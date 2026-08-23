@@ -60,6 +60,7 @@ mod reports;
 mod snapshots;
 mod sprites;
 mod sse;
+mod stacks;
 mod storage;
 mod storage_tiers;
 mod support;
@@ -950,6 +951,11 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/ports/{id}",
             get(networking::get_port).delete(networking::delete_port),
+        )
+        .route("/api/v1/stacks", get(stacks::list_stacks).post(stacks::create_stack))
+        .route(
+            "/api/v1/stacks/{id}",
+            get(stacks::get_stack).delete(stacks::delete_stack),
         )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))
