@@ -58,7 +58,7 @@ const VOLUME_SELECT: &str = "SELECT id, project_id, name, size_gib, volume_class
 /// later fails (this was a real bug: a failed detach still left the volume marked
 /// `available`). Polls the task to a terminal state before the caller updates any
 /// volume state.
-async fn wait_for_task(pool: &sqlx::SqlitePool, task_id: &str) -> Result<(), ApiError> {
+pub(crate) async fn wait_for_task(pool: &sqlx::SqlitePool, task_id: &str) -> Result<(), ApiError> {
     let task_uuid = Uuid::parse_str(task_id).map_err(|e| ApiError::internal(e.to_string()))?;
     for _ in 0..40 {
         let row: Option<(String, Option<String>)> =

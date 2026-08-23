@@ -38,6 +38,7 @@ mod maintenance;
 mod marketplace;
 mod metrics;
 mod migration_jobs;
+mod networking;
 mod networks;
 mod network_canvas;
 mod network_segments;
@@ -929,6 +930,27 @@ pub fn router(state: AppState) -> Router {
             get(volumes::list_volume_snapshots).post(volumes::create_volume_snapshot),
         )
         .route("/api/v1/volume-snapshots/{id}", delete(volumes::delete_volume_snapshot))
+        .route(
+            "/api/v1/security-groups",
+            get(networking::list_security_groups).post(networking::create_security_group),
+        )
+        .route(
+            "/api/v1/security-groups/{id}",
+            get(networking::get_security_group).delete(networking::delete_security_group),
+        )
+        .route(
+            "/api/v1/security-groups/{id}/rules",
+            get(networking::list_security_group_rules).post(networking::create_security_group_rule),
+        )
+        .route(
+            "/api/v1/security-group-rules/{id}",
+            delete(networking::delete_security_group_rule),
+        )
+        .route("/api/v1/ports", get(networking::list_ports).post(networking::create_port))
+        .route(
+            "/api/v1/ports/{id}",
+            get(networking::get_port).delete(networking::delete_port),
+        )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))
         .route("/api/v1/support/bundle", get(support::support_bundle))
