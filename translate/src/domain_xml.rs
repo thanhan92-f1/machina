@@ -77,7 +77,11 @@ fn graphics_block(listen: &str, graphics_type: &str, passwd: &str) -> String {
 /// libvirt `ceph` secret holding the key) are optional — omit them when the
 /// hypervisor's `/etc/ceph/ceph.conf` + keyring already supply them. Returns
 /// `None` when `source` is not an rbd reference (caller falls back to a file disk).
-fn rbd_disk_xml(source: &str, disk_boot: &str) -> Option<String> {
+///
+/// `pub`: also used by `agent::libvirt_ops::attach_disk` to hot-attach an
+/// already-provisioned Atlas/RBD volume as a non-root data disk (`target_dev`
+/// lets that caller name a device other than the root disk's fixed `vda`).
+pub fn rbd_disk_xml(source: &str, target_dev: &str, disk_boot: &str) -> Option<String> {
     let rest = source
         .strip_prefix("rbd://")
         .or_else(|| source.strip_prefix("rbd:"))?;
@@ -136,11 +140,12 @@ fn rbd_disk_xml(source: &str, disk_boot: &str) -> Option<String> {
         s
     };
 
+    let target_dev_esc = esc(target_dev);
     Some(format!(
         r#"<disk type='network' device='disk'>
       <driver name='qemu' type='raw'/>{auth_xml}
       <source protocol='rbd' name='{name_esc}'>{hosts_xml}</source>
-      <target dev='vda' bus='virtio'/>{disk_boot}
+      <target dev='{target_dev_esc}' bus='virtio'/>{disk_boot}
     </disk>"#
     ))
 }
@@ -283,7 +288,7 @@ pub fn domain_xml_from_spec(
         .first()
         .and_then(|s| s.source.as_deref())
         .filter(|s| !s.is_empty())
-        .and_then(|src| rbd_disk_xml(src, disk_boot))
+        .and_then(|src| rbd_disk_xml(src, "vda", disk_boot))
         .unwrap_or_else(|| {
             format!(
                 r#"<disk type='file' device='disk'>

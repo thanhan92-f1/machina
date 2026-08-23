@@ -9,7 +9,7 @@ use machina_core::libvirt::domain;
 use machina_core::state::CreateVmRequest;
 use machina_core::LibvirtError;
 use machina_spec::VirtualMachine;
-use machina_translate::domain_xml_from_spec;
+use machina_translate::{domain_xml_from_spec, rbd_disk_xml};
 use virt::connect::Connect;
 use virt::domain::Domain;
 use virt::sys;
@@ -886,15 +886,6 @@ impl LibvirtCtx {
         target_dev: &str,
     ) -> Result<(), LibvirtError> {
         use std::process::Command;
-        // Confine the attached source to a configured pool so a caller can't attach an
-        // arbitrary host file/block device (e.g. /dev/sda, /etc/shadow) into a guest and
-        // read it out via the console.
-        machina_core::libvirt::storage::assert_backup_source_within_pools(&self.conn, disk_path)?;
-        if !std::path::Path::new(disk_path).exists() {
-            return Err(LibvirtError::NotFound(format!(
-                "disk not found: {disk_path}"
-            )));
-        }
         // `target_dev` reaches the `virsh` CLI below as a bare positional argument;
         // unlike `vm_name` (constrained by the domain-lookup below) it was never
         // validated, so a leading '-' (e.g. "--sourcetype") would be parsed by
@@ -915,6 +906,46 @@ impl LibvirtCtx {
         let dom = Domain::lookup_by_name(&self.conn, vm_name)
             .map_err(|e| LibvirtError::NotFound(format!("VM '{vm_name}': {e}")))?;
         let running = dom.is_active().unwrap_or(false);
+
+        // An Atlas-provisioned RBD volume (see engine::atlas_vm::rbd_source on the
+        // controller) is a libvirt network disk, not a local file — attach it via a
+        // small XML fragment (the same shape domain_xml_from_spec already embeds for
+        // an Atlas-backed root disk at VM-create time), not the file-only
+        // `virsh attach-disk` form below. The rbd: string here is always
+        // server-constructed (controller config mon/secret + Atlas's own volume
+        // registry lookup, never a raw caller-supplied path), so this doesn't bypass
+        // the pool-confinement check below — that check only applies to the file
+        // branch, where disk_path IS a caller-named path.
+        if let Some(xml) = rbd_disk_xml(disk_path, target_dev, "") {
+            let tmp_path = std::env::temp_dir().join(format!("machina-disk-attach-{}.xml", uuid::Uuid::new_v4()));
+            std::fs::write(&tmp_path, xml.as_bytes())
+                .map_err(|e| LibvirtError::Operation(format!("write disk XML: {e}")))?;
+            let tmp_path_str = tmp_path.to_string_lossy().into_owned();
+            let mut args = vec!["attach-device", vm_name, tmp_path_str.as_str(), "--config", "--persistent"];
+            if running {
+                args.push("--live");
+            }
+            let out = Command::new("virsh").args(&args).output();
+            let _ = std::fs::remove_file(&tmp_path);
+            let out = out.map_err(|e| LibvirtError::Operation(format!("virsh attach-device: {e}")))?;
+            if !out.status.success() {
+                return Err(LibvirtError::Operation(format!(
+                    "virsh attach-device failed: {}",
+                    String::from_utf8_lossy(&out.stderr)
+                )));
+            }
+            return Ok(());
+        }
+
+        // Confine the attached source to a configured pool so a caller can't attach an
+        // arbitrary host file/block device (e.g. /dev/sda, /etc/shadow) into a guest and
+        // read it out via the console.
+        machina_core::libvirt::storage::assert_backup_source_within_pools(&self.conn, disk_path)?;
+        if !std::path::Path::new(disk_path).exists() {
+            return Err(LibvirtError::NotFound(format!(
+                "disk not found: {disk_path}"
+            )));
+        }
         let mut args = vec![
             "attach-disk",
             vm_name,

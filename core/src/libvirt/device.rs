@@ -111,8 +111,27 @@ pub fn attach_disk(
 pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<(), LibvirtError> {
     let domain = lookup_domain(conn, vm_name)?;
 
+    // `detach_device_flags` matches the supplied XML against the domain's actual
+    // device — a hardcoded `type='file'` here silently fails to match a
+    // network-backed disk (e.g. an Atlas/RBD volume attached via
+    // `agent::libvirt_ops::attach_disk`'s `type='network'` XML): the persistent
+    // config sometimes still drops the entry while the LIVE domain keeps the
+    // disk attached with no error surfaced, which is exactly the "detach
+    // reported success but `virsh domblklist` still shows it" symptom this
+    // fixes. Determine the real type from the domain's current XML instead of
+    // assuming file-backed.
+    let current_xml = domain.get_xml_desc(0).unwrap_or_default();
+    let disk_type = if super::domain::collect_network_disk_targets(&current_xml)
+        .iter()
+        .any(|t| t == target)
+    {
+        "network"
+    } else {
+        "file"
+    };
+
     let xml = format!(
-        r#"<disk type='file' device='disk'>
+        r#"<disk type='{disk_type}' device='disk'>
   <target dev='{}'/>
 </disk>"#,
         crate::xml::escape(target),

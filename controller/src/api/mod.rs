@@ -71,6 +71,7 @@ mod vm_libvirt;
 mod vm_row;
 mod vm_schedules;
 mod vms;
+mod volumes;
 mod webhooks;
 
 use axum::middleware;
@@ -915,6 +916,19 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/project-registry/{id}/members/{user_id}",
             delete(projects::remove_project_member),
         )
+        .route("/api/v1/volumes", get(volumes::list_volumes).post(volumes::create_volume))
+        .route(
+            "/api/v1/volumes/{id}",
+            get(volumes::get_volume).delete(volumes::delete_volume),
+        )
+        .route("/api/v1/volumes/{id}/attach", post(volumes::attach_volume))
+        .route("/api/v1/volumes/{id}/detach", post(volumes::detach_volume))
+        .route("/api/v1/volumes/{id}/extend", post(volumes::extend_volume))
+        .route(
+            "/api/v1/volumes/{id}/snapshots",
+            get(volumes::list_volume_snapshots).post(volumes::create_volume_snapshot),
+        )
+        .route("/api/v1/volume-snapshots/{id}", delete(volumes::delete_volume_snapshot))
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))
         .route("/api/v1/support/bundle", get(support::support_bundle))
