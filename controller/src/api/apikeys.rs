@@ -166,7 +166,6 @@ pub async fn authenticate_api_key(
             username: format!("apikey:{name}"),
             role,
             auth_source: None,
-            project_id: None,
         }))
     } else {
         Ok(None)

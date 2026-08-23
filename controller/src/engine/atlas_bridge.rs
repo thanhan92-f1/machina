@@ -110,11 +110,6 @@ impl AtlasJob {
         self.resource_str("backup_id")
     }
 
-    /// The `snapshot_id` from a snapshot job's `resource` block, if any.
-    pub fn resource_snapshot_id(&self) -> Option<String> {
-        self.resource_str("snapshot_id")
-    }
-
     fn resource_str(&self, key: &str) -> Option<String> {
         self.resource
             .get(key)
