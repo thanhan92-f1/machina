@@ -95,6 +95,89 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
         });
     }
 
+    // Create a volume — unlike "create VMs" above (queued but no executor wired,
+    // see actions::approve_and_execute), this genuinely creates the volume when
+    // approved: "create_volume" has a real executor calling api::volumes::create_volume.
+    if ql.contains("create") && (ql.contains("volume") || ql.contains("disk")) && !ql.contains("vm") {
+        let size_gib = extract_size_gib(&ql).unwrap_or(10);
+        let name = extract_named(&ql).unwrap_or_else(|| format!("vol-{}", &Uuid::new_v4().to_string()[..8]));
+        let object_ref = serde_json::json!({ "name": name, "size_gib": size_gib, "volume_class": "silver" });
+        let step = NlOpsStep {
+            label: format!("Create {size_gib}GiB volume '{name}'"),
+            action_type: "create_volume".into(),
+            review: format!("Provision a {size_gib}GiB volume named '{name}' (Atlas-backed if enabled)"),
+            risk: "low".into(),
+        };
+        let mut action_ids = Vec::new();
+        if !req.dry_run {
+            let row = actions::create_action(
+                pool,
+                &CreateActionBody {
+                    action_type: step.action_type.clone(),
+                    label: step.label.clone(),
+                    review: step.review.clone(),
+                    risk: step.risk.clone(),
+                    object_ref,
+                    source: "nl_ops".into(),
+                },
+                actor,
+            )
+            .await?;
+            action_ids.push(row.id);
+        }
+        return Ok(NlOpsPlan {
+            intent: "create_volume".into(),
+            summary: format!("Create a {size_gib}GiB volume"),
+            steps: vec![step],
+            risk_score: 3,
+            dry_run: req.dry_run,
+            approval_required: true,
+            action_ids,
+            reply: format!("Prepared a {size_gib}GiB volume named '{name}' — approve in Zyra queue."),
+        });
+    }
+
+    // Create a security group — "create_security_group_allow" also has a real
+    // executor (api::networking::{create_security_group, create_security_group_rule}).
+    if ql.contains("security group") || (ql.contains("create") && ql.contains("firewall") && ql.contains("allow")) {
+        let name = extract_named(&ql).unwrap_or_else(|| format!("sg-{}", &Uuid::new_v4().to_string()[..8]));
+        let (protocol, port) = extract_service(&ql).unwrap_or(("tcp", 22));
+        let object_ref = serde_json::json!({ "name": name, "protocol": protocol, "port": port });
+        let step = NlOpsStep {
+            label: format!("Create security group '{name}' allowing {protocol}/{port}"),
+            action_type: "create_security_group_allow".into(),
+            review: format!("New security group '{name}' with one ingress rule: {protocol}/{port} from 0.0.0.0/0"),
+            risk: "medium".into(),
+        };
+        let mut action_ids = Vec::new();
+        if !req.dry_run {
+            let row = actions::create_action(
+                pool,
+                &CreateActionBody {
+                    action_type: step.action_type.clone(),
+                    label: step.label.clone(),
+                    review: step.review.clone(),
+                    risk: step.risk.clone(),
+                    object_ref,
+                    source: "nl_ops".into(),
+                },
+                actor,
+            )
+            .await?;
+            action_ids.push(row.id);
+        }
+        return Ok(NlOpsPlan {
+            intent: "create_security_group".into(),
+            summary: format!("Create security group '{name}'"),
+            steps: vec![step],
+            risk_score: 4,
+            dry_run: req.dry_run,
+            approval_required: true,
+            action_ids,
+            reply: format!("Prepared security group '{name}' allowing {protocol}/{port} — approve in Zyra queue."),
+        });
+    }
+
     // Migrate all VMs from host
     if ql.contains("migrate") && ql.contains("from") {
         let host_hint = extract_host_hint(&ql);
@@ -320,6 +403,73 @@ fn extract_host_hint(ql: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Parses a size like "20gb", "20 gb", "20gib" out of a query. Returns the number
+/// immediately preceding a gb/gib/g unit token — deliberately not just "any number in
+/// the query" (extract_count already grabs the first bare number for VM counts, which
+/// would misfire here for e.g. "create a 20gb volume" reading "20" as a VM count).
+fn extract_size_gib(ql: &str) -> Option<i64> {
+    let words: Vec<&str> = ql.split_whitespace().collect();
+    for (i, word) in words.iter().enumerate() {
+        let trimmed = word.trim_end_matches(|c: char| !c.is_ascii_digit());
+        if trimmed.is_empty() || !trimmed.chars().all(|c| c.is_ascii_digit()) {
+            continue;
+        }
+        let suffix = &word[trimmed.len()..];
+        let is_size_unit = matches!(suffix, "gb" | "gib" | "g")
+            || words.get(i + 1).is_some_and(|next| matches!(*next, "gb" | "gib" | "g" | "gigs" | "gigabytes"));
+        if is_size_unit {
+            if let Ok(n) = trimmed.parse::<i64>() {
+                if n > 0 {
+                    return Some(n);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Pulls a resource name out of "named X" / "called X" — X is the next word, with
+/// surrounding punctuation trimmed.
+fn extract_named(ql: &str) -> Option<String> {
+    for marker in ["named ", "called "] {
+        if let Some(idx) = ql.find(marker) {
+            let rest = &ql[idx + marker.len()..];
+            if let Some(word) = rest.split_whitespace().next() {
+                let cleaned = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '-');
+                if !cleaned.is_empty() {
+                    return Some(cleaned.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Maps a common service word, or an explicit "port N", to (protocol, port).
+fn extract_service(ql: &str) -> Option<(&'static str, i32)> {
+    if let Some(idx) = ql.find("port ") {
+        let rest = &ql[idx + 5..];
+        if let Some(word) = rest.split_whitespace().next() {
+            if let Ok(n) = word.trim_matches(|c: char| !c.is_ascii_digit()).parse::<i32>() {
+                return Some(("tcp", n));
+            }
+        }
+    }
+    if ql.contains("ssh") {
+        Some(("tcp", 22))
+    } else if ql.contains("https") {
+        Some(("tcp", 443))
+    } else if ql.contains("http") {
+        Some(("tcp", 80))
+    } else if ql.contains("rdp") {
+        Some(("tcp", 3389))
+    } else if ql.contains("icmp") || ql.contains("ping") {
+        Some(("icmp", 0))
+    } else {
+        None
+    }
 }
 
 fn extract_vm_name(ql: &str) -> Option<String> {

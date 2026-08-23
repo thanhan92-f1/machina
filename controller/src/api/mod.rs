@@ -38,7 +38,7 @@ mod maintenance;
 mod marketplace;
 mod metrics;
 mod migration_jobs;
-mod networking;
+pub(crate) mod networking;
 mod networks;
 mod network_canvas;
 mod network_segments;
@@ -72,7 +72,7 @@ mod vm_libvirt;
 mod vm_row;
 mod vm_schedules;
 mod vms;
-mod volumes;
+pub(crate) mod volumes;
 mod webhooks;
 
 use axum::middleware;

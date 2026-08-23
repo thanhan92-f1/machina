@@ -183,6 +183,87 @@ pub async fn approve_and_execute(
             .await?;
             Ok(serde_json::json!({ "message": action.label, "result": out }))
         }
+        // Real executors for nl_ops-proposed resource-creation intents — unlike
+        // create_vm/migrate_vm below, these call the actual native handler
+        // (api::volumes / api::networking), so approving the action genuinely
+        // creates the resource rather than only recording an approval.
+        "create_volume" => {
+            let name = action
+                .object_ref
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow::anyhow!("name missing in object_ref"))?
+                .to_string();
+            let size_gib = action
+                .object_ref
+                .get("size_gib")
+                .and_then(|v| v.as_i64())
+                .ok_or_else(|| anyhow::anyhow!("size_gib missing in object_ref"))?;
+            let volume_class = action
+                .object_ref
+                .get("volume_class")
+                .and_then(|v| v.as_str())
+                .unwrap_or("silver")
+                .to_string();
+            let row = crate::api::volumes::create_volume(
+                axum::extract::State(state.clone()),
+                axum::Extension(actor.clone()),
+                axum::Json(crate::api::volumes::CreateVolumeBody {
+                    name,
+                    size_gib,
+                    project_id: None,
+                    volume_class,
+                }),
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?;
+            Ok(serde_json::json!({ "message": "Volume created", "volume": row.0 }))
+        }
+        "create_security_group_allow" => {
+            let name = action
+                .object_ref
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow::anyhow!("name missing in object_ref"))?
+                .to_string();
+            let protocol = action
+                .object_ref
+                .get("protocol")
+                .and_then(|v| v.as_str())
+                .unwrap_or("tcp")
+                .to_string();
+            let port = action.object_ref.get("port").and_then(|v| v.as_i64()).map(|p| p as i32);
+            let group = crate::api::networking::create_security_group(
+                axum::extract::State(state.clone()),
+                axum::Extension(actor.clone()),
+                axum::Json(crate::api::networking::CreateSecurityGroupBody {
+                    name,
+                    description: String::new(),
+                    project_id: None,
+                }),
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?;
+            let rule = crate::api::networking::create_security_group_rule(
+                axum::extract::State(state.clone()),
+                axum::Extension(actor.clone()),
+                axum::extract::Path(group.0.id),
+                axum::Json(crate::api::networking::CreateSecurityGroupRuleBody {
+                    direction: "ingress".into(),
+                    protocol: Some(protocol),
+                    port_min: port,
+                    port_max: port,
+                    remote_cidr: Some("0.0.0.0/0".into()),
+                }),
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?;
+            Ok(serde_json::json!({
+                "message": "Security group created",
+                "security_group": group.0,
+                "rule": rule.0
+            }))
+        }
         "vm.shutdown_agent" => {
             let vm_id = action
                 .object_ref
