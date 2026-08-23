@@ -43,6 +43,7 @@ mod network_canvas;
 mod network_segments;
 mod notifications;
 mod operations;
+pub mod openstack_compat;
 mod developer;
 mod fleet_automation;
 mod kubevirt;
@@ -74,7 +75,7 @@ mod vms;
 mod webhooks;
 
 use axum::middleware;
-use axum::routing::{delete, get, patch, post};
+use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 
 use crate::auth::auth_middleware;
@@ -987,6 +988,117 @@ pub fn router(state: AppState) -> Router {
             get(cpu_compat::get_cpu_compat_matrix).patch(cpu_compat::patch_cpu_compat_matrix),
         )
         .route("/api/v1/cloud-init/validate", post(cloud_init::validate_cloud_init))
+        // OpenStack-compatible inbound API (see api/openstack_compat/mod.rs) — real
+        // OpenStack clients hit these literal, unprefixed paths (not /api/v1/...),
+        // resolved from the self-referential service catalog in Keystone's token response.
+        .route("/v3/auth/catalog", get(openstack_compat::keystone::auth_catalog))
+        .route(
+            "/v3/projects",
+            get(openstack_compat::keystone::list_projects)
+                .post(openstack_compat::keystone::create_project),
+        )
+        .route(
+            "/v3/domains",
+            get(openstack_compat::keystone::list_domains)
+                .post(openstack_compat::keystone::create_domain),
+        )
+        .route("/v3/role_assignments", get(openstack_compat::keystone::list_role_assignments))
+        .route("/v3/users/{id}/projects", get(openstack_compat::keystone::list_user_projects))
+        .route(
+            "/v2.1/{project_id}/servers",
+            get(openstack_compat::nova::list_servers).post(openstack_compat::nova::create_server),
+        )
+        .route("/v2.1/{project_id}/servers/detail", get(openstack_compat::nova::list_servers))
+        .route(
+            "/v2.1/{project_id}/servers/{id}",
+            get(openstack_compat::nova::get_server).delete(openstack_compat::nova::delete_server),
+        )
+        .route("/v2.1/{project_id}/servers/{id}/action", post(openstack_compat::nova::server_action))
+        .route(
+            "/v2.1/{project_id}/flavors",
+            get(openstack_compat::nova::list_flavors).post(openstack_compat::nova::create_flavor),
+        )
+        .route("/v2.1/{project_id}/flavors/detail", get(openstack_compat::nova::list_flavors))
+        .route("/v2.1/{project_id}/limits", get(openstack_compat::nova::limits))
+        .route(
+            "/v2/images",
+            get(openstack_compat::glance::list_images).post(openstack_compat::glance::create_image),
+        )
+        .route(
+            "/v2/images/{id}",
+            get(openstack_compat::glance::get_image).delete(openstack_compat::glance::delete_image),
+        )
+        .route("/v2/images/{id}/file", put(openstack_compat::glance::upload_image_file))
+        .route(
+            "/v2.0/networks",
+            get(openstack_compat::neutron::list_networks).post(openstack_compat::neutron::create_network),
+        )
+        .route("/v2.0/networks/{id}", get(openstack_compat::neutron::get_network))
+        .route(
+            "/v2.0/subnets",
+            get(openstack_compat::neutron::list_subnets).post(openstack_compat::neutron::create_subnet),
+        )
+        .route(
+            "/v2.0/subnets/{id}",
+            get(openstack_compat::neutron::get_subnet).delete(openstack_compat::neutron::delete_subnet),
+        )
+        .route(
+            "/v2.0/ports",
+            get(openstack_compat::neutron::list_ports).post(openstack_compat::neutron::create_port),
+        )
+        .route(
+            "/v2.0/ports/{id}",
+            get(openstack_compat::neutron::get_port).delete(openstack_compat::neutron::delete_port),
+        )
+        .route(
+            "/v2.0/routers",
+            get(openstack_compat::neutron::list_routers).post(openstack_compat::neutron::create_router),
+        )
+        .route("/v2.0/routers/{id}", delete(openstack_compat::neutron::delete_router))
+        .route(
+            "/v2.0/routers/{id}/add_router_interface",
+            put(openstack_compat::neutron::add_router_interface),
+        )
+        .route(
+            "/v2.0/floatingips",
+            get(openstack_compat::neutron::list_floating_ips)
+                .post(openstack_compat::neutron::create_floating_ip),
+        )
+        .route("/v2.0/floatingips/{id}", delete(openstack_compat::neutron::delete_floating_ip))
+        .route(
+            "/v2.0/security-groups",
+            get(openstack_compat::neutron::list_security_groups)
+                .post(openstack_compat::neutron::create_security_group),
+        )
+        .route("/v2.0/security-groups/{id}", delete(openstack_compat::neutron::delete_security_group))
+        .route(
+            "/v2.0/security-group-rules",
+            post(openstack_compat::neutron::create_security_group_rule),
+        )
+        .route(
+            "/v2.0/security-group-rules/{id}",
+            delete(openstack_compat::neutron::delete_security_group_rule),
+        )
+        .route(
+            "/v3/{project_id}/volumes",
+            get(openstack_compat::cinder::list_volumes).post(openstack_compat::cinder::create_volume),
+        )
+        .route("/v3/{project_id}/volumes/detail", get(openstack_compat::cinder::list_volumes))
+        .route(
+            "/v3/{project_id}/volumes/{id}",
+            get(openstack_compat::cinder::get_volume).delete(openstack_compat::cinder::delete_volume),
+        )
+        .route("/v3/{project_id}/volumes/{id}/action", post(openstack_compat::cinder::volume_action))
+        .route(
+            "/v3/{project_id}/types",
+            get(openstack_compat::cinder::list_volume_types)
+                .post(openstack_compat::cinder::create_volume_type),
+        )
+        .route(
+            "/v3/{project_id}/snapshots",
+            get(openstack_compat::cinder::list_snapshots).post(openstack_compat::cinder::create_snapshot),
+        )
+        .route("/v3/{project_id}/snapshots/{id}", delete(openstack_compat::cinder::delete_snapshot))
         .route_layer(middleware::from_fn_with_state(state.clone(), observability_middleware::trace_middleware))
         .route_layer(middleware::from_fn_with_state(rate_limiter.clone(), rate_limit_middleware))
         .route_layer(middleware::from_fn_with_state(state.clone(), auth_middleware));
@@ -998,6 +1110,9 @@ pub fn router(state: AppState) -> Router {
     let rate_limited_public = Router::new()
         .route("/api/v1/hosts/join", post(hosts::join_host))
         .route("/api/v1/auth/login", post(crate::auth::login))
+        // Keystone v3 password auth — unauthenticated by nature (this IS the login
+        // call), same rate-limited-public bucket as the native login endpoint above.
+        .route("/v3/auth/tokens", post(openstack_compat::keystone::token_issue))
         .route("/api/v1/auth/oidc/login", get(oidc::oidc_login))
         .route("/api/v1/auth/oidc/redirect", get(oidc::oidc_login_redirect))
         .route("/api/v1/auth/oidc/callback", get(oidc::oidc_callback))

@@ -17,6 +17,10 @@ pub struct AuthUser {
     pub role: String,
     /// Federated auth source from JWT claim (`oidc`, `saml`, `local`).
     pub auth_source: Option<String>,
+    /// Project this request is scoped to, from a Keystone-style project-scoped JWT
+    /// (see `jwt::Claims::project_id`). `None` for every non-OpenStack-compat auth path
+    /// (Basic auth, API keys, unscoped JWTs) — those remain unscoped exactly as before.
+    pub project_id: Option<String>,
 }
 
 pub fn require_admin(user: &AuthUser) -> Result<(), crate::api::ApiError> {
@@ -74,6 +78,7 @@ pub async fn authenticate(
             username: username.to_string(),
             role,
             auth_source: Some("local".into()),
+            project_id: None,
         })),
         _ => Ok(None),
     }
@@ -99,8 +104,26 @@ pub async fn auth_middleware(
             username: "dev".into(),
             role: "admin".into(),
             auth_source: Some("local".into()),
+            project_id: None,
         });
         return Ok(next.run(req).await);
+    }
+
+    // Keystone-style clients (openstack CLI, OpenStack SDKs, Terraform's openstack
+    // provider) send the token from POST /v3/auth/tokens back as `X-Auth-Token`, not
+    // `Authorization: Bearer` — check it independently of the Authorization branches below.
+    if let Some(token) = req
+        .headers()
+        .get("x-auth-token")
+        .and_then(|v| v.to_str().ok())
+    {
+        if let Ok(Some(user)) =
+            crate::api::openstack_compat::keystone::authenticate_keystone_token(&state.pool, token)
+                .await
+        {
+            req.extensions_mut().insert(user);
+            return Ok(next.run(req).await);
+        }
     }
 
     let auth_header = req
@@ -128,6 +151,7 @@ pub async fn auth_middleware(
                     username: claims.sub,
                     role: claims.role,
                     auth_source: claims.auth,
+                    project_id: claims.project_id,
                 });
                 return Ok(next.run(req).await);
             }

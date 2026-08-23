@@ -75,6 +75,7 @@ async fn run_scheduled_batch(state: &AppState) {
         username: "autopilot-scheduler".into(),
         role: "operator".into(),
         auth_source: None,
+        project_id: None,
     };
 
     let max_actions = super::settings::autopilot_max_actions(&state.pool)
