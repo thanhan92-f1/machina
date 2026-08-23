@@ -903,6 +903,18 @@ pub fn router(state: AppState) -> Router {
             post(webhooks::retry_webhook_delivery),
         )
         .route("/api/v1/projects", get(projects::list_projects))
+        .route(
+            "/api/v1/project-registry",
+            get(projects::list_project_registry).post(projects::create_project),
+        )
+        .route(
+            "/api/v1/project-registry/{id}/members",
+            get(projects::list_project_members).post(projects::add_project_member),
+        )
+        .route(
+            "/api/v1/project-registry/{id}/members/{user_id}",
+            delete(projects::remove_project_member),
+        )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))
         .route("/api/v1/support/bundle", get(support::support_bundle))

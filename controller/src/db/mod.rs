@@ -185,6 +185,39 @@ pub async fn ensure_bootstrap(
 
     crate::engine::template_catalog::ensure_default_templates(pool).await?;
 
+    ensure_native_projects(pool).await?;
+
+    Ok(())
+}
+
+/// Backfills a real `projects` row for every distinct project name already in use
+/// across `vms.project` / `project_quotas.project` (see migration 020). Existing
+/// free-text project filtering elsewhere is untouched — this only gives those same
+/// names a stable id for the new project-registry endpoints (`api::projects`) to
+/// build membership/roles on top of. Runs every boot (INSERT OR IGNORE), matching
+/// `ensure_default_templates`, so a project name introduced later via the legacy
+/// free-text path gets backfilled on the next restart.
+async fn ensure_native_projects(pool: &SqlitePool) -> anyhow::Result<()> {
+    let names: Vec<String> = sqlx::query_scalar(
+        "SELECT DISTINCT name FROM (
+            SELECT COALESCE(NULLIF(project, ''), 'default') AS name FROM vms
+            UNION
+            SELECT COALESCE(NULLIF(project, ''), 'default') AS name FROM project_quotas
+            UNION
+            SELECT 'default' AS name
+        )",
+    )
+    .fetch_all(pool)
+    .await?;
+
+    for name in names {
+        sqlx::query("INSERT OR IGNORE INTO projects (id, name) VALUES (?, ?)")
+            .bind(Uuid::new_v4())
+            .bind(&name)
+            .execute(pool)
+            .await?;
+    }
+
     Ok(())
 }
 
