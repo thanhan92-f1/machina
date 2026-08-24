@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native standalone storage volumes (controller::api::volumes) — Phase 4 of the
-// OpenStack-client replacement, the Cinder equivalent. Goes through the platform
+// external-cloud-client replacement, the Cinder equivalent. Goes through the platform
 // controller proxy.
 //
 // Narrower than Cinder: no volume transfers (project-to-project ownership

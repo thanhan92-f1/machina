@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native golden-image catalog (controller::api::templates) used as the "image"
-// backend for the Fleet Cloud pages — Phase 4 of the OpenStack-client
+// backend for the Fleet Cloud pages — Phase 4 of the external-cloud-client
 // replacement, the Glance equivalent. Goes through the platform controller
 // proxy.
 //

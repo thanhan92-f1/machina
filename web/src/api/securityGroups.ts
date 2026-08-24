@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native security groups + rules (controller::api::networking) — Phase 4 of the
-// OpenStack-client replacement. Goes through the platform controller proxy.
+// external-cloud-client replacement. Goes through the platform controller proxy.
 //
 // Narrower than Neutron security groups: only CIDR-based remote rules (no
 // remote-group references) and no ethertype field — matches what the native

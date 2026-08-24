@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native L4 load balancer (controller::api::load_balancers) — the last piece of the
-// OpenStack-client replacement. One listener (protocol + port) on a chosen host fans out
+// external-cloud-client replacement. One listener (protocol + port) on a chosen host fans out
 // to weighted VM:port members via a kernel-level iptables rule set — no amphora VM, no
 // external cloud. Deliberately L4-only: no listeners/pools/L7 policies/health-monitor
 // hierarchy like Octavia — see controller/migrations/026_native_load_balancers.sql.

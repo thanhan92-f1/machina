@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # host-tune-memory.sh — extra swap on /data + optional nginx 80/443 disable
 #
-# Use on memory-tight hypervisors (k3s + OpenStack + Machina) before cargo builds.
+# Use on memory-tight hypervisors (k3s + other cloud workloads + Machina) before cargo builds.
 #
 #   sudo ./scripts/host-tune-memory.sh
 #   sudo ./scripts/host-tune-memory.sh --swap-gb 32 --disable-nginx

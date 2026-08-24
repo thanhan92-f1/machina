@@ -171,8 +171,8 @@ function main() {
   const ctrlOps = countOps(controllerSpec)
   const daemonOps = countOps(daemonSpec)
 
-  // Baseline dropped from ~430 after the legacy external-OpenStack-cloud client
-  // integration (~90 routes: openstack.rs, openstack_extended.rs, openstack_services.rs,
+  // Baseline dropped from ~430 after the legacy external-cloud client
+  // integration (~90 routes across several now-deleted route modules and the
   // vms.rs push handlers) was fully removed.
   if (daemonOps < 330) {
     console.warn(`Warning: daemon spec has ${daemonOps} operations (expected >= 330)`)

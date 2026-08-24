@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native declarative stacks (controller::api::stacks) — Phase 4 of the
-// OpenStack-client replacement, the Heat equivalent. Goes through the platform
+// external-cloud-client replacement, the Heat equivalent. Goes through the platform
 // controller proxy.
 //
 // Unlike Heat, a stack template here is NOT an arbitrary YAML resource graph —

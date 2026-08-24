@@ -639,7 +639,7 @@ npm run devhub && npm run ui-devhub
 
 | Item | Result |
 |------|--------|
-| `ops-healthx.js` | **20/20 PASS** — VM doctor/diagnose/health-check, guest health/services, sync-time/fstrim agent-down expected, host detail/gpus/health-check, AI troubleshoot/nl-ops/predictions/sre/autopilot-propose, cloud-init invalid, OpenStack status + flavors negative, secrets schema negative |
+| `ops-healthx.js` | **20/20 PASS** — VM doctor/diagnose/health-check, guest health/services, sync-time/fstrim agent-down expected, host detail/gpus/health-check, AI troubleshoot/nl-ops/predictions/sre/autopilot-propose, cloud-init invalid, external-cloud status + flavors negative, secrets schema negative |
 | `ui-healthx.js` | **10/10 PASS** — VM/host detail / support / recommendations / observability / incidents / activity / events / upgrade / cloud-init |
 
 ```bash

@@ -13,8 +13,8 @@ import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
 
 // Native project registry — this feature is SQLite-native and does not depend
-// on a wired external OpenStack cloud (there's no more <OpenStackGate>
-// component to gate it behind either: the daemon's external-OpenStack-client
+// on a wired external cloud (there's no old external-cloud gate
+// component to gate it behind either: the daemon's external-cloud-client
 // integration has since been fully removed). Unlike Keystone, there is no
 // per-project *user* catalog here — identity/login is Machina's own
 // PAM/OIDC/LDAP/SAML auth; project membership references an existing Machina

@@ -14,8 +14,8 @@ import PageLayout from '../components/PageLayout'
 import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
 
-// Native golden-image catalog — no <OpenStackGate> component to gate it behind
-// any more (the daemon's external-OpenStack-client integration has since been
+// Native golden-image catalog — no old external-cloud gate component in the way
+// any more (the daemon's external-cloud-client integration has since been
 // fully removed). See api/nativeTemplates.ts: unlike Glance there's no
 // byte-upload here (register an existing on-host disk path, or publish one
 // from a running VM).

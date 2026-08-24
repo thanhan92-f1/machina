@@ -27,8 +27,8 @@ function layoutNodes(nodes: Node[]): (Node & { x: number; y: number })[] {
   })
 }
 
-// Native topology — networks/ports/instances only; no <OpenStackGate>
-// component to gate it behind any more (the daemon's external-OpenStack-client
+// Native topology — networks/ports/instances only; no old external-cloud gate
+// component to gate it behind any more (the daemon's external-cloud-client
 // integration has since been fully removed). Neutron subnets/routers/floating-
 // IPs have no native equivalent, so those node kinds are simply absent rather
 // than faked.

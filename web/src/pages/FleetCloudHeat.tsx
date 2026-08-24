@@ -19,8 +19,8 @@ const MINIMAL_TEMPLATE: StackTemplate = {
 }
 
 // Native stacks — this feature is libvirt-native and does not depend on a wired
-// external OpenStack cloud (there's no more <OpenStackGate> component to gate it
-// behind either: the daemon's external-OpenStack-client integration has since
+// external cloud (there's no old external-cloud gate component in the way
+// either: the daemon's external-cloud-client integration has since
 // been fully removed). Unlike Heat, a template here is a fixed JSON shape
 // (security_groups/volumes/vms), not an arbitrary resource-type graph — see
 // api/stacks.ts.

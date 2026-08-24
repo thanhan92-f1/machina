@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native VM lifecycle (controller::api::vms) used as the "instance" backend for
-// the Fleet Cloud compute pages — Phase 4 of the OpenStack-client replacement.
+// the Fleet Cloud compute pages — Phase 4 of the external-cloud-client replacement.
 // Goes through the platform controller proxy, not the daemon's external-cloud
 // client. Actions enqueue a task and return immediately (no synchronous
 // completion), matching every other native create/action handler in this app.
@@ -35,7 +35,7 @@ export interface TaskResponse {
 }
 
 /** Best-effort display status derived from observed_state/lifecycle_phase — native
- * VMs don't have a single OpenStack-style status enum (ACTIVE/SHUTOFF/BUILD/ERROR). */
+ * VMs don't have a single Nova-style status enum (ACTIVE/SHUTOFF/BUILD/ERROR). */
 export function vmDisplayStatus(vm: Pick<NativeVm, 'observed_state' | 'lifecycle_phase' | 'last_error'>): string {
   if (vm.last_error) return 'ERROR'
   if (vm.lifecycle_phase && vm.lifecycle_phase !== 'ready') return vm.lifecycle_phase.toUpperCase()

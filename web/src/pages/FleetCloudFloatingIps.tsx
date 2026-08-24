@@ -20,8 +20,8 @@ import { Globe, Loader2, RefreshCw } from 'lucide-react'
 
 const PROTOCOLS = ['tcp', 'udp'] as const
 
-// Native "floating IPs" — there's no more <OpenStackGate> component to gate it
-// behind: the daemon's external-OpenStack-client integration has since been
+// Native "floating IPs" — there's no old external-cloud gate component in the
+// way: the daemon's external-cloud-client integration has since been
 // fully removed. There's no allocatable floating-IP pool; the native equivalent
 // is a per-VM host_port -> vm_port NAT rule (controller::api::vms::port_forwards,
 // already built) — see api/nativeVms.ts. Pick an instance, then manage its

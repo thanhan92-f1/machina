@@ -12,8 +12,8 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Layers, Loader2, RefreshCw } from 'lucide-react'
 
-// Native anti-affinity groups — no <OpenStackGate> component to gate them
-// behind any more (the daemon's external-OpenStack-client integration has
+// Native anti-affinity groups — no old external-cloud gate component in the
+// way any more (the daemon's external-cloud-client integration has
 // since been fully removed). A "group" is derived from VM tags (see
 // api/nativeServerGroups.ts), not a stored resource — only anti-affinity is
 // supported (Machina's placement engine only enforces that policy).

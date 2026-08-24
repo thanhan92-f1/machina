@@ -19,9 +19,9 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses, statusToneClass } from '../utils/semanticColors'
 
 // Native L4 load balancer — like the other rewired /fleet-cloud/* pages, this
-// no longer depends on a wired external OpenStack cloud (see
-// api/nativeLoadBalancers.ts). There's no <OpenStackGate> component to wrap it
-// in any more either: the daemon's external-OpenStack-client integration has
+// no longer depends on a wired external cloud (see
+// api/nativeLoadBalancers.ts). There's no old external-cloud gate component to wrap it
+// in any more either: the daemon's external-cloud-client integration has
 // since been fully removed, so this page always renders.
 export default function FleetCloudLoadBalancersPage() {
   return <FleetCloudLoadBalancersContent />

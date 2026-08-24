@@ -25,8 +25,8 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { HardDrive, RefreshCw } from 'lucide-react'
 
-// Native standalone volumes — no <OpenStackGate> component to gate them
-// behind any more (the daemon's external-OpenStack-client integration has
+// Native standalone volumes — no old external-cloud gate component in the
+// way any more (the daemon's external-cloud-client integration has
 // since been fully removed). Narrower than Cinder: no
 // transfers/retype/clone/bootable-flag/create-from-image (no native
 // equivalent yet) — see api/nativeVolumes.ts.

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-//! Native L4 load balancer CRUD -- part of the OpenStack-client replacement ("Fleet Cloud"
+//! Native L4 load balancer CRUD -- part of the external-cloud-client replacement ("Fleet Cloud"
 //! native compute). See `controller/src/engine/load_balancer.rs` for how a listener +
 //! member set gets pushed to the owning host's agent as a weighted round-robin iptables
 //! rule set, and `controller/migrations/026_native_load_balancers.sql` for why this is

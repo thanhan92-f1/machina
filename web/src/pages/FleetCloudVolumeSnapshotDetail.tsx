@@ -17,9 +17,9 @@ import { formatUserError } from '../utils/apiError'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
 // Native volume snapshots -- like the other rewired /fleet-cloud/* pages, this
-// no longer depends on a wired external OpenStack cloud. There's no
-// <OpenStackGate> component to wrap it in any more either: the daemon's
-// external-OpenStack-client integration has since been fully removed.
+// no longer depends on a wired external cloud. There's no
+// the old external-cloud gate component wrapping it any more either: the daemon's
+// external-cloud-client integration has since been fully removed.
 // No native "restore to new volume" yet (create-from-snapshot has no native equivalent --
 // see api/nativeVolumes.ts), so that action is dropped rather than faked.
 export default function FleetCloudVolumeSnapshotDetailPage() {

@@ -36,7 +36,7 @@ This document is an honest inventory of how much controller/daemon surface area 
 | Kubernetes / KubeVirt | `/k8s/*` | KubeVirt exec API |
 | Classic Machina | `/`, `/vms`, `/storage`, … | Daemon REST (original UI) |
 
-**2026-08 update:** the legacy external-OpenStack-cloud client integration described below (P9, and the OpenStack references throughout P13/P14) has been fully removed from core, daemon, controller, web, and the TUI. Fleet Cloud is Machina's own native, always-on replacement — no external cloud connection, `[openstack]` config block, or "not configured" gate exists anymore.
+**2026-08 update:** the legacy external-cloud client integration described below (P9, and the external-cloud references throughout P13/P14) has been fully removed from core, daemon, controller, web, and the TUI. Fleet Cloud is Machina's own native, always-on replacement — no external cloud connection, config block, or "not configured" gate exists anymore.
 
 ## Major gaps (next wiring phases)
 
@@ -44,7 +44,7 @@ This document is an honest inventory of how much controller/daemon surface area 
 
 - [x] `/platform/integrations` hub
 - [x] Sidebar / Go menu / Control Center links when capabilities enabled
-- [x] Live OpenStack + K8s preview panels on Integrations (inventory stats + recent instances)
+- [x] Live external-cloud + K8s preview panels on Integrations (inventory stats + recent instances)
 - [x] Single sign-on context banner when leaving Platform shell — Integrations “Leaving the desktop” panel
 
 ### P7 — Classic → Platform parity
@@ -66,11 +66,11 @@ Run `rg "platformFetch" web/src/api` vs `rg "from '../../api" web/src/pages/plat
 - [x] Full ops runbook execute flows (partial on Reports) — `/platform/reports?tab=runbooks`
 - [x] Packetwolf / SIEM deep dives — Compliance page (Packetwolf + SIEM export)
 
-### P9 — OpenStack ↔ Platform cross-links
+### P9 — External cloud ↔ Platform cross-links
 
-- [x] Platform host/VM rows → OpenStack instance when linked — VM detail OpenStack link (name/metadata match)
-- [x] Platform networks → Neutron network detail — network cards link to `/openstack/networks/:id`
-- [x] Migration radar → OpenStack migrations tab — migration hub cards + source routing
+- [x] Platform host/VM rows → external-cloud instance when linked — VM detail cross-link (name/metadata match)
+- [x] Platform networks → external network detail — network cards link to `/fleet-cloud/networks/:id`
+- [x] Migration radar → external-cloud migrations tab — migration hub cards + source routing
 
 ### P10 — Full API ↔ UX parity (shipped)
 
@@ -111,8 +111,8 @@ VSPASS='…' ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --e2e
 
 ### P13 — Integrations preview + JSON humanization (shipped)
 
-- [x] [`useIntegrationPreviewStats`](../web/src/hooks/useIntegrationPreviewStats.ts) — live OpenStack instance/network/image counts + K8s cluster overview on `/platform/integrations`
-- [x] [`PlatformIntegrationEmbeds`](../web/src/components/platform/PlatformIntegrationEmbeds.tsx) — refreshable preview panels with recent Nova instances
+- [x] [`useIntegrationPreviewStats`](../web/src/hooks/useIntegrationPreviewStats.ts) — live external-cloud instance/network/image counts + K8s cluster overview on `/platform/integrations`
+- [x] [`PlatformIntegrationEmbeds`](../web/src/components/platform/PlatformIntegrationEmbeds.tsx) — refreshable preview panels with recent instances
 - [x] JsonInspector on firewall policy simulation + air-gap bundle manifests in Settings → Security
 
 ### P14 — Overall UX polish (all shells, shipped)
@@ -121,7 +121,7 @@ VSPASS='…' ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --e2e
 
 - [x] Platform high-traffic pages: [`PageSkeleton`](../web/src/components/PageSkeleton.tsx) + [`PlatformEmptyState`](../web/src/components/platform/PlatformEmptyState.tsx) on Networks, ZeusOs, HostDetail, Templates, Maintenance, Topology, Reports
 - [x] Classic: Storage, NodeInfo, Fleet, Backups — initial skeleton; Storage empty pools [`EmptyState`](../web/src/components/EmptyState.tsx)
-- [x] OpenStack: Networking, Volumes, Instance/LB detail — skeleton on fetch/tab switch
+- [x] Fleet Cloud: Networking, Volumes, Instance/LB detail — skeleton on fetch/tab switch
 - [x] K8s: Overview node empty state; Workloads tab skeleton
 
 **Wave 2 — JSON humanization**
@@ -140,7 +140,7 @@ VSPASS='…' ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --e2e
 - [x] [`storageErrorPresentation`](../web/src/utils/storageErrorPresentation.ts) + host/node links on [`PlatformStorage`](../web/src/pages/platform/PlatformStorage.tsx)
 - [x] [`PlatformZeusOs`](../web/src/pages/platform/PlatformZeusOs.tsx) — `formatUserError` on all catches
 - [x] Classic [`Storage`](../web/src/pages/Storage.tsx) / [`NodeInfo`](../web/src/pages/NodeInfo.tsx) — libvirt hints
-- [x] [`PlatformMigration`](../web/src/pages/platform/PlatformMigration.tsx) — [`OpenStackUnreachablePanel`](../web/src/components/OpenStackUnreachablePanel.tsx) when OpenStack enabled but not live
+- [x] [`PlatformMigration`](../web/src/pages/platform/PlatformMigration.tsx) — unreachable-cloud panel when external-cloud enabled but not live (component since removed, see 2026-08 update above)
 - [x] Playwright [`shell-bridge.spec.ts`](../web/e2e/shell-bridge.spec.ts) — Platform ↔ K8s bridge + classic Storage empty state
 
 ```bash

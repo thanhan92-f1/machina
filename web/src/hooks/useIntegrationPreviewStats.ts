@@ -14,7 +14,7 @@ export type FleetCloudPreviewStats = {
 }
 
 /** Fleet Cloud is fully native now, so this always fetches -- no "is the external cloud
- * wired" gate the way the old OpenStack-backed preview needed. */
+ * wired" gate the way the old external-cloud-backed preview needed. */
 export function useIntegrationPreviewStats(k8sEnabled: boolean) {
   const [fleetCloudStats, setFleetCloudStats] = useState<FleetCloudPreviewStats | null>(null)
   const [k8sStats, setK8sStats] = useState<K8sOverview | null>(null)

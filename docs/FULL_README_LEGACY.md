@@ -4,7 +4,7 @@
 
 **Docs:** [Index](docs/README.md) · [User stories](docs/USER_STORIES.md) · **Product stack:** **Machina** is the physical infrastructure OS (hosts, hypervisors, BMC, patching, Mission Control). **Zeus OS** is the cloud layer on top (Kubernetes, KubeVirt, applications). See [`docs/machina-infrastructure-vision.md`](docs/machina-infrastructure-vision.md).
 
-Built on **libvirt** with QEMU/KVM. Optional **Kubernetes** integration via YAML workflows and `kubectl`/`virtctl` helpers allows libvirt guests to participate in **KubeVirt** clusters and migrations. See [docs/kubevirt-migration.md](docs/kubevirt-migration.md). **Fleet Cloud** provides native OpenStack-compatible instance/flavor/network/load-balancer management through the controller's own APIs.
+Built on **libvirt** with QEMU/KVM. Optional **Kubernetes** integration via YAML workflows and `kubectl`/`virtctl` helpers allows libvirt guests to participate in **KubeVirt** clusters and migrations. See [docs/kubevirt-migration.md](docs/kubevirt-migration.md). **Fleet Cloud** provides native instance/flavor/network/load-balancer management through the controller's own APIs.
 
 A **Rust daemon** exposes REST and WebSocket APIs; a **web UI** delivers VNC, SPICE, serial, and SSH consoles; a **terminal UI** covers keyboard-first workflows. PAM authentication with RBAC, live metrics, Prometheus, alerts, webhooks, scheduled actions, and more run through that single daemon.
 

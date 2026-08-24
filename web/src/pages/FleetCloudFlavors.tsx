@@ -12,9 +12,9 @@ import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Cpu, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 
 // Native flavor catalog — unlike the rest of the /fleet-cloud/* pages, this one no
-// longer depends on a wired external OpenStack cloud (see api/flavors.ts). The
-// <OpenStackGate> component it once needed to skip is gone too: the daemon's
-// external-OpenStack-client integration has since been fully removed, so this
+// longer depends on a wired external cloud (see api/flavors.ts). The
+// the old external-cloud gate component it once needed to skip is gone too: the daemon's
+// external-cloud-client integration has since been fully removed, so this
 // page always renders.
 export default function FleetCloudFlavorsPage() {
   return <FleetCloudFlavorsContent />

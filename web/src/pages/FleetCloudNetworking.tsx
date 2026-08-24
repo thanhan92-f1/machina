@@ -14,8 +14,8 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Network, Plus, RefreshCw } from 'lucide-react'
 
-// Native networking overview — no <OpenStackGate> component to gate it behind
-// any more (the daemon's external-OpenStack-client integration has since been
+// Native networking overview — no old external-cloud gate component in the way
+// any more (the daemon's external-cloud-client integration has since been
 // fully removed). Networks (already pre-existing, libvirt-backed) and ports
 // (this session's Neutron-port equivalent) only — no subnets/routers, since
 // Machina has no native L3 routing layer. See FleetCloudTopology.tsx for the

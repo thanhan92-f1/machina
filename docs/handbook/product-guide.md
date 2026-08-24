@@ -277,9 +277,9 @@ desired-state reconciliation, a task bus (in-memory or NATS), and an AI engine
   networks, images, security groups, stacks, keypairs, and load balancers
   (kernel-level weighted round-robin, not an Octavia amphora) entirely via
   Machina's own native controller APIs — no external cloud connection, no
-  credentials to wire up. The legacy external-OpenStack-cloud client
-  integration (Nova/Glance/Neutron/Keystone, and pushing local VMs to an
-  external OpenStack cloud) has been fully removed.
+  credentials to wire up. The legacy external-cloud client integration
+  (compute/image/network/identity management, and pushing local VMs to an
+  external cloud) has been fully removed.
 - **HyperSDK / hyper2kvm / GuestKit** — multi-cloud VM migration and offline
   assurance.
 - **Observability** — Prometheus scrape, remote-write ingest, OTLP/HTTP export

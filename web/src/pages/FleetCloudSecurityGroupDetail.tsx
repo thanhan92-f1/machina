@@ -21,8 +21,8 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native security groups — no <OpenStackGate> component to gate them behind
-// any more (the daemon's external-OpenStack-client integration has since been
+// Native security groups — no old external-cloud gate component in the way
+// any more (the daemon's external-cloud-client integration has since been
 // fully removed); see FleetCloudSecurityGroups.tsx.
 export default function FleetCloudSecurityGroupDetailPage() {
   return <FleetCloudSecurityGroupDetailContent />

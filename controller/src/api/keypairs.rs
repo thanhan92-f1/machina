@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-//! Native SSH keypair catalog — part of the OpenStack-client replacement ("Fleet
+//! Native SSH keypair catalog — part of the external-cloud-client replacement ("Fleet
 //! Cloud" native compute). Only the public key is ever stored (no private-key
 //! generation here — Machina isn't in the business of handing out private keys
 //! over an API); it's picked at instance-create time and injected via cloud-init

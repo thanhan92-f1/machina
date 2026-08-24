@@ -25,8 +25,8 @@ import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Loader2, RefreshCw, Shield } from 'lucide-react'
 
 // Native security groups — this feature is libvirt/SQLite-native and does not
-// depend on a wired external OpenStack cloud (there's no more <OpenStackGate>
-// component to gate them behind either: the daemon's external-OpenStack-client
+// depend on a wired external cloud (there's no old external-cloud gate
+// component to gate them behind either: the daemon's external-cloud-client
 // integration has since been fully removed).
 export default function FleetCloudSecurityGroupsPage() {
   return <FleetCloudSecurityGroupsContent />

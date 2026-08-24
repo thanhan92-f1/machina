@@ -16,8 +16,8 @@ import PageLayout from '../components/PageLayout'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import { formatUserError } from '../utils/apiError'
 
-// Native instance creation — there's no more <OpenStackGate> component to gate
-// it behind: the daemon's external-OpenStack-client integration has since been
+// Native instance creation — there's no old external-cloud gate component to gate
+// it behind: the daemon's external-cloud-client integration has since been
 // fully removed. Boots from the native image catalog (api/nativeTemplates.ts)
 // with a flavor and network resolved server-side
 // (controller::api::vms::create_from_template, extended with flavor_id/network)

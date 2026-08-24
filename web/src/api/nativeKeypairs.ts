@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native SSH keypair catalog (controller::api::keypairs) — Phase 4 of the
-// OpenStack-client replacement. Only the public key is ever stored — no
+// external-cloud-client replacement. Only the public key is ever stored — no
 // private-key generation/download, unlike Nova's "create keypair" flow.
 
 import { platformFetch } from './platform'

@@ -24,8 +24,8 @@ import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
 const ROLES = ['admin', 'operator', 'viewer'] as const
 
-// Native project registry — there's no more <OpenStackGate> component to gate
-// it behind (the daemon's external-OpenStack-client integration has since been
+// Native project registry — there's no old external-cloud gate component to gate
+// it behind (the daemon's external-cloud-client integration has since been
 // fully removed); see FleetCloudIdentity.tsx.
 export default function FleetCloudIdentityProjectDetailPage() {
   return <FleetCloudIdentityProjectDetailContent />

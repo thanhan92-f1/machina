@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native project registry (controller::api::projects) — Phase 4 of the
-// OpenStack-client replacement, the Keystone-project equivalent. Goes through the
+// external-cloud-client replacement, the Keystone-project equivalent. Goes through the
 // platform controller proxy. There is no native equivalent of Keystone *users*:
 // identity/login is Machina's own PAM/OIDC/LDAP/SAML auth, not a per-project user
 // catalog — project membership references an existing Machina user by id/role.

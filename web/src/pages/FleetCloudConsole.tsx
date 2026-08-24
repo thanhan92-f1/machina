@@ -6,7 +6,7 @@ import { Navigate, useParams } from 'react-router'
 
 // Native "instance" console — reuses Machina's existing VNC/SPICE/serial console
 // system directly (same viewer every other VM in the app already uses) instead of
-// the daemon's OpenStack-client remote-console URL flow. No new backend needed:
+// the daemon's old external-cloud-client remote-console URL flow. No new backend needed:
 // a Fleet Cloud instance IS a Machina VM, so its console works exactly the same way.
 export default function FleetCloudConsolePage() {
   const { id } = useParams<{ id: string }>()

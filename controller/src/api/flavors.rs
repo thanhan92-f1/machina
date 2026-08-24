@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-//! Native compute flavor catalog — Phase 1 of the OpenStack-client replacement
+//! Native compute flavor catalog — Phase 1 of the external-cloud-client replacement
 //! ("Fleet Cloud" native compute). A flavor is a named (vcpus, memory, disk) preset
 //! picked at instance-create time. Instance lifecycle itself (create/start/stop/
 //! reboot/console/rename) already exists via the classic native VM APIs

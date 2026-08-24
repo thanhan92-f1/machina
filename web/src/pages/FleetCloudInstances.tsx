@@ -22,9 +22,9 @@ function statusBadge(status: string) {
 }
 
 // Native VM lifecycle used as the "instance" list — this feature is
-// libvirt-native and does not depend on a wired external OpenStack cloud
-// (there's no more <OpenStackGate> component to gate it behind either: the
-// daemon's external-OpenStack-client integration has since been fully
+// libvirt-native and does not depend on a wired external cloud
+// (there's no old external-cloud gate component in the way either: the
+// daemon's external-cloud-client integration has since been fully
 // removed). Unlike the Nova instance list, there's no server-side
 // pagination/marker here — the native list endpoint returns the whole
 // project's VMs and this page filters client-side.

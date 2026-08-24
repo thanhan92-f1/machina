@@ -28,8 +28,8 @@ import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native VM detail used as the "instance" detail page — no <OpenStackGate>
-// component to gate it behind any more (the daemon's external-OpenStack-client
+// Native VM detail used as the "instance" detail page — no old external-cloud gate
+// component to gate it behind any more (the daemon's external-cloud-client
 // integration has since been fully removed). Narrower than the Nova instance
 // detail: no rescue/shelve/lock/migrate/backup/resize actions (no native
 // equivalent yet) — start/stop/reboot/delete plus disk and NIC inventory,

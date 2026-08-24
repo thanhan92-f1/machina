@@ -24,9 +24,9 @@ import { statusActionLinkClasses, statusToneClass } from '../utils/semanticColor
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
 // Native L4 load balancer — like the other rewired /fleet-cloud/* pages, this
-// no longer depends on a wired external OpenStack cloud. There's no
-// <OpenStackGate> component to wrap it in any more either: the daemon's
-// external-OpenStack-client integration has since been fully removed.
+// no longer depends on a wired external cloud. There's no
+// the old external-cloud gate component wrapping it any more either: the daemon's
+// external-cloud-client integration has since been fully removed.
 export default function FleetCloudLoadBalancerDetailPage() {
   return <FleetCloudLoadBalancerDetailContent />
 }
