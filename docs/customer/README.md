@@ -1,6 +1,6 @@
 # Machina — Customer Documentation
 
-**Machina** manages libvirt VMs, storage, networks, and consoles on Linux KVM hosts — with optional OpenStack integration, fleet Mission Control, and enterprise auth.
+**Machina** manages libvirt VMs, storage, networks, and consoles on Linux KVM hosts — with a native Fleet Cloud layer, fleet Mission Control, and enterprise auth.
 
 | You want to… | Open |
 |--------------|------|
@@ -33,7 +33,7 @@ Output lands in [`pdf/`](pdf/):
   Daemon UI/API  →  https://<host>:5092
   Controller     →  :5093 (optional multi-host)
   Surfaces       →  Web · TUI (machina) · machinactl CLI
-  Workloads      →  libvirt VMs · optional OpenStack · fleet platform
+  Workloads      →  libvirt VMs · Fleet Cloud · fleet platform
 ```
 
 ## Support surfaces (quick map)
@@ -44,7 +44,7 @@ Output lands in [`pdf/`](pdf/):
 | Fleet / Mission Control | `/platform` |
 | Consoles | VM detail → ConsoleHub / VNC / SSH / RDP |
 | Storage / networks | `/storage`, `/networks` or `/platform/storage` |
-| OpenStack | `/openstack` (when wired) |
+| Fleet Cloud | `/openstack` (native, no wiring required) |
 | Settings / users | `/settings`, `/platform/users` |
 
 ---

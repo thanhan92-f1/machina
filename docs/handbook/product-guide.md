@@ -192,8 +192,8 @@ Two shells share one daemon:
 - **Classic (daemon-backed)** — `/`, `/vms`, `/create`, `/import`, `/fleet`,
   `/storage`, `/disk-images`, `/snapshots`, `/backups`, `/networks`,
   `/nwfilters`, `/host-networking`, `/secrets`, `/k8s` (+ `/k8s/workloads`,
-  `/k8s/kata`), `/host-ssh`, `/settings`, `/api-docs`, plus the OpenStack pages
-  under `/openstack/*`.
+  `/k8s/kata`), `/host-ssh`, `/settings`, `/api-docs`, plus the Fleet Cloud
+  pages under `/openstack/*`.
 - **Platform (controller-backed)** — `/platform/*` with its own shell:
   Mission Control, Virtual Machines, Hosts, Applications, Launchpad, Datacenter
   View, Disk Utility, Storage Tiers, Networks, Content, Templates, Cloud-Init
@@ -274,8 +274,11 @@ desired-state reconciliation, a task bus (in-memory or NATS), and an AI engine
 - **KubeVirt** — export a VM as a KubeVirt YAML bundle
   (`GET /vms/{name}/kubevirt-bundle`) and apply/upload/start it on a cluster.
   See [../kubevirt-migration.md](../kubevirt-migration.md).
-- **OpenStack** — manage instances, flavors, networks, images, load balancers,
-  and push local VMs to OpenStack. See [../openstack.md](../openstack.md).
+- **Fleet Cloud** (`/openstack/*` in the UI) — manage instances, flavors,
+  networks, images, security groups, stacks, and keypairs via Machina's own
+  native controller APIs (no external cloud required). Load Balancers and
+  optional push of local VMs to an external OpenStack cloud still use the
+  legacy integration — see [../openstack.md](../openstack.md).
 - **HyperSDK / hyper2kvm / GuestKit** — multi-cloud VM migration and offline
   assurance.
 - **Observability** — Prometheus scrape, remote-write ingest, OTLP/HTTP export

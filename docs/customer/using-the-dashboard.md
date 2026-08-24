@@ -1,6 +1,6 @@
 # Using the Dashboard
 
-Machina’s UI has a **classic host shell** (Core / Infrastructure / OpenStack / Monitoring) and a **Platform** Mission Control experience for fleets.
+Machina’s UI has a **classic host shell** (Core / Infrastructure / Fleet Cloud / Monitoring) and a **Platform** Mission Control experience for fleets.
 
 ## Surfaces
 
@@ -13,7 +13,7 @@ Machina’s UI has a **classic host shell** (Core / Infrastructure / OpenStack /
 
 ## Browse vs act
 
-Inventory pages are safe to explore. Create/delete VM, firewall, and OpenStack mutations require Operator/Admin roles.
+Inventory pages are safe to explore. Create/delete VM, firewall, and Fleet Cloud mutations require Operator/Admin roles.
 
 ## Related
 

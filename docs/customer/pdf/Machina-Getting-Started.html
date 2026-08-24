@@ -24,7 +24,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Mach<span>ina</span></h1>
 <div class="sub">Getting Started</div>
-<div class="badge">2026-07-26</div>
+<div class="badge">2026-08-24</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>What you need</h2>
 <table>
@@ -82,7 +82,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <ol>
 <li><strong>Core</strong> — Dashboard, VMs, Create, Import, Fleet on this host.</li>
 <li><strong>Platform</strong> — Mission Control for multi-host fleet (<code>/platform</code>).</li>
-<li><strong>Infrastructure / OpenStack / Monitoring</strong> — storage, networks, OpenStack, host metrics.</li>
+<li><strong>Infrastructure / Fleet Cloud / Monitoring</strong> — storage, networks, Fleet Cloud instances, host metrics.</li>
 <li>Spotlight / Finder for quick jump.</li>
 </ol>
 <h2>4. First workflows</h2>
@@ -92,8 +92,8 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <p><code>/create</code> or Platform → VM Builder / Advanced Create.</p>
 <h3>C. Check host health</h3>
 <p><code>/node</code> or Platform → Hosts.</p>
-<h3>D. Wire OpenStack (optional)</h3>
-<p>Settings → OpenStack (<code>/settings?openstack=1</code>) then use <code>/openstack</code> pages.</p>
+<h3>D. Fleet Cloud</h3>
+<p><code>/openstack</code> pages (branded <strong>Fleet Cloud</strong> in the nav) work out of the box — instances, images, volumes, security groups, networking, and keypairs are all native, no external cloud required. Only Load Balancers needs a wired external OpenStack cloud: Settings → Connect Fleet Cloud (<code>/settings?openstack=1</code>).</p>
 <h2>Next steps</h2>
 <ul>
 <li><a href="using-the-dashboard.md">Using the Dashboard</a></li>
@@ -101,7 +101,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="pages/README.md">Page guides</a></li>
 </ul>
 <hr>
-<p>Machina’s UI has a <strong>classic host shell</strong> (Core / Infrastructure / OpenStack / Monitoring) and a <strong>Platform</strong> Mission Control experience for fleets.</p>
+<p>Machina’s UI has a <strong>classic host shell</strong> (Core / Infrastructure / Fleet Cloud / Monitoring) and a <strong>Platform</strong> Mission Control experience for fleets.</p>
 <h2>Surfaces</h2>
 <table>
 <thead>
@@ -128,7 +128,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 </tbody></table>
 <h2>Browse vs act</h2>
-<p>Inventory pages are safe to explore. Create/delete VM, firewall, and OpenStack mutations require Operator/Admin roles.</p>
+<p>Inventory pages are safe to explore. Create/delete VM, firewall, and Fleet Cloud mutations require Operator/Admin roles.</p>
 <h2>Related</h2>
 <ul>
 <li><a href="getting-started.md">Getting Started</a></li>
@@ -146,11 +146,11 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="pages/platform/platform-hosts.md">Hosts</a> / <a href="pages/platform/platform-vms.md">Machine Finder</a></li>
 <li><a href="pages/platform/platform-backups.md">Backup &amp; Restore</a> as needed</li>
 </ol>
-<h2>OpenStack (when wired)</h2>
+<h2>Fleet Cloud</h2>
 <ol>
-<li>Wire credentials in Settings</li>
-<li><a href="pages/openstack/openstack.md">OpenStack Overview</a></li>
-<li>Instances / Networks / Volumes as required</li>
+<li><a href="pages/fleet-cloud/openstack.md">Fleet Cloud Overview</a></li>
+<li>Instances / Networks / Volumes as required — backed by Machina&#39;s own native APIs, no external cloud wiring needed</li>
+<li>Load Balancers is the one page still backed by an external OpenStack connection; wire credentials in Settings first</li>
 </ol>
 <h2>Related</h2>
 <ul>

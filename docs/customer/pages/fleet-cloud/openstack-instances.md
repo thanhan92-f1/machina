@@ -1,8 +1,8 @@
-# Connect Fleet Cloud
+# Instances
 
 ## Purpose
 
-Connect Fleet Cloud — Machina Core page at `/settings?openstack=1`.
+Instances — Machina Fleet Cloud page at `/openstack/instances`.
 
 ## When to use it
 
@@ -12,12 +12,12 @@ Connect Fleet Cloud — Machina Core page at `/settings?openstack=1`.
 
 ## How to get there
 
-- Route: `/settings?openstack=1`
-- Nav: **Core → Connect Fleet Cloud** (or spotlight / Finder search)
+- Route: `/openstack/instances`
+- Nav: **Fleet Cloud → Instances** (or spotlight / Finder search)
 
 ## What you can do
 
-1. Open `/settings?openstack=1` against the Machina daemon (`https://<host>:5092`).
+1. Open `/openstack/instances` against the Machina daemon (`https://<host>:5092`).
 2. Use filters and host/VM selectors when the page provides them.
 3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
 4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
@@ -27,4 +27,6 @@ If the page stays empty, check daemon health (`/api/v1/health`), libvirt connect
 ## Related pages
 
 - [Getting Started](../../getting-started.md)
+- [Dashboard](../core/home.md)
+- [Mission Control](../platform/platform.md)
 - [Page index](../../PAGE_INDEX.md)

@@ -16,9 +16,31 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [Host SSH](core/host-ssh.md) | Host SSH — Machina Core page at `/host-ssh`. |
 | [Import VM](core/import.md) | Import VM — Machina Core page at `/import`. |
 | [Services](core/services.md) | Services — Machina Core page at `/services`. |
-| [Wire OpenStack](core/settings.md) | Wire OpenStack — Machina Core page at `/settings?openstack=1`. |
+| [Connect Fleet Cloud](core/settings.md) | Connect Fleet Cloud — Machina Core page at `/settings?openstack=1`. |
 | [Sprites](core/sprites.md) | Instant, disposable sandbox VMs — boot on libvirt/QEMU, Cloud Hypervisor, or Firecracker, TTL-reaped automatically, no persistent state. |
 | [Virtual Machines](core/vms.md) | Virtual machine inventory for this libvirt host. |
+
+## Fleet Cloud
+
+| Page | What it covers |
+|------|----------------|
+| [Create Instance](fleet-cloud/openstack-create.md) | Create Instance — Machina Fleet Cloud page at `/openstack/create`. |
+| [Flavors](fleet-cloud/openstack-flavors.md) | Flavors — Machina Fleet Cloud page at `/openstack/flavors`. |
+| [Floating IPs](fleet-cloud/openstack-floating-ips.md) | Floating IPs — Machina Fleet Cloud page at `/openstack/floating-ips`. |
+| [Heat Orchestration](fleet-cloud/openstack-heat.md) | Heat Orchestration — Machina Fleet Cloud page at `/openstack/heat`. |
+| [Identity](fleet-cloud/openstack-identity.md) | Identity — Machina Fleet Cloud page at `/openstack/identity`. |
+| [Images](fleet-cloud/openstack-images.md) | Images — Machina Fleet Cloud page at `/openstack/images`. |
+| [Instances](fleet-cloud/openstack-instances.md) | Instances — Machina Fleet Cloud page at `/openstack/instances`. |
+| [Keypairs](fleet-cloud/openstack-keypairs.md) | Keypairs — Machina Fleet Cloud page at `/openstack/keypairs`. |
+| [Load Balancers](fleet-cloud/openstack-load-balancers.md) | Load Balancers — Machina Fleet Cloud page at `/openstack/load-balancers`. |
+| [Migrations](fleet-cloud/openstack-migrations.md) | Migrations — Machina Fleet Cloud page at `/openstack/migrations`. |
+| [Networking](fleet-cloud/openstack-networking.md) | Networking — Machina Fleet Cloud page at `/openstack/networking`. |
+| [Security Groups](fleet-cloud/openstack-security-groups.md) | Security Groups — Machina Fleet Cloud page at `/openstack/security-groups`. |
+| [Server Groups](fleet-cloud/openstack-server-groups.md) | Server Groups — Machina Fleet Cloud page at `/openstack/server-groups`. |
+| [Network Topology](fleet-cloud/openstack-topology.md) | Network Topology — Machina Fleet Cloud page at `/openstack/topology`. |
+| [Volume Snapshots](fleet-cloud/openstack-volume-snapshots.md) | Volume Snapshots — Machina Fleet Cloud page at `/openstack/volume-snapshots`. |
+| [Volumes](fleet-cloud/openstack-volumes.md) | Volumes — Machina Fleet Cloud page at `/openstack/volumes`. |
+| [Overview](fleet-cloud/openstack.md) | Overview — Machina Fleet Cloud page at `/openstack`. |
 
 ## Infrastructure
 
@@ -52,28 +74,6 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [System Logs](monitoring/logs.md) | System Logs — Machina Monitoring page at `/logs`. |
 | [Host Overview](monitoring/node.md) | Host Overview — Machina Monitoring page at `/node`. |
 | [System Check](monitoring/system-check.md) | System Check — Machina Monitoring page at `/system-check`. |
-
-## Openstack
-
-| Page | What it covers |
-|------|----------------|
-| [Create Instance](openstack/openstack-create.md) | Create Instance — Machina OpenStack page at `/openstack/create`. |
-| [Flavors](openstack/openstack-flavors.md) | Flavors — Machina OpenStack page at `/openstack/flavors`. |
-| [Floating IPs](openstack/openstack-floating-ips.md) | Floating IPs — Machina OpenStack page at `/openstack/floating-ips`. |
-| [Heat Orchestration](openstack/openstack-heat.md) | Heat Orchestration — Machina OpenStack page at `/openstack/heat`. |
-| [Identity](openstack/openstack-identity.md) | Identity — Machina OpenStack page at `/openstack/identity`. |
-| [Glance Images](openstack/openstack-images.md) | Glance Images — Machina OpenStack page at `/openstack/images`. |
-| [Instances](openstack/openstack-instances.md) | Instances — Machina OpenStack page at `/openstack/instances`. |
-| [Keypairs](openstack/openstack-keypairs.md) | Keypairs — Machina OpenStack page at `/openstack/keypairs`. |
-| [Load Balancers](openstack/openstack-load-balancers.md) | Load Balancers — Machina OpenStack page at `/openstack/load-balancers`. |
-| [Migrations](openstack/openstack-migrations.md) | Migrations — Machina OpenStack page at `/openstack/migrations`. |
-| [Networking](openstack/openstack-networking.md) | Networking — Machina OpenStack page at `/openstack/networking`. |
-| [Security Groups](openstack/openstack-security-groups.md) | Security Groups — Machina OpenStack page at `/openstack/security-groups`. |
-| [Server Groups](openstack/openstack-server-groups.md) | Server Groups — Machina OpenStack page at `/openstack/server-groups`. |
-| [Network Topology](openstack/openstack-topology.md) | Network Topology — Machina OpenStack page at `/openstack/topology`. |
-| [Volume Snapshots](openstack/openstack-volume-snapshots.md) | Volume Snapshots — Machina OpenStack page at `/openstack/volume-snapshots`. |
-| [Volumes](openstack/openstack-volumes.md) | Volumes — Machina OpenStack page at `/openstack/volumes`. |
-| [Overview](openstack/openstack.md) | Overview — Machina OpenStack page at `/openstack`. |
 
 ## Platform
 

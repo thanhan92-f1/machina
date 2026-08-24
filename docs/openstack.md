@@ -1,5 +1,7 @@
 # OpenStack in Machina
 
+> **Status:** the `/openstack/*` UI is branded **Fleet Cloud** in the nav and no longer requires any of this wiring for most pages — Instances, Images, Volumes, Security Groups, Networking, Server Groups, Floating IPs, Stacks, Identity, and Keypairs are backed by Machina's own native controller APIs (libvirt-backed, no external cloud). This document describes the **legacy external-OpenStack-cloud integration** below, which today is only exercised by **Load Balancers** (no native traffic-distribution backend yet) and the optional Glance disk push/pull flow in [openstack-migration.md](openstack-migration.md). Everything else on this page is accurate for that legacy path but does not describe how the native Fleet Cloud pages work day to day.
+
 Machina manages OpenStack Nova instances and Glance images from the same UI as libvirt VMs—without Horizon. Credentials stay on the daemon host (`clouds.yaml`, config file, or `OS_*`); they are never stored in the browser.
 
 ## First-boot checklist
@@ -15,7 +17,7 @@ Machina manages OpenStack Nova instances and Glance images from the same UI as l
    sudo systemctl restart machina-daemon
    ```
 3. In the Machina UI: **Settings → OpenStack connection → Test connection** (or `POST /api/v1/openstack/test-connection`). Status must show **reachable=yes**.
-4. Open **OpenStack → Instances**. The nav group is always visible; instance APIs work only when **configured + reachable** (Keystone up).
+4. Open **Fleet Cloud → Instances**. The nav group is always visible; the legacy Nova-backed instance APIs work only when **configured + reachable** (Keystone up) — the page itself renders native Machina instances regardless.
 5. Optional: set `[openstack] upload_enabled = true` for **Disk images → Upload to OpenStack** (native Glance upload in machina-daemon).
 
 ### UI states
@@ -90,7 +92,7 @@ connect_timeout_secs = 30
 
 | Nav | Path |
 |-----|------|
-| OpenStack | `/openstack/instances` — list, search, start/stop/reboot (nav when configured) |
+| Fleet Cloud | `/openstack/instances` — list, search, start/stop/reboot (native; nav group always visible) |
 | Instance detail | `/openstack/instances/{id}` — lifecycle, console, FIPs, Cinder attach/detach, resize, security groups, export |
 | Instance interfaces | `/openstack/instances/{id}/interfaces` — attach/detach NICs |
 | Embedded console | `/openstack/instances/{id}/console?type=novnc` — iframe to Nova remote console URL |
@@ -228,7 +230,7 @@ See [openstack-migration.md](openstack-migration.md) for full API tables.
 
 Optional `use_hyper2kvm` on VM push delegates to hyper2kvm for guest-fix and deploy parity with hyper2kvm CLI.
 
-**HyperSDK proxy** (optional `[hypersdk]` in config): `GET /api/v1/hypersdk/status`, `.../providers/list`, `.../providers/vms`, `POST .../migrations/submit`, `GET .../migrations/jobs`, `GET .../migrations/jobs/{id}`, `GET|POST .../hypersdk/proxy?path=/api/...` — forwards to hypervisord for bulk pipelines. UI: **OpenStack → OS Migrations** (providers, VM picker, job detail).
+**HyperSDK proxy** (optional `[hypersdk]` in config): `GET /api/v1/hypersdk/status`, `.../providers/list`, `.../providers/vms`, `POST .../migrations/submit`, `GET .../migrations/jobs`, `GET .../migrations/jobs/{id}`, `GET|POST .../hypersdk/proxy?path=/api/...` — forwards to hypervisord for bulk pipelines. UI: **Fleet Cloud → Migrations** (providers, VM picker, job detail).
 
 ## What stays in Horizon / `osc` (advanced / not in Machina)
 
