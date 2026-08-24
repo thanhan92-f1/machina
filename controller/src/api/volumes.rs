@@ -27,6 +27,7 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::api::projects::default_project_id;
 use crate::api::storage::{self, CreateStorageVolumeBody, StoragePoolHostQuery};
 use crate::api::vms;
 use crate::api::ApiError;
@@ -59,8 +60,23 @@ const VOLUME_SELECT: &str = "SELECT id, project_id, name, size_gib, volume_class
 /// `available`). Polls the task to a terminal state before the caller updates any
 /// volume state.
 pub(crate) async fn wait_for_task(pool: &sqlx::SqlitePool, task_id: &str) -> Result<(), ApiError> {
+    wait_for_task_timeout(pool, task_id, Duration::from_secs(20)).await
+}
+
+/// Same polling behavior as `wait_for_task`, but with a caller-chosen timeout — some
+/// operations (e.g. VM creation with an image pull) can legitimately take longer than
+/// the 20s default used for attach/detach/resize/nic operations. Note that a timeout
+/// here does not mean the underlying task stopped: it keeps running in the background
+/// and may still complete later — callers that track created resources (e.g.
+/// `stacks::build_stack`) should account for that instead of assuming timeout == no-op.
+pub(crate) async fn wait_for_task_timeout(
+    pool: &sqlx::SqlitePool,
+    task_id: &str,
+    timeout: Duration,
+) -> Result<(), ApiError> {
     let task_uuid = Uuid::parse_str(task_id).map_err(|e| ApiError::internal(e.to_string()))?;
-    for _ in 0..40 {
+    let attempts = (timeout.as_millis() / 500).max(1) as u32;
+    for _ in 0..attempts {
         let row: Option<(String, Option<String>)> =
             sqlx::query_as("SELECT status, message FROM tasks WHERE id = ?")
                 .bind(task_uuid)
@@ -75,13 +91,6 @@ pub(crate) async fn wait_for_task(pool: &sqlx::SqlitePool, task_id: &str) -> Res
         }
     }
     Err(ApiError::internal("timed out waiting for disk operation to complete"))
-}
-
-async fn default_project_id(pool: &sqlx::SqlitePool) -> Result<Uuid, ApiError> {
-    sqlx::query_scalar("SELECT id FROM projects WHERE name = 'default'")
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| ApiError::internal("no default project — controller bootstrap has not run"))
 }
 
 #[derive(Debug, Deserialize)]
@@ -344,11 +353,15 @@ pub async fn attach_volume(
         path.ok_or_else(|| ApiError::internal("volume has no backing path"))?
     };
 
-    let task = vms::attach_vm_disk(
-        State(state.clone()),
-        Extension(actor),
-        Path(body.vm_id),
-        Json(vms::AttachDiskBody { disk_path: disk_source, target_dev: body.target_dev.clone(), size_gib: None }),
+    // attach_vm_disk_trusted, not the public attach_vm_disk: disk_source above is
+    // server-resolved (Atlas RBD lookup or the volume's own recorded local path),
+    // never raw caller input, so it's exempt from the public handler's rbd:-source
+    // rejection by design — see the doc comment on attach_vm_disk_trusted.
+    let task = vms::attach_vm_disk_trusted(
+        state.clone(),
+        actor,
+        body.vm_id,
+        vms::AttachDiskBody { disk_path: disk_source, target_dev: body.target_dev.clone(), size_gib: None },
     )
     .await?;
     wait_for_task(&state.pool, &task.0.task_id).await?;

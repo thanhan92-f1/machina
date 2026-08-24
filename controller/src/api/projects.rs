@@ -17,6 +17,16 @@ pub struct ProjectRow {
     pub vm_count: i64,
 }
 
+/// Canonical "default" project resolver, shared by every native handler
+/// (`api::volumes`, `api::networking`, `api::stacks`) that accepts an optional
+/// `project_id` and needs to fall back to the seeded default when omitted.
+pub(crate) async fn default_project_id(pool: &sqlx::SqlitePool) -> Result<Uuid, ApiError> {
+    sqlx::query_scalar("SELECT id FROM projects WHERE name = 'default'")
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| ApiError::internal("no default project — controller bootstrap has not run"))
+}
+
 /// `GET /api/v1/projects` — VM-count-by-project view, unchanged in shape except for
 /// the added `id`: every name here is backfilled into `projects` on boot (see
 /// `db::ensure_native_projects`), so `id` is always present once the controller has

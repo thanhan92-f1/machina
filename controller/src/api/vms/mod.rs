@@ -1707,6 +1707,34 @@ pub async fn attach_vm_disk(
     Json(body): Json<AttachDiskBody>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
+    // Reject a caller-supplied Ceph/RBD network-disk source at this public HTTP
+    // boundary: an `rbd:` string embeds a mon host + cephx auth secret UUID that the
+    // agent (`agent::libvirt_ops::attach_disk`) trusts completely and attaches without
+    // the local-pool confinement check (`assert_backup_source_within_pools`) that
+    // otherwise applies to every disk_path here — without this guard, any operator
+    // could attach an arbitrary Ceph pool/image from an arbitrary mon host just by
+    // hand-crafting disk_path. The only legitimate source of an `rbd:` disk_path is
+    // the server-resolved source `api::volumes::attach_volume` builds itself from
+    // Atlas's own volume registry, which calls `attach_vm_disk_trusted` below instead
+    // of this public handler.
+    if body.disk_path.starts_with("rbd:") {
+        return Err(ApiError::bad_request(
+            "rbd: disk sources cannot be attached directly here — use POST /api/v1/volumes/{id}/attach",
+        ));
+    }
+    attach_vm_disk_trusted(state, actor, id, body).await
+}
+
+/// Same as `attach_vm_disk` but skips the public-HTTP `rbd:`-source rejection above.
+/// Used only by `api::volumes::attach_volume`, which resolves the RBD source itself
+/// server-side (via Atlas's own volume registry) rather than accepting it as raw
+/// caller input.
+pub(crate) async fn attach_vm_disk_trusted(
+    state: AppState,
+    actor: AuthUser,
+    id: Uuid,
+    body: AttachDiskBody,
+) -> Result<Json<TaskResponse>, ApiError> {
     let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
         .bind(id)
         .fetch_one(&state.pool)

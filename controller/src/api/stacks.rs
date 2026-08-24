@@ -8,6 +8,8 @@
 //! handlers, created in a fixed dependency order (security groups and volumes first,
 //! since VMs may reference them by name) and torn down in reverse.
 
+use std::time::Duration;
+
 use axum::extract::{Path, State};
 use axum::Extension;
 use axum::Json;
@@ -16,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::api::networking::{self, CreateSecurityGroupBody, CreateSecurityGroupRuleBody};
+use crate::api::projects::default_project_id;
 use crate::api::vms::{self, CreateVmBody};
 use crate::api::volumes::{self, AttachVolumeBody, CreateVolumeBody};
 use crate::api::ApiError;
@@ -159,11 +162,21 @@ pub struct CreateStackBody {
     pub project_id: Option<Uuid>,
 }
 
-async fn default_project_id(pool: &sqlx::SqlitePool) -> Result<Uuid, ApiError> {
-    sqlx::query_scalar("SELECT id FROM projects WHERE name = 'default'")
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| ApiError::internal("no default project — controller bootstrap has not run"))
+/// `build_stack` creates every listed resource synchronously, in-process, inside a
+/// single HTTP request — bypassing the per-route rate-limit/tracing middleware that
+/// would normally apply if each resource were created via its own `POST` call. Cap the
+/// template so one `create_stack` request can't fan out into an unbounded burst of
+/// real VM/volume/security-group creation against the underlying hosts.
+const MAX_STACK_RESOURCES: usize = 25;
+
+fn validate_stack_size(template: &StackTemplate) -> Result<(), ApiError> {
+    let total = template.security_groups.len() + template.volumes.len() + template.vms.len();
+    if total > MAX_STACK_RESOURCES {
+        return Err(ApiError::bad_request(format!(
+            "stack template has {total} resources, exceeding the {MAX_STACK_RESOURCES} limit per stack"
+        )));
+    }
+    Ok(())
 }
 
 /// `POST /api/v1/stacks` — creates every resource in the template, in order (security
@@ -180,6 +193,7 @@ pub async fn create_stack(
 ) -> Result<Json<StackRow>, ApiError> {
     require_operator(&actor)?;
     machina_spec::validate_name(&body.name).map_err(|e| ApiError::bad_request(e.to_string()))?;
+    validate_stack_size(&body.template)?;
     let project_id = match body.project_id {
         Some(id) => id,
         None => default_project_id(&state.pool).await?,
@@ -306,7 +320,6 @@ async fn build_stack(
         )
         .await
         .map_err(|e| (created.clone(), e))?;
-        volumes::wait_for_task(&state.pool, &task.0.task_id).await.map_err(|e| (created.clone(), e))?;
         let task_uuid = Uuid::parse_str(&task.0.task_id)
             .map_err(|e| (created.clone(), ApiError::internal(e.to_string())))?;
         let vm_id: Uuid = sqlx::query_scalar("SELECT resource_id FROM tasks WHERE id = ?")
@@ -314,7 +327,17 @@ async fn build_stack(
             .fetch_one(&state.pool)
             .await
             .map_err(|e| (created.clone(), ApiError::from(e)))?;
+        // Track the VM as created BEFORE waiting on its provisioning task: if the wait
+        // below times out or the task fails partway through a real libvirt define+start,
+        // the VM may still exist on the host and must be in `created` so `delete_stack`
+        // (and the operator-visible partial-failure resource list) can find and remove
+        // it — losing this entry here would leak the VM.
         created.push(StackResourceRef { kind: "vm".into(), id: vm_id, name: vm_spec.name.clone() });
+        // VM provisioning (define + start via libvirt) runs well past the 20s default
+        // used elsewhere in this file — give it a generous ceiling before giving up.
+        volumes::wait_for_task_timeout(&state.pool, &task.0.task_id, Duration::from_secs(180))
+            .await
+            .map_err(|e| (created.clone(), e))?;
 
         for vol_name in &vm_spec.attach_volumes {
             let vol_id = *volume_ids
@@ -335,11 +358,20 @@ async fn build_stack(
     Ok(created)
 }
 
-/// `n` is a 1-based attach count (the VM's own root disk is always `vda`), so
-/// n=1 -> vdb, n=2 -> vdc, etc.
+/// `n` is a 1-based attach count (the VM's own root disk is always `vda`, reserved and
+/// never assigned here). Bijective base-26 over b..z, then aa, ab, ... — same scheme
+/// spreadsheet columns use — so n=1 -> vdb, n=25 -> vdz, n=26 -> vdaa, and it never
+/// wraps back around to collide with vda no matter how many volumes are attached.
 fn default_target_dev_for(n: usize) -> String {
-    let letter = (b'a' + (n as u8 % 24)) as char;
-    format!("vd{letter}")
+    let mut v = n + 1; // v=1 is reserved for vda; attachments start at v=2 ('b').
+    let mut letters = Vec::new();
+    while v > 0 {
+        v -= 1;
+        letters.push((b'a' + (v % 26) as u8) as char);
+        v /= 26;
+    }
+    letters.reverse();
+    format!("vd{}", letters.into_iter().collect::<String>())
 }
 
 /// `DELETE /api/v1/stacks/{id}` — tears down every tracked resource in reverse

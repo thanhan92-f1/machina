@@ -19,17 +19,11 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::api::projects::default_project_id;
 use crate::api::vms;
 use crate::api::ApiError;
 use crate::auth::{require_operator, AuthUser};
 use crate::state::AppState;
-
-async fn default_project_id(pool: &sqlx::SqlitePool) -> Result<Uuid, ApiError> {
-    sqlx::query_scalar("SELECT id FROM projects WHERE name = 'default'")
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| ApiError::internal("no default project — controller bootstrap has not run"))
-}
 
 // ---------------------------------------------------------------------------
 // Security groups
@@ -41,6 +35,10 @@ pub struct SecurityGroupRow {
     pub project_id: Option<Uuid>,
     pub name: String,
     pub description: String,
+    /// Always `false` today — rule enforcement isn't wired to `engine::zeus_firewall`
+    /// in this first cut (see module doc comment). Surfaced on the wire so API/UI
+    /// consumers don't mistake a stored-but-inert group for real traffic filtering.
+    pub enforced: bool,
 }
 
 pub async fn list_security_groups(
@@ -49,7 +47,7 @@ pub async fn list_security_groups(
 ) -> Result<Json<Vec<SecurityGroupRow>>, ApiError> {
     require_operator(&actor)?;
     let rows = sqlx::query_as::<_, SecurityGroupRow>(
-        "SELECT id, project_id, name, description FROM security_groups ORDER BY name",
+        "SELECT id, project_id, name, description, 0 AS enforced FROM security_groups ORDER BY name",
     )
     .fetch_all(&state.pool)
     .await?;
@@ -63,7 +61,7 @@ pub async fn get_security_group(
 ) -> Result<Json<SecurityGroupRow>, ApiError> {
     require_operator(&actor)?;
     let row = sqlx::query_as::<_, SecurityGroupRow>(
-        "SELECT id, project_id, name, description FROM security_groups WHERE id = ?",
+        "SELECT id, project_id, name, description, 0 AS enforced FROM security_groups WHERE id = ?",
     )
     .bind(id)
     .fetch_one(&state.pool)
@@ -99,7 +97,13 @@ pub async fn create_security_group(
         .bind(&body.description)
         .execute(&state.pool)
         .await?;
-    Ok(Json(SecurityGroupRow { id, project_id: Some(project_id), name: body.name, description: body.description }))
+    Ok(Json(SecurityGroupRow {
+        id,
+        project_id: Some(project_id),
+        name: body.name,
+        description: body.description,
+        enforced: false,
+    }))
 }
 
 pub async fn delete_security_group(
@@ -121,6 +125,8 @@ pub struct SecurityGroupRuleRow {
     pub port_min: Option<i32>,
     pub port_max: Option<i32>,
     pub remote_cidr: Option<String>,
+    /// Always `false` today — see `SecurityGroupRow::enforced`.
+    pub enforced: bool,
 }
 
 pub async fn list_security_group_rules(
@@ -130,7 +136,7 @@ pub async fn list_security_group_rules(
 ) -> Result<Json<Vec<SecurityGroupRuleRow>>, ApiError> {
     require_operator(&actor)?;
     let rows = sqlx::query_as::<_, SecurityGroupRuleRow>(
-        "SELECT id, security_group_id, direction, protocol, port_min, port_max, remote_cidr \
+        "SELECT id, security_group_id, direction, protocol, port_min, port_max, remote_cidr, 0 AS enforced \
          FROM security_group_rules WHERE security_group_id = ? ORDER BY created_at",
     )
     .bind(group_id)
@@ -189,6 +195,7 @@ pub async fn create_security_group_rule(
         port_min: body.port_min,
         port_max: body.port_max,
         remote_cidr: body.remote_cidr,
+        enforced: false,
     }))
 }
 
@@ -302,6 +309,12 @@ pub async fn create_port(
         .await?;
         crate::api::volumes::wait_for_task(&state.pool, &task.0.task_id).await?;
 
+        // Known race: if two ports are created concurrently for the same VM+network,
+        // both attach calls complete before either lists NICs, so this "last matching
+        // NIC" heuristic could attribute the wrong MAC to a port. There's no
+        // synchronous "MAC of the NIC I just attached" signal from the agent RPC to
+        // key off instead — narrowing this needs a deeper agent-side change, not
+        // something to paper over here.
         let nics = vms::list_vm_nics(State(state.clone()), Path(vm_id)).await?;
         mac_address = nics.0.iter().rev().find(|n| n.network == network_name).map(|n| n.mac_address.clone());
         status = "ACTIVE";

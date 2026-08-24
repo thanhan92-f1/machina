@@ -45,60 +45,17 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
     let q = req.query.trim();
     let ql = q.to_lowercase();
 
-    // Create VMs
-    if ql.contains("create") && (ql.contains("vm") || ql.contains("ubuntu")) {
-        let count = extract_count(&ql).unwrap_or(1);
-        let rates: (f64, f64) = sqlx::query_as(
-            "SELECT finops_vcpu_hour_usd, finops_gib_hour_usd FROM clusters ORDER BY created_at LIMIT 1",
-        )
-        .fetch_one(pool)
-        .await
-        .unwrap_or((0.02, 0.005));
-        let plan = environment_intent::plan_environment(q, rates.0, rates.1);
-        let mut steps = Vec::new();
-        for i in 0..count.min(plan.vm_count) {
-            steps.push(NlOpsStep {
-                label: format!("Create VM {i}"),
-                action_type: "create_vm".into(),
-                review: plan.label.clone(),
-                risk: "medium".into(),
-            });
-        }
-        let mut action_ids = Vec::new();
-        if !req.dry_run {
-            for step in &steps {
-                let row = actions::create_action(
-                    pool,
-                    &CreateActionBody {
-                        action_type: step.action_type.clone(),
-                        label: step.label.clone(),
-                        review: step.review.clone(),
-                        risk: step.risk.clone(),
-                        object_ref: serde_json::json!({}),
-                        source: "nl_ops".into(),
-                    },
-                    actor,
-                )
-                .await?;
-                action_ids.push(row.id);
-            }
-        }
-        return Ok(NlOpsPlan {
-            intent: "create_vms".into(),
-            summary: format!("Create {count} VM(s) from environment plan"),
-            steps,
-            risk_score: 6,
-            dry_run: req.dry_run,
-            approval_required: true,
-            action_ids,
-            reply: plan.label.clone(),
-        });
-    }
+    // Create a volume / create a security group are checked BEFORE the generic "Create
+    // VMs" block below, even though both "create a volume" and "create a security
+    // group allowing ssh to my vm" can legitimately contain the substring "vm" —
+    // ordering these more-specific intents first (rather than piling exclusion
+    // conditions onto the VM check) means a phrase mentioning "vm" incidentally still
+    // routes to the intent it's actually asking for.
 
-    // Create a volume — unlike "create VMs" above (queued but no executor wired,
-    // see actions::approve_and_execute), this genuinely creates the volume when
-    // approved: "create_volume" has a real executor calling api::volumes::create_volume.
-    if ql.contains("create") && (ql.contains("volume") || ql.contains("disk")) && !ql.contains("vm") {
+    // Create a volume — unlike "create VMs" below (queued but no executor wired, see
+    // actions::approve_and_execute), this genuinely creates the volume when approved:
+    // "create_volume" has a real executor calling api::volumes::create_volume.
+    if ql.contains("create") && (ql.contains("volume") || ql.contains("disk")) {
         let size_gib = extract_size_gib(&ql).unwrap_or(10);
         let name = extract_named(&ql).unwrap_or_else(|| format!("vol-{}", &Uuid::new_v4().to_string()[..8]));
         let object_ref = serde_json::json!({ "name": name, "size_gib": size_gib, "volume_class": "silver" });
@@ -146,7 +103,11 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
         let step = NlOpsStep {
             label: format!("Create security group '{name}' allowing {protocol}/{port}"),
             action_type: "create_security_group_allow".into(),
-            review: format!("New security group '{name}' with one ingress rule: {protocol}/{port} from 0.0.0.0/0"),
+            review: format!(
+                "New security group '{name}' with one ingress rule: {protocol}/{port} from 0.0.0.0/0. \
+                 Note: rule enforcement isn't wired to the firewall yet — this record is advisory-only \
+                 and does not actually restrict traffic."
+            ),
             risk: "medium".into(),
         };
         let mut action_ids = Vec::new();
@@ -174,7 +135,60 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
             dry_run: req.dry_run,
             approval_required: true,
             action_ids,
-            reply: format!("Prepared security group '{name}' allowing {protocol}/{port} — approve in Zyra queue."),
+            reply: format!(
+                "Prepared security group '{name}' allowing {protocol}/{port} — approve in Zyra queue. \
+                 Note: this is advisory only for now; it does not yet enforce traffic."
+            ),
+        });
+    }
+
+    // Create VMs — checked after the more specific volume/security-group intents above.
+    if ql.contains("create") && (ql.contains("vm") || ql.contains("ubuntu")) {
+        let count = extract_count(&ql).unwrap_or(1);
+        let rates: (f64, f64) = sqlx::query_as(
+            "SELECT finops_vcpu_hour_usd, finops_gib_hour_usd FROM clusters ORDER BY created_at LIMIT 1",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0.02, 0.005));
+        let plan = environment_intent::plan_environment(q, rates.0, rates.1);
+        let mut steps = Vec::new();
+        for i in 0..count.min(plan.vm_count) {
+            steps.push(NlOpsStep {
+                label: format!("Create VM {i}"),
+                action_type: "create_vm".into(),
+                review: plan.label.clone(),
+                risk: "medium".into(),
+            });
+        }
+        let mut action_ids = Vec::new();
+        if !req.dry_run {
+            for step in &steps {
+                let row = actions::create_action(
+                    pool,
+                    &CreateActionBody {
+                        action_type: step.action_type.clone(),
+                        label: step.label.clone(),
+                        review: step.review.clone(),
+                        risk: step.risk.clone(),
+                        object_ref: serde_json::json!({}),
+                        source: "nl_ops".into(),
+                    },
+                    actor,
+                )
+                .await?;
+                action_ids.push(row.id);
+            }
+        }
+        return Ok(NlOpsPlan {
+            intent: "create_vms".into(),
+            summary: format!("Create {count} VM(s) from environment plan"),
+            steps,
+            risk_score: 6,
+            dry_run: req.dry_run,
+            approval_required: true,
+            action_ids,
+            reply: plan.label.clone(),
         });
     }
 

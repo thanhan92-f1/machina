@@ -917,24 +917,7 @@ impl LibvirtCtx {
         // the pool-confinement check below — that check only applies to the file
         // branch, where disk_path IS a caller-named path.
         if let Some(xml) = rbd_disk_xml(disk_path, target_dev, "") {
-            let tmp_path = std::env::temp_dir().join(format!("machina-disk-attach-{}.xml", uuid::Uuid::new_v4()));
-            std::fs::write(&tmp_path, xml.as_bytes())
-                .map_err(|e| LibvirtError::Operation(format!("write disk XML: {e}")))?;
-            let tmp_path_str = tmp_path.to_string_lossy().into_owned();
-            let mut args = vec!["attach-device", vm_name, tmp_path_str.as_str(), "--config", "--persistent"];
-            if running {
-                args.push("--live");
-            }
-            let out = Command::new("virsh").args(&args).output();
-            let _ = std::fs::remove_file(&tmp_path);
-            let out = out.map_err(|e| LibvirtError::Operation(format!("virsh attach-device: {e}")))?;
-            if !out.status.success() {
-                return Err(LibvirtError::Operation(format!(
-                    "virsh attach-device failed: {}",
-                    String::from_utf8_lossy(&out.stderr)
-                )));
-            }
-            return Ok(());
+            return attach_device_xml(vm_name, &xml, running);
         }
 
         // Confine the attached source to a configured pool so a caller can't attach an
@@ -1074,6 +1057,33 @@ impl LibvirtCtx {
         }
         Ok(())
     }
+}
+
+/// Attach a `<disk>` device via `virsh attach-device` against a temp XML file, rather
+/// than the positional-args `virsh attach-disk` form (which is file-source-only).
+/// Shared by `LibvirtCtx::attach_disk`'s rbd branch so a future non-file disk kind
+/// (NFS, iSCSI) can reuse this instead of growing its own tempfile/virsh-invocation
+/// copy alongside the existing file-attach path.
+fn attach_device_xml(vm_name: &str, xml: &str, running: bool) -> Result<(), LibvirtError> {
+    use std::process::Command;
+    let tmp_path = std::env::temp_dir().join(format!("machina-disk-attach-{}.xml", uuid::Uuid::new_v4()));
+    std::fs::write(&tmp_path, xml.as_bytes())
+        .map_err(|e| LibvirtError::Operation(format!("write disk XML: {e}")))?;
+    let tmp_path_str = tmp_path.to_string_lossy().into_owned();
+    let mut args = vec!["attach-device", vm_name, tmp_path_str.as_str(), "--config", "--persistent"];
+    if running {
+        args.push("--live");
+    }
+    let out = Command::new("virsh").args(&args).output();
+    let _ = std::fs::remove_file(&tmp_path);
+    let out = out.map_err(|e| LibvirtError::Operation(format!("virsh attach-device: {e}")))?;
+    if !out.status.success() {
+        return Err(LibvirtError::Operation(format!(
+            "virsh attach-device failed: {}",
+            String::from_utf8_lossy(&out.stderr)
+        )));
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
