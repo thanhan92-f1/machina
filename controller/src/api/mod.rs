@@ -23,6 +23,7 @@ mod enterprise_security;
 mod error;
 mod events;
 mod fence;
+mod flavors;
 mod fleet;
 mod guestkit;
 mod zeus_firewall;
@@ -956,6 +957,11 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/stacks/{id}",
             get(stacks::get_stack).delete(stacks::delete_stack),
+        )
+        .route("/api/v1/flavors", get(flavors::list_flavors).post(flavors::create_flavor))
+        .route(
+            "/api/v1/flavors/{id}",
+            get(flavors::get_flavor).delete(flavors::delete_flavor),
         )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))
