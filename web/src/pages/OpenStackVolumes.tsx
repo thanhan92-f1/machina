@@ -43,7 +43,7 @@ import { HardDrive, Loader2, RefreshCw } from 'lucide-react'
 
 export default function OpenStackVolumesPage() {
   return (
-    <OpenStackGate title="Cinder volumes">
+    <OpenStackGate title="Storage volumes">
       <OpenStackVolumesContent />
     </OpenStackGate>
   )
@@ -156,7 +156,7 @@ function OpenStackVolumesContent() {
     >
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <HardDrive className="w-7 h-7 text-sky-400" />
-        Cinder volumes
+        Storage volumes
       </h1>
       <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end">
         <div>
@@ -193,10 +193,10 @@ function OpenStackVolumesContent() {
       </div>
 
       <div className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Create volume from Glance image</h2>
+        <h2 className="text-sm font-medium text-slate-300">Create volume from image</h2>
         <div className="flex flex-wrap gap-3 items-end">
           <select value={fromImageId} onChange={(e) => setFromImageId(e.target.value)}
-            aria-label="Glance image"
+            aria-label="Image"
             className="min-w-[14rem] px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm">
             <option value="">Image…</option>
             {images.map((img) => (
@@ -404,7 +404,7 @@ function OpenStackVolumesContent() {
           <div className="rounded-xl border border-slate-700 overflow-hidden">
             <div className="px-3 py-2 bg-slate-900 text-xs text-slate-500 uppercase">Volumes</div>
             <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="OpenStack volumes">
+            <table className="w-full text-sm" aria-label="Fleet Cloud volumes">
               <thead className="bg-slate-900/80 text-slate-400 text-left">
                 <tr>
                   <th scope="col" className="px-3 py-2">Name</th>

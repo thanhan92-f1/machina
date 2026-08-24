@@ -168,7 +168,7 @@ function OpenStackConsoleContent() {
         )}
         {!loading && url && (
           <iframe
-            title="OpenStack remote console"
+            title="Fleet Cloud remote console"
             src={url}
             className="w-full h-full min-h-[70vh] border-0"
             allow="clipboard-read; clipboard-write"
@@ -180,7 +180,7 @@ function OpenStackConsoleContent() {
       </div>
 
       <p className="text-xs text-slate-600 px-1">
-        Embedded view uses the URL from Nova. If the console is blank, your browser may block mixed content
+        Embedded view uses the URL from Compute. If the console is blank, your browser may block mixed content
         or the console host may require opening in a new tab.
       </p>
 

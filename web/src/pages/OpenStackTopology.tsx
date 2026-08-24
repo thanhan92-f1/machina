@@ -89,7 +89,7 @@ function OpenStackTopologyContent() {
   return (
     <PageLayout
       prepend={<OpenStackSubNav />}
-      title="Neutron topology"
+      title="Network topology"
       icon={<Globe className="w-7 h-7 text-sky-400" />}
       error={error}
       errorTitle="Failed to load topology"

@@ -7,7 +7,7 @@ import { Link } from 'react-router'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 
-/** Shared footer for OpenStack pages: disk migration + optional HyperSDK dashboard. */
+/** Shared footer for Fleet Cloud pages: disk migration + optional HyperSDK dashboard. */
 export default function OpenStackFooter() {
   const { info } = usePlatformInfo()
   const { phase } = useOpenStackConnection()

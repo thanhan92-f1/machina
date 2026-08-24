@@ -58,7 +58,7 @@ function OpenStackServerGroupsContent() {
     >
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <Layers className="w-7 h-7 text-sky-400" />
-        Nova server groups
+        Compute server groups
       </h1>
       <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end">
         <div>

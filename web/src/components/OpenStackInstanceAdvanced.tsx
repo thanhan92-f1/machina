@@ -130,7 +130,7 @@ export default function OpenStackInstanceAdvanced({ inst, volumes, onRefresh }: 
       if (!alive()) return
       if (!extrasErrorShown.current) {
         extrasErrorShown.current = true
-        toast.error(`Failed to load OpenStack networking extras: ${formatUserError(e)}`)
+        toast.error(`Failed to load Fleet Cloud networking extras: ${formatUserError(e)}`)
       }
     }
   }, [inst.id, volumes, toast])
@@ -436,15 +436,15 @@ export default function OpenStackInstanceAdvanced({ inst, volumes, onRefresh }: 
         <h2 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
           <RotateCcw className={`w-4 h-4 ${statusToneClass('warn')}`} /> Rebuild
         </h2>
-        <p className="text-xs text-slate-500 mb-2">Replace the instance disk from a Glance image (destructive).</p>
+        <p className="text-xs text-slate-500 mb-2">Replace the instance disk from an image (destructive).</p>
         <div className="flex flex-wrap gap-2 items-end">
           <select
-            aria-label="Glance image for rebuild"
+            aria-label="Image for rebuild"
             value={rebuildImageId}
             onChange={(e) => setRebuildImageId(e.target.value)}
             className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm min-w-[12rem]"
           >
-            <option value="">Glance image…</option>
+            <option value="">Image…</option>
             {images.map((img) => (
               <option key={img.id} value={img.id}>{img.name || img.id}</option>
             ))}
@@ -502,7 +502,7 @@ export default function OpenStackInstanceAdvanced({ inst, volumes, onRefresh }: 
 
       <section className="rounded-xl border border-slate-700/80 p-4">
         <h2 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
-          <HardDrive className="w-4 h-4 text-sky-400" /> Cinder volumes
+          <HardDrive className="w-4 h-4 text-sky-400" /> Storage volumes
         </h2>
         <div className="flex flex-wrap gap-2 items-end mb-4 pb-4 border-b border-slate-700/60">
           <div>
@@ -605,10 +605,10 @@ export default function OpenStackInstanceAdvanced({ inst, volumes, onRefresh }: 
 
       <section className="rounded-xl border border-slate-700/80 p-4">
         <h2 className="font-medium text-slate-200 mb-2 flex items-center gap-2">
-          <Upload className="w-4 h-4 text-sky-400" /> Export to Glance
+          <Upload className="w-4 h-4 text-sky-400" /> Export to Images
         </h2>
         <p className="text-slate-500 text-sm mb-3">
-          Snapshot to Glance and optionally pull qcow2 to this hypervisor for libvirt import.
+          Snapshot to Images and optionally pull qcow2 to this hypervisor for libvirt import.
         </p>
         <button
           type="button"

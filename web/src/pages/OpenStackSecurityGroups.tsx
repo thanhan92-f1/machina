@@ -30,7 +30,7 @@ import { Loader2, RefreshCw, Shield } from 'lucide-react'
 
 export default function OpenStackSecurityGroupsPage() {
   return (
-    <OpenStackGate title="OpenStack Security Groups">
+    <OpenStackGate title="Fleet Cloud Security Groups">
       <OpenStackSecurityGroupsContent />
     </OpenStackGate>
   )

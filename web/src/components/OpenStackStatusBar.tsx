@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { formatUserError, sanitizeErrorText } from '../utils/apiError'
 import { statusActionLinkClasses, statusChipClasses, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 
-/** Live OpenStack connection summary for cloud pages. */
+/** Live Fleet Cloud connection summary for cloud pages. */
 export default function OpenStackStatusBar() {
   const { info } = usePlatformInfo()
   const toast = useToastContext()
@@ -24,7 +24,7 @@ export default function OpenStackStatusBar() {
       <div className={`mb-4 flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm ${statusSurfaceClasses('warn')}`}>
         <span className={`inline-flex items-center gap-2 font-medium ${statusToneClass('warn')}`}>
           <AlertCircle className={`w-4 h-4 ${statusToneClass('warn')}`} />
-          OpenStack not wired on this host
+          Fleet Cloud not wired on this host
         </span>
         <span className="text-xs text-slate-400">
           enabled={info?.openstack?.enabled ? 'yes' : 'no'} · configured=
@@ -53,16 +53,16 @@ export default function OpenStackStatusBar() {
         ) : (
           <WifiOff className={`w-4 h-4 ${statusToneClass('error')}`} />
         )}
-        {cloudName || 'OpenStack'}
+        {cloudName || 'Fleet Cloud'}
         {!reachable && <span className={`text-xs font-normal ${statusToneClass('error')}`}>· unreachable</span>}
       </span>
       {reachable && (
         <span className="text-xs text-slate-400">
-          Keystone
-          {computeLive ? ' · Nova' : ' · Nova off'}
-          {glanceLive ? ' · Glance' : ' · Glance off'}
-          {status?.neutron_reachable ? ' · Neutron' : status?.neutron_reachable === false ? ' · Neutron off' : ''}
-          {status?.cinder_reachable ? ' · Cinder' : status?.cinder_reachable === false ? ' · Cinder off' : ''}
+          Auth
+          {computeLive ? ' · Compute' : ' · Compute off'}
+          {glanceLive ? ' · Images' : ' · Images off'}
+          {status?.neutron_reachable ? ' · Network' : status?.neutron_reachable === false ? ' · Network off' : ''}
+          {status?.cinder_reachable ? ' · Storage' : status?.cinder_reachable === false ? ' · Storage off' : ''}
         </span>
       )}
       {reachable && !computeLive && connectionHint && (
@@ -82,7 +82,7 @@ export default function OpenStackStatusBar() {
       )}
       {info?.openstack?.upload_enabled && reachable && glanceLive && (
         <span className={statusChipClasses('ok')}>
-          Glance upload on
+          Image upload on
         </span>
       )}
       {status?.error && reachable && (
@@ -103,7 +103,7 @@ export default function OpenStackStatusBar() {
             setTesting(true)
             try {
               const s = await testConnection()
-              toast.success(s.reachable ? 'OpenStack OK' : 'Still unreachable')
+              toast.success(s.reachable ? 'Fleet Cloud OK' : 'Still unreachable')
             } catch (e: unknown) {
               toast.error(formatUserError(e))
             } finally {

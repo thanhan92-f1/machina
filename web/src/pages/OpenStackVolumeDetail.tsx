@@ -17,7 +17,7 @@ import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
 export default function OpenStackVolumeDetailPage() {
   return (
-    <OpenStackGate title="Cinder volume">
+    <OpenStackGate title="Storage volume">
       <OpenStackVolumeDetailContent />
     </OpenStackGate>
   )
@@ -74,15 +74,15 @@ function OpenStackVolumeDetailContent() {
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
           setUploadBusy(false)
-          toast.success('Glance image is active')
+          toast.success('Image is active')
         } else if (st === 'killed' || st === 'deleted' || st.includes('error')) {
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
           setUploadBusy(false)
-          toast.error(`Glance upload failed: ${image.status}`)
+          toast.error(`Image upload failed: ${image.status}`)
         }
       } catch {
-        // keep polling — image may not appear in Glance immediately
+        // keep polling — image may not appear in Images immediately
       }
     }
 
@@ -149,8 +149,8 @@ function OpenStackVolumeDetailContent() {
           } catch (e: unknown) { toast.error(formatUserError(e)) }
         }}>Rename</button>
       <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Create Glance image from volume</h2>
-        <p className="text-xs text-slate-500">Upload this Cinder volume to Glance (Cinder os-volume_upload_image).</p>
+        <h2 className="text-sm font-medium text-slate-300">Create image from volume</h2>
+        <p className="text-xs text-slate-500">Upload this Storage volume to Images (Storage os-volume_upload_image).</p>
         {uploadImageId && (
           <div className="text-sm text-slate-300 space-y-1">
             <p>
@@ -169,7 +169,7 @@ function OpenStackVolumeDetailContent() {
         <button type="button" disabled={uploadBusy}
           className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm disabled:opacity-50"
           onClick={async () => {
-            const name = prompt('Glance image name', vol.name ? `${vol.name}-image` : 'volume-image')
+            const name = prompt('Image name', vol.name ? `${vol.name}-image` : 'volume-image')
             if (!name?.trim()) return
             try {
               setUploadBusy(true)
@@ -177,12 +177,12 @@ function OpenStackVolumeDetailContent() {
               const r = await uploadOpenStackVolumeToImage(vol.id, { image_name: name.trim() })
               setUploadImageId(r.upload.image_id)
               setUploadStatus(r.upload.status)
-              toast.success(`Upload started — polling Glance for ${r.upload.image_id}`)
+              toast.success(`Upload started — polling Images for ${r.upload.image_id}`)
             } catch (e: unknown) {
               setUploadBusy(false)
               toast.error(formatUserError(e))
             }
-          }}>Upload to Glance</button>
+          }}>Upload to Images</button>
       </section>
       <OpenStackFooter />
     </PageLayout>

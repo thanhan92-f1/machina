@@ -19,7 +19,7 @@ import { Cpu, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 
 export default function OpenStackFlavorsPage() {
   return (
-    <OpenStackGate title="Nova flavors">
+    <OpenStackGate title="Compute flavors">
       <OpenStackFlavorsContent />
     </OpenStackGate>
   )
@@ -92,7 +92,7 @@ function OpenStackFlavorsContent() {
     >
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <Cpu className="w-7 h-7 text-sky-400" />
-        Nova flavors
+        Compute flavors
       </h1>
       <p className="text-sm text-slate-400">Flavor catalog — create and delete require admin role.</p>
       <section className="rounded-xl border border-slate-700 p-4 space-y-3">
@@ -159,7 +159,7 @@ function OpenStackFlavorsContent() {
             </tbody>
           </table>
           {flavors.length === 0 && (
-            <p className="p-6 text-center text-slate-500 text-sm">No flavors returned from Nova.</p>
+            <p className="p-6 text-center text-slate-500 text-sm">No flavors returned from Compute.</p>
           )}
         </div>
       )}

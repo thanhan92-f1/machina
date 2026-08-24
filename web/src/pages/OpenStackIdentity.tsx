@@ -68,7 +68,7 @@ function OpenStackIdentityContent() {
       prepend={<>
       </>}
       ><h1 className="text-2xl font-semibold flex items-center gap-2">
-        <KeyRound className={`w-7 h-7 ${statusToneClass('warn')}`} /> Keystone identity
+        <KeyRound className={`w-7 h-7 ${statusToneClass('warn')}`} /> Auth identity
       </h1>
       <p className="text-slate-400 text-sm">Projects, users, and role assignments. Writes require admin credentials on the daemon.</p>
 

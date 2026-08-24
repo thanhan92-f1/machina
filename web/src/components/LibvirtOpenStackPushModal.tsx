@@ -98,7 +98,7 @@ export default function LibvirtOpenStackPushModal({
           if (['ACTIVE', 'ERROR'].includes(inst.status.toUpperCase())) return
         }
       } catch {
-        /* ignore transient errors while Nova boots */
+        /* ignore transient errors while Compute boots */
       }
       if (!cancelled) window.setTimeout(() => void poll(), 5000)
     }
@@ -133,12 +133,12 @@ export default function LibvirtOpenStackPushModal({
       if (res.mode === 'native' && res.result) {
         const native = res.result as GlanceUploadResult
         setResult({ mode: 'native', native })
-        toast.success(`Uploaded to Glance: ${native.image_name}`)
+        toast.success(`Uploaded to Images: ${native.image_name}`)
         onSuccess?.(native)
       } else if (res.mode === 'hyper2kvm') {
         const code = res.exit_code as number
         if (code === 0) {
-          toast.success('hyper2kvm OpenStack deploy finished')
+          toast.success('hyper2kvm Fleet Cloud deploy finished')
           onClose()
         } else {
           toast.error(`hyper2kvm exited ${code}: see stderr in logs`)
@@ -156,8 +156,8 @@ export default function LibvirtOpenStackPushModal({
   if (!osReady) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-        <div role="dialog" aria-modal="true" aria-label="OpenStack upload disabled" className="bg-slate-900 border border-slate-600 rounded-xl p-6 max-w-md" onClick={(e) => e.stopPropagation()}>
-          <p className="text-slate-300 text-sm">OpenStack upload is disabled. Enable <code className="text-slate-200">[openstack] upload_enabled</code> and configure the cloud in Settings.</p>
+        <div role="dialog" aria-modal="true" aria-label="Fleet Cloud upload disabled" className="bg-slate-900 border border-slate-600 rounded-xl p-6 max-w-md" onClick={(e) => e.stopPropagation()}>
+          <p className="text-slate-300 text-sm">Fleet Cloud upload is disabled. Enable <code className="text-slate-200">[openstack] upload_enabled</code> and configure the cloud in Settings.</p>
         </div>
       </div>
     )
@@ -169,14 +169,14 @@ export default function LibvirtOpenStackPushModal({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Push to OpenStack"
+        aria-label="Push to Fleet Cloud"
         className="bg-slate-900 border border-slate-600 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-slate-700 flex justify-between items-center gap-2">
           <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
             <Cloud className="w-5 h-5 text-orange-400" />
-            Push {vmName} to OpenStack
+            Push {vmName} to Fleet Cloud
           </h2>
           <button type="button" className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400" onClick={onClose} aria-label="Close">
             <X className="w-4 h-4" aria-hidden="true" />
@@ -217,7 +217,7 @@ export default function LibvirtOpenStackPushModal({
                 </label>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
-                <input className="input-field" placeholder="Glance name" value={glanceName} onChange={(e) => setGlanceName(e.target.value)} />
+                <input className="input-field" placeholder="Image name" value={glanceName} onChange={(e) => setGlanceName(e.target.value)} />
                 <select className="input-field" aria-label="Visibility" value={visibility} onChange={(e) => setVisibility(e.target.value)}>
                   <option value="private">private</option>
                   <option value="shared">shared</option>
@@ -226,11 +226,11 @@ export default function LibvirtOpenStackPushModal({
               </div>
               <label className="flex items-center gap-2 text-slate-300">
                 <input type="checkbox" checked={bootInstance} onChange={(e) => setBootInstance(e.target.checked)} />
-                Boot Nova instance
+                Boot Compute instance
               </label>
               {bootInstance && (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <input aria-label="Nova flavor" className="input-field" placeholder="flavor" value={flavor} onChange={(e) => setFlavor(e.target.value)} />
+                  <input aria-label="Compute flavor" className="input-field" placeholder="flavor" value={flavor} onChange={(e) => setFlavor(e.target.value)} />
                   <input aria-label="Network UUID" className="input-field" placeholder="network UUID" value={network} onChange={(e) => setNetwork(e.target.value)} />
                   <input aria-label="Key pair" className="input-field" placeholder="keypair" value={keyName} onChange={(e) => setKeyName(e.target.value)} />
                   <input aria-label="Instance name" className="input-field" placeholder="instance name" value={instanceName} onChange={(e) => setInstanceName(e.target.value)} />
@@ -248,14 +248,14 @@ export default function LibvirtOpenStackPushModal({
                 onClick={() => void runPush()}
                 className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium disabled:opacity-50"
               >
-                {busy ? 'Uploading…' : useHyper2kvm ? 'Run hyper2kvm → Glance' : 'Upload to Glance'}
+                {busy ? 'Uploading…' : useHyper2kvm ? 'Run hyper2kvm → Images' : 'Upload to Images'}
               </button>
               {result?.native && (
                 <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 p-3 text-xs">
                   <p>Image {result.native.image_name} ({result.native.image_id})</p>
                   {result.native.instance_id && (
                     <p className="mt-1">
-                      Nova instance:{' '}
+                      Compute instance:{' '}
                       <Link to={`/openstack/instances/${encodeURIComponent(result.native.instance_id)}`} className="text-orange-400 hover:underline" onClick={onClose}>
                         {result.native.instance_name || result.native.instance_id}
                       </Link>

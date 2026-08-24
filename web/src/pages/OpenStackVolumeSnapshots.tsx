@@ -53,7 +53,7 @@ function OpenStackVolumeSnapshotsContent() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <Camera className="w-7 h-7 text-sky-400" />
-          Cinder volume snapshots
+          Storage volume snapshots
         </h1>
         <button type="button" onClick={() => void load()} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-sm">
           <RefreshCw className="w-4 h-4" /> Refresh

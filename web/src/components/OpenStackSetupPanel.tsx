@@ -8,7 +8,7 @@ import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { isOpenStackNavEnabled } from '../utils/routes'
 import { statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 
-/** Shown when OpenStack routes are visited but the daemon is not wired. */
+/** Shown when Fleet Cloud routes are visited but the daemon is not wired. */
 export default function OpenStackSetupPanel({ compact = false }: { compact?: boolean }) {
   const { info } = usePlatformInfo()
   const ready = isOpenStackNavEnabled(info?.openstack)
@@ -28,12 +28,12 @@ export default function OpenStackSetupPanel({ compact = false }: { compact?: boo
         <div className="min-w-0 flex-1 space-y-3">
           <div>
             <h2 className={`font-semibold ${statusToneClass('warn')} ${compact ? 'text-base' : 'text-lg'}`}>
-              Wire OpenStack on this host
+              Connect Fleet Cloud on this host
             </h2>
             <p className="text-sm text-slate-400 mt-1">
               {enabled && !configured
-                ? 'OpenStack is enabled in machina config but missing cloud_name, auth_url, or clouds.yaml.'
-                : 'Nova & Glance management appears in the menu after the daemon can reach Keystone.'}
+                ? 'Fleet Cloud is enabled in machina config but missing cloud_name, auth_url, or clouds.yaml.'
+                : 'Fleet Cloud instance and image management appears in the menu after the daemon can reach it.'}
             </p>
             <p className="text-xs text-slate-500 mt-2 font-mono">
               enabled={enabled ? 'yes' : 'no'} · configured={configured ? 'yes' : 'no'}
@@ -56,7 +56,7 @@ export default function OpenStackSetupPanel({ compact = false }: { compact?: boo
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium"
             >
               <Settings className="w-4 h-4" />
-              OpenStack settings
+              Fleet Cloud settings
             </Link>
             <a
               href="/api/v1/openstack/status"

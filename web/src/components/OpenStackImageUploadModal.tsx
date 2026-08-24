@@ -99,7 +99,7 @@ export default function OpenStackImageUploadModal({
     try {
       const res = await postGlanceUpload(requestBody())
       setUploadResult(res)
-      toast.success(`Uploaded to Glance: ${res.image_name}`)
+      toast.success(`Uploaded to Images: ${res.image_name}`)
     } catch (e: unknown) {
       toast.error(formatUserError(e))
     } finally {
@@ -126,7 +126,7 @@ export default function OpenStackImageUploadModal({
         <div className="p-4 border-b border-slate-700 flex items-center justify-between gap-2">
           <h2 id="os-upload-title" className="text-lg font-semibold text-slate-100 flex items-center gap-2">
             <Cloud className="w-5 h-5 text-orange-400" />
-            Upload qcow2 to OpenStack Glance
+            Upload qcow2 to Fleet Cloud Images
           </h2>
           <button type="button" className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400" onClick={onClose} aria-label="Close">
             <X className="w-4 h-4" aria-hidden="true" />
@@ -134,8 +134,8 @@ export default function OpenStackImageUploadModal({
         </div>
         <div className="p-4 overflow-y-auto space-y-4 text-sm">
           <p className="text-slate-300 leading-relaxed">
-            Uploads <code className="text-slate-200 break-all">{qcow2Path}</code> to Glance using the machina-daemon
-            native OpenStack API (Keystone + Glance v2). Auth comes from{' '}
+            Uploads <code className="text-slate-200 break-all">{qcow2Path}</code> to Images using the machina-daemon
+            native Fleet Cloud API (Auth + Images v2). Auth comes from{' '}
             <code className="text-slate-200">clouds.yaml</code>, openrc, or{' '}
             <code className="text-slate-200">[openstack]</code> in machina config.
           </p>
@@ -148,8 +148,8 @@ export default function OpenStackImageUploadModal({
             <div className="grid gap-2 sm:grid-cols-2">
               <input
                 type="text"
-                aria-label="Glance image name"
-                placeholder="Glance image name"
+                aria-label="Image name"
+                placeholder="Image name"
                 value={glanceName}
                 onChange={(e) => setGlanceName(e.target.value)}
                 className="input-field text-sm"
@@ -167,13 +167,13 @@ export default function OpenStackImageUploadModal({
             </div>
             <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
               <input type="checkbox" checked={bootInstance} onChange={(e) => setBootInstance(e.target.checked)} />
-              Boot Nova instance after upload
+              Boot Compute instance after upload
             </label>
             {bootInstance && (
               <div className="grid gap-2 sm:grid-cols-3">
                 <input
                   type="text"
-                  aria-label="Nova flavor"
+                  aria-label="Compute flavor"
                   placeholder="flavor"
                   value={flavor}
                   onChange={(e) => setFlavor(e.target.value)}
@@ -221,7 +221,7 @@ export default function OpenStackImageUploadModal({
                 />
                 <label className="flex items-center gap-2 text-xs text-slate-400 sm:col-span-3">
                   <input type="checkbox" checked={waitActive} onChange={(e) => setWaitActive(e.target.checked)} />
-                  Wait for Nova ACTIVE
+                  Wait for Compute ACTIVE
                 </label>
               </div>
             )}
@@ -242,7 +242,7 @@ export default function OpenStackImageUploadModal({
                 onClick={() => void runUpload()}
                 className="px-3 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium disabled:opacity-50"
               >
-                {uploadBusy ? 'Uploading to Glance…' : 'Upload to Glance'}
+                {uploadBusy ? 'Uploading to Images…' : 'Upload to Images'}
               </button>
               {uploadResult && (
                 <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 p-3 text-xs text-slate-300 space-y-1">
@@ -263,7 +263,7 @@ export default function OpenStackImageUploadModal({
                     </p>
                   )}
                   <Link to="/openstack/images" className="text-orange-400 hover:underline inline-block mt-1" onClick={onClose}>
-                    View Glance images
+                    View Images
                   </Link>
                 </div>
               )}

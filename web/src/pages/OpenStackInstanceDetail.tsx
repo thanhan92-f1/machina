@@ -235,7 +235,7 @@ function OpenStackInstanceDetailContent() {
       >{inst.status.toUpperCase() === 'ERROR' && (
         <ErrorBanner
           title="Instance in ERROR state"
-          headline="Nova reported ERROR for this server. Guest may not exist if compute uses fake.FakeDriver."
+          headline="Compute reported ERROR for this server. Guest may not exist if compute uses fake.FakeDriver."
           hints={[
             'On the hypervisor: openstack server show ' + inst.id,
             'Check: journalctl -u openstack-nova-compute -n 40',
@@ -247,7 +247,7 @@ function OpenStackInstanceDetailContent() {
 
       {inst.status.toUpperCase() === 'BUILD' && (
         <div className={`rounded-xl px-4 py-3 text-sm ${statusSurfaceClasses('warn')}`}>
-          Instance is still building — refresh in a few seconds. Neutron will assign addresses when ACTIVE.
+          Instance is still building — refresh in a few seconds. Network will assign addresses when ACTIVE.
         </div>
       )}
 
@@ -337,7 +337,7 @@ function OpenStackInstanceDetailContent() {
           </button>
           <button type="button" onClick={() => setForceDeleteOpen(true)}
             className={statusDestructiveButtonClasses('text-sm hover:opacity-90')}
-            title="Nova forceDelete — use when normal delete is stuck">
+            title="Compute forceDelete — use when normal delete is stuck">
             <Trash2 className="w-4 h-4" /> Force delete
           </button>
           </div>
@@ -399,8 +399,8 @@ function OpenStackInstanceDetailContent() {
       <section className="rounded-xl border border-slate-700/80 p-4 space-y-4">
         <h2 className="font-medium text-slate-200">Migration &amp; export</h2>
         <p className="text-slate-400 text-sm">
-          Snapshot creates a Glance image from this instance. After it reaches ACTIVE, pull it from{' '}
-          <Link to="/openstack/images" className="text-sky-400 hover:underline">Glance images</Link>
+          Snapshot creates an image from this instance. After it reaches ACTIVE, pull it from{' '}
+          <Link to="/openstack/images" className="text-sky-400 hover:underline">Images</Link>
           {' '}to the hypervisor, then import as libvirt. Push on-host qcow2 from Disk images, or use HyperSDK for bulk export.
         </p>
         <div className="flex flex-wrap gap-3 items-end">
@@ -436,7 +436,7 @@ function OpenStackInstanceDetailContent() {
             to={`/disk-images?os=open&glance_name=${encodeURIComponent(inst.name)}`}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm"
           >
-            Push qcow2 to Glance
+            Push qcow2 to Images
           </Link>
           <Link
             to="/openstack/migrations"
@@ -460,8 +460,8 @@ function OpenStackInstanceDetailContent() {
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Delete OpenStack instance"
-        message={`This permanently deletes ${inst.name} in Nova.`}
+        title="Delete Fleet Cloud instance"
+        message={`This permanently deletes ${inst.name} in Compute.`}
         typeToMatch={inst.name}
         confirmLabel="Delete"
         variant="danger"
@@ -471,7 +471,7 @@ function OpenStackInstanceDetailContent() {
       <ConfirmDialog
         open={forceDeleteOpen}
         title="Force delete instance"
-        message={`Nova forceDelete removes ${inst.name} even when soft-delete fails. Use only for stuck ERROR/BUILD servers.`}
+        message={`Compute forceDelete removes ${inst.name} even when soft-delete fails. Use only for stuck ERROR/BUILD servers.`}
         typeToMatch={inst.name}
         confirmLabel="Force delete"
         variant="danger"

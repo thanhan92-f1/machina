@@ -23,7 +23,7 @@ function formatBytes(n?: number) {
 
 export default function OpenStackImageDetailPage() {
   return (
-    <OpenStackGate title="Glance image">
+    <OpenStackGate title="Image">
       <OpenStackImageDetailContent />
     </OpenStackGate>
   )
@@ -83,7 +83,7 @@ function OpenStackImageDetailContent() {
       prepend={<><OpenStackSubNav /></>}
     >
       <Link to="/openstack/images" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
-        <ArrowLeft className="w-4 h-4" /> Glance images
+        <ArrowLeft className="w-4 h-4" /> Images
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <HardDrive className="w-7 h-7 text-sky-400" />

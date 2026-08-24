@@ -10,7 +10,7 @@ import OpenStackSubNav from './OpenStackSubNav'
 import OpenStackStatusBar from './OpenStackStatusBar'
 import OpenStackUnreachablePanel from './OpenStackUnreachablePanel'
 
-/** Renders children when OpenStack API is live; otherwise setup or unreachable panels. */
+/** Renders children when Fleet Cloud API is live; otherwise setup or unreachable panels. */
 export default function OpenStackGate({
   children,
   title,

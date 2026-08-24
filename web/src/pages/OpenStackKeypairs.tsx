@@ -68,7 +68,7 @@ function OpenStackKeypairsContent() {
                   public_key: publicKey.trim() || undefined,
                 })
                 if (keypair.private_key) {
-                  // Nova generated the keypair and returned the private key exactly
+                  // Compute generated the keypair and returned the private key exactly
                   // once — surface it so the user can save it before it's gone.
                   setGeneratedKey({ name: keypair.name, privateKey: keypair.private_key })
                 } else {
@@ -87,7 +87,7 @@ function OpenStackKeypairsContent() {
           </button>
         </div>
         <textarea aria-label="SSH public key" value={publicKey} onChange={(e) => setPublicKey(e.target.value)} rows={3}
-          placeholder="Optional: paste public key (ssh-rsa AAAA...). Leave empty to let Nova generate."
+          placeholder="Optional: paste public key (ssh-rsa AAAA...). Leave empty to let Compute generate."
           className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono" />
       </div>
       <button type="button" onClick={() => void load()}

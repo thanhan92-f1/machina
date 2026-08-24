@@ -21,12 +21,12 @@ export function openStackPhaseFrom(
   return 'live'
 }
 
-/** Nova/compute APIs available (instances, flavors, etc.). */
+/** Compute APIs available (instances, flavors, etc.). */
 export function isOpenStackComputeLive(status: OpenStackConnectionStatus | null | undefined): boolean {
   return Boolean(status?.compute_reachable)
 }
 
-/** Glance image APIs available. */
+/** Image APIs available. */
 export function isOpenStackGlanceLive(status: OpenStackConnectionStatus | null | undefined): boolean {
   return Boolean(status?.glance_reachable)
 }
@@ -68,11 +68,11 @@ export function useOpenStackConnection() {
 
   const connectionHint =
     phase === 'needsWire'
-      ? 'Wire clouds.yaml and restart machina-daemon (Settings → OpenStack).'
+      ? 'Wire clouds.yaml and restart machina-daemon (Settings → Fleet Cloud).'
       : phase === 'unreachable'
-        ? status?.error || 'Keystone unreachable — check auth_url and firewall to port 5000.'
+        ? status?.error || 'Auth unreachable — check auth_url and firewall to port 5000.'
         : phase === 'live' && !isOpenStackComputeLive(status)
-          ? 'Keystone OK; Nova compute API is down or nova-compute uses fake.FakeDriver (no real guests).'
+          ? 'Auth OK; Compute API is down or nova-compute uses fake.FakeDriver (no real guests).'
           : null
 
   return {

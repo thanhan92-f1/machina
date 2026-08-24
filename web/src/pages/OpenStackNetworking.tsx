@@ -43,7 +43,7 @@ import { Loader2, Network, Plus, RefreshCw } from 'lucide-react'
 
 export default function OpenStackNetworkingPage() {
   return (
-    <OpenStackGate title="Neutron topology">
+    <OpenStackGate title="Network topology">
       <OpenStackNetworkingContent />
     </OpenStackGate>
   )
@@ -70,7 +70,7 @@ function OpenStackNetworkingContent() {
   const [fipExtNet, setFipExtNet] = useState('')
   const [allocatingFip, setAllocatingFip] = useState(false)
   // Shared in-flight guard for the create buttons (network/subnet/router/port/
-  // link) — prevents a double-click from creating duplicate Neutron resources.
+  // link) — prevents a double-click from creating duplicate network resources.
   const [busyNet, setBusyNet] = useState(false)
   const [floatingIps, setFloatingIps] = useState<OpenStackFloatingIp[]>([])
 

@@ -37,7 +37,7 @@ function statusBadge(status: string) {
 
 export default function OpenStackInstancesPage() {
   return (
-    <OpenStackGate title="OpenStack Instances">
+    <OpenStackGate title="Fleet Cloud Instances">
       <OpenStackInstancesContent />
     </OpenStackGate>
   )
@@ -94,7 +94,7 @@ function OpenStackInstancesContent() {
       if (reqRef.current !== myReq) return
       const msg = formatUserError(e)
       setLoadError(msg)
-      toast.error(`Failed to load OpenStack instances: ${msg}`)
+      toast.error(`Failed to load Fleet Cloud instances: ${msg}`)
     } finally {
       if (reqRef.current === myReq) setLoading(false)
     }
@@ -161,10 +161,10 @@ function OpenStackInstancesContent() {
   return (
     <PageLayout
       prepend={<><OpenStackSubNav /><OpenStackStatusBar /></>}
-      title="OpenStack Instances"
+      title="Fleet Cloud Instances"
       subtitle={
         <>
-          Nova instances for cloud{' '}
+          Compute instances for cloud{' '}
           <span className="text-slate-200">{status?.cloud_name || '—'}</span>
           {status?.connected && status.instance_count != null && (
             <> · {status.instance_count} in project</>
@@ -185,7 +185,7 @@ function OpenStackInstancesContent() {
             to="/openstack/images"
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 text-sm"
           >
-            Glance images
+            Images
           </Link>
           <Link
             to="/openstack/create"
@@ -215,11 +215,11 @@ function OpenStackInstancesContent() {
       {!computeLive && (
         <EmptyState
           icon={<Cloud className="w-6 h-6" />}
-          title="Keystone is up — Nova is not"
-          description="Identity works, but the compute API is unavailable. Install or start Nova (openstack-nova-api) on this host, or finish a minimal Packstack pass with Horizon disabled."
+          title="Auth is up — Compute is not"
+          description="Identity works, but the compute API is unavailable. Install or start Compute (openstack-nova-api) on this host, or finish a minimal Packstack pass with the dashboard disabled."
           secondaryAction={
             <Link to="/settings?openstack=1" className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
-              OpenStack settings
+              Fleet Cloud settings
             </Link>
           }
         />
@@ -264,7 +264,7 @@ function OpenStackInstancesContent() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-700/80">
-        <table className="w-full text-sm" aria-label="OpenStack instances">
+        <table className="w-full text-sm" aria-label="Fleet Cloud instances">
           <thead className="bg-slate-900/80 text-slate-400 text-left">
             <tr>
               <th scope="col" className="px-4 py-3 font-medium">Name</th>

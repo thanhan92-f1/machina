@@ -146,9 +146,9 @@ export default function OpenStackQuotasPanel({ compact }: Props) {
       )}
       {!loading && !error && (computeRows.length > 0 || cinderRows.length > 0 || neutronRows.length > 0) && (
         <div className={compact ? 'space-y-4' : 'grid gap-6 lg:grid-cols-3'}>
-          <QuotaTable title="Nova" rows={computeRows} onEdit={editLimit} />
-          <QuotaTable title="Cinder" rows={cinderRows} onEdit={editLimit} />
-          <QuotaTable title="Neutron" rows={neutronRows} onEdit={editLimit} />
+          <QuotaTable title="Compute" rows={computeRows} onEdit={editLimit} />
+          <QuotaTable title="Storage" rows={cinderRows} onEdit={editLimit} />
+          <QuotaTable title="Network" rows={neutronRows} onEdit={editLimit} />
         </div>
       )}
     </section>

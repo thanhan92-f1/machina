@@ -13,12 +13,12 @@ import { VERIFY_COMMANDS, WIRE_SCRIPT, openStackErrorHints } from '../utils/open
 import { formatUserError, sanitizeErrorText } from '../utils/apiError'
 import { statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 
-/** Shown when OpenStack is configured in Machina but Keystone/API is not reachable. */
+/** Shown when Fleet Cloud is configured in Machina but its API is not reachable. */
 export default function OpenStackUnreachablePanel() {
   const { status, testConnection, cloudName } = useOpenStackConnection()
   const toast = useToastContext()
   const [testing, setTesting] = useState(false)
-  const rawError = status?.error || 'Could not reach OpenStack API'
+  const rawError = status?.error || 'Could not reach Fleet Cloud API'
   const error = sanitizeErrorText(rawError)
   const hints = openStackErrorHints(rawError)
 
@@ -35,8 +35,8 @@ export default function OpenStackUnreachablePanel() {
               {cloudName ? ` (${cloudName})` : ''}
             </h2>
             <p className="text-sm text-slate-400">
-              Machina has credentials on this host, but Nova/Glance APIs are not responding. Install or start
-              OpenStack services before managing instances from the UI.
+              Machina has credentials on this host, but the Fleet Cloud APIs are not responding. Install or start
+              those services before managing instances from the UI.
             </p>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function OpenStackUnreachablePanel() {
                 setTesting(true)
                 try {
                   const s = await testConnection()
-                  toast.success(s.reachable ? 'OpenStack is reachable' : 'Still unreachable — see error')
+                  toast.success(s.reachable ? 'Fleet Cloud is reachable' : 'Still unreachable — see error')
                 } catch (e: unknown) {
                   toast.error(formatUserError(e))
                 } finally {

@@ -12,7 +12,7 @@ import { statusActionLinkClasses, statusSurfaceClasses, statusToneClass } from '
 const TABS = [
   { to: '/openstack', label: 'Overview', icon: LayoutGrid, end: true },
   { to: '/openstack/instances', label: 'Instances', icon: Server },
-  { to: '/openstack/images', label: 'Glance', icon: HardDrive },
+  { to: '/openstack/images', label: 'Images', icon: HardDrive },
   { to: '/openstack/volumes', label: 'Volumes', icon: Disc },
   { to: '/openstack/volume-snapshots', label: 'Snapshots', icon: Camera },
   { to: '/openstack/flavors', label: 'Flavors', icon: Cpu },
@@ -57,7 +57,7 @@ export default function OpenStackSubNav() {
       )}
     <nav
       className="mb-6 flex flex-wrap gap-1 p-1 rounded-xl border border-sky-500/25 bg-sky-950/20 backdrop-blur-sm"
-      aria-label="OpenStack"
+      aria-label="Fleet Cloud"
     >
       {needsWire && (
         <Link

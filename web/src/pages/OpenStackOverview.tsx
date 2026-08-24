@@ -24,13 +24,13 @@ const QUICK_LINKS = [
   {
     to: '/openstack/instances',
     icon: Server,
-    title: 'Nova instances',
+    title: 'Instances',
     description: 'List, start, stop, reboot, console, volumes, floating IPs, security groups.',
   },
   {
     to: '/openstack/images',
     icon: HardDrive,
-    title: 'Glance images',
+    title: 'Images',
     description: 'Pull images to the hypervisor, delete, boot new instances from golden images.',
   },
   {
@@ -42,26 +42,26 @@ const QUICK_LINKS = [
   {
     to: '/openstack/volumes',
     icon: HardDrive,
-    title: 'Cinder volumes',
+    title: 'Volumes',
     description: 'Create, clone, transfer, attach, snapshots, bootable volumes.',
   },
   {
     to: '/openstack/flavors',
     icon: Cloud,
-    title: 'Nova flavors',
-    description: 'Nova flavor catalog — create and delete with admin role.',
+    title: 'Flavors',
+    description: 'Flavor catalog — create and delete with admin role.',
   },
   {
     to: '/openstack/floating-ips',
     icon: Globe,
     title: 'Floating IPs',
-    description: 'Allocate, associate, and release Neutron floating IPs.',
+    description: 'Allocate, associate, and release floating IPs.',
   },
   {
     to: '/openstack/volume-snapshots',
     icon: Camera,
     title: 'Volume snapshots',
-    description: 'Cinder snapshot list and restore workflows.',
+    description: 'Snapshot list and restore workflows.',
   },
   {
     to: '/openstack/migrations',
@@ -74,20 +74,20 @@ const QUICK_LINKS = [
 const PIPELINES = [
   {
     icon: Upload,
-    title: 'qcow2 → Glance',
-    description: 'Disk Images → Upload to OpenStack (needs upload_enabled).',
+    title: 'qcow2 → Fleet Cloud',
+    description: 'Disk Images → Upload to Fleet Cloud (needs upload_enabled).',
     to: '/disk-images',
   },
   {
     icon: Server,
-    title: 'libvirt → Glance',
-    description: 'VM detail → Push to OpenStack (running VM root disk).',
+    title: 'libvirt → Fleet Cloud',
+    description: 'VM detail → Push to Fleet Cloud (running VM root disk).',
     to: '/vms',
   },
   {
     icon: Download,
-    title: 'Glance → hypervisor',
-    description: 'Pull qcow2 from Glance, then Import VM or Create VM with existing disk.',
+    title: 'Fleet Cloud → hypervisor',
+    description: 'Pull an image from Fleet Cloud, then Import VM or Create VM with existing disk.',
     to: '/openstack/images',
   },
 ] as const
@@ -129,7 +129,7 @@ function OpenStackLiveOverview() {
     <PageLayout
       hideHeader
       error={probeError}
-      errorTitle="OpenStack API errors"
+      errorTitle="Fleet Cloud API errors"
       errorHints={probeError ? openStackErrorHints(probeError) : undefined}
       technicalDetail={probeError}
       errorTone="red"
@@ -137,8 +137,8 @@ function OpenStackLiveOverview() {
       onErrorDismiss={() => setProbeError(null)}
     >
       <Hero
-        title="OpenStack"
-        subtitle={`Cloud ${cloudName || '—'} · Nova instances & Glance images without Horizon.`}
+        title="Fleet Cloud"
+        subtitle={`Cloud ${cloudName || '—'} · instances and images, managed natively from Machina.`}
         icon={<Cloud className="w-6 h-6" />}
         actions={
           <Link
@@ -154,7 +154,7 @@ function OpenStackLiveOverview() {
       <OpenStackStatusBar />
 
       {probing && !probeError && (
-        <p className="text-xs text-slate-500">Checking Nova/Glance APIs…</p>
+        <p className="text-xs text-slate-500">Checking Fleet Cloud APIs…</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -208,8 +208,8 @@ export default function OpenStackOverviewPage() {
     return (
       <PageLayout hideHeader>
         <Hero
-          title="OpenStack"
-          subtitle="Nova & Glance on this hypervisor — wire Keystone once, manage from Machina."
+          title="Fleet Cloud"
+          subtitle="Instance and image management on this hypervisor — set up once, manage from Machina."
           icon={<Cloud className="w-6 h-6" />}
         />
         <div className="flex items-center justify-center h-40">
@@ -223,8 +223,8 @@ export default function OpenStackOverviewPage() {
     return (
       <PageLayout hideHeader>
         <Hero
-          title="OpenStack"
-          subtitle="Nova & Glance on this hypervisor — wire Keystone once, manage from Machina."
+          title="Fleet Cloud"
+          subtitle="Instance and image management on this hypervisor — set up once, manage from Machina."
           icon={<Cloud className="w-6 h-6" />}
         />
         <OpenStackSubNav />
@@ -238,8 +238,8 @@ export default function OpenStackOverviewPage() {
     return (
       <PageLayout hideHeader>
         <Hero
-          title="OpenStack"
-          subtitle={`Cloud ${cloudName || '—'} is configured but Keystone/API is not reachable.`}
+          title="Fleet Cloud"
+          subtitle={`Cloud ${cloudName || '—'} is configured but its API is not reachable.`}
           icon={<Cloud className="w-6 h-6" />}
         />
         <OpenStackSubNav />

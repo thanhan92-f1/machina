@@ -307,7 +307,7 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'OpenStack',
+    label: 'Fleet Cloud',
     barIcon: Boxes,
     items: [],
     menuScroll: true,
@@ -318,7 +318,7 @@ export const navGroups: NavGroup[] = [
           {
             to: '/settings?openstack=1',
             icon: React.createElement(Cloud, { className: 'w-4 h-4' }),
-            label: 'Wire OpenStack',
+            label: 'Connect Fleet Cloud',
             openstackSetupOnly: true,
           },
         ],
@@ -413,7 +413,7 @@ export const routeLabels: Record<string, string> = {
   '/k8s': 'Kubernetes',
   '/k8s/workloads': 'K8s Workloads',
   '/k8s/kata': 'Kata Containers',
-  '/openstack': 'OpenStack',
+  '/openstack': 'Fleet Cloud',
   '/openstack/instances': 'Instances',
   '/openstack/instances/:id': 'Instance',
   '/openstack/create': 'Create Instance',

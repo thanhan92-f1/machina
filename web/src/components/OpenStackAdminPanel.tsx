@@ -206,7 +206,7 @@ export default function OpenStackAdminPanel() {
           </ul>
         </div>
         <div className="md:col-span-2">
-          <h3 className="text-xs uppercase text-slate-500 mb-2">Neutron agents</h3>
+          <h3 className="text-xs uppercase text-slate-500 mb-2">Network agents</h3>
           <ul className="space-y-1 font-mono text-slate-300 max-h-48 overflow-y-auto">
             {visibleAgents.map((a) => (
               <li key={a.id} className="flex flex-wrap items-center gap-2">

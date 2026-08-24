@@ -12,7 +12,7 @@ export interface OpenStackConnectionStatus {
   configured: boolean
   cloud_name: string
   connected: boolean
-  /** Keystone identity OK (UI “live” phase). */
+  /** Auth identity OK (UI “live” phase). */
   reachable: boolean
   keystone_reachable?: boolean
   compute_reachable?: boolean
@@ -361,7 +361,7 @@ export function getOpenStackConsoleOutput(
   return readJsonObject(`${API}/openstack/instances/${inst(id)}/console-output${q}`)
 }
 
-/** Remote console types supported by Nova (see daemon `get_remote_console`). */
+/** Remote console types supported by Compute (see daemon `get_remote_console`). */
 export const OPENSTACK_CONSOLE_TYPES = [
   { id: 'novnc', label: 'noVNC (graphical)' },
   { id: 'spice', label: 'SPICE HTML5' },

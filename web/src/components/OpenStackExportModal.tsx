@@ -83,10 +83,10 @@ export default function OpenStackExportModal({
           </button>
         </div>
         <p className="text-sm text-slate-400">
-          Snapshot this Nova instance to Glance, then optionally pull the qcow2 to this hypervisor for libvirt import.
+          Snapshot this Compute instance to Images, then optionally pull the qcow2 to this hypervisor for libvirt import.
         </p>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Glance image name</label>
+          <label className="block text-xs text-slate-500 mb-1">Image name</label>
           <input className="input-field w-full text-sm" value={imageName} onChange={(e) => setImageName(e.target.value)} />
         </div>
         <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -104,7 +104,7 @@ export default function OpenStackExportModal({
             />
             <label className="flex items-center gap-2 text-sm text-slate-400">
               <input type="checkbox" checked={waitActive} onChange={(e) => setWaitActive(e.target.checked)} />
-              Wait for Glance ACTIVE before download
+              Wait for Images ACTIVE before download
             </label>
           </>
         )}

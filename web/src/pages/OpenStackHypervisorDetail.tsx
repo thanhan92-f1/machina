@@ -72,7 +72,7 @@ function OpenStackHypervisorDetailContent() {
     return (
       <div className="space-y-4">
         <OpenStackSubNav />
-        <Link to="/openstack" className="text-sky-400 hover:underline">Back to OpenStack</Link>
+        <Link to="/openstack" className="text-sky-400 hover:underline">Back to Fleet Cloud</Link>
       </div>
     )
   }
@@ -87,7 +87,7 @@ function OpenStackHypervisorDetailContent() {
       prepend={<><OpenStackSubNav /></>}
     >
       <Link to="/openstack" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
-        <ArrowLeft className="w-4 h-4" /> OpenStack overview
+        <ArrowLeft className="w-4 h-4" /> Fleet Cloud overview
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <Server className="w-7 h-7 text-sky-400" />

@@ -31,7 +31,7 @@ import { Cloud, ExternalLink, Loader2, Play, RefreshCw, Server } from 'lucide-re
 
 export default function OpenStackMigrationsPage() {
   return (
-    <OpenStackGate title="OpenStack Migrations">
+    <OpenStackGate title="Fleet Cloud Migrations">
       <OpenStackMigrationsContent />
     </OpenStackGate>
   )
@@ -245,7 +245,7 @@ function OpenStackMigrationsContent() {
                   value={submitVmId}
                   onChange={(e) => setSubmitVmId(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm font-mono"
-                  placeholder="Nova UUID"
+                  placeholder="Compute UUID"
                 />
               </div>
               <div>
@@ -313,7 +313,7 @@ function OpenStackMigrationsContent() {
       <section className="rounded-xl border border-slate-700/80 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/80 flex items-center gap-2">
           <Server className="w-4 h-4 text-sky-400" />
-          <h2 className="font-medium text-slate-200">OpenStack VMs (HyperSDK)</h2>
+          <h2 className="font-medium text-slate-200">Fleet Cloud VMs (HyperSDK)</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm" aria-label="VM migrations">
@@ -330,7 +330,7 @@ function OpenStackMigrationsContent() {
               )}
               {!loading && vms.length === 0 && (
                 <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">
-                  No VMs from HyperSDK. Connect OpenStack in the HyperSDK dashboard first.
+                  No VMs from HyperSDK. Connect Fleet Cloud in the HyperSDK dashboard first.
                 </td></tr>
               )}
               {vms.map((vm) => (
@@ -353,8 +353,8 @@ function OpenStackMigrationsContent() {
         </div>
         <p className="px-4 py-2 text-xs text-slate-500">
           Click a row to fill the submit form. Single-VM flows:{' '}
-          <Link to="/openstack/instances" className="text-sky-400 hover:underline">Machina OpenStack instances</Link>
-          {' '}or <Link to="/vms" className="text-sky-400 hover:underline">Push libvirt VM to Glance</Link>.
+          <Link to="/openstack/instances" className="text-sky-400 hover:underline">Machina Fleet Cloud instances</Link>
+          {' '}or <Link to="/vms" className="text-sky-400 hover:underline">Push libvirt VM to Images</Link>.
         </p>
       </section>
 

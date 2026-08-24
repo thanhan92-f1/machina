@@ -30,7 +30,7 @@ function formatBytes(n?: number) {
 
 export default function OpenStackImagesPage() {
   return (
-    <OpenStackGate title="OpenStack Glance Images">
+    <OpenStackGate title="Fleet Cloud Images">
       <OpenStackImagesContent />
     </OpenStackGate>
   )
@@ -90,11 +90,11 @@ function OpenStackImagesContent() {
   return (
     <PageLayout
       prepend={<><OpenStackSubNav /><OpenStackStatusBar /></>}
-      title="Glance Images"
-      subtitle="Images in the connected OpenStack project."
+      title="Images"
+      subtitle="Images in the connected Fleet Cloud project."
       icon={<Cloud className="w-7 h-7 text-sky-400" />}
       error={loadError}
-      errorTitle="Failed to load Glance images"
+      errorTitle="Failed to load images"
       errorHints={loadError ? openStackErrorHints(loadError) : undefined}
       technicalDetail={loadError}
       errorTone="red"
@@ -107,7 +107,7 @@ function OpenStackImagesContent() {
               to="/disk-images?os=open"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm"
             >
-              Upload qcow2 to Glance
+              Upload qcow2 to Images
             </Link>
           )}
           <Link
@@ -130,7 +130,7 @@ function OpenStackImagesContent() {
     >
 
       <div className="overflow-x-auto rounded-xl border border-slate-700/80">
-        <table className="w-full text-sm" aria-label="Glance images">
+        <table className="w-full text-sm" aria-label="Images">
           <thead className="bg-slate-900/80 text-slate-400 text-left">
             <tr>
               <th scope="col" className="px-4 py-3">Name</th>
@@ -209,8 +209,8 @@ function OpenStackImagesContent() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Delete Glance image"
-        message={`Permanently delete ${deleteTarget?.name || deleteTarget?.id} from Glance?`}
+        title="Delete image"
+        message={`Permanently delete ${deleteTarget?.name || deleteTarget?.id} from Images?`}
         confirmLabel={deleting ? 'Deleting…' : 'Delete'}
         variant="danger"
         onConfirm={handleDelete}

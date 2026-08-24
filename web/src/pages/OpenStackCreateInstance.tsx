@@ -47,7 +47,7 @@ type CatalogKey = 'flavors' | 'images' | 'networks' | 'keypairs' | 'volumes'
 
 export default function OpenStackCreateInstancePage() {
   return (
-    <OpenStackGate title="Create OpenStack Instance">
+    <OpenStackGate title="Create Fleet Cloud Instance">
       <OpenStackCreateInstanceContent />
     </OpenStackGate>
   )
@@ -190,7 +190,7 @@ function OpenStackCreateInstanceContent() {
 
     const failed = Object.keys(errs)
     if (failed.length === 4) {
-      toast.error('Could not load any OpenStack catalogs — see error panel')
+      toast.error('Could not load any Fleet Cloud catalogs — see error panel')
     } else if (failed.length > 0) {
       toast.warning(`Some catalogs failed: ${failed.join(', ')}`)
     }
@@ -305,7 +305,7 @@ function OpenStackCreateInstanceContent() {
     >
       <div className="text-slate-500 py-12 text-center flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
-          Loading OpenStack catalogs…
+          Loading Fleet Cloud catalogs…
         </div>
       </PageLayout>
     )
@@ -315,7 +315,7 @@ function OpenStackCreateInstanceContent() {
     <PageLayout
       className="max-w-3xl"
       prepend={<><OpenStackSubNav /><OpenStackStatusBar /></>}
-      title="Create OpenStack instance"
+      title="Create Fleet Cloud instance"
       icon={<Cloud className="w-7 h-7 text-sky-400" />}
       actions={
         <div className="flex items-center gap-3">
@@ -364,7 +364,7 @@ function OpenStackCreateInstanceContent() {
 
       {catalogErrorSummary && (
         <ErrorBanner
-          title="OpenStack catalog errors"
+          title="Fleet Cloud catalog errors"
           headline={
             Object.keys(catalogErrors).length === 4
               ? 'Could not load flavors, images, networks, or keypairs from the API.'
@@ -402,8 +402,8 @@ function OpenStackCreateInstanceContent() {
             <label className="block text-sm text-slate-400 mb-2">Boot source</label>
             <div className="flex flex-wrap gap-2 mb-4">
               {([
-                ['image', 'Glance image'],
-                ['volume', 'Existing Cinder volume'],
+                ['image', 'Image'],
+                ['volume', 'Existing Storage volume'],
                 ['new_volume', 'New volume from image'],
                 ['snapshot', 'Volume snapshot'],
               ] as const).map(([id, label]) => (
@@ -424,7 +424,7 @@ function OpenStackCreateInstanceContent() {
           </div>
           {bootSource === 'image' && (
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Glance image</label>
+              <label className="block text-sm text-slate-400 mb-2">Image</label>
               {catalogErrors.images ? (
                 <p className="text-sm text-red-300/90">{catalogErrors.images}</p>
               ) : (
@@ -467,7 +467,7 @@ function OpenStackCreateInstanceContent() {
           )}
           {bootSource === 'volume' && (
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Cinder boot volume</label>
+              <label className="block text-sm text-slate-400 mb-2">Storage boot volume</label>
               {catalogErrors.volumes ? (
                 <p className="text-sm text-red-300/90">{catalogErrors.volumes}</p>
               ) : cinderVolumes.length === 0 ? (
@@ -491,12 +491,12 @@ function OpenStackCreateInstanceContent() {
           )}
           {bootSource === 'snapshot' && (
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Cinder snapshot</label>
+              <label className="block text-sm text-slate-400 mb-2">Storage snapshot</label>
               {volumeSnapshots.length === 0 ? (
                 <p className="text-sm text-slate-500">No volume snapshots. Create one from the Volumes page.</p>
               ) : (
                 <select
-                  aria-label="Cinder snapshot"
+                  aria-label="Storage snapshot"
                   value={bootSnapshotId}
                   onChange={(e) => setBootSnapshotId(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-100"
@@ -515,7 +515,7 @@ function OpenStackCreateInstanceContent() {
           {bootSource === 'new_volume' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Source Glance image</label>
+                <label className="block text-sm text-slate-400 mb-2">Source image</label>
                 {catalogErrors.images ? (
                   <p className="text-sm text-red-300/90">{catalogErrors.images}</p>
                 ) : (
@@ -560,7 +560,7 @@ function OpenStackCreateInstanceContent() {
           {catalogErrors.flavors ? (
             <p className="text-sm text-red-300/90">{catalogErrors.flavors}</p>
           ) : flavors.length === 0 ? (
-            <p className="text-sm text-slate-500">No flavors returned from Nova.</p>
+            <p className="text-sm text-slate-500">No flavors returned from Compute.</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-700">
               <table className="w-full text-sm" aria-label="Flavors">
@@ -604,7 +604,7 @@ function OpenStackCreateInstanceContent() {
               <p className="text-sm text-red-300/90">{catalogErrors.networks}</p>
             ) : networks.length === 0 ? (
               <p className="text-sm text-slate-500">
-                No Neutron networks available. Fix Neutron on the host, then reload catalogs.
+                No networks available. Fix networking on the host, then reload catalogs.
               </p>
             ) : (
               <ChoiceCardGrid>
@@ -631,7 +631,7 @@ function OpenStackCreateInstanceContent() {
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-100 font-mono text-sm"
               placeholder="net-uuid-2, net-uuid-3 (comma-separated, besides primary)"
             />
-            <p className="text-xs text-slate-500 mt-1">Multi-NIC: primary network above plus these Neutron network IDs.</p>
+            <p className="text-xs text-slate-500 mt-1">Multi-NIC: primary network above plus these additional network IDs.</p>
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Server group (optional)</label>
@@ -708,7 +708,7 @@ function OpenStackCreateInstanceContent() {
         <div className="rounded-xl border border-slate-700 p-4 space-y-2 text-sm">
           <p><span className="text-slate-500">Name:</span> {name}</p>
           <p><span className="text-slate-500">Boot:</span>{' '}
-            {bootSource === 'image' && `Glance · ${selectedImage?.name || imageId}`}
+            {bootSource === 'image' && `Image · ${selectedImage?.name || imageId}`}
             {bootSource === 'volume' && `Volume · ${selectedBootVolume?.name || bootVolumeId}`}
             {bootSource === 'new_volume' &&
               `New ${bootVolumeSize} GB from ${selectedBootVolumeImage?.name || bootVolumeImageId}`}
