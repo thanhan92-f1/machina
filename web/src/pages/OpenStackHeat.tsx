@@ -3,49 +3,40 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Layers, Loader2, Plus, Trash2 } from 'lucide-react'
-import OpenStackGate from '../components/OpenStackGate'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
-import {
-  createOpenStackHeatStack,
-  deleteOpenStackHeatStack,
-  listOpenStackHeatStacks,
-  type OpenStackHeatStack,
-} from '../api/openstackExtras'
+import { createStack, deleteStack, listStacks, type NativeStack, type StackTemplate } from '../api/stacks'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 
-const MINIMAL_TEMPLATE = `heat_template_version: 2016-10-14
-description: Minimal Heat stack (Machina)
-resources:
-  nothing:
-    type: OS::Heat::None
-`
+const MINIMAL_TEMPLATE: StackTemplate = {
+  security_groups: [],
+  volumes: [],
+  vms: [],
+}
 
+// Native stacks — not gated by <OpenStackGate>: this feature is libvirt-native
+// and does not depend on a wired external OpenStack cloud. Unlike Heat, a
+// template here is a fixed JSON shape (security_groups/volumes/vms), not an
+// arbitrary resource-type graph — see api/stacks.ts.
 export default function OpenStackHeatPage() {
-  return (
-    <OpenStackGate title="Heat stacks">
-      <OpenStackHeatContent />
-    </OpenStackGate>
-  )
+  return <OpenStackHeatContent />
 }
 
 function OpenStackHeatContent() {
   const toast = useToastContext()
-  const [stacks, setStacks] = useState<OpenStackHeatStack[]>([])
+  const [stacks, setStacks] = useState<NativeStack[]>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
-  const [template, setTemplate] = useState(MINIMAL_TEMPLATE)
-  const [parametersJson, setParametersJson] = useState('{}')
-  const [timeoutMins, setTimeoutMins] = useState('')
+  const [templateJson, setTemplateJson] = useState(JSON.stringify(MINIMAL_TEMPLATE, null, 2))
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const { stacks: s } = await listOpenStackHeatStacks()
+      const s = await listStacks()
       setStacks(s)
     } catch (e: unknown) {
       toast.error(formatUserError(e))
@@ -60,53 +51,39 @@ function OpenStackHeatContent() {
   return (
     <PageLayout
       hideHeader
-      prepend={<>
-      </>}
+      prepend={<><OpenStackSubNav /></>}
       ><h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Layers className="w-7 h-7 text-violet-400" /> Heat stacks
+        <Layers className="w-7 h-7 text-violet-400" /> Stacks
       </h1>
-      <p className="text-slate-400 text-sm">Orchestration stacks via Heat API. Requires Heat in the cloud catalog.</p>
+      <p className="text-slate-400 text-sm">
+        Declarative multi-resource stacks — security groups, volumes, and VMs created
+        and torn down together. Not a Heat-compatible resource graph: the template
+        below is a fixed JSON shape, not arbitrary HOT YAML.
+      </p>
 
       <div className="rounded-xl border border-slate-700 p-4 space-y-3">
         <h2 className="text-sm font-medium text-slate-300 flex items-center gap-2"><Plus className="w-4 h-4" /> Create stack</h2>
         <input aria-label="Stack name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Stack name"
           className="w-full max-w-md px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
-        <textarea aria-label="Heat template" value={template} onChange={(e) => setTemplate(e.target.value)} rows={5}
+        <label className="block text-xs text-slate-500">
+          Template — {'{'}security_groups: [{'{'}name, rules[]{'}'}], volumes: [{'{'}name, size_gib{'}'}], vms: [{'{'}name, memory, cpu_cores, disk_gib, network, attach_volumes[]{'}'}]{'}'}
+        </label>
+        <textarea aria-label="Stack template (JSON)" value={templateJson} onChange={(e) => setTemplateJson(e.target.value)} rows={8}
           className="w-full font-mono text-xs px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" />
-        <label className="block text-xs text-slate-500">Parameters (JSON)</label>
-        <textarea aria-label="Stack parameters (JSON)" value={parametersJson} onChange={(e) => setParametersJson(e.target.value)} rows={3}
-          className="w-full font-mono text-xs px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" />
-        <div className="flex flex-wrap gap-3 items-center">
-          <input type="file" aria-label="Upload template file" accept=".yaml,.yml,.json,.template" className="text-sm text-slate-400"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (!f) return
-              void f.text().then(setTemplate).catch(() => toast.error('Could not read template file'))
-            }} />
-          <input aria-label="Timeout in minutes (optional)" value={timeoutMins} onChange={(e) => setTimeoutMins(e.target.value)} placeholder="Timeout (min, optional)"
-            className="w-40 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
-        </div>
         <button type="button" className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-sm"
           onClick={async () => {
             if (!name.trim()) { toast.warning('Stack name required'); return }
-            let parameters: Record<string, unknown> = {}
+            let template: StackTemplate
             try {
-              parameters = JSON.parse(parametersJson || '{}') as Record<string, unknown>
+              template = JSON.parse(templateJson) as StackTemplate
             } catch {
-              toast.error('Parameters must be valid JSON')
+              toast.error('Template must be valid JSON')
               return
             }
             try {
-              await createOpenStackHeatStack({
-                stack_name: name.trim(),
-                template_body: template,
-                parameters,
-                timeout_mins: timeoutMins ? Number(timeoutMins) : undefined,
-              })
-              toast.success('Stack create submitted')
+              await createStack({ name: name.trim(), template })
+              toast.success('Stack created')
               setName('')
-              setParametersJson('{}')
-              setTimeoutMins('')
               void load()
             } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Create</button>
@@ -115,15 +92,15 @@ function OpenStackHeatContent() {
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
       ) : stacks.length === 0 ? (
-        <EmptyState title="No Heat stacks" description="Heat may be unreachable or no stacks in this project." />
+        <EmptyState title="No stacks" description="No stacks in this project yet." />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="w-full text-sm" aria-label="Heat stacks">
+          <table className="w-full text-sm" aria-label="Stacks">
             <thead className="bg-slate-900/80 text-slate-400 text-left">
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2">Created</th>
+                <th scope="col" className="px-3 py-2">Resources</th>
                 <th scope="col" className="px-3 py-2" />
               </tr>
             </thead>
@@ -131,18 +108,18 @@ function OpenStackHeatContent() {
               {stacks.map((s) => (
                 <tr key={s.id} className="border-t border-slate-800">
                   <td className="px-3 py-2">
-                    <Link to={`/openstack/heat/${encodeURIComponent(s.stack_name)}/${encodeURIComponent(s.id)}`}
-                      className="text-sky-400 hover:underline">{s.stack_name}</Link>
+                    <Link to={`/openstack/heat/${encodeURIComponent(s.name)}/${encodeURIComponent(s.id)}`}
+                      className="text-sky-400 hover:underline">{s.name}</Link>
                   </td>
-                  <td className="px-3 py-2">{s.stack_status}</td>
-                  <td className="px-3 py-2 text-slate-500">{s.creation_time || '—'}</td>
+                  <td className="px-3 py-2">{s.status}</td>
+                  <td className="px-3 py-2 text-slate-500">{s.resources_json.length}</td>
                   <td className="px-3 py-2 text-right">
                     <button type="button" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
                       onClick={async () => {
-                        if (!confirm(`Delete stack ${s.stack_name}?`)) return
+                        if (!confirm(`Delete stack ${s.name}?`)) return
                         try {
-                          await deleteOpenStackHeatStack(s.stack_name, s.id)
-                          toast.success('Delete submitted')
+                          await deleteStack(s.id)
+                          toast.success('Deleted')
                           void load()
                         } catch (e: unknown) { toast.error(formatUserError(e)) }
                       }}>

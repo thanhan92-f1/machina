@@ -3,64 +3,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Layers, Loader2, Save, Trash2 } from 'lucide-react'
-import OpenStackGate from '../components/OpenStackGate'
+import { ArrowLeft, Layers, Trash2 } from 'lucide-react'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
-import {
-  deleteOpenStackHeatStack,
-  getOpenStackHeatStack,
-  getOpenStackHeatTemplate,
-  listOpenStackHeatEvents,
-  listOpenStackHeatResources,
-  updateOpenStackHeatStack,
-  type OpenStackHeatEvent,
-  type OpenStackHeatResource,
-  type OpenStackHeatStack,
-} from '../api/openstackExtras'
+import { deleteStack, getStack, type NativeStack } from '../api/stacks'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-const HEAT_TABS = ['overview', 'resources', 'events', 'template', 'outputs'] as const
+// resources/template only — native stacks have no Heat-style events log, no
+// live outputs, and (unlike Heat) no in-place template update: recreate instead.
+const HEAT_TABS = ['overview', 'resources', 'template'] as const
 type Tab = (typeof HEAT_TABS)[number]
 
+// Native stacks — not gated by <OpenStackGate> (see OpenStackHeat.tsx).
 export default function OpenStackHeatDetailPage() {
-  return (
-    <OpenStackGate title="Heat stack">
-      <OpenStackHeatDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackHeatDetailContent />
 }
 
 function OpenStackHeatDetailContent() {
-  const { name, id } = useParams<{ name: string; id: string }>()
+  const { id } = useParams<{ name: string; id: string }>()
   const toast = useToastContext()
   const navigate = useNavigate()
-  const [stack, setStack] = useState<OpenStackHeatStack | null>(null)
+  const [stack, setStack] = useState<NativeStack | null>(null)
   const [tab, setTab] = usePlatformTabState(HEAT_TABS, { defaultTab: 'overview' })
   const [loading, setLoading] = useState(true)
-  const [resources, setResources] = useState<OpenStackHeatResource[]>([])
-  const [events, setEvents] = useState<OpenStackHeatEvent[]>([])
-  const [template, setTemplate] = useState('')
-  const [editTemplate, setEditTemplate] = useState('')
-  const [tabLoading, setTabLoading] = useState(false)
-  useBreadcrumbName(stack?.stack_name)
+  useBreadcrumbName(stack?.name)
   const loadStackSeq = useRef(0)
-  const loadTabSeq = useRef(0)
 
   const loadStack = useCallback(async () => {
-    if (!name || !id) return
+    if (!id) return
     // Last-response-wins: only the newest load may commit so a stale fetch for a
     // prior stack can't overwrite the one now shown.
     const seq = ++loadStackSeq.current
     const alive = () => seq === loadStackSeq.current
     setLoading(true)
     try {
-      const { stack: s } = await getOpenStackHeatStack(name, id)
+      const s = await getStack(id)
       if (!alive()) return
       setStack(s)
     } catch (e: unknown) {
@@ -70,42 +51,9 @@ function OpenStackHeatDetailContent() {
     } finally {
       if (alive()) setLoading(false)
     }
-  }, [name, id, toast])
+  }, [id, toast])
 
   useEffect(() => { void loadStack() }, [loadStack])
-
-  const loadTab = useCallback(async () => {
-    if (!name || !id || !stack) return
-    const seq = ++loadTabSeq.current
-    const alive = () => seq === loadTabSeq.current
-    setTabLoading(true)
-    try {
-      if (tab === 'resources') {
-        const { resources: r } = await listOpenStackHeatResources(name, id)
-        if (!alive()) return
-        setResources(r ?? [])
-      } else if (tab === 'events') {
-        const { events: ev } = await listOpenStackHeatEvents(name, id)
-        if (!alive()) return
-        setEvents(ev ?? [])
-      } else if (tab === 'template') {
-        const { template: t } = await getOpenStackHeatTemplate(name, id)
-        if (!alive()) return
-        setTemplate(t ?? '')
-        setEditTemplate(t ?? '')
-      }
-    } catch (e: unknown) {
-      if (!alive()) return
-      toast.error(formatUserError(e))
-    } finally {
-      if (alive()) setTabLoading(false)
-    }
-  }, [name, id, stack, tab, toast])
-
-  useEffect(() => {
-    if (tab === 'overview' || tab === 'outputs') return
-    void loadTab()
-  }, [tab, loadTab])
 
   if (loading) return <PageSkeleton />
   if (!stack) {
@@ -120,9 +68,7 @@ function OpenStackHeatDetailContent() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'resources', label: 'Resources' },
-    { id: 'events', label: 'Events' },
     { id: 'template', label: 'Template' },
-    { id: 'outputs', label: 'Outputs' },
   ]
 
   return (
@@ -132,10 +78,10 @@ function OpenStackHeatDetailContent() {
       prepend={<><OpenStackSubNav /></>}
     >
       <Link to="/openstack/heat" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
-        <ArrowLeft className="w-4 h-4" /> Heat stacks
+        <ArrowLeft className="w-4 h-4" /> Stacks
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Layers className="w-7 h-7 text-violet-400" /> {stack.stack_name}
+        <Layers className="w-7 h-7 text-violet-400" /> {stack.name}
       </h1>
 
       <div className="flex flex-wrap gap-2 border-b border-slate-700 pb-2">
@@ -154,110 +100,45 @@ function OpenStackHeatDetailContent() {
       {tab === 'overview' && (
         <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
           <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono mt-1 break-all">{stack.id}</dd></div>
-          <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">{stack.stack_status}</dd></div>
-          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Reason</dt><dd className="mt-1 text-slate-400">{stack.stack_status_reason || '—'}</dd></div>
-          <div><dt className="text-xs text-slate-500 uppercase">Created</dt><dd className="mt-1">{stack.creation_time || '—'}</dd></div>
-          <div><dt className="text-xs text-slate-500 uppercase">Updated</dt><dd className="mt-1">{stack.updated_time || '—'}</dd></div>
-          <div><dt className="text-xs text-slate-500 uppercase">Timeout (min)</dt><dd className="mt-1">{stack.timeout_mins ?? '—'}</dd></div>
+          <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">{stack.status}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Last error</dt><dd className="mt-1 text-slate-400">{stack.last_error || '—'}</dd></div>
         </dl>
       )}
 
-      {tab !== 'overview' && tabLoading ? (
-        <Loader2 className="w-6 h-6 animate-spin text-sky-400 mx-auto" />
-      ) : tab === 'resources' ? (
+      {tab === 'resources' ? (
         <div className="overflow-x-auto rounded-xl border border-slate-700">
           <table className="w-full text-sm" aria-label="Stack resources">
             <thead className="bg-slate-900/80 text-slate-400 text-left">
               <tr>
-                <th scope="col" className="px-3 py-2">Logical ID</th>
-                <th scope="col" className="px-3 py-2">Type</th>
-                <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2">Physical ID</th>
+                <th scope="col" className="px-3 py-2">Name</th>
+                <th scope="col" className="px-3 py-2">Kind</th>
+                <th scope="col" className="px-3 py-2">ID</th>
               </tr>
             </thead>
             <tbody>
-              {(resources ?? []).map((r) => (
-                <tr key={r.logical_resource_id} className="border-t border-slate-800">
-                  <td className="px-3 py-2">{r.logical_resource_id}</td>
-                  <td className="px-3 py-2 text-slate-400">{r.resource_type}</td>
-                  <td className="px-3 py-2">{r.resource_status}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{r.physical_resource_id || '—'}</td>
+              {stack.resources_json.map((r) => (
+                <tr key={r.id} className="border-t border-slate-800">
+                  <td className="px-3 py-2">{r.name}</td>
+                  <td className="px-3 py-2 text-slate-400">{r.kind}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {resources.length === 0 && <p className="p-4 text-slate-500 text-sm">No resources.</p>}
-        </div>
-      ) : tab === 'events' ? (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {(events ?? []).map((ev, i) => (
-            <div key={`${ev.resource_name}-${ev.event_time}-${i}`} className="rounded-lg border border-slate-800 p-3 text-sm">
-              <div className="text-slate-400 text-xs">{ev.event_time || '—'}</div>
-              <div className="font-medium">{ev.resource_name}</div>
-              <div>{ev.resource_status} {ev.resource_type ? `· ${ev.resource_type}` : ''}</div>
-              {ev.resource_status_reason && <div className="text-slate-500 mt-1">{ev.resource_status_reason}</div>}
-            </div>
-          ))}
-          {events.length === 0 && <p className="text-slate-500 text-sm">No events.</p>}
+          {stack.resources_json.length === 0 && <p className="p-4 text-slate-500 text-sm">No resources created yet.</p>}
         </div>
       ) : tab === 'template' ? (
-        <div className="space-y-3">
-          <textarea
-            value={editTemplate}
-            onChange={(e) => setEditTemplate(e.target.value)}
-            rows={16}
-            aria-label="Stack template"
-            className="w-full font-mono text-xs px-3 py-2 rounded-lg bg-slate-900 border border-slate-700"
-          />
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-sm inline-flex items-center gap-1"
-            onClick={async () => {
-              if (!name || !id) return
-              try {
-                await updateOpenStackHeatStack(name, id, { template_body: editTemplate })
-                toast.success('Stack update submitted')
-                setTemplate(editTemplate)
-                void loadStack()
-              } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}
-          >
-            <Save className="w-4 h-4" /> Update stack
-          </button>
-          {template && editTemplate !== template && (
-            <p className={`text-xs ${statusToneClass('warn')}`}>Unsaved template changes</p>
-          )}
-        </div>
-      ) : tab === 'outputs' ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="w-full text-sm" aria-label="Stack outputs">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
-              <tr>
-                <th scope="col" className="px-3 py-2">Key</th>
-                <th scope="col" className="px-3 py-2">Value</th>
-                <th scope="col" className="px-3 py-2">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(stack.outputs ?? []).map((o) => (
-                <tr key={o.output_key} className="border-t border-slate-800">
-                  <td className="px-3 py-2 font-mono">{o.output_key}</td>
-                  <td className="px-3 py-2 break-all">{o.output_value || '—'}</td>
-                  <td className="px-3 py-2 text-slate-500">{o.description || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {(stack.outputs ?? []).length === 0 && <p className="p-4 text-slate-500 text-sm">No outputs.</p>}
-        </div>
+        <pre className="w-full font-mono text-xs px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 overflow-x-auto">
+          {JSON.stringify(stack.template_json, null, 2)}
+        </pre>
       ) : null}
 
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-300 text-sm inline-flex items-center gap-1"
         onClick={async () => {
-          if (!confirm(`Delete stack ${stack.stack_name}?`)) return
+          if (!confirm(`Delete stack ${stack.name}?`)) return
           try {
-            await deleteOpenStackHeatStack(stack.stack_name, stack.id)
-            toast.success('Delete submitted')
+            await deleteStack(stack.id)
+            toast.success('Deleted')
             navigate('/openstack/heat')
           } catch (e: unknown) { toast.error(formatUserError(e)) }
         }}>

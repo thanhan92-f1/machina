@@ -4,53 +4,39 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { deleteOpenStackImage, listOpenStackImages, type OpenStackImage } from '../api/openstack'
+import { createTemplate, deleteTemplate, listTemplates, type NativeTemplate } from '../api/nativeTemplates'
 import { useToastContext } from '../contexts/ToastContext'
-import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import ConfirmDialog from '../components/ConfirmDialog'
 import OpenStackFooter from '../components/OpenStackFooter'
-import { Cloud, RefreshCw, Plus, Trash2, Download, Share2 } from 'lucide-react'
-import OpenStackImageSharingModal from '../components/OpenStackImageSharingModal'
-import GlancePullModal from '../components/GlancePullModal'
-import OpenStackGate from '../components/OpenStackGate'
+import { Cloud, RefreshCw, Plus, Trash2 } from 'lucide-react'
 import OpenStackSubNav from '../components/OpenStackSubNav'
-import OpenStackStatusBar from '../components/OpenStackStatusBar'
 import PageLayout from '../components/PageLayout'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
-import { openStackErrorHints } from '../utils/openstackHints'
+import { statusToneClass } from '../utils/semanticColors'
 
-function formatBytes(n?: number) {
-  if (n == null || n === 0) return '—'
-  const gb = n / (1024 ** 3)
-  if (gb >= 1) return `${gb.toFixed(1)} GiB`
-  const mb = n / (1024 ** 2)
-  return `${mb.toFixed(0)} MiB`
-}
-
+// Native golden-image catalog — not gated by <OpenStackGate>. See
+// api/nativeTemplates.ts: unlike Glance there's no byte-upload here (register an
+// existing on-host disk path, or publish one from a running VM).
 export default function OpenStackImagesPage() {
-  return (
-    <OpenStackGate title="Fleet Cloud Images">
-      <OpenStackImagesContent />
-    </OpenStackGate>
-  )
+  return <OpenStackImagesContent />
 }
 
 function OpenStackImagesContent() {
-  const [images, setImages] = useState<OpenStackImage[]>([])
+  const [images, setImages] = useState<NativeTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<OpenStackImage | null>(null)
-  const [pullTarget, setPullTarget] = useState<OpenStackImage | null>(null)
-  const [shareTarget, setShareTarget] = useState<OpenStackImage | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<NativeTemplate | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [name, setName] = useState('')
+  const [version, setVersion] = useState('1.0')
+  const [sourceDisk, setSourceDisk] = useState('')
+  const [creating, setCreating] = useState(false)
   const toast = useToastContext()
-  const { info, lastEvent, refreshKey } = usePlatformInfo()
 
   const load = useCallback(async () => {
     try {
       setLoadError(null)
-      const { images: list } = await listOpenStackImages()
+      const list = await listTemplates()
       setImages(list)
     } catch (e: unknown) {
       const msg = formatUserError(e)
@@ -61,21 +47,14 @@ function OpenStackImagesContent() {
     }
   }, [toast])
 
-  useEffect(() => { load() }, [load])
-
-  useEffect(() => {
-    if (!lastEvent) return
-    if (lastEvent.kind.startsWith('openstack.image') || lastEvent.kind.startsWith('openstack.instance')) {
-      void load()
-    }
-  }, [refreshKey, lastEvent, load])
+  useEffect(() => { void load() }, [load])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteOpenStackImage(deleteTarget.id)
-      toast.success(`Deleted image '${deleteTarget.name || deleteTarget.id}'`)
+      await deleteTemplate(deleteTarget.id)
+      toast.success(`Deleted image '${deleteTarget.name}'`)
       setDeleteTarget(null)
       await load()
     } catch (e: unknown) {
@@ -85,31 +64,26 @@ function OpenStackImagesContent() {
     }
   }
 
-  const uploadEnabled = Boolean(info?.openstack?.upload_enabled)
-
   return (
     <PageLayout
-      prepend={<><OpenStackSubNav /><OpenStackStatusBar /></>}
+      prepend={<><OpenStackSubNav /></>}
       title="Images"
-      subtitle="Images in the connected Fleet Cloud project."
+      subtitle="Golden-image catalog for instance creation."
       icon={<Cloud className="w-7 h-7 text-sky-400" />}
       error={loadError}
       errorTitle="Failed to load images"
-      errorHints={loadError ? openStackErrorHints(loadError) : undefined}
       technicalDetail={loadError}
       errorTone="red"
       onErrorRetry={() => void load()}
       onErrorDismiss={() => setLoadError(null)}
       actions={
         <div className="flex gap-2 flex-wrap">
-          {uploadEnabled && (
-            <Link
-              to="/disk-images?os=open"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm"
-            >
-              Upload qcow2 to Images
-            </Link>
-          )}
+          <Link
+            to="/disk-images"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm"
+          >
+            Manage disk images
+          </Link>
           <Link
             to="/openstack/create"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm"
@@ -119,7 +93,7 @@ function OpenStackImagesContent() {
           </Link>
           <button
             type="button"
-            onClick={() => { setLoading(true); load() }}
+            onClick={() => { setLoading(true); void load() }}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 text-sm"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -128,65 +102,67 @@ function OpenStackImagesContent() {
         </div>
       }
     >
+      <div className="rounded-xl border border-slate-700 p-4 space-y-3">
+        <h2 className="text-sm font-medium text-slate-300 flex items-center gap-2"><Plus className="w-4 h-4" /> Register image</h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <input aria-label="Image name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name"
+            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+          <input aria-label="Version" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="Version"
+            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+          <input aria-label="Source disk path" value={sourceDisk} onChange={(e) => setSourceDisk(e.target.value)} placeholder="/path/to/golden.qcow2"
+            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm font-mono" />
+        </div>
+        <button type="button" disabled={creating || !name.trim() || !sourceDisk.trim()}
+          className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm disabled:opacity-40"
+          onClick={async () => {
+            setCreating(true)
+            try {
+              await createTemplate({ name: name.trim(), version: version.trim() || '1.0', source_disk: sourceDisk.trim() })
+              toast.success('Image registered')
+              setName(''); setSourceDisk('')
+              void load()
+            } catch (e: unknown) { toast.error(formatUserError(e)) } finally { setCreating(false) }
+          }}>{creating ? 'Registering…' : 'Register'}</button>
+      </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-700/80">
         <table className="w-full text-sm" aria-label="Images">
           <thead className="bg-slate-900/80 text-slate-400 text-left">
             <tr>
               <th scope="col" className="px-4 py-3">Name</th>
+              <th scope="col" className="px-4 py-3">Version</th>
               <th scope="col" className="px-4 py-3">Status</th>
-              <th scope="col" className="px-4 py-3">Min disk</th>
-              <th scope="col" className="px-4 py-3">Min RAM</th>
-              <th scope="col" className="px-4 py-3">Size</th>
+              <th scope="col" className="px-4 py-3">Source</th>
               <th scope="col" className="px-4 py-3 w-16" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
             {loading && images.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">Loading…</td></tr>
             )}
             {!loading && images.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No images found.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No images found.</td></tr>
             )}
             {images.map((img) => (
               <tr key={img.id} className="hover:bg-slate-800/40">
                 <td className="px-4 py-3">
                   <Link to={`/openstack/images/${img.id}`} className="text-slate-200 hover:text-sky-300 hover:underline">
-                    {img.name || '—'}
+                    {img.name}
                   </Link>
                   <div className="text-xs text-slate-500 font-mono truncate max-w-xs">{img.id}</div>
                 </td>
-                <td className="px-4 py-3 text-slate-300">{img.status}</td>
-                <td className="px-4 py-3">{img.min_disk_gb} GB</td>
-                <td className="px-4 py-3">{img.min_ram_mb} MB</td>
-                <td className="px-4 py-3">{formatBytes(img.size_bytes)}</td>
+                <td className="px-4 py-3 text-slate-300">{img.version}</td>
+                <td className="px-4 py-3 text-slate-300">{img.approval_status}</td>
+                <td className="px-4 py-3 text-slate-500 font-mono text-xs truncate max-w-xs">{img.source_disk}</td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      title="Members & metadata"
-                      onClick={() => setShareTarget(img)}
-                      className="p-2 rounded hover:bg-violet-500/20 text-violet-400"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Pull to hypervisor disk"
-                      onClick={() => setPullTarget(img)}
-                      className="p-2 rounded hover:bg-sky-500/20 text-sky-400"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Delete image"
-                      onClick={() => setDeleteTarget(img)}
-                      className={`p-2 rounded hover:bg-[color-mix(in_srgb,var(--machina-status-error)_25%,transparent)] ${statusToneClass('error')}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    title="Delete image"
+                    onClick={() => setDeleteTarget(img)}
+                    className={`p-2 rounded hover:bg-[color-mix(in_srgb,var(--machina-status-error)_25%,transparent)] ${statusToneClass('error')}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -196,21 +172,10 @@ function OpenStackImagesContent() {
 
       <OpenStackFooter />
 
-      <GlancePullModal
-        open={!!pullTarget}
-        image={pullTarget}
-        onClose={() => setPullTarget(null)}
-      />
-
-      <OpenStackImageSharingModal
-        image={shareTarget}
-        onClose={() => setShareTarget(null)}
-      />
-
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete image"
-        message={`Permanently delete ${deleteTarget?.name || deleteTarget?.id} from Images?`}
+        message={`Permanently delete ${deleteTarget?.name} from the image catalog?`}
         confirmLabel={deleting ? 'Deleting…' : 'Delete'}
         variant="danger"
         onConfirm={handleDelete}

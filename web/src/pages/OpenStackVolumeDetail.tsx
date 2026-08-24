@@ -2,37 +2,41 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Disc, ExternalLink, Loader2 } from 'lucide-react'
-import { getOpenStackImage } from '../api/openstack'
-import { getOpenStackVolume, setOpenStackVolumeBootable, updateOpenStackVolume, uploadOpenStackVolumeToImage } from '../api/openstackExtras'
-import type { OpenStackAttachedVolume } from '../api/openstack'
-import OpenStackGate from '../components/OpenStackGate'
+import { ArrowLeft, Disc } from 'lucide-react'
+import {
+  createVolumeSnapshot,
+  deleteVolume,
+  deleteVolumeSnapshot,
+  detachVolume,
+  extendVolume,
+  getVolume,
+  listVolumeSnapshots,
+  type NativeVolume,
+  type NativeVolumeSnapshot,
+} from '../api/nativeVolumes'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+// Native volumes — not gated by <OpenStackGate>. Narrower than Cinder: no
+// rename, no bootable flag, no upload-to-image (no native equivalent) — see
+// api/nativeVolumes.ts.
 export default function OpenStackVolumeDetailPage() {
-  return (
-    <OpenStackGate title="Storage volume">
-      <OpenStackVolumeDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackVolumeDetailContent />
 }
 
 function OpenStackVolumeDetailContent() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()
-  const [vol, setVol] = useState<OpenStackAttachedVolume | null>(null)
+  const [vol, setVol] = useState<NativeVolume | null>(null)
+  const [snapshots, setSnapshots] = useState<NativeVolumeSnapshot[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploadBusy, setUploadBusy] = useState(false)
-  const [uploadImageId, setUploadImageId] = useState<string | null>(null)
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useBreadcrumbName(vol?.name)
   const loadSeq = useRef(0)
 
@@ -44,9 +48,10 @@ function OpenStackVolumeDetailContent() {
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const { volume } = await getOpenStackVolume(id)
+      const [v, s] = await Promise.all([getVolume(id), listVolumeSnapshots(id).catch(() => [])])
       if (!alive()) return
-      setVol(volume)
+      setVol(v)
+      setSnapshots(s)
     } catch (e: unknown) {
       if (!alive()) return
       toast.error(formatUserError(e))
@@ -59,41 +64,6 @@ function OpenStackVolumeDetailContent() {
   useEffect(() => {
     void load()
   }, [load])
-
-  useEffect(() => {
-    if (!uploadImageId) return
-    let cancelled = false
-
-    const poll = async () => {
-      try {
-        const { image } = await getOpenStackImage(uploadImageId)
-        if (cancelled) return
-        setUploadStatus(image.status)
-        const st = image.status.toLowerCase()
-        if (st === 'active') {
-          if (pollRef.current) clearInterval(pollRef.current)
-          pollRef.current = null
-          setUploadBusy(false)
-          toast.success('Image is active')
-        } else if (st === 'killed' || st === 'deleted' || st.includes('error')) {
-          if (pollRef.current) clearInterval(pollRef.current)
-          pollRef.current = null
-          setUploadBusy(false)
-          toast.error(`Image upload failed: ${image.status}`)
-        }
-      } catch {
-        // keep polling — image may not appear in Images immediately
-      }
-    }
-
-    void poll()
-    pollRef.current = setInterval(() => { void poll() }, 5000)
-    return () => {
-      cancelled = true
-      if (pollRef.current) clearInterval(pollRef.current)
-      pollRef.current = null
-    }
-  }, [uploadImageId, toast])
 
   if (loading) return <PageSkeleton />
   if (!vol) {
@@ -117,72 +87,92 @@ function OpenStackVolumeDetailContent() {
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <Disc className="w-7 h-7 text-sky-400" />
-        {vol.name || vol.id.slice(0, 12)}
+        {vol.name}
       </h1>
       <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
         <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{vol.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Size</dt><dd className="text-slate-200 mt-1">{vol.size_gb} GB</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Bootable</dt><dd className="mt-1">
-          <button type="button" className="text-sky-400 hover:underline" onClick={async () => {
-            try {
-              await setOpenStackVolumeBootable(vol.id, !vol.bootable)
-              toast.success('Updated')
-              void load()
-            } catch (e: unknown) { toast.error(formatUserError(e)) }
-          }}>{vol.bootable ? 'Yes' : 'No'} (toggle)</button>
-        </dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Size</dt><dd className="text-slate-200 mt-1">{vol.size_gib} GiB</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="text-slate-200 mt-1">{vol.status}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Class</dt><dd className="text-slate-200 mt-1">{vol.volume_class}{vol.atlas_backed ? ' (Atlas)' : ''}</dd></div>
         <div><dt className="text-xs text-slate-500 uppercase">Attached</dt><dd className="mt-1 font-mono text-xs">
-          {vol.server_id ? (
-            <Link to={`/openstack/instances/${vol.server_id}`} className="text-sky-400 hover:underline">{vol.server_id}</Link>
+          {vol.attached_vm_id ? (
+            <Link to={`/openstack/instances/${vol.attached_vm_id}`} className="text-sky-400 hover:underline">{vol.attached_vm_id}</Link>
           ) : '—'}
         </dd></div>
-        {vol.device && <div><dt className="text-xs text-slate-500 uppercase">Device</dt><dd className="font-mono text-slate-200 mt-1">{vol.device}</dd></div>}
+        {vol.attached_device && <div><dt className="text-xs text-slate-500 uppercase">Device</dt><dd className="font-mono text-slate-200 mt-1">{vol.attached_device}</dd></div>}
       </dl>
-      <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm"
-        onClick={async () => {
-          const n = prompt('Volume name', vol.name || '')
-          if (n === null) return
-          try {
-            await updateOpenStackVolume(vol.id, { name: n.trim() || undefined })
-            toast.success('Renamed')
-            void load()
-          } catch (e: unknown) { toast.error(formatUserError(e)) }
-        }}>Rename</button>
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Create image from volume</h2>
-        <p className="text-xs text-slate-500">Upload this Storage volume to Images (Storage os-volume_upload_image).</p>
-        {uploadImageId && (
-          <div className="text-sm text-slate-300 space-y-1">
-            <p>
-              Image <span className="font-mono text-sky-300">{uploadImageId}</span>
-              {uploadStatus && <> · status <span className="text-violet-300">{uploadStatus}</span></>}
-              {uploadBusy && <Loader2 className="inline w-4 h-4 ml-2 animate-spin text-sky-400" />}
-            </p>
-            {!uploadBusy && uploadStatus?.toLowerCase() === 'active' && (
-              <button type="button" className="inline-flex items-center gap-1 text-sky-400 hover:underline text-sm"
-                onClick={() => navigate(`/openstack/images/${uploadImageId}`)}>
-                Open image detail <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+      <div className="flex flex-wrap gap-2">
+        {vol.attached_vm_id && (
+          <button type="button" className={`px-3 py-1.5 rounded-lg border text-sm ${statusActionLinkClasses('warn')}`}
+            onClick={async () => {
+              try {
+                await detachVolume(vol.id)
+                toast.success('Detached')
+                void load()
+              } catch (e: unknown) { toast.error(formatUserError(e)) }
+            }}>Detach</button>
         )}
-        <button type="button" disabled={uploadBusy}
-          className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm disabled:opacity-50"
+        <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm"
           onClick={async () => {
-            const name = prompt('Image name', vol.name ? `${vol.name}-image` : 'volume-image')
-            if (!name?.trim()) return
-            try {
-              setUploadBusy(true)
-              setUploadStatus(null)
-              const r = await uploadOpenStackVolumeToImage(vol.id, { image_name: name.trim() })
-              setUploadImageId(r.upload.image_id)
-              setUploadStatus(r.upload.status)
-              toast.success(`Upload started — polling Images for ${r.upload.image_id}`)
-            } catch (e: unknown) {
-              setUploadBusy(false)
-              toast.error(formatUserError(e))
+            const n = prompt('New size (GiB)', String(vol.size_gib + 1))
+            if (!n) return
+            const size = Number.parseInt(n, 10)
+            if (!Number.isFinite(size) || size <= vol.size_gib) {
+              toast.warning(`Enter a whole number of GiB greater than ${vol.size_gib}`)
+              return
             }
-          }}>Upload to Images</button>
+            try {
+              await extendVolume(vol.id, size)
+              toast.success('Extended')
+              void load()
+            } catch (e: unknown) { toast.error(formatUserError(e)) }
+          }}>Extend</button>
+        <button type="button" className={`px-3 py-1.5 rounded-lg border text-sm ${statusActionLinkClasses('error')}`}
+          onClick={async () => {
+            if (!confirm(`Delete volume ${vol.name}?`)) return
+            try {
+              await deleteVolume(vol.id)
+              toast.success('Deleted')
+              navigate('/openstack/volumes')
+            } catch (e: unknown) { toast.error(formatUserError(e)) }
+          }}>Delete</button>
+      </div>
+
+      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-slate-300">Snapshots</h2>
+          <button type="button" className="text-xs text-sky-400 hover:underline"
+            onClick={async () => {
+              const n = prompt('Snapshot name', `${vol.name}-snap`)
+              if (!n) return
+              try {
+                await createVolumeSnapshot(vol.id, n)
+                toast.success('Snapshot requested')
+                void load()
+              } catch (e: unknown) { toast.error(formatUserError(e)) }
+            }}>+ Snapshot</button>
+        </div>
+        {snapshots.length === 0 ? (
+          <p className="text-sm text-slate-500">No snapshots.</p>
+        ) : (
+          <ul className="text-sm font-mono space-y-1">
+            {snapshots.map((s) => (
+              <li key={s.id} className="flex items-center gap-2">
+                <span>{s.name}</span>
+                <span className="text-slate-500 text-xs">{s.status}</span>
+                <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
+                  onClick={async () => {
+                    if (!confirm(`Delete snapshot ${s.name}?`)) return
+                    try {
+                      await deleteVolumeSnapshot(s.id)
+                      toast.success('Deleted')
+                      void load()
+                    } catch (e: unknown) { toast.error(formatUserError(e)) }
+                  }}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
       <OpenStackFooter />
     </PageLayout>

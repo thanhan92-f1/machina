@@ -5,46 +5,41 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import {
-  getOpenStackSecurityGroup,
-  listOpenStackSecurityGroups,
-  type OpenStackSecurityGroup,
-} from '../api/openstack'
-import {
-  createOpenStackSecurityGroup,
-  createOpenStackSecurityGroupRule,
-  deleteOpenStackSecurityGroup,
-  deleteOpenStackSecurityGroupRule,
-} from '../api/openstackExtras'
+  createSecurityGroup,
+  createSecurityGroupRule,
+  deleteSecurityGroup,
+  deleteSecurityGroupRule,
+  getSecurityGroup,
+  listSecurityGroupRules,
+  listSecurityGroups,
+  type NativeSecurityGroup,
+  type NativeSecurityGroupRule,
+} from '../api/securityGroups'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useToastContext } from '../contexts/ToastContext'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
-import OpenStackGate from '../components/OpenStackGate'
 import OpenStackSubNav from '../components/OpenStackSubNav'
-import OpenStackStatusBar from '../components/OpenStackStatusBar'
-import ErrorBanner from '../components/ErrorBanner'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
-import { openStackErrorHints } from '../utils/openstackHints'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Loader2, RefreshCw, Shield } from 'lucide-react'
 
+// Native security groups — not gated by <OpenStackGate>: this feature is
+// libvirt/SQLite-native and does not depend on a wired external OpenStack cloud.
 export default function OpenStackSecurityGroupsPage() {
-  return (
-    <OpenStackGate title="Fleet Cloud Security Groups">
-      <OpenStackSecurityGroupsContent />
-    </OpenStackGate>
-  )
+  return <OpenStackSecurityGroupsContent />
 }
 
 function OpenStackSecurityGroupsContent() {
   const toast = useToastContext()
-  const [groups, setGroups] = useState<OpenStackSecurityGroup[]>([])
+  const [groups, setGroups] = useState<NativeSecurityGroup[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [detail, setDetail] = useState<OpenStackSecurityGroup | null>(null)
+  const [detail, setDetail] = useState<NativeSecurityGroup | null>(null)
+  const [rules, setRules] = useState<NativeSecurityGroupRule[]>([])
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [deleteGroupTarget, setDeleteGroupTarget] = useState<OpenStackSecurityGroup | null>(null)
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<NativeSecurityGroup | null>(null)
   const [deletingGroup, setDeletingGroup] = useState(false)
   const [newSgName, setNewSgName] = useState('')
   const [creatingSg, setCreatingSg] = useState(false)
@@ -53,7 +48,7 @@ function OpenStackSecurityGroupsContent() {
     setLoading(true)
     setLoadError(null)
     try {
-      const { security_groups } = await listOpenStackSecurityGroups()
+      const security_groups = await listSecurityGroups()
       setGroups(security_groups)
       if (security_groups.length > 0) {
         setSelectedId((prev) => prev ?? security_groups[0].id)
@@ -71,18 +66,25 @@ function OpenStackSecurityGroupsContent() {
     void load()
   }, [load])
 
+  const loadDetail = useCallback(async (id: string) => {
+    const [g, r] = await Promise.all([getSecurityGroup(id), listSecurityGroupRules(id)])
+    setDetail(g)
+    setRules(r)
+  }, [])
+
   useEffect(() => {
     if (!selectedId) {
       setDetail(null)
+      setRules([])
       return
     }
     // Clear the previous group's rules immediately and guard against an
     // out-of-order response committing stale detail after a fast re-selection.
     let cancelled = false
     setDetail(null)
+    setRules([])
     setDetailLoading(true)
-    getOpenStackSecurityGroup(selectedId)
-      .then((r) => { if (!cancelled) setDetail(r.security_group) })
+    loadDetail(selectedId)
       .catch((e: unknown) => {
         if (cancelled) return
         toast.error(formatUserError(e))
@@ -90,7 +92,7 @@ function OpenStackSecurityGroupsContent() {
       })
       .finally(() => { if (!cancelled) setDetailLoading(false) })
     return () => { cancelled = true }
-  }, [selectedId, toast])
+  }, [selectedId, loadDetail, toast])
 
   const active = detail ?? groups.find((g) => g.id === selectedId) ?? null
 
@@ -101,7 +103,6 @@ function OpenStackSecurityGroupsContent() {
       prepend={<><OpenStackSubNav /></>}
       error={loadError}
       errorTitle="Failed to load"
-      errorHints={loadError ? openStackErrorHints(loadError) : undefined}
       technicalDetail={loadError}
       errorTone="red"
       onErrorRetry={() => void load()}
@@ -121,6 +122,9 @@ function OpenStackSecurityGroupsContent() {
           Refresh
         </button>
       </div>
+      <p className="text-xs text-amber-400/90 -mt-2">
+        Advisory only — rule enforcement isn't wired to the firewall yet.
+      </p>
 
       <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-2 items-end text-sm">
         <input id="new-sg-name" placeholder="New group name" aria-label="New security group name"
@@ -133,7 +137,7 @@ function OpenStackSecurityGroupsContent() {
             if (!name || creatingSg) return
             setCreatingSg(true)
             try {
-              await createOpenStackSecurityGroup({ name })
+              await createSecurityGroup({ name })
               toast.success('Security group created')
               setNewSgName('')
               void load()
@@ -199,32 +203,29 @@ function OpenStackSecurityGroupsContent() {
                 )}
                 <p className="text-xs font-mono text-slate-600 mt-2 break-all">{active.id}</p>
                 <h3 className="text-sm font-medium text-slate-400 mt-4 mb-2">
-                  Rules ({active.rules.length})
+                  Rules ({rules.length})
                 </h3>
                 {selectedId && (
                   <div className="mb-4 flex flex-wrap gap-2 items-end text-xs">
                     <button type="button" className="px-2 py-1 rounded border border-slate-600"
                       onClick={async () => {
                         try {
-                          await createOpenStackSecurityGroupRule(selectedId, {
+                          await createSecurityGroupRule(selectedId, {
                             direction: 'ingress',
                             protocol: 'tcp',
-                            port_range_min: 22,
-                            port_range_max: 22,
-                            remote_ip_prefix: '0.0.0.0/0',
-                            ethertype: 'IPv4',
+                            port_min: 22,
+                            port_max: 22,
+                            remote_cidr: '0.0.0.0/0',
                           })
                           toast.success('SSH rule added')
-                          const r = await getOpenStackSecurityGroup(selectedId)
-                          setDetail(r.security_group)
-                          void load()
+                          void loadDetail(selectedId)
                         } catch (e: unknown) {
                           toast.error(formatUserError(e))
                         }
                       }}>+ SSH (22)</button>
                   </div>
                 )}
-                {active.rules.length === 0 ? (
+                {rules.length === 0 ? (
                   <p className="text-sm text-slate-500">No rules defined.</p>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-slate-800">
@@ -234,36 +235,32 @@ function OpenStackSecurityGroupsContent() {
                           <th scope="col" className="px-3 py-2">Direction</th>
                           <th scope="col" className="px-3 py-2">Protocol</th>
                           <th scope="col" className="px-3 py-2">Ports</th>
-                          <th scope="col" className="px-3 py-2">Remote</th>
-                          <th scope="col" className="px-3 py-2">Ether</th>
+                          <th scope="col" className="px-3 py-2">Remote CIDR</th>
                           <th scope="col" className="px-3 py-2" />
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800 font-mono text-xs">
-                        {active.rules.map((r) => (
+                        {rules.map((r) => (
                           <tr key={r.id}>
                             <td className="px-3 py-2 text-slate-300">{r.direction}</td>
                             <td className="px-3 py-2">{r.protocol || '—'}</td>
                             <td className="px-3 py-2">
-                              {r.port_range_min != null
-                                ? r.port_range_min === r.port_range_max
-                                  ? String(r.port_range_min)
-                                  : `${r.port_range_min}–${r.port_range_max}`
+                              {r.port_min != null
+                                ? r.port_min === r.port_max
+                                  ? String(r.port_min)
+                                  : `${r.port_min}–${r.port_max}`
                                 : '—'}
                             </td>
                             <td className="px-3 py-2 text-slate-400">
-                              {r.remote_ip_prefix || r.remote_group_id || '—'}
+                              {r.remote_cidr || '—'}
                             </td>
-                            <td className="px-3 py-2">{r.ethertype || '—'}</td>
                             <td className="px-3 py-2">
                               <button type="button" className={statusActionLinkClasses('error')}
                                 onClick={async () => {
                                   try {
-                                    await deleteOpenStackSecurityGroupRule(r.id)
+                                    await deleteSecurityGroupRule(r.id)
                                     toast.success('Rule deleted')
-                                    const sg = await getOpenStackSecurityGroup(selectedId!)
-                                    setDetail(sg.security_group)
-                                    void load()
+                                    void loadDetail(selectedId!)
                                   } catch (e: unknown) {
                                     toast.error(formatUserError(e))
                                   }
@@ -296,7 +293,7 @@ function OpenStackSecurityGroupsContent() {
           if (!deleteGroupTarget) return
           setDeletingGroup(true)
           try {
-            await deleteOpenStackSecurityGroup(deleteGroupTarget.id)
+            await deleteSecurityGroup(deleteGroupTarget.id)
             toast.success('Security group deleted')
             setDeleteGroupTarget(null)
             setSelectedId(null)

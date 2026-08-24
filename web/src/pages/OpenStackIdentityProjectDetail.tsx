@@ -2,46 +2,41 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, KeyRound, Loader2 } from 'lucide-react'
-import OpenStackGate from '../components/OpenStackGate'
+import { ArrowLeft, KeyRound } from 'lucide-react'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import {
-  getOpenStackIdentityProject,
-  grantOpenStackRoleAssignment,
-  listOpenStackIdentityRoles,
-  listOpenStackIdentityUsers,
-  listOpenStackRoleAssignments,
-  revokeOpenStackRoleAssignment,
-  type OpenStackProject,
-  type OpenStackRole,
-  type OpenStackRoleAssignment,
-  type OpenStackIdentityUser,
-} from '../api/openstackExtras'
+  addProjectMember,
+  listProjectMembers,
+  listProjectRegistry,
+  listUsers,
+  removeProjectMember,
+  type NativeProject,
+  type NativeProjectMember,
+  type NativeUser,
+} from '../api/nativeProjects'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses, statusToneClass } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+const ROLES = ['admin', 'operator', 'viewer'] as const
+
+// Native project registry — not gated by <OpenStackGate> (see OpenStackIdentity.tsx).
 export default function OpenStackIdentityProjectDetailPage() {
-  return (
-    <OpenStackGate title="Project">
-      <OpenStackIdentityProjectDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackIdentityProjectDetailContent />
 }
 
 function OpenStackIdentityProjectDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
-  const [project, setProject] = useState<OpenStackProject | null>(null)
-  const [assignments, setAssignments] = useState<OpenStackRoleAssignment[]>([])
-  const [roles, setRoles] = useState<OpenStackRole[]>([])
-  const [users, setUsers] = useState<OpenStackIdentityUser[]>([])
+  const [project, setProject] = useState<NativeProject | null>(null)
+  const [members, setMembers] = useState<NativeProjectMember[]>([])
+  const [users, setUsers] = useState<NativeUser[]>([])
   const [grantUserId, setGrantUserId] = useState('')
-  const [grantRoleId, setGrantRoleId] = useState('')
+  const [grantRole, setGrantRole] = useState<string>(ROLES[1])
   const [loading, setLoading] = useState(true)
   useBreadcrumbName(project?.name)
 
@@ -55,17 +50,15 @@ function OpenStackIdentityProjectDetailContent() {
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const [p, a, r, u] = await Promise.all([
-        getOpenStackIdentityProject(id),
-        listOpenStackRoleAssignments(id),
-        listOpenStackIdentityRoles(),
-        listOpenStackIdentityUsers(),
+      const [all, m, u] = await Promise.all([
+        listProjectRegistry(),
+        listProjectMembers(id),
+        listUsers().catch(() => []),
       ])
       if (!alive()) return
-      setProject(p.project)
-      setAssignments(a.role_assignments ?? [])
-      setRoles(r.roles ?? [])
-      setUsers(u.users ?? [])
+      setProject(all.find((p) => p.id === id) ?? null)
+      setMembers(m)
+      setUsers(u)
     } catch (e: unknown) {
       if (!alive()) return
       toast.error(formatUserError(e))
@@ -94,7 +87,7 @@ function OpenStackIdentityProjectDetailContent() {
       prepend={<><OpenStackSubNav /></>}
     >
       <Link to="/openstack/identity" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
-        <ArrowLeft className="w-4 h-4" /> Identity
+        <ArrowLeft className="w-4 h-4" /> Projects
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <KeyRound className={`w-7 h-7 ${statusToneClass('warn')}`} /> {project.name}
@@ -106,62 +99,51 @@ function OpenStackIdentityProjectDetailContent() {
       </dl>
 
       <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Role assignments</h2>
+        <h2 className="text-sm font-medium text-slate-300">Members</h2>
         <div className="flex flex-wrap gap-2">
           <select aria-label="User" value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)}
             className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
             <option value="">User…</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            {users.map((u) => <option key={u.id} value={u.id}>{u.username}</option>)}
           </select>
-          <select aria-label="Role" value={grantRoleId} onChange={(e) => setGrantRoleId(e.target.value)}
+          <select aria-label="Role" value={grantRole} onChange={(e) => setGrantRole(e.target.value)}
             className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-            <option value="">Role…</option>
-            {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
           <button type="button" className="px-2 py-1 rounded bg-amber-700 text-white text-sm"
-            disabled={!grantUserId || !grantRoleId}
+            disabled={!grantUserId}
             onClick={async () => {
               try {
-                await grantOpenStackRoleAssignment({
-                  project_id: project.id,
-                  user_id: grantUserId,
-                  role_id: grantRoleId,
-                })
-                toast.success('Role granted')
+                await addProjectMember(project.id, { user_id: grantUserId, role: grantRole })
+                toast.success('Member added')
                 void load()
               } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}>Grant</button>
+            }}>Add</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" aria-label="Project role assignments">
+          <table className="w-full text-sm" aria-label="Project members">
             <thead className="text-slate-400 text-left">
               <tr><th scope="col" className="py-1">User</th><th scope="col" className="py-1">Role</th><th scope="col" /></tr>
             </thead>
             <tbody>
-              {assignments.map((a, i) => (
-                <tr key={`${a.user_id}-${a.role_id}-${i}`} className="border-t border-slate-800">
-                  <td className="py-2">{a.user_name || a.user_id || '—'}</td>
-                  <td className="py-2">{a.role_name || a.role_id}</td>
+              {members.map((m) => (
+                <tr key={m.user_id} className="border-t border-slate-800">
+                  <td className="py-2">{m.username}</td>
+                  <td className="py-2">{m.role}</td>
                   <td className="py-2 text-right">
-                    {a.user_id && (
-                      <button type="button" className={statusActionLinkClasses('error', 'text-xs')} onClick={async () => {
-                        try {
-                          await revokeOpenStackRoleAssignment({
-                            project_id: project.id,
-                            user_id: a.user_id!,
-                            role_id: a.role_id,
-                          })
-                          toast.success('Revoked')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>Revoke</button>
-                    )}
+                    <button type="button" className={statusActionLinkClasses('error', 'text-xs')} onClick={async () => {
+                      try {
+                        await removeProjectMember(project.id, m.user_id)
+                        toast.success('Removed')
+                        void load()
+                      } catch (e: unknown) { toast.error(formatUserError(e)) }
+                    }}>Remove</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {assignments.length === 0 && <p className="text-slate-500 text-sm py-2">No role assignments.</p>}
+          {members.length === 0 && <p className="text-slate-500 text-sm py-2">No members.</p>}
         </div>
       </section>
       <OpenStackFooter />

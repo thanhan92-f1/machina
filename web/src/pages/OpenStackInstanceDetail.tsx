@@ -4,479 +4,205 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { ArrowLeft, Cloud, Play, RotateCcw, Square, Trash2 } from 'lucide-react'
 import {
-  getOpenStackInstance,
-  listOpenStackInstanceVolumes,
-  startOpenStackInstance,
-  stopOpenStackInstance,
-  rebootOpenStackInstance,
-  deleteOpenStackInstance,
-  forceDeleteOpenStackInstance,
-  snapshotOpenStackInstance,
-  type OpenStackInstance,
-  type OpenStackAttachedVolume,
-} from '../api/openstack'
-import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { useToastContext } from '../contexts/ToastContext'
-import ConfirmDialog from '../components/ConfirmDialog'
-import PageSkeleton from '../components/PageSkeleton'
-import {
-  ArrowLeft, Play, Square, RotateCcw, Trash2, Camera, Copy, Cloud, HardDrive, Layers, Lock, Network, Archive,
-} from 'lucide-react'
-import { getOpenStackInstanceStack, shelveOpenStackInstance, unshelveOpenStackInstance } from '../api/openstackExtras'
+  deleteVm,
+  getVm,
+  listVmDisks,
+  listVmNics,
+  rebootVm,
+  startVm,
+  stopVm,
+  vmDisplayStatus,
+  type NativeVm,
+  type NativeVmDisk,
+  type NativeVmNic,
+} from '../api/nativeVms'
+import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
-import OpenStackInstanceAdvanced from '../components/OpenStackInstanceAdvanced'
-import OpenStackExportModal from '../components/OpenStackExportModal'
-import OpenStackGate from '../components/OpenStackGate'
-import OpenStackSubNav from '../components/OpenStackSubNav'
-import OpenStackStatusBar from '../components/OpenStackStatusBar'
+import PageSkeleton from '../components/PageSkeleton'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusBadgeClasses, statusBorderClass, statusDestructiveButtonClasses, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
-import { openStackErrorHints } from '../utils/openstackHints'
-import ErrorBanner from '../components/ErrorBanner'
+import { openstackStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Reused by every "back to list" link and post-delete redirect on this page.
-const INSTANCES_ROUTE = '/openstack/instances'
-
-function CopyBtn({ text }: { text: string }) {
-  const toast = useToastContext()
-  return (
-    <button
-      type="button"
-      title="Copy"
-      onClick={() => {
-        navigator.clipboard.writeText(text).then(
-          () => toast.success('Copied'),
-          () => toast.error('Copy failed'),
-        )
-      }}
-      className="p-1 rounded hover:bg-slate-700 text-slate-400"
-    >
-      <Copy className="w-3.5 h-3.5" />
-    </button>
-  )
-}
-
+// Native VM detail used as the "instance" detail page — not gated by
+// <OpenStackGate>. Narrower than the Nova instance detail: no rescue/shelve/
+// lock/migrate/backup/resize actions (no native equivalent yet) — start/stop/
+// reboot/delete plus disk and NIC inventory, which do have direct native
+// equivalents (api::vms).
 export default function OpenStackInstanceDetailPage() {
-  return (
-    <OpenStackGate>
-      <OpenStackInstanceDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackInstanceDetailContent />
 }
 
 function OpenStackInstanceDetailContent() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const toast = useToastContext()
-  const { lastEvent, refreshKey } = usePlatformInfo()
-  const [inst, setInst] = useState<OpenStackInstance | null>(null)
-  const [volumes, setVolumes] = useState<OpenStackAttachedVolume[]>([])
+  const navigate = useNavigate()
+  const [vm, setVm] = useState<NativeVm | null>(null)
+  const [disks, setDisks] = useState<NativeVmDisk[]>([])
+  const [nics, setNics] = useState<NativeVmNic[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [forceDeleteOpen, setForceDeleteOpen] = useState(false)
-  const [snapshotName, setSnapshotName] = useState('')
-  const [snapshotBusy, setSnapshotBusy] = useState(false)
-  const [exportOpen, setExportOpen] = useState(false)
-  const [heatStack, setHeatStack] = useState<{ stack_id?: string; stack_name?: string } | null>(null)
-  const [actionError, setActionError] = useState<{ label: string; message: string } | null>(null)
-  useBreadcrumbName(inst?.name)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  useBreadcrumbName(vm?.name)
   const loadSeq = useRef(0)
 
   const load = useCallback(async () => {
     if (!id) return
-    // Last-response-wins: rapid navigation between instances can leave stale
-    // awaits in flight; only the newest load may commit so instance A can't
-    // overwrite instance B.
+    // Last-response-wins: only the newest load may commit so a stale fetch for a
+    // prior instance can't overwrite the one now shown.
     const seq = ++loadSeq.current
     const alive = () => seq === loadSeq.current
-    setLoadError(null)
     setLoading(true)
     try {
-      const [data, vols, stackR] = await Promise.all([
-        getOpenStackInstance(id),
-        listOpenStackInstanceVolumes(id).catch(() => ({ volumes: [] as OpenStackAttachedVolume[] })),
-        getOpenStackInstanceStack(id).catch(() => ({ stack: null })),
+      const [v, d, n] = await Promise.all([
+        getVm(id),
+        listVmDisks(id).catch(() => []),
+        listVmNics(id).catch(() => []),
       ])
       if (!alive()) return
-      setInst(data)
-      setVolumes(vols.volumes)
-      setHeatStack(stackR.stack)
-      setActionError(null)
-      if (!snapshotName) setSnapshotName(`${data.name}-snap`)
+      setVm(v)
+      setDisks(d)
+      setNics(n)
     } catch (e: unknown) {
       if (!alive()) return
-      const msg = formatUserError(e)
-      setLoadError(msg)
-      setInst(null)
-      toast.error(`Failed to load instance: ${msg}`)
+      toast.error(formatUserError(e))
+      setVm(null)
     } finally {
       if (alive()) setLoading(false)
     }
   }, [id, toast])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { void load() }, [load])
 
-  useEffect(() => {
-    if (!lastEvent || !id) return
-    if (lastEvent.kind.startsWith('openstack.instance') && lastEvent.target === id) {
-      void load()
-    }
-  }, [refreshKey, lastEvent, id, load])
-
-  const runAction = async (fn: () => Promise<unknown>, label: string) => {
-    try {
-      await fn()
-      setActionError(null)
-      toast.success(`${label} OK`)
-      load()
-    } catch (e: unknown) {
-      const message = formatUserError(e)
-      setActionError({ label, message })
-      toast.error(`${label} failed: ${message}`)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!inst) return
-    setDeleteOpen(false)
-    try {
-      await deleteOpenStackInstance(inst.id)
-      toast.success(`Deleted '${inst.name}'`)
-      navigate(INSTANCES_ROUTE)
-    } catch (e: unknown) {
-      const message = formatUserError(e)
-      setActionError({ label: 'Delete', message })
-      toast.error(`Delete failed: ${message}`)
-    }
-  }
-
-  const handleForceDelete = async () => {
-    if (!inst) return
-    setForceDeleteOpen(false)
-    try {
-      await forceDeleteOpenStackInstance(inst.id)
-      toast.success(`Force-deleted '${inst.name}'`)
-      navigate(INSTANCES_ROUTE)
-    } catch (e: unknown) {
-      const message = formatUserError(e)
-      setActionError({ label: 'Force delete', message })
-      toast.error(`Force delete failed: ${message}`)
-    }
-  }
-
-  const handleSnapshot = async () => {
-    if (!inst || !snapshotName.trim()) return
-    setSnapshotBusy(true)
-    try {
-      await snapshotOpenStackInstance(inst.id, snapshotName.trim())
-      setActionError(null)
-      toast.success(`Snapshot requested: ${snapshotName}`)
-    } catch (e: unknown) {
-      const message = formatUserError(e)
-      setActionError({ label: 'Snapshot', message })
-      toast.error(`Snapshot failed: ${message}`)
-    } finally {
-      setSnapshotBusy(false)
-    }
-  }
-
-  if (loading) {
-    return <PageSkeleton />
-  }
-  if (loadError) {
-    return (
-      <div className="space-y-4 max-w-4xl">
-        <OpenStackSubNav />
-        <OpenStackStatusBar />
-        <ErrorBanner
-          title="Could not load instance"
-          headline={loadError}
-          hints={openStackErrorHints(loadError)}
-          onRetry={() => {
-            setLoading(true)
-            void load()
-          }}
-        />
-        <Link to={INSTANCES_ROUTE} className="text-sky-400 hover:underline inline-flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Back to instances
-        </Link>
-      </div>
-    )
-  }
-  if (!inst) {
+  if (loading) return <PageSkeleton />
+  if (!vm) {
     return (
       <div className="space-y-4">
-        <p className="text-slate-400">Instance not found.</p>
-        <Link to={INSTANCES_ROUTE} className="text-sky-400 hover:underline">Back to list</Link>
+        <OpenStackSubNav />
+        <Link to="/openstack/instances" className="text-sky-400 hover:underline">Back</Link>
       </div>
     )
   }
 
-  const statusUp = (inst.status ?? '').toUpperCase()
-  const canShelve = ['ACTIVE', 'SHUTOFF', 'PAUSED'].includes(statusUp)
-  const canUnshelve = statusUp.startsWith('SHELVED')
+  const status = vmDisplayStatus(vm)
+  const runAction = async (fn: (id: string) => Promise<unknown>, label: string) => {
+    try {
+      await fn(vm.id)
+      toast.success(`${label} queued`)
+      void load()
+    } catch (e: unknown) {
+      toast.error(`${label} failed: ${formatUserError(e)}`)
+    }
+  }
 
   return (
     <PageLayout
       hideHeader
       className="max-w-4xl"
       prepend={<><OpenStackSubNav /></>}
-      error={loadError}
-      errorTitle="Failed to load"
-      errorHints={loadError ? openStackErrorHints(loadError) : undefined}
-      technicalDetail={loadError}
-      errorTone="red"
-      onErrorRetry={() => void load()}
-      onErrorDismiss={() => setLoadError(null)}
-      >{inst.status.toUpperCase() === 'ERROR' && (
-        <ErrorBanner
-          title="Instance in ERROR state"
-          headline="Compute reported ERROR for this server. Guest may not exist if compute uses fake.FakeDriver."
-          hints={[
-            'On the hypervisor: openstack server show ' + inst.id,
-            'Check: journalctl -u openstack-nova-compute -n 40',
-            ...openStackErrorHints('entered error'),
-          ]}
-          tone="red"
-        />
-      )}
-
-      {inst.status.toUpperCase() === 'BUILD' && (
-        <div className={`rounded-xl px-4 py-3 text-sm ${statusSurfaceClasses('warn')}`}>
-          Instance is still building — refresh in a few seconds. Network will assign addresses when ACTIVE.
-        </div>
-      )}
-
-      {heatStack && (heatStack.stack_id || heatStack.stack_name) && (
-        <div className="rounded-xl border border-violet-500/30 bg-violet-950/20 px-4 py-3 text-sm flex flex-wrap items-center gap-2">
-          <Layers className="w-4 h-4 text-violet-400 shrink-0" />
-          <span className="text-violet-200">Heat stack</span>
-          {heatStack.stack_name && heatStack.stack_id && (
-            <Link
-              to={`/openstack/heat/${encodeURIComponent(heatStack.stack_name)}/${encodeURIComponent(heatStack.stack_id)}`}
-              className="font-medium text-sky-400 hover:underline"
-            >
-              {heatStack.stack_name}
-            </Link>
-          )}
-          {heatStack.stack_name && !heatStack.stack_id && (
-            <span className="font-medium text-slate-100">{heatStack.stack_name}</span>
-          )}
-          {heatStack.stack_id && (
-            <span className="font-mono text-xs text-slate-400 break-all">{heatStack.stack_id}</span>
-          )}
-        </div>
-      )}
-
-      <Link to={INSTANCES_ROUTE} className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
-        <ArrowLeft className="w-4 h-4" />
-        Instances
+    >
+      <Link to="/openstack/instances" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+        <ArrowLeft className="w-4 h-4" /> Instances
       </Link>
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Cloud className="w-7 h-7 text-sky-400" />
-            {inst.name}
-            {inst.locked && (
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium uppercase ${statusBadgeClasses('warn')} ${statusBorderClass('warn')}`}>
-                <Lock className="w-3.5 h-3.5" /> Locked
-              </span>
-            )}
-          </h1>
-          <p className="text-slate-500 font-mono text-sm mt-1">{inst.id}</p>
-          <Link to={`/openstack/instances/${inst.id}/interfaces`} className="inline-flex items-center gap-1.5 text-sm text-sky-400 hover:underline mt-2">
-            <Network className="w-4 h-4" /> Manage network interfaces
-          </Link>
-        </div>
-        <div className="flex flex-col gap-2 min-w-0 flex-1 sm:max-w-xl">
-          {actionError && (
-            <ErrorBanner
-              title={`${actionError.label} failed`}
-              headline={actionError.message}
-              hints={openStackErrorHints(actionError.message)}
-              onDismiss={() => setActionError(null)}
-            />
-          )}
-          <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => runAction(() => startOpenStackInstance(inst.id), 'Start')}
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-sm text-white">
-            <Play className="w-4 h-4" /> Start
-          </button>
-          <button type="button" onClick={() => runAction(() => stopOpenStackInstance(inst.id), 'Stop')}
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-600 hover:bg-slate-800 text-sm">
-            <Square className="w-4 h-4" /> Stop
-          </button>
-          <button type="button" onClick={() => runAction(() => rebootOpenStackInstance(inst.id, 'soft'), 'Soft reboot')}
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-600 hover:bg-slate-800 text-sm">
-            <RotateCcw className="w-4 h-4" /> Soft reboot
-          </button>
-          <button type="button" onClick={() => runAction(() => rebootOpenStackInstance(inst.id, 'hard'), 'Hard reboot')}
-            className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border text-sm ${statusBadgeClasses('warn')} border-[color-mix(in_srgb,var(--machina-status-warn)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--machina-status-warn)_10%,transparent)]`}>
-            <RotateCcw className="w-4 h-4" /> Hard reboot
-          </button>
-          {canShelve && (
-            <button type="button" onClick={() => runAction(() => shelveOpenStackInstance(inst.id), 'Shelve')}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-600 hover:bg-slate-800 text-sm">
-              <Archive className="w-4 h-4" /> Shelve
-            </button>
-          )}
-          {canUnshelve && (
-            <button type="button" onClick={() => runAction(() => unshelveOpenStackInstance(inst.id), 'Unshelve')}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-sky-600/50 text-sky-200 hover:bg-sky-500/10 text-sm">
-              <Archive className="w-4 h-4" /> Unshelve
-            </button>
-          )}
-          <button type="button" onClick={() => setDeleteOpen(true)}
-            className={statusDestructiveButtonClasses('hover:opacity-90')}>
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
-          <button type="button" onClick={() => setForceDeleteOpen(true)}
-            className={statusDestructiveButtonClasses('text-sm hover:opacity-90')}
-            title="Compute forceDelete — use when normal delete is stuck">
-            <Trash2 className="w-4 h-4" /> Force delete
-          </button>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold flex items-center gap-2">
+          <Cloud className="w-7 h-7 text-sky-400" /> {vm.name}
+        </h1>
+        <div className="flex gap-2">
+          <button type="button" title="Start" onClick={() => void runAction(startVm, 'Start')}
+            className="p-2 rounded border border-slate-600 hover:bg-slate-800"><Play className="w-4 h-4" /></button>
+          <button type="button" title="Stop" onClick={() => void runAction(stopVm, 'Stop')}
+            className="p-2 rounded border border-slate-600 hover:bg-slate-800"><Square className="w-4 h-4" /></button>
+          <button type="button" title="Reboot" onClick={() => void runAction(rebootVm, 'Reboot')}
+            className="p-2 rounded border border-slate-600 hover:bg-slate-800"><RotateCcw className="w-4 h-4" /></button>
+          <button type="button" title="Delete" onClick={() => setConfirmDelete(true)}
+            className={`p-2 rounded border border-red-600/50 ${statusActionLinkClasses('error')}`}><Trash2 className="w-4 h-4" /></button>
         </div>
       </div>
 
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl border border-slate-700/80 p-4 bg-slate-900/40">
-        <div>
-          <dt className="text-xs text-slate-500 uppercase">Status</dt>
-          <dd className="text-slate-100 mt-1">{inst.status} · {inst.power_state}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-slate-500 uppercase">Flavor</dt>
-          <dd className="text-slate-100 mt-1">{inst.flavor_name || inst.flavor_id || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-slate-500 uppercase">Availability zone</dt>
-          <dd className="text-slate-100 mt-1">{inst.availability_zone || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-slate-500 uppercase">Key pair</dt>
-          <dd className="text-slate-100 mt-1">{inst.key_name || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-slate-500 uppercase">Image</dt>
-          <dd className="text-slate-100 mt-1 font-mono text-sm">{inst.image_id || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-slate-500 uppercase">Created</dt>
-          <dd className="text-slate-100 mt-1 text-sm">{inst.created_at || '—'}</dd>
-        </div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
+        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono mt-1 break-all">{vm.id}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">
+          <span className={`inline-block px-2 py-0.5 rounded border text-xs ${statusBadgeClasses(openstackStatusTone(status))}`}>{status}</span>
+        </dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">vCPU</dt><dd className="mt-1">{vm.vcpus}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">RAM</dt><dd className="mt-1">{vm.memory_mib} MiB</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Project</dt><dd className="mt-1">{vm.project || '—'}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Guest IP</dt><dd className="mt-1 font-mono">{vm.guest_ip || '—'}</dd></div>
+        {vm.last_error && (
+          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Last error</dt><dd className="mt-1 text-red-300">{vm.last_error}</dd></div>
+        )}
       </dl>
 
-      <section className="rounded-xl border border-slate-700/80 p-4">
-        <h2 className="font-medium text-slate-200 mb-3">Network addresses</h2>
-        {inst.ip_addresses.length === 0 ? (
-          <p className="text-slate-500 text-sm">No addresses reported.</p>
+      <section className="rounded-xl border border-slate-700 p-4">
+        <h2 className="text-sm font-medium text-slate-300 mb-3">Network interfaces</h2>
+        {nics.length === 0 ? (
+          <p className="text-sm text-slate-500">No NICs.</p>
         ) : (
-          <ul className="space-y-2">
-            {inst.ip_addresses.map((ip) => (
-              <li key={ip} className="flex items-center gap-2 font-mono text-sm text-slate-300">
-                {ip}
-                <CopyBtn text={ip} />
-              </li>
-            ))}
-          </ul>
+          <table className="w-full text-sm" aria-label="Network interfaces">
+            <thead className="text-slate-400 text-left">
+              <tr><th scope="col" className="py-1">Network</th><th scope="col" className="py-1">MAC</th><th scope="col" className="py-1">IP</th></tr>
+            </thead>
+            <tbody className="font-mono text-xs">
+              {nics.map((n) => (
+                <tr key={n.mac_address} className="border-t border-slate-800">
+                  <td className="py-2">{n.network}</td>
+                  <td className="py-2">{n.mac_address}</td>
+                  <td className="py-2">{n.ip || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </section>
 
-      {inst.security_groups.length > 0 && (
-        <section className="rounded-xl border border-slate-700/80 p-4">
-          <h2 className="font-medium text-slate-200 mb-2">Security groups</h2>
-          <p className="text-slate-400 text-sm">{inst.security_groups.join(', ')}</p>
-        </section>
-      )}
-
-      <OpenStackInstanceAdvanced inst={inst} volumes={volumes} onRefresh={load} />
-
-      <section className="rounded-xl border border-slate-700/80 p-4 space-y-4">
-        <h2 className="font-medium text-slate-200">Migration &amp; export</h2>
-        <p className="text-slate-400 text-sm">
-          Snapshot creates an image from this instance. After it reaches ACTIVE, pull it from{' '}
-          <Link to="/openstack/images" className="text-sky-400 hover:underline">Images</Link>
-          {' '}to the hypervisor, then import as libvirt. Push on-host qcow2 from Disk images, or use HyperSDK for bulk export.
-        </p>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Snapshot image name</label>
-            <input
-              aria-label="Snapshot image name"
-              value={snapshotName}
-              onChange={(e) => setSnapshotName(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm text-slate-100"
-            />
-          </div>
-          <button
-            type="button"
-            disabled={snapshotBusy}
-            onClick={handleSnapshot}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm disabled:opacity-50"
-          >
-            <Camera className="w-4 h-4" />
-            Create snapshot
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setExportOpen(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm"
-          >
-            <HardDrive className="w-4 h-4" />
-            Export & pull to hypervisor
-          </button>
-          <Link
-            to={`/disk-images?os=open&glance_name=${encodeURIComponent(inst.name)}`}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm"
-          >
-            Push qcow2 to Images
-          </Link>
-          <Link
-            to="/openstack/migrations"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm"
-          >
-            Bulk migrations
-          </Link>
-        </div>
+      <section className="rounded-xl border border-slate-700 p-4">
+        <h2 className="text-sm font-medium text-slate-300 mb-3">Disks</h2>
+        {disks.length === 0 ? (
+          <p className="text-sm text-slate-500">No disks.</p>
+        ) : (
+          <table className="w-full text-sm" aria-label="Disks">
+            <thead className="text-slate-400 text-left">
+              <tr><th scope="col" className="py-1">Name</th><th scope="col" className="py-1">Size</th><th scope="col" className="py-1">Class</th></tr>
+            </thead>
+            <tbody className="font-mono text-xs">
+              {disks.map((d) => (
+                <tr key={d.id} className="border-t border-slate-800">
+                  <td className="py-2">{d.name}</td>
+                  <td className="py-2">{d.size_gib} GiB</td>
+                  <td className="py-2">{d.storage_class}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
-      {inst && (
-        <OpenStackExportModal
-          open={exportOpen}
-          instanceId={inst.id}
-          instanceName={inst.name}
-          onClose={() => setExportOpen(false)}
-        />
-      )}
-
       <OpenStackFooter />
-
       <ConfirmDialog
-        open={deleteOpen}
-        title="Delete Fleet Cloud instance"
-        message={`This permanently deletes ${inst.name} in Compute.`}
-        typeToMatch={inst.name}
-        confirmLabel="Delete"
+        open={confirmDelete}
         variant="danger"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteOpen(false)}
-      />
-      <ConfirmDialog
-        open={forceDeleteOpen}
-        title="Force delete instance"
-        message={`Compute forceDelete removes ${inst.name} even when soft-delete fails. Use only for stuck ERROR/BUILD servers.`}
-        typeToMatch={inst.name}
-        confirmLabel="Force delete"
-        variant="danger"
-        onConfirm={handleForceDelete}
-        onCancel={() => setForceDeleteOpen(false)}
+        title="Delete instance"
+        message={`Delete instance '${vm.name}'? This cannot be undone.`}
+        confirmLabel={deleting ? 'Deleting…' : 'Delete'}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setDeleting(true)
+          try {
+            await deleteVm(vm.id)
+            toast.success('Delete queued')
+            navigate('/openstack/instances')
+          } catch (e: unknown) {
+            toast.error(formatUserError(e))
+          } finally {
+            setDeleting(false)
+            setConfirmDelete(false)
+          }
+        }}
       />
     </PageLayout>
   )
