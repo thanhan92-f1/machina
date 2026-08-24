@@ -112,23 +112,23 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
 | Page | Route | Purpose | Guide |
 |------|-------|---------|-------|
-| Overview | `/openstack` | Overview — Machina Fleet Cloud page at `/openstack`. | [Open](pages/fleet-cloud/openstack.md) |
-| Instances | `/openstack/instances` | Instances — Machina Fleet Cloud page at `/openstack/instances`. | [Open](pages/fleet-cloud/openstack-instances.md) |
-| Create Instance | `/openstack/create` | Create Instance — Machina Fleet Cloud page at `/openstack/create`. | [Open](pages/fleet-cloud/openstack-create.md) |
-| Server Groups | `/openstack/server-groups` | Server Groups — Machina Fleet Cloud page at `/openstack/server-groups`. | [Open](pages/fleet-cloud/openstack-server-groups.md) |
-| Keypairs | `/openstack/keypairs` | Keypairs — Machina Fleet Cloud page at `/openstack/keypairs`. | [Open](pages/fleet-cloud/openstack-keypairs.md) |
-| Flavors | `/openstack/flavors` | Flavors — Machina Fleet Cloud page at `/openstack/flavors`. | [Open](pages/fleet-cloud/openstack-flavors.md) |
-| Migrations | `/openstack/migrations` | Migrations — Machina Fleet Cloud page at `/openstack/migrations`. | [Open](pages/fleet-cloud/openstack-migrations.md) |
-| Volumes | `/openstack/volumes` | Volumes — Machina Fleet Cloud page at `/openstack/volumes`. | [Open](pages/fleet-cloud/openstack-volumes.md) |
-| Volume Snapshots | `/openstack/volume-snapshots` | Volume Snapshots — Machina Fleet Cloud page at `/openstack/volume-snapshots`. | [Open](pages/fleet-cloud/openstack-volume-snapshots.md) |
-| Images | `/openstack/images` | Images — Machina Fleet Cloud page at `/openstack/images`. | [Open](pages/fleet-cloud/openstack-images.md) |
-| Networking | `/openstack/networking` | Networking — Machina Fleet Cloud page at `/openstack/networking`. | [Open](pages/fleet-cloud/openstack-networking.md) |
-| Security Groups | `/openstack/security-groups` | Security Groups — Machina Fleet Cloud page at `/openstack/security-groups`. | [Open](pages/fleet-cloud/openstack-security-groups.md) |
-| Floating IPs | `/openstack/floating-ips` | Floating IPs — Machina Fleet Cloud page at `/openstack/floating-ips`. | [Open](pages/fleet-cloud/openstack-floating-ips.md) |
-| Load Balancers | `/openstack/load-balancers` | Load Balancers — Machina Fleet Cloud page at `/openstack/load-balancers`. | [Open](pages/fleet-cloud/openstack-load-balancers.md) |
-| Network Topology | `/openstack/topology` | Network Topology — Machina Fleet Cloud page at `/openstack/topology`. | [Open](pages/fleet-cloud/openstack-topology.md) |
-| Heat Orchestration | `/openstack/heat` | Heat Orchestration — Machina Fleet Cloud page at `/openstack/heat`. | [Open](pages/fleet-cloud/openstack-heat.md) |
-| Identity | `/openstack/identity` | Identity — Machina Fleet Cloud page at `/openstack/identity`. | [Open](pages/fleet-cloud/openstack-identity.md) |
+| Overview | `/fleet-cloud` | Overview — Machina Fleet Cloud page at `/fleet-cloud`. | [Open](pages/fleet-cloud/fleet-cloud.md) |
+| Instances | `/fleet-cloud/instances` | Instances — Machina Fleet Cloud page at `/fleet-cloud/instances`. | [Open](pages/fleet-cloud/fleet-cloud-instances.md) |
+| Create Instance | `/fleet-cloud/create` | Create Instance — Machina Fleet Cloud page at `/fleet-cloud/create`. | [Open](pages/fleet-cloud/fleet-cloud-create.md) |
+| Server Groups | `/fleet-cloud/server-groups` | Server Groups — Machina Fleet Cloud page at `/fleet-cloud/server-groups`. | [Open](pages/fleet-cloud/fleet-cloud-server-groups.md) |
+| Keypairs | `/fleet-cloud/keypairs` | Keypairs — Machina Fleet Cloud page at `/fleet-cloud/keypairs`. | [Open](pages/fleet-cloud/fleet-cloud-keypairs.md) |
+| Flavors | `/fleet-cloud/flavors` | Flavors — Machina Fleet Cloud page at `/fleet-cloud/flavors`. | [Open](pages/fleet-cloud/fleet-cloud-flavors.md) |
+| Migrations | `/fleet-cloud/migrations` | Migrations — Machina Fleet Cloud page at `/fleet-cloud/migrations`. | [Open](pages/fleet-cloud/fleet-cloud-migrations.md) |
+| Volumes | `/fleet-cloud/volumes` | Volumes — Machina Fleet Cloud page at `/fleet-cloud/volumes`. | [Open](pages/fleet-cloud/fleet-cloud-volumes.md) |
+| Volume Snapshots | `/fleet-cloud/volume-snapshots` | Volume Snapshots — Machina Fleet Cloud page at `/fleet-cloud/volume-snapshots`. | [Open](pages/fleet-cloud/fleet-cloud-volume-snapshots.md) |
+| Images | `/fleet-cloud/images` | Images — Machina Fleet Cloud page at `/fleet-cloud/images`. | [Open](pages/fleet-cloud/fleet-cloud-images.md) |
+| Networking | `/fleet-cloud/networking` | Networking — Machina Fleet Cloud page at `/fleet-cloud/networking`. | [Open](pages/fleet-cloud/fleet-cloud-networking.md) |
+| Security Groups | `/fleet-cloud/security-groups` | Security Groups — Machina Fleet Cloud page at `/fleet-cloud/security-groups`. | [Open](pages/fleet-cloud/fleet-cloud-security-groups.md) |
+| Floating IPs | `/fleet-cloud/floating-ips` | Floating IPs — Machina Fleet Cloud page at `/fleet-cloud/floating-ips`. | [Open](pages/fleet-cloud/fleet-cloud-floating-ips.md) |
+| Load Balancers | `/fleet-cloud/load-balancers` | Load Balancers — Machina Fleet Cloud page at `/fleet-cloud/load-balancers`. | [Open](pages/fleet-cloud/fleet-cloud-load-balancers.md) |
+| Network Topology | `/fleet-cloud/topology` | Network Topology — Machina Fleet Cloud page at `/fleet-cloud/topology`. | [Open](pages/fleet-cloud/fleet-cloud-topology.md) |
+| Heat Orchestration | `/fleet-cloud/heat` | Heat Orchestration — Machina Fleet Cloud page at `/fleet-cloud/heat`. | [Open](pages/fleet-cloud/fleet-cloud-heat.md) |
+| Identity | `/fleet-cloud/identity` | Identity — Machina Fleet Cloud page at `/fleet-cloud/identity`. | [Open](pages/fleet-cloud/fleet-cloud-identity.md) |
 
 ## Monitoring
 

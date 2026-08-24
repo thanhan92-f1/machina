@@ -6,7 +6,7 @@ import { ReactNode } from 'react'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import OpenStackSetupPanel from './OpenStackSetupPanel'
-import OpenStackSubNav from './OpenStackSubNav'
+import FleetCloudSubNav from './FleetCloudSubNav'
 import OpenStackStatusBar from './OpenStackStatusBar'
 import OpenStackUnreachablePanel from './OpenStackUnreachablePanel'
 
@@ -33,7 +33,7 @@ export default function OpenStackGate({
     return (
       <div className="space-y-6 animate-fade-in">
         {title && <h1 className="text-2xl font-semibold text-slate-100">{title}</h1>}
-        <OpenStackSubNav />
+        <FleetCloudSubNav />
         <OpenStackStatusBar />
         <OpenStackSetupPanel />
       </div>
@@ -44,7 +44,7 @@ export default function OpenStackGate({
     return (
       <div className="space-y-6 animate-fade-in">
         {title && <h1 className="text-2xl font-semibold text-slate-100">{title}</h1>}
-        <OpenStackSubNav />
+        <FleetCloudSubNav />
         <OpenStackStatusBar />
         <OpenStackUnreachablePanel />
       </div>

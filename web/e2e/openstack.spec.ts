@@ -211,7 +211,7 @@ async function mockOpenStackApi(page: import('@playwright/test').Page) {
 
 test('OpenStack instances pagination shows search truncated warning', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/instances')
+  await page.goto('/fleet-cloud/instances')
   await expect(page.getByText('OpenStack Instances')).toBeVisible({ timeout: 15_000 })
   const search = page.getByPlaceholder(/search name or id/i)
   await expect(search).toBeVisible({ timeout: 15_000 })
@@ -221,14 +221,14 @@ test('OpenStack instances pagination shows search truncated warning', async ({ p
 
 test('OpenStack Heat page lists stacks', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/heat')
+  await page.goto('/fleet-cloud/heat')
   await expect(page.getByRole('heading', { name: /heat stacks/i })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('demo')).toBeVisible()
 })
 
 test('OpenStack topology renders SVG graph', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/topology')
+  await page.goto('/fleet-cloud/topology')
   await expect(page.getByRole('heading', { name: /neutron topology/i })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('private')).toBeVisible()
   await expect(page.getByText('router1')).toBeVisible()
@@ -236,14 +236,14 @@ test('OpenStack topology renders SVG graph', async ({ page }) => {
 
 test('OpenStack load balancers page lists LBs', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/load-balancers')
+  await page.goto('/fleet-cloud/load-balancers')
   await expect(page.getByRole('heading', { name: /octavia load balancers/i })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('link', { name: 'public-lb' })).toBeVisible({ timeout: 15_000 })
 })
 
 test('OpenStack Heat detail shows resources tab', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/heat/demo/stack-1')
+  await page.goto('/fleet-cloud/heat/demo/stack-1')
   await expect(page.getByRole('heading', { name: 'demo' })).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Resources' }).click()
   await expect(page.getByText('OS::Heat::None')).toBeVisible({ timeout: 15_000 })
@@ -251,21 +251,21 @@ test('OpenStack Heat detail shows resources tab', async ({ page }) => {
 
 test('OpenStack load balancer detail shows listeners', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/load-balancers/lb-1')
+  await page.goto('/fleet-cloud/load-balancers/lb-1')
   await expect(page.getByRole('heading', { name: 'public-lb' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('http · HTTP:80')).toBeVisible()
 })
 
 test('OpenStack identity project detail shows role assignments', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/identity/projects/proj-1')
+  await page.goto('/fleet-cloud/identity/projects/proj-1')
   await expect(page.getByRole('heading', { name: 'demo' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('cell', { name: 'member' })).toBeVisible()
 })
 
 test('OpenStack identity page lists projects and users', async ({ page }) => {
   await mockOpenStackApi(page)
-  await page.goto('/openstack/identity')
+  await page.goto('/fleet-cloud/identity')
   await expect(page.getByRole('heading', { name: /keystone identity/i })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('cell', { name: 'demo' })).toBeVisible()
   await page.getByRole('button', { name: /users/i }).click()

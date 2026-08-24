@@ -31,7 +31,7 @@ export function PlatformOpenStackVmLink({ vm }: { vm: Pick<PlatformVm, 'id' | 'n
 
   if (phase !== 'live') {
     return (
-      <Link to="/openstack" className={`text-xs inline-flex items-center gap-1 ${statusActionLinkClasses('warn', 'hover:opacity-90')}`}>
+      <Link to="/fleet-cloud" className={`text-xs inline-flex items-center gap-1 ${statusActionLinkClasses('warn', 'hover:opacity-90')}`}>
         <Cloud className="w-3 h-3" />
         Fleet Cloud {phase} — open operator UI →
       </Link>
@@ -42,7 +42,7 @@ export function PlatformOpenStackVmLink({ vm }: { vm: Pick<PlatformVm, 'id' | 'n
     <div className="flex flex-wrap items-center gap-2 text-sm">
       {instanceId ? (
         <Link
-          to={`/openstack/instances/${instanceId}`}
+          to={`/fleet-cloud/instances/${instanceId}`}
           className="inline-flex items-center gap-1.5 text-sky-400 hover:text-sky-300"
         >
           <Cloud className="w-3.5 h-3.5" />
@@ -50,12 +50,12 @@ export function PlatformOpenStackVmLink({ vm }: { vm: Pick<PlatformVm, 'id' | 'n
           <ExternalLink className="w-3 h-3 opacity-60" />
         </Link>
       ) : (
-        <Link to="/openstack/instances" className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-400">
+        <Link to="/fleet-cloud/instances" className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-400">
           <Cloud className="w-3.5 h-3.5" />
           Search in Fleet Cloud
         </Link>
       )}
-      <Link to="/openstack/migrations" className="text-slate-500 hover:text-sky-400 text-xs">
+      <Link to="/fleet-cloud/migrations" className="text-slate-500 hover:text-sky-400 text-xs">
         Migrations →
       </Link>
     </div>
@@ -80,7 +80,7 @@ export function PlatformOpenStackNetworkLink({ networkName }: { networkName: str
 
   return (
     <Link
-      to={`/openstack/networks/${networkId}`}
+      to={`/fleet-cloud/networks/${networkId}`}
       className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 mt-1"
     >
       <Cloud className="w-3 h-3" />

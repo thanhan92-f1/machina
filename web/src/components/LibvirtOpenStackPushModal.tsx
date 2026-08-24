@@ -256,7 +256,7 @@ export default function LibvirtOpenStackPushModal({
                   {result.native.instance_id && (
                     <p className="mt-1">
                       Compute instance:{' '}
-                      <Link to={`/openstack/instances/${encodeURIComponent(result.native.instance_id)}`} className="text-orange-400 hover:underline" onClick={onClose}>
+                      <Link to={`/fleet-cloud/instances/${encodeURIComponent(result.native.instance_id)}`} className="text-orange-400 hover:underline" onClick={onClose}>
                         {result.native.instance_name || result.native.instance_id}
                       </Link>
                       {deployStatus && (

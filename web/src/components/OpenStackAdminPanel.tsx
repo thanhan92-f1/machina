@@ -119,7 +119,7 @@ export default function OpenStackAdminPanel() {
           <ul className="space-y-1 font-mono text-slate-300 max-h-40 overflow-y-auto">
             {hvs.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center gap-2">
-                <Link to={`/openstack/hypervisors/${encodeURIComponent(h.id)}`} className="text-left hover:text-sky-300">
+                <Link to={`/fleet-cloud/hypervisors/${encodeURIComponent(h.id)}`} className="text-left hover:text-sky-300">
                   {h.hostname} · {h.running_vms} VMs · {h.vcpus_used}/{h.vcpus} vCPU
                 </Link>
               </li>

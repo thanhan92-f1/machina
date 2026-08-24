@@ -13,7 +13,7 @@
 
 ## Fleet Cloud
 
-1. [Fleet Cloud Overview](pages/fleet-cloud/openstack.md)
+1. [Fleet Cloud Overview](pages/fleet-cloud/fleet-cloud.md)
 2. Instances / Networks / Volumes / Load Balancers as required — all backed by Machina's own native APIs, no external cloud wiring needed
 
 ## Related

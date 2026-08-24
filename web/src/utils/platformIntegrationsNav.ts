@@ -15,7 +15,7 @@ export function integrationNavItems(info: PlatformInfo | null): PlatformNavItem[
 
   if (info.openstack?.enabled) {
     items.push({
-      to: '/openstack',
+      to: '/fleet-cloud',
       label: info.openstack.configured ? 'Fleet Cloud' : 'Fleet Cloud (setup)',
       icon: ic(Cloud),
     })
@@ -46,7 +46,7 @@ export function integrationCards(info: PlatformInfo | null): IntegrationCard[] {
       id: 'openstack',
       title: 'Fleet Cloud',
       description: 'Compute, Network, Storage, Heat, and identity — full cloud operator UI.',
-      href: '/openstack',
+      href: '/fleet-cloud',
       enabled: Boolean(info.openstack?.enabled),
       configured: info.openstack?.configured,
     },

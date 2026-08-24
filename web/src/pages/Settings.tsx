@@ -311,7 +311,7 @@ export default function SettingsPage() {
             {openstackTesting ? 'Testing…' : 'Test connection'}
           </button>
           {openstackStatus?.reachable && (
-            <Link to="/openstack/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-sm text-slate-300 hover:bg-slate-700">
+            <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-sm text-slate-300 hover:bg-slate-700">
               Open instances
             </Link>
           )}
@@ -407,7 +407,7 @@ export default function SettingsPage() {
               Kubernetes
             </Link>
             {isOpenStackConfigured(info?.openstack) && (
-              <Link to="/openstack/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
+              <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
                 Fleet Cloud
               </Link>
             )}

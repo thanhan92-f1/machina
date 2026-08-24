@@ -136,7 +136,7 @@ PACKETWOLF_ENABLED    false
 
 `web/src/`:
 
-- **`pages/`** — One file per route. Classic daemon-backed pages (e.g. `VMList.tsx`, `Dashboard.tsx`) live at the top level. Platform (controller) pages live in `pages/platform/` and are prefixed `Platform*`. Fleet Cloud pages (branded "Fleet Cloud" in the UI; routes/files/identifiers keep the legacy `openstack`/`OpenStack*` names) are prefixed `OpenStack*`.
+- **`pages/`** — One file per route. Classic daemon-backed pages (e.g. `VMList.tsx`, `Dashboard.tsx`) live at the top level. Platform (controller) pages live in `pages/platform/` and are prefixed `Platform*`. Fleet Cloud pages live at `/fleet-cloud/*` and are prefixed `FleetCloud*` (e.g. `FleetCloudInstances.tsx`). A handful of components/hooks/API-client files still say `OpenStack*`/`openstack*` on purpose — those genuinely implement the legacy external-OpenStack-cloud protocol (`OpenStackGate`, `useOpenStackConnection`, `api/openstackExtras.ts`, `OpenStackSetupPanel`, etc.), not the Fleet Cloud UI section, and were deliberately left unrenamed.
 - **`components/`** — Shared UI components. Glass design system components (`GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs`) are in `components/glass/`. AI/Zeus components are in `components/ai/`. Platform shell components are in `components/consolehub/`.
 - **`api/`** — One TypeScript module per API domain. `client.ts` is the base fetch wrapper. `platform.ts` sets the controller proxy base URL. Files prefixed `platform*` call the controller; others call the daemon.
 - **`contexts/`** — React contexts: `AuthContext`, `ThemeContext`, `WebSocketContext` (WS live updates), `AiContext`, `PlatformInfoContext`, `ToastContext`.
@@ -145,7 +145,7 @@ PACKETWOLF_ENABLED    false
 ### Route structure
 - `/` and `/vms/*` — Classic daemon-backed hypervisor UI
 - `/platform/*` — Enterprise platform shell (controller-backed); uses `PlatformLayout` with its own sidebar/nav
-- `/openstack/*` — "Fleet Cloud" UI (routes/identifiers unchanged from the legacy "OpenStack" name). Backed by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). `core/src/openstack/*` (external OpenStack-client) remains for the optional Glance disk push/pull flow only — see `docs/openstack.md`.
+- `/fleet-cloud/*` — "Fleet Cloud" UI (renamed from the legacy `/openstack/*` route this session; no redirect — old links 404). Backed by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). `core/src/openstack/*` (external OpenStack-client) remains for the optional Glance disk push/pull flow only — see `docs/openstack.md`.
 - `/fleet` — Multi-host fleet overview
 
 ### Dev proxy

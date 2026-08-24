@@ -478,6 +478,32 @@ pub async fn list_volume_snapshots(
     Ok(Json(rows))
 }
 
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct VolumeSnapshotWithVolumeRow {
+    pub id: Uuid,
+    pub volume_id: Uuid,
+    pub volume_name: String,
+    pub name: String,
+    pub status: String,
+}
+
+/// Same rows as `list_volume_snapshots` but across every volume -- the "Snapshots" tab
+/// listing doesn't scope to one volume the way the volume-detail page does.
+pub async fn list_all_volume_snapshots(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Vec<VolumeSnapshotWithVolumeRow>>, ApiError> {
+    require_operator(&actor)?;
+    let rows = sqlx::query_as::<_, VolumeSnapshotWithVolumeRow>(
+        "SELECT s.id, s.volume_id, v.name AS volume_name, s.name, s.status \
+         FROM volume_snapshots s JOIN volumes v ON v.id = s.volume_id \
+         ORDER BY s.created_at DESC",
+    )
+    .fetch_all(&state.pool)
+    .await?;
+    Ok(Json(rows))
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateSnapshotBody {
     pub name: String,

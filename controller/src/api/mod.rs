@@ -933,6 +933,7 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/volumes/{id}/snapshots",
             get(volumes::list_volume_snapshots).post(volumes::create_volume_snapshot),
         )
+        .route("/api/v1/volume-snapshots", get(volumes::list_all_volume_snapshots))
         .route("/api/v1/volume-snapshots/{id}", delete(volumes::delete_volume_snapshot))
         .route(
             "/api/v1/security-groups",

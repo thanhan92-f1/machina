@@ -59,7 +59,7 @@ test('language switcher changes login label', async ({ page }) => {
 
 test('OpenStack instances shows sanitized error when API returns HTML', async ({ page }) => {
   await mockAuthenticatedApi(page)
-  await page.goto('/openstack/instances')
+  await page.goto('/fleet-cloud/instances')
   await expect(page.getByText(/Failed to load instances/i)).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/HTML error page/i).first()).toBeVisible()
 })

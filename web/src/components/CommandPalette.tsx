@@ -520,14 +520,14 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   )
   const osHint = osLive ? 'g o' : osPhase === 'unreachable' ? 'unreachable' : 'wire cloud first'
   items.push(
-    { id: 'qa-openstack', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud overview', sublabel: osHint, action: () => go('/openstack'), category: 'Quick Actions' },
-    { id: 'qa-openstack-instances', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud instances', sublabel: osHint, action: () => go('/openstack/instances'), category: 'Quick Actions' },
-    { id: 'qa-openstack-create', icon: <Plus className="w-4 h-4" />, label: 'Create Fleet Cloud instance', sublabel: osHint, action: () => go('/openstack/create'), category: 'Quick Actions' },
-    { id: 'qa-openstack-images', icon: <HardDrive className="w-4 h-4" />, label: 'Fleet Cloud images', sublabel: osHint, action: () => go('/openstack/images'), category: 'Quick Actions' },
+    { id: 'qa-openstack', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud overview', sublabel: osHint, action: () => go('/fleet-cloud'), category: 'Quick Actions' },
+    { id: 'qa-openstack-instances', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud instances', sublabel: osHint, action: () => go('/fleet-cloud/instances'), category: 'Quick Actions' },
+    { id: 'qa-openstack-create', icon: <Plus className="w-4 h-4" />, label: 'Create Fleet Cloud instance', sublabel: osHint, action: () => go('/fleet-cloud/create'), category: 'Quick Actions' },
+    { id: 'qa-openstack-images', icon: <HardDrive className="w-4 h-4" />, label: 'Fleet Cloud images', sublabel: osHint, action: () => go('/fleet-cloud/images'), category: 'Quick Actions' },
   )
   if (hypersdkEnabled) {
     items.push(
-      { id: 'qa-openstack-migrations', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud migrations', sublabel: osHint, action: () => go('/openstack/migrations'), category: 'Quick Actions' },
+      { id: 'qa-openstack-migrations', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud migrations', sublabel: osHint, action: () => go('/fleet-cloud/migrations'), category: 'Quick Actions' },
     )
   }
   if (!openstackConfigured) {

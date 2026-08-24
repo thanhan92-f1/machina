@@ -82,7 +82,7 @@ export default function PlatformIntegrationEmbeds() {
                         key={inst.id}
                         title={inst.name}
                         subtitle={`${inst.status ?? 'unknown'} · ${inst.id.slice(0, 8)}…`}
-                        href={`/openstack/instances/${inst.id}`}
+                        href={`/fleet-cloud/instances/${inst.id}`}
                       />
                     ))}
                   </ul>
@@ -92,9 +92,9 @@ export default function PlatformIntegrationEmbeds() {
               </div>
             )}
             <div className="flex flex-wrap gap-2">
-              <Link to="/openstack" className="tahoe-btn-ghost text-xs">Open overview</Link>
+              <Link to="/fleet-cloud" className="tahoe-btn-ghost text-xs">Open overview</Link>
               {openstack.phase === 'live' && (
-                <Link to="/openstack/instances" className="tahoe-btn-primary text-xs">Instances</Link>
+                <Link to="/fleet-cloud/instances" className="tahoe-btn-primary text-xs">Instances</Link>
               )}
             </div>
           </div>

@@ -80,7 +80,7 @@ test('integrations hub lists OpenStack when enabled', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform/integrations')
   await expect(page.getByRole('heading', { name: 'Apps & Integrations' })).toBeVisible()
-  await expect(page.locator('a[href="/openstack"]').getByText('OpenStack', { exact: true })).toBeVisible()
+  await expect(page.locator('a[href="/fleet-cloud"]').getByText('Fleet Cloud', { exact: true })).toBeVisible()
   await expect(page.getByText('Kubernetes', { exact: true })).toBeVisible()
 })
 

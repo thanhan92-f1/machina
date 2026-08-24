@@ -240,7 +240,7 @@ export default function PlatformMigration() {
           </div>
         )}
         {openstack && openstackConn.phase === 'live' && (
-          <Link to="/openstack/migrations" className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-sm hover:border-sky-400/50 transition">
+          <Link to="/fleet-cloud/migrations" className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-sm hover:border-sky-400/50 transition">
             <p className="font-semibold text-sky-100 flex items-center gap-2">Fleet Cloud migrations <ExternalLink className="w-3.5 h-3.5" /></p>
             <p className="text-xs text-sky-200/70 mt-1">Images import, instance export, and cross-cloud lift-and-shift.</p>
           </Link>
@@ -356,7 +356,7 @@ export default function PlatformMigration() {
                 onClick={() => {
                   if (s.id === 'vcenter') void scanSource('vmware')
                   else if (s.id === 'esxi') void scanSource('esxi')
-                  else if (s.id === 'openstack') navigate('/openstack/migrations')
+                  else if (s.id === 'openstack') navigate('/fleet-cloud/migrations')
                   else if (s.id === 'ova' || s.id === 'vmdk' || s.id === 'cloud') navigate('/import')
                 }}
                 className="text-left p-4 rounded-2xl border border-white/[0.08] bg-slate-900/50 hover:border-white/14 hover:bg-slate-900/70 transition disabled:opacity-55 disabled:hover:border-white/[0.08]"
@@ -433,7 +433,7 @@ export default function PlatformMigration() {
         )}
         <p className="text-xs text-slate-600 flex flex-wrap gap-3">
           <Link to="/import" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>Single-VM import <ExternalLink className="w-3 h-3" /></Link>
-          {openstack && <Link to="/openstack/migrations" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>Fleet Cloud migrations <ExternalLink className="w-3 h-3" /></Link>}
+          {openstack && <Link to="/fleet-cloud/migrations" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>Fleet Cloud migrations <ExternalLink className="w-3 h-3" /></Link>}
           <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>All migration tools →</Link>
           <Link to={tasksHubHref(tier)} className={hubLinkClasses()}>View migration tasks →</Link>
         </p>

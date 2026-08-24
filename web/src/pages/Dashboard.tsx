@@ -361,7 +361,7 @@ export default function Dashboard() {
             </div>
           </div>
           <Link
-            to="/openstack"
+            to="/fleet-cloud"
             className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}
           >
             Connect Fleet Cloud
@@ -393,7 +393,7 @@ export default function Dashboard() {
             >
               Test
             </button>
-            <Link to="/openstack" className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+            <Link to="/fleet-cloud" className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
               Diagnose
             </Link>
           </div>
@@ -449,7 +449,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <Link to="/openstack/migrations" className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}>
+          <Link to="/fleet-cloud/migrations" className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}>
             Migrations
           </Link>
         </div>
@@ -485,13 +485,13 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            <Link to="/openstack/instances" className="px-3 py-1.5 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm">
+            <Link to="/fleet-cloud/instances" className="px-3 py-1.5 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm">
               Instances
             </Link>
-            <Link to="/openstack/create" className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm">
+            <Link to="/fleet-cloud/create" className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm">
               Create
             </Link>
-            <Link to="/openstack/images" className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+            <Link to="/fleet-cloud/images" className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
               Images
             </Link>
           </div>

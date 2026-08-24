@@ -73,7 +73,7 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
         title: partial
           ? `Identity OK; Compute/Images may be down — ${openstackStatus?.error || 'see Fleet Cloud overview'}`
           : `Cloud ${osCloud}; upload=${info?.openstack?.upload_enabled ? 'on' : 'off'}`,
-        to: '/openstack',
+        to: '/fleet-cloud',
       }
     }
     if (osPhase === 'unreachable') {
@@ -82,7 +82,7 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
         label: 'Fleet Cloud: unreachable',
         tone: 'error' as const,
         title: 'Configured but Auth/API not reachable',
-        to: '/openstack',
+        to: '/fleet-cloud',
       }
     }
     if (osPhase === 'needsWire') {

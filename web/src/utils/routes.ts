@@ -64,7 +64,7 @@ export function isOpenStackConfigured(
 /** @deprecated Use isOpenStackConfigured — nav visibility; operational UI gates on phase === live. */
 export const isOpenStackNavEnabled = isOpenStackConfigured
 
-/** Match nav item href against current location (supports /openstack prefix + settings query). */
+/** Match nav item href against current location (supports /fleet-cloud prefix + settings query). */
 export function navItemActive(
   item: NavItem,
   pathname: string,
@@ -79,10 +79,10 @@ export function navItemActive(
     }
     return true
   }
-  if (path === '/openstack') {
-    return pathname === '/openstack'
+  if (path === '/fleet-cloud') {
+    return pathname === '/fleet-cloud'
   }
-  if (path.startsWith('/openstack/')) {
+  if (path.startsWith('/fleet-cloud/')) {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
   if (path.startsWith('/platform/zyra/')) {
@@ -326,38 +326,38 @@ export const navGroups: NavGroup[] = [
       {
         label: 'Compute',
         items: [
-          { to: '/openstack', icon: React.createElement(Cloud, { className: 'w-4 h-4' }), label: 'Overview' },
-          { to: '/openstack/instances', icon: React.createElement(Server, { className: 'w-4 h-4' }), label: 'Instances' },
-          { to: '/openstack/create', icon: React.createElement(Plus, { className: 'w-4 h-4' }), label: 'Create Instance' },
-          { to: '/openstack/server-groups', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Server Groups' },
-          { to: '/openstack/keypairs', icon: React.createElement(Key, { className: 'w-4 h-4' }), label: 'Keypairs' },
-          { to: '/openstack/flavors', icon: React.createElement(Cpu, { className: 'w-4 h-4' }), label: 'Flavors' },
-          { to: '/openstack/migrations', icon: React.createElement(Upload, { className: 'w-4 h-4' }), label: 'Migrations', requiresHypersdk: true },
+          { to: '/fleet-cloud', icon: React.createElement(Cloud, { className: 'w-4 h-4' }), label: 'Overview' },
+          { to: '/fleet-cloud/instances', icon: React.createElement(Server, { className: 'w-4 h-4' }), label: 'Instances' },
+          { to: '/fleet-cloud/create', icon: React.createElement(Plus, { className: 'w-4 h-4' }), label: 'Create Instance' },
+          { to: '/fleet-cloud/server-groups', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Server Groups' },
+          { to: '/fleet-cloud/keypairs', icon: React.createElement(Key, { className: 'w-4 h-4' }), label: 'Keypairs' },
+          { to: '/fleet-cloud/flavors', icon: React.createElement(Cpu, { className: 'w-4 h-4' }), label: 'Flavors' },
+          { to: '/fleet-cloud/migrations', icon: React.createElement(Upload, { className: 'w-4 h-4' }), label: 'Migrations', requiresHypersdk: true },
         ],
       },
       {
         label: 'Storage',
         items: [
-          { to: '/openstack/volumes', icon: React.createElement(HardDrive, { className: 'w-4 h-4' }), label: 'Volumes' },
-          { to: '/openstack/volume-snapshots', icon: React.createElement(Camera, { className: 'w-4 h-4' }), label: 'Volume Snapshots' },
-          { to: '/openstack/images', icon: React.createElement(Package, { className: 'w-4 h-4' }), label: 'Images' },
+          { to: '/fleet-cloud/volumes', icon: React.createElement(HardDrive, { className: 'w-4 h-4' }), label: 'Volumes' },
+          { to: '/fleet-cloud/volume-snapshots', icon: React.createElement(Camera, { className: 'w-4 h-4' }), label: 'Volume Snapshots' },
+          { to: '/fleet-cloud/images', icon: React.createElement(Package, { className: 'w-4 h-4' }), label: 'Images' },
         ],
       },
       {
         label: 'Networking',
         items: [
-          { to: '/openstack/networking', icon: React.createElement(Network, { className: 'w-4 h-4' }), label: 'Networking' },
-          { to: '/openstack/security-groups', icon: React.createElement(Shield, { className: 'w-4 h-4' }), label: 'Security Groups' },
-          { to: '/openstack/floating-ips', icon: React.createElement(Globe, { className: 'w-4 h-4' }), label: 'Floating IPs' },
-          { to: '/openstack/load-balancers', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Load Balancers' },
-          { to: '/openstack/topology', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Network Topology' },
+          { to: '/fleet-cloud/networking', icon: React.createElement(Network, { className: 'w-4 h-4' }), label: 'Networking' },
+          { to: '/fleet-cloud/security-groups', icon: React.createElement(Shield, { className: 'w-4 h-4' }), label: 'Security Groups' },
+          { to: '/fleet-cloud/floating-ips', icon: React.createElement(Globe, { className: 'w-4 h-4' }), label: 'Floating IPs' },
+          { to: '/fleet-cloud/load-balancers', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Load Balancers' },
+          { to: '/fleet-cloud/topology', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Network Topology' },
         ],
       },
       {
         label: 'Platform',
         items: [
-          { to: '/openstack/heat', icon: React.createElement(Flame, { className: 'w-4 h-4' }), label: 'Heat Orchestration' },
-          { to: '/openstack/identity', icon: React.createElement(Users, { className: 'w-4 h-4' }), label: 'Identity' },
+          { to: '/fleet-cloud/heat', icon: React.createElement(Flame, { className: 'w-4 h-4' }), label: 'Heat Orchestration' },
+          { to: '/fleet-cloud/identity', icon: React.createElement(Users, { className: 'w-4 h-4' }), label: 'Identity' },
         ],
       },
     ],
@@ -413,24 +413,24 @@ export const routeLabels: Record<string, string> = {
   '/k8s': 'Kubernetes',
   '/k8s/workloads': 'K8s Workloads',
   '/k8s/kata': 'Kata Containers',
-  '/openstack': 'Fleet Cloud',
-  '/openstack/instances': 'Instances',
-  '/openstack/instances/:id': 'Instance',
-  '/openstack/create': 'Create Instance',
-  '/openstack/images': 'Images',
-  '/openstack/migrations': 'Migrations',
-  '/openstack/volumes': 'Volumes',
-  '/openstack/volume-snapshots': 'Volume Snapshots',
-  '/openstack/security-groups': 'Security Groups',
-  '/openstack/floating-ips': 'Floating IPs',
-  '/openstack/networking': 'Networking',
-  '/openstack/load-balancers': 'Load Balancers',
-  '/openstack/topology': 'Network Topology',
-  '/openstack/heat': 'Heat Orchestration',
-  '/openstack/identity': 'Identity',
-  '/openstack/keypairs': 'Keypairs',
-  '/openstack/flavors': 'Flavors',
-  '/openstack/server-groups': 'Server Groups',
+  '/fleet-cloud': 'Fleet Cloud',
+  '/fleet-cloud/instances': 'Instances',
+  '/fleet-cloud/instances/:id': 'Instance',
+  '/fleet-cloud/create': 'Create Instance',
+  '/fleet-cloud/images': 'Images',
+  '/fleet-cloud/migrations': 'Migrations',
+  '/fleet-cloud/volumes': 'Volumes',
+  '/fleet-cloud/volume-snapshots': 'Volume Snapshots',
+  '/fleet-cloud/security-groups': 'Security Groups',
+  '/fleet-cloud/floating-ips': 'Floating IPs',
+  '/fleet-cloud/networking': 'Networking',
+  '/fleet-cloud/load-balancers': 'Load Balancers',
+  '/fleet-cloud/topology': 'Network Topology',
+  '/fleet-cloud/heat': 'Heat Orchestration',
+  '/fleet-cloud/identity': 'Identity',
+  '/fleet-cloud/keypairs': 'Keypairs',
+  '/fleet-cloud/flavors': 'Flavors',
+  '/fleet-cloud/server-groups': 'Server Groups',
   '/audit': 'Audit Log',
   '/import': 'Import VM',
   '/sprites': 'Sprites',

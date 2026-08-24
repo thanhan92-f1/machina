@@ -254,7 +254,7 @@ export default function OpenStackImageUploadModal({
                     <p>
                       Instance:{' '}
                       <Link
-                        to={`/openstack/instances/${encodeURIComponent(uploadResult.instance_id)}`}
+                        to={`/fleet-cloud/instances/${encodeURIComponent(uploadResult.instance_id)}`}
                         className="text-orange-400 hover:underline"
                         onClick={onClose}
                       >
@@ -262,7 +262,7 @@ export default function OpenStackImageUploadModal({
                       </Link>
                     </p>
                   )}
-                  <Link to="/openstack/images" className="text-orange-400 hover:underline inline-block mt-1" onClick={onClose}>
+                  <Link to="/fleet-cloud/images" className="text-orange-400 hover:underline inline-block mt-1" onClick={onClose}>
                     View Images
                   </Link>
                 </div>

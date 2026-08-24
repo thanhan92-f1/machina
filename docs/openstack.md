@@ -1,6 +1,6 @@
 # OpenStack in Machina
 
-> **Status:** the `/openstack/*` UI is branded **Fleet Cloud** in the nav and no longer requires any of this wiring — Instances, Images, Volumes, Security Groups, Networking, Server Groups, Floating IPs, Stacks, Identity, Keypairs, and **Load Balancers** are all backed by Machina's own native controller APIs (libvirt-backed, no external cloud; load balancing is a kernel-level weighted round-robin iptables rule set pushed to a host via `machina-agent` — see `controller/src/engine/load_balancer.rs` — not an Octavia amphora). This document describes the **legacy external-OpenStack-cloud integration** below, which today is only exercised by the optional Glance disk push/pull flow in [openstack-migration.md](openstack-migration.md). Everything else on this page is accurate for that legacy path but does not describe how the native Fleet Cloud pages work day to day.
+> **Status:** the `/fleet-cloud/*` UI is branded **Fleet Cloud** in the nav and no longer requires any of this wiring — Instances, Images, Volumes, Security Groups, Networking, Server Groups, Floating IPs, Stacks, Identity, Keypairs, and **Load Balancers** are all backed by Machina's own native controller APIs (libvirt-backed, no external cloud; load balancing is a kernel-level weighted round-robin iptables rule set pushed to a host via `machina-agent` — see `controller/src/engine/load_balancer.rs` — not an Octavia amphora). This document describes the **legacy external-OpenStack-cloud integration** below, which today is only exercised by the optional Glance disk push/pull flow in [openstack-migration.md](openstack-migration.md). Everything else on this page is accurate for that legacy path but does not describe how the native Fleet Cloud pages work day to day.
 
 Machina manages OpenStack Nova instances and Glance images from the same UI as libvirt VMs—without Horizon. Credentials stay on the daemon host (`clouds.yaml`, config file, or `OS_*`); they are never stored in the browser.
 
@@ -92,31 +92,31 @@ connect_timeout_secs = 30
 
 | Nav | Path |
 |-----|------|
-| Fleet Cloud | `/openstack/instances` — list, search, start/stop/reboot (native; nav group always visible) |
-| Instance detail | `/openstack/instances/{id}` — lifecycle, console, FIPs, Cinder attach/detach, resize, security groups, export |
-| Instance interfaces | `/openstack/instances/{id}/interfaces` — attach/detach NICs |
-| Embedded console | `/openstack/instances/{id}/console?type=novnc` — iframe to Nova remote console URL |
-| Create wizard | `/openstack/create` — Glance image, existing Cinder boot volume, or new volume from image; flavor, network, keypair |
-| Glance images | `/openstack/images` — pull to hypervisor, import as libvirt |
-| Glance image detail | `/openstack/images/{id}` |
-| Security groups | `/openstack/security-groups` — list, create group, add/delete rules |
-| Security group detail | `/openstack/security-groups/{id}` |
-| Cinder volumes | `/openstack/volumes` — create, extend, snapshot, delete |
-| Volume detail | `/openstack/volumes/{id}` — bootable toggle, upload to Glance |
-| Volume snapshots | `/openstack/volume-snapshots` — list, restore, delete |
-| Volume snapshot detail | `/openstack/volume-snapshots/{id}` |
-| Volume transfer detail | `/openstack/volume-transfers/{id}` — auth key copy |
-| Floating IPs | `/openstack/floating-ips` — allocate, associate, release |
-| Floating IP detail | `/openstack/floating-ips/{id}` |
-| Networking | `/openstack/networking` — lab create (network/subnet/router/port/FIP) + topology lists |
-| Network topology (SVG) | `/openstack/topology` — Neutron graph (networks, subnets, routers, ports, FIPs, instances) |
-| Heat stacks | `/openstack/heat` — list, create (template), delete · detail `/openstack/heat/{name}/{id}` |
-| Load balancers (native, not Octavia) | `/openstack/load-balancers` — list, create, delete · detail `/openstack/load-balancers/{id}` adds/removes weighted members. Backed by `/api/v1/load-balancers`, not the Octavia API table below. |
-| Identity (read-only) | `/openstack/identity` — Keystone projects and users |
-| Network / subnet / router / port detail | `/openstack/networks/{id}` · `/openstack/subnets/{id}` · `/openstack/routers/{id}` · `/openstack/ports/{id}` |
-| Flavors / server groups | `/openstack/flavors/{id}` · `/openstack/server-groups/{id}` · `/openstack/hypervisors/{id}` |
-| SSH keypairs | `/openstack/keypairs` — list, create/import, delete |
-| Bulk migrations | `/openstack/migrations` — HyperSDK proxy (when `[hypersdk] enabled`) |
+| Fleet Cloud | `/fleet-cloud/instances` — list, search, start/stop/reboot (native; nav group always visible) |
+| Instance detail | `/fleet-cloud/instances/{id}` — lifecycle, console, FIPs, Cinder attach/detach, resize, security groups, export |
+| Instance interfaces | `/fleet-cloud/instances/{id}/interfaces` — attach/detach NICs |
+| Embedded console | `/fleet-cloud/instances/{id}/console?type=novnc` — iframe to Nova remote console URL |
+| Create wizard | `/fleet-cloud/create` — Glance image, existing Cinder boot volume, or new volume from image; flavor, network, keypair |
+| Glance images | `/fleet-cloud/images` — pull to hypervisor, import as libvirt |
+| Glance image detail | `/fleet-cloud/images/{id}` |
+| Security groups | `/fleet-cloud/security-groups` — list, create group, add/delete rules |
+| Security group detail | `/fleet-cloud/security-groups/{id}` |
+| Cinder volumes | `/fleet-cloud/volumes` — create, extend, snapshot, delete |
+| Volume detail | `/fleet-cloud/volumes/{id}` — bootable toggle, upload to Glance |
+| Volume snapshots | `/fleet-cloud/volume-snapshots` — list, restore, delete |
+| Volume snapshot detail | `/fleet-cloud/volume-snapshots/{id}` |
+| Volume transfer detail | *(no frontend route — API only, see below)* |
+| Floating IPs | `/fleet-cloud/floating-ips` — allocate, associate, release |
+| Floating IP detail | `/fleet-cloud/floating-ips/{id}` |
+| Networking | `/fleet-cloud/networking` — lab create (network/subnet/router/port/FIP) + topology lists |
+| Network topology (SVG) | `/fleet-cloud/topology` — Neutron graph (networks, subnets, routers, ports, FIPs, instances) |
+| Heat stacks | `/fleet-cloud/heat` — list, create (template), delete · detail `/fleet-cloud/heat/{name}/{id}` |
+| Load balancers (native, not Octavia) | `/fleet-cloud/load-balancers` — list, create, delete · detail `/fleet-cloud/load-balancers/{id}` adds/removes weighted members. Backed by `/api/v1/load-balancers`, not the Octavia API table below. |
+| Identity (read-only) | `/fleet-cloud/identity` — Keystone projects and users |
+| Network detail | `/fleet-cloud/networks/{id}` — subnet/router/port detail have no frontend route (API only, see below) |
+| Flavors / server groups | `/fleet-cloud/flavors/{id}` · `/fleet-cloud/server-groups/{id}` · `/fleet-cloud/hypervisors/{id}` |
+| SSH keypairs | `/fleet-cloud/keypairs` — list, create/import, delete |
+| Bulk migrations | `/fleet-cloud/migrations` — HyperSDK proxy (when `[hypersdk] enabled`) |
 
 Lifecycle APIs:
 
@@ -127,7 +127,7 @@ Lifecycle APIs:
 - `POST .../resize` — body `{ "flavor": "<flavor id or name>", "auto_confirm": true }` (default confirms; set `false` for VERIFY_RESIZE workflow)
 - `POST .../confirm-resize` · `POST .../revert-resize`
 - `GET .../console-output?lines=100` — serial console log tail
-- `GET .../console?type=novnc` — remote console URL (`novnc`, `spice`, `serial`, `rdp`); UI embeds via `/openstack/instances/{id}/console`
+- `GET .../console?type=novnc` — remote console URL (`novnc`, `spice`, `serial`, `rdp`); UI embeds via `/fleet-cloud/instances/{id}/console`
 - `POST .../rebuild` — body `{ "image": "<glance id>", "name": "..." }` (optional name)
 - `POST .../metadata` — body `{ "metadata": { "key": "value" } }`
 - `POST .../snapshot` — body `{ "image_name": "..." }` (Nova createImage → Glance)

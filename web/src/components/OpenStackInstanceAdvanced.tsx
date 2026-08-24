@@ -323,7 +323,7 @@ export default function OpenStackInstanceAdvanced({ inst, volumes, onRefresh }: 
             </select>
           </div>
           <Link
-            to={`/openstack/instances/${encodeURIComponent(inst.id)}/console?type=${consoleType}&tunnel=1`}
+            to={`/fleet-cloud/instances/${encodeURIComponent(inst.id)}/console?type=${consoleType}&tunnel=1`}
             className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm text-white inline-flex items-center gap-1.5"
           >
             <Monitor className="w-3.5 h-3.5" />
@@ -579,7 +579,7 @@ export default function OpenStackInstanceAdvanced({ inst, volumes, onRefresh }: 
       <section className="rounded-xl border border-slate-700/80 p-4">
         <h2 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
           <Shield className="w-4 h-4 text-sky-400" /> Security groups
-          <Link to="/openstack/security-groups" className="text-xs text-sky-400 hover:underline ml-auto font-normal">
+          <Link to="/fleet-cloud/security-groups" className="text-xs text-sky-400 hover:underline ml-auto font-normal">
             View all rules
           </Link>
         </h2>

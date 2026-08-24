@@ -96,7 +96,7 @@ export default function CapabilitiesPage() {
                   </p>
                 </div>
               </div>
-              <Link to="/openstack" className="text-sm text-sky-400 hover:underline">
+              <Link to="/fleet-cloud" className="text-sm text-sky-400 hover:underline">
                 Open cloud UI →
               </Link>
             </div>

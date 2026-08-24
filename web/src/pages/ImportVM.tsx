@@ -134,7 +134,7 @@ export default function ImportVMPage() {
             </div>
           </div>
           <Link
-            to="/openstack/images"
+            to="/fleet-cloud/images"
             className="shrink-0 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm"
           >
             Fleet Cloud images

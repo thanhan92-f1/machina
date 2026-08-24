@@ -30,6 +30,10 @@ export interface NativeVolumeSnapshot {
   status: string
 }
 
+export interface NativeVolumeSnapshotWithVolume extends NativeVolumeSnapshot {
+  volume_name: string
+}
+
 export function listVolumes(): Promise<NativeVolume[]> {
   return platformFetch<NativeVolume[]>('/api/v1/volumes')
 }
@@ -69,6 +73,10 @@ export function extendVolume(id: string, newSizeGib: number): Promise<NativeVolu
 
 export function listVolumeSnapshots(volumeId: string): Promise<NativeVolumeSnapshot[]> {
   return platformFetch<NativeVolumeSnapshot[]>(`/api/v1/volumes/${encodeURIComponent(volumeId)}/snapshots`)
+}
+
+export function listAllVolumeSnapshots(): Promise<NativeVolumeSnapshotWithVolume[]> {
+  return platformFetch<NativeVolumeSnapshotWithVolume[]>('/api/v1/volume-snapshots')
 }
 
 export function createVolumeSnapshot(volumeId: string, name: string): Promise<NativeVolumeSnapshot> {
