@@ -488,6 +488,16 @@ pub struct CreateFromTemplateBody {
     /// Substituted into name and cloud-init fields as `{{ key }}`.
     #[serde(default)]
     pub template_vars: std::collections::HashMap<String, String>,
+    /// When set, overrides `memory` above and sets vCPU count — resolved from the
+    /// native flavor catalog (`api::flavors`) rather than the caller naming raw
+    /// cpu/memory values directly, mirroring how a Nova instance names a flavor
+    /// rather than raw hardware sizing.
+    #[serde(default)]
+    pub flavor_id: Option<Uuid>,
+    /// Network name (matches `api::networks`) for the primary NIC. Omit to keep
+    /// `VirtualMachine::new`'s default network.
+    #[serde(default)]
+    pub network: Option<String>,
 }
 
 fn default_memory() -> String {
@@ -504,7 +514,28 @@ pub async fn create_from_template(
     let name = apply(&body.name);
     machina_spec::validate_name(&name).map_err(|e| ApiError::bad_request(e.to_string()))?;
     let template_ref = apply(&body.template_ref);
-    let mut vm = VirtualMachine::new(&name, &body.memory);
+    let flavor: Option<(i32, i64)> = match body.flavor_id {
+        Some(flavor_id) => Some(
+            sqlx::query_as("SELECT vcpus, memory_mib FROM flavors WHERE id = ?")
+                .bind(flavor_id)
+                .fetch_optional(&state.pool)
+                .await?
+                .ok_or_else(|| ApiError::bad_request("flavor not found"))?,
+        ),
+        None => None,
+    };
+    let memory = flavor
+        .map(|(_, memory_mib)| format!("{memory_mib}Mi"))
+        .unwrap_or_else(|| body.memory.clone());
+    let mut vm = VirtualMachine::new(&name, &memory);
+    if let Some((vcpus, _)) = flavor {
+        vm.spec.cpu.cores = vcpus.max(1) as u32;
+    }
+    if let Some(network) = &body.network {
+        if let Some(net) = vm.spec.network.first_mut() {
+            net.network = network.clone();
+        }
+    }
     vm.spec.template_ref = Some(template_ref.clone());
     if body.cloud_init_user.is_some()
         || body.cloud_init_password.is_some()

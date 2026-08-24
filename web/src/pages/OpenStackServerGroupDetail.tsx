@@ -2,46 +2,44 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Layers, Loader2 } from 'lucide-react'
-import { getOpenStackServerGroup, deleteOpenStackServerGroup, type OpenStackServerGroup } from '../api/openstackExtras'
-import OpenStackGate from '../components/OpenStackGate'
+import { ArrowLeft, Layers } from 'lucide-react'
+import { deleteServerGroup, getServerGroup, removeVmFromServerGroup, type DerivedServerGroup } from '../api/nativeServerGroups'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+// Native anti-affinity group — not gated by <OpenStackGate>. `id` in the route
+// is the group name (derived from tags, not a stored UUID) — see
+// api/nativeServerGroups.ts.
 export default function OpenStackServerGroupDetailPage() {
-  return (
-    <OpenStackGate title="Server group">
-      <OpenStackServerGroupDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackServerGroupDetailContent />
 }
 
 function OpenStackServerGroupDetailContent() {
-  const { id } = useParams<{ id: string }>()
+  const { id: name } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()
-  const [group, setGroup] = useState<OpenStackServerGroup | null>(null)
+  const [group, setGroup] = useState<DerivedServerGroup | null>(null)
   const [loading, setLoading] = useState(true)
   useBreadcrumbName(group?.name)
   const loadSeq = useRef(0)
 
   const load = useCallback(async () => {
-    if (!id) return
+    if (!name) return
     // Last-response-wins: only the newest load may commit so a stale fetch for a
-    // prior server group can't overwrite the one now shown.
+    // prior group can't overwrite the one now shown.
     const seq = ++loadSeq.current
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const { server_group } = await getOpenStackServerGroup(id)
+      const g = await getServerGroup(name)
       if (!alive()) return
-      setGroup(server_group)
+      setGroup(g)
     } catch (e: unknown) {
       if (!alive()) return
       toast.error(formatUserError(e))
@@ -49,7 +47,7 @@ function OpenStackServerGroupDetailContent() {
     } finally {
       if (alive()) setLoading(false)
     }
-  }, [id, toast])
+  }, [name, toast])
 
   useEffect(() => { void load() }, [load])
 
@@ -77,23 +75,32 @@ function OpenStackServerGroupDetailContent() {
         {group.name}
       </h1>
       <dl className="rounded-xl border border-slate-700 p-4 text-sm space-y-3">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1">{group.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Policy</dt><dd className="text-slate-200 mt-1">{group.policy}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Policy</dt><dd className="text-slate-200 mt-1">anti-affinity</dd></div>
         <div>
           <dt className="text-xs text-slate-500 uppercase">Members ({group.members.length})</dt>
           <ul className="mt-1 font-mono text-xs text-slate-400 space-y-1">
             {group.members.map((m) => (
-              <li key={m}><Link to={`/openstack/instances/${m}`} className="text-sky-400 hover:underline">{m}</Link></li>
+              <li key={m.id} className="flex items-center gap-2">
+                <Link to={`/openstack/instances/${m.id}`} className="text-sky-400 hover:underline">{m.name}</Link>
+                <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
+                  onClick={async () => {
+                    try {
+                      await removeVmFromServerGroup(m, group.name)
+                      toast.success('Removed')
+                      void load()
+                    } catch (e: unknown) { toast.error(formatUserError(e)) }
+                  }}>Remove</button>
+              </li>
             ))}
             {group.members.length === 0 && <li>None</li>}
           </ul>
         </div>
       </dl>
-      <button type="button" className={statusDestructiveButtonClasses('px-3 py-1.5 text-sm')}
+      <button type="button" className={`px-3 py-1.5 rounded-lg border text-sm ${statusActionLinkClasses('error')}`}
         onClick={async () => {
-          if (!confirm(`Delete server group ${group.name}?`)) return
+          if (!confirm(`Delete group ${group.name}?`)) return
           try {
-            await deleteOpenStackServerGroup(group.id)
+            await deleteServerGroup(group)
             toast.success('Deleted')
             navigate('/openstack/server-groups')
           } catch (e: unknown) { toast.error(formatUserError(e)) }

@@ -3,69 +3,73 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import {
-  deleteOpenStackFloatingIp,
-  dissociateOpenStackFloatingIp,
-  listOpenStackFloatingIps,
-  listOpenStackInstances,
-  listOpenStackNetworks,
-  associateOpenStackFloatingIp,
-  type OpenStackFloatingIp,
-} from '../api/openstack'
-import { createOpenStackFloatingIp } from '../api/openstackExtras'
-import OpenStackGate from '../components/OpenStackGate'
+  createVmPortForward,
+  deleteVmPortForward,
+  listVmPortForwards,
+  listVms,
+  type NativePortForward,
+  type NativeVm,
+} from '../api/nativeVms'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Globe, Loader2, RefreshCw } from 'lucide-react'
 
+const PROTOCOLS = ['tcp', 'udp'] as const
+
+// Native "floating IPs" — not gated by <OpenStackGate>. There's no allocatable
+// floating-IP pool; the native equivalent is a per-VM host_port -> vm_port NAT
+// rule (controller::api::vms::port_forwards, already built) — see
+// api/nativeVms.ts. Pick an instance, then manage its forwards.
 export default function OpenStackFloatingIpsPage() {
-  return (
-    <OpenStackGate title="Floating IPs">
-      <OpenStackFloatingIpsContent />
-    </OpenStackGate>
-  )
+  return <OpenStackFloatingIpsContent />
 }
 
 function OpenStackFloatingIpsContent() {
   const toast = useToastContext()
-  const [fips, setFips] = useState<OpenStackFloatingIp[]>([])
-  const [networks, setNetworks] = useState<{ id: string; name: string }[]>([])
-  const [instances, setInstances] = useState<{ id: string; name: string }[]>([])
+  const [vms, setVms] = useState<NativeVm[]>([])
+  const [vmId, setVmId] = useState('')
+  const [forwards, setForwards] = useState<NativePortForward[]>([])
   const [loading, setLoading] = useState(true)
-  const [extNet, setExtNet] = useState('')
-  const [allocating, setAllocating] = useState(false)
-  const [assocFip, setAssocFip] = useState('')
-  const [assocInst, setAssocInst] = useState('')
+  const [protocol, setProtocol] = useState<string>(PROTOCOLS[0])
+  const [hostPort, setHostPort] = useState('')
+  const [vmPort, setVmPort] = useState('')
+  const [description, setDescription] = useState('')
+  const [creating, setCreating] = useState(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const loadVms = useCallback(async () => {
     try {
-      const [f, n, inst] = await Promise.all([
-        listOpenStackFloatingIps(),
-        listOpenStackNetworks(),
-        listOpenStackInstances().catch(() => ({ instances: [] })),
-      ])
-      setFips(f.floating_ips)
-      const ext = n.networks.filter((x) => x.external)
-      setNetworks(ext.map((x) => ({ id: x.id, name: x.name })))
-      setInstances(inst.instances.map((i) => ({ id: i.id, name: i.name })))
-      if (!extNet && ext.length > 0) setExtNet(ext[0].id)
-      const free = f.floating_ips.filter((x) => !x.instance_id)
-      if (!assocFip && free.length > 0) setAssocFip(free[0].id)
-      if (!assocInst && inst.instances.length > 0) setAssocInst(inst.instances[0].id)
+      const list = await listVms()
+      setVms(list)
+      if (!vmId && list.length > 0) setVmId(list[0].id)
     } catch (e: unknown) {
       toast.error(formatUserError(e))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast])
+
+  useEffect(() => { void loadVms() }, [loadVms])
+
+  const loadForwards = useCallback(async () => {
+    if (!vmId) { setForwards([]); return }
+    setLoading(true)
+    try {
+      const f = await listVmPortForwards(vmId)
+      setForwards(f)
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+      setForwards([])
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [vmId, toast])
 
-  useEffect(() => {
-    void load()
-  }, [load])
+  useEffect(() => { void loadForwards() }, [loadForwards])
+
+  const selectedVm = vms.find((v) => v.id === vmId)
 
   return (
     <PageLayout
@@ -75,120 +79,112 @@ function OpenStackFloatingIpsContent() {
     >
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <Globe className="w-7 h-7 text-sky-400" />
-        Floating IPs
+        Floating IPs (port forwards)
       </h1>
+      <p className="text-sm text-slate-400">
+        No allocatable floating-IP pool natively — reach a VM's service from outside via a
+        host_port → vm_port NAT rule instead.
+      </p>
+
       <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end text-sm">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">External network</label>
-          <select value={extNet} onChange={(e) => setExtNet(e.target.value)}
-            aria-label="External network"
+          <label className="block text-xs text-slate-500 mb-1">Instance</label>
+          <select value={vmId} onChange={(e) => setVmId(e.target.value)}
+            aria-label="Instance"
             className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 min-w-[12rem]">
-            {networks.map((n) => (
-              <option key={n.id} value={n.id}>{n.name || n.id.slice(0, 8)}</option>
-            ))}
+            {vms.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select>
         </div>
-        <button type="button" disabled={!extNet || allocating} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-          onClick={async () => {
-            if (!extNet || allocating) return
-            setAllocating(true)
-            try {
-              await createOpenStackFloatingIp(extNet)
-              toast.success('Floating IP allocated')
-              void load()
-            } catch (e: unknown) { toast.error(formatUserError(e)) }
-            finally { setAllocating(false) }
-          }}>{allocating ? 'Allocating…' : 'Allocate'}</button>
-        <button type="button" onClick={() => void load()}
+        {selectedVm && (
+          <span className="text-xs text-slate-500 font-mono">guest IP: {selectedVm.guest_ip || 'unknown yet'}</span>
+        )}
+        <button type="button" onClick={() => void loadForwards()}
           className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600">
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
+
       <div className="rounded-xl border border-slate-700 p-4 space-y-3 text-sm">
-        <h2 className="text-sm font-medium text-slate-300">Associate to instance</h2>
+        <h2 className="text-sm font-medium text-slate-300">Add forward</h2>
         <div className="flex flex-wrap gap-3 items-end">
-          <select value={assocFip} onChange={(e) => setAssocFip(e.target.value)}
-            aria-label="Floating IP"
-            className="min-w-[10rem] px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700">
-            <option value="">FIP…</option>
-            {fips.filter((f) => !f.instance_id).map((f) => (
-              <option key={f.id} value={f.id}>{f.address}</option>
-            ))}
+          <select value={protocol} onChange={(e) => setProtocol(e.target.value)}
+            aria-label="Protocol"
+            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700">
+            {PROTOCOLS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
-          <select value={assocInst} onChange={(e) => setAssocInst(e.target.value)}
-            aria-label="Instance"
-            className="min-w-[10rem] px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700">
-            <option value="">Instance…</option>
-            {instances.map((i) => (
-              <option key={i.id} value={i.id}>{i.name || i.id.slice(0, 8)}</option>
-            ))}
-          </select>
-          <button type="button" disabled={!assocFip || !assocInst}
+          <input aria-label="Host port" value={hostPort} onChange={(e) => setHostPort(e.target.value)} placeholder="Host port" type="number"
+            className="w-28 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700" />
+          <input aria-label="VM port" value={vmPort} onChange={(e) => setVmPort(e.target.value)} placeholder="VM port" type="number"
+            className="w-28 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700" />
+          <input aria-label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)"
+            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 min-w-[10rem]" />
+          <button type="button" disabled={!vmId || !hostPort || !vmPort || creating}
             className="px-3 py-1.5 rounded-lg bg-sky-600 text-white disabled:opacity-40"
             onClick={async () => {
+              const hp = Number.parseInt(hostPort, 10)
+              const vp = Number.parseInt(vmPort, 10)
+              if (!Number.isFinite(hp) || !Number.isFinite(vp)) {
+                toast.warning('Ports must be numbers')
+                return
+              }
+              setCreating(true)
               try {
-                await associateOpenStackFloatingIp(assocInst, { floating_ip_id: assocFip })
-                toast.success('Associated')
-                void load()
-              } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}>Associate</button>
+                await createVmPortForward(vmId, { protocol, host_port: hp, vm_port: vp, description })
+                toast.success('Forward added')
+                setHostPort(''); setVmPort(''); setDescription('')
+                void loadForwards()
+              } catch (e: unknown) {
+                toast.error(formatUserError(e))
+              } finally {
+                setCreating(false)
+              }
+            }}>{creating ? 'Adding…' : 'Add'}</button>
         </div>
       </div>
+
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
       ) : (
         <div className="rounded-xl border border-slate-700 overflow-hidden">
-          <table className="w-full text-sm" aria-label="Floating IPs">
+          <table className="w-full text-sm" aria-label="Port forwards">
             <thead className="bg-slate-900/80 text-slate-400 text-left">
               <tr>
-                <th scope="col" className="px-3 py-2">Address</th>
-                <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2">Instance</th>
-                <th scope="col" className="px-3 py-2">Actions</th>
+                <th scope="col" className="px-3 py-2">Protocol</th>
+                <th scope="col" className="px-3 py-2">Host port</th>
+                <th scope="col" className="px-3 py-2">VM port</th>
+                <th scope="col" className="px-3 py-2">Description</th>
+                <th scope="col" className="px-3 py-2" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {fips.map((fip) => (
-                <tr key={fip.id}>
-                  <td className="px-3 py-2 font-mono text-slate-200">
-                    <Link to={`/openstack/floating-ips/${fip.id}`} className="text-sky-300 hover:underline">{fip.address}</Link>
-                  </td>
-                  <td className="px-3 py-2 text-slate-400">{fip.status}</td>
+              {forwards.map((f) => (
+                <tr key={f.id}>
+                  <td className="px-3 py-2 font-mono text-slate-200">{f.protocol}</td>
+                  <td className="px-3 py-2">{f.host_port}</td>
+                  <td className="px-3 py-2">{f.vm_port}</td>
+                  <td className="px-3 py-2 text-slate-400">{f.description || '—'}</td>
                   <td className="px-3 py-2">
-                    {fip.instance_id ? (
-                      <Link to={`/openstack/instances/${fip.instance_id}`} className="text-sky-400 hover:underline font-mono text-xs">
-                        {fip.instance_id.slice(0, 8)}
-                      </Link>
-                    ) : '—'}
-                  </td>
-                  <td className="px-3 py-2 flex flex-wrap gap-2">
-                    <Link to={`/openstack/floating-ips/${fip.id}`} className="text-xs text-violet-400 hover:underline">Detail</Link>
-                    {fip.instance_id && (
-                      <button type="button" className={statusActionLinkClasses('warn', 'text-xs')}
-                        onClick={async () => {
-                          try {
-                            await dissociateOpenStackFloatingIp(fip.id)
-                            toast.success('Dissociated')
-                            void load()
-                          } catch (e: unknown) { toast.error(formatUserError(e)) }
-                        }}>Dissociate</button>
-                    )}
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
                       onClick={async () => {
-                        if (!confirm(`Release ${fip.address}?`)) return
+                        if (!confirm(`Remove forward ${f.protocol}/${f.host_port} → ${f.vm_port}?`)) return
                         try {
-                          await deleteOpenStackFloatingIp(fip.id)
-                          toast.success('Released')
-                          void load()
+                          await deleteVmPortForward(vmId, { protocol: f.protocol, host_port: f.host_port, vm_port: f.vm_port })
+                          toast.success('Removed')
+                          void loadForwards()
                         } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>Release</button>
+                      }}>Remove</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {fips.length === 0 && <p className="p-6 text-center text-slate-500">No floating IPs.</p>}
+          {forwards.length === 0 && <p className="p-6 text-center text-slate-500">No port forwards for this instance.</p>}
         </div>
+      )}
+      {selectedVm && (
+        <Link to={`/openstack/instances/${selectedVm.id}`} className="text-sm text-sky-400 hover:underline">
+          View instance
+        </Link>
       )}
       <OpenStackFooter />
     </PageLayout>
