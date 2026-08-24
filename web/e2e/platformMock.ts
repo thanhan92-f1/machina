@@ -11,15 +11,6 @@ export const platformInfo = {
     direct_url: 'http://127.0.0.1:5093',
   },
   kubevirt: { exec_enabled: true },
-  openstack: {
-    enabled: true,
-    configured: true,
-    cloud_name: 'test',
-    upload_enabled: false,
-    upload_timeout_secs: 300,
-    default_os_cloud: 'test',
-    default_boot_instance: false,
-  },
   hypersdk: { enabled: true, base_url: 'http://127.0.0.1:8787', insecure_tls: true },
   guestkit: { enabled: true, base_url: 'http://127.0.0.1:8790', insecure_tls: true },
   fleet: { enabled: false, peer_count: 0 },
@@ -1057,36 +1048,19 @@ export async function mockPlatformApi(page: Page, opts?: {
         json: { summary: '0 bare-metal targets', targets: [], scans_pending: 0 },
       })
     }
-    if (url.includes('/openstack/status')) {
+    if (url.match(/\/platform\/controller\/api\/v1\/vms(\?|$)/)) {
       return route.fulfill({
-        json: {
-          enabled: true,
-          configured: true,
-          connected: true,
-          reachable: true,
-          keystone_reachable: true,
-          compute_reachable: true,
-          glance_reachable: true,
-          cloud_name: 'test',
-        },
+        json: [
+          { id: 'v1', name: 'web-01', observed_state: 'running', host_id: 'h1', guest_ip: '192.168.122.10', inventory_source: 'libvirt' },
+          { id: 'v2', name: 'db-01', observed_state: 'stopped', host_id: 'h1', guest_ip: '192.168.122.11', inventory_source: 'libvirt' },
+        ],
       })
     }
-    if (url.includes('/openstack/instances')) {
-      return route.fulfill({
-        json: {
-          total: 2,
-          instances: [
-            { id: 'os-1', name: 'web-01', status: 'ACTIVE' },
-            { id: 'os-2', name: 'db-01', status: 'SHUTOFF' },
-          ],
-        },
-      })
+    if (url.match(/\/platform\/controller\/api\/v1\/networks(\?|$)/)) {
+      return route.fulfill({ json: [{ id: 'n1', name: 'private' }] })
     }
-    if (url.includes('/openstack/networks')) {
-      return route.fulfill({ json: { networks: [{ id: 'n1', name: 'private' }] } })
-    }
-    if (url.includes('/openstack/images')) {
-      return route.fulfill({ json: { images: [{ id: 'i1', name: 'ubuntu-22.04' }] } })
+    if (url.match(/\/platform\/controller\/api\/v1\/templates(\?|$)/)) {
+      return route.fulfill({ json: [{ id: 'i1', name: 'ubuntu-22.04' }] })
     }
     if (url.includes('/k8s/overview')) {
       return route.fulfill({

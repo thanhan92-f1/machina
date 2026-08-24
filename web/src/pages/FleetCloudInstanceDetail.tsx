@@ -25,7 +25,7 @@ import PageSkeleton from '../components/PageSkeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { openstackStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
+import { instanceStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
 // Native VM detail used as the "instance" detail page — not gated by
@@ -127,7 +127,7 @@ function OpenStackInstanceDetailContent() {
       <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
         <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono mt-1 break-all">{vm.id}</dd></div>
         <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">
-          <span className={`inline-block px-2 py-0.5 rounded border text-xs ${statusBadgeClasses(openstackStatusTone(status))}`}>{status}</span>
+          <span className={`inline-block px-2 py-0.5 rounded border text-xs ${statusBadgeClasses(instanceStatusTone(status))}`}>{status}</span>
         </dd></div>
         <div><dt className="text-xs text-slate-500 uppercase">vCPU</dt><dd className="mt-1">{vm.vcpus}</dd></div>
         <div><dt className="text-xs text-slate-500 uppercase">RAM</dt><dd className="mt-1">{vm.memory_mib} MiB</dd></div>

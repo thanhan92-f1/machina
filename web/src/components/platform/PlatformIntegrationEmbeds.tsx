@@ -20,14 +20,13 @@ export default function PlatformIntegrationEmbeds() {
   const { info } = usePlatformInfo()
   const k8sEnabled = Boolean(info?.kubevirt?.exec_enabled)
   const {
-    openstack,
-    osStats,
+    fleetCloudStats,
     k8sStats,
-    osLoading,
+    fleetCloudLoading,
     k8sLoading,
-    osError,
+    fleetCloudError,
     k8sError,
-    refreshOpenStack,
+    refreshFleetCloud,
     refreshK8s,
   } = useIntegrationPreviewStats(k8sEnabled)
 
@@ -37,65 +36,50 @@ export default function PlatformIntegrationEmbeds() {
         <div className="flex items-start gap-3">
           <Cloud className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="text-sm text-slate-300">
-              {openstack.phase === 'live'
-                ? 'Cloud operator shell is healthy — live inventory below.'
-                : openstack.phase === 'needsWire'
-                  ? 'Fleet Cloud is enabled but needs wiring — run the wire script from Integrations.'
-                  : openstack.phase === 'unreachable'
-                    ? 'Configured but API unreachable — check clouds.yaml and Auth.'
-                    : 'Enable Fleet Cloud in daemon config to unlock the operator shell.'}
-            </p>
-            {openstack.connectionHint && (
-              <p className={`text-xs ${statusToneClass('warn')}`}>{openstack.connectionHint}</p>
-            )}
-            {openstack.phase === 'live' && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {osLoading && !osStats ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading cloud inventory…
-                    </span>
-                  ) : osStats ? (
-                    <>
-                      <PreviewStat label="Instances" value={String(osStats.instances)} />
-                      <PreviewStat label="Networks" value={String(osStats.networks)} />
-                      <PreviewStat label="Images" value={String(osStats.images)} />
-                    </>
-                  ) : osError ? (
-                    <p className={`text-xs ${statusToneClass('error')}`}>{osError}</p>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="tahoe-btn-ghost text-xs inline-flex items-center gap-1 ml-auto"
-                    disabled={osLoading}
-                    onClick={() => void refreshOpenStack()}
-                  >
-                    <RefreshCw className={`w-3 h-3 ${osLoading ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                </div>
-                {osStats?.preview.length ? (
-                  <ul className="divide-y divide-white/[0.04] rounded-xl border border-white/[0.06] bg-slate-950/30">
-                    {osStats.preview.map((inst) => (
-                      <MacListRow
-                        key={inst.id}
-                        title={inst.name}
-                        subtitle={`${inst.status ?? 'unknown'} · ${inst.id.slice(0, 8)}…`}
-                        href={`/fleet-cloud/instances/${inst.id}`}
-                      />
-                    ))}
-                  </ul>
-                ) : openstack.computeLive && osStats && osStats.instances === 0 ? (
-                  <p className="text-xs text-slate-500">No Compute instances in this project yet.</p>
+            <p className="text-sm text-slate-300">Native instance, network, and image inventory — live below.</p>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {fleetCloudLoading && !fleetCloudStats ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading Fleet Cloud inventory…
+                  </span>
+                ) : fleetCloudStats ? (
+                  <>
+                    <PreviewStat label="Instances" value={String(fleetCloudStats.instances)} />
+                    <PreviewStat label="Networks" value={String(fleetCloudStats.networks)} />
+                    <PreviewStat label="Images" value={String(fleetCloudStats.images)} />
+                  </>
+                ) : fleetCloudError ? (
+                  <p className={`text-xs ${statusToneClass('error')}`}>{fleetCloudError}</p>
                 ) : null}
+                <button
+                  type="button"
+                  className="tahoe-btn-ghost text-xs inline-flex items-center gap-1 ml-auto"
+                  disabled={fleetCloudLoading}
+                  onClick={() => void refreshFleetCloud()}
+                >
+                  <RefreshCw className={`w-3 h-3 ${fleetCloudLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
               </div>
-            )}
+              {fleetCloudStats?.preview.length ? (
+                <ul className="divide-y divide-white/[0.04] rounded-xl border border-white/[0.06] bg-slate-950/30">
+                  {fleetCloudStats.preview.map((vm) => (
+                    <MacListRow
+                      key={vm.id}
+                      title={vm.name}
+                      subtitle={`${vm.observed_state ?? 'unknown'} · ${vm.id.slice(0, 8)}…`}
+                      href={`/fleet-cloud/instances/${vm.id}`}
+                    />
+                  ))}
+                </ul>
+              ) : fleetCloudStats && fleetCloudStats.instances === 0 ? (
+                <p className="text-xs text-slate-500">No instances yet.</p>
+              ) : null}
+            </div>
             <div className="flex flex-wrap gap-2">
               <Link to="/fleet-cloud" className="tahoe-btn-ghost text-xs">Open overview</Link>
-              {openstack.phase === 'live' && (
-                <Link to="/fleet-cloud/instances" className="tahoe-btn-primary text-xs">Instances</Link>
-              )}
+              <Link to="/fleet-cloud/instances" className="tahoe-btn-primary text-xs">Instances</Link>
             </div>
           </div>
         </div>

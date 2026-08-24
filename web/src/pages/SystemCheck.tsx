@@ -15,15 +15,11 @@ import {
   RefreshCw,
   Copy,
   Stethoscope,
-  Zap,
 } from 'lucide-react'
 import { useWebSocketContext } from '../contexts/WebSocketContext'
 import { useToastContext } from '../contexts/ToastContext'
-import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
-import ConfirmDialog from '../components/ConfirmDialog'
 import ErrorBanner from '../components/ErrorBanner'
 import PageLayout from '../components/PageLayout'
-import { openStackErrorHints } from '../utils/openstackHints'
 import { libvirtErrorHints } from '../utils/libvirtHints'
 import { formatUserError } from '../utils/apiError'
 import {
@@ -34,11 +30,9 @@ import {
   type CheckStatus,
   formatCheckReportMarkdown,
   resultsByCategory,
-  runOpenStackDeepSmoke,
   runSystemCheckSuite,
   summarizeCheckResults,
 } from '../lib/systemCheckSuite'
-import type { PlatformInfo } from '../api/system'
 import { checkStatusTone, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 
 function statusIcon(status: CheckStatus) {
@@ -66,7 +60,6 @@ function rowClass(status: CheckStatus) {
 
 function categoryHints(category: CheckCategory, failedMessages: string): string[] {
   const msg = failedMessages.toLowerCase()
-  if (category === 'openstack') return openStackErrorHints(msg)
   if (category === 'host' || category === 'libvirt' || category === 'services') {
     return libvirtErrorHints(msg)
   }
@@ -177,14 +170,10 @@ function CategorySection({
 export default function SystemCheckPage() {
   const { isConnected: wsConnected } = useWebSocketContext()
   const toast = useToastContext()
-  const { connectionHint } = useOpenStackConnection()
 
   const [results, setResults] = useState<CheckResult[]>([])
-  const [platform, setPlatform] = useState<PlatformInfo | null>(null)
   const [running, setRunning] = useState(false)
   const [progressLabel, setProgressLabel] = useState<string | null>(null)
-  const [deepOpen, setDeepOpen] = useState(false)
-  const [deepRunning, setDeepRunning] = useState(false)
 
   const summary = useMemo(() => summarizeCheckResults(results), [results])
   const byCategory = useMemo(() => resultsByCategory(results), [results])
@@ -193,12 +182,11 @@ export default function SystemCheckPage() {
     setRunning(true)
     setProgressLabel('Starting…')
     try {
-      const { results: r, platform: p } = await runSystemCheckSuite(
+      const { results: r } = await runSystemCheckSuite(
         { wsConnected },
         (p) => setProgressLabel(p.label),
       )
       setResults(r)
-      setPlatform(p)
     } catch (e: unknown) {
       toast.error(`System check failed: ${formatUserError(e)}`)
     } finally {
@@ -221,33 +209,7 @@ export default function SystemCheckPage() {
     }
   }
 
-  const runDeepSmoke = async () => {
-    if (!platform) {
-      toast.warning('Run system check first')
-      return
-    }
-    setDeepOpen(false)
-    setDeepRunning(true)
-    setProgressLabel('Deep Fleet Cloud smoke…')
-    try {
-      const deep = await runOpenStackDeepSmoke(platform, setProgressLabel)
-      setResults((prev) => {
-        const merged = [...prev.filter((r) => !r.id.startsWith('deep-')), ...deep]
-        const s = summarizeCheckResults(merged)
-        if (s.fail > 0) toast.error('Deep smoke had failures')
-        else toast.success('Deep Fleet Cloud smoke completed')
-        return merged
-      })
-    } catch (e: unknown) {
-      toast.error(formatUserError(e))
-    } finally {
-      setDeepRunning(false)
-      setProgressLabel(null)
-    }
-  }
-
-  const busy = running || deepRunning
-  const openstackConfigured = Boolean(platform?.openstack?.enabled && platform?.openstack?.configured)
+  const busy = running
 
   return (
     <PageLayout
@@ -280,22 +242,11 @@ export default function SystemCheckPage() {
             <Copy className="w-4 h-4" />
             Copy report
           </button>
-          {openstackConfigured && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setDeepOpen(true)}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm disabled:opacity-50 ${statusSurfaceClasses('warn')}`}
-            >
-              <Zap className="w-4 h-4" />
-              Deep smoke
-            </button>
-          )}
         </>
       }
       contentClassName="space-y-6"
     >
-      {(running || deepRunning) && progressLabel && (
+      {running && progressLabel && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-sky-500/30 bg-sky-950/25 text-sm text-sky-200">
           <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
           {progressLabel}
@@ -323,17 +274,7 @@ export default function SystemCheckPage() {
         </div>
       )}
 
-      {connectionHint && results.some((r) => r.category === 'openstack' && r.status !== 'pass') && (
-        <div className={`rounded-xl px-4 py-3 text-sm ${statusSurfaceClasses('warn')}`}>
-          {connectionHint}
-        </div>
-      )}
-
       <div className="flex flex-wrap gap-2 text-xs">
-        <Link to="/settings?openstack=1" className="text-sky-400 hover:underline">
-          Fleet Cloud settings
-        </Link>
-        <span className="text-slate-600">·</span>
         <Link to="/services" className="text-sky-400 hover:underline">
           Services
         </Link>
@@ -376,14 +317,6 @@ export default function SystemCheckPage() {
         </div>
       )}
 
-      <ConfirmDialog
-        open={deepOpen}
-        title="Run Fleet Cloud deep smoke?"
-        message="Creates a short-lived Cirros instance (syscheck-os-*), lists it, then deletes it. Requires flavors, image, and network in Images/Compute."
-        confirmLabel="Run smoke test"
-        onConfirm={() => void runDeepSmoke()}
-        onCancel={() => setDeepOpen(false)}
-      />
     </PageLayout>
   )
 }

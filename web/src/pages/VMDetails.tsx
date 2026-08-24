@@ -48,10 +48,8 @@ import { deleteVmWithNvramRetry } from '../utils/deleteVmWithNvramRetry'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
-import LibvirtOpenStackPushModal from '../components/LibvirtOpenStackPushModal'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
-import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import { ChoiceCard, ChoiceCardDenseGrid } from '../components/ChoiceCards'
 import { BrowseHostPathModal, isHostDiskImageFileName, isIsoFileName } from '../components/BrowseHostPathModal'
 import { useToastContext } from '../contexts/ToastContext'
@@ -67,7 +65,7 @@ import {
   ToggleLeft, ToggleRight, Cpu, HardDrive, Network, Camera, Terminal,
   Save, Disc, Archive, Copy, Pencil, ArrowRightLeft, Download,
   Plus, Trash2, RotateCw, Code, MemoryStick, Settings, Usb, Layers,
-  ChevronUp, ChevronDown, X, Tag, Monitor, Shield, Sliders, FolderOpen, Cloud,
+  ChevronUp, ChevronDown, X, Tag, Monitor, Shield, Sliders, FolderOpen,
 } from 'lucide-react'
 
 interface MetricsPoint { time: string; memory: number; diskRd: number; diskWr: number; netRx: number; netTx: number }
@@ -166,16 +164,6 @@ export default function VMDetailsPage() {
   const [dialog, setDialog] = useState<Dialog>(null)
   const toast = useToastContext()
   const { info } = usePlatformInfo()
-  const { phase: osPhase, glanceLive: osGlanceLive } = useOpenStackConnection()
-  const openstackPushReady = osPhase === 'live' && osGlanceLive && Boolean(info?.openstack?.upload_enabled)
-  const openstackPushDisabledReason =
-    osPhase === 'unreachable'
-      ? 'Fleet Cloud configured but unreachable'
-      : osPhase !== 'live' && info?.openstack?.upload_enabled
-        ? 'Connect Fleet Cloud and reach Auth first'
-        : !info?.openstack?.upload_enabled
-          ? 'Enable upload_enabled in machina config'
-          : null
   const prevMetricsRef = useRef<VmMetrics | null>(null)
   const prevMetricsTsRef = useRef<number | null>(null)
   const lastLoadErrorToastAt = useRef(0)
@@ -233,7 +221,6 @@ export default function VMDetailsPage() {
   const [cdromBrowseOpen, setCdromBrowseOpen] = useState(false)
   const [attachDiskBrowseOpen, setAttachDiskBrowseOpen] = useState(false)
   const [kubevirtOpen, setKubevirtOpen] = useState(false)
-  const [openstackPushOpen, setOpenstackPushOpen] = useState(false)
   const [kubevirtBundle, setKubevirtBundle] = useState<KubeVirtBundle | null>(null)
   const [kubevirtLoading, setKubevirtLoading] = useState(false)
   /** Local checklist only (not sent to the server). */
@@ -1933,18 +1920,6 @@ export default function VMDetailsPage() {
               <Archive className="w-4 h-4" aria-hidden />
               {kubevirtLoading ? 'Loading…' : 'KubeVirt YAML'}
             </button>
-            {name && (openstackPushReady || openstackPushDisabledReason) && (
-              <button
-                type="button"
-                onClick={() => openstackPushReady && setOpenstackPushOpen(true)}
-                disabled={!openstackPushReady}
-                className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm transition flex items-center gap-1"
-                title={openstackPushReady ? 'Upload root disk to Fleet Cloud Images' : openstackPushDisabledReason ?? ''}
-              >
-                <Cloud className="w-4 h-4" aria-hidden />
-                Push to Fleet Cloud
-              </button>
-            )}
             <button onClick={() => openDialog('attach-disk')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Attach Disk</button>
           </div>
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
@@ -3704,21 +3679,6 @@ export default function VMDetailsPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {openstackPushReady && name && (
-        <LibvirtOpenStackPushModal
-          vmName={name}
-          open={openstackPushOpen}
-          onClose={() => setOpenstackPushOpen(false)}
-          onSuccess={(r) => {
-            toast.success(
-              r.instance_id
-                ? `Fleet Cloud instance ${r.instance_name || r.instance_id}`
-                : `Fleet Cloud image ${r.image_name || r.image_id}`,
-            )
-          }}
-        />
       )}
 
       <BrowseHostPathModal

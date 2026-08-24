@@ -7,15 +7,6 @@ import { readJsonObject } from './client'
 const API = '/api/v1'
 
 export interface IntegrationsStatus {
-  openstack: {
-    configured: boolean
-    enabled: boolean
-    cloud_name: string
-    connected: boolean
-    reachable?: boolean
-    error?: string | null
-    status_url: string
-  }
   kubevirt: {
     exec_enabled: boolean
     default_namespace: string

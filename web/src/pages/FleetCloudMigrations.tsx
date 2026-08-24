@@ -19,25 +19,12 @@ import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { useToastContext } from '../contexts/ToastContext'
-import OpenStackGate from '../components/OpenStackGate'
-import FleetCloudSubNav from '../components/FleetCloudSubNav'
-import OpenStackStatusBar from '../components/OpenStackStatusBar'
 import { formatUserError } from '../utils/apiError'
 import { statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
-import ErrorBanner from '../components/ErrorBanner'
-import { openStackErrorHints } from '../utils/openstackHints'
 import HypersdkStatusBanner from '../components/HypersdkStatusBanner'
 import { Cloud, ExternalLink, Loader2, Play, RefreshCw, Server } from 'lucide-react'
 
-export default function OpenStackMigrationsPage() {
-  return (
-    <OpenStackGate title="Fleet Cloud Migrations">
-      <OpenStackMigrationsContent />
-    </OpenStackGate>
-  )
-}
-
-function OpenStackMigrationsContent() {
+export default function FleetCloudMigrationsPage() {
   const toast = useToastContext()
   const { info } = usePlatformInfo()
   const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
@@ -152,20 +139,15 @@ function OpenStackMigrationsContent() {
     }
   }
 
-  const dashboardUrl = info?.openstack?.hypersdk_base_url
-    ? `${info.openstack.hypersdk_base_url.replace(/\/$/, '')}/web/dashboard/`
-    : info?.hypersdk?.base_url
-      ? `${info.hypersdk.base_url.replace(/\/$/, '')}/web/dashboard/`
-      : 'https://127.0.0.1:5080/web/dashboard/'
+  const dashboardUrl = info?.hypersdk?.base_url
+    ? `${info.hypersdk.base_url.replace(/\/$/, '')}/web/dashboard/`
+    : 'https://127.0.0.1:5080/web/dashboard/'
 
   return (
     <PageLayout
       hideHeader
-      prepend={<>
-      </>}
       error={loadError}
       errorTitle="Failed to load"
-      errorHints={loadError ? openStackErrorHints(loadError) : undefined}
       technicalDetail={loadError}
       errorTone="red"
       onErrorRetry={() => void load()}

@@ -122,7 +122,6 @@ import VmDetailHero from '../../components/platform/VmDetailHero'
 import VmPortForwardPanel from '../../components/vm/VmPortForwardPanel'
 import VmSshConnectDialog, { navigateVmSshSession } from '../../components/vm/VmSshConnectDialog'
 import { isCenterPopoutMode, openCenterPopout } from '../../utils/platformCenterPopout'
-import { PlatformOpenStackVmLink } from '../../components/platform/PlatformCrossLinks'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { tasksHubHref } from '../../utils/platformHubLinks'
@@ -1004,7 +1003,6 @@ export default function PlatformVmDetail() {
     >
       {vm && (
         <>
-          <PlatformOpenStackVmLink vm={vm} />
           {vm.inventory_source === 'kubevirt' && (
             <MacGlassPanel title="KubeVirt guest">
               <p className="text-sm text-slate-300">

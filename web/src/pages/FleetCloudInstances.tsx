@@ -13,12 +13,12 @@ import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { formatUserError } from '../utils/apiError'
-import { openstackStatusTone, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
+import { instanceStatusTone, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 
 const STATUS_CHIPS = ['', 'ACTIVE', 'SHUTOFF', 'ERROR', 'CREATING'] as const
 
 function statusBadge(status: string) {
-  return statusBadgeClasses(openstackStatusTone(status))
+  return statusBadgeClasses(instanceStatusTone(status))
 }
 
 // Native VM lifecycle used as the "instance" list — not gated by <OpenStackGate>:

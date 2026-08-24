@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { Link } from 'react-router'
 import {
@@ -15,22 +15,15 @@ import {
   NotificationChannel, SnapshotSchedule,
 } from '../api/automation'
 import { getOsUserCapability, createOsUser, deleteOsUser, OsUserCapability } from '../api/system'
-import { getOpenStackStatus, postOpenStackTestConnection, type OpenStackConnectionStatus } from '../api/openstack'
-import { listOpenStackClouds, selectOpenStackCloud } from '../api/openstackExtras'
-import OpenStackQuotasPanel from '../components/OpenStackQuotasPanel'
 import { getIntegrationsStatus, type IntegrationsStatus } from '../api/integrations'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
 import { useHypersdkConnection } from '../hooks/useHypersdkConnection'
-import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
-import { isOpenStackConfigured } from '../utils/routes'
-import CopyButton from '../components/CopyButton'
-import { WIRE_SCRIPT, VERIFY_COMMANDS, openStackErrorHints } from '../utils/openstackHints'
 import { listVMs, VmInfo } from '../api/vm'
 import { useToastContext } from '../contexts/ToastContext'
 import {
   Settings, Users, Key, Bell, Webhook, Clock, Plus, Trash2, RefreshCw,
-  Check, X, Shield, AlertCircle, Eye, Send, Camera, MessageSquare, Cloud, ExternalLink, Activity,
+  Check, X, Shield, AlertCircle, Eye, Send, Camera, MessageSquare, Activity,
 } from 'lucide-react'
 import { ChoiceCard, ChoiceCardDenseGrid } from '../components/ChoiceCards'
 import PageLayout from '../components/PageLayout'
@@ -52,7 +45,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const toast = useToastContext()
   const { info } = usePlatformInfo()
-  const { phase: osPhase } = useOpenStackConnection()
   const { phase: hsPhase } = useHypersdkConnection()
 
   // Data
@@ -91,12 +83,7 @@ export default function SettingsPage() {
   const [deleteOsUsername, setDeleteOsUsername] = useState('')
   const [confirmDeleteOsUser, setConfirmDeleteOsUser] = useState(false)
   const [addOsUserToLibvirt, setAddOsUserToLibvirt] = useState(true)
-  const [openstackStatus, setOpenstackStatus] = useState<OpenStackConnectionStatus | null>(null)
   const [integrations, setIntegrations] = useState<IntegrationsStatus | null>(null)
-  const [openstackTesting, setOpenstackTesting] = useState(false)
-  const [openstackClouds, setOpenstackClouds] = useState<{ name: string; active: boolean }[]>([])
-  const [cloudPick, setCloudPick] = useState('')
-  const openstackAutoTested = useRef(false)
   const [obsSettings, setObsSettings] = useState<ObservabilitySettingsView | null>(null)
   const [obsSaving, setObsSaving] = useState(false)
   const [auditVerifyBusy, setAuditVerifyBusy] = useState(false)
@@ -112,7 +99,6 @@ export default function SettingsPage() {
       listWebhooks(), listSchedules(), listVMs(),
       listNotificationChannels(), listSnapshotSchedules(),
       getOsUserCapability(),
-      getOpenStackStatus(),
       getObservabilitySettings(),
       getIntegrationsStatus(),
     ])
@@ -127,40 +113,14 @@ export default function SettingsPage() {
     if (results[8].status === 'fulfilled') setSnapshotSchedules(results[8].value)
     if (results[9].status === 'fulfilled') setOsUserCap(results[9].value)
     else setOsUserCap(null)
-    if (results[10].status === 'fulfilled') setOpenstackStatus(results[10].value)
-    else setOpenstackStatus(null)
-    if (results[11].status === 'fulfilled') setObsSettings(results[11].value)
+    if (results[10].status === 'fulfilled') setObsSettings(results[10].value)
     else setObsSettings(null)
-    if (results[12].status === 'fulfilled') setIntegrations(results[12].value)
+    if (results[11].status === 'fulfilled') setIntegrations(results[11].value)
     else setIntegrations(null)
     setLoading(false)
   }, [])
 
   useEffect(() => { load() }, [load])
-
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).get('openstack')) return
-    document.getElementById('openstack-connection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [])
-
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).get('openstack')) return
-    if (!openstackStatus?.configured || openstackAutoTested.current) return
-    openstackAutoTested.current = true
-    let cancelled = false
-    ;(async () => {
-      setOpenstackTesting(true)
-      try {
-        const s = await postOpenStackTestConnection()
-        if (!cancelled) setOpenstackStatus(s)
-      } catch {
-        /* keep loaded status */
-      } finally {
-        if (!cancelled) setOpenstackTesting(false)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [openstackStatus?.configured])
 
   useEffect(() => {
     if (osUserCap?.libvirtGroupAvailable === false) {
@@ -194,134 +154,6 @@ export default function SettingsPage() {
         <Link to="/secrets" className={`underline ${statusActionLinkClasses('info')}`}>Secrets</Link> page (define XML + optional base64 value).
       </p>
 
-      <section id="openstack-connection" className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-3 scroll-mt-24">
-        <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          <Cloud className="w-4 h-4 text-sky-400" />
-          Fleet Cloud connection
-        </h2>
-        <p className="text-xs text-slate-500">
-          Credentials live on the host (<code className="text-slate-400">clouds.yaml</code>, machina config, or{' '}
-          <code className="text-slate-400">OS_*</code>). Edit{' '}
-          <code className="text-slate-400">/etc/machina/config.toml</code> — not in the browser.
-        </p>
-        {openstackStatus && (
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <div><dt className="text-slate-500 text-xs">Enabled</dt><dd>{openstackStatus.enabled ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Configured</dt><dd>{openstackStatus.configured ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Cloud</dt><dd>{openstackStatus.cloud_name || '—'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Auth</dt><dd>{openstackStatus.keystone_reachable ?? openstackStatus.reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Compute</dt><dd>{openstackStatus.compute_reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Images</dt><dd>{openstackStatus.glance_reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Network</dt><dd>{openstackStatus.neutron_reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Storage</dt><dd>{openstackStatus.cinder_reachable ? 'yes' : 'no'}</dd></div>
-            {info?.openstack && (
-              <div>
-                <dt className="text-slate-500 text-xs">Image upload</dt>
-                <dd>{info.openstack.upload_enabled ? 'enabled' : 'disabled (config)'}</dd>
-              </div>
-            )}
-            {info?.openstack?.clouds_yaml && (
-              <div className="col-span-2">
-                <dt className="text-slate-500 text-xs">clouds.yaml</dt>
-                <dd className="font-mono text-xs break-all">{info.openstack.clouds_yaml}</dd>
-              </div>
-            )}
-          </dl>
-        )}
-        {openstackStatus?.reachable && openstackClouds.length > 0 && (
-          <div className="flex flex-wrap gap-2 items-end text-sm">
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Session cloud (clouds.yaml)</label>
-              <select
-                value={cloudPick || openstackStatus.cloud_name}
-                onChange={(e) => setCloudPick(e.target.value)}
-                aria-label="Session cloud"
-                className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm min-w-[10rem]"
-              >
-                {openstackClouds.map((c) => (
-                  <option key={c.name} value={c.name}>{c.name}{c.active ? ' (active)' : ''}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700"
-              onClick={async () => {
-                try {
-                  await selectOpenStackCloud(cloudPick || openstackStatus.cloud_name)
-                  const s = await postOpenStackTestConnection()
-                  setOpenstackStatus(s)
-                  toast.success(`Using cloud ${cloudPick || openstackStatus.cloud_name}`)
-                  const { clouds } = await listOpenStackClouds()
-                  setOpenstackClouds(clouds)
-                } catch (e: unknown) {
-                  toast.error(formatUserError(e))
-                }
-              }}
-            >
-              Apply cloud
-            </button>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <CopyButton text={WIRE_SCRIPT} label="Copy wire script" />
-          <CopyButton text={VERIFY_COMMANDS} label="Copy verify commands" />
-        </div>
-        {openstackStatus?.configured && !openstackStatus.reachable && (
-          <ul className={`text-xs list-disc pl-4 space-y-1 ${statusToneClass('warn')}`}>
-            {openStackErrorHints(openstackStatus.error).map((h) => (
-              <li key={h}>{h}</li>
-            ))}
-          </ul>
-        )}
-        {isOpenStackConfigured(info?.openstack) && info?.openstack?.upload_enabled && openstackStatus?.reachable && (
-          <p className="text-xs text-slate-500">
-            <a
-              href={`https://${window.location.hostname}:5080/web/dashboard/`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sky-400 hover:underline"
-            >
-              HyperSDK dashboard (export pipelines)
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </p>
-        )}
-        {openstackStatus?.error && (
-          <p className={`text-xs ${statusToneClass('error')}`}>{openstackStatus.error}</p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={openstackTesting || !openstackStatus?.configured}
-            onClick={async () => {
-              setOpenstackTesting(true)
-              try {
-                const s = await postOpenStackTestConnection()
-                setOpenstackStatus(s)
-                toast.success(s.reachable ? 'Fleet Cloud connection OK' : 'Connected but list failed')
-              } catch (e: unknown) {
-                toast.error(formatUserError(e))
-              } finally {
-                setOpenstackTesting(false)
-              }
-            }}
-            className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm disabled:opacity-50"
-          >
-            {openstackTesting ? 'Testing…' : 'Test connection'}
-          </button>
-          {openstackStatus?.reachable && (
-            <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-sm text-slate-300 hover:bg-slate-700">
-              Open instances
-            </Link>
-          )}
-        </div>
-      </section>
-
-      {openstackStatus?.reachable && (
-        <OpenStackQuotasPanel compact />
-      )}
-
       {integrations && (
         <section id="integrations-status" className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-3 scroll-mt-24">
           <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
@@ -332,11 +164,6 @@ export default function SettingsPage() {
             Capability phases mirror the Platform Integrations hub — wire each backend before using operator UIs.
           </p>
           <div className="flex flex-wrap gap-2 text-xs">
-            {info?.openstack?.enabled && (
-              <span className={statusSurfaceClasses(osPhase === 'live' ? 'ok' : 'warn', 'px-2 py-1 rounded border')}>
-                Fleet Cloud · {osPhase}
-              </span>
-            )}
             {info?.kubevirt?.exec_enabled && (
               <span className="px-2 py-1 rounded border border-violet-500/40 text-violet-300">Kubernetes · exec enabled</span>
             )}
@@ -406,11 +233,9 @@ export default function SettingsPage() {
             <Link to="/k8s" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
               Kubernetes
             </Link>
-            {isOpenStackConfigured(info?.openstack) && (
-              <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
-                Fleet Cloud
-              </Link>
-            )}
+            <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
+              Fleet Cloud
+            </Link>
           </div>
         </section>
       )}

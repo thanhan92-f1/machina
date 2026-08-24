@@ -11,7 +11,6 @@ const platformInfo = {
     direct_url: 'http://127.0.0.1:5093',
   },
   kubevirt: { exec_enabled: false },
-  openstack: { enabled: false, configured: false },
 }
 
 const sampleVms = [

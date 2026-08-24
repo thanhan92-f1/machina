@@ -44,25 +44,11 @@ export interface NavItem {
   label: string
   /** If true, only show in nav when signed in as UNIX `root`. */
   requiresRoot?: boolean
-  /** If true, only show when Fleet Cloud is enabled and configured on the daemon. */
-  requiresOpenStack?: boolean
-  /** Show only while Fleet Cloud is not wired — links to Settings for setup. */
-  openstackSetupOnly?: boolean
   /** If true, only show when HyperSDK is enabled on the daemon. */
   requiresHypersdk?: boolean
   /** If true, only show when Launchpad is enabled on the daemon. */
   requiresLaunchpad?: boolean
 }
-
-/** Fleet Cloud credentials present in daemon config (may still be unreachable). */
-export function isOpenStackConfigured(
-  openstack: { enabled?: boolean; configured?: boolean } | undefined,
-): boolean {
-  return Boolean(openstack?.enabled && openstack?.configured)
-}
-
-/** @deprecated Use isOpenStackConfigured — nav visibility; operational UI gates on phase === live. */
-export const isOpenStackNavEnabled = isOpenStackConfigured
 
 /** Match nav item href against current location (supports /fleet-cloud prefix + settings query). */
 export function navItemActive(
@@ -96,14 +82,13 @@ export function navGroupHasActive(
   pathname: string,
   search: string,
   username: string,
-  openstackReady: boolean,
   hypersdkEnabled = false,
   launchpadEnabled = true,
 ): boolean {
   return navDropdownSections(group).some((section) =>
     section.items.some(
       (item) =>
-        navItemVisible(item, username, openstackReady, hypersdkEnabled, launchpadEnabled) &&
+        navItemVisible(item, username, hypersdkEnabled, launchpadEnabled) &&
         navItemActive(item, pathname, search),
     ),
   )
@@ -112,13 +97,10 @@ export function navGroupHasActive(
 export function navItemVisible(
   item: NavItem,
   username: string,
-  openstackReady: boolean,
   hypersdkEnabled = false,
   launchpadEnabled = true,
 ): boolean {
   if (item.requiresRoot && username !== 'root') return false
-  if (item.requiresOpenStack && !openstackReady) return false
-  if (item.openstackSetupOnly && openstackReady) return false
   if (item.requiresHypersdk && !hypersdkEnabled) return false
   if (item.requiresLaunchpad && !launchpadEnabled) return false
   return true
@@ -312,17 +294,6 @@ export const navGroups: NavGroup[] = [
     items: [],
     menuScroll: true,
     sections: [
-      {
-        label: '',
-        items: [
-          {
-            to: '/settings?openstack=1',
-            icon: React.createElement(Cloud, { className: 'w-4 h-4' }),
-            label: 'Connect Fleet Cloud',
-            openstackSetupOnly: true,
-          },
-        ],
-      },
       {
         label: 'Compute',
         items: [

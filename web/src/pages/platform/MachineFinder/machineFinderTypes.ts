@@ -27,6 +27,6 @@ export const SOURCE_LABELS: Record<string, string> = {
   vmware: 'VMware',
   vsphere: 'VMware',
   proxmox: 'Proxmox',
-  openstack: 'OpenStack',
+  openstack: 'Fleet Cloud',
   discovered: 'Discovered',
 }

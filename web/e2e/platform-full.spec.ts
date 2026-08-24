@@ -76,7 +76,7 @@ test.describe('advanced tier platform routes', () => {
   }
 })
 
-test('integrations hub lists OpenStack when enabled', async ({ page }) => {
+test('integrations hub lists Fleet Cloud', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform/integrations')
   await expect(page.getByRole('heading', { name: 'Apps & Integrations' })).toBeVisible()
@@ -84,10 +84,10 @@ test('integrations hub lists OpenStack when enabled', async ({ page }) => {
   await expect(page.getByText('Kubernetes', { exact: true })).toBeVisible()
 })
 
-test('integrations hub shows live OpenStack and K8s preview stats', async ({ page }) => {
+test('integrations hub shows live Fleet Cloud and K8s preview stats', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform/integrations')
-  await expect(page.getByText('OpenStack preview')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Fleet Cloud preview')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Kubernetes preview')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Instances').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('web-01')).toBeVisible({ timeout: 15_000 })

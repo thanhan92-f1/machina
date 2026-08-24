@@ -3,10 +3,8 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { type ReactNode } from 'react'
-import { Link } from 'react-router'
-import { Activity, Lock, Shield, Boxes, KeyRound, Wifi, WifiOff, Cloud } from 'lucide-react'
+import { Activity, Lock, Shield, Boxes, KeyRound, Wifi, WifiOff } from 'lucide-react'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import { statusBadgeClasses, statusBorderClass } from '../utils/semanticColors'
 
 interface HeroProps {
@@ -61,47 +59,6 @@ function Badge({ on, label, icon, title, tone = 'default' }: BadgeProps) {
  */
 export default function Hero({ title, subtitle, icon, actions, children, hideBadges }: HeroProps) {
   const { info, providers, liveConnected, loading } = usePlatformInfo()
-  const { phase: osPhase, cloudName: osCloud, status: openstackStatus } = useOpenStackConnection()
-
-  const osBadge = (() => {
-    if (osPhase === 'live') {
-      const partial = openstackStatus && !openstackStatus.compute_reachable
-      return {
-        on: true,
-        label: partial ? `Fleet Cloud: Auth` : `Fleet Cloud: ${osCloud || 'live'}`,
-        tone: partial ? ('warn' as const) : ('info' as const),
-        title: partial
-          ? `Identity OK; Compute/Images may be down — ${openstackStatus?.error || 'see Fleet Cloud overview'}`
-          : `Cloud ${osCloud}; upload=${info?.openstack?.upload_enabled ? 'on' : 'off'}`,
-        to: '/fleet-cloud',
-      }
-    }
-    if (osPhase === 'unreachable') {
-      return {
-        on: true,
-        label: 'Fleet Cloud: unreachable',
-        tone: 'error' as const,
-        title: 'Configured but Auth/API not reachable',
-        to: '/fleet-cloud',
-      }
-    }
-    if (osPhase === 'needsWire') {
-      return {
-        on: false,
-        label: 'Fleet Cloud: not wired',
-        tone: 'warn' as const,
-        title: 'Enable [openstack] and run openstack-wire-cloud.sh',
-        to: '/settings?openstack=1',
-      }
-    }
-    return {
-      on: false,
-      label: 'Fleet Cloud off',
-      tone: 'warn' as const,
-      title: 'Enable [openstack] in /etc/machina/config.toml',
-      to: '/settings?openstack=1',
-    }
-  })()
 
   return (
     <div className="mb-6 rounded-2xl border border-slate-700/40 bg-gradient-to-br from-slate-900/70 via-slate-900/40 to-slate-800/40 p-5 backdrop-blur">
@@ -163,14 +120,6 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
             title={providers?.oidc.button_label}
             tone="info"
           />
-          <Link to={osBadge.to} className="inline-flex no-underline" title={osBadge.title}>
-            <Badge
-              on={osBadge.on}
-              label={osBadge.label}
-              icon={<Cloud className="h-3 w-3" />}
-              tone={osBadge.tone}
-            />
-          </Link>
           <Badge
             on={Boolean(info?.kubevirt.exec_enabled)}
             label={info?.kubevirt.exec_enabled ? 'KubeVirt: exec' : 'KubeVirt: bundle-only'}

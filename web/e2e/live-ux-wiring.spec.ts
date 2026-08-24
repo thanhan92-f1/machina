@@ -27,9 +27,9 @@ interface ManifestEntry {
   path: string
   tier: DesktopTier
   headingPattern: string
-  requires: 'openstack' | 'k8s' | null
+  requires: 'k8s' | null
   actions: ManifestAction[]
-  resolve?: 'platformResource' | 'classicVm' | 'storagePool' | 'openstackResource' | null
+  resolve?: 'platformResource' | 'classicVm' | 'storagePool' | null
 }
 
 interface RunResult {
@@ -134,10 +134,6 @@ async function resolveLivePath(
     return { path: `${base.replace(':pool', encodeURIComponent(pool))}${suffix}` }
   }
 
-  if (entry.resolve === 'openstackResource') {
-    return { path: entry.path, skipReason: 'openstack detail template — skipped until resource id wiring' }
-  }
-
   return { path: entry.path }
 }
 
@@ -186,12 +182,6 @@ for (const entry of manifest.entries) {
     await ensureLoggedIn(page, live!, { tier, navigate: false })
     const flags = await fetchPlatformFlags(page, live!)
 
-    if (entry.requires === 'openstack' && !flags.openstackEnabled) {
-      report.skipped += 1
-      report.results.push({ id: entry.id, path: entry.path, status: 'skipped', reason: 'openstack disabled' })
-      await context.close()
-      test.skip(true, 'openstack disabled on host')
-    }
     if (entry.requires === 'k8s' && !flags.k8sEnabled) {
       report.skipped += 1
       report.results.push({ id: entry.id, path: entry.path, status: 'skipped', reason: 'k8s disabled' })

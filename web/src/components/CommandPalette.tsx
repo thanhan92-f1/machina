@@ -16,10 +16,9 @@ import { listPools, StoragePoolInfo } from '../api/storage'
 import { listAllSnapshots, SnapshotInfo } from '../api/snapshot'
 import { useToastContext } from '../contexts/ToastContext'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
-import { navGroups, isOpenStackConfigured, navItemVisible, navGroupItems, TOP_BAR_QUICK_LINKS } from '../utils/routes'
+import { navGroups, navItemVisible, navGroupItems, TOP_BAR_QUICK_LINKS } from '../utils/routes'
 import { usePlatformInfoSlow } from '../contexts/PlatformInfoContext'
 import { useAi } from '../contexts/AiContext'
-import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import { useLaunchpadEnabled } from '../hooks/useLaunchpadEnabled'
 import { useAuth } from '../contexts/AuthContext'
 import { getStateBadgeClasses } from '../utils/vm'
@@ -97,9 +96,6 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const { info } = usePlatformInfoSlow()
   const { username } = useAuth()
   const { openCopilotWithQuery } = useAi()
-  const openstackConfigured = isOpenStackConfigured(info?.openstack)
-  const { phase: osPhase } = useOpenStackConnection()
-  const osLive = osPhase === 'live'
   const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
   const launchpadEnabled = useLaunchpadEnabled()
 
@@ -518,27 +514,16 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
     },
     { id: 'qa-kubevirt-workloads', icon: <Boxes className="w-4 h-4" />, label: 'KubeVirt Workloads', sublabel: 'g k', action: () => go('/k8s/workloads'), category: 'Quick Actions' },
   )
-  const osHint = osLive ? 'g o' : osPhase === 'unreachable' ? 'unreachable' : 'wire cloud first'
   items.push(
-    { id: 'qa-openstack', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud overview', sublabel: osHint, action: () => go('/fleet-cloud'), category: 'Quick Actions' },
-    { id: 'qa-openstack-instances', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud instances', sublabel: osHint, action: () => go('/fleet-cloud/instances'), category: 'Quick Actions' },
-    { id: 'qa-openstack-create', icon: <Plus className="w-4 h-4" />, label: 'Create Fleet Cloud instance', sublabel: osHint, action: () => go('/fleet-cloud/create'), category: 'Quick Actions' },
-    { id: 'qa-openstack-images', icon: <HardDrive className="w-4 h-4" />, label: 'Fleet Cloud images', sublabel: osHint, action: () => go('/fleet-cloud/images'), category: 'Quick Actions' },
+    { id: 'qa-fleet-cloud', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud overview', sublabel: 'g o', action: () => go('/fleet-cloud'), category: 'Quick Actions' },
+    { id: 'qa-fleet-cloud-instances', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud instances', sublabel: 'g o', action: () => go('/fleet-cloud/instances'), category: 'Quick Actions' },
+    { id: 'qa-fleet-cloud-create', icon: <Plus className="w-4 h-4" />, label: 'Create Fleet Cloud instance', sublabel: 'g o', action: () => go('/fleet-cloud/create'), category: 'Quick Actions' },
+    { id: 'qa-fleet-cloud-images', icon: <HardDrive className="w-4 h-4" />, label: 'Fleet Cloud images', sublabel: 'g o', action: () => go('/fleet-cloud/images'), category: 'Quick Actions' },
   )
   if (hypersdkEnabled) {
     items.push(
-      { id: 'qa-openstack-migrations', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud migrations', sublabel: osHint, action: () => go('/fleet-cloud/migrations'), category: 'Quick Actions' },
+      { id: 'qa-fleet-cloud-migrations', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud migrations', sublabel: 'g o', action: () => go('/fleet-cloud/migrations'), category: 'Quick Actions' },
     )
-  }
-  if (!openstackConfigured) {
-    items.push({
-      id: 'qa-openstack-setup',
-      icon: <Server className="w-4 h-4" />,
-      label: 'Connect Fleet Cloud on this host',
-      sublabel: 'Settings',
-      action: () => go('/settings?openstack=1'),
-      category: 'Setup',
-    })
   }
 
   if (onOpenHelp) {
@@ -572,7 +557,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   if (!onPlatformDesktop) {
     for (const group of navGroups) {
       for (const item of navGroupItems(group)) {
-        if (!navItemVisible(item, username, openstackConfigured, hypersdkEnabled, launchpadEnabled)) continue
+        if (!navItemVisible(item, username, hypersdkEnabled, launchpadEnabled)) continue
         items.push({
           id: `nav-${item.to}`,
           icon: item.icon,

@@ -17,24 +17,6 @@ const platformInfo = {
     virtio_container_disk_image: 'registry:5000/kubevirt/virt-launcher',
     machine_type: 'q35',
   },
-  openstack: {
-    enabled: true,
-    configured: true,
-    cloud_name: 'test',
-    upload_enabled: false,
-    upload_timeout_secs: 300,
-    default_os_cloud: 'test',
-    default_boot_instance: false,
-  },
-}
-
-const openstackLiveStatus = {
-  reachable: true,
-  keystone_reachable: true,
-  compute_reachable: true,
-  glance_reachable: true,
-  connected: true,
-  cloud_name: 'test',
 }
 
 /** Minimal authenticated API mock for classic (non-platform) routes in e2e. */
@@ -62,19 +44,6 @@ export async function mockAuthenticatedApi(page: Page) {
     }
     if (url.includes('/system/platform-info')) {
       return route.fulfill({ json: platformInfo })
-    }
-    if (url.includes('/openstack/status')) {
-      return route.fulfill({ json: openstackLiveStatus })
-    }
-    if (url.includes('/openstack/clouds')) {
-      return route.fulfill({ json: { clouds: [{ name: 'test', active: true }] } })
-    }
-    if (url.includes('/openstack/instances')) {
-      return route.fulfill({
-        status: 503,
-        contentType: 'text/html',
-        body: '<!DOCTYPE html><html><body>Bad Gateway</body></html>',
-      })
     }
     if (url.includes('/fleet/status')) {
       return route.fulfill({ json: { enabled: false, peers: [] } })

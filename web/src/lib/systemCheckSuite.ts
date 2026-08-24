@@ -12,16 +12,6 @@ import {
 } from '../api/host'
 import { listVMs } from '../api/vm'
 import { getNodeInfo } from '../api/node'
-import {
-  getOpenStackStatus,
-  postOpenStackTestConnection,
-  listOpenStackFlavors,
-  listOpenStackImages,
-  listOpenStackNetworks,
-  listOpenStackInstances,
-  createOpenStackInstance,
-  deleteOpenStackInstance,
-} from '../api/openstack'
 import { getK8sEnvironment, getK8sOverview } from '../api/k8s'
 import { getHypersdkStatus } from '../api/hypersdk'
 import { listServices } from '../api/extras'
@@ -33,7 +23,6 @@ export type CheckCategory =
   | 'api'
   | 'host'
   | 'libvirt'
-  | 'openstack'
   | 'kubernetes'
   | 'hypersdk'
   | 'services'
@@ -43,7 +32,6 @@ export const CHECK_CATEGORY_LABELS: Record<CheckCategory, string> = {
   api: 'API & platform',
   host: 'Host & virtualization',
   libvirt: 'Libvirt VMs',
-  openstack: 'OpenStack',
   kubernetes: 'Kubernetes',
   hypersdk: 'HyperSDK',
   services: 'Systemd services',
@@ -247,98 +235,6 @@ async function runLibvirtChecks(): Promise<CheckResult[]> {
   return out
 }
 
-async function runOpenStackChecks(platform: PlatformInfo): Promise<CheckResult[]> {
-  const os = platform.openstack
-  if (!os?.enabled) {
-    return [
-      skip('openstack-disabled', 'openstack', 'OpenStack integration', 'Disabled in daemon config'),
-    ]
-  }
-  if (!os.configured) {
-    return [
-      skip(
-        'openstack-not-configured',
-        'openstack',
-        'OpenStack integration',
-        'Enabled but not wired (clouds.yaml / auth)',
-      ),
-    ]
-  }
-
-  const out: CheckResult[] = []
-  out.push(
-    await timedCheck('openstack-status', 'openstack', 'Connection status', async () => {
-      const s = await getOpenStackStatus()
-      if (!s.reachable) {
-        return {
-          status: 'fail',
-          message: s.error || 'Keystone unreachable',
-          detail: s,
-        }
-      }
-      const parts = [
-        s.compute_reachable ? 'Nova' : 'Nova off',
-        s.glance_reachable ? 'Glance' : 'Glance off',
-      ]
-      if (!s.compute_reachable || !s.glance_reachable) {
-        return {
-          status: 'warn',
-          message: `Keystone OK · ${parts.join(' · ')}`,
-          detail: s,
-        }
-      }
-      return {
-        status: 'pass',
-        message: `Keystone · ${parts.join(' · ')}`,
-        detail: s,
-      }
-    }),
-  )
-  out.push(
-    await timedCheck('openstack-test-connection', 'openstack', 'Test connection', async () => {
-      const s = await postOpenStackTestConnection()
-      if (!s.reachable) {
-        return { status: 'fail', message: s.error || 'Test failed', detail: s }
-      }
-      if (!s.compute_reachable) {
-        return {
-          status: 'warn',
-          message: 'Identity OK; Nova compute API unavailable (fake driver or service down)',
-          detail: s,
-        }
-      }
-      return { status: 'pass', message: 'Test connection OK', detail: s }
-    }),
-  )
-
-  const catalogChecks = await Promise.all([
-    timedCheck('openstack-flavors', 'openstack', 'Flavors catalog', async () => {
-      const { flavors } = await listOpenStackFlavors()
-      if (flavors.length === 0) {
-        return { status: 'warn', message: 'No flavors', detail: flavors }
-      }
-      return { status: 'pass', message: `${flavors.length} flavor(s)`, detail: flavors }
-    }),
-    timedCheck('openstack-images', 'openstack', 'Images catalog', async () => {
-      const { images } = await listOpenStackImages()
-      const active = images.filter((i) => i.status?.toUpperCase() === 'ACTIVE')
-      if (active.length === 0) {
-        return { status: 'warn', message: 'No ACTIVE images', detail: images }
-      }
-      return { status: 'pass', message: `${active.length} ACTIVE image(s)`, detail: images }
-    }),
-    timedCheck('openstack-networks', 'openstack', 'Networks catalog', async () => {
-      const { networks } = await listOpenStackNetworks()
-      if (networks.length === 0) {
-        return { status: 'warn', message: 'No networks', detail: networks }
-      }
-      return { status: 'pass', message: `${networks.length} network(s)`, detail: networks }
-    }),
-  ])
-  out.push(...catalogChecks)
-  return out
-}
-
 async function runKubernetesChecks(): Promise<CheckResult[]> {
   const out: CheckResult[] = []
   out.push(
@@ -400,9 +296,6 @@ async function runHypersdkChecks(platform: PlatformInfo): Promise<CheckResult[]>
 const WATCHED_SERVICES = [
   'machina-daemon.service',
   'libvirtd.service',
-  'openstack-nova-compute.service',
-  'neutron-server.service',
-  'openstack-nova-api.service',
 ]
 
 async function runServiceChecks(): Promise<CheckResult[]> {
@@ -482,7 +375,6 @@ export const CHECK_CATEGORY_ORDER: CheckCategory[] = [
   'api',
   'host',
   'libvirt',
-  'openstack',
   'kubernetes',
   'hypersdk',
   'services',
@@ -523,11 +415,9 @@ export async function runSystemCheckSuite(
   await runCat('libvirt', runLibvirtChecks)
 
   if (platform) {
-    await runCat('openstack', () => runOpenStackChecks(platform!))
     await runCat('hypersdk', () => runHypersdkChecks(platform!))
   } else {
     results.push(
-      skip('openstack-no-platform', 'openstack', 'OpenStack', 'Platform info unavailable'),
       skip('hypersdk-no-platform', 'hypersdk', 'HyperSDK', 'Platform info unavailable'),
     )
   }
@@ -566,79 +456,4 @@ export function formatCheckReportMarkdown(
     lines.push('')
   }
   return lines.join('\n')
-}
-
-/** Destructive OpenStack create → list → delete smoke (requires configured cloud + catalogs). */
-export async function runOpenStackDeepSmoke(
-  platform: PlatformInfo,
-  onProgress?: (msg: string) => void,
-): Promise<CheckResult[]> {
-  const os = platform.openstack
-  if (!os?.enabled || !os.configured) {
-    return [
-      skip('deep-openstack', 'openstack', 'OpenStack deep smoke', 'OpenStack not configured'),
-    ]
-  }
-
-  const flavor = os.default_flavor || 'm1.tiny'
-  const image = 'cirros-test'
-  const network = os.default_network || 'private'
-  const name = `syscheck-os-${Date.now()}`
-
-  const results: CheckResult[] = []
-
-  results.push(
-    await timedCheck('deep-os-create', 'openstack', 'Create test instance', async () => {
-      onProgress?.('Creating OpenStack instance…')
-      const resp = await createOpenStackInstance({
-        name,
-        flavor,
-        image,
-        network,
-        wait_until_active: true,
-      })
-      if (resp.status.toUpperCase() === 'ERROR') {
-        return { status: 'fail', message: `Instance entered ERROR`, detail: resp }
-      }
-      return {
-        status: 'pass',
-        message: `Created ${resp.name} (${resp.status})`,
-        detail: resp,
-      }
-    }),
-  )
-
-  const create = results[0]
-  const instanceId =
-    create.detail &&
-    typeof create.detail === 'object' &&
-    'id' in (create.detail as object)
-      ? String((create.detail as { id: string }).id)
-      : null
-
-  if (create.status === 'fail' || !instanceId) {
-    return results
-  }
-
-  results.push(
-    await timedCheck('deep-os-list', 'openstack', 'List includes test instance', async () => {
-      onProgress?.('Listing instances…')
-      const { instances } = await listOpenStackInstances({ search: name })
-      const found = instances.some((i) => i.id === instanceId || i.name === name)
-      if (!found) {
-        return { status: 'fail', message: 'Instance not found in list', detail: instances }
-      }
-      return { status: 'pass', message: 'Instance visible in Nova list', detail: instances }
-    }),
-  )
-
-  results.push(
-    await timedCheck('deep-os-delete', 'openstack', 'Delete test instance', async () => {
-      onProgress?.('Deleting test instance…')
-      await deleteOpenStackInstance(instanceId)
-      return { status: 'pass', message: `Deleted ${name}`, detail: { id: instanceId } }
-    }),
-  )
-
-  return results
 }

@@ -40,7 +40,7 @@ test('normal tier shell bridge links to integrations hub', async ({ page }) => {
   ])
 })
 
-test('OpenStack subnav links to platform when fleet mode', async ({ page }) => {
+test('Fleet Cloud subnav links to platform when fleet mode', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/fleet-cloud')
   await waitForPlatformSession(page)

@@ -82,7 +82,6 @@ const FleetCloudFlavors = lazyWithRetry(() => import('./pages/FleetCloudFlavors'
 const FleetCloudServerGroups = lazyWithRetry(() => import('./pages/FleetCloudServerGroups'))
 const FleetCloudImageDetail = lazyWithRetry(() => import('./pages/FleetCloudImageDetail'))
 const FleetCloudVolumeDetail = lazyWithRetry(() => import('./pages/FleetCloudVolumeDetail'))
-const FleetCloudHypervisorDetail = lazyWithRetry(() => import('./pages/FleetCloudHypervisorDetail'))
 const FleetCloudFloatingIps = lazyWithRetry(() => import('./pages/FleetCloudFloatingIps'))
 const FleetCloudVolumeSnapshots = lazyWithRetry(() => import('./pages/FleetCloudVolumeSnapshots'))
 const FleetCloudNetworkDetail = lazyWithRetry(() => import('./pages/FleetCloudNetworkDetail'))
@@ -516,7 +515,6 @@ function AuthenticatedShellRoutes() {
                 <Route path="/fleet-cloud/server-groups" element={<FleetCloudServerGroups />} />
                 <Route path="/fleet-cloud/server-groups/:id" element={<FleetCloudServerGroupDetail />} />
                 <Route path="/fleet-cloud/networks/:id" element={<FleetCloudNetworkDetail />} />
-                <Route path="/fleet-cloud/hypervisors/:id" element={<FleetCloudHypervisorDetail />} />
                 <Route path="/fleet-cloud/volume-snapshots" element={<FleetCloudVolumeSnapshots />} />
                 <Route path="/fleet-cloud/volume-snapshots/:id" element={<FleetCloudVolumeSnapshotDetail />} />
                 <Route path="/fleet-cloud/heat" element={<FleetCloudHeat />} />
