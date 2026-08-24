@@ -2,10 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Network, Loader2, Trash2 } from 'lucide-react'
-import type { OpenStackNetwork } from '../api/openstack'
-import { getOpenStackNetwork, updateOpenStackNetwork, deleteOpenStackNetwork } from '../api/openstackExtras'
-import OpenStackGate from '../components/OpenStackGate'
+import { ArrowLeft, Network, Trash2 } from 'lucide-react'
+import { deleteNetwork, getNetwork, type NativeNetwork } from '../api/nativeNetworks'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
@@ -15,19 +13,17 @@ import { formatUserError } from '../utils/apiError'
 import { statusDestructiveButtonClasses, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+// Native network detail — not gated by <OpenStackGate>. No rename (the native
+// networks API has no name-update field — vlan_id/bridge/segment_id only).
 export default function OpenStackNetworkDetailPage() {
-  return (
-    <OpenStackGate title="Network">
-      <OpenStackNetworkDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackNetworkDetailContent />
 }
 
 function OpenStackNetworkDetailContent() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()
-  const [net, setNet] = useState<OpenStackNetwork | null>(null)
+  const [net, setNet] = useState<NativeNetwork | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleteOpen, setDeleteOpen] = useState(false)
   useBreadcrumbName(net?.name)
@@ -41,7 +37,7 @@ function OpenStackNetworkDetailContent() {
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const { network } = await getOpenStackNetwork(id)
+      const network = await getNetwork(id)
       if (!alive()) return
       setNet(network)
     } catch (e: unknown) {
@@ -77,38 +73,26 @@ function OpenStackNetworkDetailContent() {
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <Network className="w-7 h-7 text-sky-400" />
-        {net.name || net.id.slice(0, 12)}
+        {net.name}
       </h1>
       <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
         <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{net.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="text-slate-200 mt-1">{net.status}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">External</dt><dd className="text-slate-200 mt-1">{net.external ? 'Yes' : 'No'}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Shared</dt><dd className="text-slate-200 mt-1">{net.shared ? 'Yes' : 'No'}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Backend</dt><dd className="text-slate-200 mt-1">{net.backend}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">VLAN</dt><dd className="text-slate-200 mt-1">{net.vlan_id ?? '—'}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Bridge</dt><dd className="text-slate-200 mt-1">{net.bridge ?? '—'}</dd></div>
       </dl>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm"
-          onClick={async () => {
-            const n = prompt('Network name', net.name)
-            if (n === null || !n.trim()) return
-            try {
-              await updateOpenStackNetwork(net.id, { name: n.trim() })
-              toast.success('Renamed')
-              void load()
-            } catch (e: unknown) { toast.error(formatUserError(e)) }
-          }}>Rename</button>
-        <button type="button" className={statusDestructiveButtonClasses('text-sm inline-flex items-center gap-1')}
-          onClick={() => setDeleteOpen(true)}>
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
-      </div>
+      <button type="button" className={statusDestructiveButtonClasses('text-sm inline-flex items-center gap-1')}
+        onClick={() => setDeleteOpen(true)}>
+        <Trash2 className="w-4 h-4" /> Delete
+      </button>
       {deleteOpen && (
         <div className={`rounded-xl p-4 space-y-3 ${statusSurfaceClasses('error')}`}>
-          <p className={`text-sm ${statusToneClass('error')}`}>Delete network <span className="font-mono">{net.name || net.id}</span>? Subnets and ports must be removed first.</p>
+          <p className={`text-sm ${statusToneClass('error')}`}>Delete network <span className="font-mono">{net.name}</span>? Ports on it must be removed first.</p>
           <div className="flex gap-2">
             <button type="button" className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm"
               onClick={async () => {
                 try {
-                  await deleteOpenStackNetwork(net.id)
+                  await deleteNetwork(net.id)
                   toast.success('Network deleted')
                   navigate('/openstack/networking')
                 } catch (e: unknown) {

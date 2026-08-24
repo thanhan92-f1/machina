@@ -18,3 +18,14 @@ export interface NativePort {
 export function listPorts(): Promise<NativePort[]> {
   return platformFetch<NativePort[]>('/api/v1/ports')
 }
+
+export function createPort(body: { network_id: string; vm_id?: string; security_group_id?: string }): Promise<NativePort> {
+  return platformFetch<NativePort>('/api/v1/ports', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deletePort(id: string): Promise<void> {
+  await platformFetch(`/api/v1/ports/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}

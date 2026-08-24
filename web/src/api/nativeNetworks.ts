@@ -18,3 +18,18 @@ export interface NativeNetwork {
 export function listNetworks(): Promise<NativeNetwork[]> {
   return platformFetch<NativeNetwork[]>('/api/v1/networks')
 }
+
+export function createNetwork(body: { name: string; backend?: string; vlan_id?: number; bridge?: string }): Promise<NativeNetwork> {
+  return platformFetch<NativeNetwork>('/api/v1/networks', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteNetwork(id: string): Promise<void> {
+  await platformFetch(`/api/v1/networks/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function getNetwork(id: string): Promise<NativeNetwork> {
+  return platformFetch<NativeNetwork>(`/api/v1/networks/${encodeURIComponent(id)}`)
+}
