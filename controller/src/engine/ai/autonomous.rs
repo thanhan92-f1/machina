@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+const LLM_RECOMMENDATION_LINES: usize = 3;
+
 #[derive(Debug, Deserialize)]
 pub struct AutonomousPlanBody {
     pub goal: String,
@@ -124,7 +126,9 @@ async fn plan_with_agent(
     .await
     {
         deterministic = false;
-        let extra_text = llm.lines().take(3).collect::<Vec<_>>().join(" ");
+        // Only the first few lines of the LLM reply are folded into the plan
+        // step so a verbose completion doesn't blow up the step's detail text.
+        let extra_text = llm.lines().take(LLM_RECOMMENDATION_LINES).collect::<Vec<_>>().join(" ");
         if !extra_text.trim().is_empty() {
             steps.push(AutonomousPlanStep {
                 order: 5,

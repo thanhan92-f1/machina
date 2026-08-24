@@ -3,6 +3,25 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
+// Fallback FinOps rates when no cluster row carries pricing yet (approx.
+// on-demand cloud vCPU/GiB pricing at the time these defaults were chosen).
+const DEFAULT_VCPU_HOUR_USD: f64 = 0.02;
+const DEFAULT_GIB_HOUR_USD: f64 = 0.005;
+// Assumed idle-host shape used only to size the savings estimate: a
+// mid-range 16 vCPU / 64 GiB node running nearly full-time in a month.
+const IDLE_HOST_VCPUS: f64 = 16.0;
+const IDLE_HOST_GIB: f64 = 64.0;
+const HOURS_PER_MONTH: f64 = 730.0;
+// Estimated fraction of a cold host's cost that is recoverable by
+// consolidating/powering it down (rest is fixed overhead that persists).
+const IDLE_HOST_SAVINGS_FRACTION: f64 = 0.15;
+// Hotspot rebalancing recovers a smaller share since VMs are migrated, not
+// powered off — the host keeps running for whatever remains.
+const HOTSPOT_REBALANCE_SAVINGS_FRACTION: f64 = 0.4;
+// Only the top-N hotspots get a rebalance recommendation to avoid flooding
+// the report when many hosts are mildly over-utilized.
+const TOP_HOTSPOTS_LIMIT: usize = 3;
+
 #[derive(Debug, Serialize)]
 pub struct PowerOptimization {
     pub host: String,
@@ -25,9 +44,11 @@ pub async fn optimize(pool: &SqlitePool) -> anyhow::Result<FleetPowerReport> {
     )
     .fetch_one(pool)
     .await
-    .unwrap_or((0.02, 0.005));
+    .unwrap_or((DEFAULT_VCPU_HOUR_USD, DEFAULT_GIB_HOUR_USD));
 
-    let idle_host_monthly = (16.0 * rates.0 + 64.0 * rates.1) * 730.0 * 0.15;
+    let idle_host_monthly = (IDLE_HOST_VCPUS * rates.0 + IDLE_HOST_GIB * rates.1)
+        * HOURS_PER_MONTH
+        * IDLE_HOST_SAVINGS_FRACTION;
 
     let mut optimizations = Vec::new();
     for host in &heat.power_waste_hosts {
@@ -39,11 +60,11 @@ pub async fn optimize(pool: &SqlitePool) -> anyhow::Result<FleetPowerReport> {
         });
     }
 
-    for host in heat.hotspots.iter().take(3) {
+    for host in heat.hotspots.iter().take(TOP_HOTSPOTS_LIMIT) {
         optimizations.push(PowerOptimization {
             host: host.clone(),
             action: "rebalance_vms".into(),
-            estimated_savings_usd_month: idle_host_monthly * 0.4,
+            estimated_savings_usd_month: idle_host_monthly * HOTSPOT_REBALANCE_SAVINGS_FRACTION,
             reason: "Hotspot host — live-migrate VMs to cold nodes.".into(),
         });
     }

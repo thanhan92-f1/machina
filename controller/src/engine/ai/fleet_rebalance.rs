@@ -9,6 +9,17 @@ use crate::auth::AuthUser;
 use crate::state::AppState;
 use crate::tasks::enqueue::enqueue_task;
 
+// Caller-requested move count is clamped to a sane range: at least one move
+// if any are proposed, and no more than 20 to avoid enqueuing an
+// unreasonably large migration wave from a single AI proposal.
+const MIN_MOVES: usize = 1;
+const MAX_MOVES: usize = 20;
+// Heuristic efficiency-gain estimate per migration, capped so the reported
+// savings percentage never claims an implausibly large improvement.
+const SAVINGS_PCT_PER_MOVE: f32 = 4.5;
+const MAX_ESTIMATED_SAVINGS_PCT: f32 = 25.0;
+const DEFAULT_EXECUTE_MAX_MOVES: usize = 5;
+
 #[derive(Debug, Serialize)]
 pub struct RebalanceMove {
     pub vm_id: String,
@@ -28,7 +39,7 @@ pub struct RebalanceProposal {
 
 pub async fn propose(pool: &SqlitePool, max_moves: usize) -> anyhow::Result<RebalanceProposal> {
     let recs = crate::engine::placement::compute_recommendations(pool).await?;
-    let cap = max_moves.clamp(1, 20);
+    let cap = max_moves.clamp(MIN_MOVES, MAX_MOVES);
     let moves: Vec<RebalanceMove> = recs
         .into_iter()
         .take(cap)
@@ -45,7 +56,7 @@ pub async fn propose(pool: &SqlitePool, max_moves: usize) -> anyhow::Result<Reba
     let estimated_savings_pct = if moves.is_empty() {
         0.0
     } else {
-        (moves.len() as f32 * 4.5).min(25.0)
+        (moves.len() as f32 * SAVINGS_PCT_PER_MOVE).min(MAX_ESTIMATED_SAVINGS_PCT)
     };
 
     let summary = if moves.is_empty() {
@@ -74,7 +85,7 @@ pub struct RebalanceExecuteBody {
 }
 
 fn default_rebalance_execute_max() -> usize {
-    5
+    DEFAULT_EXECUTE_MAX_MOVES
 }
 
 #[derive(Debug, Serialize)]

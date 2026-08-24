@@ -4,6 +4,20 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+// Heuristic scoring weights for GPU placement — tuned so a GPU-tagged host
+// with light load clearly outranks a busy general-purpose host, without
+// letting CPU/memory alone push a non-GPU host above a GPU one.
+const BASE_SCORE: f32 = 50.0;
+const GPU_TAG_BONUS: f32 = 35.0;
+const CPU_HEADROOM_WEIGHT: f32 = 0.2;
+const MEM_HEADROOM_WEIGHT: f32 = 0.15;
+const PER_VM_PENALTY: f32 = 1.5;
+// Cap the headroom credit so an idle host doesn't dominate purely on being
+// empty — utilization below this floor all scores the same.
+const HEADROOM_UTILIZATION_FLOOR: f32 = 95.0;
+// Only the top-N candidates are surfaced in the report.
+const MAX_CANDIDATES: usize = 8;
+
 #[derive(Debug, Serialize)]
 pub struct GpuHostCandidate {
     pub host_id: String,
@@ -41,13 +55,13 @@ pub async fn advise_gpu(pool: &SqlitePool, workload: &str) -> anyhow::Result<Gpu
         } else {
             0.0
         };
-        let mut score = 50.0_f32;
+        let mut score = BASE_SCORE;
         if gpu_capable {
-            score += 35.0;
+            score += GPU_TAG_BONUS;
         }
-        score += (100.0 - cpu.min(95.0)) * 0.2;
-        score += (100.0 - mem_pct.min(95.0)) * 0.15;
-        score -= vm_count as f32 * 1.5;
+        score += (100.0 - cpu.min(HEADROOM_UTILIZATION_FLOOR)) * CPU_HEADROOM_WEIGHT;
+        score += (100.0 - mem_pct.min(HEADROOM_UTILIZATION_FLOOR)) * MEM_HEADROOM_WEIGHT;
+        score -= vm_count as f32 * PER_VM_PENALTY;
 
         let numa_hint = if gpu_capable {
             "Prefer local NUMA node for GPU passthrough / vGPU".into()
@@ -95,7 +109,7 @@ pub async fn advise_gpu(pool: &SqlitePool, workload: &str) -> anyhow::Result<Gpu
 
     Ok(GpuPlacementReport {
         workload: workload.into(),
-        candidates: candidates.into_iter().take(8).collect(),
+        candidates: candidates.into_iter().take(MAX_CANDIDATES).collect(),
         summary,
     })
 }

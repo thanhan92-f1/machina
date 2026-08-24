@@ -117,12 +117,15 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<EnterpriseSecurityOve
     })
 }
 
+/// Shared column list for `vault_providers` reads — kept as one constant so the
+/// four call sites below (list, register, sync one, sync all) can't drift.
+const VAULT_PROVIDER_COLUMNS: &str = "id, name, provider_type, address, namespace, status,
+                strftime('%Y-%m-%dT%H:%M:%SZ', last_sync_at) AS last_sync_at";
+
 pub async fn list_vault_providers(pool: &SqlitePool) -> anyhow::Result<Vec<VaultProviderRow>> {
-    sqlx::query_as(
-        "SELECT id, name, provider_type, address, namespace, status,
-                strftime('%Y-%m-%dT%H:%M:%SZ', last_sync_at) AS last_sync_at
-         FROM vault_providers ORDER BY name",
-    )
+    sqlx::query_as(&format!(
+        "SELECT {VAULT_PROVIDER_COLUMNS} FROM vault_providers ORDER BY name"
+    ))
     .fetch_all(pool)
     .await
     .map_err(|e| e.into())
@@ -167,11 +170,9 @@ pub async fn register_vault_provider(
     .execute(pool)
     .await?;
 
-    sqlx::query_as(
-        "SELECT id, name, provider_type, address, namespace, status,
-                strftime('%Y-%m-%dT%H:%M:%SZ', last_sync_at) AS last_sync_at
-         FROM vault_providers WHERE name = ?",
-    )
+    sqlx::query_as(&format!(
+        "SELECT {VAULT_PROVIDER_COLUMNS} FROM vault_providers WHERE name = ?"
+    ))
     .bind(name)
     .fetch_one(pool)
     .await
@@ -229,12 +230,15 @@ pub async fn upsert_mfa_policy(
     .map_err(|e| e.into())
 }
 
+/// Shared column list for `air_gap_bundles` reads — kept as one constant so the
+/// three call sites below (list, create, get) can't drift.
+const AIR_GAP_BUNDLE_COLUMNS: &str = "id, name, checksum, manifest_json, size_bytes,
+                strftime('%Y-%m-%dT%H:%M:%SZ', exported_at) AS exported_at";
+
 pub async fn list_air_gap_bundles(pool: &SqlitePool) -> anyhow::Result<Vec<AirGapBundleRow>> {
-    sqlx::query_as(
-        "SELECT id, name, checksum, manifest_json, size_bytes,
-                strftime('%Y-%m-%dT%H:%M:%SZ', exported_at) AS exported_at
-         FROM air_gap_bundles ORDER BY exported_at DESC",
-    )
+    sqlx::query_as(&format!(
+        "SELECT {AIR_GAP_BUNDLE_COLUMNS} FROM air_gap_bundles ORDER BY exported_at DESC"
+    ))
     .fetch_all(pool)
     .await
     .map_err(|e| e.into())
@@ -298,11 +302,9 @@ pub async fn create_air_gap_bundle(
     .execute(pool)
     .await?;
 
-    sqlx::query_as(
-        "SELECT id, name, checksum, manifest_json, size_bytes,
-                strftime('%Y-%m-%dT%H:%M:%SZ', exported_at) AS exported_at
-         FROM air_gap_bundles WHERE id = ?",
-    )
+    sqlx::query_as(&format!(
+        "SELECT {AIR_GAP_BUNDLE_COLUMNS} FROM air_gap_bundles WHERE id = ?"
+    ))
     .bind(id)
     .fetch_one(pool)
     .await
@@ -310,11 +312,9 @@ pub async fn create_air_gap_bundle(
 }
 
 pub async fn get_air_gap_bundle(pool: &SqlitePool, id: Uuid) -> anyhow::Result<AirGapBundleRow> {
-    sqlx::query_as(
-        "SELECT id, name, checksum, manifest_json, size_bytes,
-                strftime('%Y-%m-%dT%H:%M:%SZ', exported_at) AS exported_at
-         FROM air_gap_bundles WHERE id = ?",
-    )
+    sqlx::query_as(&format!(
+        "SELECT {AIR_GAP_BUNDLE_COLUMNS} FROM air_gap_bundles WHERE id = ?"
+    ))
     .bind(id)
     .fetch_optional(pool)
     .await?
@@ -421,11 +421,9 @@ pub struct UpsertTenantPolicyRequest {
 }
 
 pub async fn sync_vault_provider(pool: &SqlitePool, id: Uuid) -> anyhow::Result<VaultSyncResult> {
-    let row: VaultProviderRow = sqlx::query_as(
-        "SELECT id, name, provider_type, address, namespace, status,
-                strftime('%Y-%m-%dT%H:%M:%SZ', last_sync_at) AS last_sync_at
-         FROM vault_providers WHERE id = ?",
-    )
+    let row: VaultProviderRow = sqlx::query_as(&format!(
+        "SELECT {VAULT_PROVIDER_COLUMNS} FROM vault_providers WHERE id = ?"
+    ))
     .bind(id)
     .fetch_optional(pool)
     .await?
@@ -460,11 +458,9 @@ pub async fn sync_vault_provider(pool: &SqlitePool, id: Uuid) -> anyhow::Result<
 }
 
 pub async fn sync_all_vault_providers(pool: &SqlitePool) -> anyhow::Result<VaultSyncAllResult> {
-    let rows: Vec<VaultProviderRow> = sqlx::query_as(
-        "SELECT id, name, provider_type, address, namespace, status,
-                strftime('%Y-%m-%dT%H:%M:%SZ', last_sync_at) AS last_sync_at
-         FROM vault_providers ORDER BY name",
-    )
+    let rows: Vec<VaultProviderRow> = sqlx::query_as(&format!(
+        "SELECT {VAULT_PROVIDER_COLUMNS} FROM vault_providers ORDER BY name"
+    ))
     .fetch_all(pool)
     .await?;
     let mut results = Vec::new();

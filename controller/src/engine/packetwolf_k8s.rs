@@ -134,6 +134,29 @@ pub fn apply_export_forwarder(
     }
 }
 
+/// Fills in the fields every `export_forwarder_status` outcome shares
+/// (cluster_id/host_id/namespace/export_url), leaving callers to supply just
+/// what differs per outcome (deployed/ready/message).
+fn export_forwarder_status_result(
+    cluster_id: &str,
+    host_id: String,
+    namespace: &str,
+    export_url: String,
+    forwarder_deployed: bool,
+    ready_replicas: u32,
+    message: String,
+) -> K8sExportForwarderStatus {
+    K8sExportForwarderStatus {
+        cluster_id: cluster_id.into(),
+        host_id,
+        namespace: namespace.into(),
+        forwarder_deployed,
+        ready_replicas,
+        export_url,
+        message,
+    }
+}
+
 pub fn export_forwarder_status(
     cfg: &ControllerConfig,
     cluster_id: &str,
@@ -142,15 +165,15 @@ pub fn export_forwarder_status(
     let host_id = format!("k8s-{cluster_id}");
     let export_url = packetwolf_export_url(cfg);
     if !kubectl_available() {
-        return K8sExportForwarderStatus {
-            cluster_id: cluster_id.into(),
+        return export_forwarder_status_result(
+            cluster_id,
             host_id,
-            namespace: namespace.into(),
-            forwarder_deployed: false,
-            ready_replicas: 0,
+            namespace,
             export_url,
-            message: "kubectl not available".into(),
-        };
+            false,
+            0,
+            "kubectl not available".into(),
+        );
     }
     let output = Command::new("kubectl")
         .args([
@@ -170,45 +193,35 @@ pub fn export_forwarder_status(
                 .trim()
                 .parse::<u32>()
                 .unwrap_or(0);
-            K8sExportForwarderStatus {
-                cluster_id: cluster_id.into(),
-                host_id,
-                namespace: namespace.into(),
-                forwarder_deployed: true,
-                ready_replicas: ready,
-                export_url,
-                message: if ready > 0 {
-                    format!("Export forwarder running ({ready} ready replica(s))")
-                } else {
-                    "Export forwarder deployed but not ready".into()
-                },
-            }
+            let message = if ready > 0 {
+                format!("Export forwarder running ({ready} ready replica(s))")
+            } else {
+                "Export forwarder deployed but not ready".into()
+            };
+            export_forwarder_status_result(
+                cluster_id, host_id, namespace, export_url, true, ready, message,
+            )
         }
         Ok(o) => {
             let stderr = String::from_utf8_lossy(&o.stderr).trim().to_string();
-            K8sExportForwarderStatus {
-                cluster_id: cluster_id.into(),
-                host_id,
-                namespace: namespace.into(),
-                forwarder_deployed: false,
-                ready_replicas: 0,
-                export_url,
-                message: if stderr.is_empty() {
-                    "Export forwarder not deployed".into()
-                } else {
-                    stderr
-                },
-            }
+            let message = if stderr.is_empty() {
+                "Export forwarder not deployed".into()
+            } else {
+                stderr
+            };
+            export_forwarder_status_result(
+                cluster_id, host_id, namespace, export_url, false, 0, message,
+            )
         }
-        Err(e) => K8sExportForwarderStatus {
-            cluster_id: cluster_id.into(),
+        Err(e) => export_forwarder_status_result(
+            cluster_id,
             host_id,
-            namespace: namespace.into(),
-            forwarder_deployed: false,
-            ready_replicas: 0,
+            namespace,
             export_url,
-            message: format!("kubectl status failed: {e}"),
-        },
+            false,
+            0,
+            format!("kubectl status failed: {e}"),
+        ),
     }
 }
 

@@ -4,6 +4,24 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+// Graph/query size caps to keep the twin graph and impact-analysis queries
+// bounded on a large fleet.
+const GRAPH_VM_LIMIT: i64 = 200;
+const HOST_VM_LIMIT: i64 = 500;
+const SWITCH_VM_LIMIT: i64 = 50;
+// Shared "blast radius" severity threshold: an action affecting this many
+// or more VMs is escalated to "critical" across storage/network/segment/
+// switch impact assessments (host shutdown/migrate use their own lower
+// thresholds since a single host's VM count is naturally smaller).
+const CRITICAL_VM_COUNT_THRESHOLD: i64 = 10;
+const CRITICAL_VM_COUNT_THRESHOLD_USIZE: usize = 10;
+// Rough downtime estimates by action type, used only to give the simulation
+// a plausible ballpark: a live migration is typically fast; a full
+// shutdown/failure means the workload is down until manually recovered.
+const DOWNTIME_MIGRATE_SEC: i64 = 120;
+const DOWNTIME_SHUTDOWN_SEC: i64 = 300;
+const DOWNTIME_DEFAULT_SEC: i64 = 60;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TwinNode {
     pub kind: String,
@@ -103,7 +121,8 @@ pub async fn build_graph(pool: &SqlitePool) -> anyhow::Result<DigitalTwinGraph> 
     }
 
     let vms: Vec<(Uuid, String, Option<Uuid>, String)> =
-        sqlx::query_as("SELECT id, name, host_id, observed_state FROM vms ORDER BY name LIMIT 200")
+        sqlx::query_as("SELECT id, name, host_id, observed_state FROM vms ORDER BY name LIMIT ?")
+            .bind(GRAPH_VM_LIMIT)
             .fetch_all(pool)
             .await?;
     for (vid, name, host_id, st) in vms {
@@ -272,7 +291,7 @@ async fn storage_shutdown_impact(pool: &SqlitePool, target: &str) -> anyhow::Res
         0.0
     };
 
-    let severity = if vm_count >= 10 {
+    let severity = if vm_count >= CRITICAL_VM_COUNT_THRESHOLD {
         "critical"
     } else if vm_count > 0 {
         "high"
@@ -301,22 +320,39 @@ async fn storage_shutdown_impact(pool: &SqlitePool, target: &str) -> anyhow::Res
     })
 }
 
-async fn resolve_storage(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid> {
+/// Shared body for the `resolve_*` helpers below: a target is either already
+/// a UUID, or a human-typed name that needs a lookup in `table.name_col`.
+/// `table`/`name_col` are fixed string literals from call sites (never user
+/// input), so interpolating them into the query text carries no injection
+/// risk — only `target` (untrusted) is passed as a bind parameter.
+async fn resolve_id_by_name(
+    pool: &SqlitePool,
+    target: &str,
+    table: &str,
+    name_col: &str,
+    kind_label: &str,
+) -> anyhow::Result<Uuid> {
     if let Ok(id) = Uuid::parse_str(target) {
         return Ok(id);
     }
-    let id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM storage_pools WHERE name = ?")
+    let sql = format!("SELECT id FROM {table} WHERE {name_col} = ?");
+    let id: Option<Uuid> = sqlx::query_scalar(&sql)
         .bind(target)
         .fetch_optional(pool)
         .await?;
-    id.ok_or_else(|| anyhow::anyhow!("storage pool not found: {target}"))
+    id.ok_or_else(|| anyhow::anyhow!("{kind_label} not found: {target}"))
+}
+
+async fn resolve_storage(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid> {
+    resolve_id_by_name(pool, target, "storage_pools", "name", "storage pool").await
 }
 
 async fn host_shutdown_impact(pool: &SqlitePool, target: &str) -> anyhow::Result<ImpactAnalysis> {
     let host_id = resolve_host(pool, target).await?;
     let vms: Vec<(Uuid, String, String)> =
-        sqlx::query_as("SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT 500")
+        sqlx::query_as("SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT ?")
             .bind(host_id)
+            .bind(HOST_VM_LIMIT)
             .fetch_all(pool)
             .await?;
 
@@ -446,8 +482,9 @@ async fn host_migrate_impact(pool: &SqlitePool, target: &str) -> anyhow::Result<
         .await?;
 
     let vms: Vec<(Uuid, String, String)> =
-        sqlx::query_as("SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT 500")
+        sqlx::query_as("SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT ?")
             .bind(host_id)
+            .bind(HOST_VM_LIMIT)
             .fetch_all(pool)
             .await?;
 
@@ -525,7 +562,7 @@ async fn network_isolate_impact(pool: &SqlitePool, target: &str) -> anyhow::Resu
     .await
     .unwrap_or_default();
 
-    let severity = if vms.len() >= 10 {
+    let severity = if vms.len() >= CRITICAL_VM_COUNT_THRESHOLD_USIZE {
         "critical"
     } else if vms.is_empty() {
         "low"
@@ -587,7 +624,7 @@ async fn segment_isolate_impact(pool: &SqlitePool, target: &str) -> anyhow::Resu
             .fetch_one(pool)
             .await?;
 
-    let severity = if vms.len() >= 10 {
+    let severity = if vms.len() >= CRITICAL_VM_COUNT_THRESHOLD_USIZE {
         "critical"
     } else if vms.is_empty() {
         "low"
@@ -655,7 +692,7 @@ async fn switch_isolate_impact(pool: &SqlitePool, target: &str) -> anyhow::Resul
             .collect::<Vec<_>>()
             .join(",");
         let sql = format!(
-            "SELECT name FROM vms WHERE host_id IN ({placeholders}) ORDER BY name LIMIT 50"
+            "SELECT name FROM vms WHERE host_id IN ({placeholders}) ORDER BY name LIMIT {SWITCH_VM_LIMIT}"
         );
         let mut q = sqlx::query_scalar::<_, String>(&sql);
         for (id, _) in &rows {
@@ -664,7 +701,7 @@ async fn switch_isolate_impact(pool: &SqlitePool, target: &str) -> anyhow::Resul
         q.fetch_all(pool).await.unwrap_or_default()
     };
 
-    let severity = if vms.len() >= 10 {
+    let severity = if vms.len() >= CRITICAL_VM_COUNT_THRESHOLD_USIZE {
         "critical"
     } else if hostnames.is_empty() {
         "low"
@@ -700,47 +737,19 @@ async fn switch_isolate_impact(pool: &SqlitePool, target: &str) -> anyhow::Resul
 }
 
 async fn resolve_segment(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid> {
-    if let Ok(id) = Uuid::parse_str(target) {
-        return Ok(id);
-    }
-    let id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM network_segments WHERE name = ?")
-        .bind(target)
-        .fetch_optional(pool)
-        .await?;
-    id.ok_or_else(|| anyhow::anyhow!("segment not found: {target}"))
+    resolve_id_by_name(pool, target, "network_segments", "name", "segment").await
 }
 
 async fn resolve_network(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid> {
-    if let Ok(id) = Uuid::parse_str(target) {
-        return Ok(id);
-    }
-    let id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM networks WHERE name = ?")
-        .bind(target)
-        .fetch_optional(pool)
-        .await?;
-    id.ok_or_else(|| anyhow::anyhow!("network not found: {target}"))
+    resolve_id_by_name(pool, target, "networks", "name", "network").await
 }
 
 async fn resolve_host(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid> {
-    if let Ok(id) = Uuid::parse_str(target) {
-        return Ok(id);
-    }
-    let id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM hosts WHERE hostname = ?")
-        .bind(target)
-        .fetch_optional(pool)
-        .await?;
-    id.ok_or_else(|| anyhow::anyhow!("host not found: {target}"))
+    resolve_id_by_name(pool, target, "hosts", "hostname", "host").await
 }
 
 async fn resolve_vm(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid> {
-    if let Ok(id) = Uuid::parse_str(target) {
-        return Ok(id);
-    }
-    let id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM vms WHERE name = ?")
-        .bind(target)
-        .fetch_optional(pool)
-        .await?;
-    id.ok_or_else(|| anyhow::anyhow!("vm not found: {target}"))
+    resolve_id_by_name(pool, target, "vms", "name", "vm").await
 }
 
 pub async fn simulate_batch(
@@ -752,9 +761,9 @@ pub async fn simulate_batch(
         let impact = analyze_impact(pool, scenario).await?;
         let vms_at_risk = impact.affected_vms.len() as i64;
         let estimated_downtime_sec = match scenario.action.as_str() {
-            a if a.contains("migrate") => 120,
-            a if a.contains("shutdown") || a.contains("failure") => 300,
-            _ => 60,
+            a if a.contains("migrate") => DOWNTIME_MIGRATE_SEC,
+            a if a.contains("shutdown") || a.contains("failure") => DOWNTIME_SHUTDOWN_SEC,
+            _ => DOWNTIME_DEFAULT_SEC,
         };
         let storage_unavailable_gib = if scenario.target_kind == "storage"
             || !impact.storage_risks.is_empty()

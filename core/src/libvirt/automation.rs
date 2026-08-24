@@ -12,6 +12,11 @@ use crate::LibvirtError;
 
 const DATA_DIR: &str = "/var/lib/machina";
 
+/// Canonical timestamp format for persisted `Alert.timestamp` / schedule `last_run`
+/// fields — must stay in sync between where it's written (here, and in
+/// `automation_runner`) and where it's parsed back with `NaiveDateTime::parse_from_str`.
+pub(crate) const TIMESTAMP_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
 /// Global mutex for JSON file read-modify-write operations.
 /// Since all operations go through the same daemon process, a process-level
 /// mutex is sufficient to prevent race conditions on concurrent requests.
@@ -22,6 +27,17 @@ static JSON_LOCK: Mutex<()> = Mutex::new(());
 pub fn with_json_lock<T, F: FnOnce() -> T>(f: F) -> T {
     let _guard = JSON_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     f()
+}
+
+/// Read + JSON-deserialize `path`, falling back to `T::default()` both when the file
+/// is missing (first run) and when it fails to parse (corrupt / stale schema). None of
+/// this module's state files are authoritative enough to error the caller out on a
+/// missing/bad one — an empty result just means "nothing configured yet".
+fn load_json_or_default<T: serde::de::DeserializeOwned + Default>(path: &str) -> T {
+    match std::fs::read_to_string(path) {
+        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
+        Err(_) => T::default(),
+    }
 }
 
 // ── RBAC ───────────────────────────────────────────────────────────
@@ -76,10 +92,7 @@ fn roles_path() -> String {
 }
 
 pub fn load_roles() -> RoleMap {
-    match std::fs::read_to_string(roles_path()) {
-        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-        Err(_) => HashMap::new(),
-    }
+    load_json_or_default(&roles_path())
 }
 
 pub fn save_roles(roles: &RoleMap) -> Result<(), LibvirtError> {
@@ -349,7 +362,7 @@ pub fn create_api_token_scoped(
             token_hash: hash.clone(),
             username: username.to_string(),
             role,
-            created: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            created: chrono::Local::now().format(TIMESTAMP_FORMAT).to_string(),
             scopes,
         };
 
@@ -529,10 +542,7 @@ pub fn save_alert_rules(rules: &[AlertRule]) -> Result<(), LibvirtError> {
 }
 
 pub fn load_alerts() -> Vec<Alert> {
-    match std::fs::read_to_string(alerts_path()) {
-        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    load_json_or_default(&alerts_path())
 }
 
 pub fn save_alert(alert: &Alert) -> Result<(), LibvirtError> {
@@ -582,10 +592,7 @@ fn webhooks_path() -> String {
 }
 
 pub fn load_webhooks() -> Vec<WebhookConfig> {
-    match std::fs::read_to_string(webhooks_path()) {
-        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    load_json_or_default(&webhooks_path())
 }
 
 pub fn save_webhooks(hooks: &[WebhookConfig]) -> Result<(), LibvirtError> {
@@ -644,7 +651,7 @@ pub fn fire_webhook(event: &str, payload: &serde_json::Value) {
 pub fn fire_vm_event(event: &str, vm_name: &str, extra: &serde_json::Value) {
     let mut payload = serde_json::json!({
         "vm": vm_name,
-        "timestamp": chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        "timestamp": chrono::Local::now().format(TIMESTAMP_FORMAT).to_string(),
     });
     if let Some(obj) = payload.as_object_mut() {
         if let Some(map) = extra.as_object() {
@@ -673,10 +680,7 @@ fn schedules_path() -> String {
 }
 
 pub fn load_schedules() -> Vec<ScheduledAction> {
-    match std::fs::read_to_string(schedules_path()) {
-        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    load_json_or_default(&schedules_path())
 }
 
 pub fn save_schedules(schedules: &[ScheduledAction]) -> Result<(), LibvirtError> {
@@ -705,10 +709,7 @@ fn notifications_path() -> String {
 }
 
 pub fn load_notification_channels() -> Vec<NotificationChannel> {
-    match std::fs::read_to_string(notifications_path()) {
-        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    load_json_or_default(&notifications_path())
 }
 
 pub fn save_notification_channels(channels: &[NotificationChannel]) -> Result<(), LibvirtError> {
@@ -876,10 +877,7 @@ fn snapshot_schedules_path() -> String {
 }
 
 pub fn load_snapshot_schedules() -> Vec<SnapshotSchedule> {
-    match std::fs::read_to_string(snapshot_schedules_path()) {
-        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    load_json_or_default(&snapshot_schedules_path())
 }
 
 pub fn save_snapshot_schedules(schedules: &[SnapshotSchedule]) -> Result<(), LibvirtError> {

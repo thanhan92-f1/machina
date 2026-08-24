@@ -36,6 +36,9 @@ type ScanVm = { name: string; status: string; os: string; note: string; provider
 
 type MigrationTab = 'radar' | 'jobs'
 
+// Reused by several "enable this backend" call-to-action links on the page.
+const INTEGRATIONS_ROUTE = '/platform/integrations'
+
 const MIGRATION_TABS = [
   { id: 'radar' as const, label: 'Scan & migrate' },
   { id: 'jobs' as const, label: 'GuestKit jobs' },
@@ -368,7 +371,7 @@ export default function PlatformMigration() {
         {!hypersdk && !guestkit && !openstack && (
           <p className="mt-3 text-xs text-slate-400">
             No migration backends are enabled. Use OVF/OVA or cloud image import, or enable HyperSDK, GuestKit, or OpenStack under{' '}
-            <Link to="/platform/integrations" className={hubLinkClasses()}>Integrations</Link>.
+            <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>Integrations</Link>.
           </p>
         )}
       </section>
@@ -383,7 +386,7 @@ export default function PlatformMigration() {
             subtitle="Pick a source above to discover VMs, or use single-VM import for OVF/OVA and cloud images."
           >
             <Link to="/import" className="tahoe-btn-primary text-sm">Open import wizard</Link>
-            <Link to="/platform/integrations" className={`tahoe-btn-ghost text-sm ${hubLinkClasses()}`}>Migration integrations</Link>
+            <Link to={INTEGRATIONS_ROUTE} className={`tahoe-btn-ghost text-sm ${hubLinkClasses()}`}>Migration integrations</Link>
           </PlatformEmptyState>
         )}
         {scan.length > 0 && (
@@ -431,7 +434,7 @@ export default function PlatformMigration() {
         <p className="text-xs text-slate-600 flex flex-wrap gap-3">
           <Link to="/import" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>Single-VM import <ExternalLink className="w-3 h-3" /></Link>
           {openstack && <Link to="/openstack/migrations" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>OpenStack migrations <ExternalLink className="w-3 h-3" /></Link>}
-          <Link to="/platform/integrations" className={hubLinkClasses()}>All migration tools →</Link>
+          <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>All migration tools →</Link>
           <Link to={tasksHubHref(tier)} className={hubLinkClasses()}>View migration tasks →</Link>
         </p>
       </section>

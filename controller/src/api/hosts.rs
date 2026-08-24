@@ -65,6 +65,11 @@ pub struct HostDetailRow {
     pub rack_u: Option<i32>,
 }
 
+// Heartbeat age past which an "online" host is rendered/treated as offline. Shared
+// by apply_stale_host_state, fetch_host_detail_row, and delete_host's live-host
+// guard below so the three checks can't silently drift apart.
+const HOST_HEARTBEAT_STALE_MINUTES: i64 = 2;
+
 const HOST_LIST_SQL: &str =
     "SELECT id, hostname, address, state, maintenance_mode,
          COALESCE(schedulable, 1) AS schedulable, agent_grpc_addr, vm_count,
@@ -117,7 +122,7 @@ fn apply_stale_host_state(mut row: HostRow) -> HostRow {
     }
     if let Some(hb) = row.last_heartbeat_at {
         let age = chrono::Utc::now().signed_duration_since(hb);
-        if age > chrono::Duration::minutes(2) && row.state == "online" {
+        if age > chrono::Duration::minutes(HOST_HEARTBEAT_STALE_MINUTES) && row.state == "online" {
             row.state = "offline".into();
         }
     }
@@ -185,7 +190,7 @@ async fn fetch_host_detail_row(state: &AppState, id: Uuid) -> Result<HostDetailR
     if !detail.maintenance_mode {
         if let Some(hb) = detail.last_heartbeat_at {
             let age = chrono::Utc::now().signed_duration_since(hb);
-            if age > chrono::Duration::minutes(2) && detail.state == "online" {
+            if age > chrono::Duration::minutes(HOST_HEARTBEAT_STALE_MINUTES) && detail.state == "online" {
                 detail.state = "offline".into();
             }
         }
@@ -736,7 +741,8 @@ pub async fn delete_host(
             && row
                 .1
                 .map(|hb| {
-                    chrono::Utc::now().signed_duration_since(hb) <= chrono::Duration::minutes(2)
+                    chrono::Utc::now().signed_duration_since(hb)
+                        <= chrono::Duration::minutes(HOST_HEARTBEAT_STALE_MINUTES)
                 })
                 .unwrap_or(true);
         if live {

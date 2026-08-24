@@ -765,22 +765,25 @@ export default function PlatformVmDetail() {
 
   const queueVmDelete = async (label: string) => {
     if (!id) return
+    // Every exit from this delete flow lands back on the VM list, so the route is
+    // named once here rather than repeated at each return.
+    const vmListRoute = '/platform/vms'
     try {
       if (vm?.observed_state === 'missing') {
         const r = await pruneStaleVmRecord(id)
         if (r.name) purgeVmShortcuts([r.name])
         toast.success(label)
-        navigate('/platform/vms', { replace: true })
+        navigate(vmListRoute, { replace: true })
         return
       }
       const r = await vmDelete(id, true)
       if (vm?.name) purgeVmShortcuts([vm.name])
       if (r.status === 'completed') {
         toast.success(label)
-        navigate('/platform/vms', { replace: true })
+        navigate(vmListRoute, { replace: true })
         return
       }
-      navigate('/platform/vms', { replace: true, state: { vmDeleteTaskId: r.task_id, vmDeleteLabel: label } })
+      navigate(vmListRoute, { replace: true, state: { vmDeleteTaskId: r.task_id, vmDeleteLabel: label } })
     } catch (e: unknown) {
       toast.error(formatUserError(e))
     }

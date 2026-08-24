@@ -8,6 +8,18 @@ use uuid::Uuid;
 use super::knowledge_runbook;
 use super::root_cause::{self, AnalyzeIncidentQuery};
 
+const ACTIVE_INCIDENTS_LIMIT: i64 = 20;
+// Root-cause analysis windows: a wider 4h window when a human opens an
+// incident room (more context to review), a tighter 1h window for the
+// auto-correlation sweep (only recent signal is relevant for triage).
+const ROOM_RCA_WINDOW_HOURS: i32 = 4;
+const AUTO_CORRELATE_RCA_WINDOW_HOURS: i32 = 1;
+// Auto-correlation only opens a new incident once there's more than a
+// single blip — one failure alone is treated as noise.
+const AUTO_CORRELATE_MIN_FAILURES: i64 = 2;
+const AUTO_CORRELATE_RESOURCES_LIMIT: usize = 5;
+const AUTO_CORRELATE_HIGH_SEVERITY_CONFIDENCE: f64 = 0.7;
+
 #[derive(Debug, Serialize)]
 pub struct ActiveIncident {
     pub id: Uuid,
@@ -49,8 +61,9 @@ pub async fn list_active(pool: &SqlitePool) -> anyhow::Result<Vec<ActiveIncident
                 strftime('%Y-%m-%dT%H:%M:%SZ', window_start) AS window_start,
                 strftime('%Y-%m-%dT%H:%M:%SZ', window_end) AS window_end
          FROM ai_incidents WHERE status IN ('open', 'investigating')
-         ORDER BY created_at DESC LIMIT 20",
+         ORDER BY created_at DESC LIMIT ?",
     )
+    .bind(ACTIVE_INCIDENTS_LIMIT)
     .fetch_all(pool)
     .await
     .unwrap_or_default();
@@ -144,7 +157,7 @@ pub async fn open_room(pool: &SqlitePool, incident_id: Uuid) -> anyhow::Result<I
     let rca = root_cause::analyze(
         pool,
         &AnalyzeIncidentQuery {
-            hours: 4,
+            hours: ROOM_RCA_WINDOW_HOURS,
             vm_id: None,
             vm_name: None,
         },
@@ -250,14 +263,14 @@ pub async fn correlate_and_open(pool: &SqlitePool) -> anyhow::Result<Option<Uuid
     .await
     .unwrap_or(0);
 
-    if failed_events + failed_tasks < 2 {
+    if failed_events + failed_tasks < AUTO_CORRELATE_MIN_FAILURES {
         return Ok(None);
     }
 
     let rca = root_cause::analyze(
         pool,
         &AnalyzeIncidentQuery {
-            hours: 1,
+            hours: AUTO_CORRELATE_RCA_WINDOW_HOURS,
             vm_id: None,
             vm_name: None,
         },
@@ -267,7 +280,7 @@ pub async fn correlate_and_open(pool: &SqlitePool) -> anyhow::Result<Option<Uuid
     let resources: Vec<String> = rca
         .timeline
         .iter()
-        .take(5)
+        .take(AUTO_CORRELATE_RESOURCES_LIMIT)
         .map(|e| e.message.clone())
         .collect();
 
@@ -276,14 +289,14 @@ pub async fn correlate_and_open(pool: &SqlitePool) -> anyhow::Result<Option<Uuid
         &CreateIncidentRequest {
             title: "Correlated infrastructure incident".into(),
             summary: rca.root_cause.clone(),
-            severity: if rca.confidence >= 0.7 {
+            severity: if rca.confidence >= AUTO_CORRELATE_HIGH_SEVERITY_CONFIDENCE {
                 "high".into()
             } else {
                 "medium".into()
             },
             affected_resources: resources,
             root_cause: Some(rca.root_cause),
-            window_start: Some(Utc::now() - chrono::Duration::hours(1)),
+            window_start: Some(Utc::now() - chrono::Duration::hours(AUTO_CORRELATE_RCA_WINDOW_HOURS as i64)),
             window_end: Some(Utc::now()),
         },
     )

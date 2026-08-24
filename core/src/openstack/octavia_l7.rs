@@ -142,18 +142,31 @@ pub async fn create_lb_listener(
     parse_listener(resp.json().await.map_err(map_json_err)?)
 }
 
-pub async fn delete_lb_listener(cfg: &OpenStackConfig, id: &str) -> Result<(), LibvirtError> {
-    let listener_id = id.trim();
-    if listener_id.is_empty() {
-        return Err(LibvirtError::Invalid("listener id is required".into()));
+/// Shared body for the single-id `delete_lb_*` functions below — same
+/// trim/require-non-empty validation and Octavia `DELETE` call under
+/// `lbaas/<resource_segment>/<id>`, differing only in the resource segment
+/// and the id's label in the error message.
+async fn delete_lb_resource(
+    cfg: &OpenStackConfig,
+    resource_segment: &'static str,
+    id_label: &'static str,
+    id: &str,
+) -> Result<(), LibvirtError> {
+    let id = id.trim();
+    if id.is_empty() {
+        return Err(LibvirtError::Invalid(format!("{id_label} is required")));
     }
     let session = connect_session(cfg).await?;
     session
-        .delete(LOAD_BALANCER, &["lbaas", "listeners", listener_id])
+        .delete(LOAD_BALANCER, &["lbaas", resource_segment, id])
         .send()
         .await
         .map_err(map_osauth_err)?;
     Ok(())
+}
+
+pub async fn delete_lb_listener(cfg: &OpenStackConfig, id: &str) -> Result<(), LibvirtError> {
+    delete_lb_resource(cfg, "listeners", "listener id", id).await
 }
 
 pub async fn list_lb_pools(
@@ -238,17 +251,7 @@ pub async fn create_lb_pool(
 }
 
 pub async fn delete_lb_pool(cfg: &OpenStackConfig, id: &str) -> Result<(), LibvirtError> {
-    let pool_id = id.trim();
-    if pool_id.is_empty() {
-        return Err(LibvirtError::Invalid("pool id is required".into()));
-    }
-    let session = connect_session(cfg).await?;
-    session
-        .delete(LOAD_BALANCER, &["lbaas", "pools", pool_id])
-        .send()
-        .await
-        .map_err(map_osauth_err)?;
-    Ok(())
+    delete_lb_resource(cfg, "pools", "pool id", id).await
 }
 
 pub async fn list_lb_members(
@@ -446,19 +449,7 @@ pub async fn create_lb_health_monitor(
 }
 
 pub async fn delete_lb_health_monitor(cfg: &OpenStackConfig, id: &str) -> Result<(), LibvirtError> {
-    let monitor_id = id.trim();
-    if monitor_id.is_empty() {
-        return Err(LibvirtError::Invalid(
-            "health monitor id is required".into(),
-        ));
-    }
-    let session = connect_session(cfg).await?;
-    session
-        .delete(LOAD_BALANCER, &["lbaas", "healthmonitors", monitor_id])
-        .send()
-        .await
-        .map_err(map_osauth_err)?;
-    Ok(())
+    delete_lb_resource(cfg, "healthmonitors", "health monitor id", id).await
 }
 
 fn parse_listener(v: serde_json::Value) -> Result<OpenStackLbListener, LibvirtError> {

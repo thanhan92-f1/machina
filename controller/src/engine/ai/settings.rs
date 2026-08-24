@@ -3,6 +3,15 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+/// Bounds for `ai_autopilot_max_actions`: at least one action per scheduled run
+/// so autopilot makes visible progress, capped at 10 so a single run can't
+/// silently bulk-apply an unbounded number of unattended changes.
+const AUTOPILOT_MAX_ACTIONS_MIN: i32 = 1;
+const AUTOPILOT_MAX_ACTIONS_MAX: i32 = 10;
+/// Upper bound for `ai_autopilot_interval_secs` — one day, so autopilot can be
+/// slowed down but never configured to effectively never run.
+const AUTOPILOT_INTERVAL_MAX_SECS: i32 = 86400;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiSettings {
     pub enabled: bool,
@@ -57,7 +66,9 @@ pub async fn get_ai_settings(pool: &SqlitePool) -> anyhow::Result<AiSettings> {
         api_key_configured: !row.4.is_empty(),
         autopilot_interval_secs: row.5,
         autopilot_last_run: row.6.map(|t| t.to_rfc3339()),
-        autopilot_max_actions: row.7.clamp(1, 10),
+        autopilot_max_actions: row
+            .7
+            .clamp(AUTOPILOT_MAX_ACTIONS_MIN, AUTOPILOT_MAX_ACTIONS_MAX),
         fleet_peer_urls,
     })
 }
@@ -104,13 +115,13 @@ pub async fn patch_ai_settings(
     }
     if let Some(v) = patch.autopilot_interval_secs {
         sqlx::query("UPDATE clusters SET ai_autopilot_interval_secs = ?")
-            .bind(v.clamp(0, 86400))
+            .bind(v.clamp(0, AUTOPILOT_INTERVAL_MAX_SECS))
             .execute(&mut *tx)
             .await?;
     }
     if let Some(v) = patch.autopilot_max_actions {
         sqlx::query("UPDATE clusters SET ai_autopilot_max_actions = ?")
-            .bind(v.clamp(1, 10))
+            .bind(v.clamp(AUTOPILOT_MAX_ACTIONS_MIN, AUTOPILOT_MAX_ACTIONS_MAX))
             .execute(&mut *tx)
             .await?;
     }
@@ -133,7 +144,7 @@ pub async fn autopilot_max_actions(pool: &SqlitePool) -> anyhow::Result<usize> {
     Ok(get_ai_settings(pool)
         .await?
         .autopilot_max_actions
-        .clamp(1, 10) as usize)
+        .clamp(AUTOPILOT_MAX_ACTIONS_MIN, AUTOPILOT_MAX_ACTIONS_MAX) as usize)
 }
 
 pub async fn api_key(pool: &SqlitePool) -> anyhow::Result<Option<String>> {

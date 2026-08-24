@@ -24,6 +24,25 @@ pub struct LaunchpadConfig {
     pub enabled: bool,
 }
 
+/// Builds an `ApiError` with a caller-chosen status/code/remediation — the
+/// shared shape behind every proxy-failure branch below. `ApiError`'s own
+/// constructors (`not_found`, `bad_request`, `internal`, ...) don't cover the
+/// 503/502 "upstream Hermes unavailable" statuses this proxy needs.
+fn proxy_error(
+    status: StatusCode,
+    message: impl Into<String>,
+    error_code: &str,
+    remediation: Option<&str>,
+) -> ApiError {
+    ApiError {
+        status,
+        message: message.into(),
+        error_code: Some(error_code.into()),
+        remediation: remediation.map(|s| s.into()),
+        object_ref: None,
+    }
+}
+
 pub fn api_routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/launchpad/config", get(launchpad_config))
@@ -51,15 +70,12 @@ async fn launchpad_proxy(
 ) -> Result<Response, ApiError> {
     let base = state.config.hermes_api_base.trim();
     if base.is_empty() {
-        return Err(ApiError {
-            status: StatusCode::SERVICE_UNAVAILABLE,
-            message: "Launchpad is not configured (set HERMES_API_BASE)".into(),
-            error_code: Some("launchpad_unavailable".into()),
-            remediation: Some(
-                "Install Hermes and set HERMES_API_BASE on machina-controller.".into(),
-            ),
-            object_ref: None,
-        });
+        return Err(proxy_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Launchpad is not configured (set HERMES_API_BASE)",
+            "launchpad_unavailable",
+            Some("Install Hermes and set HERMES_API_BASE on machina-controller."),
+        ));
     }
 
     let mut url = format!(
@@ -81,6 +97,8 @@ async fn launchpad_proxy(
         .build()
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
+    // 8 MiB cap: bounds how much of a client-supplied proxied body this controller
+    // buffers in memory before forwarding it to Hermes.
     let body_bytes = axum::body::to_bytes(body, 8 * 1024 * 1024)
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
@@ -117,23 +135,19 @@ async fn launchpad_proxy(
         // UI already handles gracefully — not a gateway fault. Only surface a 502 for
         // genuine upstream protocol errors from a reachable Hermes.
         if e.is_connect() || e.is_timeout() {
-            ApiError {
-                status: StatusCode::SERVICE_UNAVAILABLE,
-                message: "Launchpad backend (Hermes) is unreachable".into(),
-                error_code: Some("launchpad_unavailable".into()),
-                remediation: Some(
-                    "Install/start Hermes and set HERMES_API_BASE on machina-controller.".into(),
-                ),
-                object_ref: None,
-            }
+            proxy_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Launchpad backend (Hermes) is unreachable",
+                "launchpad_unavailable",
+                Some("Install/start Hermes and set HERMES_API_BASE on machina-controller."),
+            )
         } else {
-            ApiError {
-                status: StatusCode::BAD_GATEWAY,
-                message: format!("Hermes proxy error: {e}"),
-                error_code: Some("hermes_proxy_error".into()),
-                remediation: None,
-                object_ref: None,
-            }
+            proxy_error(
+                StatusCode::BAD_GATEWAY,
+                format!("Hermes proxy error: {e}"),
+                "hermes_proxy_error",
+                None,
+            )
         }
     })?;
 
@@ -147,12 +161,8 @@ async fn launchpad_proxy(
             out.insert(k.clone(), val);
         }
     }
-    let bytes = resp.bytes().await.map_err(|e| ApiError {
-        status: StatusCode::BAD_GATEWAY,
-        message: e.to_string(),
-        error_code: Some("hermes_proxy_error".into()),
-        remediation: None,
-        object_ref: None,
+    let bytes = resp.bytes().await.map_err(|e| {
+        proxy_error(StatusCode::BAD_GATEWAY, e.to_string(), "hermes_proxy_error", None)
     })?;
 
     Ok((status, out, bytes).into_response())

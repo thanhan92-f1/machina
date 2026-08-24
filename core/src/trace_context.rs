@@ -67,6 +67,10 @@ fn random_hex(bytes: usize) -> String {
         .map(|d| d.as_nanos())
         .unwrap_or(0);
     let mut out = String::with_capacity(bytes * 2);
+    // Not cryptographic — trace/span ids only need to be locally unique for
+    // correlating one request's logs, not unguessable. 0x9E3779B97F4A7C15 is
+    // the well-known 64-bit golden-ratio constant used to decorrelate a
+    // near-monotonic nanosecond seed before the xorshift mix below.
     let mut x = seed ^ (bytes as u128).wrapping_mul(0x9E37_79B9_7F4A_7C15);
     for _ in 0..bytes {
         x ^= x << 13;

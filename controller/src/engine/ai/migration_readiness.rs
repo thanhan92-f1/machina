@@ -12,6 +12,22 @@ use super::llm::{self, CompletionRequest};
 use super::migration;
 use super::routing::TaskClass;
 
+const SCAN_VM_LIMIT: i64 = 25;
+const PRIORITIZED_REMEDIATION_LIMIT: usize = 12;
+// Fallback readiness scores used when a VM couldn't be assessed the normal
+// way — deliberately mediocre (not 0, not high) so these VMs sort into the
+// "needs review" band rather than looking either fine or unsalvageable.
+const READINESS_SNAPSHOT_ERROR_PCT: u8 = 40;
+const READINESS_GUESTKIT_SCAN_FAILED_PCT: u8 = 35;
+const READINESS_GUESTKIT_DISABLED_PCT: u8 = 45;
+// Score penalties applied to the base VMware advisory score for each live
+// QGA gap detected on a running VM.
+const PENALTY_NO_AGENT_PING: i32 = 15;
+const PENALTY_CHANNEL_ONLY: i32 = 10;
+const PENALTY_TIME_DRIFT: i32 = 5;
+const PENALTY_NO_GUEST_IP: i32 = 10;
+const TIME_DRIFT_WARN_MS: i64 = 5000;
+
 fn vm_is_stopped(state: &str) -> bool {
     matches!(
         state,
@@ -59,8 +75,9 @@ pub async fn generate(
 ) -> anyhow::Result<MigrationReadinessReport> {
     let vm_ids = if req.vm_ids.is_empty() {
         sqlx::query_scalar::<_, Uuid>(
-            "SELECT id FROM vms WHERE COALESCE(inventory_source, 'libvirt') = 'libvirt' ORDER BY name LIMIT 25",
+            "SELECT id FROM vms WHERE COALESCE(inventory_source, 'libvirt') = 'libvirt' ORDER BY name LIMIT ?",
         )
+        .bind(SCAN_VM_LIMIT)
         .fetch_all(pool)
         .await?
     } else {
@@ -115,7 +132,7 @@ pub async fn generate(
                 rows.push(VmMigrationReadinessRow {
                     vm_id: id.to_string(),
                     vm_name,
-                    readiness_percent: 40,
+                    readiness_percent: READINESS_SNAPSHOT_ERROR_PCT,
                     install_state: "unknown".into(),
                     os_pretty_name: String::new(),
                     guest_ip: String::new(),
@@ -163,7 +180,7 @@ pub async fn generate(
                     rows.push(VmMigrationReadinessRow {
                         vm_id: id.to_string(),
                         vm_name,
-                        readiness_percent: 35,
+                        readiness_percent: READINESS_GUESTKIT_SCAN_FAILED_PCT,
                         install_state: "offline".into(),
                         os_pretty_name: String::new(),
                         guest_ip: String::new(),
@@ -181,7 +198,7 @@ pub async fn generate(
             rows.push(VmMigrationReadinessRow {
                 vm_id: id.to_string(),
                 vm_name,
-                readiness_percent: 45,
+                readiness_percent: READINESS_GUESTKIT_DISABLED_PCT,
                 install_state: "offline".into(),
                 os_pretty_name: String::new(),
                 guest_ip: String::new(),
@@ -198,7 +215,10 @@ pub async fn generate(
 
     all_remediation.sort();
     all_remediation.dedup();
-    let prioritized_remediation: Vec<String> = all_remediation.into_iter().take(12).collect();
+    let prioritized_remediation: Vec<String> = all_remediation
+        .into_iter()
+        .take(PRIORITIZED_REMEDIATION_LIMIT)
+        .collect();
 
     let executive_summary = if super::settings::llm_enabled(pool).await.unwrap_or(false)
         && !rows.is_empty()
@@ -257,22 +277,22 @@ fn row_from_snapshot(
         qga_gaps.push("guest agent not responding".into());
         remediation
             .push("Install guestkit-agent and enable virtio channel (QGA-compatible)".into());
-        score -= 15;
+        score -= PENALTY_NO_AGENT_PING;
     }
     if s.install_state == "channel_only" {
         qga_gaps.push("Guest agent channel attached but package not running".into());
-        score -= 10;
+        score -= PENALTY_CHANNEL_ONLY;
     }
     if let Some(ms) = s.time_delta_ms {
-        if ms.abs() > 5000 {
+        if ms.abs() > TIME_DRIFT_WARN_MS {
             qga_gaps.push(format!("Time drift {ms} ms"));
             remediation.push("Sync guest time after migration".into());
-            score -= 5;
+            score -= PENALTY_TIME_DRIFT;
         }
     }
     if s.guest_ip.is_empty() {
         qga_gaps.push("No guest IP discovered".into());
-        score -= 10;
+        score -= PENALTY_NO_GUEST_IP;
     }
 
     adv.readiness_percent = score.clamp(0, 100) as u8;

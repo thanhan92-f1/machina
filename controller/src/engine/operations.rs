@@ -71,6 +71,16 @@ pub struct ExecuteRunbookRequest {
     pub context: serde_json::Value,
 }
 
+// Placeholder showback pricing model used only to seed
+// `ops_showback_snapshots` the first time it's empty — these are not real
+// billing rates, just plausible-looking stand-in numbers until a real cost
+// source is wired up.
+const SHOWBACK_MAX_PROJECTS: i64 = 20;
+const SHOWBACK_DEFAULT_COST_PER_VM_USD: f64 = 12.0;
+const SHOWBACK_PROJECT_BASE_COST_USD: f64 = 25.0;
+const SHOWBACK_PROJECT_COST_PER_VM_USD: f64 = 18.5;
+const SHOWBACK_HIGH_VM_COUNT_THRESHOLD: i64 = 5;
+
 pub async fn overview(pool: &SqlitePool) -> anyhow::Result<OperationsOverview> {
     ensure_showback_snapshots(pool).await?;
 
@@ -243,7 +253,8 @@ async fn ensure_showback_snapshots(pool: &SqlitePool) -> anyhow::Result<()> {
     }
 
     let projects: Vec<(String,)> =
-        sqlx::query_as("SELECT DISTINCT COALESCE(NULLIF(TRIM(project), ''), 'default') FROM vms ORDER BY 1 LIMIT 20")
+        sqlx::query_as("SELECT DISTINCT COALESCE(NULLIF(TRIM(project), ''), 'default') FROM vms ORDER BY 1 LIMIT ?")
+            .bind(SHOWBACK_MAX_PROJECTS)
             .fetch_all(pool)
             .await
             .unwrap_or_default();
@@ -258,7 +269,7 @@ async fn ensure_showback_snapshots(pool: &SqlitePool) -> anyhow::Result<()> {
              VALUES (?, 'default', ?, 'B', ?)",
         )
         .bind(Uuid::new_v4())
-        .bind((vm_count as f64) * 12.0)
+        .bind((vm_count as f64) * SHOWBACK_DEFAULT_COST_PER_VM_USD)
         .bind(vm_count)
         .execute(pool)
         .await?;
@@ -281,7 +292,8 @@ async fn ensure_showback_snapshots(pool: &SqlitePool) -> anyhow::Result<()> {
         .await
         .unwrap_or(0);
 
-        let cost = (vm_count as f64) * 18.5 + 25.0;
+        let cost =
+            (vm_count as f64) * SHOWBACK_PROJECT_COST_PER_VM_USD + SHOWBACK_PROJECT_BASE_COST_USD;
         sqlx::query(
             "INSERT INTO ops_showback_snapshots (id, project_name, cost_usd, compliance_grade, vm_count)
              VALUES (?, ?, ?, ?, ?)",
@@ -289,7 +301,11 @@ async fn ensure_showback_snapshots(pool: &SqlitePool) -> anyhow::Result<()> {
         .bind(Uuid::new_v4())
         .bind(&name)
         .bind(cost)
-        .bind(if vm_count > 5 { "C" } else { grade.as_str() })
+        .bind(if vm_count > SHOWBACK_HIGH_VM_COUNT_THRESHOLD {
+            "C"
+        } else {
+            grade.as_str()
+        })
         .bind(vm_count)
         .execute(&mut *tx)
         .await?;

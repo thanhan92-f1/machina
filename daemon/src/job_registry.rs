@@ -89,6 +89,22 @@ impl JobRegistry {
             .unwrap_or(0)
     }
 
+    /// Common bookkeeping shared by every `start_*` job constructor below: insert
+    /// the new job, then evict the oldest (FIFO, via `order`) while over `MAX_JOBS`.
+    /// Locks `inner` before `order`, matching `list_summaries` — see the comment
+    /// there about why the lock order must stay consistent across methods.
+    fn insert_new_job(&self, id: Uuid, inner: JobInner) {
+        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        g.insert(id, inner);
+        let mut o = self.order.lock().unwrap_or_else(|e| e.into_inner());
+        o.push_front(id);
+        while o.len() > MAX_JOBS {
+            if let Some(old) = o.pop_back() {
+                g.remove(&old);
+            }
+        }
+    }
+
     pub fn start_virt_image_build(&self, os: &str, output: &str) -> Uuid {
         let id = Uuid::new_v4();
         let ts = Self::now();
@@ -110,15 +126,7 @@ impl JobRegistry {
             },
             logs: Vec::new(),
         };
-        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        g.insert(id, inner);
-        let mut o = self.order.lock().unwrap_or_else(|e| e.into_inner());
-        o.push_front(id);
-        while o.len() > MAX_JOBS {
-            if let Some(old) = o.pop_back() {
-                g.remove(&old);
-            }
-        }
+        self.insert_new_job(id, inner);
         id
     }
 
@@ -142,15 +150,7 @@ impl JobRegistry {
             },
             logs: Vec::new(),
         };
-        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        g.insert(id, inner);
-        let mut o = self.order.lock().unwrap_or_else(|e| e.into_inner());
-        o.push_front(id);
-        while o.len() > MAX_JOBS {
-            if let Some(old) = o.pop_back() {
-                g.remove(&old);
-            }
-        }
+        self.insert_new_job(id, inner);
         id
     }
 
@@ -174,15 +174,7 @@ impl JobRegistry {
             },
             logs: Vec::new(),
         };
-        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        g.insert(id, inner);
-        let mut o = self.order.lock().unwrap_or_else(|e| e.into_inner());
-        o.push_front(id);
-        while o.len() > MAX_JOBS {
-            if let Some(old) = o.pop_back() {
-                g.remove(&old);
-            }
-        }
+        self.insert_new_job(id, inner);
         id
     }
 
@@ -208,15 +200,7 @@ impl JobRegistry {
             },
             logs: Vec::new(),
         };
-        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        g.insert(id, inner);
-        let mut o = self.order.lock().unwrap_or_else(|e| e.into_inner());
-        o.push_front(id);
-        while o.len() > MAX_JOBS {
-            if let Some(old) = o.pop_back() {
-                g.remove(&old);
-            }
-        }
+        self.insert_new_job(id, inner);
         id
     }
 

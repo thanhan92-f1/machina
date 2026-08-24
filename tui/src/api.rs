@@ -18,6 +18,12 @@ pub struct DaemonClient {
     client: reqwest::Client,
 }
 
+// Bounded timeouts (see `DaemonClient::new`) so the TUI's single-threaded event loop
+// can't hang forever waiting on a request; connect_timeout is shorter since a dead
+// host should fail fast, while an in-flight request gets more slack to complete.
+const HTTP_REQUEST_TIMEOUT_SECS: u64 = 30;
+const HTTP_CONNECT_TIMEOUT_SECS: u64 = 10;
+
 impl DaemonClient {
     pub fn new(base_url: &str) -> Self {
         // Self-signed certs from install.sh are normal; trust for local admin tool (same as curl -k).
@@ -25,8 +31,8 @@ impl DaemonClient {
         // (freezing rendering and input) if the daemon becomes unreachable mid-request.
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
-            .timeout(std::time::Duration::from_secs(30))
-            .connect_timeout(std::time::Duration::from_secs(10))
+            .timeout(std::time::Duration::from_secs(HTTP_REQUEST_TIMEOUT_SECS))
+            .connect_timeout(std::time::Duration::from_secs(HTTP_CONNECT_TIMEOUT_SECS))
             .build()
             .expect("reqwest client");
         Self {
@@ -42,69 +48,52 @@ impl DaemonClient {
         anyhow::anyhow!(format_http_error_body(status.as_u16(), reason, body,))
     }
 
-    async fn get_json<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
-        let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.get(&url).send().await?;
+    // Sends an already-built request and turns a non-2xx response into a formatted
+    // error (reusing the body text). Every verb helper below funnels through this so
+    // the success/error split stays identical across GET/POST/PUT/DELETE call sites.
+    async fn send_checked(&self, req: reqwest::RequestBuilder) -> Result<reqwest::Response> {
+        let resp = req.send().await?;
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
             return Err(Self::http_error(status, &body));
         }
+        Ok(resp)
+    }
+
+    async fn get_json<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
+        let url = format!("{}{}", self.base_url, path);
+        let resp = self.send_checked(self.client.get(&url)).await?;
         Ok(resp.json().await?)
     }
 
     async fn get_text(&self, path: &str) -> Result<String> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.get(&url).send().await?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(Self::http_error(status, &body));
-        }
+        let resp = self.send_checked(self.client.get(&url)).await?;
         Ok(resp.text().await?)
     }
 
     async fn post_action(&self, path: &str) -> Result<()> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.post(&url).send().await?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(Self::http_error(status, &body));
-        }
+        self.send_checked(self.client.post(&url)).await?;
         Ok(())
     }
 
     async fn post_json<T: serde::Serialize>(&self, path: &str, body: &T) -> Result<()> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.post(&url).json(body).send().await?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(Self::http_error(status, &body));
-        }
+        self.send_checked(self.client.post(&url).json(body)).await?;
         Ok(())
     }
 
     async fn delete_action(&self, path: &str) -> Result<()> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.delete(&url).send().await?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(Self::http_error(status, &body));
-        }
+        self.send_checked(self.client.delete(&url)).await?;
         Ok(())
     }
 
     async fn put_json<T: serde::Serialize>(&self, path: &str, body: &T) -> Result<()> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.put(&url).json(body).send().await?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(Self::http_error(status, &body));
-        }
+        self.send_checked(self.client.put(&url).json(body)).await?;
         Ok(())
     }
 
@@ -356,12 +345,7 @@ impl DaemonClient {
         } else {
             self.client.get(&url).query(&[("path", path)])
         };
-        let resp = req.send().await?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(Self::http_error(status, &body));
-        }
+        let resp = self.send_checked(req).await?;
         Ok(resp.json().await?)
     }
 
@@ -384,12 +368,8 @@ impl DaemonClient {
         body: &serde_json::Value,
     ) -> Result<serde_json::Value> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client.post(&url).json(body).send().await?;
-        let status = resp.status();
+        let resp = self.send_checked(self.client.post(&url).json(body)).await?;
         let text = resp.text().await.unwrap_or_default();
-        if !status.is_success() {
-            return Err(Self::http_error(status, &text));
-        }
         serde_json::from_str(&text).map_err(|e| anyhow::anyhow!("invalid JSON: {e}; body: {text}"))
     }
 
@@ -1018,12 +998,8 @@ impl DaemonClient {
             _ => anyhow::bail!("unknown kubevirt op '{op}' (expected apply, upload, start)"),
         };
         let url = format!("{}/api/v1/vms/{}/kubevirt/{}", self.base_url, vm, path);
-        let resp = self.client.post(&url).json(body).send().await?;
-        let status = resp.status();
+        let resp = self.send_checked(self.client.post(&url).json(body)).await?;
         let text = resp.text().await.unwrap_or_default();
-        if !status.is_success() {
-            return Err(Self::http_error(status, &text));
-        }
         serde_json::from_str(&text)
             .map_err(|e| anyhow::anyhow!("invalid JSON from daemon: {e}; body: {text}"))
     }

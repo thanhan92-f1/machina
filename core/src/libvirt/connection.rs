@@ -15,6 +15,10 @@ use crate::libvirt::{domain, metrics};
 use crate::state::{VmInfo, VmMetrics};
 use crate::LibvirtError;
 
+/// Well-known libvirt URIs used by dual-connection mode (root vs. per-user QEMU/KVM).
+const QEMU_SYSTEM_URI: &str = "qemu:///system";
+const QEMU_SESSION_URI: &str = "qemu:///session";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LibvirtTarget {
@@ -80,19 +84,19 @@ impl LibvirtManager {
         if cfg.dual_connection {
             let mut system = None;
             let mut session = None;
-            match Connect::open(Some("qemu:///system")) {
+            match Connect::open(Some(QEMU_SYSTEM_URI)) {
                 Ok(c) => {
                     system = Some(UriSlot {
-                        uri: "qemu:///system".into(),
+                        uri: QEMU_SYSTEM_URI.into(),
                         conn: Arc::new(Mutex::new(c)),
                     });
                 }
                 Err(e) => tracing::warn!("dual libvirt: qemu:///system unavailable: {e}"),
             }
-            match Connect::open(Some("qemu:///session")) {
+            match Connect::open(Some(QEMU_SESSION_URI)) {
                 Ok(c) => {
                     session = Some(UriSlot {
-                        uri: "qemu:///session".into(),
+                        uri: QEMU_SESSION_URI.into(),
                         conn: Arc::new(Mutex::new(c)),
                     });
                 }
@@ -203,8 +207,8 @@ impl LibvirtManager {
     pub fn virt_uri_for_target(&self, target: LibvirtTarget) -> String {
         match (self.dual, target) {
             (false, _) => self.primary_uri.clone(),
-            (true, LibvirtTarget::Session) => "qemu:///session".into(),
-            (true, _) => "qemu:///system".into(),
+            (true, LibvirtTarget::Session) => QEMU_SESSION_URI.into(),
+            (true, _) => QEMU_SYSTEM_URI.into(),
         }
     }
 

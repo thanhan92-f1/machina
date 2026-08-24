@@ -5,6 +5,13 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+const DEFAULT_RETENTION_DAYS: i32 = 90;
+const MIN_RETENTION_DAYS: i32 = 1;
+const MAX_RETENTION_DAYS: i32 = 3650;
+const MIN_RECALL_LIMIT: i64 = 1;
+const MAX_RECALL_LIMIT: i64 = 20;
+const MAX_CONVERSATIONS_LISTED: i64 = 50;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemorySettings {
     pub enabled: bool,
@@ -14,6 +21,9 @@ pub struct MemorySettings {
 }
 
 pub async fn get_settings(pool: &SqlitePool) -> anyhow::Result<MemorySettings> {
+    // The literal `90` default below must stay in sync with
+    // DEFAULT_RETENTION_DAYS — it lives in the SQL COALESCE rather than a
+    // bind param since it's a column default, not a query filter.
     let row: Option<(bool, bool, bool, i32)> = sqlx::query_as(
         "SELECT COALESCE(zeus_memory_enabled, TRUE), COALESCE(zeus_memory_team_scope, FALSE),
                 COALESCE(zeus_memory_project_scope, TRUE), COALESCE(zeus_memory_retention_days, 90)
@@ -21,7 +31,7 @@ pub async fn get_settings(pool: &SqlitePool) -> anyhow::Result<MemorySettings> {
     )
     .fetch_optional(pool)
     .await?;
-    let row = row.unwrap_or((true, false, true, 90));
+    let row = row.unwrap_or((true, false, true, DEFAULT_RETENTION_DAYS));
     Ok(MemorySettings {
         enabled: row.0,
         team_scope: row.1,
@@ -63,7 +73,7 @@ pub async fn patch_settings(
     }
     if let Some(v) = patch.retention_days {
         sqlx::query("UPDATE clusters SET zeus_memory_retention_days = ?")
-            .bind(v.clamp(1, 3650))
+            .bind(v.clamp(MIN_RETENTION_DAYS, MAX_RETENTION_DAYS))
             .execute(&mut *tx)
             .await?;
     }
@@ -80,7 +90,7 @@ pub async fn recall_for_user(
     if !settings.enabled {
         return Ok(vec![]);
     }
-    let cap = limit.clamp(1, 20);
+    let cap = limit.clamp(MIN_RECALL_LIMIT, MAX_RECALL_LIMIT);
     let uid = user_id.unwrap_or("");
     // Memory entries are per-owner private data (chat history summaries, etc).
     // With no identified caller there is no owner to scope by — return nothing
@@ -161,9 +171,10 @@ pub async fn list_conversations(
     user_id: &str,
 ) -> anyhow::Result<Vec<ConversationRow>> {
     let rows: Vec<(Uuid, String, String, DateTime<Utc>)> = sqlx::query_as(
-        "SELECT id, agent_id, summary, strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at FROM ai_conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT 50",
+        "SELECT id, agent_id, summary, strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at FROM ai_conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?",
     )
     .bind(user_id)
+    .bind(MAX_CONVERSATIONS_LISTED)
     .fetch_all(pool)
     .await?;
     Ok(rows

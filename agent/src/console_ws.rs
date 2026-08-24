@@ -57,14 +57,24 @@ pub fn vnc_router(state: ConsoleProxyState) -> Router {
         .with_state(state)
 }
 
+/// Shared token check for the three console routes below — same secret,
+/// same 401 body, only the upgrade handler differs.
+fn console_auth_response(secret: &str, token: &str) -> Option<Response> {
+    if console_authorized(secret, token) {
+        None
+    } else {
+        Some((StatusCode::UNAUTHORIZED, "invalid console token").into_response())
+    }
+}
+
 async fn vnc_ws(
     ws: WebSocketUpgrade,
     State(st): State<ConsoleProxyState>,
     Path(name): Path<String>,
     Query(q): Query<ConsoleAuthQuery>,
 ) -> Response {
-    if !console_authorized(&st.secret, &q.token) {
-        return (StatusCode::UNAUTHORIZED, "invalid console token").into_response();
+    if let Some(resp) = console_auth_response(&st.secret, &q.token) {
+        return resp;
     }
     let libvirt = st.libvirt.clone();
     ws.on_upgrade(move |socket| handle_vnc(socket, name, libvirt))
@@ -77,8 +87,8 @@ async fn serial_ws(
     Path(name): Path<String>,
     Query(q): Query<ConsoleAuthQuery>,
 ) -> Response {
-    if !console_authorized(&st.secret, &q.token) {
-        return (StatusCode::UNAUTHORIZED, "invalid console token").into_response();
+    if let Some(resp) = console_auth_response(&st.secret, &q.token) {
+        return resp;
     }
     let libvirt = st.libvirt.clone();
     ws.on_upgrade(move |socket| handle_serial(socket, name, libvirt))
@@ -91,8 +101,8 @@ async fn spice_ws(
     Path(name): Path<String>,
     Query(q): Query<ConsoleAuthQuery>,
 ) -> Response {
-    if !console_authorized(&st.secret, &q.token) {
-        return (StatusCode::UNAUTHORIZED, "invalid console token").into_response();
+    if let Some(resp) = console_auth_response(&st.secret, &q.token) {
+        return resp;
     }
     let libvirt = st.libvirt.clone();
     ws.on_upgrade(move |socket| handle_spice(socket, name, libvirt))
@@ -106,6 +116,23 @@ async fn spice_ws(
 /// spawned blocking-pool thread itself keeps running until the libvirt call
 /// returns, since a synchronous FFI call can't be cancelled from the outside.
 const LIBVIRT_RESOLVE_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Give up on a console WS after a resolve/connect failure: close it with no
+/// message. Used on every early-exit path below so the client sees a clean
+/// close instead of a hung connection.
+async fn close_console_ws(socket: WebSocket) {
+    let (mut sink, _) = socket.split();
+    let _ = sink.close().await;
+}
+
+/// Same as `close_console_ws`, but sends a human-readable reason first (the
+/// serial console renders raw text, so these show up directly in the
+/// terminal instead of being swallowed as a silent disconnect).
+async fn close_console_ws_with_message(socket: WebSocket, message: String) {
+    let (mut sink, _) = socket.split();
+    let _ = sink.send(Message::Text(message.into())).await;
+    let _ = sink.close().await;
+}
 
 fn resolve_console_pty(xml: &str) -> Option<String> {
     machina_core::xml::extract_attr(xml, "console", "tty")
@@ -137,8 +164,7 @@ async fn handle_vnc(socket: WebSocket, name: String, libvirt: Arc<Mutex<LibvirtC
     let (host, port) = match resolved {
         Ok(Ok(Ok((h, p)))) if p > 0 => (h, p),
         _ => {
-            let (mut sink, _) = socket.split();
-            let _ = sink.close().await;
+            close_console_ws(socket).await;
             return;
         }
     };
@@ -146,8 +172,7 @@ async fn handle_vnc(socket: WebSocket, name: String, libvirt: Arc<Mutex<LibvirtC
     let tcp = match tokio::net::TcpStream::connect(format!("{host}:{port}")).await {
         Ok(s) => s,
         Err(_) => {
-            let (mut sink, _) = socket.split();
-            let _ = sink.close().await;
+            close_console_ws(socket).await;
             return;
         }
     };
@@ -221,14 +246,11 @@ async fn handle_serial(socket: WebSocket, name: String, libvirt: Arc<Mutex<Libvi
     let pty_path = match pty_path {
         Ok(Ok(Ok(p))) => p,
         _ => {
-            let (mut sink, _) = socket.split();
-            let _ = sink
-                .send(Message::Text(
-                    format!("\r\nNo console PTY found for VM '{display_name}'. Is it running?\r\n")
-                        .into(),
-                ))
-                .await;
-            let _ = sink.close().await;
+            close_console_ws_with_message(
+                socket,
+                format!("\r\nNo console PTY found for VM '{display_name}'. Is it running?\r\n"),
+            )
+            .await;
             return;
         }
     };
@@ -238,28 +260,23 @@ async fn handle_serial(socket: WebSocket, name: String, libvirt: Arc<Mutex<Libvi
             canonical.to_string_lossy().to_string()
         }
         Ok(canonical) => {
-            let (mut sink, _) = socket.split();
-            let _ = sink
-                .send(Message::Text(
-                    format!(
-                        "\r\nInvalid PTY path '{}' resolved to '{}'\r\n",
-                        pty_path,
-                        canonical.display()
-                    )
-                    .into(),
-                ))
-                .await;
-            let _ = sink.close().await;
+            close_console_ws_with_message(
+                socket,
+                format!(
+                    "\r\nInvalid PTY path '{}' resolved to '{}'\r\n",
+                    pty_path,
+                    canonical.display()
+                ),
+            )
+            .await;
             return;
         }
         Err(e) => {
-            let (mut sink, _) = socket.split();
-            let _ = sink
-                .send(Message::Text(
-                    format!("\r\nFailed to open console PTY '{pty_path}': {e}\r\n").into(),
-                ))
-                .await;
-            let _ = sink.close().await;
+            close_console_ws_with_message(
+                socket,
+                format!("\r\nFailed to open console PTY '{pty_path}': {e}\r\n"),
+            )
+            .await;
             return;
         }
     };
@@ -272,13 +289,11 @@ async fn handle_serial(socket: WebSocket, name: String, libvirt: Arc<Mutex<Libvi
     {
         Ok(f) => f,
         Err(e) => {
-            let (mut sink, _) = socket.split();
-            let _ = sink
-                .send(Message::Text(
-                    format!("\r\nFailed to open console PTY: {e}\r\n").into(),
-                ))
-                .await;
-            let _ = sink.close().await;
+            close_console_ws_with_message(
+                socket,
+                format!("\r\nFailed to open console PTY: {e}\r\n"),
+            )
+            .await;
             return;
         }
     };
@@ -352,8 +367,7 @@ async fn handle_spice(socket: WebSocket, name: String, libvirt: Arc<Mutex<Libvir
     let endpoint = match lookup {
         Ok(Ok(Ok(ep))) => ep,
         _ => {
-            let (mut sink, _) = socket.split();
-            let _ = sink.close().await;
+            close_console_ws(socket).await;
             return;
         }
     };
@@ -371,16 +385,14 @@ async fn handle_spice(socket: WebSocket, name: String, libvirt: Arc<Mutex<Libvir
                     bridge_ws_stream(socket, tcp).await;
                 }
                 Err(_) => {
-                    let (mut sink, _) = socket.split();
-                    let _ = sink.close().await;
+                    close_console_ws(socket).await;
                 }
             }
         }
         SpiceEndpoint::Unix(path) => match tokio::net::UnixStream::connect(&path).await {
             Ok(sock) => bridge_ws_stream(socket, sock).await,
             Err(_) => {
-                let (mut sink, _) = socket.split();
-                let _ = sink.close().await;
+                close_console_ws(socket).await;
             }
         },
     }

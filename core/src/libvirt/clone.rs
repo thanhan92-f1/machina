@@ -12,6 +12,9 @@ use super::domain::lookup_domain;
 use super::template_apply::materialize_from_base;
 use crate::LibvirtError;
 
+/// Listen address given to `ensure_graphics_present` for a freshly cloned domain.
+const DEFAULT_GRAPHICS_LISTEN: &str = "127.0.0.1";
+
 /// `linked` — qcow2 backing file; `full` — independent copy; `xml` — legacy shared-disk define (unsafe).
 pub fn normalize_clone_disk_mode(mode: &str) -> &'static str {
     match mode.trim().to_lowercase().as_str() {
@@ -85,7 +88,7 @@ pub fn clone_vm_with_disk(
         let dest_dir = Path::new(&primary_dest)
             .parent()
             .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_else(|| "/var/lib/libvirt/images".to_string());
+            .unwrap_or_else(|| super::DEFAULT_LIBVIRT_IMAGES_DIR.to_string());
         let mat_mode = if mode == "copy" { "copy" } else { "backing" };
 
         let mut disk_map: Vec<(String, String)> = Vec::new();
@@ -157,7 +160,10 @@ fn clone_vm_xml_only(
     })?;
     let new_xml = remove_xml_element(&new_xml, "uuid");
     let new_xml = randomize_mac_addresses(&new_xml);
-    let new_xml = super::graphics_convert::ensure_graphics_present(&new_xml, "127.0.0.1");
+    let new_xml = super::graphics_convert::ensure_graphics_present(
+        &new_xml,
+        DEFAULT_GRAPHICS_LISTEN,
+    );
     Domain::define_xml(conn, &new_xml)
         .map_err(LibvirtError::map_op("Failed to define cloned VM"))?;
     Ok(())
@@ -207,7 +213,10 @@ fn define_cloned_domain(
     let new_xml = remove_xml_element(&new_xml, "uuid");
     let new_xml = randomize_mac_addresses(&new_xml);
     let new_xml = repoint_disks(&new_xml, disk_map);
-    let new_xml = super::graphics_convert::ensure_graphics_present(&new_xml, "127.0.0.1");
+    let new_xml = super::graphics_convert::ensure_graphics_present(
+        &new_xml,
+        DEFAULT_GRAPHICS_LISTEN,
+    );
     Domain::define_xml(conn, &new_xml)
         .map_err(|e| LibvirtError::Operation(format!("define cloned VM: {e}")))?;
     Ok(())
@@ -289,6 +298,10 @@ fn randomize_mac_addresses(xml: &str) -> String {
     result
 }
 
+// `RandomState::new()` seeds from the OS RNG per call but is not itself a general-purpose
+// RNG API, so we drive it as a keyed hasher over `counter` (and `counter + 1`) and mix two
+// independently-seeded outputs together — good enough entropy for a MAC's low 3 bytes
+// without pulling in a `rand` dependency just for clone-time NIC addressing.
 fn generate_mac(counter: u64) -> String {
     use std::collections::hash_map::RandomState;
     use std::hash::{BuildHasher, Hasher};
@@ -302,6 +315,8 @@ fn generate_mac(counter: u64) -> String {
     let hash2 = h2.finish();
     let b1 = hash1.to_le_bytes();
     let b2 = hash2.to_le_bytes();
+    // 52:54:00 is QEMU/KVM's assigned locally-administered OUI — the same prefix
+    // libvirt itself uses when it autogenerates a guest NIC's MAC address.
     format!(
         "52:54:00:{:02x}:{:02x}:{:02x}",
         b1[0] ^ b2[1],

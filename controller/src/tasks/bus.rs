@@ -56,7 +56,7 @@ impl TaskBus for NatsTaskBus {
     async fn publish(&self, subject: &str, msg: &TaskMessage) -> anyhow::Result<()> {
         let payload = serde_json::to_vec(msg)?;
         let mut headers = async_nats::HeaderMap::new();
-        headers.insert("X-Machina-Origin", self.controller_id.as_str());
+        headers.insert(super::ORIGIN_HEADER, self.controller_id.as_str());
         self.client
             .publish_with_headers(subject.to_string(), headers, payload.into())
             .await?;

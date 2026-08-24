@@ -36,6 +36,12 @@ pub struct CopilotResponse {
 
 use crate::config::ControllerConfig;
 
+// Deterministic copilot replies only preview the first few items of a list
+// (issues/findings/risks/etc.) so a VM or fleet with many problems doesn't
+// produce an unreadably long chat message.
+const COPILOT_REPLY_LIST_LIMIT: usize = 5;
+const COPILOT_REPLY_SHORT_LIST_LIMIT: usize = 3;
+
 pub async fn copilot_chat(
     pool: &SqlitePool,
     cfg: &ControllerConfig,
@@ -159,7 +165,7 @@ pub async fn build_copilot_base(
                 "**{name}** health: **{}/100**.\n",
                 health.score_numeric
             ));
-            for issue in health.issues.iter().take(5) {
+            for issue in health.issues.iter().take(COPILOT_REPLY_LIST_LIMIT) {
                 reply.push_str(&format!("- {}\n", issue.message));
             }
         } else {
@@ -187,7 +193,7 @@ pub async fn build_copilot_base(
             sec.risk_level,
             sec.findings.len()
         ));
-        for f in sec.findings.iter().take(5) {
+        for f in sec.findings.iter().take(COPILOT_REPLY_LIST_LIMIT) {
             reply.push_str(&format!("- [{}] {}: {}\n", f.severity, f.title, f.detail));
         }
     } else if ml.contains("migrat") {
@@ -206,7 +212,7 @@ pub async fn build_copilot_base(
         for r in &adv.risks {
             reply.push_str(&format!("- Risk: {r}\n"));
         }
-        for s in adv.safe.iter().take(3) {
+        for s in adv.safe.iter().take(COPILOT_REPLY_SHORT_LIST_LIMIT) {
             reply.push_str(&format!("- OK: {s}\n"));
         }
     } else if ml.contains("reach")
@@ -257,10 +263,10 @@ pub async fn build_copilot_base(
                 "**{}** troubleshoot ({}) — severity **{}**\n\n",
                 report.vm_name, report.symptom, report.severity
             ));
-            for f in report.findings.iter().take(5) {
+            for f in report.findings.iter().take(COPILOT_REPLY_LIST_LIMIT) {
                 reply.push_str(&format!("- [{}] {}: {}\n", f.domain, f.severity, f.message));
             }
-            for a in report.recommended_actions.iter().take(3) {
+            for a in report.recommended_actions.iter().take(COPILOT_REPLY_SHORT_LIST_LIMIT) {
                 reply.push_str(&format!("  → {a}\n"));
             }
         } else {
@@ -337,6 +343,8 @@ pub async fn build_copilot_base(
 }
 
 pub fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
+    // Floor the requested size so a caller passing 0/1 can't force the loop
+    // below into effectively one-byte-at-a-time chunking.
     let size = chunk_size.max(8);
     let mut chunks = Vec::new();
     let mut rest = text;
@@ -494,7 +502,7 @@ fn parse_reach_query(message: &str) -> Option<(String, String, Option<i32>)> {
         });
 
     if let Some(idx) = ml.find(" reach ") {
-        let rest = &ml[idx + 7..];
+        let rest = &ml[idx + " reach ".len()..];
         let parts: Vec<&str> = rest.split_whitespace().collect();
         if parts.len() >= 3 && parts[1].eq_ignore_ascii_case("to") {
             return Some((

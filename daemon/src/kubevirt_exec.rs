@@ -23,16 +23,33 @@ async fn apply_kubeconfig(cmd: &mut Command, k: &KubeVirtConfig) {
     }
 }
 
-/// Run `kubectl apply -f <yaml>` on the daemon host.
-pub async fn kubectl_apply_yaml(
-    k: &KubeVirtConfig,
-    yaml_path: &Path,
-) -> Result<(i32, String, String), LibvirtError> {
+/// Shared gate for every `kubectl`/`virtctl` exec path below: cluster commands
+/// are opt-in via config since they let the daemon shell out and act on the
+/// cluster on the caller's behalf.
+fn require_exec_enabled(k: &KubeVirtConfig) -> Result<(), LibvirtError> {
     if !k.exec_enabled {
         return Err(LibvirtError::Forbidden(
             "kubevirt.exec_enabled is false; set it true in machina config to allow cluster commands.".into(),
         ));
     }
+    Ok(())
+}
+
+/// Collect a finished child process's exit code and stdout/stderr as owned
+/// strings (lossily, since cluster tool output isn't guaranteed UTF-8).
+fn collect_output(out: std::process::Output) -> (i32, String, String) {
+    let code = out.status.code().unwrap_or(-1);
+    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+    (code, stdout, stderr)
+}
+
+/// Run `kubectl apply -f <yaml>` on the daemon host.
+pub async fn kubectl_apply_yaml(
+    k: &KubeVirtConfig,
+    yaml_path: &Path,
+) -> Result<(i32, String, String), LibvirtError> {
+    require_exec_enabled(k)?;
     let bin = k.kubectl_binary.trim();
     if bin.is_empty() {
         return Err(LibvirtError::Invalid(
@@ -48,10 +65,7 @@ pub async fn kubectl_apply_yaml(
         .output()
         .await
         .map_err(|e| LibvirtError::Operation(format!("kubectl: failed to spawn: {e}")))?;
-    let code = out.status.code().unwrap_or(-1);
-    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-    Ok((code, stdout, stderr))
+    Ok(collect_output(out))
 }
 
 /// Run `virtctl image-upload` for the libvirt disk into the upload DataVolume.
@@ -62,11 +76,7 @@ pub async fn virtctl_image_upload_disk(
     image_path: &str,
     namespace: &str,
 ) -> Result<(i32, String, String), LibvirtError> {
-    if !k.exec_enabled {
-        return Err(LibvirtError::Forbidden(
-            "kubevirt.exec_enabled is false; set it true in machina config to allow cluster commands.".into(),
-        ));
-    }
+    require_exec_enabled(k)?;
     let bin = k.virtctl_binary.trim();
     if bin.is_empty() {
         return Err(LibvirtError::Invalid(
@@ -95,10 +105,7 @@ pub async fn virtctl_image_upload_disk(
     let out = cmd.output().await.map_err(|e| {
         LibvirtError::Operation(format!("virtctl image-upload: failed to spawn: {e}"))
     })?;
-    let code = out.status.code().unwrap_or(-1);
-    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-    Ok((code, stdout, stderr))
+    Ok(collect_output(out))
 }
 
 /// Run `virtctl start` for the KubeVirt VM.
@@ -107,11 +114,7 @@ pub async fn virtctl_start_vm(
     vm_name: &str,
     namespace: &str,
 ) -> Result<(i32, String, String), LibvirtError> {
-    if !k.exec_enabled {
-        return Err(LibvirtError::Forbidden(
-            "kubevirt.exec_enabled is false; set it true in machina config to allow cluster commands.".into(),
-        ));
-    }
+    require_exec_enabled(k)?;
     let bin = k.virtctl_binary.trim();
     if bin.is_empty() {
         return Err(LibvirtError::Invalid(
@@ -127,9 +130,6 @@ pub async fn virtctl_start_vm(
         .output()
         .await
         .map_err(|e| LibvirtError::Operation(format!("virtctl start: failed to spawn: {e}")))?;
-    let code = out.status.code().unwrap_or(-1);
-    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-    Ok((code, stdout, stderr))
+    Ok(collect_output(out))
 }
 

@@ -1,32 +1,18 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use super::types::{TetragonInstallResult, TetragonInstallSpec};
 use crate::LibvirtError;
 
-fn policy_dir() -> PathBuf {
-    std::env::var("MACHINA_TETRAGON_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("/var/lib/machina/tetragon"))
-}
-
 fn tetragon_version() -> String {
     std::env::var("MACHINA_TETRAGON_VERSION").unwrap_or_else(|_| "1.7.0".into())
 }
 
-fn is_service_active(unit: &str) -> bool {
-    Command::new("systemctl")
-        .args(["is-active", "--quiet", unit])
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
-}
-
 pub fn render_install_script(spec: &TetragonInstallSpec) -> String {
-    let root_dir = policy_dir();
+    let root_dir = super::policy_dir();
     let root = root_dir.display().to_string();
     let version = tetragon_version();
     format!(
@@ -224,7 +210,7 @@ pub fn run_tetragon_install(
     spec: &TetragonInstallSpec,
     dry_run: bool,
 ) -> Result<TetragonInstallResult, LibvirtError> {
-    let script_path = policy_dir().join("install-tetragon.sh");
+    let script_path = super::policy_dir().join("install-tetragon.sh");
     let script = render_install_script(spec);
     write_executable(&script_path, &script, dry_run)?;
 
@@ -252,8 +238,8 @@ pub fn run_tetragon_install(
                     .output()
                     .map(|o| o.status.success())
                     .unwrap_or(false),
-                service_active: is_service_active("tetragon.service"),
-                export_timer_active: is_service_active("tetragon-export.timer"),
+                service_active: super::is_service_active("tetragon.service"),
+                export_timer_active: super::is_service_active("tetragon-export.timer"),
                 operations,
                 message: "Dry run — install script rendered only".into(),
             });
@@ -276,8 +262,8 @@ pub fn run_tetragon_install(
                 .status()
                 .map(|s| s.success())
                 .unwrap_or(false);
-        let service_active = is_service_active("tetragon.service");
-        let export_timer_active = is_service_active("tetragon-export.timer");
+        let service_active = super::is_service_active("tetragon.service");
+        let export_timer_active = super::is_service_active("tetragon-export.timer");
         let ok = output.status.success() && binary_installed && service_active;
         let message = if ok {
             if stdout.is_empty() {

@@ -176,6 +176,7 @@ pub async fn complete_login(
         }
     };
 
+    // 86400s = 24h token lifetime, matching the local password-login flow (auth::login).
     let token = crate::jwt::issue_token(jwt_secret, &username, &role, 86400, Some("oidc"))?;
     Ok((username, role, token))
 }

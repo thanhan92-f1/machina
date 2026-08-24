@@ -8,6 +8,31 @@ use uuid::Uuid;
 
 use super::digital_twin::DigitalTwinGraph;
 
+// Most `LIMIT n` values scattered through this file's queries are simple
+// per-query fan-out caps (disks/apps/backups/users/etc.) sized ad hoc per
+// query rather than shared policy, so they stay as inline literals near
+// their query. The constants below are pulled out because the same value
+// is reused for the same purpose at more than one call site.
+//
+// Deterministic health-score heuristic used when no richer scoring engine
+// (VM Doctor, Zyra SRE) is consulted — coarse online/offline and
+// running+utilization bands, just enough to color the graph UI.
+const HOST_ONLINE_HEALTH_SCORE: i32 = 85;
+const HOST_OFFLINE_HEALTH_SCORE: i32 = 40;
+const VM_STOPPED_HEALTH_SCORE: i32 = 50;
+const VM_HIGH_MEM_HEALTH_SCORE: i32 = 55;
+const VM_MED_MEM_HEALTH_SCORE: i32 = 70;
+const VM_LOW_MEM_HEALTH_SCORE: i32 = 90;
+const VM_UNKNOWN_MEM_HEALTH_SCORE: i32 = 75;
+const VM_MEM_HIGH_RATIO: f64 = 0.9;
+const VM_MEM_MED_RATIO: f64 = 0.7;
+// Only the first few blocked/allowed ports become graph nodes per firewall
+// target, to avoid one host's full port matrix flooding the graph.
+const FIREWALL_EDGE_PORT_LIMIT: usize = 5;
+// Historical graph diff (graph_at) only surfaces a handful of added/removed
+// VM names as a preview, not the full delta.
+const GRAPH_DIFF_PREVIEW_LIMIT: usize = 10;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphNode {
     pub kind: String,
@@ -307,9 +332,9 @@ pub async fn build(pool: &SqlitePool, scope: &GraphScope) -> anyhow::Result<Infr
             {
                 n.state = st;
                 n.health_score = Some(if n.state.as_deref() == Some("online") {
-                    85
+                    HOST_ONLINE_HEALTH_SCORE
                 } else {
-                    40
+                    HOST_OFFLINE_HEALTH_SCORE
                 });
             }
         }
@@ -327,18 +352,18 @@ pub async fn build(pool: &SqlitePool, scope: &GraphScope) -> anyhow::Result<Infr
             {
                 n.state = Some(st.clone());
                 let score = if st != "running" {
-                    50
+                    VM_STOPPED_HEALTH_SCORE
                 } else if let Some(u) = used {
                     let ratio = u as f64 / mem.max(1) as f64;
-                    if ratio > 0.9 {
-                        55
-                    } else if ratio > 0.7 {
-                        70
+                    if ratio > VM_MEM_HIGH_RATIO {
+                        VM_HIGH_MEM_HEALTH_SCORE
+                    } else if ratio > VM_MEM_MED_RATIO {
+                        VM_MED_MEM_HEALTH_SCORE
                     } else {
-                        90
+                        VM_LOW_MEM_HEALTH_SCORE
                     }
                 } else {
-                    75
+                    VM_UNKNOWN_MEM_HEALTH_SCORE
                 };
                 n.health_score = Some(score);
             }
@@ -476,7 +501,7 @@ pub async fn append_firewall_edges(
         let profile = detail.target.profile.as_deref().unwrap_or("Balanced");
         let rules = profile_rules(profile);
         let matrix = simulate_connectivity(&detail.inventory, &rules);
-        for cell in matrix.blocks.iter().take(5) {
+        for cell in matrix.blocks.iter().take(FIREWALL_EDGE_PORT_LIMIT) {
             let port_id = format!("port-{}-{}", cell.port, cell.protocol);
             if !nodes.iter().any(|n| n.id == port_id) {
                 nodes.push(GraphNode {
@@ -493,7 +518,7 @@ pub async fn append_firewall_edges(
                 label: "blocks".into(),
             });
         }
-        for cell in matrix.allows.iter().take(5) {
+        for cell in matrix.allows.iter().take(FIREWALL_EDGE_PORT_LIMIT) {
             let port_id = format!("port-allow-{}-{}", cell.port, cell.protocol);
             if !nodes.iter().any(|n| n.id == port_id) {
                 nodes.push(GraphNode {
@@ -981,13 +1006,13 @@ pub async fn graph_at(pool: &SqlitePool, ts: DateTime<Utc>) -> anyhow::Result<Gr
     let added: Vec<String> = current_vm_names
         .iter()
         .filter(|n| !vm_names_at.contains(n))
-        .take(10)
+        .take(GRAPH_DIFF_PREVIEW_LIMIT)
         .cloned()
         .collect();
     let removed: Vec<String> = vm_names_at
         .iter()
         .filter(|n| !current_vm_names.contains(n))
-        .take(10)
+        .take(GRAPH_DIFF_PREVIEW_LIMIT)
         .cloned()
         .collect();
     let node_delta = added.len() as i64 - removed.len() as i64;

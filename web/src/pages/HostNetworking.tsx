@@ -34,6 +34,9 @@ import { statusBgClass, statusSurfaceClasses, statusToneClass } from '../utils/s
 type Tab = 'topology' | 'portforward' | 'bridges' | 'firewall' | 'routing' | 'sysctl' | 'systemd'
 type Dialog = null | 'bridge' | 'portforward' | 'firewall'
 
+// Highest valid TCP/UDP port number — bounds the port-forward and firewall-rule inputs.
+const MAX_TCP_PORT = 65535
+
 interface TopologyNode {
   id: string; label: string; type: 'vm' | 'network' | 'bridge' | 'host-nic'
   x: number; y: number; state?: string; extra?: string
@@ -993,7 +996,7 @@ export default function HostNetworkingPage() {
                   <div><label htmlFor="pf-proto" className="block text-sm text-slate-400 mb-1">Protocol</label>
                     <select id="pf-proto" value={pfProto} onChange={e => setPfProto(e.target.value)} className="input-field"><option value="tcp">TCP</option><option value="udp">UDP</option></select>
                   </div>
-                  <div><label htmlFor="pf-hport" className="block text-sm text-slate-400 mb-1">Host Port</label><input id="pf-hport" type="number" autoFocus min={1} max={65535} value={pfHostPort || ''} onChange={e => setPfHostPort(parseInt(e.target.value) || 0)} className="input-field" placeholder="9443" /></div>
+                  <div><label htmlFor="pf-hport" className="block text-sm text-slate-400 mb-1">Host Port</label><input id="pf-hport" type="number" autoFocus min={1} max={MAX_TCP_PORT} value={pfHostPort || ''} onChange={e => setPfHostPort(parseInt(e.target.value) || 0)} className="input-field" placeholder="9443" /></div>
                 </div>
                 <div><label htmlFor="pf-vmip" className="block text-sm text-slate-400 mb-1">VM IP Address</label>
                   {allVmIps.length > 0 ? (
@@ -1003,7 +1006,7 @@ export default function HostNetworkingPage() {
                     </select>
                   ) : <input id="pf-vmip" type="text" value={pfVmIp} onChange={e => setPfVmIp(e.target.value)} className="input-field" placeholder="192.168.122.10" />}
                 </div>
-                <div><label htmlFor="pf-vport" className="block text-sm text-slate-400 mb-1">VM Port</label><input id="pf-vport" type="number" min={1} max={65535} value={pfVmPort || ''} onChange={e => setPfVmPort(parseInt(e.target.value) || 0)} className="input-field" placeholder="8443" /></div>
+                <div><label htmlFor="pf-vport" className="block text-sm text-slate-400 mb-1">VM Port</label><input id="pf-vport" type="number" min={1} max={MAX_TCP_PORT} value={pfVmPort || ''} onChange={e => setPfVmPort(parseInt(e.target.value) || 0)} className="input-field" placeholder="8443" /></div>
                 <div><label htmlFor="pf-desc" className="block text-sm text-slate-400 mb-1">Description</label><input id="pf-desc" type="text" value={pfDesc} onChange={e => setPfDesc(e.target.value)} className="input-field" placeholder="Web server" /></div>
                 <p className="text-xs text-slate-500">Host 0.0.0.0:{pfHostPort || '?'} {'\u2192'} VM {pfVmIp || '?'}:{pfVmPort || '?'}</p>
               </div>
@@ -1041,7 +1044,7 @@ export default function HostNetworkingPage() {
                   <div><label htmlFor="fw-proto" className="block text-sm text-slate-400 mb-1">Protocol</label>
                     <select id="fw-proto" value={fwProto} onChange={e => setFwProto(e.target.value)} className="input-field"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="icmp">ICMP</option><option value="all">All</option></select>
                   </div>
-                  <div><label htmlFor="fw-port" className="block text-sm text-slate-400 mb-1">Port (0 = all)</label><input id="fw-port" type="number" min={0} max={65535} value={fwPort} onChange={e => setFwPort(parseInt(e.target.value) || 0)} className="input-field" /></div>
+                  <div><label htmlFor="fw-port" className="block text-sm text-slate-400 mb-1">Port (0 = all)</label><input id="fw-port" type="number" min={0} max={MAX_TCP_PORT} value={fwPort} onChange={e => setFwPort(parseInt(e.target.value) || 0)} className="input-field" /></div>
                 </div>
                 <div><label htmlFor="fw-desc" className="block text-sm text-slate-400 mb-1">Description</label><input id="fw-desc" type="text" value={fwDesc} onChange={e => setFwDesc(e.target.value)} className="input-field" placeholder="Allow SSH" /></div>
               </div>

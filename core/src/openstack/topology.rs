@@ -802,60 +802,45 @@ pub async fn update_port(
     })
 }
 
-pub async fn delete_network(cfg: &OpenStackConfig, network_id: &str) -> Result<(), LibvirtError> {
-    let id = network_id.trim();
+/// Shared body for the four `delete_*` topology functions below — same
+/// trim/require-non-empty validation and Neutron `DELETE` call, differing
+/// only in the resource's URL path segment and the id's field name in the
+/// error message.
+async fn delete_topology_resource(
+    cfg: &OpenStackConfig,
+    resource_path: &'static str,
+    id_field_name: &'static str,
+    id: &str,
+) -> Result<(), LibvirtError> {
+    let id = id.trim();
     if id.is_empty() {
-        return Err(LibvirtError::Invalid("network_id is required".into()));
+        return Err(LibvirtError::Invalid(format!(
+            "{id_field_name} is required"
+        )));
     }
     let session = connect_session(cfg).await?;
     session
-        .delete(NETWORK, &["networks", id])
+        .delete(NETWORK, &[resource_path, id])
         .send()
         .await
         .map_err(map_osauth_err)?;
     Ok(())
+}
+
+pub async fn delete_network(cfg: &OpenStackConfig, network_id: &str) -> Result<(), LibvirtError> {
+    delete_topology_resource(cfg, "networks", "network_id", network_id).await
 }
 
 pub async fn delete_subnet(cfg: &OpenStackConfig, subnet_id: &str) -> Result<(), LibvirtError> {
-    let id = subnet_id.trim();
-    if id.is_empty() {
-        return Err(LibvirtError::Invalid("subnet_id is required".into()));
-    }
-    let session = connect_session(cfg).await?;
-    session
-        .delete(NETWORK, &["subnets", id])
-        .send()
-        .await
-        .map_err(map_osauth_err)?;
-    Ok(())
+    delete_topology_resource(cfg, "subnets", "subnet_id", subnet_id).await
 }
 
 pub async fn delete_router(cfg: &OpenStackConfig, router_id: &str) -> Result<(), LibvirtError> {
-    let id = router_id.trim();
-    if id.is_empty() {
-        return Err(LibvirtError::Invalid("router_id is required".into()));
-    }
-    let session = connect_session(cfg).await?;
-    session
-        .delete(NETWORK, &["routers", id])
-        .send()
-        .await
-        .map_err(map_osauth_err)?;
-    Ok(())
+    delete_topology_resource(cfg, "routers", "router_id", router_id).await
 }
 
 pub async fn delete_port(cfg: &OpenStackConfig, port_id: &str) -> Result<(), LibvirtError> {
-    let id = port_id.trim();
-    if id.is_empty() {
-        return Err(LibvirtError::Invalid("port_id is required".into()));
-    }
-    let session = connect_session(cfg).await?;
-    session
-        .delete(NETWORK, &["ports", id])
-        .send()
-        .await
-        .map_err(map_osauth_err)?;
-    Ok(())
+    delete_topology_resource(cfg, "ports", "port_id", port_id).await
 }
 
 pub async fn remove_router_interface(

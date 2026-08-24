@@ -1,5 +1,9 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
+// Placeholder guest IP shown when the actual address isn't known yet — matches libvirt's
+// default NAT network (192.168.122.0/24), so it reads as a real example rather than junk.
+const DEFAULT_NAT_GUEST_IP_PLACEHOLDER = '192.168.122.x'
+
 export interface GuestAccessHints {
   auth_mode: string
   serial_password_login: boolean
@@ -48,7 +52,7 @@ export function consoleAccessHints(
       } else {
         const where = opts.vmNetworkHref ? ` Open ${opts.vmNetworkHref} to expose RDP.` : ' Expose RDP in VM → Network → Hypervisor NAT.'
         out.push(
-          `Windows guest ${opts.guestIp ?? '192.168.122.x'} is on hypervisor NAT and is not reachable from your laptop.${where} Then connect with Microsoft Remote Desktop (macOS) or mstsc (Windows).`,
+          `Windows guest ${opts.guestIp ?? DEFAULT_NAT_GUEST_IP_PLACEHOLDER} is on hypervisor NAT and is not reachable from your laptop.${where} Then connect with Microsoft Remote Desktop (macOS) or mstsc (Windows).`,
         )
       }
     }
@@ -69,11 +73,11 @@ export function consoleAccessHints(
   if ((lens === 'shell' || lens === 'serial') && hints.guest_ip_private) {
     if (hints.ssh_nat_host_port) {
       out.push(
-        `Guest IP ${opts.guestIp ?? '192.168.122.x'} is hypervisor NAT only — not reachable from your laptop. Use: ssh -p ${hints.ssh_nat_host_port} ${user}@${host}`,
+        `Guest IP ${opts.guestIp ?? DEFAULT_NAT_GUEST_IP_PLACEHOLDER} is hypervisor NAT only — not reachable from your laptop. Use: ssh -p ${hints.ssh_nat_host_port} ${user}@${host}`,
       )
     } else {
       out.push(
-        `Guest IP ${opts.guestIp ?? '192.168.122.x'} is on hypervisor NAT and is not reachable from your laptop.${networkLink} Then: ssh -p 2222 ${user}@${host}`,
+        `Guest IP ${opts.guestIp ?? DEFAULT_NAT_GUEST_IP_PLACEHOLDER} is on hypervisor NAT and is not reachable from your laptop.${networkLink} Then: ssh -p 2222 ${user}@${host}`,
       )
     }
   }

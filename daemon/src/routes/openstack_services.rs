@@ -26,8 +26,7 @@ use serde::Deserialize;
 
 use crate::auth::{require_write, RequestActor};
 use crate::error::AppError;
-use crate::openstack_runtime::openstack_cfg;
-use crate::routes::openstack::{ensure_openstack_enabled, log_audit};
+use crate::routes::openstack::{log_audit, openstack_cfg_checked};
 
 #[derive(Deserialize)]
 struct ProjectQuery {
@@ -35,16 +34,14 @@ struct ProjectQuery {
 }
 
 async fn os_heat_reachable() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     Ok(Json(
         serde_json::json!({ "reachable": probe_heat_reachable(&cfg).await }),
     ))
 }
 
 async fn os_list_heat_stacks() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let stacks = list_heat_stacks(&cfg).await?;
     Ok(Json(serde_json::json!({ "stacks": stacks })))
 }
@@ -52,8 +49,7 @@ async fn os_list_heat_stacks() -> Result<Json<serde_json::Value>, AppError> {
 async fn os_get_heat_stack(
     Path((name, id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let stack = get_heat_stack(&cfg, &name, &id).await?;
     Ok(Json(serde_json::json!({ "stack": stack })))
 }
@@ -61,8 +57,7 @@ async fn os_get_heat_stack(
 async fn os_list_heat_resources(
     Path((name, id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let resources = list_heat_stack_resources(&cfg, &name, &id).await?;
     Ok(Json(serde_json::json!({ "resources": resources })))
 }
@@ -70,8 +65,7 @@ async fn os_list_heat_resources(
 async fn os_list_heat_events(
     Path((name, id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let events = list_heat_stack_events(&cfg, &name, &id).await?;
     Ok(Json(serde_json::json!({ "events": events })))
 }
@@ -79,8 +73,7 @@ async fn os_list_heat_events(
 async fn os_get_heat_template(
     Path((name, id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let template = get_heat_stack_template(&cfg, &name, &id).await?;
     Ok(Json(serde_json::json!({ "template": template })))
 }
@@ -90,8 +83,7 @@ async fn os_create_heat_stack(
     Json(body): Json<CreateHeatStackRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let stack = create_heat_stack(&cfg, &body).await?;
     log_audit("openstack.heat.create", &stack.id, "ok");
     Ok(Json(serde_json::json!({ "stack": stack })))
@@ -103,8 +95,7 @@ async fn os_update_heat_stack(
     Json(body): Json<UpdateHeatStackRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let stack = update_heat_stack(&cfg, &name, &id, &body).await?;
     log_audit("openstack.heat.update", &id, "ok");
     Ok(Json(serde_json::json!({ "stack": stack })))
@@ -115,8 +106,7 @@ async fn os_delete_heat_stack(
     Path((name, id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_heat_stack(&cfg, &name, &id).await?;
     log_audit("openstack.heat.delete", &id, "ok");
     Ok(Json(
@@ -125,23 +115,20 @@ async fn os_delete_heat_stack(
 }
 
 async fn os_octavia_reachable() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     Ok(Json(
         serde_json::json!({ "reachable": probe_octavia_reachable(&cfg).await }),
     ))
 }
 
 async fn os_list_load_balancers() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let loadbalancers = list_load_balancers(&cfg).await?;
     Ok(Json(serde_json::json!({ "loadbalancers": loadbalancers })))
 }
 
 async fn os_get_load_balancer(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let loadbalancer = get_load_balancer(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "loadbalancer": loadbalancer })))
 }
@@ -151,8 +138,7 @@ async fn os_create_load_balancer(
     Json(body): Json<CreateLoadBalancerRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let loadbalancer = create_load_balancer(&cfg, &body).await?;
     log_audit("openstack.lb.create", &loadbalancer.id, "ok");
     Ok(Json(serde_json::json!({ "loadbalancer": loadbalancer })))
@@ -163,16 +149,14 @@ async fn os_delete_load_balancer(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_load_balancer(&cfg, &id).await?;
     log_audit("openstack.lb.delete", &id, "ok");
     Ok(Json(serde_json::json!({ "status": "deleted", "id": id })))
 }
 
 async fn os_list_lb_listeners(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let listeners = list_lb_listeners(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "listeners": listeners })))
 }
@@ -183,8 +167,7 @@ async fn os_create_lb_listener(
     Json(body): Json<CreateLbListenerRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let mut req = body;
     if req.loadbalancer_id.trim().is_empty() {
         req.loadbalancer_id = id;
@@ -199,16 +182,14 @@ async fn os_delete_lb_listener(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_lb_listener(&cfg, &id).await?;
     log_audit("openstack.lb.listener.delete", &id, "ok");
     Ok(Json(serde_json::json!({ "status": "deleted", "id": id })))
 }
 
 async fn os_list_lb_pools(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let pools = list_lb_pools(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "pools": pools })))
 }
@@ -218,8 +199,7 @@ async fn os_create_lb_pool(
     Json(body): Json<CreateLbPoolRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let pool = create_lb_pool(&cfg, &body).await?;
     log_audit("openstack.lb.pool.create", &pool.id, "ok");
     Ok(Json(serde_json::json!({ "pool": pool })))
@@ -230,8 +210,7 @@ async fn os_delete_lb_pool(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_lb_pool(&cfg, &id).await?;
     log_audit("openstack.lb.pool.delete", &id, "ok");
     Ok(Json(serde_json::json!({ "status": "deleted", "id": id })))
@@ -240,8 +219,7 @@ async fn os_delete_lb_pool(
 async fn os_list_lb_members(
     Path(pool_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let members = list_lb_members(&cfg, &pool_id).await?;
     Ok(Json(serde_json::json!({ "members": members })))
 }
@@ -252,8 +230,7 @@ async fn os_create_lb_member(
     Json(body): Json<CreateLbMemberRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let member = create_lb_member(&cfg, &pool_id, &body).await?;
     log_audit("openstack.lb.member.create", &member.id, "ok");
     Ok(Json(serde_json::json!({ "member": member })))
@@ -264,8 +241,7 @@ async fn os_delete_lb_member(
     Path((pool_id, member_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_lb_member(&cfg, &pool_id, &member_id).await?;
     log_audit("openstack.lb.member.delete", &member_id, "ok");
     Ok(Json(
@@ -276,8 +252,7 @@ async fn os_delete_lb_member(
 async fn os_list_lb_health_monitors(
     Path(pool_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let healthmonitors = list_lb_health_monitors(&cfg, &pool_id).await?;
     Ok(Json(
         serde_json::json!({ "healthmonitors": healthmonitors }),
@@ -289,8 +264,7 @@ async fn os_create_lb_health_monitor(
     Json(body): Json<CreateLbHealthMonitorRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let monitor = create_lb_health_monitor(&cfg, &body).await?;
     log_audit("openstack.lb.monitor.create", &monitor.id, "ok");
     Ok(Json(serde_json::json!({ "healthmonitor": monitor })))
@@ -301,16 +275,14 @@ async fn os_delete_lb_health_monitor(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_lb_health_monitor(&cfg, &id).await?;
     log_audit("openstack.lb.monitor.delete", &id, "ok");
     Ok(Json(serde_json::json!({ "status": "deleted", "id": id })))
 }
 
 async fn os_list_projects() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let projects = list_identity_projects(&cfg).await?;
     Ok(Json(serde_json::json!({ "projects": projects })))
 }
@@ -320,23 +292,20 @@ async fn os_create_project(
     Json(body): Json<CreateIdentityProjectRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let project = create_identity_project(&cfg, &body).await?;
     log_audit("openstack.identity.project.create", &project.id, "ok");
     Ok(Json(serde_json::json!({ "project": project })))
 }
 
 async fn os_get_project(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let project = get_identity_project(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "project": project })))
 }
 
 async fn os_list_users() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let users = list_identity_users(&cfg).await?;
     Ok(Json(serde_json::json!({ "users": users })))
 }
@@ -346,16 +315,14 @@ async fn os_create_user(
     Json(body): Json<CreateIdentityUserRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let user = create_identity_user(&cfg, &body).await?;
     log_audit("openstack.identity.user.create", &user.id, "ok");
     Ok(Json(serde_json::json!({ "user": user })))
 }
 
 async fn os_get_user(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let user = get_identity_user(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "user": user })))
 }
@@ -366,16 +333,14 @@ async fn os_update_user(
     Json(body): Json<UpdateIdentityUserRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let user = update_identity_user(&cfg, &id, &body).await?;
     log_audit("openstack.identity.user.update", &id, "ok");
     Ok(Json(serde_json::json!({ "user": user })))
 }
 
 async fn os_list_roles() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let roles = list_identity_roles(&cfg).await?;
     Ok(Json(serde_json::json!({ "roles": roles })))
 }
@@ -383,8 +348,7 @@ async fn os_list_roles() -> Result<Json<serde_json::Value>, AppError> {
 async fn os_list_role_assignments(
     Query(q): Query<ProjectQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let assignments = list_role_assignments(&cfg, q.project_id.as_deref()).await?;
     Ok(Json(serde_json::json!({ "role_assignments": assignments })))
 }
@@ -394,8 +358,7 @@ async fn os_grant_role_assignment(
     Json(body): Json<RoleAssignmentRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     grant_role_assignment(&cfg, &body).await?;
     log_audit("openstack.identity.role.grant", &body.user_id, "ok");
     Ok(Json(serde_json::json!({ "status": "granted" })))
@@ -406,16 +369,14 @@ async fn os_revoke_role_assignment(
     Json(body): Json<RoleAssignmentRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     revoke_role_assignment(&cfg, &body).await?;
     log_audit("openstack.identity.role.revoke", &body.user_id, "ok");
     Ok(Json(serde_json::json!({ "status": "revoked" })))
 }
 
 async fn os_network_topology() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let graph = build_network_topology(&cfg).await?;
     Ok(Json(serde_json::json!({ "graph": graph })))
 }

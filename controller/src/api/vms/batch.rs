@@ -53,6 +53,21 @@ pub struct BatchVmPowerResponse {
     pub results: Vec<BatchVmPowerItem>,
 }
 
+impl BatchVmPowerItem {
+    /// Success result for one VM in a batch — `task_id` is `None` for an
+    /// action (like inventory pruning) that completes synchronously with no
+    /// enqueued task.
+    fn ok(vm_id: Uuid, task_id: Option<String>) -> Self {
+        Self { vm_id: vm_id.to_string(), task_id, error: None }
+    }
+
+    /// Failure result for one VM in a batch, so one bad entry doesn't abort
+    /// the rest of the request.
+    fn err(vm_id: Uuid, message: impl Into<String>) -> Self {
+        Self { vm_id: vm_id.to_string(), task_id: None, error: Some(message.into()) }
+    }
+}
+
 pub async fn batch_vm_power(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -76,16 +91,8 @@ pub async fn batch_vm_power(
         )
         .await
         {
-            Ok(Json(task)) => results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: Some(task.task_id),
-                error: None,
-            }),
-            Err(e) => results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: None,
-                error: Some(e.message),
-            }),
+            Ok(Json(task)) => results.push(BatchVmPowerItem::ok(vm_id, Some(task.task_id))),
+            Err(e) => results.push(BatchVmPowerItem::err(vm_id, e.message)),
         }
     }
     Ok(Json(BatchVmPowerResponse { results }))
@@ -131,11 +138,7 @@ pub async fn batch_vm_snapshot(
         {
             Some(h) => h,
             None => {
-                results.push(BatchVmPowerItem {
-                    vm_id: vm_id.to_string(),
-                    task_id: None,
-                    error: Some("vm not found".into()),
-                });
+                results.push(BatchVmPowerItem::err(vm_id, "vm not found"));
                 continue;
             }
         };
@@ -150,11 +153,7 @@ pub async fn batch_vm_snapshot(
         .await
         .is_err()
         {
-            results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: None,
-                error: Some("failed to record snapshot".into()),
-            });
+            results.push(BatchVmPowerItem::err(vm_id, "failed to record snapshot"));
             continue;
         }
         match enqueue_task(
@@ -175,16 +174,8 @@ pub async fn batch_vm_snapshot(
         )
         .await
         {
-            Ok(task_id) => results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: Some(task_id.to_string()),
-                error: None,
-            }),
-            Err(e) => results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: None,
-                error: Some(e.message),
-            }),
+            Ok(task_id) => results.push(BatchVmPowerItem::ok(vm_id, Some(task_id.to_string()))),
+            Err(e) => results.push(BatchVmPowerItem::err(vm_id, e.message)),
         }
     }
     Ok(Json(BatchVmPowerResponse { results }))
@@ -224,11 +215,7 @@ pub async fn batch_vm_delete(
         .fetch_optional(&state.pool)
         .await?;
         let Some((host_id, observed_state)) = row else {
-            results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: None,
-                error: Some("vm not found".into()),
-            });
+            results.push(BatchVmPowerItem::err(vm_id, "vm not found"));
             continue;
         };
         if observed_state == "missing" {
@@ -238,17 +225,9 @@ pub async fn batch_vm_delete(
                         "vm.pruned",
                         format!("Pruned missing VM record {name} from inventory"),
                     );
-                    results.push(BatchVmPowerItem {
-                        vm_id: vm_id.to_string(),
-                        task_id: None,
-                        error: None,
-                    });
+                    results.push(BatchVmPowerItem::ok(vm_id, None));
                 }
-                Err(e) => results.push(BatchVmPowerItem {
-                    vm_id: vm_id.to_string(),
-                    task_id: None,
-                    error: Some(e.message),
-                }),
+                Err(e) => results.push(BatchVmPowerItem::err(vm_id, e.message)),
             }
             continue;
         }
@@ -262,16 +241,8 @@ pub async fn batch_vm_delete(
         )
         .await
         {
-            Ok(task_id) => results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: Some(task_id.to_string()),
-                error: None,
-            }),
-            Err(e) => results.push(BatchVmPowerItem {
-                vm_id: vm_id.to_string(),
-                task_id: None,
-                error: Some(e.message),
-            }),
+            Ok(task_id) => results.push(BatchVmPowerItem::ok(vm_id, Some(task_id.to_string()))),
+            Err(e) => results.push(BatchVmPowerItem::err(vm_id, e.message)),
         }
     }
     Ok(Json(BatchVmPowerResponse { results }))

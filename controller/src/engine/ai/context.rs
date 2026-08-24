@@ -6,6 +6,11 @@ use uuid::Uuid;
 
 use crate::config::ControllerConfig;
 
+// Keep the LLM context window small: only the most recent handful of tasks
+// and events is needed to ground a response, not the full history.
+const RECENT_TASKS_LIMIT: i64 = 8;
+const RECENT_EVENTS_LIMIT: i64 = 6;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct AssembledContext {
     pub cluster_vms: i64,
@@ -61,8 +66,9 @@ pub async fn assemble(
             .await?;
 
     let recent_tasks: Vec<TaskBrief> = sqlx::query_as(
-        "SELECT operation, status, progress FROM tasks ORDER BY created_at DESC LIMIT 8",
+        "SELECT operation, status, progress FROM tasks ORDER BY created_at DESC LIMIT ?",
     )
+    .bind(RECENT_TASKS_LIMIT)
     .fetch_all(pool)
     .await?
     .into_iter()
@@ -74,8 +80,9 @@ pub async fn assemble(
     .collect();
 
     let recent_events: Vec<String> = sqlx::query_scalar(
-        "SELECT kind || ': ' || COALESCE(message, '') FROM events ORDER BY created_at DESC LIMIT 6",
+        "SELECT kind || ': ' || COALESCE(message, '') FROM events ORDER BY created_at DESC LIMIT ?",
     )
+    .bind(RECENT_EVENTS_LIMIT)
     .fetch_all(pool)
     .await
     .unwrap_or_default();

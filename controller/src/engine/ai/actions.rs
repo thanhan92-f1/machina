@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+const ACTIONS_LIST_LIMIT: i64 = 100;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct ZyraActionRow {
     pub id: Uuid,
@@ -42,9 +44,10 @@ pub async fn list_by_status(pool: &SqlitePool, status: &str) -> anyhow::Result<V
         sqlx::query_as(
             "SELECT id, source, action_type, label, review, risk, object_ref, status, requested_by,
                     strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
-             FROM ai_actions WHERE status = ? ORDER BY created_at DESC LIMIT 100",
+             FROM ai_actions WHERE status = ? ORDER BY created_at DESC LIMIT ?",
         )
         .bind(status)
+        .bind(ACTIONS_LIST_LIMIT)
         .fetch_all(pool)
         .await?;
     Ok(rows.into_iter().map(map_row).collect())

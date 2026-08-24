@@ -149,7 +149,7 @@ async fn create_session_handler(
     };
 
     let ssh_port = if body.ssh_port == 0 {
-        22
+        default_ssh_port()
     } else {
         body.ssh_port
     };

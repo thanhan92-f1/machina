@@ -10,6 +10,13 @@ use serde_json::Value;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+/// HTTP client timeout used when forwarding batches of events/alerts to a
+/// configured SIEM (Elastic, QRadar, Sentinel, Splunk). Shared by all four
+/// forwarders so the "how long do we wait on a SIEM before giving up on this
+/// forward cycle" tradeoff lives in one place rather than four copies that
+/// could quietly drift apart.
+pub(crate) const FORWARD_CLIENT_TIMEOUT_SECS: u64 = 30;
+
 #[derive(Debug, sqlx::FromRow)]
 pub struct IntegrationRow {
     pub id: Uuid,

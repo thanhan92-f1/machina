@@ -5,6 +5,29 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+const RECALL_LIMIT_MIN: i64 = 1;
+const RECALL_LIMIT_MAX: i64 = 50;
+const SIMILAR_LIMIT_MIN: i64 = 1;
+const SIMILAR_LIMIT_MAX: i64 = 20;
+const OUTAGE_WINDOW_HOURS_MIN: i32 = 1;
+const OUTAGE_WINDOW_HOURS_MAX: i32 = 48;
+const OUTAGE_CHANGES_LIMIT: i64 = 50;
+// Similarity score decays with result rank (later/less-recent matches score
+// lower) since there's no real semantic similarity computation here — this
+// approximates "more recent match = more similar" and never drops below a
+// floor so old-but-relevant matches still read as plausibly similar.
+const SIMILARITY_DECAY_PER_RANK: f32 = 0.05;
+const SIMILARITY_FLOOR: f32 = 0.4;
+
+/// Extracts a human-readable summary from an audit-log `detail` JSON blob's
+/// "message" field, falling back to the raw action string when detail is
+/// absent or has no "message" key. Shared by recall/similar/changes_before_outage.
+fn detail_summary_or_action(detail: Option<serde_json::Value>, action: &str) -> String {
+    detail
+        .and_then(|d| d.get("message").and_then(|m| m.as_str()).map(String::from))
+        .unwrap_or_else(|| action.to_string())
+}
+
 #[derive(Debug, Serialize)]
 pub struct MemoryIncident {
     pub at: DateTime<Utc>,
@@ -21,7 +44,7 @@ pub struct InfrastructureMemory {
 }
 
 pub async fn recall(pool: &SqlitePool, limit: i64) -> anyhow::Result<InfrastructureMemory> {
-    let cap = limit.clamp(1, 50);
+    let cap = limit.clamp(RECALL_LIMIT_MIN, RECALL_LIMIT_MAX);
 
     let mut incidents = Vec::new();
 
@@ -76,9 +99,7 @@ pub async fn recall(pool: &SqlitePool, limit: i64) -> anyhow::Result<Infrastruct
             }
             _ => "Historical infrastructure change — correlate with Mission Control timeline.",
         };
-        let summary = detail
-            .and_then(|d| d.get("message").and_then(|m| m.as_str()).map(String::from))
-            .unwrap_or_else(|| action.clone());
+        let summary = detail_summary_or_action(detail, &action);
         incidents.push(MemoryIncident {
             at,
             kind: action,
@@ -124,7 +145,7 @@ pub async fn similar(
     query: &str,
     limit: i64,
 ) -> anyhow::Result<SimilarIncidentsResult> {
-    let cap = limit.clamp(1, 20);
+    let cap = limit.clamp(SIMILAR_LIMIT_MIN, SIMILAR_LIMIT_MAX);
     let pattern = format!("%{}%", escape_like(query.trim()));
 
     let rows: Vec<(DateTime<Utc>, String, String, Option<serde_json::Value>)> = sqlx::query_as(
@@ -144,14 +165,12 @@ pub async fn similar(
         .into_iter()
         .enumerate()
         .map(|(i, (at, action, _actor, detail))| {
-            let summary = detail
-                .and_then(|d| d.get("message").and_then(|m| m.as_str()).map(String::from))
-                .unwrap_or_else(|| action.clone());
+            let summary = detail_summary_or_action(detail, &action);
             SimilarIncident {
                 at,
                 kind: action,
                 summary,
-                similarity: (1.0 - i as f32 * 0.05).max(0.4),
+                similarity: (1.0 - i as f32 * SIMILARITY_DECAY_PER_RANK).max(SIMILARITY_FLOOR),
             }
         })
         .collect();
@@ -196,26 +215,28 @@ pub async fn changes_before_outage(
     };
 
     let end = window_start.unwrap_or_else(Utc::now);
-    let start = end - chrono::Duration::hours(hours_before.clamp(1, 48) as i64);
+    let start = end
+        - chrono::Duration::hours(
+            hours_before.clamp(OUTAGE_WINDOW_HOURS_MIN, OUTAGE_WINDOW_HOURS_MAX) as i64,
+        );
 
     let rows: Vec<(DateTime<Utc>, String, String, Option<serde_json::Value>)> = sqlx::query_as(
         "SELECT strftime('%Y-%m-%dT%H:%M:%SZ', created_at), actor, action, detail FROM audit_logs
          WHERE created_at BETWEEN ? AND ?
            AND (action LIKE '%network%' OR action LIKE '%firewall%' OR action LIKE '%migrate%'
                 OR action LIKE '%storage%' OR action LIKE '%delete%' OR action LIKE '%update%')
-         ORDER BY created_at ASC LIMIT 50",
+         ORDER BY created_at ASC LIMIT ?",
     )
     .bind(start)
     .bind(end)
+    .bind(OUTAGE_CHANGES_LIMIT)
     .fetch_all(pool)
     .await?;
 
     let changes: Vec<MemoryIncident> = rows
         .into_iter()
         .map(|(at, actor, action, detail)| {
-            let summary = detail
-                .and_then(|d| d.get("message").and_then(|m| m.as_str()).map(String::from))
-                .unwrap_or_else(|| action.clone());
+            let summary = detail_summary_or_action(detail, &action);
             MemoryIncident {
                 at,
                 kind: action.clone(),

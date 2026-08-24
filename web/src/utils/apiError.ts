@@ -97,7 +97,6 @@ export function formatHttpErrorBody(status: number, statusText: string, text: st
   return `Request failed (${statusLabel}): ${raw}`
 }
 
-/** Format any thrown value for toasts and banners. */
 /** True when the platform controller returned 404 / not_found for a VM or other resource. */
 export function isPlatformNotFoundError(e: unknown): boolean {
   if (e && typeof e === 'object' && 'error_code' in e) {
@@ -108,6 +107,7 @@ export function isPlatformNotFoundError(e: unknown): boolean {
   return /\bnot[_ ]found\b/.test(msg)
 }
 
+/** Format any thrown value for toasts and banners. */
 export function formatUserError(e: unknown): string {
   if (e && typeof e === 'object' && 'remediation' in e) {
     const remediation = (e as { remediation?: string }).remediation

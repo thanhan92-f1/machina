@@ -11,19 +11,30 @@ use crate::api::ApiError;
 use crate::auth::{require_operator, AuthUser};
 use crate::state::AppState;
 
+/// Resolve the VM's libvirt name and dial its host's agent — shared by every
+/// handler in this file since each one needs a live agent connection before
+/// it can invoke a `graphics.*` RPC.
+async fn resolve_vm_agent(
+    state: &AppState,
+    id: Uuid,
+) -> Result<(String, crate::agent_client::AgentClient), ApiError> {
+    let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(state, id).await?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    Ok((name, client))
+}
+
 pub async fn convert_vm_spice_to_vnc(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-    let mut client = crate::agent_client::connect(&agent_addr)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (name, mut client) = resolve_vm_agent(&state, id).await?;
     let result = crate::agent_client::vm_libvirt_invoke(
         &mut client,
         &name,
@@ -74,7 +85,6 @@ pub async fn add_vm_graphics(
     Json(body): Json<VmGraphicsBody>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
     let listen = body
         .listen
         .as_deref()
@@ -87,12 +97,7 @@ pub async fn add_vm_graphics(
              VNC/SPICE console on the network",
         ));
     }
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-    let mut client = crate::agent_client::connect(&agent_addr)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (name, mut client) = resolve_vm_agent(&state, id).await?;
     let result = crate::agent_client::vm_libvirt_invoke(
         &mut client,
         &name,
@@ -118,13 +123,7 @@ pub async fn remove_vm_graphics(
     Json(body): Json<VmGraphicsBody>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-    let mut client = crate::agent_client::connect(&agent_addr)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (name, mut client) = resolve_vm_agent(&state, id).await?;
     let result = crate::agent_client::vm_libvirt_invoke(
         &mut client,
         &name,

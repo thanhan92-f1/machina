@@ -15,6 +15,9 @@ pub struct ZyraEnterpriseOverview {
 }
 
 pub async fn overview(pool: &SqlitePool, username: &str) -> anyhow::Result<ZyraEnterpriseOverview> {
+    // Column/action names below still use the pre-rebrand "zeus_"/"zeus."
+    // prefix — they refer to existing DB schema and historical audit rows,
+    // so they intentionally were not renamed alongside the Zeus->Zyra rebrand.
     let air_gap: bool = sqlx::query_scalar(
         "SELECT COALESCE(zeus_air_gap_llm, FALSE) FROM clusters ORDER BY created_at LIMIT 1",
     )

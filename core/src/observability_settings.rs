@@ -85,11 +85,6 @@ fn mask_secret(value: &str) -> String {
 }
 
 pub fn settings_view_from_config(cfg: &MachinaConfig) -> ObservabilitySettingsView {
-    let path = if MachinaConfig::system_config_path().exists() {
-        MachinaConfig::system_config_path()
-    } else {
-        MachinaConfig::user_config_path()
-    };
     let otlp = &cfg.observability.otlp;
     let mh = &cfg.metrics_history;
     ObservabilitySettingsView {
@@ -111,7 +106,7 @@ pub fn settings_view_from_config(cfg: &MachinaConfig) -> ObservabilitySettingsVi
         audit: AuditObservabilityView {
             sign_lines: cfg.audit.sign_lines,
         },
-        config_path: path.display().to_string(),
+        config_path: MachinaConfig::config_path_display(),
     }
 }
 

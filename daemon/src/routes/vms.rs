@@ -75,6 +75,16 @@ fn log_audit_with_actor(actor: Option<&str>, action: &str, target: &str, result:
     audit::write_audit_event(&event);
 }
 
+/// Shared response envelope for the `kubectl`/`hyper2kvm` exec handlers below: the
+/// caller's exit code and captured stdout/stderr, verbatim.
+fn exec_result_json(code: i32, stdout: String, stderr: String) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "exit_code": code,
+        "stdout": stdout,
+        "stderr": stderr,
+    }))
+}
+
 async fn list_vms(
     State(manager): State<LibvirtManager>,
     Extension(actor): Extension<RequestActor>,
@@ -257,11 +267,7 @@ async fn kubevirt_apply_handler(
         audit,
         &bundle.virtual_machine_name,
     );
-    Ok(Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    })))
+    Ok(exec_result_json(code, stdout, stderr))
 }
 
 async fn kubevirt_upload_handler(
@@ -301,11 +307,7 @@ async fn kubevirt_upload_handler(
         audit,
         &bundle.datavolume_name,
     );
-    Ok(Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    })))
+    Ok(exec_result_json(code, stdout, stderr))
 }
 
 #[derive(Debug, Deserialize)]
@@ -493,11 +495,7 @@ async fn kubevirt_start_handler(
         audit,
         &bundle.virtual_machine_name,
     );
-    Ok(Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    })))
+    Ok(exec_result_json(code, stdout, stderr))
 }
 
 async fn start_vm(

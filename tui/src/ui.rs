@@ -2364,11 +2364,7 @@ fn render_openstack_create_wizard(frame: &mut Frame, area: Rect, state: &AppStat
                         .iter()
                         .enumerate()
                         .map(|(i, f)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
+                            let style = wizard_row_style(i, wizard.list_cursor);
                             Row::new(vec![
                                 Cell::from(f.name.as_str()).style(style),
                                 Cell::from(format!("{}", f.vcpus)).style(style),
@@ -2385,11 +2381,7 @@ fn render_openstack_create_wizard(frame: &mut Frame, area: Rect, state: &AppStat
                         .iter()
                         .enumerate()
                         .map(|(i, img)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
+                            let style = wizard_row_style(i, wizard.list_cursor);
                             Row::new(vec![
                                 Cell::from(img.name.as_str()).style(style),
                                 Cell::from(img.status.as_str()).style(style),
@@ -2405,11 +2397,7 @@ fn render_openstack_create_wizard(frame: &mut Frame, area: Rect, state: &AppStat
                         .iter()
                         .enumerate()
                         .map(|(i, n)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
+                            let style = wizard_row_style(i, wizard.list_cursor);
                             Row::new(vec![
                                 Cell::from(n.name.as_str()).style(style),
                                 Cell::from(n.status.as_str()).style(style),
@@ -2425,11 +2413,7 @@ fn render_openstack_create_wizard(frame: &mut Frame, area: Rect, state: &AppStat
                         .iter()
                         .enumerate()
                         .map(|(i, k)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
+                            let style = wizard_row_style(i, wizard.list_cursor);
                             Row::new(vec![
                                 Cell::from(k.name.as_str()).style(style),
                                 Cell::from(k.fingerprint.as_deref().unwrap_or("—")).style(style),
@@ -2521,6 +2505,17 @@ fn render_openstack_create_wizard(frame: &mut Frame, area: Rect, state: &AppStat
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
+
+// Highlight style for the currently-cursored row in the OpenStack create wizard's
+// pick lists (flavor/image/network/keypair) — the same rule is applied across all
+// four list steps in `render_openstack_create_wizard`.
+fn wizard_row_style(idx: usize, cursor: usize) -> Style {
+    if idx == cursor {
+        Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
+    } else {
+        TEXT_STYLE
+    }
+}
 
 fn dialog_block(title: &str, border_style: Style) -> Block<'static> {
     Block::new()

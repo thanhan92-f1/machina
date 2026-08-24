@@ -37,6 +37,9 @@ import { openStackErrorHints } from '../utils/openstackHints'
 import ErrorBanner from '../components/ErrorBanner'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+// Reused by every "back to list" link and post-delete redirect on this page.
+const INSTANCES_ROUTE = '/openstack/instances'
+
 function CopyBtn({ text }: { text: string }) {
   const toast = useToastContext()
   return (
@@ -143,7 +146,7 @@ function OpenStackInstanceDetailContent() {
     try {
       await deleteOpenStackInstance(inst.id)
       toast.success(`Deleted '${inst.name}'`)
-      navigate('/openstack/instances')
+      navigate(INSTANCES_ROUTE)
     } catch (e: unknown) {
       const message = formatUserError(e)
       setActionError({ label: 'Delete', message })
@@ -157,7 +160,7 @@ function OpenStackInstanceDetailContent() {
     try {
       await forceDeleteOpenStackInstance(inst.id)
       toast.success(`Force-deleted '${inst.name}'`)
-      navigate('/openstack/instances')
+      navigate(INSTANCES_ROUTE)
     } catch (e: unknown) {
       const message = formatUserError(e)
       setActionError({ label: 'Force delete', message })
@@ -198,7 +201,7 @@ function OpenStackInstanceDetailContent() {
             void load()
           }}
         />
-        <Link to="/openstack/instances" className="text-sky-400 hover:underline inline-flex items-center gap-1">
+        <Link to={INSTANCES_ROUTE} className="text-sky-400 hover:underline inline-flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Back to instances
         </Link>
       </div>
@@ -208,7 +211,7 @@ function OpenStackInstanceDetailContent() {
     return (
       <div className="space-y-4">
         <p className="text-slate-400">Instance not found.</p>
-        <Link to="/openstack/instances" className="text-sky-400 hover:underline">Back to list</Link>
+        <Link to={INSTANCES_ROUTE} className="text-sky-400 hover:underline">Back to list</Link>
       </div>
     )
   }
@@ -269,7 +272,7 @@ function OpenStackInstanceDetailContent() {
         </div>
       )}
 
-      <Link to="/openstack/instances" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to={INSTANCES_ROUTE} className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
         <ArrowLeft className="w-4 h-4" />
         Instances
       </Link>

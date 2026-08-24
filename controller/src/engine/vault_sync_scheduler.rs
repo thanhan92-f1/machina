@@ -3,9 +3,13 @@
 
 use crate::state::AppState;
 
+/// Vault provider health/secret sync cadence (30 minutes) — infrequent
+/// because it's a background staleness check, not a live dependency.
+const SYNC_INTERVAL_SECS: u64 = 1800;
+
 pub fn spawn(state: AppState) {
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(1800));
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(SYNC_INTERVAL_SECS));
         loop {
             interval.tick().await;
             if let Err(e) =

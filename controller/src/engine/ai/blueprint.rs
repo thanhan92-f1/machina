@@ -2,6 +2,10 @@
 
 use serde::Serialize;
 
+/// Blueprint descriptions are shown inline in list views, so the source prompt
+/// is truncated to keep summaries scannable rather than dumping the full text.
+const DESCRIPTION_MAX_CHARS: usize = 200;
+
 #[derive(Debug, Serialize)]
 pub struct GeneratedBlueprint {
     pub name: String,
@@ -40,7 +44,7 @@ pub fn generate_from_nl(prompt: &str) -> GeneratedBlueprint {
     };
 
     GeneratedBlueprint {
-        description: prompt.chars().take(200).collect(),
+        description: prompt.chars().take(DESCRIPTION_MAX_CHARS).collect(),
         name,
         actions,
         suggested_vms: vec![],

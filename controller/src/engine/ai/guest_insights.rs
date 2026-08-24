@@ -10,6 +10,11 @@ use crate::engine::guest_context::{self, GuestAiSnapshot};
 use super::llm::{self, CompletionRequest};
 use super::routing::TaskClass;
 
+const CLOCK_DRIFT_WARN_MS: i64 = 5000;
+const FS_NEARLY_FULL_PCT: u32 = 90;
+// Below full-alert level but still worth reclaiming space before a backup.
+const FS_TRIM_CANDIDATE_PCT: u32 = 50;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GuestInsightRow {
     pub title: String,
@@ -137,7 +142,7 @@ fn deterministic_insights(s: &GuestAiSnapshot, focus: Option<&str>) -> Determini
     }
 
     if let Some(ms) = s.time_delta_ms {
-        if ms.abs() > 5000 {
+        if ms.abs() > CLOCK_DRIFT_WARN_MS {
             insights.push(GuestInsightRow {
                 title: "Guest clock drift".into(),
                 severity: "warn".into(),
@@ -153,7 +158,7 @@ fn deterministic_insights(s: &GuestAiSnapshot, focus: Option<&str>) -> Determini
     }
 
     for fs in &s.filesystems {
-        if fs.used_pct >= 90 {
+        if fs.used_pct >= FS_NEARLY_FULL_PCT {
             insights.push(GuestInsightRow {
                 title: format!("Filesystem {} nearly full", fs.mountpoint),
                 severity: "warn".into(),
@@ -193,7 +198,7 @@ fn deterministic_insights(s: &GuestAiSnapshot, focus: Option<&str>) -> Determini
             risk: "medium".into(),
             rationale: "Application-consistent snapshot for database or mail workloads.".into(),
         });
-        if s.filesystems.iter().any(|f| f.used_pct > 50) {
+        if s.filesystems.iter().any(|f| f.used_pct > FS_TRIM_CANDIDATE_PCT) {
             recommendations.push(GuestRecommendation {
                 label: "TRIM before snapshot".into(),
                 action: "guest.fstrim".into(),

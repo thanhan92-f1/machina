@@ -17,6 +17,12 @@ use crate::LibvirtError;
 use super::compute::{connect_cloud, map_openstack_err, OpenStackInstance};
 use super::quotas::probe_cinder_reachable;
 
+/// How long `wait_until_active` polls Nova before giving up — boot time varies
+/// widely with image size and hypervisor load, so this is generous.
+const SERVER_ACTIVE_WAIT_TIMEOUT: Duration = Duration::from_secs(600);
+const SERVER_ACTIVE_POLL_INTERVAL: Duration = Duration::from_secs(3);
+const GLANCE_IMAGE_POLL_INTERVAL: Duration = Duration::from_secs(5);
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OpenStackFlavor {
     pub id: String,
@@ -500,7 +506,7 @@ async fn create_instance_with_server_group(
         .await
         .map_err(map_openstack_err)?;
     if req.wait_until_active {
-        let deadline = Instant::now() + Duration::from_secs(600);
+        let deadline = Instant::now() + SERVER_ACTIVE_WAIT_TIMEOUT;
         loop {
             let st = format!("{:?}", s.status());
             if st.contains("ACTIVE") {
@@ -518,7 +524,7 @@ async fn create_instance_with_server_group(
                     parsed.server.id
                 )));
             }
-            sleep(Duration::from_secs(3)).await;
+            sleep(SERVER_ACTIVE_POLL_INTERVAL).await;
             s = cloud
                 .get_server(&parsed.server.id)
                 .await
@@ -559,7 +565,7 @@ pub async fn wait_glance_image_by_name(
                 "timed out waiting for Glance image '{want}' to become active"
             )));
         }
-        sleep(Duration::from_secs(5)).await;
+        sleep(GLANCE_IMAGE_POLL_INTERVAL).await;
     }
 }
 

@@ -37,6 +37,15 @@ const WebSocketContext = createContext<WebSocketContextType>({
   events: [],
 })
 
+// Exponential backoff bounds for reconnecting the watch socket.
+const WS_RETRY_INITIAL_MS = 1000
+const WS_RETRY_MAX_MS = 30000
+// After this many consecutive ws-token failures, surface `offline` instead of endlessly
+// retrying silently — e.g. the session/cookie is gone and every retry will fail the same way.
+const WS_TOKEN_FAIL_OFFLINE_THRESHOLD = 6
+// Cap the in-memory event log so a long-lived tab doesn't grow this array unbounded.
+const WS_EVENTS_BUFFER_SIZE = 50
+
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false)
   const [connection, setConnection] = useState<WsConnection>('connecting')
@@ -47,7 +56,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    let retryDelay = 1000
+    let retryDelay = WS_RETRY_INITIAL_MS
     let retryTimer: ReturnType<typeof setTimeout> | null = null
 
     async function connect() {
@@ -65,14 +74,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         tokenFailRef.current = 0
       } catch {
         tokenFailRef.current += 1
-        if (tokenFailRef.current >= 6) {
+        if (tokenFailRef.current >= WS_TOKEN_FAIL_OFFLINE_THRESHOLD) {
           setConnection('offline')
         }
         if (import.meta.env.DEV) {
           console.warn('machina: ws-token failed; real-time updates unavailable until it succeeds')
         }
         retryTimer = setTimeout(connect, retryDelay)
-        retryDelay = Math.min(retryDelay * 2, 30000)
+        retryDelay = Math.min(retryDelay * 2, WS_RETRY_MAX_MS)
         return
       }
       const ws = new WebSocket(`${protocol}//${window.location.host}/ws/v1/watch?token=${encodeURIComponent(token)}`)
@@ -92,7 +101,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           console.warn('machina: /ws/v1/watch closed', ev.code, ev.reason || '(no reason)')
         }
         retryTimer = setTimeout(connect, retryDelay)
-        retryDelay = Math.min(retryDelay * 2, 30000)
+        retryDelay = Math.min(retryDelay * 2, WS_RETRY_MAX_MS)
       }
       ws.onerror = () => ws.close()
       ws.onmessage = (e) => {
@@ -100,7 +109,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           const data = JSON.parse(e.data)
           if (data.changes && Array.isArray(data.changes)) {
             const newEvents: VMEvent[] = data.changes.map((c: VMEvent) => ({ ...c, timestamp: Date.now() }))
-            setEvents(prev => [...newEvents, ...prev].slice(0, 50))
+            setEvents(prev => [...newEvents, ...prev].slice(0, WS_EVENTS_BUFFER_SIZE))
           }
           const msg = data as WSMessage
           // Daemon sends JSON every 2s (`heartbeat` or `changes`). Only notify subscribers on `changes`

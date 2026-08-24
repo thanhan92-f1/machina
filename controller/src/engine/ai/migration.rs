@@ -2,6 +2,21 @@
 
 use serde::Serialize;
 
+// Heuristic readiness scoring for a VMware->KVM migration advisory.
+const BASE_READINESS_SCORE: i32 = 85;
+const RDM_DISK_PENALTY: i32 = 25;
+// Score collapses to this fixed low value when the VM couldn't even be
+// identified (no name) — the specific number matters less than signaling
+// "run a scan first" via a clearly-below-average score.
+const UNKNOWN_VM_READINESS_SCORE: i32 = 50;
+// When GuestKit's own migration score is available it's a stronger signal
+// than the static heuristic above, so it dominates the blended result.
+const READINESS_BLEND_HEURISTIC_WEIGHT: f64 = 0.35;
+const READINESS_BLEND_GUESTKIT_WEIGHT: f64 = 0.65;
+const GUESTKIT_WARNINGS_LIMIT: usize = 3;
+const GUESTKIT_GOOD_MIGRATION_SCORE: f64 = 80.0;
+const FIREWALL_DEPENDENCIES_LIMIT: usize = 5;
+
 #[derive(Debug, Serialize)]
 pub struct MigrationAdvisorReport {
     pub vm_name: String,
@@ -30,12 +45,12 @@ pub fn advise_vmware_vm(vm_name: &str, os_hint: &str, has_rdm: bool) -> Migratio
     ];
     let mut risks = Vec::new();
     let mut remediation = Vec::new();
-    let mut score: i32 = 85;
+    let mut score: i32 = BASE_READINESS_SCORE;
 
     if has_rdm {
         risks.push("RDM disk detected — may require storage conversion".into());
         remediation.push("Convert RDM to VMDK or map to shared storage pool".into());
-        score -= 25;
+        score -= RDM_DISK_PENALTY;
     }
     if os_hint.to_lowercase().contains("windows") {
         safe.push("Windows — use virtio-win drivers and UEFI template".into());
@@ -43,7 +58,7 @@ pub fn advise_vmware_vm(vm_name: &str, os_hint: &str, has_rdm: bool) -> Migratio
         safe.push("Linux — virtio-scsi recommended".into());
     }
     if vm_name.is_empty() {
-        score = 50;
+        score = UNKNOWN_VM_READINESS_SCORE;
         risks.push("VM name unknown — run scan first".into());
     }
 
@@ -84,7 +99,9 @@ pub fn merge_guestkit(
     report.guestkit_migration_score = Some(migration_score);
     report.guestkit_summary = Some(summary.into());
 
-    let blended = (report.readiness_percent as f64 * 0.35 + migration_score * 0.65).round() as u8;
+    let blended = (report.readiness_percent as f64 * READINESS_BLEND_HEURISTIC_WEIGHT
+        + migration_score * READINESS_BLEND_GUESTKIT_WEIGHT)
+        .round() as u8;
     report.readiness_percent = blended.clamp(0, 100);
 
     for b in blockers {
@@ -93,10 +110,10 @@ pub fn merge_guestkit(
             .remediation
             .push("Run GuestKit repair / migrate-plan export before cutover".into());
     }
-    for w in warnings.iter().take(3) {
+    for w in warnings.iter().take(GUESTKIT_WARNINGS_LIMIT) {
         report.risks.push(format!("GuestKit warning: {w}"));
     }
-    if migration_score >= 80.0 {
+    if migration_score >= GUESTKIT_GOOD_MIGRATION_SCORE {
         report.safe.push(format!(
             "GuestKit migration score {:.0}% on KVM target",
             migration_score
@@ -123,7 +140,7 @@ pub fn merge_firewall_migration(
     report
         .remediation
         .push("Apply matching Zeus Firewall profile on target VM before migration cutover".into());
-    for dep in dependencies.iter().take(5) {
+    for dep in dependencies.iter().take(FIREWALL_DEPENDENCIES_LIMIT) {
         report.safe.push(format!("Firewall dependency: {dep}"));
     }
     report

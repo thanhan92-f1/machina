@@ -8,6 +8,11 @@ use serde_json::Value;
 
 use crate::config::ControllerConfig;
 
+/// PacketWolf's conventional API port — used both as the localhost probe
+/// candidate and as the fallback when a discovered k8s Service doesn't
+/// expose an explicit port/targetPort.
+const DEFAULT_PACKETWOLF_PORT: u16 = 9191;
+
 #[derive(Debug, Clone)]
 pub struct DiscoveredEndpoint {
     pub base_url: String,
@@ -40,9 +45,9 @@ fn probe_health(base_url: &str, insecure_tls: bool) -> bool {
 
 fn localhost_candidates() -> Vec<String> {
     let mut urls = vec![
-        "http://127.0.0.1:9191".into(),
+        format!("http://127.0.0.1:{DEFAULT_PACKETWOLF_PORT}"),
         "http://127.0.0.1:9091".into(),
-        "http://localhost:9191".into(),
+        format!("http://localhost:{DEFAULT_PACKETWOLF_PORT}"),
     ];
     if let Ok(extra) = std::env::var("PACKETWOLF_LOCAL_URLS") {
         for part in extra.split(',') {
@@ -104,7 +109,7 @@ fn url_from_service(item: &Value) -> Option<DiscoveredEndpoint> {
                 .and_then(|v| v.as_u64())
                 .or_else(|| p.get("targetPort").and_then(|v| v.as_u64()))
         })
-        .unwrap_or(9191);
+        .unwrap_or(DEFAULT_PACKETWOLF_PORT as u64);
 
     if let Some(lb) = spec
         .get("type")

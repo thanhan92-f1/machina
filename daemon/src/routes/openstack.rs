@@ -72,6 +72,17 @@ pub(crate) fn ensure_openstack_enabled(
     Ok(())
 }
 
+/// `openstack_cfg()` + `ensure_openstack_enabled(&cfg)?` — the load-then-check pair every
+/// OpenStack handler except the raw status probe (`openstack_status`, which reports
+/// "not configured" rather than erroring) needs before calling an
+/// `openstack_runtime`/`machina_core::openstack` function. Factored out because nearly every
+/// handler in this module and in `openstack_extended`/`openstack_services` repeated it verbatim.
+pub(crate) fn openstack_cfg_checked() -> Result<machina_core::config::OpenStackConfig, AppError> {
+    let cfg = openstack_cfg();
+    ensure_openstack_enabled(&cfg)?;
+    Ok(cfg)
+}
+
 // --- Instance API ---
 
 async fn openstack_status() -> Result<Json<OpenStackConnectionStatus>, AppError> {
@@ -85,8 +96,7 @@ async fn openstack_status() -> Result<Json<OpenStackConnectionStatus>, AppError>
 }
 
 async fn openstack_test_connection() -> Result<Json<OpenStackConnectionStatus>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     Ok(Json(test_connection(&cfg).await))
 }
 
@@ -101,8 +111,7 @@ pub struct InstanceListQuery {
 async fn openstack_list_instances(
     Query(q): Query<InstanceListQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let result = list_instances(
         &cfg,
         ListInstancesParams {
@@ -125,8 +134,7 @@ async fn openstack_list_instances(
 async fn openstack_get_instance(
     Path(id): Path<String>,
 ) -> Result<Json<OpenStackInstance>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let inst = get_instance(&cfg, &id).await?;
     let inst = enrich_instance_flavor(&cfg, inst).await;
     Ok(Json(inst))
@@ -135,8 +143,7 @@ async fn openstack_get_instance(
 async fn openstack_instance_volumes(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let volumes = list_instance_volumes(&cfg, id.trim()).await?;
     Ok(Json(serde_json::json!({ "volumes": volumes })))
 }
@@ -153,8 +160,7 @@ async fn openstack_snapshot_instance(
     Json(body): Json<SnapshotBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match snapshot_instance(&cfg, &id, &body.image_name).await {
         Ok(()) => {
@@ -190,8 +196,7 @@ async fn openstack_delete_instance(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match delete_instance(&cfg, &id).await {
         Ok(()) => {
@@ -219,8 +224,7 @@ async fn openstack_create_instance(
     Json(req): Json<CreateInstanceRequest>,
 ) -> Result<Json<CreateInstanceResponse>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     match create_instance(&cfg, &req).await {
         Ok(resp) => {
             log_audit("openstack.instance.create", &resp.id, "ok");
@@ -248,8 +252,7 @@ async fn openstack_create_instance(
 }
 
 async fn openstack_list_flavors() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let flavors = list_flavors(&cfg).await?;
     Ok(Json(serde_json::json!({ "flavors": flavors })))
 }
@@ -259,8 +262,7 @@ async fn openstack_create_flavor(
     Json(req): Json<CreateFlavorRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let flavor = create_flavor(&cfg, &req).await?;
     log_audit("openstack.flavor.create", &flavor.id, "ok");
     Ok(Json(serde_json::json!({ "flavor": flavor })))
@@ -271,16 +273,14 @@ async fn openstack_delete_flavor(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_flavor(&cfg, &id).await?;
     log_audit("openstack.flavor.delete", &id, "ok");
     Ok(Json(serde_json::json!({ "status": "ok", "id": id })))
 }
 
 async fn openstack_list_networks() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let networks = list_networks(&cfg).await?;
     Ok(Json(serde_json::json!({ "networks": networks })))
 }
@@ -290,8 +290,7 @@ async fn openstack_create_network(
     Json(req): Json<OpenStackCreateNetworkRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let net = create_network(&cfg, &req).await?;
     log_audit("openstack.network.create", &net.id, "ok");
     Ok(Json(serde_json::json!({ "network": net })))
@@ -302,30 +301,26 @@ async fn openstack_delete_network(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_network(&cfg, &id).await?;
     log_audit("openstack.network.delete", &id, "ok");
     Ok(Json(serde_json::json!({ "status": "ok", "id": id })))
 }
 
 async fn openstack_list_images() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let images = list_images(&cfg).await?;
     Ok(Json(serde_json::json!({ "images": images })))
 }
 
 async fn openstack_get_image(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let image = get_image(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "image": image })))
 }
 
 async fn openstack_get_flavor(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let flavor = get_flavor(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "flavor": flavor })))
 }
@@ -336,8 +331,7 @@ async fn openstack_delete_image(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match delete_glance_image(&cfg, &id).await {
         Ok(()) => {
@@ -354,8 +348,7 @@ async fn openstack_delete_image(
 }
 
 async fn openstack_list_keypairs() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let keypairs = list_keypairs(&cfg).await?;
     Ok(Json(serde_json::json!({ "keypairs": keypairs })))
 }
@@ -366,8 +359,7 @@ async fn openstack_start_instance(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match start_instance(&cfg, &id).await {
         Ok(()) => {
@@ -395,8 +387,7 @@ async fn openstack_stop_instance(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match stop_instance(&cfg, &id).await {
         Ok(()) => {
@@ -431,8 +422,7 @@ async fn openstack_reboot_instance(
     body: Option<Json<RebootBody>>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     let soft = body
         .as_ref()
@@ -519,8 +509,7 @@ async fn openstack_image_upload(
     }
     let prefixes = allowed_prefixes(&manager).await?;
     validate_qcow2_allowed(path, &prefixes)?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     match upload_qcow2_to_glance(&cfg, &req).await {
         Ok(result) => {
             log_audit("openstack-image-upload", path, "ok");
@@ -555,8 +544,7 @@ macro_rules! instance_action {
             Path(id): Path<String>,
         ) -> Result<Json<serde_json::Value>, AppError> {
             require_write(&actor, "openstack:write")?;
-            let cfg = openstack_cfg();
-            ensure_openstack_enabled(&cfg)?;
+            let cfg = openstack_cfg_checked()?;
             let id = id.trim().to_string();
             match $core(&cfg, &id).await {
                 Ok(()) => {
@@ -605,8 +593,7 @@ async fn openstack_confirm_resize(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match confirm_resize_instance(&cfg, &id).await {
         Ok(()) => {
@@ -634,8 +621,7 @@ async fn openstack_revert_resize(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match revert_resize_instance(&cfg, &id).await {
         Ok(()) => {
@@ -664,8 +650,7 @@ async fn openstack_resize_instance(
     Json(body): Json<ResizeInstanceRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     let flavor = body.flavor.clone();
     match resize_instance(&cfg, &id, &body).await {
@@ -699,8 +684,7 @@ async fn openstack_console_output(
     Path(id): Path<String>,
     Query(q): Query<ConsoleQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let out = get_console_output(&cfg, &id, q.lines).await?;
     Ok(Json(serde_json::json!(out)))
 }
@@ -709,8 +693,7 @@ async fn openstack_remote_console(
     Path(id): Path<String>,
     Query(q): Query<ConsoleQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let typ = q.console_type.as_deref().unwrap_or("novnc");
     let console = get_remote_console(&cfg, &id, typ).await?;
     Ok(Json(serde_json::json!(console)))
@@ -723,8 +706,7 @@ async fn openstack_attach_volume(
     Json(body): Json<AttachVolumeRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match attach_volume(&cfg, &id, &body.volume_id).await {
         Ok(()) => {
@@ -742,8 +724,7 @@ async fn openstack_detach_volume(
     Path((id, vol_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     match detach_volume(&cfg, &id, &vol_id).await {
         Ok(()) => {
@@ -774,8 +755,7 @@ async fn openstack_export_instance(
     Json(body): Json<ExportBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let id = id.trim().to_string();
     if body.auto_pull {
         let dest = body
@@ -820,8 +800,7 @@ async fn openstack_add_security_group(
     Json(body): Json<SecurityGroupBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     add_security_group(&cfg, &id, &body.name).await?;
     Ok(Json(serde_json::json!({ "status": "ok" })))
 }
@@ -832,15 +811,13 @@ async fn openstack_remove_security_group(
     Json(body): Json<SecurityGroupBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     remove_security_group(&cfg, &id, &body.name).await?;
     Ok(Json(serde_json::json!({ "status": "ok" })))
 }
 
 async fn openstack_list_cinder_volumes() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let volumes = list_cinder_volumes(&cfg).await?;
     Ok(Json(serde_json::json!({ "volumes": volumes })))
 }
@@ -850,8 +827,7 @@ async fn openstack_create_volume(
     Json(req): Json<OpenStackCreateVolumeRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let vol = create_cinder_volume(&cfg, &req).await?;
     Ok(Json(serde_json::json!({ "volume": vol })))
 }
@@ -861,15 +837,13 @@ async fn openstack_delete_volume(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_cinder_volume(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "status": "ok", "id": id })))
 }
 
 async fn openstack_get_volume(Path(id): Path<String>) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let volume = get_cinder_volume(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "volume": volume })))
 }
@@ -877,15 +851,13 @@ async fn openstack_get_volume(Path(id): Path<String>) -> Result<Json<serde_json:
 async fn openstack_get_network(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let network = get_network(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "network": network })))
 }
 
 async fn openstack_list_security_groups() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let groups = list_security_groups(&cfg).await?;
     Ok(Json(serde_json::json!({ "security_groups": groups })))
 }
@@ -893,8 +865,7 @@ async fn openstack_list_security_groups() -> Result<Json<serde_json::Value>, App
 async fn openstack_get_security_group(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let sg = get_security_group(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "security_group": sg })))
 }
@@ -905,8 +876,7 @@ async fn openstack_rebuild_instance(
     Json(req): Json<RebuildInstanceRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     rebuild_instance(&cfg, &id, &req).await?;
     Ok(Json(serde_json::json!({ "status": "ok", "id": id })))
 }
@@ -917,15 +887,13 @@ async fn openstack_update_metadata(
     Json(req): Json<UpdateMetadataRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let metadata = update_instance_metadata(&cfg, &id, &req).await?;
     Ok(Json(serde_json::json!({ "metadata": metadata })))
 }
 
 async fn openstack_list_floating_ips_route() -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let fips = list_floating_ips(&cfg).await?;
     Ok(Json(serde_json::json!({ "floating_ips": fips })))
 }
@@ -933,8 +901,7 @@ async fn openstack_list_floating_ips_route() -> Result<Json<serde_json::Value>, 
 async fn openstack_instance_floating_ips(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let fips = list_instance_floating_ips(&cfg, &id).await?;
     Ok(Json(serde_json::json!({ "floating_ips": fips })))
 }
@@ -945,8 +912,7 @@ async fn openstack_associate_floating_ip(
     Json(body): Json<AssociateFloatingIpRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let fip = associate_floating_ip(&cfg, &id, &body).await?;
     Ok(Json(serde_json::json!({ "floating_ip": fip })))
 }
@@ -956,8 +922,7 @@ async fn openstack_dissociate_floating_ip(
     Path(fip_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     dissociate_floating_ip(&cfg, &fip_id).await?;
     Ok(Json(serde_json::json!({ "status": "ok", "id": fip_id })))
 }
@@ -967,8 +932,7 @@ async fn openstack_delete_floating_ip(
     Path(fip_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     delete_floating_ip(&cfg, &fip_id).await?;
     Ok(Json(serde_json::json!({ "status": "ok", "id": fip_id })))
 }
@@ -976,8 +940,7 @@ async fn openstack_delete_floating_ip(
 async fn openstack_get_floating_ip(
     Path(fip_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let fip = get_floating_ip(&cfg, &fip_id).await?;
     Ok(Json(serde_json::json!({ "floating_ip": fip })))
 }
@@ -987,8 +950,7 @@ async fn openstack_create_floating_ip(
     Json(body): Json<CreateFloatingIpRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let fip = create_floating_ip(&cfg, &body).await?;
     Ok(Json(serde_json::json!({ "floating_ip": fip })))
 }
@@ -1164,8 +1126,7 @@ async fn openstack_image_pull(
     Json(req): Json<GlancePullRequest>,
 ) -> Result<Json<GlancePullResult>, AppError> {
     require_write(&actor, "openstack:write")?;
-    let cfg = openstack_cfg();
-    ensure_openstack_enabled(&cfg)?;
+    let cfg = openstack_cfg_checked()?;
     let prefixes = allowed_prefixes(&manager).await?;
     let result = pull_glance_image_to_disk(&cfg, &id, &req, &prefixes).await?;
     log_audit("openstack-image-pull", &result.dest_path, "ok");

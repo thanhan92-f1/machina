@@ -1883,6 +1883,22 @@ impl App {
         self.state.view_mode = ViewMode::Xml;
     }
 
+    /// Renders a fetched JSON payload as an overlay, or reports the fetch error via
+    /// `status_message`. Shared by the ~20 read-only `:openstack <resource>[ <id>]`
+    /// commands in `execute_command` below, which differ only in which endpoint they
+    /// hit and the display title/error tag — the fetch-then-branch shape is identical.
+    fn show_openstack_json_result(
+        &mut self,
+        result: anyhow::Result<serde_json::Value>,
+        title: &str,
+        err_tag: &str,
+    ) {
+        match result {
+            Ok(v) => self.show_json_overlay(title, &v),
+            Err(e) => self.state.status_message = status_err(err_tag, &e),
+        }
+    }
+
     fn show_cluster_cmd_output(
         &mut self,
         title: &str,
@@ -2112,22 +2128,16 @@ impl App {
                 }
             }
             ["openstack", "flavors"] | ["os", "flavors"] => {
-                match self.client.openstack_list_json("flavors").await {
-                    Ok(v) => self.show_json_overlay("OpenStack flavors", &v),
-                    Err(e) => self.state.status_message = status_err("openstack flavors", &e),
-                }
+                let r = self.client.openstack_list_json("flavors").await;
+                self.show_openstack_json_result(r, "OpenStack flavors", "openstack flavors");
             }
             ["openstack", "networks"] | ["os", "networks"] => {
-                match self.client.openstack_list_json("networks").await {
-                    Ok(v) => self.show_json_overlay("OpenStack networks", &v),
-                    Err(e) => self.state.status_message = status_err("openstack networks", &e),
-                }
+                let r = self.client.openstack_list_json("networks").await;
+                self.show_openstack_json_result(r, "OpenStack networks", "openstack networks");
             }
             ["openstack", "keypairs"] | ["os", "keypairs"] => {
-                match self.client.openstack_list_json("keypairs").await {
-                    Ok(v) => self.show_json_overlay("OpenStack keypairs", &v),
-                    Err(e) => self.state.status_message = status_err("openstack keypairs", &e),
-                }
+                let r = self.client.openstack_list_json("keypairs").await;
+                self.show_openstack_json_result(r, "OpenStack keypairs", "openstack keypairs");
             }
             ["openstack", "get", id] | ["os", "get", id] => {
                 self.load_openstack_instance_detail(id).await;
@@ -2265,16 +2275,12 @@ impl App {
                 self.refresh_openstack().await;
             }
             ["openstack", "quotas"] | ["os", "quotas"] => {
-                match self.client.openstack_get_quotas().await {
-                    Ok(q) => self.show_json_overlay("OpenStack quotas", &q),
-                    Err(e) => self.state.status_message = status_err("openstack quotas", &e),
-                }
+                let r = self.client.openstack_get_quotas().await;
+                self.show_openstack_json_result(r, "OpenStack quotas", "openstack quotas");
             }
             ["openstack", "snapshots"] | ["os", "snapshots"] => {
-                match self.client.openstack_list_volume_snapshots().await {
-                    Ok(s) => self.show_json_overlay("Cinder snapshots", &s),
-                    Err(e) => self.state.status_message = status_err("openstack snapshots", &e),
-                }
+                let r = self.client.openstack_list_volume_snapshots().await;
+                self.show_openstack_json_result(r, "Cinder snapshots", "openstack snapshots");
             }
             ["openstack", "confirm-resize", id] => {
                 let r = self.client.openstack_confirm_resize(id).await;
@@ -2328,14 +2334,13 @@ impl App {
                     Err(e) => self.state.status_message = status_err("openstack console", &e),
                 }
             }
-            ["openstack", "export", id] => match self
-                .client
-                .openstack_export_instance(id, &serde_json::json!({}))
-                .await
-            {
-                Ok(v) => self.show_json_overlay("OpenStack export plan", &v),
-                Err(e) => self.state.status_message = status_err("openstack export", &e),
-            },
+            ["openstack", "export", id] => {
+                let r = self
+                    .client
+                    .openstack_export_instance(id, &serde_json::json!({}))
+                    .await;
+                self.show_openstack_json_result(r, "OpenStack export plan", "openstack export");
+            }
             ["openstack", "image-delete", id] | ["openstack", "delete-image", id] => {
                 let r = self.client.openstack_delete_image(id).await;
                 self.report_cmd_result(
@@ -2527,44 +2532,32 @@ impl App {
                 .await;
             }
             ["openstack", "az"] | ["os", "az"] => {
-                match self.client.openstack_list_json("availability-zones").await {
-                    Ok(v) => self.show_json_overlay("Availability zones", &v),
-                    Err(e) => self.state.status_message = status_err("openstack az", &e),
-                }
+                let r = self.client.openstack_list_json("availability-zones").await;
+                self.show_openstack_json_result(r, "Availability zones", "openstack az");
             }
             ["openstack", "hypervisors"] | ["os", "hypervisors"] => {
-                match self.client.openstack_list_json("hypervisors").await {
-                    Ok(v) => self.show_json_overlay("Hypervisors", &v),
-                    Err(e) => self.state.status_message = status_err("openstack hypervisors", &e),
-                }
+                let r = self.client.openstack_list_json("hypervisors").await;
+                self.show_openstack_json_result(r, "Hypervisors", "openstack hypervisors");
             }
             ["openstack", "aggregates"] | ["os", "aggregates"] => {
-                match self.client.openstack_list_json("aggregates").await {
-                    Ok(v) => self.show_json_overlay("Host aggregates", &v),
-                    Err(e) => self.state.status_message = status_err("openstack aggregates", &e),
-                }
+                let r = self.client.openstack_list_json("aggregates").await;
+                self.show_openstack_json_result(r, "Host aggregates", "openstack aggregates");
             }
             ["openstack", "compute-services"] | ["os", "compute-services"] => {
-                match self.client.openstack_list_json("compute-services").await {
-                    Ok(v) => self.show_json_overlay("Compute services", &v),
-                    Err(e) => {
-                        self.state.status_message = status_err("openstack compute-services", &e)
-                    }
-                }
+                let r = self.client.openstack_list_json("compute-services").await;
+                self.show_openstack_json_result(
+                    r,
+                    "Compute services",
+                    "openstack compute-services",
+                );
             }
             ["openstack", "neutron-agents"] | ["os", "neutron-agents"] => {
-                match self.client.openstack_list_json("neutron-agents").await {
-                    Ok(v) => self.show_json_overlay("Neutron agents", &v),
-                    Err(e) => {
-                        self.state.status_message = status_err("openstack neutron-agents", &e)
-                    }
-                }
+                let r = self.client.openstack_list_json("neutron-agents").await;
+                self.show_openstack_json_result(r, "Neutron agents", "openstack neutron-agents");
             }
             ["openstack", "server-groups"] | ["os", "server-groups"] => {
-                match self.client.openstack_list_json("server-groups").await {
-                    Ok(v) => self.show_json_overlay("Server groups", &v),
-                    Err(e) => self.state.status_message = status_err("openstack server-groups", &e),
-                }
+                let r = self.client.openstack_list_json("server-groups").await;
+                self.show_openstack_json_result(r, "Server groups", "openstack server-groups");
             }
             ["openstack", "force-delete", id] | ["os", "force-delete", id] => {
                 let r = self.client.openstack_force_delete_instance(id).await;
@@ -2604,10 +2597,8 @@ impl App {
                 .await;
             }
             ["openstack", "clouds"] | ["os", "clouds"] => {
-                match self.client.openstack_list_json("clouds").await {
-                    Ok(v) => self.show_json_overlay("Clouds", &v),
-                    Err(e) => self.state.status_message = status_err("openstack clouds", &e),
-                }
+                let r = self.client.openstack_list_json("clouds").await;
+                self.show_openstack_json_result(r, "Clouds", "openstack clouds");
             }
             ["openstack", "cloud", name] | ["os", "cloud", name] => {
                 let r = self.client.openstack_select_cloud(name).await;
@@ -2622,100 +2613,73 @@ impl App {
                 self.refresh_openstack().await;
             }
             ["openstack", "volume", id] | ["os", "volume", id] => {
-                match self
-                    .client
-                    .openstack_get_json(&format!("volumes/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Volume {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack volume", &e),
-                }
+                let r = self.client.openstack_get_json(&format!("volumes/{id}")).await;
+                self.show_openstack_json_result(r, &format!("Volume {id}"), "openstack volume");
             }
             ["openstack", "image", id] | ["os", "image", id] => {
-                match self
-                    .client
-                    .openstack_get_json(&format!("images/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Image {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack image", &e),
-                }
+                let r = self.client.openstack_get_json(&format!("images/{id}")).await;
+                self.show_openstack_json_result(r, &format!("Image {id}"), "openstack image");
             }
             ["openstack", "fip", id] | ["os", "fip", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("floating-ips/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("FIP {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack fip", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(r, &format!("FIP {id}"), "openstack fip");
             }
             ["openstack", "snapshot", id] | ["os", "snapshot", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("volume-snapshots/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Snapshot {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack snapshot", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(r, &format!("Snapshot {id}"), "openstack snapshot");
             }
             ["openstack", "hypervisor", id] | ["os", "hypervisor", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("hypervisors/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Hypervisor {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack hypervisor", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("Hypervisor {id}"),
+                    "openstack hypervisor",
+                );
             }
             ["openstack", "network", id] | ["os", "network", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("networks/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Network {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack network", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(r, &format!("Network {id}"), "openstack network");
             }
             ["openstack", "subnet", id] | ["os", "subnet", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("subnets/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Subnet {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack subnet", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(r, &format!("Subnet {id}"), "openstack subnet");
             }
             ["openstack", "router", id] | ["os", "router", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("routers/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Router {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack router", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(r, &format!("Router {id}"), "openstack router");
             }
             ["openstack", "port", id] | ["os", "port", id] => {
-                match self.client.openstack_get_json(&format!("ports/{id}")).await {
-                    Ok(v) => self.show_json_overlay(&format!("Port {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack port", &e),
-                }
+                let r = self.client.openstack_get_json(&format!("ports/{id}")).await;
+                self.show_openstack_json_result(r, &format!("Port {id}"), "openstack port");
             }
             ["openstack", "server-group", id] | ["os", "server-group", id] => {
-                match self
+                let r = self
                     .client
                     .openstack_get_json(&format!("server-groups/{id}"))
-                    .await
-                {
-                    Ok(v) => self.show_json_overlay(&format!("Server group {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack server-group", &e),
-                }
+                    .await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("Server group {id}"),
+                    "openstack server-group",
+                );
             }
             ["openstack", "rename", id, name] => {
                 let r = self.client.openstack_rename_instance(id, name).await;
@@ -2873,10 +2837,12 @@ impl App {
                 self.refresh_openstack().await;
             }
             ["openstack", "interfaces", id] | ["os", "interfaces", id] => {
-                match self.client.openstack_list_instance_interfaces(id).await {
-                    Ok(v) => self.show_json_overlay(&format!("Interfaces on {id}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack interfaces", &e),
-                }
+                let r = self.client.openstack_list_instance_interfaces(id).await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("Interfaces on {id}"),
+                    "openstack interfaces",
+                );
             }
             ["openstack", "interface-attach", id, net] | ["os", "interface-attach", id, net] => {
                 let r = self.client.openstack_attach_interface(id, net).await;
@@ -3084,51 +3050,49 @@ impl App {
                 .await;
             }
             ["openstack", "heat-stacks"] | ["os", "heat-stacks"] => {
-                match self.client.openstack_api_get("heat/stacks").await {
-                    Ok(v) => self.show_json_overlay("Heat stacks", &v),
-                    Err(e) => self.state.status_message = status_err("openstack heat-stacks", &e),
-                }
+                let r = self.client.openstack_api_get("heat/stacks").await;
+                self.show_openstack_json_result(r, "Heat stacks", "openstack heat-stacks");
             }
             ["openstack", "heat-events", name, id] | ["os", "heat-events", name, id] => {
                 let path = format!("heat/stacks/{name}/{id}/events");
-                match self.client.openstack_api_get(&path).await {
-                    Ok(v) => self.show_json_overlay(&format!("Heat events {name}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack heat-events", &e),
-                }
+                let r = self.client.openstack_api_get(&path).await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("Heat events {name}"),
+                    "openstack heat-events",
+                );
             }
             ["openstack", "heat-resources", name, id] | ["os", "heat-resources", name, id] => {
                 let path = format!("heat/stacks/{name}/{id}/resources");
-                match self.client.openstack_api_get(&path).await {
-                    Ok(v) => self.show_json_overlay(&format!("Heat resources {name}"), &v),
-                    Err(e) => {
-                        self.state.status_message = status_err("openstack heat-resources", &e)
-                    }
-                }
+                let r = self.client.openstack_api_get(&path).await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("Heat resources {name}"),
+                    "openstack heat-resources",
+                );
             }
             ["openstack", "lb-listeners", lb] | ["os", "lb-listeners", lb] => {
                 let path = format!("load-balancers/{lb}/listeners");
-                match self.client.openstack_api_get(&path).await {
-                    Ok(v) => self.show_json_overlay(&format!("LB listeners {lb}"), &v),
-                    Err(e) => self.state.status_message = status_err("openstack lb-listeners", &e),
-                }
+                let r = self.client.openstack_api_get(&path).await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("LB listeners {lb}"),
+                    "openstack lb-listeners",
+                );
             }
             ["openstack", "identity-roles"] | ["os", "identity-roles"] => {
-                match self.client.openstack_api_get("identity/roles").await {
-                    Ok(v) => self.show_json_overlay("Keystone roles", &v),
-                    Err(e) => {
-                        self.state.status_message = status_err("openstack identity-roles", &e)
-                    }
-                }
+                let r = self.client.openstack_api_get("identity/roles").await;
+                self.show_openstack_json_result(r, "Keystone roles", "openstack identity-roles");
             }
             ["openstack", "identity-assignments", project]
             | ["os", "identity-assignments", project] => {
                 let path = format!("identity/role-assignments?project_id={project}");
-                match self.client.openstack_api_get(&path).await {
-                    Ok(v) => self.show_json_overlay(&format!("Role assignments {project}"), &v),
-                    Err(e) => {
-                        self.state.status_message = status_err("openstack identity-assignments", &e)
-                    }
-                }
+                let r = self.client.openstack_api_get(&path).await;
+                self.show_openstack_json_result(
+                    r,
+                    &format!("Role assignments {project}"),
+                    "openstack identity-assignments",
+                );
             }
             ["openstack", "create", name, flavor, image, network] => {
                 let req = CreateInstanceRequest {
