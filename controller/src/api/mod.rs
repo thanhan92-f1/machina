@@ -25,6 +25,7 @@ mod events;
 mod fence;
 mod flavors;
 mod fleet;
+mod keypairs;
 mod guestkit;
 mod zeus_firewall;
 mod zeus_security;
@@ -962,6 +963,11 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/flavors/{id}",
             get(flavors::get_flavor).delete(flavors::delete_flavor),
+        )
+        .route("/api/v1/keypairs", get(keypairs::list_keypairs).post(keypairs::create_keypair))
+        .route(
+            "/api/v1/keypairs/{id}",
+            get(keypairs::get_keypair).delete(keypairs::delete_keypair),
         )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))

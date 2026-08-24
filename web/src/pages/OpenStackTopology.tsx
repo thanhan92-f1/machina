@@ -1,66 +1,43 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
-import { Globe, Loader2, Network } from 'lucide-react'
-import OpenStackGate from '../components/OpenStackGate'
+import { Globe } from 'lucide-react'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
-import ErrorBanner from '../components/ErrorBanner'
-import {
-  getOpenStackNetworkTopology,
-  type TopologyEdge,
-  type TopologyNode,
-} from '../api/openstackExtras'
+import { listNetworks, type NativeNetwork } from '../api/nativeNetworks'
+import { listPorts, type NativePort } from '../api/nativePorts'
+import { listVms, type NativeVm } from '../api/nativeVms'
 import { formatUserError } from '../utils/apiError'
-import { openStackErrorHints } from '../utils/openstackHints'
 
-const KIND_COL: Record<string, number> = {
-  'external-network': 40,
-  network: 200,
-  subnet: 360,
-  router: 520,
-  port: 680,
-  'router-port': 680,
-  'device-port': 680,
-  'floating-ip': 840,
-  instance: 840,
-}
+type NodeKind = 'network' | 'port' | 'instance'
+interface Node { id: string; label: string; kind: NodeKind; status?: string }
+interface Edge { from: string; to: string }
 
-const KIND_COLOR: Record<string, string> = {
-  'external-network': '#f59e0b',
-  network: '#38bdf8',
-  subnet: '#818cf8',
-  router: '#34d399',
-  port: '#94a3b8',
-  'router-port': '#34d399',
-  'device-port': '#a78bfa',
-  'floating-ip': '#fb7185',
-  instance: '#e879f9',
-}
+const KIND_COL: Record<NodeKind, number> = { network: 40, port: 400, instance: 760 }
+const KIND_COLOR: Record<NodeKind, string> = { network: '#38bdf8', port: '#94a3b8', instance: '#e879f9' }
 
-function layoutNodes(nodes: TopologyNode[]): (TopologyNode & { x: number; y: number })[] {
+function layoutNodes(nodes: Node[]): (Node & { x: number; y: number })[] {
   const counters: Record<number, number> = {}
   return nodes.map((n) => {
-    const col = KIND_COL[n.kind] ?? 400
+    const col = KIND_COL[n.kind]
     const idx = counters[col] ?? 0
     counters[col] = idx + 1
     return { ...n, x: col, y: 40 + idx * 72 }
   })
 }
 
+// Native topology — networks/ports/instances only (not gated by <OpenStackGate>).
+// Neutron subnets/routers/floating-IPs have no native equivalent, so those node
+// kinds are simply absent rather than faked.
 export default function OpenStackTopologyPage() {
-  return (
-    <OpenStackGate title="Network topology">
-      <OpenStackTopologyContent />
-    </OpenStackGate>
-  )
+  return <OpenStackTopologyContent />
 }
 
 function OpenStackTopologyContent() {
-  const [nodes, setNodes] = useState<TopologyNode[]>([])
-  const [edges, setEdges] = useState<TopologyEdge[]>([])
+  const [networks, setNetworks] = useState<NativeNetwork[]>([])
+  const [ports, setPorts] = useState<NativePort[]>([])
+  const [vms, setVms] = useState<NativeVm[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,19 +45,37 @@ function OpenStackTopologyContent() {
     setLoading(true)
     setError(null)
     try {
-      const { graph } = await getOpenStackNetworkTopology()
-      setNodes(graph.nodes)
-      setEdges(graph.edges)
+      const [nets, prts, machines] = await Promise.all([listNetworks(), listPorts(), listVms()])
+      setNetworks(nets)
+      setPorts(prts)
+      setVms(machines)
     } catch (e: unknown) {
       setError(formatUserError(e))
-      setNodes([])
-      setEdges([])
+      setNetworks([])
+      setPorts([])
+      setVms([])
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => { void load() }, [load])
+
+  const { nodes, edges } = useMemo(() => {
+    const n: Node[] = []
+    const e: Edge[] = []
+    for (const net of networks) n.push({ id: `net-${net.id}`, label: net.name, kind: 'network' })
+    for (const port of ports) {
+      n.push({ id: `port-${port.id}`, label: port.mac_address || port.id.slice(0, 8), kind: 'port', status: port.status })
+      e.push({ from: `net-${port.network_id}`, to: `port-${port.id}` })
+      if (port.vm_id) e.push({ from: `port-${port.id}`, to: `vm-${port.vm_id}` })
+    }
+    const vmIdsWithPorts = new Set(ports.filter((p) => p.vm_id).map((p) => p.vm_id))
+    for (const vm of vms) {
+      if (vmIdsWithPorts.has(vm.id)) n.push({ id: `vm-${vm.id}`, label: vm.name, kind: 'instance' })
+    }
+    return { nodes: n, edges: e }
+  }, [networks, ports, vms])
 
   const laid = useMemo(() => layoutNodes(nodes), [nodes])
   const pos = useMemo(() => Object.fromEntries(laid.map((n) => [n.id, n])), [laid])
@@ -93,19 +88,14 @@ function OpenStackTopologyContent() {
       icon={<Globe className="w-7 h-7 text-sky-400" />}
       error={error}
       errorTitle="Failed to load topology"
-      errorHints={error ? openStackErrorHints(error) : undefined}
+      technicalDetail={error}
       errorTone="red"
       onErrorRetry={() => void load()}
       contentLoading={loading}
-      actions={
-        <Link to="/openstack/networking" className="text-sm text-sky-400 hover:underline inline-flex items-center gap-1">
-          <Network className="w-4 h-4" /> Networking lab
-        </Link>
-      }
     >
       {!loading && laid.length === 0 && !error && (
         <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-8 text-center text-sm text-slate-500">
-          No networks or instances to graph yet. Create a network or launch an instance to see the topology.
+          No networks or connected instances to graph yet.
         </div>
       )}
       {!loading && laid.length > 0 && (
@@ -117,12 +107,12 @@ function OpenStackTopologyContent() {
               if (!a || !b) return null
               return (
                 <line key={`${e.from}-${e.to}-${i}`} x1={a.x + 90} y1={a.y + 24} x2={b.x + 90} y2={b.y + 24}
-                  stroke="#475569" strokeWidth={1.5} strokeDasharray={e.label === 'member' ? '4 3' : undefined} />
+                  stroke="#475569" strokeWidth={1.5} />
               )
             })}
             {laid.map((n) => (
               <g key={n.id} transform={`translate(${n.x}, ${n.y})`}>
-                <rect width={180} height={48} rx={8} fill="#0f172a" stroke={KIND_COLOR[n.kind] || '#64748b'} strokeWidth={1.5} />
+                <rect width={180} height={48} rx={8} fill="#0f172a" stroke={KIND_COLOR[n.kind]} strokeWidth={1.5} />
                 <text x={10} y={20} fill="#e2e8f0" fontSize={11} fontWeight={600}>{n.label.slice(0, 22)}</text>
                 <text x={10} y={36} fill="#64748b" fontSize={9}>{n.kind}{n.status ? ` · ${n.status}` : ''}</text>
               </g>

@@ -96,3 +96,16 @@ export function listVmDisks(id: string): Promise<NativeVmDisk[]> {
 export function listVmNics(id: string): Promise<NativeVmNic[]> {
   return platformFetch<NativeVmNic[]>(`/api/v1/vms/${encodeURIComponent(id)}/nics`)
 }
+
+export function attachVmNic(id: string, network: string, model = 'virtio'): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`/api/v1/vms/${encodeURIComponent(id)}/nics/attach`, {
+    method: 'POST',
+    body: JSON.stringify({ network, model }),
+  })
+}
+
+export function detachVmNic(id: string, mac: string): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`/api/v1/vms/${encodeURIComponent(id)}/nics/detach/${encodeURIComponent(mac)}`, {
+    method: 'POST',
+  })
+}

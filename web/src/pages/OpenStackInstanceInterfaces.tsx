@@ -3,38 +3,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, Loader2, Network } from 'lucide-react'
-import { getOpenStackInstance, listOpenStackNetworks, type OpenStackInstance, type OpenStackNetwork } from '../api/openstack'
-import {
-  attachOpenStackInterface,
-  detachOpenStackInterface,
-  listOpenStackInstanceInterfaces,
-  type OpenStackInstanceInterface,
-} from '../api/openstackExtras'
-import OpenStackGate from '../components/OpenStackGate'
+import { ArrowLeft, Network } from 'lucide-react'
+import { listNetworks, type NativeNetwork } from '../api/nativeNetworks'
+import { attachVmNic, detachVmNic, getVm, listVmNics, type NativeVm, type NativeVmNic } from '../api/nativeVms'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 
+// Native NIC inventory — not gated by <OpenStackGate> (see OpenStackInstances.tsx).
 export default function OpenStackInstanceInterfacesPage() {
-  return (
-    <OpenStackGate title="Instance interfaces">
-      <OpenStackInstanceInterfacesContent />
-    </OpenStackGate>
-  )
+  return <OpenStackInstanceInterfacesContent />
 }
 
 function OpenStackInstanceInterfacesContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
-  const [inst, setInst] = useState<OpenStackInstance | null>(null)
-  const [ifaces, setIfaces] = useState<OpenStackInstanceInterface[]>([])
-  const [networks, setNetworks] = useState<OpenStackNetwork[]>([])
-  const [attachNetId, setAttachNetId] = useState('')
+  const [inst, setInst] = useState<NativeVm | null>(null)
+  const [ifaces, setIfaces] = useState<NativeVmNic[]>([])
+  const [networks, setNetworks] = useState<NativeNetwork[]>([])
+  const [attachNet, setAttachNet] = useState('')
   const [loading, setLoading] = useState(true)
 
   useBreadcrumbName(inst?.name)
@@ -50,14 +41,14 @@ function OpenStackInstanceInterfacesContent() {
     setLoading(true)
     try {
       const [instance, ifc, nets] = await Promise.all([
-        getOpenStackInstance(id),
-        listOpenStackInstanceInterfaces(id),
-        listOpenStackNetworks().catch(() => ({ networks: [] as OpenStackNetwork[] })),
+        getVm(id),
+        listVmNics(id),
+        listNetworks().catch(() => []),
       ])
       if (!alive()) return
       setInst(instance)
-      setIfaces(ifc.interfaces)
-      setNetworks(nets.networks)
+      setIfaces(ifc)
+      setNetworks(nets)
     } catch (e: unknown) {
       if (!alive()) return
       toast.error(formatUserError(e))
@@ -111,13 +102,12 @@ function OpenStackInstanceInterfacesContent() {
         ) : (
           <ul className="space-y-2 text-sm">
             {ifaces.map((i) => (
-              <li key={i.port_id} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-800 px-3 py-2 font-mono">
-                <span className="text-slate-200">{i.fixed_ips.join(', ') || '—'}</span>
-                <span className="text-slate-500 text-xs">MAC {i.mac_addr}</span>
-                <Link to={`/openstack/ports/${i.port_id}`} className="text-sky-400 text-xs hover:underline">Port</Link>
-                <Link to={`/openstack/networks/${i.net_id}`} className="text-sky-400 text-xs hover:underline">Network</Link>
+              <li key={i.mac_address} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-800 px-3 py-2 font-mono">
+                <span className="text-slate-200">{i.ip || '—'}</span>
+                <span className="text-slate-500 text-xs">MAC {i.mac_address}</span>
+                <span className="text-slate-500 text-xs">{i.network} · {i.model}</span>
                 <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
-                  onClick={() => void run(() => detachOpenStackInterface(inst.id, i.port_id), 'Interface detached')}>
+                  onClick={() => void run(() => detachVmNic(inst.id, i.mac_address), 'Interface detached')}>
                   Detach
                 </button>
               </li>
@@ -129,17 +119,17 @@ function OpenStackInstanceInterfacesContent() {
       <section className="rounded-xl border border-slate-700 p-4 space-y-3">
         <h2 className="text-sm font-medium text-slate-300">Attach network</h2>
         <div className="flex flex-wrap gap-2 items-end">
-          <select value={attachNetId} onChange={(e) => setAttachNetId(e.target.value)}
+          <select value={attachNet} onChange={(e) => setAttachNet(e.target.value)}
             className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm min-w-[14rem]">
             <option value="">Select network…</option>
             {networks.map((n) => (
-              <option key={n.id} value={n.id}>{n.name || n.id}</option>
+              <option key={n.id} value={n.name}>{n.name}</option>
             ))}
           </select>
-          <button type="button" disabled={!attachNetId}
+          <button type="button" disabled={!attachNet}
             className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-sm disabled:opacity-40"
             onClick={() => void run(
-              () => attachOpenStackInterface(inst.id, { network_id: attachNetId }),
+              () => attachVmNic(inst.id, attachNet),
               'Interface attached',
             )}>Attach NIC</button>
         </div>
