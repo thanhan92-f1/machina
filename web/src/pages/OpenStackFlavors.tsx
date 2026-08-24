@@ -2,32 +2,26 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import {
-  createOpenStackFlavor,
-  deleteOpenStackFlavor,
-  listOpenStackFlavors,
-  type OpenStackFlavor,
-} from '../api/openstack'
-import OpenStackGate from '../components/OpenStackGate'
+import { createFlavor, deleteFlavor, listFlavors, type NativeFlavor } from '../api/flavors'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Cpu, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 
+// Native flavor catalog — unlike the rest of the /openstack/* pages, this one no
+// longer depends on a wired external OpenStack cloud (see api/flavors.ts), so it
+// is NOT wrapped in <OpenStackGate>: it must render regardless of that connection's
+// phase.
 export default function OpenStackFlavorsPage() {
-  return (
-    <OpenStackGate title="Compute flavors">
-      <OpenStackFlavorsContent />
-    </OpenStackGate>
-  )
+  return <OpenStackFlavorsContent />
 }
 
 function OpenStackFlavorsContent() {
   const toast = useToastContext()
-  const [flavors, setFlavors] = useState<OpenStackFlavor[]>([])
+  const [flavors, setFlavors] = useState<NativeFlavor[]>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [vcpus, setVcpus] = useState('1')
@@ -38,7 +32,7 @@ function OpenStackFlavorsContent() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const { flavors: list } = await listOpenStackFlavors()
+      const list = await listFlavors()
       setFlavors(list)
     } catch (e: unknown) {
       toast.error(formatUserError(e))
@@ -67,11 +61,11 @@ function OpenStackFlavorsContent() {
     }
     setCreating(true)
     try {
-      await createOpenStackFlavor({
+      await createFlavor({
         name: name.trim(),
         vcpus: vcpusN,
-        ram_mb: ramN,
-        disk_gb: diskN,
+        memory_mib: ramN,
+        disk_gib: diskN,
         is_public: true,
       })
       toast.success('Flavor created')
@@ -138,15 +132,15 @@ function OpenStackFlavorsContent() {
                     <span className="block text-xs text-slate-500 font-mono">{f.id}</span>
                   </td>
                   <td className="px-3 py-2">{f.vcpus}</td>
-                  <td className="px-3 py-2">{f.ram_mb} MB</td>
-                  <td className="px-3 py-2">{f.disk_gb} GB</td>
+                  <td className="px-3 py-2">{f.memory_mib} MiB</td>
+                  <td className="px-3 py-2">{f.disk_gib} GiB</td>
                   <td className="px-3 py-2 flex gap-2">
                     <Link to={`/openstack/flavors/${f.id}`} className="text-xs text-sky-400 hover:underline">Open</Link>
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs inline-flex items-center gap-0.5')}
                       onClick={async () => {
                         if (!confirm(`Delete flavor ${f.name}?`)) return
                         try {
-                          await deleteOpenStackFlavor(f.id)
+                          await deleteFlavor(f.id)
                           toast.success('Deleted')
                           void load()
                         } catch (e: unknown) { toast.error(formatUserError(e)) }

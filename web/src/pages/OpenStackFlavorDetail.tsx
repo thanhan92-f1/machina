@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowLeft, Cpu, Loader2 } from 'lucide-react'
-import { getOpenStackFlavor, type OpenStackFlavor } from '../api/openstack'
-import OpenStackGate from '../components/OpenStackGate'
+import { getFlavor, type NativeFlavor } from '../api/flavors'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
@@ -13,18 +12,15 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+// Native flavor catalog — not gated by <OpenStackGate> (see OpenStackFlavors.tsx).
 export default function OpenStackFlavorDetailPage() {
-  return (
-    <OpenStackGate title="Flavor">
-      <OpenStackFlavorDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackFlavorDetailContent />
 }
 
 function OpenStackFlavorDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
-  const [flavor, setFlavor] = useState<OpenStackFlavor | null>(null)
+  const [flavor, setFlavor] = useState<NativeFlavor | null>(null)
   const [loading, setLoading] = useState(true)
   useBreadcrumbName(flavor?.name)
   const loadSeq = useRef(0)
@@ -37,7 +33,7 @@ function OpenStackFlavorDetailContent() {
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const { flavor: f } = await getOpenStackFlavor(id)
+      const f = await getFlavor(id)
       if (!alive()) return
       setFlavor(f)
     } catch (e: unknown) {
@@ -77,8 +73,8 @@ function OpenStackFlavorDetailContent() {
       <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm font-mono">
         <div><dt className="text-xs text-slate-500 uppercase font-sans">ID</dt><dd className="text-slate-200 mt-1">{flavor.id}</dd></div>
         <div><dt className="text-xs text-slate-500 uppercase font-sans">vCPU</dt><dd className="text-slate-200 mt-1">{flavor.vcpus}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase font-sans">RAM</dt><dd className="text-slate-200 mt-1">{flavor.ram_mb} MB</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase font-sans">Disk</dt><dd className="text-slate-200 mt-1">{flavor.disk_gb} GB</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase font-sans">RAM</dt><dd className="text-slate-200 mt-1">{flavor.memory_mib} MiB</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase font-sans">Disk</dt><dd className="text-slate-200 mt-1">{flavor.disk_gib} GiB</dd></div>
       </dl>
       <Link to="/openstack/create" className="inline-block px-3 py-2 rounded-lg bg-sky-600 text-white text-sm">Create instance with this flavor</Link>
       <OpenStackFooter />
