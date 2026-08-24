@@ -16,14 +16,16 @@ import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Camera, Loader2, RefreshCw } from 'lucide-react'
 
 // Native volume snapshots (controller::api::volumes) -- like the other rewired
-// /fleet-cloud/* pages, this no longer depends on a wired external OpenStack cloud, so it
-// is NOT wrapped in <OpenStackGate>. Snapshots require an Atlas-backed volume
-// (ATLAS_ENABLED=1) -- see api/nativeVolumes.ts.
-export default function OpenStackVolumeSnapshotsPage() {
-  return <OpenStackVolumeSnapshotsContent />
+// /fleet-cloud/* pages, this no longer depends on a wired external OpenStack
+// cloud. There's no <OpenStackGate> component to wrap it in any more either:
+// the daemon's external-OpenStack-client integration has since been fully
+// removed. Snapshots require an Atlas-backed volume (ATLAS_ENABLED=1) -- see
+// api/nativeVolumes.ts.
+export default function FleetCloudVolumeSnapshotsPage() {
+  return <FleetCloudVolumeSnapshotsContent />
 }
 
-function OpenStackVolumeSnapshotsContent() {
+function FleetCloudVolumeSnapshotsContent() {
   const toast = useToastContext()
   const [snapshots, setSnapshots] = useState<NativeVolumeSnapshotWithVolume[]>([])
   const [loading, setLoading] = useState(true)

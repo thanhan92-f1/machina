@@ -18,12 +18,14 @@ import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 const HEAT_TABS = ['overview', 'resources', 'template'] as const
 type Tab = (typeof HEAT_TABS)[number]
 
-// Native stacks — not gated by <OpenStackGate> (see OpenStackHeat.tsx).
-export default function OpenStackHeatDetailPage() {
-  return <OpenStackHeatDetailContent />
+// Native stacks — there's no more <OpenStackGate> component to gate it behind
+// (the daemon's external-OpenStack-client integration has since been fully
+// removed); see FleetCloudHeat.tsx.
+export default function FleetCloudHeatDetailPage() {
+  return <FleetCloudHeatDetailContent />
 }
 
-function OpenStackHeatDetailContent() {
+function FleetCloudHeatDetailContent() {
   const { id } = useParams<{ name: string; id: string }>()
   const toast = useToastContext()
   const navigate = useNavigate()

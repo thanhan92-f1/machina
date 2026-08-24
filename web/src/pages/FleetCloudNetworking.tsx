@@ -14,15 +14,17 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Network, Plus, RefreshCw } from 'lucide-react'
 
-// Native networking overview — not gated by <OpenStackGate>. Networks (already
-// pre-existing, libvirt-backed) and ports (this session's Neutron-port
-// equivalent) only — no subnets/routers, since Machina has no native L3 routing
-// layer. See OpenStackTopology.tsx for the graph view of the same data.
-export default function OpenStackNetworkingPage() {
-  return <OpenStackNetworkingContent />
+// Native networking overview — no <OpenStackGate> component to gate it behind
+// any more (the daemon's external-OpenStack-client integration has since been
+// fully removed). Networks (already pre-existing, libvirt-backed) and ports
+// (this session's Neutron-port equivalent) only — no subnets/routers, since
+// Machina has no native L3 routing layer. See FleetCloudTopology.tsx for the
+// graph view of the same data.
+export default function FleetCloudNetworkingPage() {
+  return <FleetCloudNetworkingContent />
 }
 
-function OpenStackNetworkingContent() {
+function FleetCloudNetworkingContent() {
   const toast = useToastContext()
   const [networks, setNetworks] = useState<NativeNetwork[]>([])
   const [ports, setPorts] = useState<NativePort[]>([])

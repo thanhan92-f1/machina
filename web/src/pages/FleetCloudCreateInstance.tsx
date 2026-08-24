@@ -16,11 +16,13 @@ import PageLayout from '../components/PageLayout'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import { formatUserError } from '../utils/apiError'
 
-// Native instance creation — not gated by <OpenStackGate>. Boots from the native
-// image catalog (api/nativeTemplates.ts) with a flavor and network resolved
-// server-side (controller::api::vms::create_from_template, extended with
-// flavor_id/network) instead of the daemon's Nova instance-create call.
-export default function OpenStackCreateInstancePage() {
+// Native instance creation — there's no more <OpenStackGate> component to gate
+// it behind: the daemon's external-OpenStack-client integration has since been
+// fully removed. Boots from the native image catalog (api/nativeTemplates.ts)
+// with a flavor and network resolved server-side
+// (controller::api::vms::create_from_template, extended with flavor_id/network)
+// instead of the daemon's Nova instance-create call.
+export default function FleetCloudCreateInstancePage() {
   const navigate = useNavigate()
   const toast = useToastContext()
   const [loading, setLoading] = useState(true)

@@ -4,7 +4,6 @@
 # Usage:
 #   ./scripts/e2e-test-remote.sh USER HOST
 #   VSPASS=max ./scripts/e2e-test-remote.sh sus 185.165.240.5
-#   ./scripts/e2e-test-remote.sh sus 185.165.240.5 --require-openstack-ssh
 #
 set -euo pipefail
 

@@ -366,11 +366,6 @@
       "category": "Core"
     },
     {
-      "label": "Connect Fleet Cloud",
-      "path": "/settings?openstack=1",
-      "category": "Core"
-    },
-    {
       "label": "Overview",
       "path": "/fleet-cloud",
       "category": "Fleet Cloud"

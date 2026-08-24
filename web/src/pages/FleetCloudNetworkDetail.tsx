@@ -13,13 +13,15 @@ import { formatUserError } from '../utils/apiError'
 import { statusDestructiveButtonClasses, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native network detail — not gated by <OpenStackGate>. No rename (the native
-// networks API has no name-update field — vlan_id/bridge/segment_id only).
-export default function OpenStackNetworkDetailPage() {
-  return <OpenStackNetworkDetailContent />
+// Native network detail — no <OpenStackGate> component to gate it behind any
+// more (the daemon's external-OpenStack-client integration has since been
+// fully removed). No rename (the native networks API has no name-update
+// field — vlan_id/bridge/segment_id only).
+export default function FleetCloudNetworkDetailPage() {
+  return <FleetCloudNetworkDetailContent />
 }
 
-function OpenStackNetworkDetailContent() {
+function FleetCloudNetworkDetailContent() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()

@@ -12,17 +12,19 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
 
-// Native project registry — not gated by <OpenStackGate>: this feature is
-// SQLite-native and does not depend on a wired external OpenStack cloud. Unlike
-// Keystone, there is no per-project *user* catalog here — identity/login is
-// Machina's own PAM/OIDC/LDAP/SAML auth; project membership references an
-// existing Machina user (see the project detail page), so the standalone
-// "create a Keystone user with a password" flow has no native equivalent.
-export default function OpenStackIdentityPage() {
-  return <OpenStackIdentityContent />
+// Native project registry — this feature is SQLite-native and does not depend
+// on a wired external OpenStack cloud (there's no more <OpenStackGate>
+// component to gate it behind either: the daemon's external-OpenStack-client
+// integration has since been fully removed). Unlike Keystone, there is no
+// per-project *user* catalog here — identity/login is Machina's own
+// PAM/OIDC/LDAP/SAML auth; project membership references an existing Machina
+// user (see the project detail page), so the standalone "create a Keystone
+// user with a password" flow has no native equivalent.
+export default function FleetCloudIdentityPage() {
+  return <FleetCloudIdentityContent />
 }
 
-function OpenStackIdentityContent() {
+function FleetCloudIdentityContent() {
   const toast = useToastContext()
   const [projects, setProjects] = useState<NativeProject[]>([])
   const [loading, setLoading] = useState(true)

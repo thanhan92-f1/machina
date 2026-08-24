@@ -16,15 +16,17 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native volume snapshots -- like the other rewired /fleet-cloud/* pages, this no longer
-// depends on a wired external OpenStack cloud, so it is NOT wrapped in <OpenStackGate>.
+// Native volume snapshots -- like the other rewired /fleet-cloud/* pages, this
+// no longer depends on a wired external OpenStack cloud. There's no
+// <OpenStackGate> component to wrap it in any more either: the daemon's
+// external-OpenStack-client integration has since been fully removed.
 // No native "restore to new volume" yet (create-from-snapshot has no native equivalent --
 // see api/nativeVolumes.ts), so that action is dropped rather than faked.
-export default function OpenStackVolumeSnapshotDetailPage() {
-  return <OpenStackVolumeSnapshotDetailContent />
+export default function FleetCloudVolumeSnapshotDetailPage() {
+  return <FleetCloudVolumeSnapshotDetailContent />
 }
 
-function OpenStackVolumeSnapshotDetailContent() {
+function FleetCloudVolumeSnapshotDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
   const [snapshot, setSnapshot] = useState<NativeVolumeSnapshotWithVolume | null>(null)

@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * CDP UI: create/import/wizard and OpenStack create shells.
+ * CDP UI: create/import/wizard and Fleet Cloud create shells.
  */
 
 const { loadConfig } = require('./lib/config');
@@ -24,9 +24,9 @@ const PATHS = [
   '/platform/cloud-init',
   '/platform/create-iso',
   '/platform/migration',
-  '/openstack/create',
-  '/openstack/images',
-  '/openstack/flavors',
+  '/fleet-cloud/create',
+  '/fleet-cloud/images',
+  '/fleet-cloud/flavors',
 ];
 
 (async () => {
@@ -40,7 +40,7 @@ const PATHS = [
   for (const path of PATHS) {
     try {
       await cdp.send('Page.navigate', { url: cfg.baseUrl + path });
-      const wait = path.startsWith('/platform') || path.startsWith('/openstack') ? 12000 : 7000;
+      const wait = path.startsWith('/platform') || path.startsWith('/fleet-cloud') ? 12000 : 7000;
       const t0 = Date.now();
       let t = '';
       while (Date.now() - t0 < wait) {

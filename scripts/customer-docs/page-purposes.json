@@ -72,7 +72,6 @@
   "/k8s/workloads": "K8s Workloads — Machina Kubernetes page at `/k8s/workloads`.",
   "/k8s/kata": "Kata + Cloud Hypervisor — Machina Kubernetes page at `/k8s/kata`.",
   "/host-ssh": "Host SSH — Machina Core page at `/host-ssh`.",
-  "/settings?openstack=1": "Connect Fleet Cloud — Machina Core page at `/settings?openstack=1`.",
   "/fleet-cloud": "Overview — Machina Fleet Cloud page at `/fleet-cloud`.",
   "/fleet-cloud/instances": "Instances — Machina Fleet Cloud page at `/fleet-cloud/instances`.",
   "/fleet-cloud/create": "Create Instance — Machina Fleet Cloud page at `/fleet-cloud/create`.",

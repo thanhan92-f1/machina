@@ -21,16 +21,18 @@ function statusBadge(status: string) {
   return statusBadgeClasses(instanceStatusTone(status))
 }
 
-// Native VM lifecycle used as the "instance" list — not gated by <OpenStackGate>:
-// this feature is libvirt-native and does not depend on a wired external
-// OpenStack cloud. Unlike the Nova instance list, there's no server-side
-// pagination/marker here — the native list endpoint returns the whole project's
-// VMs and this page filters client-side.
-export default function OpenStackInstancesPage() {
-  return <OpenStackInstancesContent />
+// Native VM lifecycle used as the "instance" list — this feature is
+// libvirt-native and does not depend on a wired external OpenStack cloud
+// (there's no more <OpenStackGate> component to gate it behind either: the
+// daemon's external-OpenStack-client integration has since been fully
+// removed). Unlike the Nova instance list, there's no server-side
+// pagination/marker here — the native list endpoint returns the whole
+// project's VMs and this page filters client-side.
+export default function FleetCloudInstancesPage() {
+  return <FleetCloudInstancesContent />
 }
 
-function OpenStackInstancesContent() {
+function FleetCloudInstancesContent() {
   const [vms, setVms] = useState<NativeVm[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)

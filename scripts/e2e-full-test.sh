@@ -4,20 +4,18 @@
 # Usage:
 #   ./scripts/e2e-full-test.sh https://212.8.252.194:5092 sus PASS
 #   ./scripts/e2e-full-test.sh --platform-only https://HOST:5092 sus
-#   ./scripts/e2e-full-test.sh --skip-libvirt --skip-openstack https://HOST:5092 sus
+#   ./scripts/e2e-full-test.sh --skip-libvirt https://HOST:5092 sus
 #
 # Flags:
 #   --skip-install-smoke   Skip systemd/curl install smoke (local only unless E2E_INSTALL_REMOTE=1)
-#   --skip-daemon-e2e      Skip libvirt/openstack daemon E2E (e2e-test.sh)
+#   --skip-daemon-e2e      Skip libvirt daemon E2E (e2e-test.sh)
 #   --skip-host-health     Skip SMART/nbd checklist checks
 #   --skip-ui-proxy        Skip daemon platform proxy tests
 #   --skip-platform-smoke  Skip read-only controller smoke
 #   --skip-platform-lifecycle  Skip VM create/snapshot lifecycle on controller
 #   --platform-only        Skip daemon E2E + install smoke; run platform phases only
 #   --skip-libvirt         Forwarded to e2e-test.sh
-#   --skip-openstack       Forwarded to e2e-test.sh
 #   --skip-preflight       Forwarded to e2e-test.sh
-#   --require-openstack-ssh Forwarded to e2e-test.sh
 #
 # Env:
 #   VSPASS / E2E_PASSWORD — PAM password for daemon login
@@ -77,9 +75,9 @@ while [[ $# -gt 0 ]]; do
     --skip-platform-smoke) SKIP_PLATFORM_SMOKE=1 ;;
     --skip-platform-lifecycle) SKIP_PLATFORM_LIFECYCLE=1 ;;
     --platform-only) PLATFORM_ONLY=1; SKIP_DAEMON_E2E=1; SKIP_INSTALL_SMOKE=1 ;;
-    --skip-libvirt|--skip-openstack|--skip-preflight|--require-openstack-ssh|--libvirt-only)
+    --skip-libvirt|--skip-preflight|--libvirt-only)
       DAEMON_EXTRA+=("$1") ;;
-    --openstack-flavor|--openstack-image|--openstack-network|--ssh-host)
+    --ssh-host)
       DAEMON_EXTRA+=("$1" "${2:?}"); shift ;;
     --skip-dhcp-check) DAEMON_EXTRA+=("$1") ;;
     --auth) E2E_AUTH_MODE="${2:?}"; shift ;;

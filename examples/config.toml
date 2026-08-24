@@ -107,29 +107,6 @@ uri = "qemu:///system"
 # kubeconfig_path = "/root/.kube/config"
 # upload_timeout_minutes = 120
 
-# OpenStack: Nova instance management + native Glance qcow2 upload.
-# After Packstack/RDO: sudo /usr/local/share/machina/scripts/openstack-wire-cloud.sh /root/keystonerc_admin packstack
-[openstack]
-enabled = true
-cloud_name = "packstack"
-clouds_yaml_path = "/etc/openstack/clouds.yaml"
-connect_timeout_secs = 30
-use_env_auth = false
-# Inline Keystone (alternative to clouds.yaml):
-# auth_url = "https://controller:5000/v3"
-# username = "admin"
-# password = "secret"
-# project_name = "admin"
-# domain_name = "Default"
-upload_enabled = true
-upload_timeout_secs = 3600
-default_os_cloud = "packstack"
-default_boot_instance = false
-default_flavor = "m1.tiny"
-default_network = "private"
-default_key_name = ""
-hypersdk_base_url = "https://127.0.0.1:5080"
-
 # HyperSDK bulk migrations (proxy /api/v1/hypersdk/* → hypervisord).
 [hypersdk]
 enabled = true

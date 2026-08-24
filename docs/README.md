@@ -12,7 +12,6 @@ Enterprise Linux hypervisor management platform
 | Infrastructure vision | [machina-infrastructure-vision.md](machina-infrastructure-vision.md) |
 | KubeVirt migration | [kubevirt-migration.md](kubevirt-migration.md) |
 | Observability | [observability.md](guides/observability.md) |
-| OpenStack | [openstack.md](openstack.md) |
 | Atlas storage integration | [atlas-storage.md](atlas-storage.md) |
 | **User journeys & acceptance criteria** | [User Stories](USER_STORIES.md) |
 

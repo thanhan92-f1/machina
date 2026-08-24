@@ -6,11 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::time::Instant;
 
-use crate::openstack::{
-    OpenStackAttachedVolume, OpenStackConnectionStatus, OpenStackFlavor, OpenStackFloatingIp,
-    OpenStackImage, OpenStackInstance, OpenStackKeyPair, OpenStackNetwork,
-};
-
 // ── VM Types ────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -807,7 +802,6 @@ pub enum SidebarCategory {
     Storage,
     Snapshots,
     Backups,
-    OpenStack,
 }
 
 impl SidebarCategory {
@@ -818,7 +812,6 @@ impl SidebarCategory {
             Self::Storage,
             Self::Snapshots,
             Self::Backups,
-            Self::OpenStack,
         ]
     }
 
@@ -829,7 +822,6 @@ impl SidebarCategory {
             Self::Storage => "Storage",
             Self::Snapshots => "Snapshots",
             Self::Backups => "Backups",
-            Self::OpenStack => "OpenStack",
         }
     }
 }
@@ -841,12 +833,6 @@ pub enum SidebarItem {
     Network(String),
     StoragePool(String),
     Snapshot(String, String), // (vm_name, snap_name)
-    /// Nova instance UUID.
-    OpenStackInstance(String),
-    /// Glance images table (sidebar shortcut).
-    OpenStackImages,
-    /// Interactive Nova create wizard.
-    OpenStackCreate,
 }
 
 // ── TUI State ───────────────────────────────────────────────────────────
@@ -859,8 +845,6 @@ pub enum ResourceView {
     StoragePools,
     Snapshots,
     Backups,
-    OpenStack,
-    OpenStackImages,
     Events,
     Node,
 }
@@ -872,7 +856,6 @@ pub enum ViewMode {
     Xml,
     Logs,
     Help,
-    OpenStackCreate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -882,54 +865,6 @@ pub enum InputMode {
     Search,
     Confirmation,
     Command,
-    /// Typing instance name in OpenStack create wizard.
-    OpenStackWizard,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OpenStackCreateStep {
-    Name,
-    Flavor,
-    Image,
-    Network,
-    Keypair,
-    Confirm,
-}
-
-#[derive(Debug, Clone)]
-pub struct OpenStackCreateWizard {
-    pub step: OpenStackCreateStep,
-    pub name: String,
-    pub list_cursor: usize,
-    pub flavor_idx: usize,
-    pub image_idx: Option<usize>,
-    pub network_idx: Option<usize>,
-    pub key_idx: Option<usize>,
-    pub flavors: Vec<OpenStackFlavor>,
-    pub networks: Vec<OpenStackNetwork>,
-    pub images: Vec<OpenStackImage>,
-    pub keypairs: Vec<OpenStackKeyPair>,
-}
-
-impl OpenStackCreateWizard {
-    pub fn flavor_name(&self) -> Option<&str> {
-        self.flavors.get(self.flavor_idx).map(|f| f.name.as_str())
-    }
-
-    pub fn image_name(&self) -> Option<&str> {
-        self.image_idx
-            .and_then(|i| self.images.get(i).map(|img| img.name.as_str()))
-    }
-
-    pub fn network_name(&self) -> Option<&str> {
-        self.network_idx
-            .and_then(|i| self.networks.get(i).map(|n| n.name.as_str()))
-    }
-
-    pub fn key_name(&self) -> Option<&str> {
-        self.key_idx
-            .and_then(|i| self.keypairs.get(i).map(|k| k.name.as_str()))
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -1002,14 +937,6 @@ pub struct AppState {
     pub backups: Vec<BackupInfo>,
     pub volumes: Vec<StorageVolumeInfo>,
     pub browsing_pool: Option<String>,
-    pub openstack_status: Option<OpenStackConnectionStatus>,
-    pub openstack_instances: Vec<OpenStackInstance>,
-    pub openstack_images: Vec<OpenStackImage>,
-    pub openstack_instance_detail: Option<OpenStackInstance>,
-    pub openstack_instance_volumes: Vec<OpenStackAttachedVolume>,
-    pub openstack_instance_fips: Vec<OpenStackFloatingIp>,
-    pub openstack_cinder_volumes: Vec<OpenStackAttachedVolume>,
-    pub openstack_create_wizard: Option<OpenStackCreateWizard>,
     pub log_content: String,
     pub notification: Option<(String, Instant, NotifyLevel)>,
     pub notification_history: VecDeque<(String, NotifyLevel, String)>,
@@ -1104,17 +1031,6 @@ impl AppState {
             (SidebarCategory::Backups, vec![]),
         ];
 
-        if self.openstack_configured() {
-            let mut os_children: Vec<SidebarItem> =
-                vec![SidebarItem::OpenStackCreate, SidebarItem::OpenStackImages];
-            os_children.extend(
-                self.openstack_instances
-                    .iter()
-                    .map(|i| SidebarItem::OpenStackInstance(i.id.clone())),
-            );
-            categories.push((SidebarCategory::OpenStack, os_children));
-        }
-
         for (cat, children) in categories {
             self.sidebar_items.push(SidebarItem::Category(cat));
             if !self.is_collapsed(cat) {
@@ -1146,13 +1062,6 @@ impl AppState {
         self.sidebar_items.get(self.sidebar_selected)
     }
 
-    pub fn openstack_configured(&self) -> bool {
-        self.openstack_status
-            .as_ref()
-            .map(|s| s.configured)
-            .unwrap_or(false)
-    }
-
     pub fn sidebar_resource_view(&self) -> ResourceView {
         match self.selected_sidebar_item() {
             Some(SidebarItem::Category(SidebarCategory::VirtualMachines))
@@ -1164,10 +1073,6 @@ impl AppState {
             Some(SidebarItem::Category(SidebarCategory::Snapshots))
             | Some(SidebarItem::Snapshot(_, _)) => ResourceView::Snapshots,
             Some(SidebarItem::Category(SidebarCategory::Backups)) => ResourceView::Backups,
-            Some(SidebarItem::Category(SidebarCategory::OpenStack))
-            | Some(SidebarItem::OpenStackInstance(_)) => ResourceView::OpenStack,
-            Some(SidebarItem::OpenStackImages) => ResourceView::OpenStackImages,
-            Some(SidebarItem::OpenStackCreate) => ResourceView::OpenStack,
             None => ResourceView::VirtualMachines,
         }
     }
@@ -1214,17 +1119,6 @@ impl AppState {
             Some(SidebarItem::Category(SidebarCategory::Snapshots)) => self.selected_snapshot(),
             _ => None,
         }
-    }
-
-    pub fn effective_openstack_instance_id(&self) -> Option<&str> {
-        match self.selected_sidebar_item() {
-            Some(SidebarItem::OpenStackInstance(id)) => Some(id.as_str()),
-            _ => None,
-        }
-    }
-
-    pub fn find_openstack_instance(&self, id: &str) -> Option<&OpenStackInstance> {
-        self.openstack_instances.iter().find(|i| i.id == id)
     }
 
     pub fn add_audit_event(&mut self, action: &str, target: &str, result: &str) {
@@ -1350,8 +1244,6 @@ impl AppState {
             ResourceView::StoragePools => self.storage_pools.len(),
             ResourceView::Snapshots => self.snapshots.len(),
             ResourceView::Backups => self.backups.len(),
-            ResourceView::OpenStack => self.openstack_instances.len(),
-            ResourceView::OpenStackImages => self.openstack_images.len(),
             ResourceView::Events => self.audit_events.len(),
             ResourceView::Node => 1,
         }
@@ -1417,26 +1309,6 @@ impl AppState {
             ResourceView::Networks => score_searchable(&self.networks, &query),
             ResourceView::StoragePools => score_searchable(&self.storage_pools, &query),
             ResourceView::Snapshots => score_searchable(&self.snapshots, &query),
-            ResourceView::OpenStack => self
-                .openstack_instances
-                .iter()
-                .enumerate()
-                .filter(|(_, i)| {
-                    i.name.to_lowercase().contains(&query)
-                        || i.id.to_lowercase().contains(&query)
-                        || i.status.to_lowercase().contains(&query)
-                })
-                .map(|(idx, _)| (idx, 1))
-                .collect(),
-            ResourceView::OpenStackImages => self
-                .openstack_images
-                .iter()
-                .enumerate()
-                .filter(|(_, i)| {
-                    i.name.to_lowercase().contains(&query) || i.id.to_lowercase().contains(&query)
-                })
-                .map(|(idx, _)| (idx, 1))
-                .collect(),
             ResourceView::Backups | ResourceView::Events | ResourceView::Node => vec![],
         };
 

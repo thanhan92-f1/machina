@@ -14,14 +14,16 @@ import PageLayout from '../components/PageLayout'
 import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
 
-// Native golden-image catalog — not gated by <OpenStackGate>. See
-// api/nativeTemplates.ts: unlike Glance there's no byte-upload here (register an
-// existing on-host disk path, or publish one from a running VM).
-export default function OpenStackImagesPage() {
-  return <OpenStackImagesContent />
+// Native golden-image catalog — no <OpenStackGate> component to gate it behind
+// any more (the daemon's external-OpenStack-client integration has since been
+// fully removed). See api/nativeTemplates.ts: unlike Glance there's no
+// byte-upload here (register an existing on-host disk path, or publish one
+// from a running VM).
+export default function FleetCloudImagesPage() {
+  return <FleetCloudImagesContent />
 }
 
-function OpenStackImagesContent() {
+function FleetCloudImagesContent() {
   const [images, setImages] = useState<NativeTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)

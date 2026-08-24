@@ -31,10 +31,6 @@ export const MACHINA_HELP_LINKS: HelpDocLink[] = [
     href: 'https://github.com/ssahani/machina/blob/main/docs/kubevirt-migration.md',
   },
   {
-    label: 'Fleet Cloud integration',
-    href: 'https://github.com/ssahani/machina/blob/main/docs/openstack.md',
-  },
-  {
     label: 'Zyvor documentation',
     href: ZYVOR_HELP.docs,
   },

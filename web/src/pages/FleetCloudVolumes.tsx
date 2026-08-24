@@ -25,14 +25,16 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { HardDrive, RefreshCw } from 'lucide-react'
 
-// Native standalone volumes — not gated by <OpenStackGate>. Narrower than
-// Cinder: no transfers/retype/clone/bootable-flag/create-from-image (no native
+// Native standalone volumes — no <OpenStackGate> component to gate them
+// behind any more (the daemon's external-OpenStack-client integration has
+// since been fully removed). Narrower than Cinder: no
+// transfers/retype/clone/bootable-flag/create-from-image (no native
 // equivalent yet) — see api/nativeVolumes.ts.
-export default function OpenStackVolumesPage() {
-  return <OpenStackVolumesContent />
+export default function FleetCloudVolumesPage() {
+  return <FleetCloudVolumesContent />
 }
 
-function OpenStackVolumesContent() {
+function FleetCloudVolumesContent() {
   const toast = useToastContext()
   const [volumes, setVolumes] = useState<NativeVolume[]>([])
   const [snapshotsByVol, setSnapshotsByVol] = useState<Record<string, NativeVolumeSnapshot[]>>({})

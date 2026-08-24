@@ -28,16 +28,17 @@ import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native VM detail used as the "instance" detail page — not gated by
-// <OpenStackGate>. Narrower than the Nova instance detail: no rescue/shelve/
-// lock/migrate/backup/resize actions (no native equivalent yet) — start/stop/
-// reboot/delete plus disk and NIC inventory, which do have direct native
-// equivalents (api::vms).
-export default function OpenStackInstanceDetailPage() {
-  return <OpenStackInstanceDetailContent />
+// Native VM detail used as the "instance" detail page — no <OpenStackGate>
+// component to gate it behind any more (the daemon's external-OpenStack-client
+// integration has since been fully removed). Narrower than the Nova instance
+// detail: no rescue/shelve/lock/migrate/backup/resize actions (no native
+// equivalent yet) — start/stop/reboot/delete plus disk and NIC inventory,
+// which do have direct native equivalents (api::vms).
+export default function FleetCloudInstanceDetailPage() {
+  return <FleetCloudInstanceDetailContent />
 }
 
-function OpenStackInstanceDetailContent() {
+function FleetCloudInstanceDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
   const navigate = useNavigate()

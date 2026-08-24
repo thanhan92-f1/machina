@@ -163,7 +163,7 @@ function main() {
   const daemonSpec = buildSpec({
     title: 'Machina Host (Daemon) API',
     description:
-      'Hypervisor host REST API (machina-daemon): libvirt VMs, storage, networks, OpenStack/K8s proxies, backups, and host tools.',
+      'Hypervisor host REST API (machina-daemon): libvirt VMs, storage, networks, K8s proxies, backups, and host tools.',
     routes: daemonFull,
     websocket: daemonWs,
   })
@@ -171,8 +171,11 @@ function main() {
   const ctrlOps = countOps(controllerSpec)
   const daemonOps = countOps(daemonSpec)
 
-  if (daemonOps < 430) {
-    console.warn(`Warning: daemon spec has ${daemonOps} operations (expected >= 430)`)
+  // Baseline dropped from ~430 after the legacy external-OpenStack-cloud client
+  // integration (~90 routes: openstack.rs, openstack_extended.rs, openstack_services.rs,
+  // vms.rs push handlers) was fully removed.
+  if (daemonOps < 330) {
+    console.warn(`Warning: daemon spec has ${daemonOps} operations (expected >= 330)`)
   }
 
   const ctrlJson = JSON.stringify(controllerSpec, null, 2) + '\n'

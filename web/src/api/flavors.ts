@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 // Native compute flavor catalog (controller::api::flavors) — Phase 1 of the
-// OpenStack-client replacement. Goes through the platform controller proxy, not the
-// daemon's external-OpenStack-client routes in api/openstack.ts.
+// OpenStack-client replacement. Goes through the platform controller proxy; the
+// daemon's external-OpenStack-client integration has since been fully removed.
 
 import { platformFetch } from './platform'
 

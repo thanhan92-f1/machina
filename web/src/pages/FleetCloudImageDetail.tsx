@@ -12,12 +12,14 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native golden-image catalog — not gated by <OpenStackGate> (see OpenStackImages.tsx).
-export default function OpenStackImageDetailPage() {
-  return <OpenStackImageDetailContent />
+// Native golden-image catalog — there's no more <OpenStackGate> component to
+// gate it behind (the daemon's external-OpenStack-client integration has since
+// been fully removed); see FleetCloudImages.tsx.
+export default function FleetCloudImageDetailPage() {
+  return <FleetCloudImageDetailContent />
 }
 
-function OpenStackImageDetailContent() {
+function FleetCloudImageDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
   const [image, setImage] = useState<NativeTemplate | null>(null)

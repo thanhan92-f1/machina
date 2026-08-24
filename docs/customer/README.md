@@ -44,7 +44,7 @@ Output lands in [`pdf/`](pdf/):
 | Fleet / Mission Control | `/platform` |
 | Consoles | VM detail → ConsoleHub / VNC / SSH / RDP |
 | Storage / networks | `/storage`, `/networks` or `/platform/storage` |
-| Fleet Cloud | `/openstack` (native, no wiring required) |
+| Fleet Cloud | `/fleet-cloud` (native, no wiring required) |
 | Settings / users | `/settings`, `/platform/users` |
 
 ---

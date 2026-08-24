@@ -21,12 +21,14 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native security groups — not gated by <OpenStackGate> (see OpenStackSecurityGroups.tsx).
-export default function OpenStackSecurityGroupDetailPage() {
-  return <OpenStackSecurityGroupDetailContent />
+// Native security groups — no <OpenStackGate> component to gate them behind
+// any more (the daemon's external-OpenStack-client integration has since been
+// fully removed); see FleetCloudSecurityGroups.tsx.
+export default function FleetCloudSecurityGroupDetailPage() {
+  return <FleetCloudSecurityGroupDetailContent />
 }
 
-function OpenStackSecurityGroupDetailContent() {
+function FleetCloudSecurityGroupDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
   const [group, setGroup] = useState<NativeSecurityGroup | null>(null)

@@ -24,12 +24,14 @@ import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
 const ROLES = ['admin', 'operator', 'viewer'] as const
 
-// Native project registry — not gated by <OpenStackGate> (see OpenStackIdentity.tsx).
-export default function OpenStackIdentityProjectDetailPage() {
-  return <OpenStackIdentityProjectDetailContent />
+// Native project registry — there's no more <OpenStackGate> component to gate
+// it behind (the daemon's external-OpenStack-client integration has since been
+// fully removed); see FleetCloudIdentity.tsx.
+export default function FleetCloudIdentityProjectDetailPage() {
+  return <FleetCloudIdentityProjectDetailContent />
 }
 
-function OpenStackIdentityProjectDetailContent() {
+function FleetCloudIdentityProjectDetailContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
   const [project, setProject] = useState<NativeProject | null>(null)

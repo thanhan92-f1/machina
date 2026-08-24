@@ -228,7 +228,7 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
   (log: `/var/lib/machina/audit.log`).
 - `[inventory_history]` — `enabled=true`, `interval_secs=3600`, `max_file_mb=64`.
 - `[ssh_terminal]` — `session_ttl_secs=120` (30–3600), `allow_adhoc_hosts=true`.
-- `[kubevirt]`, `[openstack]`, `[hypersdk]`, `[guestkit]`, `[packetwolf]` —
+- `[kubevirt]`, `[hypersdk]`, `[guestkit]`, `[packetwolf]` —
   integration blocks, all `enabled=false` by default (see
   [Product Guide → Integrations](product-guide.md#integrations)).
 

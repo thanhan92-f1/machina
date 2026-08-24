@@ -16,7 +16,6 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [Host SSH](core/host-ssh.md) | Host SSH — Machina Core page at `/host-ssh`. |
 | [Import VM](core/import.md) | Import VM — Machina Core page at `/import`. |
 | [Services](core/services.md) | Services — Machina Core page at `/services`. |
-| [Connect Fleet Cloud](core/settings.md) | Connect Fleet Cloud — Machina Core page at `/settings?openstack=1`. |
 | [Sprites](core/sprites.md) | Instant, disposable sandbox VMs — boot on libvirt/QEMU, Cloud Hypervisor, or Firecracker, TTL-reaped automatically, no persistent state. |
 | [Virtual Machines](core/vms.md) | Virtual machine inventory for this libvirt host. |
 
@@ -142,4 +141,4 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 
 ---
 
-101 guides. Regenerate: `node scripts/customer-docs/generate-guide-index.mjs`.
+100 guides. Regenerate: `node scripts/customer-docs/generate-guide-index.mjs`.

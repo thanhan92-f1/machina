@@ -18,14 +18,16 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses, statusToneClass } from '../utils/semanticColors'
 
-// Native L4 load balancer — like the other rewired /fleet-cloud/* pages, this no longer
-// depends on a wired external OpenStack cloud (see api/nativeLoadBalancers.ts), so it is
-// NOT wrapped in <OpenStackGate>: it must render regardless of that connection's phase.
-export default function OpenStackLoadBalancersPage() {
-  return <OpenStackLoadBalancersContent />
+// Native L4 load balancer — like the other rewired /fleet-cloud/* pages, this
+// no longer depends on a wired external OpenStack cloud (see
+// api/nativeLoadBalancers.ts). There's no <OpenStackGate> component to wrap it
+// in any more either: the daemon's external-OpenStack-client integration has
+// since been fully removed, so this page always renders.
+export default function FleetCloudLoadBalancersPage() {
+  return <FleetCloudLoadBalancersContent />
 }
 
-function OpenStackLoadBalancersContent() {
+function FleetCloudLoadBalancersContent() {
   const toast = useToastContext()
   const [lbs, setLbs] = useState<NativeLoadBalancer[]>([])
   const [hosts, setHosts] = useState<PlatformHost[]>([])

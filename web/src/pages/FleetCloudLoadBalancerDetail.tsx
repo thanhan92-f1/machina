@@ -23,13 +23,15 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses, statusToneClass } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native L4 load balancer — like the other rewired /fleet-cloud/* pages, this no longer
-// depends on a wired external OpenStack cloud, so it is NOT wrapped in <OpenStackGate>.
-export default function OpenStackLoadBalancerDetailPage() {
-  return <OpenStackLoadBalancerDetailContent />
+// Native L4 load balancer — like the other rewired /fleet-cloud/* pages, this
+// no longer depends on a wired external OpenStack cloud. There's no
+// <OpenStackGate> component to wrap it in any more either: the daemon's
+// external-OpenStack-client integration has since been fully removed.
+export default function FleetCloudLoadBalancerDetailPage() {
+  return <FleetCloudLoadBalancerDetailContent />
 }
 
-function OpenStackLoadBalancerDetailContent() {
+function FleetCloudLoadBalancerDetailContent() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()

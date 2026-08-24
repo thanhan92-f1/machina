@@ -14,12 +14,14 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 
-// Native NIC inventory — not gated by <OpenStackGate> (see OpenStackInstances.tsx).
-export default function OpenStackInstanceInterfacesPage() {
-  return <OpenStackInstanceInterfacesContent />
+// Native NIC inventory — no <OpenStackGate> component to gate it behind any
+// more (the daemon's external-OpenStack-client integration has since been
+// fully removed); see FleetCloudInstances.tsx.
+export default function FleetCloudInstanceInterfacesPage() {
+  return <FleetCloudInstanceInterfacesContent />
 }
 
-function OpenStackInstanceInterfacesContent() {
+function FleetCloudInstanceInterfacesContent() {
   const { id } = useParams<{ id: string }>()
   const toast = useToastContext()
   const [inst, setInst] = useState<NativeVm | null>(null)

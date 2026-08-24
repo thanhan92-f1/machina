@@ -24,13 +24,15 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Loader2, RefreshCw, Shield } from 'lucide-react'
 
-// Native security groups — not gated by <OpenStackGate>: this feature is
-// libvirt/SQLite-native and does not depend on a wired external OpenStack cloud.
-export default function OpenStackSecurityGroupsPage() {
-  return <OpenStackSecurityGroupsContent />
+// Native security groups — this feature is libvirt/SQLite-native and does not
+// depend on a wired external OpenStack cloud (there's no more <OpenStackGate>
+// component to gate them behind either: the daemon's external-OpenStack-client
+// integration has since been fully removed).
+export default function FleetCloudSecurityGroupsPage() {
+  return <FleetCloudSecurityGroupsContent />
 }
 
-function OpenStackSecurityGroupsContent() {
+function FleetCloudSecurityGroupsContent() {
   const toast = useToastContext()
   const [groups, setGroups] = useState<NativeSecurityGroup[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)

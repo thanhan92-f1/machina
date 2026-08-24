@@ -20,7 +20,7 @@ This document is an honest inventory of how much controller/daemon surface area 
 ### Platform desktop (Normal tier — default for new users)
 
 - Dashboard, VMs, Hosts, Storage, Backups, Settings, Support, Notifications
-- **Apps & Integrations** hub → OpenStack, K8s, HyperSDK, GuestKit, classic UI (when daemon flags enable them)
+- **Apps & Integrations** hub → Fleet Cloud, K8s, HyperSDK, GuestKit, classic UI (when daemon flags enable them)
 - Dock-first layout; sidebar collapsed/hidden
 
 ### Platform desktop (Power / Advanced)
@@ -32,11 +32,11 @@ This document is an honest inventory of how much controller/daemon surface area 
 
 | UI | Path | Backend |
 |----|------|---------|
-| OpenStack operator | `/openstack/*` | OpenStack API proxy + Heat, Neutron, Nova pages |
+| Fleet Cloud operator | `/fleet-cloud/*` | Native controller flavors/keypairs/networks/load-balancer APIs |
 | Kubernetes / KubeVirt | `/k8s/*` | KubeVirt exec API |
 | Classic Machina | `/`, `/vms`, `/storage`, … | Daemon REST (original UI) |
 
-OpenStack was never deleted; it was **not linked from Platform** until the Integrations hub. Enable `openstack.enabled` in daemon config to see it on `/platform/integrations`.
+**2026-08 update:** the legacy external-OpenStack-cloud client integration described below (P9, and the OpenStack references throughout P13/P14) has been fully removed from core, daemon, controller, web, and the TUI. Fleet Cloud is Machina's own native, always-on replacement — no external cloud connection, `[openstack]` config block, or "not configured" gate exists anymore.
 
 ## Major gaps (next wiring phases)
 

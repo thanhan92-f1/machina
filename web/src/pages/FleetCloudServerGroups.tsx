@@ -12,15 +12,16 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Layers, Loader2, RefreshCw } from 'lucide-react'
 
-// Native anti-affinity groups — not gated by <OpenStackGate>. A "group" is
-// derived from VM tags (see api/nativeServerGroups.ts), not a stored resource —
-// only anti-affinity is supported (Machina's placement engine only enforces
-// that policy).
-export default function OpenStackServerGroupsPage() {
-  return <OpenStackServerGroupsContent />
+// Native anti-affinity groups — no <OpenStackGate> component to gate them
+// behind any more (the daemon's external-OpenStack-client integration has
+// since been fully removed). A "group" is derived from VM tags (see
+// api/nativeServerGroups.ts), not a stored resource — only anti-affinity is
+// supported (Machina's placement engine only enforces that policy).
+export default function FleetCloudServerGroupsPage() {
+  return <FleetCloudServerGroupsContent />
 }
 
-function OpenStackServerGroupsContent() {
+function FleetCloudServerGroupsContent() {
   const toast = useToastContext()
   const [groups, setGroups] = useState<DerivedServerGroup[]>([])
   const [vms, setVms] = useState<NativeVm[]>([])

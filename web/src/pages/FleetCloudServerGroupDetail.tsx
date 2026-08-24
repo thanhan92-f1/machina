@@ -13,14 +13,15 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native anti-affinity group — not gated by <OpenStackGate>. `id` in the route
-// is the group name (derived from tags, not a stored UUID) — see
-// api/nativeServerGroups.ts.
-export default function OpenStackServerGroupDetailPage() {
-  return <OpenStackServerGroupDetailContent />
+// Native anti-affinity group — no <OpenStackGate> component to gate it behind
+// any more (the daemon's external-OpenStack-client integration has since been
+// fully removed). `id` in the route is the group name (derived from tags, not
+// a stored UUID) — see api/nativeServerGroups.ts.
+export default function FleetCloudServerGroupDetailPage() {
+  return <FleetCloudServerGroupDetailContent />
 }
 
-function OpenStackServerGroupDetailContent() {
+function FleetCloudServerGroupDetailContent() {
   const { id: name } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()

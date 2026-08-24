@@ -18,15 +18,17 @@ const MINIMAL_TEMPLATE: StackTemplate = {
   vms: [],
 }
 
-// Native stacks — not gated by <OpenStackGate>: this feature is libvirt-native
-// and does not depend on a wired external OpenStack cloud. Unlike Heat, a
-// template here is a fixed JSON shape (security_groups/volumes/vms), not an
-// arbitrary resource-type graph — see api/stacks.ts.
-export default function OpenStackHeatPage() {
-  return <OpenStackHeatContent />
+// Native stacks — this feature is libvirt-native and does not depend on a wired
+// external OpenStack cloud (there's no more <OpenStackGate> component to gate it
+// behind either: the daemon's external-OpenStack-client integration has since
+// been fully removed). Unlike Heat, a template here is a fixed JSON shape
+// (security_groups/volumes/vms), not an arbitrary resource-type graph — see
+// api/stacks.ts.
+export default function FleetCloudHeatPage() {
+  return <FleetCloudHeatContent />
 }
 
-function OpenStackHeatContent() {
+function FleetCloudHeatContent() {
   const toast = useToastContext()
   const [stacks, setStacks] = useState<NativeStack[]>([])
   const [loading, setLoading] = useState(true)

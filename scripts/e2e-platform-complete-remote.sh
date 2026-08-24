@@ -67,10 +67,10 @@ run_phase() {
 
 FAILED=0
 
-# A: full API + daemon (KVM-only, no OpenStack)
+# A: full API + daemon (KVM-only)
 if [[ "${E2E_SKIP_FULL:-0}" != "1" ]]; then
   run_phase "full-api-daemon" \
-    "${SCRIPT_DIR}/e2e-full-test-remote.sh" "$USER" "$HOST" --skip-openstack \
+    "${SCRIPT_DIR}/e2e-full-test-remote.sh" "$USER" "$HOST" \
     || FAILED=$((FAILED + 1))
 fi
 

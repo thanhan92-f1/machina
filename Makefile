@@ -61,7 +61,7 @@ regression-platform: ## Live platform console/precheck/sync/pause + KubeVirt gua
 regression-infra: ## Live networks/node/metrics/platform inventory/AI/Zeus firewall reads
 	cd scripts/regression && npm install --silent && node ops-infra.js
 
-regression-fleet: ## Live devices/services/catalog/batch power/OpenStack+K8s status
+regression-fleet: ## Live devices/services/catalog/batch power/Fleet Cloud+K8s status
 	cd scripts/regression && npm install --silent && node ops-fleet.js
 
 regression-mission: ## Live browse disks/FS/fleet activity/reports/observability/Atlas
@@ -205,13 +205,13 @@ regression-ui: ## Live CDP UI (Pause/Resume, platform tabs; needs Chrome :9222)
 regression-ui-settings: ## Live CDP settings/nav smoke (needs Chrome :9222)
 	cd scripts/regression && npm install --silent && node ui-settings.js
 
-regression-ui-wizards: ## Live CDP create/wizard/OpenStack shells (needs Chrome :9222)
+regression-ui-wizards: ## Live CDP create/wizard/Fleet Cloud shells (needs Chrome :9222)
 	cd scripts/regression && npm install --silent && node ui-wizards.js
 
 regression-ui-security: ## Live CDP Zeus security/SOC/policy shells (needs Chrome :9222)
 	cd scripts/regression && npm install --silent && node ui-security.js
 
-regression-ui-k8s-os: ## Live CDP K8s + OpenStack management shells (needs Chrome :9222)
+regression-ui-k8s-os: ## Live CDP K8s + Fleet Cloud management shells (needs Chrome :9222)
 	cd scripts/regression && npm install --silent && node ui-k8s-os.js
 
 regression-ui-mission: ## Live CDP mission/observability/reports/GPU shells (needs Chrome :9222)

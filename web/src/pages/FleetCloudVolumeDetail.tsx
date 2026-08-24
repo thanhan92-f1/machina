@@ -23,14 +23,15 @@ import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// Native volumes — not gated by <OpenStackGate>. Narrower than Cinder: no
-// rename, no bootable flag, no upload-to-image (no native equivalent) — see
-// api/nativeVolumes.ts.
-export default function OpenStackVolumeDetailPage() {
-  return <OpenStackVolumeDetailContent />
+// Native volumes — no <OpenStackGate> component to gate them behind any more
+// (the daemon's external-OpenStack-client integration has since been fully
+// removed). Narrower than Cinder: no rename, no bootable flag, no
+// upload-to-image (no native equivalent) — see api/nativeVolumes.ts.
+export default function FleetCloudVolumeDetailPage() {
+  return <FleetCloudVolumeDetailContent />
 }
 
-function OpenStackVolumeDetailContent() {
+function FleetCloudVolumeDetailContent() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()

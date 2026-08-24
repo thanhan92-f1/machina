@@ -27,14 +27,16 @@ function layoutNodes(nodes: Node[]): (Node & { x: number; y: number })[] {
   })
 }
 
-// Native topology — networks/ports/instances only (not gated by <OpenStackGate>).
-// Neutron subnets/routers/floating-IPs have no native equivalent, so those node
-// kinds are simply absent rather than faked.
-export default function OpenStackTopologyPage() {
-  return <OpenStackTopologyContent />
+// Native topology — networks/ports/instances only; no <OpenStackGate>
+// component to gate it behind any more (the daemon's external-OpenStack-client
+// integration has since been fully removed). Neutron subnets/routers/floating-
+// IPs have no native equivalent, so those node kinds are simply absent rather
+// than faked.
+export default function FleetCloudTopologyPage() {
+  return <FleetCloudTopologyContent />
 }
 
-function OpenStackTopologyContent() {
+function FleetCloudTopologyContent() {
   const [networks, setNetworks] = useState<NativeNetwork[]>([])
   const [ports, setPorts] = useState<NativePort[]>([])
   const [vms, setVms] = useState<NativeVm[]>([])

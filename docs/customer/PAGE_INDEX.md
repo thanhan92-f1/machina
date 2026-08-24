@@ -2,7 +2,7 @@
 
 Every primary navigable dashboard route.
 
-_Generated: 2026-08-24 · 101 routes_
+_Generated: 2026-08-24 · 100 routes_
 
 Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
@@ -17,7 +17,6 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Sprites | `/sprites` | Instant, disposable sandbox VMs — boot on libvirt/QEMU, Cloud Hypervisor, or Firecracker, TTL-reaped automatically, no persistent state. | [Open](pages/core/sprites.md) |
 | Fleet | `/fleet` | Fleet — Machina Core page at `/fleet`. | [Open](pages/core/fleet.md) |
 | Host SSH | `/host-ssh` | Host SSH — Machina Core page at `/host-ssh`. | [Open](pages/core/host-ssh.md) |
-| Connect Fleet Cloud | `/settings?openstack=1` | Connect Fleet Cloud — Machina Core page at `/settings?openstack=1`. | [Open](pages/core/settings.md) |
 | Capabilities | `/capabilities` | Capabilities — Machina Core page at `/capabilities`. | [Open](pages/core/capabilities.md) |
 | Node Devices | `/devices` | Node Devices — Machina Core page at `/devices`. | [Open](pages/core/devices.md) |
 | Services | `/services` | Services — Machina Core page at `/services`. | [Open](pages/core/services.md) |

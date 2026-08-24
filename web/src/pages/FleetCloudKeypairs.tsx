@@ -10,14 +10,15 @@ import PageLayout from '../components/PageLayout'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Key, RefreshCw } from 'lucide-react'
 
-// Native SSH keypair catalog — not gated by <OpenStackGate>. Import-only: no
-// server-side keypair generation (Machina never hands out private keys over an
-// API) — see api/nativeKeypairs.ts.
-export default function OpenStackKeypairsPage() {
-  return <OpenStackKeypairsContent />
+// Native SSH keypair catalog — no <OpenStackGate> component to gate it behind
+// any more (the daemon's external-OpenStack-client integration has since been
+// fully removed). Import-only: no server-side keypair generation (Machina
+// never hands out private keys over an API) — see api/nativeKeypairs.ts.
+export default function FleetCloudKeypairsPage() {
+  return <FleetCloudKeypairsContent />
 }
 
-function OpenStackKeypairsContent() {
+function FleetCloudKeypairsContent() {
   const toast = useToastContext()
   const [keys, setKeys] = useState<NativeKeypair[]>([])
   const [loading, setLoading] = useState(true)
