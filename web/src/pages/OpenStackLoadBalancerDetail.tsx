@@ -3,65 +3,44 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Loader2, Plus, Scale, Trash2 } from 'lucide-react'
-import OpenStackGate from '../components/OpenStackGate'
 import OpenStackSubNav from '../components/OpenStackSubNav'
 import OpenStackFooter from '../components/OpenStackFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import { listVms, type NativeVm } from '../api/nativeVms'
 import {
-  createOpenStackLbHealthMonitor,
-  createOpenStackLbListener,
-  createOpenStackLbMember,
-  createOpenStackLbPool,
-  deleteOpenStackLbHealthMonitor,
-  deleteOpenStackLbListener,
-  deleteOpenStackLbMember,
-  deleteOpenStackLbPool,
-  deleteOpenStackLoadBalancer,
-  getOpenStackLoadBalancer,
-  listOpenStackLbHealthMonitors,
-  listOpenStackLbListeners,
-  listOpenStackLbMembers,
-  listOpenStackLbPools,
-  type OpenStackLbHealthMonitor,
-  type OpenStackLbListener,
-  type OpenStackLbMember,
-  type OpenStackLbPool,
-  type OpenStackLoadBalancer,
-} from '../api/openstackExtras'
+  addLbMember,
+  deleteLbMember,
+  deleteLoadBalancer,
+  getLoadBalancer,
+  listLbMembers,
+  patchLbMember,
+  type NativeLbMember,
+  type NativeLoadBalancer,
+} from '../api/nativeLoadBalancers'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
-import { statusActionLinkClasses, statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusActionLinkClasses, statusToneClass } from '../utils/semanticColors'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
+// Native L4 load balancer — like the other rewired /openstack/* pages, this no longer
+// depends on a wired external OpenStack cloud, so it is NOT wrapped in <OpenStackGate>.
 export default function OpenStackLoadBalancerDetailPage() {
-  return (
-    <OpenStackGate title="Load balancer">
-      <OpenStackLoadBalancerDetailContent />
-    </OpenStackGate>
-  )
+  return <OpenStackLoadBalancerDetailContent />
 }
 
 function OpenStackLoadBalancerDetailContent() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToastContext()
-  const [lb, setLb] = useState<OpenStackLoadBalancer | null>(null)
-  const [listeners, setListeners] = useState<OpenStackLbListener[]>([])
-  const [pools, setPools] = useState<OpenStackLbPool[]>([])
-  const [expandedPool, setExpandedPool] = useState<string | null>(null)
-  const [members, setMembers] = useState<Record<string, OpenStackLbMember[]>>({})
-  const [monitors, setMonitors] = useState<Record<string, OpenStackLbHealthMonitor[]>>({})
+  const [lb, setLb] = useState<NativeLoadBalancer | null>(null)
+  const [members, setMembers] = useState<NativeLbMember[]>([])
+  const [vms, setVms] = useState<NativeVm[]>([])
   const [loading, setLoading] = useState(true)
 
-  const [listenerName, setListenerName] = useState('')
-  const [listenerPort, setListenerPort] = useState('80')
-  const [poolName, setPoolName] = useState('')
-  const [poolListenerId, setPoolListenerId] = useState('')
-  const [memberAddress, setMemberAddress] = useState('')
+  const [memberVmId, setMemberVmId] = useState('')
   const [memberPort, setMemberPort] = useState('80')
-  const [memberPoolId, setMemberPoolId] = useState('')
-  const [monitorPoolId, setMonitorPoolId] = useState('')
+  const [memberWeight, setMemberWeight] = useState('1')
   useBreadcrumbName(lb?.name)
 
   const loadSeq = useRef(0)
@@ -74,20 +53,16 @@ function OpenStackLoadBalancerDetailContent() {
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const [{ loadbalancer }, ls, ps] = await Promise.all([
-        getOpenStackLoadBalancer(id),
-        listOpenStackLbListeners(id).catch(() => ({ listeners: [] as OpenStackLbListener[] })),
-        listOpenStackLbPools(id).catch(() => ({ pools: [] as OpenStackLbPool[] })),
+      const [lbR, memberR, vmR] = await Promise.all([
+        getLoadBalancer(id),
+        listLbMembers(id),
+        listVms().catch(() => []),
       ])
       if (!alive()) return
-      setLb(loadbalancer)
-      setListeners(ls.listeners ?? [])
-      setPools(ps.pools ?? [])
-      if ((ls.listeners ?? []).length > 0) setPoolListenerId(ls.listeners[0].id)
-      if ((ps.pools ?? []).length > 0) {
-        setMemberPoolId(ps.pools[0].id)
-        setMonitorPoolId(ps.pools[0].id)
-      }
+      setLb(lbR)
+      setMembers(memberR)
+      setVms(vmR)
+      if (vmR.length > 0) setMemberVmId((prev) => prev || vmR[0].id)
     } catch (e: unknown) {
       if (!alive()) return
       toast.error(formatUserError(e))
@@ -97,24 +72,7 @@ function OpenStackLoadBalancerDetailContent() {
     }
   }, [id, toast])
 
-  const loadPoolDetails = useCallback(async (poolId: string) => {
-    try {
-      const [m, h] = await Promise.all([
-        listOpenStackLbMembers(poolId).catch(() => ({ members: [] as OpenStackLbMember[] })),
-        listOpenStackLbHealthMonitors(poolId).catch(() => ({ healthmonitors: [] as OpenStackLbHealthMonitor[] })),
-      ])
-      setMembers((prev) => ({ ...prev, [poolId]: m.members ?? [] }))
-      setMonitors((prev) => ({ ...prev, [poolId]: h.healthmonitors ?? [] }))
-    } catch (e: unknown) {
-      toast.error(formatUserError(e))
-    }
-  }, [toast])
-
   useEffect(() => { void load() }, [load])
-
-  useEffect(() => {
-    if (expandedPool) void loadPoolDetails(expandedPool)
-  }, [expandedPool, loadPoolDetails])
 
   if (loading) return <PageSkeleton />
   if (!lb || !id) {
@@ -139,180 +97,110 @@ function OpenStackLoadBalancerDetailContent() {
         <Scale className={`w-7 h-7 ${statusToneClass('ok')}`} /> {lb.name}
       </h1>
       <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">VIP</dt><dd className="font-mono mt-1">{lb.vip_address || '—'}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Provisioning</dt><dd className="mt-1">{lb.provisioning_status}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Operating</dt><dd className="mt-1">{lb.operating_status}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">VIP subnet</dt><dd className="font-mono text-xs mt-1">{lb.vip_subnet_id || '—'}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Listener</dt><dd className="font-mono mt-1">{lb.protocol}/{lb.listener_port}</dd></div>
+        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">{lb.status}</dd></div>
+        {lb.status_message && (
+          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Status detail</dt><dd className="mt-1 text-amber-300">{lb.status_message}</dd></div>
+        )}
       </dl>
 
       <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Listeners</h2>
-        <div className="flex flex-wrap gap-2">
-          <input aria-label="Listener name" value={listenerName} onChange={(e) => setListenerName(e.target.value)} placeholder="Name"
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
-          <input aria-label="Listener port" value={listenerPort} onChange={(e) => setListenerPort(e.target.value)} placeholder="Port"
-            className="w-20 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
-          <button type="button" className="px-2 py-1 rounded bg-emerald-700 text-white text-sm inline-flex items-center gap-1"
+        <h2 className="text-sm font-medium text-slate-300">Members</h2>
+        <p className="text-xs text-slate-500">
+          Traffic to {lb.protocol}/{lb.listener_port} on this host is split across enabled members by weight
+          (kernel-level, weighted-random DNAT — no active health checks yet; disable a member manually to pull it
+          out of rotation).
+        </p>
+        <div className="flex flex-wrap gap-2 items-end">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">VM</label>
+            <select aria-label="Member VM" value={memberVmId} onChange={(e) => setMemberVmId(e.target.value)}
+              className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm min-w-[12rem]">
+              <option value="">VM…</option>
+              {vms.map((v) => <option key={v.id} value={v.id}>{v.name}{v.guest_ip ? ` (${v.guest_ip})` : ''}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Port</label>
+            <input aria-label="Member port" value={memberPort} onChange={(e) => setMemberPort(e.target.value)}
+              className="w-20 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Weight</label>
+            <input aria-label="Member weight" value={memberWeight} onChange={(e) => setMemberWeight(e.target.value)}
+              className="w-16 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
+          </div>
+          <button type="button" className="px-2 py-1.5 rounded bg-emerald-700 text-white text-sm inline-flex items-center gap-1"
+            disabled={!memberVmId || !Number(memberPort)}
             onClick={async () => {
               try {
-                await createOpenStackLbListener(id, {
-                  name: listenerName.trim() || `listener-${listenerPort}`,
-                  protocol: 'HTTP',
-                  protocol_port: Number(listenerPort) || 80,
+                await addLbMember(id, {
+                  vm_id: memberVmId,
+                  port: Number(memberPort) || 80,
+                  weight: Number(memberWeight) || 1,
                 })
-                toast.success('Listener created')
-                setListenerName('')
+                toast.success('Member added')
                 void load()
               } catch (e: unknown) { toast.error(formatUserError(e)) }
             }}>
-            <Plus className="w-3.5 h-3.5" /> Add
+            <Plus className="w-3.5 h-3.5" /> Add member
           </button>
         </div>
-        {(listeners ?? []).map((l) => (
-          <div key={l.id} className="flex justify-between items-center text-sm border-t border-slate-800 pt-2">
-            <span>{l.name} · {l.protocol}:{l.protocol_port} · {l.operating_status}</span>
-            <button type="button" className={statusActionLinkClasses('error', 'text-xs')} onClick={async () => {
-              if (!confirm(`Delete listener ${l.name}?`)) return
-              try {
-                await deleteOpenStackLbListener(l.id)
-                toast.success('Deleted')
-                void load()
-              } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}>Delete</button>
-          </div>
-        ))}
-      </section>
 
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Pools</h2>
-        <div className="flex flex-wrap gap-2">
-          <input aria-label="Pool name" value={poolName} onChange={(e) => setPoolName(e.target.value)} placeholder="Pool name"
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
-          <select aria-label="Listener" value={poolListenerId} onChange={(e) => setPoolListenerId(e.target.value)}
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-            <option value="">Listener…</option>
-            {listeners.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
-          <button type="button" className="px-2 py-1 rounded bg-emerald-700 text-white text-sm"
-            disabled={!poolListenerId}
-            onClick={async () => {
-              try {
-                await createOpenStackLbPool({
-                  name: poolName.trim() || 'pool',
-                  protocol: 'HTTP',
-                  lb_algorithm: 'ROUND_ROBIN',
-                  listener_id: poolListenerId,
-                })
-                toast.success('Pool created')
-                setPoolName('')
-                void load()
-              } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}>Add pool</button>
-        </div>
-        {(pools ?? []).map((p) => (
-          <div key={p.id} className="border-t border-slate-800 pt-2">
-            <button type="button" className="text-sm text-sky-400 hover:underline w-full text-left"
-              onClick={() => setExpandedPool(expandedPool === p.id ? null : p.id)}>
-              {p.name} · {p.lb_algorithm} · {p.operating_status}
-            </button>
-            {expandedPool === p.id && (
-              <div className="mt-2 ml-3 space-y-2 text-sm">
-                <div className="flex justify-end">
-                  <button type="button" className={statusActionLinkClasses('error', 'text-xs')} onClick={async () => {
-                    if (!confirm(`Delete pool ${p.name}?`)) return
-                    try {
-                      await deleteOpenStackLbPool(p.id)
-                      toast.success('Deleted')
-                      void load()
-                    } catch (e: unknown) { toast.error(formatUserError(e)) }
-                  }}>Delete pool</button>
-                </div>
-                <div className="text-slate-500 text-xs">Members</div>
-                {(members[p.id] ?? []).map((m) => (
-                  <div key={m.id} className="flex justify-between">
-                    <span>{m.address}:{m.protocol_port}</span>
-                    <button type="button" className={statusActionLinkClasses('error', 'text-xs')} onClick={async () => {
-                      try {
-                        await deleteOpenStackLbMember(p.id, m.id)
-                        toast.success('Member removed')
-                        void loadPoolDetails(p.id)
-                      } catch (e: unknown) { toast.error(formatUserError(e)) }
-                    }}>Remove</button>
-                  </div>
+        {members.length === 0 ? (
+          <p className="text-sm text-slate-500">No members yet — traffic to the listener port is dropped until at least one is added.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-800">
+            <table className="w-full text-sm" aria-label="Members">
+              <thead className="bg-slate-900/60 text-slate-400 text-left">
+                <tr>
+                  <th scope="col" className="px-3 py-2">VM</th>
+                  <th scope="col" className="px-3 py-2">Address</th>
+                  <th scope="col" className="px-3 py-2">Weight</th>
+                  <th scope="col" className="px-3 py-2">Enabled</th>
+                  <th scope="col" className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => (
+                  <tr key={m.id} className="border-t border-slate-800">
+                    <td className="px-3 py-2">{m.vm_name}</td>
+                    <td className="px-3 py-2 font-mono">{m.vm_ip ? `${m.vm_ip}:${m.port}` : <span className="text-amber-400">no guest IP yet</span>}</td>
+                    <td className="px-3 py-2">{m.weight}</td>
+                    <td className="px-3 py-2">
+                      <button type="button" className={statusActionLinkClasses(m.enabled ? 'ok' : 'neutral', 'text-xs')}
+                        onClick={async () => {
+                          try {
+                            await patchLbMember(id, m.id, { enabled: !m.enabled })
+                            void load()
+                          } catch (e: unknown) { toast.error(formatUserError(e)) }
+                        }}>
+                        {m.enabled ? 'Enabled' : 'Disabled'}
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button type="button" aria-label={`Remove ${m.vm_name}`} className={statusActionLinkClasses('error', 'text-xs')}
+                        onClick={async () => {
+                          try {
+                            await deleteLbMember(id, m.id)
+                            toast.success('Member removed')
+                            void load()
+                          } catch (e: unknown) { toast.error(formatUserError(e)) }
+                        }}>Remove</button>
+                    </td>
+                  </tr>
                 ))}
-                <div className="text-slate-500 text-xs">Health monitors</div>
-                {(monitors[p.id] ?? []).map((h) => (
-                  <div key={h.id} className="flex justify-between">
-                    <span>{h.name} · {h.type}</span>
-                    <button type="button" className={statusActionLinkClasses('error', 'text-xs')} onClick={async () => {
-                      try {
-                        await deleteOpenStackLbHealthMonitor(h.id)
-                        toast.success('Monitor removed')
-                        void loadPoolDetails(p.id)
-                      } catch (e: unknown) { toast.error(formatUserError(e)) }
-                    }}>Remove</button>
-                  </div>
-                ))}
-              </div>
-            )}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </section>
-
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Add member / health monitor</h2>
-        <div className="flex flex-wrap gap-2 items-center">
-          <select aria-label="Pool (add member)" value={memberPoolId} onChange={(e) => setMemberPoolId(e.target.value)}
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-            <option value="">Pool…</option>
-            {pools.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <input aria-label="Member IP address" value={memberAddress} onChange={(e) => setMemberAddress(e.target.value)} placeholder="Member IP"
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
-          <input aria-label="Member port" value={memberPort} onChange={(e) => setMemberPort(e.target.value)} placeholder="Port"
-            className="w-20 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
-          <button type="button" className="px-2 py-1 rounded bg-slate-700 text-sm" disabled={!memberPoolId}
-            onClick={async () => {
-              try {
-                await createOpenStackLbMember(memberPoolId, {
-                  address: memberAddress.trim(),
-                  protocol_port: Number(memberPort) || 80,
-                })
-                toast.success('Member added')
-                setMemberAddress('')
-                if (expandedPool === memberPoolId) void loadPoolDetails(memberPoolId)
-              } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}>Add member</button>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <select aria-label="Pool (health monitor)" value={monitorPoolId} onChange={(e) => setMonitorPoolId(e.target.value)}
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
-            <option value="">Pool…</option>
-            {pools.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <button type="button" className="px-2 py-1 rounded bg-slate-700 text-sm" disabled={!monitorPoolId}
-            onClick={async () => {
-              try {
-                await createOpenStackLbHealthMonitor({
-                  pool_id: monitorPoolId,
-                  name: 'monitor',
-                  type: 'HTTP',
-                  delay: 5,
-                  timeout: 4,
-                  max_retries: 3,
-                })
-                toast.success('Health monitor added')
-                if (expandedPool === monitorPoolId) void loadPoolDetails(monitorPoolId)
-              } catch (e: unknown) { toast.error(formatUserError(e)) }
-            }}>Add HTTP monitor</button>
-        </div>
+        )}
       </section>
 
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-300 text-sm inline-flex items-center gap-1"
         onClick={async () => {
           if (!confirm(`Delete ${lb.name}?`)) return
           try {
-            await deleteOpenStackLoadBalancer(lb.id)
+            await deleteLoadBalancer(lb.id)
             toast.success('Deleted')
             navigate('/openstack/load-balancers')
           } catch (e: unknown) { toast.error(formatUserError(e)) }

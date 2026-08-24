@@ -14,8 +14,7 @@
 ## Fleet Cloud
 
 1. [Fleet Cloud Overview](pages/fleet-cloud/openstack.md)
-2. Instances / Networks / Volumes as required — backed by Machina's own native APIs, no external cloud wiring needed
-3. Load Balancers is the one page still backed by an external OpenStack connection; wire credentials in Settings first
+2. Instances / Networks / Volumes / Load Balancers as required — all backed by Machina's own native APIs, no external cloud wiring needed
 
 ## Related
 

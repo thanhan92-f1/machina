@@ -93,7 +93,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <h3>C. Check host health</h3>
 <p><code>/node</code> or Platform → Hosts.</p>
 <h3>D. Fleet Cloud</h3>
-<p><code>/openstack</code> pages (branded <strong>Fleet Cloud</strong> in the nav) work out of the box — instances, images, volumes, security groups, networking, and keypairs are all native, no external cloud required. Only Load Balancers needs a wired external OpenStack cloud: Settings → Connect Fleet Cloud (<code>/settings?openstack=1</code>).</p>
+<p><code>/openstack</code> pages (branded <strong>Fleet Cloud</strong> in the nav) work out of the box — instances, images, volumes, security groups, networking, load balancers, and keypairs are all native, no external cloud required. Settings → Connect Fleet Cloud (<code>/settings?openstack=1</code>) is only needed for the optional push of local VM disks to a real external OpenStack cloud.</p>
 <h2>Next steps</h2>
 <ul>
 <li><a href="using-the-dashboard.md">Using the Dashboard</a></li>
@@ -149,8 +149,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <h2>Fleet Cloud</h2>
 <ol>
 <li><a href="pages/fleet-cloud/openstack.md">Fleet Cloud Overview</a></li>
-<li>Instances / Networks / Volumes as required — backed by Machina&#39;s own native APIs, no external cloud wiring needed</li>
-<li>Load Balancers is the one page still backed by an external OpenStack connection; wire credentials in Settings first</li>
+<li>Instances / Networks / Volumes / Load Balancers as required — all backed by Machina&#39;s own native APIs, no external cloud wiring needed</li>
 </ol>
 <h2>Related</h2>
 <ul>

@@ -26,6 +26,7 @@ mod fence;
 mod flavors;
 mod fleet;
 mod keypairs;
+mod load_balancers;
 mod guestkit;
 mod zeus_firewall;
 mod zeus_security;
@@ -968,6 +969,22 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/keypairs/{id}",
             get(keypairs::get_keypair).delete(keypairs::delete_keypair),
+        )
+        .route(
+            "/api/v1/load-balancers",
+            get(load_balancers::list_load_balancers).post(load_balancers::create_load_balancer),
+        )
+        .route(
+            "/api/v1/load-balancers/{id}",
+            get(load_balancers::get_load_balancer).delete(load_balancers::delete_load_balancer),
+        )
+        .route(
+            "/api/v1/load-balancers/{id}/members",
+            get(load_balancers::list_lb_members).post(load_balancers::add_lb_member),
+        )
+        .route(
+            "/api/v1/load-balancers/{id}/members/{member_id}",
+            axum::routing::patch(load_balancers::patch_lb_member).delete(load_balancers::delete_lb_member),
         )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))

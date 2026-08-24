@@ -1,6 +1,6 @@
 # OpenStack in Machina
 
-> **Status:** the `/openstack/*` UI is branded **Fleet Cloud** in the nav and no longer requires any of this wiring for most pages — Instances, Images, Volumes, Security Groups, Networking, Server Groups, Floating IPs, Stacks, Identity, and Keypairs are backed by Machina's own native controller APIs (libvirt-backed, no external cloud). This document describes the **legacy external-OpenStack-cloud integration** below, which today is only exercised by **Load Balancers** (no native traffic-distribution backend yet) and the optional Glance disk push/pull flow in [openstack-migration.md](openstack-migration.md). Everything else on this page is accurate for that legacy path but does not describe how the native Fleet Cloud pages work day to day.
+> **Status:** the `/openstack/*` UI is branded **Fleet Cloud** in the nav and no longer requires any of this wiring — Instances, Images, Volumes, Security Groups, Networking, Server Groups, Floating IPs, Stacks, Identity, Keypairs, and **Load Balancers** are all backed by Machina's own native controller APIs (libvirt-backed, no external cloud; load balancing is a kernel-level weighted round-robin iptables rule set pushed to a host via `machina-agent` — see `controller/src/engine/load_balancer.rs` — not an Octavia amphora). This document describes the **legacy external-OpenStack-cloud integration** below, which today is only exercised by the optional Glance disk push/pull flow in [openstack-migration.md](openstack-migration.md). Everything else on this page is accurate for that legacy path but does not describe how the native Fleet Cloud pages work day to day.
 
 Machina manages OpenStack Nova instances and Glance images from the same UI as libvirt VMs—without Horizon. Credentials stay on the daemon host (`clouds.yaml`, config file, or `OS_*`); they are never stored in the browser.
 
@@ -111,7 +111,7 @@ connect_timeout_secs = 30
 | Networking | `/openstack/networking` — lab create (network/subnet/router/port/FIP) + topology lists |
 | Network topology (SVG) | `/openstack/topology` — Neutron graph (networks, subnets, routers, ports, FIPs, instances) |
 | Heat stacks | `/openstack/heat` — list, create (template), delete · detail `/openstack/heat/{name}/{id}` |
-| Octavia load balancers | `/openstack/load-balancers` — list, create, delete · detail `/openstack/load-balancers/{id}` |
+| Load balancers (native, not Octavia) | `/openstack/load-balancers` — list, create, delete · detail `/openstack/load-balancers/{id}` adds/removes weighted members. Backed by `/api/v1/load-balancers`, not the Octavia API table below. |
 | Identity (read-only) | `/openstack/identity` — Keystone projects and users |
 | Network / subnet / router / port detail | `/openstack/networks/{id}` · `/openstack/subnets/{id}` · `/openstack/routers/{id}` · `/openstack/ports/{id}` |
 | Flavors / server groups | `/openstack/flavors/{id}` · `/openstack/server-groups/{id}` · `/openstack/hypervisors/{id}` |

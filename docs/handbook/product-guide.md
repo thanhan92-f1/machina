@@ -275,10 +275,11 @@ desired-state reconciliation, a task bus (in-memory or NATS), and an AI engine
   (`GET /vms/{name}/kubevirt-bundle`) and apply/upload/start it on a cluster.
   See [../kubevirt-migration.md](../kubevirt-migration.md).
 - **Fleet Cloud** (`/openstack/*` in the UI) — manage instances, flavors,
-  networks, images, security groups, stacks, and keypairs via Machina's own
-  native controller APIs (no external cloud required). Load Balancers and
-  optional push of local VMs to an external OpenStack cloud still use the
-  legacy integration — see [../openstack.md](../openstack.md).
+  networks, images, security groups, stacks, keypairs, and load balancers
+  (kernel-level weighted round-robin, not an Octavia amphora) via Machina's
+  own native controller APIs (no external cloud required). Only the optional
+  push of local VMs to an external OpenStack cloud still uses the legacy
+  integration — see [../openstack.md](../openstack.md).
 - **HyperSDK / hyper2kvm / GuestKit** — multi-cloud VM migration and offline
   assurance.
 - **Observability** — Prometheus scrape, remote-write ingest, OTLP/HTTP export

@@ -52,7 +52,7 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 
 ### D. Fleet Cloud
 
-`/openstack` pages (branded **Fleet Cloud** in the nav) work out of the box — instances, images, volumes, security groups, networking, and keypairs are all native, no external cloud required. Only Load Balancers needs a wired external OpenStack cloud: Settings → Connect Fleet Cloud (`/settings?openstack=1`).
+`/openstack` pages (branded **Fleet Cloud** in the nav) work out of the box — instances, images, volumes, security groups, networking, load balancers, and keypairs are all native, no external cloud required. Settings → Connect Fleet Cloud (`/settings?openstack=1`) is only needed for the optional push of local VM disks to a real external OpenStack cloud.
 
 ## Next steps
 

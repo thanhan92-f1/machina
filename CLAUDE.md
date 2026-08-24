@@ -145,7 +145,7 @@ PACKETWOLF_ENABLED    false
 ### Route structure
 - `/` and `/vms/*` — Classic daemon-backed hypervisor UI
 - `/platform/*` — Enterprise platform shell (controller-backed); uses `PlatformLayout` with its own sidebar/nav
-- `/openstack/*` — "Fleet Cloud" UI (routes/identifiers unchanged from the legacy "OpenStack" name). Backed by Machina's own native controller APIs (flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs) rather than an external OpenStack cloud for every page except Load Balancers, which still goes through `core/src/openstack/*` (external OpenStack-client) pending a native traffic-distribution backend.
+- `/openstack/*` — "Fleet Cloud" UI (routes/identifiers unchanged from the legacy "OpenStack" name). Backed by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). `core/src/openstack/*` (external OpenStack-client) remains for the optional Glance disk push/pull flow only — see `docs/openstack.md`.
 - `/fleet` — Multi-host fleet overview
 
 ### Dev proxy

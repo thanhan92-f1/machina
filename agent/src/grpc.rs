@@ -1859,6 +1859,62 @@ impl HostAgent for AgentService {
         }
     }
 
+    async fn set_load_balancer(
+        &self,
+        request: Request<SetLoadBalancerRequest>,
+    ) -> Result<Response<SetLoadBalancerResponse>, Status> {
+        let req = request.into_inner();
+        let host_port = grpc_port_u16("host_port", req.host_port)?;
+        let mut members = Vec::with_capacity(req.members.len());
+        for m in req.members {
+            members.push(machina_core::libvirt::host_network::LbMember {
+                vm_ip: m.vm_ip,
+                port: grpc_port_u16("member port", m.port)?,
+                weight: m.weight,
+            });
+        }
+        let lb_id = req.lb_id;
+        let protocol = req.protocol;
+        match tokio::task::spawn_blocking(move || {
+            machina_core::libvirt::host_network::set_load_balancer_rules(
+                &lb_id, &protocol, host_port, &members,
+            )
+        })
+        .await
+        {
+            Ok(Ok(())) => Ok(Response::new(SetLoadBalancerResponse {
+                ok: true,
+                message: String::new(),
+            })),
+            Ok(Err(e)) => Ok(Response::new(SetLoadBalancerResponse {
+                ok: false,
+                message: e.to_string(),
+            })),
+            Err(e) => Err(Status::internal(e.to_string())),
+        }
+    }
+
+    async fn delete_load_balancer(
+        &self,
+        request: Request<DeleteLoadBalancerRequest>,
+    ) -> Result<Response<DeleteLoadBalancerResponse>, Status> {
+        let req = request.into_inner();
+        let host_port = grpc_port_u16("host_port", req.host_port)?;
+        tokio::task::spawn_blocking(move || {
+            machina_core::libvirt::host_network::delete_load_balancer_rules(
+                &req.lb_id,
+                &req.protocol,
+                host_port,
+            )
+        })
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+        Ok(Response::new(DeleteLoadBalancerResponse {
+            ok: true,
+            message: String::new(),
+        }))
+    }
+
     async fn list_host_gpus(
         &self,
         _request: Request<ListHostGpusRequest>,

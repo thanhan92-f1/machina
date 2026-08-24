@@ -1231,6 +1231,66 @@ pub async fn delete_port_forward(
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct LbMemberDto {
+    pub vm_ip: String,
+    pub port: u16,
+    pub weight: u32,
+}
+
+pub async fn set_load_balancer(
+    addr: &str,
+    lb_id: &str,
+    protocol: &str,
+    host_port: u16,
+    members: &[LbMemberDto],
+) -> anyhow::Result<()> {
+    let mut client = connect(addr).await?;
+    let resp = client
+        .set_load_balancer(SetLoadBalancerRequest {
+            lb_id: lb_id.to_string(),
+            protocol: protocol.to_string(),
+            host_port: host_port as u32,
+            members: members
+                .iter()
+                .map(|m| LoadBalancerMemberMsg {
+                    vm_ip: m.vm_ip.clone(),
+                    port: m.port as u32,
+                    weight: m.weight,
+                })
+                .collect(),
+        })
+        .await?
+        .into_inner();
+    if resp.ok {
+        Ok(())
+    } else {
+        anyhow::bail!(resp.message)
+    }
+}
+
+pub async fn delete_load_balancer(
+    addr: &str,
+    lb_id: &str,
+    protocol: &str,
+    host_port: u16,
+) -> anyhow::Result<()> {
+    let mut client = connect(addr).await?;
+    let resp = client
+        .delete_load_balancer(DeleteLoadBalancerRequest {
+            lb_id: lb_id.to_string(),
+            protocol: protocol.to_string(),
+            host_port: host_port as u32,
+        })
+        .await?
+        .into_inner();
+    if resp.ok {
+        Ok(())
+    } else {
+        anyhow::bail!(resp.message)
+    }
+}
+
 pub async fn list_host_gpus(
     client: &mut AgentClient,
 ) -> anyhow::Result<ListHostGpusResponse> {
