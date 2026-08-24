@@ -33,7 +33,7 @@ export function PlatformOpenStackVmLink({ vm }: { vm: Pick<PlatformVm, 'id' | 'n
     return (
       <Link to="/openstack" className={`text-xs inline-flex items-center gap-1 ${statusActionLinkClasses('warn', 'hover:opacity-90')}`}>
         <Cloud className="w-3 h-3" />
-        OpenStack {phase} — open operator UI →
+        Fleet Cloud {phase} — open operator UI →
       </Link>
     )
   }
@@ -46,13 +46,13 @@ export function PlatformOpenStackVmLink({ vm }: { vm: Pick<PlatformVm, 'id' | 'n
           className="inline-flex items-center gap-1.5 text-sky-400 hover:text-sky-300"
         >
           <Cloud className="w-3.5 h-3.5" />
-          OpenStack instance{status ? ` (${status})` : ''}
+          Fleet Cloud instance{status ? ` (${status})` : ''}
           <ExternalLink className="w-3 h-3 opacity-60" />
         </Link>
       ) : (
         <Link to="/openstack/instances" className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-400">
           <Cloud className="w-3.5 h-3.5" />
-          Search in OpenStack
+          Search in Fleet Cloud
         </Link>
       )}
       <Link to="/openstack/migrations" className="text-slate-500 hover:text-sky-400 text-xs">
@@ -84,7 +84,7 @@ export function PlatformOpenStackNetworkLink({ networkName }: { networkName: str
       className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 mt-1"
     >
       <Cloud className="w-3 h-3" />
-      Neutron network
+      Fleet Cloud network
       <ExternalLink className="w-2.5 h-2.5 opacity-60" />
     </Link>
   )

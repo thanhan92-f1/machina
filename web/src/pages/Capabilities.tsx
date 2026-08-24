@@ -90,7 +90,7 @@ export default function CapabilitiesPage() {
               <div className="flex items-center gap-3">
                 <Cloud className="w-6 h-6 text-sky-400" />
                 <div>
-                  <h3 className="font-semibold text-slate-100">OpenStack</h3>
+                  <h3 className="font-semibold text-slate-100">Fleet Cloud</h3>
                   <p className="text-sm text-slate-400">
                     {openstackStatus.cloud_name} · {openstackStatus.instance_count ?? 0} instances · live
                   </p>

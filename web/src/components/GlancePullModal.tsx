@@ -69,7 +69,7 @@ export default function GlancePullModal({ open, image, defaultDestDir, onClose }
           </button>
         </div>
         <p className="text-sm text-slate-400">
-          Download Glance image <strong className="text-slate-200">{image.name || image.id}</strong> to a path under allowed disk-images directories.
+          Download image <strong className="text-slate-200">{image.name || image.id}</strong> to a path under allowed disk-images directories.
         </p>
         <input
           aria-label="Destination path"

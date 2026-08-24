@@ -44,9 +44,9 @@ export interface NavItem {
   label: string
   /** If true, only show in nav when signed in as UNIX `root`. */
   requiresRoot?: boolean
-  /** If true, only show when OpenStack is enabled and configured on the daemon. */
+  /** If true, only show when Fleet Cloud is enabled and configured on the daemon. */
   requiresOpenStack?: boolean
-  /** Show only while OpenStack is not wired — links to Settings for setup. */
+  /** Show only while Fleet Cloud is not wired — links to Settings for setup. */
   openstackSetupOnly?: boolean
   /** If true, only show when HyperSDK is enabled on the daemon. */
   requiresHypersdk?: boolean
@@ -54,7 +54,7 @@ export interface NavItem {
   requiresLaunchpad?: boolean
 }
 
-/** OpenStack credentials present in daemon config (may still be unreachable). */
+/** Fleet Cloud credentials present in daemon config (may still be unreachable). */
 export function isOpenStackConfigured(
   openstack: { enabled?: boolean; configured?: boolean } | undefined,
 ): boolean {
@@ -340,7 +340,7 @@ export const navGroups: NavGroup[] = [
         items: [
           { to: '/openstack/volumes', icon: React.createElement(HardDrive, { className: 'w-4 h-4' }), label: 'Volumes' },
           { to: '/openstack/volume-snapshots', icon: React.createElement(Camera, { className: 'w-4 h-4' }), label: 'Volume Snapshots' },
-          { to: '/openstack/images', icon: React.createElement(Package, { className: 'w-4 h-4' }), label: 'Glance Images' },
+          { to: '/openstack/images', icon: React.createElement(Package, { className: 'w-4 h-4' }), label: 'Images' },
         ],
       },
       {
@@ -417,7 +417,7 @@ export const routeLabels: Record<string, string> = {
   '/openstack/instances': 'Instances',
   '/openstack/instances/:id': 'Instance',
   '/openstack/create': 'Create Instance',
-  '/openstack/images': 'Glance Images',
+  '/openstack/images': 'Images',
   '/openstack/migrations': 'Migrations',
   '/openstack/volumes': 'Volumes',
   '/openstack/volume-snapshots': 'Volume Snapshots',

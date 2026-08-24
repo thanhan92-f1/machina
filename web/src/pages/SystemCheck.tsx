@@ -228,14 +228,14 @@ export default function SystemCheckPage() {
     }
     setDeepOpen(false)
     setDeepRunning(true)
-    setProgressLabel('Deep OpenStack smoke…')
+    setProgressLabel('Deep Fleet Cloud smoke…')
     try {
       const deep = await runOpenStackDeepSmoke(platform, setProgressLabel)
       setResults((prev) => {
         const merged = [...prev.filter((r) => !r.id.startsWith('deep-')), ...deep]
         const s = summarizeCheckResults(merged)
         if (s.fail > 0) toast.error('Deep smoke had failures')
-        else toast.success('Deep OpenStack smoke completed')
+        else toast.success('Deep Fleet Cloud smoke completed')
         return merged
       })
     } catch (e: unknown) {
@@ -256,7 +256,7 @@ export default function SystemCheckPage() {
       icon={<Stethoscope className="w-7 h-7 text-sky-400" />}
       subtitle={
         <>
-          Auto-runs read-only diagnostics (API, host, libvirt, OpenStack, Kubernetes, services).
+          Auto-runs read-only diagnostics (API, host, libvirt, Fleet Cloud, Kubernetes, services).
           Same coverage as <code className="text-slate-500">e2e-test.sh</code> preflight — from the UI.
         </>
       }
@@ -331,7 +331,7 @@ export default function SystemCheckPage() {
 
       <div className="flex flex-wrap gap-2 text-xs">
         <Link to="/settings?openstack=1" className="text-sky-400 hover:underline">
-          OpenStack settings
+          Fleet Cloud settings
         </Link>
         <span className="text-slate-600">·</span>
         <Link to="/services" className="text-sky-400 hover:underline">
@@ -378,8 +378,8 @@ export default function SystemCheckPage() {
 
       <ConfirmDialog
         open={deepOpen}
-        title="Run OpenStack deep smoke?"
-        message="Creates a short-lived Cirros instance (syscheck-os-*), lists it, then deletes it. Requires flavors, image, and network in Glance/Nova."
+        title="Run Fleet Cloud deep smoke?"
+        message="Creates a short-lived Cirros instance (syscheck-os-*), lists it, then deletes it. Requires flavors, image, and network in Images/Compute."
         confirmLabel="Run smoke test"
         onConfirm={() => void runDeepSmoke()}
         onCancel={() => setDeepOpen(false)}

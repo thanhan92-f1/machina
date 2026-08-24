@@ -127,7 +127,7 @@ export default function ImportVMPage() {
           <div className="flex items-start gap-3">
             <Cloud className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-slate-200">Import from OpenStack Glance</p>
+              <p className="text-sm font-medium text-slate-200">Import from Fleet Cloud Images</p>
               <p className="text-xs text-slate-400 mt-0.5">
                 Pull a cloud image to this host, then continue with configure below.
               </p>
@@ -137,7 +137,7 @@ export default function ImportVMPage() {
             to="/openstack/images"
             className="shrink-0 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm"
           >
-            Glance images
+            Fleet Cloud images
           </Link>
         </div>
       )}

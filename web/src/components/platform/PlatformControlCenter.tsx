@@ -169,7 +169,7 @@ export default function PlatformControlCenter() {
       case 'administration':
         return {
           value: info?.openstack?.enabled
-            ? (info.openstack.configured ? 'OpenStack ready' : 'OpenStack setup')
+            ? (info.openstack.configured ? 'Fleet Cloud ready' : 'Fleet Cloud setup')
             : 'Users & policies',
         }
       case 'operations':

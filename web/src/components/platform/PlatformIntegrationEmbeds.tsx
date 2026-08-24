@@ -33,7 +33,7 @@ export default function PlatformIntegrationEmbeds() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <MacGlassPanel title="OpenStack preview">
+      <MacGlassPanel title="Fleet Cloud preview">
         <div className="flex items-start gap-3">
           <Cloud className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1 space-y-3">
@@ -41,10 +41,10 @@ export default function PlatformIntegrationEmbeds() {
               {openstack.phase === 'live'
                 ? 'Cloud operator shell is healthy — live inventory below.'
                 : openstack.phase === 'needsWire'
-                  ? 'OpenStack is enabled but needs wiring — run the wire script from Integrations.'
+                  ? 'Fleet Cloud is enabled but needs wiring — run the wire script from Integrations.'
                   : openstack.phase === 'unreachable'
-                    ? 'Configured but API unreachable — check clouds.yaml and Keystone.'
-                    : 'Enable OpenStack in daemon config to unlock the operator shell.'}
+                    ? 'Configured but API unreachable — check clouds.yaml and Auth.'
+                    : 'Enable Fleet Cloud in daemon config to unlock the operator shell.'}
             </p>
             {openstack.connectionHint && (
               <p className={`text-xs ${statusToneClass('warn')}`}>{openstack.connectionHint}</p>
@@ -87,7 +87,7 @@ export default function PlatformIntegrationEmbeds() {
                     ))}
                   </ul>
                 ) : openstack.computeLive && osStats && osStats.instances === 0 ? (
-                  <p className="text-xs text-slate-500">No Nova instances in this project yet.</p>
+                  <p className="text-xs text-slate-500">No Compute instances in this project yet.</p>
                 ) : null}
               </div>
             )}

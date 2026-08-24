@@ -68,10 +68,10 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
       const partial = openstackStatus && !openstackStatus.compute_reachable
       return {
         on: true,
-        label: partial ? `OpenStack: Keystone` : `OpenStack: ${osCloud || 'live'}`,
+        label: partial ? `Fleet Cloud: Auth` : `Fleet Cloud: ${osCloud || 'live'}`,
         tone: partial ? ('warn' as const) : ('info' as const),
         title: partial
-          ? `Identity OK; Nova/Glance may be down — ${openstackStatus?.error || 'see OpenStack overview'}`
+          ? `Identity OK; Compute/Images may be down — ${openstackStatus?.error || 'see Fleet Cloud overview'}`
           : `Cloud ${osCloud}; upload=${info?.openstack?.upload_enabled ? 'on' : 'off'}`,
         to: '/openstack',
       }
@@ -79,16 +79,16 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
     if (osPhase === 'unreachable') {
       return {
         on: true,
-        label: 'OpenStack: unreachable',
+        label: 'Fleet Cloud: unreachable',
         tone: 'error' as const,
-        title: 'Configured but Keystone/API not reachable',
+        title: 'Configured but Auth/API not reachable',
         to: '/openstack',
       }
     }
     if (osPhase === 'needsWire') {
       return {
         on: false,
-        label: 'OpenStack: not wired',
+        label: 'Fleet Cloud: not wired',
         tone: 'warn' as const,
         title: 'Enable [openstack] and run openstack-wire-cloud.sh',
         to: '/settings?openstack=1',
@@ -96,7 +96,7 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
     }
     return {
       on: false,
-      label: 'OpenStack off',
+      label: 'Fleet Cloud off',
       tone: 'warn' as const,
       title: 'Enable [openstack] in /etc/machina/config.toml',
       to: '/settings?openstack=1',

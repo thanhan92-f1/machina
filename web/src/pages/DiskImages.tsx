@@ -86,9 +86,9 @@ export default function DiskImagesPage() {
     osPhase === 'live' && osGlanceLive && Boolean(info?.openstack?.upload_enabled)
   const openstackUploadHint =
     osPhase === 'unreachable'
-      ? 'OpenStack is configured but unreachable — Glance upload is disabled until Keystone is up.'
+      ? 'Fleet Cloud is configured but unreachable — image upload is disabled until Auth is up.'
       : osPhase === 'needsWire' || osPhase === 'off'
-        ? 'Wire OpenStack in Settings to enable Glance upload from qcow2 rows.'
+        ? 'Connect Fleet Cloud in Settings to enable image upload from qcow2 rows.'
         : null
 
   const load = useCallback(async () => {
@@ -324,7 +324,7 @@ export default function DiskImagesPage() {
       {openstackUploadAvailable && (
         <p className="inline-flex items-center gap-2 text-xs text-sky-300 border border-sky-500/30 bg-sky-500/10 rounded-lg px-3 py-2">
           <Cloud className="w-3.5 h-3.5 shrink-0" />
-          OpenStack upload available — use <strong className="font-medium">Upload to OpenStack</strong> on qcow2 rows.
+          Fleet Cloud upload available — use <strong className="font-medium">Upload to Fleet Cloud</strong> on qcow2 rows.
         </p>
       )}
       {openstackUploadHint && (
@@ -614,10 +614,10 @@ export default function DiskImagesPage() {
                         type="button"
                         onClick={() => setOsPath(img.path)}
                         className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 text-xs font-medium transition mr-1"
-                        title="Upload to OpenStack Glance"
+                        title="Upload to Fleet Cloud Images"
                       >
                         <Cloud className="w-3.5 h-3.5" />
-                        OpenStack
+                        Fleet Cloud
                       </button>
                     )}
                     <button

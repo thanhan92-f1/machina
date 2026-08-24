@@ -197,7 +197,7 @@ export default function SettingsPage() {
       <section id="openstack-connection" className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-3 scroll-mt-24">
         <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
           <Cloud className="w-4 h-4 text-sky-400" />
-          OpenStack connection
+          Fleet Cloud connection
         </h2>
         <p className="text-xs text-slate-500">
           Credentials live on the host (<code className="text-slate-400">clouds.yaml</code>, machina config, or{' '}
@@ -209,14 +209,14 @@ export default function SettingsPage() {
             <div><dt className="text-slate-500 text-xs">Enabled</dt><dd>{openstackStatus.enabled ? 'yes' : 'no'}</dd></div>
             <div><dt className="text-slate-500 text-xs">Configured</dt><dd>{openstackStatus.configured ? 'yes' : 'no'}</dd></div>
             <div><dt className="text-slate-500 text-xs">Cloud</dt><dd>{openstackStatus.cloud_name || '—'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Keystone</dt><dd>{openstackStatus.keystone_reachable ?? openstackStatus.reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Nova</dt><dd>{openstackStatus.compute_reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Glance</dt><dd>{openstackStatus.glance_reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Neutron</dt><dd>{openstackStatus.neutron_reachable ? 'yes' : 'no'}</dd></div>
-            <div><dt className="text-slate-500 text-xs">Cinder</dt><dd>{openstackStatus.cinder_reachable ? 'yes' : 'no'}</dd></div>
+            <div><dt className="text-slate-500 text-xs">Auth</dt><dd>{openstackStatus.keystone_reachable ?? openstackStatus.reachable ? 'yes' : 'no'}</dd></div>
+            <div><dt className="text-slate-500 text-xs">Compute</dt><dd>{openstackStatus.compute_reachable ? 'yes' : 'no'}</dd></div>
+            <div><dt className="text-slate-500 text-xs">Images</dt><dd>{openstackStatus.glance_reachable ? 'yes' : 'no'}</dd></div>
+            <div><dt className="text-slate-500 text-xs">Network</dt><dd>{openstackStatus.neutron_reachable ? 'yes' : 'no'}</dd></div>
+            <div><dt className="text-slate-500 text-xs">Storage</dt><dd>{openstackStatus.cinder_reachable ? 'yes' : 'no'}</dd></div>
             {info?.openstack && (
               <div>
-                <dt className="text-slate-500 text-xs">Glance upload</dt>
+                <dt className="text-slate-500 text-xs">Image upload</dt>
                 <dd>{info.openstack.upload_enabled ? 'enabled' : 'disabled (config)'}</dd>
               </div>
             )}
@@ -299,7 +299,7 @@ export default function SettingsPage() {
               try {
                 const s = await postOpenStackTestConnection()
                 setOpenstackStatus(s)
-                toast.success(s.reachable ? 'OpenStack connection OK' : 'Connected but list failed')
+                toast.success(s.reachable ? 'Fleet Cloud connection OK' : 'Connected but list failed')
               } catch (e: unknown) {
                 toast.error(formatUserError(e))
               } finally {
@@ -334,7 +334,7 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-2 text-xs">
             {info?.openstack?.enabled && (
               <span className={statusSurfaceClasses(osPhase === 'live' ? 'ok' : 'warn', 'px-2 py-1 rounded border')}>
-                OpenStack · {osPhase}
+                Fleet Cloud · {osPhase}
               </span>
             )}
             {info?.kubevirt?.exec_enabled && (
@@ -408,7 +408,7 @@ export default function SettingsPage() {
             </Link>
             {isOpenStackConfigured(info?.openstack) && (
               <Link to="/openstack/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
-                OpenStack
+                Fleet Cloud
               </Link>
             )}
           </div>

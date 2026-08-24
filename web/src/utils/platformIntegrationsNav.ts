@@ -16,7 +16,7 @@ export function integrationNavItems(info: PlatformInfo | null): PlatformNavItem[
   if (info.openstack?.enabled) {
     items.push({
       to: '/openstack',
-      label: info.openstack.configured ? 'OpenStack Cloud' : 'OpenStack (setup)',
+      label: info.openstack.configured ? 'Fleet Cloud' : 'Fleet Cloud (setup)',
       icon: ic(Cloud),
     })
   }
@@ -44,8 +44,8 @@ export function integrationCards(info: PlatformInfo | null): IntegrationCard[] {
   return [
     {
       id: 'openstack',
-      title: 'OpenStack',
-      description: 'Nova, Neutron, Cinder, Heat, and identity — full cloud operator UI.',
+      title: 'Fleet Cloud',
+      description: 'Compute, Network, Storage, Heat, and identity — full cloud operator UI.',
       href: '/openstack',
       enabled: Boolean(info.openstack?.enabled),
       configured: info.openstack?.configured,

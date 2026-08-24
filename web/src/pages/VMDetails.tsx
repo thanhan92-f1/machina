@@ -170,9 +170,9 @@ export default function VMDetailsPage() {
   const openstackPushReady = osPhase === 'live' && osGlanceLive && Boolean(info?.openstack?.upload_enabled)
   const openstackPushDisabledReason =
     osPhase === 'unreachable'
-      ? 'OpenStack configured but unreachable'
+      ? 'Fleet Cloud configured but unreachable'
       : osPhase !== 'live' && info?.openstack?.upload_enabled
-        ? 'Wire OpenStack and reach Keystone first'
+        ? 'Connect Fleet Cloud and reach Auth first'
         : !info?.openstack?.upload_enabled
           ? 'Enable upload_enabled in machina config'
           : null
@@ -1939,10 +1939,10 @@ export default function VMDetailsPage() {
                 onClick={() => openstackPushReady && setOpenstackPushOpen(true)}
                 disabled={!openstackPushReady}
                 className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm transition flex items-center gap-1"
-                title={openstackPushReady ? 'Upload root disk to OpenStack Glance' : openstackPushDisabledReason ?? ''}
+                title={openstackPushReady ? 'Upload root disk to Fleet Cloud Images' : openstackPushDisabledReason ?? ''}
               >
                 <Cloud className="w-4 h-4" aria-hidden />
-                Push to OpenStack
+                Push to Fleet Cloud
               </button>
             )}
             <button onClick={() => openDialog('attach-disk')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Attach Disk</button>
@@ -3714,8 +3714,8 @@ export default function VMDetailsPage() {
           onSuccess={(r) => {
             toast.success(
               r.instance_id
-                ? `OpenStack instance ${r.instance_name || r.instance_id}`
-                : `Glance image ${r.image_name || r.image_id}`,
+                ? `Fleet Cloud instance ${r.instance_name || r.instance_id}`
+                : `Fleet Cloud image ${r.image_name || r.image_id}`,
             )
           }}
         />

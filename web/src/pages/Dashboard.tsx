@@ -352,11 +352,11 @@ export default function Dashboard() {
           <div className="flex items-start gap-3 min-w-0">
             <Cloud className={`w-6 h-6 shrink-0 mt-0.5 ${statusToneClass(integrationPhaseTone(osPhase === 'off' ? 'off' : 'needsWire'))}`} />
             <div>
-              <h2 className="font-semibold text-slate-100">OpenStack not wired</h2>
+              <h2 className="font-semibold text-slate-100">Fleet Cloud not wired</h2>
               <p className="text-sm text-slate-400 mt-0.5 max-w-2xl">
                 {osPhase === 'needsWire'
-                  ? 'OpenStack is enabled in machina config but missing clouds.yaml or cloud_name.'
-                  : 'Enable [openstack] in /etc/machina/config.toml, then wire Keystone on this host.'}
+                  ? 'Fleet Cloud is enabled in machina config but missing clouds.yaml or cloud_name.'
+                  : 'Enable [openstack] in /etc/machina/config.toml, then connect Fleet Cloud auth on this host.'}
               </p>
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function Dashboard() {
             to="/openstack"
             className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}
           >
-            Wire OpenStack
+            Connect Fleet Cloud
           </Link>
         </div>
       )}
@@ -374,9 +374,9 @@ export default function Dashboard() {
           <div className="flex items-start gap-3 min-w-0">
             <Cloud className={`w-6 h-6 shrink-0 mt-0.5 ${statusToneClass(integrationPhaseTone('unreachable'))}`} />
             <div>
-              <h2 className="font-semibold text-slate-100">OpenStack unreachable</h2>
+              <h2 className="font-semibold text-slate-100">Fleet Cloud unreachable</h2>
               <p className="text-sm text-slate-400 mt-0.5">
-                Cloud <span className="text-slate-200">{openstackStatus.cloud_name || '—'}</span> is configured but Keystone/API is down.
+                Cloud <span className="text-slate-200">{openstackStatus.cloud_name || '—'}</span> is configured but Auth/API is down.
               </p>
               {openstackStatus.error && (
                 <p className={`text-xs mt-1 truncate max-w-xl ${statusToneClass('error')}`} title={openstackStatus.error}>
@@ -388,7 +388,7 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => void testOs().then((s) => toast.success(s.reachable ? 'OpenStack OK' : 'Still unreachable'))}
+              onClick={() => void testOs().then((s) => toast.success(s.reachable ? 'Fleet Cloud OK' : 'Still unreachable'))}
               className={`px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('error')}`}
             >
               Test
@@ -475,7 +475,7 @@ export default function Dashboard() {
           <div className="flex items-start gap-3 min-w-0">
             <Cloud className="w-6 h-6 text-sky-400 shrink-0 mt-0.5" />
             <div>
-              <h2 className="font-semibold text-slate-100">OpenStack</h2>
+              <h2 className="font-semibold text-slate-100">Fleet Cloud</h2>
               <p className="text-sm text-slate-400 mt-0.5">
                 Cloud <span className="text-slate-200">{openstackStatus.cloud_name || '—'}</span>
                 {openstackStatus.instance_count != null && (

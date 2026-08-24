@@ -48,7 +48,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
       subtitle={
         embedded ? undefined : (
           <span className="flex flex-col gap-1">
-            <span className="text-slate-400">OpenStack, K8s, migration tools, and classic UI</span>
+            <span className="text-slate-400">Fleet Cloud, K8s, migration tools, and classic UI</span>
             {platformStatSubtitle([
               { label: 'Available', value: String(cards.length) },
               { label: 'Enabled', value: String(enabledCount) },
@@ -64,7 +64,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
           <PlatformEmptyState
             icon={Server}
             title="No hypervisors enrolled"
-            subtitle="Enroll a host before connecting OpenStack, migration tools, or fleet apps."
+            subtitle="Enroll a host before connecting Fleet Cloud, migration tools, or fleet apps."
           >
             <button type="button" className="tahoe-btn-primary text-sm" onClick={() => setEnrollOpen(true)}>
               Enroll host
@@ -134,7 +134,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
 
         <MacGlassPanel title="Leaving the desktop">
           <p className="text-sm text-slate-400 leading-relaxed">
-            OpenStack, HyperSDK, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the sidebar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
+            Fleet Cloud, HyperSDK, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the sidebar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
           </p>
         </MacGlassPanel>
 
