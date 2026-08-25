@@ -70,7 +70,15 @@ export default function MissionControlHero({ state, warnings }: Props) {
       <div className="flex-1 min-w-[280px] grid grid-cols-2 sm:grid-cols-4 gap-px rounded-xl border border-white/[0.08] overflow-hidden bg-white/[0.06]">
         {[
           { label: 'VMs running', value: state.loading ? '—' : String(running), pct: state.loading ? 0 : Math.min(100, running * 8), tone: 'info' as StatusTone },
-          { label: 'Hosts online', value: state.loading ? '—' : `${onlineHosts}/${hosts.length}`, pct: hosts.length ? (onlineHosts / hosts.length) * 100 : 0 },
+          {
+            label: 'Hosts online',
+            value: state.loading ? '—' : `${onlineHosts}/${hosts.length}`,
+            pct: hosts.length ? (onlineHosts / hosts.length) * 100 : 0,
+            // Coverage metric — high is good, unlike utilization (CPU/mem) where
+            // high is bad. utilizationTone's default reads high-percent as risk,
+            // which would wrongly paint a fully-online fleet red.
+            tone: (hosts.length === 0 ? 'neutral' : onlineHosts === hosts.length ? 'ok' : onlineHosts === 0 ? 'error' : 'warn') as StatusTone,
+          },
           { label: 'Memory used', value: storagePct != null ? `${Math.round(storagePct)}%` : '—', pct: storagePct ?? 0 },
           { label: 'Alerts', value: warnings ? String(warnings) : 'None', pct: Math.min(100, warnings * 25), tone: warnings ? 'warn' as StatusTone : 'ok' as StatusTone },
         ].map((g) => (
