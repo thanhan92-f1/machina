@@ -19,7 +19,7 @@ const POWER_ONLY = new Set([
   '/platform/projects', '/platform/zeus', '/platform/zeus/security/firewall',
   '/platform/maintenance', '/platform/recommendations', '/platform/topology',
   '/platform/events', '/platform/enroll', '/platform/reports', '/platform/storage',
-  '/fleet-cloud', '/k8s', '/fleet',
+  '/openstack', '/k8s', '/fleet',
 ])
 
 const ADVANCED_ONLY = new Set([
@@ -32,7 +32,7 @@ const ADVANCED_ONLY = new Set([
 
 function tierForPath(p) {
   if (ADVANCED_ONLY.has(p) || [...ADVANCED_ONLY].some((x) => p.startsWith(`${x}/`))) return 'advanced'
-  if (POWER_ONLY.has(p) || p.startsWith('/fleet-cloud') || p.startsWith('/k8s') || p.startsWith('/fleet')) return 'power'
+  if (POWER_ONLY.has(p) || p.startsWith('/openstack') || p.startsWith('/k8s') || p.startsWith('/fleet')) return 'power'
   return 'normal'
 }
 
@@ -189,36 +189,36 @@ const CLASSIC_DYNAMIC_ROUTES = [
   { path: '/storage/:pool', headingPattern: 'Storage|Pool', resolve: 'storagePool' },
 ]
 
-const FLEET_CLOUD_ROUTES = [
-  '/fleet-cloud', '/fleet-cloud/instances', '/fleet-cloud/images', '/fleet-cloud/volumes',
-  '/fleet-cloud/volume-snapshots', '/fleet-cloud/flavors', '/fleet-cloud/server-groups',
-  '/fleet-cloud/networking', '/fleet-cloud/topology', '/fleet-cloud/floating-ips',
-  '/fleet-cloud/heat', '/fleet-cloud/load-balancers', '/fleet-cloud/identity',
-  '/fleet-cloud/keypairs', '/fleet-cloud/security-groups', '/fleet-cloud/migrations',
-  '/fleet-cloud/create',
+const OPENSTACK_ROUTES = [
+  '/openstack', '/openstack/instances', '/openstack/images', '/openstack/volumes',
+  '/openstack/volume-snapshots', '/openstack/flavors', '/openstack/server-groups',
+  '/openstack/networking', '/openstack/topology', '/openstack/floating-ips',
+  '/openstack/heat', '/openstack/load-balancers', '/openstack/identity',
+  '/openstack/keypairs', '/openstack/security-groups', '/openstack/migrations',
+  '/openstack/create',
 ]
 
-const FLEET_CLOUD_DETAIL_ROUTES = [
-  '/fleet-cloud/instances/:id',
-  '/fleet-cloud/instances/:id/interfaces',
-  '/fleet-cloud/instances/:id/console',
-  '/fleet-cloud/images/:id',
-  '/fleet-cloud/volumes/:id',
-  '/fleet-cloud/floating-ips/:id',
-  '/fleet-cloud/flavors/:id',
-  '/fleet-cloud/hypervisors/:id',
-  '/fleet-cloud/server-groups/:id',
-  '/fleet-cloud/networks/:id',
-  '/fleet-cloud/subnets/:id',
-  '/fleet-cloud/routers/:id',
-  '/fleet-cloud/ports/:id',
-  '/fleet-cloud/volume-transfers/:id',
-  '/fleet-cloud/volume-snapshots/:id',
-  '/fleet-cloud/heat/:name/:id',
-  '/fleet-cloud/load-balancers/:id',
-  '/fleet-cloud/identity/projects/:id',
-  '/fleet-cloud/identity/users/:id',
-  '/fleet-cloud/security-groups/:id',
+const OPENSTACK_DETAIL_ROUTES = [
+  '/openstack/instances/:id',
+  '/openstack/instances/:id/interfaces',
+  '/openstack/instances/:id/console',
+  '/openstack/images/:id',
+  '/openstack/volumes/:id',
+  '/openstack/floating-ips/:id',
+  '/openstack/flavors/:id',
+  '/openstack/hypervisors/:id',
+  '/openstack/server-groups/:id',
+  '/openstack/networks/:id',
+  '/openstack/subnets/:id',
+  '/openstack/routers/:id',
+  '/openstack/ports/:id',
+  '/openstack/volume-transfers/:id',
+  '/openstack/volume-snapshots/:id',
+  '/openstack/heat/:name/:id',
+  '/openstack/load-balancers/:id',
+  '/openstack/identity/projects/:id',
+  '/openstack/identity/users/:id',
+  '/openstack/security-groups/:id',
 ]
 
 const K8S_ROUTES = ['/k8s', '/k8s/workloads', '/k8s/kata']
@@ -262,7 +262,7 @@ const HEADING_DEFAULTS = {
   '/platform/hosts': 'Hosts',
   '/platform/storage': 'Storage|Disk',
   '/platform/networks': 'Networks',
-  '/fleet-cloud': 'Fleet Cloud|Overview',
+  '/openstack': 'OpenStack|Overview',
   '/k8s': 'Kubernetes|KubeVirt|Cluster',
 }
 
@@ -365,12 +365,16 @@ function main() {
     }))
   }
 
-  for (const p of FLEET_CLOUD_ROUTES) {
-    addEntry(entries, seen, entry('fleet-cloud', p, { tier: 'power' }))
+  for (const p of OPENSTACK_ROUTES) {
+    addEntry(entries, seen, entry('openstack', p, { requires: 'openstack', tier: 'power' }))
   }
 
-  for (const p of FLEET_CLOUD_DETAIL_ROUTES) {
-    addEntry(entries, seen, entry('fleet-cloud', p, { tier: 'power' }))
+  for (const p of OPENSTACK_DETAIL_ROUTES) {
+    addEntry(entries, seen, entry('openstack', p, {
+      requires: 'openstack',
+      tier: 'power',
+      resolve: 'openstackResource',
+    }))
   }
 
   for (const p of K8S_ROUTES) {

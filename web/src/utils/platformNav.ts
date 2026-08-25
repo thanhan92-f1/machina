@@ -54,6 +54,7 @@ export const PLATFORM_SIDEBAR: PlatformNavSection[] = [
     items: [
       { to: '/platform/zyra', label: 'Machina Zyra OS', icon: ic(Cpu) },
       { to: '/platform/zyra/configure', label: 'Configure Zyra', icon: ic(Cog) },
+      { to: '/platform/launchpad', label: 'Launchpad', icon: ic(LayoutDashboard) },
       { to: '/platform/integrations', label: 'Apps & Integrations', icon: ic(Plug) },
       { to: '/platform/ai-providers', label: 'AI Providers', icon: ic(BrainCircuit) },
       { to: '/platform/enroll', label: 'Add Host', icon: ic(UserPlus) },
@@ -88,6 +89,7 @@ export const PLATFORM_PAGE_LABELS: Record<string, string> = {
   '/platform': 'Mission Control',
   '/platform/vms': 'Finder',
   '/platform/applications': 'Applications',
+  '/platform/launchpad': 'Launchpad',
   '/platform/hosts': 'Hosts',
   '/platform/hosts/finder': 'Machine Finder',
   '/platform/integrations': 'Apps & Integrations',

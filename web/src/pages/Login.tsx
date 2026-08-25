@@ -4,6 +4,7 @@
 
 import { useEffect, useState, FormEvent, ReactNode } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { ZyvorBrandLine } from '../components/ZyvorBrand'
 import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
@@ -44,7 +45,7 @@ function MachinaLogo() {
 
 const MACOS_PILLS: PremiumLoginPill[] = [
   { icon: <Server className="w-3 h-3" aria-hidden />, label: 'Libvirt + KVM' },
-  { icon: <HardDrive className="w-3 h-3" aria-hidden />, label: 'Fleet Cloud ready' },
+  { icon: <HardDrive className="w-3 h-3" aria-hidden />, label: 'OpenStack ready' },
   { icon: <Boxes className="w-3 h-3" aria-hidden />, label: 'KubeVirt' },
   { icon: <Sparkles className="w-3 h-3" aria-hidden />, label: 'Zyra AI' },
 ]
@@ -145,7 +146,7 @@ export default function LoginPage() {
 
   const panelSubtitle = hostLabel
     ? `Sign in to libvirt and automation on ${hostLabel}`
-    : 'Sign in to libvirt, Fleet Cloud, and automation on this host'
+    : 'Sign in to libvirt, OpenStack, and automation on this host'
 
   return (
     <div className={`relative min-h-screen${reducedMotion ? ' login-page-reduced-motion' : ''}`}>
@@ -161,12 +162,12 @@ export default function LoginPage() {
         productSubtitle="Hypervisor control plane"
         heroHeadline={
           <>
-            Libvirt + Fleet Cloud
+            Libvirt + OpenStack
             <br />
             <span className="login-text-gradient">on one hypervisor host</span>
           </>
         }
-        heroSubheadline="QEMU/KVM under libvirt and Fleet Cloud on this host — plus KubeVirt clusters, multi-host fleet management, and Zyra AI operations, all from one control plane."
+        heroSubheadline="QEMU/KVM under libvirt and OpenStack on this host — plus KubeVirt clusters, multi-host fleet management, and Zyra AI operations, all from one control plane."
         pills={MACOS_PILLS}
         heroFooter={
           <div className="space-y-6">
@@ -182,11 +183,17 @@ export default function LoginPage() {
                 </li>
               ))}
             </ul>
+            <ZyvorBrandLine />
           </div>
         }
-        mobileSubtitle="Libvirt · Fleet Cloud · KubeVirt · Zyra AI"
+        mobileSubtitle="Libvirt · OpenStack · KubeVirt · Zyra AI"
         panelTitle="Welcome back"
         panelSubtitle={panelSubtitle}
+        footer={
+          <div className="lg:hidden text-center pb-6">
+            <ZyvorBrandLine />
+          </div>
+        }
       >
         <form
           onSubmit={(e) => {

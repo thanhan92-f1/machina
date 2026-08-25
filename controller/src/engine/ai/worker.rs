@@ -8,21 +8,11 @@ use sqlx::SqlitePool;
 use crate::auth::AuthUser;
 use crate::state::AppState;
 
-/// How long a non-leader controller instance backs off before re-checking
-/// leadership. Only the leader runs scheduled autopilot batches, so this just
-/// needs to be short enough to pick up a leadership change promptly.
-const LEADER_RECHECK_SECS: u64 = 30;
-/// Poll cadence for the autopilot loop once this instance is leader: how often
-/// it re-reads the configured interval and re-evaluates `should_run`. Kept
-/// short relative to realistic `ai_autopilot_interval_secs` values so a
-/// freshly lowered interval (or newly enabled autopilot) takes effect quickly.
-const AUTOPILOT_POLL_SECS: u64 = 60;
-
 pub fn spawn(state: AppState) {
     tokio::spawn(async move {
         loop {
             if !state.leader.is_leader() {
-                tokio::time::sleep(Duration::from_secs(LEADER_RECHECK_SECS)).await;
+                tokio::time::sleep(Duration::from_secs(30)).await;
                 continue;
             }
 
@@ -35,7 +25,7 @@ pub fn spawn(state: AppState) {
             };
 
             if interval_secs <= 0 {
-                tokio::time::sleep(Duration::from_secs(AUTOPILOT_POLL_SECS)).await;
+                tokio::time::sleep(Duration::from_secs(60)).await;
                 continue;
             }
 
@@ -43,7 +33,7 @@ pub fn spawn(state: AppState) {
                 run_scheduled_batch(&state).await;
             }
 
-            tokio::time::sleep(Duration::from_secs(AUTOPILOT_POLL_SECS)).await;
+            tokio::time::sleep(Duration::from_secs(60)).await;
         }
     });
 }

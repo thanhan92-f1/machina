@@ -10,12 +10,12 @@ For Zeus CloudOS (`ui/`) and PacketWolf pro UI (`web-ui/`), see [Out of repo](#o
 | **Tahoe Nav Big Sweep** | `98a1410` | [`platformNavRegistry.ts`](../web/src/utils/platformNavRegistry.ts), Spotlight zones (Settings/Ops/Resources/Security/Zeus), CommandPalette platform dedupe, dead `PlatformMenuBar`, tier-aware links, nav e2e |
 | **Overall UX Polish (P14)** | `0ff5cd4` | Empty states, host/network CTAs, Fleet/NodeInfo, K8s can-i card, platform command review e2e |
 | **Batch 48 + Tahoe classic + colors v1** | `7534747` | [`platform-batch-48.spec.ts`](../web/e2e/platform-batch-48.spec.ts), `tahoe-page-root` on classic shell, [`semanticColors.ts`](../web/src/utils/semanticColors.ts) |
-| **Batch 57 Cross-Shell Consistency** | `bea8280`–`098f4ad` + follow-up | semanticColors v2 + classic/Fleet Cloud/K8s/Platform badge migration; Help → Platform tab + tier-aware shell bridge; CollapsibleCodeBlock operator UX; [`cross-shell.spec.ts`](../web/e2e/cross-shell.spec.ts); classic operator pages (NodeInfo, Storage, Networks, Services, SystemCheck, Events, …); hub link tokens on 37+ platform pages |
+| **Batch 57 Cross-Shell Consistency** | `bea8280`–`098f4ad` + follow-up | semanticColors v2 + classic/OpenStack/K8s/Platform badge migration; Help → Platform tab + tier-aware shell bridge; CollapsibleCodeBlock operator UX; [`cross-shell.spec.ts`](../web/e2e/cross-shell.spec.ts); classic operator pages (NodeInfo, Storage, Networks, Services, SystemCheck, Events, …); hub link tokens on 37+ platform pages |
 | **Batch 58 Color Tail** | `3f3c332` | Zeus Firewall security pages + `riskTone`; platform dashboard/widget status chips; VMDetails warn/error surfaces; shared primitives (GlassButton danger, FilterPills, BuildStepTimeline, KubeVirt modal, AI panels); classic focus-ring token parity on Logs/NodeInfo/Backups |
 | **Batch 59 Platform Color Tail** | `fe0646f` | Remaining platform status surfaces (Events, Security Center, Observability, Notifications, Content, Migration, Reports, …); `utilizationBarClass`; Settings/HostNetworking warn callouts |
-| **Batch 60 Classic/Fleet Cloud/K8s Color Tail** | `fb44a50` | Dashboard/K8sOverview/K8sWorkloads/NodeInfo status surfaces; Fleet Cloud warn/error banners, locked badges, secondary destructive buttons; semantic hover chips on fleet/instance actions |
-| **Batch 61 Classic Operator Color Tail** | `bb53a4c` | Networks/DiskImages/Jobs/Kata/SystemCheck warn surfaces; VMList action hovers; VMDetails/Console tail; Hero capability badges; KubeVirt/Fleet Cloud modals; BuildStepTimeline error step |
-| **Batch 62 Cross-Shell Sweep Closure** | `541740d` | Classic Navbar Platform guide; Fleet Cloud action ErrorBanner; VMDetails KubeVirt exec tone; Fleet disabled bridge; Dashboard secondary links; +2 e2e (71 total) |
+| **Batch 60 Classic/OpenStack/K8s Color Tail** | `fb44a50` | Dashboard/K8sOverview/K8sWorkloads/NodeInfo status surfaces; OpenStack warn/error banners, locked badges, secondary destructive buttons; semantic hover chips on fleet/instance actions |
+| **Batch 61 Classic Operator Color Tail** | `bb53a4c` | Networks/DiskImages/Jobs/Kata/SystemCheck warn surfaces; VMList action hovers; VMDetails/Console tail; Hero capability badges; KubeVirt/OpenStack modals; BuildStepTimeline error step |
+| **Batch 62 Cross-Shell Sweep Closure** | `541740d` | Classic Navbar Platform guide; OpenStack action ErrorBanner; VMDetails KubeVirt exec tone; Fleet disabled bridge; Dashboard secondary links; +2 e2e (71 total) |
 | **Batch 63 Infrastructure + Ops** | `a4b1e70` | Machine Finder geography tree; ops runbook/showback UX tail; +5 e2e (76 total) |
 | **Batch 64 GPU Command Center** | `bd4efa9` | `GET /api/v1/fleet/gpu`; `/platform/gpu` MIG/vGPU/CUDA inventory + placement advisor; +2 e2e (78 total) |
 | **Batch 65 Infrastructure OS Big Sweep** | `0a8da81` | Maintenance Mission 7-step timeline + `GET /api/v1/fleet/maintenance-mission`; Infrastructure DNA + `GET /api/v1/fleet/dna`; +3 e2e (81 total) |
@@ -70,7 +70,7 @@ Cross-shell Tracks A–E remain **shipped** (Batch 62). Next in-repo themes:
 |-------|--------|
 | **A — Color system v2** | Shipped (Batches 57–61); intentional exclusions documented below |
 | **B — Shell bridge & Help parity** | Shipped — tier-aware [`ShellBridgeBar`](../web/src/components/ShellBridgeBar.tsx); Platform + classic Help → Platform guide |
-| **C — JsonInspector / operator surfaces (P14)** | Shipped per [`backend-ux-wiring-audit.md`](backend-ux-wiring-audit.md) P14; Batch 62 adds Fleet Cloud action ErrorBanner + KubeVirt exec tone |
+| **C — JsonInspector / operator surfaces (P14)** | Shipped per [`backend-ux-wiring-audit.md`](backend-ux-wiring-audit.md) P14; Batch 62 adds OpenStack action ErrorBanner + KubeVirt exec tone |
 | **D — E2E matrix** | Shipped — 71 tests in verification bundle |
 | **E — Backend ops hooks** | N/A — UI CTAs already wired; defer Vault/MFA per [`enterprise-backlog.md`](enterprise-backlog.md) |
 
@@ -84,7 +84,7 @@ Cross-shell Tracks A–E remain **shipped** (Batch 62). Next in-repo themes:
 
 **Batch 57–62 shipped (2026-05-31).** The machina `web/` cross-shell consistency sweep is complete.
 
-One reviewable PR that makes **all four shells** (Platform, Classic, Fleet Cloud, K8s) feel like the same product:
+One reviewable PR that makes **all four shells** (Platform, Classic, OpenStack, K8s) feel like the same product:
 
 - Same **status colors**, glass cards, and readable typography
 - Same **return path** to Platform desktop (shell bridge + tier-safe hub links)
@@ -102,7 +102,7 @@ flowchart TB
   subgraph shells [Surfaces]
     P[Platform Tahoe]
     CL[Classic Machina]
-    OS[Fleet Cloud]
+    OS[OpenStack]
     K8[K8s]
   end
   C1 --> shells
@@ -115,17 +115,17 @@ flowchart TB
 
 ## Track A — Color system v2 (machina)
 
-**Status:** Shipped in Batch 57 — tokens, maps, classic/Fleet Cloud/K8s/Platform status badges, NodeInfo/Storage/Backups gauges, CommandPalette network/pool badges.
+**Status:** Shipped in Batch 57 — tokens, maps, classic/OpenStack/K8s/Platform status badges, NodeInfo/Storage/Backups gauges, CommandPalette network/pool badges.
 
 **Extend**
 
 | Layer | Files | Work |
 |-------|-------|------|
 | Tokens | [`main.css`](../web/src/styles/main.css) | Add `--machina-accent-network`, `--machina-accent-security`, `--machina-accent-ai`; document usage in a short comment block |
-| Maps | [`semanticColors.ts`](../web/src/utils/semanticColors.ts) | `instanceStatusTone`, `k8sPhaseTone`, `integrationPhaseTone`; badge class helpers |
+| Maps | [`semanticColors.ts`](../web/src/utils/semanticColors.ts) | `openstackStatusTone`, `k8sPhaseTone`, `integrationPhaseTone`; badge class helpers |
 | Primitives | [`EmptyState.tsx`](../web/src/components/EmptyState.tsx), [`ErrorBanner.tsx`](../web/src/components/ErrorBanner.tsx), [`vm.ts`](../web/src/utils/vm.ts) `getStateBadgeClasses` | Route status colors through semantic maps |
 | Classic | [`Dashboard.tsx`](../web/src/pages/Dashboard.tsx), [`Fleet.tsx`](../web/src/pages/Fleet.tsx), [`VMList.tsx`](../web/src/pages/VMList.tsx) | Replace ad-hoc `text-emerald-400` / `text-amber-400` / `text-red-400` |
-| Fleet Cloud | List + detail pages under [`web/src/pages/FleetCloud*.tsx`](../web/src/pages/) | Badge maps → `semanticColors` |
+| OpenStack | List + detail pages under [`web/src/pages/OpenStack*.tsx`](../web/src/pages/) | Badge maps → `semanticColors` |
 | K8s | [`K8sOverview.tsx`](../web/src/pages/K8sOverview.tsx), [`K8sWorkloads.tsx`](../web/src/pages/K8sWorkloads.tsx) | Pod/phase chips use tokens |
 
 **Acceptance:** `rg 'text-emerald-400|text-green-400|text-amber-400|text-red-400' web/src/pages web/src/components --glob '*.tsx'` trending down; no contrast regressions on dark / steel / aurora themes.
@@ -156,14 +156,14 @@ flowchart TB
 
 ## Track C — JsonInspector & operator surfaces (P14 tail)
 
-**Status:** Shipped — VMDetails KubeVirt blocks, Fleet Cloud instance detail errors, K8sOverview etcd/inventory, PlatformReports CTAs.
+**Status:** Shipped — VMDetails KubeVirt blocks, OpenStackInstanceDetail errors, K8sOverview etcd/inventory, PlatformReports CTAs.
 
 Most P14 targets are shipped ([`backend-ux-wiring-audit.md`](backend-ux-wiring-audit.md) P14). Remaining high-traffic gaps:
 
 | Priority | File | Change |
 |----------|------|--------|
 | P1 | [`VMDetails.tsx`](../web/src/pages/VMDetails.tsx) | KubeVirt bundle / exec output — keep YAML/logs as text; add collapse + copy; optional summary card for last command exit |
-| P1 | [`FleetCloudInstanceDetail.tsx`](../web/src/pages/FleetCloudInstanceDetail.tsx) | Long-fetch skeleton; action errors via ErrorBanner hints |
+| P1 | [`OpenStackInstanceDetail.tsx`](../web/src/pages/OpenStackInstanceDetail.tsx) | Long-fetch skeleton; action errors via [`openstackHints.ts`](../web/src/utils/openstackHints.ts) |
 | P2 | [`K8sOverview.tsx`](../web/src/pages/K8sOverview.tsx) | etcd/inventory sections — table first where not already done |
 | P2 | [`PlatformReports.tsx`](../web/src/pages/platform/PlatformReports.tsx) | Runbook empty + export actions use `PlatformEmptyState` CTAs consistently |
 
@@ -182,7 +182,7 @@ Most P14 targets are shipped ([`backend-ux-wiring-audit.md`](backend-ux-wiring-a
 | [`platform-full.spec.ts`](../web/e2e/platform-full.spec.ts) | Normal-tier smoke for `/platform/backups`, `/platform/storage`; advanced firewall policy studio (already partial) |
 | [`platform-batch-48.spec.ts`](../web/e2e/platform-batch-48.spec.ts) | Help Platform tab (once Track B ships); template **not ready** path (mock readiness `ready: false`) |
 | [`platform-nav-coverage.spec.ts`](../web/e2e/platform-nav-coverage.spec.ts) | `import networks` command; Resources mobile jump |
-| New `cross-shell.spec.ts` | Classic `/storage` empty → bridge → `/platform`; Fleet Cloud subnav → Platform |
+| New `cross-shell.spec.ts` | Classic `/storage` empty → bridge → `/platform`; OpenStack subnav → Platform |
 
 **Live (optional, pre-deploy)**
 
@@ -212,7 +212,7 @@ Defer Vault/MFA, multi-site DR, in-browser RDP per [`enterprise-backlog.md`](ent
 ## Suggested implementation order
 
 1. **Track D** — extend e2e first (locks regressions before wide CSS churn).
-2. **Track A** — semanticColors + classic/Fleet Cloud/K8s badge pass (highest visual ROI).
+2. **Track A** — semanticColors + classic/OpenStack/K8s badge pass (highest visual ROI).
 3. **Track B** — Help + shell bridge (user-visible nav polish).
 4. **Track C** — JsonInspector tail (page-by-page, low conflict).
 5. **Track E** — only if API gaps block UI CTAs.

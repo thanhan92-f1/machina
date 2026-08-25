@@ -20,6 +20,7 @@ Group=root
 
 EnvironmentFile=-/etc/default/machina-daemon
 EnvironmentFile=-/etc/default/machina-platform
+EnvironmentFile=-/etc/machina/openstackrc
 Environment=RUST_LOG=info
 # install.sh installs mkosi to /usr/local/bin/mkosi; some distros' default root PATH omits it.
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

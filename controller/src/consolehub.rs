@@ -1260,7 +1260,6 @@ pub async fn upload_session_replay(
         crate::auth::require_operator(&user)?;
     }
 
-    // 256 MiB cap: bounds how large a single console-session replay upload can be.
     let bytes = axum::body::to_bytes(body, 256 * 1024 * 1024)
         .await
         .map_err(|_| ApiError::bad_request("replay payload too large"))?;

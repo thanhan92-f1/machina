@@ -48,8 +48,10 @@ import { deleteVmWithNvramRetry } from '../utils/deleteVmWithNvramRetry'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
+import LibvirtOpenStackPushModal from '../components/LibvirtOpenStackPushModal'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
+import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import { ChoiceCard, ChoiceCardDenseGrid } from '../components/ChoiceCards'
 import { BrowseHostPathModal, isHostDiskImageFileName, isIsoFileName } from '../components/BrowseHostPathModal'
 import { useToastContext } from '../contexts/ToastContext'
@@ -65,22 +67,10 @@ import {
   ToggleLeft, ToggleRight, Cpu, HardDrive, Network, Camera, Terminal,
   Save, Disc, Archive, Copy, Pencil, ArrowRightLeft, Download,
   Plus, Trash2, RotateCw, Code, MemoryStick, Settings, Usb, Layers,
-  ChevronUp, ChevronDown, X, Tag, Monitor, Shield, Sliders, FolderOpen,
+  ChevronUp, ChevronDown, X, Tag, Monitor, Shield, Sliders, FolderOpen, Cloud,
 } from 'lucide-react'
 
 interface MetricsPoint { time: string; memory: number; diskRd: number; diskWr: number; netRx: number; netTx: number }
-
-// Shared recharts styling tokens for the per-VM metrics charts below — the same hex
-// values are repeated across the memory/disk/network chart blocks (axis, grid, tooltip).
-const CHART_AXIS_COLOR = '#475569'
-const CHART_GRID_COLOR = '#1e293b'
-const CHART_TOOLTIP_BG = '#0f172a'
-const CHART_TOOLTIP_LABEL_COLOR = '#94a3b8'
-const CHART_COLOR_MEMORY = '#3b82f6'
-const CHART_COLOR_DISK_READ = '#10b981'
-const CHART_COLOR_DISK_WRITE = '#f59e0b'
-const CHART_COLOR_NET_RX = '#06b6d4'
-const CHART_COLOR_NET_TX = '#a855f7'
 
 function SnapshotTableRows({
   nodes,
@@ -164,6 +154,16 @@ export default function VMDetailsPage() {
   const [dialog, setDialog] = useState<Dialog>(null)
   const toast = useToastContext()
   const { info } = usePlatformInfo()
+  const { phase: osPhase, glanceLive: osGlanceLive } = useOpenStackConnection()
+  const openstackPushReady = osPhase === 'live' && osGlanceLive && Boolean(info?.openstack?.upload_enabled)
+  const openstackPushDisabledReason =
+    osPhase === 'unreachable'
+      ? 'OpenStack configured but unreachable'
+      : osPhase !== 'live' && info?.openstack?.upload_enabled
+        ? 'Wire OpenStack and reach Keystone first'
+        : !info?.openstack?.upload_enabled
+          ? 'Enable upload_enabled in machina config'
+          : null
   const prevMetricsRef = useRef<VmMetrics | null>(null)
   const prevMetricsTsRef = useRef<number | null>(null)
   const lastLoadErrorToastAt = useRef(0)
@@ -221,6 +221,7 @@ export default function VMDetailsPage() {
   const [cdromBrowseOpen, setCdromBrowseOpen] = useState(false)
   const [attachDiskBrowseOpen, setAttachDiskBrowseOpen] = useState(false)
   const [kubevirtOpen, setKubevirtOpen] = useState(false)
+  const [openstackPushOpen, setOpenstackPushOpen] = useState(false)
   const [kubevirtBundle, setKubevirtBundle] = useState<KubeVirtBundle | null>(null)
   const [kubevirtLoading, setKubevirtLoading] = useState(false)
   /** Local checklist only (not sent to the server). */
@@ -1859,12 +1860,12 @@ export default function VMDetailsPage() {
             <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4"><MemoryStick className={`w-4 h-4 ${statusToneClass('info')}`} /> Memory Usage</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
-                <defs><linearGradient id="memG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={CHART_COLOR_MEMORY} stopOpacity={0.3} /><stop offset="95%" stopColor={CHART_COLOR_MEMORY} stopOpacity={0} /></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
-                <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
-                <YAxis stroke={CHART_AXIS_COLOR} fontSize={10} domain={[0, 100]} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: CHART_TOOLTIP_BG, border: `1px solid ${CHART_GRID_COLOR}`, borderRadius: '0.5rem' }} labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }} />
-                <Area type="monotone" dataKey="memory" name="Memory %" stroke={CHART_COLOR_MEMORY} strokeWidth={2} fillOpacity={1} fill="url(#memG)" />
+                <defs><linearGradient id="memG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                <YAxis stroke="#475569" fontSize={10} domain={[0, 100]} tickLine={false} />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} />
+                <Area type="monotone" dataKey="memory" name="Memory %" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#memG)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -1873,15 +1874,15 @@ export default function VMDetailsPage() {
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
                 <defs>
-                  <linearGradient id="rdG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={CHART_COLOR_DISK_READ} stopOpacity={0.3} /><stop offset="95%" stopColor={CHART_COLOR_DISK_READ} stopOpacity={0} /></linearGradient>
-                  <linearGradient id="wrG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={CHART_COLOR_DISK_WRITE} stopOpacity={0.3} /><stop offset="95%" stopColor={CHART_COLOR_DISK_WRITE} stopOpacity={0} /></linearGradient>
+                  <linearGradient id="rdG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="95%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="wrG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} /><stop offset="95%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
-                <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
-                <YAxis stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} tickFormatter={(v: number) => `${formatBytes(v)}/s`} />
-                <Tooltip contentStyle={{ backgroundColor: CHART_TOOLTIP_BG, border: `1px solid ${CHART_GRID_COLOR}`, borderRadius: '0.5rem' }} labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
-                <Area type="monotone" dataKey="diskRd" name="Read" stroke={CHART_COLOR_DISK_READ} strokeWidth={1.5} fillOpacity={1} fill="url(#rdG)" />
-                <Area type="monotone" dataKey="diskWr" name="Write" stroke={CHART_COLOR_DISK_WRITE} strokeWidth={1.5} fillOpacity={1} fill="url(#wrG)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                <YAxis stroke="#475569" fontSize={10} tickLine={false} tickFormatter={(v: number) => `${formatBytes(v)}/s`} />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
+                <Area type="monotone" dataKey="diskRd" name="Read" stroke="#10b981" strokeWidth={1.5} fillOpacity={1} fill="url(#rdG)" />
+                <Area type="monotone" dataKey="diskWr" name="Write" stroke="#f59e0b" strokeWidth={1.5} fillOpacity={1} fill="url(#wrG)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -1890,15 +1891,15 @@ export default function VMDetailsPage() {
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
                 <defs>
-                  <linearGradient id="rxG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={CHART_COLOR_NET_RX} stopOpacity={0.3} /><stop offset="95%" stopColor={CHART_COLOR_NET_RX} stopOpacity={0} /></linearGradient>
-                  <linearGradient id="txG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={CHART_COLOR_NET_TX} stopOpacity={0.3} /><stop offset="95%" stopColor={CHART_COLOR_NET_TX} stopOpacity={0} /></linearGradient>
+                  <linearGradient id="rxG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} /><stop offset="95%" stopColor="#06b6d4" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="txG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} /><stop offset="95%" stopColor="#a855f7" stopOpacity={0} /></linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
-                <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
-                <YAxis stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} tickFormatter={(v: number) => `${formatBytes(v)}/s`} />
-                <Tooltip contentStyle={{ backgroundColor: CHART_TOOLTIP_BG, border: `1px solid ${CHART_GRID_COLOR}`, borderRadius: '0.5rem' }} labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
-                <Area type="monotone" dataKey="netRx" name="RX" stroke={CHART_COLOR_NET_RX} strokeWidth={1.5} fillOpacity={1} fill="url(#rxG)" />
-                <Area type="monotone" dataKey="netTx" name="TX" stroke={CHART_COLOR_NET_TX} strokeWidth={1.5} fillOpacity={1} fill="url(#txG)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                <YAxis stroke="#475569" fontSize={10} tickLine={false} tickFormatter={(v: number) => `${formatBytes(v)}/s`} />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
+                <Area type="monotone" dataKey="netRx" name="RX" stroke="#06b6d4" strokeWidth={1.5} fillOpacity={1} fill="url(#rxG)" />
+                <Area type="monotone" dataKey="netTx" name="TX" stroke="#a855f7" strokeWidth={1.5} fillOpacity={1} fill="url(#txG)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -1920,6 +1921,18 @@ export default function VMDetailsPage() {
               <Archive className="w-4 h-4" aria-hidden />
               {kubevirtLoading ? 'Loading…' : 'KubeVirt YAML'}
             </button>
+            {name && (openstackPushReady || openstackPushDisabledReason) && (
+              <button
+                type="button"
+                onClick={() => openstackPushReady && setOpenstackPushOpen(true)}
+                disabled={!openstackPushReady}
+                className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm transition flex items-center gap-1"
+                title={openstackPushReady ? 'Upload root disk to OpenStack Glance' : openstackPushDisabledReason ?? ''}
+              >
+                <Cloud className="w-4 h-4" aria-hidden />
+                Push to OpenStack
+              </button>
+            )}
             <button onClick={() => openDialog('attach-disk')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Attach Disk</button>
           </div>
           <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
@@ -3679,6 +3692,21 @@ export default function VMDetailsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {openstackPushReady && name && (
+        <LibvirtOpenStackPushModal
+          vmName={name}
+          open={openstackPushOpen}
+          onClose={() => setOpenstackPushOpen(false)}
+          onSuccess={(r) => {
+            toast.success(
+              r.instance_id
+                ? `OpenStack instance ${r.instance_name || r.instance_id}`
+                : `Glance image ${r.image_name || r.image_id}`,
+            )
+          }}
+        />
       )}
 
       <BrowseHostPathModal

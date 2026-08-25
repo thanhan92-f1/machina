@@ -258,6 +258,26 @@ async fn platform_info() -> Json<serde_json::Value> {
             "virtio_container_disk_image": cfg.kubevirt.virtio_container_disk_image,
             "machine_type": cfg.kubevirt.machine_type,
         },
+        "openstack": {
+            "enabled": cfg.openstack.enabled,
+            "configured": machina_core::is_openstack_configured(&cfg.openstack),
+            "cloud_name": machina_core::effective_cloud_name_for_config(&cfg.openstack)
+                .unwrap_or_else(|| cfg.openstack.cloud_name.clone()),
+            "clouds_yaml": machina_core::resolve_clouds_yaml_path(&cfg.openstack)
+                .map(|p| p.to_string_lossy().into_owned()),
+            "auth_url": cfg.openstack.auth_url,
+            "region": cfg.openstack.region,
+            "project_name": cfg.openstack.project_name,
+            "use_env_auth": cfg.openstack.use_env_auth,
+            "upload_enabled": cfg.openstack.upload_enabled,
+            "upload_timeout_secs": cfg.openstack.upload_timeout_secs,
+            "default_os_cloud": cfg.openstack.default_os_cloud,
+            "default_boot_instance": cfg.openstack.default_boot_instance,
+            "default_flavor": cfg.openstack.default_flavor,
+            "default_network": cfg.openstack.default_network,
+            "default_key_name": cfg.openstack.default_key_name,
+            "hypersdk_base_url": cfg.openstack.hypersdk_base_url,
+        },
         "hypersdk": {
             "enabled": cfg.hypersdk.enabled,
             "base_url": cfg.hypersdk.base_url,

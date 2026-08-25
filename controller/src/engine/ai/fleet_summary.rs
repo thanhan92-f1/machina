@@ -5,11 +5,6 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
-// Fleet peers must respond quickly since this summary blocks on every peer
-// sequentially — a short timeout keeps one unreachable peer from stalling
-// the whole aggregate view.
-const PEER_REQUEST_TIMEOUT: Duration = Duration::from_secs(4);
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FleetClusterSlice {
     pub label: String,
@@ -125,11 +120,20 @@ async fn fetch_peer_slice(base: &str) -> FleetClusterSlice {
         return unreachable_peer(&label);
     }
     let client = match reqwest::Client::builder()
-        .timeout(PEER_REQUEST_TIMEOUT)
+        .timeout(Duration::from_secs(4))
         .build()
     {
         Ok(c) => c,
-        Err(_) => return unreachable_peer(&label),
+        Err(_) => {
+            return FleetClusterSlice {
+                label,
+                reachable: false,
+                vm_count: 0,
+                estimated_monthly_usd: 0.0,
+                memory_headroom_mib: 0,
+                security_risk_level: "unknown".into(),
+            };
+        }
     };
 
     let health = client.get(format!("{base}/api/v1/health")).send().await;
@@ -139,7 +143,14 @@ async fn fetch_peer_slice(base: &str) -> FleetClusterSlice {
         .unwrap_or(false)
         == false
     {
-        return unreachable_peer(&label);
+        return FleetClusterSlice {
+            label,
+            reachable: false,
+            vm_count: 0,
+            estimated_monthly_usd: 0.0,
+            memory_headroom_mib: 0,
+            security_risk_level: "unknown".into(),
+        };
     }
 
     let mut req = client.get(format!("{base}/api/v1/ai/fleet/local"));

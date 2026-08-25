@@ -5,7 +5,7 @@ use sqlx::SqlitePool;
 
 use super::{
     fetch_unexported_events, integration_err, integration_ok, mark_exported, EventRow,
-    IntegrationRow, FORWARD_CLIENT_TIMEOUT_SECS,
+    IntegrationRow,
 };
 
 pub async fn forward(
@@ -30,7 +30,7 @@ pub async fn forward(
 
     let token = sentinel_token(&integ.config_json).await?;
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(FORWARD_CLIENT_TIMEOUT_SECS))
+        .timeout(std::time::Duration::from_secs(30))
         .build()?;
 
     let events = fetch_unexported_events(pool, integ.id, 100).await?;

@@ -279,12 +279,12 @@ _A launchpad, marketplace, blueprints, and cloud-init studio turn raw VMs into r
 
 ## 11. Integrations & Migration
 
-_Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
+_Move VMs to and from KubeVirt, OpenStack, and other clouds, and connect Machina to the wider Zyvor stack._
 
 - **KubeVirt migration** — Export a VM as a KubeVirt YAML bundle and apply, upload, and start it on a Kubernetes cluster. — _A documented, repeatable path from libvirt to KubeVirt._
   - **How:** API `GET /api/v1/vms/{name}/kubevirt-bundle` then `.../kubevirt/apply`, `/upload`, `/start` (docs/kubevirt-migration.md).
-- **Fleet Cloud** — Native instance, flavor, network, and load-balancer management, backed entirely by Machina's own controller APIs. — _A full cloud-operator UI with no external cloud to wire up._
-  - **How:** Web → Fleet Cloud → instances / networks / images / load balancers.
+- **OpenStack** — Manage OpenStack instances, flavors, networks, images, and load balancers, and push local VMs to OpenStack. — _Bridge on-metal VMs into your OpenStack cloud._
+  - **How:** Web → OpenStack → instances / networks / images; push a VM via API `POST /api/v1/vms/{name}/openstack-push`.
 - **HyperSDK / hyper2kvm** — Multi-cloud and cross-hypervisor VM migration into KVM. — _Bring VMs home from other platforms._
   - **How:** Web → Import VM (HyperSDK / hyper2kvm) to migrate a source VM into KVM.
 - **GuestKit offline assurance** — Offline VM migration assurance and guest inspection tooling. — _Validate guests before and after a move._
@@ -294,7 +294,7 @@ _Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
 - **VMware & Proxmox awareness** — Controller APIs to interoperate with VMware and Proxmox sources. — _Onboard estates from other hypervisors._
   - **How:** Web → Platform → Integrations → add VMware / Proxmox source.
 - **Zyvor platform stack** — Fits with hypercluster, Zeus OS, forge, Atlas, PacketWolf, and more across the Zyvor ecosystem. — _Machina is the metal layer of a full private-cloud stack._
-  - **How:** CLI `machinactl integrations` shows KubeVirt/k8s/automation status; wire endpoints per integration.
+  - **How:** CLI `machinactl integrations` shows OpenStack/KubeVirt/k8s/automation status; wire endpoints per integration.
 
 ## 12. Interfaces & Administration
 
@@ -330,7 +330,7 @@ _Four ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-te
 5. **Turn on protection & telemetry** — Enable scheduled backups with ./machinactl backup enable, point them off-box, and wire Prometheus scrape or OTLP export.
 6. **Scale to a fleet (optional)** — Install the controller and agents with INSTALL_PLATFORM=1 or deploy-remote --platform to unlock HA, DRS, and the platform UI.
 
-> **Good to know:** Machina builds and runs on Linux only (it depends on libvirt/QEMU/KVM headers and /dev/kvm) — the workspace does not compile on macOS, though the web UI alone does. HTTPS ships with a self-signed certificate that should be replaced with a CA-signed one for production. Security defaults matter: an empty roles.json grants every user admin, and the dev-only auth-bypass flags must never be set in production. The multi-host controller and agent tier is systemd-only (the Helm chart deploys just the daemon), and SAML is config-only today. Integrations such as KubeVirt, PacketWolf, and Atlas are disabled by default and require their own endpoints or credentials; Fleet Cloud is native and always on.
+> **Good to know:** Machina builds and runs on Linux only (it depends on libvirt/QEMU/KVM headers and /dev/kvm) — the workspace does not compile on macOS, though the web UI alone does. HTTPS ships with a self-signed certificate that should be replaced with a CA-signed one for production. Security defaults matter: an empty roles.json grants every user admin, and the dev-only auth-bypass flags must never be set in production. The multi-host controller and agent tier is systemd-only (the Helm chart deploys just the daemon), and SAML is config-only today. Integrations such as OpenStack, KubeVirt, PacketWolf, and Atlas are disabled by default and require their own endpoints or credentials.
 
 ---
 _Machina is developed by ZyvorAI Labs. Contact **info@zyvor.dev** · Proprietary & Confidential._

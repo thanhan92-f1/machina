@@ -5,7 +5,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router'
-import { Search, Plus, Camera, Server, Play, Square, Power, Terminal, ArrowRight, Network, HardDrive, Clock, Star, Boxes, Upload, Pin, Keyboard, Info, Bell, ClipboardList, Activity, Settings, Monitor } from 'lucide-react'
+import { Search, Plus, Camera, Server, Play, Square, Power, Terminal, ArrowRight, Network, HardDrive, Clock, Star, Boxes, Upload, Pin, Keyboard, Info, Bell, ClipboardList, Activity, Settings, Monitor, LayoutGrid } from 'lucide-react'
+import { launchpadHealthSummary, searchLaunchpad, type LaunchpadSearchHit } from '../api/launchpad'
+import { launchpadInspectPath, launchpadStatusLabel, openLaunchpadApp } from '../utils/launchpadHelpers'
 import { navigateVmSshSession } from './vm/VmSshConnectDialog'
 import { listVMs, startVM, stopVM, shutdownVM, VmInfo } from '../api/vm'
 import { listPlatformHosts, listPlatformVms } from '../api/platform'
@@ -14,9 +16,11 @@ import { listPools, StoragePoolInfo } from '../api/storage'
 import { listAllSnapshots, SnapshotInfo } from '../api/snapshot'
 import { useToastContext } from '../contexts/ToastContext'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
-import { navGroups, navItemVisible, navGroupItems, TOP_BAR_QUICK_LINKS } from '../utils/routes'
+import { navGroups, isOpenStackConfigured, navItemVisible, navGroupItems, TOP_BAR_QUICK_LINKS } from '../utils/routes'
 import { usePlatformInfoSlow } from '../contexts/PlatformInfoContext'
 import { useAi } from '../contexts/AiContext'
+import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
+import { useLaunchpadEnabled } from '../hooks/useLaunchpadEnabled'
 import { useAuth } from '../contexts/AuthContext'
 import { getStateBadgeClasses } from '../utils/vm'
 import { poolStateBadgeClasses, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
@@ -81,6 +85,8 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const [reviewNlOps, setReviewNlOps] = useState<NlOpsPlan | null>(null)
   const [nlOpsQuery, setNlOpsQuery] = useState('')
   const [spotlightIntents, setSpotlightIntents] = useState<SpotlightIntent[]>([])
+  const [launchpadHits, setLaunchpadHits] = useState<LaunchpadSearchHit[]>([])
+  const [launchpadBrokenCount, setLaunchpadBrokenCount] = useState(0)
   const [executing, setExecuting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -91,7 +97,11 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const { info } = usePlatformInfoSlow()
   const { username } = useAuth()
   const { openCopilotWithQuery } = useAi()
+  const openstackConfigured = isOpenStackConfigured(info?.openstack)
+  const { phase: osPhase } = useOpenStackConnection()
+  const osLive = osPhase === 'live'
   const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
+  const launchpadEnabled = useLaunchpadEnabled()
 
   const toggle = useCallback(() => {
     if (!open && isInputFocused()) return
@@ -224,6 +234,34 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const platformSpotlightPaths = onPlatformDesktop
     ? spotlightPathSetForTier(platformTier, info)
     : new Set<string>()
+
+  useEffect(() => {
+    if (!open || !onPlatformDesktop || !launchpadEnabled) {
+      setLaunchpadBrokenCount(0)
+      return
+    }
+    void launchpadHealthSummary()
+      .then((h) => setLaunchpadBrokenCount((h.broken ?? 0) + (h.degraded ?? 0)))
+      .catch(() => setLaunchpadBrokenCount(0))
+  }, [open, onPlatformDesktop, launchpadEnabled])
+
+  useEffect(() => {
+    if (!open || !onPlatformDesktop || !launchpadEnabled || query.trim().length < 2) {
+      setLaunchpadHits([])
+      return
+    }
+    const q = query.trim()
+    if (q === 'broken' || q === 'broken services') {
+      setLaunchpadHits([])
+      return
+    }
+    const t = window.setTimeout(() => {
+      void searchLaunchpad(q)
+        .then((hits) => setLaunchpadHits(hits ?? []))
+        .catch(() => setLaunchpadHits([]))
+    }, 180)
+    return () => window.clearTimeout(t)
+  }, [open, onPlatformDesktop, launchpadEnabled, query])
 
   useEffect(() => {
     if (!open || !platformConnected || !query.trim() || query.length < 3) {
@@ -480,16 +518,27 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
     },
     { id: 'qa-kubevirt-workloads', icon: <Boxes className="w-4 h-4" />, label: 'KubeVirt Workloads', sublabel: 'g k', action: () => go('/k8s/workloads'), category: 'Quick Actions' },
   )
+  const osHint = osLive ? 'g o' : osPhase === 'unreachable' ? 'unreachable' : 'wire cloud first'
   items.push(
-    { id: 'qa-fleet-cloud', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud overview', sublabel: 'g o', action: () => go('/fleet-cloud'), category: 'Quick Actions' },
-    { id: 'qa-fleet-cloud-instances', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud instances', sublabel: 'g o', action: () => go('/fleet-cloud/instances'), category: 'Quick Actions' },
-    { id: 'qa-fleet-cloud-create', icon: <Plus className="w-4 h-4" />, label: 'Create Fleet Cloud instance', sublabel: 'g o', action: () => go('/fleet-cloud/create'), category: 'Quick Actions' },
-    { id: 'qa-fleet-cloud-images', icon: <HardDrive className="w-4 h-4" />, label: 'Fleet Cloud images', sublabel: 'g o', action: () => go('/fleet-cloud/images'), category: 'Quick Actions' },
+    { id: 'qa-openstack', icon: <Server className="w-4 h-4" />, label: 'OpenStack overview', sublabel: osHint, action: () => go('/openstack'), category: 'Quick Actions' },
+    { id: 'qa-openstack-instances', icon: <Server className="w-4 h-4" />, label: 'OpenStack instances', sublabel: osHint, action: () => go('/openstack/instances'), category: 'Quick Actions' },
+    { id: 'qa-openstack-create', icon: <Plus className="w-4 h-4" />, label: 'Create OpenStack instance', sublabel: osHint, action: () => go('/openstack/create'), category: 'Quick Actions' },
+    { id: 'qa-openstack-images', icon: <HardDrive className="w-4 h-4" />, label: 'OpenStack Glance images', sublabel: osHint, action: () => go('/openstack/images'), category: 'Quick Actions' },
   )
   if (hypersdkEnabled) {
     items.push(
-      { id: 'qa-fleet-cloud-migrations', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud migrations', sublabel: 'g o', action: () => go('/fleet-cloud/migrations'), category: 'Quick Actions' },
+      { id: 'qa-openstack-migrations', icon: <Server className="w-4 h-4" />, label: 'OpenStack migrations', sublabel: osHint, action: () => go('/openstack/migrations'), category: 'Quick Actions' },
     )
+  }
+  if (!openstackConfigured) {
+    items.push({
+      id: 'qa-openstack-setup',
+      icon: <Server className="w-4 h-4" />,
+      label: 'Wire OpenStack on this host',
+      sublabel: 'Settings',
+      action: () => go('/settings?openstack=1'),
+      category: 'Setup',
+    })
   }
 
   if (onOpenHelp) {
@@ -523,7 +572,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   if (!onPlatformDesktop) {
     for (const group of navGroups) {
       for (const item of navGroupItems(group)) {
-        if (!navItemVisible(item, username, hypersdkEnabled)) continue
+        if (!navItemVisible(item, username, openstackConfigured, hypersdkEnabled, launchpadEnabled)) continue
         items.push({
           id: `nav-${item.to}`,
           icon: item.icon,
@@ -613,6 +662,54 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const q = query.toLowerCase()
   const parsedCommand = parsePlatformCommand(query, onlineHostCount)
 
+  if (onPlatformDesktop && (q === 'broken' || q === 'broken services')) {
+    const countLabel =
+      launchpadBrokenCount > 0
+        ? `Launchpad · ${launchpadBrokenCount} app${launchpadBrokenCount === 1 ? '' : 's'} need attention`
+        : 'Launchpad · filter broken routes'
+    items.unshift({
+      id: 'launchpad-broken-filter',
+      icon: <LayoutGrid className="w-4 h-4 text-orange-400" />,
+      label: 'Apps need attention',
+      sublabel: countLabel,
+      action: () => go('/platform/launchpad?filter=broken'),
+      category: 'Launchpad',
+    })
+  }
+
+  for (const hit of launchpadHits) {
+    items.unshift({
+      id: `launchpad-inspect-${hit.app.id}`,
+      icon: <LayoutGrid className="w-4 h-4 text-orange-400" />,
+      label: hit.app.displayName,
+      sublabel: `${hit.app.category} · ${launchpadStatusLabel(hit.app.status)} · Inspect`,
+      action: () => go(launchpadInspectPath(hit.app)),
+      category: 'Launchpad',
+    })
+    items.unshift({
+      id: `launchpad-${hit.app.id}`,
+      icon: <LayoutGrid className="w-4 h-4 text-orange-400" />,
+      label: hit.app.displayName,
+      sublabel: `${hit.app.category} · ${launchpadStatusLabel(hit.app.status)} · Open`,
+      action: () => {
+        close()
+        void openLaunchpadApp(hit.app)
+      },
+      category: 'Launchpad',
+    })
+  }
+
+  if (onPlatformDesktop && !q) {
+    items.unshift({
+      id: 'launchpad-home',
+      icon: <LayoutGrid className="w-4 h-4 text-orange-400" />,
+      label: 'Launchpad',
+      sublabel: 'Kubernetes apps & consoles',
+      action: () => go('/platform/launchpad'),
+      category: 'Launchpad',
+    })
+  }
+
   for (const intent of spotlightIntents) {
     const cmdId = intent.id as PlatformCommand['id']
     const knownCmd = ['import-networks', 'import-storage', 'sync-hosts', 'create-vm', 'show-offline-hosts', 'backup-vm', 'migrate-vm', 'enable-ha-vm'].includes(cmdId)
@@ -693,6 +790,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
     'Recent',
     'Pinned',
     'Zyra Spotlight',
+    'Launchpad',
     'Platform Commands',
     ...spotlightZoneOrder(),
     'Platform Actions',

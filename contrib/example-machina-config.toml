@@ -52,6 +52,10 @@ token = "replace-with-api-token"
 enabled = true
 interval_secs = 300
 
+[openstack]
+enabled = false
+cloud_name = "admin"
+
 [kubevirt]
 exec_enabled = true
 default_namespace = "default"

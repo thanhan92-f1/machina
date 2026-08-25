@@ -13,12 +13,13 @@ import { getHostStats, HostStats } from '../api/extras'
 import { getStateColor, getStateBadgeClasses } from '../utils/vm'
 import { getRecentVMs } from '../utils/recentVMs'
 import { timeAgo } from '../utils/time'
-import { Activity, Cpu, HardDrive, Server, Network, Database, Camera, ArrowRight, MonitorPlay, ChevronRight, Clock, Gauge, Power, RotateCcw, Play, Terminal, Plus, Trash2, AlertTriangle, X, RefreshCw, Boxes, Stethoscope } from 'lucide-react'
+import { Activity, Cpu, HardDrive, Server, Network, Database, Camera, ArrowRight, MonitorPlay, ChevronRight, Clock, Gauge, Power, RotateCcw, Play, Terminal, Plus, Trash2, AlertTriangle, X, RefreshCw, Cloud, Boxes, Stethoscope } from 'lucide-react'
 import { hostShutdown, hostReboot } from '../api/extras'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useWebSocketContext } from '../contexts/WebSocketContext'
 import { useToastContext } from '../contexts/ToastContext'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
+import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import { useHypersdkConnection } from '../hooks/useHypersdkConnection'
 import { getK8sEnvironment, getK8sOverview, type K8sEnvironment, type K8sOverview } from '../api/k8s'
 import Hero from '../components/Hero'
@@ -50,6 +51,7 @@ export default function Dashboard() {
   const { subscribe, events } = useWebSocketContext()
   const toast = useToastContext()
   const { info, lastEvent, refreshKey } = usePlatformInfo()
+  const { phase: osPhase, status: openstackStatus, testConnection: testOs } = useOpenStackConnection()
   const { phase: hsPhase } = useHypersdkConnection()
   const [k8sEnv, setK8sEnv] = useState<K8sEnvironment | null>(null)
   const [k8sOverview, setK8sOverview] = useState<K8sOverview | null>(null)
@@ -137,7 +139,7 @@ export default function Dashboard() {
   // Re-fetch immediately when the daemon emits a relevant event (e.g. a fresh
   // KubeVirt qcow2 upload). Avoids waiting up to 10s for the polling tick.
   useEffect(() => {
-    if (lastEvent && lastEvent.kind.startsWith('kubevirt.')) {
+    if (lastEvent && (lastEvent.kind.startsWith('kubevirt.') || lastEvent.kind.startsWith('openstack.instance'))) {
       loadData()
     }
   }, [refreshKey, lastEvent, loadData])
@@ -345,6 +347,59 @@ export default function Dashboard() {
         </div>
       )}
 
+      {(osPhase === 'off' || osPhase === 'needsWire') && (
+        <div className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 ${statusSurfaceClasses('warn')}`}>
+          <div className="flex items-start gap-3 min-w-0">
+            <Cloud className={`w-6 h-6 shrink-0 mt-0.5 ${statusToneClass(integrationPhaseTone(osPhase === 'off' ? 'off' : 'needsWire'))}`} />
+            <div>
+              <h2 className="font-semibold text-slate-100">OpenStack not wired</h2>
+              <p className="text-sm text-slate-400 mt-0.5 max-w-2xl">
+                {osPhase === 'needsWire'
+                  ? 'OpenStack is enabled in machina config but missing clouds.yaml or cloud_name.'
+                  : 'Enable [openstack] in /etc/machina/config.toml, then wire Keystone on this host.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/openstack"
+            className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}
+          >
+            Wire OpenStack
+          </Link>
+        </div>
+      )}
+
+      {osPhase === 'unreachable' && openstackStatus && (
+        <div className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${statusSurfaceClasses('error')}`}>
+          <div className="flex items-start gap-3 min-w-0">
+            <Cloud className={`w-6 h-6 shrink-0 mt-0.5 ${statusToneClass(integrationPhaseTone('unreachable'))}`} />
+            <div>
+              <h2 className="font-semibold text-slate-100">OpenStack unreachable</h2>
+              <p className="text-sm text-slate-400 mt-0.5">
+                Cloud <span className="text-slate-200">{openstackStatus.cloud_name || '—'}</span> is configured but Keystone/API is down.
+              </p>
+              {openstackStatus.error && (
+                <p className={`text-xs mt-1 truncate max-w-xl ${statusToneClass('error')}`} title={openstackStatus.error}>
+                  {openstackStatus.error}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => void testOs().then((s) => toast.success(s.reachable ? 'OpenStack OK' : 'Still unreachable'))}
+              className={`px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('error')}`}
+            >
+              Test
+            </button>
+            <Link to="/openstack" className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+              Diagnose
+            </Link>
+          </div>
+        </div>
+      )}
+
       {(k8sOverview || k8sError) && (
         <div
           className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
@@ -394,7 +449,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <Link to="/fleet-cloud/migrations" className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}>
+          <Link to="/openstack/migrations" className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}>
             Migrations
           </Link>
         </div>
@@ -415,6 +470,33 @@ export default function Dashboard() {
         </div>
       )}
 
+      {osPhase === 'live' && openstackStatus && (
+        <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <Cloud className="w-6 h-6 text-sky-400 shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-semibold text-slate-100">OpenStack</h2>
+              <p className="text-sm text-slate-400 mt-0.5">
+                Cloud <span className="text-slate-200">{openstackStatus.cloud_name || '—'}</span>
+                {openstackStatus.instance_count != null && (
+                  <> · {openstackStatus.instance_count} instance{openstackStatus.instance_count === 1 ? '' : 's'}</>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <Link to="/openstack/instances" className="px-3 py-1.5 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm">
+              Instances
+            </Link>
+            <Link to="/openstack/create" className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm">
+              Create
+            </Link>
+            <Link to="/openstack/images" className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+              Images
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Recently Viewed */}
       {(() => {

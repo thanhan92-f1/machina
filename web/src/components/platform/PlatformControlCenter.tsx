@@ -168,7 +168,9 @@ export default function PlatformControlCenter() {
         }
       case 'administration':
         return {
-          value: 'Users & policies',
+          value: info?.openstack?.enabled
+            ? (info.openstack.configured ? 'OpenStack ready' : 'OpenStack setup')
+            : 'Users & policies',
         }
       case 'operations':
         return {

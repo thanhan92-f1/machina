@@ -25,9 +25,7 @@ use crate::{LibvirtManager, VmMetrics};
 static LAST_VM_CPU: Mutex<Option<HashMap<String, (Instant, u64)>>> = Mutex::new(None);
 
 fn now_ts() -> String {
-    chrono::Local::now()
-        .format(super::automation::TIMESTAMP_FORMAT)
-        .to_string()
+    chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
 fn alert_id() -> String {
@@ -41,7 +39,7 @@ fn recent_unacked(rule_name: &str, within_mins: i64) -> bool {
         if a.acknowledged || a.rule_name != rule_name {
             return false;
         }
-        chrono::NaiveDateTime::parse_from_str(&a.timestamp, super::automation::TIMESTAMP_FORMAT)
+        chrono::NaiveDateTime::parse_from_str(&a.timestamp, "%Y-%m-%d %H:%M:%S")
             .ok()
             .and_then(|ndt| chrono::Local.from_local_datetime(&ndt).single())
             .map(|dt| dt > cutoff)
@@ -289,8 +287,7 @@ fn snapshot_due(sched: &SnapshotSchedule) -> bool {
     if sched.last_run.is_empty() {
         return true;
     }
-    let Ok(ndt) =
-        chrono::NaiveDateTime::parse_from_str(&sched.last_run, super::automation::TIMESTAMP_FORMAT)
+    let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(&sched.last_run, "%Y-%m-%d %H:%M:%S")
     else {
         return true;
     };

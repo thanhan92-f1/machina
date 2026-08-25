@@ -35,7 +35,6 @@ pub mod fleet_users;
 pub mod guest_context;
 pub mod guestkit_bridge;
 pub mod ha;
-pub mod load_balancer;
 pub mod host_os;
 pub mod host_shell;
 pub mod host_validate;

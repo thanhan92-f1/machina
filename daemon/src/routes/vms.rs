@@ -19,15 +19,18 @@ use machina_core::libvirt::domain::UndefineOptions;
 use machina_core::libvirt::resize::{CpuTuneInfo, MemTuneInfo};
 use machina_core::libvirt::{block_jobs, clone, create, device, domain, resize};
 use machina_core::{
-    audit, kubevirt_bundle_from_libvirt_vm, AttachDiskRequest, AuditEvent, CloneVmRequest,
-    CreateVmRequest, KubeVirtBundle, KubeVirtConfig, LibvirtError, LibvirtManager, MachinaConfig,
-    RenameVmRequest, VmCreateBackend, VmDetails, VmInfo,
+    audit, is_openstack_configured, kubevirt_bundle_from_libvirt_vm, libvirt_openstack_push_preview,
+    upload_qcow2_to_glance, AttachDiskRequest, AuditEvent, CloneVmRequest, CreateVmRequest,
+    GlanceUploadRequest, GlanceUploadResult, KubeVirtBundle, KubeVirtConfig, LibvirtError,
+    LibvirtManager, MachinaConfig, RenameVmRequest, VmCreateBackend, VmDetails,
+    VmInfo,
 };
 
 use crate::auth::{effective_linux_user, require_destroy_vm, require_write, RequestActor};
 use crate::conn_query::{connection_label, spawn_libvirt_actor, ConnQuery};
 use crate::error::{ok_json, AppError, Xml};
 use crate::job_registry::JobRegistry;
+use crate::hyper2kvm_exec;
 use crate::kubevirt_exec;
 use crate::routes::events::{EventBus, MachinaEvent};
 use crate::vm_events;
@@ -70,16 +73,6 @@ fn log_audit_with_actor(actor: Option<&str>, action: &str, target: &str, result:
         actor: actor.unwrap_or("").to_string(),
     };
     audit::write_audit_event(&event);
-}
-
-/// Shared response envelope for the `kubectl`/`hyper2kvm` exec handlers below: the
-/// caller's exit code and captured stdout/stderr, verbatim.
-fn exec_result_json(code: i32, stdout: String, stderr: String) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    }))
 }
 
 async fn list_vms(
@@ -264,7 +257,11 @@ async fn kubevirt_apply_handler(
         audit,
         &bundle.virtual_machine_name,
     );
-    Ok(exec_result_json(code, stdout, stderr))
+    Ok(Json(serde_json::json!({
+        "exit_code": code,
+        "stdout": stdout,
+        "stderr": stderr,
+    })))
 }
 
 async fn kubevirt_upload_handler(
@@ -304,7 +301,165 @@ async fn kubevirt_upload_handler(
         audit,
         &bundle.datavolume_name,
     );
-    Ok(exec_result_json(code, stdout, stderr))
+    Ok(Json(serde_json::json!({
+        "exit_code": code,
+        "stdout": stdout,
+        "stderr": stderr,
+    })))
+}
+
+#[derive(Debug, Deserialize)]
+struct LibvirtOpenStackPushBody {
+    #[serde(flatten)]
+    upload: GlanceUploadRequest,
+    #[serde(default)]
+    stop_vm: bool,
+    /// Run `h2kvmctl` convert/fix + deploy_openstack instead of native Rust Glance upload.
+    #[serde(default)]
+    use_hyper2kvm: bool,
+    #[serde(default = "default_true")]
+    guest_fix: bool,
+}
+
+fn vm_details_blocking(
+    manager: &LibvirtManager,
+    name: &str,
+    connection: Option<&str>,
+) -> Result<VmDetails, AppError> {
+    let t = manager.resolve_query(connection);
+    manager
+        .with_conn_target(t, |c| domain::get_vm_details(c, name))
+        .map_err(AppError::from)
+}
+
+async fn openstack_push_preview_handler(
+    Path(name): Path<String>,
+    State(manager): State<LibvirtManager>,
+    Query(conn_q): Query<ConnQuery>,
+) -> Result<Json<machina_core::LibvirtOpenStackPushPreview>, AppError> {
+    let os = MachinaConfig::load().openstack;
+    if !is_openstack_configured(&os) {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "OpenStack is not configured".into(),
+        )));
+    }
+    if !os.upload_enabled {
+        return Err(AppError::from(LibvirtError::Forbidden(
+            "openstack.upload_enabled is false".into(),
+        )));
+    }
+    let mgr = manager.clone();
+    let n = name.clone();
+    let cq = conn_q.connection.clone();
+    let preview = tokio::task::spawn_blocking(move || -> Result<_, AppError> {
+        let details = vm_details_blocking(&mgr, &n, cq.as_deref())?;
+        libvirt_openstack_push_preview(&n, &details).map_err(AppError::from)
+    })
+    .await
+    .map_err(|e| AppError::from(LibvirtError::Internal(format!("Task failed: {e}"))))??;
+    log_audit("openstack-push-preview", &name, "ok");
+    Ok(Json(preview))
+}
+
+async fn openstack_push_handler(
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+    State(manager): State<LibvirtManager>,
+    Extension(bus): Extension<Arc<EventBus>>,
+    Query(conn_q): Query<ConnQuery>,
+    Json(body): Json<LibvirtOpenStackPushBody>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    require_write(&actor, "vms:write")?;
+    let cfg = MachinaConfig::load();
+    let os = cfg.openstack.clone();
+    if !is_openstack_configured(&os) {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "OpenStack is not configured".into(),
+        )));
+    }
+    if !os.upload_enabled {
+        return Err(AppError::from(LibvirtError::Forbidden(
+            "openstack.upload_enabled is false".into(),
+        )));
+    }
+    let mgr = manager.clone();
+    let n = name.clone();
+    let cq = conn_q.connection.clone();
+    let stop_vm = body.stop_vm;
+    let glance_override = body.upload.glance_name.clone();
+    let preview = tokio::task::spawn_blocking(move || -> Result<_, AppError> {
+        let details = vm_details_blocking(&mgr, &n, cq.as_deref())?;
+        let preview = libvirt_openstack_push_preview(&n, &details).map_err(AppError::from)?;
+        if stop_vm && preview.vm_running {
+            let t = mgr.resolve_query(cq.as_deref());
+            mgr.with_conn_target(t, |c| domain::stop_vm(c, &n)).map_err(AppError::from)?;
+        }
+        Ok(preview)
+    })
+    .await
+    .map_err(|e| AppError::from(LibvirtError::Internal(format!("Task failed: {e}"))))??;
+    let root_disk = preview.root_disk;
+    let glance_name = glance_override
+        .filter(|s| !s.is_empty())
+        .unwrap_or(preview.glance_preview.suggested_name);
+
+    if body.use_hyper2kvm {
+        let h2k = hyper2kvm_exec::run_hyper2kvm_openstack_push(
+            &root_disk,
+            &glance_name,
+            &body.upload,
+            body.guest_fix,
+        )
+        .await
+        .map_err(AppError::from)?;
+        let audit = if h2k.exit_code == 0 { "ok" } else { "error" };
+        log_audit("openstack-push-h2kvm", &name, audit);
+        return Ok(Json(serde_json::json!({
+            "mode": "hyper2kvm",
+            "exit_code": h2k.exit_code,
+            "stdout": h2k.stdout,
+            "stderr": h2k.stderr,
+            "root_disk": root_disk,
+            "glance_name": glance_name,
+        })));
+    }
+
+    let prefixes = allowed_prefixes(&manager).await?;
+    validate_qcow2_allowed(&root_disk, &prefixes)?;
+    let mut upload = body.upload;
+    upload.qcow2_path = root_disk.clone();
+    if upload.glance_name.as_ref().is_none_or(|s| s.is_empty()) {
+        upload.glance_name = Some(glance_name.clone());
+    }
+    let result: GlanceUploadResult = upload_qcow2_to_glance(&os, &upload).await?;
+    log_audit("openstack-push", &name, "ok");
+    let mut ev = MachinaEvent::now("openstack.image.upload", &name, "ok");
+    ev.message = result.image_name.chars().take(512).collect();
+    bus.emit(ev);
+    Ok(Json(serde_json::json!({
+        "mode": "native",
+        "root_disk": root_disk,
+        "result": result,
+    })))
+}
+
+async fn allowed_prefixes(manager: &LibvirtManager) -> Result<Vec<String>, AppError> {
+    tokio::task::spawn_blocking({
+        let mgr = manager.clone();
+        move || mgr.with_conn(machina_core::libvirt::storage::disk_image_delete_allowed_prefixes)
+    })
+    .await
+    .map_err(|e| AppError::from(LibvirtError::Internal(format!("Task failed: {e}"))))?
+    .map_err(AppError::from)
+}
+
+fn validate_qcow2_allowed(path: &str, allowed_prefixes: &[String]) -> Result<(), LibvirtError> {
+    if !allowed_prefixes.iter().any(|p| path.starts_with(p)) {
+        return Err(LibvirtError::Invalid(format!(
+            "Path not in an allowed images directory: {path}"
+        )));
+    }
+    Ok(())
 }
 
 async fn kubevirt_start_handler(
@@ -338,7 +493,11 @@ async fn kubevirt_start_handler(
         audit,
         &bundle.virtual_machine_name,
     );
-    Ok(exec_result_json(code, stdout, stderr))
+    Ok(Json(serde_json::json!({
+        "exit_code": code,
+        "stdout": stdout,
+        "stderr": stderr,
+    })))
 }
 
 async fn start_vm(
@@ -1261,6 +1420,11 @@ pub fn vm_routes() -> Router<LibvirtManager> {
         .route("/vms/{name}/kubevirt/apply", post(kubevirt_apply_handler))
         .route("/vms/{name}/kubevirt/upload", post(kubevirt_upload_handler))
         .route("/vms/{name}/kubevirt/start", post(kubevirt_start_handler))
+        .route(
+            "/vms/{name}/openstack-push/preview",
+            get(openstack_push_preview_handler),
+        )
+        .route("/vms/{name}/openstack-push", post(openstack_push_handler))
         .route("/vms/{name}/start", post(start_vm))
         .route("/vms/{name}/stop", post(stop_vm))
         .route("/vms/{name}/shutdown", post(shutdown_vm))

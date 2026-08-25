@@ -55,7 +55,7 @@ function surfaceForUiFile(file) {
   if (rel.startsWith('components/platform/')) return 'page'
   if (rel.startsWith('components/ai/')) return 'page'
   if (rel.startsWith('hooks/')) return 'page'
-  if (rel.startsWith('pages/FleetCloud')) return 'fleet-cloud'
+  if (rel.startsWith('pages/OpenStack')) return 'openstack'
   if (rel.startsWith('pages/K8s') || rel === 'pages/KataContainers.tsx') return 'k8s'
   if (rel.startsWith('pages/')) return 'classic'
   return null
@@ -104,6 +104,9 @@ function extractApiPaths(apiFile) {
     addPath(m[1])
   }
   for (const m of src.matchAll(/['"](\/api\/v1[^'"]*)['"]/g)) {
+    addPath(m[1])
+  }
+  for (const m of src.matchAll(/['"](\/openstack\/[^'"]*)['"]/g)) {
     addPath(m[1])
   }
   for (const m of src.matchAll(/['"](\/k8s\/[^'"]*)['"]/g)) {
@@ -169,7 +172,7 @@ function classify(route, importGraph, openapiPaths, manifest) {
 
   const surfaces = importGraph.get(key)
   if (surfaces?.has('page')) return 'page'
-  if (surfaces?.has('fleet-cloud')) return 'fleet-cloud'
+  if (surfaces?.has('openstack')) return 'openstack'
   if (surfaces?.has('k8s')) return 'k8s'
   if (surfaces?.has('classic')) return 'classic'
 

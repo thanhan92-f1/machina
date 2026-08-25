@@ -8,19 +8,6 @@ use crate::auth::AuthUser;
 use crate::state::AppState;
 use crate::tasks::enqueue::enqueue_task;
 
-// Fixed per-GPU-node sizing used consistently across the plan preview, the
-// scheduler hint, and the actual VM row/spec created for each node — keep
-// these in sync if the GPU node shape ever changes.
-const GPU_NODE_VCPUS: i32 = 16;
-const GPU_NODE_MEMORY_GIB: i64 = 64;
-const GPU_NODE_MEMORY_MIB: i64 = GPU_NODE_MEMORY_GIB * 1024;
-const GPU_NODE_DISK_GIB: i64 = 100;
-// "cluster" queries provision a larger multi-node stack than a single
-// inference/test node.
-const CLUSTER_GPU_NODE_COUNT: i32 = 4;
-const DEFAULT_GPU_NODE_COUNT: i32 = 2;
-const HOURS_PER_MONTH: f64 = 730.0;
-
 #[derive(Debug, Serialize)]
 pub struct MissionStackPlan {
     pub label: String,
@@ -42,15 +29,11 @@ pub struct MissionStackPhase {
 
 pub fn plan_mission_stack(query: &str, vcpu_rate: f64, gib_rate: f64) -> MissionStackPlan {
     let ql = query.to_lowercase();
-    let gpu_nodes = if ql.contains("cluster") {
-        CLUSTER_GPU_NODE_COUNT
-    } else {
-        DEFAULT_GPU_NODE_COUNT
-    };
-    let vcpus = GPU_NODE_VCPUS * gpu_nodes;
-    let mem_gib = GPU_NODE_MEMORY_GIB * gpu_nodes as i64;
+    let gpu_nodes = if ql.contains("cluster") { 4 } else { 2 };
+    let vcpus = 16 * gpu_nodes;
+    let mem_gib = 64 * gpu_nodes;
     let hourly = vcpus as f64 * vcpu_rate + mem_gib as f64 * gib_rate;
-    let estimated_monthly_usd = hourly * HOURS_PER_MONTH;
+    let estimated_monthly_usd = hourly * 730.0;
     let network_monthly_usd = machina_core::mission_stack_network_cost(gpu_nodes);
 
     let label = if ql.contains("llama") || ql.contains("inference") {
@@ -65,9 +48,7 @@ pub fn plan_mission_stack(query: &str, vcpu_rate: f64, gib_rate: f64) -> Mission
         MissionStackPhase {
             name: "Infrastructure".into(),
             steps: vec![
-                format!(
-                    "Create {gpu_nodes} GPU-capable VMs ({GPU_NODE_VCPUS} vCPU, {GPU_NODE_MEMORY_GIB} GiB each)"
-                ),
+                format!("Create {gpu_nodes} GPU-capable VMs (16 vCPU, 64 GiB each)"),
                 "Create isolated high-bandwidth network segment".into(),
                 "Provision NVMe storage pool for model weights".into(),
             ],
@@ -136,9 +117,9 @@ fn gpu_vm_spec(name: &str) -> serde_json::Value {
         "kind": "VirtualMachine",
         "metadata": { "name": name, "project": "mission-stack" },
         "spec": {
-            "cpu": { "sockets": 1, "cores": GPU_NODE_VCPUS },
-            "memory": format!("{GPU_NODE_MEMORY_GIB}Gi"),
-            "storage": [{ "name": "root", "size": format!("{GPU_NODE_DISK_GIB}Gi"), "class": "silver" }],
+            "cpu": { "sockets": 1, "cores": 16 },
+            "memory": "64Gi",
+            "storage": [{ "name": "root", "size": "100Gi", "class": "silver" }],
             "network": [{ "network": "default", "ip_mode": "dhcp" }],
             "firmware": "bios",
             "graphics": { "type": "vnc", "listen": "127.0.0.1" }
@@ -166,7 +147,7 @@ pub async fn execute_stack(
         let host_id = crate::engine::placement::pick_host_for_vm(
             &state.pool,
             &["gpu".into(), "mission-stack".into()],
-            GPU_NODE_MEMORY_MIB,
+            65536,
         )
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
@@ -201,26 +182,23 @@ pub async fn execute_stack(
         let mut tx = state.pool.begin().await.map_err(|e| ApiError::internal(e.to_string()))?;
         sqlx::query(
             "INSERT INTO vms (id, cluster_id, host_id, name, project, spec_json, desired_state, lifecycle_phase, vcpus, memory_mib, tags)
-             VALUES (?, ?, ?, ?, 'mission-stack', ?, 'running', 'creating', ?, ?, ?)",
+             VALUES (?, ?, ?, ?, 'mission-stack', ?, 'running', 'creating', 16, 65536, ?)",
         )
         .bind(vm_id)
         .bind(cluster_id)
         .bind(host_id)
         .bind(&name)
         .bind(&spec_json)
-        .bind(GPU_NODE_VCPUS)
-        .bind(GPU_NODE_MEMORY_MIB)
         .bind(&tags_json)
         .execute(&mut *tx)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
         sqlx::query(
-            "INSERT INTO vm_disks (id, vm_id, name, size_gib, storage_class) VALUES (?, ?, 'root', ?, 'silver')",
+            "INSERT INTO vm_disks (id, vm_id, name, size_gib, storage_class) VALUES (?, ?, 'root', 100, 'silver')",
         )
         .bind(Uuid::new_v4())
         .bind(vm_id)
-        .bind(GPU_NODE_DISK_GIB)
         .execute(&mut *tx)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;

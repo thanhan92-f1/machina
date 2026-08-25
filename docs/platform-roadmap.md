@@ -202,9 +202,9 @@ This document tracks the vCenter-class platform plan on libvirt/KVM. See also [`
 
 Cross-shell consistency pass documented in [`next-big-sweep.md`](next-big-sweep.md):
 
-- **A:** Semantic color system v2 — [`semanticColors.ts`](../web/src/utils/semanticColors.ts) across Classic, Fleet Cloud, K8s, Platform; NodeInfo/Storage/Backups gauges; CommandPalette badges
+- **A:** Semantic color system v2 — [`semanticColors.ts`](../web/src/utils/semanticColors.ts) across Classic, OpenStack, K8s, Platform; NodeInfo/Storage/Backups gauges; CommandPalette badges
 - **B:** Platform Help → Platform tab; tier-aware shell bridge links
-- **C:** JsonInspector / operator surface tail (VMDetails, Fleet Cloud detail, K8sOverview, PlatformReports)
+- **C:** JsonInspector / operator surface tail (VMDetails, OpenStack detail, K8sOverview, PlatformReports)
 - **D:** E2e matrix — [`cross-shell.spec.ts`](../web/e2e/cross-shell.spec.ts), batch-48 + nav-coverage extensions (69 tests green)
 - **E:** Small backend hooks for runbooks / discover (only if UI blocked)
 
@@ -221,25 +221,25 @@ Presentation-only sweep documented in [`next-big-sweep.md`](next-big-sweep.md):
 ## Batch 59 deliverables (platform color tail — shipped)
 
 - **Platform pages:** Events severity badges, Security Center graph/critical lists, VM detail guest health, Observability SLO chips, Activity/Host detail utilization bars, Maintenance host badges, Migration HyperSDK readiness, Content approval queue, Notifications unread styling, API key token banner, Threat Hunting severity, Reports cost highlights
-- **Classic:** Settings Fleet Cloud unreachable hints, HostNetworking route/sysctl warn callouts + focus ring token
+- **Classic:** Settings OpenStack unreachable hints, HostNetworking route/sysctl warn callouts + focus ring token
 - **Helper:** `utilizationBarClass()` in [`semanticColors.ts`](../web/src/utils/semanticColors.ts)
 
-## Batch 60 deliverables (classic / Fleet Cloud / K8s color tail — shipped)
+## Batch 60 deliverables (classic / OpenStack / K8s color tail — shipped)
 
 - **Classic:** Dashboard integration banners + HyperSDK link; K8sOverview health probes, upgrade insights, node cordon/uncordon/drain chips; K8sWorkloads operator action chips; NodeInfo libvirt boot / consistency / package-update warn surfaces
-- **Fleet Cloud:** Instances/InstanceDetail/CreateInstance/Migrations warn banners; locked badges; hypervisor maintenance, port admin-down, floating-IP dissociate, volume-transfer auth key, network delete confirm; semantic hover on row action icons
+- **OpenStack:** Instances/InstanceDetail/CreateInstance/Migrations warn banners; locked badges; hypervisor maintenance, port admin-down, floating-IP dissociate, volume-transfer auth key, network delete confirm; semantic hover on row action icons
 - **Deferred:** primary CTAs (`bg-emerald-600` start/create), `ChoiceCards` accents, Identity admin buttons (`bg-amber-700`)
 
 ## Batch 61 deliverables (classic operator color tail — shipped)
 
-- **Classic pages:** Networks libvirt-boot + active-network edit warn; DiskImages Fleet Cloud/mkosi/virt-builder hints; Jobs empty-state link; KataContainers k3s/RKE2 callout; SystemCheck Fleet Cloud hint; Services stop hover; HostNetworking topology legend; Console virt-viewer download chip; VMList row action hovers
+- **Classic pages:** Networks libvirt-boot + active-network edit warn; DiskImages OpenStack/mkosi/virt-builder hints; Jobs empty-state link; KataContainers k3s/RKE2 callout; SystemCheck OpenStack hint; Services stop hover; HostNetworking topology legend; Console virt-viewer download chip; VMList row action hovers
 - **VMDetails:** tune-disk hover + filesystem mount tag tone
-- **Shared:** Hero capability badges; LibvirtFleetCloudPushModal running hint; KubeVirtQcow2Modal exec hint; KubeVirtExposeServiceModal command tone; BuildStepTimeline failed step
+- **Shared:** Hero capability badges; LibvirtOpenStackPushModal running hint; KubeVirtQcow2Modal exec hint; KubeVirtExposeServiceModal command tone; BuildStepTimeline failed step
 
 ## Batch 62 deliverables (cross-shell sweep closure — shipped)
 
 - **Help parity:** Classic [`Navbar`](../web/src/components/Navbar.tsx) Help menu → Platform guide tab (desktop + mobile); e2e on `/vms`
-- **Operator UX:** [`FleetCloudInstanceDetail`](../web/src/pages/FleetCloudInstanceDetail.tsx) persistent action `ErrorBanner` with error hints; [`VMDetails`](../web/src/pages/VMDetails.tsx) KubeVirt exec result semantic exit surface
+- **Operator UX:** [`OpenStackInstanceDetail`](../web/src/pages/OpenStackInstanceDetail.tsx) persistent action `ErrorBanner` with `openStackErrorHints`; [`VMDetails`](../web/src/pages/VMDetails.tsx) KubeVirt exec result semantic exit surface
 - **Shell bridge:** [`Fleet`](../web/src/pages/Fleet.tsx) disabled-state links to Platform desktop + Integrations via `hubLinkClasses()`
 - **Dashboard:** GuestKit / Integrations secondary link chips (`statusBadgeClasses`); orange brand panels unchanged
 - **E2e:** mobile jump → Resources (power tier); **71/71** local bundle green

@@ -40,9 +40,9 @@ test('normal tier shell bridge links to integrations hub', async ({ page }) => {
   ])
 })
 
-test('Fleet Cloud subnav links to platform when fleet mode', async ({ page }) => {
+test('OpenStack subnav links to platform when fleet mode', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/fleet-cloud')
+  await page.goto('/openstack')
   await waitForPlatformSession(page)
   const platformLink = page.getByRole('link', { name: /Platform desktop/i })
   await expect(platformLink).toBeVisible({ timeout: 20_000 })

@@ -5,12 +5,7 @@ use sqlx::SqlitePool;
 
 use super::{
     fetch_unexported_events, integration_err, integration_ok, mark_exported, IntegrationRow,
-    FORWARD_CLIENT_TIMEOUT_SECS,
 };
-
-// QRadar's REST API version header; kept as a constant since forward() and
-// test_connection() must send the same value the API was validated against.
-const QRADAR_API_VERSION: &str = "16.0";
 
 pub async fn forward(
     pool: &SqlitePool,
@@ -43,7 +38,7 @@ pub async fn forward(
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(FORWARD_CLIENT_TIMEOUT_SECS))
+        .timeout(std::time::Duration::from_secs(30))
         .danger_accept_invalid_certs(insecure_tls)
         .build()?;
 
@@ -68,7 +63,7 @@ pub async fn forward(
         let res = client
             .post(&url)
             .header("SEC", token)
-            .header("Version", QRADAR_API_VERSION)
+            .header("Version", "16.0")
             .json(&body)
             .send()
             .await?;
@@ -117,7 +112,7 @@ pub async fn test_connection(config: &serde_json::Value) -> anyhow::Result<Strin
     let res = client
         .get(format!("{}/api/system/about", base.trim_end_matches('/')))
         .header("SEC", token)
-        .header("Version", QRADAR_API_VERSION)
+        .header("Version", "16.0")
         .send()
         .await?;
     if res.status().is_success() {

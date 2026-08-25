@@ -2,10 +2,13 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Unified health summary for KubeVirt, automation, and Kubernetes tooling.
+//! Unified health summary for OpenStack, KubeVirt, automation, and Kubernetes tooling.
 
 use axum::{routing::get, Json, Router};
-use machina_core::{libvirt::automation, LibvirtManager, MachinaConfig};
+use machina_core::{
+    connection_status_skeleton, is_openstack_configured, libvirt::automation, LibvirtManager,
+    MachinaConfig,
+};
 
 use crate::automation_worker;
 use crate::error::AppError;
@@ -13,6 +16,25 @@ use crate::k8s_kubeconfig;
 
 async fn integrations_status() -> Result<Json<serde_json::Value>, AppError> {
     let cfg = MachinaConfig::load();
+
+    let openstack = {
+        let os = &cfg.openstack;
+        let configured = is_openstack_configured(os);
+        let status = if configured {
+            machina_core::test_connection(os).await
+        } else {
+            connection_status_skeleton(os)
+        };
+        serde_json::json!({
+            "configured": configured,
+            "enabled": os.enabled,
+            "cloud_name": os.cloud_name,
+            "connected": status.connected,
+            "error": status.error,
+            "reachable": status.reachable,
+            "status_url": "/api/v1/openstack/status",
+        })
+    };
 
     let kubevirt = {
         let kv = &cfg.kubevirt;
@@ -73,6 +95,7 @@ async fn integrations_status() -> Result<Json<serde_json::Value>, AppError> {
     };
 
     Ok(Json(serde_json::json!({
+        "openstack": openstack,
         "kubevirt": kubevirt,
         "automation": automation_cfg,
         "k8s": k8s,

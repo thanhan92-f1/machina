@@ -57,18 +57,9 @@ test('language switcher changes login label', async ({ page }) => {
   await expect(page.getByLabel('Usuario')).toBeVisible()
 })
 
-test('Fleet Cloud instances shows sanitized error when API returns HTML', async ({ page }) => {
+test('OpenStack instances shows sanitized error when API returns HTML', async ({ page }) => {
   await mockAuthenticatedApi(page)
-  // Override the (already-mocked) native VM list endpoint for just this test, so the
-  // page has to handle a raw HTML error body instead of the happy-path JSON.
-  await page.route(/\/platform\/controller\/api\/v1\/vms(\?|$)/, async (route) => {
-    return route.fulfill({
-      status: 503,
-      contentType: 'text/html',
-      body: '<!DOCTYPE html><html><body>Bad Gateway</body></html>',
-    })
-  })
-  await page.goto('/fleet-cloud/instances')
+  await page.goto('/openstack/instances')
   await expect(page.getByText(/Failed to load instances/i)).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/HTML error page/i).first()).toBeVisible()
 })

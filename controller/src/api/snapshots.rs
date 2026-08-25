@@ -45,25 +45,6 @@ pub struct VmTimelineRow {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-/// Every handler below enqueues a task scoped to a VM and needs the VM's
-/// current host to route it — factored out since it's the same lookup in
-/// each snapshot lifecycle handler (create/delete/revert/clone).
-async fn vm_host_id(state: &AppState, vm_id: Uuid) -> Result<Option<Uuid>, ApiError> {
-    sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
-        .bind(vm_id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(ApiError::from)
-}
-
-fn pending_task_response(task_id: Uuid, operation: &str) -> TaskResponse {
-    TaskResponse {
-        task_id: task_id.to_string(),
-        status: "pending".into(),
-        operation: operation.into(),
-    }
-}
-
 pub async fn list_vm_timeline(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -134,7 +115,10 @@ pub async fn create_vm_snapshot(
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
     machina_spec::validate_name(&body.name).map_err(|e| ApiError::bad_request(e.to_string()))?;
-    let host_id = vm_host_id(&state, vm_id).await?;
+    let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+        .bind(vm_id)
+        .fetch_one(&state.pool)
+        .await?;
 
     let id = Uuid::new_v4();
     sqlx::query(
@@ -174,7 +158,11 @@ pub async fn create_vm_snapshot(
         e
     })?;
 
-    Ok(Json(pending_task_response(task_id, "vm.snapshot")))
+    Ok(Json(TaskResponse {
+        task_id: task_id.to_string(),
+        status: "pending".into(),
+        operation: "vm.snapshot".into(),
+    }))
 }
 
 pub async fn delete_vm_snapshot(
@@ -183,7 +171,10 @@ pub async fn delete_vm_snapshot(
     Path((vm_id, name)): Path<(Uuid, String)>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
-    let host_id = vm_host_id(&state, vm_id).await?;
+    let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+        .bind(vm_id)
+        .fetch_one(&state.pool)
+        .await?;
 
     let task_id = enqueue_task(
         &state,
@@ -198,7 +189,11 @@ pub async fn delete_vm_snapshot(
     )
     .await?;
 
-    Ok(Json(pending_task_response(task_id, "vm.snapshot.delete")))
+    Ok(Json(TaskResponse {
+        task_id: task_id.to_string(),
+        status: "pending".into(),
+        operation: "vm.snapshot.delete".into(),
+    }))
 }
 
 pub async fn revert_vm_snapshot(
@@ -207,7 +202,10 @@ pub async fn revert_vm_snapshot(
     Path((vm_id, name)): Path<(Uuid, String)>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
-    let host_id = vm_host_id(&state, vm_id).await?;
+    let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+        .bind(vm_id)
+        .fetch_one(&state.pool)
+        .await?;
 
     let task_id = enqueue_task(
         &state,
@@ -222,7 +220,11 @@ pub async fn revert_vm_snapshot(
     )
     .await?;
 
-    Ok(Json(pending_task_response(task_id, "vm.snapshot.revert")))
+    Ok(Json(TaskResponse {
+        task_id: task_id.to_string(),
+        status: "pending".into(),
+        operation: "vm.snapshot.revert".into(),
+    }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -250,7 +252,10 @@ pub async fn clone_vm_snapshot(
     machina_spec::validate_name(&body.new_name)
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    let host_id = vm_host_id(&state, vm_id).await?;
+    let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+        .bind(vm_id)
+        .fetch_one(&state.pool)
+        .await?;
 
     let task_id = enqueue_task(
         &state,
@@ -269,5 +274,9 @@ pub async fn clone_vm_snapshot(
     )
     .await?;
 
-    Ok(Json(pending_task_response(task_id, "vm.snapshot.clone")))
+    Ok(Json(TaskResponse {
+        task_id: task_id.to_string(),
+        status: "pending".into(),
+        operation: "vm.snapshot.clone".into(),
+    }))
 }

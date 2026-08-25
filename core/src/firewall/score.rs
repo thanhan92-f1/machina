@@ -5,18 +5,6 @@ use super::types::{
     ScoreRecommendation,
 };
 
-// Point deductions for the 0-100 firewall score, ordered roughly by severity.
-// Each is also the number of points its matching recommendation offers back.
-const PENALTY_FIREWALL_DISABLED: i32 = 25;
-const PENALTY_DEFAULT_ALLOW_INBOUND: i32 = 10;
-const PENALTY_SSH_PUBLIC: i32 = 8;
-const PENALTY_DATABASE_PUBLIC: i32 = 20;
-/// Per-port penalty for other critical-risk open ports (only applied when
-/// `PENALTY_DATABASE_PUBLIC` didn't already cover the exposure).
-const PENALTY_PER_CRITICAL_PORT: i32 = 5;
-const PENALTY_DRIFT_DETECTED: i32 = 15;
-const RECOMMENDATION_ENABLE_STEALTH_POINTS: i32 = 5;
-
 pub fn compute_firewall_score(
     posture: &FirewallPosture,
     rules: &[FirewallRule],
@@ -27,16 +15,16 @@ pub fn compute_firewall_score(
     let mut recommendations = Vec::new();
 
     if !posture.enabled {
-        score -= PENALTY_FIREWALL_DISABLED;
+        score -= 25;
         breakdown.push(ScoreBreakdownItem {
             category: "firewall_enabled".into(),
             status: "critical".into(),
-            points: -PENALTY_FIREWALL_DISABLED,
+            points: -25,
             detail: "Host firewall is disabled".into(),
         });
         recommendations.push(ScoreRecommendation {
             label: "Enable host firewall".into(),
-            points: PENALTY_FIREWALL_DISABLED,
+            points: 25,
             action: "enable_firewall".into(),
         });
     } else {
@@ -51,16 +39,16 @@ pub fn compute_firewall_score(
     let default_deny = posture.default_inbound.as_deref() == Some("deny")
         || posture.default_inbound.as_deref() == Some("DROP");
     if posture.enabled && !default_deny {
-        score -= PENALTY_DEFAULT_ALLOW_INBOUND;
+        score -= 10;
         breakdown.push(ScoreBreakdownItem {
             category: "default_inbound".into(),
             status: "warning".into(),
-            points: -PENALTY_DEFAULT_ALLOW_INBOUND,
+            points: -10,
             detail: "Default inbound policy is not deny".into(),
         });
         recommendations.push(ScoreRecommendation {
             label: "Set default inbound to deny".into(),
-            points: PENALTY_DEFAULT_ALLOW_INBOUND,
+            points: 10,
             action: "default_deny_inbound".into(),
         });
     }
@@ -75,35 +63,34 @@ pub fn compute_firewall_score(
         .iter()
         .any(|p| p.port == 22 && p.risk == ExposureRisk::Critical);
     if ssh_public {
-        score -= PENALTY_SSH_PUBLIC;
+        score -= 8;
         breakdown.push(ScoreBreakdownItem {
             category: "ssh_exposure".into(),
             status: "warning".into(),
-            points: -PENALTY_SSH_PUBLIC,
+            points: -8,
             detail: "SSH is allowed from anywhere".into(),
         });
         recommendations.push(ScoreRecommendation {
             label: "Restrict SSH to admin subnet".into(),
-            points: PENALTY_SSH_PUBLIC,
+            points: 8,
             action: "restrict_ssh".into(),
         });
     }
 
-    // MySQL, PostgreSQL, Redis, MongoDB default ports.
     let db_public = ports
         .iter()
         .any(|p| matches!(p.port, 3306 | 5432 | 6379 | 27017) && p.risk == ExposureRisk::Critical);
     if db_public {
-        score -= PENALTY_DATABASE_PUBLIC;
+        score -= 20;
         breakdown.push(ScoreBreakdownItem {
             category: "database_exposure".into(),
             status: "critical".into(),
-            points: -PENALTY_DATABASE_PUBLIC,
+            points: -20,
             detail: "Database port exposed publicly".into(),
         });
         recommendations.push(ScoreRecommendation {
             label: "Restrict database to app servers only".into(),
-            points: PENALTY_DATABASE_PUBLIC,
+            points: 20,
             action: "restrict_database".into(),
         });
     }
@@ -113,11 +100,11 @@ pub fn compute_firewall_score(
         .filter(|p| p.risk == ExposureRisk::Critical)
         .count();
     if critical_ports > 0 && !db_public {
-        score -= (critical_ports as i32) * PENALTY_PER_CRITICAL_PORT;
+        score -= (critical_ports as i32) * 5;
         breakdown.push(ScoreBreakdownItem {
             category: "open_ports".into(),
             status: "warning".into(),
-            points: -((critical_ports as i32) * PENALTY_PER_CRITICAL_PORT),
+            points: -((critical_ports as i32) * 5),
             detail: format!("{critical_ports} critical port exposures"),
         });
     } else if critical_ports == 0 {
@@ -130,11 +117,11 @@ pub fn compute_firewall_score(
     }
 
     if posture.drift_detected {
-        score -= PENALTY_DRIFT_DETECTED;
+        score -= 15;
         breakdown.push(ScoreBreakdownItem {
             category: "drift".into(),
             status: "warning".into(),
-            points: -PENALTY_DRIFT_DETECTED,
+            points: -15,
             detail: "Firewall drift detected outside Zeus".into(),
         });
     }
@@ -142,7 +129,7 @@ pub fn compute_firewall_score(
     if posture.stealth_level == super::types::StealthLevel::Off && posture.enabled {
         recommendations.push(ScoreRecommendation {
             label: "Enable Stealth Mode".into(),
-            points: RECOMMENDATION_ENABLE_STEALTH_POINTS,
+            points: 5,
             action: "enable_stealth".into(),
         });
     }

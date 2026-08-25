@@ -55,17 +55,12 @@ pub async fn set_pending_tetragon(
     host_id: &str,
     pending: &Value,
 ) -> anyhow::Result<()> {
-    // tetragon_version here is a placeholder default (overwritten by the real
-    // reported version on the next upsert_sensor call) — use the same
-    // DEFAULT_TETRAGON_VERSION constant the rest of the module upserts with,
-    // rather than a second hardcoded "1.7.0" that could drift from it.
     sqlx::query(
         "INSERT INTO packetwolf_local_sensors (host_id, status, tetragon_version, pending_tetragon)
-         VALUES (?, 'registered', ?, ?)
+         VALUES (?, 'registered', '1.7.0', ?)
          ON CONFLICT (host_id) DO UPDATE SET pending_tetragon = EXCLUDED.pending_tetragon",
     )
     .bind(host_id)
-    .bind(packetwolf_local::DEFAULT_TETRAGON_VERSION)
     .bind(pending)
     .execute(pool)
     .await?;

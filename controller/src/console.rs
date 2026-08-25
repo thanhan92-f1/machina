@@ -175,18 +175,7 @@ async fn vm_agent_target(state: &AppState, vm_id: Uuid) -> Option<(String, Strin
     Some((name, agent_console))
 }
 
-/// Bidirectionally relays a validated browser WebSocket to the agent's
-/// `/ws/{console}/{name}` endpoint. `proxy_to_agent_vnc`/`_serial`/`_spice`
-/// are thin wrappers over this — the three consoles share this exact relay
-/// shape (dial, split, pump both directions, abort the other side on close)
-/// and differ only in which agent endpoint segment they dial.
-async fn proxy_to_agent_console(
-    socket: WebSocket,
-    state: AppState,
-    vm_id: Uuid,
-    console: &str,
-    read_only: bool,
-) {
+async fn proxy_to_agent_vnc(socket: WebSocket, state: AppState, vm_id: Uuid, read_only: bool) {
     let Some((name, agent_console)) = vm_agent_target(&state, vm_id).await else {
         let (mut sink, _) = socket.split();
         let _ = sink.close().await;
@@ -194,7 +183,7 @@ async fn proxy_to_agent_console(
     };
 
     let ws_url = format!(
-        "ws://{}/ws/{console}/{}{}",
+        "ws://{}/ws/vnc/{}{}",
         agent_client::normalize_agent_addr(&agent_console),
         name,
         agent_console_token_qs()
@@ -257,10 +246,6 @@ async fn proxy_to_agent_console(
         _ = c2a => { a2c_abort.abort(); },
         _ = a2c => { c2a_abort.abort(); },
     }
-}
-
-async fn proxy_to_agent_vnc(socket: WebSocket, state: AppState, vm_id: Uuid, read_only: bool) {
-    proxy_to_agent_console(socket, state, vm_id, "vnc", read_only).await
 }
 
 /// Dial a `wss://` URL on the daemon's own (commonly self-signed) TLS
@@ -411,7 +396,76 @@ async fn proxy_to_daemon_kubevirt(
 }
 
 async fn proxy_to_agent_serial(socket: WebSocket, state: AppState, vm_id: Uuid, read_only: bool) {
-    proxy_to_agent_console(socket, state, vm_id, "serial", read_only).await
+    let Some((name, agent_console)) = vm_agent_target(&state, vm_id).await else {
+        let (mut sink, _) = socket.split();
+        let _ = sink.close().await;
+        return;
+    };
+
+    let ws_url = format!(
+        "ws://{}/ws/serial/{}{}",
+        agent_client::normalize_agent_addr(&agent_console),
+        name,
+        agent_console_token_qs()
+    );
+
+    let agent_ws = match connect_async(&ws_url).await {
+        Ok((stream, _)) => stream,
+        Err(_) => {
+            let (mut sink, _) = socket.split();
+            let _ = sink.close().await;
+            return;
+        }
+    };
+
+    let (mut client_sink, mut client_stream) = socket.split();
+    let (mut agent_sink, mut agent_stream) = agent_ws.split();
+
+    let c2a = tokio::spawn(async move {
+        while let Some(Ok(msg)) = client_stream.next().await {
+            let up = match msg {
+                // Read-only grant: drop client input frames (keyboard/mouse/
+                // clipboard) so a viewer can watch but not drive the guest.
+                Message::Binary(b) if !read_only => TsMessage::Binary(bytes::Bytes::from(b.to_vec())),
+                Message::Text(t) if !read_only => TsMessage::Text(t.to_string().into()),
+                Message::Close(_) => {
+                    let _ = agent_sink.send(TsMessage::Close(None)).await;
+                    break;
+                }
+                _ => continue,
+            };
+            if agent_sink.send(up).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    let a2c = tokio::spawn(async move {
+        while let Some(Ok(msg)) = agent_stream.next().await {
+            let down = match msg {
+                TsMessage::Binary(b) => Message::Binary(b.into()),
+                TsMessage::Text(t) => Message::Text(t.to_string().into()),
+                TsMessage::Close(_) => {
+                    let _ = client_sink.send(Message::Close(None)).await;
+                    break;
+                }
+                _ => continue,
+            };
+            if client_sink.send(down).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    // Abort the surviving direction when either ends, so a client that closes
+    // its tab doesn't leave the guest->client task blocked forever holding the
+    // upstream agent VNC/SPICE/serial connection (an fd + libvirt console leak).
+    let c2a_abort = c2a.abort_handle();
+    let a2c_abort = a2c.abort_handle();
+    tokio::select! {
+        _ = c2a => { a2c_abort.abort(); },
+        _ = a2c => { c2a_abort.abort(); },
+    }
 }
 
 async fn host_agent_addr(pool: &sqlx::SqlitePool, host_id: Uuid) -> Result<String, ApiError> {
@@ -446,7 +500,76 @@ pub async fn spice_ws_proxy(
 }
 
 async fn proxy_to_agent_spice(socket: WebSocket, state: AppState, vm_id: Uuid, read_only: bool) {
-    proxy_to_agent_console(socket, state, vm_id, "spice", read_only).await
+    let Some((name, agent_console)) = vm_agent_target(&state, vm_id).await else {
+        let (mut sink, _) = socket.split();
+        let _ = sink.close().await;
+        return;
+    };
+
+    let ws_url = format!(
+        "ws://{}/ws/spice/{}{}",
+        agent_client::normalize_agent_addr(&agent_console),
+        name,
+        agent_console_token_qs()
+    );
+
+    let agent_ws = match connect_async(&ws_url).await {
+        Ok((stream, _)) => stream,
+        Err(_) => {
+            let (mut sink, _) = socket.split();
+            let _ = sink.close().await;
+            return;
+        }
+    };
+
+    let (mut client_sink, mut client_stream) = socket.split();
+    let (mut agent_sink, mut agent_stream) = agent_ws.split();
+
+    let c2a = tokio::spawn(async move {
+        while let Some(Ok(msg)) = client_stream.next().await {
+            let up = match msg {
+                // Read-only grant: drop client input frames (keyboard/mouse/
+                // clipboard) so a viewer can watch but not drive the guest.
+                Message::Binary(b) if !read_only => TsMessage::Binary(bytes::Bytes::from(b.to_vec())),
+                Message::Text(t) if !read_only => TsMessage::Text(t.to_string().into()),
+                Message::Close(_) => {
+                    let _ = agent_sink.send(TsMessage::Close(None)).await;
+                    break;
+                }
+                _ => continue,
+            };
+            if agent_sink.send(up).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    let a2c = tokio::spawn(async move {
+        while let Some(Ok(msg)) = agent_stream.next().await {
+            let down = match msg {
+                TsMessage::Binary(b) => Message::Binary(b.into()),
+                TsMessage::Text(t) => Message::Text(t.to_string().into()),
+                TsMessage::Close(_) => {
+                    let _ = client_sink.send(Message::Close(None)).await;
+                    break;
+                }
+                _ => continue,
+            };
+            if client_sink.send(down).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    // Abort the surviving direction when either ends, so a client that closes
+    // its tab doesn't leave the guest->client task blocked forever holding the
+    // upstream agent VNC/SPICE/serial connection (an fd + libvirt console leak).
+    let c2a_abort = c2a.abort_handle();
+    let a2c_abort = a2c.abort_handle();
+    tokio::select! {
+        _ = c2a => { a2c_abort.abort(); },
+        _ = a2c => { c2a_abort.abort(); },
+    }
 }
 
 pub fn ws_routes() -> axum::Router<AppState> {

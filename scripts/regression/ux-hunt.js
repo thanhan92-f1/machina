@@ -70,7 +70,7 @@ if (explicit) {
       continue;
     }
 
-    const wait = p.startsWith('/platform') || p.startsWith('/fleet-cloud') ? 6500 : 4500;
+    const wait = p.startsWith('/platform') || p.startsWith('/openstack') ? 6500 : 4500;
     await new Promise((r) => setTimeout(r, wait));
 
     let text = '';

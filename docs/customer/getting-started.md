@@ -33,7 +33,7 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 
 1. **Core** — Dashboard, VMs, Create, Import, Fleet on this host.
 2. **Platform** — Mission Control for multi-host fleet (`/platform`).
-3. **Infrastructure / Fleet Cloud / Monitoring** — storage, networks, Fleet Cloud instances, host metrics.
+3. **Infrastructure / OpenStack / Monitoring** — storage, networks, OpenStack, host metrics.
 4. Spotlight / Finder for quick jump.
 
 ## 4. First workflows
@@ -50,9 +50,9 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 
 `/node` or Platform → Hosts.
 
-### D. Fleet Cloud
+### D. Wire OpenStack (optional)
 
-`/fleet-cloud` pages work out of the box — instances, images, volumes, security groups, networking, load balancers, and keypairs are all native, no external cloud connection or credentials required.
+Settings → OpenStack (`/settings?openstack=1`) then use `/openstack` pages.
 
 ## Next steps
 

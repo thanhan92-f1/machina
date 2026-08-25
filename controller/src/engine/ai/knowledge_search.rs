@@ -24,15 +24,6 @@ fn escape_like(s: &str) -> String {
     s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
 }
 
-// Final result cap after merging all source kinds, and per-event snippet
-// truncation so a long event message doesn't dominate the results list.
-const MAX_TOTAL_HITS: usize = 30;
-const EVENT_SNIPPET_MAX_CHARS: usize = 120;
-// Each source kind gets a fixed relevance score rather than a computed one —
-// VMs/hosts are the primary navigation targets so they rank above
-// secondary signals like audit log entries, and ties within a kind are
-// broken by DB order (name/recency) rather than further scoring.
-
 pub async fn search(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeSearchResult> {
     let q = query.trim();
     let mut hits = Vec::new();
@@ -127,7 +118,7 @@ pub async fn search(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeS
             kind: "event".into(),
             id: kind.clone(),
             title: kind,
-            snippet: message.chars().take(EVENT_SNIPPET_MAX_CHARS).collect(),
+            snippet: message.chars().take(120).collect(),
             score: 0.8,
             navigate: Some("/platform/events".into()),
         });
@@ -167,7 +158,7 @@ pub async fn search(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeS
             .partial_cmp(&a.score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-    hits.truncate(MAX_TOTAL_HITS);
+    hits.truncate(30);
 
     Ok(KnowledgeSearchResult {
         query: q.into(),

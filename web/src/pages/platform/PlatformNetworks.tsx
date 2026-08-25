@@ -11,6 +11,7 @@ import PageSkeleton from '../../components/PageSkeleton'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import NetworkCreateWizard from '../../components/platform/NetworkCreateWizard'
 import FleetSettingsPane from '../../components/platform/FleetSettingsPane'
+import { PlatformOpenStackNetworkLink } from '../../components/platform/PlatformCrossLinks'
 import MachinaNetworkLens from '../../components/ai/MachinaNetworkLens'
 import {
   MacGlassPanel,
@@ -352,6 +353,7 @@ export default function PlatformNetworks() {
                           {active ? 'active' : 'inactive'}
                         </span>
                       )}
+                      <PlatformOpenStackNetworkLink networkName={n.name} />
                     </div>
                   </div>
                   <dl className="grid grid-cols-2 gap-2 text-xs">

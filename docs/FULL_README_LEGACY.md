@@ -4,7 +4,7 @@
 
 **Docs:** [Index](docs/README.md) · [User stories](docs/USER_STORIES.md) · **Product stack:** **Machina** is the physical infrastructure OS (hosts, hypervisors, BMC, patching, Mission Control). **Zeus OS** is the cloud layer on top (Kubernetes, KubeVirt, applications). See [`docs/machina-infrastructure-vision.md`](docs/machina-infrastructure-vision.md).
 
-Built on **libvirt** with QEMU/KVM. Optional **Kubernetes** integration via YAML workflows and `kubectl`/`virtctl` helpers allows libvirt guests to participate in **KubeVirt** clusters and migrations. See [docs/kubevirt-migration.md](docs/kubevirt-migration.md). **Fleet Cloud** provides native instance/flavor/network/load-balancer management through the controller's own APIs.
+Built on **libvirt** with QEMU/KVM. Optional **Kubernetes** integration via YAML workflows and `kubectl`/`virtctl` helpers allows libvirt guests to participate in **KubeVirt** clusters and migrations. See [docs/kubevirt-migration.md](docs/kubevirt-migration.md). **OpenStack** Nova/Glance management and native qcow2 ↔ Glance migration are built into the daemon (optional **hyper2kvm** for advanced VM push) — see [docs/openstack.md](docs/openstack.md) and [docs/openstack-migration.md](docs/openstack-migration.md).
 
 A **Rust daemon** exposes REST and WebSocket APIs; a **web UI** delivers VNC, SPICE, serial, and SSH consoles; a **terminal UI** covers keyboard-first workflows. PAM authentication with RBAC, live metrics, Prometheus, alerts, webhooks, scheduled actions, and more run through that single daemon.
 
@@ -66,7 +66,7 @@ machina/   # git checkout directory name
 ├── web/                Web frontend (React 19 + TypeScript + Tailwind + Recharts + xterm.js)
 ├── contrib/            Systemd units, default config
 ├── demo-screenshots/   Screenshots, presentation PDFs, and PDF generators
-├── docs/               Optional integration notes (e.g. KubeVirt, Atlas storage)
+├── docs/               Optional integration notes (e.g. OpenStack, KubeVirt)
 ├── examples/           Example user configuration
 ├── scripts/            deploy-remote.sh, package-binary-remote.sh (client tarball), demo, status, backup, bulk
 ├── machinactl        Management CLI (deploy, verify, health, backup, upgrade, tls)
@@ -105,7 +105,7 @@ The Machina web UI uses a **Liquid Glass** design system inspired by macOS Tahoe
 - **Reusable components** — `GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs` in `web/src/components/glass/`
 - **Steel / Aurora** themes remain available via the navbar theme picker
 
-- **Machina login page** — macOS Tahoe liquid-glass split layout ([`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) `variant="macos"`), libvirt hero copy; entry at `/` or `/login`; after sign-in the URL normalizes to `/` (dashboard)
+- **Machina login page** — macOS Tahoe liquid-glass split layout ([`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) `variant="macos"`), libvirt/OpenStack hero copy; entry at `/` or `/login`; after sign-in the URL normalizes to `/` (dashboard)
 - **Command palette** — `Ctrl+K` / `Cmd+K` to search VMs, networks, storage pools, snapshots, navigate pages, and run quick actions with keyboard navigation
 - **Notification bell** — global notification center in navbar with badge count, showing real-time VM state changes, additions, and removals
 - **Breadcrumb navigation** — auto-generated from route path on every page
@@ -297,7 +297,7 @@ Open **https://localhost:5092** or run `machina` for the TUI.
 ```bash
 ./machinactl status          # Check service status
 ./machinactl verify          # Post-install smoke test (API, VMs, libvirt)
-VSPASS=… ./scripts/e2e-test.sh https://HOST:5092 USER  # Full E2E: health, libvirt VM lifecycle
+VSPASS=… ./scripts/e2e-test.sh https://HOST:5092 USER  # Full E2E: health, libvirt VM, OpenStack API
 ./machinactl health          # Deep health check (disk, libvirt, timers)
 ./machinactl logs            # Follow logs
 ./machinactl restart         # Restart service (auto-sudo)

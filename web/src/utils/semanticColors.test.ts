@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { describe, expect, it } from 'vitest'
-import { checkStatusTone, connectionStatusTone, hostStateTone, httpStatusTone, hubLinkClasses, jobStatusTone, journalPriorityTone, k8sPhaseTone, migrationReadinessTone, navActiveChipClasses, notificationChannelTone, instanceStatusTone, poolStateBadgeClasses, prereqTone, riskTone, sessionBadgeClasses, serviceStateTone, statusBorderClass, statusChipClasses, statusSurfaceClasses, tabActiveClasses, taskStatusTone, toastSemanticTone, utilizationBarClass, utilizationTone, userRoleTone, vmStateTone } from './semanticColors'
+import { checkStatusTone, connectionStatusTone, hostStateTone, httpStatusTone, hubLinkClasses, jobStatusTone, journalPriorityTone, k8sPhaseTone, migrationReadinessTone, navActiveChipClasses, notificationChannelTone, openstackStatusTone, poolStateBadgeClasses, prereqTone, riskTone, sessionBadgeClasses, serviceStateTone, statusBorderClass, statusChipClasses, statusSurfaceClasses, tabActiveClasses, taskStatusTone, toastSemanticTone, utilizationBarClass, utilizationTone, userRoleTone, vmStateTone } from './semanticColors'
 
 describe('semanticColors', () => {
   it('maps task statuses', () => {
@@ -16,9 +16,9 @@ describe('semanticColors', () => {
     expect(hostStateTone('online', false, true)).toBe('warn')
   })
 
-  it('maps vm and instance statuses', () => {
+  it('maps vm and openstack statuses', () => {
     expect(vmStateTone('running')).toBe('ok')
-    expect(instanceStatusTone('ACTIVE')).toBe('ok')
+    expect(openstackStatusTone('ACTIVE')).toBe('ok')
     expect(k8sPhaseTone('Failed')).toBe('error')
   })
 

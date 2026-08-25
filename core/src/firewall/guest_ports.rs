@@ -46,8 +46,6 @@ pub fn scan_guest_listening_ports(vm_name: &str) -> Vec<GuestListeningPort> {
     else {
         return Vec::new();
     };
-    // `guest-exec` is async: give the guest agent a moment to run `ss` and
-    // exit before polling its status — there's no push notification for this.
     std::thread::sleep(std::time::Duration::from_millis(500));
     let status_json = format!(r#"{{"execute":"guest-exec-status","arguments":{{"pid":{pid}}}}}"#);
     let st = match Command::new("virsh")

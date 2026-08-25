@@ -23,10 +23,7 @@ mod enterprise_security;
 mod error;
 mod events;
 mod fence;
-mod flavors;
 mod fleet;
-mod keypairs;
-mod load_balancers;
 mod guestkit;
 mod zeus_firewall;
 mod zeus_security;
@@ -86,6 +83,7 @@ use axum::Router;
 use crate::auth::auth_middleware;
 use crate::console;
 use crate::consolehub;
+use crate::launchpad;
 use crate::rate_limit::{rate_limit_middleware, RateLimiter};
 use crate::state::AppState;
 
@@ -932,7 +930,6 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/volumes/{id}/snapshots",
             get(volumes::list_volume_snapshots).post(volumes::create_volume_snapshot),
         )
-        .route("/api/v1/volume-snapshots", get(volumes::list_all_volume_snapshots))
         .route("/api/v1/volume-snapshots/{id}", delete(volumes::delete_volume_snapshot))
         .route(
             "/api/v1/security-groups",
@@ -959,32 +956,6 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/stacks/{id}",
             get(stacks::get_stack).delete(stacks::delete_stack),
-        )
-        .route("/api/v1/flavors", get(flavors::list_flavors).post(flavors::create_flavor))
-        .route(
-            "/api/v1/flavors/{id}",
-            get(flavors::get_flavor).delete(flavors::delete_flavor),
-        )
-        .route("/api/v1/keypairs", get(keypairs::list_keypairs).post(keypairs::create_keypair))
-        .route(
-            "/api/v1/keypairs/{id}",
-            get(keypairs::get_keypair).delete(keypairs::delete_keypair),
-        )
-        .route(
-            "/api/v1/load-balancers",
-            get(load_balancers::list_load_balancers).post(load_balancers::create_load_balancer),
-        )
-        .route(
-            "/api/v1/load-balancers/{id}",
-            get(load_balancers::get_load_balancer).delete(load_balancers::delete_load_balancer),
-        )
-        .route(
-            "/api/v1/load-balancers/{id}/members",
-            get(load_balancers::list_lb_members).post(load_balancers::add_lb_member),
-        )
-        .route(
-            "/api/v1/load-balancers/{id}/members/{member_id}",
-            axum::routing::patch(load_balancers::patch_lb_member).delete(load_balancers::delete_lb_member),
         )
         .route("/api/v1/policy/rules", get(policy::list_policy_rules))
         .route("/api/v1/policy/quotas", get(policy::list_project_quotas).post(policy::upsert_project_quota))
@@ -1063,6 +1034,7 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/notifications/{id}/deliver",
             post(notifications::mark_notification_delivered),
         )
+        .merge(launchpad::api_routes())
         .route("/api/v1/auth/oidc", get(oidc::get_oidc_settings).patch(oidc::patch_oidc_settings))
         .route(
             "/api/v1/cpu-compat",

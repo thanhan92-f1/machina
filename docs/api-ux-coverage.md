@@ -1,20 +1,19 @@
 # API ↔ UX coverage
 
-Generated: 2026-08-24T20:26:13.836Z
+Generated: 2026-07-16T02:41:43.514Z
 
 | Metric | Count |
 |--------|-------|
-| Controller routes | 550 |
-| Daemon routes | 318 |
+| Controller routes | 517 |
+| Daemon routes | 443 |
 | WebSocket routes | 12 |
-| **Total** | **880** |
+| **Total** | **972** |
 
 | Surface | Routes |
 |---------|--------|
-| console | 349 |
+| console | 476 |
 | documented | 20 |
-| fleet-cloud | 27 |
-| page | 484 |
+| page | 476 |
 
 **All routes mapped.**
 

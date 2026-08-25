@@ -44,8 +44,8 @@ async fn run(
     self_controller_id: &str,
 ) -> anyhow::Result<()> {
     let client = async_nats::connect(nats_url).await?;
-    let mut sub = client.subscribe(super::TASK_SUBJECT).await?;
-    tracing::info!("NATS task subscriber listening on {}", super::TASK_SUBJECT);
+    let mut sub = client.subscribe("machina.tasks").await?;
+    tracing::info!("NATS task subscriber listening on machina.tasks");
     while let Some(msg) = sub.next().await {
         // NATS echoes every publish back to this same process's subscription.
         // `FanoutTaskBus::publish` already delivers our own tasks straight into
@@ -60,7 +60,7 @@ async fn run(
         let origin = msg
             .headers
             .as_ref()
-            .and_then(|h| h.get(super::ORIGIN_HEADER))
+            .and_then(|h| h.get("X-Machina-Origin"))
             .map(|v| v.to_string());
         if origin.as_deref() == Some(self_controller_id) {
             continue;

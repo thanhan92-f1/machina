@@ -3,24 +3,20 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-/// Split a `name` or `name@version` ref into its parts — `None` means no
-/// `@version` suffix was given, so the caller should fall back to whatever
-/// "latest"/default means for their query.
-fn split_template_ref(template_ref: &str) -> (String, Option<String>) {
+pub fn parse_template_ref(template_ref: &str) -> (String, String) {
     if let Some((n, v)) = template_ref.split_once('@') {
-        (n.to_string(), Some(v.to_string()))
+        (n.to_string(), v.to_string())
     } else {
-        (template_ref.to_string(), None)
+        (template_ref.to_string(), "1.0.0".into())
     }
 }
 
-pub fn parse_template_ref(template_ref: &str) -> (String, String) {
-    let (name, version) = split_template_ref(template_ref);
-    (name, version.unwrap_or_else(|| "1.0.0".into()))
-}
-
 pub async fn resolve_template_disk(pool: &SqlitePool, template_ref: &str) -> anyhow::Result<String> {
-    let (name, version) = split_template_ref(template_ref);
+    let (name, version) = if let Some((n, v)) = template_ref.split_once('@') {
+        (n.to_string(), Some(v.to_string()))
+    } else {
+        (template_ref.to_string(), None)
+    };
 
     let disk: String = if let Some(ver) = version {
         sqlx::query_scalar("SELECT source_disk FROM templates WHERE name = ? AND version = ?")
@@ -45,7 +41,11 @@ pub async fn resolve_template_firewall_profile(
     pool: &SqlitePool,
     template_ref: &str,
 ) -> anyhow::Result<Option<String>> {
-    let (name, version) = split_template_ref(template_ref);
+    let (name, version) = if let Some((n, v)) = template_ref.split_once('@') {
+        (n.to_string(), Some(v.to_string()))
+    } else {
+        (template_ref.to_string(), None)
+    };
     let profile: Option<String> = if let Some(ver) = version {
         sqlx::query_scalar(
             "SELECT firewall_profile FROM templates WHERE name = ? AND version = ?",

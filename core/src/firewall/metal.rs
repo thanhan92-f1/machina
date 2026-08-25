@@ -12,12 +12,6 @@ use super::types::{
 };
 use crate::LibvirtError;
 
-/// IPMI's conventional TCP port — used both to synthesize this file's BMC
-/// exposure model and to actually probe reachability.
-const BMC_IPMI_PORT: u16 = 623;
-/// Redfish is served over plain HTTPS, so this doubles as "the BMC's web UI port".
-const BMC_REDFISH_PORT: u16 = 443;
-
 #[derive(Debug, Clone)]
 pub struct MetalServerInput {
     pub hostname: String,
@@ -100,8 +94,8 @@ pub fn scan_ipmi_exposure(bmc_address: &str, bmc_type: &str) -> MetalExposureSca
         notes.push("No BMC address configured".into());
         false
     } else {
-        let ipmi = probe_tcp(bmc_address, BMC_IPMI_PORT);
-        let redfish = probe_tcp(bmc_address, BMC_REDFISH_PORT);
+        let ipmi = probe_tcp(bmc_address, 623);
+        let redfish = probe_tcp(bmc_address, 443);
         ipmi_exposed = ipmi;
         redfish_exposed = redfish;
         if ipmi {
@@ -188,7 +182,7 @@ fn synthetic_open_ports(server: &MetalServerInput) -> Vec<OpenPort> {
             ExposureRisk::Safe
         };
         ports.push(OpenPort {
-            port: BMC_IPMI_PORT,
+            port: 623,
             protocol: "tcp".into(),
             service_name: "IPMI".into(),
             bind_address: server.bmc_address.clone(),
@@ -202,7 +196,7 @@ fn synthetic_open_ports(server: &MetalServerInput) -> Vec<OpenPort> {
             evidence: vec!["Synthetic BMC exposure model".into()],
         });
         ports.push(OpenPort {
-            port: BMC_REDFISH_PORT,
+            port: 443,
             protocol: "tcp".into(),
             service_name: "Redfish".into(),
             bind_address: server.bmc_address.clone(),
@@ -310,7 +304,7 @@ pub fn metal_preset_temporary_pxe() -> (i32, i32, String, i32) {
 }
 
 pub fn metal_preset_temporary_bmc() -> (i32, i32, String, i32) {
-    (BMC_IPMI_PORT as i32, BMC_REDFISH_PORT as i32, "tcp".into(), 4)
+    (623, 443, "tcp".into(), 4)
 }
 
 #[cfg(test)]

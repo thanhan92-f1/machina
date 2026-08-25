@@ -17,9 +17,6 @@ export interface Toast {
 }
 
 const MAX_VISIBLE_TOASTS = 8
-const DEFAULT_TOAST_DURATION_MS = 5000
-// How long a repeat of the same (normalized) error message is suppressed for.
-const ERROR_TOAST_DEDUPE_MS = 8000
 
 /** Normalize kubectl stderr so duplicate TLS spam dedupes across retries. */
 function errorToastDedupeKey(message: string): string {
@@ -70,7 +67,7 @@ export function useToast() {
   const addToast = useCallback((
     message: string,
     type: Toast['type'],
-    duration = DEFAULT_TOAST_DURATION_MS,
+    duration = 5000,
     action?: ToastAction,
   ) => {
     const id = crypto.randomUUID()
@@ -101,7 +98,7 @@ export function useToast() {
       const key = errorToastDedupeKey(msg)
       const now = Date.now()
       const prev = lastErrorToastRef.current
-      if (prev && prev.key === key && now - prev.at < ERROR_TOAST_DEDUPE_MS) {
+      if (prev && prev.key === key && now - prev.at < 8000) {
         return prev.id
       }
       const id = addToast(msg, 'error', d)

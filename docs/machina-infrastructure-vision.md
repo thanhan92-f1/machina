@@ -121,7 +121,7 @@ Spotlight intents: `open mission control`, `infrastructure health`, `show overhe
 
 See [`enterprise-backlog.md`](enterprise-backlog.md) for deferred enterprise items.
 
-For gap analysis and K8s integration status, see [`backend-ux-wiring-audit.md`](backend-ux-wiring-audit.md).
+For gap analysis and OpenStack/K8s integration status, see [`backend-ux-wiring-audit.md`](backend-ux-wiring-audit.md).
 
 ---
 

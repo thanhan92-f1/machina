@@ -1,6 +1,6 @@
 # Machina customer PDFs
 
-Generated: 2026-08-24
+Generated: 2026-07-26
 
 Rebuild: `node scripts/customer-docs/build-customer-pdfs.mjs`
 

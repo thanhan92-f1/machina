@@ -181,6 +181,7 @@ export async function setDesktopTier(page: Page, tier: DesktopTier) {
 }
 
 export interface PlatformInfoFlags {
+  openstackEnabled: boolean
   k8sEnabled: boolean
 }
 
@@ -189,14 +190,16 @@ export async function fetchPlatformFlags(page: Page, baseUrl: string): Promise<P
     const res = await page.request.get(`${baseUrl}/api/v1/system/platform-info`, {
       ignoreHTTPSErrors: true,
     })
-    if (!res.ok()) return { k8sEnabled: false }
+    if (!res.ok()) return { openstackEnabled: false, k8sEnabled: false }
     const body = (await res.json()) as {
+      openstack?: { enabled?: boolean }
       kubevirt?: { enabled?: boolean; exec_enabled?: boolean }
     }
     return {
+      openstackEnabled: Boolean(body.openstack?.enabled),
       k8sEnabled: Boolean(body.kubevirt?.exec_enabled ?? body.kubevirt?.enabled),
     }
   } catch {
-    return { k8sEnabled: false }
+    return { openstackEnabled: false, k8sEnabled: false }
   }
 }

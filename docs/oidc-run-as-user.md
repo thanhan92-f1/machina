@@ -59,7 +59,7 @@ Install: `contrib/run-as-user/README.md`
 | `/api/v1/console/*`, `/ws/v1/console|vnc|spice|rdp/*` | Yes — WS tokens carry full `RequestActor` |
 | `/api/v1/vms/{name}/virt-viewer.vv` | Yes |
 | Extras: USB, cloud-init, import, live resize, DHCP, templates, virt-image-build | Yes (VM/storage paths) |
-| K8s, fleet proxy, host-only extras (package updates, inventory) | No — not libvirt session policy |
+| OpenStack, K8s, fleet proxy, host-only extras (package updates, inventory) | No — not libvirt session policy |
 | `[libvirt] extra_uris` federated list | Read-only; no session write path |
 
 ## Related docs

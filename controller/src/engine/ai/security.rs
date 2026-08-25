@@ -94,19 +94,6 @@ pub async fn scan(pool: &SqlitePool) -> anyhow::Result<SecurityReport> {
     })
 }
 
-/// Pulls `value[field]` as a `Vec<Value>`, defaulting to empty when the field is
-/// missing or not an array. Timelines/correlation payloads here come from other
-/// AI engine modules (and ultimately PacketWolf) as loosely-typed JSON, so every
-/// caller below needs this same defensive `.get().and_then(as_array).cloned()`
-/// rather than risking a panic on a shape mismatch.
-fn json_array_field(value: &serde_json::Value, field: &str) -> Vec<serde_json::Value> {
-    value
-        .get(field)
-        .and_then(|v| v.as_array())
-        .cloned()
-        .unwrap_or_default()
-}
-
 fn explain_event_heuristic(event: &serde_json::Value, host_id: Option<&str>) -> serde_json::Value {
     let kind = event
         .get("kind")
@@ -161,7 +148,11 @@ pub async fn explain_event(
 }
 
 pub fn attack_reconstruct_sync(timeline: &serde_json::Value) -> serde_json::Value {
-    let events = json_array_field(timeline, "events");
+    let events = timeline
+        .get("events")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     let mut chain: Vec<String> = Vec::new();
     for (i, ev) in events.iter().take(8).enumerate() {
         let s = ev
@@ -186,7 +177,11 @@ pub async fn attack_reconstruct(
     timeline: &serde_json::Value,
 ) -> anyhow::Result<serde_json::Value> {
     let mut out = attack_reconstruct_sync(timeline);
-    let events = json_array_field(timeline, "events");
+    let events = timeline
+        .get("events")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     if events.is_empty() {
         return Ok(out);
     }
@@ -292,8 +287,16 @@ pub fn hunt_summary_heuristic(
     correlations: &serde_json::Value,
     timeline: &serde_json::Value,
 ) -> serde_json::Value {
-    let corr = json_array_field(correlations, "correlations");
-    let events = json_array_field(timeline, "events");
+    let corr = correlations
+        .get("correlations")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let events = timeline
+        .get("events")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     let critical = corr
         .iter()
         .filter(|c| {
@@ -329,8 +332,16 @@ pub async fn hunt_summary(
     timeline: &serde_json::Value,
 ) -> anyhow::Result<serde_json::Value> {
     let mut out = hunt_summary_heuristic(correlations, timeline);
-    let corr = json_array_field(correlations, "correlations");
-    let events = json_array_field(timeline, "events");
+    let corr = correlations
+        .get("correlations")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let events = timeline
+        .get("events")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
     if corr.is_empty() && events.is_empty() {
         return Ok(out);
     }

@@ -106,7 +106,7 @@ describe('platformFetch 401 handling', () => {
     localStorage.setItem(LS_CONTROLLER, PROXY_BASE)
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 401 })))
 
-    await expect(platformFetch('/api/v1/vms')).rejects.toMatchObject({
+    await expect(platformFetch('/api/v1/launchpad/config')).rejects.toMatchObject({
       error_code: 'controller_unauthorized',
     })
     expect(redirectToLoginOnce).not.toHaveBeenCalled()

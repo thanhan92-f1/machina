@@ -147,6 +147,11 @@ async function ensureRunning() {
     return j.status || 'ok';
   });
 
+  await mark('openstack-status', async () => {
+    const j = await getJson('/api/v1/openstack/status');
+    return `enabled=${j.enabled} connected=${j.connected}`;
+  });
+
   await mark('k8s-contexts', async () => {
     const j = await getJson('/api/v1/k8s/contexts');
     const ctx = j.contexts || j;

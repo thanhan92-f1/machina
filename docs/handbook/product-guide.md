@@ -24,7 +24,7 @@ Machina folds all of that into one daemon + one API + one UI:
 | libvirt ops scattered across `virsh` scripts | One dashboard + REST API for the full VM lifecycle |
 | Consoles need separate gateways | Built-in noVNC, SPICE, serial and SSH proxies |
 | No fleet observability | Prometheus, alerts, webhooks, PSI/cgroups, OTLP export |
-| KubeVirt migration is manual | YAML bundles + documented migration paths |
+| KubeVirt / OpenStack migration is manual | YAML bundles + documented migration paths |
 | Vendor hypervisor lock-in | Open-source Rust daemon on your own metal |
 
 ---
@@ -98,7 +98,7 @@ The install/manage/demo CLI at the repo root. It auto-escalates to root via
 | `tls` | Generate a self-signed TLS cert into `/etc/machina/ssl/` |
 | `demo` | Interactive REST API demo |
 | `audit verify [N]` | Verify the signed audit log (via API or local file) |
-| `integrations` | Show KubeVirt/k8s/automation status |
+| `integrations` | Show OpenStack/KubeVirt/k8s/automation status |
 
 There is also `scripts/platformctl` — a thin CLI over the **controller** REST API
 (`${MACHINA_CONTROLLER_URL:-http://127.0.0.1:5093}`): `health`, `hosts`,
@@ -160,9 +160,10 @@ runtime auth config (`/system/auth/ldap-settings`, `/oidc-settings`,
 **Fleet** (`fleet.rs`): `GET /fleet/status\|metrics\|alerts\|vms`,
 `POST /fleet/placement\|create-vm`, `GET /fleet/prometheus`.
 
-**Integrations** (mounted under `/api/v1`): `k8s`, `kubevirt`, `hypersdk`,
-`guestkit`, `zeus_firewall`, `automation`, `backup`, `jobs`, `templates`,
-`guest_images`, `platform_controller` (reverse-proxy to the controller).
+**Integrations** (mounted under `/api/v1`): `k8s`, `kubevirt`, `openstack`
+(+ extended/services), `hypersdk`, `guestkit`, `zeus_firewall`, `automation`,
+`backup`, `jobs`, `templates`, `guest_images`, `platform_controller`
+(reverse-proxy to the controller).
 
 > The full machine-readable contract is served at `GET /api/v1/openapi.json`
 > and mirrored in the UI at `/api-docs`.
@@ -191,8 +192,8 @@ Two shells share one daemon:
 - **Classic (daemon-backed)** — `/`, `/vms`, `/create`, `/import`, `/fleet`,
   `/storage`, `/disk-images`, `/snapshots`, `/backups`, `/networks`,
   `/nwfilters`, `/host-networking`, `/secrets`, `/k8s` (+ `/k8s/workloads`,
-  `/k8s/kata`), `/host-ssh`, `/settings`, `/api-docs`, plus the Fleet Cloud
-  pages under `/fleet-cloud/*`.
+  `/k8s/kata`), `/host-ssh`, `/settings`, `/api-docs`, plus the OpenStack pages
+  under `/openstack/*`.
 - **Platform (controller-backed)** — `/platform/*` with its own shell:
   Mission Control, Virtual Machines, Hosts, Applications, Launchpad, Datacenter
   View, Disk Utility, Storage Tiers, Networks, Content, Templates, Cloud-Init
@@ -273,13 +274,8 @@ desired-state reconciliation, a task bus (in-memory or NATS), and an AI engine
 - **KubeVirt** — export a VM as a KubeVirt YAML bundle
   (`GET /vms/{name}/kubevirt-bundle`) and apply/upload/start it on a cluster.
   See [../kubevirt-migration.md](../kubevirt-migration.md).
-- **Fleet Cloud** (`/fleet-cloud/*` in the UI) — manage instances, flavors,
-  networks, images, security groups, stacks, keypairs, and load balancers
-  (kernel-level weighted round-robin, not an Octavia amphora) entirely via
-  Machina's own native controller APIs — no external cloud connection, no
-  credentials to wire up. The legacy external-cloud client integration
-  (compute/image/network/identity management, and pushing local VMs to an
-  external cloud) has been fully removed.
+- **OpenStack** — manage instances, flavors, networks, images, load balancers,
+  and push local VMs to OpenStack. See [../openstack.md](../openstack.md).
 - **HyperSDK / hyper2kvm / GuestKit** — multi-cloud VM migration and offline
   assurance.
 - **Observability** — Prometheus scrape, remote-write ingest, OTLP/HTTP export

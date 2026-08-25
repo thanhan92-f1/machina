@@ -56,8 +56,6 @@ type Props = {
 }
 
 const TABS: CommandCenterTab[] = ['Overview', 'Health', 'Events', 'AI']
-// Shared card style for the three Overview stat tiles (Health/State/Network).
-const statTileClass = 'rounded-lg bg-slate-900/60 p-2 border border-slate-800'
 
 export default function CommandCenterPanel({
   open,
@@ -139,15 +137,15 @@ export default function CommandCenterPanel({
           {activeTab === 'Overview' && (
             <>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className={statTileClass}>
+                <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800">
                   <p className="text-slate-500">Health</p>
                   <p className="text-lg font-semibold text-slate-100">{healthScore ?? '—'}</p>
                 </div>
-                <div className={statTileClass}>
+                <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800">
                   <p className="text-slate-500">State</p>
                   <p className="text-slate-100 capitalize">{vmState ?? 'unknown'}</p>
                 </div>
-                <div className={`${statTileClass} col-span-2`}>
+                <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800 col-span-2">
                   <p className="text-slate-500">Network</p>
                   <p className="font-mono text-emerald-300/90">{guestIp ?? 'No IP'}</p>
                 </div>

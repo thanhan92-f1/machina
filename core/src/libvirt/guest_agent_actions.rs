@@ -301,28 +301,6 @@ pub fn validate_guest_service_unit(unit: &str) -> Result<String, LibvirtError> {
     Ok(normalized)
 }
 
-// Retry/poll tuning for `guest_exec_command` below. The virtio-serial QGA channel can
-// drop transiently while a network apply is mid-flight (interface flap, netplan/NM
-// restart), so both the initial launch and the status poll retry with linear backoff
-// instead of failing on the first miss.
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_LAUNCH_RETRIES: u64 = 8;
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_LAUNCH_BACKOFF_BASE_MS: u64 = 250;
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_LAUNCH_BACKOFF_STEP_MS: u64 = 150;
-/// How many times to poll `guest-exec-status` for completion (~8s total at the fixed interval below).
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_STATUS_POLL_ATTEMPTS: u32 = 40;
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_STATUS_POLL_INTERVAL_MS: u64 = 200;
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_STATUS_RETRIES: u64 = 6;
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_STATUS_BACKOFF_BASE_MS: u64 = 200;
-#[cfg(target_os = "linux")]
-const GUEST_EXEC_STATUS_BACKOFF_STEP_MS: u64 = 100;
-
 #[cfg(target_os = "linux")]
 fn guest_exec_command(
     vm_name: &str,
@@ -356,14 +334,12 @@ fn guest_exec_command(
     // until the agent is reachable again rather than failing the whole apply.
     let v = {
         let mut last = None;
-        for attempt in 0..GUEST_EXEC_LAUNCH_RETRIES {
+        for attempt in 0..8 {
             if let Some(v) = qemu_agent_command(vm_name, &exec_json) {
                 last = Some(v);
                 break;
             }
-            std::thread::sleep(std::time::Duration::from_millis(
-                GUEST_EXEC_LAUNCH_BACKOFF_BASE_MS + attempt * GUEST_EXEC_LAUNCH_BACKOFF_STEP_MS,
-            ));
+            std::thread::sleep(std::time::Duration::from_millis(250 + attempt * 150));
         }
         last.ok_or_else(|| {
             LibvirtError::Operation("guest-exec failed — is guestkit-agent running?".into())
@@ -375,22 +351,18 @@ fn guest_exec_command(
         .and_then(|p| p.as_u64())
         .ok_or_else(|| LibvirtError::Operation("guest-exec returned no pid".into()))?;
     let mut last = None;
-    for _ in 0..GUEST_EXEC_STATUS_POLL_ATTEMPTS {
-        std::thread::sleep(std::time::Duration::from_millis(
-            GUEST_EXEC_STATUS_POLL_INTERVAL_MS,
-        ));
+    for _ in 0..40 {
+        std::thread::sleep(std::time::Duration::from_millis(200));
         let status_json =
             format!(r#"{{"execute":"guest-exec-status","arguments":{{"pid":{pid}}}}}"#);
         let st = {
             let mut got = None;
-            for attempt in 0..GUEST_EXEC_STATUS_RETRIES {
+            for attempt in 0..6 {
                 if let Some(v) = qemu_agent_command(vm_name, &status_json) {
                     got = Some(v);
                     break;
                 }
-                std::thread::sleep(std::time::Duration::from_millis(
-                    GUEST_EXEC_STATUS_BACKOFF_BASE_MS + attempt * GUEST_EXEC_STATUS_BACKOFF_STEP_MS,
-                ));
+                std::thread::sleep(std::time::Duration::from_millis(200 + attempt * 100));
             }
             got.ok_or_else(|| LibvirtError::Operation("guest-exec-status failed".into()))?
         };
@@ -796,14 +768,6 @@ fn apply_via_networkmanager(
     Ok(format!("NetworkManager profile `{con}` (persistent)"))
 }
 
-/// Escape `s` for embedding inside a single-quoted POSIX shell argument. A single
-/// quote can't be escaped while inside `'...'`, so the idiom is to close the quote,
-/// emit a backslash-escaped literal quote, then reopen: `'` becomes `'\''`.
-#[cfg(target_os = "linux")]
-fn shell_single_quote_escape(s: &str) -> String {
-    s.replace('\'', "'\\''")
-}
-
 #[cfg(target_os = "linux")]
 fn apply_via_systemd_networkd(
     vm_name: &str,
@@ -826,7 +790,7 @@ fn apply_via_systemd_networkd(
     for (to, via) in routes {
         body.push_str(&format!("\n[Route]\nDestination={to}\nGateway={via}\n"));
     }
-    let body_escaped = shell_single_quote_escape(&body);
+    let body_escaped = body.replace('\'', "'\\''");
     let path = format!("/etc/systemd/network/10-machina-{iface}.network");
     let script = format!(
         "mkdir -p /etc/systemd/network && printf '%s' '{body_escaped}' > '{path}' && \
@@ -875,7 +839,7 @@ fn apply_via_netplan(
     let yaml = format!(
         "network:\n  version: 2\n  ethernets:\n    {iface}:\n      dhcp4: false\n      addresses:\n        - {cidr}\n{dns_yaml}{routes_yaml}"
     );
-    let yaml_esc = shell_single_quote_escape(&yaml);
+    let yaml_esc = yaml.replace('\'', "'\\''");
     let path = "/etc/netplan/99-machina-guest.yaml";
     let script = format!(
         "printf '%s' '{yaml_esc}' > '{path}' && '{netplan}' apply",
@@ -912,7 +876,7 @@ fn apply_via_wicked(
     if !dns.is_empty() {
         ifcfg.push_str(&format!("NETCONFIG_DNS_STATIC_SERVERS='{}'\n", dns.join(" ")));
     }
-    let ifcfg_esc = shell_single_quote_escape(&ifcfg);
+    let ifcfg_esc = ifcfg.replace('\'', "'\\''");
     let path = format!("/etc/sysconfig/network/ifcfg-{iface}");
     let mut script = format!("printf '%s' '{ifcfg_esc}' > '{path}'");
     if let Some(ref w) = wicked {
@@ -975,7 +939,7 @@ fn apply_via_iproute2(
             .iter()
             .map(|d| format!("nameserver {d}\n"))
             .collect::<String>();
-        let esc = shell_single_quote_escape(&content);
+        let esc = content.replace('\'', "'\\''");
         let script = format!("printf '%s' '{esc}' > /etc/resolv.conf");
         let _ = guest_exec_command(vm_name, "/bin/sh", &["-c", &script]);
     }

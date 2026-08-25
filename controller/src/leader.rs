@@ -97,8 +97,6 @@ pub fn spawn(pool: SqlitePool, controller_id: String) -> LeaderHandle {
 }
 
 async fn renew_lease(pool: &SqlitePool, holder_id: &str) -> anyhow::Result<bool> {
-    // The "+15 seconds" literal below must match LEASE_SECS — sqlx query strings
-    // can't interpolate a Rust const, so keep the two in sync by hand if either changes.
     let acquired: bool = sqlx::query_scalar(
         "UPDATE controller_leadership SET holder_id = ?, lease_until = datetime('now', '+15 seconds'),
          updated_at = datetime('now')

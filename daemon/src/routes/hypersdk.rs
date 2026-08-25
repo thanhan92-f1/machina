@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Reverse-proxy selected HyperSDK / hypervisord APIs for bulk cloud migrations.
+//! Reverse-proxy selected HyperSDK / hypervisord APIs for bulk OpenStack migrations.
 
 use axum::{
     extract::{Extension, Path, Query},

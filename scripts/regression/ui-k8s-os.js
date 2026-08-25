@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * CDP UI: K8s + remaining Fleet Cloud management shells.
+ * CDP UI: K8s + remaining OpenStack management shells.
  */
 
 const { loadConfig } = require('./lib/config');
@@ -18,20 +18,20 @@ const PATHS = [
   '/k8s',
   '/k8s/workloads',
   '/k8s/kata',
-  '/fleet-cloud',
-  '/fleet-cloud/instances',
-  '/fleet-cloud/volumes',
-  '/fleet-cloud/volume-snapshots',
-  '/fleet-cloud/networking',
-  '/fleet-cloud/security-groups',
-  '/fleet-cloud/floating-ips',
-  '/fleet-cloud/load-balancers',
-  '/fleet-cloud/topology',
-  '/fleet-cloud/keypairs',
-  '/fleet-cloud/server-groups',
-  '/fleet-cloud/migrations',
-  '/fleet-cloud/heat',
-  '/fleet-cloud/identity',
+  '/openstack',
+  '/openstack/instances',
+  '/openstack/volumes',
+  '/openstack/volume-snapshots',
+  '/openstack/networking',
+  '/openstack/security-groups',
+  '/openstack/floating-ips',
+  '/openstack/load-balancers',
+  '/openstack/topology',
+  '/openstack/keypairs',
+  '/openstack/server-groups',
+  '/openstack/migrations',
+  '/openstack/heat',
+  '/openstack/identity',
   '/platform/applications',
   '/platform/marketplace',
   '/platform/enterprise',

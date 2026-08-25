@@ -185,9 +185,11 @@ agent confirms Remote Desktop is actually listening. Connect with a native
 client — Microsoft Remote Desktop on macOS, or `mstsc` on Windows — using the
 `.rdp` file generated from `GET /vms/{name}/rdp-info`.
 
-**Q33. Can I migrate VMs to KubeVirt?**
+**Q33. Can I migrate VMs to KubeVirt or OpenStack?**
 Yes. Export a KubeVirt bundle (`GET /vms/{name}/kubevirt-bundle`) and
-apply/upload/start it. See [../kubevirt-migration.md](../kubevirt-migration.md).
+apply/upload/start it, or push to OpenStack (`POST /vms/{name}/openstack-push`).
+See [../kubevirt-migration.md](../kubevirt-migration.md) and
+[../openstack.md](../openstack.md).
 
 **Q34. Does Machina expose Prometheus metrics?**
 Yes — `GET /api/v1/prometheus` is a scrape endpoint; there's a metrics-history

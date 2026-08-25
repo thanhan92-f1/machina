@@ -158,6 +158,19 @@ async function step(name, fn) {
     return `issues=${(j.issues || []).length}`;
   });
 
+  await mark('openstack-status', async () => {
+    const r = await api('GET', '/api/v1/openstack/status');
+    if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
+    const j = JSON.parse(r.body);
+    return `enabled=${j.enabled} configured=${j.configured}`;
+  });
+
+  await mark('openstack-flavors-negative', async () => {
+    const r = await api('GET', '/api/v1/openstack/flavors');
+    if (r.status < 400) throw new Error(`expected reject got ${r.status}`);
+    return `${r.status}`;
+  });
+
   await mark('secrets-schema-negative', async () => {
     const r = await api('POST', '/api/v1/secrets', {});
     if (r.status < 400) throw new Error(`expected reject got ${r.status}`);

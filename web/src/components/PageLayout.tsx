@@ -24,7 +24,7 @@ type PageLayoutProps = {
   onErrorRetry?: () => void
   onErrorDismiss?: () => void
   emptyState?: ReactNode
-  /** Rendered before errors and header (e.g. Fleet Cloud sub-nav). */
+  /** Rendered before errors and header (e.g. OpenStack sub-nav). */
   prepend?: ReactNode
   /** Tighter vertical spacing (e.g. embedded platform panels). */
   compact?: boolean

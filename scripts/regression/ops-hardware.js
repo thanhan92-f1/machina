@@ -175,6 +175,17 @@ async function ensureRunning() {
     return `count=${j.length}`;
   });
 
+  await mark('openstack-status', async () => {
+    const j = await getJson('/api/v1/openstack/status');
+    if (typeof j.enabled !== 'boolean') throw new Error('no enabled');
+    return `enabled=${j.enabled}`;
+  });
+
+  await mark('openstack-images-unconfigured', async () => {
+    const r = await api('GET', '/api/v1/openstack/images');
+    if (r.status !== 400) throw new Error(`expected 400 got ${r.status}`);
+    return '400 not configured';
+  });
 
   await mark('k8s-contexts', async () => {
     const j = await getJson('/api/v1/k8s/contexts');

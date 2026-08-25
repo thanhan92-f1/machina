@@ -6,16 +6,9 @@ use sqlx::SqlitePool;
 use crate::config::ControllerConfig;
 use crate::state::AppState;
 
-/// How often to re-scan the runbook catalog for auto-triggers.
-const TICK_INTERVAL_SECS: u64 = 600;
-/// Minimum time between repeat firings of the same auto-trigger, so a
-/// persistent condition (e.g. hosts staying offline) doesn't re-execute the
-/// same runbook every tick.
-const RETRIGGER_COOLDOWN_MINUTES: i64 = 60;
-
 pub fn spawn(state: AppState) {
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(TICK_INTERVAL_SECS));
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(600));
         loop {
             interval.tick().await;
             if !state.leader.is_leader() {
@@ -37,7 +30,7 @@ async fn tick_triggers(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Res
 
     for (incident, trigger, last) in rows {
         if let Some(last) = last {
-            if (chrono::Utc::now() - last).num_minutes() < RETRIGGER_COOLDOWN_MINUTES {
+            if (chrono::Utc::now() - last).num_minutes() < 60 {
                 continue;
             }
         }

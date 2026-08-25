@@ -9,6 +9,7 @@ import {
   Cpu, Activity, MonitorCog, Usb, Cog, ScrollText, FileText, Key, Users, Database, Terminal,
   ClipboardList,
   Boxes,
+  LayoutGrid,
   Package,
   Cloud,
   Stethoscope,
@@ -43,11 +44,27 @@ export interface NavItem {
   label: string
   /** If true, only show in nav when signed in as UNIX `root`. */
   requiresRoot?: boolean
+  /** If true, only show when OpenStack is enabled and configured on the daemon. */
+  requiresOpenStack?: boolean
+  /** Show only while OpenStack is not wired — links to Settings for setup. */
+  openstackSetupOnly?: boolean
   /** If true, only show when HyperSDK is enabled on the daemon. */
   requiresHypersdk?: boolean
+  /** If true, only show when Launchpad is enabled on the daemon. */
+  requiresLaunchpad?: boolean
 }
 
-/** Match nav item href against current location (supports /fleet-cloud prefix + settings query). */
+/** OpenStack credentials present in daemon config (may still be unreachable). */
+export function isOpenStackConfigured(
+  openstack: { enabled?: boolean; configured?: boolean } | undefined,
+): boolean {
+  return Boolean(openstack?.enabled && openstack?.configured)
+}
+
+/** @deprecated Use isOpenStackConfigured — nav visibility; operational UI gates on phase === live. */
+export const isOpenStackNavEnabled = isOpenStackConfigured
+
+/** Match nav item href against current location (supports /openstack prefix + settings query). */
 export function navItemActive(
   item: NavItem,
   pathname: string,
@@ -62,10 +79,10 @@ export function navItemActive(
     }
     return true
   }
-  if (path === '/fleet-cloud') {
-    return pathname === '/fleet-cloud'
+  if (path === '/openstack') {
+    return pathname === '/openstack'
   }
-  if (path.startsWith('/fleet-cloud/')) {
+  if (path.startsWith('/openstack/')) {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
   if (path.startsWith('/platform/zyra/')) {
@@ -79,12 +96,14 @@ export function navGroupHasActive(
   pathname: string,
   search: string,
   username: string,
+  openstackReady: boolean,
   hypersdkEnabled = false,
+  launchpadEnabled = true,
 ): boolean {
   return navDropdownSections(group).some((section) =>
     section.items.some(
       (item) =>
-        navItemVisible(item, username, hypersdkEnabled) &&
+        navItemVisible(item, username, openstackReady, hypersdkEnabled, launchpadEnabled) &&
         navItemActive(item, pathname, search),
     ),
   )
@@ -93,10 +112,15 @@ export function navGroupHasActive(
 export function navItemVisible(
   item: NavItem,
   username: string,
+  openstackReady: boolean,
   hypersdkEnabled = false,
+  launchpadEnabled = true,
 ): boolean {
   if (item.requiresRoot && username !== 'root') return false
+  if (item.requiresOpenStack && !openstackReady) return false
+  if (item.openstackSetupOnly && openstackReady) return false
   if (item.requiresHypersdk && !hypersdkEnabled) return false
+  if (item.requiresLaunchpad && !launchpadEnabled) return false
   return true
 }
 
@@ -162,6 +186,7 @@ export const navGroups: NavGroup[] = [
           { to: '/platform/vms', icon: React.createElement(MonitorCog, { className: 'w-4 h-4' }), label: 'Virtual Machines' },
           { to: '/platform/hosts', icon: React.createElement(Server, { className: 'w-4 h-4' }), label: 'Hosts' },
           { to: '/platform/applications', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Applications' },
+          { to: '/platform/launchpad', icon: React.createElement(LayoutGrid, { className: 'w-4 h-4' }), label: 'Launchpad', requiresLaunchpad: true },
           { to: '/platform/datacenter', icon: React.createElement(Building2, { className: 'w-4 h-4' }), label: 'Datacenter View' },
         ],
       },
@@ -282,46 +307,57 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Fleet Cloud',
+    label: 'OpenStack',
     barIcon: Boxes,
     items: [],
     menuScroll: true,
     sections: [
       {
+        label: '',
+        items: [
+          {
+            to: '/settings?openstack=1',
+            icon: React.createElement(Cloud, { className: 'w-4 h-4' }),
+            label: 'Wire OpenStack',
+            openstackSetupOnly: true,
+          },
+        ],
+      },
+      {
         label: 'Compute',
         items: [
-          { to: '/fleet-cloud', icon: React.createElement(Cloud, { className: 'w-4 h-4' }), label: 'Overview' },
-          { to: '/fleet-cloud/instances', icon: React.createElement(Server, { className: 'w-4 h-4' }), label: 'Instances' },
-          { to: '/fleet-cloud/create', icon: React.createElement(Plus, { className: 'w-4 h-4' }), label: 'Create Instance' },
-          { to: '/fleet-cloud/server-groups', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Server Groups' },
-          { to: '/fleet-cloud/keypairs', icon: React.createElement(Key, { className: 'w-4 h-4' }), label: 'Keypairs' },
-          { to: '/fleet-cloud/flavors', icon: React.createElement(Cpu, { className: 'w-4 h-4' }), label: 'Flavors' },
-          { to: '/fleet-cloud/migrations', icon: React.createElement(Upload, { className: 'w-4 h-4' }), label: 'Migrations', requiresHypersdk: true },
+          { to: '/openstack', icon: React.createElement(Cloud, { className: 'w-4 h-4' }), label: 'Overview' },
+          { to: '/openstack/instances', icon: React.createElement(Server, { className: 'w-4 h-4' }), label: 'Instances' },
+          { to: '/openstack/create', icon: React.createElement(Plus, { className: 'w-4 h-4' }), label: 'Create Instance' },
+          { to: '/openstack/server-groups', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Server Groups' },
+          { to: '/openstack/keypairs', icon: React.createElement(Key, { className: 'w-4 h-4' }), label: 'Keypairs' },
+          { to: '/openstack/flavors', icon: React.createElement(Cpu, { className: 'w-4 h-4' }), label: 'Flavors' },
+          { to: '/openstack/migrations', icon: React.createElement(Upload, { className: 'w-4 h-4' }), label: 'Migrations', requiresHypersdk: true },
         ],
       },
       {
         label: 'Storage',
         items: [
-          { to: '/fleet-cloud/volumes', icon: React.createElement(HardDrive, { className: 'w-4 h-4' }), label: 'Volumes' },
-          { to: '/fleet-cloud/volume-snapshots', icon: React.createElement(Camera, { className: 'w-4 h-4' }), label: 'Volume Snapshots' },
-          { to: '/fleet-cloud/images', icon: React.createElement(Package, { className: 'w-4 h-4' }), label: 'Images' },
+          { to: '/openstack/volumes', icon: React.createElement(HardDrive, { className: 'w-4 h-4' }), label: 'Volumes' },
+          { to: '/openstack/volume-snapshots', icon: React.createElement(Camera, { className: 'w-4 h-4' }), label: 'Volume Snapshots' },
+          { to: '/openstack/images', icon: React.createElement(Package, { className: 'w-4 h-4' }), label: 'Glance Images' },
         ],
       },
       {
         label: 'Networking',
         items: [
-          { to: '/fleet-cloud/networking', icon: React.createElement(Network, { className: 'w-4 h-4' }), label: 'Networking' },
-          { to: '/fleet-cloud/security-groups', icon: React.createElement(Shield, { className: 'w-4 h-4' }), label: 'Security Groups' },
-          { to: '/fleet-cloud/floating-ips', icon: React.createElement(Globe, { className: 'w-4 h-4' }), label: 'Floating IPs' },
-          { to: '/fleet-cloud/load-balancers', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Load Balancers' },
-          { to: '/fleet-cloud/topology', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Network Topology' },
+          { to: '/openstack/networking', icon: React.createElement(Network, { className: 'w-4 h-4' }), label: 'Networking' },
+          { to: '/openstack/security-groups', icon: React.createElement(Shield, { className: 'w-4 h-4' }), label: 'Security Groups' },
+          { to: '/openstack/floating-ips', icon: React.createElement(Globe, { className: 'w-4 h-4' }), label: 'Floating IPs' },
+          { to: '/openstack/load-balancers', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Load Balancers' },
+          { to: '/openstack/topology', icon: React.createElement(Share2, { className: 'w-4 h-4' }), label: 'Network Topology' },
         ],
       },
       {
         label: 'Platform',
         items: [
-          { to: '/fleet-cloud/heat', icon: React.createElement(Flame, { className: 'w-4 h-4' }), label: 'Heat Orchestration' },
-          { to: '/fleet-cloud/identity', icon: React.createElement(Users, { className: 'w-4 h-4' }), label: 'Identity' },
+          { to: '/openstack/heat', icon: React.createElement(Flame, { className: 'w-4 h-4' }), label: 'Heat Orchestration' },
+          { to: '/openstack/identity', icon: React.createElement(Users, { className: 'w-4 h-4' }), label: 'Identity' },
         ],
       },
     ],
@@ -377,24 +413,24 @@ export const routeLabels: Record<string, string> = {
   '/k8s': 'Kubernetes',
   '/k8s/workloads': 'K8s Workloads',
   '/k8s/kata': 'Kata Containers',
-  '/fleet-cloud': 'Fleet Cloud',
-  '/fleet-cloud/instances': 'Instances',
-  '/fleet-cloud/instances/:id': 'Instance',
-  '/fleet-cloud/create': 'Create Instance',
-  '/fleet-cloud/images': 'Images',
-  '/fleet-cloud/migrations': 'Migrations',
-  '/fleet-cloud/volumes': 'Volumes',
-  '/fleet-cloud/volume-snapshots': 'Volume Snapshots',
-  '/fleet-cloud/security-groups': 'Security Groups',
-  '/fleet-cloud/floating-ips': 'Floating IPs',
-  '/fleet-cloud/networking': 'Networking',
-  '/fleet-cloud/load-balancers': 'Load Balancers',
-  '/fleet-cloud/topology': 'Network Topology',
-  '/fleet-cloud/heat': 'Heat Orchestration',
-  '/fleet-cloud/identity': 'Identity',
-  '/fleet-cloud/keypairs': 'Keypairs',
-  '/fleet-cloud/flavors': 'Flavors',
-  '/fleet-cloud/server-groups': 'Server Groups',
+  '/openstack': 'OpenStack',
+  '/openstack/instances': 'Instances',
+  '/openstack/instances/:id': 'Instance',
+  '/openstack/create': 'Create Instance',
+  '/openstack/images': 'Glance Images',
+  '/openstack/migrations': 'Migrations',
+  '/openstack/volumes': 'Volumes',
+  '/openstack/volume-snapshots': 'Volume Snapshots',
+  '/openstack/security-groups': 'Security Groups',
+  '/openstack/floating-ips': 'Floating IPs',
+  '/openstack/networking': 'Networking',
+  '/openstack/load-balancers': 'Load Balancers',
+  '/openstack/topology': 'Network Topology',
+  '/openstack/heat': 'Heat Orchestration',
+  '/openstack/identity': 'Identity',
+  '/openstack/keypairs': 'Keypairs',
+  '/openstack/flavors': 'Flavors',
+  '/openstack/server-groups': 'Server Groups',
   '/audit': 'Audit Log',
   '/import': 'Import VM',
   '/sprites': 'Sprites',
@@ -407,6 +443,7 @@ export const routeLabels: Record<string, string> = {
   '/platform': 'Mission Control',
   '/platform/vms': 'Virtual Machines',
   '/platform/applications': 'Applications',
+  '/platform/launchpad': 'Launchpad',
   '/platform/hosts': 'Hosts',
   '/platform/content': 'Images & ISOs',
   '/platform/templates': 'Templates',
@@ -481,6 +518,8 @@ export const routeLabels: Record<string, string> = {
   '/platform/vms/:id': 'Virtual Machine',
   '/platform/vms/:id/consolehub': 'Console Hub',
   '/platform/vms/:id/console': 'Console',
+  '/platform/launchpad/apps/:id': 'App',
+  '/platform/launchpad/spaces/:spaceId': 'Space',
   '/platform/zyra/machines/:hostId': 'Host',
   '/platform/zeus/security/firewall/:id': 'Firewall',
 }

@@ -210,7 +210,7 @@ VSPASS='…' ./scripts/deploy-remote.sh sus 212.8.252.194 \
 
 This rsyncs sources, runs `make release web` on the server, installs **machina-daemon** (`:5092`), then `scripts/install-platform.sh` (PostgreSQL + **machina-controller** `:5093` + **machina-agent**).
 
-With `--platform --e2e`, deploy runs the **full E2E suite** (`e2e-full-test-remote.sh`): daemon libvirt checks, host checklist (no nbd SMART noise), UI platform proxy via `/api/v1/platform/controller`, read-only controller smoke, and VM lifecycle on `:5093`.
+With `--platform --e2e`, deploy runs the **full E2E suite** (`e2e-full-test-remote.sh`): daemon libvirt/OpenStack checks, host checklist (no nbd SMART noise), UI platform proxy via `/api/v1/platform/controller`, read-only controller smoke, and VM lifecycle on `:5093`.
 
 ### Comprehensive platform E2E (recommended sign-off)
 
@@ -220,7 +220,7 @@ With `--platform --e2e`, deploy runs the **full E2E suite** (`e2e-full-test-remo
 VSPASS='…' ./scripts/e2e-platform-complete-remote.sh sus 175.110.114.93
 ```
 
-This runs, in order: full API/daemon E2E, UX API flow (create + delete VM), live UX wiring manifest (~84 routes), and live Playwright (create/delete VM, platform routes, host smoke). Results are written to [`docs/e2e-last-run.json`](e2e-last-run.json).
+This runs, in order: full API/daemon E2E (with `--skip-openstack` on KVM-only hosts), UX API flow (create + delete VM), live UX wiring manifest (~84 routes), and live Playwright (create/delete VM, platform routes, host smoke). Results are written to [`docs/e2e-last-run.json`](e2e-last-run.json).
 
 Optional local mocked CI: `E2E_INCLUDE_MOCK=1` prepends `npm run test:e2e` in the web tree.
 
@@ -232,16 +232,22 @@ From your laptop:
 VSPASS='…' ./scripts/e2e-full-test-remote.sh sus 212.8.252.194
 ```
 
-Platform-only (skip libvirt daemon tests):
+Platform-only (skip libvirt/OpenStack daemon tests):
 
 ```bash
 VSPASS='…' ./scripts/e2e-full-test-remote.sh sus 212.8.252.194 --platform-only
 ```
 
+KVM-only remote host (skip OpenStack):
+
+```bash
+VSPASS='…' ./scripts/e2e-full-test-remote.sh sus 175.110.114.93 --skip-openstack
+```
+
 Phases (each skippable via flags on `e2e-full-test.sh`):
 
 1. **Install smoke** — `systemctl` + controller health on the remote host
-2. **Daemon E2E** — PAM login, libvirt VM lifecycle
+2. **Daemon E2E** — PAM login, libvirt VM lifecycle, OpenStack when configured
 3. **Host health** — `/api/v1/health/problems` and linux-observability exclude nbd SMART
 4. **UI platform proxy** — authenticated calls through daemon to controller (browser path)
 5. **Platform controller** — read-only API smoke + VM create/snapshot lifecycle

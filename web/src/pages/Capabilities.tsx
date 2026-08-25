@@ -3,9 +3,15 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { useEffect, useState, useCallback } from 'react'
+import { Link } from 'react-router'
 import { getCapabilities, getSysinfo, CapabilitiesInfo } from '../api/advanced'
+import { getOpenStackStatus, type OpenStackConnectionStatus } from '../api/openstack'
+import { usePlatformInfo } from '../contexts/PlatformInfoContext'
+import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
+import OpenStackUnreachablePanel from '../components/OpenStackUnreachablePanel'
 import { useToastContext } from '../contexts/ToastContext'
-import { RefreshCw, Cpu, Info } from 'lucide-react'
+import { RefreshCw, Cpu, Info, Cloud } from 'lucide-react'
+import OpenStackSetupPanel from '../components/OpenStackSetupPanel'
 import PageLayout from '../components/PageLayout'
 import { ChoiceCard, ChoiceCardGrid } from '../components/ChoiceCards'
 import SysinfoDisplay from '../components/SysinfoDisplay'
@@ -17,17 +23,22 @@ export default function CapabilitiesPage() {
   const [sysinfo, setSysinfo] = useState('')
   const [tab, setTab] = useState<'capabilities' | 'sysinfo'>('capabilities')
   const [loading, setLoading] = useState(true)
+  const [openstackStatus, setOpenstackStatus] = useState<OpenStackConnectionStatus | null>(null)
   const toast = useToastContext()
+  const { info } = usePlatformInfo()
+  const { phase: osPhase } = useOpenStackConnection()
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      const [caps, sys] = await Promise.all([
+      const [caps, sys, os] = await Promise.all([
         getCapabilities().catch(() => null),
         getSysinfo().catch(() => ''),
+        getOpenStackStatus().catch(() => null),
       ])
       setCapabilities(caps)
       setSysinfo(sys)
+      setOpenstackStatus(os)
     } catch (e: unknown) {
       toast.error(`${formatUserError(e)}`)
     } finally {
@@ -71,6 +82,31 @@ export default function CapabilitiesPage() {
           ))}
         </ChoiceCardGrid>
       </div>
+
+      {tab === 'capabilities' && (
+        <div className="space-y-4">
+          {osPhase === 'live' && openstackStatus ? (
+            <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Cloud className="w-6 h-6 text-sky-400" />
+                <div>
+                  <h3 className="font-semibold text-slate-100">OpenStack</h3>
+                  <p className="text-sm text-slate-400">
+                    {openstackStatus.cloud_name} · {openstackStatus.instance_count ?? 0} instances · live
+                  </p>
+                </div>
+              </div>
+              <Link to="/openstack" className="text-sm text-sky-400 hover:underline">
+                Open cloud UI →
+              </Link>
+            </div>
+          ) : osPhase === 'unreachable' ? (
+            <OpenStackUnreachablePanel />
+          ) : (
+            <OpenStackSetupPanel compact />
+          )}
+        </div>
+      )}
 
       {tab === 'capabilities' && capabilities && (
         <div className="space-y-6">

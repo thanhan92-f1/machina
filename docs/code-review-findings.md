@@ -114,7 +114,7 @@ Optional remote close-out (2026-06-11, `212.8.252.194`):
 | Install smoke | 5/5 pass |
 | Daemon E2E | 18/18 pass |
 | Platform API E2E | 307/307 pass |
-| Live UX manifest | 208 pass, 37 skipped (external cloud), ~46 min |
+| Live UX manifest | 208 pass, 37 skipped (OpenStack), ~46 min |
 | Live VM lifecycle | 5/8 pass — **2 failures** in `platform-live-access.spec.ts` |
 
 Live access failures (VM may lack libvirt private-IP NAT setup):
@@ -130,5 +130,5 @@ Deploy itself succeeded; report emailed. Full log: `/tmp/deploy-e2e-verify.log`
 
 - Splitting `web/src/api/platform.ts`
 - Mission Control UI redesign
-- Full external-cloud/K8s integration audit
+- Full OpenStack/K8s integration audit
 - Performance / load testing

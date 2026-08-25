@@ -5,11 +5,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useSearchParams } from 'react-router'
-import { Boxes, ClipboardList, FolderOpen, HardDrive, RefreshCw, Trash2 } from 'lucide-react'
+import { Boxes, Cloud, ClipboardList, FolderOpen, HardDrive, RefreshCw, Trash2 } from 'lucide-react'
 import Hero from '../components/Hero'
 import PageLayout from '../components/PageLayout'
 import KubeVirtQcow2Modal from '../components/KubeVirtQcow2Modal'
+import OpenStackImageUploadModal from '../components/OpenStackImageUploadModal'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
+import { useOpenStackConnection } from '../hooks/useOpenStackConnection'
 import EmptyState from '../components/EmptyState'
 import {
   buildVirtImageDisk,
@@ -32,7 +34,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import { computeVirtImageBuildTimeline, VIRT_IMAGE_TIMELINE_LABELS } from '../utils/buildProgress'
 import { formatUserError } from '../utils/apiError'
 import { libvirtErrorHints } from '../utils/libvirtHints'
-import { statusDestructiveButtonClasses, statusToneClass } from '../utils/semanticColors'
+import { statusDestructiveButtonClasses, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 
 function formatBytes(b: number): string {
   if (b === 0) return '0 B'
@@ -73,10 +75,21 @@ export default function DiskImagesPage() {
   const [mkosiWorkspaces, setMkosiWorkspaces] = useState<MkosiWorkspace[]>([])
   const [directBuildBusy, setDirectBuildBusy] = useState(false)
   const [kvPath, setKvPath] = useState<string | null>(null)
+  const [osPath, setOsPath] = useState<string | null>(null)
+  const [osGlanceName, setOsGlanceName] = useState<string | undefined>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const toast = useToastContext()
   const { info, lastEvent, refreshKey } = usePlatformInfo()
+  const { phase: osPhase, glanceLive: osGlanceLive } = useOpenStackConnection()
+  const openstackUploadAvailable =
+    osPhase === 'live' && osGlanceLive && Boolean(info?.openstack?.upload_enabled)
+  const openstackUploadHint =
+    osPhase === 'unreachable'
+      ? 'OpenStack is configured but unreachable — Glance upload is disabled until Keystone is up.'
+      : osPhase === 'needsWire' || osPhase === 'off'
+        ? 'Wire OpenStack in Settings to enable Glance upload from qcow2 rows.'
+        : null
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -123,6 +136,24 @@ export default function DiskImagesPage() {
     const next = new URLSearchParams(searchParams)
     next.delete('kv')
     next.delete('path')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, images, setSearchParams])
+
+  useEffect(() => {
+    if (searchParams.get('os') !== 'open') return
+    const glance = searchParams.get('glance_name')
+    if (glance) setOsGlanceName(glance)
+    const path = searchParams.get('path')
+    if (path) {
+      setOsPath(path)
+    } else if (images.length > 0) {
+      const first = images.find((i) => i.format === 'qcow2' || i.path.toLowerCase().endsWith('.qcow2'))
+      if (first) setOsPath(first.path)
+    }
+    const next = new URLSearchParams(searchParams)
+    next.delete('os')
+    next.delete('path')
+    next.delete('glance_name')
     setSearchParams(next, { replace: true })
   }, [searchParams, images, setSearchParams])
 
@@ -289,6 +320,19 @@ export default function DiskImagesPage() {
           </button>
         }
       />
+
+      {openstackUploadAvailable && (
+        <p className="inline-flex items-center gap-2 text-xs text-sky-300 border border-sky-500/30 bg-sky-500/10 rounded-lg px-3 py-2">
+          <Cloud className="w-3.5 h-3.5 shrink-0" />
+          OpenStack upload available — use <strong className="font-medium">Upload to OpenStack</strong> on qcow2 rows.
+        </p>
+      )}
+      {openstackUploadHint && (
+        <p className={`inline-flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${statusSurfaceClasses('warn')}`}>
+          <Cloud className="w-3.5 h-3.5 shrink-0" />
+          {openstackUploadHint}
+        </p>
+      )}
 
       {!loading && scanDirectories.length > 0 && (
         <div className="rounded-xl border border-slate-700/50 bg-slate-900/30 px-4 py-3 text-xs text-slate-400 space-y-2">
@@ -565,6 +609,17 @@ export default function DiskImagesPage() {
                         KubeVirt
                       </button>
                     )}
+                    {(img.format === 'qcow2' || img.path.toLowerCase().endsWith('.qcow2')) && (
+                      <button
+                        type="button"
+                        onClick={() => setOsPath(img.path)}
+                        className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 text-xs font-medium transition mr-1"
+                        title="Upload to OpenStack Glance"
+                      >
+                        <Cloud className="w-3.5 h-3.5" />
+                        OpenStack
+                      </button>
+                    )}
                     <button
                       onClick={() => setConfirmPath(img.path)}
                       disabled={deleting === img.path}
@@ -599,6 +654,12 @@ export default function DiskImagesPage() {
       />
 
       <KubeVirtQcow2Modal open={!!kvPath} qcow2Path={kvPath ?? ''} onClose={() => setKvPath(null)} />
+      <OpenStackImageUploadModal
+        open={!!osPath}
+        qcow2Path={osPath ?? ''}
+        initialGlanceName={osGlanceName}
+        onClose={() => { setOsPath(null); setOsGlanceName(undefined) }}
+      />
 
       <ConfirmDialog
         open={!!confirmPath}

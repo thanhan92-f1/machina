@@ -31,6 +31,10 @@ export const MACHINA_HELP_LINKS: HelpDocLink[] = [
     href: 'https://github.com/ssahani/machina/blob/main/docs/kubevirt-migration.md',
   },
   {
+    label: 'OpenStack integration',
+    href: 'https://github.com/ssahani/machina/blob/main/docs/openstack.md',
+  },
+  {
     label: 'Zyvor documentation',
     href: ZYVOR_HELP.docs,
   },
@@ -75,7 +79,7 @@ export default function ZyvorAbout({ className = '' }: { className?: string }) {
             {ZYVOR_BRAND}
           </a>{' '}
           product family — <span className="text-slate-200">{ZEUS_OS_PRODUCT}</span> is the enterprise virtualization platform.
-          {MACHINA_PRODUCT} is the AI-native infrastructure operating system (Machina Zyra OS): libvirt/KVM and Fleet Cloud control,
+          {MACHINA_PRODUCT} is the AI-native infrastructure operating system (Machina Zyra OS): libvirt/KVM and OpenStack control,
           fleet, observability, and Zyra (Spotlight, assistant, SRE, Autopilot, Digital Twin, Root Cause).
         </p>
         <p className="text-xs text-slate-500 leading-relaxed">

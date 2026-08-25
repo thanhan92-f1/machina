@@ -35,24 +35,6 @@ pub struct ReviewBody {
     pub note: Option<String>,
 }
 
-/// Column tuple shared by every `firewall_approvals` row fetch (list, single,
-/// and the `map_row` conversion below) — kept as one alias so the three call
-/// sites can't quietly drift out of sync with each other or with the SELECT
-/// column list.
-type ApprovalRow = (
-    Uuid,
-    String,
-    Uuid,
-    Option<String>,
-    serde_json::Value,
-    String,
-    String,
-    Option<String>,
-    Option<String>,
-    chrono::DateTime<chrono::Utc>,
-    Option<chrono::DateTime<chrono::Utc>>,
-);
-
 pub async fn request_approval(
     pool: &SqlitePool,
     body: ApprovalRequest,
@@ -95,7 +77,19 @@ pub async fn list_approvals(
     pool: &SqlitePool,
     status: Option<&str>,
 ) -> anyhow::Result<Vec<FirewallApproval>> {
-    let rows: Vec<ApprovalRow> = if let Some(st) = status {
+    let rows: Vec<(
+        Uuid,
+        String,
+        Uuid,
+        Option<String>,
+        serde_json::Value,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        chrono::DateTime<chrono::Utc>,
+        Option<chrono::DateTime<chrono::Utc>>,
+    )> = if let Some(st) = status {
         sqlx::query_as(
             "SELECT id, target_kind, target_id, profile, plan_json, status, requested_by,
                     reviewed_by, review_note, created_at, reviewed_at
@@ -209,7 +203,19 @@ async fn review(
 }
 
 async fn get_approval(pool: &SqlitePool, id: Uuid) -> anyhow::Result<FirewallApproval> {
-    let row: ApprovalRow = sqlx::query_as(
+    let row: (
+        Uuid,
+        String,
+        Uuid,
+        Option<String>,
+        serde_json::Value,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        chrono::DateTime<chrono::Utc>,
+        Option<chrono::DateTime<chrono::Utc>>,
+    ) = sqlx::query_as(
         "SELECT id, target_kind, target_id, profile, plan_json, status, requested_by,
                 reviewed_by, review_note, created_at, reviewed_at
          FROM firewall_approvals WHERE id = ?",
@@ -221,7 +227,21 @@ async fn get_approval(pool: &SqlitePool, id: Uuid) -> anyhow::Result<FirewallApp
     Ok(map_row(row))
 }
 
-fn map_row(row: ApprovalRow) -> FirewallApproval {
+fn map_row(
+    row: (
+        Uuid,
+        String,
+        Uuid,
+        Option<String>,
+        serde_json::Value,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        chrono::DateTime<chrono::Utc>,
+        Option<chrono::DateTime<chrono::Utc>>,
+    ),
+) -> FirewallApproval {
     let (
         id,
         target_kind,

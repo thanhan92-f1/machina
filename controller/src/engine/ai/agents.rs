@@ -7,14 +7,6 @@ use uuid::Uuid;
 use super::context::AssembledContext;
 use super::routing::TaskClass;
 
-// Prompt-sizing budgets for the chat completion request: only a handful of
-// recalled memories, and the user message / assembled context are each
-// character-capped so a pathological input can't blow the LLM context
-// window or balloon request cost.
-const CHAT_MEMORY_RECALL_LIMIT: i64 = 3;
-const CHAT_MESSAGE_MAX_CHARS: usize = 8192;
-const CHAT_CONTEXT_MAX_CHARS: usize = 16384;
-
 #[derive(Debug, Clone, Serialize)]
 pub struct ZyraAgentInfo {
     pub id: String,
@@ -229,17 +221,13 @@ pub async fn chat(
     .await?;
     let mut reply = base.reply;
     let task_class = TaskClass::from_agent(&agent_id);
-    let memory = super::memory_store::recall_for_user(pool, user_id, CHAT_MEMORY_RECALL_LIMIT)
+    let memory = super::memory_store::recall_for_user(pool, user_id, 3)
         .await
         .unwrap_or_default();
     let memory_text = memory.join("\n");
     let system = system_prompt(&agent_id);
-    let safe_message = body
-        .message
-        .chars()
-        .take(CHAT_MESSAGE_MAX_CHARS)
-        .collect::<String>();
-    let ctx: String = base.ctx_json.chars().take(CHAT_CONTEXT_MAX_CHARS).collect();
+    let safe_message = body.message.chars().take(8192).collect::<String>();
+    let ctx: String = base.ctx_json.chars().take(16384).collect();
     let user_prompt = format!(
         "Agent: {agent_id}\nPage: {}\n<memory>\n{memory_text}\n</memory>\nContext: {}\n<user_message>\n{safe_message}\n</user_message>",
         body.page_path.as_deref().unwrap_or(""),

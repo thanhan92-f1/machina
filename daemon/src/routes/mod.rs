@@ -22,6 +22,9 @@ mod kubevirt;
 mod metrics;
 mod networks;
 mod node;
+mod openstack;
+mod openstack_extended;
+mod openstack_services;
 mod platform_controller;
 mod platform_ws;
 mod prometheus;
@@ -44,6 +47,7 @@ pub fn api_routes() -> Router<LibvirtManager> {
         .merge(jobs::job_routes())
         .merge(k8s::k8s_routes())
         .merge(kubevirt::kubevirt_routes())
+        .merge(openstack::openstack_routes())
         .merge(integrations::integrations_routes())
         .merge(hypersdk::hypersdk_routes())
         .merge(guestkit::guestkit_routes())

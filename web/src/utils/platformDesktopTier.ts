@@ -45,7 +45,7 @@ const ADVANCED_ONLY_PREFIXES = [
 
 const POWER_PATHS = [
   ...NORMAL_PATHS,
-  '/fleet-cloud',
+  '/openstack',
   '/k8s',
   '/fleet',
   '/platform/applications',

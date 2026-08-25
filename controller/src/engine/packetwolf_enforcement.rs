@@ -408,33 +408,28 @@ pub async fn enforcement_policy_tetragon(cfg: &ControllerConfig, policy_id: &str
     })
 }
 
-/// Shared body for attach/sync/detach: all three are a POST to
-/// `/api/v1/runtime/enforcement/<verb>` gated behind production TC mode, and
-/// all three report the same "only available in production" note otherwise —
-/// `verb` is both the URL segment and the note text.
-async fn production_tc_transition(cfg: &ControllerConfig, verb: &str) -> Value {
+pub async fn attach_enforcement(cfg: &ControllerConfig) -> Value {
     if production_enforcement_mode(cfg).await {
-        let raw = fabric_post(
-            cfg,
-            &format!("/api/v1/runtime/enforcement/{verb}"),
-            json!({}),
-        )
-        .await;
+        let raw = fabric_post(cfg, "/api/v1/runtime/enforcement/attach", json!({})).await;
         return normalize_production_status(&raw);
     }
-    json!({"ok": false, "note": format!("{verb} only available in production PacketWolf mode")})
-}
-
-pub async fn attach_enforcement(cfg: &ControllerConfig) -> Value {
-    production_tc_transition(cfg, "attach").await
+    json!({"ok": false, "note": "attach only available in production PacketWolf mode"})
 }
 
 pub async fn sync_enforcement(cfg: &ControllerConfig) -> Value {
-    production_tc_transition(cfg, "sync").await
+    if production_enforcement_mode(cfg).await {
+        let raw = fabric_post(cfg, "/api/v1/runtime/enforcement/sync", json!({})).await;
+        return normalize_production_status(&raw);
+    }
+    json!({"ok": false, "note": "sync only available in production PacketWolf mode"})
 }
 
 pub async fn detach_enforcement(cfg: &ControllerConfig) -> Value {
-    production_tc_transition(cfg, "detach").await
+    if production_enforcement_mode(cfg).await {
+        let raw = fabric_post(cfg, "/api/v1/runtime/enforcement/detach", json!({})).await;
+        return normalize_production_status(&raw);
+    }
+    json!({"ok": false, "note": "detach only available in production PacketWolf mode"})
 }
 
 #[cfg(test)]

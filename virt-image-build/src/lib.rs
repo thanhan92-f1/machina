@@ -372,13 +372,6 @@ fn pump_virt_builder_stream<R: Read + Send + 'static>(
     }
 }
 
-/// Polling interval used both while busy-waiting on the child's exit status
-/// and while draining the log-forwarding channel below. Shared so the two
-/// loops stay in lockstep (same responsiveness/CPU tradeoff) rather than
-/// drifting independently if one call site's literal were tuned without the
-/// other.
-const CHILD_POLL_INTERVAL: Duration = Duration::from_millis(200);
-
 fn wait_child_interrupt_streams(
     mut child: Child,
     out_path: &Path,
@@ -400,7 +393,7 @@ fn wait_child_interrupt_streams(
                 bail!("virt-builder exceeded its wall-clock time limit");
             }
         }
-        thread::sleep(CHILD_POLL_INTERVAL);
+        thread::sleep(Duration::from_millis(200));
     }
 }
 
@@ -438,7 +431,7 @@ fn run_virt_builder_child(
     let limit = timeout.filter(|d| !d.is_zero());
     let deadline = limit.map(|d| Instant::now() + d);
     loop {
-        match rx.recv_timeout(CHILD_POLL_INTERVAL) {
+        match rx.recv_timeout(Duration::from_millis(200)) {
             Ok(line) => log(&line),
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
             Err(mpsc::RecvTimeoutError::Timeout) => {

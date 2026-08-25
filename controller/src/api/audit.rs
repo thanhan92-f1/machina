@@ -34,11 +34,6 @@ fn default_limit() -> i64 {
     100
 }
 
-// Shared column list for every `audit_logs` fetch below, so the four filter
-// branches (both/action-only/actor-only/unfiltered) stay in sync.
-const AUDIT_COLUMNS: &str = "id, actor, action, resource_type, resource_id,
-                        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at";
-
 pub async fn list_audit_logs(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -51,10 +46,11 @@ pub async fn list_audit_logs(
     }
     let rows = match (&q.action, &q.actor) {
         (Some(action), Some(actor_filter)) if !action.is_empty() && !actor_filter.is_empty() => {
-            sqlx::query_as::<_, AuditRow>(&format!(
-                "SELECT {AUDIT_COLUMNS}
-                 FROM audit_logs WHERE action LIKE ? ESCAPE '\\' AND actor LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?"
-            ))
+            sqlx::query_as::<_, AuditRow>(
+                "SELECT id, actor, action, resource_type, resource_id,
+                        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+                 FROM audit_logs WHERE action LIKE ? ESCAPE '\\' AND actor LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?",
+            )
             .bind(format!("%{}%", escape_like(action)))
             .bind(format!("%{}%", escape_like(actor_filter)))
             .bind(limit)
@@ -62,30 +58,33 @@ pub async fn list_audit_logs(
             .await?
         }
         (Some(action), _) if !action.is_empty() => {
-            sqlx::query_as::<_, AuditRow>(&format!(
-                "SELECT {AUDIT_COLUMNS}
-                 FROM audit_logs WHERE action LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?"
-            ))
+            sqlx::query_as::<_, AuditRow>(
+                "SELECT id, actor, action, resource_type, resource_id,
+                        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+                 FROM audit_logs WHERE action LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?",
+            )
             .bind(format!("%{}%", escape_like(action)))
             .bind(limit)
             .fetch_all(&state.pool)
             .await?
         }
         (_, Some(actor_filter)) if !actor_filter.is_empty() => {
-            sqlx::query_as::<_, AuditRow>(&format!(
-                "SELECT {AUDIT_COLUMNS}
-                 FROM audit_logs WHERE actor LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?"
-            ))
+            sqlx::query_as::<_, AuditRow>(
+                "SELECT id, actor, action, resource_type, resource_id,
+                        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+                 FROM audit_logs WHERE actor LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?",
+            )
             .bind(format!("%{}%", escape_like(actor_filter)))
             .bind(limit)
             .fetch_all(&state.pool)
             .await?
         }
         _ => {
-            sqlx::query_as::<_, AuditRow>(&format!(
-                "SELECT {AUDIT_COLUMNS}
-                 FROM audit_logs ORDER BY created_at DESC LIMIT ?"
-            ))
+            sqlx::query_as::<_, AuditRow>(
+                "SELECT id, actor, action, resource_type, resource_id,
+                        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+                 FROM audit_logs ORDER BY created_at DESC LIMIT ?",
+            )
             .bind(limit)
             .fetch_all(&state.pool)
             .await?

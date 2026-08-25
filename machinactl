@@ -28,7 +28,7 @@
 #   tls             Generate self-signed TLS certificate
 #   demo            Run interactive API demo
 #   audit verify    Verify signed audit log (API or local file)
-#   integrations    Show KubeVirt/k8s/automation integration status
+#   integrations    Show OpenStack/KubeVirt/k8s/automation integration status
 #   sprite          Manage disposable sandbox VMs (list/get/create/delete/golden-images)
 #   help            Show this help
 #
@@ -957,7 +957,7 @@ cmd_help() {
     echo "  tls               Generate self-signed TLS certificate (auto-sudo)"
     echo "  demo              Run interactive API demo"
     echo "  audit verify      Verify audit.log sha256 signatures (API or local)"
-    echo "  integrations      Integration status (KubeVirt, k8s, automation, …)"
+    echo "  integrations      Integration status (OpenStack, k8s, automation, …)"
     echo "  sprite            Manage disposable sandbox VMs (list/get/create/delete/golden-images)"
     echo "  help              Show this help"
     echo ""

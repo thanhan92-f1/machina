@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::state::AppState;
 use crate::tasks::enqueue::enqueue_task;
 
+#[allow(dead_code)]
 const HEARTBEAT_STALE_SECS: i64 = 90;
 
 pub fn spawn(state: AppState) {
@@ -71,13 +72,13 @@ async fn retry_pending_fences(state: &AppState) -> anyhow::Result<()> {
 
 async fn mark_stale_hosts(state: &AppState) -> anyhow::Result<()> {
     let pool = &state.pool;
-    let stale: Vec<(Uuid, String)> = sqlx::query_as(&format!(
+    let stale: Vec<(Uuid, String)> = sqlx::query_as(
         "SELECT id, hostname FROM hosts
          WHERE state = 'online'
            AND last_heartbeat_at IS NOT NULL
-           AND last_heartbeat_at < datetime('now', '-{HEARTBEAT_STALE_SECS} seconds')
-         LIMIT 50"
-    ))
+           AND last_heartbeat_at < datetime('now', '-90 seconds')
+         LIMIT 50",
+    )
     .fetch_all(pool)
     .await?;
 
@@ -314,10 +315,13 @@ async fn record_ha_event_deduped(
     record_ha_event(pool, vm_id, host_id, action, message).await
 }
 
+/// Pick the first candidate host (candidates are pre-ordered least-loaded first)
+/// whose free memory — minus memory already reserved to it earlier in this scan —
+/// covers `need_mib`. Returns None when no online host can fit the VM.
 /// Pick the first candidate host (already ordered least-loaded first) with enough
 /// free memory for `need_mib`, honoring reservations already made this pass. Shared
 /// by HA recovery and maintenance evacuation so both spread VMs by real capacity
-/// instead of piling them onto one host. Returns None when no online host fits.
+/// instead of piling them onto one host.
 pub(crate) fn pick_ha_dest(
     candidates: &[(Uuid, i64)],
     reserved: &std::collections::HashMap<Uuid, i64>,

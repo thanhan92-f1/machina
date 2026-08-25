@@ -51,10 +51,6 @@ pub async fn explain_exposure(
         }
     }
     for rule in &detail.inventory.rules {
-        // SSH (22) and the common DB ports (5432 Postgres, 3306 MySQL) are
-        // singled out here because an open-to-any rule on these specifically
-        // is the classic "credential stuffing / DB dump" exposure pattern —
-        // other open ports don't get flagged as evidence by this check.
         if rule.action == "allow"
             && rule.sources.iter().any(|s| s == "any" || s == "0.0.0.0/0")
             && (rule.ports == "22" || rule.ports == "5432" || rule.ports == "3306")

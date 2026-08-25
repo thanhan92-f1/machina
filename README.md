@@ -17,7 +17,7 @@
 
 **[Feature Guide](docs/machina-customer-feature-guide.md)** — capability map across **12** domains ([PDF](docs/machina-customer-feature-guide.pdf)).
 
-Unified control plane for **VMs, networks, storage, snapshots, and day-two operations** on bare-metal worker nodes — web UI with VNC/SPICE consoles, terminal UI, REST API, and `machinactl` for fleet automation. Built on **libvirt/QEMU/KVM**, with an optional multi-host **enterprise control plane** (fleet HA/DRS, KubeVirt, Fleet Cloud, and **Zeus AI** — autonomous diagnostics, approvals, and natural-language ops).
+Unified control plane for **VMs, networks, storage, snapshots, and day-two operations** on bare-metal worker nodes — web UI with VNC/SPICE consoles, terminal UI, REST API, and `machinactl` for fleet automation. Built on **libvirt/QEMU/KVM**, with an optional multi-host **enterprise control plane** (fleet HA/DRS, KubeVirt, OpenStack, and **Zeus AI** — autonomous diagnostics, approvals, and natural-language ops).
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -61,7 +61,7 @@ Unified control plane for **VMs, networks, storage, snapshots, and day-two opera
 | **TUI** | ratatui terminal client — `tui/` |
 | **Core** | libvirt bindings, types — `core/` |
 | **CLI** | `machinactl` deploy/verify/health — root |
-| **Integrations** | PacketWolf, Atlas storage — `docs/` |
+| **Integrations** | OpenStack, PacketWolf, Atlas storage — `docs/` |
 
 ---
 
@@ -87,6 +87,7 @@ machina
 | Infrastructure vision | [docs/machina-infrastructure-vision.md](docs/machina-infrastructure-vision.md) |
 | KubeVirt migration | [docs/kubevirt-migration.md](docs/kubevirt-migration.md) |
 | Observability | [docs/guides/observability.md](docs/guides/observability.md) |
+| OpenStack | [docs/openstack.md](docs/openstack.md) |
 
 ---
 

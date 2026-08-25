@@ -87,9 +87,6 @@ function psiBar(label: string, pct: number) {
 
 type HostCheck = { name: string; passed: boolean; message: string; remediation?: string }
 
-// Shared by the several "host agent unreachable" empty states below.
-const ENROLL_ROUTE = '/platform/enroll'
-
 const TAB_PARAM: Record<string, HostDetailTab> = {
   general: 'general',
   network: 'network',
@@ -327,7 +324,7 @@ export default function PlatformHostDetailPage() {
       ))}
       {error && hostErrorPresentation(error)?.error_code === 'host_agent_offline' && (
         <p className="text-xs text-slate-500">
-          <Link to={ENROLL_ROUTE} className={hubLinkClasses()}>Add Host / re-enroll agent</Link>
+          <Link to="/platform/enroll" className={hubLinkClasses()}>Add Host / re-enroll agent</Link>
           {' · '}
           <Link to="/node" className={hubLinkClasses()}>Classic node tools</Link>
         </p>
@@ -594,7 +591,7 @@ export default function PlatformHostDetailPage() {
                     subtitle="Install or reconnect the host agent to load systemd-networkd and interface data."
                     action={
                       <div className="flex flex-wrap gap-2">
-                        <Link to={ENROLL_ROUTE} className="btn-primary text-sm">Enroll agent</Link>
+                        <Link to="/platform/enroll" className="btn-primary text-sm">Enroll agent</Link>
                         <Link to="/node" className="btn-secondary text-sm">Classic node tools</Link>
                       </div>
                     }
@@ -820,7 +817,7 @@ export default function PlatformHostDetailPage() {
                     subtitle="PSI, thermal, SMART, and package data require a connected host agent."
                     action={
                       <div className="flex flex-wrap gap-2">
-                        <Link to={ENROLL_ROUTE} className="btn-primary text-sm">Enroll agent</Link>
+                        <Link to="/platform/enroll" className="btn-primary text-sm">Enroll agent</Link>
                         <Link to="/node" className={`text-sm self-center ${hubLinkClasses()}`}>Classic node tools →</Link>
                       </div>
                     }

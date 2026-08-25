@@ -369,6 +369,32 @@ install_deps() {
     ensure_helm
     ensure_cloud_hypervisor
     ensure_firecracker
+    install_openstack_clients
+}
+
+# Optional OpenStack CLI / openstacksdk for host debugging and hyper2kvm deploy (h2kvmctl on Python 3.12).
+install_openstack_clients() {
+    step "OpenStack client tools (optional)"
+    case "$OS_FAMILY" in
+        fedora|rhel)
+            log_cmd $PKG_MANAGER install -y python3-openstackclient >> "$LOG_FILE" 2>&1 \
+                || info "python3-openstackclient not available (optional)"
+            if command -v python3.12 >/dev/null 2>&1; then
+                info "Installing openstacksdk for python3.12 (hyper2kvm OpenStack deploy)"
+                python3.12 -m pip install --upgrade 'openstacksdk>=1.0' >> "$LOG_FILE" 2>&1 \
+                    || info "openstacksdk pip install skipped (optional)"
+            fi
+            ;;
+        debian)
+            DEBIAN_FRONTEND=noninteractive log_cmd $PKG_MANAGER install -y python3-openstackclient >> "$LOG_FILE" 2>&1 \
+                || info "python3-openstackclient not available (optional)"
+            ;;
+        suse)
+            log_cmd $PKG_MANAGER install -y python3-openstackclient >> "$LOG_FILE" 2>&1 \
+                || info "python3-openstackclient not available (optional)"
+            ;;
+    esac
+    ok "OpenStack client step finished"
 }
 
 # HashiCorp Packer (for contrib/packer/build-linux-image.sh). Override version: PACKER_VERSION=1.11.2 sudo ./install.sh
@@ -1530,6 +1556,10 @@ run_tests() {
         test_endpoint "List nwfilters"    "https://localhost:5092/api/v1/nwfilters"     "["
         test_endpoint "List secrets"      "https://localhost:5092/api/v1/secrets"       "["
         test_endpoint "Metrics endpoint"  "https://localhost:5092/api/v1/metrics"       "["
+        if [ -f /etc/machina/config.toml ] && grep -qE '^\[openstack\]' /etc/machina/config.toml \
+            && grep -qE '^\s*enabled\s*=\s*true' /etc/machina/config.toml; then
+            test_endpoint "OpenStack status" "https://localhost:5092/api/v1/openstack/status" "enabled"
+        fi
     else
         info "  API tests skipped (auth enabled — endpoints correctly return 401)"
     fi
@@ -1721,6 +1751,13 @@ print_summary() {
     echo "  Log:         ${LOG_FILE}"
     echo "  Packer:      /usr/local/share/machina/packer/build-linux-image.sh"
     echo "  Win+VirtIO:  /usr/local/share/machina/packer/windows-qemu/ (see HOWTO.txt)"
+    if [ -f /etc/machina/config.toml ] && grep -qE '^\[openstack\]' /etc/machina/config.toml \
+        && grep -qE '^\s*enabled\s*=\s*true' /etc/machina/config.toml; then
+        echo ""
+        echo "  OpenStack:   wire cloud credentials on the host, then test in Settings:"
+        echo "    sudo /usr/local/share/machina/scripts/openstack-wire-cloud.sh /root/keystonerc_admin packstack"
+        echo "    sudo systemctl restart machina-daemon"
+    fi
     echo ""
 }
 

@@ -281,7 +281,7 @@ pub fn snapshot_precheck(
             req.external_memory_dir.trim().to_string()
         } else {
             super::storage::primary_vm_disk_base_dir(conn)
-                .unwrap_or_else(|| super::DEFAULT_LIBVIRT_IMAGES_DIR.to_string())
+                .unwrap_or_else(|| "/var/lib/libvirt/images".to_string())
         };
         let parent = Path::new(&base);
         if parent.is_absolute() {

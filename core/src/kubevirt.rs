@@ -113,7 +113,7 @@ fn is_file_disk(d: &DiskInfo) -> bool {
         && d.source != crate::UNKNOWN
 }
 
-/// First file-backed boot disk on a libvirt guest.
+/// First file-backed boot disk on a libvirt guest (shared by KubeVirt and OpenStack push).
 pub fn pick_root_boot_disk(details: &VmDetails) -> Result<&DiskInfo, LibvirtError> {
     let pathish = |s: &str| {
         s.ends_with(".qcow2") || s.ends_with(".QCOW2") || s.ends_with(".raw") || s.ends_with(".img")

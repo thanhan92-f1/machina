@@ -100,6 +100,24 @@ export interface PlatformInfo {
     virtio_container_disk_image: string
     machine_type: string
   }
+  openstack: {
+    enabled: boolean
+    configured: boolean
+    cloud_name: string
+    clouds_yaml?: string
+    auth_url?: string
+    region?: string
+    project_name?: string
+    use_env_auth?: boolean
+    upload_enabled: boolean
+    upload_timeout_secs: number
+    default_os_cloud: string
+    default_boot_instance: boolean
+    default_flavor?: string
+    default_network?: string
+    default_key_name?: string
+    hypersdk_base_url?: string
+  }
   hypersdk?: {
     enabled: boolean
     base_url: string

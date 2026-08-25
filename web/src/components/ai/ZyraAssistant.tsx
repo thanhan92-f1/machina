@@ -68,18 +68,6 @@ export default function ZyraAssistant() {
     void listZyraAgents().then(setAgents).catch(() => setAgents([]))
   }, [platform])
 
-  // The streaming reply is built incrementally at a fixed index (assistantIdx)
-  // reserved as soon as the user's message is sent — several branches below
-  // (nl-ops summary, stream chunks, chat fallback, error) all need to overwrite
-  // that same placeholder message rather than appending a new one.
-  const updateAssistantMessage = useCallback((idx: number, text: string) => {
-    setMessages((m) => {
-      const next = [...m]
-      next[idx] = { role: 'assistant', text }
-      return next
-    })
-  }, [])
-
   const loadProposals = useCallback(async () => {
     if (!platform || mode === 'off') return
     try {
@@ -119,7 +107,11 @@ export default function ZyraAssistant() {
       if (looksLikeOps) {
         const plan = await runNlOps(text, true)
         setNlOpsPlan(plan)
-        updateAssistantMessage(assistantIdx, plan.reply || plan.summary)
+        setMessages((m) => {
+          const next = [...m]
+          next[assistantIdx] = { role: 'assistant', text: plan.reply || plan.summary }
+          return next
+        })
         setBusy(false)
         return
       }
@@ -133,7 +125,11 @@ export default function ZyraAssistant() {
           (ev) => {
             if (ev.type === 'chunk' && ev.text) {
               streamed += ev.text
-              updateAssistantMessage(assistantIdx, streamed)
+              setMessages((m) => {
+                const next = [...m]
+                next[assistantIdx] = { role: 'assistant', text: streamed }
+                return next
+              })
             } else if (ev.type === 'error') {
               streamFailed = true
             }
@@ -155,14 +151,22 @@ export default function ZyraAssistant() {
           vm_ids: contextVmIds.length > 0 ? contextVmIds : undefined,
           page_path: location.pathname,
         })
-        updateAssistantMessage(assistantIdx, zyra.reply)
+        setMessages((m) => {
+          const next = [...m]
+          next[assistantIdx] = { role: 'assistant', text: zyra.reply }
+          return next
+        })
       }
     } catch (e: unknown) {
-      updateAssistantMessage(assistantIdx, formatUserError(e))
+      setMessages((m) => {
+        const next = [...m]
+        next[assistantIdx] = { role: 'assistant', text: formatUserError(e) }
+        return next
+      })
     } finally {
       setBusy(false)
     }
-  }, [input, busy, platform, contextVmId, contextHostId, contextVmIds, messages.length, selectedAgent, location.pathname, updateAssistantMessage])
+  }, [input, busy, platform, contextVmId, contextHostId, contextVmIds, messages.length, selectedAgent, location.pathname])
 
   useEffect(() => {
     if (copilotOpen && pendingQuery) {

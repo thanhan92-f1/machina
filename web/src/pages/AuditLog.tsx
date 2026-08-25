@@ -64,7 +64,7 @@ export default function AuditLogPage() {
         <>
           <button type="button" onClick={() => { setActionInp('openstack'); setQInp('') }}
             className="px-3 py-1.5 text-xs rounded-lg border border-sky-600/50 text-sky-300 hover:bg-sky-950/40">
-            Fleet Cloud only
+            OpenStack only
           </button>
           <button type="button" onClick={() => void fetchLog()} className="px-3 py-1.5 text-xs rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex items-center gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh now

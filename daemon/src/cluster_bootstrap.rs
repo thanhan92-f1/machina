@@ -50,10 +50,6 @@ const TIMEOUT_SHELL_LONG_SECS: u64 = 1800;
 const TIMEOUT_KUBECTL_SECS: u64 = 600;
 /// `kubectl wait … --timeout=10m`
 const TIMEOUT_KUBECTL_WAIT_SECS: u64 = 660;
-/// The `--timeout=` value passed to `kubectl wait` itself; kept in sync with
-/// [`TIMEOUT_KUBECTL_WAIT_SECS`] above, which bounds the surrounding process spawn
-/// with a little headroom over this in-command deadline.
-const KUBECTL_WAIT_TIMEOUT_ARG: &str = "--timeout=10m";
 const TIMEOUT_CILIUM_STATUS_SECS: u64 = 900;
 const TIMEOUT_METRICS_ROLLOUT_SECS: u64 = 180;
 
@@ -706,7 +702,7 @@ async fn phase_kubevirt_cdi(
             "wait".into(),
             "kv/kubevirt".into(),
             "--for=condition=Available".into(),
-            KUBECTL_WAIT_TIMEOUT_ARG.into(),
+            "--timeout=10m".into(),
         ],
         &kube_env,
         TIMEOUT_KUBECTL_WAIT_SECS,
@@ -771,7 +767,7 @@ async fn phase_kubevirt_cdi(
             "cdi".into(),
             "cdi".into(),
             "--for=condition=Available".into(),
-            KUBECTL_WAIT_TIMEOUT_ARG.into(),
+            "--timeout=10m".into(),
         ],
         &kube_env,
         TIMEOUT_KUBECTL_WAIT_SECS,
@@ -788,7 +784,7 @@ async fn phase_kubevirt_cdi(
                 "wait".into(),
                 "cdi/cdi".into(),
                 "--for=condition=Available".into(),
-                KUBECTL_WAIT_TIMEOUT_ARG.into(),
+                "--timeout=10m".into(),
             ],
             &kube_env,
             TIMEOUT_KUBECTL_WAIT_SECS,

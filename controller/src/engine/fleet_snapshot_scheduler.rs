@@ -58,35 +58,6 @@ async fn tick(state: &AppState) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Select the managed VMs a schedule targets (whole fleet, a project, or a project+tag),
-/// mirroring fleet_backup_scheduler's identically-named helper.
-async fn select_vms(
-    pool: &SqlitePool,
-    project: &str,
-    tag_filter: &str,
-) -> anyhow::Result<Vec<(Uuid, String, Option<Uuid>)>> {
-    let base = "SELECT id, name, host_id FROM vms
-                WHERE managed = TRUE AND COALESCE(inventory_source, 'libvirt') = 'libvirt'
-                  AND lifecycle_phase NOT IN ('retired', 'deleting')";
-    let vms = if !project.is_empty() && !tag_filter.is_empty() {
-        sqlx::query_as(&format!(
-            "{base} AND project = ? AND EXISTS (SELECT 1 FROM json_each(COALESCE(tags,'[]')) WHERE value = ?)"
-        ))
-        .bind(project)
-        .bind(tag_filter)
-        .fetch_all(pool)
-        .await?
-    } else if !project.is_empty() {
-        sqlx::query_as(&format!("{base} AND project = ?"))
-            .bind(project)
-            .fetch_all(pool)
-            .await?
-    } else {
-        sqlx::query_as(base).fetch_all(pool).await?
-    };
-    Ok(vms)
-}
-
 async fn enqueue_snapshots_for_schedule(
     pool: &SqlitePool,
     app: &AppState,
@@ -96,7 +67,36 @@ async fn enqueue_snapshots_for_schedule(
     disk_only: bool,
     quiesce: bool,
 ) -> anyhow::Result<()> {
-    let vms = select_vms(pool, project, tag_filter).await?;
+    let vms: Vec<(Uuid, String, Option<Uuid>)> = if !project.is_empty() && !tag_filter.is_empty() {
+        sqlx::query_as(
+            "SELECT id, name, host_id FROM vms
+             WHERE managed = TRUE AND COALESCE(inventory_source, 'libvirt') = 'libvirt'
+               AND lifecycle_phase NOT IN ('retired', 'deleting')
+               AND project = ? AND EXISTS (SELECT 1 FROM json_each(COALESCE(tags,'[]')) WHERE value = ?)",
+        )
+        .bind(project)
+        .bind(tag_filter)
+        .fetch_all(pool)
+        .await?
+    } else if !project.is_empty() {
+        sqlx::query_as(
+            "SELECT id, name, host_id FROM vms
+             WHERE managed = TRUE AND COALESCE(inventory_source, 'libvirt') = 'libvirt'
+               AND lifecycle_phase NOT IN ('retired', 'deleting')
+               AND project = ?",
+        )
+        .bind(project)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, name, host_id FROM vms
+             WHERE managed = TRUE AND COALESCE(inventory_source, 'libvirt') = 'libvirt'
+               AND lifecycle_phase NOT IN ('retired', 'deleting')",
+        )
+        .fetch_all(pool)
+        .await?
+    };
 
     let stamp = chrono::Utc::now().format("%Y%m%d");
     for (vm_id, vm_name, host_id) in vms {

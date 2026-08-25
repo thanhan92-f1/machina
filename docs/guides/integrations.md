@@ -1,4 +1,4 @@
-# Integrations (KubeVirt, k8s, automation)
+# Integrations (OpenStack, KubeVirt, k8s, automation)
 
 Machina surfaces optional backends through a single status API and Settings UI.
 
@@ -6,12 +6,13 @@ Machina surfaces optional backends through a single status API and Settings UI.
 
 `GET /api/v1/integrations/status` returns:
 
+- **openstack** — configured, connected, Keystone/Nova/Glance reachability
 - **kubevirt** — exec enabled, default namespace/storage class, route hints
 - **automation** — worker interval, `last_tick_unix`, alert rule counts, unacked alerts
 - **k8s** — kubeconfig auto-selection, inventory history flag, route hints
 - **run_as_user** — impersonation mode and whether it is active
 
-Deep links: run-as-user `GET /api/v1/auth/run-as-user`.
+Deep links: OpenStack `GET /api/v1/openstack/status`, run-as-user `GET /api/v1/auth/run-as-user`.
 
 ## Kubernetes metrics
 
@@ -33,6 +34,7 @@ On scrape, the daemon exports:
 - `machina_automation_last_tick_unix` — last successful automation worker tick
 - `machina_run_as_user_active` — `1` when `[auth.run_as_user]` impersonation is active
 - `machina_k8s_metrics_available` / `machina_k8s_last_probe_unix` — last `kubectl top` probe
+- `machina_openstack_configured` — when OpenStack is enabled in config
 
 See `contrib/grafana/machina-overview.json` (v4+) and `contrib/prometheus/alerts.yaml`.
 

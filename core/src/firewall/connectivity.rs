@@ -71,11 +71,6 @@ struct Probe {
     protocol: String,
 }
 
-/// Cap on extra probes synthesized from the host's actually-open ports, on top
-/// of the fixed SSH/Postgres/HTTPS probes above — keeps the matrix readable
-/// on a host with dozens of listening services.
-const MAX_EXTRA_PORT_PROBES: usize = 5;
-
 fn default_probes(open_ports: &[OpenPort]) -> Vec<Probe> {
     let mut probes = vec![
         Probe {
@@ -109,7 +104,7 @@ fn default_probes(open_ports: &[OpenPort]) -> Vec<Probe> {
             protocol: "tcp".into(),
         },
     ];
-    for p in open_ports.iter().take(MAX_EXTRA_PORT_PROBES) {
+    for p in open_ports.iter().take(5) {
         if !probes.iter().any(|pr| pr.port == p.port) {
             probes.push(Probe {
                 source: "internet".into(),
