@@ -1,5 +1,5 @@
--- Native SSH keypair catalog — part of the OpenStack-client replacement ("Fleet
--- Cloud" native compute). A named public key an operator picks at instance-create
+-- Native SSH keypair catalog — part of Fleet Cloud's native compute layer.
+-- A named public key an operator picks at instance-create
 -- time via cloud-init (Machina has no private-key generation/storage — only the
 -- public key is ever stored, matching how cloud-init ssh_authorized_keys works).
 CREATE TABLE IF NOT EXISTS keypairs (

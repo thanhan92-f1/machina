@@ -62,7 +62,7 @@ export default function AuditLogPage() {
       subtitle={`${events.length} events (server-filtered)`}
       actions={
         <>
-          <button type="button" onClick={() => { setActionInp('openstack'); setQInp('') }}
+          <button type="button" onClick={() => { setActionInp('fleet_cloud'); setQInp('') }}
             className="px-3 py-1.5 text-xs rounded-lg border border-sky-600/50 text-sky-300 hover:bg-sky-950/40">
             Fleet Cloud only
           </button>

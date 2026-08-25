@@ -1,12 +1,11 @@
--- Native L4 load balancer — the last piece of the OpenStack-client replacement ("Fleet
--- Cloud" native compute). Unlike Octavia (amphora VMs running full HAProxy instances),
+-- Native L4 load balancer — the last piece of Fleet Cloud's native compute layer.
+-- Unlike a typical amphora-based load balancer (VMs running full HAProxy instances),
 -- this is kernel-level: one hypervisor host installs a weighted round-robin DNAT rule
 -- set (iptables `statistic` match, see core::libvirt::host_network::set_load_balancer_rules)
 -- that fans out `listener_port` on that host to N backend VM:port members. No amphora,
 -- no separate LB VM, no external cloud dependency.
 --
--- Scope is deliberately L4 only, matching what docs/openstack.md already declares out of
--- scope for the native replacement (L7 policies, amphora diagnostics). Member health is a
+-- Scope is deliberately L4 only (no L7 policies, no amphora diagnostics). Member health is a
 -- manual `enabled` toggle for v1, not an automatic health monitor -- see load_balancer.rs.
 CREATE TABLE IF NOT EXISTS load_balancers (
     id TEXT NOT NULL PRIMARY KEY,

@@ -1,6 +1,6 @@
 -- Security groups and ports — Phase B of the next-gen roadmap
 -- (/Users/ssahani/.claude/plans/lazy-munching-quilt.md). Native /api/v1/... resources,
--- not OpenStack wire-compatible. A port bound to a VM (vm_id set) delegates the actual
+-- not wire-compatible with any external cloud API. A port bound to a VM (vm_id set) delegates the actual
 -- NIC attach/detach to the existing vms::attach_vm_nic/detach_vm_nic — no new libvirt
 -- plumbing here.
 --
