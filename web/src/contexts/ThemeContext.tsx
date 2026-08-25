@@ -4,9 +4,9 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 
-export type AppTheme = 'dark' | 'steel' | 'aurora'
+export type AppTheme = 'dark' | 'steel' | 'aurora' | 'rack'
 
-const THEME_CYCLE: AppTheme[] = ['dark', 'steel', 'aurora']
+const THEME_CYCLE: AppTheme[] = ['dark', 'steel', 'aurora', 'rack']
 
 interface ThemeContextType {
   theme: AppTheme
@@ -23,7 +23,7 @@ const ThemeContext = createContext<ThemeContextType>({
 
 function parseStoredTheme(raw: string | null): AppTheme {
   if (raw === 'light') return 'dark'
-  if (raw === 'aurora' || raw === 'steel' || raw === 'dark') return raw
+  if (raw === 'aurora' || raw === 'steel' || raw === 'rack' || raw === 'dark') return raw
   return 'dark'
 }
 
@@ -39,11 +39,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('machina-theme', theme)
     const root = document.documentElement
-    root.classList.remove('steel-theme', 'aurora-theme', 'liquid-glass-app')
+    root.classList.remove('steel-theme', 'aurora-theme', 'rack-theme', 'liquid-glass-app')
     if (theme === 'steel') {
       root.classList.add('steel-theme')
     } else if (theme === 'aurora') {
       root.classList.add('aurora-theme')
+    } else if (theme === 'rack') {
+      root.classList.add('rack-theme')
     } else {
       root.classList.add('liquid-glass-app')
     }

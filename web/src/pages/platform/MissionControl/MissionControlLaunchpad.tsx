@@ -12,7 +12,6 @@ import {
   Wrench,
 } from 'lucide-react'
 import { Link } from 'react-router'
-import { LaunchpadAppIcon } from '../../../components/platform/mac/PlatformMacUi'
 import { cinemaHubPath } from '../../../utils/consoleExperienceMode'
 import type { PlatformVm } from '../../../api/platform'
 
@@ -44,24 +43,35 @@ const CARDS: Array<{
 export default function MissionControlLaunchpad({ onCreateVm, lastVm }: Props) {
   return (
     <section data-testid="mission-control-launchpad">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-3">Launchpad</p>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-6">
+      <div className="flex items-center gap-3 mb-2">
+        <p className="text-[10px] font-mono font-medium uppercase tracking-[0.16em] text-[var(--text-muted)]">Operations</p>
+        <span className="flex-1 h-px bg-white/[0.08]" />
+      </div>
+      <div
+        className="grid gap-px rounded-xl border border-white/[0.08] overflow-hidden bg-white/[0.06]"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))' }}
+      >
         {CARDS.map((card) => {
           const Icon = card.icon
           const inner = (
-            <div className="mc-launchpad-card transition-transform hover:-translate-y-1">
-              <LaunchpadAppIcon name={card.label} icon={<Icon className="w-9 h-9 sm:w-10 sm:h-10" strokeWidth={1.5} />} />
-              <p className="text-[10px] text-slate-500 text-center mt-1 truncate px-1">{card.subtitle}</p>
-            </div>
+            <span className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--glass-bg)] hover:bg-white/[0.04] transition-colors w-full text-left">
+              <span className="w-7 h-7 rounded-md flex items-center justify-center bg-black/20 border border-white/[0.08] text-[var(--text-muted)] shrink-0">
+                <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-medium truncate">{card.label}</span>
+                <span className="block font-mono text-[10px] text-[var(--text-muted)] truncate">{card.subtitle}</span>
+              </span>
+            </span>
           )
           if (card.action === 'create') {
-            return <button key={card.id} type="button" className="text-left" onClick={onCreateVm}>{inner}</button>
+            return <button key={card.id} type="button" onClick={onCreateVm}>{inner}</button>
           }
           if (card.action === 'console') {
             const consoleHref = lastVm ? cinemaHubPath(lastVm.id) : '/platform/vms'
-            return <Link key={card.id} to={consoleHref} className="block">{inner}</Link>
+            return <Link key={card.id} to={consoleHref}>{inner}</Link>
           }
-          return <Link key={card.id} to={card.href!} className="block">{inner}</Link>
+          return <Link key={card.id} to={card.href!}>{inner}</Link>
         })}
       </div>
     </section>

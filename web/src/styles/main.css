@@ -2607,6 +2607,254 @@ a.tahoe-context-app-title:hover {
   border-bottom-color: rgba(120, 145, 175, 0.15);
 }
 
+/* Rack theme — "rack panel" equipment-strip look (void/amp orange) */
+.rack-theme {
+  color-scheme: dark;
+  --page-bg: #0b0e13;
+
+  --blur-liquid: 0px;
+  --glass-bg: rgba(18, 23, 31, 0.97);
+  --glass-bg-elevated: rgba(26, 33, 43, 0.97);
+  --glass-bg-strong: rgba(11, 14, 19, 0.99);
+  --glass-border: rgba(51, 64, 79, 0.35);
+  --glass-border-strong: rgba(51, 64, 79, 0.5);
+  --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.35);
+  --glass-highlight: rgba(255, 106, 31, 0.04);
+  --glass-tint: rgba(255, 106, 31, 0.01);
+
+  /* Semantic status tokens — the mockup's live/warn/fault/amp palette */
+  --machina-status-ok: rgb(53, 208, 165);
+  --machina-status-warn: rgb(255, 176, 32);
+  --machina-status-error: rgb(255, 77, 94);
+  --machina-status-info: rgb(255, 106, 31);
+  --machina-status-neutral: rgb(141, 154, 172);
+  --machina-accent: rgb(255, 106, 31);
+  --machina-accent-ai: rgb(255, 106, 31);
+  --machina-accent-network: rgb(53, 208, 165);
+  --machina-accent-security: var(--machina-status-error);
+
+  --machina-vm-running: #35d0a5;
+  --machina-vm-stopped: #3e4b5c;
+  --machina-vm-paused: #ffb020;
+  --machina-vm-creating: #ff6a1f;
+  --machina-vm-failed: #ff4d5e;
+  --machina-vm-migrating: #ff6a1f;
+  --machina-vm-suspended: #ffb020;
+  --machina-vm-unknown: #8d9aac;
+}
+.rack-theme body {
+  background-color: #0b0e13;
+  color: #e7edf4;
+}
+
+.rack-theme .machina-nav-group {
+  color: #8d9aac;
+}
+.rack-theme .machina-nav-group:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 106, 31, 0.14);
+}
+.rack-theme .machina-nav-group-active {
+  color: #e7edf4;
+  background: rgba(255, 106, 31, 0.14);
+  border-color: rgba(255, 106, 31, 0.3);
+}
+.rack-theme .machina-nav-group-active::after {
+  background: linear-gradient(90deg, #ff6a1f, #ff7e3d);
+}
+.rack-theme .machina-nav-dropdown {
+  background: linear-gradient(145deg, #1a212b 0%, #12171f 50%, #0d1117 100%);
+  border: 1px solid rgba(51, 64, 79, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+.rack-theme .machina-nav-dd-link {
+  color: #b9c6d6;
+}
+.rack-theme .machina-nav-dd-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+.rack-theme .machina-nav-dd-active {
+  color: #ff9e5e;
+  background: rgba(255, 106, 31, 0.15);
+}
+
+.rack-theme .input-field {
+  background: linear-gradient(180deg, #12171f 0%, #0d1117 100%);
+  border-color: rgba(51, 64, 79, 0.4);
+  color: #e7edf4;
+}
+.rack-theme .input-field:focus {
+  border-color: #ff6a1f;
+}
+
+.rack-theme .skeleton {
+  background: linear-gradient(90deg, #1a212b 25%, #252e3a 50%, #1a212b 75%);
+}
+
+.rack-theme .table-row-hover:hover {
+  background-color: rgba(255, 106, 31, 0.08);
+}
+
+.rack-theme ::-webkit-scrollbar-thumb {
+  background: #252e3a;
+}
+.rack-theme ::-webkit-scrollbar-thumb:hover {
+  background: #33404f;
+}
+
+/* Rack theme: comprehensive surface overrides for hardcoded Tailwind bg classes */
+.rack-theme .bg-slate-950,
+.rack-theme .bg-slate-950\/98,
+.rack-theme .bg-slate-950\/95 { background-color: rgba(11, 14, 19, 0.97); }
+.rack-theme .bg-slate-950\/90 { background-color: rgba(11, 14, 19, 0.9); }
+.rack-theme .bg-slate-950\/80 { background-color: rgba(11, 14, 19, 0.8); }
+.rack-theme .bg-slate-950\/60 { background-color: rgba(11, 14, 19, 0.6); }
+.rack-theme .bg-slate-950\/50 { background-color: rgba(11, 14, 19, 0.5); }
+.rack-theme .bg-slate-950\/40 { background-color: rgba(11, 14, 19, 0.4); }
+.rack-theme .bg-slate-950\/30 { background-color: rgba(11, 14, 19, 0.3); }
+
+.rack-theme .bg-slate-900,
+.rack-theme .bg-slate-900\/98,
+.rack-theme .bg-slate-900\/95 { background-color: rgba(18, 23, 31, 0.97); }
+.rack-theme .bg-slate-900\/80 { background-color: rgba(18, 23, 31, 0.8); }
+.rack-theme .bg-slate-900\/70 { background-color: rgba(18, 23, 31, 0.7); }
+.rack-theme .bg-slate-900\/60 { background-color: rgba(18, 23, 31, 0.6); }
+.rack-theme .bg-slate-900\/50 { background-color: rgba(18, 23, 31, 0.5); }
+.rack-theme .bg-slate-900\/40 { background-color: rgba(18, 23, 31, 0.4); }
+.rack-theme .bg-slate-900\/35 { background-color: rgba(18, 23, 31, 0.35); }
+.rack-theme .bg-slate-900\/30 { background-color: rgba(18, 23, 31, 0.3); }
+.rack-theme .bg-slate-900\/25 { background-color: rgba(18, 23, 31, 0.25); }
+.rack-theme .bg-slate-900\/20 { background-color: rgba(18, 23, 31, 0.2); }
+
+.rack-theme .bg-slate-800,
+.rack-theme .bg-slate-800\/95,
+.rack-theme .bg-slate-800\/80 { background-color: rgba(26, 33, 43, 0.88); }
+.rack-theme .bg-slate-800\/70 { background-color: rgba(26, 33, 43, 0.7); }
+.rack-theme .bg-slate-800\/60 { background-color: rgba(26, 33, 43, 0.6); }
+.rack-theme .bg-slate-800\/55 { background-color: rgba(26, 33, 43, 0.55); }
+.rack-theme .bg-slate-800\/50 { background-color: rgba(26, 33, 43, 0.5); }
+.rack-theme .bg-slate-800\/40 { background-color: rgba(26, 33, 43, 0.4); }
+.rack-theme .bg-slate-800\/30 { background-color: rgba(26, 33, 43, 0.3); }
+.rack-theme .bg-slate-800\/20 { background-color: rgba(26, 33, 43, 0.2); }
+
+.rack-theme .bg-slate-700,
+.rack-theme .bg-slate-700\/80 { background-color: rgba(37, 46, 58, 0.88); }
+.rack-theme .bg-slate-700\/60 { background-color: rgba(37, 46, 58, 0.6); }
+.rack-theme .bg-slate-700\/50 { background-color: rgba(37, 46, 58, 0.5); }
+.rack-theme .bg-slate-700\/40 { background-color: rgba(37, 46, 58, 0.4); }
+.rack-theme .bg-slate-700\/30 { background-color: rgba(37, 46, 58, 0.3); }
+.rack-theme .bg-slate-700\/20 { background-color: rgba(37, 46, 58, 0.2); }
+
+.rack-theme .bg-slate-600,
+.rack-theme .bg-slate-600\/80 { background-color: rgba(51, 64, 79, 0.88); }
+.rack-theme .bg-slate-600\/50 { background-color: rgba(51, 64, 79, 0.5); }
+.rack-theme .bg-slate-600\/40 { background-color: rgba(51, 64, 79, 0.4); }
+.rack-theme .bg-slate-600\/30 { background-color: rgba(51, 64, 79, 0.3); }
+
+.rack-theme .bg-slate-500 { background-color: rgba(70, 84, 100, 0.85); }
+
+.rack-theme .border-slate-700\/50,
+.rack-theme .border-slate-700,
+.rack-theme .border-slate-700\/30 { border-color: rgba(51, 64, 79, 0.4); }
+
+/* Rack: kill all backdrop blur — hardcoded values not covered by --blur-liquid var */
+.rack-theme .glass,
+.rack-theme .glass-elevated,
+.rack-theme .glass-strong,
+.rack-theme .glass-card,
+.rack-theme .tahoe-glass-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.rack-theme .liquid-glass-navbar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: linear-gradient(180deg, #0d1117 0%, #1a212b 50%, #0b0e13 100%);
+  border-bottom-color: rgba(51, 64, 79, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.rack-theme .liquid-glass-modal-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: linear-gradient(160deg, #12171f 0%, #0d1117 100%);
+  border-color: rgba(51, 64, 79, 0.45);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.rack-theme .liquid-glass-modal-backdrop {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.rack-theme .liquid-glass-toast {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(18, 23, 31, 0.98);
+  border-color: rgba(51, 64, 79, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.rack-theme .liquid-glass-breadcrumb {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.rack-theme [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.rack-theme [class*="border-white"] {
+  border-color: rgba(51, 64, 79, 0.35);
+}
+
+.rack-theme [class*="bg-white\/"] {
+  background-color: rgba(26, 33, 43, 0.45);
+}
+
+.rack-theme .platform-mac-shell {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.rack-theme .platform-mac-panel,
+.rack-theme .platform-mac-stat {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(18, 23, 31, 0.95);
+}
+.rack-theme .platform-vm-card,
+.rack-theme .platform-action-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.rack-theme .mac-finder-sidebar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(11, 14, 19, 0.98);
+}
+.rack-theme .mac-dock-inner {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(18, 23, 31, 0.97);
+}
+.rack-theme .tahoe-context-bar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(11, 14, 19, 0.95);
+  border-bottom-color: rgba(51, 64, 79, 0.35);
+}
+.rack-theme .platform-detail-tabs-sticky {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(11, 14, 19, 0.97);
+  border-bottom-color: rgba(51, 64, 79, 0.3);
+}
+
 /* ── VM detail: machine cockpit polish ─────────────────────────── */
 
 .vm-detail-hero {

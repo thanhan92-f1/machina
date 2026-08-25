@@ -1,18 +1,21 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { Link } from 'react-router'
-import { Server } from 'lucide-react'
+import { Server, ChevronRight } from 'lucide-react'
 import LivingMachineCard from '../MachineFinder/LivingMachineCard'
 import { openCenterPopout } from '../../../utils/platformCenterPopout'
 import { cinemaPopoutPath } from '../../../utils/consoleExperienceMode'
-import { statusPillClasses } from '../../../utils/semanticColors'
+import { hostStateTone } from '../../../utils/semanticColors'
 import type { MissionControlFleetState } from './useMissionControlFleet'
+import { StatusLed, SegmentedMeter, BayRow } from './MissionControlRackKit'
 
 type Props = {
   state: MissionControlFleetState
+  selectedHostId?: string | null
+  onSelectHost?: (hostId: string | null) => void
 }
 
-export default function HostMachinePanels({ state }: Props) {
+export default function HostMachinePanels({ state, selectedHostId, onSelectHost }: Props) {
   const { hosts, vmsByHost, selectedVmId, setSelectedVmId, setDragVmId, setSshVm } = state
 
   if (state.loading) {
@@ -25,8 +28,15 @@ export default function HostMachinePanels({ state }: Props) {
 
   if (hosts.length === 0) {
     return (
-      <section className="rounded-xl border border-white/[0.08] bg-slate-900/40 p-6 text-center">
-        <p className="text-slate-400 mb-3">No hosts enrolled yet.</p>
+      <section
+        className="rounded-xl border border-dashed border-white/[0.14] p-9 text-center"
+        style={{ background: 'repeating-linear-gradient(-45deg, transparent, transparent 9px, rgba(255,255,255,0.012) 9px, rgba(255,255,255,0.012) 18px)' }}
+      >
+        <Server className="w-6 h-6 mx-auto text-[var(--text-muted)]" />
+        <h3 className="text-[15px] font-semibold mt-3 mb-1">No hosts attached</h3>
+        <p className="text-sm text-[var(--text-muted)] max-w-[44ch] mx-auto mb-4">
+          Once a host runs machina-daemon with valid controller credentials, it claims a slot here within seconds.
+        </p>
         <Link to="/platform/enroll" className="btn-primary text-sm">Add host</Link>
       </section>
     )
@@ -40,19 +50,45 @@ export default function HostMachinePanels({ state }: Props) {
       </div>
       {hosts.map((host) => {
         const hostVms = vmsByHost.get(host.id) ?? []
-        const online = host.state !== 'offline'
+        const tone = hostStateTone(host.state, host.fenced, host.maintenance_mode)
+        const memPct = host.memory_total_mib > 0 ? (host.memory_used_mib / host.memory_total_mib) * 100 : 0
+        const selected = selectedHostId === host.id
         return (
           <article key={host.id} className="mc-host-panel rounded-2xl border border-white/[0.08] bg-slate-950/40 p-4 space-y-3">
-            <header className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Server className="w-4 h-4 text-sky-400 shrink-0" />
-                <h3 className="font-medium text-white truncate">{host.hostname}</h3>
-                <span className={statusPillClasses(online ? 'ok' : 'warn')}>{online ? 'Healthy' : host.state}</span>
-              </div>
-              <p className="text-xs text-slate-500">
-                {hostVms.length} machines · {Math.round(host.cpu_percent ?? 0)}% CPU · {host.vm_count} VMs fleet
-              </p>
-            </header>
+            <button
+              type="button"
+              className={`w-full flex flex-wrap items-center gap-4 -m-1 p-1 rounded-lg text-left transition-colors ${selected ? 'bg-[var(--machina-accent)]/[0.08]' : 'hover:bg-white/[0.03]'}`}
+              onClick={() => onSelectHost?.(selected ? null : host.id)}
+              data-testid="mc-host-strip"
+            >
+              <span className="flex items-center gap-2 min-w-0 w-44 shrink-0">
+                <StatusLed tone={tone} />
+                <span className="min-w-0">
+                  <span className="block font-mono text-[13px] font-medium truncate">{host.hostname}</span>
+                  <span className="block font-mono text-[10px] text-[var(--text-muted)] truncate">{host.site || '—'} · {host.address}</span>
+                </span>
+              </span>
+
+              <BayRow count={hostVms.length} tone={tone} />
+
+              <span className="flex-1 min-w-[160px] flex gap-5">
+                <span className="flex-1 min-w-[64px] max-w-[150px]">
+                  <span className="flex justify-between text-[10px] font-mono uppercase text-[var(--text-muted)] mb-1">
+                    <span>CPU</span><b className="text-[var(--text-primary)] normal-case">{Math.round(host.cpu_percent ?? 0)}%</b>
+                  </span>
+                  <SegmentedMeter percent={host.cpu_percent ?? 0} segments={10} />
+                </span>
+                <span className="flex-1 min-w-[64px] max-w-[150px]">
+                  <span className="flex justify-between text-[10px] font-mono uppercase text-[var(--text-muted)] mb-1">
+                    <span>MEM</span><b className="text-[var(--text-primary)] normal-case">{Math.round(memPct)}%</b>
+                  </span>
+                  <SegmentedMeter percent={memPct} segments={10} />
+                </span>
+              </span>
+
+              <span className="text-xs text-[var(--text-muted)] shrink-0">{host.state}</span>
+              <ChevronRight className={`w-4 h-4 shrink-0 text-[var(--text-muted)] transition-transform ${selected ? 'rotate-90' : ''}`} />
+            </button>
             {hostVms.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {hostVms.map((vm) => (

@@ -29,6 +29,7 @@ import HostMachinePanels from './HostMachinePanels'
 import MissionControlBriefing from './MissionControlBriefing'
 import MissionControlGeography from './MissionControlGeography'
 import MissionControlHero from './MissionControlHero'
+import MissionControlHostDock from './MissionControlHostDock'
 import MissionControlLaunchpad from './MissionControlLaunchpad'
 import { useMissionControlFleet } from './useMissionControlFleet'
 import EnterpriseSecurityStrip from '../../../components/platform/EnterpriseSecurityStrip'
@@ -42,6 +43,7 @@ export default function MissionControlPage() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [missingImagesCount, setMissingImagesCount] = useState(0)
   const [geoExpanded, setGeoExpanded] = useState(searchParams.get('mission') === '1')
+  const [selectedHostId, setSelectedHostId] = useState<string | null>(null)
 
   useEffect(() => {
     void listMissingTemplateImages()
@@ -73,6 +75,18 @@ export default function MissionControlPage() {
   }, [state.hosts.length, state.onlineHosts])
 
   const lastRunningVm = state.vms.find((v) => v.observed_state === 'running') ?? null
+  const selectedHost = selectedHostId ? state.hosts.find((h) => h.id === selectedHostId) ?? null : null
+
+  const handleSelectHost = (hostId: string | null) => {
+    setSelectedHostId(hostId)
+    if (hostId) state.setSelectedVmId(null)
+  }
+
+  // Selecting a VM (e.g. via a host's machine grid) takes over the right dock from a
+  // selected host — the two are mutually exclusive, single-selection panels.
+  useEffect(() => {
+    if (state.selectedVmId) setSelectedHostId(null)
+  }, [state.selectedVmId])
 
   const handleCreate = async (payload: VmWizardPayload) => {
     try {
@@ -155,7 +169,12 @@ export default function MissionControlPage() {
     <PageLayout compact hideHeader contentClassName="mission-control-page pb-[calc(var(--dock-height,4.25rem)+1rem)]">
       <div className="flex flex-col xl:flex-row xl:items-start gap-4">
         <section className="mission-control-root flex-1 min-w-0 flex flex-col gap-4" data-testid="mission-control-page">
-          {state.error && <StructuredErrorBanner error={{ message: state.error }} />}
+          {state.error && (
+            <div className="space-y-2">
+              <StructuredErrorBanner error={{ message: state.error }} />
+              <button type="button" className="btn-secondary text-xs" onClick={() => void state.load()}>Retry</button>
+            </div>
+          )}
 
           <MissionControlHero state={state} warnings={warnings} />
           <MissionControlBriefing
@@ -177,22 +196,30 @@ export default function MissionControlPage() {
           )}
           <MissionControlLaunchpad onCreateVm={() => setWizardOpen(true)} lastVm={lastRunningVm} />
           <ActionDropZones state={state} />
-          <HostMachinePanels state={state} />
+          <HostMachinePanels state={state} selectedHostId={selectedHostId} onSelectHost={handleSelectHost} />
           <MissionControlGeography expanded={geoExpanded} onToggle={() => setGeoExpanded((v) => !v)} />
         </section>
 
-        <FleetCommandCenter
-          selectedVm={state.selectedVm}
-          hosts={state.hosts}
-          hostMap={state.hostMap}
-          showTheatrePreview
-          onSsh={(vm) => state.setSshVm(vm)}
-          onMigrate={(vm, destId, destName) => state.setMigrateModal({ vm, destId, destName })}
-          onPower={(vm, action) => void state.vmPowerAction(vm, action)}
-          onSnapshot={(vm) => void state.vmSnapshotAction(vm)}
-          onDelete={(vm) => void state.vmDeleteAction(vm)}
-          onAdopt={(vm) => void state.adoptVm(vm)}
-        />
+        {selectedHost ? (
+          <MissionControlHostDock
+            host={selectedHost}
+            vms={state.vmsByHost.get(selectedHost.id) ?? []}
+            onClose={() => setSelectedHostId(null)}
+          />
+        ) : (
+          <FleetCommandCenter
+            selectedVm={state.selectedVm}
+            hosts={state.hosts}
+            hostMap={state.hostMap}
+            showTheatrePreview
+            onSsh={(vm) => state.setSshVm(vm)}
+            onMigrate={(vm, destId, destName) => state.setMigrateModal({ vm, destId, destName })}
+            onPower={(vm, action) => void state.vmPowerAction(vm, action)}
+            onSnapshot={(vm) => void state.vmSnapshotAction(vm)}
+            onDelete={(vm) => void state.vmDeleteAction(vm)}
+            onAdopt={(vm) => void state.adoptVm(vm)}
+          />
+        )}
       </div>
 
       <SimpleCreateVmWizard open={wizardOpen} onClose={() => setWizardOpen(false)} onCreate={handleCreate} />

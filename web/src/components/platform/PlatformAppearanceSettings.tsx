@@ -21,6 +21,7 @@ const THEME_OPTIONS: { value: AppTheme; label: string; description: string; prev
   { value: 'dark', label: 'Liquid Glass', description: 'Modern translucent glass — macOS Tahoe style', preview: 'bg-gradient-to-br from-sky-950 via-slate-900 to-purple-950' },
   { value: 'steel', label: 'Steel', description: 'Classic dark steel — high contrast, professional', preview: 'bg-gradient-to-br from-[#06080d] via-[#0b1017] to-[#101722]' },
   { value: 'aurora', label: 'Aurora', description: 'Deep space purple — cosmic dark', preview: 'bg-gradient-to-br from-[#030712] via-[#0a0618] to-[#12082a]' },
+  { value: 'rack', label: 'Rack', description: 'Equipment-panel dark — orange signal accents', preview: 'bg-gradient-to-br from-[#0b0e13] via-[#12171f] to-[#1a212b]' },
 ]
 
 const SWATCH_CLASS: Record<PlatformWallpaper, string> = {
