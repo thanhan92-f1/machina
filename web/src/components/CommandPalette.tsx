@@ -488,7 +488,6 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   )
   if (hypersdkEnabled) {
     items.push(
-      { id: 'qa-fleet-cloud-migrations', icon: <Server className="w-4 h-4" />, label: 'Fleet Cloud migrations', sublabel: 'g o', action: () => go('/fleet-cloud/migrations'), category: 'Quick Actions' },
     )
   }
 

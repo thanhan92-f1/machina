@@ -17,8 +17,6 @@ export function groupVmsBySource(vms: PlatformVm[], hostMap: Map<string, string>
       key = `kubevirt:${vm.k8s_namespace ?? 'default'}`
     } else if (src === 'vmware' || src === 'vsphere') {
       key = 'vmware:—'
-    } else if (src === 'openstack') {
-      key = 'openstack:—'
     } else {
       key = `${src}:—`
     }

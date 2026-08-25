@@ -72,7 +72,6 @@ const FleetCloudInstances = lazyWithRetry(() => import('./pages/FleetCloudInstan
 const FleetCloudInstanceDetail = lazyWithRetry(() => import('./pages/FleetCloudInstanceDetail'))
 const FleetCloudCreateInstance = lazyWithRetry(() => import('./pages/FleetCloudCreateInstance'))
 const FleetCloudImages = lazyWithRetry(() => import('./pages/FleetCloudImages'))
-const FleetCloudMigrations = lazyWithRetry(() => import('./pages/FleetCloudMigrations'))
 const FleetCloudSecurityGroups = lazyWithRetry(() => import('./pages/FleetCloudSecurityGroups'))
 const FleetCloudConsole = lazyWithRetry(() => import('./pages/FleetCloudConsole'))
 const FleetCloudVolumes = lazyWithRetry(() => import('./pages/FleetCloudVolumes'))
@@ -496,7 +495,6 @@ function AuthenticatedShellRoutes() {
                 <Route path="/fleet-cloud/create" element={<FleetCloudCreateInstance />} />
                 <Route path="/fleet-cloud/images" element={<FleetCloudImages />} />
                 <Route path="/fleet-cloud/images/:id" element={<FleetCloudImageDetail />} />
-                <Route path="/fleet-cloud/migrations" element={<FleetCloudMigrations />} />
                 <Route path="/fleet-cloud/security-groups" element={<FleetCloudSecurityGroups />} />
                 <Route path="/fleet-cloud/security-groups/:id" element={<FleetCloudSecurityGroupDetail />} />
                 <Route path="/fleet-cloud/volumes" element={<FleetCloudVolumes />} />

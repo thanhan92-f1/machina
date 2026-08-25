@@ -4,7 +4,7 @@
 
 import { Link, useLocation } from 'react-router'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { LayoutGrid, Puzzle, Server, HardDrive, Plus, GitBranch, Shield, Network, Key, Disc, Cpu, Layers, Globe, Camera, Scale, KeyRound, Map } from 'lucide-react'
+import { LayoutGrid, Puzzle, Server, HardDrive, Plus, Shield, Network, Key, Disc, Cpu, Layers, Globe, Camera, Scale, KeyRound, Map } from 'lucide-react'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 
 const TABS = [
@@ -24,7 +24,6 @@ const TABS = [
   { to: '/fleet-cloud/keypairs', label: 'Keys', icon: Key },
   { to: '/fleet-cloud/security-groups', label: 'Security', icon: Shield },
   { to: '/fleet-cloud/create', label: 'Create', icon: Plus },
-  { to: '/fleet-cloud/migrations', label: 'Migrations', icon: GitBranch, requiresHypersdk: true },
 ] as const
 
 export default function FleetCloudSubNav() {

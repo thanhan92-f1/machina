@@ -296,7 +296,6 @@ export const navGroups: NavGroup[] = [
           { to: '/fleet-cloud/server-groups', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Server Groups' },
           { to: '/fleet-cloud/keypairs', icon: React.createElement(Key, { className: 'w-4 h-4' }), label: 'Keypairs' },
           { to: '/fleet-cloud/flavors', icon: React.createElement(Cpu, { className: 'w-4 h-4' }), label: 'Flavors' },
-          { to: '/fleet-cloud/migrations', icon: React.createElement(Upload, { className: 'w-4 h-4' }), label: 'Migrations', requiresHypersdk: true },
         ],
       },
       {
@@ -382,7 +381,6 @@ export const routeLabels: Record<string, string> = {
   '/fleet-cloud/instances/:id': 'Instance',
   '/fleet-cloud/create': 'Create Instance',
   '/fleet-cloud/images': 'Images',
-  '/fleet-cloud/migrations': 'Migrations',
   '/fleet-cloud/volumes': 'Volumes',
   '/fleet-cloud/volume-snapshots': 'Volume Snapshots',
   '/fleet-cloud/security-groups': 'Security Groups',

@@ -394,7 +394,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <Link to="/fleet-cloud/migrations" className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}>
+          <Link to="/platform/migration" className={`shrink-0 px-3 py-1.5 rounded-lg border text-sm ${statusBadgeClasses('warn')}`}>
             Migrations
           </Link>
         </div>

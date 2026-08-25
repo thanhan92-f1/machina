@@ -3,12 +3,11 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { Link } from 'react-router'
-import { Cloud, Server, HardDrive, Plus, GitBranch, ArrowRight, Globe, Camera } from 'lucide-react'
+import { Cloud, Server, HardDrive, Plus, ArrowRight, Globe, Camera } from 'lucide-react'
 import Hero from '../components/Hero'
 import PageLayout from '../components/PageLayout'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
-import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 
 const QUICK_LINKS = [
   {
@@ -53,20 +52,10 @@ const QUICK_LINKS = [
     title: 'Volume snapshots',
     description: 'Snapshot list and restore workflows.',
   },
-  {
-    to: '/fleet-cloud/migrations',
-    icon: GitBranch,
-    title: 'Bulk migrations',
-    description: 'HyperSDK export pipelines when hypersdk is enabled on the daemon.',
-  },
 ] as const
 
 export default function FleetCloudOverviewPage() {
-  const { info } = usePlatformInfo()
-  const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
-  const quickLinks = hypersdkEnabled
-    ? QUICK_LINKS
-    : QUICK_LINKS.filter((l) => l.to !== '/fleet-cloud/migrations')
+  const quickLinks = QUICK_LINKS
 
   return (
     <PageLayout hideHeader>

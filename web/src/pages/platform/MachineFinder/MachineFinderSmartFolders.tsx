@@ -101,7 +101,6 @@ export default function MachineFinderSmartFolders({ state }: Props) {
           <SidebarRow active={source === 'libvirt'} label="Libvirt" count={sourceCounts.libvirt} onClick={() => setSource('libvirt')} />
           <SidebarRow active={source === 'kubevirt'} label="KubeVirt" count={sourceCounts.kubevirt} onClick={() => setSource('kubevirt')} />
           <SidebarRow active={source === 'vmware'} label="VMware" count={sourceCounts.vmware} onClick={() => setSource('vmware')} />
-          <SidebarRow active={source === 'openstack'} label="Fleet Cloud" count={sourceCounts.openstack} onClick={() => setSource('openstack')} />
           <SidebarRow active={!source && folder === 'discovered'} label="Discovered" count={sourceCounts.discovered} onClick={() => setFilter({ folder: 'discovered' })} />
         </div>
       </div>

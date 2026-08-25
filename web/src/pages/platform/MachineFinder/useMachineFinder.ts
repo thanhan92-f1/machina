@@ -137,7 +137,6 @@ export function useMachineFinder() {
     libvirt: vms.filter((v) => (v.inventory_source ?? 'libvirt') === 'libvirt').length,
     kubevirt: vms.filter((v) => v.inventory_source === 'kubevirt').length,
     vmware: vms.filter((v) => v.inventory_source === 'vmware' || v.inventory_source === 'vsphere').length,
-    openstack: vms.filter((v) => v.inventory_source === 'openstack').length,
     discovered: vms.filter((v) => v.managed === false).length,
   }), [vms])
 
@@ -261,7 +260,7 @@ export function useMachineFinder() {
   // load() after them still reads the pre-change state (card stays "running"
   // after Stop; a new VM doesn't appear). These vm.* events are emitted by the
   // worker AFTER the task runs and the DB is updated, so reloading on them
-  // reflects the real state. Mirrors the OpenStackInstances pattern.
+  // reflects the real state.
   useEffect(() => {
     if (!lastEvent) return
     if (lastEvent.kind.startsWith('vm.') || lastEvent.kind.startsWith('ha.')) void load()
