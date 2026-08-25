@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use jsonwebtoken::jwk::JwkSet;
-use jsonwebtoken::{decode, decode_header, DecodingKey, Validation};
+use jsonwebtoken::{decode, DecodingKey, Validation};
 use machina_core::libvirt::automation::{
     effective_token_scopes, get_user_role, load_roles, token_allows, Role,
 };
@@ -86,7 +86,7 @@ pub struct SessionStore {
     // Only writes (create/revoke/remove) need exclusive access.
     sessions: Arc<RwLock<HashMap<String, SessionData>>>,
     ws_tokens: Arc<Mutex<HashMap<String, WsTokenData>>>,
-    oidc_states: Arc<Mutex<HashMap<String, OidcStateData>>>,
+    oidc_states: Arc<Mutex<HashMap<String, machina_core::oidc::OidcStateEntry>>>,
     max_sessions_global: usize,
     /// `0` = unlimited concurrent sessions per username.
     max_sessions_per_user: usize,
@@ -116,13 +116,6 @@ struct WsTokenData {
     actor: RequestActor,
     created_at: Instant,
 }
-
-struct OidcStateData {
-    nonce: String,
-    created_at: Instant,
-}
-
-const OIDC_STATE_TTL_SECS: u64 = 300;
 
 impl SessionStore {
     pub fn new(max_sessions_global: usize, max_sessions_per_user: usize) -> Self {
@@ -311,10 +304,10 @@ impl SessionStore {
         let state_bytes: [u8; 32] = rng.gen();
         let state = hex::encode(state_bytes);
         let mut states = self.oidc_states.lock().unwrap_or_else(|e| e.into_inner());
-        states.retain(|_, data| data.created_at.elapsed().as_secs() < OIDC_STATE_TTL_SECS);
+        states.retain(|_, data| data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS);
         states.insert(
             state.clone(),
-            OidcStateData {
+            machina_core::oidc::OidcStateEntry {
                 nonce,
                 created_at: Instant::now(),
             },
@@ -324,9 +317,9 @@ impl SessionStore {
 
     pub fn take_oidc_state(&self, state: &str) -> Option<String> {
         let mut states = self.oidc_states.lock().unwrap_or_else(|e| e.into_inner());
-        states.retain(|_, data| data.created_at.elapsed().as_secs() < OIDC_STATE_TTL_SECS);
+        states.retain(|_, data| data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS);
         states.remove(state).and_then(|data| {
-            if data.created_at.elapsed().as_secs() < OIDC_STATE_TTL_SECS {
+            if data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS {
                 Some(data.nonce)
             } else {
                 None
@@ -517,26 +510,21 @@ pub fn effective_linux_user(actor: &RequestActor) -> Option<&str> {
 }
 
 fn resolve_oidc_role(username: &str, groups: &[String], cfg: &OidcConfig) -> Role {
-    if groups
-        .iter()
-        .any(|g| cfg.admin_groups.iter().any(|want| want == g))
-    {
-        return Role::Admin;
-    }
-    if groups
-        .iter()
-        .any(|g| cfg.operator_groups.iter().any(|want| want == g))
-    {
-        return Role::Operator;
-    }
-    let roles = load_roles();
-    if let Some(local_role) = roles.get(username) {
-        return local_role.clone();
-    }
-    match cfg.default_role {
-        OidcDefaultRole::Admin => Role::Admin,
-        OidcDefaultRole::Operator => Role::Operator,
-        OidcDefaultRole::ReadOnly => Role::ReadOnly,
+    use machina_core::oidc::RoleTier;
+    match machina_core::oidc::resolve_role_tier(groups, &cfg.admin_groups, &cfg.operator_groups) {
+        RoleTier::Admin => Role::Admin,
+        RoleTier::Operator => Role::Operator,
+        RoleTier::NoMatch => {
+            let roles = load_roles();
+            if let Some(local_role) = roles.get(username) {
+                return local_role.clone();
+            }
+            match cfg.default_role {
+                OidcDefaultRole::Admin => Role::Admin,
+                OidcDefaultRole::Operator => Role::Operator,
+                OidcDefaultRole::ReadOnly => Role::ReadOnly,
+            }
+        }
     }
 }
 
@@ -558,14 +546,6 @@ struct SamlProviderMetadata {
 }
 
 #[derive(Debug, Deserialize)]
-struct OidcDiscoveryDocument {
-    authorization_endpoint: String,
-    token_endpoint: String,
-    jwks_uri: String,
-    issuer: String,
-}
-
-#[derive(Debug, Deserialize)]
 struct OidcCallbackQuery {
     code: Option<String>,
     state: Option<String>,
@@ -578,108 +558,41 @@ struct OidcTokenResponse {
     id_token: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-struct OidcClaims {
-    sub: String,
-    exp: usize,
-    #[serde(default)]
-    nbf: Option<usize>,
-    #[serde(default)]
-    iss: Option<String>,
-    #[serde(default)]
-    aud: Option<serde_json::Value>,
-    #[serde(default)]
-    nonce: Option<String>,
-    #[serde(flatten)]
-    extra: HashMap<String, serde_json::Value>,
+/// Map a `machina_core::oidc::OidcError` onto the daemon's own error type, keeping
+/// the pre-unification Forbidden/Operation split: an untrustworthy or invalid
+/// discovery/token response is Forbidden (403), a network/decode failure talking
+/// to the IdP is Operation (500) — matching the behavior this daemon had before
+/// the OIDC protocol logic moved into `machina_core::oidc`.
+fn oidc_error_to_app_error(e: machina_core::oidc::OidcError) -> AppError {
+    use machina_core::oidc::OidcError as E;
+    match e {
+        E::DiscoveryInvalid(msg) | E::TokenInvalid(msg) => AppError::from(LibvirtError::Forbidden(msg)),
+        E::DiscoveryFetch(msg) => AppError::from(LibvirtError::Operation(format!("Fetch OIDC discovery: {msg}"))),
+        E::DiscoveryDecode(msg) => {
+            AppError::from(LibvirtError::Operation(format!("Decode OIDC discovery document: {msg}")))
+        }
+        E::JwksFetch(msg) => AppError::from(LibvirtError::Operation(format!("Fetch OIDC JWKS: {msg}"))),
+        E::JwksDecode(msg) => AppError::from(LibvirtError::Operation(format!("Decode OIDC JWKS: {msg}"))),
+    }
 }
-
-/// Shared timeout for every outbound call this daemon makes to an OIDC IdP (discovery,
-/// JWKS, token exchange). Without it, a slow/unresponsive/black-holed IdP would hang the
-/// request task indefinitely — these handlers are reachable pre-auth (rate-limited but
-/// not otherwise bounded), so an unresponsive upstream must not tie up connections forever.
-const OIDC_HTTP_TIMEOUT: Duration = Duration::from_secs(15);
 
 fn oidc_http_client() -> Result<reqwest::Client, AppError> {
-    reqwest::Client::builder()
-        .timeout(OIDC_HTTP_TIMEOUT)
-        .build()
-        .map_err(|e| AppError::from(LibvirtError::Operation(format!("Build OIDC HTTP client: {e}"))))
+    machina_core::oidc::oidc_http_client().map_err(oidc_error_to_app_error)
 }
 
-async fn fetch_oidc_discovery(cfg: &OidcConfig) -> Result<OidcDiscoveryDocument, AppError> {
-    let base = cfg.issuer_url.trim_end_matches('/');
-    let url = format!("{base}/.well-known/openid-configuration");
+/// `require_https: false` — this daemon has never enforced an HTTPS-only issuer
+/// (needed for internal/test IdPs), unlike the controller's OIDC flow which does.
+/// Preserved as-is rather than silently tightened as part of sharing this code.
+async fn fetch_oidc_discovery(cfg: &OidcConfig) -> Result<machina_core::oidc::OidcDiscoveryDocument, AppError> {
     let client = oidc_http_client()?;
-    let res = client
-        .get(&url)
-        .send()
+    machina_core::oidc::fetch_discovery(&client, &cfg.issuer_url, false)
         .await
-        .map_err(|e| LibvirtError::Operation(format!("Fetch OIDC discovery: {e}")))?;
-    if !res.status().is_success() {
-        return Err(AppError::from(LibvirtError::Operation(format!(
-            "Fetch OIDC discovery: HTTP {}",
-            res.status()
-        ))));
-    }
-    let doc = res.json::<OidcDiscoveryDocument>().await.map_err(|e| {
-        AppError::from(LibvirtError::Operation(format!(
-            "Decode OIDC discovery document: {e}"
-        )))
-    })?;
-
-    // OIDC Discovery 1.0 §4.3: the `issuer` in the discovery document MUST exactly
-    // match the URL it was fetched from. `doc.issuer` is what later pins the
-    // id_token's `iss` validation (see `validate_oidc_id_token`), so skipping this
-    // check would let a compromised/misconfigured discovery response (cache
-    // poisoning, a shared reverse proxy, a subdomain mix-up) redirect trust to a
-    // different issuer than the admin configured.
-    if doc.issuer.trim_end_matches('/') != base {
-        return Err(AppError::from(LibvirtError::Forbidden(format!(
-            "OIDC discovery document issuer '{}' does not match configured issuer_url '{}'",
-            doc.issuer, cfg.issuer_url
-        ))));
-    }
-    Ok(doc)
+        .map_err(oidc_error_to_app_error)
 }
 
 async fn fetch_oidc_jwks(url: &str) -> Result<JwkSet, AppError> {
     let client = oidc_http_client()?;
-    let res = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|e| LibvirtError::Operation(format!("Fetch OIDC JWKS: {e}")))?;
-    if !res.status().is_success() {
-        return Err(AppError::from(LibvirtError::Operation(format!(
-            "Fetch OIDC JWKS: HTTP {}",
-            res.status()
-        ))));
-    }
-    res.json::<JwkSet>()
-        .await
-        .map_err(|e| AppError::from(LibvirtError::Operation(format!("Decode OIDC JWKS: {e}"))))
-}
-
-fn claim_strings(value: Option<&serde_json::Value>) -> Vec<String> {
-    match value {
-        Some(serde_json::Value::String(s)) => vec![s.clone()],
-        Some(serde_json::Value::Array(arr)) => arr
-            .iter()
-            .filter_map(|v| match v {
-                serde_json::Value::String(s) => Some(s.clone()),
-                _ => None,
-            })
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
-fn claim_string(value: Option<&serde_json::Value>) -> Option<String> {
-    match value {
-        Some(serde_json::Value::String(s)) if !s.trim().is_empty() => Some(s.clone()),
-        _ => None,
-    }
+    machina_core::oidc::fetch_jwks(&client, url).await.map_err(oidc_error_to_app_error)
 }
 
 fn resolve_effective_linux_user(
@@ -687,8 +600,8 @@ fn resolve_effective_linux_user(
     claims: &HashMap<String, serde_json::Value>,
     cfg: &OidcConfig,
 ) -> Option<String> {
-    let claimed = claim_string(claims.get(&cfg.linux_username_claim))
-        .or_else(|| claim_string(claims.get(&cfg.username_claim)))
+    let claimed = machina_core::oidc::claim_string(claims.get(&cfg.linux_username_claim))
+        .or_else(|| machina_core::oidc::claim_string(claims.get(&cfg.username_claim)))
         .or_else(|| Some(username.to_string()))?;
     if machina_core::system_accounts::unix_user_exists(&claimed) {
         Some(claimed)
@@ -697,111 +610,27 @@ fn resolve_effective_linux_user(
     }
 }
 
-/// Signing algorithms it is safe to accept for a JWK of this key type, derived from
-/// the JWK's own (server-published, trusted) key parameters — never from the
-/// `alg` field of the token header, which an attacker fully controls. This closes
-/// the classic alg-confusion class of attack (e.g. an attacker requesting `HS256`
-/// and trying to use the RSA public key bytes as an HMAC secret): the returned set
-/// only ever contains algorithms whose key family matches the JWK, so a header
-/// claiming a mismatched algorithm is rejected outright.
-fn allowed_algorithms_for_jwk(jwk: &jsonwebtoken::jwk::Jwk) -> Vec<jsonwebtoken::Algorithm> {
-    use jsonwebtoken::jwk::{AlgorithmParameters, EllipticCurve};
-    use jsonwebtoken::Algorithm;
-    match &jwk.algorithm {
-        AlgorithmParameters::RSA(_) => vec![
-            Algorithm::RS256,
-            Algorithm::RS384,
-            Algorithm::RS512,
-            Algorithm::PS256,
-            Algorithm::PS384,
-            Algorithm::PS512,
-        ],
-        AlgorithmParameters::EllipticCurve(params) => match params.curve {
-            EllipticCurve::P256 => vec![Algorithm::ES256],
-            EllipticCurve::P384 => vec![Algorithm::ES384],
-            // P-521 and any future curve variant: no jsonwebtoken Algorithm maps to
-            // it, so there is nothing safe to accept.
-            _ => vec![],
-        },
-        AlgorithmParameters::OctetKeyPair(_) => vec![Algorithm::EdDSA],
-        // A symmetric (HMAC) key published in a *public* JWKS would mean the
-        // "secret" is public too — never usable for signature verification.
-        AlgorithmParameters::OctetKey(_) => vec![],
-    }
-}
-
 fn validate_oidc_id_token(
     id_token: &str,
     jwks: &JwkSet,
-    discovery: &OidcDiscoveryDocument,
+    discovery: &machina_core::oidc::OidcDiscoveryDocument,
     cfg: &OidcConfig,
     expected_nonce: &str,
 ) -> Result<(String, Option<String>, Role), AppError> {
-    let header = decode_header(id_token).map_err(|e| {
-        AppError::from(LibvirtError::Forbidden(format!(
-            "Decode OIDC token header: {e}"
-        )))
-    })?;
-    let kid = header.kid.ok_or_else(|| {
-        AppError::from(LibvirtError::Forbidden(
-            "OIDC id_token is missing key id".into(),
-        ))
-    })?;
-    let jwk = jwks.find(&kid).ok_or_else(|| {
-        AppError::from(LibvirtError::Forbidden(format!(
-            "OIDC signing key '{kid}' not found in JWKS"
-        )))
-    })?;
-    let key = DecodingKey::from_jwk(jwk).map_err(|e| {
-        AppError::from(LibvirtError::Forbidden(format!(
-            "Build OIDC decoding key from JWKS: {e}"
-        )))
-    })?;
+    let claims = machina_core::oidc::validate_id_token(
+        id_token,
+        jwks,
+        &discovery.issuer,
+        cfg.client_id.trim(),
+        Some(expected_nonce),
+    )
+    .map_err(oidc_error_to_app_error)?;
 
-    // Pin the accepted signing algorithm(s) to what this JWK's own key type
-    // supports — never trust `header.alg` (attacker-controlled) on its own.
-    let allowed_algs = allowed_algorithms_for_jwk(jwk);
-    if allowed_algs.is_empty() {
-        return Err(AppError::from(LibvirtError::Forbidden(format!(
-            "OIDC signing key '{kid}' has an unsupported or unsafe key type for id_token verification"
-        ))));
-    }
-    if !allowed_algs.contains(&header.alg) {
-        return Err(AppError::from(LibvirtError::Forbidden(format!(
-            "OIDC id_token alg {:?} is not permitted for signing key '{kid}'",
-            header.alg
-        ))));
-    }
-
-    let mut validation = Validation::new(header.alg);
-    validation.algorithms = allowed_algs;
-    validation.set_audience(&[cfg.client_id.trim()]);
-    validation.set_issuer(&[discovery.issuer.as_str()]);
-    validation.set_required_spec_claims(&["exp", "iss", "aud", "sub"]);
-    validation.validate_nbf = true;
-
-    let token = decode::<OidcClaims>(id_token, &key, &validation).map_err(|e| {
-        AppError::from(LibvirtError::Forbidden(format!(
-            "Validate OIDC id_token: {e}"
-        )))
-    })?;
-    let claims = token.claims;
-    let _ = claims.exp;
-    let _ = &claims.aud;
-    let _ = &claims.iss;
-    let _ = claims.nbf;
-
-    if claims.nonce.as_deref() != Some(expected_nonce) {
-        return Err(AppError::from(LibvirtError::Forbidden(
-            "OIDC nonce mismatch".into(),
-        )));
-    }
-
-    let username = claim_string(claims.extra.get(&cfg.username_claim))
-        .or_else(|| claim_string(claims.extra.get("email")))
+    let username = machina_core::oidc::claim_string(claims.extra.get(&cfg.username_claim))
+        .or_else(|| machina_core::oidc::claim_string(claims.extra.get("email")))
         .unwrap_or(claims.sub);
     let effective_linux_user = resolve_effective_linux_user(&username, &claims.extra, cfg);
-    let groups = claim_strings(claims.extra.get(&cfg.groups_claim));
+    let groups = machina_core::oidc::claim_strings(claims.extra.get(&cfg.groups_claim));
     let role = resolve_oidc_role(&username, &groups, cfg);
     Ok((username, effective_linux_user, role))
 }
@@ -1422,7 +1251,17 @@ async fn oidc_callback_handler(
             .into_response();
         }
     };
-    let jwks = match fetch_oidc_jwks(&discovery.jwks_uri).await {
+    let jwks_uri = match discovery.jwks_uri.as_deref() {
+        Some(uri) => uri,
+        None => {
+            stats.inc_auth_attempt("oidc", "failure");
+            return AppError::from(LibvirtError::Operation(
+                "OIDC provider has no jwks_uri — cannot verify id_token signature".into(),
+            ))
+            .into_response();
+        }
+    };
+    let jwks = match fetch_oidc_jwks(jwks_uri).await {
         Ok(set) => set,
         Err(e) => return e.into_response(),
     };
