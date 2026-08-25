@@ -31,6 +31,7 @@ pub mod metrics_history;
 pub mod network;
 pub mod obs_counters;
 pub mod observability_settings;
+pub mod oidc;
 pub mod otlp;
 pub mod prometheus_remote_write;
 pub mod prometheus_text;
