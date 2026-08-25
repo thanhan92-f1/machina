@@ -4,7 +4,6 @@
 
 import { useEffect, useState, FormEvent, ReactNode } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { ZyvorBrandLine } from '../components/ZyvorBrand'
 import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
@@ -183,17 +182,11 @@ export default function LoginPage() {
                 </li>
               ))}
             </ul>
-            <ZyvorBrandLine />
           </div>
         }
         mobileSubtitle="Libvirt · Fleet Cloud · KubeVirt · Zyra AI"
         panelTitle="Welcome back"
         panelSubtitle={panelSubtitle}
-        footer={
-          <div className="lg:hidden text-center pb-6">
-            <ZyvorBrandLine />
-          </div>
-        }
       >
         <form
           onSubmit={(e) => {

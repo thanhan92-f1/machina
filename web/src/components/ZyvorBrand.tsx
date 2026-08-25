@@ -100,23 +100,21 @@ type FooterProps = {
   product?: string;
 };
 
-/** Page footer — transparent; orange brand line only. */
+/** Page footer — transparent; shows the daemon host OS line only, when present. */
 export function ZyvorFooter({ className = '', hostOs }: FooterProps) {
+  if (!hostOs) return null;
   return (
     <footer
       className={`zyvor-footer shrink-0 py-3 text-center bg-transparent border-0 ${className}`.trim()}
       style={{ marginTop: 'auto' }}
       role="contentinfo"
     >
-      <ZyvorBrandLine />
-      {hostOs ? (
-        <div
-          className="mt-1 text-[11px] text-slate-500"
-          title="Daemon host operating system"
-        >
-          {hostOs}
-        </div>
-      ) : null}
+      <div
+        className="text-[11px] text-slate-500"
+        title="Daemon host operating system"
+      >
+        {hostOs}
+      </div>
     </footer>
   );
 }
