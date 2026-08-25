@@ -70,6 +70,11 @@ const HERO_HIGHLIGHTS: { icon: ReactNode; title: string; description: string }[]
     title: 'Security & compliance',
     description: 'Firewall automation, PacketWolf flow correlation, and audit trails.',
   },
+  {
+    icon: <HardDrive className="w-4 h-4" aria-hidden />,
+    title: 'Fleet Cloud native compute',
+    description: 'Flavors, networking, volumes, security groups, load balancers, and declarative stacks — no external cloud required.',
+  },
 ]
 
 export default function LoginPage() {
