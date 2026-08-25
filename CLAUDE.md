@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+New to the project? Start with [docs/ENGINEERING_ONBOARDING.md](docs/ENGINEERING_ONBOARDING.md) — a day-by-day plan from repo access to a verified first deploy.
+
 ---
 
 ## Build & Development Commands
