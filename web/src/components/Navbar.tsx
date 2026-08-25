@@ -19,7 +19,6 @@ import { timeAgo } from '../utils/time'
 import { navGroups, NavItem, navItemVisible, navItemActive, navGroupHasActive, navDropdownSections, TOP_BAR_QUICK_LINKS } from '../utils/routes'
 import { navActiveChipClasses, statusActionLinkClasses, statusBgClass, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { useLaunchpadEnabled } from '../hooks/useLaunchpadEnabled'
 import { useAi } from '../contexts/AiContext'
 import { ZYRA_ASSISTANT_NAME } from '../config/aiBrand'
 
@@ -91,7 +90,6 @@ function DesktopNavCluster({
   username,
   theme,
   hypersdkEnabled,
-  launchpadEnabled,
 }: {
   openGroup: string | null
   onOpenGroup: (name: string | null) => void
@@ -100,7 +98,6 @@ function DesktopNavCluster({
   username: string
   theme: AppTheme
   hypersdkEnabled: boolean
-  launchpadEnabled: boolean
 }) {
   const location = useLocation()
   const steel = theme === 'steel'
@@ -153,11 +150,11 @@ function DesktopNavCluster({
     <>
       {navGroups.map((group) => {
         const BarIcon = group.barIcon
-        const hasActive = navGroupHasActive(group, location.pathname, location.search, username, hypersdkEnabled, launchpadEnabled)
+        const hasActive = navGroupHasActive(group, location.pathname, location.search, username, hypersdkEnabled)
         const sections = navDropdownSections(group)
           .map((section) => ({
             ...section,
-            items: section.items.filter((i) => navItemVisible(i, username, hypersdkEnabled, launchpadEnabled)),
+            items: section.items.filter((i) => navItemVisible(i, username, hypersdkEnabled)),
           }))
           .filter((section) => section.items.length > 0)
         if (sections.length === 0) return null
@@ -224,7 +221,6 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
   const { info } = usePlatformInfo()
   const { toggleCopilot, mode } = useAi()
   const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
-  const launchpadEnabled = useLaunchpadEnabled()
   const steel = theme === 'steel'
   const aurora = theme === 'aurora'
   const themed = steel || aurora
@@ -393,7 +389,6 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                 username={username}
                 theme={theme}
                 hypersdkEnabled={hypersdkEnabled}
-                launchpadEnabled={launchpadEnabled}
               />
             </nav>
             <div
@@ -767,7 +762,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               const sections = navDropdownSections(group)
                 .map((section) => ({
                   ...section,
-                  items: section.items.filter((item) => navItemVisible(item, username, hypersdkEnabled, launchpadEnabled)),
+                  items: section.items.filter((item) => navItemVisible(item, username, hypersdkEnabled)),
                 }))
                 .filter((section) => section.items.length > 0)
               if (sections.length === 0) return null

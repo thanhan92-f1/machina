@@ -86,7 +86,6 @@ use axum::Router;
 use crate::auth::auth_middleware;
 use crate::console;
 use crate::consolehub;
-use crate::launchpad;
 use crate::rate_limit::{rate_limit_middleware, RateLimiter};
 use crate::state::AppState;
 
@@ -1064,7 +1063,6 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/notifications/{id}/deliver",
             post(notifications::mark_notification_delivered),
         )
-        .merge(launchpad::api_routes())
         .route("/api/v1/auth/oidc", get(oidc::get_oidc_settings).patch(oidc::patch_oidc_settings))
         .route(
             "/api/v1/cpu-compat",

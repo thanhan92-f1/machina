@@ -9,7 +9,6 @@ pub mod consolehub;
 pub mod db;
 pub mod engine;
 pub mod jwt;
-pub mod launchpad;
 pub mod leader;
 pub mod oidc_flow;
 pub mod oidc_jwt;

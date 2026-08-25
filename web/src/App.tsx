@@ -145,9 +145,6 @@ const PlatformMigration = lazyWithRetry(() => import('./pages/platform/PlatformM
 const PlatformActivityMonitor = lazyWithRetry(() => import('./pages/platform/PlatformActivityMonitor'))
 const PlatformRecommendations = lazyWithRetry(() => import('./pages/platform/PlatformRecommendations'))
 const PlatformApplications = lazyWithRetry(() => import('./pages/platform/PlatformApplications'))
-const PlatformLaunchpad = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpad'))
-const PlatformLaunchpadAppDetail = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpadAppDetail'))
-const PlatformLaunchpadSpace = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpadSpace'))
 const PlatformBackups = lazyWithRetry(() => import('./pages/platform/PlatformBackups'))
 const PlatformTopology = lazyWithRetry(() => import('./pages/platform/PlatformTopology'))
 const PlatformZyraOs = lazyWithRetry(() => import('./pages/platform/PlatformZyraOs'))
@@ -414,9 +411,6 @@ function AuthenticatedShellRoutes() {
                   <Route path="mission-control/live" element={<MissionControlLiveWall />} />
                   <Route path="vms/:id/console" element={<PlatformConsoleRedirect />} />
                   <Route path="applications" element={<PlatformApplications />} />
-                  <Route path="launchpad/apps/:id" element={<PlatformLaunchpadAppDetail />} />
-                  <Route path="launchpad/spaces/:spaceId" element={<PlatformLaunchpadSpace />} />
-                  <Route path="launchpad" element={<PlatformLaunchpad />} />
                   <Route path="content" element={<PlatformContent />} />
                   <Route path="create-iso" element={<PlatformIsoCreate />} />
                   <Route path="create-advanced" element={<PlatformVirtInstallCreate />} />

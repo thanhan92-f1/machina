@@ -9,7 +9,6 @@ import {
   Cpu, Activity, MonitorCog, Usb, Cog, ScrollText, FileText, Key, Users, Database, Terminal,
   ClipboardList,
   Boxes,
-  LayoutGrid,
   Package,
   Cloud,
   Stethoscope,
@@ -46,8 +45,6 @@ export interface NavItem {
   requiresRoot?: boolean
   /** If true, only show when HyperSDK is enabled on the daemon. */
   requiresHypersdk?: boolean
-  /** If true, only show when Launchpad is enabled on the daemon. */
-  requiresLaunchpad?: boolean
 }
 
 /** Match nav item href against current location (supports /fleet-cloud prefix + settings query). */
@@ -83,12 +80,11 @@ export function navGroupHasActive(
   search: string,
   username: string,
   hypersdkEnabled = false,
-  launchpadEnabled = true,
 ): boolean {
   return navDropdownSections(group).some((section) =>
     section.items.some(
       (item) =>
-        navItemVisible(item, username, hypersdkEnabled, launchpadEnabled) &&
+        navItemVisible(item, username, hypersdkEnabled) &&
         navItemActive(item, pathname, search),
     ),
   )
@@ -98,11 +94,9 @@ export function navItemVisible(
   item: NavItem,
   username: string,
   hypersdkEnabled = false,
-  launchpadEnabled = true,
 ): boolean {
   if (item.requiresRoot && username !== 'root') return false
   if (item.requiresHypersdk && !hypersdkEnabled) return false
-  if (item.requiresLaunchpad && !launchpadEnabled) return false
   return true
 }
 
@@ -168,7 +162,6 @@ export const navGroups: NavGroup[] = [
           { to: '/platform/vms', icon: React.createElement(MonitorCog, { className: 'w-4 h-4' }), label: 'Virtual Machines' },
           { to: '/platform/hosts', icon: React.createElement(Server, { className: 'w-4 h-4' }), label: 'Hosts' },
           { to: '/platform/applications', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Applications' },
-          { to: '/platform/launchpad', icon: React.createElement(LayoutGrid, { className: 'w-4 h-4' }), label: 'Launchpad', requiresLaunchpad: true },
           { to: '/platform/datacenter', icon: React.createElement(Building2, { className: 'w-4 h-4' }), label: 'Datacenter View' },
         ],
       },
@@ -414,7 +407,6 @@ export const routeLabels: Record<string, string> = {
   '/platform': 'Mission Control',
   '/platform/vms': 'Virtual Machines',
   '/platform/applications': 'Applications',
-  '/platform/launchpad': 'Launchpad',
   '/platform/hosts': 'Hosts',
   '/platform/content': 'Images & ISOs',
   '/platform/templates': 'Templates',
@@ -489,8 +481,6 @@ export const routeLabels: Record<string, string> = {
   '/platform/vms/:id': 'Virtual Machine',
   '/platform/vms/:id/consolehub': 'Console Hub',
   '/platform/vms/:id/console': 'Console',
-  '/platform/launchpad/apps/:id': 'App',
-  '/platform/launchpad/spaces/:spaceId': 'Space',
   '/platform/zyra/machines/:hostId': 'Host',
   '/platform/zeus/security/firewall/:id': 'Firewall',
 }

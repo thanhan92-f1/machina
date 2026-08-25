@@ -16,65 +16,6 @@ export const platformInfo = {
   fleet: { enabled: false, peer_count: 0 },
 }
 
-const mockLaunchpadDiagnosis = {
-  appId: 'monitoring/grafana',
-  routePath: '/launchpad/a/monitoring/grafana',
-  publicUrl: 'http://127.0.0.1:31847/launchpad/apps/grafana',
-  backend: { kind: 'Service', name: 'grafana', port: 80, scheme: 'http', path: '/' },
-  chain: [
-    { id: 'user', label: 'User' },
-    { id: 'identity', label: 'Zeus Identity' },
-    { id: 'gateway', label: 'Hermes Gateway' },
-    { id: 'approute', label: 'AppRoute: grafana' },
-    { id: 'namespace', label: 'Namespace: monitoring' },
-    { id: 'service', label: 'Service grafana:80', status: 'healthy' },
-  ],
-  suggestedActions: [{ label: 'Open Kubernetes workloads', href: '/k8s/workloads?ns=monitoring' }],
-}
-
-const mockLaunchpadApps = [
-  {
-    id: 'monitoring/grafana',
-    slug: 'grafana',
-    canonicalSlug: 'grafana',
-    displayName: 'Grafana',
-    description: 'Monitoring dashboard',
-    namespace: 'monitoring',
-    category: 'Monitoring',
-    icon: 'grafana',
-    backend: { kind: 'Service', name: 'grafana', port: 80, scheme: 'http', path: '/' },
-    routePath: '/launchpad/a/monitoring/grafana',
-    publicUrl: 'http://127.0.0.1:31847/launchpad/apps/grafana',
-    status: 'healthy',
-    source: 'signature',
-    authMode: 'none',
-    score: 80,
-    visibility: { published: true, hidden: false, favorite: true },
-    readyEndpoints: 1,
-    updatedAt: '2026-06-12T12:00:00.000Z',
-  },
-  {
-    id: 'monitoring/prometheus-server',
-    slug: 'prometheus-server',
-    canonicalSlug: 'prometheus',
-    displayName: 'Prometheus',
-    description: 'Metrics',
-    namespace: 'monitoring',
-    category: 'Monitoring',
-    icon: 'prometheus',
-    backend: { kind: 'Service', name: 'prometheus-server', port: 9090, scheme: 'http', path: '/' },
-    routePath: '/launchpad/a/monitoring/prometheus-server',
-    publicUrl: 'http://127.0.0.1:31847/launchpad/apps/prometheus',
-    status: 'healthy',
-    source: 'signature',
-    authMode: 'none',
-    score: 75,
-    visibility: { published: true, hidden: false, favorite: false },
-    readyEndpoints: 1,
-    updatedAt: '2026-06-12T11:00:00.000Z',
-  },
-]
-
 const fleetFinder = {
   summary: '2 VM(s) · 1 running',
   smart_folders: [
@@ -775,54 +716,6 @@ export async function mockPlatformApi(page: Page, opts?: {
       return route.fulfill({
         json: { status: 'ok', leader: true, controller_id: 'ctrl-test-1' },
       })
-    }
-    if (url.includes('/api/v1/launchpad/config')) {
-      return route.fulfill({
-        json: {
-          publicBase: 'http://127.0.0.1:31847',
-          pathPrefix: '/launchpad',
-          enabled: true,
-        },
-      })
-    }
-    if (url.includes('/api/v1/launchpad/favorites') && route.request().method() === 'PUT') {
-      return route.fulfill({ status: 204, body: '' })
-    }
-    if (url.includes('/api/v1/launchpad/favorites')) {
-      return route.fulfill({ json: mockLaunchpadApps.filter((a) => a.visibility.favorite) })
-    }
-    if (url.includes('/api/v1/launchpad/apps/') && url.includes('/diagnosis')) {
-      return route.fulfill({ json: mockLaunchpadDiagnosis })
-    }
-    if (url.match(/\/api\/v1\/launchpad\/apps\/[^/?]+/)) {
-      const idPart = decodeURIComponent(url.split('/api/v1/launchpad/apps/')[1]?.split('?')[0] ?? '')
-      const app =
-        mockLaunchpadApps.find((a) => a.id === idPart) ||
-        mockLaunchpadApps.find((a) => a.canonicalSlug === idPart) ||
-        mockLaunchpadApps.find((a) => a.slug === idPart)
-      if (app) return route.fulfill({ json: app })
-      return route.fulfill({ status: 404, json: { error: 'not found' } })
-    }
-    if (url.includes('/api/v1/launchpad/catalog') || url.endsWith('/api/v1/launchpad/apps')) {
-      return route.fulfill({ json: mockLaunchpadApps })
-    }
-    if (url.includes('/api/v1/launchpad/health/apps')) {
-      return route.fulfill({
-        json: {
-          total: mockLaunchpadApps.length,
-          healthy: mockLaunchpadApps.length,
-          degraded: 0,
-          broken: 0,
-          apps: [],
-        },
-      })
-    }
-    if (url.includes('/api/v1/launchpad/search')) {
-      const q = new URL(url).searchParams.get('q')?.toLowerCase() ?? ''
-      const hits = mockLaunchpadApps
-        .filter((a) => a.displayName.toLowerCase().includes(q) || a.slug.includes(q))
-        .map((app) => ({ app, score: 90 }))
-      return route.fulfill({ json: hits })
     }
     if (url.match(/\/hosts\/[^/]+\/linux\/observability/)) {
       return route.fulfill({

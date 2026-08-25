@@ -12,9 +12,6 @@ import { dispatchOpenSpotlight } from '../../utils/platformJarvisShell'
 import { useMissionControl } from './mac/MissionControlContext'
 import { useFleetDesktop } from '../../hooks/useFleetDesktop'
 import { getFleetFinder } from '../../api/platform'
-import { useLaunchpadDockApps } from '../../hooks/useLaunchpadDockApps'
-import { gradientForName } from './mac/PlatformMacUi'
-import { openLaunchpadApp } from '../../utils/launchpadHelpers'
 
 function isPlatformShell(pathname: string): boolean {
   return pathname.startsWith('/platform')
@@ -27,7 +24,6 @@ export default function PlatformMacDock() {
   const { openCopilot } = useAi()
   const { closeMissionControl } = useMissionControl()
   const dockItems = usePlatformDockItems()
-  const launchpadFavorites = useLaunchpadDockApps(4)
   const { desktop } = useFleetDesktop(isPlatformShell(location.pathname), 90_000)
   const [mounted, setMounted] = useState(false)
   const [dockVisible, setDockVisible] = useState(true)
@@ -148,29 +144,6 @@ export default function PlatformMacDock() {
             </Link>
           )
         })}
-
-        {launchpadFavorites.length > 0 ? (
-          <>
-            <div className="mac-dock-divider" aria-hidden />
-            {launchpadFavorites.map((app) => (
-              <button
-                key={`launchpad-${app.id}`}
-                type="button"
-                title={app.displayName}
-                aria-label={`Open ${app.displayName}`}
-                className="mac-dock-item mac-dock-launchpad-app"
-                onClick={() => void openLaunchpadApp(app)}
-              >
-                <span
-                  className={`w-8 h-8 rounded-[22%] bg-gradient-to-br ${gradientForName(app.displayName)} flex items-center justify-center text-white text-xs font-bold shadow-md`}
-                >
-                  {app.displayName.trim().charAt(0).toUpperCase()}
-                </span>
-                <span className="mac-dock-tooltip">{app.displayName}</span>
-              </button>
-            ))}
-          </>
-        ) : null}
 
         <div className="mac-dock-divider" aria-hidden />
 
