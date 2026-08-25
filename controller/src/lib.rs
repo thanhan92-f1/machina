@@ -11,7 +11,6 @@ pub mod engine;
 pub mod jwt;
 pub mod leader;
 pub mod oidc_flow;
-pub mod oidc_jwt;
 pub mod rate_limit;
 pub mod state;
 pub mod sync;

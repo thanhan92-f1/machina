@@ -14,14 +14,6 @@ pub struct OidcConfig {
 }
 
 #[derive(Debug, Deserialize)]
-struct OidcDiscovery {
-    authorization_endpoint: String,
-    token_endpoint: String,
-    userinfo_endpoint: Option<String>,
-    jwks_uri: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
 struct TokenResponse {
     access_token: String,
     id_token: Option<String>,
@@ -82,8 +74,10 @@ pub async fn complete_login(
     state: &str,
 ) -> anyhow::Result<(String, String, String)> {
     // Fetch nonce alongside state validation; None means state not found or expired.
+    // 5-minute window — converged with the daemon's OIDC_STATE_TTL_SECS (this was
+    // 10 minutes before unifying the two OIDC implementations' state/nonce TTLs).
     let stored_nonce: Option<Option<String>> = sqlx::query_scalar(
-        "SELECT nonce FROM oidc_states WHERE state = ? AND created_at > datetime('now', '-10 minutes')",
+        "SELECT nonce FROM oidc_states WHERE state = ? AND created_at > datetime('now', '-5 minutes')",
     )
     .bind(state)
     .fetch_optional(pool)
@@ -127,27 +121,31 @@ pub async fn complete_login(
             .or(info.name)
             .unwrap_or(info.sub)
     } else if let Some(ref id_token) = token.id_token {
-        if let Some(jwks_uri) = discovery.jwks_uri.as_deref() {
-            match crate::oidc_jwt::validate_id_token(
-                id_token,
-                &cfg.issuer,
-                &cfg.client_id,
-                jwks_uri,
-                nonce.as_deref(),
-            )
-            .await
-            {
-                Ok(u) => u,
-                Err(e) => {
-                    tracing::warn!("id_token JWKS validation failed: {e:#}");
-                    return Err(anyhow::anyhow!("id_token signature verification failed"));
-                }
-            }
-        } else {
+        let Some(jwks_uri) = discovery.jwks_uri.as_deref() else {
             return Err(anyhow::anyhow!(
                 "OIDC provider has no jwks_uri — cannot verify id_token signature"
             ));
-        }
+        };
+        let jwks = machina_core::oidc::fetch_jwks(&client, jwks_uri)
+            .await
+            .map_err(|e| anyhow::anyhow!("fetch OIDC JWKS: {e}"))?;
+        let claims = match machina_core::oidc::validate_id_token(
+            id_token,
+            &jwks,
+            &discovery.issuer,
+            &cfg.client_id,
+            nonce.as_deref(),
+        ) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!("id_token JWKS validation failed: {e:#}");
+                return Err(anyhow::anyhow!("id_token signature verification failed"));
+            }
+        };
+        machina_core::oidc::claim_string(claims.extra.get("email"))
+            .or_else(|| machina_core::oidc::claim_string(claims.extra.get("preferred_username")))
+            .or_else(|| machina_core::oidc::claim_string(claims.extra.get("name")))
+            .unwrap_or(claims.sub)
     } else {
         format!(
             "oidc-{}",
@@ -180,41 +178,11 @@ pub async fn complete_login(
     Ok((username, role, token))
 }
 
-async fn fetch_discovery(issuer: &str) -> anyhow::Result<OidcDiscovery> {
-    if !issuer.starts_with("https://") {
-        return Err(anyhow::anyhow!(
-            "OIDC issuer must use HTTPS — got: {issuer}"
-        ));
-    }
-    let url = format!("{issuer}/.well-known/openid-configuration");
-    let discovery: OidcDiscovery = reqwest::get(&url).await?.error_for_status()?.json().await?;
-    // Validate that token_endpoint and userinfo_endpoint share the issuer's origin
-    // to prevent SSRF via attacker-controlled discovery document fields.
-    let issuer_origin = issuer
-        .trim_end_matches('/')
-        .split('/')
-        .take(3)
-        .collect::<Vec<_>>()
-        .join("/");
-    if !discovery.token_endpoint.starts_with(&issuer_origin) {
-        return Err(anyhow::anyhow!(
-            "OIDC token_endpoint '{}' does not match issuer origin '{issuer_origin}'",
-            discovery.token_endpoint
-        ));
-    }
-    if let Some(ref ui) = discovery.userinfo_endpoint {
-        if !ui.starts_with(&issuer_origin) {
-            return Err(anyhow::anyhow!(
-                "OIDC userinfo_endpoint '{ui}' does not match issuer origin '{issuer_origin}'"
-            ));
-        }
-    }
-    if let Some(ref jwks) = discovery.jwks_uri {
-        if !jwks.starts_with(&issuer_origin) {
-            return Err(anyhow::anyhow!(
-                "OIDC jwks_uri '{jwks}' does not match issuer origin '{issuer_origin}'"
-            ));
-        }
-    }
-    Ok(discovery)
+// require_https: true — the controller has always required an HTTPS issuer,
+// preserved as-is (the daemon's own discovery fetch does not require this).
+async fn fetch_discovery(issuer: &str) -> anyhow::Result<machina_core::oidc::OidcDiscoveryDocument> {
+    let client = machina_core::oidc::oidc_http_client().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    machina_core::oidc::fetch_discovery(&client, issuer, true)
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))
 }
