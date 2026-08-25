@@ -152,22 +152,6 @@ async fn read_rpc<T>(
     Ok(timed(label, fut).await?.into_inner())
 }
 
-/// Decodes an agent response's `{ok, message, <payload>_json}` shape into `T`,
-/// or bails with the agent-supplied message when `ok` is false. Centralizes
-/// the decode-or-bail pattern repeated across most of the read-only RPCs below.
-fn decode_json_response<T: serde::de::DeserializeOwned>(
-    ok: bool,
-    json: &str,
-    message: &str,
-    what: &str,
-) -> anyhow::Result<T> {
-    if ok {
-        serde_json::from_str(json).map_err(|e| anyhow::anyhow!("{what}: {e}"))
-    } else {
-        anyhow::bail!("{message}")
-    }
-}
-
 pub async fn list_vms(client: &mut AgentClient) -> anyhow::Result<ListVmsResponse> {
     read_rpc("list_vms", client.list_vms(ListVmsRequest {})).await
 }
@@ -745,7 +729,11 @@ pub async fn vm_libvirt_query(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.result_json, &resp.message, "decode query")
+    if resp.ok {
+        serde_json::from_str(&resp.result_json).map_err(|e| anyhow::anyhow!("decode query: {e}"))
+    } else {
+        anyhow::bail!("{}", resp.message)
+    }
 }
 
 pub async fn vm_libvirt_invoke(
@@ -764,7 +752,11 @@ pub async fn vm_libvirt_invoke(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.result_json, &resp.message, "decode invoke")
+    if resp.ok {
+        serde_json::from_str(&resp.result_json).map_err(|e| anyhow::anyhow!("decode invoke: {e}"))
+    } else {
+        anyhow::bail!("{}", resp.message)
+    }
 }
 
 pub async fn host_libvirt_query(
@@ -781,7 +773,12 @@ pub async fn host_libvirt_query(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.result_json, &resp.message, "decode host query")
+    if resp.ok {
+        serde_json::from_str(&resp.result_json)
+            .map_err(|e| anyhow::anyhow!("decode host query: {e}"))
+    } else {
+        anyhow::bail!("{}", resp.message)
+    }
 }
 
 pub async fn host_libvirt_invoke(
@@ -798,7 +795,12 @@ pub async fn host_libvirt_invoke(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.result_json, &resp.message, "decode host invoke")
+    if resp.ok {
+        serde_json::from_str(&resp.result_json)
+            .map_err(|e| anyhow::anyhow!("decode host invoke: {e}"))
+    } else {
+        anyhow::bail!("{}", resp.message)
+    }
 }
 
 pub async fn get_vm_details(
@@ -813,7 +815,12 @@ pub async fn get_vm_details(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.details_json, &resp.message, "decode vm details")
+    if resp.ok {
+        serde_json::from_str(&resp.details_json)
+            .map_err(|e| anyhow::anyhow!("decode vm details: {e}"))
+    } else {
+        anyhow::bail!("{}", resp.message)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -922,7 +929,12 @@ pub async fn get_firewall_inventory(addr: &str) -> anyhow::Result<machina_core::
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.inventory_json, &resp.message, "inventory json")
+    if resp.ok {
+        serde_json::from_str(&resp.inventory_json)
+            .map_err(|e| anyhow::anyhow!("inventory json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn apply_firewall_plan(
@@ -936,7 +948,11 @@ pub async fn apply_firewall_plan(
         .apply_firewall_plan(ApplyFirewallPlanRequest { plan_json, dry_run })
         .await?
         .into_inner();
-    decode_json_response(resp.ok, &resp.result_json, &resp.message, "plan json")
+    if resp.ok {
+        serde_json::from_str(&resp.result_json).map_err(|e| anyhow::anyhow!("plan json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn apply_security_bundle(
@@ -952,7 +968,11 @@ pub async fn apply_security_bundle(
         })
         .await?
         .into_inner();
-    decode_json_response(resp.ok, &resp.result_json, &resp.message, "result json")
+    if resp.ok {
+        serde_json::from_str(&resp.result_json).map_err(|e| anyhow::anyhow!("result json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn get_security_fabric_status(
@@ -965,7 +985,11 @@ pub async fn get_security_fabric_status(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.status_json, &resp.message, "status json")
+    if resp.ok {
+        serde_json::from_str(&resp.status_json).map_err(|e| anyhow::anyhow!("status json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub struct GuestFirewallPortsResponse {
@@ -1020,7 +1044,11 @@ pub async fn get_firewall_activity(addr: &str, hours: u32) -> anyhow::Result<ser
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.activity_json, &resp.message, "activity json")
+    if resp.ok {
+        serde_json::from_str(&resp.activity_json).map_err(|e| anyhow::anyhow!("activity json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn get_lldp(
@@ -1048,7 +1076,11 @@ pub async fn get_linux_observability(addr: &str) -> anyhow::Result<serde_json::V
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.json, &resp.message, "linux obs json")
+    if resp.ok {
+        serde_json::from_str(&resp.json).map_err(|e| anyhow::anyhow!("linux obs json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn get_systemd_network_diagnostics(addr: &str) -> anyhow::Result<serde_json::Value> {
@@ -1059,7 +1091,11 @@ pub async fn get_systemd_network_diagnostics(addr: &str) -> anyhow::Result<serde
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.json, &resp.message, "network diag json")
+    if resp.ok {
+        serde_json::from_str(&resp.json).map_err(|e| anyhow::anyhow!("network diag json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn get_linux_audit(addr: &str) -> anyhow::Result<serde_json::Value> {
@@ -1070,7 +1106,11 @@ pub async fn get_linux_audit(addr: &str) -> anyhow::Result<serde_json::Value> {
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.json, &resp.message, "linux audit json")
+    if resp.ok {
+        serde_json::from_str(&resp.json).map_err(|e| anyhow::anyhow!("linux audit json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn get_linux_package_updates(addr: &str) -> anyhow::Result<serde_json::Value> {
@@ -1081,7 +1121,12 @@ pub async fn get_linux_package_updates(addr: &str) -> anyhow::Result<serde_json:
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.json, &resp.message, "linux package updates json")
+    if resp.ok {
+        serde_json::from_str(&resp.json)
+            .map_err(|e| anyhow::anyhow!("linux package updates json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn apply_linux_package_upgrade(
@@ -1123,7 +1168,11 @@ pub async fn get_linux_filesystems(addr: &str) -> anyhow::Result<serde_json::Val
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.json, &resp.message, "linux filesystems json")
+    if resp.ok {
+        serde_json::from_str(&resp.json).map_err(|e| anyhow::anyhow!("linux filesystems json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 pub async fn get_linux_top_processes(
@@ -1141,7 +1190,11 @@ pub async fn get_linux_top_processes(
     )
     .await?
     .into_inner();
-    decode_json_response(resp.ok, &resp.json, &resp.message, "linux processes json")
+    if resp.ok {
+        serde_json::from_str(&resp.json).map_err(|e| anyhow::anyhow!("linux processes json: {e}"))
+    } else {
+        anyhow::bail!(resp.message)
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

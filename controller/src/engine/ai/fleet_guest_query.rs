@@ -10,16 +10,6 @@ use crate::engine::guest_context::{self, GuestAiSnapshot};
 use super::llm::{self, CompletionRequest};
 use super::routing::TaskClass;
 
-const VM_SCAN_LIMIT: i64 = 50;
-// Default "old kernel" cutoff used by the keyword-based filter parser when a
-// query mentions an old kernel without a specific day count.
-const DEFAULT_KERNEL_AGE_DAYS: u32 = 90;
-// Clock drift beyond this is notable enough to both (a) become the implicit
-// filter threshold for a "time drift"/"clock" query and (b) get flagged on
-// every matched row's output, regardless of whether that query drove the
-// filter.
-const NOTABLE_TIME_DRIFT_MS: i64 = 5000;
-
 #[derive(Debug, Deserialize)]
 pub struct FleetGuestQueryRequest {
     pub query: String,
@@ -157,13 +147,12 @@ async fn resolve_vm_ids(pool: &SqlitePool, req: &FleetGuestQueryRequest) -> anyh
            AND (? IS NULL OR EXISTS (SELECT 1 FROM json_each(COALESCE(tags,'[]')) WHERE value = ?))
            AND (observed_state = 'running' OR observed_state = 'paused')
          ORDER BY name
-         LIMIT ?",
+         LIMIT 50",
     )
     .bind(req.project.as_deref())
     .bind(req.project.as_deref())
     .bind(req.tag.as_deref())
     .bind(req.tag.as_deref())
-    .bind(VM_SCAN_LIMIT)
     .fetch_all(pool)
     .await?;
     if rows.is_empty() {
@@ -171,10 +160,9 @@ async fn resolve_vm_ids(pool: &SqlitePool, req: &FleetGuestQueryRequest) -> anyh
             "SELECT id FROM vms
              WHERE COALESCE(inventory_source, 'libvirt') = 'libvirt'
                AND name LIKE ? ESCAPE '\\'
-             LIMIT ?",
+             LIMIT 50",
         )
         .bind(&pattern)
-        .bind(VM_SCAN_LIMIT)
         .fetch_all(pool)
         .await?;
         return Ok(rows.into_iter().map(|(id,)| id).collect());
@@ -216,7 +204,7 @@ fn keyword_plan(ql: &str) -> FilterPlan {
         plan.has_logged_in_users = Some(true);
     }
     if ql.contains("old kernel") || ql.contains("kernel older") {
-        plan.kernel_older_than_days = Some(DEFAULT_KERNEL_AGE_DAYS);
+        plan.kernel_older_than_days = Some(90);
     }
     if ql.contains("ubuntu") {
         plan.os_family_contains = Some("ubuntu".into());
@@ -225,7 +213,7 @@ fn keyword_plan(ql: &str) -> FilterPlan {
         plan.os_family_contains = Some("windows".into());
     }
     if ql.contains("time drift") || ql.contains("clock") {
-        plan.time_drift_gt_ms = Some(NOTABLE_TIME_DRIFT_MS);
+        plan.time_drift_gt_ms = Some(5000);
     }
     if ql.contains("no guest agent") || ql.contains("qga") && ql.contains("missing") {
         plan.agent_ping_required = Some(false);
@@ -286,10 +274,7 @@ fn matches_plan(s: &GuestAiSnapshot, plan: &FilterPlan) -> bool {
         }
     }
     if plan.kernel_older_than_days.is_some() {
-        // No package DB is available to compute actual kernel age, so this
-        // only excludes VMs with no kernel string at all rather than truly
-        // filtering by the requested day threshold — a coarse stand-in, not
-        // a real "older than N days" check.
+        // Heuristic: without package DB, match if kernel version string lacks recent year
         if s.os_kernel.is_empty() {
             return false;
         }
@@ -303,7 +288,7 @@ fn snapshot_to_row(s: &GuestAiSnapshot) -> FleetVmGuestRow {
         flags.push("no_qga".into());
     }
     if let Some(ms) = s.time_delta_ms {
-        if ms.abs() > NOTABLE_TIME_DRIFT_MS {
+        if ms.abs() > 5000 {
             flags.push("time_drift".into());
         }
     }

@@ -7,7 +7,6 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 export type AppTheme = 'dark' | 'steel' | 'aurora'
 
 const THEME_CYCLE: AppTheme[] = ['dark', 'steel', 'aurora']
-const THEME_STORAGE_KEY = 'machina-theme'
 
 interface ThemeContextType {
   theme: AppTheme
@@ -23,8 +22,6 @@ const ThemeContext = createContext<ThemeContextType>({
 })
 
 function parseStoredTheme(raw: string | null): AppTheme {
-  // 'light' was a real theme value in older builds; the app is dark-only now, so
-  // treat any stored 'light' as 'dark' instead of an unrecognized/invalid value.
   if (raw === 'light') return 'dark'
   if (raw === 'aurora' || raw === 'steel' || raw === 'dark') return raw
   return 'dark'
@@ -32,7 +29,7 @@ function parseStoredTheme(raw: string | null): AppTheme {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<AppTheme>(() =>
-    parseStoredTheme(typeof localStorage !== 'undefined' ? localStorage.getItem(THEME_STORAGE_KEY) : null)
+    parseStoredTheme(typeof localStorage !== 'undefined' ? localStorage.getItem('machina-theme') : null)
   )
 
   const setTheme = useCallback((t: AppTheme) => {
@@ -40,7 +37,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(THEME_STORAGE_KEY, theme)
+    localStorage.setItem('machina-theme', theme)
     const root = document.documentElement
     root.classList.remove('steel-theme', 'aurora-theme', 'liquid-glass-app')
     if (theme === 'steel') {

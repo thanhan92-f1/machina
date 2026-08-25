@@ -6,6 +6,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{MachinaConfig, OidcDefaultRole};
 
+fn config_path_display() -> String {
+    if MachinaConfig::system_config_path().exists() {
+        MachinaConfig::system_config_path().display().to_string()
+    } else {
+        MachinaConfig::user_config_path().display().to_string()
+    }
+}
+
 fn mask_secret(value: &str) -> String {
     let v = value.trim();
     if v.is_empty() {
@@ -159,7 +167,7 @@ pub fn oidc_settings_view_from_config(cfg: &MachinaConfig) -> OidcSettingsView {
         default_role: role_label(oidc.default_role).into(),
         button_label: oidc.button_label.clone(),
         require_local_user_for_session_libvirt: oidc.require_local_user_for_session_libvirt,
-        config_path: MachinaConfig::config_path_display(),
+        config_path: config_path_display(),
         login_path: "/api/v1/auth/oidc/login".into(),
         callback_path: "/api/v1/auth/oidc/callback".into(),
     }
@@ -236,7 +244,7 @@ pub fn saml_settings_view_from_config(cfg: &MachinaConfig) -> SamlSettingsView {
         operator_groups: saml.operator_groups.clone(),
         default_role: role_label(saml.default_role).into(),
         notes: saml.notes.clone(),
-        config_path: MachinaConfig::config_path_display(),
+        config_path: config_path_display(),
         metadata_path: "/api/v1/auth/saml/metadata".into(),
     }
 }

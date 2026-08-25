@@ -77,22 +77,23 @@ pub async fn create_temporary_rule(
     .execute(pool)
     .await?;
 
-    super::record_timeline(
-        pool,
-        &req.target_kind,
-        req.target_id,
-        "temporary_rule",
-        &format!(
-            "Temporary rule RECORDED (not enforced on host): {} {}:{} for {}h",
-            req.protocol, req.source_cidr, req.dest_port, req.duration_hours
-        ),
-        &serde_json::json!({
-            "reason": req.reason,
-            "expires_at": expires.to_rfc3339(),
-            "enforced": false,
-        }),
-        req.owner.as_deref().unwrap_or("system"),
+    let _ = sqlx::query(
+        "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, ?, ?, 'temporary_rule', ?, ?, ?)",
     )
+    .bind(uuid::Uuid::new_v4())
+    .bind(&req.target_kind)
+    .bind(req.target_id)
+    .bind(format!(
+        "Temporary rule RECORDED (not enforced on host): {} {}:{} for {}h",
+        req.protocol, req.source_cidr, req.dest_port, req.duration_hours
+    ))
+    .bind(serde_json::json!({
+        "reason": req.reason,
+        "expires_at": expires.to_rfc3339(),
+        "enforced": false,
+    }))
+    .bind(req.owner.as_deref().unwrap_or("system"))
+    .execute(pool)
     .await;
 
     Ok(TemporaryRule {

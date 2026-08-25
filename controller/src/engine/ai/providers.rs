@@ -6,12 +6,6 @@ use uuid::Uuid;
 
 use super::crypto;
 
-/// Model seeded for a provider created with no explicit model list, and the
-/// fallback used when a provider has no enabled model row to pick from — keeps
-/// `create_provider` and `resolve_for_provider` referring to the same default
-/// rather than risking the two silently drifting apart.
-const DEFAULT_MODEL_ID: &str = "gpt-4o-mini";
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiProviderRow {
     pub id: Uuid,
@@ -203,12 +197,10 @@ pub async fn create_provider(
     if body.models.is_empty() {
         sqlx::query(
             "INSERT INTO ai_models (id, provider_id, model_id, display_name)
-             VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING",
+             VALUES (?, ?, 'gpt-4o-mini', 'gpt-4o-mini') ON CONFLICT DO NOTHING",
         )
         .bind(Uuid::new_v4())
         .bind(id)
-        .bind(DEFAULT_MODEL_ID)
-        .bind(DEFAULT_MODEL_ID)
         .execute(&mut *tx)
         .await?;
     }
@@ -390,7 +382,7 @@ pub async fn resolve_for_provider(
         .bind(pid)
         .fetch_optional(pool)
         .await?
-        .unwrap_or_else(|| DEFAULT_MODEL_ID.into())
+        .unwrap_or_else(|| "gpt-4o-mini".into())
     };
 
     Ok(Some(ResolvedProvider {

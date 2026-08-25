@@ -62,18 +62,17 @@ pub async fn sync_host_posture(
             == Some(report.actual.as_str());
 
         if !duplicate {
-            super::record_timeline(
-                pool,
-                "host",
-                host_id,
-                "drift",
-                &report.summary,
-                &serde_json::json!({
-                    "expected": &report.expected,
-                    "actual": &report.actual,
-                }),
-                "system",
+            let _ = sqlx::query(
+                "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, 'host', ?, 'drift', ?, ?, 'system')",
             )
+            .bind(uuid::Uuid::new_v4())
+            .bind(host_id)
+            .bind(&report.summary)
+            .bind(serde_json::json!({
+                "expected": &report.expected,
+                "actual": &report.actual,
+            }))
+            .execute(pool)
             .await;
 
             let hostname: String = sqlx::query_scalar("SELECT hostname FROM hosts WHERE id = ?")

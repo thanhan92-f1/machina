@@ -72,13 +72,6 @@ export default function VmPortForwardPanel({
     [customServices],
   )
 
-  // Shared by the three service-button lists (known/custom/compact) so "is this
-  // service already exposed" can't drift out of sync between them.
-  const isServiceActive = useCallback(
-    (service: PortForwardServiceTemplate) => rules.some((rule) => ruleMatchesService(rule, service)),
-    [rules],
-  )
-
   const load = useCallback(async () => {
     if (!platformVmId || !ip) {
       setRules([])
@@ -265,7 +258,7 @@ export default function VmPortForwardPanel({
         <p className="text-[10px] uppercase tracking-wider text-slate-500">Known services</p>
         <div className="flex flex-wrap gap-2">
           {KNOWN_PORT_FORWARD_SERVICES.map((service) => {
-            const active = isServiceActive(service)
+            const active = rules.some((rule) => ruleMatchesService(rule, service))
             return (
               <button
                 key={service.id}
@@ -288,7 +281,7 @@ export default function VmPortForwardPanel({
           <p className="text-[10px] uppercase tracking-wider text-slate-500">Your saved services</p>
           <div className="flex flex-wrap gap-2">
             {customServices.map((service) => {
-              const active = isServiceActive(service)
+              const active = rules.some((rule) => ruleMatchesService(rule, service))
               return (
                 <span key={service.id} className="inline-flex items-center gap-1">
                   <button
@@ -413,7 +406,7 @@ export default function VmPortForwardPanel({
       ) : (
         <div className="flex flex-wrap gap-2">
           {KNOWN_PORT_FORWARD_SERVICES.filter((s) => s.id === 'ssh' || s.id === 'http').map((service) => {
-            const active = isServiceActive(service)
+            const active = rules.some((rule) => ruleMatchesService(rule, service))
             return (
               <button
                 key={service.id}

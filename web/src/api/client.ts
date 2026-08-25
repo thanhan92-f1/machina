@@ -36,21 +36,16 @@ async function fetchApi(url: string, init?: RequestInit): Promise<Response> {
   return res
 }
 
-/** Throws a formatted error for a non-2xx response; no-op otherwise. Shared by every helper below
- *  so the "read the body, build the error message" shape lives in exactly one place. */
-async function ensureOk(res: Response): Promise<void> {
-  if (res.ok) return
-  const body = await res.text().catch(() => '')
-  throw new Error(formatHttpErrorBody(res.status, res.statusText, body))
-}
-
 /**
  * Successful GET whose body must be JSON (stricter than `apiGet`, which can return plain text).
  * Used by {@link readJsonArray}, {@link readJsonObject}, etc.
  */
 async function fetchJsonBody(url: string): Promise<unknown> {
   const res = await fetchApi(url, defaultOpts)
-  await ensureOk(res)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, body))
+  }
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
     const text = await res.text().catch(() => '')
@@ -114,7 +109,10 @@ export async function readJsonItemsList<T>(url: string): Promise<{ items: T[] }>
  */
 export async function apiGetText(url: string): Promise<string> {
   const res = await fetchApi(url, defaultOpts)
-  await ensureOk(res)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, body))
+  }
   return res.text()
 }
 
@@ -125,7 +123,10 @@ export async function apiGetText(url: string): Promise<string> {
  */
 export async function apiGet<T>(url: string): Promise<T> {
   const res = await fetchApi(url, defaultOpts)
-  await ensureOk(res)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, body))
+  }
   const contentType = res.headers.get('content-type') || ''
   if (contentType.includes('application/json')) {
     return res.json()
@@ -136,25 +137,24 @@ export async function apiGet<T>(url: string): Promise<T> {
 /** GET binary (screenshots, downloads). */
 export async function apiGetBlob(url: string): Promise<Blob> {
   const res = await fetchApi(url, defaultOpts)
-  await ensureOk(res)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, body))
+  }
   return res.blob()
 }
 
-/** Shared request path for the write verbs (POST/PUT/PATCH/DELETE): JSON-encodes `body` when
- *  present and throws the formatted error on a non-2xx response, same as the GET helpers above. */
-async function apiWrite(url: string, method: string, body?: unknown): Promise<Response> {
+export async function apiPost<T>(url: string, body?: unknown): Promise<T> {
   const res = await fetchApi(url, {
     ...defaultOpts,
-    method,
+    method: 'POST',
     headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
-  await ensureOk(res)
-  return res
-}
-
-/** JSON when the response says so, otherwise raw text — mirrors the legacy `apiGet` contract. */
-async function parseByContentType<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, text))
+  }
   const contentType = res.headers.get('content-type') || ''
   if (contentType.includes('application/json')) {
     return res.json()
@@ -162,24 +162,61 @@ async function parseByContentType<T>(res: Response): Promise<T> {
   return await res.text() as T
 }
 
-export async function apiPost<T>(url: string, body?: unknown): Promise<T> {
-  return parseByContentType<T>(await apiWrite(url, 'POST', body))
-}
-
 export async function apiPostVoid(url: string, body?: unknown): Promise<void> {
-  await apiWrite(url, 'POST', body)
+  const res = await fetchApi(url, {
+    ...defaultOpts,
+    method: 'POST',
+    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, text))
+  }
 }
 
 export async function apiPut<T>(url: string, body?: unknown): Promise<T> {
-  return parseByContentType<T>(await apiWrite(url, 'PUT', body))
+  const res = await fetchApi(url, {
+    ...defaultOpts,
+    method: 'PUT',
+    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, text))
+  }
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return res.json()
+  }
+  return await res.text() as T
 }
 
 export async function apiPatch<T>(url: string, body?: unknown): Promise<T> {
-  return parseByContentType<T>(await apiWrite(url, 'PATCH', body))
+  const res = await fetchApi(url, {
+    ...defaultOpts,
+    method: 'PATCH',
+    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, text))
+  }
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return res.json()
+  }
+  return await res.text() as T
 }
 
 export async function apiDelete(url: string): Promise<void> {
-  await apiWrite(url, 'DELETE')
+  const res = await fetchApi(url, { ...defaultOpts, method: 'DELETE' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, text))
+  }
 }
 
 function wsAuthHeaders(): HeadersInit {

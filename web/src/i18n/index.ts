@@ -7,9 +7,7 @@ import { initReactI18next } from 'react-i18next'
 import en from './locales/en.json'
 import es from './locales/es.json'
 
-const LANG_STORAGE_KEY = 'machina_lang'
-
-const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_STORAGE_KEY) : null
+const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('machina_lang') : null
 
 void i18n.use(initReactI18next).init({
   resources: {
@@ -23,7 +21,7 @@ void i18n.use(initReactI18next).init({
 
 export function setAppLanguage(lang: 'en' | 'es') {
   void i18n.changeLanguage(lang)
-  localStorage.setItem(LANG_STORAGE_KEY, lang)
+  localStorage.setItem('machina_lang', lang)
 }
 
 export default i18n

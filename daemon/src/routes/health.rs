@@ -11,22 +11,6 @@ use axum::{Json, Router};
 use machina_core::{host_linux_obs, host_virt, linux_audit, LibvirtManager};
 use serde_json::json;
 
-// Thresholds for `/health/problems`'s host-health heuristics. Kept as named
-// constants since each one encodes a judgment call about what counts as
-// "worth surfacing to an operator", not just an arbitrary literal.
-/// `df` percent-used at/above which a filesystem is flagged (warning; critical below).
-const DISK_PRESSURE_WARN_PCT: u32 = 90;
-const DISK_PRESSURE_CRITICAL_PCT: u32 = 98;
-/// PSI (pressure stall information) "some" percent thresholds — see `man 7 psi`.
-const MEMORY_PSI_WARN_PCT: f64 = 10.0;
-const MEMORY_PSI_CRITICAL_PCT: f64 = 25.0;
-const IO_PSI_WARN_PCT: f64 = 15.0;
-const CGROUP_MEMORY_WARN_PCT: f64 = 90.0;
-const CGROUP_MEMORY_CRITICAL_PCT: f64 = 98.0;
-/// Automation worker ticks every ~60s (see `automation_worker.rs`); flag as stale
-/// well beyond that so a single slow tick doesn't false-positive.
-const AUTOMATION_STALE_SECS: i64 = 300;
-
 async fn health_check(State(manager): State<LibvirtManager>) -> impl IntoResponse {
     let alive = tokio::task::spawn_blocking(move || {
         manager
@@ -116,12 +100,8 @@ async fn host_problems() -> Json<serde_json::Value> {
     }
     for path in ["/var/lib/libvirt", "/var/lib/machina", "/"] {
         if let Some(pct) = df_use_percent(path) {
-            if pct >= DISK_PRESSURE_WARN_PCT {
-                let sev = if pct >= DISK_PRESSURE_CRITICAL_PCT {
-                    "critical"
-                } else {
-                    "warning"
-                };
+            if pct >= 90 {
+                let sev = if pct >= 98 { "critical" } else { "warning" };
                 items.push(json!({
                     "id": format!("disk_pressure_{}", path.trim_matches('/').replace('/', "_")),
                     "severity": sev,
@@ -134,16 +114,16 @@ async fn host_problems() -> Json<serde_json::Value> {
     }
     if let Ok(obs) = host_linux_obs::gather_linux_observability() {
         if obs.pressure.available {
-            if obs.pressure.memory.some >= MEMORY_PSI_WARN_PCT {
+            if obs.pressure.memory.some >= 10.0 {
                 items.push(json!({
                     "id": "psi_memory",
-                    "severity": if obs.pressure.memory.some >= MEMORY_PSI_CRITICAL_PCT { "critical" } else { "warning" },
+                    "severity": if obs.pressure.memory.some >= 25.0 { "critical" } else { "warning" },
                     "title": "Memory pressure (PSI)",
                     "detail": format!("some={:.1}% full={:.1}% — host is stalling on memory.", obs.pressure.memory.some, obs.pressure.memory.full),
                     "doc_url": null,
                 }));
             }
-            if obs.pressure.io.some >= IO_PSI_WARN_PCT {
+            if obs.pressure.io.some >= 15.0 {
                 items.push(json!({
                     "id": "psi_io",
                     "severity": "warning",
@@ -170,10 +150,10 @@ async fn host_problems() -> Json<serde_json::Value> {
             {
                 if max > 0 {
                     let pct = (cur as f64 / max as f64) * 100.0;
-                    if pct >= CGROUP_MEMORY_WARN_PCT {
+                    if pct >= 90.0 {
                         items.push(json!({
                             "id": "cgroup_memory",
-                            "severity": if pct >= CGROUP_MEMORY_CRITICAL_PCT { "critical" } else { "warning" },
+                            "severity": if pct >= 98.0 { "critical" } else { "warning" },
                             "title": "Daemon cgroup memory high",
                             "detail": format!(
                                 "machina-daemon cgroup ({}) at {:.0}% of memory.max",
@@ -188,7 +168,7 @@ async fn host_problems() -> Json<serde_json::Value> {
     }
     if let Some(ts) = crate::automation_worker::automation_last_tick_unix() {
         let age = chrono::Utc::now().timestamp() - ts;
-        if age > AUTOMATION_STALE_SECS {
+        if age > 300 {
             items.push(json!({
                 "id": "automation_worker_stale",
                 "severity": "warning",

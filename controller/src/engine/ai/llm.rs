@@ -5,20 +5,6 @@ use sqlx::SqlitePool;
 use super::providers::ResolvedProvider;
 use super::routing::{RoutingRequest, TaskClass};
 
-// Shared across all provider backends (OpenAI-compatible, Anthropic,
-// Google): generous enough for a non-streaming completion, short enough
-// that a hung provider doesn't block the caller indefinitely.
-const LLM_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(45);
-// Response length cap sent to providers that take an explicit max_tokens
-// (Google's request shape has no equivalent field).
-const LLM_MAX_TOKENS: u32 = 1024;
-
-/// HTTP client shared by all provider backends below, built with the common
-/// request timeout so each backend doesn't repeat the same builder call.
-fn llm_http_client() -> reqwest::Result<reqwest::Client> {
-    reqwest::Client::builder().timeout(LLM_REQUEST_TIMEOUT).build()
-}
-
 #[derive(Debug, Clone)]
 pub struct CompletionRequest {
     pub task_class: TaskClass,
@@ -205,9 +191,11 @@ async fn openai_compatible_complete(
             {"role": "system", "content": system},
             {"role": "user", "content": user}
         ],
-        "max_tokens": LLM_MAX_TOKENS
+        "max_tokens": 1024
     });
-    let client = llm_http_client()?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(45))
+        .build()?;
     let url = openai_base(resolved);
     let mut req = client.post(&url).json(&body);
     if !resolved.api_key.is_empty() {
@@ -250,11 +238,13 @@ async fn anthropic_complete(
     };
     let body = serde_json::json!({
         "model": resolved.model_id,
-        "max_tokens": LLM_MAX_TOKENS,
+        "max_tokens": 1024,
         "system": system,
         "messages": [{"role": "user", "content": user}]
     });
-    let client = llm_http_client()?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(45))
+        .build()?;
     let resp = client
         .post(url)
         .header("x-api-key", &resolved.api_key)
@@ -295,7 +285,9 @@ async fn google_complete(
     let body = serde_json::json!({
         "contents": [{"parts": [{"text": format!("{system}\n\n{user}")}]}]
     });
-    let client = llm_http_client()?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(45))
+        .build()?;
     let resp = client
         .post(url)
         .header("x-goog-api-key", &resolved.api_key)

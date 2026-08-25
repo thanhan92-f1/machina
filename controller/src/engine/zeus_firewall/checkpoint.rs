@@ -85,15 +85,18 @@ pub async fn rollback_checkpoint(
         anyhow::bail!("checkpoint not found");
     };
 
-    super::record_timeline(
-        pool,
-        target_kind,
-        target_id,
-        "rollback",
-        &format!("Rollback to checkpoint {label} recorded (not applied to host firewall)"),
-        &serde_json::json!({ "checkpoint_id": checkpoint_id }),
-        actor,
+    let _ = sqlx::query(
+        "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, ?, ?, 'rollback', ?, ?, ?)",
     )
+    .bind(uuid::Uuid::new_v4())
+    .bind(target_kind)
+    .bind(target_id)
+    .bind(format!(
+        "Rollback to checkpoint {label} recorded (not applied to host firewall)"
+    ))
+    .bind(serde_json::json!({ "checkpoint_id": checkpoint_id }))
+    .bind(actor)
+    .execute(pool)
     .await;
 
     // Honesty fix (bug-hunt): this function only records a timeline event and

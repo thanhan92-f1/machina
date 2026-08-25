@@ -1240,19 +1240,6 @@ impl MachinaConfig {
         Self::system_config_path()
     }
 
-    /// Display path of whichever config file [`Self::load`] would actually read
-    /// (system path if present, else the user path) — for API settings views to
-    /// show the operator where a save will land. Was duplicated verbatim across
-    /// three `*_settings.rs` view modules; consolidated here since they all only
-    /// ever call it against `MachinaConfig`'s own path helpers.
-    pub fn config_path_display() -> String {
-        if Self::system_config_path().exists() {
-            Self::system_config_path().display().to_string()
-        } else {
-            Self::user_config_path().display().to_string()
-        }
-    }
-
     pub fn load() -> Self {
         let paths = [Self::system_config_path(), Self::user_config_path()];
 

@@ -431,11 +431,6 @@ pub struct IpamPoolRow {
     pub reservation_count: i64,
 }
 
-/// LLDP neighbor data changes slowly (switch-side refresh cadence is minutes,
-/// not seconds); reusing a cache entry within this window avoids hammering
-/// agents on every topology read.
-const LLDP_CACHE_TTL_SECS: i64 = 300;
-
 async fn fetch_segment(pool: &SqlitePool, id: Uuid) -> anyhow::Result<SegmentRow> {
     sqlx::query_as(
         "SELECT id, name, tier, cidr, east_west_default, firewall_profile, gitops_namespace
@@ -584,7 +579,7 @@ pub async fn refresh_lldp_cache(pool: &SqlitePool, max_age_secs: i64) -> anyhow:
 }
 
 pub async fn lldp_topology_from_cache(pool: &SqlitePool) -> anyhow::Result<LldpTopologyContribution> {
-    let _ = refresh_lldp_cache(pool, LLDP_CACHE_TTL_SECS).await;
+    let _ = refresh_lldp_cache(pool, 300).await;
 
     let rows: Vec<(Uuid, String, String, serde_json::Value, String)> = sqlx::query_as(
         "SELECT c.host_id, h.hostname, c.source, c.neighbors_json, c.summary

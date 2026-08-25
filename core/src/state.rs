@@ -901,14 +901,6 @@ impl SortDirection {
 
 // ── Bounded buffer helper ───────────────────────────────────────────────
 
-/// In-memory audit event cap; kept in sync with the on-disk history loaded
-/// by `load_audit_history` so a fresh load and incremental pushes agree.
-const MAX_AUDIT_EVENTS: usize = 500;
-const MAX_NOTIFICATION_HISTORY: usize = 100;
-const MAX_METRICS_HISTORY_SAMPLES: usize = 20;
-/// How long a VM's row stays highlighted after a state transition.
-const STATE_CHANGE_HIGHLIGHT_SECS: u64 = 3;
-
 fn push_bounded<T>(buf: &mut VecDeque<T>, item: T, max: usize) {
     buf.push_back(item);
     if buf.len() > max {
@@ -1131,7 +1123,7 @@ impl AppState {
             actor: String::new(),
         };
         crate::audit::write_audit_event(&event);
-        push_bounded(&mut self.audit_events, event, MAX_AUDIT_EVENTS);
+        push_bounded(&mut self.audit_events, event, 500);
     }
 
     pub fn compute_dashboard(&mut self) {
@@ -1179,12 +1171,12 @@ impl AppState {
         push_bounded(
             &mut self.notification_history,
             (msg.to_string(), level, timestamp),
-            MAX_NOTIFICATION_HISTORY,
+            100,
         );
     }
 
     pub fn load_audit_history(&mut self) {
-        self.audit_events = crate::audit::load_audit_events(MAX_AUDIT_EVENTS).into();
+        self.audit_events = crate::audit::load_audit_events(500).into();
     }
 
     pub fn find_vm(&self, name: &str) -> Option<&VmInfo> {
@@ -1319,7 +1311,7 @@ impl AppState {
 
     pub fn detect_state_changes(&mut self) {
         self.state_changed_vms
-            .retain(|_, when| when.elapsed().as_secs() < STATE_CHANGE_HIGHLIGHT_SECS);
+            .retain(|_, when| when.elapsed().as_secs() < 3);
 
         for vm in &self.vms {
             if let Some(prev_state) = self.previous_vm_states.get(&vm.name) {
@@ -1340,7 +1332,7 @@ impl AppState {
     pub fn record_metrics_snapshot(&mut self) {
         for m in &self.vm_metrics {
             let history = self.metrics_history.entry(m.name.clone()).or_default();
-            push_bounded(history, m.memory_pct, MAX_METRICS_HISTORY_SAMPLES);
+            push_bounded(history, m.memory_pct, 20);
         }
     }
 

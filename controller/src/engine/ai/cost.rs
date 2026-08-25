@@ -3,20 +3,6 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
-const HOURS_PER_MONTH: f64 = 730.0;
-// A running VM using under 35% of its allocated memory is flagged as
-// over-provisioned and worth right-sizing.
-const OVERSIZED_MEMORY_UTILIZATION_FRACTION: f64 = 0.35;
-const SNAPSHOT_HEAVY_ALERT_COUNT: i64 = 5;
-// Predicted next-month spend growth multiplier, escalated by how much waste
-// is already present — more idle/oversized VMs implies faster uncontrolled
-// growth if left unaddressed.
-const GROWTH_HIGH_IDLE_THRESHOLD: i64 = 2;
-const GROWTH_HIGH_IDLE_MULTIPLIER: f64 = 1.08;
-const GROWTH_OVERSIZED_THRESHOLD: i64 = 3;
-const GROWTH_OVERSIZED_MULTIPLIER: f64 = 1.03;
-const GROWTH_BASELINE_MULTIPLIER: f64 = 1.02;
-
 #[derive(Debug, Serialize)]
 pub struct CostAnalysis {
     pub estimated_monthly_usd: f64,
@@ -44,7 +30,7 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostAnalysis> {
     .await?;
     let memory_gib = totals.1 as f64 / 1024.0;
     let hourly = totals.0 as f64 * rates.0 + memory_gib * rates.1;
-    let estimated_monthly_usd = hourly * HOURS_PER_MONTH;
+    let estimated_monthly_usd = hourly * 730.0;
     let idle_vm_count: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM vms WHERE observed_state != 'running'
          AND updated_at < datetime('now', '-30 days')",
@@ -59,9 +45,8 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostAnalysis> {
          WHERE v.observed_state = 'running'
            AND v.memory_mib > 0
            AND m.memory_used_mib > 0
-           AND CAST(m.memory_used_mib AS REAL) / CAST(v.memory_mib AS REAL) < ?",
+           AND CAST(m.memory_used_mib AS REAL) / CAST(v.memory_mib AS REAL) < 0.35",
     )
-    .bind(OVERSIZED_MEMORY_UTILIZATION_FRACTION)
     .fetch_one(pool)
     .await
     .unwrap_or(0);
@@ -84,16 +69,16 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostAnalysis> {
             "Right-size {oversized_vm_count} VM(s) using <35% allocated memory."
         ));
     }
-    if snapshot_heavy_count > SNAPSHOT_HEAVY_ALERT_COUNT {
+    if snapshot_heavy_count > 5 {
         suggestions.push("Consolidate old snapshots to reduce storage cost.".into());
     }
 
-    let growth = if idle_vm_count > GROWTH_HIGH_IDLE_THRESHOLD {
-        GROWTH_HIGH_IDLE_MULTIPLIER
-    } else if oversized_vm_count > GROWTH_OVERSIZED_THRESHOLD {
-        GROWTH_OVERSIZED_MULTIPLIER
+    let growth = if idle_vm_count > 2 {
+        1.08
+    } else if oversized_vm_count > 3 {
+        1.03
     } else {
-        GROWTH_BASELINE_MULTIPLIER
+        1.02
     };
     let predicted_next_month_usd = estimated_monthly_usd * growth;
 
@@ -145,7 +130,7 @@ Estimated monthly USD,",
 
     for (name, vcpus, memory_mib, state) in vms {
         let gib = memory_mib as f64 / 1024.0;
-        let monthly = (vcpus as f64 * rates.0 + gib * rates.1) * HOURS_PER_MONTH;
+        let monthly = (vcpus as f64 * rates.0 + gib * rates.1) * 730.0;
         csv.push_str(&format!(
             "{},{},{},{},{:.2}\n",
             csv_escape(&name),

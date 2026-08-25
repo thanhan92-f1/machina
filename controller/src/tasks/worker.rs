@@ -20,28 +20,6 @@ use crate::tasks::TaskMessage;
 /// (pool max is 4). Tasks for the *same* resource still run strictly one at a time.
 const MAX_CONCURRENT_TASKS: usize = 8;
 
-/// Extracts a required UUID field from a task payload, erroring with a
-/// consistent "<field> missing" message. Centralizes the
-/// `payload[field].as_str().and_then(Uuid::parse_str).ok_or_else(...)` shape
-/// repeated across nearly every handler below.
-fn required_uuid(payload: &serde_json::Value, field: &str) -> anyhow::Result<Uuid> {
-    payload[field]
-        .as_str()
-        .and_then(|s| Uuid::parse_str(s).ok())
-        .ok_or_else(|| anyhow::anyhow!("{field} missing"))
-}
-
-/// Extracts a required string field from a task payload, erroring with a
-/// consistent "<field> missing" message. Centralizes the
-/// `payload[field].as_str().ok_or_else(...).to_string()` shape repeated
-/// across several handlers below.
-fn required_str(payload: &serde_json::Value, field: &str) -> anyhow::Result<String> {
-    payload[field]
-        .as_str()
-        .ok_or_else(|| anyhow::anyhow!("{field} missing"))
-        .map(str::to_string)
-}
-
 /// Serialization key for a task: two tasks with the same key never run
 /// concurrently (preserving per-VM / per-host ordering and avoiding races), while
 /// different keys run in parallel. Derived from the payload since TaskMessage has
@@ -220,10 +198,16 @@ async fn process_one(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> 
 }
 
 async fn vm_apply(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     vm_lifecycle::set_vm_phase_clear_error(&state.pool, vm_id, vm_lifecycle::PHASE_CREATING)
         .await?;
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
 
     let row: (String, serde_json::Value) =
         sqlx::query_as("SELECT name, spec_json FROM vms WHERE id = ?")
@@ -327,7 +311,10 @@ async fn vm_apply(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn vm_power(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     let action = msg.payload["action"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("action missing"))?
@@ -383,7 +370,10 @@ async fn vm_power(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn vm_install(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     vm_lifecycle::set_vm_phase_clear_error(&state.pool, vm_id, vm_lifecycle::PHASE_STARTING)
         .await?;
 
@@ -418,7 +408,10 @@ async fn vm_install(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn vm_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     vm_lifecycle::set_vm_phase(&state.pool, vm_id, vm_lifecycle::PHASE_DELETING).await?;
 
     let row: (String, Option<Uuid>, String, Option<String>, String) = sqlx::query_as(
@@ -471,7 +464,10 @@ async fn vm_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
 
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     // Cap the inventory RPCs: a host whose libvirtd is wedged accepts the TCP
@@ -724,8 +720,14 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
 }
 
 async fn vm_migrate(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let dest_host_id: Uuid = required_uuid(&msg.payload, "dest_host_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let dest_host_id: Uuid = msg.payload["dest_host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("dest_host_id missing"))?;
     let live = msg.payload["live"].as_bool().unwrap_or(true);
     let bandwidth_mib = msg.payload["bandwidth_mib"].as_u64().unwrap_or(0);
     let postcopy = msg.payload["postcopy"].as_bool().unwrap_or(false);
@@ -830,8 +832,14 @@ async fn vm_migrate(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn vm_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let new_name = required_str(&msg.payload, "new_name")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let new_name = msg.payload["new_name"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("new_name missing"))?
+        .to_string();
     let clone_mode = msg.payload["clone_mode"]
         .as_str()
         .unwrap_or("linked")
@@ -894,7 +902,10 @@ async fn vm_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn host_maintenance(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
     let action = msg.payload["action"]
         .as_str()
         .unwrap_or("enter")
@@ -1046,8 +1057,14 @@ async fn confirm_host_drained(
 }
 
 async fn ha_recover(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
     let desired = msg.payload["desired_state"].as_str().unwrap_or("running");
 
     let row: (String, serde_json::Value) =
@@ -1255,7 +1272,10 @@ async fn vm_snapshot(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> 
         .as_str()
         .and_then(|s| Uuid::parse_str(s).ok())
         .ok_or_else(|| anyhow::anyhow!("snapshot_id missing"))?;
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     vm_lifecycle::set_vm_phase(&state.pool, vm_id, vm_lifecycle::PHASE_SNAPSHOTTING).await?;
 
     // Atlas-backed VMs snapshot their backend volumes through the Atlas control
@@ -1411,8 +1431,14 @@ async fn vm_snapshot(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> 
 }
 
 async fn vm_snapshot_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let snap_name = required_str(&msg.payload, "snapshot_name")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let snap_name = msg.payload["snapshot_name"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("snapshot_name missing"))?
+        .to_string();
 
     let row: (String, Option<Uuid>) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
         .bind(vm_id)
@@ -1444,8 +1470,14 @@ async fn vm_snapshot_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Resu
 }
 
 async fn vm_backup(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let record_id: Uuid = required_uuid(&msg.payload, "backup_id")?;
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let record_id: Uuid = msg.payload["backup_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("backup_id missing"))?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
 
     // Clear sticky last_error from a prior failed backup so the VM detail banner
     // doesn't keep showing the old failure while this retry is in flight.
@@ -1664,8 +1696,14 @@ async fn vm_backup(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn vm_snapshot_revert(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let snap_name = required_str(&msg.payload, "snapshot_name")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let snap_name = msg.payload["snapshot_name"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("snapshot_name missing"))?
+        .to_string();
 
     let row: (String, Option<Uuid>) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
         .bind(vm_id)
@@ -1688,9 +1726,18 @@ async fn vm_snapshot_revert(state: &AppState, msg: &TaskMessage) -> anyhow::Resu
 }
 
 async fn vm_snapshot_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let snap_name = required_str(&msg.payload, "snapshot_name")?;
-    let new_name = required_str(&msg.payload, "new_name")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let snap_name = msg.payload["snapshot_name"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("snapshot_name missing"))?
+        .to_string();
+    let new_name = msg.payload["new_name"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("new_name missing"))?
+        .to_string();
     let revert_source = msg.payload["revert_source"].as_bool().unwrap_or(false);
     let dest_host_id = msg.payload["dest_host_id"]
         .as_str()
@@ -1812,7 +1859,10 @@ async fn vm_snapshot_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Resul
 /// Retention GC: delete a backup's on-disk file (via the host agent) or its Atlas backup, then
 /// drop the catalog row. Enqueued by fleet_backup_scheduler so backup storage is reclaimed.
 async fn vm_backup_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let record_id: Uuid = required_uuid(&msg.payload, "backup_id")?;
+    let record_id: Uuid = msg.payload["backup_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("backup_id missing"))?;
 
     let row: Option<(String, Option<Uuid>, Uuid)> = sqlx::query_as(
         "SELECT COALESCE(br.backup_path, ''), v.host_id, br.vm_id
@@ -1850,8 +1900,14 @@ async fn vm_backup_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result
 }
 
 async fn vm_backup_restore(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let record_id: Uuid = required_uuid(&msg.payload, "backup_id")?;
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let record_id: Uuid = msg.payload["backup_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("backup_id missing"))?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
 
     // SAFETY: require the backup to belong to THIS vm and to be in a completed
     // state. Without the vm_id match, a caller could restore VM A's image onto
@@ -2130,7 +2186,7 @@ async fn on_task_failure(state: &AppState, msg: &TaskMessage, err: &str) {
                 "transient failure; retry {attempts}/{MAX_TASK_ATTEMPTS} scheduled in {backoff:?}");
             tokio::spawn(async move {
                 tokio::time::sleep(backoff).await;
-                if let Err(e) = bus.publish(crate::tasks::TASK_SUBJECT, &msg).await {
+                if let Err(e) = bus.publish("machina.tasks", &msg).await {
                     // Re-publish failed → no worker will ever pick this task back up,
                     // so this IS the terminal failure for it. Route through the same
                     // finalize path as every other terminal failure (mark_task_failed,
@@ -2190,7 +2246,10 @@ pub async fn finalize_terminal_task_failure(pool: &SqlitePool, msg: &TaskMessage
 }
 
 async fn host_validate_task(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
     update_task_progress(&state.pool, msg.task_id, 10, "running validation checklist").await?;
     let report = crate::engine::host_validate::validate_host(&state.pool, host_id).await?;
     crate::engine::host_validate::persist_validation(&state.pool, host_id, &report).await?;
@@ -2363,7 +2422,12 @@ async fn k8s_tetragon_install(state: &AppState, msg: &TaskMessage) -> anyhow::Re
 }
 
 async fn host_linux_package_upgrade(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id = required_uuid(&msg.payload, "host_id")?;
+    let host_id = msg
+        .payload
+        .get("host_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
     update_task_progress(
         &state.pool,
         msg.task_id,
@@ -2389,7 +2453,12 @@ async fn host_linux_package_upgrade(state: &AppState, msg: &TaskMessage) -> anyh
 }
 
 async fn host_linux_reboot(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id = required_uuid(&msg.payload, "host_id")?;
+    let host_id = msg
+        .payload
+        .get("host_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
     update_task_progress(&state.pool, msg.task_id, 30, "initiating hypervisor reboot").await?;
     crate::engine::host_os::reboot_linux_host(&state.pool, &state.config, host_id).await?;
     update_task_progress(
@@ -2472,7 +2541,10 @@ async fn host_enforcement_apply(state: &AppState, msg: &TaskMessage) -> anyhow::
 }
 
 async fn host_agent_upgrade(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
     let target = msg.payload["target_version"]
         .as_str()
         .unwrap_or(env!("CARGO_PKG_VERSION"));
@@ -2547,7 +2619,10 @@ async fn storage_pool_provision(state: &AppState, msg: &TaskMessage) -> anyhow::
         .as_str()
         .and_then(|s| Uuid::parse_str(s).ok())
         .ok_or_else(|| anyhow::anyhow!("pool_id missing"))?;
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
 
     let row: (String, String, Option<String>) =
         sqlx::query_as("SELECT name, backend, path FROM storage_pools WHERE id = ?")
@@ -2585,7 +2660,10 @@ async fn network_provision(state: &AppState, msg: &TaskMessage) -> anyhow::Resul
         .as_str()
         .and_then(|s| Uuid::parse_str(s).ok())
         .ok_or_else(|| anyhow::anyhow!("network_id missing"))?;
-    let host_id: Uuid = required_uuid(&msg.payload, "host_id")?;
+    let host_id: Uuid = msg.payload["host_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("host_id missing"))?;
 
     let row: (String, String, Option<i32>, Option<String>) =
         sqlx::query_as("SELECT name, backend, vlan_id, bridge FROM networks WHERE id = ?")
@@ -2603,7 +2681,10 @@ async fn network_provision(state: &AppState, msg: &TaskMessage) -> anyhow::Resul
 }
 
 async fn vm_disk_attach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     let disk_path = msg.payload["disk_path"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("disk_path missing"))?
@@ -2640,8 +2721,14 @@ async fn vm_host_row(pool: &SqlitePool, vm_id: Uuid) -> anyhow::Result<(String, 
 }
 
 async fn vm_disk_detach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let target_dev = required_str(&msg.payload, "target_dev")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let target_dev = msg.payload["target_dev"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("target_dev missing"))?
+        .to_string();
     let (name, host_id) = vm_host_row(&state.pool, vm_id).await?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
@@ -2655,8 +2742,14 @@ async fn vm_disk_detach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
 }
 
 async fn vm_disk_resize(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
-    let target_dev = required_str(&msg.payload, "target_dev")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
+    let target_dev = msg.payload["target_dev"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("target_dev missing"))?
+        .to_string();
     let size_gb = msg.payload["size_gb"]
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("size_gb missing"))?;
@@ -2673,7 +2766,10 @@ async fn vm_disk_resize(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
 }
 
 async fn vm_nic_attach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     let network = msg.payload["network"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("network missing"))?
@@ -2695,7 +2791,10 @@ async fn vm_nic_attach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()
 }
 
 async fn vm_nic_detach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     let mac = msg.payload["mac_address"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("mac_address missing"))?
@@ -2710,7 +2809,10 @@ async fn vm_nic_detach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()
 }
 
 async fn vm_autostart(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     let enabled = msg.payload["enabled"].as_bool().unwrap_or(false);
     let (name, host_id) = vm_host_row(&state.pool, vm_id).await?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
@@ -2728,7 +2830,10 @@ async fn vm_autostart(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()>
 }
 
 async fn vm_resize(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     let kind = msg.payload["kind"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("kind missing"))?;
@@ -2767,7 +2872,10 @@ async fn vm_resize(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 }
 
 async fn vm_guest_tools_install(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let vm_id: Uuid = required_uuid(&msg.payload, "vm_id")?;
+    let vm_id: Uuid = msg.payload["vm_id"]
+        .as_str()
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or_else(|| anyhow::anyhow!("vm_id missing"))?;
     // Clear sticky last_error from a prior failed attach so success doesn't leave
     // the VM detail banner stuck on the old failure.
     vm_lifecycle::set_vm_phase_clear_error(&state.pool, vm_id, vm_lifecycle::PHASE_IDLE).await?;

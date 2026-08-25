@@ -9,13 +9,6 @@ use machina_core::LibvirtError;
 use serde_json::Value;
 use virt::connect::Connect;
 
-/// Default number of qemu log lines to return when the caller doesn't
-/// specify `lines`.
-const DEFAULT_QEMU_LOG_LINES: u64 = 500;
-/// Hard cap on `lines`, regardless of what the caller asks for — the qemu
-/// log can be large, and this bounds the response size / read cost.
-const MAX_QEMU_LOG_LINES: u64 = 5000;
-
 pub fn vm_query(
     conn: &Connect,
     vm_name: &str,
@@ -84,8 +77,8 @@ pub fn vm_query(
             let lines = payload
                 .get("lines")
                 .and_then(|v| v.as_u64())
-                .unwrap_or(DEFAULT_QEMU_LOG_LINES)
-                .min(MAX_QEMU_LOG_LINES) as usize;
+                .unwrap_or(500)
+                .min(5000) as usize;
             let (log_path, content) = domain::read_qemu_log(vm_name, lines)?;
             Ok(serde_json::json!({
                 "vm_name": vm_name,
@@ -567,14 +560,30 @@ pub fn host_invoke(
         }
         "cockpit.nm.create_bond" => {
             let name = payload_str(payload, "name")?;
-            let ifaces = payload_str_array(payload, "interfaces");
+            let ifaces: Vec<String> = payload
+                .get("interfaces")
+                .and_then(|v| v.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect()
+                })
+                .unwrap_or_default();
             let msg = machina_core::host_cockpit::nm_create_bond(&name, &ifaces)?;
             Ok(serde_json::json!({ "status": "ok", "message": msg, "name": name }))
         }
         "cockpit.nm.create_team" => {
             let name = payload_str(payload, "name")?;
             let runner = payload.get("runner").and_then(|v| v.as_str()).unwrap_or("loadbalance");
-            let ifaces = payload_str_array(payload, "interfaces");
+            let ifaces: Vec<String> = payload
+                .get("interfaces")
+                .and_then(|v| v.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect()
+                })
+                .unwrap_or_default();
             let msg = machina_core::host_cockpit::nm_create_team(&name, &ifaces, runner)?;
             Ok(serde_json::json!({ "status": "ok", "message": msg, "name": name }))
         }
@@ -613,7 +622,15 @@ pub fn host_invoke(
             Ok(serde_json::json!({ "status": "ok", "message": msg }))
         }
         "host.package.install" => {
-            let pkgs = payload_str_array(payload, "packages");
+            let pkgs: Vec<String> = payload
+                .get("packages")
+                .and_then(|v| v.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect()
+                })
+                .unwrap_or_default();
             if pkgs.is_empty() {
                 return Err(LibvirtError::Invalid("packages required".into()));
             }
@@ -638,7 +655,15 @@ pub fn host_invoke(
             Ok(serde_json::json!({ "status": "ok", "message": message, "result": res }))
         }
         "host.package.remove" => {
-            let pkgs = payload_str_array(payload, "packages");
+            let pkgs: Vec<String> = payload
+                .get("packages")
+                .and_then(|v| v.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect()
+                })
+                .unwrap_or_default();
             if pkgs.is_empty() {
                 return Err(LibvirtError::Invalid("packages required".into()));
             }
@@ -687,20 +712,4 @@ fn payload_u64(payload: &Value, key: &str) -> u64 {
 
 fn payload_bool(payload: &Value, key: &str) -> bool {
     payload.get(key).and_then(|v| v.as_bool()).unwrap_or(false)
-}
-
-/// Extract a JSON array field as `Vec<String>`, silently dropping any
-/// non-string elements and defaulting to empty when the field is absent —
-/// matches the other `payload_*` helpers' "missing/malformed input degrades
-/// to a safe default" convention rather than erroring.
-fn payload_str_array(payload: &Value, key: &str) -> Vec<String> {
-    payload
-        .get(key)
-        .and_then(|v| v.as_array())
-        .map(|a| {
-            a.iter()
-                .filter_map(|x| x.as_str().map(str::to_string))
-                .collect()
-        })
-        .unwrap_or_default()
 }

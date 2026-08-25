@@ -62,8 +62,3 @@ pub mod virt_install;
 pub mod vnc;
 
 pub use connection::{LibvirtManager, LibvirtTarget};
-
-/// Default directory backing libvirt's built-in `images` storage pool. Used as the
-/// fallback disk-image directory wherever a VM's actual pool/target directory can't
-/// be resolved (e.g. `storage::primary_vm_disk_base_dir` returns `None`).
-pub const DEFAULT_LIBVIRT_IMAGES_DIR: &str = "/var/lib/libvirt/images";

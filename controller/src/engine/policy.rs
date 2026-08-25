@@ -36,16 +36,6 @@ pub async fn evaluate_vm_create(
     Ok(())
 }
 
-/// All four quota checks below report the same `rule_name`; factoring the
-/// struct construction out keeps that tag from drifting between them.
-fn quota_violation(message: String, remediation: &str) -> PolicyViolation {
-    PolicyViolation {
-        rule_name: "project_quota".into(),
-        message,
-        remediation: remediation.into(),
-    }
-}
-
 async fn check_project_quota(
     pool: &SqlitePool,
     project: &str,
@@ -78,28 +68,32 @@ async fn check_project_quota(
     };
 
     if max_vms > 0 && cur_vms + 1 > max_vms as i64 {
-        return Err(quota_violation(
-            format!("Project '{project}' VM count quota exceeded ({max_vms})"),
-            "Increase max_vms in project quotas or delete unused VMs.",
-        ));
+        return Err(PolicyViolation {
+            rule_name: "project_quota".into(),
+            message: format!("Project '{project}' VM count quota exceeded ({max_vms})"),
+            remediation: "Increase max_vms in project quotas or delete unused VMs.".into(),
+        });
     }
     if max_vcpu > 0 && cur_vcpu + i64::from(vcpus) > i64::from(max_vcpu) {
-        return Err(quota_violation(
-            format!("Project '{project}' vCPU quota exceeded ({max_vcpu})"),
-            "Increase max_vcpu quota or reduce VM size.",
-        ));
+        return Err(PolicyViolation {
+            rule_name: "project_quota".into(),
+            message: format!("Project '{project}' vCPU quota exceeded ({max_vcpu})"),
+            remediation: "Increase max_vcpu quota or reduce VM size.".into(),
+        });
     }
     if max_mem > 0 && cur_mem + memory_mib > max_mem {
-        return Err(quota_violation(
-            format!("Project '{project}' memory quota exceeded ({max_mem} MiB)"),
-            "Increase max_memory_mib quota or use smaller VMs.",
-        ));
+        return Err(PolicyViolation {
+            rule_name: "project_quota".into(),
+            message: format!("Project '{project}' memory quota exceeded ({max_mem} MiB)"),
+            remediation: "Increase max_memory_mib quota or use smaller VMs.".into(),
+        });
     }
     if max_storage > 0 && cur_storage + storage_gib > max_storage {
-        return Err(quota_violation(
-            format!("Project '{project}' storage quota exceeded ({max_storage} GiB)"),
-            "Increase max_storage_gib quota or shrink disks.",
-        ));
+        return Err(PolicyViolation {
+            rule_name: "project_quota".into(),
+            message: format!("Project '{project}' storage quota exceeded ({max_storage} GiB)"),
+            remediation: "Increase max_storage_gib quota or shrink disks.".into(),
+        });
     }
     Ok(())
 }

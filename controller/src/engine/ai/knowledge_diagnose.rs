@@ -24,10 +24,6 @@ fn escape_like(s: &str) -> String {
     s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
 }
 
-// Same "hot" CPU threshold used by fleet_heatmap's classification — kept as
-// a local literal here since this module only needs it for one query.
-const HIGH_CPU_PERCENT: i64 = 85;
-
 pub async fn diagnose(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeDiagnosis> {
     let q = query.trim();
     let ql = q.to_lowercase();
@@ -50,9 +46,8 @@ pub async fn diagnose(pool: &SqlitePool, query: &str) -> anyhow::Result<Knowledg
     .unwrap_or(0);
 
     let high_cpu_vms: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM vms v JOIN vm_metrics m ON m.vm_id = v.id WHERE m.cpu_percent > ?",
+        "SELECT COUNT(*) FROM vms v JOIN vm_metrics m ON m.vm_id = v.id WHERE m.cpu_percent > 85",
     )
-    .bind(HIGH_CPU_PERCENT)
     .fetch_one(pool)
     .await
     .unwrap_or(0);
@@ -77,7 +72,7 @@ pub async fn diagnose(pool: &SqlitePool, query: &str) -> anyhow::Result<Knowledg
             hypotheses.push(DiagnoseHypothesis {
                 title: "Hotspot VMs consuming CPU".into(),
                 confidence: 0.65,
-                evidence: format!("{high_cpu_vms} VM(s) above {HIGH_CPU_PERCENT}% CPU"),
+                evidence: format!("{high_cpu_vms} VM(s) above 85% CPU"),
                 action: "Open Zyra SRE on top consumers; consider rebalance.".into(),
             });
         }

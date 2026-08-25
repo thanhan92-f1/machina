@@ -1010,46 +1010,6 @@ pub async fn install_vm(
     }))
 }
 
-/// Dial the agent for `host_id` — the resolve+connect two-step every
-/// libvirt-detail/action handler below needs before it can call the agent.
-async fn connect_host_agent(
-    state: &AppState,
-    host_id: Uuid,
-) -> Result<crate::agent_client::AgentClient, ApiError> {
-    let (_, agent_addr) =
-        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-            .await
-            .map_err(|e| ApiError::internal(e.to_string()))?;
-    crate::agent_client::connect(&agent_addr)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))
-}
-
-/// Resolve the VM's libvirt name + host, then dial that host's agent — shared
-/// preamble for every read-only libvirt-detail handler below. The
-/// KubeVirt-rejection message differs per caller (each phrases it for its own
-/// UI surface), so callers supply their own wording rather than a generic one.
-async fn connect_vm_agent_libvirt_only(
-    state: &AppState,
-    id: Uuid,
-    not_libvirt_message: &'static str,
-) -> Result<(String, crate::agent_client::AgentClient), ApiError> {
-    let row: (String, Option<Uuid>, String) = sqlx::query_as(
-        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await?;
-    if row.2 == "kubevirt" {
-        return Err(ApiError::bad_request(not_libvirt_message));
-    }
-    let host_id = row
-        .1
-        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let client = connect_host_agent(state, host_id).await?;
-    Ok((row.0, client))
-}
-
 pub async fn get_vm_domain_xml(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -1060,13 +1020,27 @@ pub async fn get_vm_domain_xml(
     // console-credential-bearing reads (get_vm_viewer_vv, get_vm_qemu_logs)
     // rather than leaving it open to any authenticated (including viewer) role.
     require_operator(&actor)?;
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Domain XML is only available for libvirt-managed VMs",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
-    let xml = crate::agent_client::get_domain_xml(&mut client, &name)
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "Domain XML is only available for libvirt-managed VMs",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let xml = crate::agent_client::get_domain_xml(&mut client, &row.0)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(Json(serde_json::json!({ "xml": xml })))
@@ -1788,7 +1762,7 @@ pub async fn attach_vm_disk(
 /// caller input.
 pub(crate) async fn attach_vm_disk_trusted(
     state: AppState,
-    _actor: AuthUser,
+    actor: AuthUser,
     id: Uuid,
     body: AttachDiskBody,
 ) -> Result<Json<TaskResponse>, ApiError> {
@@ -1849,13 +1823,27 @@ pub async fn get_vm_libvirt_details(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<machina_core::state::VmDetails>, ApiError> {
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Libvirt details are only available for libvirt-managed VMs",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
-    let details = crate::agent_client::get_vm_details(&mut client, &name)
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "Libvirt details are only available for libvirt-managed VMs",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let details = crate::agent_client::get_vm_details(&mut client, &row.0)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(Json(details))
@@ -1865,15 +1853,29 @@ pub async fn get_vm_hardware_summary(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<machina_core::libvirt::hardware_summary::VmHardwareSummaryReport>, ApiError> {
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Hardware summary applies to libvirt-managed VMs only",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "Hardware summary applies to libvirt-managed VMs only",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     let result = crate::agent_client::vm_libvirt_query(
         &mut client,
-        &name,
+        &row.0,
         "hardware.summary",
         &serde_json::json!({}),
     )
@@ -1888,15 +1890,29 @@ pub async fn get_vm_hardware_compat(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<machina_core::libvirt::hardware_summary::HardwareCompatReport>, ApiError> {
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Hardware compatibility check applies to libvirt-managed VMs only",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "Hardware compatibility check applies to libvirt-managed VMs only",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     let result = crate::agent_client::vm_libvirt_query(
         &mut client,
-        &name,
+        &row.0,
         "hardware.compat",
         &serde_json::json!({}),
     )
@@ -1911,15 +1927,29 @@ pub async fn get_vm_domain_caps(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<machina_core::libvirt::hardware_summary::DomainCapabilitiesReport>, ApiError> {
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Domain capabilities apply to libvirt-managed VMs only",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "Domain capabilities apply to libvirt-managed VMs only",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     let result = crate::agent_client::vm_libvirt_query(
         &mut client,
-        &name,
+        &row.0,
         "domain.caps.report",
         &serde_json::json!({}),
     )
@@ -1934,15 +1964,29 @@ pub async fn get_vm_pending_config(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<machina_core::libvirt::pending_config::PendingConfig>, ApiError> {
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Pending config applies to libvirt-managed VMs only",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "Pending config applies to libvirt-managed VMs only",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     let result = crate::agent_client::vm_libvirt_query(
         &mut client,
-        &name,
+        &row.0,
         "pending.config",
         &serde_json::json!({}),
     )
@@ -2129,13 +2173,27 @@ pub async fn get_vm_viewer_vv(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
     require_operator(&actor)?;
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "virt-viewer download applies to libvirt-managed VMs only",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
-    let plan = crate::agent_client::get_console_access_plan(&mut client, &name)
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request(
+            "virt-viewer download applies to libvirt-managed VMs only",
+        ));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let plan = crate::agent_client::get_console_access_plan(&mut client, &row.0)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     let console_type = if plan.console_type.is_empty() {
@@ -2159,9 +2217,9 @@ pub async fn get_vm_viewer_vv(
     let port = plan.vnc_port.max(0);
     let vv = format!(
         "[virt-viewer]\ntype={console_type}\nhost={listen_host}\nport={port}\ntitle={}\ndelete-this-file=1\nfullscreen=0\n",
-        name
+        row.0
     );
-    let filename = format!("{}.vv", name);
+    let filename = format!("{}.vv", row.0);
     let disposition = format!("attachment; filename=\"{filename}\"");
     Ok((
         [
@@ -2188,7 +2246,12 @@ pub async fn get_vm_qemu_logs(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let mut client = connect_host_agent(&state, host_id).await?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     let lines = q.lines.unwrap_or(500).min(5000);
     let result = crate::agent_client::vm_libvirt_query(
         &mut client,
@@ -2241,7 +2304,12 @@ pub async fn rename_platform_vm(
         .bind(id)
         .execute(&state.pool)
         .await?;
-    let mut client = connect_host_agent(&state, host_id).await?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     if let Err(e) = crate::agent_client::vm_libvirt_invoke(
         &mut client,
         &old_name,
@@ -2269,7 +2337,12 @@ pub async fn inject_vm_nmi(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let mut client = connect_host_agent(&state, host_id).await?;
+    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     crate::agent_client::vm_libvirt_invoke(&mut client, &name, "domain.nmi", &serde_json::json!({}))
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -2506,13 +2579,26 @@ pub async fn publish_vm_template(
     machina_spec::validate_name(&body.template_name)
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    let (name, mut client) = connect_vm_agent_libvirt_only(
-        &state,
-        id,
-        "Templates require libvirt-managed VMs",
+    let row: (String, Option<Uuid>, String) = sqlx::query_as(
+        "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
+    .bind(id)
+    .fetch_one(&state.pool)
     .await?;
-    let xml = crate::agent_client::get_domain_xml(&mut client, &name)
+    if row.2 == "kubevirt" {
+        return Err(ApiError::bad_request("Templates require libvirt-managed VMs"));
+    }
+    let host_id = row
+        .1
+        .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
+    let mut client = crate::agent_client::connect(&agent_addr)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let xml = crate::agent_client::get_domain_xml(&mut client, &row.0)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     let source_disk = machina_core::libvirt::template_apply::primary_disk_path_from_xml(&xml)
@@ -2530,7 +2616,7 @@ pub async fn publish_vm_template(
         "approved"
     };
     let desc = if body.description.is_empty() {
-        format!("Golden image from VM '{}'", name)
+        format!("Golden image from VM '{}'", row.0)
     } else {
         body.description.clone()
     };

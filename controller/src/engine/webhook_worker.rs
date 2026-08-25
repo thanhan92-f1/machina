@@ -95,9 +95,6 @@ async fn mark_retry(
     max_attempts: i32,
     err: &str,
 ) -> anyhow::Result<()> {
-    // Cap exponential backoff so a delivery that's been failing for a while
-    // still gets retried at a bounded cadence instead of drifting out to hours.
-    const MAX_BACKOFF_SECS: i32 = 300;
     let next = attempts + 1;
     if next >= max_attempts {
         sqlx::query(
@@ -109,7 +106,7 @@ async fn mark_retry(
         .execute(pool)
         .await?;
     } else {
-        let backoff_secs = 2_i32.saturating_pow(next as u32).min(MAX_BACKOFF_SECS);
+        let backoff_secs = 2_i32.saturating_pow(next as u32).min(300);
         // Release the claim back to 'pending' (clearing claimed_by, same as
         // tasks/worker.rs does when a claimed task goes back to pending) so
         // the row is eligible to be claimed again once next_retry_at elapses.

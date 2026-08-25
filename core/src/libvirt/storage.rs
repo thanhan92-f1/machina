@@ -79,7 +79,7 @@ pub fn collect_image_scan_directories(
         .into_iter()
         .map(std::path::PathBuf::from)
         .collect();
-    for extra in ["/var/lib/machina/images", super::DEFAULT_LIBVIRT_IMAGES_DIR] {
+    for extra in ["/var/lib/machina/images", "/var/lib/libvirt/images"] {
         let pb = std::path::PathBuf::from(extra);
         if !out.iter().any(|p| p == &pb) {
             out.push(pb);

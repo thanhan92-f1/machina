@@ -32,20 +32,15 @@ pub struct CreateBlueprintBody {
     pub vm_ids: Vec<Uuid>,
 }
 
-// Shared column list for every `blueprints` row fetch below, so the three call
-// sites (get/list/create) stay in sync if a column is ever added or renamed.
-const BLUEPRINT_COLUMNS: &str =
-    "id, name, description, actions, vm_ids, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at";
-
 pub async fn get_blueprint(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<BlueprintRow>, ApiError> {
     require_operator(&actor)?;
-    let row = sqlx::query_as::<_, BlueprintRow>(&format!(
-        "SELECT {BLUEPRINT_COLUMNS} FROM blueprints WHERE id = ?"
-    ))
+    let row = sqlx::query_as::<_, BlueprintRow>(
+        "SELECT id, name, description, actions, vm_ids, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at FROM blueprints WHERE id = ?",
+    )
     .bind(id)
     .fetch_optional(&state.pool)
     .await?
@@ -58,9 +53,9 @@ pub async fn list_blueprints(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<Vec<BlueprintRow>>, ApiError> {
     require_operator(&actor)?;
-    let rows = sqlx::query_as::<_, BlueprintRow>(&format!(
-        "SELECT {BLUEPRINT_COLUMNS} FROM blueprints ORDER BY name"
-    ))
+    let rows = sqlx::query_as::<_, BlueprintRow>(
+        "SELECT id, name, description, actions, vm_ids, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at FROM blueprints ORDER BY name",
+    )
     .fetch_all(&state.pool)
     .await?;
     Ok(Json(rows))
@@ -97,9 +92,9 @@ pub async fn create_blueprint(
     .bind(serde_json::to_string(&body.vm_ids).unwrap_or_else(|_| "[]".into()))
     .execute(&state.pool)
     .await?;
-    let row = sqlx::query_as::<_, BlueprintRow>(&format!(
-        "SELECT {BLUEPRINT_COLUMNS} FROM blueprints WHERE id = ?"
-    ))
+    let row = sqlx::query_as::<_, BlueprintRow>(
+        "SELECT id, name, description, actions, vm_ids, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at FROM blueprints WHERE id = ?",
+    )
     .bind(id)
     .fetch_one(&state.pool)
     .await?;

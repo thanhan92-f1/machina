@@ -29,33 +29,3 @@ pub use inventory::*;
 pub use lockdown::*;
 pub use metal::*;
 pub use temporary::*;
-
-/// Records a `firewall_timeline` audit-trail row. Every call site historically
-/// wrote this INSERT inline and swallowed the error with `let _ = ...`: the
-/// timeline entry is a best-effort audit record alongside a firewall mutation
-/// (or scan) that has already happened, so a transient DB error here must
-/// never fail or roll back the operation it's describing. Centralized here so
-/// that "ignore the error, but still try" policy is expressed once instead of
-/// once per call site.
-pub(crate) async fn record_timeline(
-    pool: &sqlx::SqlitePool,
-    target_kind: &str,
-    target_id: uuid::Uuid,
-    kind: &str,
-    summary: &str,
-    detail: &serde_json::Value,
-    actor: &str,
-) {
-    let _ = sqlx::query(
-        "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    )
-    .bind(uuid::Uuid::new_v4())
-    .bind(target_kind)
-    .bind(target_id)
-    .bind(kind)
-    .bind(summary)
-    .bind(detail)
-    .bind(actor)
-    .execute(pool)
-    .await;
-}

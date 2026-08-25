@@ -107,38 +107,6 @@ pub struct LibvirtBootAutostartIssue {
     pub systemd_unit: String,
 }
 
-#[cfg(target_os = "linux")]
-fn unit_file_state_is_bad(state: &str) -> bool {
-    state == "disabled" || state == "masked"
-}
-
-/// Check one boot-autostart unit and build the standard issue report if it's
-/// disabled/masked. `require_present` gates the check on `systemctl
-/// list-unit-files` first — used for the modular `virtnetworkd`/`virtqemud`
-/// units, which don't exist on a non-modular libvirt install and would
-/// otherwise be misreported as "disabled" rather than "not applicable".
-/// `libvirtd.service` skips that gate: it's the non-modular daemon, assumed
-/// present, so its own missing/disabled state is worth surfacing either way.
-#[cfg(target_os = "linux")]
-fn autostart_issue_for_unit(
-    unit: &str,
-    detail: &str,
-    require_present: bool,
-) -> Option<LibvirtBootAutostartIssue> {
-    if require_present && !systemctl_unit_list_has(unit) {
-        return None;
-    }
-    let state = systemctl_unit_file_state(unit)?;
-    if unit_file_state_is_bad(&state) {
-        Some(LibvirtBootAutostartIssue {
-            detail: detail.to_string(),
-            systemd_unit: unit.to_string(),
-        })
-    } else {
-        None
-    }
-}
-
 /// When systemd is not configured to start libvirt at boot.
 ///
 /// Libvirt’s own “autostart” for networks and guests only runs **after** the appropriate libvirt
@@ -146,25 +114,43 @@ fn autostart_issue_for_unit(
 /// nothing autostarts after a host reboot even when Machina shows autostart enabled.
 #[cfg(target_os = "linux")]
 pub fn libvirt_boot_autostart_issue() -> Option<LibvirtBootAutostartIssue> {
-    autostart_issue_for_unit(
-        "libvirtd.service",
-        "libvirtd.service is not enabled to start at boot. Until libvirt runs, libvirt autostart (networks and VMs) does not run after a reboot.",
-        false,
-    )
-    .or_else(|| {
-        autostart_issue_for_unit(
-            "virtnetworkd.service",
-            "virtnetworkd.service is not enabled at boot (modular libvirt). NAT networks will not come up after reboot.",
-            true,
-        )
-    })
-    .or_else(|| {
-        autostart_issue_for_unit(
-            "virtqemud.service",
-            "virtqemud.service is not enabled at boot (modular libvirt). Guests with autostart will not start after reboot.",
-            true,
-        )
-    })
+    let bad = |s: &str| s == "disabled" || s == "masked";
+
+    if let Some(ref state) = systemctl_unit_file_state("libvirtd.service") {
+        if bad(state) {
+            return Some(LibvirtBootAutostartIssue {
+                detail: "libvirtd.service is not enabled to start at boot. Until libvirt runs, libvirt autostart (networks and VMs) does not run after a reboot."
+                    .to_string(),
+                systemd_unit: "libvirtd.service".to_string(),
+            });
+        }
+    }
+
+    if systemctl_unit_list_has("virtnetworkd.service") {
+        if let Some(ref state) = systemctl_unit_file_state("virtnetworkd.service") {
+            if bad(state) {
+                return Some(LibvirtBootAutostartIssue {
+                    detail: "virtnetworkd.service is not enabled at boot (modular libvirt). NAT networks will not come up after reboot."
+                        .to_string(),
+                    systemd_unit: "virtnetworkd.service".to_string(),
+                });
+            }
+        }
+    }
+
+    if systemctl_unit_list_has("virtqemud.service") {
+        if let Some(ref state) = systemctl_unit_file_state("virtqemud.service") {
+            if bad(state) {
+                return Some(LibvirtBootAutostartIssue {
+                    detail: "virtqemud.service is not enabled at boot (modular libvirt). Guests with autostart will not start after reboot."
+                        .to_string(),
+                    systemd_unit: "virtqemud.service".to_string(),
+                });
+            }
+        }
+    }
+
+    None
 }
 
 #[cfg(not(target_os = "linux"))]

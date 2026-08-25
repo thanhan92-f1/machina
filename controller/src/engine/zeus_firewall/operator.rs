@@ -241,20 +241,23 @@ pub async fn execute_secure(
 
     let result = apply_profile(pool, cfg, &req.host_id, &profile, actor, false).await?;
     let host_id = uuid::Uuid::parse_str(&req.host_id).unwrap_or_else(|_| uuid::Uuid::nil());
-    super::record_timeline(
-        pool,
-        "host",
-        host_id,
-        "operator_secure",
-        &format!("Operator applied {} → {}", preview.hostname, profile),
-        &serde_json::json!({
-            "profile": profile,
-            "hostname": preview.hostname,
-            "operations": result.operations,
-            "forced": req.force,
-        }),
-        actor,
+    let _ = sqlx::query(
+        "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, 'host', ?, 'operator_secure', ?, ?, ?)",
     )
+    .bind(uuid::Uuid::new_v4())
+    .bind(host_id)
+    .bind(format!(
+        "Operator applied {} → {}",
+        preview.hostname, profile
+    ))
+    .bind(serde_json::json!({
+        "profile": profile,
+        "hostname": preview.hostname,
+        "operations": result.operations,
+        "forced": req.force,
+    }))
+    .bind(actor)
+    .execute(pool)
     .await;
 
     Ok(OperatorExecuteResult {

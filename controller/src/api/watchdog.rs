@@ -12,12 +12,6 @@ use crate::api::ApiError;
 use crate::auth::{require_operator, AuthUser};
 use crate::state::AppState;
 
-// Defaults shared between the "no policy row yet" view and the clamp fallback
-// in `set_vm_watchdog`, so both surfaces agree on what "unset" means.
-const DEFAULT_FAILURE_THRESHOLD_SECS: i64 = 120;
-const DEFAULT_COOLDOWN_SECS: i64 = 600;
-const DEFAULT_MAX_RESTARTS_PER_HOUR: i64 = 3;
-
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct WatchdogPolicy {
     pub vm_id: Uuid,
@@ -59,9 +53,9 @@ pub async fn get_vm_watchdog(
     Ok(Json(row.unwrap_or(WatchdogPolicy {
         vm_id,
         enabled: false,
-        failure_threshold_secs: DEFAULT_FAILURE_THRESHOLD_SECS,
-        cooldown_secs: DEFAULT_COOLDOWN_SECS,
-        max_restarts_per_hour: DEFAULT_MAX_RESTARTS_PER_HOUR,
+        failure_threshold_secs: 120,
+        cooldown_secs: 600,
+        max_restarts_per_hour: 3,
         unhealthy_since: None,
         last_restart_at: None,
         restarts_this_hour: 0,
@@ -83,18 +77,9 @@ pub async fn set_vm_watchdog(
     if exists.is_none() {
         return Err(ApiError::not_found("vm not found"));
     }
-    let threshold = body
-        .failure_threshold_secs
-        .unwrap_or(DEFAULT_FAILURE_THRESHOLD_SECS)
-        .clamp(30, 3600);
-    let cooldown = body
-        .cooldown_secs
-        .unwrap_or(DEFAULT_COOLDOWN_SECS)
-        .clamp(60, 86400);
-    let max_per_hour = body
-        .max_restarts_per_hour
-        .unwrap_or(DEFAULT_MAX_RESTARTS_PER_HOUR)
-        .clamp(1, 60);
+    let threshold = body.failure_threshold_secs.unwrap_or(120).clamp(30, 3600);
+    let cooldown = body.cooldown_secs.unwrap_or(600).clamp(60, 86400);
+    let max_per_hour = body.max_restarts_per_hour.unwrap_or(3).clamp(1, 60);
 
     sqlx::query(
         "INSERT INTO vm_watchdog (vm_id, enabled, failure_threshold_secs, cooldown_secs, max_restarts_per_hour)

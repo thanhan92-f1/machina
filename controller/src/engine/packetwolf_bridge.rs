@@ -150,17 +150,13 @@ fn auth_headers(
     }
 }
 
-/// Fallback ingest endpoint when the fabric isn't configured but callers
-/// still need *some* URL to point at (dev PacketWolf's conventional local port).
-const LOCAL_DEV_INGEST_URL: &str = "http://127.0.0.1:9091/api/v1/ingest";
-
 pub fn ingest_base_url(cfg: &ControllerConfig) -> String {
     if cfg.packetwolf_enabled && fabric_api_available(cfg) {
         packetwolf_ingest_base_url(cfg)
     } else if cfg.packetwolf_enabled {
         format!("http://127.0.0.1:{}/api/v1/zeus-security/ingest", cfg.port)
     } else {
-        LOCAL_DEV_INGEST_URL.into()
+        "http://127.0.0.1:9091/api/v1/ingest".into()
     }
 }
 
@@ -171,7 +167,7 @@ fn packetwolf_ingest_base_url(cfg: &ControllerConfig) -> String {
             cfg.packetwolf_base_url.trim_end_matches('/')
         )
     } else {
-        LOCAL_DEV_INGEST_URL.into()
+        "http://127.0.0.1:9091/api/v1/ingest".into()
     }
 }
 
@@ -242,49 +238,74 @@ pub async fn production_network_available(cfg: &ControllerConfig) -> bool {
         .unwrap_or(false)
 }
 
-/// Default per-request timeout for calls into the PacketWolf fabric API
-/// (distinct from `AVAILABILITY_CACHE_SECS`, which caches whether the fabric
-/// is up at all — this bounds each individual request against it).
-const FABRIC_REQUEST_TIMEOUT_SECS: u64 = 15;
-
-/// Shared plumbing for get/post/patch/delete/put against the fabric API:
-/// enabled check, client construction, URL join, auth headers, and best-effort
-/// JSON decode. `build_request` supplies just the verb-specific piece (method
-/// + optional body) so each public wrapper below stays a one-liner.
-fn request_json(
-    cfg: &ControllerConfig,
-    path: &str,
-    build_request: impl FnOnce(&reqwest::blocking::Client, &str) -> reqwest::blocking::RequestBuilder,
-) -> Option<Value> {
+fn get_json(cfg: &ControllerConfig, path: &str) -> Option<Value> {
     if !cfg.packetwolf_enabled {
         return None;
     }
-    let Ok(client) = build_client(cfg.packetwolf_insecure_tls, FABRIC_REQUEST_TIMEOUT_SECS) else {
+    let Ok(client) = build_client(cfg.packetwolf_insecure_tls, 15) else {
         return None;
     };
     let url = format!("{}{}", cfg.packetwolf_base_url.trim_end_matches('/'), path);
-    let req = build_request(&client, &url);
-    auth_headers(cfg, req).send().ok().and_then(|r| r.json().ok())
-}
-
-fn get_json(cfg: &ControllerConfig, path: &str) -> Option<Value> {
-    request_json(cfg, path, |client, url| client.get(url))
+    auth_headers(cfg, client.get(&url))
+        .send()
+        .ok()
+        .and_then(|r| r.json().ok())
 }
 
 fn post_json(cfg: &ControllerConfig, path: &str, body: Value) -> Option<Value> {
-    request_json(cfg, path, |client, url| client.post(url).json(&body))
+    if !cfg.packetwolf_enabled {
+        return None;
+    }
+    let Ok(client) = build_client(cfg.packetwolf_insecure_tls, 15) else {
+        return None;
+    };
+    let url = format!("{}{}", cfg.packetwolf_base_url.trim_end_matches('/'), path);
+    auth_headers(cfg, client.post(&url).json(&body))
+        .send()
+        .ok()
+        .and_then(|r| r.json().ok())
 }
 
 fn patch_json(cfg: &ControllerConfig, path: &str, body: Value) -> Option<Value> {
-    request_json(cfg, path, |client, url| client.patch(url).json(&body))
+    if !cfg.packetwolf_enabled {
+        return None;
+    }
+    let Ok(client) = build_client(cfg.packetwolf_insecure_tls, 15) else {
+        return None;
+    };
+    let url = format!("{}{}", cfg.packetwolf_base_url.trim_end_matches('/'), path);
+    auth_headers(cfg, client.patch(&url).json(&body))
+        .send()
+        .ok()
+        .and_then(|r| r.json().ok())
 }
 
 fn delete_json(cfg: &ControllerConfig, path: &str) -> Option<Value> {
-    request_json(cfg, path, |client, url| client.delete(url))
+    if !cfg.packetwolf_enabled {
+        return None;
+    }
+    let Ok(client) = build_client(cfg.packetwolf_insecure_tls, 15) else {
+        return None;
+    };
+    let url = format!("{}{}", cfg.packetwolf_base_url.trim_end_matches('/'), path);
+    auth_headers(cfg, client.delete(&url))
+        .send()
+        .ok()
+        .and_then(|r| r.json().ok())
 }
 
 fn put_json(cfg: &ControllerConfig, path: &str, body: Value) -> Option<Value> {
-    request_json(cfg, path, |client, url| client.put(url).json(&body))
+    if !cfg.packetwolf_enabled {
+        return None;
+    }
+    let Ok(client) = build_client(cfg.packetwolf_insecure_tls, 15) else {
+        return None;
+    };
+    let url = format!("{}{}", cfg.packetwolf_base_url.trim_end_matches('/'), path);
+    auth_headers(cfg, client.put(&url).json(&body))
+        .send()
+        .ok()
+        .and_then(|r| r.json().ok())
 }
 
 pub async fn fabric_get(cfg: &ControllerConfig, path: &str) -> Value {

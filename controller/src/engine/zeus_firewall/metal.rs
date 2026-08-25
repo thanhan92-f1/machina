@@ -133,15 +133,15 @@ pub async fn scan_exposure(
     let inv = gather_metal_inventory(&row_to_input(&row));
     let _ = super::drift::save_snapshot(pool, "bare_metal", id, &inv).await;
 
-    super::record_timeline(
-        pool,
-        "bare_metal",
-        id,
-        "metal_scan",
-        &format!("Exposure scan — risk {}", scan.risk),
-        &posture,
-        actor,
+    let _ = sqlx::query(
+        "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, 'bare_metal', ?, 'metal_scan', ?, ?, ?)",
     )
+    .bind(uuid::Uuid::new_v4())
+    .bind(id)
+    .bind(format!("Exposure scan — risk {}", scan.risk))
+    .bind(&posture)
+    .bind(actor)
+    .execute(pool)
     .await;
 
     Ok(posture)
@@ -200,15 +200,16 @@ pub async fn apply_metal(
     } else {
         "metal_profile_applied"
     };
-    super::record_timeline(
-        pool,
-        "bare_metal",
-        id,
-        kind,
-        &format!("Applied metal profile {profile} (policy-only)"),
-        &serde_json::json!({ "operations": result.operations, "tag": "metal" }),
-        actor,
+    let _ = sqlx::query(
+        "INSERT INTO firewall_timeline (id, target_kind, target_id, kind, summary, detail_json, actor) VALUES (?, 'bare_metal', ?, ?, ?, ?, ?)",
     )
+    .bind(uuid::Uuid::new_v4())
+    .bind(id)
+    .bind(kind)
+    .bind(format!("Applied metal profile {profile} (policy-only)"))
+    .bind(serde_json::json!({ "operations": result.operations, "tag": "metal" }))
+    .bind(actor)
+    .execute(pool)
     .await;
 
     Ok(result)
@@ -261,17 +262,12 @@ pub async fn create_metal_temporary_preset(
         other => anyhow::bail!("unknown temporary preset '{other}' (expected 'pxe' or 'bmc')"),
     };
 
-    // RFC 1918 /8 block: these presets grant temporary BMC/PXE management
-    // access, which should only ever be reachable from the internal
-    // management network, never a caller-supplied source.
-    const MGMT_SOURCE_CIDR: &str = "10.0.0.0/8";
-
     let rule = super::temporary::create_temporary_rule(
         pool,
         super::TemporaryRuleRequest {
             target_kind: "bare_metal".into(),
             target_id: id,
-            source_cidr: MGMT_SOURCE_CIDR.into(),
+            source_cidr: "10.0.0.0/8".into(),
             dest_port: port,
             protocol: proto.clone(),
             reason: reason.into(),
@@ -292,7 +288,7 @@ pub async fn create_metal_temporary_preset(
             super::TemporaryRuleRequest {
                 target_kind: "bare_metal".into(),
                 target_id: id,
-                source_cidr: MGMT_SOURCE_CIDR.into(),
+                source_cidr: "10.0.0.0/8".into(),
                 dest_port: port2,
                 protocol: proto,
                 reason: reason.into(),

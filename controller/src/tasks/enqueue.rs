@@ -33,7 +33,7 @@ pub async fn enqueue_task(
         operation: operation.to_string(),
         payload,
     };
-    if let Err(e) = state.task_bus.publish(super::TASK_SUBJECT, &msg).await {
+    if let Err(e) = state.task_bus.publish("machina.tasks", &msg).await {
         // The task row was already committed as 'pending'. If the bus publish fails no worker
         // will ever pick it up, so mark it terminally failed instead of leaving it stuck. Route
         // through the same finalize helper every other terminal failure uses — a bare status

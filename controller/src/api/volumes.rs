@@ -52,15 +52,6 @@ pub struct VolumeRow {
 const VOLUME_SELECT: &str = "SELECT id, project_id, name, size_gib, volume_class, status, \
     attached_vm_id, attached_device, (atlas_volume_id IS NOT NULL) AS atlas_backed FROM volumes";
 
-/// Shared row fetch for the `WHERE id = ?` shape used by every handler below
-/// that returns the current volume row after a mutation.
-async fn fetch_volume_by_id(pool: &sqlx::SqlitePool, id: Uuid) -> Result<VolumeRow, sqlx::Error> {
-    sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
-        .bind(id)
-        .fetch_one(pool)
-        .await
-}
-
 /// `vms::{attach_vm_disk, detach_vm_disk, resize_vm_disk}` only enqueue a task and
 /// return immediately — they don't wait for the agent to actually finish the libvirt
 /// op. Without this, an attach/detach handler that updates `volumes.status`
@@ -129,7 +120,10 @@ pub async fn get_volume(
     Path(id): Path<Uuid>,
 ) -> Result<Json<VolumeRow>, ApiError> {
     require_operator(&actor)?;
-    let row = fetch_volume_by_id(&state.pool, id).await?;
+    let row = sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
     Ok(Json(row))
 }
 
@@ -186,7 +180,10 @@ pub async fn create_volume(
         return Err(e);
     }
 
-    let row = fetch_volume_by_id(&state.pool, id).await?;
+    let row = sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
     Ok(Json(row))
 }
 
@@ -376,7 +373,10 @@ pub async fn attach_volume(
         .execute(&state.pool)
         .await?;
 
-    let row = fetch_volume_by_id(&state.pool, id).await?;
+    let row = sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
     Ok(Json(row))
 }
 
@@ -402,7 +402,10 @@ pub async fn detach_volume(
         .bind(id)
         .execute(&state.pool)
         .await?;
-    let row = fetch_volume_by_id(&state.pool, id).await?;
+    let row = sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
     Ok(Json(row))
 }
 
@@ -447,7 +450,10 @@ pub async fn extend_volume(
         wait_for_task(&state.pool, &task.0.task_id).await?;
     }
     sqlx::query("UPDATE volumes SET size_gib = ? WHERE id = ?").bind(body.new_size_gib).bind(id).execute(&state.pool).await?;
-    let row = fetch_volume_by_id(&state.pool, id).await?;
+    let row = sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
     Ok(Json(row))
 }
 

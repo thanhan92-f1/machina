@@ -22,12 +22,6 @@ pub struct SpotlightBody {
     pub query: String,
 }
 
-// Shared cap on user-supplied NL text (spotlight query / copilot message): each of
-// these handlers runs a substantial amount of sequential parsing/scanning (or, for
-// copilot, an LLM call) per byte of input, so an unbounded body is an asymmetric
-// CPU/cost sink. 32 KiB is far beyond any real query.
-const MAX_AI_QUERY_LEN: usize = 32_768;
-
 pub async fn get_settings(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -59,8 +53,8 @@ pub async fn spotlight(
     require_operator(&actor)?;
     // Cap query length (as copilot_chat does): `route_spotlight` runs ~150 sequential
     // substring scans plus NL parsers over the query, so an unbounded body is an
-    // asymmetric CPU cost.
-    if body.query.len() > MAX_AI_QUERY_LEN {
+    // asymmetric CPU cost. 32 KiB is far beyond any real spotlight query.
+    if body.query.len() > 32_768 {
         return Err(ApiError::bad_request("spotlight query too long (max 32768 bytes)"));
     }
     let online: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM hosts WHERE state = 'online'")
@@ -127,7 +121,7 @@ pub async fn copilot_chat(
     Json(body): Json<CopilotBody>,
 ) -> Result<Json<ai::CopilotResponse>, ApiError> {
     require_operator(&actor)?;
-    if body.message.len() > MAX_AI_QUERY_LEN {
+    if body.message.len() > 32_768 {
         return Err(ApiError::bad_request("message too long (max 32 768 chars)"));
     }
     ai::copilot_chat(
@@ -156,7 +150,7 @@ pub async fn copilot_stream(
         )));
         return Sse::new(ReceiverStream::new(rx1)).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
     }
-    if body.message.len() > MAX_AI_QUERY_LEN {
+    if body.message.len() > 32_768 {
         let _ = tx.try_send(Ok(Event::default().data(
             serde_json::json!({"type":"error","message":"message too long"}).to_string()
         )));

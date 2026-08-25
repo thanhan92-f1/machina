@@ -11,9 +11,6 @@ use crate::xml::{extract_attr, split_blocks};
 use crate::LibvirtError;
 use virt::connect::Connect;
 
-/// VNC's well-known base TCP port: display `:N` maps to port `5900 + N`.
-const VNC_BASE_PORT: u32 = 5900;
-
 /// Parse one line of `virsh vncdisplay` output (`:N`, `host:N`, …) into `(host, tcp_port)`.
 pub fn parse_vnc_display_line(line: &str) -> Option<(String, u16)> {
     let s = line.trim();
@@ -31,7 +28,7 @@ pub fn parse_vnc_display_line(line: &str) -> Option<(String, u16)> {
         h => h,
     };
     let n: u32 = num_str.trim().parse().ok()?;
-    let port = VNC_BASE_PORT.checked_add(n)?;
+    let port = 5900u32.checked_add(n)?;
     let port = u16::try_from(port).ok()?;
     Some((host.to_string(), port))
 }
@@ -65,8 +62,6 @@ fn try_endpoint_from_vnc_graphics_xml(xml: &str) -> Option<(String, u16)> {
     None
 }
 
-// A bind-any address in the domain XML isn't itself connectable; the console
-// proxy always runs on the same host as libvirt, so route those cases to loopback.
 fn normalize_vnc_listen(listen: &str) -> String {
     match listen.trim() {
         "" | "0.0.0.0" | "::" | "[::]" => "127.0.0.1".to_string(),

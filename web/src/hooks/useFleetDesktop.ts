@@ -16,11 +16,7 @@ type FleetDesktopState = {
   updatedAt: number
 }
 
-// Module-level singleton store: every `useFleetDesktop()` consumer on the page shares one
-// fetch/poll cycle instead of each mounting its own interval and hammering the API in lockstep.
 const listeners = new Set<() => void>()
-// Each mounted consumer registers its desired poll interval here; reschedulePolling() then
-// polls at whichever registered interval is shortest, so one fast consumer speeds up the rest.
 const pollIntervals = new Map<symbol, number>()
 const CACHE_MS = 5_000
 let snapshot: FleetDesktopState = {
