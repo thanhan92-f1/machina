@@ -454,7 +454,7 @@ function AuthenticatedShellRoutes() {
                   <Route path="zyra/security/hunt" element={<PlatformThreatHunting />} />
                   <Route path="zyra/security/enforcement" element={<PlatformRuntimeEnforcement />} />
                   <Route path="soc" element={<PlatformSoc />} />
-                  <Route path="zyra/security" element={<PlatformSecurityCenter />} />
+                  <Route path="zeus/security" element={<PlatformSecurityCenter />} />
                   <Route path="zyra/machines/:hostId" element={<PlatformMachineSecurity />} />
                   <Route path="zeus/security/firewall" element={<PlatformFirewallOverview />} />
                   <Route path="zeus/security/firewall/:id" element={<PlatformFirewallTargetDetail />} />
