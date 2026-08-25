@@ -13,6 +13,10 @@ import {
   sshNatHostPort,
 } from '../../utils/vmPortForwardServices'
 
+// Matches KNOWN_PORT_FORWARD_SERVICES' 'ssh' entry in vmPortForwardServices —
+// the conventional hypervisor-side NAT port for guest 22 when none is exposed yet.
+const DEFAULT_SSH_NAT_HOST_PORT = 2222
+
 export interface VmSshConnectDialogProps {
   open: boolean
   vmName: string
@@ -98,7 +102,7 @@ export default function VmSshConnectDialog({
       onRefreshPortForwards?.()
       const cmd = laptopSshCommand(user, defaultIp, hypervisorAddress, [
         ...portForwardRules,
-        { protocol: 'tcp', host_port: 2222, vm_port: 22 },
+        { protocol: 'tcp', host_port: DEFAULT_SSH_NAT_HOST_PORT, vm_port: 22 },
       ])
       if (cmd) {
         await navigator.clipboard.writeText(cmd)

@@ -3,6 +3,23 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
+// A synthetic monthly budget is derived from current spend since there is no
+// explicit budget input yet: current spend plus 15% headroom, with a $1000
+// floor so a near-empty fleet doesn't get a near-zero budget (and therefore
+// a misleadingly high utilization percentage).
+const BUDGET_HEADROOM_MULTIPLIER: f64 = 1.15;
+const MIN_MONTHLY_BUDGET_USD: f64 = 1000.0;
+const UTILIZATION_CRITICAL_PCT: f32 = 95.0;
+const UTILIZATION_WARNING_PCT: f32 = 80.0;
+const IDLE_VM_ALERT_THRESHOLD: i64 = 2;
+// Flag when a meaningful share of spend has no team/project tag attached.
+const UNATTRIBUTED_SPEND_FRACTION: f64 = 0.3;
+// Firewall exposure overlapping with a noticeable slice of infra spend is
+// worth surfacing as a FinOps x Security cross-cutting alert.
+const EXPOSURE_INFO_FRACTION: f64 = 0.05;
+const EXPOSURE_WARNING_FRACTION: f64 = 0.1;
+const IDLE_PORT_WASTE_ALERT_USD: f64 = 50.0;
+
 #[derive(Debug, Serialize)]
 pub struct BudgetAlert {
     pub id: String,
@@ -25,7 +42,8 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostBudgetReport> {
     let cost = super::cost::analyze(pool).await?;
     let attribution = super::cost_attribution::attribute(pool).await?;
 
-    let monthly_budget_usd = (cost.estimated_monthly_usd * 1.15).max(1000.0);
+    let monthly_budget_usd =
+        (cost.estimated_monthly_usd * BUDGET_HEADROOM_MULTIPLIER).max(MIN_MONTHLY_BUDGET_USD);
     let current_spend_usd = cost.estimated_monthly_usd;
     let predicted_spend_usd = cost.predicted_next_month_usd;
     let utilization_pct = if monthly_budget_usd > 0.0 {
@@ -35,13 +53,13 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostBudgetReport> {
     };
 
     let mut alerts = Vec::new();
-    if utilization_pct >= 95.0 {
+    if utilization_pct >= UTILIZATION_CRITICAL_PCT {
         alerts.push(BudgetAlert {
             id: "budget-critical".into(),
             severity: "critical".into(),
             message: format!("Spend at {:.0}% of monthly budget", utilization_pct),
         });
-    } else if utilization_pct >= 80.0 {
+    } else if utilization_pct >= UTILIZATION_WARNING_PCT {
         alerts.push(BudgetAlert {
             id: "budget-warning".into(),
             severity: "warning".into(),
@@ -49,7 +67,7 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostBudgetReport> {
         });
     }
 
-    if cost.idle_vm_count > 2 {
+    if cost.idle_vm_count > IDLE_VM_ALERT_THRESHOLD {
         alerts.push(BudgetAlert {
             id: "idle-waste".into(),
             severity: "info".into(),
@@ -57,7 +75,7 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostBudgetReport> {
         });
     }
 
-    if attribution.unattributed_monthly_usd > current_spend_usd * 0.3 {
+    if attribution.unattributed_monthly_usd > current_spend_usd * UNATTRIBUTED_SPEND_FRACTION {
         alerts.push(BudgetAlert {
             id: "unattributed".into(),
             severity: "info".into(),
@@ -67,10 +85,12 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostBudgetReport> {
 
     let cfg = crate::config::ControllerConfig::default();
     if let Ok(exp) = crate::engine::zeus_firewall::finops::exposure_rollup(pool, &cfg).await {
-        if exp.fleet_exposure_monthly_usd > current_spend_usd * 0.05 {
+        if exp.fleet_exposure_monthly_usd > current_spend_usd * EXPOSURE_INFO_FRACTION {
             alerts.push(BudgetAlert {
                 id: "firewall-exposure-overlap".into(),
-                severity: if exp.fleet_exposure_monthly_usd > current_spend_usd * 0.1 {
+                severity: if exp.fleet_exposure_monthly_usd
+                    > current_spend_usd * EXPOSURE_WARNING_FRACTION
+                {
                     "warning".into()
                 } else {
                     "info".into()
@@ -86,7 +106,7 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostBudgetReport> {
                 ),
             });
         }
-        if exp.idle_port_waste_usd > 50.0 {
+        if exp.idle_port_waste_usd > IDLE_PORT_WASTE_ALERT_USD {
             alerts.push(BudgetAlert {
                 id: "idle-port-waste".into(),
                 severity: "info".into(),

@@ -10,6 +10,19 @@ use crate::tasks::enqueue::enqueue_task;
 
 use super::intent_router::SpotlightIntent;
 
+const HOURS_PER_MONTH: f64 = 730.0;
+// Storage total shown in the plan preview only — the actual disk attached to
+// each created VM (env_vm_spec / vm_disks insert below) is always
+// DEV_DISK_GIB_PER_VM regardless of environment type, so a "production"
+// plan's reported storage_gib does not match what execute_environment
+// actually provisions per VM today.
+const PROD_STORAGE_GIB_PER_VM: i32 = 200;
+const DEV_DISK_GIB_PER_VM: i32 = 80;
+const DEFAULT_EXECUTE_MAX_VMS: i32 = 5;
+// Sanity cap on a developer/seat count parsed out of free-text query —
+// guards against absurd input being treated as a real environment size.
+const MAX_PARSED_COUNT: i32 = 10_000;
+
 #[derive(Debug, Serialize)]
 pub struct EnvironmentResourcePlan {
     pub label: String,
@@ -90,9 +103,14 @@ pub fn plan_environment(query: &str, vcpu_rate: f64, gib_rate: f64) -> Environme
 
     let total_vcpus = vm_count * vcpus;
     let total_memory_gib = vm_count * mem_gib;
-    let storage_gib = vm_count * if env_type == "production" { 200 } else { 80 };
+    let storage_gib = vm_count
+        * if env_type == "production" {
+            PROD_STORAGE_GIB_PER_VM
+        } else {
+            DEV_DISK_GIB_PER_VM
+        };
     let hourly = total_vcpus as f64 * vcpu_rate + total_memory_gib as f64 * gib_rate;
-    let estimated_monthly_usd = hourly * 730.0;
+    let estimated_monthly_usd = hourly * HOURS_PER_MONTH;
 
     let backup_policy = match env_type {
         "production" => "daily + 7d retention",
@@ -186,14 +204,14 @@ fn extract_count(hay: &str, units: &[&str]) -> Option<i32> {
                 .rev()
                 .collect();
             if let Ok(n) = num.parse::<i32>() {
-                if n > 0 && n <= 10_000 {
+                if n > 0 && n <= MAX_PARSED_COUNT {
                     return Some(n);
                 }
             }
         }
     }
     if let Some(n) = hay.split_whitespace().find_map(|w| w.parse::<i32>().ok()) {
-        if n > 0 && n <= 10_000 {
+        if n > 0 && n <= MAX_PARSED_COUNT {
             return Some(n);
         }
     }
@@ -210,7 +228,7 @@ pub struct EnvironmentExecuteBody {
 }
 
 fn default_env_max_vms() -> i32 {
-    5
+    DEFAULT_EXECUTE_MAX_VMS
 }
 
 #[derive(Debug, Serialize)]
@@ -236,7 +254,7 @@ fn env_vm_spec(name: &str, vcpus: i32, memory_gib: i32) -> serde_json::Value {
         "spec": {
             "cpu": { "sockets": 1, "cores": vcpus },
             "memory": format!("{memory_gib}Gi"),
-            "storage": [{ "name": "root", "size": "80Gi", "class": "silver" }],
+            "storage": [{ "name": "root", "size": format!("{DEV_DISK_GIB_PER_VM}Gi"), "class": "silver" }],
             "network": [{ "network": "default", "ip_mode": "dhcp" }],
             "firmware": "bios",
             "graphics": { "type": "vnc", "listen": "127.0.0.1" }
@@ -322,10 +340,11 @@ pub async fn execute_environment(
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
         sqlx::query(
-            "INSERT INTO vm_disks (id, vm_id, name, size_gib, storage_class) VALUES (?, ?, 'root', 80, 'silver')",
+            "INSERT INTO vm_disks (id, vm_id, name, size_gib, storage_class) VALUES (?, ?, 'root', ?, 'silver')",
         )
         .bind(Uuid::new_v4())
         .bind(vm_id)
+        .bind(DEV_DISK_GIB_PER_VM)
         .execute(&mut *tx)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;

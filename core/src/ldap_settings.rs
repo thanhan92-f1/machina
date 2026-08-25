@@ -88,14 +88,6 @@ fn mask_secret(value: &str) -> String {
     "***".into()
 }
 
-fn config_path_display() -> String {
-    if MachinaConfig::system_config_path().exists() {
-        MachinaConfig::system_config_path().display().to_string()
-    } else {
-        MachinaConfig::user_config_path().display().to_string()
-    }
-}
-
 /// Active Directory preset for `zyvorai.local` (45.82.66.172).
 pub fn zyvorai_local_preset() -> LdapConfig {
     LdapConfig {
@@ -146,7 +138,7 @@ pub fn ldap_settings_view_from_config(cfg: &MachinaConfig) -> LdapSettingsView {
         admin_group_substrings: ldap.admin_group_substrings.clone(),
         operator_group_substrings: ldap.operator_group_substrings.clone(),
         readonly_group_substrings: ldap.readonly_group_substrings.clone(),
-        config_path: config_path_display(),
+        config_path: MachinaConfig::config_path_display(),
         preset: detect_preset(ldap),
     }
 }

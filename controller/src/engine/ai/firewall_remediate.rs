@@ -4,6 +4,13 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+// Cap the fleet scan so a very large fleet can't turn this into an
+// unbounded per-host firewall-inventory sweep on every call.
+const MAX_HOSTS_SCANNED: i64 = 200;
+// Below this score a host is flagged even with no single critical port,
+// matching the "Warning" threshold used elsewhere in the firewall UI.
+const LOW_SCORE_THRESHOLD: u32 = 65;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct FirewallRemediation {
     pub id: String,
@@ -23,10 +30,12 @@ pub struct FirewallRemediateProposal {
 }
 
 pub async fn propose(pool: &SqlitePool) -> anyhow::Result<FirewallRemediateProposal> {
-    let hosts: Vec<(Uuid, String)> =
-        sqlx::query_as("SELECT id, hostname FROM hosts WHERE state = 'online' ORDER BY hostname LIMIT 200")
-            .fetch_all(pool)
-            .await?;
+    let hosts: Vec<(Uuid, String)> = sqlx::query_as(
+        "SELECT id, hostname FROM hosts WHERE state = 'online' ORDER BY hostname LIMIT ?",
+    )
+    .bind(MAX_HOSTS_SCANNED)
+    .fetch_all(pool)
+    .await?;
 
     let mut remediations = Vec::new();
     for (host_id, hostname) in hosts {
@@ -58,7 +67,7 @@ pub async fn propose(pool: &SqlitePool) -> anyhow::Result<FirewallRemediatePropo
                 risk: "Critical".into(),
                 priority: 1,
             });
-        } else if inv.score.score < 65 {
+        } else if inv.score.score < LOW_SCORE_THRESHOLD {
             remediations.push(FirewallRemediation {
                 id: format!("fw-score-{host_id}"),
                 host_id: host_id.to_string(),

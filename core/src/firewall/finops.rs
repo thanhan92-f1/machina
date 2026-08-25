@@ -30,6 +30,9 @@ pub fn port_monthly_cost(port: &OpenPort, idle: bool) -> f64 {
     let base = match port.risk {
         ExposureRisk::Critical => PUBLIC_CRITICAL_PORT_USD,
         ExposureRisk::Warning => PUBLIC_WARNING_PORT_USD,
+        // A "safe" port still bound to a public interface doubles the idle
+        // baseline — audit/monitoring overhead is higher for anything internet
+        // reachable even when today's risk classification says it's fine.
         ExposureRisk::Safe if is_public_bind(&port.bind_address) => IDLE_PORT_MONTHLY_USD * 2.0,
         ExposureRisk::Safe => IDLE_PORT_MONTHLY_USD,
     };
@@ -80,6 +83,8 @@ pub fn fleet_exposure_monthly(ports: &[OpenPort], profile_multiplier: f64) -> f6
 
 pub fn cloud_sg_monthly_cost(rule_count: usize, public_rule_count: usize) -> f64 {
     let base = rule_count as f64 * CLOUD_SG_RULE_MONTHLY_USD;
+    // Rules open to the public internet carry a 15% surcharge on top of the
+    // flat per-rule attribution, on the warning-tier port rate.
     let public_premium = public_rule_count as f64 * PUBLIC_WARNING_PORT_USD * 0.15;
     base + public_premium
 }

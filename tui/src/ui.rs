@@ -11,8 +11,8 @@ use ratatui::widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, Wrap}
 use ratatui::Frame;
 
 use machina_core::{
-    AppState, Focus, InputMode, NotifyLevel, ObjectTab, OpenStackCreateStep, ResourceView,
-    SidebarCategory, SidebarItem, ViewMode,
+    AppState, Focus, InputMode, NotifyLevel, ObjectTab, ResourceView, SidebarCategory,
+    SidebarItem, ViewMode,
 };
 
 // ── GuestKit Theme Colors ───────────────────────────────────────────────
@@ -70,10 +70,6 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         ViewMode::Help => {
             render_content_panel(frame, main_chunks[1], state);
             render_help_overlay(frame, frame.area(), state);
-        }
-        ViewMode::OpenStackCreate => {
-            render_content_panel(frame, main_chunks[1], state);
-            render_openstack_create_wizard(frame, main_chunks[1], state);
         }
         _ => render_content_panel(frame, main_chunks[1], state),
     }
@@ -227,9 +223,6 @@ fn render_sidebar(frame: &mut Frame, area: Rect, state: &AppState) {
                     SidebarCategory::Backups => {
                         format!("{}", state.backups.len())
                     }
-                    SidebarCategory::OpenStack => {
-                        format!("{}", state.openstack_instances.len())
-                    }
                 };
                 let label = format!("{arrow} {} ({count_label})", cat.label());
                 let style = if is_selected {
@@ -281,43 +274,6 @@ fn render_sidebar(frame: &mut Frame, area: Rect, state: &AppState) {
                     Span::raw("    "),
                     Span::styled(
                         truncate_str(&label, max_name_width.saturating_sub(2)),
-                        sidebar_item_style(is_selected),
-                    ),
-                ])
-            }
-            SidebarItem::OpenStackCreate => Line::from(vec![
-                Span::styled("  + ", Style::new().fg(SUCCESS_COLOR)),
-                Span::styled(
-                    truncate_str("Create instance", max_name_width),
-                    sidebar_item_style(is_selected),
-                ),
-            ]),
-            SidebarItem::OpenStackImages => Line::from(vec![
-                Span::styled("  ◆ ", Style::new().fg(INFO_COLOR)),
-                Span::styled(
-                    truncate_str("Glance images", max_name_width),
-                    sidebar_item_style(is_selected),
-                ),
-            ]),
-            SidebarItem::OpenStackInstance(id) => {
-                let label = state
-                    .find_openstack_instance(id)
-                    .map(|i| i.name.as_str())
-                    .unwrap_or(id.as_str());
-                let status = state
-                    .find_openstack_instance(id)
-                    .map(|i| i.status.as_str())
-                    .unwrap_or("?");
-                let color = match status.to_uppercase().as_str() {
-                    "ACTIVE" => SUCCESS_COLOR,
-                    "SHUTOFF" | "STOPPED" => DIM_BORDER,
-                    "ERROR" => ERROR_COLOR,
-                    _ => WARNING_COLOR,
-                };
-                Line::from(vec![
-                    Span::styled("  ● ", Style::new().fg(color)),
-                    Span::styled(
-                        truncate_str(label, max_name_width),
                         sidebar_item_style(is_selected),
                     ),
                 ])
@@ -389,19 +345,6 @@ fn render_content_panel(frame: &mut Frame, area: Rect, state: &AppState) {
         }
         Some(SidebarItem::Category(SidebarCategory::Backups)) => {
             render_backup_table(frame, area, state);
-        }
-        Some(SidebarItem::Category(SidebarCategory::OpenStack)) => {
-            render_openstack_overview(frame, area, state);
-        }
-        Some(SidebarItem::OpenStackImages) => {
-            render_openstack_images_table(frame, area, state);
-        }
-        Some(SidebarItem::OpenStackCreate) => {
-            render_openstack_create_prompt(frame, area, state);
-        }
-        Some(SidebarItem::OpenStackInstance(id)) => {
-            let id = id.clone();
-            render_openstack_instance_detail(frame, area, state, &id);
         }
         Some(SidebarItem::Vm(name)) => {
             let name = name.clone();
@@ -1796,32 +1739,9 @@ fn render_help_overlay(frame: &mut Frame, area: Rect, state: &AppState) {
         help_line(":kubevirt-apply <vm>  :kubevirt-upload <vm>  :kubevirt-start <vm>"),
         help_line("(upload/start need [kubevirt] exec_enabled=true + kubeconfig on daemon host)"),
         Line::from(""),
-        help_section("OpenStack (Nova/Glance) — matches web UI"),
-        help_line(":openstack | :os  status   :openstack test"),
-        help_line(":openstack list  :openstack images  :openstack flavors"),
-        help_line(":openstack networks  :openstack keypairs"),
-        help_line(":openstack create  interactive wizard (flavor/image/network)"),
-        help_line(":openstack create <name> <flavor> [image] [network]  one-shot"),
-        help_line(":openstack get <id>"),
-        help_line(":openstack start|stop|reboot|pause|unpause|suspend|resume <id>"),
-        help_line(":openstack delete <id>  :openstack snapshot <id> <image-name>"),
-        help_line(":openstack resize <id> <flavor>  :openstack confirm-resize <id>"),
-        help_line(":openstack revert-resize <id>  :openstack quotas  :openstack snapshots"),
-        help_line(":openstack console <id>"),
-        help_line(":openstack export <id>  :openstack image-delete <id>"),
-        help_line(":openstack volumes | volumes-json  instance-volumes <id>"),
-        help_line(":openstack attach|detach <inst> <vol>  fips | instance-fips <id>"),
-        help_line(":openstack fip-associate <inst> <fip>  fip-new <inst> <network>"),
-        help_line(":openstack fip-dissociate <fip>  sg-add|sg-remove <inst> <sg>"),
-        help_line(":openstack reboot-soft <id>"),
-        help_line("Sidebar: + Create instance (Enter) · Glance images · instances"),
-        help_line("Wizard: j/k pick · Enter next · n skip image/key · Esc cancel"),
-        help_line("OpenStack instance keys: s/x/b/d/l"),
-        Line::from(""),
         help_section("About — Zyvor"),
         help_line("https://zyvor.dev  ·  https://zyvor.dev/machina"),
         help_line("© 2026 Zyvor — proprietary. Docs: zyvor.dev/docs/products"),
-        help_line("Glance upload / libvirt push / migrations: use Machina web UI"),
         Line::from(""),
         Line::from(Span::styled(
             "j/k:scroll  any other key:close",
@@ -1900,28 +1820,7 @@ fn render_bottom_bar(frame: &mut Frame, area: Rect, state: &AppState) {
             Span::styled("_", LABEL_STYLE),
         ]),
         InputMode::Confirmation => Line::from(Span::styled("", Style::new().fg(ERROR_COLOR))),
-        InputMode::OpenStackWizard => {
-            let name = state
-                .openstack_create_wizard
-                .as_ref()
-                .map(|w| w.name.as_str())
-                .unwrap_or("");
-            Line::from(vec![
-                Span::styled("name: ", ORANGE_BOLD),
-                Span::styled(name, TEXT_STYLE.add_modifier(Modifier::UNDERLINED)),
-                Span::styled("_  Enter next · Esc cancel", DARK_ORANGE_STYLE),
-            ])
-        }
-        InputMode::Normal => {
-            if state.view_mode == ViewMode::OpenStackCreate {
-                Line::from(Span::styled(
-                    "OpenStack create · j/k · Enter · n skip · Backspace back · Esc cancel",
-                    DARK_ORANGE_STYLE,
-                ))
-            } else {
-                build_context_help_line(state)
-            }
-        }
+        InputMode::Normal => build_context_help_line(state),
     };
     frame.render_widget(Paragraph::new(line), area);
 }
@@ -1985,14 +1884,6 @@ fn build_context_help_line(state: &AppState) -> Line<'static> {
                 Some(SidebarItem::Category(SidebarCategory::Snapshots)) => {
                     add_hint(&mut spans, "n", "new");
                 }
-                Some(SidebarItem::OpenStackInstance(_)) => {
-                    add_hint(&mut spans, "s", "start");
-                    add_hint(&mut spans, "x", "stop");
-                    add_hint(&mut spans, "d", "del");
-                }
-                Some(SidebarItem::OpenStackCreate) => {
-                    add_hint(&mut spans, "Enter", "wizard");
-                }
                 _ => {}
             }
         }
@@ -2038,486 +1929,12 @@ fn build_context_help_line(state: &AppState) -> Line<'static> {
                     add_hint(&mut spans, "n", "new");
                     add_hint(&mut spans, "d", "del");
                 }
-                Some(SidebarItem::OpenStackInstance(_)) => {
-                    add_hint(&mut spans, "s", "start");
-                    add_hint(&mut spans, "x", "stop");
-                    add_hint(&mut spans, "b", "reboot");
-                    add_hint(&mut spans, "l", "log");
-                }
                 _ => {}
             }
         }
     }
 
     Line::from(spans)
-}
-
-// ── OpenStack panels (parity with web OpenStack pages) ──────────────────
-
-fn render_openstack_overview(frame: &mut Frame, area: Rect, state: &AppState) {
-    let st = state.openstack_status.as_ref();
-    let status_line = match st {
-        Some(s) if s.compute_reachable => {
-            format!(
-                "Keystone+Nova+Glance OK · cloud={} · instances={} images={}",
-                s.cloud_name,
-                s.instance_count.unwrap_or(state.openstack_instances.len()),
-                s.image_count.unwrap_or(state.openstack_images.len())
-            )
-        }
-        Some(s) if s.reachable || s.keystone_reachable => {
-            format!(
-                "Keystone OK · compute/glance may be down · {}",
-                s.error.as_deref().unwrap_or("see :openstack test")
-            )
-        }
-        Some(s) if s.configured => format!(
-            "Configured · not connected · {}",
-            s.error
-                .as_deref()
-                .unwrap_or("run openstack-wire-cloud.sh on host")
-        ),
-        _ => "OpenStack not configured ([openstack] in /etc/machina/config.toml)".to_string(),
-    };
-
-    let header = vec![
-        Line::from(Span::styled("OpenStack overview", ORANGE_BOLD)),
-        Line::from(Span::styled(status_line, TEXT_STYLE)),
-        Line::from(""),
-    ];
-
-    let mut rows: Vec<Row> = Vec::new();
-    rows.push(Row::new(vec![
-        Cell::from(Span::styled("NAME", LABEL_STYLE)),
-        Cell::from(Span::styled("STATUS", LABEL_STYLE)),
-        Cell::from(Span::styled("POWER", LABEL_STYLE)),
-        Cell::from(Span::styled("ID", LABEL_STYLE)),
-    ]));
-    for inst in &state.openstack_instances {
-        rows.push(Row::new(vec![
-            Cell::from(inst.name.clone()),
-            Cell::from(inst.status.clone()),
-            Cell::from(inst.power_state.clone()),
-            Cell::from(truncate_str(&inst.id, 36)),
-        ]));
-    }
-
-    let table = Table::new(
-        rows,
-        [
-            Constraint::Percentage(28),
-            Constraint::Length(12),
-            Constraint::Length(10),
-            Constraint::Min(20),
-        ],
-    )
-    .block(content_block(state, " OpenStack instances "))
-    .column_spacing(1);
-
-    let chunks = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
-    frame.render_widget(Paragraph::new(header), chunks[0]);
-    frame.render_widget(table, chunks[1]);
-}
-
-fn render_openstack_images_table(frame: &mut Frame, area: Rect, state: &AppState) {
-    let mut rows: Vec<Row> = Vec::new();
-    rows.push(Row::new(vec![
-        Cell::from(Span::styled("NAME", LABEL_STYLE)),
-        Cell::from(Span::styled("STATUS", LABEL_STYLE)),
-        Cell::from(Span::styled("MIN DISK", LABEL_STYLE)),
-        Cell::from(Span::styled("ID", LABEL_STYLE)),
-    ]));
-    for img in &state.openstack_images {
-        rows.push(Row::new(vec![
-            Cell::from(img.name.clone()),
-            Cell::from(img.status.clone()),
-            Cell::from(format!("{} GB", img.min_disk_gb)),
-            Cell::from(truncate_str(&img.id, 36)),
-        ]));
-    }
-    let table = Table::new(
-        rows,
-        [
-            Constraint::Percentage(35),
-            Constraint::Length(12),
-            Constraint::Length(10),
-            Constraint::Min(18),
-        ],
-    )
-    .block(content_block(state, " Glance images "))
-    .column_spacing(1);
-    frame.render_widget(table, area);
-}
-
-fn render_openstack_instance_detail(frame: &mut Frame, area: Rect, state: &AppState, id: &str) {
-    let inst = state
-        .openstack_instance_detail
-        .as_ref()
-        .filter(|i| i.id == id)
-        .or_else(|| state.find_openstack_instance(id));
-
-    let lines = match inst {
-        Some(i) => {
-            let ips = if i.ip_addresses.is_empty() {
-                "—".to_string()
-            } else {
-                i.ip_addresses.join(", ")
-            };
-            let mut lines = vec![
-                Line::from(Span::styled(i.name.clone(), NAME_BOLD)),
-                Line::from(""),
-                Line::from(vec![
-                    Span::styled("  ID:     ", LABEL_STYLE),
-                    Span::raw(i.id.as_str()),
-                ]),
-                Line::from(vec![
-                    Span::styled("  Status: ", LABEL_STYLE),
-                    Span::raw(i.status.as_str()),
-                ]),
-                Line::from(vec![
-                    Span::styled("  Power:  ", LABEL_STYLE),
-                    Span::raw(i.power_state.as_str()),
-                ]),
-                Line::from(vec![
-                    Span::styled("  Flavor: ", LABEL_STYLE),
-                    Span::raw(i.flavor_name.as_deref().unwrap_or("—")),
-                ]),
-                Line::from(vec![
-                    Span::styled("  Image:  ", LABEL_STYLE),
-                    Span::raw(i.image_id.as_deref().unwrap_or("—")),
-                ]),
-                Line::from(vec![
-                    Span::styled("  IPs:    ", LABEL_STYLE),
-                    Span::raw(ips),
-                ]),
-                Line::from(vec![
-                    Span::styled("  AZ:     ", LABEL_STYLE),
-                    Span::raw(i.availability_zone.as_str()),
-                ]),
-                Line::from(vec![
-                    Span::styled("  SGs:    ", LABEL_STYLE),
-                    Span::raw(if i.security_groups.is_empty() {
-                        "—".to_string()
-                    } else {
-                        i.security_groups.join(", ")
-                    }),
-                ]),
-                Line::from(""),
-                Line::from(Span::styled("  Attached volumes", LABEL_STYLE)),
-            ];
-            for v in &state.openstack_instance_volumes {
-                lines.push(Line::from(format!(
-                    "    {}  {} GB  {}  {}",
-                    v.device,
-                    v.size_gb,
-                    v.name,
-                    truncate_str(&v.id, 12)
-                )));
-            }
-            if state.openstack_instance_volumes.is_empty() {
-                lines.push(Line::from("    (none)"));
-            }
-            lines.push(Line::from(""));
-            lines.push(Line::from(Span::styled("  Floating IPs", LABEL_STYLE)));
-            for f in &state.openstack_instance_fips {
-                lines.push(Line::from(format!(
-                    "    {}  {}  {}",
-                    f.address,
-                    f.status,
-                    truncate_str(&f.id, 12)
-                )));
-            }
-            if state.openstack_instance_fips.is_empty() {
-                lines.push(Line::from("    (none)"));
-            }
-            lines.push(Line::from(""));
-            lines.push(Line::from(Span::styled(
-                "  s start  x stop  b reboot  d delete  l console log",
-                DARK_ORANGE_STYLE,
-            )));
-            lines
-        }
-        None => vec![Line::from(Span::styled(
-            " Loading instance… (or run :openstack get <id>) ",
-            DIM_STYLE,
-        ))],
-    };
-
-    let p = Paragraph::new(lines)
-        .block(content_block(state, " OpenStack instance "))
-        .wrap(Wrap { trim: true })
-        .scroll((state.content_scroll_offset, 0));
-    frame.render_widget(p, area);
-}
-
-fn render_openstack_create_prompt(frame: &mut Frame, area: Rect, state: &AppState) {
-    let lines = vec![
-        Line::from(Span::styled("Create OpenStack instance", ORANGE_BOLD)),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("Enter", ORANGE_BOLD),
-            Span::raw(" on sidebar “+ Create instance”, or run "),
-            Span::styled(":openstack create", NAME_STYLE),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "Wizard steps: name → flavor → image (optional) → network → keypair (optional) → confirm",
-            DIM_STYLE,
-        )),
-        Line::from(Span::styled(
-            "Matches web Create Instance flow when Nova/Neutron/Glance are reachable.",
-            DIM_STYLE,
-        )),
-    ];
-    let p = Paragraph::new(lines)
-        .block(content_block(state, " OpenStack create "))
-        .wrap(Wrap { trim: true });
-    frame.render_widget(p, area);
-}
-
-fn render_openstack_create_wizard(frame: &mut Frame, area: Rect, state: &AppState) {
-    let Some(wizard) = state.openstack_create_wizard.as_ref() else {
-        return;
-    };
-
-    let popup = centered_rect(70, 80, area);
-    frame.render_widget(Clear, popup);
-
-    let step_title = match wizard.step {
-        OpenStackCreateStep::Name => "1/6 Name",
-        OpenStackCreateStep::Flavor => "2/6 Flavor",
-        OpenStackCreateStep::Image => "3/6 Image (optional)",
-        OpenStackCreateStep::Network => "4/6 Network",
-        OpenStackCreateStep::Keypair => "5/6 Keypair (optional)",
-        OpenStackCreateStep::Confirm => "6/6 Confirm",
-    };
-
-    let block = Block::new()
-        .borders(Borders::ALL)
-        .border_style(Style::new().fg(ORANGE))
-        .title(format!(" Create instance — {step_title} "))
-        .title_style(ORANGE_BOLD)
-        .style(Style::new().bg(Color::Black));
-
-    let inner = block.inner(popup);
-    frame.render_widget(block, popup);
-
-    match wizard.step {
-        OpenStackCreateStep::Name => {
-            let p = Paragraph::new(vec![
-                Line::from("Type the instance name in the bottom bar."),
-                Line::from(""),
-                Line::from(vec![
-                    Span::styled("Name: ", LABEL_STYLE),
-                    Span::styled(&wizard.name, NAME_BOLD),
-                ]),
-            ])
-            .wrap(Wrap { trim: true });
-            frame.render_widget(p, inner);
-        }
-        OpenStackCreateStep::Confirm => {
-            let image = wizard
-                .image_name()
-                .map(str::to_string)
-                .unwrap_or_else(|| "(none)".to_string());
-            let network = wizard
-                .network_name()
-                .map(str::to_string)
-                .unwrap_or_else(|| "(default)".to_string());
-            let key = wizard
-                .key_name()
-                .map(str::to_string)
-                .unwrap_or_else(|| "(none)".to_string());
-            let lines = vec![
-                Line::from(vec![
-                    Span::styled("Name:    ", LABEL_STYLE),
-                    Span::styled(&wizard.name, NAME_BOLD),
-                ]),
-                Line::from(vec![
-                    Span::styled("Flavor:  ", LABEL_STYLE),
-                    Span::raw(wizard.flavor_name().unwrap_or("?")),
-                ]),
-                Line::from(vec![
-                    Span::styled("Image:   ", LABEL_STYLE),
-                    Span::raw(image),
-                ]),
-                Line::from(vec![
-                    Span::styled("Network: ", LABEL_STYLE),
-                    Span::raw(network),
-                ]),
-                Line::from(vec![Span::styled("Key:     ", LABEL_STYLE), Span::raw(key)]),
-                Line::from(""),
-                Line::from(Span::styled(
-                    "Enter to create · Backspace to edit · Esc to cancel",
-                    DIM_STYLE,
-                )),
-            ];
-            let p = Paragraph::new(lines).wrap(Wrap { trim: true });
-            frame.render_widget(p, inner);
-        }
-        step => {
-            let (header, rows): (String, Vec<Row>) = match step {
-                OpenStackCreateStep::Flavor => (
-                    "vCPUs  RAM   Disk".to_string(),
-                    wizard
-                        .flavors
-                        .iter()
-                        .enumerate()
-                        .map(|(i, f)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
-                            Row::new(vec![
-                                Cell::from(f.name.as_str()).style(style),
-                                Cell::from(format!("{}", f.vcpus)).style(style),
-                                Cell::from(format!("{} MiB", f.ram_mb)).style(style),
-                                Cell::from(format!("{} GB", f.disk_gb)).style(style),
-                            ])
-                        })
-                        .collect(),
-                ),
-                OpenStackCreateStep::Image => (
-                    "Status  Min disk".to_string(),
-                    wizard
-                        .images
-                        .iter()
-                        .enumerate()
-                        .map(|(i, img)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
-                            Row::new(vec![
-                                Cell::from(img.name.as_str()).style(style),
-                                Cell::from(img.status.as_str()).style(style),
-                                Cell::from(format!("{} GB", img.min_disk_gb)).style(style),
-                            ])
-                        })
-                        .collect(),
-                ),
-                OpenStackCreateStep::Network => (
-                    "Status  External".to_string(),
-                    wizard
-                        .networks
-                        .iter()
-                        .enumerate()
-                        .map(|(i, n)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
-                            Row::new(vec![
-                                Cell::from(n.name.as_str()).style(style),
-                                Cell::from(n.status.as_str()).style(style),
-                                Cell::from(if n.external { "yes" } else { "no" }).style(style),
-                            ])
-                        })
-                        .collect(),
-                ),
-                OpenStackCreateStep::Keypair => (
-                    "Fingerprint".to_string(),
-                    wizard
-                        .keypairs
-                        .iter()
-                        .enumerate()
-                        .map(|(i, k)| {
-                            let style = if i == wizard.list_cursor {
-                                Style::new().fg(LIGHT_ORANGE).add_modifier(Modifier::BOLD)
-                            } else {
-                                TEXT_STYLE
-                            };
-                            Row::new(vec![
-                                Cell::from(k.name.as_str()).style(style),
-                                Cell::from(k.fingerprint.as_deref().unwrap_or("—")).style(style),
-                            ])
-                        })
-                        .collect(),
-                ),
-                _ => (String::new(), vec![]),
-            };
-
-            if rows.is_empty() {
-                let msg = match step {
-                    OpenStackCreateStep::Image => {
-                        "No Glance images — press n to skip, or Esc to cancel"
-                    }
-                    OpenStackCreateStep::Network => {
-                        "No Neutron networks available — check Neutron on the host"
-                    }
-                    OpenStackCreateStep::Keypair => "No keypairs — press n to skip",
-                    _ => "No items",
-                };
-                let p = Paragraph::new(Line::from(Span::styled(msg, WARNING_COLOR)));
-                frame.render_widget(p, inner);
-            } else {
-                let widths = match step {
-                    OpenStackCreateStep::Flavor => {
-                        vec![
-                            Constraint::Percentage(40),
-                            Constraint::Length(6),
-                            Constraint::Length(10),
-                            Constraint::Length(8),
-                        ]
-                    }
-                    OpenStackCreateStep::Image => {
-                        vec![
-                            Constraint::Percentage(50),
-                            Constraint::Length(12),
-                            Constraint::Length(10),
-                        ]
-                    }
-                    OpenStackCreateStep::Network => {
-                        vec![
-                            Constraint::Percentage(50),
-                            Constraint::Length(10),
-                            Constraint::Length(10),
-                        ]
-                    }
-                    OpenStackCreateStep::Keypair => {
-                        vec![Constraint::Percentage(35), Constraint::Min(10)]
-                    }
-                    _ => vec![Constraint::Percentage(100)],
-                };
-                let header_cells: Vec<&str> = match step {
-                    OpenStackCreateStep::Flavor => vec!["Flavor", "vCPU", "RAM", "Disk"],
-                    OpenStackCreateStep::Image => vec!["Image", "Status", "Min disk"],
-                    OpenStackCreateStep::Network => vec!["Network", "Status", "External"],
-                    OpenStackCreateStep::Keypair => vec!["Keypair", "Fingerprint"],
-                    _ => vec!["Name"],
-                };
-                let table = Table::new(rows, widths)
-                    .header(Row::new(header_cells).style(ORANGE_BOLD).bottom_margin(0))
-                    .column_spacing(1);
-                frame.render_widget(table, inner);
-                let hint_y = popup.y + popup.height.saturating_sub(2);
-                if hint_y > popup.y {
-                    let hint_area = Rect {
-                        x: popup.x + 1,
-                        y: hint_y,
-                        width: popup.width.saturating_sub(2),
-                        height: 1,
-                    };
-                    let skip = matches!(
-                        step,
-                        OpenStackCreateStep::Image | OpenStackCreateStep::Keypair
-                    );
-                    let hint = if skip {
-                        format!("j/k · Enter select · n skip · {header}")
-                    } else {
-                        format!("j/k · Enter select · {header}")
-                    };
-                    frame.render_widget(
-                        Paragraph::new(Span::styled(hint, DARK_ORANGE_STYLE)),
-                        hint_area,
-                    );
-                }
-            }
-        }
-    }
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────

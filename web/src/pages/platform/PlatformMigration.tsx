@@ -13,8 +13,6 @@ import { getGuestkitStatus, guestkitDoctor, guestkitMigratePlan, submitGuestkitI
 import JsonInspector from '../../components/platform/JsonInspector'
 import { getMigrationAdvisor, type MigrationAdvisorReport } from '../../api/ai'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
-import { useOpenStackConnection } from '../../hooks/useOpenStackConnection'
-import OpenStackUnreachablePanel from '../../components/OpenStackUnreachablePanel'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusSurfaceClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
@@ -28,13 +26,15 @@ const SOURCES = [
   { id: 'esxi', label: 'ESXi Host', desc: 'Direct ESXi connection' },
   { id: 'ova', label: 'OVF / OVA File', desc: 'Upload and convert' },
   { id: 'vmdk', label: 'VMDK File', desc: 'Single disk import' },
-  { id: 'openstack', label: 'OpenStack', desc: 'Glance image import' },
   { id: 'cloud', label: 'Cloud Image', desc: 'Ubuntu/RHEL cloud images' },
 ]
 
 type ScanVm = { name: string; status: string; os: string; note: string; provider?: string; advisor?: MigrationAdvisorReport }
 
 type MigrationTab = 'radar' | 'jobs'
+
+// Reused by several "enable this backend" call-to-action links on the page.
+const INTEGRATIONS_ROUTE = '/platform/integrations'
 
 const MIGRATION_TABS = [
   { id: 'radar' as const, label: 'Scan & migrate' },
@@ -44,13 +44,11 @@ const MIGRATION_TABS = [
 export default function PlatformMigration() {
   const { info } = usePlatformInfo()
   const [tier] = usePlatformDesktopTier()
-  const openstackConn = useOpenStackConnection()
   const navigate = useNavigate()
   const toast = useToastContext()
   const [tab, setTab] = usePlatformTabState<MigrationTab>(MIGRATION_TABS.map((t) => t.id), { defaultTab: 'radar' })
   const hypersdk = Boolean(info?.hypersdk?.enabled)
   const guestkit = Boolean(info?.guestkit?.enabled)
-  const openstack = Boolean(info?.openstack?.enabled)
   const [gkStatus, setGkStatus] = useState<Awaited<ReturnType<typeof getGuestkitStatus>> | null>(null)
   const [diskPath, setDiskPath] = useState('')
   // Mirror diskPath into a ref so scanSource (a stable useCallback) reads the
@@ -231,17 +229,6 @@ export default function PlatformMigration() {
       <>
       {loading && scan.length === 0 && <PageSkeleton />}
       <div className="grid gap-3 sm:grid-cols-3">
-        {openstack && openstackConn.phase !== 'live' && (
-          <div className="sm:col-span-3">
-            <OpenStackUnreachablePanel />
-          </div>
-        )}
-        {openstack && openstackConn.phase === 'live' && (
-          <Link to="/openstack/migrations" className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-sm hover:border-sky-400/50 transition">
-            <p className="font-semibold text-sky-100 flex items-center gap-2">OpenStack migrations <ExternalLink className="w-3.5 h-3.5" /></p>
-            <p className="text-xs text-sky-200/70 mt-1">Glance import, instance export, and cross-cloud lift-and-shift.</p>
-          </Link>
-        )}
         {hypersdk && (
           <div className={`rounded-xl p-4 text-sm ${statusSurfaceClasses(status?.reachable ? 'ok' : 'warn')}`}>
             <p className="font-semibold">HyperSDK</p>
@@ -341,9 +328,7 @@ export default function PlatformMigration() {
             const disabled = loading || (needsHypersdk && !hypersdk)
             const hint = needsHypersdk && !hypersdk
               ? 'Enable HyperSDK in Integrations to scan VMware sources.'
-              : s.id === 'openstack' && !openstack
-                ? 'Enable OpenStack in daemon config to use Glance import.'
-                : null
+              : null
             return (
               <button
                 key={s.id}
@@ -353,7 +338,6 @@ export default function PlatformMigration() {
                 onClick={() => {
                   if (s.id === 'vcenter') void scanSource('vmware')
                   else if (s.id === 'esxi') void scanSource('esxi')
-                  else if (s.id === 'openstack') navigate('/openstack/migrations')
                   else if (s.id === 'ova' || s.id === 'vmdk' || s.id === 'cloud') navigate('/import')
                 }}
                 className="text-left p-4 rounded-2xl border border-white/[0.08] bg-slate-900/50 hover:border-white/14 hover:bg-slate-900/70 transition disabled:opacity-55 disabled:hover:border-white/[0.08]"
@@ -365,10 +349,10 @@ export default function PlatformMigration() {
             )
           })}
         </div>
-        {!hypersdk && !guestkit && !openstack && (
+        {!hypersdk && !guestkit && (
           <p className="mt-3 text-xs text-slate-400">
-            No migration backends are enabled. Use OVF/OVA or cloud image import, or enable HyperSDK, GuestKit, or OpenStack under{' '}
-            <Link to="/platform/integrations" className={hubLinkClasses()}>Integrations</Link>.
+            No migration backends are enabled. Use OVF/OVA or cloud image import, or enable HyperSDK or GuestKit under{' '}
+            <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>Integrations</Link>.
           </p>
         )}
       </section>
@@ -383,7 +367,7 @@ export default function PlatformMigration() {
             subtitle="Pick a source above to discover VMs, or use single-VM import for OVF/OVA and cloud images."
           >
             <Link to="/import" className="tahoe-btn-primary text-sm">Open import wizard</Link>
-            <Link to="/platform/integrations" className={`tahoe-btn-ghost text-sm ${hubLinkClasses()}`}>Migration integrations</Link>
+            <Link to={INTEGRATIONS_ROUTE} className={`tahoe-btn-ghost text-sm ${hubLinkClasses()}`}>Migration integrations</Link>
           </PlatformEmptyState>
         )}
         {scan.length > 0 && (
@@ -430,8 +414,7 @@ export default function PlatformMigration() {
         )}
         <p className="text-xs text-slate-600 flex flex-wrap gap-3">
           <Link to="/import" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>Single-VM import <ExternalLink className="w-3 h-3" /></Link>
-          {openstack && <Link to="/openstack/migrations" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>OpenStack migrations <ExternalLink className="w-3 h-3" /></Link>}
-          <Link to="/platform/integrations" className={hubLinkClasses()}>All migration tools →</Link>
+          <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>All migration tools →</Link>
           <Link to={tasksHubHref(tier)} className={hubLinkClasses()}>View migration tasks →</Link>
         </p>
       </section>

@@ -366,94 +366,89 @@
       "category": "Core"
     },
     {
-      "label": "Wire OpenStack",
-      "path": "/settings?openstack=1",
-      "category": "Core"
-    },
-    {
       "label": "Overview",
-      "path": "/openstack",
-      "category": "OpenStack"
+      "path": "/fleet-cloud",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Instances",
-      "path": "/openstack/instances",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/instances",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Create Instance",
-      "path": "/openstack/create",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/create",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Server Groups",
-      "path": "/openstack/server-groups",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/server-groups",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Keypairs",
-      "path": "/openstack/keypairs",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/keypairs",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Flavors",
-      "path": "/openstack/flavors",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/flavors",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Migrations",
-      "path": "/openstack/migrations",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/migrations",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Volumes",
-      "path": "/openstack/volumes",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/volumes",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Volume Snapshots",
-      "path": "/openstack/volume-snapshots",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/volume-snapshots",
+      "category": "Fleet Cloud"
     },
     {
-      "label": "Glance Images",
-      "path": "/openstack/images",
-      "category": "OpenStack"
+      "label": "Images",
+      "path": "/fleet-cloud/images",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Networking",
-      "path": "/openstack/networking",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/networking",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Security Groups",
-      "path": "/openstack/security-groups",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/security-groups",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Floating IPs",
-      "path": "/openstack/floating-ips",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/floating-ips",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Load Balancers",
-      "path": "/openstack/load-balancers",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/load-balancers",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Network Topology",
-      "path": "/openstack/topology",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/topology",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Heat Orchestration",
-      "path": "/openstack/heat",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/heat",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Identity",
-      "path": "/openstack/identity",
-      "category": "OpenStack"
+      "path": "/fleet-cloud/identity",
+      "category": "Fleet Cloud"
     },
     {
       "label": "Host Overview",

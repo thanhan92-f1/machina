@@ -30,9 +30,7 @@ impl AgentService {
     {
         let libvirt = self.libvirt.clone();
         tokio::task::spawn_blocking(move || {
-            let mut ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let mut ctx = lock_libvirt(&libvirt)?;
             f(&mut ctx)
         })
         .await
@@ -48,6 +46,19 @@ fn grpc_port_u16(field: &str, value: u32) -> Result<u16, Status> {
     Ok(value as u16)
 }
 
+/// Acquire the shared libvirt lock, mapping mutex poisoning (another thread
+/// panicked while holding it) to the same `LibvirtError::Internal` every
+/// handler below already produced by hand. Every RPC below runs its libvirt
+/// call inside `spawn_blocking` against this same `Mutex`, so this one
+/// helper replaces what was ~30 copies of the identical three-line lock.
+fn lock_libvirt(
+    libvirt: &std::sync::Mutex<libvirt_ops::LibvirtCtx>,
+) -> Result<std::sync::MutexGuard<'_, libvirt_ops::LibvirtCtx>, machina_core::LibvirtError> {
+    libvirt
+        .lock()
+        .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))
+}
+
 async fn run_vm_op<Req, F>(
     request: Request<Req>,
     libvirt: Arc<std::sync::Mutex<libvirt_ops::LibvirtCtx>>,
@@ -61,9 +72,7 @@ where
 {
     let req = request.into_inner();
     tokio::task::spawn_blocking(move || {
-        let ctx = libvirt
-            .lock()
-            .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+        let ctx = lock_libvirt(&libvirt)?;
         op(&ctx, req)
     })
     .await
@@ -179,9 +188,7 @@ impl HostAgent for AgentService {
         };
         let libvirt = self.libvirt.clone();
         let (vms, stats) = tokio::task::spawn_blocking(move || {
-            let mut ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let mut ctx = lock_libvirt(&libvirt)?;
             let vms = ctx.list_vms()?;
             let stats = ctx.host_resource_stats().unwrap_or((0.0, 0, 0));
             Ok::<_, machina_core::LibvirtError>((vms, stats))
@@ -305,9 +312,7 @@ impl HostAgent for AgentService {
             .unwrap_or("/var/lib/libvirt/images")
             .to_string();
         let (name, uuid) = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             let tpl = if template_source.is_empty() {
                 None
             } else {
@@ -339,9 +344,7 @@ impl HostAgent for AgentService {
             Some(req.mode)
         };
         let state = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.power(&vm_name, &action, power_mode.as_deref())
         })
         .await
@@ -361,9 +364,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         let xml = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.get_domain_xml(&vm_name)
         })
         .await
@@ -380,9 +381,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.delete(&vm_name)
         })
         .await
@@ -412,9 +411,7 @@ impl HostAgent for AgentService {
         };
         let copy_storage = req.copy_storage;
         tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.migrate(
                 &vm_name,
                 &dest_uri,
@@ -445,9 +442,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         let (host, port) = tokio::task::spawn_blocking(move || {
-            let mut ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let mut ctx = lock_libvirt(&libvirt)?;
             ctx.resolve_vnc(&vm_name)
         })
         .await
@@ -488,9 +483,7 @@ impl HostAgent for AgentService {
         let new_name = req.new_name.clone();
         let clone_mode = req.clone_mode.clone();
         let (vm_name, uuid) = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             let uuid = ctx.clone_vm(&source, &new_name, &clone_mode)?;
             Ok::<_, machina_core::LibvirtError>((new_name, uuid))
         })
@@ -529,9 +522,7 @@ impl HostAgent for AgentService {
     ) -> Result<Response<GetHostInfoResponse>, Status> {
         let libvirt = self.libvirt.clone();
         let (cpu, lv, qemu) = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.host_info()
         })
         .await
@@ -554,9 +545,7 @@ impl HostAgent for AgentService {
         let dest_cpu = req.dest_cpu_model.clone();
         let dest_lv = req.dest_libvirt_version.clone();
         let checks = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.precheck_migrate(&vm_name, &dest_cpu, &dest_lv)
         })
         .await
@@ -593,9 +582,7 @@ impl HostAgent for AgentService {
         let ipmi_password = req.ipmi_password.clone();
         let shell_command = req.shell_command.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.fence_host(
                 &hostname,
                 &method,
@@ -633,9 +620,7 @@ impl HostAgent for AgentService {
         let storage_mode = req.storage_mode.clone();
         let snap_out = snap_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.create_snapshot(
                 &vm_name,
                 &snap_name,
@@ -680,9 +665,7 @@ impl HostAgent for AgentService {
         let vm_name = req.vm_name.clone();
         let snap_name = req.snapshot_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.delete_snapshot(&vm_name, &snap_name)
         })
         .await
@@ -701,9 +684,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         let snaps = tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.list_snapshots(&vm_name)
         })
         .await
@@ -731,9 +712,7 @@ impl HostAgent for AgentService {
         let vm_name = req.vm_name.clone();
         let dest = req.dest_path.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.backup_vm_disk(&vm_name, &dest)
         })
         .await
@@ -793,9 +772,7 @@ impl HostAgent for AgentService {
         let vm_name = req.vm_name.clone();
         let snap_name = req.snapshot_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.revert_snapshot(&vm_name, &snap_name)
         })
         .await
@@ -821,9 +798,7 @@ impl HostAgent for AgentService {
         let vm_name = req.vm_name.clone();
         let backup_path = req.backup_path.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.restore_vm_backup(&vm_name, &backup_path)
         })
         .await
@@ -852,9 +827,7 @@ impl HostAgent for AgentService {
         let new_disk_path = req.new_disk_path.clone();
         let revert_source = req.revert_source;
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.clone_from_snapshot(
                 &vm_name,
                 &snap_name,
@@ -940,9 +913,7 @@ impl HostAgent for AgentService {
         let disk_path = req.disk_path.clone();
         let target = req.target_dev.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.attach_disk(&vm_name, &disk_path, &target)
         })
         .await
@@ -1107,9 +1078,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.get_vm_details(&vm_name)
         })
         .await
@@ -1142,9 +1111,7 @@ impl HostAgent for AgentService {
         let payload: serde_json::Value =
             serde_json::from_str(&req.payload_json).unwrap_or(serde_json::json!({}));
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             crate::libvirt_invoke::vm_query(&ctx.conn, &vm_name, &action, &payload)
         })
         .await
@@ -1174,9 +1141,7 @@ impl HostAgent for AgentService {
         let payload: serde_json::Value =
             serde_json::from_str(&req.payload_json).unwrap_or(serde_json::json!({}));
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             if action == "domain.install" {
                 let vm: machina_spec::VirtualMachine = payload
                     .get("spec")
@@ -1219,9 +1184,7 @@ impl HostAgent for AgentService {
         let payload: serde_json::Value =
             serde_json::from_str(&req.payload_json).unwrap_or(serde_json::json!({}));
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             crate::libvirt_invoke::host_query(&ctx.conn, &action, &payload)
         })
         .await
@@ -1250,9 +1213,7 @@ impl HostAgent for AgentService {
         let payload: serde_json::Value =
             serde_json::from_str(&req.payload_json).unwrap_or(serde_json::json!({}));
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             crate::libvirt_invoke::host_invoke(&ctx.conn, &action, &payload)
         })
         .await
@@ -1279,9 +1240,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.guest_health(&vm_name)
         })
         .await
@@ -1330,9 +1289,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.guest_observability(&vm_name)
         })
         .await
@@ -1360,9 +1317,7 @@ impl HostAgent for AgentService {
         let vm_name = req.vm_name.clone();
         let action = req.action.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.guest_agent_action(&vm_name, &action)
         })
         .await
@@ -1389,7 +1344,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt.lock().map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.install_guest_tools(&vm_name)
         })
         .await
@@ -1497,9 +1452,7 @@ impl HostAgent for AgentService {
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         match tokio::task::spawn_blocking(move || {
-            let ctx = libvirt
-                .lock()
-                .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
+            let ctx = lock_libvirt(&libvirt)?;
             ctx.guest_firewall_ports(&vm_name)
         })
         .await
@@ -1904,6 +1857,62 @@ impl HostAgent for AgentService {
             })),
             Err(e) => Err(Status::internal(e.to_string())),
         }
+    }
+
+    async fn set_load_balancer(
+        &self,
+        request: Request<SetLoadBalancerRequest>,
+    ) -> Result<Response<SetLoadBalancerResponse>, Status> {
+        let req = request.into_inner();
+        let host_port = grpc_port_u16("host_port", req.host_port)?;
+        let mut members = Vec::with_capacity(req.members.len());
+        for m in req.members {
+            members.push(machina_core::libvirt::host_network::LbMember {
+                vm_ip: m.vm_ip,
+                port: grpc_port_u16("member port", m.port)?,
+                weight: m.weight,
+            });
+        }
+        let lb_id = req.lb_id;
+        let protocol = req.protocol;
+        match tokio::task::spawn_blocking(move || {
+            machina_core::libvirt::host_network::set_load_balancer_rules(
+                &lb_id, &protocol, host_port, &members,
+            )
+        })
+        .await
+        {
+            Ok(Ok(())) => Ok(Response::new(SetLoadBalancerResponse {
+                ok: true,
+                message: String::new(),
+            })),
+            Ok(Err(e)) => Ok(Response::new(SetLoadBalancerResponse {
+                ok: false,
+                message: e.to_string(),
+            })),
+            Err(e) => Err(Status::internal(e.to_string())),
+        }
+    }
+
+    async fn delete_load_balancer(
+        &self,
+        request: Request<DeleteLoadBalancerRequest>,
+    ) -> Result<Response<DeleteLoadBalancerResponse>, Status> {
+        let req = request.into_inner();
+        let host_port = grpc_port_u16("host_port", req.host_port)?;
+        tokio::task::spawn_blocking(move || {
+            machina_core::libvirt::host_network::delete_load_balancer_rules(
+                &req.lb_id,
+                &req.protocol,
+                host_port,
+            )
+        })
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+        Ok(Response::new(DeleteLoadBalancerResponse {
+            ok: true,
+            message: String::new(),
+        }))
     }
 
     async fn list_host_gpus(

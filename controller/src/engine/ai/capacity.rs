@@ -3,6 +3,21 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
+// Storage runway estimate: absent real historical growth data, assume daily
+// growth is 2% of current usage (floored at 1 GiB/day so a small pool still
+// gets a finite, non-huge runway estimate instead of dividing by ~0).
+const STORAGE_DAILY_GROWTH_FRACTION: f64 = 0.02;
+const STORAGE_DAILY_GROWTH_FLOOR_GIB: f64 = 1.0;
+const STORAGE_RUNWAY_WARNING_DAYS: i32 = 30;
+// Rough sizing assumption for "how many more small VMs fit" — a small VM
+// is modeled as 4 GiB of memory.
+const SMALL_VM_MEMORY_MIB: i64 = 4096;
+// VM count forecast assumes flat 2% month-over-month growth, projected
+// linearly across the 30/60/90-day windows.
+const VM_GROWTH_RATE_MONTHLY: f64 = 0.02;
+const CPU_PRESSURE_WARNING_PERCENT: f32 = 75.0;
+const MEMORY_HEADROOM_WARNING_MIB: i64 = 8192;
+
 #[derive(Debug, Serialize)]
 pub struct CapacityPlan {
     pub hosts_online: i64,
@@ -43,14 +58,15 @@ pub async fn plan(pool: &SqlitePool) -> anyhow::Result<CapacityPlan> {
     .unwrap_or((0, 0));
 
     let storage_runway_days = if storage_used > 0 && storage_cap > storage_used {
-        let daily_growth = (storage_used as f64 * 0.02).max(1.0);
+        let daily_growth = (storage_used as f64 * STORAGE_DAILY_GROWTH_FRACTION)
+            .max(STORAGE_DAILY_GROWTH_FLOOR_GIB);
         Some(((storage_cap - storage_used) as f64 / daily_growth) as i32)
     } else {
         None
     };
 
     let cpu_headroom = (100.0 - avg_cpu).max(0.0);
-    let mem_per_vm = 4096i64;
+    let mem_per_vm = SMALL_VM_MEMORY_MIB;
     let estimated_small_vms_addable = if mem_per_vm > 0 {
         memory_headroom_mib / mem_per_vm
     } else {
@@ -60,7 +76,7 @@ pub async fn plan(pool: &SqlitePool) -> anyhow::Result<CapacityPlan> {
     let vm_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM vms WHERE managed = TRUE")
         .fetch_one(pool)
         .await?;
-    let growth_rate = 0.02_f64;
+    let growth_rate = VM_GROWTH_RATE_MONTHLY;
     let forecast_30d_vms = (vm_count as f64 * (1.0 + growth_rate)).round() as i64;
     let forecast_60d_vms = (vm_count as f64 * (1.0 + growth_rate * 2.0)).round() as i64;
     let forecast_90d_vms = (vm_count as f64 * (1.0 + growth_rate * 3.0)).round() as i64;
@@ -69,14 +85,14 @@ pub async fn plan(pool: &SqlitePool) -> anyhow::Result<CapacityPlan> {
     recommendations.push(format!(
         "30/60/90-day VM forecast (2% monthly): {forecast_30d_vms} / {forecast_60d_vms} / {forecast_90d_vms} (current {vm_count})"
     ));
-    if avg_cpu > 75.0 {
+    if avg_cpu > CPU_PRESSURE_WARNING_PERCENT {
         recommendations.push("CPU pressure high — add hosts or migrate workloads.".into());
     }
-    if memory_headroom_mib < 8192 {
+    if memory_headroom_mib < MEMORY_HEADROOM_WARNING_MIB {
         recommendations.push("Memory headroom low — defer large VM creates.".into());
     }
     if let Some(days) = storage_runway_days {
-        if days < 30 {
+        if days < STORAGE_RUNWAY_WARNING_DAYS {
             recommendations.push(format!(
                 "Storage may reach capacity in ~{days} days at current growth."
             ));

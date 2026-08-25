@@ -18,10 +18,7 @@ use machina_core::libvirt::automation;
 use machina_core::libvirt::extras::get_host_stats;
 use machina_core::libvirt::node;
 use machina_core::obs_counters;
-use machina_core::{
-    is_openstack_configured, LibvirtManager, MachinaConfig, VmBlockDeviceMetrics, VmInfo,
-    VmMetrics, VmNetDeviceMetrics,
-};
+use machina_core::{LibvirtManager, MachinaConfig, VmBlockDeviceMetrics, VmInfo, VmMetrics, VmNetDeviceMetrics};
 
 use crate::daemon_stats::DaemonStats;
 use crate::http_metrics::HttpMetrics;
@@ -609,14 +606,6 @@ pub(crate) async fn collect_prometheus_exposition(
         "1 when OIDC run-as-user impersonation is active",
         if run_as.impersonation_active() { 1 } else { 0 },
     );
-    if is_openstack_configured(&cfg.openstack) {
-        add_gauge(
-            &mut output,
-            "machina_openstack_configured",
-            "1 when OpenStack is configured in machina config",
-            1,
-        );
-    }
     add_gauge(
         &mut output,
         "machina_k8s_metrics_available",

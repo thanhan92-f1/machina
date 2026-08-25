@@ -6,6 +6,16 @@ use sqlx::SqlitePool;
 
 use crate::config::ControllerConfig;
 
+// Minimum estimated monthly cost before a target's exposure is worth
+// surfacing as a remediation item, to keep the report focused on
+// material waste rather than noise from trivially small exposures.
+const TARGET_EXPOSURE_MIN_USD: f64 = 20.0;
+const CLOUD_SG_EXPOSURE_MIN_USD: f64 = 5.0;
+// Only the top-N idle-port VMs / SRE remediations feed into the report so it
+// stays digestible.
+const TOP_IDLE_VMS_LIMIT: usize = 3;
+const TOP_SRE_REMEDIATIONS_LIMIT: usize = 3;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct ExposureWasteItem {
     pub id: String,
@@ -33,7 +43,7 @@ pub async fn propose_waste(
     for t in report
         .targets
         .iter()
-        .filter(|t| t.exposure_monthly_usd > 20.0)
+        .filter(|t| t.exposure_monthly_usd > TARGET_EXPOSURE_MIN_USD)
     {
         items.push(ExposureWasteItem {
             id: format!("finops-waste-{}", t.target_id),
@@ -56,7 +66,7 @@ pub async fn propose_waste(
         });
     }
 
-    for v in report.vm_idle_ranking.iter().take(3) {
+    for v in report.vm_idle_ranking.iter().take(TOP_IDLE_VMS_LIMIT) {
         items.push(ExposureWasteItem {
             id: format!("finops-vm-idle-{}", v.vm_id),
             label: format!("VM {} — ${:.0}/mo idle port waste", v.vm_name, v.waste_usd),
@@ -71,7 +81,7 @@ pub async fn propose_waste(
         });
     }
 
-    if report.cloud_sg_monthly_usd > 5.0 {
+    if report.cloud_sg_monthly_usd > CLOUD_SG_EXPOSURE_MIN_USD {
         items.push(ExposureWasteItem {
             id: "finops-cloud-sg".into(),
             label: format!(
@@ -114,7 +124,7 @@ pub async fn joint_sre_finops(
     let sre = super::sre_remediate::propose(pool).await?;
     let mut joint = Vec::new();
 
-    for s in sre.remediations.iter().take(3) {
+    for s in sre.remediations.iter().take(TOP_SRE_REMEDIATIONS_LIMIT) {
         let exposure = waste
             .items
             .iter()

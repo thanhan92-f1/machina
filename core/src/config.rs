@@ -27,9 +27,6 @@ pub struct MachinaConfig {
     /// Defaults for `GET /api/v1/vms/{name}/kubevirt-bundle` (libvirt qcow2 → KubeVirt manifest generation).
     #[serde(default)]
     pub kubevirt: KubeVirtConfig,
-    /// Defaults for OpenStack Glance upload (`/api/v1/openstack/images/upload`).
-    #[serde(default)]
-    pub openstack: OpenStackConfig,
     /// Optional HyperSDK hypervisord proxy (`/api/v1/hypersdk/*`).
     #[serde(default)]
     pub hypersdk: HypersdkConfig,
@@ -407,80 +404,8 @@ impl Default for KubeVirtConfig {
     }
 }
 
-/// OpenStack Nova management and native Glance upload ([`crate::openstack`]).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OpenStackConfig {
-    /// When true, OpenStack API routes are active.
-    #[serde(default)]
-    pub enabled: bool,
-    /// Path to `clouds.yaml` (sets `OS_CLIENT_CONFIG_FILE` when connecting by cloud name).
-    #[serde(default)]
-    pub clouds_yaml_path: String,
-    /// `clouds.yaml` cloud entry name (preferred auth).
-    #[serde(default)]
-    pub cloud_name: String,
-    /// Inline Keystone v3 (used when `cloud_name` is empty).
-    #[serde(default)]
-    pub auth_url: String,
-    #[serde(default)]
-    pub username: String,
-    #[serde(default)]
-    pub password: String,
-    /// Project/tenant name (Keystone v3). Alias `tenant` matches HyperSDK/hypersdk config.
-    #[serde(default, alias = "tenant")]
-    pub project_name: String,
-    #[serde(default = "default_openstack_domain")]
-    pub domain_name: String,
-    #[serde(default)]
-    pub region: String,
-    /// Use `OS_*` / openrc environment when cloud_name and inline auth are unset.
-    #[serde(default)]
-    pub use_env_auth: bool,
-    #[serde(default = "default_openstack_connect_timeout")]
-    pub connect_timeout_secs: u64,
-    /// When true, `POST /api/v1/openstack/images/upload` may upload qcow2 to Glance.
-    #[serde(default = "default_openstack_upload_enabled")]
-    pub upload_enabled: bool,
-    /// Timeout for Glance image data upload (large qcow2 files).
-    #[serde(default = "default_openstack_upload_timeout")]
-    pub upload_timeout_secs: u64,
-    /// Default `clouds.yaml` entry when the client omits `os_cloud`.
-    #[serde(default)]
-    pub default_os_cloud: String,
-    #[serde(default)]
-    pub default_boot_instance: bool,
-    #[serde(default)]
-    pub default_flavor: String,
-    #[serde(default)]
-    pub default_network: String,
-    #[serde(default)]
-    pub default_key_name: String,
-    /// When true, Nova boot after Glance upload waits for ACTIVE (upload API and defaults).
-    #[serde(default)]
-    pub default_wait_until_active: bool,
-    /// HyperSDK / hypervisord base URL for migration dashboard links and optional API proxy.
-    #[serde(default = "default_hypersdk_base_url")]
-    pub hypersdk_base_url: String,
-}
-
 fn default_hypersdk_base_url() -> String {
     "https://127.0.0.1:5080".to_string()
-}
-
-fn default_openstack_domain() -> String {
-    "Default".to_string()
-}
-
-fn default_openstack_connect_timeout() -> u64 {
-    30
-}
-
-fn default_openstack_upload_enabled() -> bool {
-    true
-}
-
-fn default_openstack_upload_timeout() -> u64 {
-    3600
 }
 
 /// Proxy settings for HyperSDK bulk migrations (hypervisord on :5080 by default).
@@ -562,33 +487,6 @@ fn default_packetwolf_base_url() -> String {
 fn default_packetwolf_insecure_tls() -> bool {
     // Secure by default; opt in for a self-signed PacketWolf fabric over HTTPS.
     false
-}
-
-impl Default for OpenStackConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            clouds_yaml_path: String::new(),
-            cloud_name: String::new(),
-            auth_url: String::new(),
-            username: String::new(),
-            password: String::new(),
-            project_name: String::new(),
-            domain_name: default_openstack_domain(),
-            region: String::new(),
-            use_env_auth: false,
-            connect_timeout_secs: default_openstack_connect_timeout(),
-            upload_enabled: default_openstack_upload_enabled(),
-            upload_timeout_secs: default_openstack_upload_timeout(),
-            default_os_cloud: String::new(),
-            default_boot_instance: false,
-            default_flavor: String::new(),
-            default_network: String::new(),
-            default_key_name: String::new(),
-            default_wait_until_active: false,
-            hypersdk_base_url: default_hypersdk_base_url(),
-        }
-    }
 }
 
 
@@ -1340,6 +1238,19 @@ impl MachinaConfig {
     /// Prefer [`Self::system_config_path`] as the canonical location.
     pub fn config_path() -> PathBuf {
         Self::system_config_path()
+    }
+
+    /// Display path of whichever config file [`Self::load`] would actually read
+    /// (system path if present, else the user path) — for API settings views to
+    /// show the operator where a save will land. Was duplicated verbatim across
+    /// three `*_settings.rs` view modules; consolidated here since they all only
+    /// ever call it against `MachinaConfig`'s own path helpers.
+    pub fn config_path_display() -> String {
+        if Self::system_config_path().exists() {
+            Self::system_config_path().display().to_string()
+        } else {
+            Self::user_config_path().display().to_string()
+        }
     }
 
     pub fn load() -> Self {

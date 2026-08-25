@@ -11,11 +11,10 @@
 2. [Hosts](pages/platform/platform-hosts.md) / [Machine Finder](pages/platform/platform-vms.md)
 3. [Backup & Restore](pages/platform/platform-backups.md) as needed
 
-## OpenStack (when wired)
+## Fleet Cloud
 
-1. Wire credentials in Settings
-2. [OpenStack Overview](pages/openstack/openstack.md)
-3. Instances / Networks / Volumes as required
+1. [Fleet Cloud Overview](pages/fleet-cloud/fleet-cloud.md)
+2. Instances / Networks / Volumes / Load Balancers as required — all backed by Machina's own native APIs, no external cloud wiring needed
 
 ## Related
 

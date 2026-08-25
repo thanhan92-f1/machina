@@ -10,6 +10,11 @@ use std::collections::HashMap;
 
 use crate::prometheus_text::{host_percents_from_samples, PrometheusSample};
 
+/// Prometheus's reserved label carrying the metric name itself (not a regular
+/// label) — used both when reading incoming series and when constructing the
+/// synthetic gauge series this module emits.
+const METRIC_NAME_LABEL: &str = "__name__";
+
 /// Prometheus Remote Write 2.0 messages (minimal subset for ingest).
 pub mod write_v2 {
     use prost::Message;
@@ -101,7 +106,7 @@ pub fn samples_from_write_request(req: &WriteRequest) -> RemoteWriteDecodeResult
     let mut by_name: HashMap<String, f64> = HashMap::new();
     let mut sample_count = 0usize;
     for ts in &req.timeseries {
-        let Some(metric) = label_value(&ts.labels, "__name__") else {
+        let Some(metric) = label_value(&ts.labels, METRIC_NAME_LABEL) else {
             continue;
         };
         if let Some(sample) = ts.samples.last() {
@@ -127,7 +132,7 @@ fn decode_v2(proto: &[u8]) -> Result<RemoteWriteDecodeResult, String> {
     let mut sample_count = 0usize;
     for ts in &req.timeseries {
         let labels = labels_from_v2_refs(&ts.labels_refs, &req.symbols);
-        let Some(metric) = labels.get("__name__") else {
+        let Some(metric) = labels.get(METRIC_NAME_LABEL) else {
             continue;
         };
         if let Some(sample) = ts.samples.last() {
@@ -171,7 +176,7 @@ pub fn write_request_with_gauge(name: &str, value: f64, timestamp_ms: i64) -> Wr
         timeseries: vec![TimeSeries {
             labels: vec![
                 Label {
-                    name: "__name__".into(),
+                    name: METRIC_NAME_LABEL.into(),
                     value: name.into(),
                 },
                 Label {
@@ -193,7 +198,7 @@ pub fn write_request_v2_with_gauge(name: &str, value: f64, timestamp_ms: i64) ->
     write_v2::Request {
         symbols: vec![
             String::new(),
-            "__name__".into(),
+            METRIC_NAME_LABEL.into(),
             name.into(),
             "job".into(),
             "machina".into(),

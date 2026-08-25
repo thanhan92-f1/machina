@@ -9,6 +9,10 @@ use serde_json::{json, Value};
 use crate::metrics_history::MetricsHistoryPoint;
 use crate::state::AuditEvent;
 
+/// OTLP `service.name` resource attribute for every export (metrics, logs, traces) —
+/// all three payload builders report as this one logical service.
+const OTLP_SERVICE_NAME: &str = "machina-daemon";
+
 fn now_unix_nano() -> String {
     chrono::Utc::now()
         .timestamp_nanos_opt()
@@ -144,7 +148,7 @@ pub fn build_metrics_export_payload(
 
     json!({
         "resourceMetrics": [{
-            "resource": { "attributes": resource_attrs("machina-daemon", hostname) },
+            "resource": { "attributes": resource_attrs(OTLP_SERVICE_NAME, hostname) },
             "scopeMetrics": [{
                 "scope": { "name": "machina" },
                 "metrics": metrics
@@ -183,7 +187,7 @@ pub fn build_logs_export_payload(hostname: &str, events: &[AuditEvent]) -> Value
 
     json!({
         "resourceLogs": [{
-            "resource": { "attributes": resource_attrs("machina-daemon", hostname) },
+            "resource": { "attributes": resource_attrs(OTLP_SERVICE_NAME, hostname) },
             "scopeLogs": [{
                 "scope": { "name": "machina.audit" },
                 "logRecords": records
@@ -232,7 +236,7 @@ pub fn build_traces_export_payload(hostname: &str, spans: &[OtlpHttpSpan]) -> Va
 
     json!({
         "resourceSpans": [{
-            "resource": { "attributes": resource_attrs("machina-daemon", hostname) },
+            "resource": { "attributes": resource_attrs(OTLP_SERVICE_NAME, hostname) },
             "scopeSpans": [{
                 "scope": { "name": "machina.http" },
                 "spans": spans_json

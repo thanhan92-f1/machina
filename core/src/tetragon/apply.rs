@@ -9,14 +9,8 @@ use super::install::{render_install_script, run_tetragon_install};
 use super::types::{SecurityBundleApplyResult, SecurityFabricStatus, TetragonInstallSpec};
 use crate::LibvirtError;
 
-fn policy_dir() -> PathBuf {
-    std::env::var("MACHINA_TETRAGON_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("/var/lib/machina/tetragon"))
-}
-
 fn policies_subdir() -> PathBuf {
-    policy_dir().join("tracing-policies")
+    super::policy_dir().join("tracing-policies")
 }
 
 fn tetragon_tp_dir() -> PathBuf {
@@ -64,14 +58,6 @@ fn is_safe_policy_name(name: &str) -> bool {
 fn tetragon_in_path() -> bool {
     PathBuf::from("/usr/local/lib/tetragon/bpf").is_dir()
         && PathBuf::from("/usr/local/bin/tetragon").is_file()
-}
-
-fn is_service_active(unit: &str) -> bool {
-    std::process::Command::new("systemctl")
-        .args(["is-active", "--quiet", unit])
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
 }
 
 fn write_file(path: &Path, contents: &str, dry_run: bool) -> Result<(), LibvirtError> {
@@ -154,8 +140,8 @@ pub fn apply_security_bundle(
 
     let mut install_script_written = false;
     let mut tetragon_install_attempted = false;
-    let mut tetragon_service_active = is_service_active("tetragon.service");
-    let mut tetragon_export_timer_active = is_service_active("tetragon-export.timer");
+    let mut tetragon_service_active = super::is_service_active("tetragon.service");
+    let mut tetragon_export_timer_active = super::is_service_active("tetragon-export.timer");
     let mut install_message = String::new();
 
     if let Some(install) = bundle.get("tetragon_install") {
@@ -169,7 +155,7 @@ pub fn apply_security_bundle(
                 host_id: host_id.clone(),
             };
             let script = render_install_script(&spec);
-            let script_path = policy_dir().join("install-tetragon.sh");
+            let script_path = super::policy_dir().join("install-tetragon.sh");
             write_file(&script_path, &script, dry_run)?;
             operations.push(format!("write {}", script_path.display()));
             install_script_written = true;
@@ -190,7 +176,7 @@ pub fn apply_security_bundle(
         }
     }
 
-    let manifest_path = policy_dir().join("bundle-manifest.json");
+    let manifest_path = super::policy_dir().join("bundle-manifest.json");
     write_file(&manifest_path, bundle_json, dry_run)?;
     operations.push(format!("write {}", manifest_path.display()));
 
@@ -252,8 +238,8 @@ pub fn security_fabric_status() -> Result<SecurityFabricStatus, LibvirtError> {
         }
     }
     policy_files.sort();
-    let install_script = policy_dir().join("install-tetragon.sh");
-    let export_url = fs::read_to_string(policy_dir().join("bundle-manifest.json"))
+    let install_script = super::policy_dir().join("install-tetragon.sh");
+    let export_url = fs::read_to_string(super::policy_dir().join("bundle-manifest.json"))
         .ok()
         .and_then(|s| serde_json::from_str::<Value>(&s).ok())
         .and_then(|v| {
@@ -266,8 +252,8 @@ pub fn security_fabric_status() -> Result<SecurityFabricStatus, LibvirtError> {
         policy_files,
         install_script_present: install_script.is_file(),
         tetragon_binary_found: tetragon_in_path(),
-        tetragon_service_active: is_service_active("tetragon.service"),
-        tetragon_export_timer_active: is_service_active("tetragon-export.timer"),
+        tetragon_service_active: super::is_service_active("tetragon.service"),
+        tetragon_export_timer_active: super::is_service_active("tetragon-export.timer"),
         export_url,
     })
 }

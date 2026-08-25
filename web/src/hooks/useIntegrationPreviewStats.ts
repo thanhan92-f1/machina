@@ -2,57 +2,45 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { getK8sOverview, type K8sOverview } from '../api/k8s'
-import {
-  listOpenStackImages,
-  listOpenStackInstances,
-  listOpenStackNetworks,
-  type OpenStackInstance,
-} from '../api/openstack'
-import { useOpenStackConnection } from './useOpenStackConnection'
+import { listVms, type NativeVm } from '../api/nativeVms'
+import { listNetworks } from '../api/nativeNetworks'
+import { listTemplates } from '../api/nativeTemplates'
 
-export type OpenStackPreviewStats = {
+export type FleetCloudPreviewStats = {
   instances: number
   networks: number
   images: number
-  preview: OpenStackInstance[]
+  preview: NativeVm[]
 }
 
+/** Fleet Cloud is fully native now, so this always fetches -- no "is the external cloud
+ * wired" gate the way the old external-cloud-backed preview needed. */
 export function useIntegrationPreviewStats(k8sEnabled: boolean) {
-  const openstack = useOpenStackConnection()
-  const [osStats, setOsStats] = useState<OpenStackPreviewStats | null>(null)
+  const [fleetCloudStats, setFleetCloudStats] = useState<FleetCloudPreviewStats | null>(null)
   const [k8sStats, setK8sStats] = useState<K8sOverview | null>(null)
-  const [osLoading, setOsLoading] = useState(false)
+  const [fleetCloudLoading, setFleetCloudLoading] = useState(false)
   const [k8sLoading, setK8sLoading] = useState(false)
-  const [osError, setOsError] = useState<string | null>(null)
+  const [fleetCloudError, setFleetCloudError] = useState<string | null>(null)
   const [k8sError, setK8sError] = useState<string | null>(null)
 
-  const refreshOpenStack = useCallback(async () => {
-    if (openstack.phase !== 'live' || !openstack.computeLive) {
-      setOsStats(null)
-      setOsError(null)
-      return
-    }
-    setOsLoading(true)
-    setOsError(null)
+  const refreshFleetCloud = useCallback(async () => {
+    setFleetCloudLoading(true)
+    setFleetCloudError(null)
     try {
-      const [inst, nets, imgs] = await Promise.all([
-        listOpenStackInstances({ limit: 5 }),
-        listOpenStackNetworks(),
-        listOpenStackImages(),
-      ])
-      setOsStats({
-        instances: inst.total ?? inst.instances.length,
-        networks: nets.networks.length,
-        images: imgs.images.length,
-        preview: inst.instances,
+      const [vms, nets, images] = await Promise.all([listVms(), listNetworks(), listTemplates()])
+      setFleetCloudStats({
+        instances: vms.length,
+        networks: nets.length,
+        images: images.length,
+        preview: vms.slice(0, 5),
       })
     } catch (e: unknown) {
-      setOsStats(null)
-      setOsError(e instanceof Error ? e.message : 'OpenStack preview failed')
+      setFleetCloudStats(null)
+      setFleetCloudError(e instanceof Error ? e.message : 'Fleet Cloud preview failed')
     } finally {
-      setOsLoading(false)
+      setFleetCloudLoading(false)
     }
-  }, [openstack.phase, openstack.computeLive])
+  }, [])
 
   const refreshK8s = useCallback(async () => {
     if (!k8sEnabled) {
@@ -73,22 +61,21 @@ export function useIntegrationPreviewStats(k8sEnabled: boolean) {
   }, [k8sEnabled])
 
   useEffect(() => {
-    void refreshOpenStack()
-  }, [refreshOpenStack, openstack.status])
+    void refreshFleetCloud()
+  }, [refreshFleetCloud])
 
   useEffect(() => {
     void refreshK8s()
   }, [refreshK8s])
 
   return {
-    openstack,
-    osStats,
+    fleetCloudStats,
     k8sStats,
-    osLoading,
+    fleetCloudLoading,
     k8sLoading,
-    osError,
+    fleetCloudError,
     k8sError,
-    refreshOpenStack,
+    refreshFleetCloud,
     refreshK8s,
   }
 }

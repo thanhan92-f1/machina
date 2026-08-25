@@ -12,6 +12,11 @@ use super::guest_health::gather_guest_health;
 use super::pending_config::get_pending_config;
 use crate::LibvirtError;
 
+/// Badge tag: the change only takes effect after the VM is next shut down and started.
+const BADGE_RESTART_REQUIRED: &str = "restart_required";
+/// Badge tag: this hardware feature blocks live migration.
+const BADGE_MIGRATION_UNSAFE: &str = "migration_unsafe";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HardwareSection {
     pub label: String,
@@ -310,7 +315,7 @@ pub fn get_hardware_summary(conn: &Connect, name: &str) -> Result<VmHardwareSumm
     };
     let mut cpu_badges = Vec::new();
     if pending.as_ref().is_some_and(|p| p.needs_shutdown) {
-        cpu_badges.push("restart_required".into());
+        cpu_badges.push(BADGE_RESTART_REQUIRED.into());
     }
 
     let mem_gib = topology
@@ -328,24 +333,24 @@ pub fn get_hardware_summary(conn: &Connect, name: &str) -> Result<VmHardwareSumm
         mem_badges.push("live".into());
     }
     if pending.as_ref().is_some_and(|p| p.needs_shutdown) {
-        mem_badges.push("restart_required".into());
+        mem_badges.push(BADGE_RESTART_REQUIRED.into());
     }
 
     let (firmware_value, secure_boot) = parse_firmware(&config_xml);
-    let fw_badges = vec!["restart_required".into()];
+    let fw_badges = vec![BADGE_RESTART_REQUIRED.into()];
 
     let os_pretty = guest.as_ref().and_then(|g| g.os_pretty_name.as_deref());
     let is_windows = is_windows_os(&details.os_type, os_pretty);
 
     let (tpm_value, tpm2) = parse_tpm(&config_xml);
     let tpm_badges = if tpm_value == "Not configured" {
-        let mut b = vec!["restart_required".to_string()];
+        let mut b = vec![BADGE_RESTART_REQUIRED.to_string()];
         if is_windows {
             b.push("windows_recommended".into());
         }
         b
     } else {
-        vec!["restart_required".into()]
+        vec![BADGE_RESTART_REQUIRED.into()]
     };
 
     let display_value = parse_display(&config_xml);
@@ -373,8 +378,8 @@ pub fn get_hardware_summary(conn: &Connect, name: &str) -> Result<VmHardwareSumm
     };
     let mut hostdev_badges = Vec::new();
     if hostdev_count > 0 {
-        hostdev_badges.push("restart_required".into());
-        hostdev_badges.push("migration_unsafe".into());
+        hostdev_badges.push(BADGE_RESTART_REQUIRED.into());
+        hostdev_badges.push(BADGE_MIGRATION_UNSAFE.into());
         hostdev_badges.push("advanced".into());
     }
 
@@ -389,7 +394,7 @@ pub fn get_hardware_summary(conn: &Connect, name: &str) -> Result<VmHardwareSumm
     };
     let mut migration_badges = Vec::new();
     if vfio {
-        migration_badges.push("migration_unsafe".into());
+        migration_badges.push(BADGE_MIGRATION_UNSAFE.into());
     }
 
     let windows_readiness = if is_windows {
@@ -678,7 +683,7 @@ pub fn check_hardware_compat(conn: &Connect, name: &str) -> Result<HardwareCompa
             severity: "warn".into(),
             category: "migration".into(),
             message: "VFIO passthrough devices block live migration".into(),
-            badges: vec!["migration_unsafe".into()],
+            badges: vec![BADGE_MIGRATION_UNSAFE.into()],
         });
     }
 

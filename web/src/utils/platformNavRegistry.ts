@@ -114,7 +114,6 @@ const INFRASTRUCTURE_ITEMS: ContextNavItem[] = [
 
 const WORKLOADS_ITEMS: ContextNavItem[] = [
   { to: '/platform/workloads', label: 'Overview' },
-  { to: '/platform/launchpad', label: 'Launchpad' },
   { to: '/platform/applications', label: 'Applications' },
   { to: '/platform/vms', label: 'Machine Finder' },
   { to: '/k8s/workloads', label: 'Kubernetes Workloads' },
@@ -247,8 +246,7 @@ export const HUB_DEFINITIONS: ContextDefinition[] = [
     id: 'workloads',
     match: (p) =>
       p === '/platform/workloads'
-      || p.startsWith('/platform/applications')
-      || p.startsWith('/platform/launchpad'),
+      || p.startsWith('/platform/applications'),
     appLabel: 'Workloads',
     appIcon: Package,
     hubPath: '/platform/workloads',

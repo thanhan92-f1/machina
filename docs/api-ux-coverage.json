@@ -1,17 +1,18 @@
 {
-  "generated_at": "2026-07-16T02:41:43.514Z",
-  "controller_total": 517,
-  "daemon_total": 443,
+  "generated_at": "2026-08-24T20:26:13.836Z",
+  "controller_total": 550,
+  "daemon_total": 318,
   "websocket_total": 12,
-  "total_routes": 972,
+  "total_routes": 880,
   "counts": {
-    "page": 476,
-    "console": 476,
+    "page": 484,
+    "console": 349,
+    "fleet-cloud": 27,
     "documented": 20
   },
   "by_source": {
-    "controller": 517,
-    "daemon": 443,
+    "controller": 550,
+    "daemon": 318,
     "websocket": 12
   },
   "unmapped_count": 0,
@@ -209,7 +210,7 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/ai/enterprise/zeus",
+      "path": "/api/v1/ai/enterprise/zyra",
       "methods": [
         "GET"
       ],
@@ -809,7 +810,7 @@
       "surface": "console"
     },
     {
-      "path": "/api/v1/ai/zeus/chat",
+      "path": "/api/v1/ai/zyra/chat",
       "methods": [
         "POST"
       ],
@@ -817,7 +818,7 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/ai/zeus/execute",
+      "path": "/api/v1/ai/zyra/execute",
       "methods": [
         "POST"
       ],
@@ -825,7 +826,7 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/ai/zeus/plan",
+      "path": "/api/v1/ai/zyra/plan",
       "methods": [
         "POST"
       ],
@@ -833,7 +834,7 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/ai/zeus/summary",
+      "path": "/api/v1/ai/zyra/summary",
       "methods": [
         "GET"
       ],
@@ -1097,6 +1098,14 @@
       "surface": "console"
     },
     {
+      "path": "/api/v1/auth/login",
+      "methods": [
+        "POST"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
       "path": "/api/v1/auth/oidc",
       "methods": [
         "GET"
@@ -1268,6 +1277,14 @@
       "path": "/api/v1/content/images",
       "methods": [
         "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/content/images/{id}",
+      "methods": [
+        "DELETE"
       ],
       "source": "controller",
       "surface": "console"
@@ -1447,6 +1464,22 @@
       ],
       "source": "controller",
       "surface": "page"
+    },
+    {
+      "path": "/api/v1/flavors",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/flavors/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
     },
     {
       "path": "/api/v1/fleet/activity",
@@ -1897,12 +1930,60 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/keypairs",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/keypairs/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
       "path": "/api/v1/kubevirt/sync",
       "methods": [
         "POST"
       ],
       "source": "controller",
       "surface": "page"
+    },
+    {
+      "path": "/api/v1/load-balancers",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/load-balancers/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/load-balancers/{id}/members",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/load-balancers/{id}/members/{member_id}",
+      "methods": [
+        "PATCH"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
     },
     {
       "path": "/api/v1/maintenance/schedules",
@@ -2226,6 +2307,46 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/ports",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/ports/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/project-registry",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/project-registry/{id}/members",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/project-registry/{id}/members/{user_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
       "path": "/api/v1/projects",
       "methods": [
         "GET"
@@ -2280,6 +2401,38 @@
       ],
       "source": "controller",
       "surface": "page"
+    },
+    {
+      "path": "/api/v1/security-group-rules/{id}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/security-groups",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/security-groups/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/security-groups/{id}/rules",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
     },
     {
       "path": "/api/v1/soc/alerts",
@@ -2432,6 +2585,30 @@
       ],
       "source": "controller",
       "surface": "page"
+    },
+    {
+      "path": "/api/v1/sprites",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/stacks",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/stacks/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
     },
     {
       "path": "/api/v1/storage/backup-sla",
@@ -2938,6 +3115,14 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/vms/{id}/guest/network",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "page"
+    },
+    {
       "path": "/api/v1/vms/{id}/guest/observability",
       "methods": [
         "GET"
@@ -2949,6 +3134,14 @@
       "path": "/api/v1/vms/{id}/guest/services",
       "methods": [
         "GET"
+      ],
+      "source": "controller",
+      "surface": "page"
+    },
+    {
+      "path": "/api/v1/vms/{id}/guest/services/{unit}/{action}",
+      "methods": [
+        "POST"
       ],
       "source": "controller",
       "surface": "page"
@@ -3058,6 +3251,14 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/vms/{id}/nics",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "page"
+    },
+    {
       "path": "/api/v1/vms/{id}/nics/attach",
       "methods": [
         "POST"
@@ -3151,7 +3352,7 @@
         "POST"
       ],
       "source": "controller",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/vms/{id}/rename",
@@ -3255,7 +3456,7 @@
         "POST"
       ],
       "source": "controller",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/vms/{id}/stop",
@@ -3263,7 +3464,7 @@
         "POST"
       ],
       "source": "controller",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/vms/{id}/timeline",
@@ -3392,6 +3593,70 @@
       ],
       "source": "controller",
       "surface": "page"
+    },
+    {
+      "path": "/api/v1/volume-snapshots",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volume-snapshots/{id}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volumes",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volumes/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volumes/{id}/attach",
+      "methods": [
+        "POST"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volumes/{id}/detach",
+      "methods": [
+        "POST"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volumes/{id}/extend",
+      "methods": [
+        "POST"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
+    },
+    {
+      "path": "/api/v1/volumes/{id}/snapshots",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "fleet-cloud"
     },
     {
       "path": "/api/v1/webhook-deliveries",
@@ -3898,14 +4163,6 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-security/enforcement/policies/{id}",
-      "methods": [
-        "PATCH"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
       "path": "/api/v1/zeus-security/enforcement/policies/{id}/apply",
       "methods": [
         "POST"
@@ -4146,6 +4403,14 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/zyra-security/enforcement/policies/{id}",
+      "methods": [
+        "PATCH"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
       "path": "/install.sh",
       "methods": [
         "GET"
@@ -4290,6 +4555,22 @@
       "surface": "console"
     },
     {
+      "path": "/api/v1/browse/isos/download",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/browse/isos/upload",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
       "path": "/api/v1/browse/mkosi-workspaces",
       "methods": [
         "GET"
@@ -4357,54 +4638,6 @@
       "path": "/api/v1/console/{name}",
       "methods": [
         "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/consolehub/guacamole/{session_id}",
-      "methods": [
-        "DELETE",
-        "GET",
-        "PATCH",
-        "POST",
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/consolehub/guacamole/{session_id}/",
-      "methods": [
-        "DELETE",
-        "GET",
-        "PATCH",
-        "POST",
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/consolehub/guacamole/{session_id}/{*path}",
-      "methods": [
-        "DELETE",
-        "GET",
-        "PATCH",
-        "POST",
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/consolehub/guacamole/{session_id}/websocket-tunnel",
-      "methods": [
-        "DELETE",
-        "GET",
-        "PATCH",
-        "POST",
-        "PUT"
       ],
       "source": "daemon",
       "surface": "console"
@@ -5580,1067 +5813,6 @@
       "surface": "console"
     },
     {
-      "path": "/api/v1/openstack/aggregates",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/aggregates/{id}",
-      "methods": [
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/aggregates/{id}/add-host",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/aggregates/{id}/remove-host",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/availability-zones",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/cloud",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/clouds",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/compute-services",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/compute-services/disable",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/compute-services/enable",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/console-tunnel/{token}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/flavors",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/flavors/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/floating-ips",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/floating-ips/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/floating-ips/{id}/dissociate",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/heat/reachable",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/heat/stacks",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/heat/stacks/{name}/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/heat/stacks/{name}/{id}/events",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/heat/stacks/{name}/{id}/resources",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/heat/stacks/{name}/{id}/template",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/hypervisors",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/hypervisors/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/projects",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/projects/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/role-assignments",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/role-assignments/revoke",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/roles",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/users",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/identity/users/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/{id}/members",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/{id}/members/{member}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/{id}/metadata",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/{id}/pull",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/{id}/visibility",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/upload",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/images/upload/preview",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/backup",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/confirm-resize",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/console",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/console-output",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/console/tunnel",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/export",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/floating-ips",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/force-delete",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/interfaces",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/interfaces/{port}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/lock",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/metadata",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/migrate",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/pause",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/reboot",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/rebuild",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/rename",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/rescue",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/reset-state",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/resize",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/resume",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/revert-resize",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/security-groups",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/security-groups/remove",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/shelve",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/snapshot",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/stack",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/start",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/stop",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/suspend",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/unlock",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/unpause",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/unrescue",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/unshelve",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/volumes",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/volumes/{vol_id}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/instances/{id}/volumes/attach",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/keypairs",
-      "methods": [
-        "GET",
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/keypairs/{name}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/{id}/listeners",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/{id}/pools",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/health-monitors",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/health-monitors/{id}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/listeners/{id}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/pools",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/pools/{id}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/pools/{pool_id}/health-monitors",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/pools/{pool_id}/members",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/load-balancers/pools/{pool_id}/members/{member_id}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/network-topology",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/networks",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/networks/{id}",
-      "methods": [
-        "GET",
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/neutron-agents",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/neutron-agents/{id}",
-      "methods": [
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/octavia/reachable",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/ports",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/ports/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/quotas",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/routers",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/routers/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/routers/add-interface",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/routers/remove-interface",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/security-group-rules/{id}",
-      "methods": [
-        "DELETE"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/security-groups",
-      "methods": [
-        "GET",
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/security-groups/{id}",
-      "methods": [
-        "DELETE",
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/security-groups/{id}/rules",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/server-groups",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/server-groups/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/status",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/subnets",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/subnets/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/test-connection",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volume-snapshots",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volume-snapshots/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volume-transfers",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volume-transfers/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volume-transfers/accept",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volume-types",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/{id}",
-      "methods": [
-        "GET",
-        "PUT"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/{id}/bootable",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/{id}/extend",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/{id}/retype",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/{id}/snapshot",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/{id}/upload-image",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/clone",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/from-image",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/openstack/volumes/from-snapshot",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
       "path": "/api/v1/platform/controller/{*rest}",
       "methods": [
         "DELETE",
@@ -6774,6 +5946,30 @@
     },
     {
       "path": "/api/v1/spice/{name}",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites/golden-images",
       "methods": [
         "GET"
       ],
@@ -7090,6 +6286,14 @@
       "surface": "console"
     },
     {
+      "path": "/api/v1/vms/{name}/cdrom/detach/{target}",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
       "path": "/api/v1/vms/{name}/cdrom/eject/{target}",
       "methods": [
         "POST"
@@ -7234,9 +6438,17 @@
       "surface": "console"
     },
     {
-      "path": "/api/v1/vms/{name}/guacamole-auth",
+      "path": "/api/v1/vms/{name}/guest-agent/channel",
       "methods": [
-        "GET"
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/guest-agent/install-media",
+      "methods": [
+        "POST"
       ],
       "source": "daemon",
       "surface": "console"
@@ -7347,6 +6559,46 @@
     },
     {
       "path": "/api/v1/vms/{name}/kubevirt/upload",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/linux/enable-ssh",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/linux/fix-fstab",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/linux/inject-ssh-key",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/linux/reset-password",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/linux/set-hostname",
       "methods": [
         "POST"
       ],
@@ -7467,22 +6719,6 @@
       "surface": "console"
     },
     {
-      "path": "/api/v1/vms/{name}/openstack-push",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/vms/{name}/openstack-push/preview",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
       "path": "/api/v1/vms/{name}/pause",
       "methods": [
         "POST"
@@ -7504,7 +6740,7 @@
         "POST"
       ],
       "source": "daemon",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/vms/{name}/rename",
@@ -7568,7 +6804,7 @@
         "POST"
       ],
       "source": "daemon",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/vms/{name}/stop",
@@ -7576,7 +6812,7 @@
         "POST"
       ],
       "source": "daemon",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/vms/{name}/tags",
@@ -7630,6 +6866,14 @@
       "path": "/api/v1/vms/{name}/virt-viewer.vv",
       "methods": [
         "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/windows/enable-rdp",
+      "methods": [
+        "POST"
       ],
       "source": "daemon",
       "surface": "console"

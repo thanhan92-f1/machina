@@ -54,6 +54,11 @@ import {
 
 type Tab = 'fleet' | 'security' | 'knowledge' | 'services' | 'baremetal' | 'brain' | 'memory'
 
+// Zeus Firewall keeps its pre-rebrand route/branding intentionally (out of scope for the
+// Zeus → Zyra rename); named here since the path is reused across several links below.
+const ZEUS_SECURITY_ROUTE = '/platform/zeus/security'
+const ZEUS_FIREWALL_ROUTE = '/platform/zeus/security/firewall'
+
 const ZEUS_TABS: Array<{ id: Tab; label: string }> = [
   { id: 'fleet', label: 'Fleet' },
   { id: 'brain', label: 'Graph Brain' },
@@ -416,10 +421,10 @@ export default function PlatformZyraOs() {
         <div className="space-y-4">
           <MacGlassPanel title="Security hubs" subtitle="Threat intelligence and host firewall — open a hub for full detail">
             <div className="flex flex-wrap gap-3">
-              <Link to="/platform/zeus/security" className="btn-secondary text-sm">
+              <Link to={ZEUS_SECURITY_ROUTE} className="btn-secondary text-sm">
                 Security Center
               </Link>
-              <Link to="/platform/zeus/security/firewall" className="btn-secondary text-sm">
+              <Link to={ZEUS_FIREWALL_ROUTE} className="btn-secondary text-sm">
                 Zeus Firewall
               </Link>
             </div>
@@ -513,7 +518,7 @@ export default function PlatformZyraOs() {
                   key={s.id}
                   title={s.hostname}
                   subtitle={`${s.bmc_type} @ ${s.bmc_address || '—'} · ${s.firewall_profile || 'BareMetalBmc'} · ${s.state}`}
-                  href={`/platform/zeus/security/firewall/${s.id}`}
+                  href={`${ZEUS_FIREWALL_ROUTE}/${s.id}`}
                   trailing={
                     <span className="flex gap-2 text-[10px]">
                       <button type="button" className={hubLinkClasses()} onClick={(e) => {
@@ -537,11 +542,11 @@ export default function PlatformZyraOs() {
                   icon={Server}
                   title="No bare-metal servers"
                   subtitle="Register BMC targets from Zeus Firewall to manage power, PXE, and firewall profiles."
-                  action={<Link to="/platform/zeus/security/firewall" className="btn-primary text-sm">Open Zeus Firewall</Link>}
+                  action={<Link to={ZEUS_FIREWALL_ROUTE} className="btn-primary text-sm">Open Zeus Firewall</Link>}
                 />
               )}
             </div>
-            <Link to="/platform/zeus/security/firewall" className={`text-xs mt-3 inline-block ${hubLinkClasses()}`}>
+            <Link to={ZEUS_FIREWALL_ROUTE} className={`text-xs mt-3 inline-block ${hubLinkClasses()}`}>
               Open Zeus Firewall fleet →
             </Link>
           </MacGlassPanel>

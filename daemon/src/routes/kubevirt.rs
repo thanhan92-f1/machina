@@ -39,6 +39,17 @@ fn log_audit(action: &str, target: &str, result: &str) {
     audit::write_audit_event(&event);
 }
 
+/// Shared response envelope for the `kubectl`/`virtctl` exec handlers below
+/// (`qcow2_kubevirt_apply`, `_upload`, `_start`): the caller's exit code and
+/// captured stdout/stderr, verbatim.
+fn exec_result_json(code: i32, stdout: String, stderr: String) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "exit_code": code,
+        "stdout": stdout,
+        "stderr": stderr,
+    }))
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Qcow2KubeVirtParams {
     /// Absolute path to `.qcow2` (or `.raw`/`.img`) on the hypervisor.
@@ -193,11 +204,7 @@ async fn qcow2_kubevirt_apply(
         audit,
         &bundle.virtual_machine_name,
     );
-    Ok(Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    })))
+    Ok(exec_result_json(code, stdout, stderr))
 }
 
 async fn qcow2_kubevirt_upload(
@@ -237,11 +244,7 @@ async fn qcow2_kubevirt_upload(
         audit,
         &bundle.datavolume_name,
     );
-    Ok(Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    })))
+    Ok(exec_result_json(code, stdout, stderr))
 }
 
 async fn qcow2_kubevirt_start(
@@ -276,11 +279,7 @@ async fn qcow2_kubevirt_start(
         audit,
         &bundle.virtual_machine_name,
     );
-    Ok(Json(serde_json::json!({
-        "exit_code": code,
-        "stdout": stdout,
-        "stderr": stderr,
-    })))
+    Ok(exec_result_json(code, stdout, stderr))
 }
 
 pub fn kubevirt_routes() -> Router<LibvirtManager> {

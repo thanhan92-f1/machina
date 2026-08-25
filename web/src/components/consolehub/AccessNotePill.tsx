@@ -18,6 +18,10 @@ import {
   type NatRuleLike,
 } from '../../utils/vmPortForwardServices'
 
+// Remembers where the operator dragged the pill so it doesn't jump back to
+// its default spot (and obscure the same part of the console) every reconnect.
+const DRAG_POSITION_STORAGE_KEY = 'machina.accessNotePos'
+
 type Props = {
   hints: GuestAccessHints | null | undefined
   vmId?: string
@@ -55,7 +59,7 @@ export default function AccessNotePill({
   const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
     if (typeof window === 'undefined') return null
     try {
-      const raw = window.localStorage.getItem('machina.accessNotePos')
+      const raw = window.localStorage.getItem(DRAG_POSITION_STORAGE_KEY)
       return raw ? (JSON.parse(raw) as { x: number; y: number }) : null
     } catch {
       return null
@@ -66,8 +70,8 @@ export default function AccessNotePill({
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      if (pos) window.localStorage.setItem('machina.accessNotePos', JSON.stringify(pos))
-      else window.localStorage.removeItem('machina.accessNotePos')
+      if (pos) window.localStorage.setItem(DRAG_POSITION_STORAGE_KEY, JSON.stringify(pos))
+      else window.localStorage.removeItem(DRAG_POSITION_STORAGE_KEY)
     } catch {
       /* ignore */
     }

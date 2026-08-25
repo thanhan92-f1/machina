@@ -67,43 +67,36 @@ const Jobs = lazyWithRetry(() => import('./pages/Jobs'))
 const K8sOverview = lazyWithRetry(() => import('./pages/K8sOverview'))
 const K8sWorkloads = lazyWithRetry(() => import('./pages/K8sWorkloads'))
 const KataContainers = lazyWithRetry(() => import('./pages/KataContainers'))
-const OpenStackOverview = lazyWithRetry(() => import('./pages/OpenStackOverview'))
-const OpenStackInstances = lazyWithRetry(() => import('./pages/OpenStackInstances'))
-const OpenStackInstanceDetail = lazyWithRetry(() => import('./pages/OpenStackInstanceDetail'))
-const OpenStackCreateInstance = lazyWithRetry(() => import('./pages/OpenStackCreateInstance'))
-const OpenStackImages = lazyWithRetry(() => import('./pages/OpenStackImages'))
-const OpenStackMigrations = lazyWithRetry(() => import('./pages/OpenStackMigrations'))
-const OpenStackSecurityGroups = lazyWithRetry(() => import('./pages/OpenStackSecurityGroups'))
-const OpenStackConsole = lazyWithRetry(() => import('./pages/OpenStackConsole'))
-const OpenStackVolumes = lazyWithRetry(() => import('./pages/OpenStackVolumes'))
-const OpenStackNetworking = lazyWithRetry(() => import('./pages/OpenStackNetworking'))
-const OpenStackKeypairs = lazyWithRetry(() => import('./pages/OpenStackKeypairs'))
-const OpenStackFlavors = lazyWithRetry(() => import('./pages/OpenStackFlavors'))
-const OpenStackServerGroups = lazyWithRetry(() => import('./pages/OpenStackServerGroups'))
-const OpenStackImageDetail = lazyWithRetry(() => import('./pages/OpenStackImageDetail'))
-const OpenStackVolumeDetail = lazyWithRetry(() => import('./pages/OpenStackVolumeDetail'))
-const OpenStackFloatingIps = lazyWithRetry(() => import('./pages/OpenStackFloatingIps'))
-const OpenStackVolumeSnapshots = lazyWithRetry(() => import('./pages/OpenStackVolumeSnapshots'))
-const OpenStackNetworkDetail = lazyWithRetry(() => import('./pages/OpenStackNetworkDetail'))
-const OpenStackSubnetDetail = lazyWithRetry(() => import('./pages/OpenStackSubnetDetail'))
-const OpenStackRouterDetail = lazyWithRetry(() => import('./pages/OpenStackRouterDetail'))
-const OpenStackPortDetail = lazyWithRetry(() => import('./pages/OpenStackPortDetail'))
-const OpenStackFlavorDetail = lazyWithRetry(() => import('./pages/OpenStackFlavorDetail'))
-const OpenStackHypervisorDetail = lazyWithRetry(() => import('./pages/OpenStackHypervisorDetail'))
-const OpenStackServerGroupDetail = lazyWithRetry(() => import('./pages/OpenStackServerGroupDetail'))
-const OpenStackVolumeTransferDetail = lazyWithRetry(() => import('./pages/OpenStackVolumeTransferDetail'))
-const OpenStackInstanceInterfaces = lazyWithRetry(() => import('./pages/OpenStackInstanceInterfaces'))
-const OpenStackSecurityGroupDetail = lazyWithRetry(() => import('./pages/OpenStackSecurityGroupDetail'))
-const OpenStackFloatingIpDetail = lazyWithRetry(() => import('./pages/OpenStackFloatingIpDetail'))
-const OpenStackVolumeSnapshotDetail = lazyWithRetry(() => import('./pages/OpenStackVolumeSnapshotDetail'))
-const OpenStackHeat = lazyWithRetry(() => import('./pages/OpenStackHeat'))
-const OpenStackHeatDetail = lazyWithRetry(() => import('./pages/OpenStackHeatDetail'))
-const OpenStackLoadBalancers = lazyWithRetry(() => import('./pages/OpenStackLoadBalancers'))
-const OpenStackLoadBalancerDetail = lazyWithRetry(() => import('./pages/OpenStackLoadBalancerDetail'))
-const OpenStackIdentity = lazyWithRetry(() => import('./pages/OpenStackIdentity'))
-const OpenStackIdentityProjectDetail = lazyWithRetry(() => import('./pages/OpenStackIdentityProjectDetail'))
-const OpenStackIdentityUserDetail = lazyWithRetry(() => import('./pages/OpenStackIdentityUserDetail'))
-const OpenStackTopology = lazyWithRetry(() => import('./pages/OpenStackTopology'))
+const FleetCloudOverview = lazyWithRetry(() => import('./pages/FleetCloudOverview'))
+const FleetCloudInstances = lazyWithRetry(() => import('./pages/FleetCloudInstances'))
+const FleetCloudInstanceDetail = lazyWithRetry(() => import('./pages/FleetCloudInstanceDetail'))
+const FleetCloudCreateInstance = lazyWithRetry(() => import('./pages/FleetCloudCreateInstance'))
+const FleetCloudImages = lazyWithRetry(() => import('./pages/FleetCloudImages'))
+const FleetCloudMigrations = lazyWithRetry(() => import('./pages/FleetCloudMigrations'))
+const FleetCloudSecurityGroups = lazyWithRetry(() => import('./pages/FleetCloudSecurityGroups'))
+const FleetCloudConsole = lazyWithRetry(() => import('./pages/FleetCloudConsole'))
+const FleetCloudVolumes = lazyWithRetry(() => import('./pages/FleetCloudVolumes'))
+const FleetCloudNetworking = lazyWithRetry(() => import('./pages/FleetCloudNetworking'))
+const FleetCloudKeypairs = lazyWithRetry(() => import('./pages/FleetCloudKeypairs'))
+const FleetCloudFlavors = lazyWithRetry(() => import('./pages/FleetCloudFlavors'))
+const FleetCloudServerGroups = lazyWithRetry(() => import('./pages/FleetCloudServerGroups'))
+const FleetCloudImageDetail = lazyWithRetry(() => import('./pages/FleetCloudImageDetail'))
+const FleetCloudVolumeDetail = lazyWithRetry(() => import('./pages/FleetCloudVolumeDetail'))
+const FleetCloudFloatingIps = lazyWithRetry(() => import('./pages/FleetCloudFloatingIps'))
+const FleetCloudVolumeSnapshots = lazyWithRetry(() => import('./pages/FleetCloudVolumeSnapshots'))
+const FleetCloudNetworkDetail = lazyWithRetry(() => import('./pages/FleetCloudNetworkDetail'))
+const FleetCloudFlavorDetail = lazyWithRetry(() => import('./pages/FleetCloudFlavorDetail'))
+const FleetCloudServerGroupDetail = lazyWithRetry(() => import('./pages/FleetCloudServerGroupDetail'))
+const FleetCloudInstanceInterfaces = lazyWithRetry(() => import('./pages/FleetCloudInstanceInterfaces'))
+const FleetCloudSecurityGroupDetail = lazyWithRetry(() => import('./pages/FleetCloudSecurityGroupDetail'))
+const FleetCloudVolumeSnapshotDetail = lazyWithRetry(() => import('./pages/FleetCloudVolumeSnapshotDetail'))
+const FleetCloudHeat = lazyWithRetry(() => import('./pages/FleetCloudHeat'))
+const FleetCloudHeatDetail = lazyWithRetry(() => import('./pages/FleetCloudHeatDetail'))
+const FleetCloudLoadBalancers = lazyWithRetry(() => import('./pages/FleetCloudLoadBalancers'))
+const FleetCloudLoadBalancerDetail = lazyWithRetry(() => import('./pages/FleetCloudLoadBalancerDetail'))
+const FleetCloudIdentity = lazyWithRetry(() => import('./pages/FleetCloudIdentity'))
+const FleetCloudIdentityProjectDetail = lazyWithRetry(() => import('./pages/FleetCloudIdentityProjectDetail'))
+const FleetCloudTopology = lazyWithRetry(() => import('./pages/FleetCloudTopology'))
 const Fleet = lazyWithRetry(() => import('./pages/Fleet'))
 const PlatformLayout = lazyWithRetry(() => import('./layouts/PlatformLayout'))
 const PlatformDashboard = lazyWithRetry(() => import('./pages/platform/PlatformDashboard'))
@@ -152,9 +145,6 @@ const PlatformMigration = lazyWithRetry(() => import('./pages/platform/PlatformM
 const PlatformActivityMonitor = lazyWithRetry(() => import('./pages/platform/PlatformActivityMonitor'))
 const PlatformRecommendations = lazyWithRetry(() => import('./pages/platform/PlatformRecommendations'))
 const PlatformApplications = lazyWithRetry(() => import('./pages/platform/PlatformApplications'))
-const PlatformLaunchpad = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpad'))
-const PlatformLaunchpadAppDetail = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpadAppDetail'))
-const PlatformLaunchpadSpace = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpadSpace'))
 const PlatformBackups = lazyWithRetry(() => import('./pages/platform/PlatformBackups'))
 const PlatformTopology = lazyWithRetry(() => import('./pages/platform/PlatformTopology'))
 const PlatformZyraOs = lazyWithRetry(() => import('./pages/platform/PlatformZyraOs'))
@@ -227,7 +217,7 @@ function GlobalShortcuts({
       { sequence: ['g', 'b'], handler: () => navigate('/backups') },
       { sequence: ['g', 'i'], handler: () => navigate('/disk-images') },
       { sequence: ['g', 'k'], handler: () => navigate('/k8s/workloads') },
-      { sequence: ['g', 'o'], handler: () => navigate('/openstack') },
+      { sequence: ['g', 'o'], handler: () => navigate('/fleet-cloud') },
     ]
     return base
   }, [navigate])
@@ -421,9 +411,6 @@ function AuthenticatedShellRoutes() {
                   <Route path="mission-control/live" element={<MissionControlLiveWall />} />
                   <Route path="vms/:id/console" element={<PlatformConsoleRedirect />} />
                   <Route path="applications" element={<PlatformApplications />} />
-                  <Route path="launchpad/apps/:id" element={<PlatformLaunchpadAppDetail />} />
-                  <Route path="launchpad/spaces/:spaceId" element={<PlatformLaunchpadSpace />} />
-                  <Route path="launchpad" element={<PlatformLaunchpad />} />
                   <Route path="content" element={<PlatformContent />} />
                   <Route path="create-iso" element={<PlatformIsoCreate />} />
                   <Route path="create-advanced" element={<PlatformVirtInstallCreate />} />
@@ -461,7 +448,7 @@ function AuthenticatedShellRoutes() {
                   <Route path="zyra/security/hunt" element={<PlatformThreatHunting />} />
                   <Route path="zyra/security/enforcement" element={<PlatformRuntimeEnforcement />} />
                   <Route path="soc" element={<PlatformSoc />} />
-                  <Route path="zyra/security" element={<PlatformSecurityCenter />} />
+                  <Route path="zeus/security" element={<PlatformSecurityCenter />} />
                   <Route path="zyra/machines/:hostId" element={<PlatformMachineSecurity />} />
                   <Route path="zeus/security/firewall" element={<PlatformFirewallOverview />} />
                   <Route path="zeus/security/firewall/:id" element={<PlatformFirewallTargetDetail />} />
@@ -502,43 +489,36 @@ function AuthenticatedShellRoutes() {
                 <Route path="/k8s" element={<K8sOverview />} />
                 <Route path="/k8s/workloads" element={<K8sWorkloads />} />
                 <Route path="/k8s/kata" element={<KataContainers />} />
-                <Route path="/openstack" element={<OpenStackOverview />} />
-                <Route path="/openstack/instances" element={<OpenStackInstances />} />
-                <Route path="/openstack/instances/:id" element={<OpenStackInstanceDetail />} />
-                <Route path="/openstack/instances/:id/interfaces" element={<OpenStackInstanceInterfaces />} />
-                <Route path="/openstack/create" element={<OpenStackCreateInstance />} />
-                <Route path="/openstack/images" element={<OpenStackImages />} />
-                <Route path="/openstack/images/:id" element={<OpenStackImageDetail />} />
-                <Route path="/openstack/migrations" element={<OpenStackMigrations />} />
-                <Route path="/openstack/security-groups" element={<OpenStackSecurityGroups />} />
-                <Route path="/openstack/security-groups/:id" element={<OpenStackSecurityGroupDetail />} />
-                <Route path="/openstack/volumes" element={<OpenStackVolumes />} />
-                <Route path="/openstack/volumes/:id" element={<OpenStackVolumeDetail />} />
-                <Route path="/openstack/floating-ips" element={<OpenStackFloatingIps />} />
-                <Route path="/openstack/floating-ips/:id" element={<OpenStackFloatingIpDetail />} />
-                <Route path="/openstack/networking" element={<OpenStackNetworking />} />
-                <Route path="/openstack/keypairs" element={<OpenStackKeypairs />} />
-                <Route path="/openstack/flavors" element={<OpenStackFlavors />} />
-                <Route path="/openstack/flavors/:id" element={<OpenStackFlavorDetail />} />
-                <Route path="/openstack/hypervisors/:id" element={<OpenStackHypervisorDetail />} />
-                <Route path="/openstack/server-groups" element={<OpenStackServerGroups />} />
-                <Route path="/openstack/server-groups/:id" element={<OpenStackServerGroupDetail />} />
-                <Route path="/openstack/networks/:id" element={<OpenStackNetworkDetail />} />
-                <Route path="/openstack/subnets/:id" element={<OpenStackSubnetDetail />} />
-                <Route path="/openstack/routers/:id" element={<OpenStackRouterDetail />} />
-                <Route path="/openstack/ports/:id" element={<OpenStackPortDetail />} />
-                <Route path="/openstack/volume-transfers/:id" element={<OpenStackVolumeTransferDetail />} />
-                <Route path="/openstack/volume-snapshots" element={<OpenStackVolumeSnapshots />} />
-                <Route path="/openstack/volume-snapshots/:id" element={<OpenStackVolumeSnapshotDetail />} />
-                <Route path="/openstack/heat" element={<OpenStackHeat />} />
-                <Route path="/openstack/heat/:name/:id" element={<OpenStackHeatDetail />} />
-                <Route path="/openstack/load-balancers" element={<OpenStackLoadBalancers />} />
-                <Route path="/openstack/load-balancers/:id" element={<OpenStackLoadBalancerDetail />} />
-                <Route path="/openstack/identity" element={<OpenStackIdentity />} />
-                <Route path="/openstack/identity/projects/:id" element={<OpenStackIdentityProjectDetail />} />
-                <Route path="/openstack/identity/users/:id" element={<OpenStackIdentityUserDetail />} />
-                <Route path="/openstack/topology" element={<OpenStackTopology />} />
-                <Route path="/openstack/instances/:id/console" element={<OpenStackConsole />} />
+                <Route path="/fleet-cloud" element={<FleetCloudOverview />} />
+                <Route path="/fleet-cloud/instances" element={<FleetCloudInstances />} />
+                <Route path="/fleet-cloud/instances/:id" element={<FleetCloudInstanceDetail />} />
+                <Route path="/fleet-cloud/instances/:id/interfaces" element={<FleetCloudInstanceInterfaces />} />
+                <Route path="/fleet-cloud/create" element={<FleetCloudCreateInstance />} />
+                <Route path="/fleet-cloud/images" element={<FleetCloudImages />} />
+                <Route path="/fleet-cloud/images/:id" element={<FleetCloudImageDetail />} />
+                <Route path="/fleet-cloud/migrations" element={<FleetCloudMigrations />} />
+                <Route path="/fleet-cloud/security-groups" element={<FleetCloudSecurityGroups />} />
+                <Route path="/fleet-cloud/security-groups/:id" element={<FleetCloudSecurityGroupDetail />} />
+                <Route path="/fleet-cloud/volumes" element={<FleetCloudVolumes />} />
+                <Route path="/fleet-cloud/volumes/:id" element={<FleetCloudVolumeDetail />} />
+                <Route path="/fleet-cloud/floating-ips" element={<FleetCloudFloatingIps />} />
+                <Route path="/fleet-cloud/networking" element={<FleetCloudNetworking />} />
+                <Route path="/fleet-cloud/keypairs" element={<FleetCloudKeypairs />} />
+                <Route path="/fleet-cloud/flavors" element={<FleetCloudFlavors />} />
+                <Route path="/fleet-cloud/flavors/:id" element={<FleetCloudFlavorDetail />} />
+                <Route path="/fleet-cloud/server-groups" element={<FleetCloudServerGroups />} />
+                <Route path="/fleet-cloud/server-groups/:id" element={<FleetCloudServerGroupDetail />} />
+                <Route path="/fleet-cloud/networks/:id" element={<FleetCloudNetworkDetail />} />
+                <Route path="/fleet-cloud/volume-snapshots" element={<FleetCloudVolumeSnapshots />} />
+                <Route path="/fleet-cloud/volume-snapshots/:id" element={<FleetCloudVolumeSnapshotDetail />} />
+                <Route path="/fleet-cloud/heat" element={<FleetCloudHeat />} />
+                <Route path="/fleet-cloud/heat/:name/:id" element={<FleetCloudHeatDetail />} />
+                <Route path="/fleet-cloud/load-balancers" element={<FleetCloudLoadBalancers />} />
+                <Route path="/fleet-cloud/load-balancers/:id" element={<FleetCloudLoadBalancerDetail />} />
+                <Route path="/fleet-cloud/identity" element={<FleetCloudIdentity />} />
+                <Route path="/fleet-cloud/identity/projects/:id" element={<FleetCloudIdentityProjectDetail />} />
+                <Route path="/fleet-cloud/topology" element={<FleetCloudTopology />} />
+                <Route path="/fleet-cloud/instances/:id/console" element={<FleetCloudConsole />} />
                 <Route path="/networks" element={<Networks />} />
                 <Route path="/storage" element={<Storage />} />
                 <Route path="/storage/:pool" element={<StoragePoolDetail />} />

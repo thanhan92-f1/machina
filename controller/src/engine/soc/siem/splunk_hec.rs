@@ -5,8 +5,21 @@ use sqlx::SqlitePool;
 
 use super::{
     fetch_unexported_alerts, fetch_unexported_events, integration_err, integration_ok,
-    mark_exported, AlertRow, EventRow, IntegrationRow,
+    mark_exported, AlertRow, EventRow, IntegrationRow, FORWARD_CLIENT_TIMEOUT_SECS,
 };
+
+/// Splunk accepts HEC posts at a path ending in `/services/collector[...]`;
+/// callers may configure either that full collector URL or just the Splunk
+/// base URL. Normalize both into a concrete `/services/collector/event`
+/// endpoint so forward() and test_connection() can't drift apart on this.
+fn hec_event_url(base_url: &str) -> String {
+    let trimmed = base_url.trim_end_matches('/');
+    if trimmed.contains("/services/collector") {
+        trimmed.to_string()
+    } else {
+        format!("{trimmed}/services/collector/event")
+    }
+}
 
 pub async fn forward(
     pool: &SqlitePool,
@@ -50,11 +63,7 @@ pub async fn forward(
         .filter(|s| !s.is_empty())
         .unwrap_or(controller_id);
 
-    let hec_url = if url.contains("/services/collector") {
-        url.to_string()
-    } else {
-        format!("{url}/services/collector/event")
-    };
+    let hec_url = hec_event_url(url);
 
     let insecure_tls = integ
         .config_json
@@ -62,7 +71,7 @@ pub async fn forward(
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
+        .timeout(std::time::Duration::from_secs(FORWARD_CLIENT_TIMEOUT_SECS))
         .danger_accept_invalid_certs(insecure_tls)
         .build()?;
 
@@ -177,11 +186,7 @@ pub async fn test_connection(
     if url.is_empty() || token.is_empty() {
         anyhow::bail!("url and token required");
     }
-    let hec_url = if url.contains("/services/collector") {
-        url.to_string()
-    } else {
-        format!("{}/services/collector/event", url.trim_end_matches('/'))
-    };
+    let hec_url = hec_event_url(url);
     let insecure_tls = config
         .get("insecure_tls")
         .and_then(|v| v.as_bool())

@@ -8,17 +8,23 @@ use crate::engine::vm_lifecycle;
 use crate::state::AppState;
 use crate::tasks::enqueue::enqueue_task;
 
+/// How often a non-leader replica re-checks leadership before it starts
+/// reconciling.
+const LEADER_POLL_INTERVAL: Duration = Duration::from_secs(10);
+/// Steady-state reconcile cadence once this replica is leader.
+const RECONCILE_TICK_INTERVAL: Duration = Duration::from_secs(60);
+
 pub fn spawn(state: AppState) {
     tokio::spawn(async move {
         loop {
             if !state.leader.is_leader() {
-                tokio::time::sleep(Duration::from_secs(10)).await;
+                tokio::time::sleep(LEADER_POLL_INTERVAL).await;
                 continue;
             }
             if let Err(e) = reconcile_once(&state).await {
                 tracing::warn!("vm reconcile loop: {e:#}");
             }
-            tokio::time::sleep(Duration::from_secs(60)).await;
+            tokio::time::sleep(RECONCILE_TICK_INTERVAL).await;
         }
     });
 }

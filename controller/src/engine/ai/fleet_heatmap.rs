@@ -3,6 +3,14 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
+// Classification thresholds shared with fleet_power/fleet_rebalance callers,
+// which key their recommendations off the "hot"/"cold" labels below.
+const HOT_CPU_PERCENT: f32 = 85.0;
+const HOT_MEMORY_PERCENT: f32 = 85.0;
+const COLD_CPU_PERCENT: f32 = 15.0;
+const COLD_MEMORY_PERCENT: f32 = 20.0;
+const COLD_MAX_VM_COUNT: i32 = 1;
+
 #[derive(Debug, Serialize)]
 pub struct HostHeatCell {
     pub host_id: String,
@@ -42,9 +50,12 @@ pub async fn heatmap(pool: &SqlitePool) -> anyhow::Result<FleetHeatmap> {
         };
         let classification = if state != "online" {
             "offline"
-        } else if cpu >= 85.0 || mem_pct >= 85.0 {
+        } else if cpu >= HOT_CPU_PERCENT || mem_pct >= HOT_MEMORY_PERCENT {
             "hot"
-        } else if cpu < 15.0 && mem_pct < 20.0 && vm_count <= 1 {
+        } else if cpu < COLD_CPU_PERCENT
+            && mem_pct < COLD_MEMORY_PERCENT
+            && vm_count <= COLD_MAX_VM_COUNT
+        {
             "cold"
         } else {
             "balanced"

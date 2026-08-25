@@ -3,6 +3,8 @@
 use serde::Serialize;
 use sqlx::SqlitePool;
 
+const HOURS_PER_MONTH: f64 = 730.0;
+
 #[derive(Debug, Serialize)]
 pub struct TeamCostRow {
     pub team: String,
@@ -62,7 +64,7 @@ pub async fn attribute(pool: &SqlitePool) -> anyhow::Result<CostAttributionRepor
             .filter(|p| !p.is_empty())
             .unwrap_or_else(|| "default".into());
         let memory_gib = mem_mib as f64 / 1024.0;
-        let monthly = (vcpus as f64 * rates.0 + memory_gib * rates.1) * 730.0;
+        let monthly = (vcpus as f64 * rates.0 + memory_gib * rates.1) * HOURS_PER_MONTH;
         total += monthly;
         teams.push(TeamCostRow {
             team: format!("project:{team}"),
@@ -81,7 +83,7 @@ pub async fn attribute(pool: &SqlitePool) -> anyhow::Result<CostAttributionRepor
             continue;
         }
         let memory_gib = mem_mib as f64 / 1024.0;
-        let monthly = (vcpus as f64 * rates.0 + memory_gib * rates.1) * 730.0;
+        let monthly = (vcpus as f64 * rates.0 + memory_gib * rates.1) * HOURS_PER_MONTH;
         teams.push(TeamCostRow {
             team: format!("tag:{team}"),
             vm_count: count,
@@ -117,6 +119,10 @@ pub async fn attribute(pool: &SqlitePool) -> anyhow::Result<CostAttributionRepor
         crate::engine::zeus_firewall::finops::team_exposure_attribution(pool, &cfg).await
     {
         for (team, exposure, _) in exp_teams {
+            // Both arms currently produce the same "tag:{team}" key — the
+            // metal: prefix isn't given a distinct attribution key yet, so
+            // don't "simplify" this away without checking whether bare-metal
+            // exposure attribution needs its own key format first.
             let key = if team.starts_with("metal:") {
                 format!("tag:{team}")
             } else {

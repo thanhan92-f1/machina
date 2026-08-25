@@ -88,6 +88,9 @@ pub fn append_metrics_history_point(
         if let Ok(meta) = fs::metadata(&path) {
             let max_bytes = max_file_mb.saturating_mul(1024 * 1024);
             if meta.len() > max_bytes {
+                // Trim to 85% of the cap, not 100%: leaves headroom so the very next
+                // append doesn't immediately exceed the cap again and re-trigger a
+                // trim on every single write once the file is at steady state.
                 let target = ((max_bytes as usize).saturating_mul(85) / 100).max(4096);
                 trim_jsonl_to_budget(&path, target)?;
             }

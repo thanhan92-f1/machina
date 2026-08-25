@@ -532,7 +532,7 @@ pub fn import_disk_image(
         .unwrap_or("")
         .to_lowercase();
     let base = storage::primary_vm_disk_base_dir(conn)
-        .unwrap_or_else(|| "/var/lib/libvirt/images".to_string());
+        .unwrap_or_else(|| super::DEFAULT_LIBVIRT_IMAGES_DIR.to_string());
     let dest_path = format!("{}/{}.qcow2", base.trim_end_matches('/'), dest_name);
 
     if Path::new(&dest_path).exists() {

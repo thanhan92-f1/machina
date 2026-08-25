@@ -19,7 +19,7 @@ HEALTH_URL="${HEALTH_URL:-https://127.0.0.1:5092/api/v1/health}"
 STRICT="${STRICT:-0}"
 # Default matches VM-style layout: rsync here → build on server → install to /usr/local + systemd
 REMOTE_DIR="${REMOTE_DIR:-~/.deployment/machina}"
-# Limit parallel rustc link jobs on memory-tight hypervisors (k3s + OpenStack + Machina).
+# Limit parallel rustc link jobs on memory-tight hypervisors (k3s + other cloud workloads + Machina).
 REMOTE_CARGO_BUILD_JOBS="${REMOTE_CARGO_BUILD_JOBS:-1}"
 
 info() { deploy_ui_info_b "$@"; }

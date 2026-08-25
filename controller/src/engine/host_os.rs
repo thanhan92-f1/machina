@@ -284,19 +284,30 @@ pub struct VmGuestHealthReport {
     pub guest_observability: Option<serde_json::Value>,
 }
 
-pub async fn vm_guest_health(
+/// Look up a VM's name + host, resolve the host's agent address, and connect a
+/// gRPC client to it. Shared by every guest-agent entrypoint below — they all
+/// need the same (name, connected client) pair before making their own RPC.
+async fn connect_vm_agent(
     pool: &SqlitePool,
     cfg: &ControllerConfig,
     vm_id: Uuid,
-) -> anyhow::Result<VmGuestHealthReport> {
+) -> anyhow::Result<(String, agent_client::AgentClient)> {
     let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
         .bind(vm_id)
         .fetch_optional(pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-    let (vm_name, host_id) = row;
-    let (_, addr) = resolve_agent_addr(pool, cfg, host_id).await?;
-    let mut client = agent_client::connect(&addr).await?;
+    let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
+    let client = agent_client::connect(&addr).await?;
+    Ok((row.0, client))
+}
+
+pub async fn vm_guest_health(
+    pool: &SqlitePool,
+    cfg: &ControllerConfig,
+    vm_id: Uuid,
+) -> anyhow::Result<VmGuestHealthReport> {
+    let (vm_name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
     let gh = agent_client::get_guest_health(&mut client, &vm_name).await?;
     let summary = match gh.install_state.as_str() {
         "running" if gh.healthy => format!("Guest agent running · {}", gh.os_pretty_name),
@@ -370,14 +381,8 @@ pub async fn vm_guest_agent_action(
     vm_id: Uuid,
     action: &str,
 ) -> anyhow::Result<serde_json::Value> {
-    let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-        .bind(vm_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-    let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
-    let mut client = agent_client::connect(&addr).await?;
-    agent_client::guest_agent_action(&mut client, &row.0, action).await
+    let (name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
+    agent_client::guest_agent_action(&mut client, &name, action).await
 }
 
 pub async fn vm_guest_observability(
@@ -385,14 +390,8 @@ pub async fn vm_guest_observability(
     cfg: &ControllerConfig,
     vm_id: Uuid,
 ) -> anyhow::Result<serde_json::Value> {
-    let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-        .bind(vm_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-    let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
-    let mut client = agent_client::connect(&addr).await?;
-    agent_client::get_guest_observability(&mut client, &row.0).await
+    let (name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
+    agent_client::get_guest_observability(&mut client, &name).await
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -432,14 +431,8 @@ pub async fn vm_guest_services(
             detail: health.os_pretty_name.clone(),
             controllable: false,
         });
-        let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-            .bind(vm_id)
-            .fetch_optional(pool)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-        let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
-        let mut client = agent_client::connect(&addr).await?;
-        if let Ok(val) = agent_client::guest_agent_action(&mut client, &row.0, "list_services").await
+        let (name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
+        if let Ok(val) = agent_client::guest_agent_action(&mut client, &name, "list_services").await
         {
             if let Some(arr) = val.get("services").and_then(|s| s.as_array()) {
                 for item in arr {
@@ -489,20 +482,14 @@ pub async fn vm_guest_service_action(
     unit: &str,
     action: &str,
 ) -> anyhow::Result<serde_json::Value> {
-    let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-        .bind(vm_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-    let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
-    let mut client = agent_client::connect(&addr).await?;
+    let (name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
     let keyed = match action.trim().to_ascii_lowercase().as_str() {
         "start" => format!("service_start:{unit}"),
         "stop" => format!("service_stop:{unit}"),
         "restart" => format!("service_restart:{unit}"),
         other => anyhow::bail!("unsupported guest service action: {other}"),
     };
-    agent_client::guest_agent_action(&mut client, &row.0, &keyed).await
+    agent_client::guest_agent_action(&mut client, &name, &keyed).await
 }
 
 pub async fn vm_guest_network_get(
@@ -510,14 +497,8 @@ pub async fn vm_guest_network_get(
     cfg: &ControllerConfig,
     vm_id: Uuid,
 ) -> anyhow::Result<serde_json::Value> {
-    let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-        .bind(vm_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-    let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
-    let mut client = agent_client::connect(&addr).await?;
-    let val = agent_client::guest_agent_action(&mut client, &row.0, "get_network").await?;
+    let (name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
+    let val = agent_client::guest_agent_action(&mut client, &name, "get_network").await?;
     Ok(val
         .get("network")
         .cloned()
@@ -534,15 +515,9 @@ pub async fn vm_guest_network_apply(
     vm_id: Uuid,
     req: &serde_json::Value,
 ) -> anyhow::Result<serde_json::Value> {
-    let row: (String, Uuid) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-        .bind(vm_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
-    let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
-    let mut client = agent_client::connect(&addr).await?;
+    let (name, mut client) = connect_vm_agent(pool, cfg, vm_id).await?;
     let keyed = format!("network_apply:{req}");
-    agent_client::guest_agent_action(&mut client, &row.0, &keyed).await
+    agent_client::guest_agent_action(&mut client, &name, &keyed).await
 }
 
 #[derive(Debug, Clone, Serialize)]

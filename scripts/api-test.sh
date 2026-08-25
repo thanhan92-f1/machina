@@ -7,7 +7,7 @@
 # Examples:
 #   VSPASS=max ./scripts/api-test.sh https://185.165.240.5:5092 sus
 #
-# Runs e2e-test.sh with libvirt-only mode (no OpenStack / preflight).
+# Runs e2e-test.sh with libvirt-only mode (no preflight).
 #
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -234,6 +234,20 @@ function CockpitInner({
     [displayProtocols, onExperienceModeChange, onProtocolChange, plan?.recommended],
   )
 
+  // These two open-the-Command-Center-on-a-given-tab callbacks are handed to
+  // three different chrome layers (Cinema's ops-shelf/AI buttons, Studio's
+  // command-center/AI buttons, and the classic command strip) — factored out
+  // so the three call sites can't drift out of sync with each other.
+  const openOverviewPanel = useCallback(() => { setCommandCenter(true); setCcTab('Overview') }, [])
+  const openAiPanel = useCallback(() => { setCommandCenter(true); setCcTab('AI') }, [])
+
+  // plan.hypervisor_address is the fallback when the caller didn't already
+  // resolve one; several child panels (SSH/shell banners, port-forward,
+  // network drawer) all need this same resolved value.
+  const effectiveHypervisorAddress = hypervisorAddress ?? plan?.hypervisor_address ?? undefined
+
+  const notifySuccess = useCallback((m: string) => toast.success(m), [toast])
+
   const sendCtrlAltDel = async () => {
     if (!access.canSendKeys) {
       toast.info('Read-only session — cannot send keys')
@@ -439,10 +453,10 @@ function CockpitInner({
           guestIp={plan?.guest_ip ?? undefined}
           vmId={vmId}
           vmName={vmName}
-          hypervisorHost={hypervisorAddress ?? plan?.hypervisor_address ?? undefined}
+          hypervisorHost={effectiveHypervisorAddress}
           portForwardRules={portForwardRules}
           onPlanRefresh={onPlanRefresh}
-          onNotify={(m) => toast.success(m)}
+          onNotify={notifySuccess}
         />
         {activeProtocol === 'serial' && plan?.guest_access ? (
           <ConsoleLoginRecoveryCard
@@ -460,9 +474,9 @@ function CockpitInner({
             hints={plan?.guest_access}
             sshUser={plan?.ssh_user ?? undefined}
             guestIp={plan?.guest_ip ?? undefined}
-            hypervisorHost={hypervisorAddress ?? plan?.hypervisor_address ?? undefined}
+            hypervisorHost={effectiveHypervisorAddress}
             portForwardRules={portForwardRules}
-            onNotify={(m) => toast.success(m)}
+            onNotify={notifySuccess}
           />
         ) : null}
       </>
@@ -517,9 +531,9 @@ function CockpitInner({
               vmName={vmName}
               guestIp={plan.guest_ip}
               sshUser={plan.ssh_user ?? undefined}
-              hypervisorAddress={hypervisorAddress ?? plan.hypervisor_address ?? undefined}
+              hypervisorAddress={effectiveHypervisorAddress}
               compact
-              onNotify={(m) => toast.success(m)}
+              onNotify={notifySuccess}
             />
           ) : (
             <p className="text-xs text-slate-500">NAT port forwarding is available when the guest has a private libvirt IP.</p>
@@ -545,7 +559,7 @@ function CockpitInner({
       vmState={vmState}
       guestIp={plan?.guest_ip}
       guestAccess={plan?.guest_access}
-      hypervisorAddress={hypervisorAddress ?? plan?.hypervisor_address ?? undefined}
+      hypervisorAddress={effectiveHypervisorAddress}
       sshUser={plan?.ssh_user ?? undefined}
       sessions={history}
       timeline={machineTimeline}
@@ -583,11 +597,11 @@ function CockpitInner({
           hypervisorAddress={hypervisorAddress}
           portForwardRules={portForwardRules}
           onPlanRefresh={onPlanRefresh}
-          onNotify={(m) => toast.success(m)}
+          onNotify={notifySuccess}
           onBack={() => navigate(`/platform/vms/${vmId}`)}
           onOpenStudio={() => onExperienceModeChange?.('studio')}
-          onOpenOpsShelf={() => { setCommandCenter(true); setCcTab('Overview') }}
-          onOpenAi={() => { setCommandCenter(true); setCcTab('AI') }}
+          onOpenOpsShelf={openOverviewPanel}
+          onOpenAi={openAiPanel}
           onSwitchLens={(l) => switchLens(l as ConsoleLens)}
           onCtrlAltDel={() => void sendCtrlAltDel()}
           onSendKey={(p) => void sendKeyPreset(p as 'esc' | 'ctrl_alt_del' | 'alt_tab')}
@@ -641,9 +655,9 @@ function CockpitInner({
           vmName={vmName}
           guestIp={plan?.guest_ip}
           sshUser={plan?.ssh_user ?? undefined}
-          hypervisorAddress={hypervisorAddress ?? plan?.hypervisor_address ?? undefined}
+          hypervisorAddress={effectiveHypervisorAddress}
           onPlanRefresh={onPlanRefresh}
-          onNotify={(m) => toast.success(m)}
+          onNotify={notifySuccess}
         />
         {opsShelf}
       </>
@@ -685,8 +699,8 @@ function CockpitInner({
           activeProtocol={activeProtocol}
           onProtocolChange={onProtocolChange}
           recommended={plan?.recommended}
-          onCommandCenter={() => { setCommandCenter(true); setCcTab('Overview') }}
-          onAi={() => { setCommandCenter(true); setCcTab('AI') }}
+          onCommandCenter={openOverviewPanel}
+          onAi={openAiPanel}
           onOpenCinema={() => onExperienceModeChange?.('cinema')}
           primary={
             <MachineCanvas vmState={vmState} healthScore={healthScore} theatre className="flex-1 min-h-[50vh]">
@@ -728,8 +742,8 @@ function CockpitInner({
         nodeName={nodeName}
         healthScore={healthScore}
         onEnterTheatre={() => onExperienceModeChange?.('cinema')}
-        onCommandCenter={() => { setCommandCenter(true); setCcTab('Overview') }}
-        onAi={() => { setCommandCenter(true); setCcTab('AI') }}
+        onCommandCenter={openOverviewPanel}
+        onAi={openAiPanel}
       />
       <ViewLensBar
         active={lens}

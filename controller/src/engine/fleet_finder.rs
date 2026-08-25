@@ -143,12 +143,6 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetFinderOverview> 
     .fetch_one(pool)
     .await
     .unwrap_or(0);
-    let openstack_src: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM vms WHERE inventory_source = 'openstack'")
-            .fetch_one(pool)
-            .await
-            .unwrap_or(0);
-
     let tag_rows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT j.value AS tag, COUNT(*) FROM vms, json_each(COALESCE(tags,'[]')) j
          WHERE tags IS NOT NULL AND tags != '[]' AND tags != ''
@@ -266,7 +260,7 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetFinderOverview> 
 
     Ok(FleetFinderOverview {
         summary: format!(
-            "{all} machines · {running} running · {stopped} stopped · {unprotected} need backup · libvirt {libvirt_src} · kubevirt {kubevirt_src} · vmware {vmware_src} · openstack {openstack_src}",
+            "{all} machines · {running} running · {stopped} stopped · {unprotected} need backup · libvirt {libvirt_src} · kubevirt {kubevirt_src} · vmware {vmware_src}",
         ),
         smart_folders,
         tags,

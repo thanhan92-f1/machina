@@ -27,7 +27,7 @@ const STEPS: { id: StepId; label: string; hint: string }[] = [
   { id: 'networks', label: 'Import networks', hint: 'Pull libvirt networks from online hosts' },
   { id: 'storage', label: 'Import storage', hint: 'Discover storage pools from libvirt' },
   { id: 'templates', label: 'Seed templates', hint: 'Load the default App Store catalog' },
-  { id: 'integrations', label: 'Explore Apps & Integrations', hint: 'OpenStack, K8s, HyperSDK, and classic tools' },
+  { id: 'integrations', label: 'Explore Apps & Integrations', hint: 'Fleet Cloud, K8s, HyperSDK, and classic tools' },
   { id: 'vm', label: 'Create your first VM', hint: 'Optional — launch the VM wizard when ready' },
 ]
 

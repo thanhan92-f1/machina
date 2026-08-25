@@ -41,6 +41,39 @@ pub struct NlOpsPlan {
     pub reply: String,
 }
 
+/// Submits `step` as a queued action unless `dry_run` is set, appending the new
+/// action's id to `action_ids`. The volume/security-group/create-VM/migrate
+/// intents below all funnel through here — they were each hand-rolling the same
+/// dry-run gate plus `CreateActionBody` construction, which made it easy for the
+/// gate to drift out of sync between intents.
+async fn queue_nl_op_action(
+    pool: &SqlitePool,
+    dry_run: bool,
+    step: &NlOpsStep,
+    object_ref: serde_json::Value,
+    actor: &str,
+    action_ids: &mut Vec<Uuid>,
+) -> anyhow::Result<()> {
+    if dry_run {
+        return Ok(());
+    }
+    let row = actions::create_action(
+        pool,
+        &CreateActionBody {
+            action_type: step.action_type.clone(),
+            label: step.label.clone(),
+            review: step.review.clone(),
+            risk: step.risk.clone(),
+            object_ref,
+            source: "nl_ops".into(),
+        },
+        actor,
+    )
+    .await?;
+    action_ids.push(row.id);
+    Ok(())
+}
+
 pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyhow::Result<NlOpsPlan> {
     let q = req.query.trim();
     let ql = q.to_lowercase();
@@ -66,22 +99,7 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
             risk: "low".into(),
         };
         let mut action_ids = Vec::new();
-        if !req.dry_run {
-            let row = actions::create_action(
-                pool,
-                &CreateActionBody {
-                    action_type: step.action_type.clone(),
-                    label: step.label.clone(),
-                    review: step.review.clone(),
-                    risk: step.risk.clone(),
-                    object_ref,
-                    source: "nl_ops".into(),
-                },
-                actor,
-            )
-            .await?;
-            action_ids.push(row.id);
-        }
+        queue_nl_op_action(pool, req.dry_run, &step, object_ref, actor, &mut action_ids).await?;
         return Ok(NlOpsPlan {
             intent: "create_volume".into(),
             summary: format!("Create a {size_gib}GiB volume"),
@@ -111,22 +129,7 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
             risk: "medium".into(),
         };
         let mut action_ids = Vec::new();
-        if !req.dry_run {
-            let row = actions::create_action(
-                pool,
-                &CreateActionBody {
-                    action_type: step.action_type.clone(),
-                    label: step.label.clone(),
-                    review: step.review.clone(),
-                    risk: step.risk.clone(),
-                    object_ref,
-                    source: "nl_ops".into(),
-                },
-                actor,
-            )
-            .await?;
-            action_ids.push(row.id);
-        }
+        queue_nl_op_action(pool, req.dry_run, &step, object_ref, actor, &mut action_ids).await?;
         return Ok(NlOpsPlan {
             intent: "create_security_group".into(),
             summary: format!("Create security group '{name}'"),
@@ -162,23 +165,9 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
             });
         }
         let mut action_ids = Vec::new();
-        if !req.dry_run {
-            for step in &steps {
-                let row = actions::create_action(
-                    pool,
-                    &CreateActionBody {
-                        action_type: step.action_type.clone(),
-                        label: step.label.clone(),
-                        review: step.review.clone(),
-                        risk: step.risk.clone(),
-                        object_ref: serde_json::json!({}),
-                        source: "nl_ops".into(),
-                    },
-                    actor,
-                )
+        for step in &steps {
+            queue_nl_op_action(pool, req.dry_run, step, serde_json::json!({}), actor, &mut action_ids)
                 .await?;
-                action_ids.push(row.id);
-            }
         }
         return Ok(NlOpsPlan {
             intent: "create_vms".into(),
@@ -219,23 +208,9 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
             });
         }
         let mut action_ids = Vec::new();
-        if !req.dry_run {
-            for step in &steps {
-                let row = actions::create_action(
-                    pool,
-                    &CreateActionBody {
-                        action_type: step.action_type.clone(),
-                        label: step.label.clone(),
-                        review: step.review.clone(),
-                        risk: step.risk.clone(),
-                        object_ref: serde_json::json!({}),
-                        source: "nl_ops".into(),
-                    },
-                    actor,
-                )
+        for step in &steps {
+            queue_nl_op_action(pool, req.dry_run, step, serde_json::json!({}), actor, &mut action_ids)
                 .await?;
-                action_ids.push(row.id);
-            }
         }
         return Ok(NlOpsPlan {
             intent: "migrate_vms_from_host".into(),

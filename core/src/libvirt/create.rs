@@ -379,7 +379,11 @@ pub fn find_disk_path(conn: &Connect, vm_name: &str) -> Result<String, LibvirtEr
     if let Some(base) = super::storage::primary_vm_disk_base_dir(conn) {
         return Ok(format!("{}/{}.qcow2", base.trim_end_matches('/'), vm_name));
     }
-    Ok(format!("/var/lib/libvirt/images/{}.qcow2", vm_name))
+    Ok(format!(
+        "{}/{}.qcow2",
+        super::DEFAULT_LIBVIRT_IMAGES_DIR,
+        vm_name
+    ))
 }
 
 fn create_qcow2_disk(
@@ -426,16 +430,24 @@ fn probe_disk_format(path: &str) -> Option<String> {
         .map(|s| s.to_string())
 }
 
+/// First candidate path that exists as a regular file, checked in order.
+fn first_existing_file(candidates: &[&str]) -> Option<String> {
+    for path in candidates {
+        if Path::new(path).is_file() {
+            return Some(path.to_string());
+        }
+    }
+    None
+}
+
 fn find_qemu_binary() -> String {
     let candidates = [
         "/usr/bin/qemu-system-x86_64",
         "/usr/libexec/qemu-kvm",
         "/usr/bin/qemu-kvm",
     ];
-    for path in &candidates {
-        if Path::new(path).is_file() {
-            return path.to_string();
-        }
+    if let Some(found) = first_existing_file(&candidates) {
+        return found;
     }
     // PATH fallback — mirrors hyper2kvm's shutil.which behaviour
     for name in &["qemu-system-x86_64", "qemu-kvm"] {
@@ -452,7 +464,7 @@ fn find_qemu_binary() -> String {
 }
 
 pub(crate) fn find_ovmf_code() -> Option<String> {
-    let candidates = [
+    first_existing_file(&[
         "/usr/share/edk2/ovmf/OVMF_CODE.fd",
         "/usr/share/edk2/ovmf/x64/OVMF_CODE.fd",
         "/usr/share/OVMF/OVMF_CODE.fd",
@@ -461,17 +473,11 @@ pub(crate) fn find_ovmf_code() -> Option<String> {
         "/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd",
         "/usr/share/edk2/ovmf/x64/OVMF_CODE.secboot.fd",
         "/usr/share/OVMF/OVMF_CODE_4M.fd",
-    ];
-    for path in &candidates {
-        if Path::new(path).is_file() {
-            return Some(path.to_string());
-        }
-    }
-    None
+    ])
 }
 
 pub(crate) fn find_ovmf_vars_template() -> Option<String> {
-    let candidates = [
+    first_existing_file(&[
         "/usr/share/edk2/ovmf/OVMF_VARS.fd",
         "/usr/share/OVMF/OVMF_VARS.fd",
         "/usr/share/edk2/ovmf/x64/OVMF_VARS.fd",
@@ -479,13 +485,7 @@ pub(crate) fn find_ovmf_vars_template() -> Option<String> {
         "/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd",
         "/usr/share/edk2/ovmf/x64/OVMF_VARS.secboot.fd",
         "/usr/share/OVMF/OVMF_VARS_4M.fd",
-    ];
-    for path in &candidates {
-        if Path::new(path).is_file() {
-            return Some(path.to_string());
-        }
-    }
-    None
+    ])
 }
 
 /// Detect SPICE availability by probing for libspice-server.so in common lib dirs.

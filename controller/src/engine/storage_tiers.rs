@@ -69,6 +69,19 @@ pub struct UpsertBackupSlaRequest {
     pub retention_days: i32,
 }
 
+/// Simulated compliance grade from RPO: <=4h is best-practice (A), <=24h is
+/// acceptable (B), anything looser is flagged (C). Shared by the SLA upsert
+/// path and the auto-seeded stub SLAs so both grade the same RPO the same way.
+fn compliance_grade_for_rpo(rpo_hours: i32) -> &'static str {
+    if rpo_hours <= 4 {
+        "A"
+    } else if rpo_hours <= 24 {
+        "B"
+    } else {
+        "C"
+    }
+}
+
 pub async fn tiers_overview(pool: &SqlitePool) -> anyhow::Result<TiersOverview> {
     let rows: Vec<StorageTierRow> = match sqlx::query_as(
         "SELECT id, name, tier_class, iops_tier, replication, snapshot_retention_days, backup_rpo_hours, description
@@ -180,13 +193,7 @@ pub async fn upsert_backup_sla(
         .await?
         .ok_or_else(|| anyhow::anyhow!("storage pool not found"))?;
 
-    let grade = if req.rpo_hours <= 4 {
-        "A"
-    } else if req.rpo_hours <= 24 {
-        "B"
-    } else {
-        "C"
-    };
+    let grade = compliance_grade_for_rpo(req.rpo_hours);
 
     let id = Uuid::new_v4();
     sqlx::query(
@@ -249,13 +256,7 @@ async fn ensure_sla_stubs(pool: &SqlitePool) -> anyhow::Result<()> {
             (24, 14)
         };
 
-        let grade = if rpo <= 4 {
-            "A"
-        } else if rpo <= 24 {
-            "B"
-        } else {
-            "C"
-        };
+        let grade = compliance_grade_for_rpo(rpo);
         let mut tx = pool.begin().await?;
         sqlx::query(
             "INSERT INTO storage_backup_sla (id, pool_id, rpo_hours, rto_hours, retention_days, compliance_grade)

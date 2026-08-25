@@ -65,6 +65,8 @@ service HostAgent {
   rpc CreatePortForward(CreatePortForwardRequest) returns (CreatePortForwardResponse);
   rpc DeletePortForward(DeletePortForwardRequest) returns (DeletePortForwardResponse);
   rpc ListHostGpus(ListHostGpusRequest) returns (ListHostGpusResponse);
+  rpc SetLoadBalancer(SetLoadBalancerRequest) returns (SetLoadBalancerResponse);
+  rpc DeleteLoadBalancer(DeleteLoadBalancerRequest) returns (DeleteLoadBalancerResponse);
 }
 
 message RegisterRequest {
@@ -813,6 +815,35 @@ message DeletePortForwardRequest {
 }
 
 message DeletePortForwardResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message LoadBalancerMemberMsg {
+  string vm_ip = 1;
+  uint32 port = 2;
+  uint32 weight = 3;
+}
+
+message SetLoadBalancerRequest {
+  string lb_id = 1;
+  string protocol = 2;
+  uint32 host_port = 3;
+  repeated LoadBalancerMemberMsg members = 4;
+}
+
+message SetLoadBalancerResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message DeleteLoadBalancerRequest {
+  string lb_id = 1;
+  string protocol = 2;
+  uint32 host_port = 3;
+}
+
+message DeleteLoadBalancerResponse {
   bool ok = 1;
   string message = 2;
 }

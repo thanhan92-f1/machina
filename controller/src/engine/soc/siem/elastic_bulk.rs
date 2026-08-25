@@ -5,7 +5,7 @@ use sqlx::SqlitePool;
 
 use super::{
     fetch_unexported_events, integration_err, integration_ok, mark_exported, EventRow,
-    IntegrationRow,
+    IntegrationRow, FORWARD_CLIENT_TIMEOUT_SECS,
 };
 
 pub async fn forward(
@@ -40,7 +40,7 @@ pub async fn forward(
         .unwrap_or(false);
     let bulk_url = format!("{url}/{index}/_bulk");
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
+        .timeout(std::time::Duration::from_secs(FORWARD_CLIENT_TIMEOUT_SECS))
         .danger_accept_invalid_certs(insecure_tls)
         .build()?;
 

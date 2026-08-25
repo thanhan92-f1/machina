@@ -95,10 +95,6 @@ pub struct ControllerConfig {
     pub consolehub_recording_dir: PathBuf,
     /// Require OIDC/SAML federation before opening production consoles (Phase 5).
     pub consolehub_require_oidc: bool,
-    /// Hermes Launchpad API (Kubernetes app catalog + gateway).
-    pub hermes_api_base: String,
-    pub hermes_public_base: String,
-    pub hermes_path_prefix: String,
     /// Zone name → CIDR map for firewall profile rule sources (e.g.
     /// `admin-network` → `10.0.0.0/8`), from `MACHINA_FIREWALL_ZONES`
     /// (`name=cidr,name=cidr`, malformed entries skipped). Injected into
@@ -196,14 +192,6 @@ impl Default for ControllerConfig {
             consolehub_require_oidc: std::env::var("CONSOLEHUB_REQUIRE_OIDC")
                 .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
                 .unwrap_or(false),
-            // Launchpad/Hermes is opt-in: empty by default so `enabled` (config.rs
-            // launchpad handler) is false unless an operator explicitly points at a
-            // Hermes deployment. A non-empty localhost default made the UI render the
-            // Launchpad and then 502 on every call when Hermes wasn't installed.
-            hermes_api_base: std::env::var("HERMES_API_BASE").unwrap_or_default(),
-            hermes_public_base: std::env::var("HERMES_PUBLIC_BASE").unwrap_or_default(),
-            hermes_path_prefix: std::env::var("HERMES_PATH_PREFIX")
-                .unwrap_or_else(|_| "/launchpad".into()),
             firewall_zones: std::env::var("MACHINA_FIREWALL_ZONES")
                 .map(|raw| machina_core::parse_zone_env(&raw))
                 .unwrap_or_default(),
@@ -270,9 +258,6 @@ impl std::fmt::Debug for ControllerConfig {
             )
             .field("consolehub_recording_dir", &self.consolehub_recording_dir)
             .field("consolehub_require_oidc", &self.consolehub_require_oidc)
-            .field("hermes_api_base", &self.hermes_api_base)
-            .field("hermes_public_base", &self.hermes_public_base)
-            .field("hermes_path_prefix", &self.hermes_path_prefix)
             .field("firewall_zones", &self.firewall_zones.keys().collect::<Vec<_>>())
             .finish()
     }

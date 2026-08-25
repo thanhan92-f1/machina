@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-07-16T02:41:43.578Z",
+  "generated_at": "2026-08-24T20:26:13.686Z",
   "entries": [
     {
       "id": "classic:/",
@@ -106,6 +106,376 @@
       "id": "classic:/fleet",
       "shell": "classic",
       "path": "/fleet",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud",
+      "tier": "power",
+      "headingPattern": "Fleet Cloud|Overview",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/create",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/create",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/flavors",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/flavors",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/flavors/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/flavors/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/floating-ips",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/floating-ips",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/floating-ips/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/floating-ips/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/heat",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/heat",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/heat/:name/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/heat/:name/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/hypervisors/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/hypervisors/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/identity",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/identity",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/identity/projects/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/identity/projects/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/identity/users/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/identity/users/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/images",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/images",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/images/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/images/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/instances",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/instances",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/instances/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/instances/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/instances/:id/console",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/instances/:id/console",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/instances/:id/interfaces",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/instances/:id/interfaces",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/keypairs",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/keypairs",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/load-balancers",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/load-balancers",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/load-balancers/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/load-balancers/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/migrations",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/migrations",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/networking",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/networking",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/networks/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/networks/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/ports/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/ports/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/routers/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/routers/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/security-groups",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/security-groups",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/security-groups/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/security-groups/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/server-groups",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/server-groups",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/server-groups/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/server-groups/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/subnets/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/subnets/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/topology",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/topology",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/volume-snapshots",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/volume-snapshots",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/volume-snapshots/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/volume-snapshots/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/volume-transfers/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/volume-transfers/:id",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/volumes",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/volumes",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "fleet-cloud:/fleet-cloud/volumes/:id",
+      "shell": "fleet-cloud",
+      "path": "/fleet-cloud/volumes/:id",
       "tier": "power",
       "headingPattern": ".+",
       "requires": null,
@@ -231,376 +601,6 @@
       "requires": null,
       "actions": [],
       "resolve": null
-    },
-    {
-      "id": "openstack:/openstack",
-      "shell": "openstack",
-      "path": "/openstack",
-      "tier": "power",
-      "headingPattern": "OpenStack|Overview",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/create",
-      "shell": "openstack",
-      "path": "/openstack/create",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/flavors",
-      "shell": "openstack",
-      "path": "/openstack/flavors",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/flavors/:id",
-      "shell": "openstack",
-      "path": "/openstack/flavors/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/floating-ips",
-      "shell": "openstack",
-      "path": "/openstack/floating-ips",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/floating-ips/:id",
-      "shell": "openstack",
-      "path": "/openstack/floating-ips/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/heat",
-      "shell": "openstack",
-      "path": "/openstack/heat",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/heat/:name/:id",
-      "shell": "openstack",
-      "path": "/openstack/heat/:name/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/hypervisors/:id",
-      "shell": "openstack",
-      "path": "/openstack/hypervisors/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/identity",
-      "shell": "openstack",
-      "path": "/openstack/identity",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/identity/projects/:id",
-      "shell": "openstack",
-      "path": "/openstack/identity/projects/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/identity/users/:id",
-      "shell": "openstack",
-      "path": "/openstack/identity/users/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/images",
-      "shell": "openstack",
-      "path": "/openstack/images",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/images/:id",
-      "shell": "openstack",
-      "path": "/openstack/images/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/instances",
-      "shell": "openstack",
-      "path": "/openstack/instances",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/instances/:id",
-      "shell": "openstack",
-      "path": "/openstack/instances/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/instances/:id/console",
-      "shell": "openstack",
-      "path": "/openstack/instances/:id/console",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/instances/:id/interfaces",
-      "shell": "openstack",
-      "path": "/openstack/instances/:id/interfaces",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/keypairs",
-      "shell": "openstack",
-      "path": "/openstack/keypairs",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/load-balancers",
-      "shell": "openstack",
-      "path": "/openstack/load-balancers",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/load-balancers/:id",
-      "shell": "openstack",
-      "path": "/openstack/load-balancers/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/migrations",
-      "shell": "openstack",
-      "path": "/openstack/migrations",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/networking",
-      "shell": "openstack",
-      "path": "/openstack/networking",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/networks/:id",
-      "shell": "openstack",
-      "path": "/openstack/networks/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/ports/:id",
-      "shell": "openstack",
-      "path": "/openstack/ports/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/routers/:id",
-      "shell": "openstack",
-      "path": "/openstack/routers/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/security-groups",
-      "shell": "openstack",
-      "path": "/openstack/security-groups",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/security-groups/:id",
-      "shell": "openstack",
-      "path": "/openstack/security-groups/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/server-groups",
-      "shell": "openstack",
-      "path": "/openstack/server-groups",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/server-groups/:id",
-      "shell": "openstack",
-      "path": "/openstack/server-groups/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/subnets/:id",
-      "shell": "openstack",
-      "path": "/openstack/subnets/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/topology",
-      "shell": "openstack",
-      "path": "/openstack/topology",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/volume-snapshots",
-      "shell": "openstack",
-      "path": "/openstack/volume-snapshots",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/volume-snapshots/:id",
-      "shell": "openstack",
-      "path": "/openstack/volume-snapshots/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/volume-transfers/:id",
-      "shell": "openstack",
-      "path": "/openstack/volume-transfers/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
-    },
-    {
-      "id": "openstack:/openstack/volumes",
-      "shell": "openstack",
-      "path": "/openstack/volumes",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "openstack:/openstack/volumes/:id",
-      "shell": "openstack",
-      "path": "/openstack/volumes/:id",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": "openstack",
-      "actions": [],
-      "resolve": "openstackResource"
     },
     {
       "id": "platform:/platform",
@@ -810,6 +810,18 @@
           "label": "Approved"
         },
         {
+          "kind": "tab",
+          "label": "Upload from this computer"
+        },
+        {
+          "kind": "tab",
+          "label": "Download from a URL"
+        },
+        {
+          "kind": "tab",
+          "label": "Register a host path"
+        },
+        {
           "kind": "filterPill",
           "label": "All"
         },
@@ -820,6 +832,18 @@
         {
           "kind": "filterPill",
           "label": "Approved"
+        },
+        {
+          "kind": "filterPill",
+          "label": "Upload from this computer"
+        },
+        {
+          "kind": "filterPill",
+          "label": "Download from a URL"
+        },
+        {
+          "kind": "filterPill",
+          "label": "Register a host path"
         }
       ],
       "resolve": null
@@ -835,9 +859,39 @@
       "resolve": null
     },
     {
+      "id": "platform:/platform/content?tab=file",
+      "shell": "platform",
+      "path": "/platform/content?tab=file",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/content?tab=path",
+      "shell": "platform",
+      "path": "/platform/content?tab=path",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
       "id": "platform:/platform/content?tab=pending",
       "shell": "platform",
       "path": "/platform/content?tab=pending",
+      "tier": "power",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/content?tab=url",
+      "shell": "platform",
+      "path": "/platform/content?tab=url",
       "tier": "power",
       "headingPattern": ".+",
       "requires": null,
@@ -1207,10 +1261,6 @@
         },
         {
           "kind": "tab",
-          "label": "OpenStack"
-        },
-        {
-          "kind": "tab",
           "label": "Cloud Image"
         }
       ],
@@ -1230,16 +1280,6 @@
       "id": "platform:/platform/migration?tab=esxi",
       "shell": "platform",
       "path": "/platform/migration?tab=esxi",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/migration?tab=openstack",
-      "shell": "platform",
-      "path": "/platform/migration?tab=openstack",
       "tier": "power",
       "headingPattern": ".+",
       "requires": null,
@@ -1424,7 +1464,7 @@
         },
         {
           "kind": "tab",
-          "label": "Zeus"
+          "label": "Zyra"
         },
         {
           "kind": "tab",
@@ -1500,7 +1540,7 @@
         },
         {
           "kind": "settingsSection",
-          "label": "Zeus"
+          "label": "Zyra"
         },
         {
           "kind": "settingsSection",
@@ -1910,9 +1950,9 @@
       "resolve": null
     },
     {
-      "id": "platform:/platform/settings?tab=zeus",
+      "id": "platform:/platform/settings?tab=zyra",
       "shell": "platform",
-      "path": "/platform/settings?tab=zeus",
+      "path": "/platform/settings?tab=zyra",
       "tier": "normal",
       "headingPattern": "Settings|General",
       "requires": null,
@@ -2349,110 +2389,11 @@
       "resolve": null
     },
     {
-      "id": "platform:/platform/zeus",
-      "shell": "platform",
-      "path": "/platform/zeus",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [
-        {
-          "kind": "tab",
-          "label": "Fleet"
-        },
-        {
-          "kind": "tab",
-          "label": "Graph Brain"
-        },
-        {
-          "kind": "tab",
-          "label": "Memory"
-        },
-        {
-          "kind": "tab",
-          "label": "Security"
-        },
-        {
-          "kind": "tab",
-          "label": "Knowledge"
-        },
-        {
-          "kind": "tab",
-          "label": "Services"
-        },
-        {
-          "kind": "tab",
-          "label": "Bare Metal"
-        }
-      ],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus?tab=baremetal",
-      "shell": "platform",
-      "path": "/platform/zeus?tab=baremetal",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus?tab=brain",
-      "shell": "platform",
-      "path": "/platform/zeus?tab=brain",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus?tab=knowledge",
-      "shell": "platform",
-      "path": "/platform/zeus?tab=knowledge",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus?tab=memory",
-      "shell": "platform",
-      "path": "/platform/zeus?tab=memory",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
       "id": "platform:/platform/zeus?tab=security",
       "shell": "platform",
       "path": "/platform/zeus?tab=security",
       "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus?tab=services",
-      "shell": "platform",
-      "path": "/platform/zeus?tab=services",
-      "tier": "power",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/approvals",
-      "shell": "platform",
-      "path": "/platform/zeus/approvals",
-      "tier": "normal",
-      "headingPattern": ".+",
+      "headingPattern": "Zeus|Security",
       "requires": null,
       "actions": [],
       "resolve": null
@@ -2463,26 +2404,6 @@
       "path": "/platform/zeus/approvals?tab=pending",
       "tier": "normal",
       "headingPattern": "Approval",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/configure",
-      "shell": "platform",
-      "path": "/platform/zeus/configure",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/incidents",
-      "shell": "platform",
-      "path": "/platform/zeus/incidents",
-      "tier": "normal",
-      "headingPattern": ".+",
       "requires": null,
       "actions": [],
       "resolve": null
@@ -2504,149 +2425,8 @@
       "tier": "normal",
       "headingPattern": ".+",
       "requires": null,
-      "actions": [
-        {
-          "kind": "tab",
-          "label": "Processes"
-        },
-        {
-          "kind": "tab",
-          "label": "Connections"
-        },
-        {
-          "kind": "tab",
-          "label": "Events"
-        },
-        {
-          "kind": "tab",
-          "label": "Graph"
-        },
-        {
-          "kind": "tab",
-          "label": "DNS"
-        },
-        {
-          "kind": "tab",
-          "label": "Open ports"
-        },
-        {
-          "kind": "tab",
-          "label": "Files"
-        },
-        {
-          "kind": "tab",
-          "label": "Containers"
-        },
-        {
-          "kind": "tab",
-          "label": "Users"
-        },
-        {
-          "kind": "tab",
-          "label": "Enforcement"
-        }
-      ],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=connections",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=connections",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
       "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=containers",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=containers",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=dns",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=dns",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=enforcement",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=enforcement",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=events",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=events",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=files",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=files",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=graph",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=graph",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=ports",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=ports",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/machines/:hostId?tab=users",
-      "shell": "platform",
-      "path": "/platform/zeus/machines/:hostId?tab=users",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/rightsizing",
-      "shell": "platform",
-      "path": "/platform/zeus/rightsizing",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
+      "resolve": "platformResource"
     },
     {
       "id": "platform:/platform/zeus/rightsizing?tab=candidates",
@@ -2715,99 +2495,6 @@
       "tier": "normal",
       "headingPattern": ".+",
       "requires": null,
-      "actions": [
-        {
-          "kind": "tab",
-          "label": "Deny process"
-        },
-        {
-          "kind": "tab",
-          "label": "Deny DNS"
-        },
-        {
-          "kind": "tab",
-          "label": "Deny port"
-        },
-        {
-          "kind": "tab",
-          "label": "Deny IP/CIDR"
-        },
-        {
-          "kind": "tab",
-          "label": "Deny file"
-        },
-        {
-          "kind": "tab",
-          "label": "Deny capability"
-        },
-        {
-          "kind": "tab",
-          "label": "Deny K8s namespace"
-        },
-        {
-          "kind": "tab",
-          "label": "TC egress allow"
-        }
-      ],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=deny_cap",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=deny_cap",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=deny_dns",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=deny_dns",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=deny_file",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=deny_file",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=deny_ip",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=deny_ip",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=deny_namespace",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=deny_namespace",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=deny_port",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=deny_port",
-      "tier": "normal",
-      "headingPattern": ".+",
-      "requires": null,
       "actions": [],
       "resolve": null
     },
@@ -2817,16 +2504,6 @@
       "path": "/platform/zeus/security/enforcement?tab=rules",
       "tier": "normal",
       "headingPattern": "Enforcement|Runtime",
-      "requires": null,
-      "actions": [],
-      "resolve": null
-    },
-    {
-      "id": "platform:/platform/zeus/security/enforcement?tab=tc_allow",
-      "shell": "platform",
-      "path": "/platform/zeus/security/enforcement?tab=tc_allow",
-      "tier": "normal",
-      "headingPattern": ".+",
       "requires": null,
       "actions": [],
       "resolve": null
@@ -3017,6 +2694,419 @@
       "shell": "platform",
       "path": "/platform/zeus/security/services",
       "tier": "advanced",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra",
+      "shell": "platform",
+      "path": "/platform/zyra",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [
+        {
+          "kind": "tab",
+          "label": "Fleet"
+        },
+        {
+          "kind": "tab",
+          "label": "Graph Brain"
+        },
+        {
+          "kind": "tab",
+          "label": "Memory"
+        },
+        {
+          "kind": "tab",
+          "label": "Security"
+        },
+        {
+          "kind": "tab",
+          "label": "Knowledge"
+        },
+        {
+          "kind": "tab",
+          "label": "Services"
+        },
+        {
+          "kind": "tab",
+          "label": "Bare Metal"
+        }
+      ],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra?tab=baremetal",
+      "shell": "platform",
+      "path": "/platform/zyra?tab=baremetal",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra?tab=brain",
+      "shell": "platform",
+      "path": "/platform/zyra?tab=brain",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra?tab=knowledge",
+      "shell": "platform",
+      "path": "/platform/zyra?tab=knowledge",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra?tab=memory",
+      "shell": "platform",
+      "path": "/platform/zyra?tab=memory",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra?tab=security",
+      "shell": "platform",
+      "path": "/platform/zyra?tab=security",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra?tab=services",
+      "shell": "platform",
+      "path": "/platform/zyra?tab=services",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/approvals",
+      "shell": "platform",
+      "path": "/platform/zyra/approvals",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/configure",
+      "shell": "platform",
+      "path": "/platform/zyra/configure",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/incidents",
+      "shell": "platform",
+      "path": "/platform/zyra/incidents",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [
+        {
+          "kind": "tab",
+          "label": "Processes"
+        },
+        {
+          "kind": "tab",
+          "label": "Connections"
+        },
+        {
+          "kind": "tab",
+          "label": "Events"
+        },
+        {
+          "kind": "tab",
+          "label": "Graph"
+        },
+        {
+          "kind": "tab",
+          "label": "DNS"
+        },
+        {
+          "kind": "tab",
+          "label": "Open ports"
+        },
+        {
+          "kind": "tab",
+          "label": "Files"
+        },
+        {
+          "kind": "tab",
+          "label": "Containers"
+        },
+        {
+          "kind": "tab",
+          "label": "Users"
+        },
+        {
+          "kind": "tab",
+          "label": "Enforcement"
+        }
+      ],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=connections",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=connections",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=containers",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=containers",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=dns",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=dns",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=enforcement",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=enforcement",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=events",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=events",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=files",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=files",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=graph",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=graph",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=ports",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=ports",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/machines/:hostId?tab=users",
+      "shell": "platform",
+      "path": "/platform/zyra/machines/:hostId?tab=users",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/rightsizing",
+      "shell": "platform",
+      "path": "/platform/zyra/rightsizing",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security",
+      "shell": "platform",
+      "path": "/platform/zyra/security",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [
+        {
+          "kind": "tab",
+          "label": "Deny process"
+        },
+        {
+          "kind": "tab",
+          "label": "Deny DNS"
+        },
+        {
+          "kind": "tab",
+          "label": "Deny port"
+        },
+        {
+          "kind": "tab",
+          "label": "Deny IP/CIDR"
+        },
+        {
+          "kind": "tab",
+          "label": "Deny file"
+        },
+        {
+          "kind": "tab",
+          "label": "Deny capability"
+        },
+        {
+          "kind": "tab",
+          "label": "Deny K8s namespace"
+        },
+        {
+          "kind": "tab",
+          "label": "TC egress allow"
+        }
+      ],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=deny_cap",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=deny_cap",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=deny_dns",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=deny_dns",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=deny_file",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=deny_file",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=deny_ip",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=deny_ip",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=deny_namespace",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=deny_namespace",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=deny_port",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=deny_port",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/enforcement?tab=tc_allow",
+      "shell": "platform",
+      "path": "/platform/zyra/security/enforcement?tab=tc_allow",
+      "tier": "normal",
+      "headingPattern": ".+",
+      "requires": null,
+      "actions": [],
+      "resolve": null
+    },
+    {
+      "id": "platform:/platform/zyra/security/hunt",
+      "shell": "platform",
+      "path": "/platform/zyra/security/hunt",
+      "tier": "normal",
       "headingPattern": ".+",
       "requires": null,
       "actions": [],

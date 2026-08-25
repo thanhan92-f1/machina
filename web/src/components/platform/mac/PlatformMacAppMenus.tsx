@@ -38,6 +38,11 @@ function openSpotlight(prefill?: string) {
   dispatchOpenSpotlight(prefill)
 }
 
+// Thin rule between menu-item groups, repeated across every dropdown below.
+function MenuDivider() {
+  return <div className="my-1 border-t border-white/[0.08]" />
+}
+
 export default function PlatformMacAppMenus() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -123,17 +128,17 @@ export default function PlatformMacAppMenus() {
         <PlatformMacMenuItem label="About Machina Platform" onClick={() => go('/platform/settings?section=about')} />
         <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => go('/platform/settings')} />
         <PlatformMacMenuItem label="Customize Dock…" onClick={() => { openPlatformDockEditor(); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         <PlatformMacMenuItem label="Add Host…" onClick={() => go('/platform/enroll')} />
         <PlatformMacMenuItem label="Platform Support" onClick={() => go('/platform/support')} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         <PlatformMacMenuItem label="Sign Out" onClick={() => { void logout(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
       <PlatformMacMenuDropdown label="Go" open={openMenu === 'go'} onToggle={() => toggleMenu('go')} onClose={closeMenu}>
         {navSections.map((section, idx) => (
           <div key={section.label}>
-            {idx > 0 && <div className="my-1 border-t border-white/[0.08]" />}
+            {idx > 0 && <MenuDivider />}
             <PlatformMacMenuItem label={section.label} header />
             {section.items.map((item, itemIdx) => {
               const prev = section.items[itemIdx - 1]
@@ -151,18 +156,18 @@ export default function PlatformMacAppMenus() {
             })}
           </div>
         ))}
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         <PlatformMacMenuItem label="All destinations…" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
       <PlatformMacMenuDropdown label="View" open={openMenu === 'view'} onToggle={() => toggleMenu('view')} onClose={closeMenu}>
         <PlatformMacMenuItem label="Show Sidebar" shortcut="⌘⌥S" checked={sidebarVisible} onClick={() => { toggleSidebar(); closeMenu() }} />
         <PlatformMacMenuItem label="Show Inspector" shortcut="⌘⌥I" checked={inspectorVisible} onClick={() => { toggleInspector(); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.normal} checked={tier === 'normal'} onClick={() => pickTier('normal')} />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.power} checked={tier === 'power'} onClick={() => pickTier('power')} />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.advanced} checked={tier === 'advanced'} onClick={() => pickTier('advanced')} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         <PlatformMacMenuItem label="Mission Control" shortcut="F3" onClick={() => { dispatchOpenMissionControl(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
@@ -178,7 +183,7 @@ export default function PlatformMacAppMenus() {
                 onClick={() => go(tab.path)}
               />
             ))}
-            <div className="my-1 border-t border-white/[0.08]" />
+            <MenuDivider />
           </>
         )}
         <PlatformMacMenuItem label="Spotlight…" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
@@ -189,10 +194,10 @@ export default function PlatformMacAppMenus() {
       <PlatformMacMenuDropdown label="Help" open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={closeMenu}>
         <PlatformMacMenuItem label="Platform guide…" onClick={() => { dispatchOpenHelp('platform'); closeMenu() }} />
         <PlatformMacMenuItem label="Keyboard shortcuts" onClick={() => { dispatchOpenHelp('shortcuts'); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         <PlatformMacMenuItem label={`${ASK_ZYRA_LABEL}…`} shortcut="⌘⇧A" onClick={() => { openCopilot(); closeMenu() }} />
         <PlatformMacMenuItem label="Spotlight Search" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <MenuDivider />
         {helpNavItems.map((item) => (
           <PlatformMacMenuItem key={item.path} label={item.label} onClick={() => go(item.path)} />
         ))}

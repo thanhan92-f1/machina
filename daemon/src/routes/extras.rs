@@ -32,6 +32,18 @@ static HOST_HEAVY_PROBE_SEM: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::n
 /// Only one mutating package action at a time (can run for a long time and locks package managers).
 static HOST_PACKAGE_ACTION_SEM: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(1));
 
+/// Serializes the host package-management endpoints below (`post_host_package_upgrade`,
+/// `_autoremove`, `_install`, `_remove`): only one apt/dnf-style mutation should run against
+/// the host at a time, so each awaits this single-slot semaphore before spawning theirs.
+async fn acquire_host_package_action_permit(
+) -> Result<tokio::sync::SemaphorePermit<'static>, AppError> {
+    HOST_PACKAGE_ACTION_SEM.acquire().await.map_err(|_| {
+        AppError::from(LibvirtError::Internal(
+            "host package action concurrency limiter closed".into(),
+        ))
+    })
+}
+
 /// Short-lived cache for `virt-builder --list --list-format json` (avoid hammering the tool on every UI poll).
 const VIRT_BUILDER_LIST_CACHE_TTL: Duration = Duration::from_secs(300);
 
@@ -62,6 +74,18 @@ fn log_audit_with_actor(actor: &RequestActor, action: &str, target: &str, result
         actor: actor.username.clone(),
     };
     audit::write_audit_event(&event);
+}
+
+/// Standard "operation succeeded" response for the offline guest-fixup handlers below
+/// (`enable_linux_ssh`, `enable_windows_rdp`, `linux_reset_password`, ...): each runs a
+/// distinct `..._offline` helper against the VM's disk and reports its own outcome type
+/// under the same `{status, vm, result}` envelope.
+fn vm_result_ok(name: String, outcome: impl serde::Serialize) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "status": "ok",
+        "vm": name,
+        "result": outcome,
+    }))
 }
 
 // ── ISO / Disk Browser ─────────────────────────────────────────────
@@ -914,11 +938,7 @@ async fn enable_windows_rdp(
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
 
     log_audit_with_actor(&actor, "windows.enable-rdp", &name, "success");
-    Ok(Json(serde_json::json!({
-        "status": "ok",
-        "vm": name,
-        "result": outcome,
-    })))
+    Ok(vm_result_ok(name, outcome))
 }
 
 /// Resolve the first file-backed disk and refuse while the guest is running.
@@ -992,11 +1012,7 @@ async fn enable_linux_ssh(
     .await
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
     log_audit_with_actor(&actor, "linux.enable-ssh", &name, "success");
-    Ok(Json(serde_json::json!({
-        "status": "ok",
-        "vm": name,
-        "result": outcome,
-    })))
+    Ok(vm_result_ok(name, outcome))
 }
 
 async fn linux_inject_ssh_key(
@@ -1024,11 +1040,7 @@ async fn linux_inject_ssh_key(
     .await
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
     log_audit_with_actor(&actor, "linux.inject-ssh-key", &name, "success");
-    Ok(Json(serde_json::json!({
-        "status": "ok",
-        "vm": name,
-        "result": outcome,
-    })))
+    Ok(vm_result_ok(name, outcome))
 }
 
 async fn linux_reset_password(
@@ -1057,11 +1069,7 @@ async fn linux_reset_password(
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
     // Never include the plaintext password in audit details.
     log_audit_with_actor(&actor, "linux.reset-password", &name, "success");
-    Ok(Json(serde_json::json!({
-        "status": "ok",
-        "vm": name,
-        "result": outcome,
-    })))
+    Ok(vm_result_ok(name, outcome))
 }
 
 async fn linux_fix_fstab(
@@ -1081,11 +1089,7 @@ async fn linux_fix_fstab(
     .await
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
     log_audit_with_actor(&actor, "linux.fix-fstab", &name, "success");
-    Ok(Json(serde_json::json!({
-        "status": "ok",
-        "vm": name,
-        "result": outcome,
-    })))
+    Ok(vm_result_ok(name, outcome))
 }
 
 async fn linux_set_hostname(
@@ -1111,11 +1115,7 @@ async fn linux_set_hostname(
     .await
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
     log_audit_with_actor(&actor, "linux.set-hostname", &name, "success");
-    Ok(Json(serde_json::json!({
-        "status": "ok",
-        "vm": name,
-        "result": outcome,
-    })))
+    Ok(vm_result_ok(name, outcome))
 }
 
 async fn ensure_guest_agent_channel_handler(
@@ -1883,11 +1883,7 @@ async fn post_host_package_upgrade(
     Json(body): Json<HostPackageUpgradeBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_browser_session_for_host_insight(&actor).map_err(AppError::from)?;
-    let _permit = HOST_PACKAGE_ACTION_SEM.acquire().await.map_err(|_| {
-        AppError::from(LibvirtError::Internal(
-            "host package action concurrency limiter closed".into(),
-        ))
-    })?;
+    let _permit = acquire_host_package_action_permit().await?;
     let dry = body.dry_run.unwrap_or(false);
     let res = if dry {
         tokio::task::spawn_blocking(host_platform::package_upgrade_preview)
@@ -1916,11 +1912,7 @@ async fn post_host_package_autoremove(
     Extension(actor): Extension<RequestActor>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_browser_session_for_host_insight(&actor).map_err(AppError::from)?;
-    let _permit = HOST_PACKAGE_ACTION_SEM.acquire().await.map_err(|_| {
-        AppError::from(LibvirtError::Internal(
-            "host package action concurrency limiter closed".into(),
-        ))
-    })?;
+    let _permit = acquire_host_package_action_permit().await?;
     let res = tokio::task::spawn_blocking(host_platform::package_autoremove)
         .await
         .map_err(|e| AppError::from(LibvirtError::Internal(format!("Task failed: {e}"))))??;
@@ -1945,11 +1937,7 @@ async fn post_host_package_install(
     Json(body): Json<HostPackagesBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_browser_session_for_host_insight(&actor).map_err(AppError::from)?;
-    let _permit = HOST_PACKAGE_ACTION_SEM.acquire().await.map_err(|_| {
-        AppError::from(LibvirtError::Internal(
-            "host package action concurrency limiter closed".into(),
-        ))
-    })?;
+    let _permit = acquire_host_package_action_permit().await?;
     let pkgs = body.packages;
     let target = pkgs.join(",").chars().take(240).collect::<String>();
     let res = tokio::task::spawn_blocking(move || host_platform::package_install(pkgs))
@@ -1977,11 +1965,7 @@ async fn post_host_package_remove(
     Json(body): Json<HostPackageRemoveBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_browser_session_for_host_insight(&actor).map_err(AppError::from)?;
-    let _permit = HOST_PACKAGE_ACTION_SEM.acquire().await.map_err(|_| {
-        AppError::from(LibvirtError::Internal(
-            "host package action concurrency limiter closed".into(),
-        ))
-    })?;
+    let _permit = acquire_host_package_action_permit().await?;
     let pkgs = body.packages;
     let purge = body.purge.unwrap_or(false);
     let target = pkgs.join(",").chars().take(240).collect::<String>();

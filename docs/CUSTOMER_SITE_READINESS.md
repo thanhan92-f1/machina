@@ -11,7 +11,7 @@ document when live regression waves complete (see
 | **Single-host Linux KVM/libvirt + GuestKit agent + platform controller** | **Pilot-ready** |
 | Multi-host HA failover under real host loss | API dry-run **PASS** (`/api/v1/ha/status`, `ha_enabled=false` on lab); still needs customer host-loss drill |
 | Atlas / Ceph storage fabric | Soft-pass when disabled; enable + retest before claiming |
-| OpenStack / KubeVirt-primary | Status/negative covered; not primary path on lab host |
+| KubeVirt-primary | Status/negative covered; not primary path on lab host |
 | Windows guest RDP-first | Lab golden `win10-msedge`: feature-test **26/26**; offline `enable-rdp` **200** via GuestKit only (`plan apply --skip-backup`, hivex). No Machina `virt-win-reg`/libguestfs-tools path. Dirty NTFS: GuestKit `ntfsfix` before mount |
 | Linux offline GuestKit | GuestKit ≥ **0.3.17**: `linux-ssh` plan + rescue `enable-ssh` / `inject-ssh-key` / `reset-password` / `fix-fstab` / `set-hostname`. Machina: `POST /api/v1/vms/{name}/linux/*` (VM shut off) |
 | Full UI CDP page-sweep | **Done** — `npm run pages` → **130/130** pass / 0 soft / 0 fail (2026-08-06 full test-all); all `ui`/`ui-*` suites **WAVE_C_FAILS=0** |

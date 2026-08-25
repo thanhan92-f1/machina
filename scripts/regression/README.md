@@ -42,7 +42,7 @@ npm run platform
 # Networks/node/metrics/platform inventory/AI/Zeus firewall
 npm run infra
 
-# Devices/services/catalog/batch power/OpenStack+K8s status
+# Devices/services/catalog/batch power/Fleet Cloud+K8s status
 npm run fleet
 
 # Browse disks / fleet activity / reports / observability / Atlas
@@ -125,7 +125,7 @@ export MACHINA_BASE_URL=https://127.0.0.1:15092
 
 ## Fixtures
 
-- `fixtures/pages.json` — 130 App routes (classic + platform + OpenStack + K8s)
+- `fixtures/pages.json` — 130 App routes (classic + platform + Fleet Cloud + K8s)
 - `fixtures/known-softs.md` — intermittent short-body hydrates (not hard fails)
 
 Override routes: `MACHINA_PAGES_JSON=/path/to.json` or

@@ -24,9 +24,9 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Mach<span>ina</span></h1>
 <div class="sub">Customer Documentation Overview</div>
-<div class="badge">2026-07-26</div>
+<div class="badge">2026-08-24</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
-<main><p><strong>Machina</strong> manages libvirt VMs, storage, networks, and consoles on Linux KVM hosts — with optional OpenStack integration, fleet Mission Control, and enterprise auth.</p>
+<main><p><strong>Machina</strong> manages libvirt VMs, storage, networks, and consoles on Linux KVM hosts — with a native Fleet Cloud layer, fleet Mission Control, and enterprise auth.</p>
 <table>
 <thead>
 <tr>
@@ -95,7 +95,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <pre><code class="language-text">  Daemon UI/API  →  https://&lt;host&gt;:5092
   Controller     →  :5093 (optional multi-host)
   Surfaces       →  Web · TUI (machina) · machinactl CLI
-  Workloads      →  libvirt VMs · optional OpenStack · fleet platform
+  Workloads      →  libvirt VMs · Fleet Cloud · fleet platform
 </code></pre>
 <h2>Support surfaces (quick map)</h2>
 <table>
@@ -122,8 +122,8 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/storage</code>, <code>/networks</code> or <code>/platform/storage</code></td>
 </tr>
 <tr>
-<td>OpenStack</td>
-<td><code>/openstack</code> (when wired)</td>
+<td>Fleet Cloud</td>
+<td><code>/fleet-cloud</code> (native, no wiring required)</td>
 </tr>
 <tr>
 <td>Settings / users</td>

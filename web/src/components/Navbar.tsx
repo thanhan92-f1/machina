@@ -16,10 +16,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme, type AppTheme } from '../contexts/ThemeContext'
 import { useWebSocketContext, VMEvent } from '../contexts/WebSocketContext'
 import { timeAgo } from '../utils/time'
-import { navGroups, NavItem, isOpenStackNavEnabled, navItemVisible, navItemActive, navGroupHasActive, navDropdownSections, TOP_BAR_QUICK_LINKS } from '../utils/routes'
+import { navGroups, NavItem, navItemVisible, navItemActive, navGroupHasActive, navDropdownSections, TOP_BAR_QUICK_LINKS } from '../utils/routes'
 import { navActiveChipClasses, statusActionLinkClasses, statusBgClass, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { useLaunchpadEnabled } from '../hooks/useLaunchpadEnabled'
 import { useAi } from '../contexts/AiContext'
 import { ZYRA_ASSISTANT_NAME } from '../config/aiBrand'
 
@@ -90,9 +89,7 @@ function DesktopNavCluster({
   onDropdownLeave,
   username,
   theme,
-  openstackReady,
   hypersdkEnabled,
-  launchpadEnabled,
 }: {
   openGroup: string | null
   onOpenGroup: (name: string | null) => void
@@ -100,9 +97,7 @@ function DesktopNavCluster({
   onDropdownLeave: () => void
   username: string
   theme: AppTheme
-  openstackReady: boolean
   hypersdkEnabled: boolean
-  launchpadEnabled: boolean
 }) {
   const location = useLocation()
   const steel = theme === 'steel'
@@ -155,11 +150,11 @@ function DesktopNavCluster({
     <>
       {navGroups.map((group) => {
         const BarIcon = group.barIcon
-        const hasActive = navGroupHasActive(group, location.pathname, location.search, username, openstackReady, hypersdkEnabled, launchpadEnabled)
+        const hasActive = navGroupHasActive(group, location.pathname, location.search, username, hypersdkEnabled)
         const sections = navDropdownSections(group)
           .map((section) => ({
             ...section,
-            items: section.items.filter((i) => navItemVisible(i, username, openstackReady, hypersdkEnabled, launchpadEnabled)),
+            items: section.items.filter((i) => navItemVisible(i, username, hypersdkEnabled)),
           }))
           .filter((section) => section.items.length > 0)
         if (sections.length === 0) return null
@@ -194,7 +189,7 @@ function DesktopNavCluster({
                             key={item.to}
                             to={item.to}
                             onClick={() => onOpenGroup(null)}
-                            className={linkClass(navItemActive(item, location.pathname, location.search), item.openstackSetupOnly)}
+                            className={linkClass(navItemActive(item, location.pathname, location.search))}
                           >
                             {item.icon}
                             <span>{item.label}</span>
@@ -225,9 +220,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
   const { theme, setTheme, cycleTheme } = useTheme()
   const { info } = usePlatformInfo()
   const { toggleCopilot, mode } = useAi()
-  const openstackReady = isOpenStackNavEnabled(info?.openstack)
   const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
-  const launchpadEnabled = useLaunchpadEnabled()
   const steel = theme === 'steel'
   const aurora = theme === 'aurora'
   const themed = steel || aurora
@@ -395,9 +388,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                 onDropdownLeave={handleNavDropdownLeave}
                 username={username}
                 theme={theme}
-                openstackReady={openstackReady}
                 hypersdkEnabled={hypersdkEnabled}
-                launchpadEnabled={launchpadEnabled}
               />
             </nav>
             <div
@@ -771,7 +762,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               const sections = navDropdownSections(group)
                 .map((section) => ({
                   ...section,
-                  items: section.items.filter((item) => navItemVisible(item, username, openstackReady, hypersdkEnabled, launchpadEnabled)),
+                  items: section.items.filter((item) => navItemVisible(item, username, hypersdkEnabled)),
                 }))
                 .filter((section) => section.items.length > 0)
               if (sections.length === 0) return null
@@ -800,7 +791,6 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                             key={item.to}
                             item={item}
                             theme={theme}
-                            setup={item.openstackSetupOnly}
                             onClick={() => setMobileOpen(false)}
                           />
                         ))}

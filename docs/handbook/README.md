@@ -16,7 +16,7 @@ Machina replaces scattered `virsh` scripts and bolt-on console gateways with a
 single control plane: a Rust daemon that speaks libvirt, plus a web UI, a
 terminal UI, a REST API, and the `machinactl` CLI. It ships built-in noVNC,
 SPICE, serial and SSH console proxies, PAM/LDAP/OIDC auth with RBAC, Prometheus
-metrics, VM backup, and a documented KubeVirt/OpenStack migration path.
+metrics, VM backup, and a documented KubeVirt migration path.
 
 ```text
         ┌──────────── Interfaces ────────────┐
@@ -104,7 +104,6 @@ The handbook cross-links rather than duplicates these existing guides:
 | Infrastructure vision | [../machina-infrastructure-vision.md](../machina-infrastructure-vision.md) |
 | KubeVirt migration | [../kubevirt-migration.md](../kubevirt-migration.md) |
 | Observability | [../guides/observability.md](../guides/observability.md) |
-| OpenStack | [../openstack.md](../openstack.md) |
 | Fleet / HA | [../fleet-ha.md](../fleet-ha.md) · [../fleet.md](../fleet.md) |
 | Runbooks | [../runbook.md](../runbook.md) · [../platform-runbooks.md](../platform-runbooks.md) |
 | User stories | [../USER_STORIES.md](../USER_STORIES.md) |

@@ -37,6 +37,17 @@ pub struct VmHealthReport {
     pub guest_hostname: Option<String>,
 }
 
+/// Guest-agent RPC fields report "unknown" as an empty string rather than a
+/// missing value; this is the shared translation into the `Option<String>`
+/// shape the rest of the health report and DB columns expect.
+fn non_empty(s: String) -> Option<String> {
+    if s.is_empty() {
+        None
+    } else {
+        Some(s)
+    }
+}
+
 fn issue(
     id: &str,
     severity: &str,
@@ -226,16 +237,8 @@ pub async fn run_vm_health_check(pool: &SqlitePool, vm_id: Uuid) -> anyhow::Resu
                                 } else {
                                     "not_installed".into()
                                 };
-                                guest_ip = if gh.guest_ip.is_empty() {
-                                    None
-                                } else {
-                                    Some(gh.guest_ip.clone())
-                                };
-                                guest_hostname = if gh.guest_hostname.is_empty() {
-                                    None
-                                } else {
-                                    Some(gh.guest_hostname.clone())
-                                };
+                                guest_ip = non_empty(gh.guest_ip.clone());
+                                guest_hostname = non_empty(gh.guest_hostname.clone());
                                 if !gh.os_pretty_name.is_empty() {
                                     os_family = Some(gh.os_pretty_name.clone());
                                 }
@@ -364,8 +367,8 @@ pub async fn sync_guest_tools(pool: &SqlitePool, vm_id: Uuid, vm_name: &str, hos
         "UPDATE vms SET guest_tools_status = ?, guest_ip = ?, guest_hostname = ?, updated_at = datetime('now') WHERE id = ?",
     )
     .bind(status)
-    .bind(if gh.guest_ip.is_empty() { None::<String> } else { Some(gh.guest_ip) })
-    .bind(if gh.guest_hostname.is_empty() { None::<String> } else { Some(gh.guest_hostname) })
+    .bind(non_empty(gh.guest_ip))
+    .bind(non_empty(gh.guest_hostname))
     .bind(vm_id)
     .execute(pool)
     .await;

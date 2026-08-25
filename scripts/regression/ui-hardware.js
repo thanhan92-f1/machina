@@ -33,8 +33,8 @@ const PATHS = [
   '/platform/hosts',
   '/platform/tasks',
   '/platform/events',
-  '/openstack',
-  '/openstack/images',
+  '/fleet-cloud',
+  '/fleet-cloud/images',
 ];
 
 (async () => {

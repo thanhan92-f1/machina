@@ -39,19 +39,27 @@ fn default_backend() -> String {
     "linux-bridge".into()
 }
 
+/// Shared row fetch for the `WHERE id = ?` shape used by every handler below
+/// that needs the freshly-committed network row; callers map the not-found
+/// case to their own error message/status as needed.
+async fn fetch_network_by_id(pool: &sqlx::SqlitePool, id: Uuid) -> Result<NetworkRow, sqlx::Error> {
+    sqlx::query_as::<_, NetworkRow>(
+        "SELECT id, name, backend, vlan_id, bridge, segment_id FROM networks WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_one(pool)
+    .await
+}
+
 pub async fn get_network(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<NetworkRow>, ApiError> {
     require_operator(&actor)?;
-    let row = sqlx::query_as::<_, NetworkRow>(
-        "SELECT id, name, backend, vlan_id, bridge, segment_id FROM networks WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await
-    .map_err(|_| ApiError::not_found("network not found"))?;
+    let row = fetch_network_by_id(&state.pool, id)
+        .await
+        .map_err(|_| ApiError::not_found("network not found"))?;
     Ok(Json(row))
 }
 
@@ -121,12 +129,7 @@ pub async fn create_network(
         }
     }
 
-    let row = sqlx::query_as::<_, NetworkRow>(
-        "SELECT id, name, backend, vlan_id, bridge, segment_id FROM networks WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await?;
+    let row = fetch_network_by_id(&state.pool, id).await?;
 
     let host_id = match body.host_id {
         Some(h) => h,
@@ -205,12 +208,7 @@ pub async fn patch_network(
             .await
             .map_err(|e| ApiError::bad_request(e.to_string()))?;
     }
-    let row = sqlx::query_as::<_, NetworkRow>(
-        "SELECT id, name, backend, vlan_id, bridge, segment_id FROM networks WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await?;
+    let row = fetch_network_by_id(&state.pool, id).await?;
     Ok(Json(row))
 }
 

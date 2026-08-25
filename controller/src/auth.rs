@@ -168,6 +168,7 @@ pub async fn login(
             remediation: None,
             object_ref: None,
         })?;
+    // 86400s = 24h token lifetime for this password-exchange flow.
     let token = crate::jwt::issue_token(&state.config.jwt_secret, &user.username, &user.role, 86400, Some("local"))
         .map_err(|e| crate::api::ApiError::internal(e.to_string()))?;
     Ok(Json(LoginResponse { token, username: user.username, role: user.role }))

@@ -97,6 +97,11 @@ pub fn detect_package_backend() -> &'static str {
 #[cfg(target_os = "linux")]
 const PROBE_BUDGET: Duration = Duration::from_secs(45);
 
+/// Shorter budget for apk/pacman update probes, which are local-cache lookups
+/// (no repo I/O) and should never need the full 45s allotted to apt/dnf/zypper.
+#[cfg(target_os = "linux")]
+const FAST_PROBE_BUDGET: Duration = Duration::from_secs(25);
+
 #[cfg(target_os = "linux")]
 fn run_with_budget(
     cmd: &mut Command,
@@ -351,7 +356,7 @@ fn probe_apk_updates(out: &mut PackageUpdateCheck) -> Result<(), LibvirtError> {
     cmd.arg("-c").arg(format!(
         "set -o pipefail; {apk} list -u 2>/dev/null | tail -n 4000 | wc -l"
     ));
-    match run_with_budget(&mut cmd, Duration::from_secs(25)) {
+    match run_with_budget(&mut cmd, FAST_PROBE_BUDGET) {
         Ok(output) => {
             let n: u32 = String::from_utf8_lossy(&output.stdout)
                 .trim()
@@ -381,7 +386,7 @@ fn probe_pacman_updates(out: &mut PackageUpdateCheck) -> Result<(), LibvirtError
     cmd.arg("-c").arg(format!(
         "set -o pipefail; {pm} -Qu --color never 2>/dev/null | tail -n 4000 | wc -l"
     ));
-    match run_with_budget(&mut cmd, Duration::from_secs(25)) {
+    match run_with_budget(&mut cmd, FAST_PROBE_BUDGET) {
         Ok(output) => {
             let n: u32 = String::from_utf8_lossy(&output.stdout)
                 .trim()

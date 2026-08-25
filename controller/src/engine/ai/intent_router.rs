@@ -2,6 +2,19 @@
 
 use serde::Serialize;
 
+// NL "create a VM" parsing: size-tier thresholds and sanity caps on parsed
+// numbers, so a bogus/huge parsed value can't be treated as a real spec.
+const NL_VM_LARGE_VCPUS: i32 = 8;
+const NL_VM_LARGE_MEM_GIB: i32 = 16;
+const NL_VM_MEDIUM_VCPUS: i32 = 4;
+const NL_VM_MEDIUM_MEM_GIB: i32 = 8;
+const MAX_PARSED_VCPUS: i32 = 128;
+const MAX_PARSED_MEM_GIB: i32 = 1024;
+const MAX_PARSED_VM_NAME_LEN: usize = 64;
+// Missing-image landing intent shows only the first few names inline,
+// summarizing the rest as "+N more".
+const MISSING_IMAGES_PREVIEW_LIMIT: usize = 4;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct SpotlightIntent {
     pub id: String,
@@ -1437,11 +1450,14 @@ pub fn jarvis_landing_intents(
         let auto = missing_images.iter().filter(|m| m.auto_fetch).count();
         let names: Vec<String> = missing_images
             .iter()
-            .take(4)
+            .take(MISSING_IMAGES_PREVIEW_LIMIT)
             .map(|m| m.name.clone())
             .collect();
-        let suffix = if missing_images.len() > 4 {
-            format!(" +{} more", missing_images.len() - 4)
+        let suffix = if missing_images.len() > MISSING_IMAGES_PREVIEW_LIMIT {
+            format!(
+                " +{} more",
+                missing_images.len() - MISSING_IMAGES_PREVIEW_LIMIT
+            )
         } else {
             String::new()
         };
@@ -1513,8 +1529,8 @@ fn parse_nl_create_vm(query: &str) -> Option<SpotlightIntent> {
         .unwrap_or_else(|| "new-vm".into());
 
     let size = match (cores, memory_gib) {
-        (Some(c), Some(m)) if c >= 8 || m >= 16 => "large",
-        (Some(c), Some(m)) if c >= 4 || m >= 8 => "medium",
+        (Some(c), Some(m)) if c >= NL_VM_LARGE_VCPUS || m >= NL_VM_LARGE_MEM_GIB => "large",
+        (Some(c), Some(m)) if c >= NL_VM_MEDIUM_VCPUS || m >= NL_VM_MEDIUM_MEM_GIB => "medium",
         _ => "small",
     };
 
@@ -1558,7 +1574,7 @@ fn extract_number_before(hay: &str, units: &[&str]) -> Option<i32> {
                 .rev()
                 .collect();
             if let Ok(n) = num.parse::<i32>() {
-                if n > 0 && n <= 128 {
+                if n > 0 && n <= MAX_PARSED_VCPUS {
                     return Some(n);
                 }
             }
@@ -1573,7 +1589,7 @@ fn extract_memory_gib(hay: &str) -> Option<i32> {
         if let Ok(n) = digits.parse::<i32>() {
             let rest = token[digits.len()..].to_lowercase();
             if rest.starts_with("gb") || rest.starts_with("gib") || rest.starts_with("gi") {
-                return Some(n.clamp(1, 1024));
+                return Some(n.clamp(1, MAX_PARSED_MEM_GIB));
             }
         }
     }
@@ -1605,7 +1621,7 @@ fn extract_nl_vm_name(query: &str) -> Option<String> {
             .split_whitespace()
             .next()?
             .trim_matches(|c: char| !c.is_alphanumeric() && c != '-' && c != '_');
-        if !token.is_empty() && token.len() <= 64 {
+        if !token.is_empty() && token.len() <= MAX_PARSED_VM_NAME_LEN {
             return Some(token.to_string());
         }
     }

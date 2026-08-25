@@ -11,6 +11,18 @@ use crate::state::AppState;
 use crate::tasks::enqueue::write_audit;
 use crate::tasks::TaskMessage;
 
+// Batch-style actions (bulk_backup, bulk_ha) cap how many VMs a single
+// autopilot execution touches, so one call can't fan out into an unbounded
+// number of tasks.
+const MAX_BULK_ACTION_VMS: usize = 10;
+const MAX_SAFE_BATCH_ACTIONS: usize = 10;
+const MAX_HISTORY_LIMIT: i64 = 100;
+// Default HA policy applied when autopilot enables HA on a VM: 3 restart
+// attempts before giving up, "medium" priority, and no forced fencing or
+// anti-affinity (those are more disruptive and left to manual configuration).
+const HA_DEFAULT_RESTART_ATTEMPTS: i32 = 3;
+const HA_DEFAULT_RESTART_PRIORITY: &str = "medium";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProposedAction {
     pub id: String,
@@ -120,7 +132,7 @@ pub async fn execute(
                 .get("vm_ids")
                 .and_then(|v| serde_json::from_value(v.clone()).ok())
                 .unwrap_or_default();
-            for id_str in vm_ids.iter().take(10) {
+            for id_str in vm_ids.iter().take(MAX_BULK_ACTION_VMS) {
                 let vm_id =
                     Uuid::parse_str(id_str).map_err(|_| ApiError::bad_request("invalid vm_id"))?;
                 let host_id: Option<Uuid> =
@@ -224,22 +236,25 @@ pub async fn execute(
             } else {
                 vec![parse_vm_id(&body.object_ref)?.to_string()]
             };
-            for id_str in vm_ids.iter().take(10) {
+            for id_str in vm_ids.iter().take(MAX_BULK_ACTION_VMS) {
                 let vm_id =
                     Uuid::parse_str(id_str).map_err(|_| ApiError::bad_request("invalid vm_id"))?;
                 crate::engine::template::upsert_ha_policy(
                     &state.pool,
                     vm_id,
                     true,
-                    3,
-                    "medium",
+                    HA_DEFAULT_RESTART_ATTEMPTS,
+                    HA_DEFAULT_RESTART_PRIORITY,
                     false,
                     false,
                 )
                 .await
                 .map_err(|e| ApiError::internal(e.to_string()))?;
             }
-            format!("HA enabled on {} VM(s)", vm_ids.len().min(10))
+            format!(
+                "HA enabled on {} VM(s)",
+                vm_ids.len().min(MAX_BULK_ACTION_VMS)
+            )
         }
         "install_guest_tools" => {
             let vm_id = parse_vm_id(&body.object_ref)?;
@@ -372,7 +387,7 @@ pub async fn run_safe_batch(
     let proposal = propose(&state.pool, vm_id)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    let cap = max_actions.clamp(1, 10);
+    let cap = max_actions.clamp(1, MAX_SAFE_BATCH_ACTIONS);
     let all = proposal.actions;
     let skipped_count = all.iter().filter(|a| !is_auto_safe(a)).count();
     let safe: Vec<ProposedAction> = all
@@ -421,7 +436,7 @@ pub struct AutopilotHistoryEntry {
 }
 
 pub async fn list_history(pool: &SqlitePool, limit: i64) -> anyhow::Result<Vec<AutopilotHistoryEntry>> {
-    let cap = limit.clamp(1, 100);
+    let cap = limit.clamp(1, MAX_HISTORY_LIMIT);
     let rows = sqlx::query_as::<_, AutopilotHistoryEntry>(
         "SELECT id, actor, action, created_at, COALESCE(detail, '{}') AS detail
          FROM audit_logs

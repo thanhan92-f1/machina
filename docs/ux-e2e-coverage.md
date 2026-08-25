@@ -44,9 +44,9 @@ Maps platform UX surfaces to mock Playwright specs and live validation depth.
 | Storage bridge | `cross-shell.spec.ts` |
 | Host networking | `classic-operator-ux.spec.ts` (partial) |
 
-## OpenStack / K8s manifest routes
+## Fleet Cloud / K8s manifest routes
 
-Skipped on hosts without OpenStack/K8s (`requires` in manifest). Covered by `openstack.spec.ts` and `platform-kubevirt-crud.spec.ts` when enabled.
+K8s routes skipped on hosts without K8s (`requires` in manifest). Fleet Cloud routes are always live (native controller feature, no external config gate). Covered by `platform-kubevirt-crud.spec.ts` when K8s is enabled.
 
 ## Deploy post-flight
 

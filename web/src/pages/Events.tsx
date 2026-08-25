@@ -54,6 +54,12 @@ const VM_LINE_COLORS = [
   '#fb7185',
 ]
 
+// Shared recharts styling tokens — kept as named constants since the same hex values are
+// reused across every chart on this page (axis lines, grid lines, tooltip label text).
+const CHART_AXIS_COLOR = '#475569'
+const CHART_GRID_COLOR = '#1e293b'
+const CHART_TOOLTIP_LABEL_COLOR = '#94a3b8'
+
 function chartMemKey(name: string) {
   return `mem:${name}`
 }
@@ -218,7 +224,7 @@ export default function EventsPage() {
 
   const tooltipStyle = {
     backgroundColor: '#0f172a',
-    border: '1px solid #1e293b',
+    border: `1px solid ${CHART_GRID_COLOR}`,
     borderRadius: '0.5rem',
     boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
   }
@@ -348,10 +354,10 @@ export default function EventsPage() {
                 {timeline.length > 1 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={timeline}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+                      <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
                       <YAxis
-                        stroke="#475569"
+                        stroke={CHART_AXIS_COLOR}
                         fontSize={10}
                         domain={[0, 100]}
                         tickLine={false}
@@ -359,7 +365,7 @@ export default function EventsPage() {
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
-                        labelStyle={{ color: '#94a3b8' }}
+                        labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }}
                         formatter={(value) => [`${value}%`, '']}
                       />
                       <Legend wrapperStyle={{ fontSize: 11, maxHeight: 72, overflowY: 'auto' }} />
@@ -393,10 +399,10 @@ export default function EventsPage() {
                 {timeline.length > 1 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={timeline}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+                      <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
                       <YAxis
-                        stroke="#475569"
+                        stroke={CHART_AXIS_COLOR}
                         fontSize={10}
                         domain={[0, 100]}
                         tickLine={false}
@@ -404,7 +410,7 @@ export default function EventsPage() {
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
-                        labelStyle={{ color: '#94a3b8' }}
+                        labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }}
                         formatter={(value) => [`${value}%`, '']}
                       />
                       <Legend wrapperStyle={{ fontSize: 11, maxHeight: 72, overflowY: 'auto' }} />
@@ -448,17 +454,17 @@ export default function EventsPage() {
                           <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+                      <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
                       <YAxis
-                        stroke="#475569"
+                        stroke={CHART_AXIS_COLOR}
                         fontSize={10}
                         tickLine={false}
                         tickFormatter={(v: number) => formatThroughput(v)}
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
-                        labelStyle={{ color: '#94a3b8' }}
+                        labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }}
                         formatter={(v) => formatThroughput(Number(v))}
                       />
                       <Legend />
@@ -508,17 +514,17 @@ export default function EventsPage() {
                           <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+                      <XAxis dataKey="time" stroke={CHART_AXIS_COLOR} fontSize={10} tickLine={false} />
                       <YAxis
-                        stroke="#475569"
+                        stroke={CHART_AXIS_COLOR}
                         fontSize={10}
                         tickLine={false}
                         tickFormatter={(v: number) => formatThroughput(v)}
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
-                        labelStyle={{ color: '#94a3b8' }}
+                        labelStyle={{ color: CHART_TOOLTIP_LABEL_COLOR }}
                         formatter={(v) => formatThroughput(Number(v))}
                       />
                       <Legend />
@@ -561,8 +567,8 @@ export default function EventsPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barData} layout="vertical" margin={{ left: 4, right: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                    <XAxis type="number" domain={[0, 100]} stroke="#475569" fontSize={10} tickFormatter={(v) => `${v}%`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} horizontal={false} />
+                    <XAxis type="number" domain={[0, 100]} stroke={CHART_AXIS_COLOR} fontSize={10} tickFormatter={(v) => `${v}%`} />
                     <YAxis type="category" dataKey="label" width={148} stroke="#64748b" fontSize={10} tickLine={false} />
                     <Tooltip
                       contentStyle={tooltipStyle}

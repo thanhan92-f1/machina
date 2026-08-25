@@ -11,78 +11,10 @@ export const platformInfo = {
     direct_url: 'http://127.0.0.1:5093',
   },
   kubevirt: { exec_enabled: true },
-  openstack: {
-    enabled: true,
-    configured: true,
-    cloud_name: 'test',
-    upload_enabled: false,
-    upload_timeout_secs: 300,
-    default_os_cloud: 'test',
-    default_boot_instance: false,
-  },
   hypersdk: { enabled: true, base_url: 'http://127.0.0.1:8787', insecure_tls: true },
   guestkit: { enabled: true, base_url: 'http://127.0.0.1:8790', insecure_tls: true },
   fleet: { enabled: false, peer_count: 0 },
 }
-
-const mockLaunchpadDiagnosis = {
-  appId: 'monitoring/grafana',
-  routePath: '/launchpad/a/monitoring/grafana',
-  publicUrl: 'http://127.0.0.1:31847/launchpad/apps/grafana',
-  backend: { kind: 'Service', name: 'grafana', port: 80, scheme: 'http', path: '/' },
-  chain: [
-    { id: 'user', label: 'User' },
-    { id: 'identity', label: 'Zeus Identity' },
-    { id: 'gateway', label: 'Hermes Gateway' },
-    { id: 'approute', label: 'AppRoute: grafana' },
-    { id: 'namespace', label: 'Namespace: monitoring' },
-    { id: 'service', label: 'Service grafana:80', status: 'healthy' },
-  ],
-  suggestedActions: [{ label: 'Open Kubernetes workloads', href: '/k8s/workloads?ns=monitoring' }],
-}
-
-const mockLaunchpadApps = [
-  {
-    id: 'monitoring/grafana',
-    slug: 'grafana',
-    canonicalSlug: 'grafana',
-    displayName: 'Grafana',
-    description: 'Monitoring dashboard',
-    namespace: 'monitoring',
-    category: 'Monitoring',
-    icon: 'grafana',
-    backend: { kind: 'Service', name: 'grafana', port: 80, scheme: 'http', path: '/' },
-    routePath: '/launchpad/a/monitoring/grafana',
-    publicUrl: 'http://127.0.0.1:31847/launchpad/apps/grafana',
-    status: 'healthy',
-    source: 'signature',
-    authMode: 'none',
-    score: 80,
-    visibility: { published: true, hidden: false, favorite: true },
-    readyEndpoints: 1,
-    updatedAt: '2026-06-12T12:00:00.000Z',
-  },
-  {
-    id: 'monitoring/prometheus-server',
-    slug: 'prometheus-server',
-    canonicalSlug: 'prometheus',
-    displayName: 'Prometheus',
-    description: 'Metrics',
-    namespace: 'monitoring',
-    category: 'Monitoring',
-    icon: 'prometheus',
-    backend: { kind: 'Service', name: 'prometheus-server', port: 9090, scheme: 'http', path: '/' },
-    routePath: '/launchpad/a/monitoring/prometheus-server',
-    publicUrl: 'http://127.0.0.1:31847/launchpad/apps/prometheus',
-    status: 'healthy',
-    source: 'signature',
-    authMode: 'none',
-    score: 75,
-    visibility: { published: true, hidden: false, favorite: false },
-    readyEndpoints: 1,
-    updatedAt: '2026-06-12T11:00:00.000Z',
-  },
-]
 
 const fleetFinder = {
   summary: '2 VM(s) · 1 running',
@@ -785,54 +717,6 @@ export async function mockPlatformApi(page: Page, opts?: {
         json: { status: 'ok', leader: true, controller_id: 'ctrl-test-1' },
       })
     }
-    if (url.includes('/api/v1/launchpad/config')) {
-      return route.fulfill({
-        json: {
-          publicBase: 'http://127.0.0.1:31847',
-          pathPrefix: '/launchpad',
-          enabled: true,
-        },
-      })
-    }
-    if (url.includes('/api/v1/launchpad/favorites') && route.request().method() === 'PUT') {
-      return route.fulfill({ status: 204, body: '' })
-    }
-    if (url.includes('/api/v1/launchpad/favorites')) {
-      return route.fulfill({ json: mockLaunchpadApps.filter((a) => a.visibility.favorite) })
-    }
-    if (url.includes('/api/v1/launchpad/apps/') && url.includes('/diagnosis')) {
-      return route.fulfill({ json: mockLaunchpadDiagnosis })
-    }
-    if (url.match(/\/api\/v1\/launchpad\/apps\/[^/?]+/)) {
-      const idPart = decodeURIComponent(url.split('/api/v1/launchpad/apps/')[1]?.split('?')[0] ?? '')
-      const app =
-        mockLaunchpadApps.find((a) => a.id === idPart) ||
-        mockLaunchpadApps.find((a) => a.canonicalSlug === idPart) ||
-        mockLaunchpadApps.find((a) => a.slug === idPart)
-      if (app) return route.fulfill({ json: app })
-      return route.fulfill({ status: 404, json: { error: 'not found' } })
-    }
-    if (url.includes('/api/v1/launchpad/catalog') || url.endsWith('/api/v1/launchpad/apps')) {
-      return route.fulfill({ json: mockLaunchpadApps })
-    }
-    if (url.includes('/api/v1/launchpad/health/apps')) {
-      return route.fulfill({
-        json: {
-          total: mockLaunchpadApps.length,
-          healthy: mockLaunchpadApps.length,
-          degraded: 0,
-          broken: 0,
-          apps: [],
-        },
-      })
-    }
-    if (url.includes('/api/v1/launchpad/search')) {
-      const q = new URL(url).searchParams.get('q')?.toLowerCase() ?? ''
-      const hits = mockLaunchpadApps
-        .filter((a) => a.displayName.toLowerCase().includes(q) || a.slug.includes(q))
-        .map((app) => ({ app, score: 90 }))
-      return route.fulfill({ json: hits })
-    }
     if (url.match(/\/hosts\/[^/]+\/linux\/observability/)) {
       return route.fulfill({
         json: {
@@ -1057,36 +941,19 @@ export async function mockPlatformApi(page: Page, opts?: {
         json: { summary: '0 bare-metal targets', targets: [], scans_pending: 0 },
       })
     }
-    if (url.includes('/openstack/status')) {
+    if (url.match(/\/platform\/controller\/api\/v1\/vms(\?|$)/)) {
       return route.fulfill({
-        json: {
-          enabled: true,
-          configured: true,
-          connected: true,
-          reachable: true,
-          keystone_reachable: true,
-          compute_reachable: true,
-          glance_reachable: true,
-          cloud_name: 'test',
-        },
+        json: [
+          { id: 'v1', name: 'web-01', observed_state: 'running', host_id: 'h1', guest_ip: '192.168.122.10', inventory_source: 'libvirt' },
+          { id: 'v2', name: 'db-01', observed_state: 'stopped', host_id: 'h1', guest_ip: '192.168.122.11', inventory_source: 'libvirt' },
+        ],
       })
     }
-    if (url.includes('/openstack/instances')) {
-      return route.fulfill({
-        json: {
-          total: 2,
-          instances: [
-            { id: 'os-1', name: 'web-01', status: 'ACTIVE' },
-            { id: 'os-2', name: 'db-01', status: 'SHUTOFF' },
-          ],
-        },
-      })
+    if (url.match(/\/platform\/controller\/api\/v1\/networks(\?|$)/)) {
+      return route.fulfill({ json: [{ id: 'n1', name: 'private' }] })
     }
-    if (url.includes('/openstack/networks')) {
-      return route.fulfill({ json: { networks: [{ id: 'n1', name: 'private' }] } })
-    }
-    if (url.includes('/openstack/images')) {
-      return route.fulfill({ json: { images: [{ id: 'i1', name: 'ubuntu-22.04' }] } })
+    if (url.match(/\/platform\/controller\/api\/v1\/templates(\?|$)/)) {
+      return route.fulfill({ json: [{ id: 'i1', name: 'ubuntu-22.04' }] })
     }
     if (url.includes('/k8s/overview')) {
       return route.fulfill({

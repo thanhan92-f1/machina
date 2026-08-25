@@ -13,13 +13,7 @@ export function integrationNavItems(info: PlatformInfo | null): PlatformNavItem[
   if (!info) return []
   const items: PlatformNavItem[] = []
 
-  if (info.openstack?.enabled) {
-    items.push({
-      to: '/openstack',
-      label: info.openstack.configured ? 'OpenStack Cloud' : 'OpenStack (setup)',
-      icon: ic(Cloud),
-    })
-  }
+  items.push({ to: '/fleet-cloud', label: 'Fleet Cloud', icon: ic(Cloud) })
   if (info.kubevirt?.exec_enabled) {
     items.push({ to: '/k8s', label: 'Kubernetes', icon: ic(Layers) })
   }
@@ -43,12 +37,12 @@ export function integrationCards(info: PlatformInfo | null): IntegrationCard[] {
   if (!info) return []
   return [
     {
-      id: 'openstack',
-      title: 'OpenStack',
-      description: 'Nova, Neutron, Cinder, Heat, and identity — full cloud operator UI.',
-      href: '/openstack',
-      enabled: Boolean(info.openstack?.enabled),
-      configured: info.openstack?.configured,
+      id: 'fleet-cloud',
+      title: 'Fleet Cloud',
+      description: 'Compute, Network, Storage, Heat, and identity — native, no external cloud required.',
+      href: '/fleet-cloud',
+      enabled: true,
+      configured: true,
     },
     {
       id: 'k8s',

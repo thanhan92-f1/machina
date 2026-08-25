@@ -66,6 +66,9 @@ pub fn append_k8s_cluster_inventory_line(
         if let Ok(meta) = fs::metadata(&path) {
             let len = meta.len();
             if len > max_file_bytes {
+                // Trim down to 85% of budget, not 100%: trimming to the exact limit
+                // would put the file back over budget on the very next append,
+                // forcing a rewrite on every single write once the file is full.
                 let target = ((max_file_bytes as usize).saturating_mul(85) / 100).max(4096);
                 trim_jsonl_file_to_budget(&path, target)?;
             }

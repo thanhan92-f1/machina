@@ -98,7 +98,7 @@ export function vmStateTone(state: string): 'ok' | 'warn' | 'error' | 'info' | '
   return 'neutral'
 }
 
-export function openstackStatusTone(status: string): 'ok' | 'warn' | 'error' | 'info' | 'neutral' {
+export function instanceStatusTone(status: string): 'ok' | 'warn' | 'error' | 'info' | 'neutral' {
   const s = status.toUpperCase()
   if (s === 'ACTIVE' || s === 'UP') return 'ok'
   if (s === 'ERROR' || s === 'DOWN') return 'error'

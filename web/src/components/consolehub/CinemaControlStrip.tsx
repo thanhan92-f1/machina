@@ -51,6 +51,8 @@ type Props = {
 }
 
 const ZOOM_LEVELS: ZoomLevel[] = [75, 100, 125, 150, 200]
+// How long the mouse must sit still before the strip fades to its idle (low-opacity) state.
+const IDLE_TIMEOUT_MS = 3500
 
 function protocolLabel(p: string): string {
   return p.replace('webrtc_', '').replace('_', ' ')
@@ -106,7 +108,7 @@ export default function CinemaControlStrip({
       setShow(true)
       setIdle(false)
       clearTimeout(timer)
-      timer = setTimeout(() => setIdle(true), 3500)
+      timer = setTimeout(() => setIdle(true), IDLE_TIMEOUT_MS)
     }
     reset()
     window.addEventListener('mousemove', reset)
@@ -141,6 +143,10 @@ export default function CinemaControlStrip({
 
   const btn =
     'px-2.5 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 transition inline-flex items-center gap-1'
+  // Shared row style for every plain-text item inside the strip's dropdown
+  // menus (Power/Keyboard/Display/More) — kept as one constant so the many
+  // rows below can't drift out of sync with each other.
+  const dropdownItemClass = 'block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded'
 
   const setMode = (mode: ViewportMode) => {
     vp.setMode(mode)
@@ -201,7 +207,7 @@ export default function CinemaControlStrip({
                 <button
                   key={a}
                   type="button"
-                  className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded capitalize"
+                  className={`${dropdownItemClass} capitalize`}
                   onClick={() => {
                     onPower?.(a)
                     setPowerOpen(false)
@@ -241,16 +247,16 @@ export default function CinemaControlStrip({
           {keyboardOpen ? (
             <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl">
               {onCtrlAltDel ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onCtrlAltDel(); setKeyboardOpen(false) }}>
+                <button type="button" className={dropdownItemClass} onClick={() => { onCtrlAltDel(); setKeyboardOpen(false) }}>
                   Ctrl+Alt+Del
                 </button>
               ) : null}
               {onSendKey ? (
                 <>
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSendKey('esc'); setKeyboardOpen(false) }}>
+                  <button type="button" className={dropdownItemClass} onClick={() => { onSendKey('esc'); setKeyboardOpen(false) }}>
                     Send Esc
                   </button>
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSendKey('alt_tab'); setKeyboardOpen(false) }}>
+                  <button type="button" className={dropdownItemClass} onClick={() => { onSendKey('alt_tab'); setKeyboardOpen(false) }}>
                     Alt+Tab
                   </button>
                 </>
@@ -320,23 +326,23 @@ export default function CinemaControlStrip({
               ))}
               <div className="my-1 border-t border-white/10" />
               {(['fit', 'fill', 'native', 'scroll', 'stretch'] as ViewportMode[]).map((mode) => (
-                <button key={mode} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded capitalize" onClick={() => setMode(mode)}>
+                <button key={mode} type="button" className={`${dropdownItemClass} capitalize`} onClick={() => setMode(mode)}>
                   {mode}
                 </button>
               ))}
               {ZOOM_LEVELS.map((z) => (
-                <button key={z} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { vp.setZoom(z); setDisplayOpen(false) }}>
+                <button key={z} type="button" className={dropdownItemClass} onClick={() => { vp.setZoom(z); setDisplayOpen(false) }}>
                   Zoom {z}%
                 </button>
               ))}
               {vp.monitors.length > 1 ? (
                 <>
                   <div className="my-1 border-t border-white/10" />
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { vp.setActiveMonitor('all'); setDisplayOpen(false) }}>
+                  <button type="button" className={dropdownItemClass} onClick={() => { vp.setActiveMonitor('all'); setDisplayOpen(false) }}>
                     All monitors
                   </button>
                   {vp.monitors.map((mon) => (
-                    <button key={mon.id} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { vp.setActiveMonitor(mon.id); setDisplayOpen(false) }}>
+                    <button key={mon.id} type="button" className={dropdownItemClass} onClick={() => { vp.setActiveMonitor(mon.id); setDisplayOpen(false) }}>
                       {mon.label}
                     </button>
                   ))}
@@ -387,7 +393,7 @@ export default function CinemaControlStrip({
           {moreOpen ? (
             <div className="absolute bottom-full right-0 mb-1 min-w-[11rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl">
               {onScreenshot ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onScreenshot(); setMoreOpen(false) }}>
+                <button type="button" className={dropdownItemClass} onClick={() => { onScreenshot(); setMoreOpen(false) }}>
                   Screenshot
                 </button>
               ) : null}
@@ -399,12 +405,12 @@ export default function CinemaControlStrip({
               {onSwitchLens ? (
                 <>
                   {!displayProtocols?.length || displayProtocols.includes('serial') ? (
-                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSwitchLens('serial'); setMoreOpen(false) }}>
+                    <button type="button" className={dropdownItemClass} onClick={() => { onSwitchLens('serial'); setMoreOpen(false) }}>
                       Serial
                     </button>
                   ) : null}
                   {!displayProtocols?.length || displayProtocols.includes('native_ssh') || displayProtocols.includes('ssh') ? (
-                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSwitchLens('shell'); setMoreOpen(false) }}>
+                    <button type="button" className={dropdownItemClass} onClick={() => { onSwitchLens('shell'); setMoreOpen(false) }}>
                       Shell
                     </button>
                   ) : null}
@@ -416,16 +422,16 @@ export default function CinemaControlStrip({
                 </button>
               ) : null}
               {onOpenStudio ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onOpenStudio(); setMoreOpen(false) }}>
+                <button type="button" className={dropdownItemClass} onClick={() => { onOpenStudio(); setMoreOpen(false) }}>
                   Studio
                 </button>
               ) : null}
               {onOpenOpsShelf ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onOpenOpsShelf(); setMoreOpen(false) }}>
+                <button type="button" className={dropdownItemClass} onClick={() => { onOpenOpsShelf(); setMoreOpen(false) }}>
                   Ops Shelf
                 </button>
               ) : null}
-              <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { document.documentElement.requestFullscreen?.(); setMoreOpen(false) }}>
+              <button type="button" className={dropdownItemClass} onClick={() => { document.documentElement.requestFullscreen?.(); setMoreOpen(false) }}>
                 Fullscreen
               </button>
             </div>

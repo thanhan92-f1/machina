@@ -126,6 +126,9 @@ pub struct LlmToolCall {
 }
 
 pub fn parse_tool_call(text: &str) -> Option<LlmToolCall> {
+    // LLM replies often include prose before the JSON payload despite the
+    // system prompt asking for JSON only, so scan for the first '{' rather
+    // than requiring the whole response to be valid JSON.
     let json = if let Some(start) = text.find('{') {
         text.get(start..)?.to_string()
     } else {

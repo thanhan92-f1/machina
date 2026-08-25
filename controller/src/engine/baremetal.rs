@@ -61,15 +61,30 @@ pub struct BaremetalCapacityPlan {
     pub summary: String,
 }
 
+/// Shared column list for `baremetal_servers` reads — kept as one constant so the
+/// four call sites below (list, register, power, provision preview) can't drift.
+const BAREMETAL_SERVER_COLUMNS: &str = "id, hostname, bmc_address, bmc_type, state, cpu_cores, memory_mib,
+                firewall_profile, firewall_enabled, bmc_vlan, pxe_vlan, created_at";
+
 pub async fn list_servers(pool: &SqlitePool) -> anyhow::Result<Vec<BaremetalServer>> {
-    let rows = sqlx::query_as::<_, BaremetalServer>(
-        "SELECT id, hostname, bmc_address, bmc_type, state, cpu_cores, memory_mib,
-                firewall_profile, firewall_enabled, bmc_vlan, pxe_vlan, created_at
-         FROM baremetal_servers ORDER BY hostname",
-    )
+    let rows = sqlx::query_as::<_, BaremetalServer>(&format!(
+        "SELECT {BAREMETAL_SERVER_COLUMNS} FROM baremetal_servers ORDER BY hostname"
+    ))
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+/// Fetch one server by id, or an error if it doesn't exist. Shared by the
+/// `set_power` and `provision_preview` "not found" paths.
+async fn fetch_server(pool: &SqlitePool, id: Uuid) -> anyhow::Result<BaremetalServer> {
+    sqlx::query_as::<_, BaremetalServer>(&format!(
+        "SELECT {BAREMETAL_SERVER_COLUMNS} FROM baremetal_servers WHERE id = ?"
+    ))
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| anyhow::anyhow!("server not found"))
 }
 
 pub async fn register(
@@ -103,11 +118,9 @@ pub async fn register(
     )
     .await;
 
-    sqlx::query_as::<_, BaremetalServer>(
-        "SELECT id, hostname, bmc_address, bmc_type, state, cpu_cores, memory_mib,
-                firewall_profile, firewall_enabled, bmc_vlan, pxe_vlan, created_at
-         FROM baremetal_servers WHERE id = ?",
-    )
+    sqlx::query_as::<_, BaremetalServer>(&format!(
+        "SELECT {BAREMETAL_SERVER_COLUMNS} FROM baremetal_servers WHERE id = ?"
+    ))
     .bind(id)
     .fetch_one(pool)
     .await
@@ -182,15 +195,7 @@ pub async fn set_power(
         anyhow::bail!("action must be on, off, cycle, or reset");
     }
 
-    let row: BaremetalServer = sqlx::query_as(
-        "SELECT id, hostname, bmc_address, bmc_type, state, cpu_cores, memory_mib,
-                firewall_profile, firewall_enabled, bmc_vlan, pxe_vlan, created_at
-         FROM baremetal_servers WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| anyhow::anyhow!("server not found"))?;
+    let row = fetch_server(pool, id).await?;
 
     let new_state = match action.as_str() {
         "on" => "powered_on",
@@ -240,15 +245,7 @@ pub struct BaremetalProvisionPlan {
 }
 
 pub async fn provision_preview(pool: &SqlitePool, id: Uuid) -> anyhow::Result<BaremetalProvisionPlan> {
-    let row: BaremetalServer = sqlx::query_as(
-        "SELECT id, hostname, bmc_address, bmc_type, state, cpu_cores, memory_mib,
-                firewall_profile, firewall_enabled, bmc_vlan, pxe_vlan, created_at
-         FROM baremetal_servers WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| anyhow::anyhow!("server not found"))?;
+    let row = fetch_server(pool, id).await?;
 
     let steps = vec![
         format!(

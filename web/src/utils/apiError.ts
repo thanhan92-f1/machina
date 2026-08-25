@@ -30,7 +30,7 @@ export function sanitizeErrorText(text: string): string {
   if (/<!DOCTYPE\s+html/i.test(t) || /<html[\s>]/i.test(t) || t.includes('</html>')) {
     return (
       'The API returned an HTML error page instead of JSON. ' +
-      'This usually means a reverse proxy failure or an OpenStack service (Keystone, Nova, Neutron, or Glance) is down.'
+      'This usually means a reverse proxy failure or machina-daemon is down.'
     )
   }
 
@@ -58,7 +58,7 @@ export function formatHttpErrorBody(status: number, statusText: string, text: st
   if (/<!DOCTYPE\s+html/i.test(raw) || /^<\s*html/i.test(raw)) {
     return (
       `Request failed (${statusLabel}): the server returned an HTML error page instead of JSON. ` +
-      'Check that machina-daemon is running and OpenStack endpoints are reachable.'
+      'Check that machina-daemon is running and reachable.'
     )
   }
 
@@ -97,7 +97,6 @@ export function formatHttpErrorBody(status: number, statusText: string, text: st
   return `Request failed (${statusLabel}): ${raw}`
 }
 
-/** Format any thrown value for toasts and banners. */
 /** True when the platform controller returned 404 / not_found for a VM or other resource. */
 export function isPlatformNotFoundError(e: unknown): boolean {
   if (e && typeof e === 'object' && 'error_code' in e) {
@@ -108,6 +107,7 @@ export function isPlatformNotFoundError(e: unknown): boolean {
   return /\bnot[_ ]found\b/.test(msg)
 }
 
+/** Format any thrown value for toasts and banners. */
 export function formatUserError(e: unknown): string {
   if (e && typeof e === 'object' && 'remediation' in e) {
     const remediation = (e as { remediation?: string }).remediation

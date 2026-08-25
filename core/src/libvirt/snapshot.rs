@@ -253,7 +253,7 @@ pub fn create_snapshot(
                 if mem_file.is_empty() {
                     // Default under primary VM disk dir (pool target)
                     let base = super::storage::primary_vm_disk_base_dir(conn)
-                        .unwrap_or_else(|| "/var/lib/libvirt/images".to_string());
+                        .unwrap_or_else(|| super::DEFAULT_LIBVIRT_IMAGES_DIR.to_string());
                     let dir = if !req.external_memory_dir.trim().is_empty() {
                         req.external_memory_dir.trim().to_string()
                     } else {
