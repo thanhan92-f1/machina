@@ -100,5 +100,8 @@
   "/logs": "System Logs \u2014 Machina Monitoring page at `/logs`.",
   "/audit": "Audit Log \u2014 Machina Monitoring page at `/audit`.",
   "/admin/sessions": "Web Sessions \u2014 Machina Monitoring page at `/admin/sessions`.",
-  "/settings": "Daemon and UI settings, including Fleet Cloud wiring."
+  "/settings": "Daemon and UI settings, including Fleet Cloud wiring.",
+  "/mission-control": "Mission Control \u2014 Core surface.",
+  "/ssh": "SSH \u2014 Infrastructure surface.",
+  "/api-docs": "API Docs \u2014 Platform surface."
 }

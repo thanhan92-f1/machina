@@ -13,7 +13,7 @@ import { getHostStats, HostStats } from '../api/extras'
 import { getStateColor, getStateBadgeClasses } from '../utils/vm'
 import { getRecentVMs } from '../utils/recentVMs'
 import { timeAgo } from '../utils/time'
-import { Activity, Cpu, HardDrive, Server, Network, Database, Camera, ArrowRight, MonitorPlay, ChevronRight, Clock, Gauge, Power, RotateCcw, Play, Terminal, Plus, Trash2, AlertTriangle, X, RefreshCw, Boxes, Stethoscope } from 'lucide-react'
+import { Activity, Cpu, HardDrive, Server, Network, Database, Camera, ArrowRight, MonitorPlay, ChevronRight, Clock, Gauge, Power, RotateCcw, Play, Terminal, Plus, Trash2, AlertTriangle, X, RefreshCw, Boxes, Stethoscope, Box } from 'lucide-react'
 import { hostShutdown, hostReboot } from '../api/extras'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useWebSocketContext } from '../contexts/WebSocketContext'
@@ -21,6 +21,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { useHypersdkConnection } from '../hooks/useHypersdkConnection'
 import { getK8sEnvironment, getK8sOverview, type K8sEnvironment, type K8sOverview } from '../api/k8s'
+import { getVesselStatus, listVesselContainers, type VesselStatus } from '../api/vessel'
 import Hero from '../components/Hero'
 import PageLayout from '../components/PageLayout'
 import { formatUserError } from '../utils/apiError'
@@ -54,6 +55,8 @@ export default function Dashboard() {
   const [k8sEnv, setK8sEnv] = useState<K8sEnvironment | null>(null)
   const [k8sOverview, setK8sOverview] = useState<K8sOverview | null>(null)
   const [k8sError, setK8sError] = useState<string | null>(null)
+  const [vesselStatus, setVesselStatus] = useState<VesselStatus | null>(null)
+  const [vesselContainerCount, setVesselContainerCount] = useState<number | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const platformEnabled = Boolean(info?.control_plane?.proxy_url)
@@ -110,6 +113,21 @@ export default function Dashboard() {
           setK8sEnv(null)
           setK8sOverview(null)
           setK8sError(formatUserError(e))
+        }
+      })(),
+      (async () => {
+        try {
+          const st = await getVesselStatus()
+          setVesselStatus(st)
+          if (st.connected) {
+            const list = await listVesselContainers(true)
+            setVesselContainerCount(list.length)
+          } else {
+            setVesselContainerCount(null)
+          }
+        } catch {
+          setVesselStatus(null)
+          setVesselContainerCount(null)
         }
       })(),
     ])
@@ -378,6 +396,29 @@ export default function Dashboard() {
             </Link>
             <Link to="/k8s/workloads" className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm">
               Workloads
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {vesselStatus?.connected && (
+        <div className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-emerald-500/30 bg-emerald-950/20">
+          <div className="flex items-start gap-3 min-w-0">
+            <Box className="w-6 h-6 shrink-0 mt-0.5 text-emerald-400" />
+            <div>
+              <h2 className="font-semibold text-slate-100">Containers</h2>
+              <p className="text-sm text-slate-400 mt-0.5">
+                {String(vesselStatus.engine ?? 'engine')} {vesselStatus.version ?? ''} ·{' '}
+                {vesselContainerCount ?? 0} container{vesselContainerCount === 1 ? '' : 's'} on this host
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <Link to="/containers" className="px-3 py-1.5 rounded-lg border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 text-sm">
+              Manage
+            </Link>
+            <Link to="/containers?create=1" className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
+              Create container
             </Link>
           </div>
         </div>

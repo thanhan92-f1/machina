@@ -50,7 +50,7 @@ pub use api_error::{
 pub use config::{
     AuthConfig, FleetConfig, FleetPeer, GuestkitConfig, HypersdkConfig, KubeVirtConfig, LdapConfig,
     MachinaConfig, OidcConfig, OidcDefaultRole, PacketwolfConfig, RunAsUserConfig,
-    SshTerminalConfig, SshTerminalTarget, VmCreateBackend, DEFAULT_DAEMON_PORT,
+    SshTerminalConfig, SshTerminalTarget, VesselConfig, VmCreateBackend, DEFAULT_DAEMON_PORT,
 };
 pub use firewall::{
     apply_k8s_plan, apply_plan, builtin_profiles, cloud_sg_monthly_cost, compile_k8s_policies,

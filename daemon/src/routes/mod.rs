@@ -30,6 +30,7 @@ mod sprites;
 mod storage;
 mod system;
 mod templates;
+mod vessel;
 mod vm_guest;
 mod vms;
 mod ws;
@@ -42,6 +43,7 @@ pub fn api_routes() -> Router<LibvirtManager> {
     Router::new()
         .merge(events::event_routes())
         .merge(jobs::job_routes())
+        .merge(vessel::vessel_routes())
         .merge(k8s::k8s_routes())
         .merge(kubevirt::kubevirt_routes())
         .merge(integrations::integrations_routes())
@@ -75,5 +77,6 @@ pub fn api_routes() -> Router<LibvirtManager> {
 pub fn websocket_routes() -> Router<LibvirtManager> {
     Router::new()
         .merge(ws::ws_routes())
+        .merge(vessel::vessel_ws_routes())
         .merge(platform_ws::platform_ws_routes())
 }

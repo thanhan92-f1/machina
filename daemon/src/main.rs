@@ -28,6 +28,7 @@ mod sprite_registry;
 mod systemd;
 mod terminal;
 mod virt_image_validate;
+mod vessel_handle;
 mod vm_events;
 
 use clap::Parser;
@@ -192,7 +193,7 @@ async fn main() -> anyhow::Result<()> {
     let tls_cert_path = config.tls.cert_path.clone();
     let tls_key_path = config.tls.key_path.clone();
 
-    let app = server::create_app(manager, config);
+    let app = server::create_app(manager, config).await;
 
     if tls_enabled {
         info!("listening on {bind_addr} (TLS enabled)");

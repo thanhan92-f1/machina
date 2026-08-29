@@ -39,6 +39,13 @@ impl From<LibvirtError> for AppError {
 fn classify_operation_error(msg: &str) -> Option<(StatusCode, &'static str)> {
     let m = msg.to_ascii_lowercase();
 
+    if m.contains("[vessel_unavailable]") {
+        return Some((StatusCode::SERVICE_UNAVAILABLE, "vessel_unavailable"));
+    }
+    if m.contains("[vessel_unsupported]") {
+        return Some((StatusCode::BAD_REQUEST, "vessel_unsupported"));
+    }
+
     // Guest agent not connected / not responding → the request is valid but the
     // guest side isn't ready yet. 503 signals "retry once the guest is up".
     if m.contains("code=agentunresponsive")

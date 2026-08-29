@@ -228,6 +228,11 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
   (log: `/var/lib/machina/audit.log`).
 - `[inventory_history]` — `enabled=true`, `interval_secs=3600`, `max_file_mb=64`.
 - `[ssh_terminal]` — `session_ttl_secs=120` (30–3600), `allow_adhoc_hosts=true`.
+- `[vessel]` — local Podman/Docker container engine (Vessel). `enabled=true`
+  by default; daemon connects fail-soft if the socket is missing. Optional
+  `socket` (unix path or `unix://…`); `auto_discover=true` searches common
+  Podman/Docker socket locations when `socket` is empty. REST:
+  `/api/v1/vessel/*`; WebSocket stats/logs under `/ws/v1/vessel/…`.
 - `[kubevirt]`, `[hypersdk]`, `[guestkit]`, `[packetwolf]` —
   integration blocks, all `enabled=false` by default (see
   [Product Guide → Integrations](product-guide.md#integrations)).

@@ -504,6 +504,30 @@
       "label": "Web Sessions",
       "path": "/admin/sessions",
       "category": "Monitoring"
+    },
+    {
+      "label": "Mission Control",
+      "path": "/mission-control",
+      "category": "Core",
+      "legacy": false
+    },
+    {
+      "label": "Settings",
+      "path": "/settings",
+      "category": "Platform",
+      "legacy": false
+    },
+    {
+      "label": "SSH",
+      "path": "/ssh",
+      "category": "Infrastructure",
+      "legacy": false
+    },
+    {
+      "label": "API Docs",
+      "path": "/api-docs",
+      "category": "Platform",
+      "legacy": false
     }
   ]
 }

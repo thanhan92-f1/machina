@@ -2,7 +2,7 @@
 
 Every primary navigable dashboard route.
 
-_Generated: 2026-08-29 · 101 routes_
+_Generated: 2026-08-29 · 105 routes_
 
 Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
@@ -20,6 +20,7 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Capabilities | `/capabilities` | Capabilities — Machina Core page at `/capabilities`. | [Open](pages/core/capabilities.md) |
 | Node Devices | `/devices` | Node Devices — Machina Core page at `/devices`. | [Open](pages/core/devices.md) |
 | Services | `/services` | Services — Machina Core page at `/services`. | [Open](pages/core/services.md) |
+| Mission Control | `/mission-control` | Mission Control — Core surface. | [Open](pages/core/mission-control.md) |
 
 ## Platform
 
@@ -74,6 +75,8 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Developer Hub | `/platform/developer` | Developer Hub — Machina Platform page at `/platform/developer`. | [Open](pages/platform/platform-developer.md) |
 | Support | `/platform/support` | Support — Machina Platform page at `/platform/support`. | [Open](pages/platform/platform-support.md) |
 | Event Log | `/platform/events` | Event Log — Machina Platform page at `/platform/events`. | [Open](pages/platform/platform-events.md) |
+| Settings | `/settings` | Daemon and UI settings, including Fleet Cloud wiring. | [Open](pages/platform/settings.md) |
+| API Docs | `/api-docs` | API Docs — Platform surface. | [Open](pages/platform/api-docs.md) |
 
 ## Platform / Security
 
@@ -100,6 +103,7 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Secrets | `/secrets` | Secrets — Machina Infrastructure page at `/secrets`. | [Open](pages/infrastructure/secrets.md) |
 | Containers | `/containers` | Local Podman/Docker containers via Vessel — list, create, lifecycle, and live stats on this host. | [Open](pages/infrastructure/containers.md) |
 | Container Pods | `/containers/pods` | Podman pods via Vessel — create and manage shared-namespace container groups (not Kubernetes pods). | [Open](pages/infrastructure/containers-pods.md) |
+| SSH | `/ssh` | SSH — Infrastructure surface. | [Open](pages/infrastructure/ssh.md) |
 
 ## Kubernetes
 

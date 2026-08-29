@@ -41,6 +41,7 @@ rustls = { version = "0.23", default-features = false, features = ["std", "ring"
 portable-pty = { workspace = true }
 tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect"] }
 ldap3 = { version = "0.11", default-features = false, features = ["sync", "tls"] }
+vessel-core = { path = "../vessel" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 pam = { workspace = true }

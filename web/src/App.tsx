@@ -67,6 +67,8 @@ const Jobs = lazyWithRetry(() => import('./pages/Jobs'))
 const K8sOverview = lazyWithRetry(() => import('./pages/K8sOverview'))
 const K8sWorkloads = lazyWithRetry(() => import('./pages/K8sWorkloads'))
 const KataContainers = lazyWithRetry(() => import('./pages/KataContainers'))
+const Containers = lazyWithRetry(() => import('./pages/Containers'))
+const ContainerPods = lazyWithRetry(() => import('./pages/ContainerPods'))
 const FleetCloudOverview = lazyWithRetry(() => import('./pages/FleetCloudOverview'))
 const FleetCloudInstances = lazyWithRetry(() => import('./pages/FleetCloudInstances'))
 const FleetCloudInstanceDetail = lazyWithRetry(() => import('./pages/FleetCloudInstanceDetail'))
@@ -488,6 +490,8 @@ function AuthenticatedShellRoutes() {
                 <Route path="/k8s" element={<K8sOverview />} />
                 <Route path="/k8s/workloads" element={<K8sWorkloads />} />
                 <Route path="/k8s/kata" element={<KataContainers />} />
+                <Route path="/containers" element={<Containers />} />
+                <Route path="/containers/pods" element={<ContainerPods />} />
                 <Route path="/fleet-cloud" element={<FleetCloudOverview />} />
                 <Route path="/fleet-cloud/instances" element={<FleetCloudInstances />} />
                 <Route path="/fleet-cloud/instances/:id" element={<FleetCloudInstanceDetail />} />

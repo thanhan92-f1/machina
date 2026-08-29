@@ -25,8 +25,9 @@ use crate::obs_workers::ObservabilityWorkers;
 use crate::routes;
 use crate::sprite_registry::{self, SpriteRegistry};
 use crate::terminal::{self, TerminalSessionStore};
+use crate::vessel_handle::VesselHandle;
 
-pub fn create_app(manager: LibvirtManager, config: MachinaConfig) -> Router {
+pub async fn create_app(manager: LibvirtManager, config: MachinaConfig) -> Router {
     let web_dir = find_web_dist();
     let session_store = SessionStore::new(
         config.auth.max_sessions_global,
@@ -48,6 +49,7 @@ pub fn create_app(manager: LibvirtManager, config: MachinaConfig) -> Router {
     );
     let terminal_store = TerminalSessionStore::new();
     let console_session_store = routes::consolehub::ConsoleSessionStore::new();
+    let vessel_handle = VesselHandle::from_config(&config.vessel).await;
     let ssh_terminal_cfg = config.ssh_terminal.clone();
     let mut auth_cfg = config.auth.clone();
     // Mirrors main.rs's bind_rustls-vs-plain-TCP decision so `machina_session`'s `Secure`
@@ -77,6 +79,7 @@ pub fn create_app(manager: LibvirtManager, config: MachinaConfig) -> Router {
         .layer(Extension(job_registry))
         .layer(Extension(sprite_registry))
         .layer(Extension(event_bus))
+        .layer(Extension(vessel_handle.clone()))
         .layer(Extension(vib_build_slots))
         .layer(Extension(k8s_inventory_history_cfg.clone()))
         .layer(Extension(daemon_stats.clone()))
@@ -98,6 +101,7 @@ pub fn create_app(manager: LibvirtManager, config: MachinaConfig) -> Router {
         ))
         .layer(Extension(terminal_store))
         .layer(Extension(ssh_terminal_cfg))
+        .layer(Extension(vessel_handle))
         .with_state(manager);
 
     let mut router = Router::new()

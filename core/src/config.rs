@@ -36,6 +36,9 @@ pub struct MachinaConfig {
     /// Optional PacketWolf traffic intelligence proxy for Zeus Firewall activity views.
     #[serde(default)]
     pub packetwolf: PacketwolfConfig,
+    /// Local Podman/Docker container engine (Vessel).
+    #[serde(default)]
+    pub vessel: VesselConfig,
     /// Periodic snapshots of host hardware inventory (JSON Lines under `/var/lib/machina/hardware-inventory.jsonl`).
     #[serde(default)]
     pub inventory_history: InventoryHistoryConfig,
@@ -487,6 +490,38 @@ fn default_packetwolf_base_url() -> String {
 fn default_packetwolf_insecure_tls() -> bool {
     // Secure by default; opt in for a self-signed PacketWolf fabric over HTTPS.
     false
+}
+
+/// Local container engine (Podman / Docker) via Vessel.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VesselConfig {
+    /// When true, daemon attempts to connect on start (fail-soft if socket missing).
+    #[serde(default = "default_vessel_enabled")]
+    pub enabled: bool,
+    /// Optional unix socket override (`/run/user/…/podman/podman.sock` or `unix://…`).
+    #[serde(default)]
+    pub socket: String,
+    /// Prefer auto-discovery when `socket` is empty.
+    #[serde(default = "default_vessel_auto_discover")]
+    pub auto_discover: bool,
+}
+
+fn default_vessel_enabled() -> bool {
+    true
+}
+
+fn default_vessel_auto_discover() -> bool {
+    true
+}
+
+impl Default for VesselConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_vessel_enabled(),
+            socket: String::new(),
+            auto_discover: default_vessel_auto_discover(),
+        }
+    }
 }
 
 

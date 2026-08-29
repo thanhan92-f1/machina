@@ -15,6 +15,7 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [Dashboard](core/home.md) | Host dashboard — VM inventory pulse, Vessel container shortcuts when Podman/Docker is connected, and quick links. |
 | [SSH — hypervisor](core/host-ssh.md) | Host SSH — Machina Core page at `/host-ssh`. |
 | [Import guest VM](core/import.md) | Import VM — Machina Core page at `/import`. |
+| [Mission Control](core/mission-control.md) | Mission Control — Core surface. |
 | [Systemd Services](core/services.md) | Services — Machina Core page at `/services`. |
 | [Sprites](core/sprites.md) | Instant, disposable sandbox VMs — boot on libvirt/QEMU, Cloud Hypervisor, or Firecracker, TTL-reaped automatically, no persistent state. |
 | [Virtual Machines](core/vms.md) | Virtual machine inventory for this libvirt host. |
@@ -53,6 +54,7 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [Network Filters](infrastructure/nwfilters.md) | Network Filters — Machina Infrastructure page at `/nwfilters`. |
 | [Secrets](infrastructure/secrets.md) | Secrets — Machina Infrastructure page at `/secrets`. |
 | [Snapshots](infrastructure/snapshots.md) | Snapshots — Machina Infrastructure page at `/snapshots`. |
+| [SSH](infrastructure/ssh.md) | SSH — Infrastructure surface. |
 | [Storage pools](infrastructure/storage.md) | Storage Pools — Machina Infrastructure page at `/storage`. |
 
 ## Kubernetes
@@ -79,6 +81,7 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 
 | Page | What it covers |
 |------|----------------|
+| [API Docs](platform/api-docs.md) | API Docs — Platform surface. |
 | [Activity Monitor](platform/platform-activity.md) | Activity Monitor — Machina Platform page at `/platform/activity`. |
 | [AI Providers](platform/platform-ai-providers.md) | AI Providers — Machina Platform page at `/platform/ai-providers`. |
 | [API keys](platform/platform-api-keys.md) | API Keys — Machina Platform page at `/platform/api-keys`. |
@@ -128,6 +131,7 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [Machine Finder](platform/platform-vms.md) | Fleet VM finder across enrolled hosts. |
 | [Webhooks](platform/platform-webhooks.md) | Webhooks — Machina Platform page at `/platform/webhooks`. |
 | [Mission Control](platform/platform.md) | Mission Control — multi-host platform overview. |
+| [Settings](platform/settings.md) | Daemon and UI settings, including Fleet Cloud wiring. |
 
 ## Platform Security
 
@@ -142,4 +146,4 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 
 ---
 
-101 guides. Regenerate: `node scripts/customer-docs/generate-guide-index.mjs`.
+105 guides. Regenerate: `node scripts/customer-docs/generate-guide-index.mjs`.

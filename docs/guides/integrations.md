@@ -11,6 +11,12 @@ Machina surfaces optional backends through a single status API and Settings UI.
 - **k8s** — kubeconfig auto-selection, inventory history flag, route hints
 - **run_as_user** — impersonation mode and whether it is active
 
+**Vessel** (local containers) has a dedicated status endpoint:
+`GET /api/v1/vessel/status` — engine type, version, socket, `connected`, and
+`capabilities` (including Podman pods). Lifecycle and inventory live under
+`/api/v1/vessel/containers` and `/api/v1/vessel/pods`; stats/logs stream on
+`/ws/v1/vessel/containers/{id}/stats|logs`.
+
 Deep links: run-as-user `GET /api/v1/auth/run-as-user`.
 
 ## Kubernetes metrics

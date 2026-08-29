@@ -291,6 +291,8 @@ _Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
   - **How:** Web → Import VM → GuestKit offline inspection / assurance.
 - **Kubernetes & Kata** — View Kubernetes workloads and Kata containers alongside VMs, with KubeVirt VNC/console proxying. — _One console for both VMs and cluster workloads._
   - **How:** Web → Kubernetes (Overview / Workloads) and Web → Kata Containers.
+- **Vessel (Podman / Docker)** — List, create, and lifecycle local containers on the hypervisor host; Podman pod groups on `/containers/pods`. Live stats over WebSocket. — _Run sidecars and lab containers next to libvirt VMs without a separate tool._
+  - **How:** Web → Infrastructure → Containers; API `/api/v1/vessel/*`. Enable or point `[vessel].socket` in daemon config (on by default).
 - **VMware & Proxmox awareness** — Controller APIs to interoperate with VMware and Proxmox sources. — _Onboard estates from other hypervisors._
   - **How:** Web → Platform → Integrations → add VMware / Proxmox source.
 - **Zyvor platform stack** — Fits with hypercluster, Zeus OS, forge, Atlas, PacketWolf, and more across the Zyvor ecosystem. — _Machina is the metal layer of a full private-cloud stack._

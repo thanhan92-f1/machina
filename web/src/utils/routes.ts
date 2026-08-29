@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Boxes,
   Package,
+  Box,
   Cloud,
   Stethoscope,
   Layers,
@@ -271,6 +272,13 @@ export const navGroups: NavGroup[] = [
         ],
       },
       {
+        label: 'Containers',
+        items: [
+          { to: '/containers', icon: React.createElement(Box, { className: 'w-4 h-4' }), label: 'Containers' },
+          { to: '/containers/pods', icon: React.createElement(Layers, { className: 'w-4 h-4' }), label: 'Pods' },
+        ],
+      },
+      {
         label: 'Kubernetes',
         items: [
           { to: '/k8s', icon: React.createElement(Boxes, { className: 'w-4 h-4' }), label: 'Kubernetes' },
@@ -376,6 +384,8 @@ export const routeLabels: Record<string, string> = {
   '/k8s': 'Kubernetes',
   '/k8s/workloads': 'K8s Workloads',
   '/k8s/kata': 'Kata Containers',
+  '/containers': 'Containers',
+  '/containers/pods': 'Container Pods',
   '/fleet-cloud': 'Fleet Cloud',
   '/fleet-cloud/instances': 'Instances',
   '/fleet-cloud/instances/:id': 'Instance',

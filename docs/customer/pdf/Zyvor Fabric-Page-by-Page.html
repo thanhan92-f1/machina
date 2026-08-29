@@ -1,14 +1,14 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Page-by-Page Product Manual — Machina</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Page-by-Page Product Manual — Zyvor Fabric</title>
 <style>
 @page{size:A4;margin:15mm 16mm}*{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Segoe UI',system-ui,sans-serif;color:#1f2937;line-height:1.58;font-size:10.5pt}
-.cover{height:262mm;margin:-15mm -16mm 0;background:linear-gradient(135deg,#7c2d12,#9a3412,#0d1b2a);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;page-break-after:always;position:relative}
+.cover{height:262mm;margin:-15mm -16mm 0;background:linear-gradient(135deg,#0a0a1a,#1e3a5f,#0d1b2a);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;page-break-after:always;position:relative}
 .cover .kicker{letter-spacing:5px;text-transform:uppercase;opacity:.72;margin-bottom:1.4em}
 .cover h1{font-size:3.2em;font-weight:800;letter-spacing:-2px}
-.cover h1 span{color:#fb923c}
+.cover h1 span{color:#4ade80}
 .cover .sub{font-size:1.3em;font-weight:300;opacity:.93;margin:1em 0;max-width:24em}
-.cover .badge{display:inline-block;background:rgba(96,165,250,.2);border:1px solid #fb923c;padding:8px 22px;border-radius:20px;margin-top:2em}
+.cover .badge{display:inline-block;background:rgba(96,165,250,.2);border:1px solid #4ade80;padding:8px 22px;border-radius:20px;margin-top:2em}
 .cover .foot{position:absolute;bottom:34px;font-size:.82em;opacity:.6}
 h2{page-break-before:always;margin:0 0 .35em;font-size:1.55em;font-weight:750;color:#12203a;border-bottom:2px solid #e5edfb;padding-bottom:.28em}
 h2:first-of-type{page-break-before:avoid}
@@ -22,7 +22,7 @@ th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:to
 hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </style></head><body>
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
-<h1>Mach<span>ina</span></h1>
+<h1>Zyvor Fabric</h1>
 <div class="sub">Page-by-Page Product Manual</div>
 <div class="badge">2026-08-29</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
@@ -64,10 +64,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <tr>
 <td><a href="core/import.md">Import guest VM</a></td>
 <td>Import VM — Machina Core page at <code>/import</code>.</td>
-</tr>
-<tr>
-<td><a href="core/mission-control.md">Mission Control</a></td>
-<td>Mission Control — Core surface.</td>
 </tr>
 <tr>
 <td><a href="core/services.md">Systemd Services</a></td>
@@ -200,10 +196,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Snapshots — Machina Infrastructure page at <code>/snapshots</code>.</td>
 </tr>
 <tr>
-<td><a href="infrastructure/ssh.md">SSH</a></td>
-<td>SSH — Infrastructure surface.</td>
-</tr>
-<tr>
 <td><a href="infrastructure/storage.md">Storage pools</a></td>
 <td>Storage Pools — Machina Infrastructure page at <code>/storage</code>.</td>
 </tr>
@@ -275,10 +267,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="platform/api-docs.md">API Docs</a></td>
-<td>API Docs — Platform surface.</td>
-</tr>
-<tr>
 <td><a href="platform/platform-activity.md">Activity Monitor</a></td>
 <td>Activity Monitor — Machina Platform page at <code>/platform/activity</code>.</td>
 </tr>
@@ -474,10 +462,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><a href="platform/platform.md">Mission Control</a></td>
 <td>Mission Control — multi-host platform overview.</td>
 </tr>
-<tr>
-<td><a href="platform/settings.md">Settings</a></td>
-<td>Daemon and UI settings, including Fleet Cloud wiring.</td>
-</tr>
 </tbody></table>
 <h3>Platform Security</h3>
 <table>
@@ -513,7 +497,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 </tbody></table>
 <hr>
-<p>105 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
+<p>101 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
 <hr>
 <h2>Capabilities</h2>
 <h3>Purpose</h3>
@@ -763,36 +747,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../fleet-cloud/fleet-cloud-images.md">Images</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="home.md">Dashboard</a></li>
-<li><a href="../platform/platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
-<h2>Mission Control</h2>
-<h3>Purpose</h3>
-<p>Mission Control — Core surface.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Open this page when the job matches the purpose above</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/mission-control</code></li>
-<li>Nav: <strong>Core → Mission Control</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>What you can do</h3>
-<ol>
-<li>Open <code>/mission-control</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
-<li>Use filters and host/VM selectors when the page provides them.</li>
-<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
-<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="../platform/platform.md">Mission Control</a></li>
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
@@ -1744,36 +1698,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>SSH</h2>
-<h3>Purpose</h3>
-<p>SSH — Infrastructure surface.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Open this page when the job matches the purpose above</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/ssh</code></li>
-<li>Nav: <strong>Infrastructure → SSH</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>What you can do</h3>
-<ol>
-<li>Open <code>/ssh</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
-<li>Use filters and host/VM selectors when the page provides them.</li>
-<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
-<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
-<li><a href="../platform/platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
 <h2>Storage pools</h2>
 <h3>Purpose</h3>
 <p>Storage Pools — Machina Infrastructure page at <code>/storage</code>.</p>
@@ -2148,36 +2072,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="node.md">Host overview</a></li>
 <li><a href="../core/capabilities.md">Capabilities</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../platform/platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
-<h2>API Docs</h2>
-<h3>Purpose</h3>
-<p>API Docs — Platform surface.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Open this page when the job matches the purpose above</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/api-docs</code></li>
-<li>Nav: <strong>Platform → API Docs</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>What you can do</h3>
-<ol>
-<li>Open <code>/api-docs</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
-<li>Use filters and host/VM selectors when the page provides them.</li>
-<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
-<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="../platform/platform.md">Mission Control</a></li>
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
@@ -3863,36 +3757,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Settings</h2>
-<h3>Purpose</h3>
-<p>Daemon and UI settings, including Fleet Cloud wiring.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Open this page when the job matches the purpose above</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/settings</code></li>
-<li>Nav: <strong>Platform → Settings</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>What you can do</h3>
-<ol>
-<li>Open <code>/settings</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
-<li>Use filters and host/VM selectors when the page provides them.</li>
-<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
-<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
-<li><a href="../platform/platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
 <h2>Security Center</h2>
 <h3>Purpose</h3>
 <p>Zeus Security — Machina Platform / Security page at <code>/platform/zeus/security</code>.</p>
@@ -4117,9 +3981,9 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Machina — Complete page index</h2>
+<h2>Zyvor Fabric — Complete page index</h2>
 <p>Every primary navigable dashboard route.</p>
-<p><em>Generated: 2026-08-29 · 105 routes</em></p>
+<p><em>Generated: 2026-08-29 · 101 routes</em></p>
 <p>Regenerate: <code>node scripts/customer-docs/generate-page-index.mjs</code></p>
 <h3>Core</h3>
 <table>
@@ -4190,12 +4054,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/services</code></td>
 <td>Services — Machina Core page at <code>/services</code>.</td>
 <td><a href="pages/core/services.md">Open</a></td>
-</tr>
-<tr>
-<td>Mission Control</td>
-<td><code>/mission-control</code></td>
-<td>Mission Control — Core surface.</td>
-<td><a href="pages/core/mission-control.md">Open</a></td>
 </tr>
 </tbody></table>
 <h3>Platform</h3>
@@ -4502,18 +4360,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Event Log — Machina Platform page at <code>/platform/events</code>.</td>
 <td><a href="pages/platform/platform-events.md">Open</a></td>
 </tr>
-<tr>
-<td>Settings</td>
-<td><code>/settings</code></td>
-<td>Daemon and UI settings, including Fleet Cloud wiring.</td>
-<td><a href="pages/platform/settings.md">Open</a></td>
-</tr>
-<tr>
-<td>API Docs</td>
-<td><code>/api-docs</code></td>
-<td>API Docs — Platform surface.</td>
-<td><a href="pages/platform/api-docs.md">Open</a></td>
-</tr>
 </tbody></table>
 <h3>Platform / Security</h3>
 <table>
@@ -4631,12 +4477,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/containers/pods</code></td>
 <td>Podman pods via Vessel — create and manage shared-namespace container groups (not Kubernetes pods).</td>
 <td><a href="pages/infrastructure/containers-pods.md">Open</a></td>
-</tr>
-<tr>
-<td>SSH</td>
-<td><code>/ssh</code></td>
-<td>SSH — Infrastructure surface.</td>
-<td><a href="pages/infrastructure/ssh.md">Open</a></td>
 </tr>
 </tbody></table>
 <h3>Kubernetes</h3>

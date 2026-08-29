@@ -160,9 +160,10 @@ runtime auth config (`/system/auth/ldap-settings`, `/oidc-settings`,
 **Fleet** (`fleet.rs`): `GET /fleet/status\|metrics\|alerts\|vms`,
 `POST /fleet/placement\|create-vm`, `GET /fleet/prometheus`.
 
-**Integrations** (mounted under `/api/v1`): `k8s`, `kubevirt`, `hypersdk`,
-`guestkit`, `zeus_firewall`, `automation`, `backup`, `jobs`, `templates`,
-`guest_images`, `platform_controller` (reverse-proxy to the controller).
+**Integrations** (mounted under `/api/v1`): `vessel` (local Podman/Docker),
+`k8s`, `kubevirt`, `hypersdk`, `guestkit`, `zeus_firewall`, `automation`,
+`backup`, `jobs`, `templates`, `guest_images`, `platform_controller`
+(reverse-proxy to the controller).
 
 > The full machine-readable contract is served at `GET /api/v1/openapi.json`
 > and mirrored in the UI at `/api-docs`.
@@ -182,6 +183,7 @@ as `?token=`:
 | `/ws/v1/terminal/{session_id}` | Terminal / PTY |
 | `/ws/v1/ssh/{host}` | SSH |
 | `/ws/v1/k8s-kubevirt/{ns}/{name}/vnc\|console` | KubeVirt VNC / console |
+| `/ws/v1/vessel/containers/{id}/stats\|logs` | Container CPU/mem/network stats or log stream |
 | `/ws/v1/platform/vnc\|serial\|spice/{vm_id}` | Platform-proxied consoles |
 
 ### 3.4 Web UI
@@ -190,8 +192,9 @@ Two shells share one daemon:
 
 - **Classic (daemon-backed)** — `/`, `/vms`, `/create`, `/import`, `/fleet`,
   `/storage`, `/disk-images`, `/snapshots`, `/backups`, `/networks`,
-  `/nwfilters`, `/host-networking`, `/secrets`, `/k8s` (+ `/k8s/workloads`,
-  `/k8s/kata`), `/host-ssh`, `/settings`, `/api-docs`, plus the Fleet Cloud
+  `/nwfilters`, `/host-networking`, `/secrets`, `/containers` (+ `/containers/pods`
+  for Podman pods), `/k8s` (+ `/k8s/workloads`, `/k8s/kata`), `/host-ssh`,
+  `/settings`, `/api-docs`, plus the Fleet Cloud
   pages under `/fleet-cloud/*`.
 - **Platform (controller-backed)** — `/platform/*` with its own shell:
   Mission Control, Virtual Machines, Hosts, Applications, Launchpad, Datacenter
@@ -270,6 +273,10 @@ desired-state reconciliation, a task bus (in-memory or NATS), and an AI engine
 
 ### Integrations
 
+- **Vessel** — local Podman or Docker on the hypervisor host. List/create
+  containers, Podman pod CRUD, lifecycle, and WebSocket stats/logs via
+  `/api/v1/vessel/*`. Enabled by default (`[vessel]`); fails soft when no
+  engine socket is present. Kubernetes pods remain on `/k8s/workloads`.
 - **KubeVirt** — export a VM as a KubeVirt YAML bundle
   (`GET /vms/{name}/kubevirt-bundle`) and apply/upload/start it on a cluster.
   See [../kubevirt-migration.md](../kubevirt-migration.md).
