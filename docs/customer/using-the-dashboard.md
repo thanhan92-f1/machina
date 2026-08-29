@@ -7,7 +7,8 @@ Machina’s UI has a **classic host shell** (Core / Infrastructure / Fleet Cloud
 | Element | Purpose |
 |---------|---------|
 | **Core nav** | This-host VMs, create/import, fleet list |
-| **Platform** | Multi-host Mission Control, Zeus, backups, SOC |
+| **Infrastructure** | Storage, networks, **Containers** (Vessel / Podman or Docker), Podman pods |
+| **Platform** | Multi-host Mission Control, **Zyra AI**, **Zeus Security**, backups, SOC |
 | **Top-bar quick links** | Settings, Host SSH, API Docs |
 | **Consoles** | VNC, SPICE, SSH PTY, serial, RDP from VM detail |
 

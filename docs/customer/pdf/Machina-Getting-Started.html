@@ -24,7 +24,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Mach<span>ina</span></h1>
 <div class="sub">Getting Started</div>
-<div class="badge">2026-08-24</div>
+<div class="badge">2026-08-29</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>What you need</h2>
 <table>
@@ -82,7 +82,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <ol>
 <li><strong>Core</strong> — Dashboard, VMs, Create, Import, Fleet on this host.</li>
 <li><strong>Platform</strong> — Mission Control for multi-host fleet (<code>/platform</code>).</li>
-<li><strong>Infrastructure / Fleet Cloud / Monitoring</strong> — storage, networks, Fleet Cloud instances, host metrics.</li>
+<li><strong>Infrastructure / Fleet Cloud / Monitoring</strong> — storage, networks, Podman/Docker containers (Vessel), Fleet Cloud instances, host metrics.</li>
 <li>Spotlight / Finder for quick jump.</li>
 </ol>
 <h2>4. First workflows</h2>
@@ -94,6 +94,8 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <p><code>/node</code> or Platform → Hosts.</p>
 <h3>D. Fleet Cloud</h3>
 <p><code>/fleet-cloud</code> pages work out of the box — instances, images, volumes, security groups, networking, load balancers, and keypairs are all native, no external cloud connection or credentials required.</p>
+<h3>E. Containers (Vessel)</h3>
+<p><strong>Infrastructure → Containers</strong> (<code>/containers</code>) when Podman/Docker is connected — see <a href="admin-basics.md">Admin basics</a>.</p>
 <h2>Next steps</h2>
 <ul>
 <li><a href="using-the-dashboard.md">Using the Dashboard</a></li>
@@ -115,8 +117,12 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>This-host VMs, create/import, fleet list</td>
 </tr>
 <tr>
+<td><strong>Infrastructure</strong></td>
+<td>Storage, networks, <strong>Containers</strong> (Vessel / Podman or Docker), Podman pods</td>
+</tr>
+<tr>
 <td><strong>Platform</strong></td>
-<td>Multi-host Mission Control, Zeus, backups, SOC</td>
+<td>Multi-host Mission Control, <strong>Zyra AI</strong>, <strong>Zeus Security</strong>, backups, SOC</td>
 </tr>
 <tr>
 <td><strong>Top-bar quick links</strong></td>
@@ -135,24 +141,44 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="pages/README.md">Page-by-page guides</a></li>
 </ul>
 <hr>
-<h2>Create and console into a VM</h2>
+<p>End-to-end jobs across Machina Core, Mission Control, and Fleet Cloud. Prefer console click-paths.</p>
+<h2>Create and console into a VM (this host)</h2>
 <ol>
-<li><a href="pages/core/create.md">Create VM</a> or <a href="pages/platform/platform-vm-builder.md">VM Builder</a></li>
-<li><a href="pages/core/vms.md">Virtual Machines</a> → open detail → console</li>
+<li><strong>Core → Create VM</strong> (<code>/create</code>) — install media or golden clone</li>
+<li><strong>Core → Virtual Machines</strong> (<code>/vms</code>) → open guest → <strong>Console</strong> / SSH</li>
+<li>Optional: <strong>Infrastructure → Containers</strong> if you need Vessel containers on the same host</li>
 </ol>
-<h2>Fleet day-2</h2>
+<h2>Fleet day-2 (Mission Control)</h2>
 <ol>
-<li><a href="pages/platform/platform.md">Mission Control</a></li>
-<li><a href="pages/platform/platform-hosts.md">Hosts</a> / <a href="pages/platform/platform-vms.md">Machine Finder</a></li>
-<li><a href="pages/platform/platform-backups.md">Backup &amp; Restore</a> as needed</li>
+<li><strong>Platform → Mission Control</strong> (<code>/platform</code>) — Launchpad tiles live here (no separate <code>/platform/launchpad</code>)</li>
+<li><strong>Hosts</strong> (<code>/platform/hosts</code>) / <strong>Machine Finder</strong> (<code>/platform/vms</code>)</li>
+<li><strong>Time Machine</strong> backups (<code>/platform/backups</code>) as needed</li>
+<li><strong>Zyra AI</strong> (<code>/platform/zyra</code>) for fleet intelligence; <strong>Zeus Security</strong> (<code>/platform/zeus/security</code>) for Security Center</li>
 </ol>
 <h2>Fleet Cloud</h2>
 <ol>
-<li><a href="pages/fleet-cloud/fleet-cloud.md">Fleet Cloud Overview</a></li>
-<li>Instances / Networks / Volumes / Load Balancers as required — all backed by Machina&#39;s own native APIs, no external cloud wiring needed</li>
+<li><strong>Fleet Cloud → Overview</strong> (<code>/fleet-cloud</code>)</li>
+<li><strong>Create Instance</strong> → pick image / flavor / network / keypair / security groups</li>
+<li>Manage <strong>Volumes</strong>, <strong>Networking</strong>, <strong>Load Balancers</strong> as required — native Machina APIs (no external cloud wiring)</li>
+</ol>
+<h2>Migrate a VM in</h2>
+<ol>
+<li><strong>Migration Assistant</strong> (<code>/platform/migration</code>) — scan vCenter/ESXi/OVF/VMDK</li>
+<li>Import wizard → confirm in <strong>Machine Finder</strong> (<code>/platform/vms?lens=migration</code>)</li>
+<li>Placement / HA (<code>/platform/placement</code>) if you need DRS-style move</li>
+</ol>
+<h2>First-hour health check</h2>
+<ol>
+<li>Open <code>https://&lt;host&gt;:5092</code> — PAM/OIDC sign-in</li>
+<li><strong>System Check</strong> (<code>/system-check</code>)</li>
+<li><strong>Dashboard</strong> or <strong>Mission Control</strong> if enrolled</li>
+<li>Create a test VM and open console</li>
 </ol>
 <h2>Related</h2>
 <ul>
 <li><a href="getting-started.md">Getting Started</a></li>
+<li><a href="using-the-dashboard.md">Using the Dashboard</a></li>
+<li><a href="pages/README.md">Page-by-page guides</a></li>
+<li><a href="admin-basics.md">Admin basics</a></li>
 </ul>
 </main></body></html>

@@ -1,4 +1,4 @@
-# Disk Utility
+# Storage (Disk Utility)
 
 ## Purpose
 
@@ -6,7 +6,7 @@ Disk Utility — Machina Platform page at `/platform/storage`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **Storage (Disk Utility)** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,16 +15,25 @@ Disk Utility — Machina Platform page at `/platform/storage`.
 - Route: `/platform/storage`
 - Nav: **Platform → Disk Utility** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/platform/storage` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Filters / tabs: **Disks / Pools / Tiers / Backup SLA**.
+3. Sync hosts.
+4. Add pool.
+5. New volume.
+6. Delete.
+7. **Empty:** No storage pools → import/add.
+8. **Success:** Pool active; volume created.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Storage pools](../infrastructure/storage.md)
+- [Storage (Atlas)](platform-storage-atlas.md)
+- [Storage Tiers](platform-storage-tiers.md)
 - [Getting Started](../../getting-started.md)
+- [Dashboard](../core/home.md)
+- [Mission Control](platform.md)
 - [Page index](../../PAGE_INDEX.md)

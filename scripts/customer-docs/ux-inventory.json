@@ -1,0 +1,1488 @@
+{
+  "/": {
+    "title": "Dashboard",
+    "actions": [
+      "Refresh",
+      "Create VM",
+      "Create container",
+      "Reboot/Shutdown host",
+      "Open Platform",
+      "Run system check"
+    ],
+    "empty": "Stats show 0 guests \u2014 use Create VM",
+    "success": "Guests count + running badge update; metrics populate",
+    "filters": "Guest strip; K8s status card",
+    "related": [
+      "/vms",
+      "/create",
+      "/platform",
+      "/system-check",
+      "/containers"
+    ]
+  },
+  "/vms": {
+    "title": "Virtual Machines",
+    "actions": [
+      "Create VM",
+      "Import VM",
+      "Start/Stop/Pause/Resume",
+      "Console/SSH",
+      "Bulk delete",
+      "Export JSON/CSV"
+    ],
+    "empty": "No guests \u2192 Create VM / Import",
+    "success": "VM appears running; console opens",
+    "filters": "Search; tag filter; Table/Grid; pin",
+    "related": [
+      "/create",
+      "/import",
+      "/platform/vms"
+    ]
+  },
+  "/create": {
+    "title": "Create new guest VM",
+    "actions": [
+      "Install from media or Clone golden image",
+      "Browse ISO",
+      "Create VM",
+      "Save defaults"
+    ],
+    "empty": "Need pool/volume or new disk",
+    "success": "Job/console opens; guest listed on /vms",
+    "filters": "Modes: install vs golden; Source & OS \u2192 Disk \u2192 Network \u2192 Cloud-init \u2192 Review",
+    "related": [
+      "/vms",
+      "/disk-images",
+      "/storage",
+      "/platform/create-iso"
+    ]
+  },
+  "/import": {
+    "title": "Import guest VM",
+    "actions": [
+      "Browse disk",
+      "Import from Fleet Cloud Images",
+      "Create VM"
+    ],
+    "empty": "Need readable disk image",
+    "success": "Domain defined; appears on /vms",
+    "filters": "Source path picker",
+    "related": [
+      "/vms",
+      "/disk-images",
+      "/fleet-cloud/images"
+    ]
+  },
+  "/sprites": {
+    "title": "Sprites",
+    "actions": [
+      "New Sprite",
+      "Refresh",
+      "Delete"
+    ],
+    "empty": "No sprites running \u2192 New Sprite",
+    "success": "Sprite running with TTL",
+    "filters": "",
+    "related": [
+      "/vms",
+      "/create"
+    ]
+  },
+  "/fleet": {
+    "title": "Fleet",
+    "actions": [
+      "Refresh",
+      "Create on best peer",
+      "Start/Shutdown/Stop peer VMs",
+      "Placement suggest"
+    ],
+    "empty": "No fleet peers \u2192 add peers in Settings",
+    "success": "Peers online; VMs aggregated",
+    "filters": "Peer list; placement vCPU/mem",
+    "related": [
+      "/settings",
+      "/vms",
+      "/platform/hosts"
+    ]
+  },
+  "/host-ssh": {
+    "title": "SSH \u2014 hypervisor",
+    "actions": [
+      "Pick user (root/admin)",
+      "Connect SSH console"
+    ],
+    "empty": "Hostname undetermined \u2192 back to Dashboard",
+    "success": "Shell session connected",
+    "filters": "Quick user cards",
+    "related": [
+      "/",
+      "/node"
+    ]
+  },
+  "/capabilities": {
+    "title": "Capabilities",
+    "actions": [
+      "Refresh"
+    ],
+    "empty": "\u2014",
+    "success": "Arch/features listed",
+    "filters": "Capabilities / System Info",
+    "related": [
+      "/node",
+      "/devices"
+    ]
+  },
+  "/devices": {
+    "title": "Node Devices",
+    "actions": [
+      "Refresh"
+    ],
+    "empty": "No devices found",
+    "success": "PCI/USB tree visible",
+    "filters": "",
+    "related": [
+      "/node",
+      "/capabilities"
+    ]
+  },
+  "/services": {
+    "title": "Systemd Services",
+    "actions": [
+      "Start/Stop/Enable units",
+      "View journal"
+    ],
+    "empty": "\u2014",
+    "success": "Unit Active",
+    "filters": "",
+    "related": [
+      "/node",
+      "/logs"
+    ]
+  },
+  "/platform": {
+    "title": "Mission Control",
+    "actions": [
+      "Create VM (wizard)",
+      "Use Launchpad tiles",
+      "Power VM",
+      "Ask Zyra",
+      "Geography expand",
+      "Live Wall"
+    ],
+    "empty": "No hosts \u2192 Add host / enroll",
+    "success": "Hosts online; VM create task; hero Operational",
+    "filters": "?mission=1 geography; host/VM dock",
+    "related": [
+      "/platform/vms",
+      "/platform/hosts",
+      "/platform/backups",
+      "/platform/enroll"
+    ]
+  },
+  "/platform/vms": {
+    "title": "Machine Finder",
+    "actions": [
+      "New VM",
+      "Open Cinema",
+      "SSH",
+      "Power",
+      "Delete",
+      "Prune missing"
+    ],
+    "empty": "No machines \u2192 create VM / change folder",
+    "success": "VM in folder; power state updates",
+    "filters": "Lenses: Grid/Gallery/Table/Topology/Timeline/Heatmap/Migration; Smart Folders; tags",
+    "related": [
+      "/platform",
+      "/platform/hosts",
+      "/platform/create-iso"
+    ]
+  },
+  "/platform/hosts": {
+    "title": "Hosts",
+    "actions": [
+      "Add/Enroll host",
+      "Sync all",
+      "Open host",
+      "Open in Machine Finder"
+    ],
+    "empty": "No hosts enrolled \u2192 Add host",
+    "success": "Host online + heartbeat",
+    "filters": "?filter=offline; search",
+    "related": [
+      "/platform/enroll",
+      "/platform/vms"
+    ]
+  },
+  "/platform/applications": {
+    "title": "Applications",
+    "actions": [
+      "New Application",
+      "Start all",
+      "Stop all",
+      "Backup all VMs"
+    ],
+    "empty": "No application groups \u2192 Create Application (need VMs)",
+    "success": "Group starts/stops as stack",
+    "filters": "App Launchpad icons",
+    "related": [
+      "/platform/vms",
+      "/platform/backups"
+    ]
+  },
+  "/platform/launchpad": {
+    "title": "Launchpad (on Mission Control)",
+    "actions": [
+      "Open /platform",
+      "Use Operations launchpad tiles (Create VM, Security, Finder, Recovery, GPU, Migration, Templates, Cinema, Live Wall)"
+    ],
+    "empty": "There is no separate /platform/launchpad route",
+    "success": "Tile opens the target surface",
+    "filters": "Operations launchpad on Mission Control",
+    "related": [
+      "/platform",
+      "/platform/blueprints"
+    ]
+  },
+  "/platform/datacenter": {
+    "title": "Datacenter",
+    "actions": [
+      "Refresh inventory"
+    ],
+    "empty": "Empty inventory \u2192 enroll hosts",
+    "success": "Hosts listed with honest scope",
+    "filters": "Multi-hypervisor scope",
+    "related": [
+      "/platform/hosts",
+      "/platform/topology"
+    ]
+  },
+  "/platform/storage": {
+    "title": "Storage (Disk Utility)",
+    "actions": [
+      "Sync hosts",
+      "Add pool",
+      "New volume",
+      "Delete"
+    ],
+    "empty": "No storage pools \u2192 import/add",
+    "success": "Pool active; volume created",
+    "filters": "Disks / Pools / Tiers / Backup SLA",
+    "related": [
+      "/storage",
+      "/platform/storage-atlas",
+      "/platform/storage-tiers"
+    ]
+  },
+  "/platform/storage-atlas": {
+    "title": "Storage (Atlas)",
+    "actions": [
+      "New volume",
+      "Restore"
+    ],
+    "empty": "Atlas disabled / unreachable",
+    "success": "Backend healthy; volume ops",
+    "filters": "Backend cards (Ceph/NFS/ZFS)",
+    "related": [
+      "/platform/storage",
+      "/platform/backups"
+    ]
+  },
+  "/platform/storage-tiers": {
+    "title": "Storage Tiers",
+    "actions": [
+      "Define/edit tiers"
+    ],
+    "empty": "No storage tiers",
+    "success": "Tier list non-empty",
+    "filters": "",
+    "related": [
+      "/platform/storage"
+    ]
+  },
+  "/platform/networks": {
+    "title": "Networks",
+    "actions": [
+      "New network",
+      "New segment",
+      "Import/Sync from hosts"
+    ],
+    "empty": "No networks yet \u2192 create/enroll",
+    "success": "Segment + IPAM pool present",
+    "filters": "Overlay segments; IPAM",
+    "related": [
+      "/networks",
+      "/platform/network-canvas",
+      "/platform/zeus/security"
+    ]
+  },
+  "/platform/content": {
+    "title": "Content Library",
+    "actions": [
+      "Upload",
+      "Download URL",
+      "Create from ISO",
+      "Approve"
+    ],
+    "empty": "No images \u2192 upload for approval",
+    "success": "Image Approved",
+    "filters": "All / Pending / Approved",
+    "related": [
+      "/platform/create-iso",
+      "/platform/templates"
+    ]
+  },
+  "/platform/templates": {
+    "title": "Marketplace (Templates)",
+    "actions": [
+      "Sync git",
+      "Restore defaults",
+      "Refresh",
+      "Launch from template"
+    ],
+    "empty": "Marketplace empty \u2192 sync/restore",
+    "success": "Template usable in create",
+    "filters": "Fleet catalog",
+    "related": [
+      "/platform/content",
+      "/platform",
+      "/platform/vms"
+    ]
+  },
+  "/platform/cloud-init": {
+    "title": "Cloud-Init Studio",
+    "actions": [
+      "Edit",
+      "Validate #cloud-config"
+    ],
+    "empty": "\u2014",
+    "success": "Validation OK",
+    "filters": "",
+    "related": [
+      "/platform/create-iso",
+      "/create",
+      "/fleet-cloud/create"
+    ]
+  },
+  "/platform/create-iso": {
+    "title": "Create VM from ISO",
+    "actions": [
+      "Create",
+      "Import .pub",
+      "Open Content Library"
+    ],
+    "empty": "No approved ISOs \u2192 Content Library",
+    "success": "VM task queued; appears in Finder",
+    "filters": "Network: Default DHCP",
+    "related": [
+      "/platform/content",
+      "/platform/vms"
+    ]
+  },
+  "/platform/baremetal": {
+    "title": "Register Server",
+    "actions": [
+      "Register Server (BMC)"
+    ],
+    "empty": "No bare metal servers",
+    "success": "Server registered",
+    "filters": "",
+    "related": [
+      "/platform/zyra",
+      "/platform/zeus/security"
+    ]
+  },
+  "/platform/migration": {
+    "title": "Migration Radar",
+    "actions": [
+      "Scan source",
+      "Open import wizard",
+      "Import"
+    ],
+    "empty": "No scan yet \u2192 pick source",
+    "success": "Discovered VMs importable",
+    "filters": "vCenter / ESXi / OVF\u00b7OVA / VMDK / Cloud Image",
+    "related": [
+      "/import",
+      "/platform/placement",
+      "/platform/vms"
+    ]
+  },
+  "/platform/vm-builder": {
+    "title": "AI VM Builder",
+    "actions": [
+      "Prompt \u2192 Suggest",
+      "Create VM"
+    ],
+    "empty": "\u2014",
+    "success": "Queued create with sized spec",
+    "filters": "",
+    "related": [
+      "/platform/zyra",
+      "/platform/vms"
+    ]
+  },
+  "/platform/create-advanced": {
+    "title": "Advanced VM install",
+    "actions": [
+      "virt-install path/URL",
+      "Create from ISO"
+    ],
+    "empty": "\u2014",
+    "success": "Install task running",
+    "filters": "Default DHCP",
+    "related": [
+      "/platform/create-iso",
+      "/create"
+    ]
+  },
+  "/platform/blueprints": {
+    "title": "Blueprint Studio",
+    "actions": [
+      "New shortcut",
+      "Create from VMs",
+      "AI generate",
+      "Run",
+      "Delete"
+    ],
+    "empty": "Create shortcut to populate Launchpad",
+    "success": "Blueprint run \u2192 tasks",
+    "filters": "Launchpad / Studio",
+    "related": [
+      "/platform/tasks",
+      "/platform/vms"
+    ]
+  },
+  "/platform/tasks": {
+    "title": "Tasks",
+    "actions": [
+      "Refresh",
+      "Open task detail"
+    ],
+    "empty": "No tasks",
+    "success": "Task Completed",
+    "filters": "Pending / Running / Completed / Failed",
+    "related": [
+      "/platform/events",
+      "/platform/activity"
+    ]
+  },
+  "/platform/network-canvas": {
+    "title": "Network canvas",
+    "actions": [
+      "Inspect paths",
+      "Open Security"
+    ],
+    "empty": "\u2014",
+    "success": "Path/trace visible",
+    "filters": "Canvas interactions",
+    "related": [
+      "/platform/networks",
+      "/platform/zeus/security"
+    ]
+  },
+  "/platform/soc": {
+    "title": "Security Operations Center",
+    "actions": [
+      "Run ingest",
+      "New playbook",
+      "Enable forwarders"
+    ],
+    "empty": "\u2014",
+    "success": "Alerts/detections populate",
+    "filters": "Overview / Alerts / Detections / Attack surface / Integrations",
+    "related": [
+      "/platform/zeus/security",
+      "/platform"
+    ]
+  },
+  "/platform/policy": {
+    "title": "Policy rules",
+    "actions": [
+      "Save quota"
+    ],
+    "empty": "\u2014",
+    "success": "Quota saved",
+    "filters": "",
+    "related": [
+      "/platform/users",
+      "/platform/projects"
+    ]
+  },
+  "/platform/webhooks": {
+    "title": "Webhooks",
+    "actions": [
+      "Add endpoint",
+      "Delete",
+      "View deliveries"
+    ],
+    "empty": "No webhook endpoints",
+    "success": "Delivery succeeds",
+    "filters": "",
+    "related": [
+      "/platform/api-keys",
+      "/platform/events"
+    ]
+  },
+  "/platform/backups": {
+    "title": "Time Machine",
+    "actions": [
+      "Add destination",
+      "Queue backup",
+      "Add schedule",
+      "Restore",
+      "Browse VMs"
+    ],
+    "empty": "No schedules/events \u2192 queue or schedule",
+    "success": "Backup event completed; restore OK",
+    "filters": "Destinations / schedules / events",
+    "related": [
+      "/backups",
+      "/platform/vms",
+      "/platform/fleet-snapshots"
+    ]
+  },
+  "/platform/fleet-snapshots": {
+    "title": "Fleet snapshot schedules",
+    "actions": [
+      "Add schedule",
+      "Delete"
+    ],
+    "empty": "No fleet schedules yet",
+    "success": "Schedule listed/enabled",
+    "filters": "Project/tag filters",
+    "related": [
+      "/snapshots",
+      "/platform/backups"
+    ]
+  },
+  "/platform/placement": {
+    "title": "Placement & HA",
+    "actions": [
+      "Toggle DRS auto-migrate",
+      "Refresh",
+      "Migrate (precheck)"
+    ],
+    "empty": "Cluster load balanced (no recs)",
+    "success": "Migration job recorded",
+    "filters": "Recs / migrations / fence / HA events",
+    "related": [
+      "/platform/ha",
+      "/platform/migration",
+      "/platform/vms"
+    ]
+  },
+  "/platform/ha": {
+    "title": "HA Events",
+    "actions": [
+      "Refresh"
+    ],
+    "empty": "No HA events / No hosts",
+    "success": "HA status healthy",
+    "filters": "",
+    "related": [
+      "/platform/placement",
+      "/platform/hosts"
+    ]
+  },
+  "/platform/upgrade": {
+    "title": "Upgrade Guide",
+    "actions": [
+      "Apply agent upgrades"
+    ],
+    "empty": "No hosts enrolled",
+    "success": "Hosts on target version",
+    "filters": "",
+    "related": [
+      "/platform/maintenance",
+      "/platform/hosts"
+    ]
+  },
+  "/platform/maintenance": {
+    "title": "Maintenance",
+    "actions": [
+      "Schedule window",
+      "Apply upgrades",
+      "Enroll host"
+    ],
+    "empty": "No hosts / No windows",
+    "success": "Window scheduled",
+    "filters": "",
+    "related": [
+      "/platform/upgrade",
+      "/platform/enroll"
+    ]
+  },
+  "/platform/recommendations": {
+    "title": "Recommendations",
+    "actions": [
+      "Act on / dismiss recs"
+    ],
+    "empty": "Estate looks good",
+    "success": "Rec applied or cleared",
+    "filters": "",
+    "related": [
+      "/platform/zyra/rightsizing",
+      "/platform/activity"
+    ]
+  },
+  "/platform/notifications": {
+    "title": "Alerts",
+    "actions": [
+      "Open runbook/action",
+      "Acknowledge"
+    ],
+    "empty": "No alerts \u2014 you are caught up",
+    "success": "Alert cleared",
+    "filters": "",
+    "related": [
+      "/platform/soc",
+      "/platform/events"
+    ]
+  },
+  "/platform/observability": {
+    "title": "Observability",
+    "actions": [
+      "Refresh"
+    ],
+    "empty": "No SLO policies / No API traces",
+    "success": "Metrics & traces present",
+    "filters": "SLO / traces panels",
+    "related": [
+      "/platform/activity",
+      "/events"
+    ]
+  },
+  "/platform/activity": {
+    "title": "Activity Monitor",
+    "actions": [
+      "Refresh",
+      "Switch scope"
+    ],
+    "empty": "No running VMs / No hosts",
+    "success": "Live CPU/mem/PSI",
+    "filters": "VMs / Hosts",
+    "related": [
+      "/platform/vms",
+      "/platform/hosts"
+    ]
+  },
+  "/platform/topology": {
+    "title": "Topology",
+    "actions": [
+      "Enroll host",
+      "Import networks"
+    ],
+    "empty": "Enroll hosts and import networks",
+    "success": "Twin graph populated",
+    "filters": "",
+    "related": [
+      "/platform/datacenter",
+      "/platform/networks"
+    ]
+  },
+  "/platform/reports": {
+    "title": "Runbook catalog",
+    "actions": [
+      "Export CSV/HTML/PDF",
+      "Open compliance"
+    ],
+    "empty": "No runbooks",
+    "success": "Export downloads",
+    "filters": "",
+    "related": [
+      "/platform/zeus/security"
+    ]
+  },
+  "/platform/gpu": {
+    "title": "GPU Command Center",
+    "actions": [
+      "Browse hosts",
+      "Create VM here",
+      "Open Zyra"
+    ],
+    "empty": "No GPU inventory \u2192 tag hosts",
+    "success": "GPUs discovered",
+    "filters": "",
+    "related": [
+      "/platform/hosts",
+      "/platform/vms"
+    ]
+  },
+  "/platform/settings": {
+    "title": "Settings",
+    "actions": [
+      "Save",
+      "Generate YAML",
+      "Open Keychain/Network Lens"
+    ],
+    "empty": "\u2014",
+    "success": "Settings persist",
+    "filters": "General / Identity & SSO / Zyra / AI Providers / Security",
+    "related": [
+      "/platform/ai-providers",
+      "/platform/zyra/configure"
+    ]
+  },
+  "/platform/users": {
+    "title": "Users & Groups",
+    "actions": [
+      "Add user",
+      "Delete",
+      "Open Machine Finder"
+    ],
+    "empty": "No workspaces yet",
+    "success": "User listed",
+    "filters": "Workspaces",
+    "related": [
+      "/platform/projects",
+      "/platform/api-keys"
+    ]
+  },
+  "/platform/projects": {
+    "title": "Stage Manager",
+    "actions": [
+      "Open Machine Finder",
+      "Assign project labels"
+    ],
+    "empty": "No workspace spaces yet",
+    "success": "Space shows VMs",
+    "filters": "Spaces",
+    "related": [
+      "/platform/vms",
+      "/platform/users"
+    ]
+  },
+  "/platform/enroll": {
+    "title": "Host Enrollment",
+    "actions": [
+      "Generate join token",
+      "Copy install command"
+    ],
+    "empty": "No enrollment tokens yet",
+    "success": "Host appears on /platform/hosts",
+    "filters": "Token history",
+    "related": [
+      "/platform/hosts"
+    ]
+  },
+  "/platform/api-keys": {
+    "title": "API keys",
+    "actions": [
+      "Create key",
+      "Rotate",
+      "Delete"
+    ],
+    "empty": "Create bearer for CI",
+    "success": "machina_* key shown once",
+    "filters": "",
+    "related": [
+      "/platform/developer"
+    ]
+  },
+  "/platform/integrations": {
+    "title": "Integrations",
+    "actions": [
+      "Enroll host",
+      "Connect tiles"
+    ],
+    "empty": "No hypervisors enrolled",
+    "success": "Integration connected",
+    "filters": "Launchpad grid",
+    "related": [
+      "/platform/enroll",
+      "/fleet-cloud"
+    ]
+  },
+  "/platform/marketplace": {
+    "title": "Marketplace",
+    "actions": [
+      "Install / Installed plugins"
+    ],
+    "empty": "No plugins available",
+    "success": "Plugin Installed",
+    "filters": "Featured",
+    "related": [
+      "/platform/templates",
+      "/platform/applications"
+    ]
+  },
+  "/platform/ai-providers": {
+    "title": "AI Providers",
+    "actions": [
+      "Add provider",
+      "Save",
+      "Delete"
+    ],
+    "empty": "\u2014",
+    "success": "Provider usable by Zyra",
+    "filters": "",
+    "related": [
+      "/platform/zyra",
+      "/platform/settings"
+    ]
+  },
+  "/platform/enterprise": {
+    "title": "Enterprise Features",
+    "actions": [
+      "Register provider",
+      "Sync",
+      "Save policy"
+    ],
+    "empty": "\u2014",
+    "success": "Policy saved",
+    "filters": "Secrets / FIPS etc.",
+    "related": [
+      "/platform/settings",
+      "/secrets"
+    ]
+  },
+  "/platform/developer": {
+    "title": "Developer",
+    "actions": [
+      "OpenAPI",
+      "Try API Console"
+    ],
+    "empty": "\u2014",
+    "success": "Spec loads; call succeeds",
+    "filters": "SDK & Terraform / API Console",
+    "related": [
+      "/platform/api-keys"
+    ]
+  },
+  "/platform/support": {
+    "title": "Support Assistant",
+    "actions": [
+      "Export support bundle"
+    ],
+    "empty": "\u2014",
+    "success": "Bundle downloads",
+    "filters": "",
+    "related": [
+      "/platform/events",
+      "/logs"
+    ]
+  },
+  "/platform/events": {
+    "title": "Platform events",
+    "actions": [
+      "Apply filters",
+      "Refresh"
+    ],
+    "empty": "No platform events",
+    "success": "Filtered rows appear",
+    "filters": "All / Audit / Events / Tasks",
+    "related": [
+      "/audit",
+      "/platform/tasks"
+    ]
+  },
+  "/platform/zyra": {
+    "title": "Machina Zyra OS",
+    "actions": [
+      "Open Firewall",
+      "Register BMC",
+      "Run runbooks",
+      "Open apps"
+    ],
+    "empty": "No bare-metal \u2192 register BMC",
+    "success": "Tab data loads; sensors enrolled",
+    "filters": "Fleet / Graph Brain / Memory / Security / Knowledge (?tab=)",
+    "related": [
+      "/platform/zyra/configure",
+      "/platform/zeus/security",
+      "/platform/zyra/incidents"
+    ]
+  },
+  "/platform/zyra/configure": {
+    "title": "Configure Zyra",
+    "actions": [
+      "Save air-gap",
+      "Enable memory",
+      "Save prompt"
+    ],
+    "empty": "\u2014",
+    "success": "Settings saved",
+    "filters": "",
+    "related": [
+      "/platform/zyra",
+      "/platform/ai-providers"
+    ]
+  },
+  "/platform/zeus/security": {
+    "title": "Security Center",
+    "actions": [
+      "Enroll Tetragon",
+      "Runtime enforcement",
+      "Open Ports",
+      "Threat hunting"
+    ],
+    "empty": "PacketWolf fabric unreachable",
+    "success": "Posture tiles green/nominal",
+    "filters": "Hub tiles \u2192 firewall/ports/services/\u2026",
+    "related": [
+      "/platform/soc",
+      "/platform/zyra"
+    ]
+  },
+  "/platform/zyra/incidents": {
+    "title": "Incident Commander",
+    "actions": [
+      "Open approvals",
+      "Runbook"
+    ],
+    "empty": "\u2014",
+    "success": "Incident advanced/closed",
+    "filters": "",
+    "related": [
+      "/platform/zyra/approvals",
+      "/platform/soc"
+    ]
+  },
+  "/platform/zyra/approvals": {
+    "title": "Zyra Approvals",
+    "actions": [
+      "Approve / Deny"
+    ],
+    "empty": "No pending approvals",
+    "success": "Queue empty after approve",
+    "filters": "",
+    "related": [
+      "/platform/zyra/incidents",
+      "/platform/tasks"
+    ]
+  },
+  "/platform/zyra/rightsizing": {
+    "title": "VM Rightsizing",
+    "actions": [
+      "Queue single resize"
+    ],
+    "empty": "\u2014",
+    "success": "Resize task queued",
+    "filters": "",
+    "related": [
+      "/platform/recommendations",
+      "/platform/vms"
+    ]
+  },
+  "/storage": {
+    "title": "Storage pools",
+    "actions": [
+      "Create volume",
+      "Clone",
+      "Resize",
+      "Refresh"
+    ],
+    "empty": "No storage pools / No volumes",
+    "success": "Volume listed",
+    "filters": "Pool \u2192 volumes",
+    "related": [
+      "/platform/storage",
+      "/disk-images"
+    ]
+  },
+  "/disk-images": {
+    "title": "Disk Images",
+    "actions": [
+      "Create VM",
+      "Import VM",
+      "Open Jobs"
+    ],
+    "empty": "No disk images found",
+    "success": "Image path usable in create/import",
+    "filters": "",
+    "related": [
+      "/create",
+      "/import",
+      "/jobs"
+    ]
+  },
+  "/snapshots": {
+    "title": "Snapshots",
+    "actions": [
+      "Create",
+      "Revert",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "No snapshots",
+    "success": "Snapshot listed; revert OK",
+    "filters": "Per-VM",
+    "related": [
+      "/vms",
+      "/platform/fleet-snapshots"
+    ]
+  },
+  "/backups": {
+    "title": "Backups (Snapshot Backups)",
+    "actions": [
+      "New Backup",
+      "Scheduled Backup",
+      "Verify checksums"
+    ],
+    "empty": "No backups",
+    "success": "Backup completed/verified",
+    "filters": "",
+    "related": [
+      "/platform/backups",
+      "/snapshots"
+    ]
+  },
+  "/networks": {
+    "title": "Networks",
+    "actions": [
+      "Create network",
+      "Start/Stop",
+      "Edit XML"
+    ],
+    "empty": "No libvirt networks",
+    "success": "Network active",
+    "filters": "",
+    "related": [
+      "/platform/networks",
+      "/nwfilters"
+    ]
+  },
+  "/nwfilters": {
+    "title": "Network Filters",
+    "actions": [
+      "Create Filter"
+    ],
+    "empty": "No network filters",
+    "success": "Filter defined",
+    "filters": "",
+    "related": [
+      "/networks"
+    ]
+  },
+  "/host-networking": {
+    "title": "Host Networking",
+    "actions": [
+      "Create Bridge",
+      "Add Rule",
+      "Refresh diagnostics"
+    ],
+    "empty": "\u2014",
+    "success": "Bridge/rule applied",
+    "filters": "Bridges/routes/DNS/firewall",
+    "related": [
+      "/networks",
+      "/node"
+    ]
+  },
+  "/secrets": {
+    "title": "Secrets",
+    "actions": [
+      "Create/delete secret"
+    ],
+    "empty": "No secrets found",
+    "success": "Secret listed",
+    "filters": "",
+    "related": [
+      "/platform/enterprise"
+    ]
+  },
+  "/containers": {
+    "title": "Containers",
+    "actions": [
+      "Create container",
+      "Start/Stop",
+      "Refresh"
+    ],
+    "empty": "No containers (Vessel/Podman/Docker)",
+    "success": "Container running",
+    "filters": "",
+    "related": [
+      "/containers/pods",
+      "/"
+    ]
+  },
+  "/containers/pods": {
+    "title": "Container Pods",
+    "actions": [
+      "Create pod",
+      "Start/Stop",
+      "Refresh"
+    ],
+    "empty": "No pods",
+    "success": "Pod running",
+    "filters": "",
+    "related": [
+      "/containers"
+    ]
+  },
+  "/k8s": {
+    "title": "Kubernetes",
+    "actions": [
+      "Refresh contexts",
+      "Open workloads",
+      "Open Security Center"
+    ],
+    "empty": "No cluster nodes",
+    "success": "Nodes Ready",
+    "filters": "Cluster/node status",
+    "related": [
+      "/k8s/workloads",
+      "/k8s/kata",
+      "/platform/zeus/security"
+    ]
+  },
+  "/k8s/workloads": {
+    "title": "Kubernetes Workloads",
+    "actions": [
+      "Refresh",
+      "Scale/rollout",
+      "Apply",
+      "Delete"
+    ],
+    "empty": "No workloads in this scope",
+    "success": "Deployment Ready",
+    "filters": "Deployments/pods/services",
+    "related": [
+      "/k8s"
+    ]
+  },
+  "/k8s/kata": {
+    "title": "Kata + Cloud Hypervisor",
+    "actions": [
+      "Install sequence",
+      "Apply RuntimeClass",
+      "Refresh contexts"
+    ],
+    "empty": "Need cluster context",
+    "success": "RuntimeClass present; pod with kata-clh",
+    "filters": "",
+    "related": [
+      "/k8s",
+      "/k8s/workloads"
+    ]
+  },
+  "/fleet-cloud": {
+    "title": "Fleet Cloud",
+    "actions": [
+      "Create instance",
+      "Open Instances/Images/Volumes quick links"
+    ],
+    "empty": "\u2014",
+    "success": "Cards navigate; counts sensible",
+    "filters": "Sub-nav",
+    "related": [
+      "/fleet-cloud/instances",
+      "/fleet-cloud/create"
+    ]
+  },
+  "/fleet-cloud/instances": {
+    "title": "Fleet Cloud Instances",
+    "actions": [
+      "Create instance",
+      "Start/Stop/Reboot",
+      "Refresh",
+      "Console"
+    ],
+    "empty": "No instances \u2192 Create",
+    "success": "Instance ACTIVE",
+    "filters": "Project scope",
+    "related": [
+      "/fleet-cloud/create"
+    ]
+  },
+  "/fleet-cloud/create": {
+    "title": "Create Fleet Cloud instance",
+    "actions": [
+      "Pick image/flavor/network/keypair/SGs",
+      "Create instance"
+    ],
+    "empty": "No flavors \u2192 create flavor first",
+    "success": "Instance listed running",
+    "filters": "Wizard fields",
+    "related": [
+      "/fleet-cloud/images",
+      "/fleet-cloud/flavors",
+      "/fleet-cloud/instances"
+    ]
+  },
+  "/fleet-cloud/server-groups": {
+    "title": "Server Groups",
+    "actions": [
+      "Add to group",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "No anti-affinity groups yet",
+    "success": "Group has members",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/instances"
+    ]
+  },
+  "/fleet-cloud/keypairs": {
+    "title": "SSH keypairs",
+    "actions": [
+      "Import",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "Import-only (no generate)",
+    "success": "Keypair listed",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/create"
+    ]
+  },
+  "/fleet-cloud/flavors": {
+    "title": "Flavors",
+    "actions": [
+      "Create flavor",
+      "Delete",
+      "Open"
+    ],
+    "empty": "No flavors from Compute",
+    "success": "Flavor selectable in create",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/create"
+    ]
+  },
+  "/fleet-cloud/volumes": {
+    "title": "Volumes",
+    "actions": [
+      "Create volume",
+      "Attach/Detach",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "No volumes in this project",
+    "success": "Attached to instance",
+    "filters": "Project",
+    "related": [
+      "/fleet-cloud/volume-snapshots",
+      "/fleet-cloud/instances"
+    ]
+  },
+  "/fleet-cloud/volume-snapshots": {
+    "title": "Volume Snapshots",
+    "actions": [
+      "Create snapshot",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "No snapshots",
+    "success": "Snapshot listed",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/volumes"
+    ]
+  },
+  "/fleet-cloud/images": {
+    "title": "Images",
+    "actions": [
+      "Register image",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "Empty catalog \u2192 register",
+    "success": "Image ACTIVE for boot",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/create",
+      "/import"
+    ]
+  },
+  "/fleet-cloud/networking": {
+    "title": "Networking",
+    "actions": [
+      "Create network",
+      "Create port",
+      "Delete",
+      "Refresh"
+    ],
+    "empty": "\u2014",
+    "success": "Network/port created",
+    "filters": "Networks/ports",
+    "related": [
+      "/fleet-cloud/topology",
+      "/fleet-cloud/security-groups"
+    ]
+  },
+  "/fleet-cloud/security-groups": {
+    "title": "Security Groups",
+    "actions": [
+      "Create group",
+      "Add rules",
+      "Delete"
+    ],
+    "empty": "No security groups",
+    "success": "Rules applied; attachable",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/instances",
+      "/fleet-cloud/create"
+    ]
+  },
+  "/fleet-cloud/floating-ips": {
+    "title": "Floating IPs",
+    "actions": [
+      "Add forward",
+      "Refresh"
+    ],
+    "empty": "No native FIP pool \u2014 use port forward",
+    "success": "Forward works to guest",
+    "filters": "Instance forwards",
+    "related": [
+      "/fleet-cloud/instances",
+      "/fleet-cloud/networking"
+    ]
+  },
+  "/fleet-cloud/load-balancers": {
+    "title": "Load Balancers",
+    "actions": [
+      "Create",
+      "Add members"
+    ],
+    "empty": "No load balancers",
+    "success": "LB listening with members",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/instances"
+    ]
+  },
+  "/fleet-cloud/topology": {
+    "title": "Network topology",
+    "actions": [
+      "Inspect graph"
+    ],
+    "empty": "Empty until nets/instances",
+    "success": "Topology shows nets+VMs",
+    "filters": "",
+    "related": [
+      "/fleet-cloud/networking"
+    ]
+  },
+  "/fleet-cloud/heat": {
+    "title": "Heat Orchestration",
+    "actions": [
+      "Create stack",
+      "Delete"
+    ],
+    "empty": "No stacks",
+    "success": "Stack CREATE_COMPLETE",
+    "filters": "",
+    "related": [
+      "/fleet-cloud"
+    ]
+  },
+  "/fleet-cloud/identity": {
+    "title": "Identity",
+    "actions": [
+      "Create project",
+      "Enable"
+    ],
+    "empty": "No projects",
+    "success": "Project selectable",
+    "filters": "Projects",
+    "related": [
+      "/fleet-cloud/instances",
+      "/platform/users"
+    ]
+  },
+  "/node": {
+    "title": "Host overview",
+    "actions": [
+      "Refresh",
+      "Install/start libvirt",
+      "Kill process",
+      "Package upgrade links"
+    ],
+    "empty": "Could not load host info",
+    "success": "CPU/mem/disk gauges live",
+    "filters": "Resource gauges; history charts",
+    "related": [
+      "/events",
+      "/services",
+      "/logs",
+      "/host-networking"
+    ]
+  },
+  "/events": {
+    "title": "Live Metrics",
+    "actions": [
+      "Refresh"
+    ],
+    "empty": "No running VMs with metrics",
+    "success": "Charts update for running guests",
+    "filters": "Per-VM metrics",
+    "related": [
+      "/node",
+      "/vms",
+      "/platform/activity"
+    ]
+  },
+  "/system-check": {
+    "title": "System Check",
+    "actions": [
+      "Run again"
+    ],
+    "empty": "\u2014",
+    "success": "All checks pass / actionable fails listed",
+    "filters": "Check categories",
+    "related": [
+      "/",
+      "/node",
+      "/capabilities"
+    ]
+  },
+  "/jobs": {
+    "title": "Daemon Jobs",
+    "actions": [
+      "Refresh",
+      "Open job",
+      "Create VM link"
+    ],
+    "empty": "No jobs yet",
+    "success": "Job succeeded",
+    "filters": "Job list",
+    "related": [
+      "/create",
+      "/disk-images"
+    ]
+  },
+  "/logs": {
+    "title": "System Logs",
+    "actions": [
+      "Filter",
+      "Follow journal"
+    ],
+    "empty": "\u2014",
+    "success": "Log lines stream",
+    "filters": "Unit/priority filters",
+    "related": [
+      "/node",
+      "/services"
+    ]
+  },
+  "/audit": {
+    "title": "Audit Log",
+    "actions": [
+      "Refresh now"
+    ],
+    "empty": "\u2014",
+    "success": "Audit rows after actions",
+    "filters": "",
+    "related": [
+      "/platform/events",
+      "/admin/sessions"
+    ]
+  },
+  "/admin/sessions": {
+    "title": "Web sessions",
+    "actions": [
+      "Revoke (root only)"
+    ],
+    "empty": "No active sessions",
+    "success": "Session list matches logins",
+    "filters": "",
+    "related": [
+      "/audit"
+    ]
+  }
+}

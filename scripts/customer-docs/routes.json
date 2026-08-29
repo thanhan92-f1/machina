@@ -51,7 +51,7 @@
       "category": "Platform"
     },
     {
-      "label": "Launchpad",
+      "label": "Launchpad (Mission Control)",
       "path": "/platform/launchpad",
       "category": "Platform"
     },
@@ -136,13 +136,13 @@
       "category": "Platform"
     },
     {
-      "label": "Zeus AI",
-      "path": "/platform/zeus",
+      "label": "Zyra AI",
+      "path": "/platform/zyra",
       "category": "Platform / Security"
     },
     {
-      "label": "Configure Zeus",
-      "path": "/platform/zeus/configure",
+      "label": "Configure Zyra",
+      "path": "/platform/zyra/configure",
       "category": "Platform / Security"
     },
     {
@@ -192,12 +192,12 @@
     },
     {
       "label": "Incident Commander",
-      "path": "/platform/zeus/incidents",
+      "path": "/platform/zyra/incidents",
       "category": "Platform / Security"
     },
     {
       "label": "Approvals",
-      "path": "/platform/zeus/approvals",
+      "path": "/platform/zyra/approvals",
       "category": "Platform / Security"
     },
     {
@@ -232,7 +232,7 @@
     },
     {
       "label": "Rightsizing",
-      "path": "/platform/zeus/rightsizing",
+      "path": "/platform/zyra/rightsizing",
       "category": "Platform / Security"
     },
     {
@@ -346,6 +346,16 @@
       "category": "Infrastructure"
     },
     {
+      "label": "Containers",
+      "path": "/containers",
+      "category": "Infrastructure"
+    },
+    {
+      "label": "Container Pods",
+      "path": "/containers/pods",
+      "category": "Infrastructure"
+    },
+    {
       "label": "Kubernetes",
       "path": "/k8s",
       "category": "Kubernetes"
@@ -393,11 +403,6 @@
     {
       "label": "Flavors",
       "path": "/fleet-cloud/flavors",
-      "category": "Fleet Cloud"
-    },
-    {
-      "label": "Migrations",
-      "path": "/fleet-cloud/migrations",
       "category": "Fleet Cloud"
     },
     {

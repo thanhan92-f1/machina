@@ -1,4 +1,4 @@
-# Host SSH
+# SSH — hypervisor
 
 ## Purpose
 
@@ -6,7 +6,7 @@ Host SSH — Machina Core page at `/host-ssh`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **SSH — hypervisor** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,16 +15,21 @@ Host SSH — Machina Core page at `/host-ssh`.
 - Route: `/host-ssh`
 - Nav: **Core → Host SSH** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/host-ssh` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Filters / tabs: **Quick user cards**.
+3. Pick user (root/admin).
+4. Connect SSH console.
+5. **Empty:** Hostname undetermined → back to Dashboard.
+6. **Success:** Shell session connected.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Dashboard](home.md)
+- [Host overview](../monitoring/node.md)
 - [Getting Started](../../getting-started.md)
+- [Mission Control](../platform/platform.md)
 - [Page index](../../PAGE_INDEX.md)

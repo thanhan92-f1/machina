@@ -24,7 +24,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Mach<span>ina</span></h1>
 <div class="sub">Admin Basics</div>
-<div class="badge">2026-08-24</div>
+<div class="badge">2026-08-29</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>Ports</h2>
 <table>
@@ -57,6 +57,14 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </ul>
 <h2>Install sketch</h2>
 <p>Use <code>./machinactl deploy</code> / <code>install.sh</code> from the customer bundle or repo docs. Verify health on <code>:5092</code>.</p>
+<h2>Vessel (containers)</h2>
+<p>Podman or Docker on the host is optional but enabled by default:</p>
+<pre><code class="language-toml">[vessel]
+enabled = true
+# socket = &quot;/run/podman/podman.sock&quot;
+auto_discover = true
+</code></pre>
+<p>If the engine is down, the daemon still starts; use <strong>Infrastructure → Containers</strong> or <code>POST /api/v1/vessel/reconnect</code> after fixing the socket.</p>
 <h2>Related</h2>
 <ul>
 <li><a href="getting-started.md">Getting Started</a></li>

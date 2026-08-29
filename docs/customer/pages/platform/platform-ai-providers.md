@@ -6,7 +6,7 @@ AI Providers — Machina Platform page at `/platform/ai-providers`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **AI Providers** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,16 +15,22 @@ AI Providers — Machina Platform page at `/platform/ai-providers`.
 - Route: `/platform/ai-providers`
 - Nav: **Platform → AI Providers** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/platform/ai-providers` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Add provider.
+3. Save.
+4. Delete.
+5. **Empty:** —.
+6. **Success:** Provider usable by Zyra.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Machina Zyra OS](../platform-security/platform-zyra.md)
+- [Settings](platform-settings.md)
 - [Getting Started](../../getting-started.md)
+- [Dashboard](../core/home.md)
+- [Mission Control](platform.md)
 - [Page index](../../PAGE_INDEX.md)

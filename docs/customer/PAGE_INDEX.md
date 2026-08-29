@@ -2,7 +2,7 @@
 
 Every primary navigable dashboard route.
 
-_Generated: 2026-08-24 · 100 routes_
+_Generated: 2026-08-29 · 101 routes_
 
 Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
@@ -10,7 +10,7 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
 | Page | Route | Purpose | Guide |
 |------|-------|---------|-------|
-| Dashboard | `/` | Host dashboard — VM inventory pulse and shortcuts. | [Open](pages/core/home.md) |
+| Dashboard | `/` | Host dashboard — VM inventory pulse, Vessel container shortcuts when Podman/Docker is connected, and quick links. | [Open](pages/core/home.md) |
 | Virtual Machines | `/vms` | Virtual machine inventory for this libvirt host. | [Open](pages/core/vms.md) |
 | Create VM | `/create` | Create a new libvirt VM. | [Open](pages/core/create.md) |
 | Import VM | `/import` | Import VM — Machina Core page at `/import`. | [Open](pages/core/import.md) |
@@ -29,7 +29,7 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Virtual Machines | `/platform/vms` | Fleet VM finder across enrolled hosts. | [Open](pages/platform/platform-vms.md) |
 | Hosts | `/platform/hosts` | Hosts — Machina Platform page at `/platform/hosts`. | [Open](pages/platform/platform-hosts.md) |
 | Applications | `/platform/applications` | Applications — Machina Platform page at `/platform/applications`. | [Open](pages/platform/platform-applications.md) |
-| Launchpad | `/platform/launchpad` | Launchpad — Machina Platform page at `/platform/launchpad`. | [Open](pages/platform/platform-launchpad.md) |
+| Launchpad (Mission Control) | `/platform/launchpad` | Launchpad tiles live on Mission Control (`/platform`) — there is no separate `/platform/launchpad` route. | [Open](pages/platform/platform-launchpad.md) |
 | Datacenter View | `/platform/datacenter` | Datacenter View — Machina Platform page at `/platform/datacenter`. | [Open](pages/platform/platform-datacenter.md) |
 | Disk Utility | `/platform/storage` | Disk Utility — Machina Platform page at `/platform/storage`. | [Open](pages/platform/platform-storage.md) |
 | Storage (Atlas) | `/platform/storage-atlas` | Storage (Atlas) — Machina Platform page at `/platform/storage-atlas`. | [Open](pages/platform/platform-storage-atlas.md) |
@@ -79,12 +79,12 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
 | Page | Route | Purpose | Guide |
 |------|-------|---------|-------|
-| Zeus AI | `/platform/zeus` | Zeus AI assistant for Machina operations. | [Open](pages/platform-security/platform-zeus.md) |
-| Configure Zeus | `/platform/zeus/configure` | Configure Zeus — Machina Platform / Security page at `/platform/zeus/configure`. | [Open](pages/platform-security/platform-zeus-configure.md) |
+| Zyra AI | `/platform/zyra` | Zyra AI assistant for Machina operations. | [Open](pages/platform-security/platform-zyra.md) |
+| Configure Zyra | `/platform/zyra/configure` | Configure Zyra — Machina Platform / Security page at `/platform/zyra/configure`. | [Open](pages/platform-security/platform-zyra-configure.md) |
 | Zeus Security | `/platform/zeus/security` | Zeus Security — Machina Platform / Security page at `/platform/zeus/security`. | [Open](pages/platform-security/platform-zeus-security.md) |
-| Incident Commander | `/platform/zeus/incidents` | Incident Commander — Machina Platform / Security page at `/platform/zeus/incidents`. | [Open](pages/platform-security/platform-zeus-incidents.md) |
-| Approvals | `/platform/zeus/approvals` | Approvals — Machina Platform / Security page at `/platform/zeus/approvals`. | [Open](pages/platform-security/platform-zeus-approvals.md) |
-| Rightsizing | `/platform/zeus/rightsizing` | Rightsizing — Machina Platform / Security page at `/platform/zeus/rightsizing`. | [Open](pages/platform-security/platform-zeus-rightsizing.md) |
+| Incident Commander | `/platform/zyra/incidents` | Incident Commander — Machina Platform / Security page at `/platform/zyra/incidents`. | [Open](pages/platform-security/platform-zyra-incidents.md) |
+| Approvals | `/platform/zyra/approvals` | Approvals — Machina Platform / Security page at `/platform/zyra/approvals`. | [Open](pages/platform-security/platform-zyra-approvals.md) |
+| Rightsizing | `/platform/zyra/rightsizing` | Rightsizing — Machina Platform / Security page at `/platform/zyra/rightsizing`. | [Open](pages/platform-security/platform-zyra-rightsizing.md) |
 
 ## Infrastructure
 
@@ -98,6 +98,8 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Network Filters | `/nwfilters` | Network Filters — Machina Infrastructure page at `/nwfilters`. | [Open](pages/infrastructure/nwfilters.md) |
 | Host Networking | `/host-networking` | Host Networking — Machina Infrastructure page at `/host-networking`. | [Open](pages/infrastructure/host-networking.md) |
 | Secrets | `/secrets` | Secrets — Machina Infrastructure page at `/secrets`. | [Open](pages/infrastructure/secrets.md) |
+| Containers | `/containers` | Local Podman/Docker containers via Vessel — list, create, lifecycle, and live stats on this host. | [Open](pages/infrastructure/containers.md) |
+| Container Pods | `/containers/pods` | Podman pods via Vessel — create and manage shared-namespace container groups (not Kubernetes pods). | [Open](pages/infrastructure/containers-pods.md) |
 
 ## Kubernetes
 
@@ -117,7 +119,6 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Server Groups | `/fleet-cloud/server-groups` | Server Groups — Machina Fleet Cloud page at `/fleet-cloud/server-groups`. | [Open](pages/fleet-cloud/fleet-cloud-server-groups.md) |
 | Keypairs | `/fleet-cloud/keypairs` | Keypairs — Machina Fleet Cloud page at `/fleet-cloud/keypairs`. | [Open](pages/fleet-cloud/fleet-cloud-keypairs.md) |
 | Flavors | `/fleet-cloud/flavors` | Flavors — Machina Fleet Cloud page at `/fleet-cloud/flavors`. | [Open](pages/fleet-cloud/fleet-cloud-flavors.md) |
-| Migrations | `/fleet-cloud/migrations` | Migrations — Machina Fleet Cloud page at `/fleet-cloud/migrations`. | [Open](pages/fleet-cloud/fleet-cloud-migrations.md) |
 | Volumes | `/fleet-cloud/volumes` | Volumes — Machina Fleet Cloud page at `/fleet-cloud/volumes`. | [Open](pages/fleet-cloud/fleet-cloud-volumes.md) |
 | Volume Snapshots | `/fleet-cloud/volume-snapshots` | Volume Snapshots — Machina Fleet Cloud page at `/fleet-cloud/volume-snapshots`. | [Open](pages/fleet-cloud/fleet-cloud-volume-snapshots.md) |
 | Images | `/fleet-cloud/images` | Images — Machina Fleet Cloud page at `/fleet-cloud/images`. | [Open](pages/fleet-cloud/fleet-cloud-images.md) |

@@ -6,7 +6,7 @@ Networks — Machina Platform page at `/platform/networks`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **Networks** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,16 +15,24 @@ Networks — Machina Platform page at `/platform/networks`.
 - Route: `/platform/networks`
 - Nav: **Platform → Networks** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/platform/networks` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Filters / tabs: **Overlay segments; IPAM**.
+3. New network.
+4. New segment.
+5. Import/Sync from hosts.
+6. **Empty:** No networks yet → create/enroll.
+7. **Success:** Segment + IPAM pool present.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Networks](../infrastructure/networks.md)
+- [Network canvas](platform-network-canvas.md)
+- [Security Center](../platform-security/platform-zeus-security.md)
 - [Getting Started](../../getting-started.md)
+- [Dashboard](../core/home.md)
+- [Mission Control](platform.md)
 - [Page index](../../PAGE_INDEX.md)

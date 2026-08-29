@@ -6,7 +6,7 @@ System Check — Machina Monitoring page at `/system-check`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **System Check** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,16 +15,21 @@ System Check — Machina Monitoring page at `/system-check`.
 - Route: `/system-check`
 - Nav: **Monitoring → System Check** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/system-check` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Filters / tabs: **Check categories**.
+3. Run again.
+4. **Empty:** —.
+5. **Success:** All checks pass / actionable fails listed.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Dashboard](../core/home.md)
+- [Host overview](node.md)
+- [Capabilities](../core/capabilities.md)
 - [Getting Started](../../getting-started.md)
+- [Mission Control](../platform/platform.md)
 - [Page index](../../PAGE_INDEX.md)

@@ -1,4 +1,4 @@
-# Storage Pools
+# Storage pools
 
 ## Purpose
 
@@ -6,7 +6,7 @@ Storage Pools — Machina Infrastructure page at `/storage`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **Storage pools** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,16 +15,24 @@ Storage Pools — Machina Infrastructure page at `/storage`.
 - Route: `/storage`
 - Nav: **Infrastructure → Storage Pools** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/storage` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Filters / tabs: **Pool → volumes**.
+3. Create volume.
+4. Clone.
+5. Resize.
+6. Refresh.
+7. **Empty:** No storage pools / No volumes.
+8. **Success:** Volume listed.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Storage (Disk Utility)](../platform/platform-storage.md)
+- [Disk Images](disk-images.md)
 - [Getting Started](../../getting-started.md)
+- [Dashboard](../core/home.md)
+- [Mission Control](../platform/platform.md)
 - [Page index](../../PAGE_INDEX.md)

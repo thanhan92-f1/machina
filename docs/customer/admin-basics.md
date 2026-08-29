@@ -20,6 +20,19 @@
 
 Use `./machinactl deploy` / `install.sh` from the customer bundle or repo docs. Verify health on `:5092`.
 
+## Vessel (containers)
+
+Podman or Docker on the host is optional but enabled by default:
+
+```toml
+[vessel]
+enabled = true
+# socket = "/run/podman/podman.sock"
+auto_discover = true
+```
+
+If the engine is down, the daemon still starts; use **Infrastructure → Containers** or `POST /api/v1/vessel/reconnect` after fixing the socket.
+
 ## Related
 
 - [Getting Started](getting-started.md)

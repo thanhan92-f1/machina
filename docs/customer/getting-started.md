@@ -33,7 +33,7 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 
 1. **Core** — Dashboard, VMs, Create, Import, Fleet on this host.
 2. **Platform** — Mission Control for multi-host fleet (`/platform`).
-3. **Infrastructure / Fleet Cloud / Monitoring** — storage, networks, Fleet Cloud instances, host metrics.
+3. **Infrastructure / Fleet Cloud / Monitoring** — storage, networks, Podman/Docker containers (Vessel), Fleet Cloud instances, host metrics.
 4. Spotlight / Finder for quick jump.
 
 ## 4. First workflows
@@ -53,6 +53,10 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 ### D. Fleet Cloud
 
 `/fleet-cloud` pages work out of the box — instances, images, volumes, security groups, networking, load balancers, and keypairs are all native, no external cloud connection or credentials required.
+
+### E. Containers (Vessel)
+
+**Infrastructure → Containers** (`/containers`) when Podman/Docker is connected — see [Admin basics](admin-basics.md).
 
 ## Next steps
 

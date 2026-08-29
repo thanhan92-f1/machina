@@ -1,4 +1,4 @@
-# Create Instance
+# Create Fleet Cloud instance
 
 ## Purpose
 
@@ -6,7 +6,7 @@ Create Instance — Machina Fleet Cloud page at `/fleet-cloud/create`.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
+- Operate **Create Fleet Cloud instance** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
@@ -15,17 +15,22 @@ Create Instance — Machina Fleet Cloud page at `/fleet-cloud/create`.
 - Route: `/fleet-cloud/create`
 - Nav: **Fleet Cloud → Create Instance** (or spotlight / Finder search)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/fleet-cloud/create` against the Machina daemon (`https://<host>:5092`).
-2. Use filters and host/VM selectors when the page provides them.
-3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
-4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
+1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
+2. Filters / tabs: **Wizard fields**.
+3. Pick image/flavor/network/keypair/SGs.
+4. Create instance.
+5. **Empty:** No flavors → create flavor first.
+6. **Success:** Instance listed running.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
+- [Images](fleet-cloud-images.md)
+- [Flavors](fleet-cloud-flavors.md)
+- [Fleet Cloud Instances](fleet-cloud-instances.md)
 - [Getting Started](../../getting-started.md)
 - [Dashboard](../core/home.md)
 - [Mission Control](../platform/platform.md)

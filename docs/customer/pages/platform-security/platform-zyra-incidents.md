@@ -1,35 +1,39 @@
-# Capabilities
+# Incident Commander
 
 ## Purpose
 
-Capabilities — Machina Core page at `/capabilities`.
+Incident Commander — Machina Platform / Security page at `/platform/zyra/incidents`.
 
 ## When to use it
 
-- Operate **Capabilities** when your job matches this page
+- Operate **Incident Commander** when your job matches this page
 - Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
 - Confirm PAM/OIDC login and roles if actions are missing
 
 ## How to get there
 
-- Route: `/capabilities`
-- Nav: **Core → Capabilities** (or spotlight / Finder search)
+- Route: `/platform/zyra/incidents`
+- Nav: **Platform / Security → Incident Commander** (or spotlight / Finder search)
+
+## Notes
+
+- Formerly documented under `/platform/zeus*` (except Zeus Security Center, which remains `/platform/zeus/security`).
 
 ## Operate from the console (UX)
 
 1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
-2. Filters / tabs: **Capabilities / System Info**.
-3. Refresh.
+2. Open approvals.
+3. Runbook.
 4. **Empty:** —.
-5. **Success:** Arch/features listed.
+5. **Success:** Incident advanced/closed.
 
 If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
 
 ## Related pages
 
-- [Host overview](../monitoring/node.md)
-- [Node Devices](devices.md)
+- [Zyra Approvals](platform-zyra-approvals.md)
+- [Security Operations Center](../platform/platform-soc.md)
 - [Getting Started](../../getting-started.md)
-- [Dashboard](home.md)
+- [Dashboard](../core/home.md)
 - [Mission Control](../platform/platform.md)
 - [Page index](../../PAGE_INDEX.md)
