@@ -285,8 +285,8 @@ _Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
   - **How:** API `GET /api/v1/vms/{name}/kubevirt-bundle` then `.../kubevirt/apply`, `/upload`, `/start` (docs/kubevirt-migration.md).
 - **Fleet Cloud** — Native instance, flavor, network, and load-balancer management, backed entirely by Machina's own controller APIs. — _A full cloud-operator UI with no external cloud to wire up._
   - **How:** Web → Fleet Cloud → instances / networks / images / load balancers.
-- **HyperSDK / hyper2kvm** — Multi-cloud and cross-hypervisor VM migration into KVM. — _Bring VMs home from other platforms._
-  - **How:** Web → Import VM (HyperSDK / hyper2kvm) to migrate a source VM into KVM.
+- **Transiva / h2kvm** — Multi-cloud and cross-hypervisor VM migration into KVM. — _Bring VMs home from other platforms._
+  - **How:** Web → Import VM (Transiva / h2kvm) to migrate a source VM into KVM.
 - **GuestKit offline assurance** — Offline VM migration assurance and guest inspection tooling. — _Validate guests before and after a move._
   - **How:** Web → Import VM → GuestKit offline inspection / assurance.
 - **Kubernetes & Kata** — View Kubernetes workloads and Kata containers alongside VMs, with KubeVirt VNC/console proxying. — _One console for both VMs and cluster workloads._
