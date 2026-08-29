@@ -159,7 +159,7 @@ What remains:
   back to co-location only if no other host exists. DRS now also requires the destination to beat
   the source by a margin before migrating, preventing ping-pong between similarly-loaded hosts.
 
-**Verified live (2026-07-11, host 80.79.5.173):** an end-to-end restore drill on a real
+**Verified live (2026-07-11, host <ephemeral-ip>):** an end-to-end restore drill on a real
 managed VM — backup via the platform API, blank the disk, restore — recovered the **exact**
 disk content (sha256 match), and a cross-VM restore was correctly rejected (HTTP 404). Two
 out-of-the-box blockers were found and fixed in the process: local **backup writes** and

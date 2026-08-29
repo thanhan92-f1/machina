@@ -5,8 +5,8 @@ Integrate Machina, Zeus OS, and the HyperSDK suite with the **zyvorai.local** do
 | Field | Value |
 |-------|--------|
 | Domain | `zyvorai.local` |
-| DC host | `45.82.66.172` |
-| LDAP URL | `ldap://45.82.66.172:389` |
+| DC host | `<ephemeral-ip>` |
+| LDAP URL | `ldap://<ephemeral-ip>:389` |
 | Base DN | `DC=zyvorai,DC=local` |
 | Test UPN | `sshant@zyvorai.local` |
 
@@ -25,7 +25,7 @@ Equivalent `config.toml`:
 ```toml
 [auth.ldap]
 enabled = true
-url = "ldap://45.82.66.172:389"
+url = "ldap://<ephemeral-ip>:389"
 base_dn = "DC=zyvorai,DC=local"
 user_filter = "(|(sAMAccountName={username})(userPrincipalName={username}))"
 member_attribute = "memberOf"
@@ -41,16 +41,16 @@ See also: [LDAP / Active Directory login](../ldap-auth.md).
 
 ## E2E and deploy (auth mode)
 
-When LDAP is enabled on the daemon, PAM login for the SSH user (`sus`) no longer works on `:5092`. Pass **`--auth ldap`** (or set `E2E_AUTH_MODE=ldap`) and LDAP credentials:
+When LDAP is enabled on the daemon, PAM login for the SSH user (`operator`) no longer works on `:5092`. Pass **`--auth ldap`** (or set `E2E_AUTH_MODE=ldap`) and LDAP credentials:
 
 ```bash
 export E2E_AUTH_MODE=ldap
 export E2E_LDAP_USER='sshant@zyvorai.local'
 export E2E_LDAP_PASS='…'
-VSPASS=max ./scripts/e2e-full-test-remote.sh sus 212.8.252.194 --auth ldap
+VSPASS=max ./scripts/e2e-full-test-remote.sh operator <ephemeral-ip> --auth ldap
 
 # Deploy + post-deploy E2E
-VSPASS=max ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --platform --e2e --e2e-auth ldap
+VSPASS=max ./scripts/deploy-remote.sh operator <ephemeral-ip> --quick --platform --e2e --e2e-auth ldap
 ```
 
 | Mode | Flag / env | Credentials |
@@ -68,7 +68,7 @@ Set on the Zeus OS API deployment:
 
 ```bash
 export ZEUS_OS_AUTH=ldap
-export ZEUS_OS_LDAP_URL=ldap://45.82.66.172:389
+export ZEUS_OS_LDAP_URL=ldap://<ephemeral-ip>:389
 export ZEUS_OS_LDAP_BASE_DN=DC=zyvorai,DC=local
 export ZEUS_OS_LDAP_BIND_DN_TEMPLATE={}@zyvorai.local
 ```
@@ -86,6 +86,6 @@ Marketing and client decks reference suite-wide LDAP/AD under Machina + Zeus OS 
 | Symptom | Check |
 |---------|--------|
 | Invalid username characters | Machina ≥ current build allows `@` when LDAP is enabled |
-| LDAP bind failed | Firewall 389/tcp to `45.82.66.172`, clock skew, password |
+| LDAP bind failed | Firewall 389/tcp to `<ephemeral-ip>`, clock skew, password |
 | User not found | Base DN / user filter; try full UPN |
 | Readonly role only | `memberOf` / group substring mapping in LDAP settings |

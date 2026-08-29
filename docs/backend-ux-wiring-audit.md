@@ -104,9 +104,9 @@ Static coverage (P11) proves wiring *intent*; live verification proves *runtime*
 - [x] Report artifact: [`docs/ux-wiring-live-report.json`](ux-wiring-live-report.json)
 
 ```bash
-VSPASS='…' ./scripts/e2e-live-ux-remote.sh sus 212.8.252.194
+VSPASS='…' ./scripts/e2e-live-ux-remote.sh operator <ephemeral-ip>
 # or after deploy:
-VSPASS='…' ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --e2e
+VSPASS='…' ./scripts/deploy-remote.sh operator <ephemeral-ip> --quick --e2e
 ```
 
 ### P13 — Integrations preview + JSON humanization (shipped)

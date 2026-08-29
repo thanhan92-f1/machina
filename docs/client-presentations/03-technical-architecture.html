@@ -474,12 +474,12 @@ tr:last-child td:last-child { border-radius: 0 0 8px 0; }
       <p><code>scripts/deploy-remote.sh</code> rsyncs sources to <code>~/.deployment/machina</code> and runs <strong>cargo + npm on the SSH host</strong> (not on your laptop). Use <strong>USER@HOST</strong> or <strong>USER then HOST</strong>.</p>
       <div class="code" style="margin-top:10px;">
         <span class="comment"># Full install on remote</span><br>
-        ./scripts/deploy-remote.sh sus@10.0.0.5 --bind 0.0.0.0<br><br>
+        ./scripts/deploy-remote.sh operator@10.0.0.5 --bind 0.0.0.0<br><br>
         <span class="comment"># After rsync: compile-only smoke</span><br>
-        ./scripts/deploy-remote.sh sus@10.0.0.5 --remote-check<br>
-        ./scripts/deploy-remote.sh sus@10.0.0.5 --remote-build<br><br>
+        ./scripts/deploy-remote.sh operator@10.0.0.5 --remote-check<br>
+        ./scripts/deploy-remote.sh operator@10.0.0.5 --remote-build<br><br>
         <span class="comment"># Quick: make release web + sudo make install (already on server)</span><br>
-        ./scripts/deploy-remote.sh sus@10.0.0.5 --quick
+        ./scripts/deploy-remote.sh operator@10.0.0.5 --quick
       </div>
     </div>
   </div>

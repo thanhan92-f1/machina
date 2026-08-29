@@ -258,10 +258,10 @@ kbd { display: inline-block; background: rgba(255,255,255,0.1); border: 1px soli
     </h3>
     <p>Nothing compiles on your laptop: <code>scripts/deploy-remote.sh</code> rsyncs the repo to the host and runs <code>sudo install.sh</code> there (Rust + npm on the server). Always pass <strong>USER then HOST</strong> or <code>user@host</code>.</p>
     <div class="code">
-      <span class="prompt">$</span> ./scripts/deploy-remote.sh sus@10.0.0.5 --bind 0.0.0.0 --open-firewall<br><br>
+      <span class="prompt">$</span> ./scripts/deploy-remote.sh operator@10.0.0.5 --bind 0.0.0.0 --open-firewall<br><br>
       <span class="comment"># Optional: after rsync, compile only (fast smoke before full install)</span><br>
-      <span class="prompt">$</span> ./scripts/deploy-remote.sh sus@10.0.0.5 --remote-check<br>
-      <span class="prompt">$</span> ./scripts/deploy-remote.sh sus@10.0.0.5 --remote-build
+      <span class="prompt">$</span> ./scripts/deploy-remote.sh operator@10.0.0.5 --remote-check<br>
+      <span class="prompt">$</span> ./scripts/deploy-remote.sh operator@10.0.0.5 --remote-build
     </div>
   </div>
 

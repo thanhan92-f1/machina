@@ -1,5 +1,5 @@
 {
-  "host": "212.8.248.187",
+  "host": "<ephemeral-ip>",
   "generated_at": "2026-07-23T17:40:44.136Z",
   "passed": 212,
   "failed": 9,
@@ -618,17 +618,17 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/platform/controller/api/v1/launchpad/health/apps",
+          "url": "https://<ephemeral-ip>:5092/api/v1/platform/controller/api/v1/launchpad/health/apps",
           "status": 503,
           "reason": "HTTP 5xx"
         },
         {
-          "url": "https://212.8.248.187:5092/api/v1/platform/controller/api/v1/launchpad/favorites",
+          "url": "https://<ephemeral-ip>:5092/api/v1/platform/controller/api/v1/launchpad/favorites",
           "status": 503,
           "reason": "HTTP 5xx"
         },
         {
-          "url": "https://212.8.248.187:5092/api/v1/platform/controller/api/v1/launchpad/catalog",
+          "url": "https://<ephemeral-ip>:5092/api/v1/platform/controller/api/v1/launchpad/catalog",
           "status": 503,
           "reason": "HTTP 5xx"
         }
@@ -641,12 +641,12 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/platform/controller/api/v1/launchpad/apps/%3Aid",
+          "url": "https://<ephemeral-ip>:5092/api/v1/platform/controller/api/v1/launchpad/apps/%3Aid",
           "status": 503,
           "reason": "HTTP 5xx"
         },
         {
-          "url": "https://212.8.248.187:5092/api/v1/platform/controller/api/v1/launchpad/catalog",
+          "url": "https://<ephemeral-ip>:5092/api/v1/platform/controller/api/v1/launchpad/catalog",
           "status": 503,
           "reason": "HTTP 5xx"
         }
@@ -659,7 +659,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/platform/controller/api/v1/launchpad/catalog",
+          "url": "https://<ephemeral-ip>:5092/api/v1/platform/controller/api/v1/launchpad/catalog",
           "status": 503,
           "reason": "HTTP 5xx"
         }
@@ -696,7 +696,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/hypersdk/providers/vms?provider=vmware",
+          "url": "https://<ephemeral-ip>:5092/api/v1/hypersdk/providers/vms?provider=vmware",
           "status": 500,
           "reason": "HTTP 5xx"
         }
@@ -709,7 +709,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/hypersdk/providers/vms?provider=vmware",
+          "url": "https://<ephemeral-ip>:5092/api/v1/hypersdk/providers/vms?provider=vmware",
           "status": 500,
           "reason": "HTTP 5xx"
         }
@@ -722,7 +722,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/hypersdk/providers/vms?provider=vmware",
+          "url": "https://<ephemeral-ip>:5092/api/v1/hypersdk/providers/vms?provider=vmware",
           "status": 500,
           "reason": "HTTP 5xx"
         }
@@ -735,7 +735,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/hypersdk/providers/vms?provider=vmware",
+          "url": "https://<ephemeral-ip>:5092/api/v1/hypersdk/providers/vms?provider=vmware",
           "status": 500,
           "reason": "HTTP 5xx"
         }
@@ -748,7 +748,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/hypersdk/providers/vms?provider=vmware",
+          "url": "https://<ephemeral-ip>:5092/api/v1/hypersdk/providers/vms?provider=vmware",
           "status": 500,
           "reason": "HTTP 5xx"
         }
@@ -1637,7 +1637,7 @@
       "reason": "HTTP 5xx",
       "apiFailures": [
         {
-          "url": "https://212.8.248.187:5092/api/v1/vms/win10-msedge/hostname",
+          "url": "https://<ephemeral-ip>:5092/api/v1/vms/win10-msedge/hostname",
           "status": 503,
           "reason": "HTTP 5xx"
         }

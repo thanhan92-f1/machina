@@ -107,10 +107,10 @@ Proves buttons and page loads hit working backends on a real host (not mocked Pl
 node scripts/generate-ux-live-manifest.mjs
 
 # Against remote host (requires PAM credentials)
-VSPASS='…' ./scripts/e2e-live-ux-remote.sh sus 212.8.252.194
+VSPASS='…' ./scripts/e2e-live-ux-remote.sh operator <ephemeral-ip>
 
 # Included in deploy when --e2e and VSPASS are set (skip with --skip-live-ux)
-VSPASS='…' ./scripts/deploy-remote.sh sus HOST --quick --e2e
+VSPASS='…' ./scripts/deploy-remote.sh operator HOST --quick --e2e
 ```
 
 Report: [`docs/ux-wiring-live-report.json`](ux-wiring-live-report.json) — pass/fail per route with API failure details.
@@ -233,7 +233,7 @@ Build: `cd web && npm run build`. Deploy: `./scripts/deploy remote user@host --q
 **Live E2E (optional):**
 
 ```bash
-PLAYWRIGHT_LIVE_URL=https://HOST:5092 PLAYWRIGHT_LIVE_USER=sus PLAYWRIGHT_LIVE_PASS=… \
+PLAYWRIGHT_LIVE_URL=https://HOST:5092 PLAYWRIGHT_LIVE_USER=operator PLAYWRIGHT_LIVE_PASS=… \
   npm run test:e2e -- e2e/live-host.spec.ts
 ```
 

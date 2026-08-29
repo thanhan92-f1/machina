@@ -53,7 +53,7 @@ Sets `IdentityFile` for rsync and SSH (with `IdentitiesOnly=yes`).
 
 ```bash
 export VSPASS='your-pam-password'
-./scripts/e2e-vm-lifecycle-remote.sh user 203.0.113.10 \
+./scripts/e2e-vm-lifecycle-remote.sh user <ephemeral-ip> \
   --ssh-key ~/.ssh/id_ed25519 \
   --template ubuntu-24.04 \
   [--deploy] [--keep-vm]

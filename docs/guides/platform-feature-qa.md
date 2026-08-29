@@ -54,8 +54,8 @@ npm run test:e2e:features -- -g "F15"
 Requires a running platform with at least one libvirt VM:
 
 ```bash
-export PLAYWRIGHT_LIVE_URL=https://212.8.252.194:5092
-export PLAYWRIGHT_LIVE_USER=sus
+export PLAYWRIGHT_LIVE_URL=https://<ephemeral-ip>:5092
+export PLAYWRIGHT_LIVE_USER=operator
 export PLAYWRIGHT_LIVE_PASS=max
 export PLAYWRIGHT_LIBVIRT_VM_ID=87ddc1a8-b0e9-43c4-b866-faf219663f7f  # optional; auto-picks NAT VM
 
@@ -69,7 +69,7 @@ Live tests are **read-only** (no delete, force reboot, attach disk, or destructi
 From repo root:
 
 ```bash
-VSPASS=max ./scripts/e2e-feature-matrix-remote.sh sus 212.8.252.194
+VSPASS=max ./scripts/e2e-feature-matrix-remote.sh operator <ephemeral-ip>
 ```
 
 Optionally set `PLAYWRIGHT_LIBVIRT_VM_ID` before running.
@@ -77,7 +77,7 @@ Optionally set `PLAYWRIGHT_LIBVIRT_VM_ID` before running.
 ## Include in full platform E2E
 
 ```bash
-E2E_FEATURE_MATRIX=1 VSPASS=max ./scripts/e2e-platform-complete-remote.sh sus 212.8.252.194
+E2E_FEATURE_MATRIX=1 VSPASS=max ./scripts/e2e-platform-complete-remote.sh operator <ephemeral-ip>
 ```
 
 ## Test files

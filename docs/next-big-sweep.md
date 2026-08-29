@@ -187,7 +187,7 @@ Most P14 targets are shipped ([`backend-ux-wiring-audit.md`](backend-ux-wiring-a
 **Live (optional, pre-deploy)**
 
 ```bash
-VSPASS='…' ./scripts/e2e-live-ux-remote.sh sus 212.8.252.194
+VSPASS='…' ./scripts/e2e-live-ux-remote.sh operator <ephemeral-ip>
 # or deploy with --e2e per backend-ux-wiring-audit P12
 ```
 

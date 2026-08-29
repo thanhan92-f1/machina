@@ -7,9 +7,9 @@ Deliver **machina-daemon**, **TUI**, and **web/dist** as a tarball—no `deploy-
 ## Quick command
 
 ```bash
-./scripts/package-binary-remote.sh 212.8.252.194 sus --fetch
+./scripts/package-binary-remote.sh <ephemeral-ip> operator --fetch
 ./scripts/package-binary-remote.sh HOST USER --reuse-build --fetch   # skip make if already built
-./scripts/package-binary-remote.sh 212.8.252.194 sus --from-deploy --fetch   # tarball from ~/.deployment/machina
+./scripts/package-binary-remote.sh <ephemeral-ip> operator --from-deploy --fetch   # tarball from ~/.deployment/machina
 ```
 
 **`--from-deploy`** — use the tree already on the server after `deploy-remote.sh` (no `make release`); only refreshes packaging scripts from your laptop, then assembles the customer tarball.

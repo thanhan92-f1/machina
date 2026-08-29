@@ -51,7 +51,7 @@ K8s routes skipped on hosts without K8s (`requires` in manifest). Fleet Cloud ro
 ## Deploy post-flight
 
 ```bash
-VSPASS=max ./scripts/deploy-remote.sh sus HOST --quick --platform --e2e --bind 0.0.0.0 --disable-firewalld
+VSPASS=max ./scripts/deploy-remote.sh operator HOST --quick --platform --e2e --bind 0.0.0.0 --disable-firewalld
 ```
 
 Runs: API E2E → live UX manifest (244) → live access + VM lifecycle specs.

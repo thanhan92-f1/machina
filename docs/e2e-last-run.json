@@ -1,7 +1,7 @@
 {
-  "host": "80.79.5.173",
-  "user": "sus",
-  "base_url": "https://80.79.5.173:5092",
+  "host": "<ephemeral-ip>",
+  "user": "operator",
+  "base_url": "https://<ephemeral-ip>:5092",
   "started_at": "2026-07-10T08:53:22Z",
   "ended_at": "2026-07-10T10:03:47Z",
   "overall": "failed",

@@ -107,7 +107,7 @@ After fixes (2026-06-11):
 - `npm run build` — pass
 - `npm run test:e2e` — 274 pass, 62 skipped
 
-Optional remote close-out (2026-06-11, `212.8.252.194`):
+Optional remote close-out (2026-06-11, `<ephemeral-ip>`):
 
 | Phase | Result |
 |-------|--------|

@@ -20,7 +20,7 @@ document when live regression waves complete (see
 (or small fleet) Linux KVM deployment after the checklist below. Broader
 topologies are **scoped expansions**, not assumed.
 
-## Live evidence (lab: 212.8.248.187 / chrome-e2e-vm + win10-msedge)
+## Live evidence (lab: <ephemeral-ip> / chrome-e2e-vm + win10-msedge)
 
 - **Full lab test-all (2026-08-06):** waves A–G green — see [`scripts/regression/RESULTS.md`](../scripts/regression/RESULTS.md) “full lab test-all”
 - GuestKit matrix: `./scripts/guestkit-live-matrix.sh --with-offline` → **29/29** (2026-08-06; run from laptop with `MACHINA_SSH`)
@@ -38,7 +38,7 @@ topologies are **scoped expansions**, not assumed.
 Prefer SSH tunnel for API login (avoids PAM rate limits):
 
 ```bash
-ssh -f -N -L 15092:127.0.0.1:5092 sus@CUSTOMER_HOST
+ssh -f -N -L 15092:127.0.0.1:5092 operator@CUSTOMER_HOST
 export MACHINA_BASE_URL=https://127.0.0.1:15092
 export MACHINA_USER=… MACHINA_PASS=…
 cd scripts/regression && npm run once   # or targeted suites

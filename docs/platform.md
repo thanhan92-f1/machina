@@ -204,7 +204,7 @@ The controller stores **desired** state separately from **observed** state. The 
 Deploy the daemon plus platform stack to a remote KVM host:
 
 ```bash
-VSPASS='…' ./scripts/deploy-remote.sh sus 212.8.252.194 \
+VSPASS='…' ./scripts/deploy-remote.sh operator <ephemeral-ip> \
   --quick --platform --e2e --bind 0.0.0.0 --open-firewall
 ```
 
@@ -217,7 +217,7 @@ With `--platform --e2e`, deploy runs the **full E2E suite** (`e2e-full-test-remo
 **Mock Playwright alone is not sufficient** for platform UX sign-off — use the orchestrator against a deployed host with real PAM credentials:
 
 ```bash
-VSPASS='…' ./scripts/e2e-platform-complete-remote.sh sus 175.110.114.93
+VSPASS='…' ./scripts/e2e-platform-complete-remote.sh operator <ephemeral-ip>
 ```
 
 This runs, in order: full API/daemon E2E, UX API flow (create + delete VM), live UX wiring manifest (~84 routes), and live Playwright (create/delete VM, platform routes, host smoke). Results are written to [`docs/e2e-last-run.json`](e2e-last-run.json).
@@ -229,13 +229,13 @@ Optional local mocked CI: `E2E_INCLUDE_MOCK=1` prepends `npm run test:e2e` in th
 From your laptop:
 
 ```bash
-VSPASS='…' ./scripts/e2e-full-test-remote.sh sus 212.8.252.194
+VSPASS='…' ./scripts/e2e-full-test-remote.sh operator <ephemeral-ip>
 ```
 
 Platform-only (skip libvirt daemon tests):
 
 ```bash
-VSPASS='…' ./scripts/e2e-full-test-remote.sh sus 212.8.252.194 --platform-only
+VSPASS='…' ./scripts/e2e-full-test-remote.sh operator <ephemeral-ip> --platform-only
 ```
 
 Phases (each skippable via flags on `e2e-full-test.sh`):
@@ -279,20 +279,20 @@ Limits are keyed by **username** (Basic auth) or JWT subject, not the raw `Autho
 Env vars:
 
 - `VSPASS` — PAM password for daemon login (`:5092`)
-- `E2E_PLATFORM_USER` / `E2E_PLATFORM_PASS` — controller Basic auth when `MACHINA_SKIP_AUTH` is off (default platform E2E user `machina-e2e`; use `sus` on lab hosts via orchestrator export)
+- `E2E_PLATFORM_USER` / `E2E_PLATFORM_PASS` — controller Basic auth when `MACHINA_SKIP_AUTH` is off (default platform E2E user `machina-e2e`; use `operator` on lab hosts via orchestrator export)
 - `MACHINA_E2E_BYPASS_SECRET` — must match the controller env for automated smoke to skip rate limits
 
 ### Individual scripts
 
 ```bash
 # Controller only (direct :5093)
-./scripts/e2e-platform-test-remote.sh sus 212.8.252.194
+./scripts/e2e-platform-test-remote.sh operator <ephemeral-ip>
 
 # Daemon only (:5092)
-VSPASS='…' ./scripts/e2e-test-remote.sh sus 212.8.252.194
+VSPASS='…' ./scripts/e2e-test-remote.sh operator <ephemeral-ip>
 
 # Post-install service check on remote
-./scripts/e2e-platform-install-smoke-remote.sh sus 212.8.252.194
+./scripts/e2e-platform-install-smoke-remote.sh operator <ephemeral-ip>
 ```
 
 Services: `machina-controller`, `machina-agent`, `postgresql`. Config: `/etc/default/machina-platform`. Dev E2E sets `MACHINA_SKIP_AUTH=1`; use `--require-auth` on install for production.

@@ -6,10 +6,10 @@
 
 | Field | Value |
 |-------|--------|
-| Host | `212.8.252.194` |
-| User | `sus` |
-| UI | https://212.8.252.194:5092/ (or `/login` — redirects to `/` after sign-in) |
-| Platform API | http://212.8.252.194:5093/api/v1/health |
+| Host | `<ephemeral-ip>` |
+| User | `operator` |
+| UI | https://<ephemeral-ip>:5092/ (or `/login` — redirects to `/` after sign-in) |
+| Platform API | http://<ephemeral-ip>:5093/api/v1/health |
 | Remote tree | `~/.deployment/machina` |
 
 ## Git snapshot
@@ -43,14 +43,14 @@ Also in this batch: v9s Tahoe UX shell (dock editor, Help menu, columns view, ho
 
 ```bash
 cd /Users/ssahani/tt/machina
-VSPASS=max ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --platform --e2e --bind 0.0.0.0 --open-firewall
+VSPASS=max ./scripts/deploy-remote.sh operator <ephemeral-ip> --quick --platform --e2e --bind 0.0.0.0 --open-firewall
 ```
 
 ## Post-deploy verification
 
 ```bash
-curl -sk https://212.8.252.194:5092/api/v1/health
-curl -s http://212.8.252.194:5093/api/v1/health
+curl -sk https://<ephemeral-ip>:5092/api/v1/health
+curl -s http://<ephemeral-ip>:5093/api/v1/health
 ./scripts/platformctl fleet general    # Phase 48
 ./scripts/platformctl fleet spaces     # Phase 47
 ```
@@ -65,7 +65,7 @@ Spotlight smoke: `general settings`, `customize dock`, `stage manager`.
 |-------|--------|
 | Git push `8dcf569` | **Success** |
 | Remote deploy | **Failed** — SSH timeout syncing GuestKit sibling repo (`Operation timed out`) |
-| Action | Retry when `212.8.252.194` is reachable: `VSPASS=max ./scripts/deploy-remote.sh sus 212.8.252.194 --quick --platform --e2e --bind 0.0.0.0 --open-firewall` |
+| Action | Retry when `<ephemeral-ip>` is reachable: `VSPASS=max ./scripts/deploy-remote.sh operator <ephemeral-ip> --quick --platform --e2e --bind 0.0.0.0 --open-firewall` |
 
 Previous successful deploy (Phases 38–47): commit `001a2d5`, E2E 277 passed / 5 failed (fixed in `8dcf569`).
 
