@@ -6,11 +6,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes login-atmosphere-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(1.2%, -1%, 0) scale(1.04); }
-}
-
 @keyframes login-shake {
   0%, 100% { transform: translateX(0); }
   20%, 60% { transform: translateX(-4px); }
@@ -28,7 +23,7 @@
   --login-paper: #f5f5f7;
   --login-card: #ffffff;
   --login-line: rgba(0, 0, 0, 0.1);
-  --login-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 22px 56px -28px rgba(0, 0, 0, 0.28);
+  --login-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 3px rgba(0, 0, 0, 0.08), 0 20px 44px -24px rgba(0, 0, 0, 0.24);
 
   isolation: isolate;
   position: relative;
@@ -46,48 +41,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
-}
-
-/* Light atmosphere — warm paper + orange wash */
-.login-atmosphere {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 85% 65% at 50% -20%, rgba(255, 90, 21, 0.18), transparent 58%),
-    radial-gradient(ellipse 50% 40% at 100% 15%, rgba(255, 180, 120, 0.2), transparent 55%),
-    radial-gradient(ellipse 45% 35% at 0% 85%, rgba(230, 230, 235, 0.9), transparent 50%),
-    linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 45%, #efefef 100%);
-}
-
-.login-atmosphere::before,
-.login-atmosphere::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(72px);
-  animation: login-atmosphere-drift 24s ease-in-out infinite;
-  will-change: transform;
-}
-
-.login-atmosphere::before {
-  width: min(70vw, 48rem);
-  height: min(70vw, 48rem);
-  top: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(255, 90, 21, 0.22) 0%, transparent 68%);
-}
-
-.login-atmosphere::after {
-  width: min(42vw, 24rem);
-  height: min(42vw, 24rem);
-  bottom: -10%;
-  right: -4%;
-  background: radial-gradient(circle, rgba(40, 40, 45, 0.08) 0%, transparent 70%);
-  animation-delay: -9s;
 }
 
 /* Dark / carbon night — black stage, orange embers */
@@ -109,33 +62,6 @@ html[data-ui-shell='rack'] .login-page {
   --login-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 28px 64px -24px rgba(0, 0, 0, 0.75);
   background: #000000;
   color: var(--login-ink);
-}
-
-html:not(.apple-light):not(.light-theme) .login-atmosphere,
-html[data-theme='tahoe'] .login-atmosphere,
-html[data-theme='dark-steel'] .login-atmosphere,
-html[data-theme='aurora'] .login-atmosphere,
-html[data-theme='rack'] .login-atmosphere,
-html[data-ui-shell='default'] .login-atmosphere,
-html[data-ui-shell='dark-steel'] .login-atmosphere,
-html[data-ui-shell='aurora'] .login-atmosphere,
-html[data-ui-shell='rack'] .login-atmosphere {
-  background:
-    radial-gradient(ellipse 80% 55% at 50% -15%, rgba(255, 90, 21, 0.28), transparent 55%),
-    radial-gradient(ellipse 45% 35% at 90% 80%, rgba(255, 90, 21, 0.1), transparent 50%),
-    linear-gradient(180deg, #0a0a0a 0%, #000000 55%, #050505 100%);
-}
-
-html:not(.apple-light):not(.light-theme) .login-atmosphere::before,
-html[data-theme='tahoe'] .login-atmosphere::before,
-html[data-ui-shell='default'] .login-atmosphere::before {
-  background: radial-gradient(circle, rgba(255, 90, 21, 0.32) 0%, transparent 68%);
-}
-
-html:not(.apple-light):not(.light-theme) .login-atmosphere::after,
-html[data-theme='tahoe'] .login-atmosphere::after,
-html[data-ui-shell='default'] .login-atmosphere::after {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
 }
 
 /* Tahoe light stays paper */
@@ -161,95 +87,28 @@ html[data-ui-shell='tahoe-light'] .login-page {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 4.25rem 1.25rem 2.75rem;
+  padding: 2.5rem 1.25rem;
   background: transparent;
   min-width: 0;
 }
 
 .login-stage {
   width: 100%;
-  max-width: 28rem;
+  max-width: 20rem;
   text-align: center;
-}
-
-.login-brand {
-  animation: login-fade-in-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
-  margin-bottom: 1.75rem;
-}
-
-.login-logo {
-  display: inline-flex;
-  margin-bottom: 1.5rem;
 }
 
 .login-mark,
 .login-mark.zyvor-mark,
 .login-page .zyvor-mark {
   display: block;
-  border-radius: 18px;
+  border-radius: 12px;
   filter: none;
-  transform: scale(1.08);
-  transform-origin: center;
 }
 
 .login-page .zyvor-mark-word {
   font-weight: 600;
   letter-spacing: -0.04em;
-}
-
-.login-eyebrow {
-  display: inline-block;
-  margin-bottom: 0.85rem;
-  padding: 0.28rem 0.7rem;
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--login-orange);
-  border: 1px solid color-mix(in srgb, var(--login-orange) 35%, transparent);
-  background: var(--login-orange-soft);
-}
-
-.login-product {
-  margin: 0 auto 0.35rem;
-  font-size: clamp(3.25rem, 9vw, 4.75rem);
-  font-weight: 700;
-  letter-spacing: -0.055em;
-  line-height: 0.95;
-  color: var(--login-ink);
-  background: linear-gradient(
-    115deg,
-    var(--login-ink) 0%,
-    var(--login-ink) 42%,
-    var(--login-orange) 78%,
-    var(--login-orange-deep) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.login-headline {
-  margin: 0.85rem auto 0;
-  max-width: 22ch;
-  font-size: clamp(1.2rem, 2.8vw, 1.45rem);
-  font-weight: 510;
-  letter-spacing: -0.03em;
-  line-height: 1.25;
-  color: var(--login-ink);
-  -webkit-text-fill-color: var(--login-ink);
-  background: none;
-}
-
-.login-tagline {
-  color: var(--login-ink-secondary);
-  max-width: 30rem;
-  margin: 0.75rem auto 0;
-  letter-spacing: -0.012em;
-  font-size: 1.05rem;
-  line-height: 1.45;
-  font-weight: 400;
 }
 
 .login-card {
@@ -259,7 +118,7 @@ html[data-ui-shell='tahoe-light'] .login-page {
   margin-right: auto;
   text-align: left;
   padding: 1.5rem 1.4rem 1.35rem;
-  border-radius: 1.25rem;
+  border-radius: 0.875rem;
   background: var(--login-card);
   border: 1px solid var(--login-line);
   box-shadow: var(--login-card-shadow);
@@ -269,12 +128,38 @@ html[data-ui-shell='tahoe-light'] .login-page {
 
 .login-card-label {
   display: block;
-  margin-bottom: 1rem;
-  font-size: 0.8125rem;
+  margin: 0 0 1.5rem;
+  font-size: 1.75rem;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--login-ink);
   text-align: center;
+}
+
+.login-back-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--login-ink-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.login-back-row:hover {
+  color: var(--login-orange);
+}
+
+.login-back-row span {
+  color: var(--login-ink);
+  font-weight: 600;
 }
 
 @media (min-width: 640px) {
@@ -588,16 +473,10 @@ html[data-ui-shell='default'] .login-theme-toggle button[aria-pressed='true'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-brand,
   .login-card,
   .login-form-block {
     animation: none !important;
     opacity: 1 !important;
-  }
-
-  .login-atmosphere::before,
-  .login-atmosphere::after {
-    animation: none !important;
   }
 
   .login-shake {

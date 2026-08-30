@@ -2,14 +2,14 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useEffect, useState, FormEvent } from 'react'
+import { useEffect, useRef, useState, FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import { formatUserError } from '../utils/apiError'
-import { Lock, User, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Lock, User, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react'
 import {
   PremiumLoginShell,
   LoginDivider,
@@ -31,6 +31,7 @@ export default function LoginPage() {
     }
   })()
 
+  const [step, setStep] = useState<'identify' | 'password'>('identify')
   const [username, setUsername] = useState(saved?.username ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -47,11 +48,13 @@ export default function LoginPage() {
   const { login } = useAuth()
   const { theme, setTheme } = useTheme()
   const isLight = theme === 'light'
-  const hostLabel = typeof window !== 'undefined' ? window.location.hostname : ''
   const oidcEnabled = providers.oidc.enabled
   const pamEnabled = providers.pam.enabled
   const ldapEnabled = providers.ldap.enabled
   const passwordLogin = pamEnabled || ldapEnabled
+
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     void getAuthProviders().then(setProviders).catch(() => {})
@@ -68,10 +71,35 @@ export default function LoginPage() {
     }
   }, [])
 
-  const handleSubmit = async (e: FormEvent) => {
+  useEffect(() => {
+    if (step === 'identify') {
+      usernameRef.current?.focus()
+    } else {
+      passwordRef.current?.focus()
+    }
+  }, [step])
+
+  const handleIdentify = (e: FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !password) {
-      setError('Username and password are required')
+    if (!username.trim()) {
+      setError('Enter your username')
+      return
+    }
+    setError('')
+    setStep('password')
+  }
+
+  const handleBack = () => {
+    setStep('identify')
+    setPassword('')
+    setError('')
+    setShowPassword(false)
+  }
+
+  const handlePasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!password) {
+      setError('Password is required')
       return
     }
     setSubmitting(true)
@@ -119,119 +147,146 @@ export default function LoginPage() {
         </div>
       }
       logo={
-        <ZyvorMark
-          to={null}
-          size="xl"
-          tone={isLight ? 'onLight' : 'onDark'}
-          className="login-mark zyvor-mark"
-        />
+        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30">
+          <ZyvorMark
+            to={null}
+            size="md"
+            tone={isLight ? 'onLight' : 'onDark'}
+            className="login-mark zyvor-mark"
+          />
+        </div>
       }
-      productName="Machina"
-      heroHeadline="The private cloud that feels like home."
-      heroSubheadline={
-        hostLabel
-          ? `Libvirt, Fleet Cloud, and Zyra — on ${hostLabel}.`
-          : 'Libvirt, Fleet Cloud, and Zyra — one quiet control plane.'
+      headerSlot={
+        step === 'identify' ? (
+          <h1 className="login-card-label">Sign in to Machina</h1>
+        ) : (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="login-back-row"
+            aria-label={`Back, change username (currently ${username})`}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            <span>{username}</span>
+          </button>
+        )
       }
-      panelTitle="Sign in to continue"
+      panelHint={step === 'password' ? 'Forgotten your password? Contact your administrator.' : undefined}
       footer={<ZyvorFooter />}
     >
       <form
         onSubmit={(e) => {
-          e.preventDefault()
-          if (passwordLogin) void handleSubmit(e)
+          if (step === 'identify') {
+            handleIdentify(e)
+            return
+          }
+          if (passwordLogin) void handlePasswordSubmit(e)
+          else e.preventDefault()
         }}
         autoComplete={passwordLogin ? 'on' : 'off'}
         aria-label={t('login.title')}
       >
-        {error ? <LoginError message={error} /> : null}
+        <div key={step}>
+          {error ? <LoginError message={error} /> : null}
 
-        {providers.saml?.enabled && !providers.saml.login_available ? (
-          <p className="login-hint" role="status">
-            SAML metadata is configured for IdP federation — browser SAML login coming soon.
-          </p>
-        ) : null}
+          {step === 'identify' ? (
+            <>
+              {providers.saml?.enabled && !providers.saml.login_available ? (
+                <p className="login-hint" role="status">
+                  SAML metadata is configured for IdP federation — browser SAML login coming soon.
+                </p>
+              ) : null}
 
-        {oidcEnabled ? (
-          <button type="button" onClick={() => beginOidcLogin()} className="login-btn-primary group w-full mb-4">
-            <span className="relative z-10">{providers.oidc.button_label}</span>
-            <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        ) : null}
+              {oidcEnabled ? (
+                <button type="button" onClick={() => beginOidcLogin()} className="login-btn-primary group w-full mb-4">
+                  <span className="relative z-10">{providers.oidc.button_label}</span>
+                  <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              ) : null}
 
-        {oidcEnabled && passwordLogin ? (
-          <LoginDivider label="or use password" />
-        ) : null}
+              {oidcEnabled && passwordLogin ? (
+                <LoginDivider label="or use password" />
+              ) : null}
 
-        {ldapEnabled ? (
-          <p className="login-hint mb-4" role="status">
-            {t('login.ldapHint')}
-          </p>
-        ) : null}
-
-        {passwordLogin ? (
-          <>
-            <LoginField label={t('login.username')} id="login-username">
-              <User className="login-field-icon" />
-              <input
-                id="login-username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="login-input"
-                placeholder={t('login.username')}
-                autoComplete="username"
-                autoFocus
-                required
-                disabled={submitting}
-              />
-            </LoginField>
-
-            <LoginField label={t('login.password')} id="login-password">
-              <Lock className="login-field-icon" />
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="login-input pr-11"
-                placeholder={t('login.password')}
-                autoComplete="current-password"
-                required
-                disabled={submitting}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </LoginField>
-
-            <LoginRemember
-              checked={rememberMe}
-              onChange={setRememberMe}
-              label="Remember username on this device"
-              hint="Only your username is stored locally — never your password."
-            />
-
-            <LoginSubmit loading={submitting} disabled={!username.trim() || !password}>
-              {submitting ? (
+              {passwordLogin ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  <span>Signing in…</span>
+                  {ldapEnabled ? (
+                    <p className="login-hint mb-4" role="status">
+                      {t('login.ldapHint')}
+                    </p>
+                  ) : null}
+
+                  <LoginField label={t('login.username')} id="login-username">
+                    <User className="login-field-icon" />
+                    <input
+                      ref={usernameRef}
+                      id="login-username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="login-input"
+                      placeholder={t('login.username')}
+                      autoComplete="username"
+                      required
+                    />
+                  </LoginField>
+
+                  <LoginSubmit disabled={!username.trim()}>
+                    <span>Continue</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </LoginSubmit>
                 </>
-              ) : (
-                <>
-                  <span>Continue</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </LoginSubmit>
-          </>
-        ) : null}
+              ) : null}
+            </>
+          ) : (
+            <>
+              <LoginField label={t('login.password')} id="login-password">
+                <Lock className="login-field-icon" />
+                <input
+                  ref={passwordRef}
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="login-input pr-11"
+                  placeholder={t('login.password')}
+                  autoComplete="current-password"
+                  required
+                  disabled={submitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </LoginField>
+
+              <LoginRemember
+                checked={rememberMe}
+                onChange={setRememberMe}
+                label="Remember username on this device"
+                hint="Only your username is stored locally — never your password."
+              />
+
+              <LoginSubmit loading={submitting} disabled={!password || submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    <span>Signing in…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Continue</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </LoginSubmit>
+            </>
+          )}
+        </div>
       </form>
     </PremiumLoginShell>
   )

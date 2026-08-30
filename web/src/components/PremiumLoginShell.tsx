@@ -10,21 +10,6 @@ import type { ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { ZyvorMark } from './ZyvorMark';
 
-export type PremiumLoginFeature = {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  gradient?: string;
-  glow?: string;
-  highlight?: boolean;
-};
-
-export type PremiumLoginPill = {
-  icon?: ReactNode;
-  label: string;
-  glow?: boolean;
-};
-
 export type LoginAccent =
   | 'blue'
   | 'amber'
@@ -39,28 +24,11 @@ export type LoginAccent =
 export type PremiumLoginShellProps = {
   accent?: LoginAccent;
   pageThemeClass?: string;
-  /** @deprecated unused */
-  heroWidth?: '55' | '58';
   themeSwitcher?: ReactNode;
   /** Optional override; default is ZyvorMark */
   logo?: ReactNode;
-  productName: string;
-  productSubtitle?: string;
-  /** Marketing line under the product name */
-  heroHeadline?: ReactNode;
-  /** Quiet supporting sentence */
-  heroSubheadline?: string;
-  /** @deprecated unused */
-  pills?: PremiumLoginPill[];
-  /** @deprecated unused */
-  features?: PremiumLoginFeature[];
-  /** @deprecated unused */
-  heroFooter?: ReactNode;
-  mobileSubtitle?: string;
-  /** Label above the form card */
-  panelTitle?: string;
-  /** @deprecated unused for marketing layout */
-  panelSubtitle?: string;
+  /** Rendered above the form — a heading on the identify step, a back-row on the password step */
+  headerSlot?: ReactNode;
   panelHint?: ReactNode;
   footer?: ReactNode;
   formClassName?: string;
@@ -72,43 +40,28 @@ export function PremiumLoginShell({
   pageThemeClass = '',
   themeSwitcher,
   logo,
-  productName,
-  productSubtitle,
-  heroHeadline,
-  heroSubheadline,
-  mobileSubtitle,
-  panelTitle = 'Sign in',
+  headerSlot,
   panelHint,
   footer,
   formClassName = '',
   children,
 }: PremiumLoginShellProps) {
   const accentClass = accent === 'blue' ? '' : `login-accent-${accent}`;
-  const tagline = heroSubheadline ?? productSubtitle ?? mobileSubtitle;
-  const marketingLine =
-    heroHeadline ??
-    'Private cloud, built to feel inevitable.';
-  const mark = logo ?? <ZyvorMark to={null} size="xl" className="login-mark zyvor-mark" />;
+  const mark = logo ?? (
+    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30">
+      <ZyvorMark to={null} size="md" className="login-mark zyvor-mark" />
+    </div>
+  );
 
   return (
     <div className={`login-page min-h-screen flex flex-col ${accentClass} ${pageThemeClass}`.trim()}>
-      <div className="login-atmosphere" aria-hidden="true" />
+      {mark}
       {themeSwitcher}
 
       <main className="login-panel" aria-label="Sign in">
         <div className="login-stage relative z-10">
-          <div className="login-brand">
-            <div className="login-logo">{mark}</div>
-            <span className="login-eyebrow">Zyvor</span>
-            <p className="login-product" aria-label={productName}>
-              {productName}
-            </p>
-            <h1 className="login-headline">{marketingLine}</h1>
-            {tagline ? <p className="login-tagline">{tagline}</p> : null}
-          </div>
-
           <div className="login-card">
-            <span className="login-card-label">{panelTitle}</span>
+            {headerSlot}
             <div className={`login-form-block ${formClassName}`.trim()}>{children}</div>
             {panelHint ? <p className="login-hint">{panelHint}</p> : null}
           </div>
