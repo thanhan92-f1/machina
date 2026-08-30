@@ -96,43 +96,43 @@ export default function GuestAiInsightsPanel({
       }
     >
       {!report && !loading && (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[var(--text-muted)]">
           {autoLoad
             ? 'Insights will load automatically when this tab is open.'
             : 'Generate a natural-language summary with security and operations recommendations from live guest-agent data.'}
         </p>
       )}
       {loading && !report && (
-        <p className="text-sm text-slate-500 flex items-center gap-2">
+        <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" /> Analyzing guest telemetry…
         </p>
       )}
       {report && (
         <div className="space-y-3 text-sm">
-          <p className="text-slate-200">{report.summary}</p>
+          <p className="text-[var(--text-primary)]">{report.summary}</p>
           {report.llm_powered && (
             <span className={statusPillClasses('info')}>LLM-powered</span>
           )}
           {report.insights.length > 0 ? (
             <ul className="space-y-2">
               {report.insights.map((i) => (
-                <li key={i.title} className="rounded-lg border border-white/[0.06] bg-slate-900/40 px-3 py-2">
+                <li key={i.title} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
                   <p className={`font-medium ${statusToneClass(severityTone(i.severity))}`}>{i.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{i.detail}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">{i.detail}</p>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-slate-500">No specific insights — guest telemetry looks nominal.</p>
+            <p className="text-xs text-[var(--text-muted)]">No specific insights — guest telemetry looks nominal.</p>
           )}
           {report.recommendations.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recommendations</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Recommendations</p>
               {report.recommendations.map((r) => (
                 <div key={r.label} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/[0.06] px-3 py-2">
                   <div>
-                    <p className="text-slate-200">{r.label}</p>
-                    <p className="text-xs text-slate-500">{r.rationale}</p>
+                    <p className="text-[var(--text-primary)]">{r.label}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{r.rationale}</p>
                   </div>
                   {r.action === 'guest.install_tools' && (
                     <button
@@ -146,7 +146,7 @@ export default function GuestAiInsightsPanel({
                     </button>
                   )}
                   {!DIAGNOSTICS_ACTIONS.has(r.action) && r.action !== 'guest.install_tools' && r.action !== 'none' && (
-                    <span className="text-[10px] text-slate-500">Zyra approval</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">Zyra approval</span>
                   )}
                 </div>
               ))}

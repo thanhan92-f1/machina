@@ -61,7 +61,7 @@ function FleetCloudVolumeSnapshotDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/volume-snapshots" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/volume-snapshots" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -69,21 +69,22 @@ function FleetCloudVolumeSnapshotDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/volume-snapshots" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/volume-snapshots" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Volume snapshots
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Camera className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Camera className="w-7 h-7 text-[var(--accent)]" />
         {snapshot.name || snapshot.id.slice(0, 12)}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{snapshot.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="text-slate-200 mt-1">{snapshot.status}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Source volume</dt><dd className="font-mono text-xs mt-1">
-          <Link to={`/fleet-cloud/volumes/${snapshot.volume_id}`} className="text-sky-400 hover:underline">{snapshot.volume_name}</Link>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono text-[var(--text-primary)] mt-1 break-all">{snapshot.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="text-[var(--text-primary)] mt-1">{snapshot.status}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Source volume</dt><dd className="font-mono text-xs mt-1">
+          <Link to={`/fleet-cloud/volumes/${snapshot.volume_id}`} className="text-[var(--accent)] hover:underline">{snapshot.volume_name}</Link>
         </dd></div>
       </dl>
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-300 text-sm"

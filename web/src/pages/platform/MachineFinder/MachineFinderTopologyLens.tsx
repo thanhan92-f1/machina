@@ -122,7 +122,7 @@ export default function MachineFinderTopologyLens({ state }: Props) {
   )
 
   if (loading && !mission) {
-    return <p className="text-sm text-slate-500 p-4">Loading topology…</p>
+    return <p className="text-sm text-[var(--text-muted)] p-4">Loading topology…</p>
   }
 
   if (error) {

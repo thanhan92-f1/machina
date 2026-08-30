@@ -6,7 +6,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router'
 import { getPinnedPages } from '../utils/pinnedPages'
 import { getPageLabel } from '../utils/pageLabels'
-import { Plus, Menu, X, ChevronDown, Zap, LogOut, User, Sparkles, Bell, Palette, CircleHelp, Keyboard, Info, BookOpen, ExternalLink, Bot, LayoutGrid, Layers } from 'lucide-react'
+import { Plus, Menu, X, ChevronDown, LogOut, User, Sparkles, Bell, Palette, CircleHelp, Keyboard, Info, BookOpen, ExternalLink, Bot, LayoutGrid, Layers } from 'lucide-react'
+import { ZyvorMark } from './ZyvorMark'
 import { ZYVOR_HELP } from '../config/zyvorHelp'
 import type { HelpTab } from './HelpDialog'
 import ConnectionStatus from './ConnectionStatus'
@@ -22,47 +23,9 @@ import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { useAi } from '../contexts/AiContext'
 import { ZYRA_ASSISTANT_NAME } from '../config/aiBrand'
 
-function NavLink({ item, onClick, theme, setup }: { item: NavItem; onClick?: () => void; theme: AppTheme; setup?: boolean }) {
+function NavLink({ item, onClick, theme: _theme, setup }: { item: NavItem; onClick?: () => void; theme: AppTheme; setup?: boolean }) {
   const location = useLocation()
   const isActive = navItemActive(item, location.pathname, location.search)
-
-  if (theme === 'steel') {
-    return (
-      <Link
-        to={item.to}
-        onClick={onClick}
-        className={`nav-steel-link flex items-center gap-2 px-2 py-2 text-sm font-medium no-underline transition-colors duration-200 ${
-          setup
-            ? `${statusToneClass('warn')} opacity-90 hover:opacity-100`
-            : isActive
-              ? 'nav-steel-link-active'
-              : 'text-[#9aa8b8] hover:text-white'
-        }`}
-      >
-        {item.icon}
-        {item.label}
-      </Link>
-    )
-  }
-
-  if (theme === 'aurora') {
-    return (
-      <Link
-        to={item.to}
-        onClick={onClick}
-        className={`nav-aurora-link flex items-center gap-2 px-2 py-2 text-sm font-medium no-underline transition-colors duration-200 ${
-          setup
-            ? `${statusToneClass('warn')} opacity-90 hover:opacity-100`
-            : isActive
-              ? 'nav-aurora-link-active'
-              : 'text-[#a89ec8] hover:text-[#f5f3ff]'
-        }`}
-      >
-        {item.icon}
-        {item.label}
-      </Link>
-    )
-  }
 
   return (
     <Link
@@ -72,7 +35,7 @@ function NavLink({ item, onClick, theme, setup }: { item: NavItem; onClick?: () 
         setup
           ? `${statusSurfaceClasses('warn', 'border flex items-center gap-2 px-3 py-2 rounded-liquid text-sm font-medium')}`
           : isActive
-            ? 'glass bg-white/10 text-white border border-white/15 shadow-sm'
+            ? 'glass bg-white/10 text-[var(--text-primary)] border border-white/15 shadow-sm'
             : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
       }`}
     >
@@ -112,26 +75,19 @@ function DesktopNavCluster({
     return `machina-nav-group machina-nav-group-icon flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
       active
         ? navActiveChipClasses('flex h-9 w-9 items-center justify-center rounded-lg')
-        : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
     }`
   }
 
   const panelClass = (scroll: boolean) => {
     const scrollCls = scroll ? 'max-h-[min(70vh,28rem)] overflow-y-auto' : ''
-    if (steel) return `machina-nav-dropdown p-2 rounded-xl min-w-[220px] ${scrollCls}`
-    if (aurora) return `machina-nav-dropdown p-2 rounded-xl min-w-[220px] ${scrollCls}`
-    return `bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl p-2 rounded-xl min-w-[220px] ${scrollCls}`
+    return `machina-nav-dropdown p-2 rounded-xl min-w-[220px] ${scrollCls}`
   }
 
   const linkClass = (active: boolean, setup?: boolean) => {
     if (setup) return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${statusActionLinkClasses('warn')}`
-    if (steel || aurora) {
-      return `machina-nav-dd-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-        active ? 'machina-nav-dd-active' : ''
-      }`
-    }
-    return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-      active ? navActiveChipClasses() : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'
+    return `machina-nav-dd-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+      active ? 'machina-nav-dd-active' : ''
     }`
   }
 
@@ -139,7 +95,7 @@ function DesktopNavCluster({
     ? 'px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#7f8b99]'
     : aurora
       ? 'px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#8b7aa8]'
-      : 'px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500'
+      : 'px-3 py-1.5 text-xs font-medium tracking-tight text-[var(--text-muted)]'
 
   const handleNavClick = (e: React.MouseEvent, name: string) => {
     e.stopPropagation()
@@ -297,7 +253,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
       : `flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
           active
             ? navActiveChipClasses('flex h-9 w-9 items-center justify-center rounded-lg')
-            : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
         }`
 
   const navShell = themed
@@ -307,14 +263,14 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
   const themeSelect = (
     <label className="flex items-center gap-1 shrink-0 min-w-0" title="Theme">
       <Palette
-        className={`w-3.5 h-3.5 shrink-0 ${steel ? 'text-[#8fa0b2]' : aurora ? 'text-[#a89ec8]' : 'text-slate-500'}`}
+        className={`w-3.5 h-3.5 shrink-0 ${steel ? 'text-[#8fa0b2]' : aurora ? 'text-[#a89ec8]' : 'text-[var(--text-muted)]'}`}
         aria-hidden
       />
       <select
         aria-label="Theme"
         value={theme}
         onChange={(e) => setTheme(e.target.value as AppTheme)}
-        className={`text-xs rounded-xl border px-1.5 sm:px-2 py-1.5 max-w-[6.5rem] sm:max-w-[7.5rem] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 transition min-w-0 ${
+        className={`text-xs rounded-xl border px-1.5 sm:px-2 py-1.5 max-w-[6.5rem] sm:max-w-[7.5rem] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] transition min-w-0 ${
           steel
             ? 'nav-steel-select text-[#d7dde5]'
             : aurora
@@ -322,9 +278,11 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               : 'glass bg-white/5 border-white/10 text-[var(--text-primary)]'
         }`}
       >
-        <option value="dark">Liquid Glass</option>
+        <option value="dark">Classic Blue</option>
         <option value="steel">Steel</option>
         <option value="aurora">Aurora</option>
+        <option value="rack">Rack</option>
+        <option value="light">Tahoe Light</option>
       </select>
     </label>
   )
@@ -339,41 +297,15 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
     <nav id="app-topnav" className={`sticky top-0 z-30 ${navBarClass}`}>
       <div className="app-shell">
         <div className={navShell}>
-          {/* Logo */}
-          <Link
-            to="/"
-            title="Linux hypervisor host manager — QEMU/KVM + libvirt, optional KubeVirt"
-            className={`flex items-center gap-2 sm:gap-2.5 group hover:scale-[1.02] transition-transform duration-200 shrink-0 order-1 ${
+          {/* Logo — Zyvor mark (matches zyvor.dev); product remains Machina in titles */}
+          <div
+            title="Machina — Linux hypervisor host manager (QEMU/KVM + libvirt)"
+            className={`flex items-center shrink-0 order-1 ${
               steel ? 'nav-steel-brand' : aurora ? 'nav-aurora-brand' : ''
             }`}
           >
-            <div
-              className={`flex items-center justify-center shrink-0 ${
-                steel
-                  ? 'w-[38px] h-[38px] rounded-xl bg-gradient-to-br from-[#2a3442] to-[#121820] border border-[rgba(170,190,220,0.25)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_6px_16px_rgba(0,0,0,0.4)]'
-                  : aurora
-                    ? 'w-[38px] h-[38px] rounded-xl bg-gradient-to-br from-[#1a0a2e] to-[#050816] border border-[rgba(167,139,250,0.35)] shadow-[0_0_24px_rgba(34,211,238,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]'
-                    : 'w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow'
-              }`}
-            >
-              <Zap
-                className={`${
-                  steel ? 'w-5 h-5 text-[#b8c5d6]' : aurora ? 'w-5 h-5 text-[#67e8f9]' : 'w-4.5 h-4.5 text-white'
-                }`}
-              />
-            </div>
-            <span
-              className={
-                steel
-                  ? 'text-base sm:text-lg font-semibold text-[#eef3f8]'
-                  : aurora
-                    ? 'text-base sm:text-lg font-semibold bg-gradient-to-r from-[#67e8f9] via-[#e9d5ff] to-[#f9a8d4] bg-clip-text text-transparent'
-                    : 'text-base sm:text-lg font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent'
-              }
-            >
-              Machina
-            </span>
-          </Link>
+            <ZyvorMark to="/" size="md" />
+          </div>
 
           {/* Desktop Nav — v9s-style icon cluster + quick links */}
           <div
@@ -393,7 +325,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
             </nav>
             <div
               className={`flex flex-shrink-0 items-center gap-0.5 border-l pl-2 ${
-                steel ? 'border-[rgba(140,160,190,0.2)]' : aurora ? 'border-[rgba(167,139,250,0.2)]' : 'border-slate-700/60'
+                steel ? 'border-[rgba(140,160,190,0.2)]' : aurora ? 'border-[rgba(167,139,250,0.2)]' : 'border-[var(--apple-hairline)]'
               }`}
               aria-label="Toolbar shortcuts"
             >
@@ -430,12 +362,12 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               onClick={() => void cycleTheme()}
               className={`p-1.5 rounded-lg transition shrink-0 ${
                 steel
-                  ? 'text-[#9aa8b8] hover:text-white hover:bg-white/5'
+                  ? 'text-[#9aa8b8] hover:text-[var(--text-primary)] hover:bg-white/5'
                   : aurora
                     ? 'text-[#a89ec8] hover:text-[#f5f3ff] hover:bg-white/5'
-                    : 'hover:bg-slate-700/60 text-slate-400 hover:text-white'
+                    : 'hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
-              title="Cycle theme (dark → steel → aurora)"
+              title="Cycle theme (dark → steel → aurora → rack → light)"
               aria-label="Cycle theme"
             >
               <Sparkles className={`w-4 h-4 ${aurora ? 'text-[#67e8f9]' : ''}`} />
@@ -446,10 +378,10 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                 onClick={() => setBellOpen(o => !o)}
                 className={`relative p-1.5 rounded-lg transition ${
                   steel
-                    ? 'text-[#9aa8b8] hover:text-white hover:bg-white/5'
+                    ? 'text-[#9aa8b8] hover:text-[var(--text-primary)] hover:bg-white/5'
                     : aurora
                       ? 'text-[#a89ec8] hover:text-[#f5f3ff] hover:bg-white/5'
-                      : 'hover:bg-slate-700/60 text-slate-400 hover:text-white'
+                      : 'hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                 }`}
                 title="Notifications"
                 aria-label="Notifications"
@@ -466,7 +398,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                       ? 'nav-steel-dropdown border border-[rgba(140,160,190,0.18)] shadow-2xl'
                       : aurora
                         ? 'nav-aurora-dropdown shadow-2xl'
-                        : 'bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl'
+                        : 'bg-[var(--apple-fill-tertiary)]/95 backdrop-blur-xl border border-[var(--apple-hairline)] shadow-2xl'
                   }`}
                 >
                   <div className={`px-4 py-2 border-b text-[10px] font-bold uppercase tracking-wider ${
@@ -474,26 +406,26 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                       ? 'border-[rgba(140,160,190,0.12)] text-[#7f8b99]'
                       : aurora
                         ? 'border-[rgba(167,139,250,0.15)] text-[#8b7aa8]'
-                        : 'border-slate-700/50 text-slate-500'
+                        : 'border-[var(--apple-hairline)] text-[var(--text-muted)]'
                   }`}
                   >
                     Recent Activity
                   </div>
                   {events.length === 0 ? (
-                    <div className={`px-4 py-6 text-center text-sm ${steel ? 'text-[#8fa0b2]' : aurora ? 'text-[#8b7aa8]' : 'text-slate-500'}`}>No recent events</div>
+                    <div className={`px-4 py-6 text-center text-sm ${steel ? 'text-[#8fa0b2]' : aurora ? 'text-[#8b7aa8]' : 'text-[var(--text-muted)]'}`}>No recent events</div>
                   ) : (
                     events.slice(0, 20).map((ev: VMEvent) => (
                       <div
                         key={`${ev.timestamp}-${ev.name}-${ev.event}`}
                         className={`px-4 py-2.5 transition text-sm ${
-                          themed ? 'hover:bg-white/5 text-[#cfd8e3]' : 'hover:bg-slate-700/40'
+                          themed ? 'hover:bg-white/5 text-[#cfd8e3]' : 'hover:bg-[var(--surface-hover)]'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`font-medium ${themed ? 'text-[#eef3f8]' : 'text-white'}`}>{ev.name}</span>
-                          <span className={`text-[10px] ${steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-slate-500'}`}>{timeAgo(ev.timestamp)}</span>
+                          <span className={`font-medium ${themed ? 'text-[#eef3f8]' : 'text-[var(--text-primary)]'}`}>{ev.name}</span>
+                          <span className={`text-[10px] ${steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-[var(--text-muted)]'}`}>{timeAgo(ev.timestamp)}</span>
                         </div>
-                        <div className={`text-xs mt-0.5 ${steel ? 'text-[#9aa8b8]' : aurora ? 'text-[#a89ec8]' : 'text-slate-400'}`}>
+                        <div className={`text-xs mt-0.5 ${steel ? 'text-[#9aa8b8]' : aurora ? 'text-[#a89ec8]' : 'text-[var(--text-muted)]'}`}>
                           {ev.event === 'state_change' && `${ev.old_state} → ${ev.new_state}`}
                           {ev.event === 'vm_added' && 'VM created'}
                           {ev.event === 'vm_removed' && 'VM removed'}
@@ -513,7 +445,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                     ? 'text-orange-300/90 hover:text-orange-200 hover:bg-white/5'
                     : aurora
                       ? 'text-orange-300/90 hover:text-orange-200 hover:bg-white/5'
-                      : 'text-orange-400 hover:bg-slate-700/60 hover:text-orange-300'
+                      : 'text-orange-400 hover:bg-[var(--surface-hover)] hover:text-orange-300'
                 }`}
                 title="Zyra"
                 aria-label="Open Zyra"
@@ -531,11 +463,11 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                   aria-haspopup="menu"
                   className={`flex items-center gap-1 px-2 py-1.5 rounded-lg transition text-sm ${
                     steel
-                      ? 'text-[#9aa8b8] hover:text-white hover:bg-white/5'
+                      ? 'text-[#9aa8b8] hover:text-[var(--text-primary)] hover:bg-white/5'
                       : aurora
                         ? 'text-[#a89ec8] hover:text-[#f5f3ff] hover:bg-white/5'
-                        : 'text-slate-400 hover:bg-slate-700/60 hover:text-white'
-                  } ${helpMenuOpen ? (themed ? 'bg-white/5 text-white' : 'bg-slate-700/60 text-white') : ''}`}
+                        : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+                  } ${helpMenuOpen ? (themed ? 'bg-white/5 text-white' : 'bg-[var(--surface-hover)] text-[var(--text-primary)]') : ''}`}
                   title="Help (?)"
                   aria-label="Help menu"
                 >
@@ -553,7 +485,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                         ? 'nav-steel-dropdown border border-[rgba(140,160,190,0.18)] shadow-2xl'
                         : aurora
                           ? 'nav-aurora-dropdown shadow-2xl'
-                          : 'bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl'
+                          : 'bg-[var(--apple-fill-tertiary)]/95 backdrop-blur-xl border border-[var(--apple-hairline)] shadow-2xl'
                     }`}
                     role="menu"
                   >
@@ -565,7 +497,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                         onOpenHelp('platform')
                       }}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-sm ${
-                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                       }`}
                     >
                       <Layers className="w-4 h-4 shrink-0" aria-hidden />
@@ -579,14 +511,14 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                         onOpenHelp('shortcuts')
                       }}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-sm ${
-                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                       }`}
                     >
                       <Keyboard className="w-4 h-4 shrink-0" aria-hidden />
                       Keyboard shortcuts
                       <kbd
                         className={`ml-auto text-[10px] px-1 py-0.5 rounded font-mono ${
-                          themed ? 'bg-black/30 text-[#9aa8b8]' : 'bg-slate-700 text-slate-500'
+                          themed ? 'bg-black/30 text-[#9aa8b8]' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
                         }`}
                       >
                         ?
@@ -600,7 +532,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                         onOpenHelp('about')
                       }}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-sm ${
-                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                       }`}
                     >
                       <Info className="w-4 h-4 shrink-0" aria-hidden />
@@ -613,7 +545,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                       rel="noopener noreferrer"
                       onClick={() => setHelpMenuOpen(false)}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-sm ${
-                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                       }`}
                     >
                       <BookOpen className="w-4 h-4 shrink-0" aria-hidden />
@@ -627,7 +559,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                       rel="noopener noreferrer"
                       onClick={() => setHelpMenuOpen(false)}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-sm ${
-                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                        themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                       }`}
                     >
                       <ExternalLink className="w-4 h-4 shrink-0" aria-hidden />
@@ -656,13 +588,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
             </div>
             <Link
               to="/create"
-              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all duration-200 text-sm font-medium shrink-0 whitespace-nowrap ${
-                steel
-                  ? 'bg-gradient-to-r from-[#5d90f7] to-[#3d6fd0] text-white shadow-lg shadow-black/30 hover:brightness-110'
-                  : aurora
-                    ? 'bg-gradient-to-r from-cyan-500 via-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/25 hover:brightness-110'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 shadow-lg shadow-blue-600/20 hover:shadow-blue-500/30'
-              }`}
+              className="hidden md:inline-flex items-center gap-1.5 btn-primary text-sm shrink-0 whitespace-nowrap"
             >
               <Plus className="w-4 h-4 shrink-0" />
               <span className="hidden lg:inline">Create VM</span>
@@ -675,12 +601,12 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                     ? 'border-[rgba(140,160,190,0.2)]'
                     : aurora
                       ? 'border-[rgba(167,139,250,0.2)]'
-                      : 'border-slate-700/60'
+                      : 'border-[var(--apple-hairline)]'
                 }`}
               >
                 <span
                   className={`hidden xl:flex text-xs items-center gap-1 max-w-[140px] 2xl:max-w-[200px] ${
-                    steel ? 'text-[#9aa8b8]' : aurora ? 'text-[#a89ec8]' : 'text-slate-400'
+                    steel ? 'text-[#9aa8b8]' : aurora ? 'text-[#a89ec8]' : 'text-[var(--text-muted)]'
                   }`}
                   title={username || undefined}
                 >
@@ -692,15 +618,15 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                   onClick={() => void logout()}
                   className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg transition shrink-0 border ${
                     steel
-                      ? 'text-[#cfd8e3] border-[rgba(140,160,190,0.25)] hover:bg-white/5 hover:text-white'
+                      ? 'text-[#cfd8e3] border-[rgba(140,160,190,0.25)] hover:bg-white/5 hover:text-[var(--text-primary)]'
                       : aurora
-                        ? 'text-[#e8e4f8] border-[rgba(167,139,250,0.28)] hover:bg-white/5 hover:text-white'
-                        : 'text-slate-300 hover:bg-slate-700 hover:text-white border-slate-600/60 hover:border-slate-500'
+                        ? 'text-[#e8e4f8] border-[rgba(167,139,250,0.28)] hover:bg-white/5 hover:text-[var(--text-primary)]'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] border-[var(--apple-hairline)]/60 hover:border-[var(--apple-hairline)]'
                   }`}
                   title={username ? `Sign out (${username})` : 'Sign out'}
                   aria-label="Sign out"
                 >
-                  <LogOut className={`w-4 h-4 shrink-0 text-slate-400 group-hover:text-[var(--machina-status-error)]`} />
+                  <LogOut className={`w-4 h-4 shrink-0 text-[var(--text-muted)] group-hover:text-[var(--machina-status-error)]`} />
                   <span className="text-[11px] sm:text-xs font-medium leading-none">Log out</span>
                 </button>
               </div>
@@ -709,10 +635,10 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               type="button"
               className={`lg:hidden p-2 rounded-lg transition shrink-0 -mr-1 ${
                 steel
-                  ? 'text-[#9aa8b8] hover:bg-white/5 hover:text-white'
+                  ? 'text-[#9aa8b8] hover:bg-white/5 hover:text-[var(--text-primary)]'
                   : aurora
                     ? 'text-[#a89ec8] hover:bg-white/5 hover:text-[#f5f3ff]'
-                    : 'hover:bg-slate-700/60'
+                    : 'hover:bg-[var(--surface-hover)]'
               }`}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Open menu"
@@ -730,14 +656,14 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               ? 'border-[rgba(140,160,190,0.15)] nav-steel-dropdown'
               : aurora
                 ? 'border-[rgba(167,139,250,0.15)] nav-aurora-dropdown'
-                : 'border-slate-700/50 bg-slate-900/95 backdrop-blur-xl'
+                : 'border-[var(--apple-hairline)] bg-[var(--apple-surface-elevated)] backdrop-blur-xl'
           }`}
         >
           <div className="app-shell pt-3 space-y-4">
             {pinnedPaths.length > 0 ? (
               <div>
                 <div className={`text-[10px] font-bold uppercase tracking-wider px-3 mb-1.5 ${
-                  steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-slate-500'
+                  steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-[var(--text-muted)]'
                 }`}
                 >
                   Pinned
@@ -767,9 +693,9 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                 .filter((section) => section.items.length > 0)
               if (sections.length === 0) return null
               return (
-              <div key={group.label} className="px-1 py-2 border-b border-slate-700/40 last:border-b-0">
+              <div key={group.label} className="px-1 py-2 border-b border-[var(--apple-hairline)] last:border-b-0">
                 <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 px-3 ${
-                  steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-slate-500'
+                  steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-[var(--text-muted)]'
                 }`}
                 >
                   {group.label}
@@ -779,7 +705,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                     <div key={section.label || '_'}>
                       {section.label ? (
                         <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 pl-3 ${
-                          steel ? 'text-[#6b7785]' : aurora ? 'text-[#7a6a98]' : 'text-slate-600'
+                          steel ? 'text-[#6b7785]' : aurora ? 'text-[#7a6a98]' : 'text-[var(--text-faint)]'
                         }`}
                         >
                           {section.label}
@@ -801,9 +727,9 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
               </div>
               )
             })}
-            <div className="px-4 py-3 border-b border-slate-700/40">
+            <div className="px-4 py-3 border-b border-[var(--apple-hairline)]">
               <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${
-                steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-slate-500'
+                steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-[var(--text-muted)]'
               }`}
               >
                 Shortcuts
@@ -817,13 +743,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
             <Link
               to="/create"
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition sm:hidden font-medium ${
-                steel
-                  ? 'bg-gradient-to-r from-[#5d90f7] to-[#3d6fd0] text-white'
-                  : aurora
-                    ? 'bg-gradient-to-r from-cyan-500 via-violet-600 to-fuchsia-600 text-white'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-700'
-              }`}
+              className="inline-flex items-center justify-center gap-2 btn-primary sm:hidden"
             >
               <Plus className="w-4 h-4" />
               Create VM
@@ -831,7 +751,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
             {onOpenHelp && (
               <div className="space-y-0.5 sm:hidden">
                 <div className={`text-[10px] font-bold uppercase tracking-wider px-3 mb-1.5 ${
-                  steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-slate-500'
+                  steel ? 'text-[#7f8b99]' : aurora ? 'text-[#8b7aa8]' : 'text-[var(--text-muted)]'
                 }`}
                 >
                   Help
@@ -840,7 +760,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                   type="button"
                   onClick={() => { setMobileOpen(false); onOpenHelp('platform') }}
                   className={`flex w-full items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
                   <Layers className="w-4 h-4" />
@@ -850,7 +770,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                   type="button"
                   onClick={() => { setMobileOpen(false); onOpenHelp('shortcuts') }}
                   className={`flex w-full items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
                   <Keyboard className="w-4 h-4" />
@@ -860,7 +780,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                   type="button"
                   onClick={() => { setMobileOpen(false); onOpenHelp('about') }}
                   className={`flex w-full items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
                   <Info className="w-4 h-4" />
@@ -872,7 +792,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                   rel="noopener noreferrer"
                   onClick={() => setMobileOpen(false)}
                   className={`flex w-full items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-slate-300 hover:bg-slate-700/60'
+                    themed ? 'text-[#cfd8e3] hover:bg-white/5' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
                   <BookOpen className="w-4 h-4" />
@@ -885,7 +805,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                 type="button"
                 onClick={() => { setMobileOpen(false); void logout() }}
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition text-sm w-full ${
-                  themed ? 'bg-white/5 text-[#cfd8e3] hover:bg-white/10' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                  themed ? 'bg-white/5 text-[#cfd8e3] hover:bg-white/10' : 'bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)]'
                 }`}
               >
                 <LogOut className="w-4 h-4" />

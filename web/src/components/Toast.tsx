@@ -65,7 +65,7 @@ function ToastItem({
           <Link
             to={toast.action.href}
             data-testid="toast-action-link"
-            className="inline-block mt-2 text-xs font-medium text-sky-400 hover:text-sky-300"
+            className="inline-block mt-2 text-xs font-medium text-[var(--link)] hover:text-[var(--link)]"
             onClick={() => onClose(toast.id)}
           >
             {toast.action.label} →

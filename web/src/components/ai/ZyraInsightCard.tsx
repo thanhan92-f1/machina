@@ -20,8 +20,8 @@ export default function ZyraInsightCard({
       <div className="flex items-start gap-2">
         <Sparkles className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-slate-100">{title}</p>
-          <p className="text-slate-400 text-xs mt-1">{detail}</p>
+          <p className="font-medium text-[var(--text-primary)]">{title}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1">{detail}</p>
           <div className="flex flex-wrap gap-2 mt-2">
             {onApprove && (
               <button type="button" className="btn-primary text-[10px]" onClick={onApprove}>

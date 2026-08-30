@@ -76,52 +76,53 @@ function FleetCloudFloatingIpsContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-4xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Globe className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Globe className="w-7 h-7 text-[var(--accent)]" />
         Floating IPs (port forwards)
       </h1>
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-[var(--text-muted)]">
         No allocatable floating-IP pool natively — reach a VM's service from outside via a
         host_port → vm_port NAT rule instead.
       </p>
 
-      <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end text-sm">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-3 items-end text-sm">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Instance</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Instance</label>
           <select value={vmId} onChange={(e) => setVmId(e.target.value)}
             aria-label="Instance"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 min-w-[12rem]">
+            className="input-field min-w-[12rem]">
             {vms.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select>
         </div>
         {selectedVm && (
-          <span className="text-xs text-slate-500 font-mono">guest IP: {selectedVm.guest_ip || 'unknown yet'}</span>
+          <span className="text-xs text-[var(--text-muted)] font-mono">guest IP: {selectedVm.guest_ip || 'unknown yet'}</span>
         )}
         <button type="button" onClick={() => void loadForwards()}
-          className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600">
+          className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--apple-hairline)]">
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
 
-      <div className="rounded-xl border border-slate-700 p-4 space-y-3 text-sm">
-        <h2 className="text-sm font-medium text-slate-300">Add forward</h2>
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3 text-sm">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Add forward</h2>
         <div className="flex flex-wrap gap-3 items-end">
           <select value={protocol} onChange={(e) => setProtocol(e.target.value)}
             aria-label="Protocol"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700">
+            className="input-field">
             {PROTOCOLS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <input aria-label="Host port" value={hostPort} onChange={(e) => setHostPort(e.target.value)} placeholder="Host port" type="number"
-            className="w-28 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700" />
+            className="w-28 input-field" />
           <input aria-label="VM port" value={vmPort} onChange={(e) => setVmPort(e.target.value)} placeholder="VM port" type="number"
-            className="w-28 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700" />
+            className="w-28 input-field" />
           <input aria-label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 min-w-[10rem]" />
+            className="input-field min-w-[10rem]" />
           <button type="button" disabled={!vmId || !hostPort || !vmPort || creating}
-            className="px-3 py-1.5 rounded-lg bg-sky-600 text-white disabled:opacity-40"
+            className="btn-primary text-sm disabled:opacity-40"
             onClick={async () => {
               const hp = Number.parseInt(hostPort, 10)
               const vp = Number.parseInt(vmPort, 10)
@@ -145,11 +146,11 @@ function FleetCloudFloatingIpsContent() {
       </div>
 
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : (
-        <div className="rounded-xl border border-slate-700 overflow-hidden">
-          <table className="w-full text-sm" aria-label="Port forwards">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+          <table className="apple-table" aria-label="Port forwards">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Protocol</th>
                 <th scope="col" className="px-3 py-2">Host port</th>
@@ -158,13 +159,13 @@ function FleetCloudFloatingIpsContent() {
                 <th scope="col" className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-[var(--apple-hairline)]">
               {forwards.map((f) => (
                 <tr key={f.id}>
-                  <td className="px-3 py-2 font-mono text-slate-200">{f.protocol}</td>
+                  <td className="px-3 py-2 font-mono text-[var(--text-primary)]">{f.protocol}</td>
                   <td className="px-3 py-2">{f.host_port}</td>
                   <td className="px-3 py-2">{f.vm_port}</td>
-                  <td className="px-3 py-2 text-slate-400">{f.description || '—'}</td>
+                  <td className="px-3 py-2 text-[var(--text-muted)]">{f.description || '—'}</td>
                   <td className="px-3 py-2">
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
                       onClick={async () => {
@@ -180,11 +181,11 @@ function FleetCloudFloatingIpsContent() {
               ))}
             </tbody>
           </table>
-          {forwards.length === 0 && <p className="p-6 text-center text-slate-500">No port forwards for this instance.</p>}
+          {forwards.length === 0 && <p className="p-6 text-center text-[var(--text-muted)]">No port forwards for this instance.</p>}
         </div>
       )}
       {selectedVm && (
-        <Link to={`/fleet-cloud/instances/${selectedVm.id}`} className="text-sm text-sky-400 hover:underline">
+        <Link to={`/fleet-cloud/instances/${selectedVm.id}`} className="text-sm text-[var(--accent)] hover:underline">
           View instance
         </Link>
       )}

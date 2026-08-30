@@ -136,7 +136,7 @@ export default function VmDetailActionBar({
       className={
         opts?.destructive
           ? 'w-full text-left px-3 py-2 text-sm text-red-300 hover:bg-red-500/10'
-          : 'w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-white/5'
+          : 'w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-white/5'
       }
       onClick={() => {
         setMenuOpen(false)
@@ -177,7 +177,7 @@ export default function VmDetailActionBar({
           </button>
           {menuOpen ? (
             <div
-              className="absolute right-0 top-full z-50 mt-1 min-w-[12rem] rounded-lg border border-white/10 bg-slate-900/95 shadow-xl py-1 vm-detail-action-menu"
+              className="absolute right-0 top-full z-50 mt-1 min-w-[12rem] rounded-lg border border-white/10 bg-[var(--apple-surface-elevated)] shadow-xl py-1 vm-detail-action-menu"
               role="menu"
             >
               {isRunning && power.onPause ? menuItem('Pause', power.onPause) : null}
@@ -194,7 +194,7 @@ export default function VmDetailActionBar({
               <div className="my-1 border-t border-white/10" />
               <Link
                 to={studioHubPath(vmId)}
-                className="block px-3 py-2 text-sm text-slate-200 hover:bg-white/5"
+                className="block px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-white/5"
                 onClick={() => setMenuOpen(false)}
               >
                 Studio
@@ -203,7 +203,7 @@ export default function VmDetailActionBar({
                 <a
                   href={virtViewerUrl}
                   download={`${vmName}.vv`}
-                  className="block px-3 py-2 text-sm text-slate-200 hover:bg-white/5"
+                  className="block px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-white/5"
                   data-testid="vm-virt-viewer-download"
                   onClick={() => setMenuOpen(false)}
                 >

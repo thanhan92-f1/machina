@@ -204,7 +204,7 @@ export default function PlatformBackups() {
           : undefined
       }
     >
-      <p className="text-xs text-slate-500 flex flex-wrap gap-3">
+      <p className="text-xs text-[var(--text-muted)] flex flex-wrap gap-3">
         <Link to="/platform/fleet-snapshots" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>
           <Camera className="w-3.5 h-3.5" /> Fleet snapshot schedules
         </Link>
@@ -223,7 +223,7 @@ export default function PlatformBackups() {
             tabIndex={tab === id ? 0 : -1}
             onClick={() => setSearchParams(id === 'timeline' ? {} : { tab: id })}
             className={`px-4 py-2 text-sm rounded-t-lg flex items-center gap-2 transition ${
-              tab === id ? 'bg-slate-800/80 text-orange-300 border-b-2 border-orange-400' : 'text-slate-400 hover:text-slate-200'
+              tab === id ? 'bg-[var(--apple-fill-tertiary)]/80 text-orange-300 border-b-2 border-orange-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             <Icon className="w-4 h-4" /> {label}
@@ -246,11 +246,11 @@ export default function PlatformBackups() {
             <ul className="divide-y divide-white/[0.04]">
               {targets.map((t) => (
                 <li key={t.id} className="py-2 flex justify-between gap-2 text-sm">
-                  <span className="text-slate-200">{t.name}</span>
-                  <span className="text-slate-500 uppercase text-xs">{t.kind}</span>
+                  <span className="text-[var(--text-primary)]">{t.name}</span>
+                  <span className="text-[var(--text-muted)] uppercase text-xs">{t.kind}</span>
                 </li>
               ))}
-              {targets.length === 0 && <li className="text-sm text-slate-500 py-2">No destinations — add one above.</li>}
+              {targets.length === 0 && <li className="text-sm text-[var(--text-muted)] py-2">No destinations — add one above.</li>}
             </ul>
           </MacGlassPanel>
           <MacGlassPanel title="Queue VM backup" subtitle="Full qcow2 or incremental (chains prior completed backup on host).">
@@ -279,7 +279,7 @@ export default function PlatformBackups() {
               <input className="input text-sm" aria-label="Tag filter" placeholder="Tag filter (optional)" value={schedTag} onChange={(e) => setSchedTag(e.target.value)} />
               <input className="input text-sm" aria-label="Interval hours" type="number" min={1} max={720} placeholder="Interval (hours)" value={schedIntervalHours} onChange={(e) => setSchedIntervalHours(e.target.value)} />
               <input className="input text-sm" aria-label="Retain count" type="number" min={0} max={1000} placeholder="Retain count" value={schedRetainCount} onChange={(e) => setSchedRetainCount(e.target.value)} />
-              <label className="flex items-center gap-2 text-sm text-slate-300">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <input type="checkbox" checked={schedEnabled} onChange={(e) => setSchedEnabled(e.target.checked)} /> Enabled
               </label>
             </div>
@@ -316,10 +316,10 @@ export default function PlatformBackups() {
 
       {tab === 'timeline' && (
         <>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[var(--text-muted)]">
             Need per-VM legacy jobs? <Link to="/backups" className={hubLinkClasses()}>Open classic backups UI →</Link>
           </p>
-          {fleet?.summary ? <p className="text-sm text-slate-400">{fleet.summary}</p> : null}
+          {fleet?.summary ? <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p> : null}
           <div className="space-y-6">
             {grouped.length === 0 && !error && (
               <PlatformEmptyState icon={Archive} title="No backup events yet" subtitle="Create backups from VM detail pages or run fleet backup jobs.">
@@ -328,20 +328,20 @@ export default function PlatformBackups() {
             )}
             {grouped.map(([day, entries]) => (
               <section key={day}>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{day}</h2>
-                <div className="relative pl-4 border-l border-slate-700/60 space-y-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">{day}</h2>
+                <div className="relative pl-4 border-l border-[var(--apple-hairline)] space-y-3">
                   {entries.map((e) => (
                     <article key={`${e.kind}-${e.id}`} className="relative tahoe-glass-card p-4 flex gap-4">
-                      <span className="absolute -left-[1.35rem] top-5 w-2.5 h-2.5 rounded-full bg-slate-600 border-2 border-slate-900" />
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${e.status === 'completed' ? statusBadgeClasses('ok') : 'bg-slate-800 text-slate-400'}`}>
+                      <span className="absolute -left-[1.35rem] top-5 w-2.5 h-2.5 rounded-full bg-[var(--apple-fill-secondary)] border-2 border-[var(--apple-surface)]" />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${e.status === 'completed' ? statusBadgeClasses('ok') : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'}`}>
                         <Archive className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {new Date(e.created_at).toLocaleTimeString()}
-                          <span className="text-slate-600">· {e.kind}</span>
+                          <span className="text-[var(--text-faint)]">· {e.kind}</span>
                         </p>
-                        <p className="text-sm font-medium text-slate-200 mt-0.5">{e.label}</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{e.label}</p>
                         <Link to={`/platform/vms/${e.vm_id}`} className={`text-xs hover:underline ${hubLinkClasses()}`}>{e.vm_name}</Link>
                       </div>
                       <div className="flex flex-col gap-1 shrink-0">

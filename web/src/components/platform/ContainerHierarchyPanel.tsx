@@ -25,13 +25,13 @@ export interface ContainerHierarchy {
 function severityClass(sev?: string): string {
   if (sev === 'critical' || sev === 'high') return statusToneClass('error')
   if (sev === 'medium') return statusToneClass('warn')
-  return 'text-slate-400'
+  return 'text-[var(--text-muted)]'
 }
 
 export default function ContainerHierarchyPanel({ data }: { data: ContainerHierarchy | null }) {
   if (!data?.namespaces?.length) {
     return (
-      <p className="text-sm text-slate-500 p-3">
+      <p className="text-sm text-[var(--text-muted)] p-3">
         No K8s pod/container metadata yet. Install Tetragon on the cluster or enable K8s enrichment on this node.
       </p>
     )
@@ -39,23 +39,23 @@ export default function ContainerHierarchyPanel({ data }: { data: ContainerHiera
 
   return (
     <div className="space-y-4 p-3">
-      {data.summary && <p className="text-xs text-slate-500">{data.summary}</p>}
+      {data.summary && <p className="text-xs text-[var(--text-muted)]">{data.summary}</p>}
       {data.namespaces.map((ns) => (
-        <div key={ns.namespace} className="rounded-lg border border-white/[0.08] bg-slate-900/30 p-3">
-          <p className="text-sm font-medium text-slate-100">
+        <div key={ns.namespace} className="rounded-lg border border-white/[0.08] bg-[var(--apple-fill-tertiary)] p-3">
+          <p className="text-sm font-medium text-[var(--text-primary)]">
             ns/{ns.namespace}
-            {ns.event_count ? <span className="text-xs text-slate-500 ml-2">{ns.event_count} events</span> : null}
+            {ns.event_count ? <span className="text-xs text-[var(--text-muted)] ml-2">{ns.event_count} events</span> : null}
           </p>
           <div className="mt-2 space-y-3 pl-3 border-l border-white/[0.06]">
             {(ns.pods ?? []).map((pod) => (
               <div key={pod.pod}>
-                <p className="text-sm text-slate-200">
+                <p className="text-sm text-[var(--text-primary)]">
                   pod/{pod.pod}
-                  {pod.deployment ? <span className="text-xs text-slate-500 ml-2">deploy/{pod.deployment}</span> : null}
+                  {pod.deployment ? <span className="text-xs text-[var(--text-muted)] ml-2">deploy/{pod.deployment}</span> : null}
                 </p>
                 <ul className="mt-1 space-y-1 pl-3">
                   {(pod.containers ?? []).map((c) => (
-                    <li key={c.container} className="text-xs text-slate-400">
+                    <li key={c.container} className="text-xs text-[var(--text-muted)]">
                       <span className={severityClass(c.max_severity)}>{c.container}</span>
                       {' · '}
                       {c.event_count ?? 0} events

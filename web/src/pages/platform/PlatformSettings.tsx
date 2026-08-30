@@ -19,7 +19,7 @@ function SettingsBlock({
     return (
       <MacSettingsGroup title={title}>
         <MacSettingsGroupBody>
-          {subtitle ? <p className="text-xs text-slate-400 leading-relaxed">{subtitle}</p> : null}
+          {subtitle ? <p className="text-xs text-[var(--text-muted)] leading-relaxed">{subtitle}</p> : null}
           {children}
         </MacSettingsGroupBody>
       </MacSettingsGroup>
@@ -119,26 +119,27 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       error={error}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Platform settings'}
       subtitle={embedded ? undefined : 'Cluster name, OIDC, CPU compatibility, HA'}
-      icon={embedded ? undefined : <Settings className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Settings className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       <SettingsBlock embedded={embedded} title="Controller connection" subtitle="HTTP API base and direct WebSocket console URL.">
-        <p className="text-xs text-slate-400">
-          Daemon proxy: <code className="text-slate-200">{PLATFORM_CONTROLLER_PROXY}</code>
+        <p className="text-xs text-[var(--text-muted)]">
+          Daemon proxy: <code className="text-[var(--text-primary)]">{PLATFORM_CONTROLLER_PROXY}</code>
         </p>
-        <label className="text-sm block mt-2 text-slate-200">
+        <label className="text-sm block mt-2 text-[var(--text-primary)]">
           Controller base URL
           <input className="input mt-1 block w-full font-mono text-xs" value={controllerUrl} onChange={(e) => setControllerUrl(e.target.value)} placeholder="http://127.0.0.1:5093" />
         </label>
-        <p className="text-xs text-slate-400 mt-2">
-          Direct console base: <code className="text-slate-200 break-all">{directControllerUrl}</code>
+        <p className="text-xs text-[var(--text-muted)] mt-2">
+          Direct console base: <code className="text-[var(--text-primary)] break-all">{directControllerUrl}</code>
         </p>
         <div className="grid gap-2 md:grid-cols-2 mt-2">
           <input className="input" aria-label="Basic auth user" placeholder="Basic auth user" value={controllerUser} onChange={(e) => setControllerUser(e.target.value)} />
@@ -168,12 +169,12 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
       {leadership && (
         <SettingsBlock embedded={embedded} title="Controller leadership">
           <div className="space-y-2 text-sm">
-          <p className="text-slate-300">
-            This instance: <span className="text-slate-100">{leadership.controller_id}</span>
+          <p className="text-[var(--text-secondary)]">
+            This instance: <span className="text-[var(--text-primary)]">{leadership.controller_id}</span>
             {' · '}
             {leadership.is_leader ? <span className={statusToneClass('ok')}>leader</span> : <span className={statusToneClass('warn')}>follower</span>}
           </p>
-          <p className="text-slate-400">Holder: {leadership.holder_id || 'none'} · lease until {new Date(leadership.lease_until).toLocaleString()}</p>
+          <p className="text-[var(--text-muted)]">Holder: {leadership.holder_id || 'none'} · lease until {new Date(leadership.lease_until).toLocaleString()}</p>
           </div>
         </SettingsBlock>
       )}
@@ -184,7 +185,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
         }}>Save cluster name</button>
       </SettingsBlock>
       <SettingsBlock embedded={embedded} title="Inventory sync" subtitle="Leader-only periodic host inventory sync. Set 0 to disable.">
-        <label className="text-sm block text-slate-200">
+        <label className="text-sm block text-[var(--text-primary)]">
           Interval (seconds)
           <input type="number" min={0} max={86400} className="input mt-1 block w-40" value={syncInterval}
             onChange={(e) => setSyncInterval(Number(e.target.value))} />
@@ -198,7 +199,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
         }}>Save sync interval</button>
       </SettingsBlock>
       <SettingsBlock embedded={embedded} title="OIDC login">
-        <label className="flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={oidc.enabled} onChange={(e) => setOidc({ ...oidc, enabled: e.target.checked })} /> Enable OIDC</label>
+        <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="checkbox" checked={oidc.enabled} onChange={(e) => setOidc({ ...oidc, enabled: e.target.checked })} /> Enable OIDC</label>
         <input className="input" aria-label="Issuer URL" placeholder="issuer URL" value={oidc.issuer} onChange={(e) => setOidc({ ...oidc, issuer: e.target.value })} />
         <input className="input" aria-label="Client ID" placeholder="client id" value={oidc.client_id} onChange={(e) => setOidc({ ...oidc, client_id: e.target.value })} />
         <input className="input" type="password" autoComplete="off" aria-label="Client secret" placeholder="client secret" value={oidc.client_secret} onChange={(e) => setOidc({ ...oidc, client_secret: e.target.value })} />
@@ -217,7 +218,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
       </SettingsBlock>
       <SettingsBlock embedded={embedded} title="Project quotas" subtitle="0 = unlimited. Enforced on VM create.">
         {quotas.length > 0 && (
-          <ul className="text-xs text-slate-400 space-y-1">
+          <ul className="text-xs text-[var(--text-muted)] space-y-1">
             {quotas.map((q) => (
               <li key={q.project}>{q.project}: {q.max_vms || '∞'} VMs, {q.max_vcpu || '∞'} vCPU, {q.max_memory_mib || '∞'} MiB, {q.max_storage_gib || '∞'} GiB</li>
             ))}
@@ -239,11 +240,11 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
         }}>Save quota</button>
       </SettingsBlock>
       <SettingsBlock embedded={embedded} title="Zyra AI (BYOK)" subtitle="Deterministic engines work with AI disabled. Optional LLM improves NL parsing and explanations. Configure providers under Settings → AI Providers.">
-        <label className="flex items-center gap-2 text-sm text-slate-200">
+        <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
           <input type="checkbox" checked={ai.enabled} onChange={(e) => setAi({ ...ai, enabled: e.target.checked })} />
           Enable Zyra AI
         </label>
-        <label className="text-sm block text-slate-200">
+        <label className="text-sm block text-[var(--text-primary)]">
           Mode
           <select className="input mt-1 block w-full max-w-xs" value={ai.mode} onChange={(e) => setAi({ ...ai, mode: e.target.value })}>
             <option value="advisor">Advisor — recommend only</option>
@@ -251,7 +252,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
             <option value="autopilot">Autopilot — auto-run low-risk fixes (configurable batch)</option>
           </select>
         </label>
-        <label className="text-sm block text-slate-200">
+        <label className="text-sm block text-[var(--text-primary)]">
           Autopilot max actions per batch
           <input
             type="number"
@@ -263,7 +264,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
           />
         </label>
         {ai.mode === 'autopilot' && (
-          <label className="text-sm block text-slate-200">
+          <label className="text-sm block text-[var(--text-primary)]">
             Scheduled Autopilot interval (seconds)
             <input
               type="number"
@@ -273,15 +274,15 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
               value={ai.autopilot_interval_secs}
               onChange={(e) => setAi({ ...ai, autopilot_interval_secs: Number(e.target.value) })}
             />
-            <span className="text-xs text-slate-400">0 = manual only. Leader runs safe batch on interval.</span>
+            <span className="text-xs text-[var(--text-muted)]">0 = manual only. Leader runs safe batch on interval.</span>
             {ai.autopilot_last_run && (
-              <span className="text-xs text-slate-400 block mt-1">
+              <span className="text-xs text-[var(--text-muted)] block mt-1">
                 Last run: {new Date(ai.autopilot_last_run).toLocaleString()}
               </span>
             )}
           </label>
         )}
-        <label className="text-sm block text-slate-200">
+        <label className="text-sm block text-[var(--text-primary)]">
           Fleet peer controller URLs (one per line, for multi-cluster Zyra summary)
           <textarea
             className="input mt-1 block w-full max-w-lg min-h-20 font-mono text-xs"

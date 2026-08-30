@@ -18,9 +18,9 @@ export default function VmHardwareSection({ label, value, badges, badge, testId 
 
   return (
     <div className="flex items-start justify-between gap-3 py-2 border-b border-white/[0.06] last:border-0" data-testid={testId}>
-      <span className="text-xs text-slate-500 shrink-0 w-28">{label}</span>
+      <span className="text-xs text-[var(--text-muted)] shrink-0 w-28">{label}</span>
       <div className="flex flex-wrap items-center justify-end gap-1.5 min-w-0 flex-1">
-        <span className="text-xs text-slate-200 text-right">{value}</span>
+        <span className="text-xs text-[var(--text-primary)] text-right">{value}</span>
         {resolved.map((b) => (
           <HardwareApplyBadge key={b.id} badge={b} />
         ))}

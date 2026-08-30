@@ -51,10 +51,11 @@ export default function PlatformVmBuilder() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       prepend={<PlatformBackLink to="/platform/vms" label="Virtual Machines" />}
       title="AI VM Builder"
       subtitle="Describe workload in plain language — Zyra sizes CPU, memory, and FinOps estimate."
-      icon={<Sparkles className="w-6 h-6 text-violet-400" />}
+      icon={<Sparkles className="w-6 h-6 text-[var(--accent)]" />}
     >
       <MacGlassPanel title="Prompt">
         <textarea
@@ -65,23 +66,23 @@ export default function PlatformVmBuilder() {
           placeholder="e.g. Small Debian lab VM for CI tests"
         />
         <label className="block text-sm mt-3">
-          <span className="text-slate-400">VM name (optional)</span>
+          <span className="text-[var(--text-muted)]">VM name (optional)</span>
           <input className="input w-full mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="auto from environment type" />
         </label>
         <button type="button" className="btn-primary mt-3 flex items-center gap-2" disabled={busy || !prompt.trim()} onClick={() => void run()}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           Generate plan
         </button>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-[var(--text-muted)] mt-2">
           Multi-VM environments: <Link to="/platform/zyra" className={hubLinkClasses()}>Zyra OS → Environment intent</Link>
         </p>
       </MacGlassPanel>
 
       {plan && (
         <MacGlassPanel title="Suggested VM" className="mt-4">
-          <p className="text-sm text-slate-200">{plan.summary}</p>
-          <ul className="text-xs text-slate-400 mt-2 space-y-1">
-            <li>Name: <span className="font-mono text-slate-300">{plan.vm_name}</span></li>
+          <p className="text-sm text-[var(--text-primary)]">{plan.summary}</p>
+          <ul className="text-xs text-[var(--text-muted)] mt-2 space-y-1">
+            <li>Name: <span className="font-mono text-[var(--text-secondary)]">{plan.vm_name}</span></li>
             <li>{plan.vcpus} vCPU · {plan.memory_gib} GiB · network {plan.network}</li>
             <li>OS hint: {plan.os_hint}</li>
           </ul>

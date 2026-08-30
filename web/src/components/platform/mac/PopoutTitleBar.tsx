@@ -19,8 +19,8 @@ export default function PopoutTitleBar({ title, subtitle = 'Machina Platform' }:
         <span className="mac-popout-traffic mac-popout-traffic-maximize" aria-hidden />
       </div>
       <div className="flex-1 min-w-0 text-center">
-        <span className="text-xs font-medium text-white/90 truncate block">{title}</span>
-        <span className="text-[10px] text-white/40">{subtitle}</span>
+        <span className="text-xs font-medium text-[var(--text-primary)] truncate block">{title}</span>
+        <span className="text-[10px] text-[var(--text-muted)]">{subtitle}</span>
       </div>
       <div className="w-[52px] shrink-0" aria-hidden />
     </header>

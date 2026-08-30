@@ -20,8 +20,8 @@ export default function HostMachinePanels({ state, selectedHostId, onSelectHost 
 
   if (state.loading) {
     return (
-      <section className="rounded-xl border border-white/[0.08] bg-slate-900/40 p-6 text-center">
-        <p className="text-slate-400">Loading host inventory…</p>
+      <section className="rounded-xl border border-white/[0.08] bg-[var(--apple-surface)] p-6 text-center">
+        <p className="text-[var(--text-muted)]">Loading host inventory…</p>
       </section>
     )
   }
@@ -45,8 +45,8 @@ export default function HostMachinePanels({ state, selectedHostId, onSelectHost 
   return (
     <section data-testid="host-machine-panels" className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Hosts / Machines</h2>
-        <span className="text-xs text-slate-500">Grouped</span>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">Hosts / Machines</h2>
+        <span className="text-xs text-[var(--text-muted)]">Grouped</span>
       </div>
       {hosts.map((host) => {
         const hostVms = vmsByHost.get(host.id) ?? []
@@ -54,7 +54,7 @@ export default function HostMachinePanels({ state, selectedHostId, onSelectHost 
         const memPct = host.memory_total_mib > 0 ? (host.memory_used_mib / host.memory_total_mib) * 100 : 0
         const selected = selectedHostId === host.id
         return (
-          <article key={host.id} className="mc-host-panel rounded-2xl border border-white/[0.08] bg-slate-950/40 p-4 space-y-3">
+          <article key={host.id} className="mc-host-panel rounded-2xl border border-white/[0.08] bg-[var(--apple-surface)] p-4 space-y-3">
             <button
               type="button"
               className={`w-full flex flex-wrap items-center gap-4 -m-1 p-1 rounded-lg text-left transition-colors ${selected ? 'bg-[var(--machina-accent)]/[0.08]' : 'hover:bg-white/[0.03]'}`}
@@ -106,7 +106,7 @@ export default function HostMachinePanels({ state, selectedHostId, onSelectHost 
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">No machines on this host.</p>
+              <p className="text-sm text-[var(--text-muted)]">No machines on this host.</p>
             )}
             <footer className="flex flex-wrap gap-2 pt-1">
               <Link to={`/platform/hosts/${host.id}`} className="btn-secondary text-xs">Open host</Link>
@@ -117,7 +117,7 @@ export default function HostMachinePanels({ state, selectedHostId, onSelectHost 
       })}
       {vmsByHost.has('__unassigned__') && (
         <article className="mc-host-panel rounded-2xl border border-dashed border-white/[0.12] p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Unassigned machines</h3>
+          <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Unassigned machines</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {(vmsByHost.get('__unassigned__') ?? []).map((vm) => (
               <LivingMachineCard

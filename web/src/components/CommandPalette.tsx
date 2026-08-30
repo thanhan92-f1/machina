@@ -347,7 +347,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
       for (const entry of zoneItems) {
         items.push({
           id: entry.id,
-          icon: entry.kind === 'hub' ? <Boxes className="w-4 h-4 text-sky-400" /> : <ArrowRight className="w-4 h-4" />,
+          icon: entry.kind === 'hub' ? <Boxes className="w-4 h-4 text-[var(--link)]" /> : <ArrowRight className="w-4 h-4" />,
           label: entry.label,
           sublabel: entry.kind === 'hub'
             ? `Hub · ${entry.description ?? entry.zone}`
@@ -792,14 +792,14 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={spotlight ? 'Zyra — search or ask…' : 'Search or type > import networks…'}
-              className="flex-1 py-3.5 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500/50"
+              className="flex-1 py-3.5 bg-transparent text-sm text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]"
             />
             {spotlight ? (
-              <kbd className="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-[10px] font-mono text-slate-400 hidden sm:inline">⌘Space</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded text-[10px] font-mono text-[var(--text-muted)] hidden sm:inline">⌘Space</kbd>
             ) : (
-              <kbd className="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-[10px] font-mono text-slate-400">⌘K</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded text-[10px] font-mono text-[var(--text-muted)]">⌘K</kbd>
             )}
-            <kbd className="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-[10px] font-mono text-slate-400">Esc</kbd>
+            <kbd className="px-1.5 py-0.5 bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded text-[10px] font-mono text-[var(--text-muted)]">Esc</kbd>
           </div>
 
           {/* Results */}
@@ -807,9 +807,9 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
             {reviewNlOps ? (
               <div className="p-4 space-y-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-orange-400/80">NL Ops plan (dry-run)</p>
-                <p className="text-sm text-slate-200 font-medium">{reviewNlOps.summary}</p>
-                <p className="text-xs text-slate-500">Risk {reviewNlOps.risk_score}/10 · {reviewNlOps.intent}</p>
-                <ul className="text-xs text-slate-400 space-y-1">
+                <p className="text-sm text-[var(--text-primary)] font-medium">{reviewNlOps.summary}</p>
+                <p className="text-xs text-[var(--text-muted)]">Risk {reviewNlOps.risk_score}/10 · {reviewNlOps.intent}</p>
+                <ul className="text-xs text-[var(--text-muted)] space-y-1">
                   {reviewNlOps.steps.map((s) => (
                     <li key={s.label}>• {s.label} ({s.action_type})</li>
                   ))}
@@ -828,8 +828,8 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
             ) : reviewCommand ? (
               <div className="p-4 space-y-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-orange-400/80">Review command</p>
-                <p className="text-sm text-slate-200 font-medium">{reviewCommand.label}</p>
-                <p className="text-sm text-slate-400">{reviewCommand.review}</p>
+                <p className="text-sm text-[var(--text-primary)] font-medium">{reviewCommand.label}</p>
+                <p className="text-sm text-[var(--text-muted)]">{reviewCommand.review}</p>
                 <button
                   type="button"
                   className="btn-primary w-full"
@@ -840,9 +840,9 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
                 </button>
               </div>
             ) : loading ? (
-              <div className="px-4 py-8 text-center text-sm text-slate-500">Loading...</div>
+              <div className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">Loading...</div>
             ) : flatFiltered.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-slate-500 space-y-3">
+              <div className="px-4 py-8 text-center text-sm text-[var(--text-muted)] space-y-3">
                 <p>No results for "{query}"</p>
                 {platformConnected && query.trim() && (
                   <button
@@ -857,7 +857,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
             ) : (
               grouped.map(({ cat, items: groupItems }) => (
                 <div key={cat}>
-                  <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">{cat}</div>
+                  <div className="px-4 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{cat}</div>
                   {groupItems.map(item => {
                     const idx = runningIdx++
                     const selected = idx === clampedIndex
@@ -867,14 +867,14 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
                         data-index={idx}
                         onClick={() => item.action()}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                          selected ? 'bg-slate-700/60 text-white' : 'text-slate-300 hover:bg-slate-700/40'
+                          selected ? 'bg-[var(--surface-hover)]/60 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]/40'
                         }`}
                       >
-                        <span className="text-slate-400">{item.icon}</span>
+                        <span className="text-[var(--text-muted)]">{item.icon}</span>
                         <span className="flex-1 text-left truncate">{item.label}</span>
                         {item.badge}
-                        {item.sublabel && <span className="text-[10px] text-slate-500">{item.sublabel}</span>}
-                        {selected && <ArrowRight className="w-3 h-3 text-slate-500" />}
+                        {item.sublabel && <span className="text-[10px] text-[var(--text-muted)]">{item.sublabel}</span>}
+                        {selected && <ArrowRight className="w-3 h-3 text-[var(--text-muted)]" />}
                       </button>
                     )
                   })}

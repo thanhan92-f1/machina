@@ -150,7 +150,7 @@ export default function PlatformZoneHub({
       subtitle={
         embedded ? undefined : (
           <span className="flex flex-col gap-1">
-            <span className="text-slate-400">{zone.description}</span>
+            <span className="text-[var(--text-muted)]">{zone.description}</span>
             {subtitleStats}
           </span>
         )

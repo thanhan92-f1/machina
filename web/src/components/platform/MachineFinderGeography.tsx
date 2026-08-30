@@ -33,7 +33,7 @@ function FinderColumn<T>({
   return (
     <div className="w-48 sm:w-52 shrink-0 border-r border-white/[0.06]">
       {items.length === 0 ? (
-        <p className="px-3 py-4 text-xs text-white/35">{emptyLabel}</p>
+        <p className="px-3 py-4 text-xs text-[var(--text-muted)]">{emptyLabel}</p>
       ) : items.map((item) => {
         const key = itemKey(item)
         const active = selectedKey === key
@@ -43,12 +43,12 @@ function FinderColumn<T>({
             type="button"
             onClick={() => onSelect(key)}
             className={`w-full text-left px-3 py-2 text-sm border-b border-white/[0.04] ${
-              active ? 'bg-sky-500/15 text-sky-100' : 'text-white/80 hover:bg-white/[0.03]'
+              active ? 'bg-[var(--accent)]/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--apple-surface)]'
             }`}
           >
             <span className="block truncate">{renderLabel(item)}</span>
             {renderMeta?.(item) ? (
-              <span className="block text-[10px] text-slate-500 truncate mt-0.5">{renderMeta(item)}</span>
+              <span className="block text-[10px] text-[var(--text-muted)] truncate mt-0.5">{renderMeta(item)}</span>
             ) : null}
           </button>
         )
@@ -62,16 +62,16 @@ function HostInspector({ host, vms, onSelectVm }: { host: MissionHost; vms: Plat
   return (
     <div className="platform-finder-inspector p-4 space-y-4">
       <div>
-        <h3 className="font-semibold text-white flex items-center gap-2">
+        <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
           <Server className="w-4 h-4 shrink-0" />
           {host.hostname}
         </h3>
         <p className="platform-finder-inspector-subtitle mt-1">{host.address || '—'}</p>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs">
-        <div><dt className="platform-finder-inspector-label">Site</dt><dd className="text-white">{host.site || '—'}</dd></div>
-        <div><dt className="platform-finder-inspector-label">Rack</dt><dd className="text-white">{host.rack || '—'}</dd></div>
-        <div><dt className="platform-finder-inspector-label">Rack U</dt><dd className="text-white">{host.rack_u ?? '—'}</dd></div>
+        <div><dt className="platform-finder-inspector-label">Site</dt><dd className="text-[var(--text-primary)]">{host.site || '—'}</dd></div>
+        <div><dt className="platform-finder-inspector-label">Rack</dt><dd className="text-[var(--text-primary)]">{host.rack || '—'}</dd></div>
+        <div><dt className="platform-finder-inspector-label">Rack U</dt><dd className="text-[var(--text-primary)]">{host.rack_u ?? '—'}</dd></div>
         <div><dt className="platform-finder-inspector-label">State</dt><dd className={`capitalize ${tone === 'ok' ? statusToneClass('ok') : tone === 'error' ? statusToneClass('error') : statusToneClass('warn')}`}>{host.maintenance_mode ? 'maintenance' : host.state}</dd></div>
         <div><dt className="platform-finder-inspector-label">CPU</dt><dd>{host.cpu_percent.toFixed(0)}%</dd></div>
         <div><dt className="platform-finder-inspector-label">VMs</dt><dd>{host.vm_count}</dd></div>
@@ -114,15 +114,15 @@ function VmInspector({ vm }: { vm: PlatformVm }) {
   const ip = vm.guest_ip?.trim() ?? ''
   return (
     <div className="platform-finder-inspector p-4 space-y-3">
-      <h3 className="font-semibold text-white flex items-center gap-2">
+      <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
         <Monitor className="w-4 h-4" />
         {vm.name}
       </h3>
       <dl className="grid grid-cols-2 gap-2 text-xs">
-        <div><dt className="platform-finder-inspector-label">State</dt><dd className="capitalize text-white">{vm.observed_state}</dd></div>
-        <div><dt className="platform-finder-inspector-label">vCPU</dt><dd className="text-white">{vm.vcpus}</dd></div>
-        <div><dt className="platform-finder-inspector-label">Memory</dt><dd className="text-white">{Math.round(vm.memory_mib / 1024)} Gi</dd></div>
-        <div><dt className="platform-finder-inspector-label">Managed</dt><dd className="text-white">{vm.managed === false ? 'discovered' : 'yes'}</dd></div>
+        <div><dt className="platform-finder-inspector-label">State</dt><dd className="capitalize text-[var(--text-primary)]">{vm.observed_state}</dd></div>
+        <div><dt className="platform-finder-inspector-label">vCPU</dt><dd className="text-[var(--text-primary)]">{vm.vcpus}</dd></div>
+        <div><dt className="platform-finder-inspector-label">Memory</dt><dd className="text-[var(--text-primary)]">{Math.round(vm.memory_mib / 1024)} Gi</dd></div>
+        <div><dt className="platform-finder-inspector-label">Managed</dt><dd className="text-[var(--text-primary)]">{vm.managed === false ? 'discovered' : 'yes'}</dd></div>
         {ip && (
           <div className="col-span-2"><dt className="platform-finder-inspector-label">Guest IP</dt><dd className="font-mono text-emerald-300/90">{ip}</dd></div>
         )}
@@ -218,7 +218,7 @@ export default function MachineFinderGeography({
   const selectedVm = hostVms.find((v) => v.id === selection.vmId) ?? null
 
   return (
-    <div className="flex border border-white/[0.06] rounded-xl bg-slate-950/30">
+    <div className="flex border border-white/[0.06] rounded-xl bg-[var(--apple-surface)]">
       <FinderColumn
         items={siteOptions}
         selectedKey={selectedSite?.key ?? null}

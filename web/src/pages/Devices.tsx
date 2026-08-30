@@ -57,15 +57,16 @@ export default function DevicesPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       title="Node Devices"
       icon={<Usb className="w-6 h-6" />}
       actions={
         <>
-          <select value={capFilter} onChange={(e) => setCapFilter(e.target.value)} aria-label="Filter by capability type" className="px-3 py-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm">
+          <select value={capFilter} onChange={(e) => setCapFilter(e.target.value)} aria-label="Filter by capability type" className="px-3 py-1.5 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm">
             <option value="">All types</option>
             {capTypes.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
-          <button onClick={load} className="p-2 hover:bg-slate-700 rounded transition" title="Refresh" aria-label="Refresh">
+          <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Refresh" aria-label="Refresh">
             <RefreshCw className="w-4 h-4" />
           </button>
         </>
@@ -79,22 +80,22 @@ export default function DevicesPage() {
           description={capFilter ? 'Try clearing the capability filter.' : 'No node devices were reported by libvirt on this host.'}
         />
       ) : (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
           <table className="w-full" aria-label="Host devices">
-            <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Capability</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Driver</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Parent</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Capability</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Driver</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Parent</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+            <tbody className="divide-y divide-[var(--apple-hairline)]/50">
               {filtered.map((dev) => (
-                <tr key={dev.name} className="hover:bg-slate-700/50">
+                <tr key={dev.name} className="hover:bg-[var(--surface-hover)]/50">
                   <td className="px-6 py-3 font-medium font-mono text-sm">{dev.name}</td>
                   <td className="px-6 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses('info')}`}>{dev.capability_type}</span></td>
                   <td className="px-6 py-3 hidden md:table-cell text-sm">
                     {dev.driver === 'vfio-pci'
                       ? <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses('ok')}`}>vfio-pci ✓</span>
-                      : <span className="text-slate-400">{dev.driver || '-'}</span>}
+                      : <span className="text-[var(--text-muted)]">{dev.driver || '-'}</span>}
                   </td>
-                  <td className="px-6 py-3 hidden md:table-cell text-sm text-slate-400 font-mono">{dev.parent || '-'}</td>
+                  <td className="px-6 py-3 hidden md:table-cell text-sm text-[var(--text-muted)] font-mono">{dev.parent || '-'}</td>
                   <td className="px-6 py-3 text-right">
-                    <button onClick={() => showXml(dev.name)} className="p-1.5 hover:bg-blue-600/20 rounded transition" title="View XML" aria-label="View XML"><Code className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
+                    <button onClick={() => showXml(dev.name)} className="p-1.5 hover:bg-white/10 rounded transition" title="View XML" aria-label="View XML"><Code className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
                   </td>
                 </tr>
               ))}
@@ -105,12 +106,12 @@ export default function DevicesPage() {
 
       {xmlContent !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setXmlContent(null)}>
-          <div className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-[var(--apple-hairline)]">
               <span className="text-lg font-semibold font-mono">{xmlName}</span>
-              <button onClick={() => setXmlContent(null)} aria-label="Close" className="text-slate-400 hover:text-white p-1 hover:bg-slate-700 rounded-lg transition"><X className="w-4 h-4" /></button>
+              <button onClick={() => setXmlContent(null)} aria-label="Close" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 hover:bg-[var(--surface-hover)] rounded-lg transition"><X className="w-4 h-4" /></button>
             </div>
-            <pre className="p-5 text-sm text-slate-300 overflow-auto whitespace-pre-wrap font-mono flex-1">{xmlContent}</pre>
+            <pre className="p-5 text-sm text-[var(--text-secondary)] overflow-auto whitespace-pre-wrap font-mono flex-1">{xmlContent}</pre>
           </div>
         </div>
       )}

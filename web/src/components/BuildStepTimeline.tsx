@@ -12,9 +12,9 @@ const doneStepClasses = 'bg-[color-mix(in_srgb,var(--machina-status-ok)_90%,tran
 const doneLineClasses = 'bg-[color-mix(in_srgb,var(--machina-status-ok)_70%,transparent)]'
 
 const variantRing: Record<Variant, string> = {
-  slate: 'ring-cyan-500/50 text-cyan-300 border-cyan-500/40',
+  slate: 'ring-[var(--accent)]/40 text-[var(--accent)] border-[var(--accent)]/40',
   amber: 'ring-amber-500/50 text-amber-200 border-amber-500/40',
-  violet: 'ring-violet-500/50 text-violet-200 border-violet-500/40',
+  violet: 'ring-violet-500/50 text-[var(--link)] border-[var(--accent)]/40',
 }
 
 const variantDone: Record<Variant, string> = {
@@ -68,8 +68,8 @@ export function BuildStepTimeline({
               : errHere
                 ? `${statusBadgeClasses('error')} border-2 ${statusBorderClass('error')}`
                 : current
-                  ? `border-slate-600 bg-slate-800 ${variantRing[v]} ring-2`
-                  : 'border-slate-600 bg-slate-900/80 text-slate-500'
+                  ? `border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] ${variantRing[v]} ring-2`
+                  : 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] text-[var(--text-muted)]'
           }`}
           aria-current={current ? 'step' : undefined}
         >
@@ -85,7 +85,7 @@ export function BuildStepTimeline({
         </div>
         <span
           className={`mt-1.5 text-center text-[10px] font-medium leading-snug sm:text-[11px] ${
-            done || current ? 'text-slate-200' : errHere ? statusToneClass('error') : 'text-slate-500'
+            done || current ? 'text-[var(--text-primary)]' : errHere ? statusToneClass('error') : 'text-[var(--text-muted)]'
           }`}
         >
           {label}
@@ -96,7 +96,7 @@ export function BuildStepTimeline({
       nodes.push(
         <div
           key={`line-${i}`}
-          className={`mt-4 hidden h-0.5 min-w-[4px] flex-1 sm:block ${lineDone ? variantLineDone[v] : 'bg-slate-700/80'}`}
+          className={`mt-4 hidden h-0.5 min-w-[4px] flex-1 sm:block ${lineDone ? variantLineDone[v] : 'bg-[var(--surface-hover)]/80'}`}
           aria-hidden
         />,
       )
@@ -105,7 +105,7 @@ export function BuildStepTimeline({
 
   return (
     <div
-      className={`rounded-lg border border-slate-700/50 bg-slate-950/50 px-2 py-3 sm:px-3 ${className}`}
+      className={`rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-2 py-3 sm:px-3 ${className}`}
       role="list"
       aria-label="Build progress"
     >

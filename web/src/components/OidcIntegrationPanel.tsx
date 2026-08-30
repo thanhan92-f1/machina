@@ -67,7 +67,7 @@ export default function OidcIntegrationPanel({ compact }: Props) {
     }
   }
 
-  if (loading) return <p className="text-sm text-slate-500">Loading OIDC settings…</p>
+  if (loading) return <p className="text-sm text-[var(--text-muted)]">Loading OIDC settings…</p>
   if (!settings) {
     return <p className="text-sm text-amber-400">OIDC settings unavailable (admin role required).</p>
   }
@@ -75,16 +75,16 @@ export default function OidcIntegrationPanel({ compact }: Props) {
   const pad = compact ? 'p-3' : 'p-4'
 
   return (
-    <div className={`rounded-xl border border-slate-700/50 bg-slate-900/30 ${pad} space-y-4`}>
+    <div className={`rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)]/30 ${pad} space-y-4`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-sky-400" />
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-[var(--link)]" />
             OpenID Connect (OIDC)
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[var(--text-muted)] mt-1">
             Authorization code flow with discovery, callback, and JWT validation. Writes{' '}
-            <code className="text-slate-400">{settings.config_path}</code>.
+            <code className="text-[var(--text-muted)]">{settings.config_path}</code>.
           </p>
         </div>
         <span className={`text-xs px-2 py-1 rounded-full ${statusSurfaceClasses(settings.enabled ? 'ok' : 'neutral')}`}>
@@ -92,7 +92,7 @@ export default function OidcIntegrationPanel({ compact }: Props) {
         </span>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-300">
+      <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
         <input
           type="checkbox"
           checked={settings.enabled}
@@ -103,7 +103,7 @@ export default function OidcIntegrationPanel({ compact }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-3 text-sm">
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">Issuer URL</span>
+          <span className="text-[var(--text-muted)] text-xs">Issuer URL</span>
           <input
             className="input mt-1 w-full"
             value={settings.issuer_url}
@@ -112,11 +112,11 @@ export default function OidcIntegrationPanel({ compact }: Props) {
           />
         </label>
         <label className="block">
-          <span className="text-slate-400 text-xs">Client ID</span>
+          <span className="text-[var(--text-muted)] text-xs">Client ID</span>
           <input className="input mt-1 w-full" value={settings.client_id} onChange={(e) => setSettings({ ...settings, client_id: e.target.value })} />
         </label>
         <label className="block">
-          <span className="text-slate-400 text-xs">Client secret {settings.client_secret_set ? '(set)' : ''}</span>
+          <span className="text-[var(--text-muted)] text-xs">Client secret {settings.client_secret_set ? '(set)' : ''}</span>
           <input
             className="input mt-1 w-full"
             type="password"
@@ -127,7 +127,7 @@ export default function OidcIntegrationPanel({ compact }: Props) {
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">Redirect URL (callback)</span>
+          <span className="text-[var(--text-muted)] text-xs">Redirect URL (callback)</span>
           <input
             className="input mt-1 w-full"
             value={settings.redirect_url}
@@ -136,26 +136,26 @@ export default function OidcIntegrationPanel({ compact }: Props) {
           />
           <button
             type="button"
-            className="text-xs text-sky-400 mt-1 hover:underline"
+            className="text-xs text-[var(--link)] mt-1 hover:underline"
             onClick={() => setSettings({ ...settings, redirect_url: suggestedOidcRedirectUrl() })}
           >
             Use suggested callback URL
           </button>
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">Login button label</span>
+          <span className="text-[var(--text-muted)] text-xs">Login button label</span>
           <input className="input mt-1 w-full" value={settings.button_label} onChange={(e) => setSettings({ ...settings, button_label: e.target.value })} />
         </label>
         <label className="block">
-          <span className="text-slate-400 text-xs">Username claim</span>
+          <span className="text-[var(--text-muted)] text-xs">Username claim</span>
           <input className="input mt-1 w-full" value={settings.username_claim} onChange={(e) => setSettings({ ...settings, username_claim: e.target.value })} />
         </label>
         <label className="block">
-          <span className="text-slate-400 text-xs">Groups claim</span>
+          <span className="text-[var(--text-muted)] text-xs">Groups claim</span>
           <input className="input mt-1 w-full" value={settings.groups_claim} onChange={(e) => setSettings({ ...settings, groups_claim: e.target.value })} />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">Admin groups (comma-separated)</span>
+          <span className="text-[var(--text-muted)] text-xs">Admin groups (comma-separated)</span>
           <input
             className="input mt-1 w-full"
             value={settings.admin_groups.join(', ')}
@@ -168,7 +168,7 @@ export default function OidcIntegrationPanel({ compact }: Props) {
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">Operator groups (comma-separated)</span>
+          <span className="text-[var(--text-muted)] text-xs">Operator groups (comma-separated)</span>
           <input
             className="input mt-1 w-full"
             value={settings.operator_groups.join(', ')}

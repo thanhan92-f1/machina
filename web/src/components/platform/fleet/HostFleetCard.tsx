@@ -23,28 +23,28 @@ export default function HostFleetCard({ host, linux, selected, onSelect }: Props
   return (
     <article
       className={`mc-host-fleet-card rounded-2xl border p-4 transition cursor-pointer ${
-        selected ? 'border-sky-400/40 bg-sky-500/5' : 'border-white/[0.08] bg-slate-950/40 hover:bg-white/[0.02]'
+        selected ? 'border-[var(--accent)]/40 bg-[var(--accent)]/5' : 'border-white/[0.08] bg-[var(--apple-surface)] hover:bg-white/[0.02]'
       }`}
       onClick={onSelect}
       data-testid={`host-fleet-card-${host.id}`}
     >
       <header className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <h3 className="font-semibold text-white flex items-center gap-2">
-            <Server className="w-4 h-4 text-sky-400" />
+          <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <Server className="w-4 h-4 text-[var(--link)]" />
             {host.hostname}
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">Libvirt host · {linux?.status ?? 'Linux ok'}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">Libvirt host · {linux?.status ?? 'Linux ok'}</p>
         </div>
         <span className={statusPillClasses(online && !linuxPressure ? 'ok' : 'warn')}>
           {!online ? host.state : linuxPressure ? 'Under pressure' : 'Healthy'}
         </span>
       </header>
-      <dl className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-3">
-        <div><dt className="text-slate-600">VMs</dt><dd className="text-slate-200">{host.vm_count}</dd></div>
-        <div><dt className="text-slate-600">CPU</dt><dd className="text-slate-200">{Math.round(host.cpu_percent ?? 0)}%</dd></div>
-        <div><dt className="text-slate-600">Memory</dt><dd className="text-slate-200">{memPct != null ? `${memPct}%` : '—'}</dd></div>
-        <div><dt className="text-slate-600">Network</dt><dd className="text-emerald-300/80">OK</dd></div>
+      <dl className="grid grid-cols-2 gap-2 text-xs text-[var(--text-muted)] mb-3">
+        <div><dt className="text-[var(--text-faint)]">VMs</dt><dd className="text-[var(--text-primary)]">{host.vm_count}</dd></div>
+        <div><dt className="text-[var(--text-faint)]">CPU</dt><dd className="text-[var(--text-primary)]">{Math.round(host.cpu_percent ?? 0)}%</dd></div>
+        <div><dt className="text-[var(--text-faint)]">Memory</dt><dd className="text-[var(--text-primary)]">{memPct != null ? `${memPct}%` : '—'}</dd></div>
+        <div><dt className="text-[var(--text-faint)]">Network</dt><dd className="text-emerald-300/80">OK</dd></div>
       </dl>
       <footer className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
         <Link to={`/platform/hosts/${host.id}`} className="btn-secondary text-xs">Open host</Link>

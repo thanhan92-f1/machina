@@ -76,7 +76,7 @@ export default function SamlMetadataPanel({ compact }: Props) {
     }
   }
 
-  if (loading) return <p className="text-sm text-slate-500">Loading SAML settings…</p>
+  if (loading) return <p className="text-sm text-[var(--text-muted)]">Loading SAML settings…</p>
   if (!settings) {
     return <p className="text-sm text-amber-400">SAML settings unavailable (admin role required).</p>
   }
@@ -85,14 +85,14 @@ export default function SamlMetadataPanel({ compact }: Props) {
   const urls = suggestedSamlUrls()
 
   return (
-    <div className={`rounded-xl border border-slate-700/50 bg-slate-900/30 ${pad} space-y-4`}>
+    <div className={`rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)]/30 ${pad} space-y-4`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <FileKey2 className="w-4 h-4 text-violet-400" />
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <FileKey2 className="w-4 h-4 text-[var(--accent)]" />
             SAML 2.0 metadata (config-only)
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[var(--text-muted)] mt-1">
             Store SP/IdP federation metadata for enterprise IdP setup. Browser SAML login is not wired yet.
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function SamlMetadataPanel({ compact }: Props) {
         </span>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-300">
+      <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
         <input
           type="checkbox"
           checked={settings.enabled}
@@ -112,23 +112,23 @@ export default function SamlMetadataPanel({ compact }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-3 text-sm">
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">SP entity ID</span>
+          <span className="text-[var(--text-muted)] text-xs">SP entity ID</span>
           <input className="input mt-1 w-full" value={settings.sp_entity_id} onChange={(e) => setSettings({ ...settings, sp_entity_id: e.target.value })} />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">SP ACS URL</span>
+          <span className="text-[var(--text-muted)] text-xs">SP ACS URL</span>
           <input className="input mt-1 w-full" value={settings.sp_acs_url} onChange={(e) => setSettings({ ...settings, sp_acs_url: e.target.value })} />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">IdP entity ID</span>
+          <span className="text-[var(--text-muted)] text-xs">IdP entity ID</span>
           <input className="input mt-1 w-full" value={settings.idp_entity_id} onChange={(e) => setSettings({ ...settings, idp_entity_id: e.target.value })} />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">IdP metadata URL</span>
+          <span className="text-[var(--text-muted)] text-xs">IdP metadata URL</span>
           <input className="input mt-1 w-full" value={settings.idp_metadata_url} onChange={(e) => setSettings({ ...settings, idp_metadata_url: e.target.value })} placeholder="https://idp.example.com/metadata" />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">IdP metadata XML {settings.idp_metadata_xml_set ? '(stored)' : ''}</span>
+          <span className="text-[var(--text-muted)] text-xs">IdP metadata XML {settings.idp_metadata_xml_set ? '(stored)' : ''}</span>
           <textarea
             className="input mt-1 w-full min-h-[120px] font-mono text-xs"
             value={metadataXml}
@@ -137,16 +137,16 @@ export default function SamlMetadataPanel({ compact }: Props) {
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-slate-400 text-xs">Notes</span>
+          <span className="text-[var(--text-muted)] text-xs">Notes</span>
           <textarea className="input mt-1 w-full min-h-[60px]" value={settings.notes} onChange={(e) => setSettings({ ...settings, notes: e.target.value })} />
         </label>
       </div>
 
-      <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-        <button type="button" className="text-sky-400 hover:underline" onClick={applySuggested}>
+      <div className="flex flex-wrap gap-2 text-xs text-[var(--text-muted)]">
+        <button type="button" className="text-[var(--link)] hover:underline" onClick={applySuggested}>
           Apply suggested SP URLs
         </button>
-        <a className="text-sky-400 hover:underline" href={urls.metadataUrl} target="_blank" rel="noreferrer">
+        <a className="text-[var(--link)] hover:underline" href={urls.metadataUrl} target="_blank" rel="noreferrer">
           View SP metadata
         </a>
       </div>

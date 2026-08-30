@@ -3,96 +3,105 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { Link } from 'react-router'
-import { Cloud, Server, HardDrive, Plus, ArrowRight, Globe, Camera } from 'lucide-react'
-import Hero from '../components/Hero'
+import { Cloud, Server, HardDrive, Plus, Globe, Camera } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 
-const QUICK_LINKS = [
+const DESTINATIONS = [
   {
     to: '/fleet-cloud/instances',
     icon: Server,
     title: 'Instances',
-    description: 'List, start, stop, reboot, console, volumes, floating IPs, security groups.',
+    description: 'Start, stop, console, volumes, and security groups.',
   },
   {
     to: '/fleet-cloud/images',
     icon: HardDrive,
     title: 'Images',
-    description: 'Pull images to the hypervisor, delete, boot new instances from golden images.',
+    description: 'Golden images on this hypervisor.',
   },
   {
     to: '/fleet-cloud/create',
     icon: Plus,
     title: 'Create instance',
-    description: 'Wizard: image, flavor, network, keypair, security groups, cloud-init.',
+    description: 'Image, flavor, network, keypair, cloud-init.',
   },
   {
     to: '/fleet-cloud/volumes',
     icon: HardDrive,
     title: 'Volumes',
-    description: 'Create, clone, transfer, attach, snapshots, bootable volumes.',
+    description: 'Create, clone, attach, snapshot.',
   },
   {
     to: '/fleet-cloud/flavors',
     icon: Cloud,
     title: 'Flavors',
-    description: 'Flavor catalog — create and delete with admin role.',
+    description: 'Size catalog for new instances.',
   },
   {
     to: '/fleet-cloud/floating-ips',
     icon: Globe,
     title: 'Floating IPs',
-    description: 'Allocate, associate, and release floating IPs.',
+    description: 'Allocate, associate, release.',
   },
   {
     to: '/fleet-cloud/volume-snapshots',
     icon: Camera,
     title: 'Volume snapshots',
-    description: 'Snapshot list and restore workflows.',
+    description: 'Snapshot list and restore.',
   },
 ] as const
 
 export default function FleetCloudOverviewPage() {
-  const quickLinks = QUICK_LINKS
-
   return (
-    <PageLayout hideHeader>
-      <Hero
-        title="Fleet Cloud"
-        subtitle="Instance and image management on this hypervisor — native, no external cloud required."
-        icon={<Cloud className="w-6 h-6" />}
-        actions={
-          <Link
-            to="/fleet-cloud/create"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Create instance
-          </Link>
-        }
-      />
-      <FleetCloudSubNav />
+    <PageLayout hideHeader className="!space-y-0 w-full max-w-none" contentClassName="px-0">
+      <div className="apple-story-stack w-full">
+        <header className="apple-section apple-section--hero">
+          <p className="apple-eyebrow">Fleet Cloud</p>
+          <h1 className="apple-display">Native compute</h1>
+          <p className="apple-lede">
+            Instances and images on this hypervisor — no external cloud required.
+          </p>
+          <div className="apple-cta-row">
+            <Link to="/fleet-cloud/create" className="btn-primary inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Create instance
+            </Link>
+            <Link to="/fleet-cloud/instances" className="apple-text-link">
+              Browse instances <span aria-hidden>›</span>
+            </Link>
+          </div>
+        </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {quickLinks.map(({ to, icon: Icon, title, description }) => (
-          <Link
-            key={to}
-            to={to}
-            className="group rounded-xl border border-slate-700/60 bg-slate-800/40 p-4 hover:border-sky-500/40 hover:bg-sky-950/20 transition"
-          >
-            <Icon className="w-6 h-6 text-sky-400 mb-2" />
-            <h3 className="font-semibold text-slate-100 flex items-center gap-2">
-              {title}
-              <ArrowRight className="w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
-            </h3>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">{description}</p>
-          </Link>
-        ))}
+        <div className="apple-section apple-section--tight">
+          <FleetCloudSubNav />
+        </div>
+
+        <section className="apple-section">
+          <p className="apple-eyebrow">Explore</p>
+          <h2 className="apple-display apple-display--sm">What you can do</h2>
+          <ul className="apple-dest-list">
+            {DESTINATIONS.map(({ to, title, description }) => (
+              <li key={to}>
+                <Link to={to} className="apple-dest-row">
+                  <span className="min-w-0">
+                    <span className="apple-dest-title block">{title}</span>
+                    <span className="apple-dest-sub block">{description}</span>
+                  </span>
+                  <span className="apple-dest-chevron" aria-hidden>
+                    ›
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="apple-section apple-section--tight">
+          <FleetCloudFooter />
+        </div>
       </div>
-
-      <FleetCloudFooter />
     </PageLayout>
   )
 }

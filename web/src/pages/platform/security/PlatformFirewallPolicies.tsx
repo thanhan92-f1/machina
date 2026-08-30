@@ -113,7 +113,7 @@ export default function PlatformFirewallPolicies() {
       }
       title="Policy Studio"
       subtitle={`${rows.length} polic${rows.length === 1 ? 'y' : 'ies'} · create, simulate, and manage Zeus firewall policies`}
-      icon={<Shield className="w-6 h-6 text-slate-400" />}
+      icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex gap-2">
           <button type="button" className="btn-primary text-sm" onClick={() => void create()}>Create</button>
@@ -145,19 +145,19 @@ export default function PlatformFirewallPolicies() {
           {rows.map((p) => (
             <MacListRow key={p.id} title={p.name} subtitle={profileFromSpecYaml(p.spec_yaml) ?? 'policy'} />
           ))}
-          {rows.length === 0 && <p className="text-sm text-slate-400 px-1">No policies yet.</p>}
+          {rows.length === 0 && <p className="text-sm text-[var(--text-muted)] px-1">No policies yet.</p>}
         </ul>
       </MacGlassPanel>
       <MacGlassPanel title="Multi-site DR">
         {drTemplates ? (
-          <p className="text-sm text-slate-400 mb-3">{drTemplates.summary}</p>
+          <p className="text-sm text-[var(--text-muted)] mb-3">{drTemplates.summary}</p>
         ) : (
-          <p className="text-sm text-slate-500 mb-3">Loading DR templates…</p>
+          <p className="text-sm text-[var(--text-muted)] mb-3">Loading DR templates…</p>
         )}
         {drTemplates?.profiles?.length ? (
           <ul className="text-xs space-y-1 mb-3">
             {drTemplates.profiles.map((p) => (
-              <li key={p.primary_profile} className="text-slate-300">{p.primary_profile} → {p.dr_profile}</li>
+              <li key={p.primary_profile} className="text-[var(--text-secondary)]">{p.primary_profile} → {p.dr_profile}</li>
             ))}
           </ul>
         ) : null}
@@ -165,7 +165,7 @@ export default function PlatformFirewallPolicies() {
         {multisiteExport ? <JsonInspector data={multisiteExport} className="mt-3" /> : null}
       </MacGlassPanel>
       <MacSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Simulation result" wide>
-        {simResult ? <JsonInspector data={simResult} /> : <p className="text-sm text-slate-500">—</p>}
+        {simResult ? <JsonInspector data={simResult} /> : <p className="text-sm text-[var(--text-muted)]">—</p>}
       </MacSheet>
     </PageLayout>
   )

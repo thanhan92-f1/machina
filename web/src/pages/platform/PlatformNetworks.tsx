@@ -264,12 +264,13 @@ export default function PlatformNetworks() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load(false)}
       prepend={<PlatformBackLink to="/platform/infrastructure" label="Infrastructure" />}
       title="Networks"
       subtitle="Overlays, libvirt bridges, IPAM — NSX-class segments and micro-segmentation."
-      icon={<Network className="w-6 h-6 text-slate-400" />}
+      icon={<Network className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           {tab === 'networks' && (
@@ -324,7 +325,7 @@ export default function PlatformNetworks() {
           )}
 
           {discovering && rows.length === 0 && (
-            <div className="flex items-center justify-center gap-2 text-sm text-slate-400 py-12">
+            <div className="flex items-center justify-center gap-2 text-sm text-[var(--text-muted)] py-12">
               <Loader2 className="w-5 h-5 animate-spin" /> Discovering libvirt networks…
             </div>
           )}
@@ -337,7 +338,7 @@ export default function PlatformNetworks() {
                 return (
                 <article
                   key={n.id}
-                  className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-slate-900/50 backdrop-blur-md p-5 flex flex-col gap-4 hover:border-white/10 transition"
+                  className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] backdrop-blur-md p-5 flex flex-col gap-4 hover:border-white/10 transition"
                   data-testid={`platform-network-${n.name}`}
                 >
                   <div className="flex items-start gap-3">
@@ -345,8 +346,8 @@ export default function PlatformNetworks() {
                       <Wifi className="w-6 h-6" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-slate-100 truncate">{n.name}</h3>
-                      <p className="text-xs text-slate-500 mt-0.5 capitalize">{n.backend.replace('-', ' ')}</p>
+                      <h3 className="font-semibold text-[var(--text-primary)] truncate">{n.name}</h3>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 capitalize">{n.backend.replace('-', ' ')}</p>
                       {live && (
                         <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${statusBadgeClasses(active ? 'ok' : 'warn')}`}>
                           {active ? 'active' : 'inactive'}
@@ -356,23 +357,23 @@ export default function PlatformNetworks() {
                   </div>
                   <dl className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <dt className="text-slate-500">Bridge</dt>
-                      <dd className="text-slate-200 font-mono mt-0.5">{n.bridge || '—'}</dd>
+                      <dt className="text-[var(--text-muted)]">Bridge</dt>
+                      <dd className="text-[var(--text-primary)] font-mono mt-0.5">{n.bridge || '—'}</dd>
                     </div>
                     <div>
-                      <dt className="text-slate-500">VLAN</dt>
-                      <dd className="text-slate-200 mt-0.5">{n.vlan_id ?? '—'}</dd>
+                      <dt className="text-[var(--text-muted)]">VLAN</dt>
+                      <dd className="text-[var(--text-primary)] mt-0.5">{n.vlan_id ?? '—'}</dd>
                     </div>
                     <div className="col-span-2">
-                      <dt className="text-slate-500">Segment</dt>
-                      <dd className="text-slate-200 mt-0.5">
+                      <dt className="text-[var(--text-muted)]">Segment</dt>
+                      <dd className="text-[var(--text-primary)] mt-0.5">
                         {segmentName(n.segment_id) ?? 'Unbound'}
                       </dd>
                     </div>
                   </dl>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="block text-xs">
-                      <span className="text-slate-500">Bridge</span>
+                      <span className="text-[var(--text-muted)]">Bridge</span>
                       <input
                         className="input w-full mt-1 font-mono text-xs"
                         value={networkDraft(n).bridge}
@@ -381,7 +382,7 @@ export default function PlatformNetworks() {
                       />
                     </label>
                     <label className="block text-xs">
-                      <span className="text-slate-500">VLAN</span>
+                      <span className="text-[var(--text-muted)]">VLAN</span>
                       <input
                         className="input w-full mt-1 text-xs"
                         inputMode="numeric"
@@ -483,7 +484,7 @@ export default function PlatformNetworks() {
               <button
                 type="button"
                 onClick={() => setNetworkWizardOpen(true)}
-                className="rounded-2xl border-2 border-dashed border-slate-600/60 bg-slate-900/20 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-blue-400/50 hover:text-blue-300 transition min-h-[10rem]"
+                className="rounded-2xl border-2 border-dashed border-[var(--apple-hairline)]/60 bg-[var(--apple-surface)]/20 p-5 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition min-h-[10rem]"
               >
                 <Plus className="w-8 h-8" />
                 <span className="text-sm font-medium">New network</span>
@@ -532,7 +533,7 @@ export default function PlatformNetworks() {
               <div className="overflow-x-auto -mx-2">
                 <table className="w-full text-sm" aria-label="Network segments">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+                    <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                       <th scope="col" className="py-2 px-2">Name</th>
                       <th scope="col" className="py-2 px-2">Tier</th>
                       <th scope="col" className="py-2 px-2">CIDR</th>
@@ -546,7 +547,7 @@ export default function PlatformNetworks() {
                   </thead>
                   <tbody>
                     {segments.map((s) => (
-                      <tr key={s.id} className="border-b border-white/[0.04] text-slate-200">
+                      <tr key={s.id} className="border-b border-white/[0.04] text-[var(--text-primary)]">
                         <td className="py-2.5 px-2 font-medium">{s.name}</td>
                         <td className="py-2.5 px-2 font-mono text-xs">{s.tier}</td>
                         <td className="py-2.5 px-2 font-mono text-xs">{s.cidr}</td>
@@ -598,7 +599,7 @@ export default function PlatformNetworks() {
       {tab === 'ipam' && (
         <MacGlassPanel title="IPAM pools" subtitle="Next-free allocation from segment CIDR pools.">
           <label className="block text-sm mb-4 max-w-md">
-            <span className="text-slate-400">Default hostname (optional)</span>
+            <span className="text-[var(--text-muted)]">Default hostname (optional)</span>
             <input
               className="input w-full mt-1.5 font-mono text-sm"
               value={ipamHostname}
@@ -616,7 +617,7 @@ export default function PlatformNetworks() {
             <div className="overflow-x-auto -mx-2">
               <table className="w-full text-sm" aria-label="IPAM pools">
                 <thead>
-                  <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+                  <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 px-2">Segment</th>
                     <th scope="col" className="py-2 px-2">CIDR</th>
                     <th scope="col" className="py-2 px-2">Gateway</th>
@@ -627,7 +628,7 @@ export default function PlatformNetworks() {
                 </thead>
                 <tbody>
                   {ipamPools.map((p) => (
-                    <tr key={p.id} className="border-b border-white/[0.04] text-slate-200">
+                    <tr key={p.id} className="border-b border-white/[0.04] text-[var(--text-primary)]">
                       <td className="py-2.5 px-2">{p.segment_name}</td>
                       <td className="py-2.5 px-2 font-mono text-xs">{p.cidr}</td>
                       <td className="py-2.5 px-2 font-mono text-xs">{p.gateway || '—'}</td>
@@ -655,7 +656,7 @@ export default function PlatformNetworks() {
       {tab === 'lens' && (
         <div className="space-y-4">
           {fleetNetwork && (
-            <p className="text-sm text-slate-400">{fleetNetwork.summary}</p>
+            <p className="text-sm text-[var(--text-muted)]">{fleetNetwork.summary}</p>
           )}
           <MachinaNetworkLens vmNames={lensVmNames} />
           <MacGlassPanel title="System Settings" subtitle="Fleet network pane — segments, firewall SLA, host systemd">
@@ -680,29 +681,29 @@ export default function PlatformNetworks() {
       <MacSheet open={segmentSheetOpen} onClose={() => setSegmentSheetOpen(false)} title="New overlay segment" subtitle="Tier-0 uplink / Tier-1 workload segment with optional Zyra profile." wide>
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-400">Name</span>
+            <span className="text-[var(--text-muted)]">Name</span>
             <input className="input w-full mt-1.5" value={segName} onChange={(e) => setSegName(e.target.value)} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Tier</span>
+            <span className="text-[var(--text-muted)]">Tier</span>
             <select className="input w-full mt-1.5" value={segTier} onChange={(e) => setSegTier(e.target.value)}>
               <option value="tier1">tier1 — workload</option>
               <option value="tier0">tier0 — uplink / DMZ</option>
             </select>
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">CIDR</span>
+            <span className="text-[var(--text-muted)]">CIDR</span>
             <input className="input w-full mt-1.5 font-mono" value={segCidr} onChange={(e) => setSegCidr(e.target.value)} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">East-west default</span>
+            <span className="text-[var(--text-muted)]">East-west default</span>
             <select className="input w-full mt-1.5" value={segEastWest} onChange={(e) => setSegEastWest(e.target.value)}>
               <option value="allow">allow</option>
               <option value="deny">deny (micro-seg)</option>
             </select>
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Zeus firewall profile</span>
+            <span className="text-[var(--text-muted)]">Zeus firewall profile</span>
             <input className="input w-full mt-1.5" value={segProfile} onChange={(e) => setSegProfile(e.target.value)} placeholder="ProductionServer" />
           </label>
           <div className="flex gap-2 pt-2">
@@ -722,11 +723,11 @@ export default function PlatformNetworks() {
         wide
       >
         {connectivityLoading && (
-          <p className="text-sm text-slate-400 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Simulating…</p>
+          <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Simulating…</p>
         )}
         {connectivity && (
           <div className="space-y-4">
-            <p className="text-sm text-slate-400">{connectivity.matrix.summary}</p>
+            <p className="text-sm text-[var(--text-muted)]">{connectivity.matrix.summary}</p>
             {connectivity.matrix.warnings.length > 0 && (
               <div className={`rounded-xl p-3 text-sm space-y-1 ${statusSurfaceClasses('warn')}`}>
                 {connectivity.matrix.warnings.map((w) => (
@@ -742,7 +743,7 @@ export default function PlatformNetworks() {
                     <MacListRow key={`a-${i}`} title={`${c.source} → ${c.destination}:${c.port}`} subtitle={c.reason} />
                   ))}
                   {connectivity.matrix.allows.length === 0 && (
-                    <p className="px-4 py-3 text-sm text-slate-500">No allowed paths</p>
+                    <p className="px-4 py-3 text-sm text-[var(--text-muted)]">No allowed paths</p>
                   )}
                 </div>
               </div>
@@ -753,7 +754,7 @@ export default function PlatformNetworks() {
                     <MacListRow key={`b-${i}`} title={`${c.source} → ${c.destination}:${c.port}`} subtitle={c.reason} />
                   ))}
                   {connectivity.matrix.blocks.length === 0 && (
-                    <p className="px-4 py-3 text-sm text-slate-500">No blocked paths</p>
+                    <p className="px-4 py-3 text-sm text-[var(--text-muted)]">No blocked paths</p>
                   )}
                 </div>
               </div>

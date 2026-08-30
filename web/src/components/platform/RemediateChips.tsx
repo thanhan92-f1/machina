@@ -51,7 +51,7 @@ export default function RemediateChips({ compact = false }: { compact?: boolean 
         >
           <Sparkles className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-70 transition-opacity" />
           <span className="truncate max-w-[14rem]">{r.label}</span>
-          {r.framework ? <span className="text-white/35 text-[10px]">({r.framework})</span> : null}
+          {r.framework ? <span className="text-[var(--text-muted)] text-[10px]">({r.framework})</span> : null}
         </Link>
       ))}
       {compact && hiddenCount > 0 && !expanded ? (
@@ -87,7 +87,7 @@ export default function RemediateChips({ compact = false }: { compact?: boolean 
 
   return (
     <MacGlassPanel title="AI remediations" subtitle="SRE + compliance suggestions from controller">
-      {summary && <p className="text-xs text-slate-400 mb-2">{summary}</p>}
+      {summary && <p className="text-xs text-[var(--text-muted)] mb-2">{summary}</p>}
       {chipList}
     </MacGlassPanel>
   )

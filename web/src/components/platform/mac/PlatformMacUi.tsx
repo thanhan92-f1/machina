@@ -44,9 +44,9 @@ export function PlatformDesktopPanel(props: Parameters<typeof MacGlassPanel>[0])
 
 export function MacSectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="mb-4 platform-readable">
-      <h2 className="text-xl font-semibold text-slate-50 tracking-tight leading-snug">{title}</h2>
-      {subtitle && <p className="text-[15px] text-slate-400 mt-1 leading-relaxed">{subtitle}</p>}
+    <div className="mb-6 platform-readable">
+      <h2 className="section-title text-[var(--text-primary)]">{title}</h2>
+      {subtitle && <p className="page-lede !mt-2 !text-[1.0625rem]">{subtitle}</p>}
     </div>
   )
 }
@@ -65,17 +65,17 @@ export function MacStatWidget({
   tone?: 'default' | 'ok' | 'warn'
 }) {
   const toneClass =
-    tone === 'ok' ? statusToneClass('ok') : tone === 'warn' ? statusToneClass('warn') : 'text-slate-100'
+    tone === 'ok' ? statusToneClass('ok') : tone === 'warn' ? statusToneClass('warn') : 'text-[var(--text-primary)]'
   const inner = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-slate-500 text-xs font-medium">{label}</span>
-        <span className="text-slate-400">{icon}</span>
+        <span className="text-[var(--text-muted)] text-xs font-medium tracking-tight">{label}</span>
+        <span className="text-[var(--text-faint)]">{icon}</span>
       </div>
-      <p className={`text-2xl font-semibold mt-2 tracking-tight ${toneClass}`}>{value}</p>
+      <p className={`text-[28px] font-semibold mt-3 tracking-tight tabular-nums ${toneClass}`}>{value}</p>
     </>
   )
-  const cls = 'platform-mac-stat glass glass-elevated p-4 hover:border-white/10 transition-all rounded-liquid'
+  const cls = 'platform-mac-stat rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-5 shadow-[var(--shadow-1)] hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--apple-hairline))] transition'
   if (href) return <Link to={href} className={`${cls} block`}>{inner}</Link>
   return <div className={cls}>{inner}</div>
 }
@@ -105,12 +105,12 @@ export function MacSheet({
 }
 
 const GRADIENTS = [
-  'from-blue-500 to-indigo-600',
-  'from-emerald-500 to-teal-600',
-  'from-violet-500 to-purple-600',
-  'from-orange-500 to-rose-600',
-  'from-cyan-500 to-blue-600',
-  'from-amber-500 to-orange-600',
+  'from-[#2a2a2c] to-[#1d1d1f]',
+  'from-[#3a3a3c] to-[#2a2a2c]',
+  'from-[#1d1d1f] to-[#000000]',
+  'from-[#2c2c2e] to-[#1c1c1e]',
+  'from-[#323234] to-[#1d1d1f]',
+  'from-[#3a3a3c] to-[#000000]',
 ] as const
 
 export function gradientForName(name: string): string {
@@ -149,12 +149,12 @@ export function LaunchpadAppIcon({
       >
         {icon}
         {vmCount != null && vmCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-slate-950/90 border border-white/20 text-[10px] font-semibold flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-[var(--apple-surface)]/90 border border-white/20 text-[10px] font-semibold flex items-center justify-center">
             {vmCount}
           </span>
         )}
       </div>
-      <span className="text-xs sm:text-sm font-medium text-slate-200 max-w-[7rem] leading-tight line-clamp-2">{name}</span>
+      <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] max-w-[7rem] leading-tight line-clamp-2">{name}</span>
     </Tag>
   )
 }
@@ -166,11 +166,11 @@ export function NewLaunchpadCard({ onClick, label = 'New Application', subtitle 
       onClick={onClick}
       className="platform-launchpad-icon group flex flex-col items-center gap-2.5 text-center w-full"
     >
-      <div className="w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] rounded-[22%] border-2 border-dashed border-slate-600/80 bg-slate-900/40 flex items-center justify-center text-slate-400 group-hover:border-blue-400/60 group-hover:text-blue-300 group-hover:bg-blue-500/5 transition-all group-hover:scale-105 group-active:scale-95">
+      <div className="w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] rounded-[22%] border-2 border-dashed border-[var(--apple-hairline)]/80 bg-[var(--apple-surface)] flex items-center justify-center text-[var(--text-muted)] group-hover:border-[var(--accent)]/60 group-hover:text-[var(--accent)] group-hover:bg-[var(--accent-soft)] transition-all group-hover:scale-105 group-active:scale-95">
         <Plus className="w-8 h-8" />
       </div>
-      <span className="text-xs sm:text-sm font-medium text-slate-300 max-w-[7rem] leading-tight">{label}</span>
-      <span className="text-xs text-slate-400 -mt-1">{subtitle}</span>
+      <span className="text-xs sm:text-sm font-medium text-[var(--text-secondary)] max-w-[7rem] leading-tight">{label}</span>
+      <span className="text-xs text-[var(--text-muted)] -mt-1">{subtitle}</span>
     </button>
   )
 }
@@ -192,14 +192,14 @@ export function PresetTemplateCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 p-3 rounded-xl border border-white/[0.06] bg-slate-800/40 hover:bg-slate-800/70 hover:border-white/10 transition text-left w-full"
+      className="flex items-center gap-3 p-3 rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] hover:bg-[var(--apple-fill-tertiary)]/70 hover:border-white/10 transition text-left w-full"
     >
       <div className={`w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-md`}>
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-slate-100 truncate">{name}</p>
-        <p className="text-xs text-slate-500 truncate">{description}</p>
+        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{name}</p>
+        <p className="text-xs text-[var(--text-muted)] truncate">{description}</p>
       </div>
     </button>
   )
@@ -225,10 +225,10 @@ export function MacToggle({
   return (
     <div className="flex items-start justify-between gap-4 px-4 py-3 border-b border-white/[0.04] last:border-0">
       <div className="min-w-0">
-        <label htmlFor={toggleId} className="text-sm font-medium text-slate-100 cursor-pointer">
+        <label htmlFor={toggleId} className="text-sm font-medium text-[var(--text-primary)] cursor-pointer">
           {label}
         </label>
-        {description && <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{description}</p>}
+        {description && <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">{description}</p>}
       </div>
       <button
         id={toggleId}
@@ -238,7 +238,7 @@ export function MacToggle({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`platform-mac-toggle relative shrink-0 w-11 h-6 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--machina-status-info)] ${
-          checked ? statusBgClass('ok') : 'bg-slate-600'
+          checked ? statusBgClass('ok') : 'bg-[var(--apple-fill-secondary)]'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <span
@@ -265,7 +265,7 @@ export function MacSegmentedControl<T extends string>({
 }) {
   return (
     <div className="space-y-2">
-      {label && <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>}
+      {label && <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">{label}</p>}
       <div className="inline-flex p-0.5 rounded-full bg-black/30 border border-white/[0.08] tahoe-segment" role="tablist">
         {options.map((opt) => (
           <button
@@ -276,8 +276,8 @@ export function MacSegmentedControl<T extends string>({
             onClick={() => onChange(opt.value)}
             className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
               value === opt.value
-                ? 'tahoe-segment-active text-white'
-                : 'text-white/50 hover:text-white/80'
+                ? 'tahoe-segment-active text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {opt.label}
@@ -309,8 +309,8 @@ export function MacListRow({
   const inner = (
     <>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-100 truncate">{title}</p>
-        {subtitle && <p className="text-xs text-slate-500 truncate mt-0.5">{subtitle}</p>}
+        <p className="text-sm text-[var(--text-primary)] truncate">{title}</p>
+        {subtitle && <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{subtitle}</p>}
       </div>
       {badge}
       {trailing}
@@ -348,9 +348,9 @@ export function MacSettingsPane({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col xl:flex-row xl:items-start gap-0 w-full rounded-2xl border border-white/[0.06] overflow-clip bg-slate-950/30">
+    <div className="flex flex-col xl:flex-row xl:items-start gap-0 w-full rounded-2xl border border-white/[0.06] overflow-clip bg-[var(--apple-surface)]">
       <aside className="xl:w-56 shrink-0 border-b xl:border-b-0 xl:border-r border-white/[0.06] p-3 xl:sticky xl:top-[calc(var(--platform-chrome-top,6.5rem)+0.5rem)] xl:self-start">
-        <h2 className="text-lg font-semibold text-slate-100 px-2 mb-3 hidden xl:block">{title}</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] px-2 mb-3 hidden xl:block">{title}</h2>
         <nav className="flex xl:flex-col gap-1 overflow-x-auto xl:overflow-visible">
           {sections.map((s) => (
             <button
@@ -360,7 +360,7 @@ export function MacSettingsPane({
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition ${
                 active === s.id
                   ? navActiveChipClasses()
-                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--apple-fill-tertiary)]/60 hover:text-[var(--text-primary)]'
               }`}
             >
               {s.icon}
@@ -369,7 +369,7 @@ export function MacSettingsPane({
           ))}
         </nav>
       </aside>
-      <div className="mac-settings-detail flex-1 min-w-0 p-5 xl:p-8 platform-readable text-slate-200">{children}</div>
+      <div className="mac-settings-detail flex-1 min-w-0 p-5 xl:p-8 platform-readable text-[var(--text-primary)]">{children}</div>
     </div>
   )
 }
@@ -384,9 +384,9 @@ export function MacSettingsGroup({
   return (
     <section className="mb-6 last:mb-0">
       {title && (
-        <h3 className="text-sm font-medium text-slate-300 mb-2 px-1">{title}</h3>
+        <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-2 px-1">{title}</h3>
       )}
-      <div className="rounded-xl border border-white/[0.08] bg-slate-900/60 overflow-hidden divide-y divide-white/[0.05] text-slate-300">
+      <div className="rounded-xl border border-white/[0.08] bg-[var(--apple-surface)] overflow-hidden divide-y divide-white/[0.05] text-[var(--text-secondary)]">
         {children}
       </div>
     </section>

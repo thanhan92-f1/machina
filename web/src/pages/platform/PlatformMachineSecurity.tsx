@@ -203,8 +203,8 @@ export default function PlatformMachineSecurity() {
       subtitle={
         <span className="flex flex-wrap items-center gap-2 text-sm">
           <span className={statusPillClasses(threatTone)}>Threat {String(threatScore)}</span>
-          <span className="text-slate-400">Sensor {String(sensor.status ?? 'unknown')}</span>
-          <span className="text-slate-500 text-xs">{fabricLine}</span>
+          <span className="text-[var(--text-muted)]">Sensor {String(sensor.status ?? 'unknown')}</span>
+          <span className="text-[var(--text-muted)] text-xs">{fabricLine}</span>
         </span>
       }
       actions={
@@ -235,7 +235,7 @@ export default function PlatformMachineSecurity() {
       <MacGlassPanel title={PRIMARY_TABS.find((t) => t.id === tab)?.label ?? MORE_TABS.find((t) => t.id === tab)?.label ?? 'Security'}>
         {tab === 'ports' ? (
           ports.length === 0 ? (
-            <p className="text-sm text-slate-500 p-3">No open ports reported.</p>
+            <p className="text-sm text-[var(--text-muted)] p-3">No open ports reported.</p>
           ) : (
             ports.map((p) => (
               <MacListRow
@@ -252,14 +252,14 @@ export default function PlatformMachineSecurity() {
         ) : tab === 'containers' ? (
           <ContainerHierarchyPanel data={containers as Parameters<typeof ContainerHierarchyPanel>[0]['data']} />
         ) : tab === 'users' ? (
-          <p className="text-sm text-slate-500 p-3">
+          <p className="text-sm text-[var(--text-muted)] p-3">
             User session events correlate from process exec and privilege escalation timelines.
           </p>
         ) : tab === 'enforcement' ? (
           <div className="p-3 space-y-3 text-sm">
             {hostEnforcement ? (
               <>
-                <p className="text-slate-300">
+                <p className="text-[var(--text-secondary)]">
                   Mode: <span className="font-mono">{String(hostEnforcement.mode ?? 'observe')}</span>
                   {' · '}
                   {String(hostEnforcement.summary ?? 'Per-host Tetragon enforcement posture')}
@@ -275,18 +275,18 @@ export default function PlatformMachineSecurity() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-slate-500">No enforcement policies applied on this host yet.</p>
+                  <p className="text-[var(--text-muted)]">No enforcement policies applied on this host yet.</p>
                 )}
               </>
             ) : (
-              <p className="text-slate-500">Enforcement status unavailable — ensure PacketWolf fabric is reachable.</p>
+              <p className="text-[var(--text-muted)]">Enforcement status unavailable — ensure PacketWolf fabric is reachable.</p>
             )}
             {enforcementPolicies.length > 0 && (
               <div className="pt-2 border-t border-white/[0.06] space-y-2">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Fleet policies</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Fleet policies</p>
                 {enforcementPolicies.slice(0, 5).map((p) => (
                   <div key={p.id ?? p.name} className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-slate-300">{p.name}</span>
+                    <span className="text-[var(--text-secondary)]">{p.name}</span>
                     <button
                       type="button"
                       className="btn-secondary text-xs"
@@ -309,7 +309,7 @@ export default function PlatformMachineSecurity() {
             )}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-500 p-3">No events in this category. Enable PacketWolf + Tetragon sensor.</p>
+          <p className="text-sm text-[var(--text-muted)] p-3">No events in this category. Enable PacketWolf + Tetragon sensor.</p>
         ) : (
           <>
             {items.slice(0, 30).map((e, i) => {
@@ -336,7 +336,7 @@ export default function PlatformMachineSecurity() {
               )
             })}
             {explain && (
-              <div className="p-3 text-sm text-slate-300 border-t border-white/[0.06]">{explain}</div>
+              <div className="p-3 text-sm text-[var(--text-secondary)] border-t border-white/[0.06]">{explain}</div>
             )}
             <JsonInspector data={items.slice(0, 5)} />
           </>
@@ -345,7 +345,7 @@ export default function PlatformMachineSecurity() {
 
       {attackChain && attackChain.length > 0 && (
         <MacGlassPanel title="Attack reconstruction" subtitle="AI timeline analysis">
-          <ol className="list-decimal pl-5 text-sm text-slate-300 space-y-1">
+          <ol className="list-decimal pl-5 text-sm text-[var(--text-secondary)] space-y-1">
             {attackChain.map((s) => (
               <li key={s}>{s}</li>
             ))}

@@ -22,11 +22,11 @@ export default function VmCard({ vm, hostLabel, cpuPercent, memoryUsedMib, dragg
   const inner = (
     <>
       <div className="flex items-start gap-3">
-        <div className={`p-2.5 rounded-xl ${running ? statusBadgeClasses('ok') : 'bg-slate-800/80 text-slate-400'}`}>
+        <div className={`p-2.5 rounded-xl ${running ? statusBadgeClasses('ok') : 'bg-[var(--apple-surface)] text-[var(--text-muted)]'}`}>
           <Monitor className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-100 truncate group-hover:text-white">{vm.name}</h3>
+          <h3 className="font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--text-primary)]">{vm.name}</h3>
           <div className="mt-1">
             <VmStatusBadge state={vm.observed_state || vm.desired_state} />
           </div>
@@ -35,14 +35,14 @@ export default function VmCard({ vm, hostLabel, cpuPercent, memoryUsedMib, dragg
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusBadgeClasses('warn')}`}>Discovered</span>
         )}
       </div>
-      <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-400">
+      <div className="mt-4 flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
         <span className="flex items-center gap-1"><Cpu className="w-3 h-3" /> {cpuPercent != null ? `${cpuPercent.toFixed(0)}%` : `${vm.vcpus} vCPU`}</span>
         <span className="flex items-center gap-1"><MemoryStick className="w-3 h-3" /> {memoryUsedMib != null ? `${memoryUsedMib} MiB` : `${Math.round(vm.memory_mib / 1024)} Gi`}</span>
       </div>
-      {hostLabel && <p className="mt-2 text-[10px] text-slate-600 truncate">{hostLabel}</p>}
+      {hostLabel && <p className="mt-2 text-[10px] text-[var(--text-faint)] truncate">{hostLabel}</p>}
     </>
   )
-  const className = `platform-vm-card machina-vm-card-accent ${vmCardAccentClass(vm.observed_state || vm.desired_state)} group block rounded-2xl border border-slate-800/80 bg-slate-900/50 p-4 hover:border-slate-600/80 hover:bg-slate-900/80 transition-all hover:shadow-lg hover:shadow-black/20`
+  const className = `platform-vm-card machina-vm-card-accent ${vmCardAccentClass(vm.observed_state || vm.desired_state)} group block rounded-2xl border border-[var(--apple-hairline)]/80 bg-[var(--apple-surface)] p-4 hover:border-[var(--apple-hairline)]/80 hover:bg-[var(--apple-surface)] transition-all hover:shadow-lg hover:shadow-black/20`
   if (draggable) {
     return (
       <div

@@ -60,18 +60,18 @@ export default function VmMemorySizingModal({ open, vmId, vmName, running, onClo
   return (
     <MacSheet open={open} onClose={onClose} title={`Memory — ${vmName}`} ariaLabel="Memory sizing">
       {loading ? (
-        <p className="text-sm text-slate-400">Loading memory…</p>
+        <p className="text-sm text-[var(--text-muted)]">Loading memory…</p>
       ) : (
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-400">Current memory (GiB)</span>
+            <span className="text-[var(--text-muted)]">Current memory (GiB)</span>
             <input type="number" min={1} className="input mt-1 w-full" value={currentGiB} onChange={(e) => setCurrentGiB(e.target.value)} />
-            {running && <span className="text-xs text-slate-500 mt-1 block">Balloon on running guest (requires guest balloon driver).</span>}
+            {running && <span className="text-xs text-[var(--text-muted)] mt-1 block">Balloon on running guest (requires guest balloon driver).</span>}
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Maximum memory (GiB)</span>
+            <span className="text-[var(--text-muted)]">Maximum memory (GiB)</span>
             <input type="number" min={1} className="input mt-1 w-full" value={maxGiB} onChange={(e) => setMaxGiB(e.target.value)} />
-            <span className="text-xs text-slate-500 mt-1 block">Persistent domain limit — may require reboot if lowered below current.</span>
+            <span className="text-xs text-[var(--text-muted)] mt-1 block">Persistent domain limit — may require reboot if lowered below current.</span>
           </label>
           <button type="button" className="btn-primary w-full" disabled={saving} onClick={() => void save()}>
             {saving ? 'Saving…' : 'Apply memory'}

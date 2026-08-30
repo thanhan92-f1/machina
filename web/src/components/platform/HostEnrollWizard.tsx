@@ -52,14 +52,14 @@ export default function HostEnrollWizard({ open, onClose }: Props) {
       onFinish={onClose}
     >
       {step === 0 && (
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-[var(--text-muted)]">
           Machina will create an enrollment token. Run the install command on the hypervisor as root (or with sudo).
         </p>
       )}
       {step === 1 && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500 font-mono break-all">{token}</p>
-          <pre className="text-xs bg-slate-950 p-3 rounded-lg overflow-x-auto text-slate-300">{command}</pre>
+          <p className="text-xs text-[var(--text-muted)] font-mono break-all">{token}</p>
+          <pre className="text-xs bg-[var(--apple-surface)] p-3 rounded-lg overflow-x-auto text-[var(--text-secondary)]">{command}</pre>
           <button
             type="button"
             className="btn-secondary text-xs inline-flex items-center gap-1"
@@ -73,9 +73,9 @@ export default function HostEnrollWizard({ open, onClose }: Props) {
         </div>
       )}
       {step === 2 && (
-        <p className="text-sm text-slate-400">
-          After the agent connects, open <strong className="text-slate-200">Hosts</strong> and confirm the host shows{' '}
-          <strong className="text-slate-200">online</strong>. Sync hosts from the dashboard if needed.
+        <p className="text-sm text-[var(--text-muted)]">
+          After the agent connects, open <strong className="text-[var(--text-primary)]">Hosts</strong> and confirm the host shows{' '}
+          <strong className="text-[var(--text-primary)]">online</strong>. Sync hosts from the dashboard if needed.
         </p>
       )}
     </PlatformStepWizard>

@@ -55,19 +55,19 @@ export default function SocAlertDetailPanel({
   }
 
   if (loading && !detail) {
-    return <MacGlassPanel title="Alert detail"><p className="text-sm text-slate-500 p-3">Loading…</p></MacGlassPanel>
+    return <MacGlassPanel title="Alert detail"><p className="text-sm text-[var(--text-muted)] p-3">Loading…</p></MacGlassPanel>
   }
 
   if (!detail) {
-    return <MacGlassPanel title="Alert detail"><p className="text-sm text-slate-500 p-3">Could not load alert.</p></MacGlassPanel>
+    return <MacGlassPanel title="Alert detail"><p className="text-sm text-[var(--text-muted)] p-3">Could not load alert.</p></MacGlassPanel>
   }
 
   return (
     <MacGlassPanel title="Alert detail">
       <div className="p-3 space-y-4 text-sm">
         <div>
-          <p className="font-medium text-slate-100">{detail.title}</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="font-medium text-[var(--text-primary)]">{detail.title}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">
             <span className={statusBadgeClasses(severityTone(detail.severity))}>{detail.severity}</span>
             {' · '}
             <span className={statusToneClass(detail.status === 'open' ? 'warn' : detail.status === 'closed' ? 'neutral' : 'ok')}>
@@ -77,7 +77,7 @@ export default function SocAlertDetailPanel({
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-400">
+        <div className="grid gap-2 sm:grid-cols-2 text-xs text-[var(--text-muted)]">
           <span>First seen: {new Date(detail.first_seen).toLocaleString()}</span>
           <span>Last seen: {new Date(detail.last_seen).toLocaleString()}</span>
           <span>Events: {detail.event_count}</span>
@@ -85,7 +85,7 @@ export default function SocAlertDetailPanel({
         </div>
 
         <label className="block">
-          <span className="text-slate-400 text-xs">Assigned to</span>
+          <span className="text-[var(--text-muted)] text-xs">Assigned to</span>
           <div className="flex gap-2 mt-1">
             <input
               className="input flex-1 text-sm"
@@ -114,7 +114,7 @@ export default function SocAlertDetailPanel({
 
         {(detail.mitre_tags?.length ?? 0) > 0 && (
           <div>
-            <p className="text-xs text-slate-400 mb-1">MITRE ATT&CK</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">MITRE ATT&CK</p>
             <div className="flex flex-wrap gap-1">
               {detail.mitre_tags!.map((t) => (
                 <span key={`${t.id}-${t.name}`} className={statusBadgeClasses('info')}>
@@ -127,22 +127,22 @@ export default function SocAlertDetailPanel({
 
         {Object.keys(detail.detail_json ?? {}).length > 0 && (
           <div>
-            <p className="text-xs text-slate-400 mb-1">Detection context</p>
-            <pre className="text-xs bg-black/30 rounded p-2 overflow-auto max-h-28 text-slate-300">
+            <p className="text-xs text-[var(--text-muted)] mb-1">Detection context</p>
+            <pre className="text-xs bg-black/30 rounded p-2 overflow-auto max-h-28 text-[var(--text-secondary)]">
               {JSON.stringify(detail.detail_json, null, 2)}
             </pre>
           </div>
         )}
 
         <div>
-          <p className="text-xs text-slate-400 mb-1">Linked events ({detail.linked_events?.length ?? 0})</p>
+          <p className="text-xs text-[var(--text-muted)] mb-1">Linked events ({detail.linked_events?.length ?? 0})</p>
           {(detail.linked_events?.length ?? 0) === 0 ? (
-            <p className="text-xs text-slate-500">No linked events stored for this alert.</p>
+            <p className="text-xs text-[var(--text-muted)]">No linked events stored for this alert.</p>
           ) : (
             <ul className="divide-y divide-white/5 max-h-48 overflow-auto">
               {detail.linked_events.map((e) => (
                 <li key={e.id} className="py-2">
-                  <p className="text-slate-200 truncate">{e.summary}</p>
+                  <p className="text-[var(--text-primary)] truncate">{e.summary}</p>
                   <p className={`text-[10px] mt-0.5 ${statusToneClass(severityTone(e.severity))}`}>
                     {e.source} · {e.severity} · {new Date(e.occurred_at).toLocaleString()}
                   </p>
@@ -154,10 +154,10 @@ export default function SocAlertDetailPanel({
 
         {(detail.playbook_runs?.length ?? 0) > 0 && (
           <div>
-            <p className="text-xs text-slate-400 mb-1">Playbook runs</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">Playbook runs</p>
             <ul className="space-y-1 text-xs">
               {detail.playbook_runs!.map((r) => (
-                <li key={r.id} className="text-slate-400">
+                <li key={r.id} className="text-[var(--text-muted)]">
                   {r.playbook_name ?? r.playbook_id.slice(0, 8)} —{' '}
                   <span className={statusToneClass(r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'error' : 'neutral')}>
                     {r.status}

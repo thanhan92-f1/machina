@@ -144,7 +144,7 @@ export default function SocPlaybookEditor({
   if (!playbook && !isNew) {
     return (
       <MacGlassPanel title="Playbook editor">
-        <p className="text-sm text-slate-500 p-3">Select a playbook or create a new one.</p>
+        <p className="text-sm text-[var(--text-muted)] p-3">Select a playbook or create a new one.</p>
       </MacGlassPanel>
     )
   }
@@ -154,7 +154,7 @@ export default function SocPlaybookEditor({
       <MacGlassPanel title="Global webhook (SOAR)">
         <div className="p-3 space-y-2 max-w-xl">
           <label className="block text-sm">
-            <span className="text-slate-400 text-xs">Webhook URL for steps using global setting</span>
+            <span className="text-[var(--text-muted)] text-xs">Webhook URL for steps using global setting</span>
             <input
               className="input w-full mt-1 text-sm"
               value={webhookUrl}
@@ -172,12 +172,12 @@ export default function SocPlaybookEditor({
         <div className="p-3 space-y-3 max-w-xl">
           {isNew && (
             <label className="block text-sm">
-              <span className="text-slate-400 text-xs">Name</span>
+              <span className="text-[var(--text-muted)] text-xs">Name</span>
               <input className="input w-full mt-1 text-sm" value={name} onChange={(e) => setName(e.target.value)} />
             </label>
           )}
           <label className="block text-sm">
-            <span className="text-slate-400 text-xs">Description</span>
+            <span className="text-[var(--text-muted)] text-xs">Description</span>
             <input
               className="input w-full mt-1 text-sm"
               value={description}
@@ -185,7 +185,7 @@ export default function SocPlaybookEditor({
             />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400 text-xs">Minimum severity</span>
+            <span className="text-[var(--text-muted)] text-xs">Minimum severity</span>
             <select className="input w-full mt-1 text-sm" value={minSeverity} onChange={(e) => setMinSeverity(e.target.value)}>
               {SEVERITIES.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -198,7 +198,7 @@ export default function SocPlaybookEditor({
           </label>
 
           <div>
-            <p className="text-xs text-slate-400 mb-2">Steps</p>
+            <p className="text-xs text-[var(--text-muted)] mb-2">Steps</p>
             <ul className="space-y-3">
               {steps.map((step, i) => (
                 <li key={i} className="border border-white/10 rounded-lg p-2 space-y-2">
@@ -226,7 +226,7 @@ export default function SocPlaybookEditor({
                   </div>
                   {step.type === 'webhook' && (
                     <>
-                      <label className="flex items-center gap-2 text-xs text-slate-400">
+                      <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                         <input
                           type="checkbox"
                           checked={step.useGlobalWebhook}

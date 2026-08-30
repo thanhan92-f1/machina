@@ -117,6 +117,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       loading={loading && !fleet}
@@ -124,7 +125,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Access & Workspaces'}
       subtitle={embedded ? undefined : 'Platform RBAC accounts and tenant workspaces — switch active workspace from the menu bar.'}
-      icon={embedded ? undefined : <Users className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Users className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : (
         <>
           <button
@@ -140,8 +141,8 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-users-page">
-        {me && <p className="text-sm text-slate-400">Signed in as <strong className="text-slate-200">{me.username}</strong> ({me.role})</p>}
-        {fleet && <p className="text-sm text-slate-400">{fleet.summary}</p>}
+        {me && <p className="text-sm text-[var(--text-muted)]">Signed in as <strong className="text-[var(--text-primary)]">{me.username}</strong> ({me.role})</p>}
+        {fleet && <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>}
 
         {fleet && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -167,7 +168,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
             >
               <form id="users-add-form" className="grid gap-3 md:grid-cols-4 md:items-end" onSubmit={(e) => { e.preventDefault(); void handleAddUser() }}>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-400">Username</span>
+                  <span className="text-xs text-[var(--text-muted)]">Username</span>
                   <input
                     className="input w-full"
                     placeholder="jane.ops"
@@ -177,7 +178,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-400">Password</span>
+                  <span className="text-xs text-[var(--text-muted)]">Password</span>
                   <input
                     className="input w-full"
                     type="password"
@@ -188,7 +189,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-400">Role</span>
+                  <span className="text-xs text-[var(--text-muted)]">Role</span>
                   <select className="input w-full" value={role} onChange={(e) => setRole(e.target.value)}>
                     <option value="admin">admin</option>
                     <option value="operator">operator</option>
@@ -231,7 +232,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
             >
               {rows.map((u) => (
                 <tr key={u.id} className="border-b border-white/[0.04]">
-                  <td className="p-3 font-medium text-slate-200">{u.username}</td>
+                  <td className="p-3 font-medium text-[var(--text-primary)]">{u.username}</td>
                   <td className="p-3">
                     <select
                       aria-label="User role"
@@ -270,7 +271,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
         {tab === 'workspaces' && (
           <MacGlassPanel title="Workspace groups" subtitle="Tenant isolation by project label — active workspace syncs with menu bar switcher.">
             {!fleet ? (
-              <p className="text-sm text-slate-400 py-6 text-center">Loading workspaces…</p>
+              <p className="text-sm text-[var(--text-muted)] py-6 text-center">Loading workspaces…</p>
             ) : fleet.workspaces.length === 0 ? (
               <PlatformEmptyState
                 icon={Boxes}
@@ -292,7 +293,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
                     onClick={() => switchWorkspace(w.name)}
                     badge={
                       workspace === w.name ? (
-                        <span className="text-[10px] text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded">active</span>
+                        <span className="text-[10px] text-[var(--link)] border border-[var(--apple-hairline)] px-2 py-0.5 rounded">active</span>
                       ) : w.enforce_quotas ? (
                         <span className={`text-[10px] ${statusToneClass('ok')}`}>enforced</span>
                       ) : null

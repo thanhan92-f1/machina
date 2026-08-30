@@ -258,13 +258,14 @@ export default function PlatformTemplates() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load(false)}
       loading={loading && rows.length === 0}
       prepend={<PlatformBackLink to="/platform/infrastructure" label="Infrastructure" />}
       title="Marketplace"
       subtitle="Golden image templates and platform integration plugins."
-      icon={<Package className="w-6 h-6 text-slate-400" />}
+      icon={<Package className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           {tab === 'templates' && (
@@ -331,10 +332,10 @@ export default function PlatformTemplates() {
       )}
       {fleetCatalog.length > 0 && (
         <MacGlassPanel title="Fleet template catalog" subtitle="Controller-registered golden images (GET /api/v1/templates) — includes marketplace and private fleet images.">
-          <p className="text-sm text-slate-400 mb-2">{fleetCatalog.length} template(s) in fleet catalog</p>
+          <p className="text-sm text-[var(--text-muted)] mb-2">{fleetCatalog.length} template(s) in fleet catalog</p>
           <ul className="flex flex-wrap gap-2 text-xs">
             {fleetCatalog.map((t) => (
-              <li key={`${t.name}-${t.version}`} className="px-2 py-1 rounded-lg bg-slate-800/80 text-slate-300 font-mono">
+              <li key={`${t.name}-${t.version}`} className="px-2 py-1 rounded-lg bg-[var(--apple-fill-tertiary)]/80 text-[var(--text-secondary)] font-mono">
                 {t.name}:{t.version}
               </li>
             ))}
@@ -353,7 +354,7 @@ export default function PlatformTemplates() {
 
       {featuredRows.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
             <Sparkles className={`w-4 h-4 ${statusToneClass('warn')}`} /> Featured
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -379,8 +380,8 @@ export default function PlatformTemplates() {
                 onClick={() => setCategory(c)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
                   category === c
-                    ? 'bg-blue-500/20 text-blue-200 border border-blue-500/30'
-                    : 'bg-slate-900/60 text-slate-400 border border-white/[0.06] hover:border-white/10'
+                    ? 'bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30'
+                    : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-white/[0.06] hover:border-white/10'
                 }`}
               >
                 {c}
@@ -404,7 +405,7 @@ export default function PlatformTemplates() {
             ))}
           </div>
           {filtered.length === 0 && (
-            <p className="text-center text-slate-500 py-8">No templates in {category} — try another category.</p>
+            <p className="text-center text-[var(--text-muted)] py-8">No templates in {category} — try another category.</p>
           )}
         </>
       )}
@@ -420,8 +421,8 @@ export default function PlatformTemplates() {
             <div className="flex items-center gap-3">
               <span className="text-4xl">{templateIcon(deploySheet)}</span>
               <div>
-                <p className="font-medium text-slate-100">{deploySheet.name}@{deploySheet.version}</p>
-                <p className="text-xs text-slate-500">{deploySheet.category}</p>
+                <p className="font-medium text-[var(--text-primary)]">{deploySheet.name}@{deploySheet.version}</p>
+                <p className="text-xs text-[var(--text-muted)]">{deploySheet.category}</p>
               </div>
             </div>
             <VmWizardReadinessBanner
@@ -432,28 +433,28 @@ export default function PlatformTemplates() {
               onReadinessChange={setReadiness}
             />
             <label className="block text-sm">
-              <span className="text-slate-400">VM name</span>
+              <span className="text-[var(--text-muted)]">VM name</span>
               <input className="input w-full mt-1" value={deployName} onChange={(e) => setDeployName(e.target.value)} />
             </label>
             <label className="block text-sm">
-              <span className="text-slate-400">Hostname (substitutes <code className="text-xs">{'{{ hostname }}'}</code> in cloud-init)</span>
+              <span className="text-[var(--text-muted)]">Hostname (substitutes <code className="text-xs">{'{{ hostname }}'}</code> in cloud-init)</span>
               <input className="input w-full mt-1" value={deployHostname} onChange={(e) => setDeployHostname(e.target.value)} placeholder={deployName} />
             </label>
             {deploySheet.cloud_init && (
               <>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[var(--text-muted)]">
                   <Link to="/platform/cloud-init" className={hubLinkClasses()}>Cloud-Init Studio</Link> — validate #cloud-config before deploy.
                 </p>
                 <label className="block text-sm">
-                  <span className="text-slate-400">Cloud-init user</span>
+                  <span className="text-[var(--text-muted)]">Cloud-init user</span>
                   <input className="input w-full mt-1" value={cloudUser} onChange={(e) => setCloudUser(e.target.value)} />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-slate-400">Password (optional)</span>
+                  <span className="text-[var(--text-muted)]">Password (optional)</span>
                   <input type="password" autoComplete="new-password" className="input w-full mt-1" value={cloudPass} onChange={(e) => setCloudPass(e.target.value)} />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-slate-400">SSH public key (optional)</span>
+                  <span className="text-[var(--text-muted)]">SSH public key (optional)</span>
                   <textarea
                     className="input w-full mt-1 font-mono text-xs min-h-[4rem]"
                     placeholder="ssh-ed25519 AAAA… user@host"
@@ -514,7 +515,7 @@ export default function PlatformTemplates() {
             <button type="button" className="tahoe-btn-ghost text-xs" onClick={() => setPluginPublishOpen(true)}>Publish plugin</button>
           </div>
           {pluginLoading && plugins.length === 0 ? (
-            <p className="text-sm text-slate-400 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading plugins…</p>
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading plugins…</p>
           ) : (
             <>
               <div className="flex flex-wrap gap-2 mb-4">
@@ -525,8 +526,8 @@ export default function PlatformTemplates() {
                     onClick={() => setPluginCategory(c)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition ${
                       pluginCategory === c
-                        ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
-                        : 'bg-slate-900/60 text-slate-400 border border-white/[0.06]'
+                        ? 'bg-violet-500/20 text-[var(--link)] border border-[var(--apple-hairline)]'
+                        : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-white/[0.06]'
                     }`}
                   >
                     {c}
@@ -535,17 +536,17 @@ export default function PlatformTemplates() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredPlugins.map((p) => (
-                  <article key={p.id} className="rounded-2xl border border-white/[0.06] bg-slate-900/40 p-4 flex flex-col gap-3">
+                  <article key={p.id} className="rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-semibold text-slate-100 flex items-center gap-2">
-                          <Package className="w-4 h-4 text-violet-400" /> {p.name}
+                        <p className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                          <Package className="w-4 h-4 text-[var(--accent)]" /> {p.name}
                         </p>
-                        <p className="text-xs text-slate-500 mt-0.5">{p.author} · v{p.version} · {p.category}</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{p.author} · v{p.version} · {p.category}</p>
                       </div>
                       {p.featured && <Star className={`w-4 h-4 shrink-0 ${statusToneClass('warn')}`} />}
                     </div>
-                    <p className="text-sm text-slate-400 flex-1">{p.description}</p>
+                    <p className="text-sm text-[var(--text-muted)] flex-1">{p.description}</p>
                     <button
                       type="button"
                       className={p.installed ? 'btn-secondary text-xs' : 'btn-primary text-xs'}
@@ -587,12 +588,12 @@ function MarketplaceCard({
   const needsImage = t.source_disk?.includes('.qcow2')
   const approval = t.approval_status ?? 'approved'
   return (
-    <article className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-slate-900/50 backdrop-blur-md p-5 flex flex-col hover:border-white/10 transition group">
+    <article className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] backdrop-blur-md p-5 flex flex-col hover:border-white/10 transition group">
       <div className="flex items-start gap-3">
         <span className="text-3xl group-hover:scale-110 transition-transform" aria-hidden>{templateIcon(t)}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-semibold text-slate-100 truncate">{t.name}</h3>
+            <h3 className="font-semibold text-[var(--text-primary)] truncate">{t.name}</h3>
             {t.featured && <Star className={`w-3 h-3 shrink-0 ${statusToneClass('warn')} fill-[var(--machina-status-warn)]`} />}
             {approval !== 'approved' && (
               <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${statusBadgeClasses(approval === 'rejected' ? 'error' : 'warn')}`}>
@@ -600,7 +601,7 @@ function MarketplaceCard({
               </span>
             )}
             {needsImage && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-white/[0.06]">Catalog</span>
+              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)] border border-white/[0.06]">Catalog</span>
             )}
             {t.auto_fetch && (
               <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 inline-flex items-center gap-0.5">
@@ -611,14 +612,14 @@ function MarketplaceCard({
               <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-200/90 border border-amber-500/20">Manual upload</span>
             )}
           </div>
-          <p className="text-xs text-slate-500">{t.category ?? 'Linux'} · v{t.version}{t.workload ? ` · ${t.workload}` : ''}</p>
+          <p className="text-xs text-[var(--text-muted)]">{t.category ?? 'Linux'} · v{t.version}{t.workload ? ` · ${t.workload}` : ''}</p>
         </div>
       </div>
-      <p className="text-xs text-slate-400 mt-3 flex-1 leading-relaxed line-clamp-3">
+      <p className="text-xs text-[var(--text-muted)] mt-3 flex-1 leading-relaxed line-clamp-3">
         {t.description || (t.auto_fetch ? 'Downloads on first deploy when missing on the host.' : 'Upload the golden image to the host path before deploy.')}
       </p>
       {t.firewall_profile && (
-        <p className="text-[10px] text-blue-300/90 mt-2">Zeus Firewall: {t.firewall_profile}</p>
+        <p className="text-[10px] text-[var(--accent)] mt-2">Zeus Firewall: {t.firewall_profile}</p>
       )}
       {approval === 'pending' && (
         <div className="flex gap-1 mt-2">

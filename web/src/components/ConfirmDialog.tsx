@@ -46,9 +46,7 @@ export default function ConfirmDialog({
 
   if (!open) return null
 
-  const btnColor = variant === 'danger'
-    ? 'bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20'
-    : 'bg-yellow-600 hover:bg-yellow-500 shadow-lg shadow-yellow-600/20'
+  const confirmClass = variant === 'danger' ? 'btn-destructive' : 'btn-primary'
 
   const needsMatch = Boolean(typeToMatch && typeToMatch.length > 0)
   const matchOk = !needsMatch || typed === typeToMatch
@@ -63,26 +61,26 @@ export default function ConfirmDialog({
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fade-in"
+        className="bg-[rgba(29,29,31,0.96)] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fade-in"
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => { e.preventDefault(); if (matchOk) onConfirm() }}
       >
-        <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.08]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-yellow-500" />
+            <div className="w-8 h-8 rounded-full bg-[color-mix(in_srgb,var(--machina-status-warn)_18%,transparent)] flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-[var(--machina-status-warn)]" />
             </div>
-            <span id={titleId} className="text-lg font-semibold">{title}</span>
+            <span id={titleId} className="text-lg font-semibold tracking-tight">{title}</span>
           </div>
-          <button type="button" onClick={onCancel} aria-label="Cancel" className="text-slate-400 hover:text-white p-1 hover:bg-slate-700 rounded-lg transition">
+          <button type="button" onClick={onCancel} aria-label="Cancel" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 hover:bg-white/10 rounded-full transition">
             <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
-        <div className="p-5 text-slate-300 text-sm leading-relaxed space-y-3">
+        <div className="p-5 text-[var(--text-secondary)] text-sm leading-relaxed space-y-3">
           <div>{message}</div>
           {needsMatch && (
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5" htmlFor="confirm-type-match">
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5" htmlFor="confirm-type-match">
                 {typeToMatchLabel ?? 'Type the confirmation phrase exactly (case-sensitive):'}
               </label>
               <input
@@ -94,18 +92,18 @@ export default function ConfirmDialog({
                 spellCheck={false}
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm font-mono text-slate-200 focus:outline-none focus:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500/50"
+                className="input-field font-mono"
                 placeholder={typeToMatch}
               />
             </div>
           )}
         </div>
         <div className="flex justify-end gap-3 px-5 pb-5">
-          <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
+          <button type="button" onClick={onCancel} className="btn-secondary text-sm">Cancel</button>
           <button
             type="submit"
             disabled={!matchOk}
-            className={`px-4 py-2 rounded-lg text-sm text-white font-medium transition ${btnColor} disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none`}
+            className={`${confirmClass} text-sm disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {confirmLabel}
           </button>

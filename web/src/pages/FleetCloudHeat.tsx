@@ -54,25 +54,26 @@ function FleetCloudHeatContent() {
     <PageLayout
       hideHeader
       prepend={<><FleetCloudSubNav /></>}
-      ><h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Layers className="w-7 h-7 text-violet-400" /> Stacks
+      ><p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Layers className="w-7 h-7 text-[var(--accent)]" /> Stacks
       </h1>
-      <p className="text-slate-400 text-sm">
+      <p className="text-[var(--text-muted)] text-sm">
         Declarative multi-resource stacks — security groups, volumes, and VMs created
         and torn down together. Not a Heat-compatible resource graph: the template
         below is a fixed JSON shape, not arbitrary HOT YAML.
       </p>
 
-      <div className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300 flex items-center gap-2"><Plus className="w-4 h-4" /> Create stack</h2>
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"><Plus className="w-4 h-4" /> Create stack</h2>
         <input aria-label="Stack name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Stack name"
-          className="w-full max-w-md px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
-        <label className="block text-xs text-slate-500">
+          className="w-full max-w-md input-field text-sm" />
+        <label className="block text-xs text-[var(--text-muted)]">
           Template — {'{'}security_groups: [{'{'}name, rules[]{'}'}], volumes: [{'{'}name, size_gib{'}'}], vms: [{'{'}name, memory, cpu_cores, disk_gib, network, attach_volumes[]{'}'}]{'}'}
         </label>
         <textarea aria-label="Stack template (JSON)" value={templateJson} onChange={(e) => setTemplateJson(e.target.value)} rows={8}
-          className="w-full font-mono text-xs px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" />
-        <button type="button" className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-sm"
+          className="w-full font-mono text-xs input-field" />
+        <button type="button" className="btn-primary text-sm"
           onClick={async () => {
             if (!name.trim()) { toast.warning('Stack name required'); return }
             let template: StackTemplate
@@ -92,13 +93,13 @@ function FleetCloudHeatContent() {
       </div>
 
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : stacks.length === 0 ? (
         <EmptyState title="No stacks" description="No stacks in this project yet." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="w-full text-sm" aria-label="Stacks">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="overflow-x-auto apple-surface rounded-2xl">
+          <table className="apple-table" aria-label="Stacks">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 <th scope="col" className="px-3 py-2">Status</th>
@@ -108,13 +109,13 @@ function FleetCloudHeatContent() {
             </thead>
             <tbody>
               {stacks.map((s) => (
-                <tr key={s.id} className="border-t border-slate-800">
+                <tr key={s.id} className="border-t border-[var(--apple-hairline)]">
                   <td className="px-3 py-2">
                     <Link to={`/fleet-cloud/heat/${encodeURIComponent(s.name)}/${encodeURIComponent(s.id)}`}
-                      className="text-sky-400 hover:underline">{s.name}</Link>
+                      className="text-[var(--accent)] hover:underline">{s.name}</Link>
                   </td>
                   <td className="px-3 py-2">{s.status}</td>
-                  <td className="px-3 py-2 text-slate-500">{s.resources_json.length}</td>
+                  <td className="px-3 py-2 text-[var(--text-muted)]">{s.resources_json.length}</td>
                   <td className="px-3 py-2 text-right">
                     <button type="button" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
                       onClick={async () => {

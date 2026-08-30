@@ -278,6 +278,7 @@ export default function PlatformStorage() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load(false)}
       className="platform-readable"
@@ -285,7 +286,7 @@ export default function PlatformStorage() {
       title="Storage"
       subtitle={
         <span className="flex flex-col gap-1">
-          <span className="text-slate-400">Pools, tiers, backup SLA, and fleet disk health</span>
+          <span className="text-[var(--text-muted)]">Pools, tiers, backup SLA, and fleet disk health</span>
           {rows.length > 0
             ? platformStatSubtitle([
                 { label: 'Pools', value: String(rows.length) },
@@ -295,7 +296,7 @@ export default function PlatformStorage() {
             : null}
         </span>
       }
-      icon={<HardDrive className="w-6 h-6 text-slate-400" />}
+      icon={<HardDrive className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           {tab === 'pools' && (
@@ -323,7 +324,7 @@ export default function PlatformStorage() {
         <ErrorBanner message={error} />
       ))}
       {error && storageErrorPresentation(error) && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           <Link to="/platform/hosts" className={hubLinkClasses()}>Hosts</Link>
           {' · '}
           <Link to="/node" className={hubLinkClasses()}>Classic node tools</Link>
@@ -334,7 +335,7 @@ export default function PlatformStorage() {
         <div className="space-y-4">
           {fleetStorage && (
             <>
-              <p className="text-sm text-slate-400">{fleetStorage.summary}</p>
+              <p className="text-sm text-[var(--text-muted)]">{fleetStorage.summary}</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MacStatWidget label="Pools" value={String(fleetStorage.pool_count)} icon={<HardDrive className="w-4 h-4" />} />
                 <MacStatWidget
@@ -358,7 +359,7 @@ export default function PlatformStorage() {
             </>
           )}
           {!fleetStorage && (
-            <div className="flex items-center gap-2 text-sm text-slate-400 py-8">
+            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] py-8">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading fleet storage…
             </div>
           )}
@@ -369,27 +370,27 @@ export default function PlatformStorage() {
                   const pct = capacityRing(p.used_gib, p.capacity_gib)
                   const ringClass = p.status === 'critical' ? statusToneClass('error') : p.status === 'warn' ? statusToneClass('warn') : statusToneClass('info')
                   return (
-                    <article key={p.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-slate-900/40 p-4 space-y-3">
+                    <article key={p.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-3">
                       <div className="flex items-start gap-3">
                         <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradientForName(p.name)} flex items-center justify-center text-white shrink-0`}>
                           <HardDrive className="w-5 h-5" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold truncate">{p.name}</p>
-                          <p className="text-xs text-slate-500 capitalize">{p.storage_class}{p.tier_name ? ` · ${p.tier_name}` : ''}</p>
+                          <p className="text-xs text-[var(--text-muted)] capitalize">{p.storage_class}{p.tier_name ? ` · ${p.tier_name}` : ''}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="relative w-14 h-14 shrink-0">
                           <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-800" />
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-[var(--mark-track)]" />
                             <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${pct} 100`} className={ringClass} />
                           </svg>
                           <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">{Math.round(p.used_pct)}%</span>
                         </div>
                         <dl className="text-xs space-y-1 flex-1">
-                          <div><dt className="text-slate-500 inline">Used </dt><dd className="inline text-slate-200">{p.used_gib} GiB</dd></div>
-                          <div><dt className="text-slate-500 inline">Capacity </dt><dd className="inline text-slate-200">{p.capacity_gib || '—'} GiB</dd></div>
+                          <div><dt className="text-[var(--text-muted)] inline">Used </dt><dd className="inline text-[var(--text-primary)]">{p.used_gib} GiB</dd></div>
+                          <div><dt className="text-[var(--text-muted)] inline">Capacity </dt><dd className="inline text-[var(--text-primary)]">{p.capacity_gib || '—'} GiB</dd></div>
                         </dl>
                       </div>
                     </article>
@@ -403,7 +404,7 @@ export default function PlatformStorage() {
               {fleetStorage.smart_hosts_sampled === 0 ? (
                 <p className="text-sm text-amber-300/90">SMART data unavailable — no online host returned a disk sample.</p>
               ) : (fleetStorage.smart_disks ?? []).length === 0 ? (
-                <p className="text-sm text-slate-400">No SMART failures detected on sampled hosts.</p>
+                <p className="text-sm text-[var(--text-muted)]">No SMART failures detected on sampled hosts.</p>
               ) : (
                 <div className="divide-y divide-white/[0.04] -mx-1">
                   {(fleetStorage.smart_disks ?? []).map((d) => (
@@ -447,15 +448,15 @@ export default function PlatformStorage() {
                 const live = livePools[p.name]
                 const active = live?.state === 'running'
                 return (
-                  <article key={p.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-slate-900/50 p-5 space-y-4" data-testid={`storage-pool-${p.name}`}>
+                  <article key={p.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-5 space-y-4" data-testid={`storage-pool-${p.name}`}>
                     <div className="flex items-start gap-3">
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientForName(p.name)} flex items-center justify-center text-white`}>
                         <HardDrive className="w-6 h-6" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold truncate">{p.name}</p>
-                        <p className="text-xs text-slate-500 capitalize">{p.storage_class} · {p.backend}</p>
-                        <p className="text-xs text-violet-300/80 mt-0.5">{tierName(p.tier_id) ?? 'No tier'}</p>
+                        <p className="text-xs text-[var(--text-muted)] capitalize">{p.storage_class} · {p.backend}</p>
+                        <p className="text-xs text-[var(--link)]/80 mt-0.5">{tierName(p.tier_id) ?? 'No tier'}</p>
                         {live && (
                           <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${statusBadgeClasses(active ? 'ok' : 'warn')}`}>
                             {live.state}
@@ -466,15 +467,15 @@ export default function PlatformStorage() {
                     <div className="flex items-center gap-4">
                       <div className="relative w-14 h-14 shrink-0">
                         <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-800" />
+                          <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-[var(--mark-track)]" />
                             <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${pct} 100`} className={pct > 85 ? statusToneClass('warn') : statusToneClass('info')} />
                         </svg>
                         <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">{pct}%</span>
                       </div>
                       <dl className="text-xs space-y-1 flex-1">
-                        <div><dt className="text-slate-500 inline">Used </dt><dd className="inline text-slate-200">{p.used_gib} GiB</dd></div>
-                        <div><dt className="text-slate-500 inline">Capacity </dt><dd className="inline text-slate-200">{p.capacity_gib || '—'} GiB</dd></div>
-                        {p.path && <div className="text-slate-500 truncate" title={p.path}>{p.path}</div>}
+                        <div><dt className="text-[var(--text-muted)] inline">Used </dt><dd className="inline text-[var(--text-primary)]">{p.used_gib} GiB</dd></div>
+                        <div><dt className="text-[var(--text-muted)] inline">Capacity </dt><dd className="inline text-[var(--text-primary)]">{p.capacity_gib || '—'} GiB</dd></div>
+                        {p.path && <div className="text-[var(--text-muted)] truncate" title={p.path}>{p.path}</div>}
                       </dl>
                     </div>
                     {tiers.length > 0 && (
@@ -596,17 +597,17 @@ export default function PlatformStorage() {
                         )}
                       </div>
                       {expandedPoolId === p.id && (
-                        <div className="rounded-lg border border-white/[0.06] bg-slate-950/40 p-2">
+                        <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] p-2">
                           {volumesLoading === p.id && !poolVolumes[p.id] ? (
-                            <p className="text-xs text-slate-500 flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Loading volumes…</p>
+                            <p className="text-xs text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Loading volumes…</p>
                           ) : (poolVolumes[p.id]?.length ?? 0) === 0 ? (
-                            <p className="text-xs text-slate-500">{active ? 'No volumes in this pool.' : 'Activate the pool to manage volumes.'}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{active ? 'No volumes in this pool.' : 'Activate the pool to manage volumes.'}</p>
                           ) : (
                             <ul className="text-xs space-y-2">
                               {poolVolumes[p.id]?.map((v) => (
-                                <li key={v.name} className="flex flex-wrap items-center justify-between gap-2 text-slate-300">
+                                <li key={v.name} className="flex flex-wrap items-center justify-between gap-2 text-[var(--text-secondary)]">
                                   <span>
-                                    <span className="font-medium text-slate-200">{v.name}</span>
+                                    <span className="font-medium text-[var(--text-primary)]">{v.name}</span>
                                     {' · '}
                                     {v.capacity_gb} GiB
                                     {v.allocation_gb > 0 && ` (${v.allocation_gb} GiB allocated)`}
@@ -647,10 +648,10 @@ export default function PlatformStorage() {
                       {snapshotPolicyLoading === p.id ? 'Loading policy…' : 'Snapshot policy'}
                     </button>
                     {snapshotPolicies[p.id] && (
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-[var(--text-muted)]">
                         {snapshotPolicies[p.id].summary}
                         {' · '}
-                        <span className="text-violet-300/90">{snapshotPolicies[p.id].snapshot_retention_days}d retention</span>
+                        <span className="text-[var(--link)]/90">{snapshotPolicies[p.id].snapshot_retention_days}d retention</span>
                       </p>
                     )}
                     <button
@@ -675,12 +676,12 @@ export default function PlatformStorage() {
       {tab === 'tiers' && (
         <MacGlassPanel title="Storage tiers" subtitle="Gold / silver / bronze taxonomy with IOPS and replication stubs.">
           {tiers.length === 0 ? (
-            <p className="text-sm text-slate-400">No tiers — run migration 028 to seed defaults.</p>
+            <p className="text-sm text-[var(--text-muted)]">No tiers — run migration 028 to seed defaults.</p>
           ) : (
             <div className="overflow-x-auto -mx-2">
               <table className="w-full text-sm" aria-label="Storage tiers">
                 <thead>
-                  <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+                  <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 px-2">Name</th>
                     <th scope="col" className="py-2 px-2">Class</th>
                     <th scope="col" className="py-2 px-2">IOPS</th>
@@ -692,7 +693,7 @@ export default function PlatformStorage() {
                 </thead>
                 <tbody>
                   {tiers.map((t) => (
-                    <tr key={t.id} className="border-b border-white/[0.04] text-slate-200">
+                    <tr key={t.id} className="border-b border-white/[0.04] text-[var(--text-primary)]">
                       <td className="py-2.5 px-2 font-medium">{t.name}</td>
                       <td className="py-2.5 px-2 capitalize">{t.tier_class}</td>
                       <td className="py-2.5 px-2">{t.iops_tier}</td>
@@ -712,12 +713,12 @@ export default function PlatformStorage() {
       {tab === 'sla' && (
         <MacGlassPanel title="Backup SLA" subtitle="Per-pool RPO/RTO compliance grades (simulated).">
           {slaPolicies.length === 0 ? (
-            <p className="text-sm text-slate-400">No SLA policies — import pools first.</p>
+            <p className="text-sm text-[var(--text-muted)]">No SLA policies — import pools first.</p>
           ) : (
             <div className="overflow-x-auto -mx-2">
               <table className="w-full text-sm" aria-label="Backup SLA policies">
                 <thead>
-                  <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+                  <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 px-2">Pool</th>
                     <th scope="col" className="py-2 px-2">Tier</th>
                     <th scope="col" className="py-2 px-2">RPO</th>
@@ -729,7 +730,7 @@ export default function PlatformStorage() {
                 </thead>
                 <tbody>
                   {slaPolicies.map((s) => (
-                    <tr key={s.id} className="border-b border-white/[0.04] text-slate-200">
+                    <tr key={s.id} className="border-b border-white/[0.04] text-[var(--text-primary)]">
                       <td className="py-2.5 px-2">{s.pool_name}</td>
                       <td className="py-2.5 px-2">{s.tier_name ?? '—'}</td>
                       <td className="py-2.5 px-2">{s.rpo_hours}h</td>
@@ -766,15 +767,15 @@ export default function PlatformStorage() {
       <MacSheet open={!!volumeCreatePool} onClose={() => setVolumeCreatePool(null)} title={`New volume — ${volumeCreatePool?.name ?? ''}`}>
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-400">Name</span>
+            <span className="text-[var(--text-muted)]">Name</span>
             <input className="input mt-1 w-full" value={volumeName} onChange={(e) => setVolumeName(e.target.value)} placeholder="data-01.qcow2" />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Capacity (GiB)</span>
+            <span className="text-[var(--text-muted)]">Capacity (GiB)</span>
             <input type="number" min={1} className="input mt-1 w-full" value={volumeCapacityGb} onChange={(e) => setVolumeCapacityGb(Number(e.target.value))} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Format</span>
+            <span className="text-[var(--text-muted)]">Format</span>
             <select className="input mt-1 w-full" value={volumeFormat} onChange={(e) => setVolumeFormat(e.target.value)}>
               <option value="qcow2">qcow2</option>
               <option value="raw">raw</option>
@@ -789,15 +790,15 @@ export default function PlatformStorage() {
       <MacSheet open={!!slaEdit} onClose={() => setSlaEdit(null)} title={`Edit backup SLA — ${slaEdit?.pool_name ?? ''}`}>
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-400">RPO (hours)</span>
+            <span className="text-[var(--text-muted)]">RPO (hours)</span>
             <input type="number" min={1} max={168} className="input mt-1 w-full" value={slaRpo} onChange={(e) => setSlaRpo(Number(e.target.value))} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">RTO (hours)</span>
+            <span className="text-[var(--text-muted)]">RTO (hours)</span>
             <input type="number" min={1} max={72} className="input mt-1 w-full" value={slaRto} onChange={(e) => setSlaRto(Number(e.target.value))} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Retention (days)</span>
+            <span className="text-[var(--text-muted)]">Retention (days)</span>
             <input type="number" min={1} max={365} className="input mt-1 w-full" value={slaRetention} onChange={(e) => setSlaRetention(Number(e.target.value))} />
           </label>
           <button type="button" className="btn-primary w-full" disabled={slaSaving} onClick={() => void saveSla()}>
@@ -834,13 +835,13 @@ export default function PlatformStorage() {
       />
       {resizePool && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setResizePool(null)}>
-          <div className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-700/50">
+          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--apple-hairline)]">
               <span className="text-lg font-semibold">Edit pool capacity</span>
-              <p className="text-sm text-slate-400 mt-1">Pool: {resizePool.name}</p>
+              <p className="text-sm text-[var(--text-muted)] mt-1">Pool: {resizePool.name}</p>
             </div>
             <div className="p-5 space-y-3">
-              <label htmlFor="resize-pool-capacity" className="block text-sm text-slate-400">Capacity (GiB)</label>
+              <label htmlFor="resize-pool-capacity" className="block text-sm text-[var(--text-muted)]">Capacity (GiB)</label>
               <input
                 id="resize-pool-capacity"
                 type="number"
@@ -865,11 +866,11 @@ export default function PlatformStorage() {
               />
             </div>
             <div className="flex justify-end gap-3 px-5 pb-5">
-              <button type="button" onClick={() => setResizePool(null)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
+              <button type="button" onClick={() => setResizePool(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
               <button
                 type="button"
                 disabled={!resizePoolInput || Number(resizePoolInput) < 1}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 onClick={() => {
                   const n = Number(resizePoolInput)
                   if (!n || n < 1) return

@@ -38,20 +38,20 @@ export default function MissionControlLiveWall() {
     <PageLayout title="Live Preview Wall" subtitle="Machina Mission Control · fleet console grid" compact>
       <div className="space-y-4" data-testid="mission-control-live-wall">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm text-slate-400">Running VMs with live VNC thumbnails (max {MAX_LIVE} concurrent).</p>
+          <p className="text-sm text-[var(--text-muted)]">Running VMs with live VNC thumbnails (max {MAX_LIVE} concurrent).</p>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" onClick={() => void load()}>
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
         </div>
         {loading ? (
-          <p className="text-sm text-slate-500">Loading fleet previews…</p>
+          <p className="text-sm text-[var(--text-muted)]">Loading fleet previews…</p>
         ) : error ? (
           <div className="text-sm text-red-400">
             Couldn&rsquo;t load fleet previews: {error}{' '}
             <button type="button" className="underline hover:text-red-300" onClick={() => void load()}>Retry</button>
           </div>
         ) : vms.length === 0 ? (
-          <p className="text-sm text-slate-500">No running VMs to preview.</p>
+          <p className="text-sm text-[var(--text-muted)]">No running VMs to preview.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {vms.map((vm) => (
@@ -61,7 +61,7 @@ export default function MissionControlLiveWall() {
                 data-testid={`live-wall-tile-${vm.name}`}
               >
                 <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] text-xs">
-                  <span className="font-medium text-slate-200 truncate">{vm.name}</span>
+                  <span className="font-medium text-[var(--text-primary)] truncate">{vm.name}</span>
                   <VmStatusBadge state={vm.observed_state ?? 'unknown'} />
                 </div>
                 <div className="min-h-[12rem]">

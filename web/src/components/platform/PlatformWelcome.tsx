@@ -117,7 +117,7 @@ export default function PlatformWelcome({
         }
         case 'integrations':
           setDone((d) => ({ ...d, integrations: true }))
-          window.location.assign('/platform/integrations')
+          window.location.assign('/platform/settings?section=integrations')
           break
         case 'vm':
           onCreateVm()
@@ -153,34 +153,34 @@ export default function PlatformWelcome({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div ref={panelRef} className="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl overflow-hidden" role="dialog" aria-modal="true" aria-label="Welcome">
+      <div ref={panelRef} className="w-full max-w-lg rounded-2xl border border-white/10 bg-[var(--apple-surface-elevated)] shadow-2xl overflow-hidden" role="dialog" aria-modal="true" aria-label="Welcome">
         <div className="flex items-start justify-between p-6 border-b border-white/[0.06]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-orange-400/80 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" /> Welcome
             </p>
-            <h2 className="text-xl font-bold text-slate-50 mt-1">Set up your datacenter</h2>
-            <p className="text-sm text-slate-400 mt-1">Import inventory from libvirt, seed templates, then create a VM.</p>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">Set up your datacenter</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-1">Import inventory from libvirt, seed templates, then create a VM.</p>
           </div>
-          <button type="button" className="text-slate-500 hover:text-slate-300 p-1" onClick={close} aria-label="Dismiss"><X className="w-5 h-5" /></button>
+          <button type="button" className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] p-1" onClick={close} aria-label="Dismiss"><X className="w-5 h-5" /></button>
         </div>
         <ul className="p-6 space-y-3">
           {STEPS.map((step) => (
-            <li key={step.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-slate-800/40 px-4 py-3">
+            <li key={step.id} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] px-4 py-3">
               {done[step.id] ? (
                 <CheckCircle2 className={`w-5 h-5 shrink-0 ${statusToneClass('ok')}`} />
               ) : running === step.id ? (
                 <Loader2 className={`w-5 h-5 animate-spin shrink-0 ${statusToneClass('info')}`} />
               ) : (
-                <Circle className="w-5 h-5 text-slate-600 shrink-0" />
+                <Circle className="w-5 h-5 text-[var(--text-faint)] shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200">{step.label}</p>
-                <p className="text-xs text-slate-500">{step.hint}</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{step.label}</p>
+                <p className="text-xs text-[var(--text-muted)]">{step.hint}</p>
               </div>
               {!done[step.id] && (
                 step.id === 'integrations' ? (
-                  <Link to="/platform/integrations" className="btn-secondary text-xs shrink-0" onClick={() => setDone((d) => ({ ...d, integrations: true }))}>
+                  <Link to="/platform/settings?section=integrations" className="btn-secondary text-xs shrink-0" onClick={() => setDone((d) => ({ ...d, integrations: true }))}>
                     Open hub
                   </Link>
                 ) : (

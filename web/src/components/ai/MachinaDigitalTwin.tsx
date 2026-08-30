@@ -103,7 +103,7 @@ export default function MachinaDigitalTwin() {
     >
       <div className="flex flex-wrap items-end gap-3 text-sm">
         <label className="block">
-          <span className="text-xs text-slate-500">Target</span>
+          <span className="text-xs text-[var(--text-muted)]">Target</span>
           <select className="input mt-1 block text-xs" value={simKind} onChange={(e) => setSimKind(e.target.value as 'host' | 'network' | 'storage' | 'switch')}>
             <option value="host">Host</option>
             <option value="network">Network</option>
@@ -113,7 +113,7 @@ export default function MachinaDigitalTwin() {
         </label>
         {simKind === 'host' && (
           <label className="block">
-            <span className="text-xs text-slate-500">Action</span>
+            <span className="text-xs text-[var(--text-muted)]">Action</span>
             <select className="input mt-1 block text-xs" value={simAction} onChange={(e) => setSimAction(e.target.value as 'shutdown' | 'migrate' | 'isolate' | 'failure')}>
               <option value="shutdown">Shutdown</option>
               <option value="failure">Host failure</option>
@@ -122,7 +122,7 @@ export default function MachinaDigitalTwin() {
           </label>
         )}
         <label className="block">
-          <span className="text-xs text-slate-500">{simKind === 'network' ? 'Network to isolate' : simKind === 'storage' ? 'Storage pool' : 'Host'}</span>
+          <span className="text-xs text-[var(--text-muted)]">{simKind === 'network' ? 'Network to isolate' : simKind === 'storage' ? 'Storage pool' : 'Host'}</span>
           <select className="input mt-1 block min-w-[12rem]" value={hostId} onChange={(e) => setHostId(e.target.value)}>
             {targets.map((h) => (
               <option key={h.id} value={h.name}>{h.name} {h.state ? `(${h.state})` : ''}</option>
@@ -148,7 +148,7 @@ export default function MachinaDigitalTwin() {
           {batchBusy ? 'Batch…' : 'Batch simulate'}
         </button>
         {graph && (
-          <span className="text-xs text-slate-500 flex items-center gap-1">
+          <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
             <GitBranch className="w-3 h-3" /> {graph.node_count} nodes · {graph.edge_count} edges
           </span>
         )}
@@ -156,32 +156,32 @@ export default function MachinaDigitalTwin() {
       {error && <p className={`text-xs mt-2 ${statusToneClass('error')}`}>{error}</p>}
       {batchResults.length > 1 && (
         <div className="mt-3 space-y-2">
-          <p className="text-xs text-slate-500 uppercase tracking-wide">Batch scenarios ({batchResults.length})</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Batch scenarios ({batchResults.length})</p>
           {batchResults.map((r, i) => (
-            <p key={`${r.target}-${i}`} className="text-xs text-slate-400">
+            <p key={`${r.target}-${i}`} className="text-xs text-[var(--text-muted)]">
               {i + 1}. {r.summary}
             </p>
           ))}
         </div>
       )}
       {impact && (
-        <div className="mt-4 rounded-xl border border-white/[0.06] bg-slate-900/50 p-4 space-y-2 text-sm">
-          <p className="flex items-center gap-2 font-medium text-slate-200">
+        <div className="mt-4 rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-2 text-sm">
+          <p className="flex items-center gap-2 font-medium text-[var(--text-primary)]">
             <Zap className="w-4 h-4 text-orange-400" />
             {impact.summary}
             <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full ${statusBadgeClasses(riskTone(impact.severity))}`}>{impact.severity}</span>
           </p>
           {impact.affected_vms.length > 0 && (
-            <p className="text-slate-400 text-xs">VMs affected: {impact.affected_vms.join(', ')}</p>
+            <p className="text-[var(--text-muted)] text-xs">VMs affected: {impact.affected_vms.join(', ')}</p>
           )}
           {impact.affected_applications.length > 0 && (
-            <p className="text-slate-400 text-xs">Applications: {impact.affected_applications.join(', ')}</p>
+            <p className="text-[var(--text-muted)] text-xs">Applications: {impact.affected_applications.join(', ')}</p>
           )}
           {(impact.vms_at_risk ?? 0) > 0 && (
-            <p className="text-slate-400 text-xs">VMs at risk: {impact.vms_at_risk} · est. downtime {impact.estimated_downtime_sec ?? 0}s</p>
+            <p className="text-[var(--text-muted)] text-xs">VMs at risk: {impact.vms_at_risk} · est. downtime {impact.estimated_downtime_sec ?? 0}s</p>
           )}
           {(impact.storage_unavailable_gib ?? 0) > 0 && (
-            <p className="text-slate-400 text-xs">Storage unavailable: {impact.storage_unavailable_gib} GiB</p>
+            <p className="text-[var(--text-muted)] text-xs">Storage unavailable: {impact.storage_unavailable_gib} GiB</p>
           )}
           {impact.recommendations.map((r) => (
             <p key={r} className={`text-xs ${hubLinkClasses()}`}>→ {r}</p>

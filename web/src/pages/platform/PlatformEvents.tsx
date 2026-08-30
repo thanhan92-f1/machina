@@ -41,15 +41,15 @@ function formatTime(iso: string) {
 
 function LogLine({ entry }: { entry: FleetConsoleEntry }) {
   return (
-    <div className="flex gap-3 px-3 py-2 font-mono text-xs border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
-      <time className="text-slate-500 shrink-0 w-36">{formatTime(entry.created_at)}</time>
+    <div className="flex gap-3 px-3 py-2 font-mono text-xs border-b border-white/[0.04] last:border-0 hover:bg-[var(--surface-hover)]">
+      <time className="text-[var(--text-muted)] shrink-0 w-36">{formatTime(entry.created_at)}</time>
       <span className={`shrink-0 px-1.5 py-0.5 rounded border uppercase text-[10px] tracking-wide ${severityClass(entry.severity)}`}>
         {entry.severity}
       </span>
       <span className="shrink-0 w-14 text-orange-300/90 capitalize">{entry.source}</span>
-      <span className="text-slate-200 min-w-0 break-all">
-        {entry.actor ? <span className="text-violet-300">{entry.actor} </span> : null}
-        <span className="text-slate-400">{entry.action}</span>
+      <span className="text-[var(--text-primary)] min-w-0 break-all">
+        {entry.actor ? <span className="text-[var(--link)]">{entry.actor} </span> : null}
+        <span className="text-[var(--text-muted)]">{entry.action}</span>
         {' — '}
         {entry.message}
       </span>
@@ -112,6 +112,7 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       loading={loading && !fleet && !error}
@@ -119,14 +120,14 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Logs & Audit'}
       subtitle={embedded ? undefined : 'Unified fleet log tail — audit trail, platform events, and task failures in one stream.'}
-      icon={embedded ? undefined : <Terminal className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Terminal className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-events-page">
       {fleet && (
         <>
-          <p className="text-sm text-slate-400">{fleet.summary}</p>
+          <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MacStatWidget label="24h total" value={String(fleet.total_24h)} icon={<ScrollText className="w-4 h-4" />} />
             <MacStatWidget label="Audit (24h)" value={String(fleet.audit_24h)} icon={<Terminal className="w-4 h-4" />} />
@@ -160,7 +161,7 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
           />
           {query && (
             <button type="button" aria-label="Clear filter" onClick={() => setQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -181,7 +182,7 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
             />
             {eventKind && (
               <button type="button" aria-label="Clear kind filter" onClick={() => setEventKind('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -193,11 +194,11 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
         {platformEvents.length === 0 ? (
           <PlatformEmptyState title="No platform events" subtitle="Events appear when controller operations occur — try clearing the kind filter." />
         ) : (
-          <ul className="text-sm text-slate-300 space-y-2">
+          <ul className="text-sm text-[var(--text-secondary)] space-y-2">
             {platformEvents.slice(0, 20).map((e) => (
               <li key={e.id} className="flex flex-wrap gap-x-2 gap-y-1 border-b border-white/[0.04] pb-2 last:border-0">
-                <time className="text-xs text-slate-500 shrink-0">{formatTime(e.created_at)}</time>
-                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded border border-white/[0.08] text-violet-300">{e.kind}</span>
+                <time className="text-xs text-[var(--text-muted)] shrink-0">{formatTime(e.created_at)}</time>
+                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded border border-white/[0.08] text-[var(--link)]">{e.kind}</span>
                 <span>{e.message}</span>
               </li>
             ))}
@@ -207,7 +208,7 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
 
       <MacGlassPanel title="Log stream" subtitle="Newest first — merged audit, events, and tasks.">
         {!fleet ? (
-          <p className="text-sm text-slate-400 py-8 text-center">Loading fleet console…</p>
+          <p className="text-sm text-[var(--text-muted)] py-8 text-center">Loading fleet console…</p>
         ) : entries.length === 0 ? (
           <PlatformEmptyState
             icon={ScrollText}
@@ -215,7 +216,7 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
             subtitle="Adjust the source tab or message filter to broaden the stream."
           />
         ) : (
-          <div className="rounded-xl border border-white/[0.06] bg-slate-950/60 overflow-hidden -mx-1">
+          <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] overflow-hidden -mx-1">
             {entries.map((e) => (
               <LogLine key={`${e.source}-${e.id}`} entry={e} />
             ))}
@@ -225,13 +226,13 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
 
       {controllerAudit.length > 0 && (
         <MacGlassPanel title="Controller audit log" subtitle={`GET /api/v1/audit — ${controllerAudit.length} entries`}>
-          <div className="rounded-xl border border-white/[0.06] bg-slate-950/60 overflow-hidden -mx-1">
+          <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] overflow-hidden -mx-1">
             {controllerAudit.map((a) => (
               <div key={a.id} className="flex gap-3 px-3 py-2 font-mono text-xs border-b border-white/[0.04] last:border-0">
-                <time className="text-slate-500 shrink-0">{formatTime(a.created_at)}</time>
-                <span className="text-violet-300 shrink-0">{a.actor}</span>
-                <span className="text-slate-400">{a.action}</span>
-                {a.resource_type && <span className="text-slate-500">({a.resource_type})</span>}
+                <time className="text-[var(--text-muted)] shrink-0">{formatTime(a.created_at)}</time>
+                <span className="text-[var(--link)] shrink-0">{a.actor}</span>
+                <span className="text-[var(--text-muted)]">{a.action}</span>
+                {a.resource_type && <span className="text-[var(--text-muted)]">({a.resource_type})</span>}
               </div>
             ))}
           </div>

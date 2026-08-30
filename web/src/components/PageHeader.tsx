@@ -8,37 +8,40 @@ import { RefreshCw } from 'lucide-react'
 type Props = {
   title: string
   subtitle?: string
+  eyebrow?: string
   icon?: ReactNode
   onRefresh?: () => void
   refreshing?: boolean
   actions?: ReactNode
 }
 
-/** Standard page title row (non-Hero pages). */
+/** Standard page title row — same apple.com type as PageLayout / Hero. */
 export default function PageHeader({
   title,
   subtitle,
+  eyebrow,
   icon,
   onRefresh,
   refreshing,
   actions,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-100">
-          {icon}
-          {title}
+    <header className="apple-page-header mb-8">
+      <div className="min-w-0 flex-1 max-w-3xl">
+        {eyebrow ? <p className="apple-eyebrow">{eyebrow}</p> : null}
+        <h1 className="page-title flex items-center gap-3">
+          {icon ? <span className="text-[var(--text-muted)] shrink-0">{icon}</span> : null}
+          <span className="truncate">{title}</span>
         </h1>
-        {subtitle && <p className="text-sm text-slate-400 mt-0.5 max-w-2xl">{subtitle}</p>}
+        {subtitle ? <p className="page-lede">{subtitle}</p> : null}
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="apple-page-actions">
         {onRefresh && (
           <button
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="p-2 hover:bg-slate-700 rounded-lg transition disabled:opacity-50"
+            className="btn-secondary p-2.5 rounded-full disabled:opacity-50"
             aria-label="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -46,6 +49,6 @@ export default function PageHeader({
         )}
         {actions}
       </div>
-    </div>
+    </header>
   )
 }

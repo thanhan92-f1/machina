@@ -95,7 +95,7 @@ export default function VmLaptopAccessChecklist({
           Expose SSH
         </button>
       ) : networkTabHref ? (
-        <Link to={networkTabHref} className="text-xs text-sky-400 hover:underline">Network tab</Link>
+        <Link to={networkTabHref} className="text-xs text-[var(--link)] hover:underline">Network tab</Link>
       ) : null,
     },
     {
@@ -110,23 +110,23 @@ export default function VmLaptopAccessChecklist({
   ]
 
   return (
-    <div className="rounded-xl border border-sky-500/25 bg-sky-950/20 p-3 space-y-2" data-testid="vm-laptop-access-checklist">
-      <p className="text-xs font-semibold text-sky-100/95">Laptop access checklist</p>
+    <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)] p-3 space-y-2" data-testid="vm-laptop-access-checklist">
+      <p className="text-xs font-semibold text-[var(--text-primary)]">Laptop access checklist</p>
       <ul className="space-y-2 text-xs">
         {steps.map((step) => (
           <li key={step.label} className="flex flex-wrap items-center gap-2">
             {step.done ? (
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             ) : (
-              <Circle className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <Circle className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
             )}
-            <span className={step.done ? 'text-slate-200' : 'text-slate-400'}>{step.label}</span>
+            <span className={step.done ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>{step.label}</span>
             {step.action}
           </li>
         ))}
       </ul>
       {guestAccess.auth_mode === 'ssh_key' && (
-        <p className="text-[10px] text-slate-500">Serial password login is not configured — use SSH with the key injected at VM create.</p>
+        <p className="text-[10px] text-[var(--text-muted)]">Serial password login is not configured — use SSH with the key injected at VM create.</p>
       )}
     </div>
   )

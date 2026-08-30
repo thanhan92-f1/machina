@@ -9,39 +9,39 @@ import { Link } from 'react-router'
 export type ChoiceTone = 'blue' | 'amber' | 'sky' | 'cyan' | 'purple' | 'emerald' | 'slate' | 'violet'
 
 const selectedClass: Record<ChoiceTone, string> = {
-  blue: 'border-blue-500 bg-blue-950/35 ring-2 ring-blue-500/80 shadow-lg shadow-blue-900/20',
-  amber: 'border-amber-500 bg-amber-950/25 ring-2 ring-amber-500/80 shadow-lg shadow-amber-900/15',
-  sky: 'border-sky-500 bg-sky-950/30 ring-2 ring-sky-500/70 shadow-md shadow-sky-950/20',
-  cyan: 'border-cyan-500 bg-cyan-950/25 ring-2 ring-cyan-500/70',
-  purple: 'border-purple-500 bg-purple-950/30 ring-2 ring-purple-500/70 shadow-md shadow-purple-950/20',
-  emerald: 'border-emerald-500 bg-emerald-950/25 ring-2 ring-emerald-500/70',
-  slate: 'border-slate-400 bg-slate-800/80 ring-2 ring-slate-400/60',
-  violet: 'border-violet-500 bg-violet-950/30 ring-2 ring-violet-500/70',
+  blue: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]',
+  amber: 'border-amber-500/70 bg-amber-950/20 ring-1 ring-amber-500/40',
+  sky: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]',
+  cyan: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]',
+  purple: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]',
+  emerald: 'border-emerald-500/60 bg-[var(--apple-surface)] ring-1 ring-emerald-500/40',
+  slate: 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] ring-1 ring-white/10',
+  violet: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]',
 }
 
 const iconSelectedClass: Record<ChoiceTone, string> = {
-  blue: 'bg-blue-600/30 text-blue-300',
-  amber: 'bg-amber-600/30 text-amber-100',
-  sky: 'bg-sky-600/40 text-sky-200',
-  cyan: 'bg-cyan-600/30 text-cyan-200',
-  purple: 'bg-purple-600/35 text-purple-200',
-  emerald: 'bg-emerald-600/30 text-emerald-200',
-  slate: 'bg-slate-500/40 text-slate-100',
-  violet: 'bg-violet-600/35 text-violet-200',
+  blue: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
+  amber: 'bg-amber-600/25 text-amber-100',
+  sky: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
+  cyan: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
+  purple: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
+  emerald: 'bg-emerald-600/25 text-emerald-200',
+  slate: 'bg-white/10 text-[var(--text-primary)]',
+  violet: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
 }
 
 const iconIdleClass: Record<ChoiceTone, string> = {
-  blue: 'bg-slate-700/80 text-slate-300',
-  amber: 'bg-slate-600 text-amber-100',
-  sky: 'bg-slate-700/80 text-slate-300',
-  cyan: 'bg-slate-600 text-slate-200',
-  purple: 'bg-slate-700/80 text-slate-300',
-  emerald: 'bg-slate-700/80 text-slate-300',
-  slate: 'bg-slate-700/80 text-slate-300',
-  violet: 'bg-slate-700/80 text-slate-300',
+  blue: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  amber: 'bg-[var(--apple-fill-secondary)] text-amber-100',
+  sky: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  cyan: 'bg-[var(--apple-fill-secondary)] text-[var(--text-primary)]',
+  purple: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  emerald: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  slate: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  violet: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
 }
 
-const baseUnselected = 'border-slate-600 bg-slate-900/40 hover:border-slate-500 hover:bg-slate-800/50'
+const baseUnselected = 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] hover:border-[var(--apple-hairline)] hover:bg-[var(--apple-surface)]'
 
 const baseButton =
   'rounded-xl border text-left transition flex flex-col gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:opacity-45 disabled:pointer-events-none'
@@ -74,13 +74,13 @@ export function ChoiceLinkCard({
   return (
     <Link
       to={to}
-      className={`${baseButton} p-3 gap-2 ${baseUnselected} hover:border-blue-500/45 hover:bg-slate-800/55 ${className}`.trim()}
+      className={`${baseButton} p-3 gap-2 ${baseUnselected} hover:border-[var(--accent)]/45 hover:bg-[var(--apple-fill-tertiary)]/55 ${className}`.trim()}
     >
-      <span className="flex items-center gap-2 text-sm font-medium text-slate-100">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-700/80 text-blue-300">{icon}</span>
+      <span className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-hover)]/80 text-[var(--accent)]">{icon}</span>
         {title}
       </span>
-      {description ? <span className="text-xs text-slate-500 leading-snug">{description}</span> : null}
+      {description ? <span className="text-xs text-[var(--text-muted)] leading-snug">{description}</span> : null}
     </Link>
   )
 }
@@ -112,12 +112,12 @@ export function ChoiceCard({
   const pad = compact ? 'p-2.5 gap-1.5' : 'p-4 gap-2'
   const minh = compact ? '' : 'min-h-[108px]'
   const iconBox = largeIcon ? 'h-10 w-10 shrink-0' : compact ? 'h-8 w-8 shrink-0' : 'h-9 w-9 shrink-0'
-  const titleCls = compact ? 'text-sm font-medium text-white' : largeIcon ? 'text-white font-semibold' : 'text-white font-medium'
+  const titleCls = compact ? 'text-sm font-medium text-[var(--text-primary)]' : largeIcon ? 'text-[var(--text-primary)] font-semibold' : 'text-[var(--text-primary)] font-medium'
   const descCls = compact
-    ? 'text-[11px] text-slate-500 leading-snug line-clamp-2'
+    ? 'text-[11px] text-[var(--text-muted)] leading-snug line-clamp-2'
     : largeIcon
-      ? 'text-sm text-slate-400 leading-snug'
-      : 'text-xs text-slate-500 leading-relaxed'
+      ? 'text-sm text-[var(--text-muted)] leading-snug'
+      : 'text-xs text-[var(--text-muted)] leading-relaxed'
 
   return (
     <button

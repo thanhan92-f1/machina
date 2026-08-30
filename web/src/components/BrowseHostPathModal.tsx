@@ -91,14 +91,14 @@ export function BrowseHostPathModal({
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="bg-slate-900 border border-slate-600 rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between gap-2">
-          <h2 id={titleId} className="text-sm font-semibold text-slate-100">
+      <div className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="p-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-2">
+          <h2 id={titleId} className="text-sm font-semibold text-[var(--text-primary)]">
             {title}
           </h2>
           <button
             type="button"
-            className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+            className="text-xs px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)]"
             onClick={onClose}
           >
             Close
@@ -111,7 +111,7 @@ export function BrowseHostPathModal({
                 key={r}
                 type="button"
                 title={r}
-                className="text-[11px] px-2 py-1 rounded border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-300 max-w-[220px] truncate"
+                className="text-[11px] px-2 py-1 rounded border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)]/80 hover:bg-[var(--apple-fill-tertiary)] text-[var(--text-secondary)] max-w-[220px] truncate"
                 onClick={() => void load(r)}
               >
                 {r}
@@ -119,36 +119,36 @@ export function BrowseHostPathModal({
             ))}
           </div>
         ) : null}
-        <div className="px-4 py-2 flex items-center gap-2 border-b border-slate-800 min-h-[2.25rem]">
+        <div className="px-4 py-2 flex items-center gap-2 border-b border-[var(--apple-hairline)] min-h-[2.25rem]">
           {data?.parent ? (
             <button
               type="button"
-              className="text-xs shrink-0 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+              className="text-xs shrink-0 px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)]"
               onClick={() => data.parent && void load(data.parent)}
             >
               Up
             </button>
           ) : null}
-          <span className="text-xs text-slate-400 font-mono truncate" title={data?.path}>
+          <span className="text-xs text-[var(--text-muted)] font-mono truncate" title={data?.path}>
             {loading && !data ? '…' : data?.path}
           </span>
         </div>
         <div className="flex-1 overflow-y-auto min-h-0 p-2 space-y-1">
           {err ? <p className={`text-xs ${statusToneClass('error')} px-2`}>{err}</p> : null}
           {loading && !data?.entries?.length ? (
-            <p className="text-xs text-slate-500 px-2 py-4">Loading…</p>
+            <p className="text-xs text-[var(--text-muted)] px-2 py-4">Loading…</p>
           ) : null}
           {data?.entries?.map((entry) => (
             <div
               key={entry.path}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[var(--apple-fill-tertiary)]/80 border border-transparent hover:border-[var(--apple-hairline)]"
             >
               {entry.is_directory ? (
                 pickDirectory ? (
                   <div className="flex flex-1 min-w-0 items-center gap-2">
                     <button
                       type="button"
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-slate-200"
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-[var(--text-primary)]"
                       onClick={() => void load(entry.path)}
                     >
                       <FolderOpen className={`w-4 h-4 shrink-0 ${statusToneClass('warn')} opacity-90`} aria-hidden />
@@ -168,7 +168,7 @@ export function BrowseHostPathModal({
                 ) : (
                   <button
                     type="button"
-                    className="flex-1 min-w-0 text-left text-sm text-slate-200 flex items-center gap-2"
+                    className="flex-1 min-w-0 text-left text-sm text-[var(--text-primary)] flex items-center gap-2"
                     onClick={() => void load(entry.path)}
                   >
                     <FolderOpen className={`w-4 h-4 shrink-0 ${statusToneClass('warn')} opacity-90`} aria-hidden />
@@ -177,16 +177,16 @@ export function BrowseHostPathModal({
                 )
               ) : (
                 <>
-                  <span className="flex-1 min-w-0 text-sm text-slate-300 truncate" title={entry.path}>
+                  <span className="flex-1 min-w-0 text-sm text-[var(--text-secondary)] truncate" title={entry.path}>
                     {entry.name}
                     {canSelectFile(entry.name) ? (
-                      <span className="text-slate-500 text-xs ml-2">({formatEntrySize(entry.size_bytes)})</span>
+                      <span className="text-[var(--text-muted)] text-xs ml-2">({formatEntrySize(entry.size_bytes)})</span>
                     ) : null}
                   </span>
                   {canSelectFile(entry.name) ? (
                     <button
                       type="button"
-                      className="shrink-0 text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white"
+                      className="shrink-0 text-xs px-2 py-1 rounded btn-primary"
                       onClick={() => {
                         onSelectPath(entry.path)
                         onClose()
@@ -195,7 +195,7 @@ export function BrowseHostPathModal({
                       Select
                     </button>
                   ) : (
-                    <span className="text-[10px] text-slate-600 shrink-0">—</span>
+                    <span className="text-[10px] text-[var(--text-faint)] shrink-0">—</span>
                   )}
                 </>
               )}

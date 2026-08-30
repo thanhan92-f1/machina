@@ -1,0 +1,919 @@
+/* ============================================================================
+   machina-daylight.css — Zeus OS Tahoe Light / Magichromatic shell for Machina.
+
+   Palette: iPhone 17 finishes (Mist Blue, Sage, Lavender, White, Black)
+   + iPhone 17 Pro accents (Cosmic Orange, Deep Blue, Silver).
+   SoT: ../zeus-os/ui/src/index.css (html[data-theme='tahoe-light'])
+   Laws: docs/design/DAYLIGHT-CONTRACT.md
+   ========================================================================= */
+
+html.apple-light,
+html.light-theme,
+html[data-theme='tahoe-light'],
+html[data-ui-shell='tahoe-light'] {
+  color-scheme: light;
+
+  /* --- iPhone 17 named finishes ----------------------------------------- */
+  --iphone-mist-blue: hsl(200 62% 62%);
+  --iphone-mist-blue-deep: hsl(200 78% 40%);
+  --iphone-sage: hsl(110 18% 48%);
+  --iphone-sage-deep: hsl(145 32% 36%);
+  --iphone-lavender: hsl(270 32% 62%);
+  --iphone-lavender-deep: hsl(270 42% 48%);
+  --iphone-white: #ffffff;
+  --iphone-black: hsl(0 0% 11%);
+  --iphone-cosmic-orange: hsl(18 92% 48%);
+  --iphone-deep-blue: hsl(215 58% 32%);
+  --iphone-silver: hsl(210 12% 78%);
+
+  /* Zeus Magichromatic HSL roles (as usable hex/hsl for Machina aliases) */
+  --background: 210 36% 95%;
+  --foreground: 0 0% 11%;
+  --card: 0 0% 100%;
+  --primary: 200 78% 40%;
+  --primary-foreground: 0 0% 100%;
+  --muted-foreground: 220 12% 38%;
+  --border-hsl: 205 22% 84%;
+  --accent-alt: 270 42% 48%;
+  --accent-live: 145 32% 36%;
+  --warning-hsl: 18 92% 48%;
+  --info-hsl: 215 58% 32%;
+
+  /* --- Ground (Law 0) — mist-tinted paper, white working plane ----------- */
+  --surface-0: hsl(210 36% 95%);
+  --surface-1: hsl(205 32% 97%);
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --surface-sunken: hsl(205 22% 90%);
+  --surface-hover: hsl(200 48% 96% / 0.9);
+  --surface-active: hsl(200 78% 40% / 0.1);
+
+  --border-faint: hsl(205 22% 84% / 0.55);
+  --border: hsl(205 22% 84%);
+  --border-strong: hsl(200 28% 76%);
+  --divider: hsl(205 22% 84% / 0.7);
+
+  --shadow-1: 0 1px 2px hsl(210 24% 40% / 0.05);
+  --shadow-2: 0 2px 8px hsl(210 24% 40% / 0.06), 0 1px 2px hsl(210 24% 40% / 0.04);
+  --shadow-3: 0 12px 32px hsl(210 24% 40% / 0.1), 0 2px 6px hsl(210 24% 40% / 0.05);
+
+  /* --- Text (graphite on mist paper) ------------------------------------ */
+  --text-primary: hsl(0 0% 11%);
+  --text-secondary: hsl(220 12% 38%);
+  --text-muted: hsl(220 10% 44%);
+  --text-faint: hsl(220 8% 58%);
+  --text-on-accent: #ffffff;
+  --text-inverse: #f2f4f7;
+
+  /* --- Intent = Mist Blue ------------------------------------------------ */
+  --plasma: var(--iphone-mist-blue-deep);
+  --plasma-strong: hsl(200 78% 32%);
+  --plasma-tint: hsl(200 78% 40% / 0.12);
+  --plasma-tint-2: hsl(200 78% 40% / 0.2);
+  --focus-ring: 0 0 0 3px hsl(200 78% 40% / 0.26);
+
+  /* Cosmic Orange = warn; Sage = good; Ember = fail */
+  --amber: var(--iphone-cosmic-orange);
+  --amber-tint: hsl(18 92% 48% / 0.09);
+  --ember: hsl(4 72% 42%);
+  --ember-tint: hsl(4 72% 42% / 0.08);
+  --verdant: var(--iphone-sage-deep);
+  --verdant-tint: hsl(145 32% 36% / 0.09);
+
+  --mark-nominal: hsl(220 10% 46%);
+  --mark-track: hsl(205 22% 84% / 0.65);
+  --mark-ghost: hsl(220 12% 38% / 0.2);
+  --grid-line: hsl(205 22% 84% / 0.55);
+  --unmeasured-stroke: hsl(220 12% 38% / 0.28);
+  --unmeasured-text: var(--text-muted);
+
+  --tty-bg: #0b0d11;
+  --tty-fg: #c6ceda;
+  --tty-dim: #6e7681;
+  --tty-border: hsl(205 22% 84%);
+
+  --topbar-bg: transparent;
+  --topbar-border: hsl(200 28% 82%);
+  --rail-bg: transparent;
+  --rail-active-bg: linear-gradient(90deg, hsl(200 78% 40% / 0.16), hsl(270 42% 48% / 0.08));
+  --rail-active-fg: hsl(200 78% 32%);
+  --scrim: hsl(210 30% 20% / 0.28);
+
+  /* --- Machina aliases -------------------------------------------------- */
+  --page-bg: var(--surface-0);
+  --apple-surface: var(--surface-2);
+  --apple-surface-elevated: var(--surface-3);
+  --apple-hairline: var(--border);
+  --apple-muted: var(--text-muted);
+  --apple-fill-secondary: var(--surface-hover);
+  --apple-fill-tertiary: hsl(200 40% 96% / 0.55);
+
+  --accent: var(--plasma);
+  --accent-hover: var(--plasma-strong);
+  --accent-pressed: hsl(200 78% 28%);
+  --accent-soft: var(--plasma-tint);
+  --link: var(--plasma);
+  --link-hover: var(--plasma-strong);
+  --link-on-light: var(--plasma);
+  --zyvor-accent: var(--iphone-cosmic-orange);
+
+  --glass-bg: hsl(200 55% 97% / 0.9);
+  --glass-bg-elevated: hsl(0 0% 100% / 0.96);
+  --glass-bg-strong: #ffffff;
+  --glass-border: var(--border);
+  --glass-border-strong: var(--border-strong);
+  --glass-shadow: var(--shadow-2);
+  --glass-highlight: hsl(0 0% 100% / 0.9);
+
+  --machina-status-ok: var(--verdant);
+  --machina-status-warn: var(--amber);
+  --machina-status-error: var(--ember);
+  --machina-status-info: var(--plasma);
+  --machina-status-neutral: var(--mark-nominal);
+  --machina-accent: var(--plasma);
+  --machina-accent-ai: var(--iphone-lavender-deep);
+  --machina-accent-network: var(--plasma);
+  --machina-accent-security: var(--ember);
+  --machina-vm-running: var(--verdant);
+  --machina-vm-stopped: var(--mark-nominal);
+  --machina-vm-paused: var(--amber);
+  --machina-vm-creating: var(--plasma);
+  --machina-vm-failed: var(--ember);
+  --machina-vm-migrating: var(--iphone-deep-blue);
+  --machina-vm-suspended: var(--plasma);
+  --machina-vm-unknown: var(--mark-nominal);
+
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Magichromatic page wash — exact Zeus shell */
+html.apple-light,
+html.light-theme,
+html[data-theme='tahoe-light'],
+html.apple-light body,
+html.light-theme body,
+html[data-theme='tahoe-light'] body,
+.apple-light-shell,
+html.apple-light .mac-desktop-root,
+html.light-theme .mac-desktop-root,
+html[data-theme='tahoe-light'] .mac-desktop-root,
+html.apple-light .mac-desktop-main,
+html.light-theme .mac-desktop-main,
+html[data-theme='tahoe-light'] .mac-desktop-main,
+html.apple-light .tahoe-page-root,
+html.light-theme .tahoe-page-root,
+html[data-theme='tahoe-light'] .tahoe-page-root,
+html.apple-light .app-shell,
+html.light-theme .app-shell {
+  background-color: hsl(210 36% 95%) !important;
+  background-image:
+    radial-gradient(ellipse 78% 52% at 6% -8%, hsl(200 70% 62% / 0.34), transparent 58%),
+    radial-gradient(ellipse 58% 44% at 96% 4%, hsl(270 38% 68% / 0.26), transparent 55%),
+    radial-gradient(ellipse 52% 38% at 78% 108%, hsl(110 28% 55% / 0.2), transparent 55%),
+    radial-gradient(ellipse 38% 28% at 42% 62%, hsl(18 90% 55% / 0.08), transparent 50%) !important;
+  background-attachment: fixed !important;
+  color: var(--text-primary);
+}
+
+html.apple-light ::selection,
+html.light-theme ::selection,
+html[data-theme='tahoe-light'] ::selection {
+  background: var(--plasma-tint-2);
+  color: var(--text-primary);
+}
+
+/* White working plane + shadow (Law 0) */
+html.apple-light .apple-surface,
+html.light-theme .apple-surface,
+html.apple-light .card,
+html.light-theme .card,
+html.apple-light .machina-clean .card,
+html.light-theme .machina-clean .card,
+html.apple-light .rounded-3xl.border.bg-\[var\(--apple-surface\)\],
+html.light-theme .rounded-3xl.border {
+  background: #ffffff !important;
+  border-color: hsl(200 35% 84%) !important;
+  box-shadow: 0 1px 0 hsl(200 50% 90% / 0.6) inset, var(--shadow-1);
+}
+
+html.apple-light .apple-surface-elevated,
+html.light-theme .apple-surface-elevated {
+  background: #ffffff !important;
+  border: 1px solid hsl(200 35% 84%) !important;
+  box-shadow: var(--shadow-3) !important;
+}
+
+/* Mist Blue primary CTA — Zeus tahoe-btn-primary gradient */
+html.apple-light .btn-primary,
+html.light-theme .btn-primary,
+html.apple-light .machina-clean .btn-primary,
+html.light-theme .machina-clean .btn-primary {
+  background: linear-gradient(135deg, hsl(200 78% 42%) 0%, hsl(210 72% 38%) 55%, hsl(220 70% 36%) 100%) !important;
+  color: #fff !important;
+  border: 1px solid hsl(200 60% 32% / 0.35) !important;
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.28) inset,
+    0 2px 8px -2px hsl(200 78% 40% / 0.45) !important;
+}
+html.apple-light .btn-primary:hover:not(:disabled),
+html.light-theme .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05) saturate(1.05);
+  background: linear-gradient(135deg, hsl(200 78% 42%) 0%, hsl(210 72% 38%) 55%, hsl(220 70% 36%) 100%) !important;
+}
+
+html.apple-light .btn-secondary,
+html.light-theme .btn-secondary {
+  background: hsl(200 55% 96% / 0.9) !important;
+  color: hsl(200 78% 32%) !important;
+  border: 1px solid hsl(200 78% 40% / 0.35) !important;
+}
+
+html.apple-light .apple-link,
+html.light-theme .apple-link {
+  color: hsl(200 78% 32%);
+}
+html.apple-light .apple-link:hover,
+html.light-theme .apple-link:hover {
+  color: hsl(200 78% 28%);
+}
+
+html.apple-light :focus-visible,
+html.light-theme :focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Navbar / menubar — Magichromatic chrome */
+html.apple-light .liquid-glass-navbar,
+html.light-theme .liquid-glass-navbar,
+html.apple-light .mac-menubar-inner,
+html.light-theme .mac-menubar-inner {
+  background:
+    linear-gradient(90deg,
+      hsl(200 70% 94% / 0.88) 0%,
+      hsl(270 45% 95% / 0.85) 50%,
+      hsl(145 30% 95% / 0.88) 100%) !important;
+  border-bottom: 1px solid hsl(200 35% 82%) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--text-primary);
+}
+
+/* Platform sidebar — Zeus .zeus-sidebar wash */
+html.apple-light .mac-finder-sidebar,
+html.light-theme .mac-finder-sidebar,
+html.apple-light .platform-sidebar,
+html.light-theme .platform-sidebar,
+html.apple-light .tahoe-sidebar-expanded,
+html.light-theme .tahoe-sidebar-expanded {
+  background:
+    linear-gradient(165deg,
+      hsl(200 70% 92% / 0.92) 0%,
+      hsl(270 45% 94% / 0.9) 45%,
+      hsl(145 30% 94% / 0.92) 100%) !important;
+  border-right: 1px solid hsl(200 40% 78%) !important;
+  border-color: hsl(200 40% 78%) !important;
+  color: var(--text-primary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: none;
+}
+
+html.apple-light .tahoe-sidebar-link-active,
+html.light-theme .tahoe-sidebar-link-active,
+html.apple-light .platform-rail-active,
+html.light-theme .platform-rail-active {
+  background: linear-gradient(90deg, hsl(200 78% 40% / 0.18), hsl(270 48% 52% / 0.1)) !important;
+  color: hsl(200 78% 32%) !important;
+  box-shadow: inset 3px 0 0 hsl(200 78% 40%);
+}
+
+html.apple-light .tahoe-sidebar-link,
+html.light-theme .tahoe-sidebar-link,
+html.apple-light .platform-rail-link,
+html.light-theme .platform-rail-link {
+  color: hsl(220 12% 38%) !important;
+}
+html.apple-light .tahoe-sidebar-link:hover,
+html.light-theme .tahoe-sidebar-link:hover {
+  color: hsl(0 0% 11%) !important;
+  background: hsl(200 55% 96% / 0.7) !important;
+}
+
+html.apple-light .tahoe-context-bar,
+html.light-theme .tahoe-context-bar,
+html[data-theme='tahoe-light'] .tahoe-context-bar {
+  background:
+    linear-gradient(90deg, hsl(200 70% 96% / 0.85), hsl(270 40% 97% / 0.8), hsl(145 28% 96% / 0.85)) !important;
+  border-bottom-color: hsl(200 40% 78% / 0.7) !important;
+  color: var(--text-primary);
+}
+
+html.apple-light .tahoe-context-app-title,
+html.light-theme .tahoe-context-app-title,
+html[data-theme='tahoe-light'] .tahoe-context-app-title,
+html.apple-light .tahoe-context-pill,
+html.light-theme .tahoe-context-pill,
+html[data-theme='tahoe-light'] .tahoe-context-pill,
+html.apple-light .tahoe-context-status-chip,
+html.light-theme .tahoe-context-status-chip,
+html[data-theme='tahoe-light'] .tahoe-context-status-chip,
+html.apple-light .tahoe-mobile-jump-select,
+html.light-theme .tahoe-mobile-jump-select,
+html[data-theme='tahoe-light'] .tahoe-mobile-jump-select {
+  color: hsl(0 0% 11% / 0.82) !important;
+}
+
+html.apple-light .tahoe-context-app-title,
+html.light-theme .tahoe-context-app-title,
+html[data-theme='tahoe-light'] .tahoe-context-app-title {
+  color: hsl(0 0% 11% / 0.92) !important;
+}
+
+html.apple-light a.tahoe-context-app-title:hover,
+html.light-theme a.tahoe-context-app-title:hover,
+html[data-theme='tahoe-light'] a.tahoe-context-app-title:hover {
+  color: hsl(200 78% 32%) !important;
+}
+
+html.apple-light .tahoe-context-pill-active,
+html.light-theme .tahoe-context-pill-active,
+html[data-theme='tahoe-light'] .tahoe-context-pill-active {
+  color: hsl(200 78% 32%) !important;
+  background: hsl(200 78% 40% / 0.12) !important;
+  border-color: hsl(200 78% 40% / 0.22) !important;
+}
+
+html.apple-light .tahoe-context-overflow-menu,
+html.light-theme .tahoe-context-overflow-menu,
+html[data-theme='tahoe-light'] .tahoe-context-overflow-menu {
+  background: #ffffff !important;
+  border-color: hsl(205 28% 84%) !important;
+  color: hsl(0 0% 11%) !important;
+}
+
+html.apple-light .tahoe-context-overflow-item,
+html.light-theme .tahoe-context-overflow-item,
+html[data-theme='tahoe-light'] .tahoe-context-overflow-item {
+  color: hsl(0 0% 11% / 0.78) !important;
+}
+
+html.apple-light .tahoe-context-overflow-item:hover,
+html.light-theme .tahoe-context-overflow-item:hover,
+html[data-theme='tahoe-light'] .tahoe-context-overflow-item:hover,
+html.apple-light .tahoe-context-overflow-item-active,
+html.light-theme .tahoe-context-overflow-item-active,
+html[data-theme='tahoe-light'] .tahoe-context-overflow-item-active {
+  color: hsl(200 78% 32%) !important;
+}
+
+html.apple-light .platform-detail-tabs-sticky,
+html.light-theme .platform-detail-tabs-sticky,
+html[data-theme='tahoe-light'] .platform-detail-tabs-sticky {
+  background: hsl(200 55% 98% / 0.92) !important;
+  border-bottom-color: hsl(200 40% 78% / 0.65) !important;
+}
+
+html.apple-light .tahoe-mesh,
+html.light-theme .tahoe-mesh {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse 55% 45% at 85% 30%, hsl(200 85% 55% / 0.22), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 15% 75%, hsl(270 55% 60% / 0.18), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 50% 95%, hsl(24 95% 55% / 0.14), transparent 50%) !important;
+}
+
+html.apple-light .mac-desktop-root[data-wallpaper],
+html.light-theme .mac-desktop-root[data-wallpaper] {
+  background-color: hsl(210 36% 95%) !important;
+  background-image:
+    radial-gradient(ellipse 78% 52% at 6% -8%, hsl(200 70% 62% / 0.34), transparent 58%),
+    radial-gradient(ellipse 58% 44% at 96% 4%, hsl(270 38% 68% / 0.26), transparent 55%),
+    radial-gradient(ellipse 52% 38% at 78% 108%, hsl(110 28% 55% / 0.2), transparent 55%),
+    radial-gradient(ellipse 38% 28% at 42% 62%, hsl(18 90% 55% / 0.08), transparent 50%) !important;
+}
+
+/* Platform inherits light tokens (no carbon shell under Light) */
+html.apple-light .mac-desktop-root,
+html.light-theme .mac-desktop-root {
+  --text-primary: hsl(0 0% 11%);
+  --text-secondary: hsl(220 12% 38%);
+  --text-muted: hsl(220 10% 44%);
+  --apple-surface: #ffffff;
+  --apple-surface-elevated: #ffffff;
+  --apple-hairline: hsl(205 22% 84%);
+  --glass-bg: hsl(200 55% 97% / 0.9);
+  --glass-bg-elevated: #ffffff;
+  --glass-bg-strong: #ffffff;
+  --glass-border: hsl(205 22% 84%);
+  --machina-accent-ai: var(--iphone-lavender-deep);
+  color: var(--text-primary);
+}
+
+html.apple-light .mac-desktop-root .text-white,
+html.light-theme .mac-desktop-root .text-white,
+html.apple-light .mac-dock .text-white,
+html.light-theme .mac-dock .text-white,
+html[data-theme='tahoe-light'] .text-white {
+  color: var(--text-primary) !important;
+}
+html.apple-light .mac-desktop-root .text-white\/90,
+html.light-theme .mac-desktop-root .text-white\/90,
+html.apple-light .mac-desktop-root .text-white\/75,
+html.light-theme .mac-desktop-root .text-white\/75,
+html.apple-light .mac-desktop-root .text-white\/55,
+html.light-theme .mac-desktop-root .text-white\/55,
+html.apple-light .mac-desktop-root .text-white\/50,
+html.light-theme .mac-desktop-root .text-white\/50,
+html.apple-light .mac-desktop-root .text-white\/40,
+html.light-theme .mac-desktop-root .text-white\/40,
+html.apple-light .mac-desktop-root .text-white\/35,
+html.light-theme .mac-desktop-root .text-white\/35,
+html[data-theme='tahoe-light'] .text-white\/90,
+html[data-theme='tahoe-light'] .text-white\/75,
+html[data-theme='tahoe-light'] .text-white\/55,
+html[data-theme='tahoe-light'] .text-white\/50,
+html[data-theme='tahoe-light'] .text-white\/40,
+html[data-theme='tahoe-light'] .text-white\/35 {
+  color: var(--text-secondary) !important;
+}
+
+html.apple-light .mac-desktop-root .text-slate-200,
+html.light-theme .mac-desktop-root .text-slate-200,
+html.apple-light .mac-desktop-root .text-slate-300,
+html.light-theme .mac-desktop-root .text-slate-300 {
+  color: var(--text-secondary) !important;
+}
+html.apple-light .mac-desktop-root .text-slate-400,
+html.light-theme .mac-desktop-root .text-slate-400,
+html.apple-light .mac-desktop-root .text-slate-500,
+html.light-theme .mac-desktop-root .text-slate-500,
+html.apple-light .mac-desktop-root .text-slate-600,
+html.light-theme .mac-desktop-root .text-slate-600 {
+  color: var(--text-muted) !important;
+}
+
+html.apple-light .mac-desktop-root .border-white\/\[0\.08\],
+html.light-theme .mac-desktop-root .border-white\/\[0\.08\],
+html.apple-light .mac-desktop-root .border-white\/10,
+html.light-theme .mac-desktop-root .border-white\/10,
+html.apple-light .mac-desktop-root .border-white\/\[0\.06\],
+html.light-theme .mac-desktop-root .border-white\/\[0\.06\] {
+  border-color: hsl(200 35% 84%) !important;
+}
+
+html.apple-light .mac-desktop-root .bg-white\/\[0\.03\],
+html.light-theme .mac-desktop-root .bg-white\/\[0\.03\],
+html.apple-light .mac-desktop-root .bg-white\/\[0\.04\],
+html.light-theme .mac-desktop-root .bg-white\/\[0\.04\],
+html.apple-light .mac-desktop-root .bg-white\/\[0\.06\],
+html.light-theme .mac-desktop-root .bg-white\/\[0\.06\],
+html.apple-light .mac-desktop-root .bg-\[var\(--glass-bg\)\],
+html.light-theme .mac-desktop-root .bg-\[var\(--glass-bg\)\] {
+  background-color: #ffffff !important;
+}
+
+/* Mission Control / home panels — Zeus command-deck panel look */
+html.apple-light .mc-briefing,
+html.light-theme .mc-briefing,
+html.apple-light .mission-control-root > section,
+html.light-theme .mission-control-root > section {
+  border-color: hsl(200 35% 84%);
+}
+
+html.apple-light .mc-hero-ribbon,
+html.light-theme .mc-hero-ribbon {
+  background:
+    radial-gradient(ellipse 90% 80% at 0% 0%, hsl(200 85% 55% / 0.2), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 100% 10%, hsl(270 55% 62% / 0.16), transparent 50%),
+    linear-gradient(180deg, hsl(210 50% 98%) 0%, hsl(210 35% 96%) 100%) !important;
+  border-color: hsl(200 40% 82% / 0.7) !important;
+  box-shadow: inset 3px 0 0 hsl(200 78% 40% / 0.55);
+}
+
+html.apple-light .mc-briefing,
+html.light-theme .mc-briefing {
+  background:
+    linear-gradient(160deg, hsl(200 60% 99%) 0%, hsl(0 0% 100%) 45%, hsl(270 30% 99%) 100%);
+  border: 1px solid hsl(200 35% 84%);
+  border-radius: 1.75rem;
+  box-shadow: 0 1px 0 hsl(200 50% 90% / 0.6) inset;
+}
+
+html.apple-light .mission-control-page,
+html.light-theme .mission-control-page,
+html.apple-light .mission-control-root,
+html.light-theme .mission-control-root {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+html.apple-light .table-row-hover:hover,
+html.light-theme .table-row-hover:hover {
+  background: hsl(200 55% 96% / 0.85);
+  border-left: 2px solid hsl(200 78% 40%);
+}
+
+/* Shell bridge / secondary chrome bars */
+html.apple-light .shell-bridge-bar,
+html.light-theme .shell-bridge-bar {
+  background:
+    linear-gradient(90deg, hsl(200 70% 96% / 0.85), hsl(270 40% 97% / 0.8), hsl(145 28% 96% / 0.85)) !important;
+  border-color: hsl(200 40% 78% / 0.7) !important;
+  color: var(--text-primary);
+}
+
+/* Login + TTY remain carbon islands */
+html.apple-light .login-page-macos,
+html.light-theme .login-page-macos {
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a6;
+  --text-muted: #86868b;
+  --apple-surface: rgba(255, 255, 255, 0.06);
+  --apple-hairline: rgba(255, 255, 255, 0.12);
+  --plasma: #0071e3;
+  --accent: #0071e3;
+  color: #f5f5f7;
+  background-color: #000 !important;
+  background-image: none !important;
+  background-attachment: scroll !important;
+}
+
+html.apple-light .login-page-macos .login-hero-headline,
+html.light-theme .login-page-macos .login-hero-headline,
+html.apple-light .login-page-macos h2,
+html.light-theme .login-page-macos h2 {
+  color: #f5f5f7 !important;
+}
+
+html.apple-light .tty-surface,
+html.light-theme .tty-surface,
+html.apple-light [data-tty],
+html.light-theme [data-tty] {
+  background: var(--tty-bg) !important;
+  color: var(--tty-fg) !important;
+  border-color: var(--tty-border) !important;
+}
+
+/* Dock — portaled to body (outside .mac-desktop-root); must remap here */
+html.apple-light .mac-dock-inner,
+html.light-theme .mac-dock-inner,
+html[data-theme='tahoe-light'] .mac-dock-inner {
+  background: hsl(200 55% 97% / 0.92) !important;
+  border-color: hsl(200 28% 78% / 0.65) !important;
+  box-shadow: var(--shadow-2);
+}
+
+html.apple-light .mac-dock-item,
+html.light-theme .mac-dock-item,
+html[data-theme='tahoe-light'] .mac-dock-item,
+html.apple-light .mac-dock-spotlight,
+html.light-theme .mac-dock-spotlight,
+html[data-theme='tahoe-light'] .mac-dock-spotlight {
+  color: hsl(0 0% 11% / 0.88) !important;
+}
+
+html.apple-light .mac-dock-stats,
+html.light-theme .mac-dock-stats,
+html[data-theme='tahoe-light'] .mac-dock-stats {
+  color: hsl(0 0% 11% / 0.78) !important;
+  background: hsl(200 55% 97% / 0.95) !important;
+  border-color: hsl(200 28% 78% / 0.65) !important;
+}
+
+html.apple-light .mac-dock-item-active,
+html.light-theme .mac-dock-item-active,
+html[data-theme='tahoe-light'] .mac-dock-item-active {
+  color: hsl(200 78% 32%) !important;
+  background: hsl(200 78% 40% / 0.12) !important;
+}
+
+html.apple-light .mac-dock-item:hover,
+html.light-theme .mac-dock-item:hover,
+html[data-theme='tahoe-light'] .mac-dock-item:hover {
+  background: hsl(0 0% 11% / 0.06) !important;
+}
+
+html.apple-light .mac-dock-tooltip,
+html.light-theme .mac-dock-tooltip,
+html[data-theme='tahoe-light'] .mac-dock-tooltip {
+  color: hsl(0 0% 11%) !important;
+  background: #ffffff !important;
+  border-color: hsl(205 28% 84%) !important;
+}
+
+html.apple-light .mac-dock-divider,
+html.light-theme .mac-dock-divider,
+html[data-theme='tahoe-light'] .mac-dock-divider {
+  background: hsl(0 0% 11% / 0.12) !important;
+}
+
+html.apple-light .mac-dock-dot,
+html.light-theme .mac-dock-dot,
+html[data-theme='tahoe-light'] .mac-dock-dot {
+  background: hsl(200 78% 40%) !important;
+}
+
+html.apple-light .mac-dock-ask,
+html.light-theme .mac-dock-ask,
+html[data-theme='tahoe-light'] .mac-dock-ask {
+  color: hsl(18 92% 40%) !important;
+}
+
+/* Menubar / menu panel text — graphite on mist */
+html.apple-light .mac-menubar-inner .text-white,
+html.light-theme .mac-menubar-inner .text-white,
+html.apple-light .mac-menubar-inner .text-white\/90,
+html.light-theme .mac-menubar-inner .text-white\/90,
+html.apple-light .mac-menu-item,
+html.light-theme .mac-menu-item,
+html[data-theme='tahoe-light'] .mac-menu-item {
+  color: hsl(0 0% 11% / 0.9) !important;
+}
+
+html.apple-light .mac-menubar-inner .text-white\/50,
+html.light-theme .mac-menubar-inner .text-white\/50,
+html.apple-light .mac-menubar-inner .text-white\/55,
+html.light-theme .mac-menubar-inner .text-white\/55,
+html.apple-light .mac-menubar-inner .text-white\/40,
+html.light-theme .mac-menubar-inner .text-white\/40 {
+  color: hsl(220 12% 38%) !important;
+}
+
+html.apple-light .mac-menu-panel,
+html.light-theme .mac-menu-panel,
+html[data-theme='tahoe-light'] .mac-menu-panel {
+  background: #ffffff !important;
+  border-color: hsl(205 28% 84%) !important;
+  color: hsl(0 0% 11%) !important;
+}
+
+html.apple-light .mac-menu-item:hover,
+html.light-theme .mac-menu-item:hover,
+html.apple-light .mac-menu-item-active,
+html.light-theme .mac-menu-item-active {
+  background: hsl(200 78% 40% / 0.1) !important;
+  color: hsl(0 0% 11%) !important;
+}
+
+/* ============================================================================
+   Platform + classic slate remaps — Law 0 white cards on mist paper
+   Covers Machine Finder / Fleet Cloud / leftover carbon admin panels
+   ========================================================================= */
+
+html.apple-light .mac-desktop-root .bg-slate-950\/30,
+html.light-theme .mac-desktop-root .bg-slate-950\/30,
+html.apple-light .mac-desktop-root .bg-slate-950\/40,
+html.light-theme .mac-desktop-root .bg-slate-950\/40,
+html.apple-light .mac-desktop-root .bg-slate-950\/50,
+html.light-theme .mac-desktop-root .bg-slate-950\/50,
+html.apple-light .mac-desktop-root .bg-slate-950\/60,
+html.light-theme .mac-desktop-root .bg-slate-950\/60,
+html.apple-light .mac-desktop-root .bg-slate-900\/30,
+html.light-theme .mac-desktop-root .bg-slate-900\/30,
+html.apple-light .mac-desktop-root .bg-slate-900\/40,
+html.light-theme .mac-desktop-root .bg-slate-900\/40,
+html.apple-light .mac-desktop-root .bg-slate-900\/50,
+html.light-theme .mac-desktop-root .bg-slate-900\/50,
+html.apple-light .mac-desktop-root .bg-slate-900\/60,
+html.light-theme .mac-desktop-root .bg-slate-900\/60,
+html.apple-light .mac-desktop-root .bg-slate-900\/80,
+html.light-theme .mac-desktop-root .bg-slate-900\/80,
+html.apple-light .mac-desktop-root .bg-slate-900\/95,
+html.light-theme .mac-desktop-root .bg-slate-900\/95,
+html.apple-light .mac-desktop-root .bg-slate-800\/40,
+html.light-theme .mac-desktop-root .bg-slate-800\/40,
+html.apple-light .mac-desktop-root .bg-slate-800\/50,
+html.light-theme .mac-desktop-root .bg-slate-800\/50,
+html.apple-light .liquid-glass-app .bg-slate-950\/30,
+html.light-theme .liquid-glass-app .bg-slate-950\/30,
+html.apple-light .liquid-glass-app .bg-slate-950\/40,
+html.light-theme .liquid-glass-app .bg-slate-950\/40,
+html.apple-light .liquid-glass-app .bg-slate-950\/50,
+html.light-theme .liquid-glass-app .bg-slate-950\/50,
+html.apple-light .liquid-glass-app .bg-slate-900\/30,
+html.light-theme .liquid-glass-app .bg-slate-900\/30,
+html.apple-light .liquid-glass-app .bg-slate-900\/40,
+html.light-theme .liquid-glass-app .bg-slate-900\/40,
+html.apple-light .liquid-glass-app .bg-slate-900\/50,
+html.light-theme .liquid-glass-app .bg-slate-900\/50,
+html.apple-light .liquid-glass-app .bg-slate-900\/60,
+html.light-theme .liquid-glass-app .bg-slate-900\/60,
+html.apple-light .liquid-glass-app .bg-slate-900,
+html.light-theme .liquid-glass-app .bg-slate-900,
+html.apple-light .liquid-glass-app .bg-slate-800\/40,
+html.light-theme .liquid-glass-app .bg-slate-800\/40,
+html.apple-light .liquid-glass-app .bg-slate-800\/50,
+html.light-theme .liquid-glass-app .bg-slate-800\/50,
+html.apple-light .app-shell .bg-slate-900,
+html.light-theme .app-shell .bg-slate-900,
+html.apple-light .app-shell .bg-slate-800\/40,
+html.light-theme .app-shell .bg-slate-800\/40 {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+html.apple-light .mac-desktop-root .bg-slate-800,
+html.light-theme .mac-desktop-root .bg-slate-800,
+html.apple-light .liquid-glass-app .bg-slate-800,
+html.light-theme .liquid-glass-app .bg-slate-800 {
+  background-color: #ffffff !important;
+}
+
+html.apple-light .mac-desktop-root .border-slate-600,
+html.light-theme .mac-desktop-root .border-slate-600,
+html.apple-light .mac-desktop-root .border-slate-700,
+html.light-theme .mac-desktop-root .border-slate-700,
+html.apple-light .mac-desktop-root .border-slate-700\/50,
+html.light-theme .mac-desktop-root .border-slate-700\/50,
+html.apple-light .mac-desktop-root .border-slate-700\/60,
+html.light-theme .mac-desktop-root .border-slate-700\/60,
+html.apple-light .liquid-glass-app .border-slate-600,
+html.light-theme .liquid-glass-app .border-slate-600,
+html.apple-light .liquid-glass-app .border-slate-700,
+html.light-theme .liquid-glass-app .border-slate-700,
+html.apple-light .liquid-glass-app .border-slate-700\/50,
+html.light-theme .liquid-glass-app .border-slate-700\/50,
+html.apple-light .liquid-glass-app .border-slate-700\/60,
+html.light-theme .liquid-glass-app .border-slate-700\/60,
+html.apple-light .app-shell .border-slate-700\/60,
+html.light-theme .app-shell .border-slate-700\/60 {
+  border-color: hsl(205 22% 84%) !important;
+}
+
+html.apple-light .mac-desktop-root .from-slate-900\/80,
+html.light-theme .mac-desktop-root .from-slate-900\/80,
+html.apple-light .mac-desktop-root .to-slate-950\/60,
+html.light-theme .mac-desktop-root .to-slate-950\/60,
+html.apple-light .mac-desktop-root .bg-gradient-to-r.from-slate-900\/80,
+html.light-theme .mac-desktop-root .bg-gradient-to-r.from-slate-900\/80 {
+  --tw-gradient-from: hsl(200 48% 98%) !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+/* Machine Finder / Mission Control work surfaces */
+html.apple-light .machine-finder-briefing,
+html.light-theme .machine-finder-briefing,
+html.apple-light .mc-host-panel,
+html.light-theme .mc-host-panel,
+html.apple-light .mc-geography,
+html.light-theme .mc-geography,
+html.apple-light .machine-finder-migrate-zone,
+html.light-theme .machine-finder-migrate-zone {
+  background: #ffffff !important;
+  border-color: hsl(205 22% 84%) !important;
+  box-shadow: 0 1px 0 hsl(200 40% 92% / 0.55) inset, var(--shadow-1);
+}
+
+html.apple-light .mc-hero-ribbon,
+html.light-theme .mc-hero-ribbon {
+  background:
+    radial-gradient(ellipse 90% 80% at 0% 0%, hsl(200 70% 62% / 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 100% 8%, hsl(270 38% 68% / 0.14), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 80% 100%, hsl(110 28% 55% / 0.1), transparent 50%),
+    linear-gradient(180deg, hsl(210 40% 98%) 0%, hsl(205 30% 96%) 100%) !important;
+  box-shadow: inset 3px 0 0 hsl(200 78% 40% / 0.55);
+}
+
+/* Tahoe tiles / hero — no carbon under light */
+html.apple-light .tahoe-hero,
+html.light-theme .tahoe-hero {
+  background:
+    radial-gradient(ellipse 80% 70% at 0% 0%, hsl(200 70% 62% / 0.18), transparent 55%),
+    linear-gradient(160deg, hsl(210 40% 98%) 0%, #ffffff 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 0 hsl(200 40% 92% / 0.6) inset, var(--shadow-1) !important;
+  border: 1px solid hsl(205 22% 84%);
+}
+
+html.apple-light .tahoe-stat-tile,
+html.light-theme .tahoe-stat-tile,
+html.apple-light .tahoe-remediate-strip,
+html.light-theme .tahoe-remediate-strip {
+  background: #ffffff !important;
+  border-color: hsl(205 22% 84%) !important;
+  backdrop-filter: none !important;
+  box-shadow: var(--shadow-1);
+  color: var(--text-primary);
+}
+
+html.apple-light .tahoe-stat-value,
+html.light-theme .tahoe-stat-value,
+html[data-theme='tahoe-light'] .tahoe-stat-value {
+  color: var(--text-primary) !important;
+}
+
+html.apple-light .tahoe-stat-label,
+html.light-theme .tahoe-stat-label,
+html[data-theme='tahoe-light'] .tahoe-stat-label,
+html.apple-light .tahoe-remediate-summary,
+html.light-theme .tahoe-remediate-summary,
+html.apple-light .tahoe-remediate-more,
+html.light-theme .tahoe-remediate-more {
+  color: var(--text-muted) !important;
+}
+
+html.apple-light .tahoe-remediate-chip,
+html.light-theme .tahoe-remediate-chip,
+html.apple-light .tahoe-btn-ghost,
+html.light-theme .tahoe-btn-ghost,
+html.apple-light .tahoe-quick-nav-link,
+html.light-theme .tahoe-quick-nav-link {
+  color: var(--text-secondary) !important;
+  background: hsl(200 55% 97% / 0.9) !important;
+  border-color: hsl(205 22% 84%) !important;
+}
+
+html.apple-light .tahoe-toolbar,
+html.light-theme .tahoe-toolbar,
+html[data-theme='tahoe-light'] .tahoe-toolbar {
+  background: hsl(200 55% 98% / 0.92) !important;
+  border-color: hsl(200 40% 78% / 0.65) !important;
+  color: var(--text-primary);
+}
+
+html.apple-light .tahoe-page-root .tahoe-content thead th,
+html.light-theme .tahoe-page-root .tahoe-content thead th {
+  color: var(--text-muted) !important;
+  border-bottom-color: hsl(205 22% 84%) !important;
+}
+
+html.apple-light .tahoe-page-root .tahoe-content tbody td,
+html.light-theme .tahoe-page-root .tahoe-content tbody td {
+  color: var(--text-primary) !important;
+}
+
+html.apple-light .tahoe-page-root .tahoe-content tbody tr:hover,
+html.light-theme .tahoe-page-root .tahoe-content tbody tr:hover {
+  background: hsl(200 55% 96% / 0.85) !important;
+}
+
+html.apple-light .tahoe-stat-violet .tahoe-stat-value,
+html.light-theme .tahoe-stat-violet .tahoe-stat-value {
+  color: var(--iphone-lavender-deep) !important;
+}
+
+html.apple-light .platform-finder-inspector,
+html.light-theme .platform-finder-inspector {
+  color: var(--text-primary) !important;
+}
+html.apple-light .platform-finder-inspector .platform-finder-inspector-label,
+html.light-theme .platform-finder-inspector .platform-finder-inspector-label,
+html.apple-light .platform-finder-inspector dt,
+html.light-theme .platform-finder-inspector dt {
+  color: var(--text-muted) !important;
+}
+
+html.apple-light .stat-card-purple,
+html.light-theme .stat-card-purple {
+  background: #ffffff !important;
+  border-color: hsl(270 28% 84%) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Classic shell: slightly wider under Daylight so lists aren't squeezed */
+html.apple-light,
+html.light-theme,
+html[data-theme='tahoe-light'] {
+  --layout-max-width: 90rem;
+}
+
+html.apple-light .app-shell .text-slate-100,
+html.light-theme .app-shell .text-slate-100,
+html.apple-light .app-shell .text-slate-200,
+html.light-theme .app-shell .text-slate-200,
+html.apple-light .liquid-glass-app .text-slate-100,
+html.light-theme .liquid-glass-app .text-slate-100 {
+  color: var(--text-primary) !important;
+}
+html.apple-light .app-shell .text-slate-400,
+html.light-theme .app-shell .text-slate-400,
+html.apple-light .liquid-glass-app .text-slate-400,
+html.light-theme .liquid-glass-app .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+html.apple-light .input-field,
+html.light-theme .input-field,
+html.apple-light .liquid-glass-app input:not([type='checkbox']):not([type='radio']),
+html.light-theme .liquid-glass-app input:not([type='checkbox']):not([type='radio']),
+html.apple-light .liquid-glass-app select,
+html.light-theme .liquid-glass-app select,
+html.apple-light .liquid-glass-app textarea,
+html.light-theme .liquid-glass-app textarea,
+html.apple-light .mac-desktop-root input:not([type='checkbox']):not([type='radio']),
+html.light-theme .mac-desktop-root input:not([type='checkbox']):not([type='radio']),
+html.apple-light .mac-desktop-root select,
+html.light-theme .mac-desktop-root select,
+html.apple-light .mac-desktop-root textarea,
+html.light-theme .mac-desktop-root textarea {
+  background: #ffffff !important;
+  border-color: hsl(205 22% 84%) !important;
+  color: var(--text-primary) !important;
+}
+html.apple-light .input-field::placeholder,
+html.light-theme .input-field::placeholder {
+  color: var(--text-faint) !important;
+}

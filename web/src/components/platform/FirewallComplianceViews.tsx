@@ -14,9 +14,9 @@ export function ComplianceReportSummary({ report }: { report: Record<string, unk
 
   return (
     <div className="space-y-3">
-      {summary && <p className="text-sm text-slate-300">{summary}</p>}
+      {summary && <p className="text-sm text-[var(--text-secondary)]">{summary}</p>}
       <div className="flex flex-wrap gap-3 text-xs">
-        <span className="px-2 py-1 rounded bg-slate-800 text-slate-300">{findings.length} finding(s)</span>
+        <span className="px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] text-[var(--text-secondary)]">{findings.length} finding(s)</span>
         {critical != null && Number(critical) > 0 && (
           <span className={`px-2 py-1 rounded ${statusBadgeClasses('error')}`}>{Number(critical)} critical</span>
         )}
@@ -29,9 +29,9 @@ export function ComplianceReportSummary({ report }: { report: Record<string, unk
             const detail = String(row.detail ?? row.message ?? row.description ?? '')
             const target = row.target_id ?? row.host_id
             return (
-              <li key={title} className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2 text-sm">
-                <p className="text-slate-200 font-medium">{title}</p>
-                {detail && <p className="text-xs text-slate-500 mt-0.5">{detail}</p>}
+              <li key={title} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 text-sm">
+                <p className="text-[var(--text-primary)] font-medium">{title}</p>
+                {detail && <p className="text-xs text-[var(--text-muted)] mt-0.5">{detail}</p>}
                 {target != null && target !== '' && (
                   <Link to={`/platform/zeus/security/firewall/${String(target)}`} className={`text-xs mt-1 inline-block ${hubLinkClasses()}`}>
                     Open firewall target →
@@ -52,9 +52,9 @@ export function PacketwolfAnomalySummary({ data }: { data: Record<string, unknow
 
   return (
     <div className="space-y-3">
-      {summary && <p className="text-sm text-slate-300">{summary}</p>}
+      {summary && <p className="text-sm text-[var(--text-secondary)]">{summary}</p>}
       {anomalies.length === 0 ? (
-        <p className="text-sm text-slate-400">No anomalies in the latest Packetwolf scan.</p>
+        <p className="text-sm text-[var(--text-muted)]">No anomalies in the latest Packetwolf scan.</p>
       ) : (
         <ul className="space-y-2 max-h-64 overflow-y-auto">
           {anomalies.slice(0, 15).map((item, i) => {
@@ -85,9 +85,9 @@ export function SupportBundleSummary({ bundle }: { bundle: Record<string, unknow
   return (
     <ul className="grid gap-2 sm:grid-cols-2 text-sm">
       {rows.map((r) => (
-        <li key={r.label} className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2">
-          <span className="text-xs text-slate-500 block">{r.label}</span>
-          <span className="text-slate-200">{String(r.value)}</span>
+        <li key={r.label} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+          <span className="text-xs text-[var(--text-muted)] block">{r.label}</span>
+          <span className="text-[var(--text-primary)]">{String(r.value)}</span>
         </li>
       ))}
     </ul>

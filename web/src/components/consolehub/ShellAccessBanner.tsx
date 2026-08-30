@@ -38,7 +38,7 @@ export default function ShellAccessBanner({
   }
 
   return (
-    <div className="shrink-0 rounded-lg border border-sky-500/25 bg-sky-950/20 px-3 py-2 text-xs text-sky-100/90 space-y-1.5" data-testid="shell-access-banner">
+    <div className="shrink-0 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--text-primary)]/90 space-y-1.5" data-testid="shell-access-banner">
       <p>
         In-browser Shell authenticates with <strong>hypervisor SSH keys</strong>, not your cloud-init key.
         {hints.auth_mode === 'ssh_key' ? ' This VM is SSH-key only.' : null}

@@ -219,12 +219,12 @@ export default function PlatformApiConsole() {
             key={id}
             type="button"
             onClick={() => setTarget(id)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition ${
-              target === id ? 'bg-sky-600/30 text-sky-100 border border-sky-500/40' : 'text-slate-400 hover:text-slate-200 border border-white/10'
+            className={`px-3 py-1.5 rounded-full text-sm transition ${
+              target === id ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-white/10'
             }`}
           >
             {label}
-            <span className="ml-2 text-xs text-slate-500">{ops.length}</span>
+            <span className="ml-2 text-xs text-[var(--text-muted)]">{ops.length}</span>
           </button>
         ))}
       </div>
@@ -233,10 +233,10 @@ export default function PlatformApiConsole() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="tahoe-glass-card p-4 space-y-3">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
             <input
               aria-label="Filter operations"
-              className="w-full pl-8 pr-3 py-2 rounded-lg bg-black/25 border border-white/10 text-sm text-white"
+              className="w-full pl-8 pr-3 py-2 rounded-lg bg-black/25 border border-white/10 text-sm text-[var(--text-primary)]"
               placeholder="Filter operations…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -248,8 +248,8 @@ export default function PlatformApiConsole() {
               if (!group.length) return null
               return (
                 <section key={tag}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
-                    {tag} <span className="text-slate-600">({group.length})</span>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                    {tag} <span className="text-[var(--text-faint)]">({group.length})</span>
                   </h3>
                   <ul className="space-y-1">
                     {group.map((op) => (
@@ -258,10 +258,10 @@ export default function PlatformApiConsole() {
                           type="button"
                           onClick={() => selectOp(op)}
                           className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition ${
-                            selected?.id === op.id ? 'bg-sky-500/15 text-sky-100' : 'text-slate-300 hover:bg-white/[0.04]'
+                            selected?.id === op.id ? 'bg-[var(--accent)]/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-white/[0.04]'
                           }`}
                         >
-                          <span className="font-mono text-sky-300/90">{op.transport === 'websocket' ? 'WS' : op.method}</span>{' '}
+                          <span className="font-mono text-[var(--link)]/90">{op.transport === 'websocket' ? 'WS' : op.method}</span>{' '}
                           <span className="font-mono">{op.path}</span>
                         </button>
                       </li>
@@ -275,21 +275,21 @@ export default function PlatformApiConsole() {
 
         <div className="tahoe-glass-card p-4 space-y-3">
           {!selected ? (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[var(--text-muted)]">
               Select an operation to try it against the {target === 'controller' ? 'controller' : 'host daemon'}.
             </p>
           ) : (
             <>
               <div>
-                <p className="text-sm font-medium text-white">{selected.summary}</p>
-                <p className="text-xs font-mono text-slate-400 mt-1">
+                <p className="text-sm font-medium text-[var(--text-primary)]">{selected.summary}</p>
+                <p className="text-xs font-mono text-[var(--text-muted)] mt-1">
                   {selected.transport === 'websocket' ? 'WS' : selected.method} {resolvedPath()}
                 </p>
               </div>
               {Object.keys(pathParams).length > 0 && (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {Object.keys(pathParams).map((k) => (
-                    <label key={k} className="text-xs text-slate-400">
+                    <label key={k} className="text-xs text-[var(--text-muted)]">
                       {k}
                       <input
                         className="input text-sm mt-1 w-full"

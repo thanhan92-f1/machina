@@ -42,11 +42,12 @@ export default function PlatformEnroll() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       loading={loading && history.length === 0 && !token}
       prepend={<PlatformBackLink to="/platform/hosts" label="Hosts" />}
       title="Host Enrollment"
       subtitle="Join new KVM nodes to the control plane"
-      icon={<KeyRound className="w-6 h-6 text-slate-400" />}
+      icon={<KeyRound className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-enroll-page">
@@ -60,21 +61,21 @@ export default function PlatformEnroll() {
           <MacGlassPanel title="Active token" subtitle={`Expires ${token.expires_at}`}>
             <div className="space-y-4">
               <div>
-                <div className="text-sm text-slate-400 mb-1">Token</div>
+                <div className="text-sm text-[var(--text-muted)] mb-1">Token</div>
                 <div className="flex gap-2 items-start">
-                  <code className="flex-1 p-2 bg-slate-900 rounded text-sm break-all">{token.token}</code>
+                  <code className="flex-1 p-2 bg-[var(--apple-surface)] rounded text-sm break-all">{token.token}</code>
                   <CopyButton text={token.token} />
                 </div>
               </div>
               <div>
-                <div className="text-sm text-slate-400 mb-1 flex items-center gap-2">Install command <Copy className="w-3 h-3" /></div>
+                <div className="text-sm text-[var(--text-muted)] mb-1 flex items-center gap-2">Install command <Copy className="w-3 h-3" /></div>
                 <div className="flex gap-2 items-start">
-                  <code className="flex-1 p-2 bg-slate-900 rounded text-xs break-all">{token.install_command}</code>
+                  <code className="flex-1 p-2 bg-[var(--apple-surface)] rounded text-xs break-all">{token.install_command}</code>
                   <CopyButton text={token.install_command} />
                 </div>
               </div>
-              <p className="text-sm text-slate-400">
-                On the KVM host: <code className="text-slate-200">machina-agent join --controller URL --token TOKEN</code>
+              <p className="text-sm text-[var(--text-muted)]">
+                On the KVM host: <code className="text-[var(--text-primary)]">machina-agent join --controller URL --token TOKEN</code>
               </p>
             </div>
           </MacGlassPanel>
@@ -88,7 +89,7 @@ export default function PlatformEnroll() {
               subtitle="Generate a join token above — revoked and used tokens appear here."
             />
           ) : (
-            <ul className="text-xs text-slate-400 space-y-1">{history.map((t) => (
+            <ul className="text-xs text-[var(--text-muted)] space-y-1">{history.map((t) => (
               <li key={t.token} className="flex justify-between gap-2">
                 <span><code>{t.token.slice(0, 20)}…</code> {t.used_at ? 'used' : 'open'}</span>
                 {!t.used_at && (

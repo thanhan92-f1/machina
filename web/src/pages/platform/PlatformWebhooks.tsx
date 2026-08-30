@@ -60,6 +60,7 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       loading={loading && rows.length === 0 && deliveries.length === 0}
@@ -67,7 +68,7 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Webhooks'}
       subtitle={embedded ? undefined : 'Event notifications for VM lifecycle and HA events'}
-      icon={embedded ? undefined : <Webhook className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Webhook className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : (
         <>
           <form className="contents" onSubmit={async (e) => {
@@ -151,7 +152,7 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
           <MacGlassPanel title="Registered endpoints">
             <ul className="divide-y divide-white/[0.04] -mx-1 space-y-0">
               {rows.map((w) => (
-                <li key={w.id} className="flex justify-between gap-2 py-3 px-1 text-sm text-slate-400">
+                <li key={w.id} className="flex justify-between gap-2 py-3 px-1 text-sm text-[var(--text-muted)]">
                   <span><span className={statusToneClass(w.enabled ? 'ok' : 'neutral')}>{w.enabled ? 'on' : 'off'}</span> {w.url}</span>
                   <span className="flex gap-2 shrink-0">
                     <button type="button" className="btn-secondary text-xs" onClick={async () => { try { await toggleWebhook(w.id); await load() } catch (e: unknown) { toast.error(formatUserError(e)) } }}>Toggle</button>
@@ -201,7 +202,7 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
           ) : (
             <ul className="space-y-2 text-xs">
               {deliveries.map((d) => (
-                <li key={d.id} className="border-b border-white/[0.04] pb-2 text-slate-400">
+                <li key={d.id} className="border-b border-white/[0.04] pb-2 text-[var(--text-muted)]">
                   <div className="flex justify-between gap-2">
                     <span>{d.event_kind} → {d.url}</span>
                     <span className={statusToneClass(webhookDeliveryTone(d.status))}>

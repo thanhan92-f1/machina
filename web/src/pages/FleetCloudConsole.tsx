@@ -12,7 +12,7 @@ export default function FleetCloudConsolePage() {
   const { id } = useParams<{ id: string }>()
   if (!id) {
     return (
-      <div className="p-8 text-center text-slate-500">
+      <div className="p-8 text-center text-[var(--text-muted)]">
         Missing instance id.
       </div>
     )

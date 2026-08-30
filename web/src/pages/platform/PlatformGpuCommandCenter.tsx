@@ -130,6 +130,7 @@ export default function PlatformGpuCommandCenter() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       contentLoading={loading && !overview}
@@ -137,7 +138,7 @@ export default function PlatformGpuCommandCenter() {
       title="GPU Command Center"
       subtitle={
         <span className="flex flex-col gap-1">
-          <span className="text-slate-400">MIG, vGPU, and CUDA placement</span>
+          <span className="text-[var(--text-muted)]">MIG, vGPU, and CUDA placement</span>
           {overview
             ? platformStatSubtitle([
                 { label: 'GPU hosts', value: String(overview.gpu_host_count) },
@@ -147,7 +148,7 @@ export default function PlatformGpuCommandCenter() {
             : null}
         </span>
       }
-      icon={<Cpu className="w-6 h-6 text-slate-400" />}
+      icon={<Cpu className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -165,7 +166,7 @@ export default function PlatformGpuCommandCenter() {
 
         {!loading && overview && overview.gpu_host_count > 0 && (
           <>
-            <p className="text-sm text-white/45">{overview.summary}</p>
+            <p className="text-sm text-[var(--text-muted)]">{overview.summary}</p>
 
             {overview.profiles.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -187,7 +188,7 @@ export default function PlatformGpuCommandCenter() {
               <div className="overflow-x-auto -mt-2">
                 <table className="w-full text-sm" aria-label="GPU hosts">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+                    <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                       <th scope="col" className="py-2 pr-2">Host</th>
                       <th scope="col" className="py-2 pr-2">Profile</th>
                       <th scope="col" className="py-2 pr-2">Model</th>
@@ -198,15 +199,15 @@ export default function PlatformGpuCommandCenter() {
                   </thead>
                   <tbody>
                     {(overview.hosts ?? []).map((h) => (
-                      <tr key={h.host_id} className="border-b border-white/[0.04] text-slate-200">
+                      <tr key={h.host_id} className="border-b border-white/[0.04] text-[var(--text-primary)]">
                         <td className="py-2 pr-2">
                           <Link to={`/platform/hosts/${h.host_id}`} className={`hover:underline ${hubLinkClasses()}`}>{h.hostname}</Link>
                         </td>
                         <td className="py-2 pr-2">
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${profileBadge(h.profile)}`}>{profileLabel(h.profile)}</span>
                         </td>
-                        <td className="py-2 pr-2 text-slate-400">{h.model_hint}</td>
-                        <td className="py-2 pr-2 text-slate-400 text-xs">{h.site || '—'} / {h.rack || '—'}</td>
+                        <td className="py-2 pr-2 text-[var(--text-muted)]">{h.model_hint}</td>
+                        <td className="py-2 pr-2 text-[var(--text-muted)] text-xs">{h.site || '—'} / {h.rack || '—'}</td>
                         <td className="py-2 pr-2">{h.gpu_vm_count}</td>
                         <td className="py-2 pr-2">{h.vgpu_slices > 0 ? h.vgpu_slices : '—'}</td>
                       </tr>
@@ -225,7 +226,7 @@ export default function PlatformGpuCommandCenter() {
                         <Monitor className="w-3.5 h-3.5" />
                         {v.vm_name}
                       </Link>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-[var(--text-muted)]">
                         {v.hostname ?? 'unplaced'} · <span className={statusToneClass(v.observed_state === 'running' ? 'ok' : 'neutral')}>{v.observed_state}</span>
                       </span>
                     </li>
@@ -236,17 +237,17 @@ export default function PlatformGpuCommandCenter() {
 
             <MacGlassPanel title="PCI / IOMMU inventory" subtitle="Live discovery via host agent (passthrough & MIG hints)">
               {pciLoading ? (
-                <p className="text-sm text-slate-500">Scanning online hosts…</p>
+                <p className="text-sm text-[var(--text-muted)]">Scanning online hosts…</p>
               ) : pciDevices.length === 0 ? (
-                <p className="text-sm text-slate-500">No GPU PCI devices reported — check IOMMU and nvidia-smi on hosts.</p>
+                <p className="text-sm text-[var(--text-muted)]">No GPU PCI devices reported — check IOMMU and nvidia-smi on hosts.</p>
               ) : (
                 <div className="space-y-4 -mt-2">
                   {pciDevices.map((row) => (
                     <div key={row.hostId}>
-                      <p className="text-xs font-medium text-slate-300 mb-1">
+                      <p className="text-xs font-medium text-[var(--text-secondary)] mb-1">
                         <Link to={`/platform/hosts/${row.hostId}`} className={hubLinkClasses()}>{row.host}</Link>
                       </p>
-                      <ul className="text-xs text-slate-400 space-y-1">
+                      <ul className="text-xs text-[var(--text-muted)] space-y-1">
                         {row.devices.map((d) => (
                           <li key={d.pci_address}>
                             {d.pci_address} · {d.device_name} · IOMMU {d.iommu_group}
@@ -265,7 +266,7 @@ export default function PlatformGpuCommandCenter() {
 
             <MacGlassPanel title="CUDA placement advisor" subtitle="Rank hosts for inference / training workloads">
               <div className="flex flex-wrap gap-2 items-end -mt-2 mb-3">
-                <label className="text-xs text-slate-400 flex flex-col gap-1">
+                <label className="text-xs text-[var(--text-muted)] flex flex-col gap-1">
                   Workload
                   <input
                     value={workload}
@@ -283,17 +284,17 @@ export default function PlatformGpuCommandCenter() {
               </div>
               {placement && (
                 <>
-                  <p className="text-sm text-slate-300 mb-3">{placement.summary}</p>
+                  <p className="text-sm text-[var(--text-secondary)] mb-3">{placement.summary}</p>
                   <ul className="text-sm space-y-2">
                     {placement.candidates.map((c) => (
                       <li key={c.hostname} className="flex flex-wrap justify-between gap-2 border-b border-white/[0.04] pb-2 items-center">
-                        <span className="inline-flex items-center gap-1.5 text-slate-200">
+                        <span className="inline-flex items-center gap-1.5 text-[var(--text-primary)]">
                           <Server className="w-3.5 h-3.5 shrink-0" />
                           {c.hostname}
                           {c.gpu_capable && <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusBadgeClasses('ok')}`}>GPU</span>}
                         </span>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-slate-500">{c.reason} · score {c.score.toFixed(0)}</span>
+                          <span className="text-xs text-[var(--text-muted)]">{c.reason} · score {c.score.toFixed(0)}</span>
                           <button
                             type="button"
                             className="btn-secondary text-xs"

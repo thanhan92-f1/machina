@@ -10,7 +10,7 @@ export default function PlatformTopBar() {
   const page = PLATFORM_PAGE_LABELS[pathname] ?? PLATFORM_PAGE_LABELS[base] ?? 'Platform'
 
   return (
-    <h1 className="mac-menubar-title text-sm font-medium text-white/90 truncate max-w-[min(100%,20rem)]">
+    <h1 className="mac-menubar-title text-sm font-medium text-[var(--text-primary)] truncate max-w-[min(100%,20rem)]">
       {page}
     </h1>
   )

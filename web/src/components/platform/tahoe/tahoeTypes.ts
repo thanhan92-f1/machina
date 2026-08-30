@@ -1,9 +1,9 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
-export type TahoeStatTone = 'sky' | 'violet' | 'emerald' | 'amber'
-
-export interface TahoeStat {
+export type TahoeStat = {
   label: string
-  value: string
-  tone?: TahoeStatTone
+  value: string | number
+  tone?: 'sky' | 'violet' | 'emerald' | 'amber' | 'red'
 }

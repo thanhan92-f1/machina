@@ -62,7 +62,7 @@ function FleetCloudHeatDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/heat" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/heat" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -76,22 +76,23 @@ function FleetCloudHeatDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-4xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/heat" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/heat" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Stacks
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Layers className="w-7 h-7 text-violet-400" /> {stack.name}
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Layers className="w-7 h-7 text-[var(--accent)]" /> {stack.name}
       </h1>
 
-      <div className="flex flex-wrap gap-2 border-b border-slate-700 pb-2">
+      <div className="flex flex-wrap gap-2 border-b border-[var(--apple-hairline)] pb-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
-            className={`px-3 py-1.5 rounded-lg text-sm ${tab === t.id ? 'bg-violet-600/30 text-violet-200' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg text-sm ${tab === t.id ? 'bg-[var(--accent)]/30 text-[var(--link)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
@@ -100,17 +101,17 @@ function FleetCloudHeatDetailContent() {
       </div>
 
       {tab === 'overview' && (
-        <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-          <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono mt-1 break-all">{stack.id}</dd></div>
-          <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">{stack.status}</dd></div>
-          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Last error</dt><dd className="mt-1 text-slate-400">{stack.last_error || '—'}</dd></div>
+        <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+          <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono mt-1 break-all">{stack.id}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="mt-1">{stack.status}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Last error</dt><dd className="mt-1 text-[var(--text-muted)]">{stack.last_error || '—'}</dd></div>
         </dl>
       )}
 
       {tab === 'resources' ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="w-full text-sm" aria-label="Stack resources">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="overflow-x-auto apple-surface rounded-2xl">
+          <table className="apple-table" aria-label="Stack resources">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 <th scope="col" className="px-3 py-2">Kind</th>
@@ -119,18 +120,18 @@ function FleetCloudHeatDetailContent() {
             </thead>
             <tbody>
               {stack.resources_json.map((r) => (
-                <tr key={r.id} className="border-t border-slate-800">
+                <tr key={r.id} className="border-t border-[var(--apple-hairline)]">
                   <td className="px-3 py-2">{r.name}</td>
-                  <td className="px-3 py-2 text-slate-400">{r.kind}</td>
+                  <td className="px-3 py-2 text-[var(--text-muted)]">{r.kind}</td>
                   <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {stack.resources_json.length === 0 && <p className="p-4 text-slate-500 text-sm">No resources created yet.</p>}
+          {stack.resources_json.length === 0 && <p className="p-4 text-[var(--text-muted)] text-sm">No resources created yet.</p>}
         </div>
       ) : tab === 'template' ? (
-        <pre className="w-full font-mono text-xs px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 overflow-x-auto">
+        <pre className="w-full font-mono text-xs input-field overflow-x-auto">
           {JSON.stringify(stack.template_json, null, 2)}
         </pre>
       ) : null}

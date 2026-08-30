@@ -905,13 +905,13 @@ export default function PlatformVmDetail() {
           {vm.lifecycle_phase && vm.lifecycle_phase !== vm.observed_state && (
             <VmStatusBadge state={vm.lifecycle_phase} />
           )}
-          <span className="text-slate-500">·</span>
-          <span className="text-slate-400" title={hostRow?.address ?? undefined}>{hostLabel}</span>
-          <span className="text-slate-500">·</span>
-          <span className="text-slate-400">{vm.vcpus ?? '—'} vCPU · {formatVmMemoryGiB(vm.memory_mib)}</span>
+          <span className="text-[var(--text-muted)]">·</span>
+          <span className="text-[var(--text-muted)]" title={hostRow?.address ?? undefined}>{hostLabel}</span>
+          <span className="text-[var(--text-muted)]">·</span>
+          <span className="text-[var(--text-muted)]">{vm.vcpus ?? '—'} vCPU · {formatVmMemoryGiB(vm.memory_mib)}</span>
           {guestIp && (
             <>
-              <span className="text-slate-500">·</span>
+              <span className="text-[var(--text-muted)]">·</span>
               <span className="font-mono text-emerald-300/90">{guestIp}</span>
             </>
           )}
@@ -928,7 +928,7 @@ export default function PlatformVmDetail() {
           {vm.ha_enabled && <span className={statusPillClasses('info')}>HA</span>}
         </span>
       ) : undefined}
-      icon={<Monitor className="w-6 h-6 text-slate-400" />}
+      icon={<Monitor className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={vm && id ? (
         vm.inventory_source === 'kubevirt' ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -1002,14 +1002,14 @@ export default function PlatformVmDetail() {
         <>
           {vm.inventory_source === 'kubevirt' && (
             <MacGlassPanel title="KubeVirt guest">
-              <p className="text-sm text-slate-300">
-                Namespace: <span className="font-mono text-sky-200">{vm.k8s_namespace ?? 'default'}</span>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Namespace: <span className="font-mono text-[var(--link)]">{vm.k8s_namespace ?? 'default'}</span>
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {vm.observed_state !== 'running' && (
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-emerald-500/15 text-emerald-200 border border-emerald-500/35 hover:bg-emerald-500/25"
+                    className="btn-secondary text-xs inline-flex items-center gap-1"
                     onClick={() =>
                       void act('Start requested', () =>
                         postK8sKubevirtVmLifecycle(vm.k8s_namespace ?? 'default', vm.name, 'start'),
@@ -1023,7 +1023,7 @@ export default function PlatformVmDetail() {
                   <>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-slate-700/80 text-slate-200 border border-slate-600 hover:bg-slate-600"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--surface-hover)]/80 text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)]"
                       onClick={() =>
                         void act('Stop requested', () =>
                           postK8sKubevirtVmLifecycle(vm.k8s_namespace ?? 'default', vm.name, 'stop'),
@@ -1047,12 +1047,12 @@ export default function PlatformVmDetail() {
                 )}
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-red-500/15 text-red-200 border border-red-500/35 hover:bg-red-500/25"
+                  className="btn-destructive text-xs inline-flex items-center gap-1"
                   onClick={() => setVmConfirmOp('delete_kubevirt')}
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete CR
                 </button>
-                <Link to="/platform/integrations?tab=k8s" className={`text-sm ${hubLinkClasses()}`}>K8s Workloads →</Link>
+                <Link to="/platform/settings?section=integrations" className={`text-sm ${hubLinkClasses()}`}>K8s Workloads →</Link>
               </div>
             </MacGlassPanel>
           )}
@@ -1162,7 +1162,7 @@ export default function PlatformVmDetail() {
                 </button>
               </MacGlassPanel>
               <MacGlassPanel title="Guest health">
-                <p className="text-sm text-slate-400 mb-2">Agent status, offline assurance, and service inventory.</p>
+                <p className="text-sm text-[var(--text-muted)] mb-2">Agent status, offline assurance, and service inventory.</p>
                 <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={() => setTab('guestHealth')}>
                   Open Guest health →
                 </button>
@@ -1174,9 +1174,9 @@ export default function PlatformVmDetail() {
             <div className="space-y-4 pt-2" data-testid="vm-hardware-tab">
               <MacGlassPanel title="KubeVirt hardware" subtitle="Cluster-managed VirtualMachine template — edit CPU/memory when stopped">
                 {kubevirtHardware.loading && !kubevirtHardware.summary ? (
-                  <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+                  <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
                 ) : kubevirtHardware.summary ? (
-                  <div className="rounded-lg border border-white/[0.08] bg-slate-900/40 px-3 py-1">
+                  <div className="rounded-lg border border-white/[0.08] bg-[var(--apple-surface)] px-3 py-1">
                     <VmHardwareSection label="CPU" value={kubevirtHardware.summary.cpu} testId="vm-hardware-cpu" />
                     <VmHardwareSection label="Memory" value={kubevirtHardware.summary.memory} testId="vm-hardware-memory" />
                     <VmHardwareSection label="Firmware" value={kubevirtHardware.summary.firmware} testId="vm-hardware-firmware" />
@@ -1186,7 +1186,7 @@ export default function PlatformVmDetail() {
                     <VmHardwareSection label="Node" value={kubevirtHardware.summary.node} testId="vm-kubevirt-hardware-node" />
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">Hardware details unavailable.</p>
+                  <p className="text-sm text-[var(--text-muted)]">Hardware details unavailable.</p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button type="button" className="btn-secondary text-sm" onClick={() => setHardwareDrawerOpen(true)}>
@@ -1204,10 +1204,10 @@ export default function PlatformVmDetail() {
             <div className="space-y-4 pt-2" data-testid="vm-hardware-tab">
               <MacGlassPanel title="Libvirt hardware" subtitle="Domain XML summary — edit without leaving VM detail">
                 {hardware.loading && !hardware.summary ? (
-                  <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+                  <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
                 ) : hardware.summary || hardware.report ? (
                   <div className="space-y-4">
-                    <div className="rounded-lg border border-white/[0.08] bg-slate-900/40 px-3 py-1">
+                    <div className="rounded-lg border border-white/[0.08] bg-[var(--apple-surface)] px-3 py-1">
                       <VmHardwareSection label="CPU" value={hardware.report?.cpu.value ?? hardware.summary!.cpu} badges={hardware.report?.cpu.badges} testId="vm-hardware-cpu" />
                       <VmHardwareSection label="Memory" value={hardware.report?.memory.value ?? hardware.summary!.memory} badges={hardware.report?.memory.badges} badge={hardware.pending?.needs_shutdown && !hardware.report ? 'restart' : null} />
                       <VmHardwareSection label="Firmware" value={hardware.report?.firmware.value ?? hardware.summary!.firmware} badges={hardware.report?.firmware.badges} />
@@ -1226,7 +1226,7 @@ export default function PlatformVmDetail() {
                     ) : null}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">Hardware details unavailable.</p>
+                  <p className="text-sm text-[var(--text-muted)]">Hardware details unavailable.</p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button type="button" className="btn-primary text-sm" disabled={vm.managed === false} onClick={() => setHardwareEditOpen(true)} data-testid="vm-hardware-edit">
@@ -1276,24 +1276,24 @@ export default function PlatformVmDetail() {
                   }
                 >
                   {computeTopologyLoading && !computeTopology ? (
-                    <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading compute…</p>
+                    <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading compute…</p>
                   ) : computeTopology ? (
                     <dl className="grid gap-3 sm:grid-cols-2 text-sm">
                       <div>
-                        <dt className="text-xs text-slate-500">vCPUs (active)</dt>
-                        <dd className="text-slate-200">{computeTopology.vcpus}</dd>
+                        <dt className="text-xs text-[var(--text-muted)]">vCPUs (active)</dt>
+                        <dd className="text-[var(--text-primary)]">{computeTopology.vcpus}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">Topology</dt>
-                        <dd className="text-slate-200">{computeTopology.sockets}×{computeTopology.cores}×{computeTopology.threads}</dd>
+                        <dt className="text-xs text-[var(--text-muted)]">Topology</dt>
+                        <dd className="text-[var(--text-primary)]">{computeTopology.sockets}×{computeTopology.cores}×{computeTopology.threads}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">Current memory</dt>
-                        <dd className="text-slate-200">{Math.round(computeTopology.current_memory_kib / 1024 / 1024)} GiB</dd>
+                        <dt className="text-xs text-[var(--text-muted)]">Current memory</dt>
+                        <dd className="text-[var(--text-primary)]">{Math.round(computeTopology.current_memory_kib / 1024 / 1024)} GiB</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">Maximum memory</dt>
-                        <dd className="text-slate-200">{Math.round(computeTopology.max_memory_kib / 1024 / 1024)} GiB</dd>
+                        <dt className="text-xs text-[var(--text-muted)]">Maximum memory</dt>
+                        <dd className="text-[var(--text-primary)]">{Math.round(computeTopology.max_memory_kib / 1024 / 1024)} GiB</dd>
                       </div>
                       {computeTopology.has_vfio_hostdev && (
                         <div className="sm:col-span-2 text-xs text-amber-300/90">
@@ -1302,14 +1302,14 @@ export default function PlatformVmDetail() {
                       )}
                     </dl>
                   ) : (
-                    <p className="text-sm text-slate-500">Compute details unavailable.</p>
+                    <p className="text-sm text-[var(--text-muted)]">Compute details unavailable.</p>
                   )}
                 </MacGlassPanel>
               )}
               {doctor && (
-                <div className="flex flex-wrap items-center gap-2 text-sm rounded-xl border border-violet-500/20 bg-violet-950/20 px-4 py-3">
-                  <span className="text-slate-300">
-                    Doctor: <span className="font-semibold text-violet-200">{doctor.score_numeric}/100</span>
+                <div className="flex flex-wrap items-center gap-2 text-sm rounded-xl border border-violet-500/20 bg-[var(--apple-surface)] px-4 py-3">
+                  <span className="text-[var(--text-secondary)]">
+                    Doctor: <span className="font-semibold text-[var(--link)]">{doctor.score_numeric}/100</span>
                     {(doctor.issues?.length ?? 0) > 0 ? ` · ${doctor.issues.length} issue(s)` : ' · all checks passed'}
                   </span>
                   <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={() => setTab('doctor')}>
@@ -1363,7 +1363,7 @@ export default function PlatformVmDetail() {
               />
               {info?.guestkit?.enabled && (
                 <MacGlassPanel title="GuestKit offline migration" subtitle="Disk-based KVM migrate plan without a running guest agent">
-                  <p className="text-sm text-slate-400 mb-3">
+                  <p className="text-sm text-[var(--text-muted)] mb-3">
                     Score boot blockers and required changes for live migration using the VM disk image while stopped or online.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -1390,7 +1390,7 @@ export default function PlatformVmDetail() {
           {tab === 'console' && (
             <div className="space-y-4 pt-2">
               <MacGlassPanel title="VNC console">
-                <p className="text-sm text-slate-400 mb-4">
+                <p className="text-sm text-[var(--text-muted)] mb-4">
                   Machina Cinema — immersive full-screen VNC/SPICE with floating controls.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1415,12 +1415,12 @@ export default function PlatformVmDetail() {
                   <div className="flex flex-wrap gap-6 text-sm">
                     <span className="flex items-center gap-2"><Activity className="w-4 h-4" /> CPU {metrics.cpu_percent.toFixed(1)}%</span>
                     <span>Memory {metrics.memory_used_mib} MiB</span>
-                    <span className="text-slate-500 text-xs">Updated {new Date(metrics.updated_at).toLocaleString()}</span>
+                    <span className="text-[var(--text-muted)] text-xs">Updated {new Date(metrics.updated_at).toLocaleString()}</span>
                   </div>
-                  <p className="text-xs text-slate-500">Guest tools will unlock richer CPU, disk latency, and noisy-neighbor insights.</p>
+                  <p className="text-xs text-[var(--text-muted)]">Guest tools will unlock richer CPU, disk latency, and noisy-neighbor insights.</p>
                 </>
               ) : (
-                <p className="text-slate-500 text-sm">Metrics appear after the next host inventory sync.</p>
+                <p className="text-[var(--text-muted)] text-sm">Metrics appear after the next host inventory sync.</p>
               )}
             </MacGlassPanel>
           )}
@@ -1445,13 +1445,13 @@ export default function PlatformVmDetail() {
             <div className="space-y-4 pt-2" data-testid="vm-disks-panel">
               <MacGlassPanel title="Libvirt disks" subtitle="Live hypervisor inventory">
                 {libvirtDetailsLoading ? (
-                  <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+                  <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
                 ) : libvirtDetails?.disks.length ? (
-                  <ul className="text-sm text-slate-400 space-y-3">
+                  <ul className="text-sm text-[var(--text-muted)] space-y-3">
                     {libvirtDetails.disks.map((d) => (
                       <li key={d.target} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                         <span className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-slate-200">{d.target}</span>
+                          <span className="font-mono text-[var(--text-primary)]">{d.target}</span>
                           <VmPendingBadge pending={pendingConfig} category="disk" />
                           {' · '}{d.device}
                           {d.bus ? ` · ${d.bus}` : ''}
@@ -1502,13 +1502,13 @@ export default function PlatformVmDetail() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-500">No disks reported from libvirt.</p>
+                  <p className="text-sm text-[var(--text-muted)]">No disks reported from libvirt.</p>
                 )}
               </MacGlassPanel>
               {diskEditTarget && (
                 <MacGlassPanel title={`Edit disk ${diskEditTarget}`}>
                   <div className="flex flex-wrap gap-3 items-end">
-                    <label className="text-xs text-slate-500">
+                    <label className="text-xs text-[var(--text-muted)]">
                       Bus
                       <select className="input mt-1 block" value={diskEditBus} onChange={(e) => setDiskEditBus(e.target.value)}>
                         <option value="virtio">virtio</option>
@@ -1517,7 +1517,7 @@ export default function PlatformVmDetail() {
                         <option value="ide">ide</option>
                       </select>
                     </label>
-                    <label className="text-xs text-slate-500">
+                    <label className="text-xs text-[var(--text-muted)]">
                       Cache
                       <select className="input mt-1 block" value={diskEditCache} onChange={(e) => setDiskEditCache(e.target.value)}>
                         <option value="none">none</option>
@@ -1527,7 +1527,7 @@ export default function PlatformVmDetail() {
                         <option value="unsafe">unsafe</option>
                       </select>
                     </label>
-                    <label className="text-xs text-slate-500 flex items-center gap-2 mt-5">
+                    <label className="text-xs text-[var(--text-muted)] flex items-center gap-2 mt-5">
                       <input type="checkbox" checked={diskEditReadonly} onChange={(e) => setDiskEditReadonly(e.target.checked)} />
                       Read-only
                     </label>
@@ -1554,14 +1554,14 @@ export default function PlatformVmDetail() {
               )}
               {disks.length > 0 && (
                 <MacGlassPanel title="Platform disk records">
-                  <ul className="text-sm text-slate-400 space-y-2">{disks.map((d) => (
+                  <ul className="text-sm text-[var(--text-muted)] space-y-2">{disks.map((d) => (
                     <li key={d.id}>{d.name} · {d.size_gib} GiB · {d.storage_class}{d.path ? ` · ${d.path}` : ''}</li>
                   ))}</ul>
                 </MacGlassPanel>
               )}
               <MacGlassPanel title="Attach disk">
                 <div className="flex flex-wrap gap-3 items-end">
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     Path
                     <div className="mt-1 flex gap-2 min-w-[18rem]">
                       <input className="input flex-1 min-w-0 font-mono text-xs" value={attachPath} onChange={(e) => setAttachPath(e.target.value)} />
@@ -1580,13 +1580,13 @@ export default function PlatformVmDetail() {
                       </button>
                     </div>
                   </label>
-                  <label className="text-xs text-slate-500">Target dev<input className="input mt-1 block w-24" value={attachDev} onChange={(e) => setAttachDev(e.target.value)} /></label>
+                  <label className="text-xs text-[var(--text-muted)]">Target dev<input className="input mt-1 block w-24" value={attachDev} onChange={(e) => setAttachDev(e.target.value)} /></label>
                   <button type="button" className="btn-secondary" disabled={vm.managed === false} onClick={() => void act('Attach disk queued', () => attachVmDisk(id, { disk_path: attachPath, target_dev: attachDev }))}>Attach</button>
                 </div>
               </MacGlassPanel>
               <MacGlassPanel title="Resize block device">
                 <div className="flex flex-wrap gap-3 items-end">
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     Target
                     <select className="input mt-1 block min-w-[8rem]" value={resizeTarget} onChange={(e) => setResizeTarget(e.target.value)}>
                       <option value="">Select…</option>
@@ -1595,7 +1595,7 @@ export default function PlatformVmDetail() {
                       ))}
                     </select>
                   </label>
-                  <label className="text-xs text-slate-500">Size (GiB)<input type="number" min={1} className="input mt-1 block w-24" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} /></label>
+                  <label className="text-xs text-[var(--text-muted)]">Size (GiB)<input type="number" min={1} className="input mt-1 block w-24" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} /></label>
                   <button
                     type="button"
                     className="btn-secondary"
@@ -1608,7 +1608,7 @@ export default function PlatformVmDetail() {
               </MacGlassPanel>
               <MacGlassPanel title="Insert ISO" subtitle="Attach host ISO to a CD-ROM target (live when running)" data-testid="vm-insert-iso-panel">
                 <div className="flex flex-wrap gap-3 items-end">
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     ISO path
                     <div className="mt-1 space-y-2 min-w-[18rem]">
                       {isoFiles.length > 0 ? (
@@ -1650,7 +1650,7 @@ export default function PlatformVmDetail() {
                       </div>
                     </div>
                   </label>
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     CD-ROM target
                     <select className="input mt-1 block w-24" value={isoTarget} onChange={(e) => setIsoTarget(e.target.value)}>
                       {(libvirtDetails?.disks ?? []).filter((d) => d.device === 'cdrom').map((d) => (
@@ -1675,7 +1675,7 @@ export default function PlatformVmDetail() {
                     Insert ISO
                   </button>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">ISO scan, host browse, or typed path — same libvirt <code className="text-slate-400">cdrom.insert</code> as classic VM detail.</p>
+                <p className="text-xs text-[var(--text-muted)] mt-2">ISO scan, host browse, or typed path — same libvirt <code className="text-[var(--text-muted)]">cdrom.insert</code> as classic VM detail.</p>
               </MacGlassPanel>
             </div>
           ))}
@@ -1684,13 +1684,13 @@ export default function PlatformVmDetail() {
             <div className="space-y-4 pt-2" data-testid="vm-network-panel">
               <MacGlassPanel title="Network interfaces" subtitle="Hot-plug NICs via libvirt">
                 {libvirtDetailsLoading ? (
-                  <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+                  <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
                 ) : libvirtDetails?.interfaces.length ? (
-                  <ul className="text-sm text-slate-400 space-y-3">
+                  <ul className="text-sm text-[var(--text-muted)] space-y-3">
                     {libvirtDetails.interfaces.map((iface) => (
                       <li key={iface.mac_address} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                         <span className="flex items-center gap-2 flex-wrap">
-                          <Network className="w-4 h-4 text-slate-500" />
+                          <Network className="w-4 h-4 text-[var(--text-muted)]" />
                           {iface.mac_address} · {iface.source} · {iface.model}
                           {iface.ip && (
                             <span className="font-mono text-emerald-300/80"> · {iface.ip}</span>
@@ -1721,17 +1721,17 @@ export default function PlatformVmDetail() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-500">No interfaces attached.</p>
+                  <p className="text-sm text-[var(--text-muted)]">No interfaces attached.</p>
                 )}
                 {nicEditMac && (
                   <div className="mt-4 p-3 rounded-lg border border-white/[0.06] space-y-3">
-                    <p className="text-sm text-slate-300">Edit NIC <span className="font-mono">{nicEditMac}</span></p>
+                    <p className="text-sm text-[var(--text-secondary)]">Edit NIC <span className="font-mono">{nicEditMac}</span></p>
                     <div className="flex flex-wrap gap-3 items-end">
-                      <label className="text-xs text-slate-500">
+                      <label className="text-xs text-[var(--text-muted)]">
                         Network
                         <input className="input mt-1 block min-w-[12rem]" value={nicEditNetwork} onChange={(e) => setNicEditNetwork(e.target.value)} />
                       </label>
-                      <label className="text-xs text-slate-500">
+                      <label className="text-xs text-[var(--text-muted)]">
                         Model
                         <select className="input mt-1 block w-28" value={nicEditModel} onChange={(e) => setNicEditModel(e.target.value)}>
                           <option value="virtio">virtio</option>
@@ -1761,7 +1761,7 @@ export default function PlatformVmDetail() {
                   </div>
                 )}
                 <div className="flex flex-wrap gap-3 items-end mt-4 pt-3 border-t border-white/[0.04]">
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     Network
                     {platformNetworks.length > 0 ? (
                       <select className="input mt-1 block min-w-[12rem]" value={nicNetwork} onChange={(e) => setNicNetwork(e.target.value)}>
@@ -1771,7 +1771,7 @@ export default function PlatformVmDetail() {
                       <input className="input mt-1 block min-w-[12rem]" value={nicNetwork} onChange={(e) => setNicNetwork(e.target.value)} />
                     )}
                   </label>
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     Model
                     <select className="input mt-1 block w-28" value={nicModel} onChange={(e) => setNicModel(e.target.value)}>
                       <option value="virtio">virtio</option>
@@ -1801,14 +1801,14 @@ export default function PlatformVmDetail() {
                 />
               </MacGlassPanel>
               <MacGlassPanel title="Platform networks">
-                <p className="text-sm text-slate-400">Attach NICs to libvirt networks provisioned on the host.</p>
+                <p className="text-sm text-[var(--text-muted)]">Attach NICs to libvirt networks provisioned on the host.</p>
                 <Link to="/platform/networks" className={`text-sm mt-2 inline-block ${hubLinkClasses()}`}>Manage networks →</Link>
               </MacGlassPanel>
             </div>
           )}
           {tab === 'network' && vm.inventory_source === 'kubevirt' && (
             <MacGlassPanel title="Network" className="pt-2">
-              <p className="text-sm text-slate-400">KubeVirt networking is managed via the cluster CNI. Use kubectl or the K8s console for service exposure.</p>
+              <p className="text-sm text-[var(--text-muted)]">KubeVirt networking is managed via the cluster CNI. Use kubectl or the K8s console for service exposure.</p>
             </MacGlassPanel>
           )}
 
@@ -1875,13 +1875,13 @@ export default function PlatformVmDetail() {
             <div className="space-y-4 pt-2">
               <MacGlassPanel title="Guest services" subtitle="Live guestkit-agent inventory · start/stop controllable units">
                 {guestServicesLoading && (
-                  <p className="text-sm text-slate-500 flex items-center gap-2">
+                  <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" /> Loading guest services…
                   </p>
                 )}
                 {!guestServicesLoading && guestServicesError && (
                   <div className={`rounded-lg border p-3 text-sm ${statusSurfaceClasses('error')}`}>
-                    <p className="text-slate-200">{guestServicesError}</p>
+                    <p className="text-[var(--text-primary)]">{guestServicesError}</p>
                     <button type="button" className="btn-secondary text-xs mt-2" onClick={() => void loadGuestServices()}>
                       Retry
                     </button>
@@ -1889,7 +1889,7 @@ export default function PlatformVmDetail() {
                 )}
                 {!guestServicesLoading && !guestServicesError && guestServices && (
                   <>
-                    <p className="text-xs text-slate-500 mb-3">
+                    <p className="text-xs text-[var(--text-muted)] mb-3">
                       {guestServices.summary}
                       {!guestServices.agent_reachable ? ' · Guest agent unreachable' : ''}
                     </p>
@@ -1989,15 +1989,15 @@ export default function PlatformVmDetail() {
                     <Shield className="w-4 h-4" /> Host firewall (Zeus) →
                   </Link>
                 )}
-                {guestPortsLoading && <p className="text-sm text-slate-500">Loading guest ports…</p>}
+                {guestPortsLoading && <p className="text-sm text-[var(--text-muted)]">Loading guest ports…</p>}
                 {!guestPortsLoading && guestPorts && (
                   <>
-                    <p className="text-xs text-slate-500 mb-3">
+                    <p className="text-xs text-[var(--text-muted)] mb-3">
                       {guestPorts.summary}
                       {!guestPorts.agent_reachable && ' · Guest agent unreachable — install Guest Tools'}
                     </p>
                     {(guestPorts.ports ?? []).length === 0 ? (
-                      <p className="text-sm text-slate-500">No listening ports reported inside the guest.</p>
+                      <p className="text-sm text-[var(--text-muted)]">No listening ports reported inside the guest.</p>
                     ) : (
                       <div className="space-y-1">
                         {(guestPorts.ports ?? []).map((p) => (
@@ -2019,7 +2019,7 @@ export default function PlatformVmDetail() {
                   </>
                 )}
                 {!guestPortsLoading && !guestPorts && (
-                  <p className="text-sm text-slate-500">Could not load guest firewall ports. Ensure Guest Tools are installed and the VM is running.</p>
+                  <p className="text-sm text-[var(--text-muted)]">Could not load guest firewall ports. Ensure Guest Tools are installed and the VM is running.</p>
                 )}
                 <button type="button" className="btn-secondary text-xs mt-3" onClick={() => void loadGuestPorts()}>Refresh</button>
               </MacGlassPanel>
@@ -2033,9 +2033,9 @@ export default function PlatformVmDetail() {
                   <h3 className="text-sm font-semibold mb-2">Time Machine</h3>
                   <ul className="text-xs space-y-2">
                     {timeline.map((e) => (
-                      <li key={`${e.kind}-${e.id}`} className="flex flex-wrap items-center justify-between gap-2 text-slate-400">
+                      <li key={`${e.kind}-${e.id}`} className="flex flex-wrap items-center justify-between gap-2 text-[var(--text-muted)]">
                         <span>
-                          <span className="text-slate-500 uppercase text-[10px] mr-1">{e.kind}</span>
+                          <span className="text-[var(--text-muted)] uppercase text-[10px] mr-1">{e.kind}</span>
                           {e.label} · {new Date(e.created_at).toLocaleString()}
                         </span>
                         {e.kind === 'snapshot' && (
@@ -2081,10 +2081,10 @@ export default function PlatformVmDetail() {
                   AI snapshot advice
                 </button>
                 {snapAiHint && (
-                  <p className="text-xs text-slate-400 max-w-xl">{snapAiHint.summary}</p>
+                  <p className="text-xs text-[var(--text-muted)] max-w-xl">{snapAiHint.summary}</p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-4 mt-3 text-xs text-slate-400">
+              <div className="flex flex-wrap gap-4 mt-3 text-xs text-[var(--text-muted)]">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={snapDiskOnly} onChange={(e) => setSnapDiskOnly(e.target.checked)} /> Disk only
                 </label>
@@ -2101,20 +2101,20 @@ export default function PlatformVmDetail() {
                 <GuestFsFreezeBanner vmId={id!} poll className="mt-3" />
               )}
               {(snapPrecheckLoading || snapPrecheck) && (
-                <div className="mt-3 rounded-lg border border-white/[0.06] bg-slate-900/50 p-3 text-xs">
+                <div className="mt-3 rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] p-3 text-xs">
                   {snapPrecheckLoading ? (
-                    <p className="text-slate-500 flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Checking snapshot readiness…</p>
+                    <p className="text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Checking snapshot readiness…</p>
                   ) : snapPrecheck?.blocked ? (
                     <p className="text-amber-300/90">{snapPrecheck.message}</p>
                   ) : snapPrecheck?.has_vfio_hostdev && vm.observed_state === 'running' ? (
                     <p className="text-amber-300/90">VFIO device present — stop the VM before creating a snapshot.</p>
                   ) : snapPrecheck?.estimated_bytes ? (
-                    <p className="text-slate-400">
+                    <p className="text-[var(--text-muted)]">
                       External snapshot may need ~{Math.ceil(snapPrecheck.estimated_bytes / (1024 * 1024))} MiB
                       {snapPrecheck.available_bytes != null && ` (${Math.floor(snapPrecheck.available_bytes / (1024 * 1024))} MiB free on host)`}.
                     </p>
                   ) : (
-                    <p className="text-slate-500">Snapshot precheck passed.</p>
+                    <p className="text-[var(--text-muted)]">Snapshot precheck passed.</p>
                   )}
                 </div>
               )}
@@ -2138,7 +2138,7 @@ export default function PlatformVmDetail() {
               </div>
               <ul className="text-xs space-y-3 mt-3">
                 {snapshots.map((s) => (
-                  <li key={s.id} className="flex flex-col gap-2 text-slate-400 border-b border-white/5 pb-2">
+                  <li key={s.id} className="flex flex-col gap-2 text-[var(--text-muted)] border-b border-white/5 pb-2">
                     <span>{s.name} ({s.status})</span>
                     <span className="flex flex-wrap gap-1">
                       <button type="button" className="btn-secondary text-xs" onClick={() => setSnapDestructiveConfirm({ snapName: s.name, action: 'revert', run: () => revertVmSnapshot(id, s.name), label: 'Revert queued' })}>Revert</button>
@@ -2159,11 +2159,11 @@ export default function PlatformVmDetail() {
 
           {tab === 'backup' && (
             <MacGlassPanel title="Backup" className="pt-2">
-              <p className="text-xs text-slate-500">Restore will not overwrite the current VM unless you choose restore in place.</p>
+              <p className="text-xs text-[var(--text-muted)]">Restore will not overwrite the current VM unless you choose restore in place.</p>
               <button type="button" className="btn-secondary text-xs" onClick={() => void act('Backup queued', () => createVmBackup(id))}><Archive className="w-3 h-3 inline" /> Backup now</button>
               <ul className="text-xs space-y-2">
                 {backups.map((b) => (
-                  <li key={b.id} className="flex items-center justify-between gap-2 text-slate-400">
+                  <li key={b.id} className="flex items-center justify-between gap-2 text-[var(--text-muted)]">
                     <span>{b.backup_type} ({b.status})</span>
                     {b.status === 'completed' && (
                       <button type="button" className="btn-secondary text-xs" onClick={() => void act('Restore queued', () => restoreVmBackup(id, b.id))}>Restore</button>
@@ -2177,15 +2177,15 @@ export default function PlatformVmDetail() {
           {tab === 'topology' && (
             <MacGlassPanel title="VM topology" className="pt-2">
               {!topology ? (
-                <p className="text-sm text-slate-400">Loading topology…</p>
+                <p className="text-sm text-[var(--text-muted)]">Loading topology…</p>
               ) : (
                 <div className="space-y-3 text-sm">
-                  <p className="text-slate-400">{topology.nodes.length} nodes · {topology.edges.length} edges</p>
+                  <p className="text-[var(--text-muted)]">{topology.nodes.length} nodes · {topology.edges.length} edges</p>
                   <ul className="divide-y divide-white/[0.04]">
                     {topology.nodes.map((n) => (
                       <li key={n.id} className="py-2 flex justify-between gap-2">
-                        <span className="text-slate-200">{n.name}</span>
-                        <span className="text-xs text-slate-500 uppercase">{n.kind}</span>
+                        <span className="text-[var(--text-primary)]">{n.name}</span>
+                        <span className="text-xs text-[var(--text-muted)] uppercase">{n.kind}</span>
                       </li>
                     ))}
                   </ul>
@@ -2199,7 +2199,7 @@ export default function PlatformVmDetail() {
             <div className="space-y-4 pt-2">
               <MacGlassPanel title="Migration history">
                 {migrations.length === 0 ? (
-                  <p className="text-sm text-slate-400">No migration records for this VM.</p>
+                  <p className="text-sm text-[var(--text-muted)]">No migration records for this VM.</p>
                 ) : (
                   <ul className="divide-y divide-white/[0.04] -mx-1">
                     {migrations.map((m) => (
@@ -2229,18 +2229,18 @@ export default function PlatformVmDetail() {
               <MacGlassPanel title="Organization">
                 <div className="flex flex-wrap gap-3 items-end">
                   <div>
-                    <label htmlFor="vm-settings-project" className="text-xs text-slate-500 block mb-1">Project</label>
+                    <label htmlFor="vm-settings-project" className="text-xs text-[var(--text-muted)] block mb-1">Project</label>
                     <input id="vm-settings-project" className="input" value={project} onChange={(e) => setProject(e.target.value)} placeholder="default" />
                   </div>
                   <div className="flex-1 min-w-[12rem]">
-                    <label htmlFor="vm-settings-tags" className="text-xs text-slate-500 block mb-1">Tags</label>
+                    <label htmlFor="vm-settings-tags" className="text-xs text-[var(--text-muted)] block mb-1">Tags</label>
                     <input id="vm-settings-tags" className="input w-full" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="prod, web" />
                   </div>
                   <button type="button" className="btn-secondary" onClick={() => void act('Project updated', () => patchVm(id, { project, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) }))}>Save</button>
                 </div>
               </MacGlassPanel>
               <MacGlassPanel title="Description">
-                <p className="text-xs text-slate-500 mb-2">Operator notes stored in the VM spec (Cockpit Machines parity).</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">Operator notes stored in the VM spec (Cockpit Machines parity).</p>
                 <textarea
                   aria-label="Description"
                   className="input w-full min-h-[4.5rem] text-sm"
@@ -2259,7 +2259,7 @@ export default function PlatformVmDetail() {
               </MacGlassPanel>
               {vm.inventory_source !== 'kubevirt' && (vm.observed_state === 'shutoff' || vm.observed_state === 'stopped') && (
                 <MacGlassPanel title="Rename VM">
-                  <p className="text-xs text-slate-500 mb-2">Libvirt domain rename (guest must be shut off).</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-2">Libvirt domain rename (guest must be shut off).</p>
                   <div className="flex flex-wrap gap-2">
                     <input
                       aria-label="New VM name"
@@ -2293,7 +2293,7 @@ export default function PlatformVmDetail() {
               {vm.inventory_source !== 'kubevirt' && (
                 <MacGlassPanel title="Boot & autostart">
                   <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <span className="text-sm text-slate-400">Autostart on host boot</span>
+                    <span className="text-sm text-[var(--text-muted)]">Autostart on host boot</span>
                     <button
                       type="button"
                       className="inline-flex items-center gap-2 text-sm"
@@ -2306,11 +2306,11 @@ export default function PlatformVmDetail() {
                       {libvirtDetails?.autostart ? (
                         <><ToggleRight className={`w-5 h-5 ${statusToneClass('ok')}`} /> Enabled</>
                       ) : (
-                        <><ToggleLeft className="w-5 h-5 text-slate-500" /> Disabled</>
+                        <><ToggleLeft className="w-5 h-5 text-[var(--text-muted)]" /> Disabled</>
                       )}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-[var(--text-muted)]">
                     CPU topology and memory sizing live on the{' '}
                     <button type="button" className={hubLinkClasses()} onClick={() => setTab('overview')}>Overview</button>
                     {' '}Compute panel — use Edit CPU / Edit memory there.
@@ -2319,25 +2319,25 @@ export default function PlatformVmDetail() {
               )}
               <MacGlassPanel title="Scheduled operations" subtitle="Recurring power or snapshot actions">
                 {schedulesLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
                 ) : schedules.length === 0 ? (
-                  <p className="text-sm text-slate-500 mb-3">No schedules configured.</p>
+                  <p className="text-sm text-[var(--text-muted)] mb-3">No schedules configured.</p>
                 ) : (
                   <table className="w-full text-sm mb-3">
-                    <thead><tr className="text-left text-xs text-slate-400 border-b border-slate-700/50"><th scope="col" className="pb-1 pr-4">Action</th><th scope="col" className="pb-1 pr-4">Every</th><th scope="col" className="pb-1 pr-4">Next run</th><th scope="col" className="pb-1 pr-4">Label</th><th scope="col" /></tr></thead>
-                    <tbody className="divide-y divide-slate-700/30">
+                    <thead><tr className="text-left text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]"><th scope="col" className="pb-1 pr-4">Action</th><th scope="col" className="pb-1 pr-4">Every</th><th scope="col" className="pb-1 pr-4">Next run</th><th scope="col" className="pb-1 pr-4">Label</th><th scope="col" /></tr></thead>
+                    <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                       {schedules.map((s) => (
                         <tr key={s.id}>
                           <td className="py-1 pr-4 font-mono">{s.action}</td>
-                          <td className="py-1 pr-4 text-slate-300">
+                          <td className="py-1 pr-4 text-[var(--text-secondary)]">
                             {s.interval_minutes < 60
                               ? `${s.interval_minutes}m`
                               : s.interval_minutes < 1440
                               ? `${s.interval_minutes / 60}h`
                               : `${s.interval_minutes / 1440}d`}
                           </td>
-                          <td className="py-1 pr-4 text-slate-400 text-xs">{s.next_run_at ? new Date(s.next_run_at.replace(' ', 'T') + 'Z').toLocaleString() : '—'}</td>
-                          <td className="py-1 pr-4 text-slate-400">{s.label || '—'}</td>
+                          <td className="py-1 pr-4 text-[var(--text-muted)] text-xs">{s.next_run_at ? new Date(s.next_run_at.replace(' ', 'T') + 'Z').toLocaleString() : '—'}</td>
+                          <td className="py-1 pr-4 text-[var(--text-muted)]">{s.label || '—'}</td>
                           <td className="py-1 text-right">
                             <button
                               type="button"
@@ -2372,7 +2372,7 @@ export default function PlatformVmDetail() {
                   </select>
                   {newSchedAction === 'snapshot' && (
                     <div className="col-span-2 flex items-center gap-2">
-                      <label className="text-xs text-slate-400 whitespace-nowrap">Keep last</label>
+                      <label className="text-xs text-[var(--text-muted)] whitespace-nowrap">Keep last</label>
                       <input
                         type="number"
                         className="input w-20 text-sm"
@@ -2381,7 +2381,7 @@ export default function PlatformVmDetail() {
                         value={newSchedRetention ?? 5}
                         onChange={(e) => setNewSchedRetention(Number(e.target.value) || null)}
                       />
-                      <label className="text-xs text-slate-400">snapshots</label>
+                      <label className="text-xs text-[var(--text-muted)]">snapshots</label>
                     </div>
                   )}
                   <input
@@ -2461,7 +2461,7 @@ export default function PlatformVmDetail() {
                     <select aria-label="Destination host" className="input w-full mb-2" value={destHost} onChange={(e) => setDestHost(e.target.value)}>
                       {hosts.map((h) => <option key={h.id} value={h.id}>{h.hostname}</option>)}
                     </select>
-                    <div className="flex flex-wrap gap-3 mb-2 text-xs text-slate-400">
+                    <div className="flex flex-wrap gap-3 mb-2 text-xs text-[var(--text-muted)]">
                       <label className="flex items-center gap-2">
                         <input type="checkbox" checked={migrateLive} onChange={(e) => setMigrateLive(e.target.checked)} /> Live migration
                       </label>
@@ -2547,7 +2547,7 @@ export default function PlatformVmDetail() {
                         <li key={c.name} className={statusToneClass(c.passed ? 'ok' : 'error')}>
                           {c.name}: {c.message}
                           {c.remediation && !c.passed && (
-                            <p className="text-slate-400 pl-2 mt-1">
+                            <p className="text-[var(--text-muted)] pl-2 mt-1">
                               Fix: {c.remediation}
                               {!c.passed && c.name.toLowerCase().includes('network') && (
                                 <button type="button" className="btn-secondary text-[10px] ml-2" onClick={() => setTab('network')}>Choose network</button>
@@ -2570,7 +2570,7 @@ export default function PlatformVmDetail() {
                 </div>
               </MacGlassPanel>
               <MacGlassPanel title="Lifecycle & export">
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-[var(--text-muted)] mb-3">
                   Retire stops the VM, tags it, and blocks start. Export disk queues a full qcow2 backup task.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -2651,7 +2651,7 @@ export default function PlatformVmDetail() {
                 </MacGlassPanel>
               )}
               <MacGlassPanel title="VM spec">
-                {specData ? <JsonInspector data={specData} /> : <p className="text-sm text-slate-500">Spec unavailable</p>}
+                {specData ? <JsonInspector data={specData} /> : <p className="text-sm text-[var(--text-muted)]">Spec unavailable</p>}
               </MacGlassPanel>
             </div>
           )}
@@ -2825,8 +2825,8 @@ export default function PlatformVmDetail() {
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="glass glass-elevated rounded-liquid p-3 glass-hover-lift">
-      <p className="text-[10px] uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="font-semibold text-slate-100 mt-1 capitalize tracking-tight">{value}</p>
+      <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+      <p className="font-semibold text-[var(--text-primary)] mt-1 capitalize tracking-tight">{value}</p>
     </div>
   )
 }

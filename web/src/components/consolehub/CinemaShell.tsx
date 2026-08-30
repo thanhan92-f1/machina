@@ -144,7 +144,7 @@ export default function CinemaShell({
           </span>
         ) : null}
         {spiceAudioEnabled ? (
-          <span className="px-2 py-0.5 rounded-full bg-violet-950/80 border border-violet-500/40 text-violet-100 text-[10px] uppercase tracking-wide" data-testid="cinema-spice-audio-badge">
+          <span className="px-2 py-0.5 rounded-full bg-[var(--apple-surface)] border border-[var(--accent)]/40 text-[var(--text-primary)] text-[10px] uppercase tracking-wide" data-testid="cinema-spice-audio-badge">
             SPICE audio
           </span>
         ) : null}
@@ -176,7 +176,7 @@ export default function CinemaShell({
                 onClick={() => onProtocolChange(p)}
                 className={
                   p === activeProtocol
-                    ? 'px-2 py-0.5 rounded-full text-[10px] bg-emerald-900/50 text-emerald-100 border border-emerald-500/30'
+                    ? 'px-2 py-0.5 rounded-full text-[10px] bg-emerald-900/50 text-emerald-100 border border-[var(--apple-hairline)]'
                     : 'px-2 py-0.5 rounded-full text-[10px] text-slate-400 bg-black/50 border border-white/10'
                 }
               >

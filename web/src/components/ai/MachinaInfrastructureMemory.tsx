@@ -91,23 +91,23 @@ export default function MachinaInfrastructureMemory() {
         }
       >
         {error && <p className={`text-sm ${statusToneClass('error')}`}>{error}</p>}
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-[var(--text-muted)]">
           {memory?.incidents.length ?? 0} remembered incident(s)
           {memory?.runbook_hints?.[0] ? ` · ${memory.runbook_hints[0]}` : ''}
         </p>
         <ul className="mt-3 space-y-2 text-xs max-h-56 overflow-y-auto">
           {(memory?.incidents ?? []).map((inc, i) => (
             <li key={`${inc.at}-${i}`} className="rounded-lg border border-white/[0.06] p-2">
-              <p className="font-medium text-slate-200 flex items-center gap-1">
+              <p className="font-medium text-[var(--text-primary)] flex items-center gap-1">
                 <Clock className="w-3 h-3 opacity-60" />
                 {new Date(inc.at).toLocaleString()} · {inc.kind}
               </p>
-              <p className="text-slate-400 mt-0.5">{inc.summary}</p>
-              <p className="text-slate-500 mt-0.5">{inc.lesson}</p>
+              <p className="text-[var(--text-muted)] mt-0.5">{inc.summary}</p>
+              <p className="text-[var(--text-muted)] mt-0.5">{inc.lesson}</p>
             </li>
           ))}
           {(memory?.incidents.length ?? 0) === 0 && (
-            <li className="text-slate-500">No incidents in memory yet — POST RCA analysis to persist.</li>
+            <li className="text-[var(--text-muted)]">No incidents in memory yet — POST RCA analysis to persist.</li>
           )}
         </ul>
         <Link to="/platform/zyra/incidents" className={`text-xs mt-3 inline-block ${hubLinkClasses()}`}>
@@ -117,7 +117,7 @@ export default function MachinaInfrastructureMemory() {
 
       <MacGlassPanel title="What changed before an outage?" subtitle="Audit delta in the pre-incident window">
         <div className="flex flex-wrap items-end gap-3 mb-3">
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             Hours before
             <input
               type="number"
@@ -133,10 +133,10 @@ export default function MachinaInfrastructureMemory() {
             {busy ? 'Loading…' : 'Query audit delta'}
           </button>
         </div>
-        {changesSummary && <p className="text-sm text-slate-300">{changesSummary}</p>}
+        {changesSummary && <p className="text-sm text-[var(--text-secondary)]">{changesSummary}</p>}
         <ul className="mt-2 space-y-1 text-xs font-mono max-h-40 overflow-y-auto">
           {changes.map((c, i) => (
-            <li key={`${c.at}-${i}`} className="text-slate-400">
+            <li key={`${c.at}-${i}`} className="text-[var(--text-muted)]">
               [{c.kind}] {c.summary} — {c.actor}
             </li>
           ))}

@@ -165,8 +165,8 @@ export default function SSHConsole({ host, sshUser = 'root', sshPort }: Props) {
   const clear = () => xtermRef.current?.clear()
 
   return (
-    <div className={fullscreen ? 'fixed inset-0 z-50 bg-slate-900 flex flex-col' : ''}>
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 rounded-t-lg">
+    <div className={fullscreen ? 'fixed inset-0 z-50 bg-[var(--apple-surface)] flex flex-col' : ''}>
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--apple-fill-tertiary)] border-b border-[var(--apple-hairline)] rounded-t-lg">
         <div className="flex items-center gap-3">
           <div
             className={`w-2.5 h-2.5 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
@@ -174,15 +174,15 @@ export default function SSHConsole({ host, sshUser = 'root', sshPort }: Props) {
             title={connected ? 'Connected' : 'Disconnected'}
             aria-label={connected ? 'Connected' : 'Disconnected'}
           />
-          <span className="text-sm text-slate-300">
+          <span className="text-sm text-[var(--text-secondary)]">
             SSH — {sshUser}@{host}{sshPort && sshPort !== 22 ? `:${sshPort}` : ''}
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={clear} className="p-1.5 hover:bg-slate-700 rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-slate-400" aria-hidden="true" /></button>
-          <button onClick={reconnect} className="p-1.5 hover:bg-slate-700 rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-slate-400" aria-hidden="true" /></button>
-          <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-slate-700 rounded transition" title="Fullscreen" aria-label="Fullscreen">
-            {fullscreen ? <Minimize className="w-4 h-4 text-slate-400" aria-hidden="true" /> : <Maximize className="w-4 h-4 text-slate-400" aria-hidden="true" />}
+          <button onClick={clear} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" /></button>
+          <button onClick={reconnect} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" /></button>
+          <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+            {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />}
           </button>
         </div>
       </div>

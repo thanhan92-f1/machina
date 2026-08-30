@@ -44,7 +44,7 @@ function statusIcon(status: CheckStatus) {
     case 'fail':
       return <XCircle className={`w-4 h-4 shrink-0 ${statusToneClass('error')}`} />
     case 'skip':
-      return <MinusCircle className="w-4 h-4 text-slate-500 shrink-0" />
+      return <MinusCircle className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
   }
 }
 
@@ -71,32 +71,32 @@ function CheckRow({ result }: { result: CheckResult }) {
   const hasDetail = result.detail !== undefined && result.detail !== null
 
   return (
-    <div className={`border-b border-slate-700/40 last:border-0 ${rowClass(result.status)}`}>
+    <div className={`border-b border-[var(--apple-hairline)]/40 last:border-0 ${rowClass(result.status)}`}>
       <button
         type="button"
-        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-800/40 transition"
+        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[var(--apple-surface)] transition"
         onClick={() => hasDetail && setOpen((o) => !o)}
         disabled={!hasDetail}
       >
         {statusIcon(result.status)}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-slate-200 text-sm">{result.label}</span>
-            <span className="text-xs text-slate-500 font-mono uppercase">{result.status}</span>
+            <span className="font-medium text-[var(--text-primary)] text-sm">{result.label}</span>
+            <span className="text-xs text-[var(--text-muted)] font-mono uppercase">{result.status}</span>
             {result.durationMs > 0 && (
-              <span className="text-xs text-slate-600">{result.durationMs}ms</span>
+              <span className="text-xs text-[var(--text-faint)]">{result.durationMs}ms</span>
             )}
           </div>
-          <p className="text-sm text-slate-400 mt-0.5">{result.message}</p>
+          <p className="text-sm text-[var(--text-muted)] mt-0.5">{result.message}</p>
         </div>
         {hasDetail && (
-          <span className="text-slate-500 mt-0.5">
+          <span className="text-[var(--text-muted)] mt-0.5">
             {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </span>
         )}
       </button>
       {open && hasDetail && (
-        <pre className="mx-4 mb-3 p-3 rounded-lg bg-slate-950/80 border border-slate-700/50 text-xs text-slate-400 overflow-x-auto max-h-48">
+        <pre className="mx-4 mb-3 p-3 rounded-lg bg-[var(--apple-surface)]/80 border border-[var(--apple-hairline)] text-xs text-[var(--text-muted)] overflow-x-auto max-h-48">
           {JSON.stringify(result.detail, null, 2)}
         </pre>
       )}
@@ -124,19 +124,19 @@ function CategorySection({
   )
 
   return (
-    <section className="rounded-xl border border-slate-700/80 bg-slate-900/40 overflow-hidden">
+    <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/80 bg-[var(--apple-surface)] overflow-hidden">
       <button
         type="button"
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-800/30 transition text-left"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--apple-fill-tertiary)]/30 transition text-left"
         onClick={() => setExpanded((e) => !e)}
       >
         <div className="flex items-center gap-2">
           {expanded ? (
-            <ChevronDown className="w-4 h-4 text-slate-500" />
+            <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-slate-500" />
+            <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
           )}
-          <h2 className="font-semibold text-slate-100">{CHECK_CATEGORY_LABELS[category]}</h2>
+          <h2 className="font-semibold text-[var(--text-primary)]">{CHECK_CATEGORY_LABELS[category]}</h2>
           <span
             className={`text-xs px-2 py-0.5 rounded-full border ${overallBadgeClass(catOverall)}`}
           >
@@ -213,13 +213,14 @@ export default function SystemCheckPage() {
 
   return (
     <PageLayout
+      eyebrow="System"
       className="max-w-4xl"
       title="System Check"
-      icon={<Stethoscope className="w-7 h-7 text-sky-400" />}
+      icon={<Stethoscope className="w-7 h-7 text-[var(--link)]" />}
       subtitle={
         <>
           Auto-runs read-only diagnostics (API, host, libvirt, Fleet Cloud, Kubernetes, services).
-          Same coverage as <code className="text-slate-500">e2e-test.sh</code> preflight — from the UI.
+          Same coverage as <code className="text-[var(--text-muted)]">e2e-test.sh</code> preflight — from the UI.
         </>
       }
       actions={
@@ -228,7 +229,7 @@ export default function SystemCheckPage() {
             type="button"
             disabled={busy}
             onClick={() => void runChecks()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium disabled:opacity-50"
+            className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${running ? 'animate-spin' : ''}`} />
             Run again
@@ -237,7 +238,7 @@ export default function SystemCheckPage() {
             type="button"
             disabled={results.length === 0 || busy}
             onClick={() => void copyReport()}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 text-sm disabled:opacity-50"
+            className="btn-secondary text-sm inline-flex items-center gap-2 disabled:opacity-50"
           >
             <Copy className="w-4 h-4" />
             Copy report
@@ -247,7 +248,7 @@ export default function SystemCheckPage() {
       contentClassName="space-y-6"
     >
       {running && progressLabel && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-sky-500/30 bg-sky-950/25 text-sm text-sky-200">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)] text-sm text-[var(--link)]">
           <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
           {progressLabel}
         </div>
@@ -267,7 +268,7 @@ export default function SystemCheckPage() {
             {summary.skip > 0 && (
               <>
                 {' · '}
-                <span className="text-slate-400">{summary.skip} skipped</span>
+                <span className="text-[var(--text-muted)]">{summary.skip} skipped</span>
               </>
             )}
           </span>
@@ -275,22 +276,22 @@ export default function SystemCheckPage() {
       )}
 
       <div className="flex flex-wrap gap-2 text-xs">
-        <Link to="/services" className="text-sky-400 hover:underline">
+        <Link to="/services" className="text-[var(--link)] hover:underline">
           Services
         </Link>
-        <span className="text-slate-600">·</span>
-        <Link to="/capabilities" className="text-sky-400 hover:underline">
+        <span className="text-[var(--text-faint)]">·</span>
+        <Link to="/capabilities" className="text-[var(--link)] hover:underline">
           Capabilities
         </Link>
-        <span className="text-slate-600">·</span>
-        <Link to="/node" className="text-sky-400 hover:underline">
+        <span className="text-[var(--text-faint)]">·</span>
+        <Link to="/node" className="text-[var(--link)] hover:underline">
           Host overview
         </Link>
       </div>
 
       {running && results.length === 0 && (
-        <div className="flex items-center justify-center py-16 text-slate-500">
-          <RefreshCw className="w-8 h-8 animate-spin text-sky-400 mr-3" />
+        <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
+          <RefreshCw className="w-8 h-8 animate-spin text-[var(--link)] mr-3" />
           Running system check…
         </div>
       )}

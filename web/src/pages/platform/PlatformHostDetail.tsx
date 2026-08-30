@@ -74,11 +74,11 @@ import { getHostCockpitInventory, type HostCockpitSystem } from '../../api/platf
 function psiBar(label: string, pct: number) {
   return (
     <div key={label} className="space-y-1">
-      <div className="flex justify-between text-xs text-slate-400">
+      <div className="flex justify-between text-xs text-[var(--text-muted)]">
         <span>{label}</span>
         <span>{pct.toFixed(1)}%</span>
       </div>
-      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div className={`h-full rounded-full ${utilizationBarClass(pct, { warn: 20, error: 50 })}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>
@@ -298,11 +298,11 @@ export default function PlatformHostDetailPage() {
           <span className={statusPillClasses(host.validation_status === 'valid' ? 'ok' : 'warn')}>{host.validation_status || 'pending'}</span>
           <span className={statusPillClasses(host.schedulable ? 'ok' : 'warn')}>{host.schedulable ? 'Schedulable' : 'Cordoned'}</span>
           {host.fenced && <span className={statusPillClasses('error')}>Fenced</span>}
-          <span className="text-slate-500">·</span>
-          <span className="text-slate-400">{host.vm_count ?? 0} VMs</span>
+          <span className="text-[var(--text-muted)]">·</span>
+          <span className="text-[var(--text-muted)]">{host.vm_count ?? 0} VMs</span>
         </span>
       ) : undefined}
-      icon={<Server className="w-6 h-6 text-slate-400" />}
+      icon={<Server className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={host ? (
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-secondary text-sm" onClick={() => void syncHost(id).then(() => toast.success('Sync queued')).catch((e: unknown) => toast.error(formatUserError(e)))}>Sync</button>
@@ -323,7 +323,7 @@ export default function PlatformHostDetailPage() {
         <ErrorBanner message={error} />
       ))}
       {error && hostErrorPresentation(error)?.error_code === 'host_agent_offline' && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           <Link to="/platform/enroll" className={hubLinkClasses()}>Add Host / re-enroll agent</Link>
           {' · '}
           <Link to="/node" className={hubLinkClasses()}>Classic node tools</Link>
@@ -400,7 +400,7 @@ export default function PlatformHostDetailPage() {
                       {healthChecks.map((c) => (
                         <li key={c.name} className={statusToneClass(c.passed ? 'ok' : 'error')}>
                           <span className="font-mono text-xs">{c.name}</span>: {c.message}
-                          {c.remediation ? <span className="block text-xs text-slate-500 mt-0.5">→ {c.remediation}</span> : null}
+                          {c.remediation ? <span className="block text-xs text-[var(--text-muted)] mt-0.5">→ {c.remediation}</span> : null}
                         </li>
                       ))}
                     </ul>
@@ -423,24 +423,24 @@ export default function PlatformHostDetailPage() {
                     <div>Load: {host.cpu_percent?.toFixed(0)}% · {host.memory_used_mib}/{host.memory_total_mib} MiB</div>
                     <div>Libvirt: {host.libvirt_version || '—'}</div>
                     <div>QEMU: {host.qemu_version || '—'}</div>
-                    <div className="md:col-span-2 font-mono text-xs text-slate-500">{host.libvirt_uri}</div>
+                    <div className="md:col-span-2 font-mono text-xs text-[var(--text-muted)]">{host.libvirt_uri}</div>
                   </div>
                 </MacSettingsGroup>
                 <MacSettingsGroup title="Datacenter location">
-                  <p className="px-3 pt-3 text-xs text-slate-500">
+                  <p className="px-3 pt-3 text-xs text-[var(--text-muted)]">
                     Organize this host on the Mission Control map (site → rack → U position).
                   </p>
                   <div className="p-3 grid gap-3 sm:grid-cols-3">
                     <label htmlFor="host-site" className="space-y-1 text-sm">
-                      <span className="text-slate-400 text-xs">Site</span>
+                      <span className="text-[var(--text-muted)] text-xs">Site</span>
                       <input id="host-site" name="site" className="input w-full text-sm" value={site} onChange={(e) => setSite(e.target.value)} placeholder="e.g. Pune" />
                     </label>
                     <label htmlFor="host-rack" className="space-y-1 text-sm">
-                      <span className="text-slate-400 text-xs">Rack</span>
+                      <span className="text-[var(--text-muted)] text-xs">Rack</span>
                       <input id="host-rack" name="rack" className="input w-full text-sm" value={rack} onChange={(e) => setRack(e.target.value)} placeholder="e.g. Rack 01" />
                     </label>
                     <label htmlFor="host-rack-u" className="space-y-1 text-sm">
-                      <span className="text-slate-400 text-xs">Rack U</span>
+                      <span className="text-[var(--text-muted)] text-xs">Rack U</span>
                       <input id="host-rack-u" name="rack_u" className="input w-full text-sm" type="number" min={1} max={52} value={rackU} onChange={(e) => setRackU(e.target.value)} placeholder="12" />
                     </label>
                   </div>
@@ -464,7 +464,7 @@ export default function PlatformHostDetailPage() {
                 </MacSettingsGroup>
                 <MacSettingsGroup title="Tags">
                   <div className="p-3 space-y-2">
-                    <label htmlFor="host-tags" className="block text-xs text-slate-400">
+                    <label htmlFor="host-tags" className="block text-xs text-[var(--text-muted)]">
                       Placement and capability tags
                     </label>
                     <input
@@ -475,7 +475,7 @@ export default function PlatformHostDetailPage() {
                       onChange={(e) => setTags(e.target.value)}
                       placeholder="gpu, nvidia:a100, cuda"
                     />
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[var(--text-muted)]">
                       Comma-separated tags drive GPU, MIG, vGPU, CUDA, and placement discovery.
                     </p>
                     <button
@@ -500,7 +500,7 @@ export default function PlatformHostDetailPage() {
                 </MacSettingsGroup>
                 <MacSettingsGroup title="Danger zone">
                   <div className="p-3 space-y-2">
-                    <p className="text-xs text-slate-500">Removes the host from fleet inventory. VMs must be evacuated first.</p>
+                    <p className="text-xs text-[var(--text-muted)]">Removes the host from fleet inventory. VMs must be evacuated first.</p>
                     <button
                       type="button"
                       className="btn-danger text-sm"
@@ -521,14 +521,14 @@ export default function PlatformHostDetailPage() {
                 ) : null}
                 <MacSettingsGroup title="Classic hypervisor tools">
                   <div className="p-3">
-                    <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                    <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">
                       Deep libvirt, device passthrough, host SSH, and capability matrix — classic Machina UI on this daemon.
                     </p>
                     <PlatformClassicToolLinks tools={hostClassicTools()} />
                     <Link to={`/node?host=${encodeURIComponent(host.hostname)}`} className={`text-xs inline-block mt-2 ${hubLinkClasses()}`}>Open NodeInfo →</Link>
                     {localFw ? (
                       <div className="mt-3">
-                        <p className="text-xs text-slate-500 mb-2">Local firewall inventory (daemon fallback)</p>
+                        <p className="text-xs text-[var(--text-muted)] mb-2">Local firewall inventory (daemon fallback)</p>
                         <JsonInspector data={localFw} />
                       </div>
                     ) : null}
@@ -566,21 +566,21 @@ export default function PlatformHostDetailPage() {
                     <div className="grid gap-2 sm:grid-cols-2 text-sm mb-3 p-3">
                       <div>networkd: <span className={statusToneClass((netDiag.networkd_active ?? netDiag.systemd_networkd_active) ? 'ok' : 'warn')}>{(netDiag.networkd_active ?? netDiag.systemd_networkd_active) ? 'active' : 'inactive'}</span></div>
                       <div>resolved: <span className={statusToneClass(netDiag.resolved_active ? 'ok' : 'warn')}>{netDiag.resolved_active ? 'active' : 'inactive'}</span></div>
-                      {netDiag.summary && <p className="sm:col-span-2 text-xs text-slate-500">{netDiag.summary}</p>}
+                      {netDiag.summary && <p className="sm:col-span-2 text-xs text-[var(--text-muted)]">{netDiag.summary}</p>}
                     </div>
                     {(netDiag.interfaces ?? []).slice(0, 8).map((iface) => (
                       <MacListRow key={iface.name} title={iface.name} subtitle={(iface.addresses ?? []).join(', ') || iface.state || iface.kind || '—'} />
                     ))}
                     {netDiag.networkctl_status_all && (
                       <details className="p-3 text-xs">
-                        <summary className="cursor-pointer text-slate-400">networkctl status</summary>
-                        <pre className="mt-2 font-mono text-slate-500 max-h-48 overflow-auto whitespace-pre-wrap">{netDiag.networkctl_status_all.slice(0, 6000)}</pre>
+                        <summary className="cursor-pointer text-[var(--text-muted)]">networkctl status</summary>
+                        <pre className="mt-2 font-mono text-[var(--text-muted)] max-h-48 overflow-auto whitespace-pre-wrap">{netDiag.networkctl_status_all.slice(0, 6000)}</pre>
                       </details>
                     )}
                     {netDiag.resolvectl_status && (
                       <details className="p-3 text-xs">
-                        <summary className="cursor-pointer text-slate-400">resolvectl status</summary>
-                        <pre className="mt-2 font-mono text-slate-500 max-h-48 overflow-auto whitespace-pre-wrap">{netDiag.resolvectl_status.slice(0, 4000)}</pre>
+                        <summary className="cursor-pointer text-[var(--text-muted)]">resolvectl status</summary>
+                        <pre className="mt-2 font-mono text-[var(--text-muted)] max-h-48 overflow-auto whitespace-pre-wrap">{netDiag.resolvectl_status.slice(0, 4000)}</pre>
                       </details>
                     )}
                   </MacGlassPanel>
@@ -610,12 +610,12 @@ export default function PlatformHostDetailPage() {
             {section === 'linux' && (
               <div className="space-y-4">
                 <MacGlassPanel title="GPU inventory" subtitle="PCI passthrough · MIG · CUDA readiness from host agent">
-                  {gpuLoading && <p className="text-sm text-slate-500">Scanning GPUs…</p>}
+                  {gpuLoading && <p className="text-sm text-[var(--text-muted)]">Scanning GPUs…</p>}
                   {!gpuLoading && gpuError && (
                     <p className="text-sm text-amber-300/90">{gpuError}</p>
                   )}
                   {!gpuLoading && !gpuError && gpus.length === 0 && (
-                    <p className="text-sm text-slate-500">No discrete GPUs reported on this host.</p>
+                    <p className="text-sm text-[var(--text-muted)]">No discrete GPUs reported on this host.</p>
                   )}
                   {!gpuLoading && gpus.length > 0 && (
                     <ul className="divide-y divide-white/[0.04] -mx-1">
@@ -629,7 +629,7 @@ export default function PlatformHostDetailPage() {
                     </ul>
                   )}
                   {gpuSummary && (
-                    <pre className="mt-3 text-[10px] font-mono text-slate-500 whitespace-pre-wrap max-h-32 overflow-y-auto">{gpuSummary}</pre>
+                    <pre className="mt-3 text-[10px] font-mono text-[var(--text-muted)] whitespace-pre-wrap max-h-32 overflow-y-auto">{gpuSummary}</pre>
                   )}
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link to="/platform/gpu" className={`text-xs inline-flex items-center gap-1 ${hubLinkClasses()}`}>
@@ -684,7 +684,7 @@ export default function PlatformHostDetailPage() {
                     )}
                     {linuxObs.bpf && (
                       <MacGlassPanel title="eBPF summary">
-                        <p className="text-sm text-slate-400 p-3 font-mono text-xs">
+                        <p className="text-sm text-[var(--text-muted)] p-3 font-mono text-xs">
                           {JSON.stringify(linuxObs.bpf)}
                         </p>
                       </MacGlassPanel>
@@ -787,7 +787,7 @@ export default function PlatformHostDetailPage() {
                           )}
                         </div>
                         {(linuxUpdates.packages ?? []).length === 0 ? (
-                          <p className="text-sm text-slate-400 p-3">
+                          <p className="text-sm text-[var(--text-muted)] p-3">
                             {(linuxUpdates.pending_count ?? 0) > 0
                               ? `${linuxUpdates.pending_count} pending update(s) — package list not enumerated`
                               : 'No pending updates.'}
@@ -805,7 +805,7 @@ export default function PlatformHostDetailPage() {
                           </ul>
                         )}
                         {upgradePreview && (
-                          <pre className="mt-2 p-2 text-[10px] font-mono text-slate-400 max-h-40 overflow-auto bg-slate-950/50 rounded-lg">{upgradePreview}</pre>
+                          <pre className="mt-2 p-2 text-[10px] font-mono text-[var(--text-muted)] max-h-40 overflow-auto bg-[var(--apple-surface)]/50 rounded-lg">{upgradePreview}</pre>
                         )}
                       </MacGlassPanel>
                     )}
@@ -840,7 +840,7 @@ export default function PlatformHostDetailPage() {
                 <MacGlassPanel title="Machine Security">
                   {firewall ? (
                     <div className="text-sm space-y-2 mb-3">
-                      <div className="flex flex-wrap gap-3 text-slate-300">
+                      <div className="flex flex-wrap gap-3 text-[var(--text-secondary)]">
                         <span>Profile: {firewall.target.profile || 'default'}</span>
                         <span>Risk: {firewall.target.risk}</span>
                         <span>Score: {firewall.target.score}</span>
@@ -851,9 +851,9 @@ export default function PlatformHostDetailPage() {
                       </p>
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-500 mb-3">Firewall summary unavailable.</p>
+                    <p className="text-sm text-[var(--text-muted)] mb-3">Firewall summary unavailable.</p>
                   )}
-                  <p className="text-sm text-slate-400 mb-3">Zeus Firewall profiles, stealth mode, and port exposure for this hypervisor.</p>
+                  <p className="text-sm text-[var(--text-muted)] mb-3">Zeus Firewall profiles, stealth mode, and port exposure for this hypervisor.</p>
                   <div className="flex flex-wrap gap-2">
                     <Link to={`/platform/zeus/security/firewall/${id}`} className="btn-secondary text-sm inline-flex items-center gap-2">
                       <Shield className="w-4 h-4" /> Open Zeus Firewall
@@ -882,14 +882,14 @@ export default function PlatformHostDetailPage() {
               <MacGlassPanel title="Linux audit">
                 {audit ? (
                   <div className="text-sm space-y-2 p-3">
-                    <p className="text-slate-300">{audit.summary || 'Audit report loaded'}</p>
-                    <div className="grid gap-2 sm:grid-cols-2 text-slate-400">
+                    <p className="text-[var(--text-secondary)]">{audit.summary || 'Audit report loaded'}</p>
+                    <div className="grid gap-2 sm:grid-cols-2 text-[var(--text-muted)]">
                       <div>auditd: {audit.auditd_active ? 'active' : 'inactive'}</div>
                       <div>AVC count: {audit.avc_count ?? '—'}</div>
                       <div>recent events: {audit.recent_events ?? audit.events?.length ?? '—'}</div>
                     </div>
                     {(audit.events ?? []).length > 0 && (
-                      <ul className="mt-3 space-y-1 font-mono text-[10px] text-slate-500">
+                      <ul className="mt-3 space-y-1 font-mono text-[10px] text-[var(--text-muted)]">
                         {audit.events!.slice(0, 20).map((ev, i) => (
                           <li key={String(ev.summary ?? ev.message ?? i)} className="border-b border-white/[0.04] pb-1">{String(ev.summary ?? ev.message ?? JSON.stringify(ev))}</li>
                         ))}
@@ -898,7 +898,7 @@ export default function PlatformHostDetailPage() {
                     <Link to="/platform/zeus/security" className={`text-xs inline-flex mt-2 ${hubLinkClasses()}`}>Security Center →</Link>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500 p-3">Audit report unavailable.</p>
+                  <p className="text-sm text-[var(--text-muted)] p-3">Audit report unavailable.</p>
                 )}
               </MacGlassPanel>
             )}

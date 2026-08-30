@@ -39,13 +39,14 @@ export function PlatformRefreshButton({ onClick, label = 'Refresh' }: { onClick:
 
 /** Inline stat row for PageLayout subtitle (replaces TahoeHero stats). */
 export function platformStatSubtitle(
-  stats: Array<{ label: string; value: string }>,
+  stats: Array<{ label: string; value: string | number }>,
 ): ReactNode {
   return (
-    <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-400">
+    <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[var(--text-muted)] tracking-tight">
       {stats.map((s) => (
         <span key={s.label}>
-          <span className="text-slate-500">{s.label}</span> {s.value}
+          <span className="text-[var(--text-faint)]">{s.label}</span>{' '}
+          <span className="text-[var(--text-primary)] tabular-nums font-medium">{s.value}</span>
         </span>
       ))}
     </span>

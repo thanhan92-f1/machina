@@ -129,15 +129,15 @@ export default function OsDiagnosePanel({
       </div>
       {report && (
         <div className="space-y-3 text-sm">
-          <p className="text-slate-300">{report.summary}</p>
+          <p className="text-[var(--text-secondary)]">{report.summary}</p>
           {report.hypotheses.map((h) => (
-            <div key={h.title} className="rounded-xl border border-white/[0.06] bg-slate-950/40 p-3">
+            <div key={h.title} className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
               <div className="flex justify-between gap-2 mb-1">
-                <span className="font-medium text-slate-100">{h.title}</span>
-                <span className="text-xs text-violet-300">{Math.round(h.confidence * 100)}%</span>
+                <span className="font-medium text-[var(--text-primary)]">{h.title}</span>
+                <span className="text-xs text-[var(--link)]">{Math.round(h.confidence * 100)}%</span>
               </div>
-              <p className="text-xs text-slate-400">{h.evidence}</p>
-              <p className="text-xs text-slate-500 mt-1">{h.action}</p>
+              <p className="text-xs text-[var(--text-muted)]">{h.evidence}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{h.action}</p>
             </div>
           ))}
           {report.fix_actions.length > 0 && (
@@ -159,13 +159,13 @@ export default function OsDiagnosePanel({
           <p className="font-medium text-orange-200">Full troubleshoot — {troubleshoot.severity}</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {troubleshoot.checks.map((c) => (
-              <div key={c.domain} className="text-slate-400">
-                <span className="text-slate-300 capitalize">{c.domain}</span>: {c.detail}
+              <div key={c.domain} className="text-[var(--text-muted)]">
+                <span className="text-[var(--text-secondary)] capitalize">{c.domain}</span>: {c.detail}
               </div>
             ))}
           </div>
           {troubleshoot.findings.slice(0, 3).map((f) => (
-            <p key={f.message} className="text-slate-500">[{f.domain}] {f.message}</p>
+            <p key={f.message} className="text-[var(--text-muted)]">[{f.domain}] {f.message}</p>
           ))}
         </div>
       )}

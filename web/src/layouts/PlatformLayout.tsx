@@ -46,6 +46,8 @@ function PlatformDesktopShell() {
   const navEpoch = useRef(0)
   const cinemaRoute = location.pathname.includes('/consolehub') && cinemaChromeHidden
   const hideChrome = cinemaRoute
+  const platformHome =
+    location.pathname === '/platform' || location.pathname.replace(/\/$/, '') === '/platform'
   const meshSubtle = location.pathname !== '/platform' && suppressContextBar(location.pathname)
   const contextBarVisible =
     !hideChrome
@@ -184,8 +186,24 @@ function PlatformDesktopShell() {
         {sidebarVisible && !hideChrome ? <PlatformSidebar /> : null}
         <div className="tahoe-canvas mac-desktop-main flex-1 min-w-0 relative min-h-0">
           {!hideChrome ? <div className={`tahoe-mesh pointer-events-none${meshSubtle ? ' tahoe-mesh-subtle' : ''}`} aria-hidden /> : null}
-          <div className={`relative z-[1] w-full platform-mac-scroll-body ${hideChrome ? 'p-0 max-w-none h-full min-h-0' : 'px-4 lg:px-6 pt-1 pb-16 lg:pb-24 max-w-[160rem] mx-auto'}`}>
-            <div className={hideChrome ? 'h-full min-h-0' : 'platform-readable tahoe-readable-stack py-3 pb-8'}>
+          <div
+            className={
+              hideChrome
+                ? 'relative z-[1] w-full platform-mac-scroll-body p-0 max-w-none h-full min-h-0'
+                : platformHome
+                  ? 'relative z-[1] w-full platform-mac-scroll-body px-3 sm:px-4 lg:px-5 xl:px-6 pt-1 pb-20 max-w-none'
+                  : 'relative z-[1] w-full platform-mac-scroll-body px-4 lg:px-6 pt-1 pb-16 lg:pb-24 max-w-[160rem] mx-auto'
+            }
+          >
+            <div
+              className={
+                hideChrome
+                  ? 'h-full min-h-0'
+                  : platformHome
+                    ? 'w-full min-w-0 py-2 pb-8'
+                    : 'platform-readable tahoe-readable-stack py-3 pb-8'
+              }
+            >
               <Outlet />
             </div>
           </div>

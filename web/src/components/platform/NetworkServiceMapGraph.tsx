@@ -42,7 +42,7 @@ export default function NetworkServiceMapGraph({ nodes, edges, className = '' }:
     <svg
       ref={svgRef}
       viewBox="0 0 400 200"
-      className={`w-full h-48 rounded-lg border border-slate-700/40 bg-slate-950/60 ${className}`}
+      className={`w-full h-48 rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] ${className}`}
       aria-label="Service map graph"
       data-testid="network-service-map-graph"
     >

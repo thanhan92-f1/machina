@@ -186,6 +186,7 @@ export default function VMList() {
   return (
     <PageLayout
       loading={loading}
+      eyebrow="Hypervisor"
       title="Virtual machines"
       subtitle={
         <>
@@ -205,8 +206,8 @@ export default function VMList() {
       onErrorDismiss={() => setLoadError(null)}
       actions={
         <>
-          <button onClick={() => downloadJSON(filtered, 'vms.json')} className="p-2 hover:bg-slate-700 rounded transition" title="Export JSON" aria-label="Export JSON"><Download className="w-4 h-4" /></button>
-          <button onClick={() => downloadCSV(filtered as unknown as Record<string, unknown>[], 'vms.csv')} className="p-2 hover:bg-slate-700 rounded transition" title="Export CSV" aria-label="Export CSV"><Download className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>
+          <button onClick={() => downloadJSON(filtered, 'vms.json')} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Export JSON" aria-label="Export JSON"><Download className="w-4 h-4" /></button>
+          <button onClick={() => downloadCSV(filtered as unknown as Record<string, unknown>[], 'vms.csv')} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Export CSV" aria-label="Export CSV"><Download className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>
           <ChoiceCardGrid className="max-w-[220px] sm:max-w-[240px] [&_button]:min-h-0">
             <ChoiceCard
               compact
@@ -227,39 +228,39 @@ export default function VMList() {
               description="Card tiles"
             />
           </ChoiceCardGrid>
-          <button onClick={load} className="p-2 hover:bg-slate-700 rounded transition" title="Refresh" aria-label="Refresh VM list">
+          <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Refresh" aria-label="Refresh VM list">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <Link to="/create" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm transition">+ Create VM</Link>
+          <Link to="/create" className="btn-primary text-sm">+ Create VM</Link>
         </>
       }
     >
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
             aria-label="Search VMs"
             placeholder="Search VMs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`w-full pl-10 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 ${search ? 'pr-8' : 'pr-4'}`}
+            className={`w-full pl-10 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] ${search ? 'pr-8' : 'pr-4'}`}
           />
           {search && (
             <button type="button" aria-label="Clear search" onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
         {allTagNames.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <Tag className="w-4 h-4 text-slate-400" />
+            <Tag className="w-4 h-4 text-[var(--text-muted)]" />
             <select
               value={tagFilter}
               onChange={(e) => setTagFilter(e.target.value)}
               aria-label="Filter by tag"
-              className="bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm py-2 px-3 focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-300"
+              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm py-2 px-3 focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-secondary)]"
             >
               <option value="">All tags</option>
               {allTagNames.map(t => <option key={t} value={t}>{t}</option>)}
@@ -267,7 +268,7 @@ export default function VMList() {
           </div>
         )}
         {(search || tagFilter) && (
-          <span aria-live="polite" className="text-sm text-slate-400 shrink-0">
+          <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0">
             {filtered.length} VM{filtered.length !== 1 ? 's' : ''}
           </span>
         )}
@@ -284,14 +285,14 @@ export default function VMList() {
           }
           primaryAction={
             !search && !tagFilter ? (
-              <Link to="/create" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">
+              <Link to="/create" className="btn-primary text-sm">
                 Create VM
               </Link>
             ) : undefined
           }
           secondaryAction={
             !search && !tagFilter ? (
-              <Link to="/import" className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+              <Link to="/import" className="px-4 py-2 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-sm">
                 Import VM
               </Link>
             ) : undefined
@@ -301,9 +302,9 @@ export default function VMList() {
         <div className="card overflow-hidden">
           <table className="w-full" aria-label="Virtual machines">
             <thead>
-              <tr className="border-b border-slate-700/50 text-left text-sm text-slate-400">
+              <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">
                 <th scope="col" className="px-3 py-3 w-8">
-                  <input type="checkbox" checked={selectedVMs.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded border-slate-600 bg-slate-900" />
+                  <input type="checkbox" checked={selectedVMs.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                 </th>
                 <th scope="col" className="px-6 py-3">Name</th>
                 <th scope="col" className="px-6 py-3">State</th>
@@ -312,16 +313,16 @@ export default function VMList() {
                 <th scope="col" className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/50">
               {sorted.map((vm) => (
-                <tr key={vmScopeKey(vm)} className="hover:bg-slate-700/50 transition">
+                <tr key={vmScopeKey(vm)} className="hover:bg-[var(--surface-hover)]/50 transition">
                   <td className="px-3 py-4">
-                    <input type="checkbox" checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-slate-600 bg-slate-900" />
+                    <input type="checkbox" checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 flex-wrap">
                       <button onClick={(e) => { e.preventDefault(); togglePin(vmScopeKey(vm)); setPinnedRefresh(n => n + 1) }} aria-label={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'} className="p-1 hover:bg-yellow-600/20 rounded transition" title={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'}>
-                        <Star className={`w-3.5 h-3.5 ${isPinned(vmScopeKey(vm)) ? `${statusToneClass('warn')} fill-[var(--machina-status-warn)]` : 'text-slate-500'}`} />
+                        <Star className={`w-3.5 h-3.5 ${isPinned(vmScopeKey(vm)) ? `${statusToneClass('warn')} fill-[var(--machina-status-warn)]` : 'text-[var(--text-muted)]'}`} />
                       </button>
                       <Link to={vmDetailRoute(vm.name, vm.libvirt_connection)} className={`font-medium ${statusActionLinkClasses('info')}`}>{vm.name}</Link>
                       {vm.libvirt_connection === 'session' && (
@@ -335,27 +336,27 @@ export default function VMList() {
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
                   </td>
-                  <td className="px-6 py-4 hidden md:table-cell text-slate-300">{vm.vcpus}</td>
-                  <td className="px-6 py-4 hidden md:table-cell text-slate-300">{vm.memory_mb} MB</td>
+                  <td className="px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.vcpus}</td>
+                  <td className="px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.memory_mb} MB</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1">
                       {vm.state === 'running' && (
                         <>
-                          <Link to={vmConsoleRoute(vm.name, vm.libvirt_connection)} className="p-1.5 hover:bg-slate-600/30 rounded transition" title="VNC console" aria-label="VNC console">
-                            <Monitor className="w-4 h-4 text-slate-300" />
+                          <Link to={vmConsoleRoute(vm.name, vm.libvirt_connection)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="VNC console" aria-label="VNC console">
+                            <Monitor className="w-4 h-4 text-[var(--text-secondary)]" />
                           </Link>
-                          <button type="button" onClick={() => setSshVm(vm)} className="p-1.5 hover:bg-slate-600/30 rounded transition" title="SSH" aria-label="SSH">
-                            <Terminal className="w-4 h-4 text-slate-300" />
+                          <button type="button" onClick={() => setSshVm(vm)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="SSH" aria-label="SSH">
+                            <Terminal className="w-4 h-4 text-[var(--text-secondary)]" />
                           </button>
                           {vm.guest_ip && (
                             <button
                               type="button"
                               onClick={async () => { if (await copyText(vm.guest_ip!)) toast.success('Guest IP copied'); else toast.error('Copy failed — check clipboard permissions') }}
-                              className="p-1.5 hover:bg-slate-600/30 rounded transition"
+                              className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
                               title="Copy guest IP"
                               aria-label="Copy guest IP"
                             >
-                              <Copy className="w-4 h-4 text-slate-300" />
+                              <Copy className="w-4 h-4 text-[var(--text-secondary)]" />
                             </button>
                           )}
                         </>
@@ -399,9 +400,9 @@ export default function VMList() {
             <div key={vmScopeKey(vm)} className="card p-5 hover:border-white/15 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <input type="checkbox" checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-slate-600 bg-slate-900 shrink-0" />
+                  <input type="checkbox" checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)] shrink-0" />
                   <button onClick={(e) => { e.preventDefault(); togglePin(vmScopeKey(vm)); setPinnedRefresh(n => n + 1) }} aria-label={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'} className="p-1 hover:bg-yellow-600/20 rounded transition" title={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'}>
-                    <Star className={`w-3.5 h-3.5 ${isPinned(vmScopeKey(vm)) ? `${statusToneClass('warn')} fill-[var(--machina-status-warn)]` : 'text-slate-500'}`} />
+                    <Star className={`w-3.5 h-3.5 ${isPinned(vmScopeKey(vm)) ? `${statusToneClass('warn')} fill-[var(--machina-status-warn)]` : 'text-[var(--text-muted)]'}`} />
                   </button>
                   <Link to={vmDetailRoute(vm.name, vm.libvirt_connection)} className={`font-semibold truncate ${statusActionLinkClasses('info')}`}>{vm.name}</Link>
                   {vm.libvirt_connection === 'session' && (
@@ -410,9 +411,9 @@ export default function VMList() {
                 </div>
                 <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
               </div>
-              <div className="space-y-1 text-sm text-slate-300 mb-3">
-                <div className="flex justify-between"><span className="text-slate-500">vCPUs</span><span>{vm.vcpus}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Memory</span><span>{vm.memory_mb} MB</span></div>
+              <div className="space-y-1 text-sm text-[var(--text-secondary)] mb-3">
+                <div className="flex justify-between"><span className="text-[var(--text-muted)]">vCPUs</span><span>{vm.vcpus}</span></div>
+                <div className="flex justify-between"><span className="text-[var(--text-muted)]">Memory</span><span>{vm.memory_mb} MB</span></div>
               </div>
               {(vmTagsMap[vmScopeKey(vm)] || []).length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
@@ -421,13 +422,13 @@ export default function VMList() {
                   ))}
                 </div>
               )}
-              <div className="flex items-center gap-1 pt-3 border-t border-slate-700/50">
+              <div className="flex items-center gap-1 pt-3 border-t border-[var(--apple-hairline)]">
                 {vm.state === 'running' && (
                   <>
-                    <Link to={vmConsoleRoute(vm.name, vm.libvirt_connection)} className="p-1.5 hover:bg-slate-600/30 rounded transition" title="VNC" aria-label="VNC"><Monitor className="w-4 h-4 text-slate-300" /></Link>
-                    <button type="button" onClick={() => setSshVm(vm)} className="p-1.5 hover:bg-slate-600/30 rounded transition" title="SSH" aria-label="SSH"><Terminal className="w-4 h-4 text-slate-300" /></button>
+                    <Link to={vmConsoleRoute(vm.name, vm.libvirt_connection)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="VNC" aria-label="VNC"><Monitor className="w-4 h-4 text-[var(--text-secondary)]" /></Link>
+                    <button type="button" onClick={() => setSshVm(vm)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="SSH" aria-label="SSH"><Terminal className="w-4 h-4 text-[var(--text-secondary)]" /></button>
                     {vm.guest_ip && (
-                      <button type="button" onClick={async () => { if (await copyText(vm.guest_ip!)) toast.success('Guest IP copied'); else toast.error('Copy failed — check clipboard permissions') }} className="p-1.5 hover:bg-slate-600/30 rounded transition" title="Copy IP" aria-label="Copy IP"><Copy className="w-4 h-4 text-slate-300" /></button>
+                      <button type="button" onClick={async () => { if (await copyText(vm.guest_ip!)) toast.success('Guest IP copied'); else toast.error('Copy failed — check clipboard permissions') }} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Copy IP" aria-label="Copy IP"><Copy className="w-4 h-4 text-[var(--text-secondary)]" /></button>
                     )}
                     <button onClick={() => action(vm, shutdownVM, 'Shutdown')} className={`p-1.5 rounded transition hover:bg-[color-mix(in_srgb,var(--machina-status-warn)_25%,transparent)]`} title="Shutdown" aria-label="Shutdown"><Power className={`w-4 h-4 ${statusToneClass('warn')}`} /></button>
                     <button onClick={() => action(vm, stopVM, 'Stop')} className={`p-1.5 rounded transition hover:bg-[color-mix(in_srgb,var(--machina-status-error)_25%,transparent)]`} title="Force Stop" aria-label="Force Stop"><Square className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
@@ -449,14 +450,14 @@ export default function VMList() {
       )}
 
       {selectedVMs.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-800 border border-slate-700/50 rounded-xl shadow-2xl px-4 py-3 flex items-center gap-3 animate-fade-in">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-xl shadow-2xl px-4 py-3 flex items-center gap-3 animate-fade-in">
           <span className="text-sm font-medium">{selectedVMs.size} selected</span>
-          <div className="w-px h-5 bg-slate-700" />
+          <div className="w-px h-5 bg-[var(--surface-hover)]" />
           <button onClick={() => batchRun(startVM, 'Start')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusBadgeClasses('ok')}`}>Start</button>
           <button onClick={() => batchRun(shutdownVM, 'Shutdown')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusBadgeClasses('warn')}`}>Shutdown</button>
           <button onClick={() => batchRun(stopVM, 'Stop')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusBadgeClasses('error')}`}>Stop</button>
           <button onClick={() => setBatchDeleteConfirm(true)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusBadgeClasses('error')}`}>Delete</button>
-          <button onClick={() => setSelectedVMs(new Set())} className="p-1.5 hover:bg-slate-700 rounded-lg transition" title="Clear selection" aria-label="Clear selection"><X className="w-4 h-4 text-slate-400" /></button>
+          <button onClick={() => setSelectedVMs(new Set())} className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg transition" title="Clear selection" aria-label="Clear selection"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
         </div>
       )}
 

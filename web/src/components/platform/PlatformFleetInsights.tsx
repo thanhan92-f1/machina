@@ -57,8 +57,8 @@ export default function PlatformFleetInsights({
         data-testid="platform-fleet-insights-toggle"
       >
         <div>
-          <p className="text-sm font-semibold text-slate-200">Fleet insights</p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Fleet insights</p>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">
             {badgeCount > 0
               ? `${badgeCount} item${badgeCount === 1 ? '' : 's'} need attention`
               : 'DNA, remediations, and enterprise security'}
@@ -68,7 +68,7 @@ export default function PlatformFleetInsights({
           {badgeCount > 0 && (
             <span className={statusPillClasses('warn')}>{badgeCount}</span>
           )}
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
         </div>
       </button>
       {open && <div className="px-4 pb-4 pt-0 space-y-4 border-t border-white/[0.04]">{children}</div>}

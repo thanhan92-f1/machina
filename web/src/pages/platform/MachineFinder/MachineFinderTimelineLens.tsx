@@ -16,23 +16,23 @@ export default function MachineFinderTimelineLens() {
   }, [])
 
   if (error) return <p className="text-sm text-red-300 p-4">{error}</p>
-  if (!data) return <p className="text-sm text-slate-500 p-4">Loading fleet activity…</p>
+  if (!data) return <p className="text-sm text-[var(--text-muted)] p-4">Loading fleet activity…</p>
 
   return (
     <div className="card p-4 space-y-3" data-testid="machine-finder-timeline">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-white">Fleet timeline</h3>
+        <h3 className="font-medium text-[var(--text-primary)]">Fleet timeline</h3>
         <Link to="/platform/activity" className="btn-secondary text-xs">Open Activity Monitor</Link>
       </div>
-      <p className="text-sm text-slate-400">{data.summary}</p>
+      <p className="text-sm text-[var(--text-muted)]">{data.summary}</p>
       <ul className="space-y-2 text-sm">
         {data.top_vms.slice(0, 12).map((vm) => (
-          <li key={vm.vm_id} className="flex gap-3 text-slate-300 border-b border-white/[0.04] pb-2">
-            <Link to={`/platform/vms/${vm.vm_id}`} className="font-medium text-sky-300/90 hover:underline shrink-0">{vm.vm_name}</Link>
-            <span className="text-xs text-slate-500">CPU {vm.cpu_percent?.toFixed?.(0) ?? vm.cpu_percent}% · mem {vm.memory_used_mib} MiB</span>
+          <li key={vm.vm_id} className="flex gap-3 text-[var(--text-secondary)] border-b border-white/[0.04] pb-2">
+            <Link to={`/platform/vms/${vm.vm_id}`} className="font-medium text-[var(--link)]/90 hover:underline shrink-0">{vm.vm_name}</Link>
+            <span className="text-xs text-[var(--text-muted)]">CPU {vm.cpu_percent?.toFixed?.(0) ?? vm.cpu_percent}% · mem {vm.memory_used_mib} MiB</span>
           </li>
         ))}
-        {data.top_vms.length === 0 && <li className="text-slate-500">No recent VM activity.</li>}
+        {data.top_vms.length === 0 && <li className="text-[var(--text-muted)]">No recent VM activity.</li>}
       </ul>
     </div>
   )

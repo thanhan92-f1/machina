@@ -147,7 +147,7 @@ export default function LivingMachineCard({
         }
       }}
       className={`machine-finder-card cursor-grab active:cursor-grabbing rounded-2xl p-3 transition ${auraRing} ${
-        selected ? 'ring-2 ring-sky-400/50 bg-sky-500/5' : 'hover:bg-white/[0.03]'
+        selected ? 'ring-2 ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[var(--accent)]/5' : 'hover:bg-white/[0.03]'
       }`}
       data-testid={`machine-card-${vm.id}`}
     >
@@ -159,50 +159,50 @@ export default function LivingMachineCard({
       </div>
 
       <div className="text-center space-y-1">
-        <p className="font-medium text-sm text-white truncate px-1">{vm.name}</p>
+        <p className="font-medium text-sm text-[var(--text-primary)] truncate px-1">{vm.name}</p>
         <VmStatusBadge state={vm.observed_state} />
       </div>
 
-      <dl className="mt-2 space-y-1 text-[11px] text-slate-400">
+      <dl className="mt-2 space-y-1 text-[11px] text-[var(--text-muted)]">
         {(overlay === 'default' || overlay === 'network') && (
           <div className="flex justify-between gap-2">
             <dt>IP</dt>
-            <dd className="font-mono text-emerald-300/80 truncate">{guestIp || vm.guest_ip || '—'}</dd>
+            <dd className="font-mono text-[var(--verdant)] truncate">{guestIp || vm.guest_ip || '—'}</dd>
           </div>
         )}
         {(overlay === 'default' || overlay === 'cost') && (
           <>
             <div className="flex justify-between gap-2">
               <dt>vCPU</dt>
-              <dd className="text-slate-200">{vm.vcpus}</dd>
+              <dd className="text-[var(--text-primary)]">{vm.vcpus}</dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt>Mem</dt>
-              <dd className="text-slate-200">{formatVmMemoryGiB(vm.memory_mib)}</dd>
+              <dd className="text-[var(--text-primary)]">{formatVmMemoryGiB(vm.memory_mib)}</dd>
             </div>
           </>
         )}
         {overlay === 'health' && healthScore != null && (
           <div className="flex justify-between gap-2">
             <dt>Health</dt>
-            <dd className={healthScore >= 85 ? 'text-emerald-300' : healthScore >= 60 ? 'text-amber-300' : 'text-red-300'}>{healthScore}</dd>
+            <dd className={healthScore >= 85 ? 'text-[var(--verdant)]' : healthScore >= 60 ? 'text-[var(--amber)]' : 'text-[var(--ember)]'}>{healthScore}</dd>
           </div>
         )}
         {overlay === 'backup' && (
           <div className="flex justify-between gap-2">
             <dt>Backup</dt>
-            <dd className={lastBackup ? 'text-emerald-300/80' : 'text-amber-300'}>{lastBackup ? 'Recent' : 'At risk'}</dd>
+            <dd className={lastBackup ? 'text-[var(--verdant)]' : 'text-[var(--amber)]'}>{lastBackup ? 'Recent' : 'At risk'}</dd>
           </div>
         )}
         {overlay === 'security' && (
           <>
             <div className="flex justify-between gap-2">
               <dt>Risk</dt>
-              <dd className="text-amber-300 capitalize">{securityRisk ?? '—'}</dd>
+              <dd className="text-[var(--amber)] capitalize">{securityRisk ?? '—'}</dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt>Findings</dt>
-              <dd className={securityFindings && securityFindings > 0 ? 'text-amber-300' : 'text-emerald-300/80'}>
+              <dd className={securityFindings && securityFindings > 0 ? 'text-[var(--amber)]' : 'text-[var(--verdant)]'}>
                 {securityFindings ?? '—'}
               </dd>
             </div>
@@ -211,7 +211,7 @@ export default function LivingMachineCard({
         {(overlay === 'gpu' || (overlay === 'default' && hasGpu)) && (
           <div className="flex justify-between gap-2">
             <dt>GPU</dt>
-            <dd className={hasGpu ? 'text-violet-300' : 'text-slate-500'}>{hasGpu ? 'Assigned' : 'None'}</dd>
+            <dd className={hasGpu ? 'text-[var(--link)]' : 'text-[var(--text-muted)]'}>{hasGpu ? 'Assigned' : 'None'}</dd>
           </div>
         )}
         {overlay === 'default' && libvirt && (
@@ -232,17 +232,17 @@ export default function LivingMachineCard({
         )}
         {overlay === 'default' && cpuPct != null && (
           <div className="mt-1">
-            <div className="flex justify-between text-[10px] text-slate-500 mb-0.5"><span>CPU</span><span>{cpuPct}%</span></div>
-            <div className="h-1 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full bg-sky-500/70" style={{ width: `${Math.min(100, cpuPct)}%` }} />
+            <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5"><span>CPU</span><span>{cpuPct}%</span></div>
+            <div className="h-1 rounded-full bg-[var(--mark-track)] overflow-hidden">
+              <div className="h-full bg-[var(--accent)]/70" style={{ width: `${Math.min(100, cpuPct)}%` }} />
             </div>
           </div>
         )}
         {overlay === 'default' && memPct != null && (
           <div>
-            <div className="flex justify-between text-[10px] text-slate-500 mb-0.5"><span>Mem</span><span>{memPct}%</span></div>
-            <div className="h-1 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full bg-violet-500/70" style={{ width: `${Math.min(100, memPct)}%` }} />
+            <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5"><span>Mem</span><span>{memPct}%</span></div>
+            <div className="h-1 rounded-full bg-[var(--mark-track)] overflow-hidden">
+              <div className="h-full bg-[var(--accent)]" style={{ width: `${Math.min(100, memPct)}%` }} />
             </div>
           </div>
         )}
@@ -250,12 +250,12 @@ export default function LivingMachineCard({
 
       {running && libvirt && (
         <div className="flex justify-center gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
-          <Link to={cinemaHubPath(vm.id, { protocol: 'novnc' })} className="p-1.5 rounded-lg hover:bg-white/10" title="VNC Cinema" aria-label="VNC Cinema"><Monitor className="w-3.5 h-3.5 text-slate-400" /></Link>
-          <Link to={cinemaHubPath(vm.id, { protocol: 'spice' })} className="p-1.5 rounded-lg hover:bg-white/10" title="SPICE Cinema" aria-label="SPICE Cinema"><Wifi className="w-3.5 h-3.5 text-slate-400" /></Link>
-          <button type="button" className="p-1.5 rounded-lg hover:bg-white/10" title="SSH" aria-label="SSH" onClick={onSsh}><Terminal className="w-3.5 h-3.5 text-slate-400" /></button>
+          <Link to={cinemaHubPath(vm.id, { protocol: 'novnc' })} className="p-1.5 rounded-lg hover:bg-white/10" title="VNC Cinema" aria-label="VNC Cinema"><Monitor className="w-3.5 h-3.5 text-[var(--text-muted)]" /></Link>
+          <Link to={cinemaHubPath(vm.id, { protocol: 'spice' })} className="p-1.5 rounded-lg hover:bg-white/10" title="SPICE Cinema" aria-label="SPICE Cinema"><Wifi className="w-3.5 h-3.5 text-[var(--text-muted)]" /></Link>
+          <button type="button" className="p-1.5 rounded-lg hover:bg-white/10" title="SSH" aria-label="SSH" onClick={onSsh}><Terminal className="w-3.5 h-3.5 text-[var(--text-muted)]" /></button>
           <button
             type="button"
-            className="p-1.5 rounded-lg hover:bg-white/10 text-[10px] text-slate-500"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-[10px] text-[var(--text-muted)]"
             title="Pop out Cinema"
             onClick={() => openCenterPopout(cinemaPopoutPath(vm.id))}
           >

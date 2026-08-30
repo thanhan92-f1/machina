@@ -100,13 +100,14 @@ export default function PlatformTasks() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       loading={loading && rows.length === 0}
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Tasks"
       subtitle="Orchestration queue — like Activity Monitor for your datacenter."
-      icon={<ClipboardList className="w-6 h-6 text-slate-400" />}
+      icon={<ClipboardList className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -114,16 +115,16 @@ export default function PlatformTasks() {
         <MacGlassPanel title="Controller health" subtitle="GET /api/v1/health">
           <dl className="grid gap-2 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-xs text-slate-500">Status</dt>
-              <dd className="text-slate-200 capitalize">{controllerHealth.status}</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Status</dt>
+              <dd className="text-[var(--text-primary)] capitalize">{controllerHealth.status}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Leader</dt>
-              <dd className="text-slate-200">{controllerHealth.leader == null ? '—' : controllerHealth.leader ? 'yes' : 'no'}</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Leader</dt>
+              <dd className="text-[var(--text-primary)]">{controllerHealth.leader == null ? '—' : controllerHealth.leader ? 'yes' : 'no'}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Controller ID</dt>
-              <dd className="font-mono text-slate-200 text-xs">{controllerHealth.controller_id ?? '—'}</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Controller ID</dt>
+              <dd className="font-mono text-[var(--text-primary)] text-xs">{controllerHealth.controller_id ?? '—'}</dd>
             </div>
           </dl>
         </MacGlassPanel>
@@ -139,25 +140,25 @@ export default function PlatformTasks() {
         >
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-xs text-slate-500">Operation</dt>
-              <dd className="text-slate-200">{taskDetail.operation}</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Operation</dt>
+              <dd className="text-[var(--text-primary)]">{taskDetail.operation}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Status</dt>
-              <dd className="text-slate-200 capitalize">{taskDetail.status}</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Status</dt>
+              <dd className="text-[var(--text-primary)] capitalize">{taskDetail.status}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Progress</dt>
-              <dd className="text-slate-200">{taskDetail.progress}%</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Progress</dt>
+              <dd className="text-[var(--text-primary)]">{taskDetail.progress}%</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Created</dt>
-              <dd className="text-slate-200">{new Date(taskDetail.created_at).toLocaleString()}</dd>
+              <dt className="text-xs text-[var(--text-muted)]">Created</dt>
+              <dd className="text-[var(--text-primary)]">{new Date(taskDetail.created_at).toLocaleString()}</dd>
             </div>
             {taskDetail.message && (
               <div className="sm:col-span-2">
-                <dt className="text-xs text-slate-500">Message</dt>
-                <dd className="text-slate-300">{taskDetail.message}</dd>
+                <dt className="text-xs text-[var(--text-muted)]">Message</dt>
+                <dd className="text-[var(--text-secondary)]">{taskDetail.message}</dd>
               </div>
             )}
           </dl>
@@ -179,7 +180,7 @@ export default function PlatformTasks() {
         <input className={`input w-full ${opFilter ? 'pr-8' : 'pr-4'}`} aria-label="Filter by operation" placeholder="Filter by operation" value={opFilter} onChange={(e) => setOpFilter(e.target.value)} />
         {opFilter && (
           <button type="button" aria-label="Clear filter" onClick={() => setOpFilter('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -194,21 +195,21 @@ export default function PlatformTasks() {
             <li
               key={t.id}
               ref={highlighted ? highlightRef : undefined}
-              className={`platform-mac-stat rounded-xl border bg-slate-900/50 p-4 transition ${
-                highlighted ? 'border-sky-500/50 ring-1 ring-sky-500/30' : 'border-white/[0.06]'
+              className={`platform-mac-stat rounded-xl border bg-[var(--apple-surface)] p-4 transition ${
+                highlighted ? 'border-[var(--accent)]/50 ring-1 ring-[var(--accent)]/40' : 'border-white/[0.06]'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                 <div>
-                  <p className="font-medium text-slate-200">{t.operation}</p>
-                  <p className="text-xs text-slate-500 font-mono">{t.id.slice(0, 8)}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{t.operation}</p>
+                  <p className="text-xs text-[var(--text-muted)] font-mono">{t.id.slice(0, 8)}</p>
                 </div>
-                <span className="text-xs capitalize text-slate-400">{t.status}</span>
+                <span className="text-xs capitalize text-[var(--text-muted)]">{t.status}</span>
               </div>
-              <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden mb-2">
+              <div className="h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden mb-2">
                 <div className={`h-full rounded-full transition-all ${statusColor(t.status)}`} style={{ width: `${Math.min(100, t.progress)}%` }} />
               </div>
-              <div className="flex justify-between items-center text-xs text-slate-500">
+              <div className="flex justify-between items-center text-xs text-[var(--text-muted)]">
                 <span>{t.progress}% {t.message || ''}</span>
                 <div className="flex gap-2">
                   <button

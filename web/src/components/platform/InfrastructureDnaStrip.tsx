@@ -40,7 +40,7 @@ export default function InfrastructureDnaStrip({ compact = false, className = ''
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.06] bg-slate-900/40 px-4 py-3 ${className}`}
+      className={`flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] px-4 py-3 ${className}`}
       data-testid="infrastructure-dna-strip"
     >
       <div className="flex items-center gap-3 min-w-0">
@@ -51,12 +51,12 @@ export default function InfrastructureDnaStrip({ compact = false, className = ''
           {dna.score}
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
             <Dna className="w-3.5 h-3.5" /> Infrastructure DNA
           </p>
-          <p className="text-sm text-slate-200 truncate">
+          <p className="text-sm text-[var(--text-primary)] truncate">
             Grade <span className={statusBadgeClasses(tone)}>{dna.grade}</span>
-            {!compact && <span className="text-slate-500"> · {dna.summary}</span>}
+            {!compact && <span className="text-[var(--text-muted)]"> · {dna.summary}</span>}
           </p>
         </div>
       </div>

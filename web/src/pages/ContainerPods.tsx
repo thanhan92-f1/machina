@@ -112,6 +112,7 @@ export default function ContainerPodsPage() {
 
   return (
     <PageLayout
+      eyebrow="Vessel"
       title="Container Pods"
       subtitle="Podman pods on this host — shared network namespace for grouped containers."
       icon={<Layers className="w-5 h-5" />}
@@ -128,7 +129,7 @@ export default function ContainerPodsPage() {
         <div className="flex items-center gap-2">
           <Link
             to="/containers"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-600 text-sm text-slate-200 hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)]"
           >
             <Box className="w-3.5 h-3.5" /> Containers
           </Link>
@@ -136,14 +137,14 @@ export default function ContainerPodsPage() {
             type="button"
             disabled={!status?.capabilities?.pods}
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-40"
+            className="btn-primary text-sm disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" /> Create pod
           </button>
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-600 text-sm text-slate-200 hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)]"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
@@ -159,7 +160,7 @@ export default function ContainerPodsPage() {
             <button
               type="button"
               onClick={() => setShowCreate(true)}
-              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm"
+              className="btn-primary text-sm"
             >
               Create pod
             </button>
@@ -170,7 +171,7 @@ export default function ContainerPodsPage() {
       {items.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-white/10">
           <table className="w-full text-sm">
-            <thead className="bg-slate-900/60 text-left text-slate-400">
+            <thead className="bg-[var(--apple-surface)] text-left text-[var(--text-muted)]">
               <tr>
                 <th className="px-3 py-2 font-medium">Name</th>
                 <th className="px-3 py-2 font-medium">Status</th>
@@ -185,12 +186,12 @@ export default function ContainerPodsPage() {
                 const disabled = busy === p.id
                 return (
                   <tr key={p.id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="px-3 py-2 text-slate-100 font-medium">{p.name}</td>
+                    <td className="px-3 py-2 text-[var(--text-primary)] font-medium">{p.name}</td>
                     <td className="px-3 py-2">
                       <span className={statusBadgeClasses(tone)}>{p.status}</span>
                     </td>
-                    <td className="px-3 py-2 text-slate-400">{p.containers.length}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-slate-500">{shortId(p.id)}</td>
+                    <td className="px-3 py-2 text-[var(--text-muted)]">{p.containers.length}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-muted)]">{shortId(p.id)}</td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1">
                         <button
@@ -234,31 +235,31 @@ export default function ContainerPodsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div
             ref={createRef}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-xl"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[var(--apple-surface)] p-5 shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-pod-title"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 id="create-pod-title" className="text-lg font-semibold text-slate-100">
+              <h2 id="create-pod-title" className="text-lg font-semibold text-[var(--text-primary)]">
                 Create Podman pod
               </h2>
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-400"
+                className="p-1 rounded-lg hover:bg-white/10 text-[var(--text-muted)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <label className="block text-sm text-slate-400 mb-1" htmlFor="pod-name">
+            <label className="block text-sm text-[var(--text-muted)] mb-1" htmlFor="pod-name">
               Name
             </label>
             <input
               id="pod-name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 mb-4"
+              className="w-full rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-3 py-2 text-[var(--text-primary)] mb-4"
               placeholder="my-pod"
               autoFocus
             />
@@ -266,7 +267,7 @@ export default function ContainerPodsPage() {
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm text-slate-300"
+                className="btn-secondary text-sm text-[var(--text-secondary)]"
               >
                 Cancel
               </button>
@@ -274,7 +275,7 @@ export default function ContainerPodsPage() {
                 type="button"
                 disabled={creating}
                 onClick={() => void onCreate()}
-                className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-40"
+                className="btn-primary text-sm disabled:opacity-40"
               >
                 {creating ? 'Creating…' : 'Create'}
               </button>

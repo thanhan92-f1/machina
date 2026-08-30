@@ -2,10 +2,10 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { ExternalLink, Zap } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
+import { ZyvorMark } from './ZyvorMark'
 import { ZYVOR_URL, ZYVOR_BRAND, ZYVOR_COPY, ZYVOR_LINE } from './ZyvorBrand'
 import { MACHINA_HELP, ZEUS_OS_HELP, ZYVOR_HELP, type HelpDocLink } from '../config/zyvorHelp'
-import { statusToneClass } from '../utils/semanticColors'
 
 export const MACHINA_PRODUCT = MACHINA_HELP.name
 export const MACHINA_VERSION = MACHINA_HELP.version
@@ -50,19 +50,17 @@ export const MACHINA_HELP_LINKS: HelpDocLink[] = [
 
 export default function ZyvorAbout({ className = '' }: { className?: string }) {
   return (
-    <div className={`space-y-5 text-sm text-slate-300 ${className}`.trim()}>
+    <div className={`space-y-5 text-sm text-[var(--text-secondary)] ${className}`.trim()}>
       <div className="flex items-start gap-4">
-        <div className="shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-500/30 to-blue-700/50 border border-blue-400/30 shadow-lg shadow-blue-500/15">
-          <Zap className={`w-8 h-8 ${statusToneClass('info')}`} aria-hidden />
-        </div>
+        <ZyvorMark to={null} size="lg" showWordmark={false} className="shrink-0 mt-1" />
         <div className="min-w-0 pt-0.5">
-          <h3 className="text-lg font-semibold text-white">{MACHINA_PRODUCT}</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Version {MACHINA_VERSION}</p>
-          <p className="text-sm text-slate-400 mt-2 leading-relaxed">{MACHINA_TAGLINE}</p>
+          <h3 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{MACHINA_PRODUCT}</h3>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">Version {MACHINA_VERSION}</p>
+          <p className="text-sm text-[var(--text-muted)] mt-2 leading-relaxed">{MACHINA_TAGLINE}</p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 p-4 space-y-3">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/60 bg-[var(--apple-surface)] p-4 space-y-3">
         <p className="leading-relaxed">
           Part of the{' '}
           <a
@@ -74,11 +72,11 @@ export default function ZyvorAbout({ className = '' }: { className?: string }) {
           >
             {ZYVOR_BRAND}
           </a>{' '}
-          product family — <span className="text-slate-200">{ZEUS_OS_PRODUCT}</span> is the enterprise virtualization platform.
+          product family — <span className="text-[var(--text-primary)]">{ZEUS_OS_PRODUCT}</span> is the enterprise virtualization platform.
           {MACHINA_PRODUCT} is the AI-native infrastructure operating system (Machina Zyra OS): libvirt/KVM and Fleet Cloud control,
           fleet, observability, and Zyra (Spotlight, assistant, SRE, Autopilot, Digital Twin, Root Cause).
         </p>
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed">
           <span style={{ color: ORANGE }} className="font-medium">
             {ZYVOR_LINE}
           </span>
@@ -88,7 +86,7 @@ export default function ZyvorAbout({ className = '' }: { className?: string }) {
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Help & documentation</h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Help & documentation</h4>
         <ul className="space-y-1.5">
           {MACHINA_HELP_LINKS.map((link) => (
             <li key={link.href}>
@@ -96,7 +94,7 @@ export default function ZyvorAbout({ className = '' }: { className?: string }) {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-slate-300 transition-colors hover:text-[var(--machina-status-info)]"
+                className="inline-flex items-center gap-1.5 text-[var(--text-secondary)] transition-colors hover:text-[var(--machina-status-info)]"
               >
                 <span>{link.label}</span>
                 <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-60" aria-hidden />
@@ -106,7 +104,7 @@ export default function ZyvorAbout({ className = '' }: { className?: string }) {
         </ul>
       </div>
 
-      <p className="text-center text-xs text-slate-500 pt-2 border-t border-slate-700/50">
+      <p className="text-center text-xs text-[var(--text-muted)] pt-2 border-t border-[var(--apple-hairline)]">
         {ZYVOR_COPY} {ZYVOR_BRAND}. All rights reserved.
       </p>
     </div>

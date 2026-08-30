@@ -40,7 +40,7 @@ export default function PlatformFirewallConnectivity() {
       }
       title="Connectivity Matrix"
       subtitle={summary || 'Simulate paths before applying a profile'}
-      icon={<Network className="w-6 h-6 text-slate-400" />}
+      icon={<Network className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-4"
     >
       <MacGlassPanel title="Simulation">
@@ -49,7 +49,7 @@ export default function PlatformFirewallConnectivity() {
           <input aria-label="Firewall profile" className="input text-sm flex-1 min-w-[8rem]" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="profile" />
           <button type="button" className="btn-primary text-sm" onClick={run}>Simulate</button>
         </div>
-        {summary && <p className="text-sm text-slate-400 mb-4">{summary}</p>}
+        {summary && <p className="text-sm text-[var(--text-muted)] mb-4">{summary}</p>}
         {warnings.length > 0 && (
           <div className={`mb-4 p-3 rounded-xl ${statusSurfaceClasses('warn')}`}>
             {warnings.map((w) => (
@@ -62,7 +62,7 @@ export default function PlatformFirewallConnectivity() {
             <p className={`text-xs font-semibold uppercase mb-2 ${statusToneClass('ok')}`}>Allowed</p>
             <div className="rounded-xl border border-white/[0.06] overflow-hidden">
               {allows.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-slate-500">Run simulation</p>
+                <p className="px-4 py-3 text-sm text-[var(--text-muted)]">Run simulation</p>
               ) : (
                 allows.map((c, i) => (
                   <MacListRow
@@ -78,7 +78,7 @@ export default function PlatformFirewallConnectivity() {
             <p className={`text-xs font-semibold uppercase mb-2 ${statusToneClass('error')}`}>Blocked</p>
             <div className="rounded-xl border border-white/[0.06] overflow-hidden">
               {blocks.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-slate-500">Run simulation</p>
+                <p className="px-4 py-3 text-sm text-[var(--text-muted)]">Run simulation</p>
               ) : (
                 blocks.map((c, i) => (
                   <MacListRow

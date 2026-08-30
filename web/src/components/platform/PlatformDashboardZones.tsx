@@ -51,8 +51,8 @@ const TILE_ICONS: Record<string, typeof Server> = {
 }
 
 const ZONE_ACCENT: Record<DashboardZoneId, string> = {
-  infrastructure: 'text-sky-400',
-  workloads: 'text-violet-400',
+  infrastructure: 'text-[var(--link)]',
+  workloads: 'text-[var(--accent)]',
   operations: 'text-emerald-400',
   administration: 'text-amber-400',
 }
@@ -62,7 +62,7 @@ function ZoneTileLink({ tile }: { tile: ZoneTileDef }) {
   return (
     <Link
       to={tile.to}
-      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition"
+      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--apple-surface)] transition"
     >
       <Icon className="h-4 w-4 shrink-0 opacity-75" />
       <span className="truncate">{tile.label}</span>

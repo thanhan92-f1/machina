@@ -149,6 +149,7 @@ export default function ContainersPage() {
 
   return (
     <PageLayout
+      eyebrow="Vessel"
       title="Containers"
       subtitle="Local Podman / Docker containers on this host (Vessel)."
       icon={<Box className="w-5 h-5" />}
@@ -166,7 +167,7 @@ export default function ContainersPage() {
           {podsCapable && (
             <Link
               to="/containers/pods"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-600 text-sm text-slate-200 hover:bg-slate-800"
+              className="inline-flex items-center gap-1.5 btn-secondary text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)]"
             >
               <Layers className="w-3.5 h-3.5" /> Pods
             </Link>
@@ -175,7 +176,7 @@ export default function ContainersPage() {
             type="button"
             disabled={!status?.connected}
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 btn-primary text-sm disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" /> Create container
           </button>
@@ -186,14 +187,14 @@ export default function ContainersPage() {
                 .then(() => load())
                 .catch((e) => toast.error(formatUserError(e)))
             }
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-600 text-sm text-slate-200 hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)]"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Reconnect
           </button>
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm"
+            className="btn-primary text-sm"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
@@ -201,18 +202,18 @@ export default function ContainersPage() {
       }
     >
       {status?.connected && (
-        <div className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300 flex flex-wrap gap-x-6 gap-y-1">
+        <div className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--text-secondary)] flex flex-wrap gap-x-6 gap-y-1">
           <span>
-            Engine <strong className="text-slate-100">{engineLabel}</strong>
+            Engine <strong className="text-[var(--text-primary)]">{engineLabel}</strong>
           </span>
           <span>
-            Version <strong className="text-slate-100">{status.version || '—'}</strong>
+            Version <strong className="text-[var(--text-primary)]">{status.version || '—'}</strong>
           </span>
           <span>
-            Containers <strong className="text-slate-100">{items.length}</strong>
+            Containers <strong className="text-[var(--text-primary)]">{items.length}</strong>
             {items.length > 0 ? ` (${runningCount} running)` : ''}
           </span>
-          <span className="font-mono text-xs text-slate-400 truncate max-w-md">
+          <span className="font-mono text-xs text-[var(--text-muted)] truncate max-w-md">
             {status.socket || '—'}
           </span>
         </div>
@@ -227,7 +228,7 @@ export default function ContainersPage() {
             <button
               type="button"
               onClick={() => setShowCreate(true)}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm"
+              className="btn-primary text-sm"
             >
               Create container
             </button>
@@ -238,7 +239,7 @@ export default function ContainersPage() {
       {items.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-white/10">
           <table className="w-full text-sm">
-            <thead className="bg-slate-900/60 text-left text-slate-400">
+            <thead className="bg-[var(--apple-surface)] text-left text-[var(--text-muted)]">
               <tr>
                 <th className="px-3 py-2 font-medium">Name</th>
                 <th className="px-3 py-2 font-medium">Image</th>
@@ -254,15 +255,15 @@ export default function ContainersPage() {
                 const disabled = busy === id
                 return (
                   <tr key={id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="px-3 py-2 text-slate-100 font-medium">{c.name || '—'}</td>
-                    <td className="px-3 py-2 text-slate-300 font-mono text-xs max-w-[14rem] truncate">
+                    <td className="px-3 py-2 text-[var(--text-primary)] font-medium">{c.name || '—'}</td>
+                    <td className="px-3 py-2 text-[var(--text-secondary)] font-mono text-xs max-w-[14rem] truncate">
                       {c.image}
                     </td>
                     <td className="px-3 py-2">
                       <span className={statusBadgeClasses(tone)}>{c.status}</span>
                       <span className={`ml-2 text-xs ${statusToneClass(tone)}`}>{c.state}</span>
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs text-slate-500">{shortId(id)}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-muted)]">{shortId(id)}</td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1">
                         <button
@@ -290,7 +291,7 @@ export default function ContainersPage() {
                           onClick={() =>
                             void runAction(id, 'Restart', () => restartVesselContainer(id))
                           }
-                          className="p-1.5 rounded-lg hover:bg-sky-500/20 text-sky-400 disabled:opacity-40"
+                          className="p-1.5 rounded-lg hover:bg-[var(--accent)]/20 text-[var(--link)] disabled:opacity-40"
                         >
                           <RotateCw className="w-3.5 h-3.5" />
                         </button>
@@ -317,67 +318,67 @@ export default function ContainersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div
             ref={createRef}
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-xl"
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[var(--apple-surface)] p-5 shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-container-title"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 id="create-container-title" className="text-lg font-semibold text-slate-100">
+              <h2 id="create-container-title" className="text-lg font-semibold text-[var(--text-primary)]">
                 Create container
               </h2>
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-400"
+                className="p-1 rounded-lg hover:bg-white/10 text-[var(--text-muted)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-slate-400 mb-1" htmlFor="ctr-name">
+                <label className="block text-sm text-[var(--text-muted)] mb-1" htmlFor="ctr-name">
                   Name
                 </label>
                 <input
                   id="ctr-name"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100"
+                  className="w-full rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-3 py-2 text-[var(--text-primary)]"
                   placeholder="my-app"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1" htmlFor="ctr-image">
+                <label className="block text-sm text-[var(--text-muted)] mb-1" htmlFor="ctr-image">
                   Image
                 </label>
                 <input
                   id="ctr-image"
                   value={newImage}
                   onChange={(e) => setNewImage(e.target.value)}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 font-mono text-sm"
+                  className="w-full rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-3 py-2 text-[var(--text-primary)] font-mono text-sm"
                   placeholder="docker.io/library/nginx:alpine"
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1" htmlFor="ctr-cmd">
-                  Command <span className="text-slate-500">(optional)</span>
+                <label className="block text-sm text-[var(--text-muted)] mb-1" htmlFor="ctr-cmd">
+                  Command <span className="text-[var(--text-muted)]">(optional)</span>
                 </label>
                 <input
                   id="ctr-cmd"
                   value={newCommand}
                   onChange={(e) => setNewCommand(e.target.value)}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 font-mono text-sm"
+                  className="w-full rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-3 py-2 text-[var(--text-primary)] font-mono text-sm"
                   placeholder="nginx -g daemon off;"
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm text-slate-300">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <input
                   type="checkbox"
                   checked={startAfterCreate}
                   onChange={(e) => setStartAfterCreate(e.target.checked)}
-                  className="rounded border-slate-600"
+                  className="rounded border-[var(--apple-hairline)]"
                 />
                 Start after create
               </label>
@@ -386,7 +387,7 @@ export default function ContainersPage() {
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm text-slate-300"
+                className="btn-secondary text-sm text-[var(--text-secondary)]"
               >
                 Cancel
               </button>
@@ -394,7 +395,7 @@ export default function ContainersPage() {
                 type="button"
                 disabled={creating}
                 onClick={() => void onCreate()}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm disabled:opacity-40"
+                className="btn-primary text-sm disabled:opacity-40"
               >
                 {creating ? 'Creating…' : 'Create'}
               </button>

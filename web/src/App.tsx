@@ -4,7 +4,6 @@
 
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate, useSearchParams } from 'react-router'
 import { MotionConfig } from 'framer-motion'
-import { ZyvorFooter } from './components/ZyvorBrand';
 import { Suspense, useState, useCallback, useMemo, useEffect } from 'react'
 import { lazyWithRetry } from './utils/lazyWithRetry'
 import AppErrorBoundary from './components/AppErrorBoundary'
@@ -13,15 +12,12 @@ import { WebSocketProvider } from './contexts/WebSocketContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { PlatformInfoProvider } from './contexts/PlatformInfoContext'
-import Navbar from './components/Navbar'
-import ShellBridgeBar from './components/ShellBridgeBar'
 import NotFound from './pages/NotFound'
 import LoginPage from './pages/Login'
 import CommandPalette from './components/CommandPalette'
 import ZyraSpotlight from './components/ai/ZyraSpotlight'
 import ZyraAssistant from './components/ai/ZyraAssistant'
 import ZyraAmbientBar from './components/ai/ZyraAmbientBar'
-import Breadcrumb from './components/Breadcrumb'
 import { BreadcrumbNameProvider } from './contexts/BreadcrumbNameContext'
 import HelpDialog, { type HelpTab } from './components/HelpDialog'
 import { OPEN_HELP_EVENT } from './utils/openHelp'
@@ -175,7 +171,6 @@ const PlatformFirewallCloud = lazyWithRetry(() => import('./pages/platform/secur
 const PlatformFirewallConnectivity = lazyWithRetry(() => import('./pages/platform/security/PlatformFirewallConnectivity'))
 const PlatformFirewallPolicies = lazyWithRetry(() => import('./pages/platform/security/PlatformFirewallPolicies'))
 const PlatformPolicy = lazyWithRetry(() => import('./pages/platform/PlatformPolicy'))
-const PlatformIntegrations = lazyWithRetry(() => import('./pages/platform/PlatformIntegrations'))
 const PlatformBlueprints = lazyWithRetry(() => import('./pages/platform/PlatformBlueprints'))
 const PlatformSupport = lazyWithRetry(() => import('./pages/platform/PlatformSupport'))
 const PlatformDeveloper = lazyWithRetry(() => import('./pages/platform/PlatformDeveloper'))
@@ -184,12 +179,6 @@ const PlatformEnterprise = lazyWithRetry(() => import('./pages/platform/Platform
 const RdpConsole = lazyWithRetry(() => import('./pages/RdpConsole'))
 const MissionControl = lazyWithRetry(() => import('./pages/MissionControl'))
 const SystemCheck = lazyWithRetry(() => import('./pages/SystemCheck'))
-
-function AppZyvorFooter() {
-  const { info } = usePlatformInfo()
-  const hostOs = info?.host?.os_pretty_name?.trim()
-  return <ZyvorFooter hostOs={hostOs || undefined} />
-}
 
 function GlobalShortcuts({
   helpOpen,
@@ -269,7 +258,7 @@ function AuthenticatedApp() {
     return (
       <div className="min-h-screen dashboard-liquid-glass liquid-glass-app flex items-center justify-center">
         <div className="glass glass-elevated p-8 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
         </div>
       </div>
     )
@@ -322,7 +311,6 @@ function AuthenticatedShell() {
 function AuthenticatedShellRoutes() {
   const { theme } = useTheme()
   const location = useLocation()
-  const isPlatformRoute = location.pathname.startsWith('/platform')
   const [helpOpen, setHelpOpen] = useState(false)
   const [helpTab, setHelpTab] = useState<HelpTab>('shortcuts')
 
@@ -356,7 +344,11 @@ function AuthenticatedShellRoutes() {
       ? 'dashboard-steel min-h-screen flex flex-col text-[#d7dde5]'
       : theme === 'aurora'
         ? 'dashboard-aurora min-h-screen flex flex-col text-[#e8e4f8]'
-        : 'dashboard-liquid-glass liquid-glass-app min-h-screen flex flex-col text-[var(--text-primary)]'
+        : theme === 'rack'
+          ? 'dashboard-rack min-h-screen flex flex-col text-[#e7edf4]'
+          : theme === 'light'
+            ? 'apple-light-shell min-h-screen flex flex-col text-[var(--text-primary)]'
+            : 'dashboard-liquid-glass liquid-glass-app min-h-screen flex flex-col text-[var(--text-primary)]'
 
   return (
     <>
@@ -369,8 +361,6 @@ function AuthenticatedShellRoutes() {
             >
               Skip to main content
             </a>
-            {!isPlatformRoute && <Navbar onOpenHelp={openHelp} />}
-            {!isPlatformRoute && <ShellBridgeBar />}
             <ZyraSpotlight onOpenHelp={openHelp} />
             <ZyraAssistant />
             <ZyraAmbientBar />
@@ -383,17 +373,13 @@ function AuthenticatedShellRoutes() {
             />
             <main
               id="main-content"
-              className={
-                isPlatformRoute
-                  ? 'platform-route-main flex-1 min-w-0 flex flex-col w-full'
-                  : `app-shell tahoe-page-root platform-readable flex-1 min-w-0 py-6 lg:py-8${theme === 'steel' ? ' steel-content' : ''}${theme === 'aurora' ? ' aurora-content' : ''}`
-              }
+              className="platform-route-main flex-1 min-w-0 flex flex-col w-full"
             >
-              {!isPlatformRoute && <Breadcrumb />}
               <AppErrorBoundary resetKey={location.pathname}>
               <Suspense fallback={<PageSkeleton />}>
                 <Routes>
                 <Route path="/login" element={<PostLoginRedirect />} />
+                <Route element={<PlatformLayout />}>
                 <Route path="/" element={<HomeRoute />} />
                 <Route path="/vms" element={<VMList />} />
                 <Route path="/vms/:name" element={<VMDetails />} />
@@ -401,7 +387,7 @@ function AuthenticatedShellRoutes() {
                 <Route path="/vms/:name/consolehub" element={<ClassicConsoleHub />} />
                 <Route path="/vms/:name/rdp" element={<RdpConsole />} />
                 <Route path="/fleet" element={<Fleet />} />
-                <Route path="/platform" element={<PlatformLayout />}>
+                <Route path="/platform">
                   <Route index element={<PlatformDashboard />} />
                   <Route path="hosts" element={<PlatformHosts />} />
                   <Route path="hosts/finder" element={<PlatformMachineFinder />} />
@@ -462,7 +448,7 @@ function AuthenticatedShellRoutes() {
                   <Route path="zeus/security/connectivity" element={<PlatformFirewallConnectivity />} />
                   <Route path="zeus/security/policies" element={<PlatformFirewallPolicies />} />
                   <Route path="policy" element={<PlatformPolicy />} />
-                  <Route path="integrations" element={<PlatformIntegrations />} />
+                  <Route path="integrations" element={<Navigate to="/platform/settings?section=integrations" replace />} />
                   <Route path="infrastructure" element={<PlatformInfrastructureHub />} />
                   <Route path="workloads" element={<PlatformWorkloadsHub />} />
                   <Route path="administration" element={<PlatformAdministrationHub />} />
@@ -548,11 +534,11 @@ function AuthenticatedShellRoutes() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin/sessions" element={<AdminSessions />} />
                 <Route path="*" element={<NotFound />} />
+                </Route>
               </Routes>
             </Suspense>
             </AppErrorBoundary>
           </main>
-          {!isPlatformRoute && <AppZyvorFooter />}
         </div>
     </>
   )

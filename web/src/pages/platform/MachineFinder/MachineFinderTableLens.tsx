@@ -47,7 +47,7 @@ export default function MachineFinderTableLens({ state }: Props) {
     <div className="card overflow-x-auto" data-testid="machine-finder-table">
       <table className="w-full text-sm" aria-label="Virtual machines">
         <thead>
-          <tr className="text-left text-slate-400 border-b border-white/[0.04]">
+          <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.04]">
             <th scope="col" className="p-3 w-10">
               <input
                 type="checkbox"
@@ -75,7 +75,7 @@ export default function MachineFinderTableLens({ state }: Props) {
             return (
               <tr
                 key={v.id}
-                className={`border-b border-slate-900/80 cursor-pointer ${selectedVmId === v.id ? 'bg-sky-500/10' : 'hover:bg-white/[0.02]'}`}
+                className={`border-b border-[var(--apple-hairline)] cursor-pointer ${selectedVmId === v.id ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'}`}
                 onClick={() => setSelectedVmId(v.id)}
               >
                 <td className="p-3" onClick={(e) => e.stopPropagation()}>
@@ -85,9 +85,9 @@ export default function MachineFinderTableLens({ state }: Props) {
                   <Link to={`/platform/vms/${v.id}`} className={`hover:underline ${hubLinkClasses()}`} onClick={(e) => e.stopPropagation()}>{v.name}</Link>
                   <MachineFinderParityBadges vm={v} batchVmIds={runningLibvirtIds} />
                 </td>
-                <td className="p-3 text-xs text-slate-500 capitalize">{v.inventory_source ?? 'libvirt'}</td>
+                <td className="p-3 text-xs text-[var(--text-muted)] capitalize">{v.inventory_source ?? 'libvirt'}</td>
                 <td className="p-3"><VmStatusBadge state={v.observed_state} /></td>
-                <td className="p-3 text-slate-500">
+                <td className="p-3 text-[var(--text-muted)]">
                   {v.inventory_source === 'kubevirt'
                     ? (v.k8s_namespace ? `${v.k8s_namespace}/` : 'k8s/')
                     : v.host_id ? hostMap.get(v.host_id) : '—'}

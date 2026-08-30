@@ -20,14 +20,14 @@ export default function VmPendingConfigBanner({ pending, loading, onShutdown }: 
         <div className="flex gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-slate-200">
+            <p className="text-sm text-[var(--text-primary)]">
               Persistent configuration differs from the running guest. Shut down and start the VM to apply changes.
             </p>
             {pending.pending_changes.length > 0 && (
-              <ul className="mt-2 text-xs text-slate-400 space-y-1 list-disc list-inside">
+              <ul className="mt-2 text-xs text-[var(--text-muted)] space-y-1 list-disc list-inside">
                 {pending.pending_changes.slice(0, 6).map((c) => (
                   <li key={`${c.category}-${c.summary}`}>
-                    <span className="text-slate-500 uppercase tracking-wide">{c.category}</span>
+                    <span className="text-[var(--text-muted)] uppercase tracking-wide">{c.category}</span>
                     {' — '}
                     {c.summary}
                   </li>

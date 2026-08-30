@@ -76,15 +76,16 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       title={embedded ? undefined : 'Zyra'}
       subtitle={embedded ? undefined : 'Prompt library, memory controls, and agent marketplace'}
-      icon={embedded ? undefined : <Sparkles className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Sparkles className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-[var(--text-muted)]">
         <Link to="/platform/zyra/approvals" className={hubLinkClasses()}>Zyra approvals queue →</Link>
         {' '}Review pending AI actions before they run on the fleet.
       </p>
@@ -92,12 +93,12 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
       {enterprise && (
         <MacGlassPanel title="Enterprise Zyra posture" subtitle="RBAC, air-gap LLM, and audit activity">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-            <p className="text-slate-300">Admin: <span className={enterprise.zyra_admin_role ? 'text-emerald-400' : 'text-slate-500'}>{enterprise.zyra_admin_role ? 'yes' : 'no'}</span></p>
-            <p className="text-slate-300">Execute: <span className={enterprise.zyra_execute_role ? 'text-emerald-400' : 'text-slate-500'}>{enterprise.zyra_execute_role ? 'yes' : 'no'}</span></p>
-            <p className="text-slate-300">Read: <span className="text-emerald-400">{enterprise.zyra_read_role ? 'yes' : 'no'}</span></p>
-            <p className="text-slate-300">Audit 24h: <span className="text-slate-200">{enterprise.audit_events_24h}</span></p>
+            <p className="text-[var(--text-secondary)]">Admin: <span className={enterprise.zyra_admin_role ? 'text-emerald-400' : 'text-[var(--text-muted)]'}>{enterprise.zyra_admin_role ? 'yes' : 'no'}</span></p>
+            <p className="text-[var(--text-secondary)]">Execute: <span className={enterprise.zyra_execute_role ? 'text-emerald-400' : 'text-[var(--text-muted)]'}>{enterprise.zyra_execute_role ? 'yes' : 'no'}</span></p>
+            <p className="text-[var(--text-secondary)]">Read: <span className="text-emerald-400">{enterprise.zyra_read_role ? 'yes' : 'no'}</span></p>
+            <p className="text-[var(--text-secondary)]">Audit 24h: <span className="text-[var(--text-primary)]">{enterprise.audit_events_24h}</span></p>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-[var(--text-muted)] mt-2">
             SCIM {enterprise.scim_enabled ? 'on' : 'off'} · SSO {enterprise.sso_configured ? 'configured' : 'not configured'}
           </p>
           {enterprise.zyra_admin_role && (
@@ -141,7 +142,7 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
             <input type="checkbox" checked={memory.project_scope} onChange={(e) => setMemory({ ...memory, project_scope: e.target.checked })} />
             Project-scoped memory
           </label>
-          <label className="block text-xs text-slate-500">
+          <label className="block text-xs text-[var(--text-muted)]">
             Retention (days)
             <input
               type="number"
@@ -223,7 +224,7 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{p.title}</p>
-                    <p className="text-xs text-slate-500 line-clamp-2">{p.body}</p>
+                    <p className="text-xs text-[var(--text-muted)] line-clamp-2">{p.body}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button type="button" className="btn-secondary text-xs" onClick={() => startEdit(p)}>Edit</button>
@@ -241,12 +242,12 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
 
       <MacGlassPanel title="Agent marketplace" subtitle="Install specialist agents (AWS, Terraform, FinOps, …)">
         <div className="space-y-2">
-          {agents.length === 0 && <p className="text-sm text-slate-500">No marketplace agents available.</p>}
+          {agents.length === 0 && <p className="text-sm text-[var(--text-muted)]">No marketplace agents available.</p>}
           {agents.map((a) => (
             <div key={a.slug} className="flex items-center gap-2 text-sm border border-white/[0.06] rounded-lg p-2">
               <div className="flex-1">
                 <p className="font-medium">{a.name}</p>
-                <p className="text-xs text-slate-500">{a.description}</p>
+                <p className="text-xs text-[var(--text-muted)]">{a.description}</p>
               </div>
               <button type="button" className="btn-secondary text-xs" onClick={async () => {
                 try {

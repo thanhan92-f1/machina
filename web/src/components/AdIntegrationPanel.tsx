@@ -104,7 +104,7 @@ export default function AdIntegrationPanel({ compact }: Props) {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Loading directory settings…</p>
+    return <p className="text-sm text-[var(--text-muted)]">Loading directory settings…</p>
   }
 
   if (!settings) {
@@ -145,23 +145,23 @@ export default function AdIntegrationPanel({ compact }: Props) {
       </div>
 
       <div className={`grid gap-3 ${compact ? 'md:grid-cols-2' : ''}`}>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           LDAP URL
           <input className={`${inputClass} mt-1 font-mono`} value={settings.url} onChange={(e) => setSettings({ ...settings, url: e.target.value })} />
         </label>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           Base DN
           <input className={`${inputClass} mt-1 font-mono`} value={settings.base_dn} onChange={(e) => setSettings({ ...settings, base_dn: e.target.value })} />
         </label>
-        <label className="block text-xs text-slate-400 md:col-span-2">
+        <label className="block text-xs text-[var(--text-muted)] md:col-span-2">
           User filter
           <input className={`${inputClass} mt-1 font-mono text-xs`} value={settings.user_filter} onChange={(e) => setSettings({ ...settings, user_filter: e.target.value })} />
         </label>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           Service bind DN (optional)
           <input className={`${inputClass} mt-1 font-mono text-xs`} value={settings.bind_dn} onChange={(e) => setSettings({ ...settings, bind_dn: e.target.value })} />
         </label>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           Service bind password
           <input
             type="password"
@@ -175,7 +175,7 @@ export default function AdIntegrationPanel({ compact }: Props) {
       </div>
 
       <div className={`grid gap-3 ${compact ? 'md:grid-cols-3' : 'md:grid-cols-1'}`}>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           Admin group substrings (comma-separated)
           <input
             className={`${inputClass} mt-1`}
@@ -189,7 +189,7 @@ export default function AdIntegrationPanel({ compact }: Props) {
             }
           />
         </label>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           Operator group substrings (comma-separated)
           <input
             className={`${inputClass} mt-1`}
@@ -203,7 +203,7 @@ export default function AdIntegrationPanel({ compact }: Props) {
             }
           />
         </label>
-        <label className="block text-xs text-slate-400">
+        <label className="block text-xs text-[var(--text-muted)]">
           Read-only group substrings (comma-separated)
           <input
             className={`${inputClass} mt-1`}
@@ -219,17 +219,17 @@ export default function AdIntegrationPanel({ compact }: Props) {
         </label>
       </div>
 
-      <div className="rounded-lg border border-slate-700/60 p-3 space-y-2">
-        <p className="text-xs font-medium text-slate-300 flex items-center gap-2">
+      <div className="rounded-lg border border-[var(--apple-hairline)] p-3 space-y-2">
+        <p className="text-xs font-medium text-[var(--text-secondary)] flex items-center gap-2">
           <PlugZap className="w-3.5 h-3.5" aria-hidden />
           Test bind
         </p>
         <div className="flex flex-wrap gap-2 items-end">
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-[var(--text-muted)]">
             Username
             <input className={`${inputClass} mt-1 min-w-[14rem] font-mono text-xs`} value={testUser} onChange={(e) => setTestUser(e.target.value)} />
           </label>
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-[var(--text-muted)]">
             Password
             <input type="password" autoComplete="current-password" className={`${inputClass} mt-1`} value={testPass} onChange={(e) => setTestPass(e.target.value)} />
           </label>

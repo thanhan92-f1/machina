@@ -58,8 +58,8 @@ function FleetCloudNetworkDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <p className="text-slate-400">Network not found.</p>
-        <Link to="/fleet-cloud/networking" className="text-sky-400 hover:underline">Back</Link>
+        <p className="text-[var(--text-muted)]">Network not found.</p>
+        <Link to="/fleet-cloud/networking" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -67,21 +67,22 @@ function FleetCloudNetworkDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/networking" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/networking" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Networking
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Network className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Network className="w-7 h-7 text-[var(--accent)]" />
         {net.name}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{net.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Backend</dt><dd className="text-slate-200 mt-1">{net.backend}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">VLAN</dt><dd className="text-slate-200 mt-1">{net.vlan_id ?? '—'}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Bridge</dt><dd className="text-slate-200 mt-1">{net.bridge ?? '—'}</dd></div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono text-[var(--text-primary)] mt-1 break-all">{net.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Backend</dt><dd className="text-[var(--text-primary)] mt-1">{net.backend}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">VLAN</dt><dd className="text-[var(--text-primary)] mt-1">{net.vlan_id ?? '—'}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Bridge</dt><dd className="text-[var(--text-primary)] mt-1">{net.bridge ?? '—'}</dd></div>
       </dl>
       <button type="button" className={statusDestructiveButtonClasses('text-sm inline-flex items-center gap-1')}
         onClick={() => setDeleteOpen(true)}>
@@ -91,7 +92,7 @@ function FleetCloudNetworkDetailContent() {
         <div className={`rounded-xl p-4 space-y-3 ${statusSurfaceClasses('error')}`}>
           <p className={`text-sm ${statusToneClass('error')}`}>Delete network <span className="font-mono">{net.name}</span>? Ports on it must be removed first.</p>
           <div className="flex gap-2">
-            <button type="button" className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm"
+            <button type="button" className="btn-destructive text-sm"
               onClick={async () => {
                 try {
                   await deleteNetwork(net.id)
@@ -102,7 +103,7 @@ function FleetCloudNetworkDetailContent() {
                   setDeleteOpen(false)
                 }
               }}>Delete</button>
-            <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm"
+            <button type="button" className="btn-secondary text-sm"
               onClick={() => setDeleteOpen(false)}>Cancel</button>
           </div>
         </div>

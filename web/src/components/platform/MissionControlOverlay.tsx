@@ -107,7 +107,7 @@ export default function MissionControlOverlay() {
 
   return (
     <div
-      className="fixed inset-0 z-[90] bg-slate-950/95 backdrop-blur-xl overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[90] bg-[var(--apple-surface)]/95 backdrop-blur-xl overflow-y-auto animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-label="Mission Control"
@@ -119,10 +119,10 @@ export default function MissionControlOverlay() {
         onClick={closeMissionControl}
       />
       <div className="relative z-[1] min-h-full">
-        <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-slate-950/90">
+        <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-[var(--apple-surface)]/90">
           <div>
-            <h1 className="text-xl font-bold text-slate-100">Mission Control</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Mission Control</h1>
+            <p className="text-sm text-[var(--text-muted)]">
               Infrastructure Earth · {fleetTitle} · {hosts.length} hosts · {vms.length} VMs
             </p>
           </div>
@@ -139,13 +139,13 @@ export default function MissionControlOverlay() {
 
         {openWindows.length > 0 && (
           <div className="px-6 py-3 border-b border-white/[0.06]">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/35 mb-2">Open windows</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Open windows</p>
             <div className="flex flex-wrap gap-2">
               {openWindows.map((tab) => (
                 <Link
                   key={tab.path}
                   to={tab.path}
-                  className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs text-white/70 hover:text-white hover:bg-white/[0.08] transition"
+                  className="rounded-full border border-[color-mix(in_srgb,var(--apple-hairline)_90%,transparent)] bg-[var(--apple-surface)] px-3 py-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[color-mix(in_srgb,var(--apple-surface)_80%,transparent)] transition"
                   onClick={closeMissionControl}
                 >
                   {tab.label}
@@ -196,7 +196,7 @@ export default function MissionControlOverlay() {
 
         {desktop && (
           <div className="px-6 pb-2 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full border border-white/[0.08] bg-slate-900/60 px-3 py-1 text-slate-300">{desktop.summary}</span>
+            <span className="rounded-full border border-white/[0.08] bg-[var(--apple-surface)] px-3 py-1 text-[var(--text-secondary)]">{desktop.summary}</span>
             {(linuxHealth?.pressure_hosts ?? desktop.pressure_hosts) > 0 && (
               <Link to="/platform/hosts" className={statusChipClasses('warn')} onClick={closeMissionControl}>
                 {linuxHealth?.summary ?? desktop.linux_summary}
@@ -224,8 +224,8 @@ export default function MissionControlOverlay() {
         </div>
 
         <div className="p-6 grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-          <section className="rounded-2xl border border-white/[0.06] bg-slate-900/50 p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2"><Server className="w-4 h-4" /> Hosts</h2>
+          <section className="rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[var(--text-muted)] flex items-center gap-2"><Server className="w-4 h-4" /> Hosts</h2>
             <ul className="space-y-2 text-sm max-h-64 overflow-y-auto">
               {hosts.map((h) => (
                 <li key={h.id}>
@@ -245,8 +245,8 @@ export default function MissionControlOverlay() {
               </Link>
             </ul>
           </section>
-          <section className="rounded-2xl border border-white/[0.06] bg-slate-900/50 p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2"><Boxes className="w-4 h-4" /> Virtual machines</h2>
+          <section className="rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[var(--text-muted)] flex items-center gap-2"><Boxes className="w-4 h-4" /> Virtual machines</h2>
             <ul className="space-y-2 text-sm max-h-64 overflow-y-auto">
               {vms.slice(0, 24).map((v) => (
                 <li key={v.id}>
@@ -259,16 +259,16 @@ export default function MissionControlOverlay() {
                     title={v.host_id ? 'Open in Machine Finder' : 'Open VM'}
                   >
                     <span className="truncate">{v.name}</span>
-                    <span className="text-slate-500 shrink-0 ml-2">{v.observed_state}</span>
+                    <span className="text-[var(--text-muted)] shrink-0 ml-2">{v.observed_state}</span>
                   </Link>
                 </li>
               ))}
             </ul>
           </section>
-          <section className="rounded-2xl border border-white/[0.06] bg-slate-900/50 p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Alerts</h2>
+          <section className="rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[var(--text-muted)] flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Alerts</h2>
             {alerts.length === 0 ? (
-              <p className="text-sm text-slate-500">No unread alerts</p>
+              <p className="text-sm text-[var(--text-muted)]">No unread alerts</p>
             ) : (
               <ul className="space-y-2 text-sm max-h-64 overflow-y-auto">
                 {alerts.map((a) => (
@@ -278,9 +278,9 @@ export default function MissionControlOverlay() {
             )}
             <Link to={operationsHubHref(tier)} className={`text-xs ${statusActionLinkClasses('info')}`} onClick={closeMissionControl}>Open Operations hub →</Link>
           </section>
-          <section className="rounded-2xl border border-white/[0.06] bg-slate-900/50 p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2"><ArrowRightLeft className="w-4 h-4" /> Migrations & tasks</h2>
-            <p className="text-xs text-slate-500">
+          <section className="rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[var(--text-muted)] flex items-center gap-2"><ArrowRightLeft className="w-4 h-4" /> Migrations & tasks</h2>
+            <p className="text-xs text-[var(--text-muted)]">
               {migrations.length} migration tasks ·{' '}
               {failedTasks.length > 0 ? (
                 <Link to={tasksHubHref(tier)} className="text-amber-300 hover:underline" onClick={closeMissionControl}>

@@ -36,23 +36,23 @@ export default function MissionControlGeography({ expanded: expandedProp, onTogg
   }
 
   return (
-    <section id="geography" className="mc-geography rounded-2xl border border-white/[0.08] bg-slate-950/30 overflow-hidden" data-testid="mission-control-geography">
+    <section id="geography" className="mc-geography rounded-2xl border border-white/[0.08] bg-[var(--apple-surface)] overflow-hidden" data-testid="mission-control-geography">
       <button
         type="button"
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/[0.02]"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--surface-hover)]"
         onClick={toggle}
       >
         <div>
-          <h2 className="text-sm font-semibold text-white">Fleet geography</h2>
-          <p className="text-xs text-slate-500">Site, rack, host topology</p>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Fleet geography</h2>
+          <p className="text-xs text-[var(--text-muted)]">Site, rack, host topology</p>
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+        {expanded ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
       </button>
       {expanded && (
         <div className="px-4 pb-4 border-t border-white/[0.06]">
           {error && <p className="text-sm text-red-300 py-2">{error}</p>}
           {mission && <InfrastructureEarthView mission={mission} />}
-          {!mission && !error && <p className="text-sm text-slate-500 py-4">Loading geography…</p>}
+          {!mission && !error && <p className="text-sm text-[var(--text-muted)] py-4">Loading geography…</p>}
         </div>
       )}
     </section>

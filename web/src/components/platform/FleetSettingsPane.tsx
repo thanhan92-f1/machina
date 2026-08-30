@@ -28,16 +28,16 @@ export default function FleetSettingsPane({ kind, enabled = true }: { kind: Flee
   return (
     <MacGlassPanel title={TITLES[kind]} subtitle="Fleet-wide summary">
       {loading && (
-        <p className="text-sm text-slate-400 flex items-center gap-2">
+        <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading fleet summary…
         </p>
       )}
       {error && !loading && (
-        <p className="text-sm text-slate-400">Fleet summary is temporarily unavailable. Page data above may still be current.</p>
+        <p className="text-sm text-[var(--text-muted)]">Fleet summary is temporarily unavailable. Page data above may still be current.</p>
       )}
-      {!loading && !error && summary && <p className="text-sm text-slate-300 leading-relaxed">{summary}</p>}
+      {!loading && !error && summary && <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{summary}</p>}
       {!loading && !error && !summary && data && (
-        <p className="text-sm text-slate-500">Fleet aggregate loaded.</p>
+        <p className="text-sm text-[var(--text-muted)]">Fleet aggregate loaded.</p>
       )}
     </MacGlassPanel>
   )

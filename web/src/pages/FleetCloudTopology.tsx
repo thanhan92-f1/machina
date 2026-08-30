@@ -87,7 +87,7 @@ function FleetCloudTopologyContent() {
     <PageLayout
       prepend={<FleetCloudSubNav />}
       title="Network topology"
-      icon={<Globe className="w-7 h-7 text-sky-400" />}
+      icon={<Globe className="w-7 h-7 text-[var(--accent)]" />}
       error={error}
       errorTitle="Failed to load topology"
       technicalDetail={error}
@@ -96,12 +96,12 @@ function FleetCloudTopologyContent() {
       contentLoading={loading}
     >
       {!loading && laid.length === 0 && !error && (
-        <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-8 text-center text-sm text-slate-500">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-8 text-center text-sm text-[var(--text-muted)]">
           No networks or connected instances to graph yet.
         </div>
       )}
       {!loading && laid.length > 0 && (
-        <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4 overflow-x-auto">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 overflow-x-auto">
           <svg width="960" height={maxY} className="w-full min-w-[640px]" viewBox={`0 0 960 ${maxY}`}>
             {edges.map((e, i) => {
               const a = pos[e.from]

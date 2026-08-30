@@ -114,17 +114,17 @@ export default function KubeVirtSerialConsole({ namespace, vmName }: Props) {
   }, [connect])
 
   return (
-    <div className={fullscreen ? 'fixed inset-0 z-[70] bg-slate-900 flex flex-col' : 'flex flex-col h-full min-h-0'}>
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 rounded-t-lg shrink-0">
+    <div className={fullscreen ? 'fixed inset-0 z-[70] bg-[var(--apple-surface)] flex flex-col' : 'flex flex-col h-full min-h-0'}>
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--apple-fill-tertiary)] border-b border-[var(--apple-hairline)] rounded-t-lg shrink-0">
         <div className="flex items-center gap-3">
           <div className={`w-2.5 h-2.5 rounded-full ${statusBgClass(connected ? 'ok' : 'error')}`} />
-          <span className="text-sm text-slate-300">KubeVirt console — {namespace}/{vmName}</span>
+          <span className="text-sm text-[var(--text-secondary)]">KubeVirt console — {namespace}/{vmName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => xtermRef.current?.clear()} className="p-1.5 hover:bg-slate-700 rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-slate-400" /></button>
-          <button type="button" onClick={() => void connect()} className="p-1.5 hover:bg-slate-700 rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-slate-400" /></button>
-          <button type="button" onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-slate-700 rounded transition" title="Fullscreen" aria-label="Fullscreen">
-            {fullscreen ? <Minimize className="w-4 h-4 text-slate-400" /> : <Maximize className="w-4 h-4 text-slate-400" />}
+          <button type="button" onClick={() => xtermRef.current?.clear()} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" /></button>
+          <button type="button" onClick={() => void connect()} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" /></button>
+          <button type="button" onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+            {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
           </button>
         </div>
       </div>

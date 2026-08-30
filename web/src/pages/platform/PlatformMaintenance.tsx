@@ -73,8 +73,8 @@ function stepTone(status: MaintenanceStepStatus): string {
   if (status === 'done') return statusChipClasses('ok')
   if (status === 'ready') return statusChipClasses('info')
   if (status === 'blocked') return statusChipClasses('error')
-  if (status === 'skipped') return 'text-slate-500 border-white/[0.06]'
-  return 'text-slate-400 border-white/[0.08]'
+  if (status === 'skipped') return 'text-[var(--text-muted)] border-white/[0.06]'
+  return 'text-[var(--text-muted)] border-white/[0.08]'
 }
 
 export default function PlatformMaintenance() {
@@ -188,12 +188,13 @@ export default function PlatformMaintenance() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Maintenance"
       subtitle="Fleet patch catalog, maintenance mission timeline, and deferred windows — guided orchestration only."
-      icon={<Download className="w-6 h-6 text-slate-400" />}
+      icon={<Download className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -204,7 +205,7 @@ export default function PlatformMaintenance() {
 
       {!pageLoading && tab === 'mission' && mission && (
         <div className="space-y-4">
-          <p className="text-sm text-slate-400">{mission.summary}</p>
+          <p className="text-sm text-[var(--text-muted)]">{mission.summary}</p>
           <div className="grid gap-3 sm:grid-cols-3">
             <MacStatWidget label="Hosts with updates" value={String(mission.hosts_with_updates)} icon={<Download className="w-4 h-4" />} tone={mission.hosts_with_updates > 0 ? 'warn' : 'ok'} />
             <MacStatWidget label="In maintenance" value={String(mission.hosts_in_maintenance)} icon={<AlertTriangle className="w-4 h-4" />} tone={mission.hosts_in_maintenance > 0 ? 'warn' : 'ok'} />
@@ -220,7 +221,7 @@ export default function PlatformMaintenance() {
           ) : (
             <>
               <div className="flex flex-wrap gap-3 items-center">
-                <label htmlFor="maintenance-mission-host" className="text-xs text-slate-500">Host</label>
+                <label htmlFor="maintenance-mission-host" className="text-xs text-[var(--text-muted)]">Host</label>
                 <select
                   id="maintenance-mission-host"
                   name="mission_host"
@@ -261,7 +262,7 @@ export default function PlatformMaintenance() {
                     <p className="text-sm text-amber-200/90">{selectedMission.blockers.join(' ')}</p>
                   )}
                   {selectedMission.update_summary && (
-                    <p className="text-xs text-slate-500">{selectedMission.update_summary}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{selectedMission.update_summary}</p>
                   )}
                   {!selectedMission.maintenance_mode && (selectedMission.pending_packages ?? 0) > 0 && (
                     <div className={`rounded-lg border p-3 text-sm ${statusSurfaceClasses('warn')}`}>
@@ -372,7 +373,7 @@ export default function PlatformMaintenance() {
                       </Link>
                     </div>
                     {previewSummary && (
-                      <p className="text-xs text-slate-400 mt-3 font-mono whitespace-pre-wrap">{previewSummary}</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-3 font-mono whitespace-pre-wrap">{previewSummary}</p>
                     )}
                   </MacGlassPanel>
                 </>
@@ -386,7 +387,7 @@ export default function PlatformMaintenance() {
         <div className="space-y-4">
           {fleet && (
             <>
-              <p className="text-sm text-slate-400">{fleet.summary}</p>
+              <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MacStatWidget label="Hosts scanned" value={String(fleet.hosts_scanned)} icon={<Download className="w-4 h-4" />} />
                 <MacStatWidget
@@ -408,30 +409,30 @@ export default function PlatformMaintenance() {
                   tone={fleet.agent_drift_count > 0 ? 'warn' : 'ok'}
                 />
               </div>
-              <p className="text-xs text-slate-500">
-                Recommended agent: <span className="text-slate-300 font-mono">{fleet.recommended_agent}</span>
+              <p className="text-xs text-[var(--text-muted)]">
+                Recommended agent: <span className="text-[var(--text-secondary)] font-mono">{fleet.recommended_agent}</span>
                 {fleet.total_pending_packages > 0 && (
-                  <> · <span className="text-slate-300">{fleet.total_pending_packages}</span> pending package(s) counted</>
+                  <> · <span className="text-[var(--text-secondary)]">{fleet.total_pending_packages}</span> pending package(s) counted</>
                 )}
               </p>
               {upgradeMatrix && (
                 <MacGlassPanel title="Agent upgrade matrix" subtitle="Controller vs enrolled agent compatibility">
                   <dl className="grid gap-2 text-sm sm:grid-cols-2">
                     <div>
-                      <dt className="text-xs text-slate-500">Controller</dt>
-                      <dd className="font-mono text-slate-200">{upgradeMatrix.controller_version}</dd>
+                      <dt className="text-xs text-[var(--text-muted)]">Controller</dt>
+                      <dd className="font-mono text-[var(--text-primary)]">{upgradeMatrix.controller_version}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-slate-500">Recommended agent</dt>
-                      <dd className="font-mono text-slate-200">{upgradeMatrix.recommended_agent}</dd>
+                      <dt className="text-xs text-[var(--text-muted)]">Recommended agent</dt>
+                      <dd className="font-mono text-[var(--text-primary)]">{upgradeMatrix.recommended_agent}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-slate-500">Minimum agent</dt>
-                      <dd className="font-mono text-slate-200">{upgradeMatrix.min_agent}</dd>
+                      <dt className="text-xs text-[var(--text-muted)]">Minimum agent</dt>
+                      <dd className="font-mono text-[var(--text-primary)]">{upgradeMatrix.min_agent}</dd>
                     </div>
                     <div className="sm:col-span-2">
-                      <dt className="text-xs text-slate-500">Notes</dt>
-                      <dd className="text-slate-300">{upgradeMatrix.notes}</dd>
+                      <dt className="text-xs text-[var(--text-muted)]">Notes</dt>
+                      <dd className="text-[var(--text-secondary)]">{upgradeMatrix.notes}</dd>
                     </div>
                   </dl>
                 </MacGlassPanel>
@@ -439,14 +440,14 @@ export default function PlatformMaintenance() {
             </>
           )}
           {!fleet && loadingUpdates && (
-            <div className="flex items-center gap-2 text-sm text-slate-400 py-8">
+            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] py-8">
               <Loader2 className="w-4 h-4 animate-spin" /> Probing host package managers…
             </div>
           )}
           {fleet && (
             <MacGlassPanel title="Host patch catalog" subtitle="Read-only apt/dnf/apk/pacman/zypper probes via enrolled agents.">
               {fleet.hosts.length === 0 ? (
-                <p className="text-sm text-slate-400">No online hosts to scan.</p>
+                <p className="text-sm text-[var(--text-muted)]">No online hosts to scan.</p>
               ) : (
                 <div className="divide-y divide-white/[0.04] -mx-1">
                   {fleet.hosts.map((h) => (
@@ -463,7 +464,7 @@ export default function PlatformMaintenance() {
                           h.status === 'ok'
                             ? statusChipClasses('ok', 'border')
                             : h.status === 'unreachable'
-                              ? 'text-slate-400 border-white/[0.08]'
+                              ? 'text-[var(--text-muted)] border-white/[0.08]'
                               : statusChipClasses('warn', 'border')
                         }`}>
                           {h.reboot_required ? 'reboot' : h.status}
@@ -474,7 +475,7 @@ export default function PlatformMaintenance() {
                           {h.agent_update_available ? (
                             <button
                               type="button"
-                              className="text-[10px] text-violet-300 hover:underline"
+                              className="text-[10px] text-[var(--link)] hover:underline"
                               onClick={(e) => {
                                 e.preventDefault()
                                 void upgradeHostAgent(h.host_id).then((r) => {
@@ -491,7 +492,7 @@ export default function PlatformMaintenance() {
                   ))}
                 </div>
               )}
-              <p className="text-xs text-slate-500 mt-4">
+              <p className="text-xs text-[var(--text-muted)] mt-4">
                 Apply upgrades on-host or use the{' '}
                 <button type="button" className="text-orange-300 hover:underline" onClick={() => setTab('mission')}>
                   Maintenance mission
@@ -543,14 +544,14 @@ export default function PlatformMaintenance() {
           ) : (
           <div className="card overflow-x-auto">
             <table className="w-full text-sm" aria-label="Maintenance schedules">
-              <thead><tr className="text-slate-400 border-b border-slate-800"><th scope="col" className="p-3 text-left">Host</th><th scope="col" className="p-3">Action</th><th scope="col" className="p-3">Run at</th><th scope="col" className="p-3">Status</th><th scope="col" className="p-3" /></tr></thead>
+              <thead><tr className="text-[var(--text-muted)] border-b border-[var(--apple-hairline)]"><th scope="col" className="p-3 text-left">Host</th><th scope="col" className="p-3">Action</th><th scope="col" className="p-3">Run at</th><th scope="col" className="p-3">Status</th><th scope="col" className="p-3" /></tr></thead>
               <tbody>{rows.map((s) => (
-                <tr key={s.id} className="border-b border-slate-900">
+                <tr key={s.id} className="border-b border-[var(--apple-hairline)]">
                   <td className="p-3">
                     <Link to={`/platform/hosts/${s.host_id}`} className={`hover:underline ${hubLinkClasses()}`}>{hostName(s.host_id)}</Link>
                   </td>
                   <td className="p-3">{s.action}{s.evacuate ? ' (evacuate)' : ''}</td>
-                  <td className="p-3 text-slate-500">{new Date(s.run_at).toLocaleString()}</td>
+                  <td className="p-3 text-[var(--text-muted)]">{new Date(s.run_at).toLocaleString()}</td>
                   <td className="p-3">{s.status}</td>
                   <td className="p-3 text-right">
                     {s.status === 'pending' && (

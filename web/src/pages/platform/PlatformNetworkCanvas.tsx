@@ -137,6 +137,7 @@ export default function PlatformNetworkCanvas() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       compact
       title="Network canvas"
       subtitle="Machina fleet topology + PacketWolf Network Brain (K8s/Hubble)"
@@ -154,7 +155,7 @@ export default function PlatformNetworkCanvas() {
           >
             {data.packetwolf.summary}
             {data.packetwolf.discovery_source && (
-              <span className="text-slate-500 block mt-0.5">Discovery: {data.packetwolf.discovery_source}</span>
+              <span className="text-[var(--text-muted)] block mt-0.5">Discovery: {data.packetwolf.discovery_source}</span>
             )}
           </p>
         )}
@@ -211,7 +212,7 @@ export default function PlatformNetworkCanvas() {
                 return (
                 <li key={`${String(threat.host_id ?? '')}-${String(threat.kind ?? title)}-${i}`} className="border-b border-white/[0.04] pb-2 space-y-1">
                   <span className={statusToneClass(threat.severity === 'critical' ? 'error' : 'warn')}>{title}</span>
-                  {detail && <p className="text-slate-500 mt-0.5">{detail}</p>}
+                  {detail && <p className="text-[var(--text-muted)] mt-0.5">{detail}</p>}
                   <EbpfActionMenu
                     hostId={threat.host_id}
                     suggestedKind={threat.suggested_kind ?? 'deny_port'}
@@ -231,10 +232,10 @@ export default function PlatformNetworkCanvas() {
             <NetworkServiceMapGraph nodes={svcNodes} edges={svcEdges} className="mb-4" />
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 -mt-1 mb-4">
               {svcNodes.slice(0, 18).map((n: ServiceMapNode) => (
-                <div key={`${n.namespace}/${n.name}`} className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-2 text-xs">
+                <div key={`${n.namespace}/${n.name}`} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-2 text-xs">
                   <p className={`font-medium ${nodeTone(n.status, n.risk)}`}>{n.name}</p>
-                  <p className="text-slate-500">{n.namespace}</p>
-                  <p className="text-slate-400 mt-1">
+                  <p className="text-[var(--text-muted)]">{n.namespace}</p>
+                  <p className="text-[var(--text-muted)] mt-1">
                     in {n.connections_in ?? 0} · out {n.connections_out ?? 0}
                     {(n.blocked_flows ?? 0) > 0 && <span className={statusToneClass('warn')}> · {n.blocked_flows} blocked</span>}
                   </p>
@@ -243,14 +244,14 @@ export default function PlatformNetworkCanvas() {
             </div>
             {svcEdges.length > 0 && (
               <>
-                <h3 className="text-xs font-semibold text-slate-500 mb-2">Connections</h3>
+                <h3 className="text-xs font-semibold text-[var(--text-muted)] mb-2">Connections</h3>
                 <ul className="text-xs space-y-1">
                   {svcEdges.map((e: ServiceMapEdge) => (
                     <li key={e.id} className={`truncate ${edgeTone(e.health)}`}>
                       {e.source} → {e.target}
                       {e.dropped_count != null && e.dropped_count > 0 && (
                         <>
-                          <span className="text-slate-500"> ({e.dropped_count} dropped)</span>
+                          <span className="text-[var(--text-muted)]"> ({e.dropped_count} dropped)</span>
                           {' '}
                           <Link
                             to={`/platform/zeus/security/enforcement?kind=deny_port&match=${encodeURIComponent('4444/tcp')}`}
@@ -266,7 +267,7 @@ export default function PlatformNetworkCanvas() {
               </>
             )}
             {Array.isArray(topTalkers) && topTalkers.length > 0 && (
-              <p className="text-xs text-slate-500 mt-3">
+              <p className="text-xs text-[var(--text-muted)] mt-3">
                 Top talkers:{' '}
                 {topTalkers
                   .slice(0, 5)
@@ -282,11 +283,11 @@ export default function PlatformNetworkCanvas() {
           <MacGlassPanel title="Workloads" subtitle="PacketWolf /api/v1/network/workloads">
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
               {workloads.slice(0, 18).map((w) => (
-                <li key={`${w.namespace}/${w.name}`} className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-2">
-                  <p className="font-medium text-slate-100">{w.name}</p>
-                  <p className="text-slate-500">{w.namespace}</p>
+                <li key={`${w.namespace}/${w.name}`} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-2">
+                  <p className="font-medium text-[var(--text-primary)]">{w.name}</p>
+                  <p className="text-[var(--text-muted)]">{w.namespace}</p>
                   {'connections_out' in w && (
-                    <p className="text-slate-400 mt-1">out {(w as { connections_out?: number }).connections_out ?? 0}</p>
+                    <p className="text-[var(--text-muted)] mt-1">out {(w as { connections_out?: number }).connections_out ?? 0}</p>
                   )}
                 </li>
               ))}
@@ -305,7 +306,7 @@ export default function PlatformNetworkCanvas() {
                     <span className={statusToneClass(row.severity === 'critical' || row.severity === 'high' ? 'error' : 'neutral')}>
                       {label}
                     </span>
-                    {row.timestamp && <p className="text-slate-500 mt-0.5">{row.timestamp}</p>}
+                    {row.timestamp && <p className="text-[var(--text-muted)] mt-0.5">{row.timestamp}</p>}
                   </li>
                 )
               })}
@@ -317,11 +318,11 @@ export default function PlatformNetworkCanvas() {
           <MacGlassPanel title="Kubernetes nodes" subtitle="PacketWolf kubectl-backed inventory">
             <ul className="flex flex-wrap gap-2 text-xs">
               {k8sNodes.slice(0, 12).map((n) => (
-                <li key={n.name} className="px-2 py-1 rounded-lg border border-slate-700/60 text-slate-300 flex items-center gap-1">
-                  <Server className="w-3 h-3 text-slate-500" />
+                <li key={n.name} className="px-2 py-1 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] flex items-center gap-1">
+                  <Server className="w-3 h-3 text-[var(--text-muted)]" />
                   {n.name}
                   <span className={statusToneClass(n.status === 'Ready' ? 'ok' : 'warn')}>{n.status}</span>
-                  {n.pods_count != null && <span className="text-slate-500">({n.pods_count} pods)</span>}
+                  {n.pods_count != null && <span className="text-[var(--text-muted)]">({n.pods_count} pods)</span>}
                 </li>
               ))}
             </ul>
@@ -332,7 +333,7 @@ export default function PlatformNetworkCanvas() {
           <MacGlassPanel title="Host flows" subtitle="PacketWolf eBPF / libvirt host plane">
             <ul className="grid gap-2 sm:grid-cols-2">
               {flowEdges.map((e) => (
-                <li key={e.id} className="rounded-lg border border-slate-700/50 bg-slate-900/50 p-3 text-xs">
+                <li key={e.id} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 text-xs">
                   <span
                     className={`text-[10px] uppercase mr-2 ${
                       e.verdict === 'DROPPED' || e.verdict === 'blocked' ? statusToneClass('error') : statusToneClass('ok')
@@ -340,9 +341,9 @@ export default function PlatformNetworkCanvas() {
                   >
                     {e.verdict}
                   </span>
-                  <p className="font-medium text-slate-100 mt-0.5">{e.label}</p>
-                  {e.host && <p className="text-slate-500 mt-0.5">Host {e.host}</p>}
-                  {e.summary && <p className="text-slate-400 mt-0.5 truncate">{e.summary}</p>}
+                  <p className="font-medium text-[var(--text-primary)] mt-0.5">{e.label}</p>
+                  {e.host && <p className="text-[var(--text-muted)] mt-0.5">Host {e.host}</p>}
+                  {e.summary && <p className="text-[var(--text-muted)] mt-0.5 truncate">{e.summary}</p>}
                 </li>
               ))}
             </ul>
@@ -352,18 +353,18 @@ export default function PlatformNetworkCanvas() {
         <MacGlassPanel title="Machina fleet topology" subtitle="Hosts, VMs, and networks from controller inventory">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {nodes.length === 0 && (
-              <p className="text-sm text-slate-500 col-span-full py-4 text-center">No hosts, VMs, or networks in the controller inventory yet.</p>
+              <p className="text-sm text-[var(--text-muted)] col-span-full py-4 text-center">No hosts, VMs, or networks in the controller inventory yet.</p>
             )}
             {nodes.map((n) => (
-              <div key={n.id} className="rounded-lg border border-slate-700/50 bg-slate-900/50 p-3 text-sm">
-                <span className="text-[10px] uppercase text-slate-500">{n.kind}</span>
-                <p className="font-medium text-slate-100">{n.label}</p>
-                {n.detail && <p className="text-xs text-slate-400 mt-0.5">{n.detail}</p>}
+              <div key={n.id} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 text-sm">
+                <span className="text-[10px] uppercase text-[var(--text-muted)]">{n.kind}</span>
+                <p className="font-medium text-[var(--text-primary)]">{n.label}</p>
+                {n.detail && <p className="text-xs text-[var(--text-muted)] mt-0.5">{n.detail}</p>}
               </div>
             ))}
           </div>
           {(data?.topology.edges?.length ?? 0) > 0 && (
-            <ul className="text-xs text-slate-400 space-y-1 mt-3 max-h-32 overflow-y-auto">
+            <ul className="text-xs text-[var(--text-muted)] space-y-1 mt-3 max-h-32 overflow-y-auto">
               {data!.topology.edges.slice(0, 20).map((e) => (
                 <li key={`${e.from}-${e.to}`}>
                   {e.from} → {e.to} ({e.label})
@@ -373,7 +374,7 @@ export default function PlatformNetworkCanvas() {
           )}
         </MacGlassPanel>
 
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           PacketWolf APIs: network overview, service-map, threats, nodes (via kubeconfig). Deep dive:{' '}
           <Link to="/platform/zeus/security" className={hubLinkClasses()}>
             Zeus Security

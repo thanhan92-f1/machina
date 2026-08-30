@@ -113,20 +113,21 @@ export default function JobsPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       className="mx-auto max-w-6xl px-4"
       loading={loading && jobs.length === 0}
       title="Jobs"
       icon={<Activity className={`w-7 h-7 ${statusToneClass('warn')}`} />}
       subtitle={
         <>
-          Monitor <strong className="text-slate-300">virt-image-build</strong>,{' '}
-          <strong className="text-slate-300">Golden Forge</strong> (Packer qcow2), and{' '}
-          <strong className="text-slate-300">Create VM</strong> progress after you navigate away. Logs update automatically while a job is running.
+          Monitor <strong className="text-[var(--text-secondary)]">virt-image-build</strong>,{' '}
+          <strong className="text-[var(--text-secondary)]">Golden Forge</strong> (Packer qcow2), and{' '}
+          <strong className="text-[var(--text-secondary)]">Create VM</strong> progress after you navigate away. Logs update automatically while a job is running.
         </>
       }
       actions={
         <>
-          <Link to="/" className="p-2 hover:bg-slate-700 rounded transition" aria-label="Dashboard" title="Back to dashboard">
+          <Link to="/" className="p-2 hover:bg-[var(--surface-hover)] rounded transition" aria-label="Dashboard" title="Back to dashboard">
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <button
@@ -156,34 +157,34 @@ export default function JobsPage() {
               title="No jobs yet"
               description="Start a disk build, Golden Forge qcow2 build, or create a VM with streaming logs — progress appears here after you navigate away."
               primaryAction={
-                <Link to="/disk-images" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">
+                <Link to="/disk-images" className="btn-primary text-sm">
                   Disk images
                 </Link>
               }
               secondaryAction={
-                <Link to="/create" className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-slate-200 border border-slate-600">
+                <Link to="/create" className="px-4 py-2 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] text-sm text-[var(--text-primary)] border border-[var(--apple-hairline)]">
                   Create VM
                 </Link>
               }
             />
           ) : (
-            <ul className="space-y-2 max-h-[32rem] overflow-y-auto divide-y divide-slate-800/80">
+            <ul className="space-y-2 max-h-[32rem] overflow-y-auto divide-y divide-[var(--apple-hairline)]/80">
               {jobs.map((j) => (
                 <li key={j.id} className="pt-2 first:pt-0">
                   <Link
                     to={`/jobs/${encodeURIComponent(j.id)}`}
-                    className={`block rounded-lg px-3 py-2 transition hover:bg-slate-800/80 ${
-                      selectedId === j.id ? 'bg-slate-800 ring-1 ring-amber-500/40' : ''
+                    className={`block rounded-lg px-3 py-2 transition hover:bg-[var(--apple-fill-tertiary)]/80 ${
+                      selectedId === j.id ? 'bg-[var(--apple-fill-tertiary)] ring-1 ring-amber-500/40' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-slate-500 truncate">{j.id}</span>
+                      <span className="font-mono text-xs text-[var(--text-muted)] truncate">{j.id}</span>
                       <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${statusBadge(j.status)}`}>
                         {j.status}
                       </span>
                     </div>
-                    <div className="text-sm text-slate-200 mt-1">{j.title}</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">
+                    <div className="text-sm text-[var(--text-primary)] mt-1">{j.title}</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
                       {j.kind.replace(/_/g, ' ')}
                       {j.vm_name ? ` · VM ${j.vm_name}` : ''}
                       {j.target_path ? ` · ${j.target_path}` : ''}
@@ -197,21 +198,21 @@ export default function JobsPage() {
 
         <div className="card p-4 flex flex-col min-h-[20rem]">
           {!selectedId ? (
-            <p className="text-slate-500 text-sm">Select a job from the list to view logs.</p>
+            <p className="text-[var(--text-muted)] text-sm">Select a job from the list to view logs.</p>
           ) : !detail ? (
-            <p className="text-slate-500 text-sm">Loading job…</p>
+            <p className="text-[var(--text-muted)] text-sm">Loading job…</p>
           ) : (
             <>
               <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-200">Job detail</h2>
-                  <p className="font-mono text-xs text-slate-500 break-all mt-1">{detail.id}</p>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Job detail</h2>
+                  <p className="font-mono text-xs text-[var(--text-muted)] break-all mt-1">{detail.id}</p>
                 </div>
                 <span className={`text-[10px] uppercase tracking-wide px-2 py-1 rounded ${statusBadge(detail.status)}`}>
                   {detail.status}
                 </span>
               </div>
-              <p className="text-sm text-slate-300 mb-2">{detail.title}</p>
+              <p className="text-sm text-[var(--text-secondary)] mb-2">{detail.title}</p>
               {detail.error ? (
                 <p className="text-sm text-rose-300 mb-2">{detail.error}</p>
               ) : null}
@@ -226,8 +227,8 @@ export default function JobsPage() {
                 />
               ) : null}
               <div className="flex-1 min-h-0 flex flex-col">
-                <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Log</h3>
-                <pre className="flex-1 text-[11px] leading-relaxed font-mono text-slate-300 bg-slate-950/80 border border-slate-800 rounded-lg p-3 overflow-auto max-h-[50vh] whitespace-pre-wrap break-words">
+                <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-1">Log</h3>
+                <pre className="flex-1 text-[11px] leading-relaxed font-mono text-[var(--text-secondary)] bg-[var(--apple-surface)]/80 border border-[var(--apple-hairline)] rounded-lg p-3 overflow-auto max-h-[50vh] whitespace-pre-wrap break-words">
                   {detail.logs.length ? detail.logs.join('\n') : '(no log lines yet)'}
                 </pre>
               </div>

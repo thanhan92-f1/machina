@@ -47,7 +47,7 @@ export default function PlatformFirewallCloud() {
       }
       title="Cloud Security Groups"
       subtitle={summary || 'AWS · Azure · GCP edge inventory'}
-      icon={<Cloud className="w-6 h-6 text-slate-400" />}
+      icon={<Cloud className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -62,7 +62,7 @@ export default function PlatformFirewallCloud() {
       )}
       <MacGlassPanel title="Security groups" subtitle={summary || 'Configure cloud CLI on controller host'}>
         {rules.length === 0 ? (
-          <p className="text-sm text-slate-500">No cloud security groups detected. Install and configure aws/az/gcloud CLI.</p>
+          <p className="text-sm text-[var(--text-muted)]">No cloud security groups detected. Install and configure aws/az/gcloud CLI.</p>
         ) : (
           <div className="rounded-xl border border-white/[0.06] overflow-hidden">
             {rules.slice(0, 50).map((r, i) => (

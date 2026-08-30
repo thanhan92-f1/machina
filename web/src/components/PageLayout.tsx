@@ -9,6 +9,8 @@ import PageSkeleton from './PageSkeleton'
 type PageLayoutProps = {
   title?: string
   subtitle?: ReactNode
+  /** Quiet product line above the title (apple.com eyebrow). */
+  eyebrow?: string
   icon?: ReactNode
   actions?: ReactNode
   children?: ReactNode
@@ -36,15 +38,17 @@ type PageLayoutProps = {
 
 function ContentSpinner() {
   return (
-    <div className="flex items-center justify-center h-32" aria-busy="true" aria-label="Loading">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+    <div className="flex items-center justify-center h-40" aria-busy="true" aria-label="Loading">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
     </div>
   )
 }
 
+/** Default page shell — apple.com Browse/Work rhythm for every route. */
 export default function PageLayout({
   title,
   subtitle,
+  eyebrow,
   icon,
   actions,
   children,
@@ -69,7 +73,9 @@ export default function PageLayout({
   }
 
   return (
-    <div className={`${compact ? 'space-y-4' : 'space-y-6'} animate-fade-in ${className ?? ''}`}>
+    <div
+      className={`apple-page ${compact ? 'apple-page--compact' : ''} animate-fade-in ${className ?? ''}`}
+    >
       {prepend}
       {error ? (
         <ErrorBanner
@@ -84,16 +90,17 @@ export default function PageLayout({
       ) : null}
 
       {!hideHeader ? (
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            {icon && <span className="shrink-0">{icon}</span>}
-            <h1 className="text-2xl font-bold text-slate-100">{title}</h1>
+        <header className="apple-page-header">
+          <div className="min-w-0 flex-1 max-w-3xl">
+            {eyebrow ? <p className="apple-eyebrow">{eyebrow}</p> : null}
+            {icon ? <div className="mb-3 text-[var(--text-muted)]">{icon}</div> : null}
+            <h1 className="page-title">{title}</h1>
+            {subtitle ? <div className="page-lede">{subtitle}</div> : null}
           </div>
-          {subtitle && <p className="text-sm text-slate-400 mt-0.5 max-w-2xl">{subtitle}</p>}
-        </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div> : null}
-      </div>
+          {actions ? (
+            <div className="apple-page-actions">{actions}</div>
+          ) : null}
+        </header>
       ) : null}
 
       {contentLoading ? (
@@ -101,7 +108,7 @@ export default function PageLayout({
       ) : emptyState ? (
         emptyState
       ) : (
-        <div className={contentClassName ?? ''}>{children}</div>
+        <div className={`apple-page-body ${contentClassName ?? ''}`}>{children}</div>
       )}
     </div>
   )

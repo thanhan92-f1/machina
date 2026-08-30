@@ -56,7 +56,7 @@ export default function PlatformTaskDrawer({ open, onClose }: PlatformTaskDrawer
   return (
     <div className="fixed inset-0 z-[90] flex justify-end">
       <button type="button" className="absolute inset-0 bg-black/50" aria-label="Close task drawer" onClick={onClose} />
-      <aside ref={panelRef} className="relative w-full max-w-md bg-slate-950/95 backdrop-blur-xl border-l border-white/[0.08] shadow-xl flex flex-col" role="dialog" aria-modal="true" aria-label="Active tasks">
+      <aside ref={panelRef} className="relative w-full max-w-md bg-[var(--apple-surface)]/95 backdrop-blur-xl border-l border-white/[0.08] shadow-xl flex flex-col" role="dialog" aria-modal="true" aria-label="Active tasks">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.08]">
           <h2 className="font-semibold flex items-center gap-2">
             <ListTodo className="w-5 h-5" /> Active tasks
@@ -72,7 +72,7 @@ export default function PlatformTaskDrawer({ open, onClose }: PlatformTaskDrawer
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {tasks.length === 0 && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[var(--text-muted)]">
               No active tasks.{' '}
               <Link to={operationsHref} className={statusActionLinkClasses('info')} onClick={onClose}>
                 Open Operations hub
@@ -82,13 +82,13 @@ export default function PlatformTaskDrawer({ open, onClose }: PlatformTaskDrawer
           {tasks.map((t) => (
             <div key={t.id} className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-sm">
               <div className="flex justify-between gap-2">
-                <span className="font-mono text-xs text-slate-400">{t.operation}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">{t.operation}</span>
                 <span className={`text-xs uppercase ${statusBadgeClasses(taskStatusTone(t.status))}`}>{t.status}</span>
               </div>
-              <div className="mt-2 h-1.5 bg-slate-800 rounded overflow-hidden">
+              <div className="mt-2 h-1.5 bg-[var(--apple-fill-tertiary)] rounded overflow-hidden">
                 <div className={`h-full ${statusBgClass('info')} transition-all`} style={{ width: `${t.progress}%` }} />
               </div>
-              {t.message && <p className="mt-2 text-slate-400 text-xs">{t.message}</p>}
+              {t.message && <p className="mt-2 text-[var(--text-muted)] text-xs">{t.message}</p>}
             </div>
           ))}
         </div>

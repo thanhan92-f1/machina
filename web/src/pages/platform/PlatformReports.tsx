@@ -166,6 +166,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       error={error}
@@ -173,7 +174,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       loading={loading}
       title={embedded ? undefined : 'Reports'}
       subtitle={embedded ? undefined : 'Cost Guardian, FinOps, operations runbooks, and compliance showback.'}
-      icon={embedded ? undefined : <PieChart className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <PieChart className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -214,8 +215,8 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
               ) : runbooks.map((rb) => (
                 <li key={rb.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                   <div>
-                    <p className="text-slate-200">{rb.title}</p>
-                    <p className="text-xs text-slate-500">{rb.category} · {rb.severity}{rb.auto_trigger ? ` · trigger: ${rb.auto_trigger}` : ''}</p>
+                    <p className="text-[var(--text-primary)]">{rb.title}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{rb.category} · {rb.severity}{rb.auto_trigger ? ` · trigger: ${rb.auto_trigger}` : ''}</p>
                   </div>
                   <button type="button" className="btn-secondary text-xs shrink-0" disabled={runbookBusy === rb.incident} onClick={() => void runRunbook(rb.incident, rb.title)}>
                     {runbookBusy === rb.incident ? 'Running…' : 'Execute'}
@@ -231,7 +232,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                 subtitle="Execute a catalog playbook to record steps and commands here."
               />
             ) : (
-              <ul className="text-xs space-y-2 text-slate-400">
+              <ul className="text-xs space-y-2 text-[var(--text-muted)]">
                 {executions.map((ex) => {
                   const steps = parseRunbookStepsJson(ex.steps_json)
                   const expanded = expandedExecution === ex.id
@@ -242,11 +243,11 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                         className="text-left w-full"
                         onClick={() => setExpandedExecution(expanded ? null : ex.id)}
                       >
-                        <span className="text-slate-300">{ex.incident}</span> — {ex.summary}
-                        <span className="text-slate-600 block">{new Date(ex.created_at).toLocaleString()}</span>
+                        <span className="text-[var(--text-secondary)]">{ex.incident}</span> — {ex.summary}
+                        <span className="text-[var(--text-faint)] block">{new Date(ex.created_at).toLocaleString()}</span>
                       </button>
                       {expanded && steps.length > 0 && (
-                        <ol className="mt-2 list-decimal list-inside text-slate-500 space-y-1">
+                        <ol className="mt-2 list-decimal list-inside text-[var(--text-muted)] space-y-1">
                           {steps.map((s, i) => <li key={`${ex.id}-${i}`}>{s}</li>)}
                         </ol>
                       )}
@@ -280,9 +281,9 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
         <>
           <MacGlassPanel title="Compliance showback" subtitle={showback.summary}>
             <p className={`text-2xl font-bold -mt-2 ${statusToneClass('ok')}`}>
-              ${showback.total_cost_usd.toFixed(0)}<span className="text-sm font-normal text-slate-500"> / mo</span>
+              ${showback.total_cost_usd.toFixed(0)}<span className="text-sm font-normal text-[var(--text-muted)]"> / mo</span>
             </p>
-            <p className="text-sm text-slate-400 mt-1">Fleet compliance grade: {showback.fleet_grade}</p>
+            <p className="text-sm text-[var(--text-muted)] mt-1">Fleet compliance grade: {showback.fleet_grade}</p>
             {compliance && (
               <div className="flex flex-wrap gap-2 mt-3">
                 <button type="button" className="btn-secondary text-xs" onClick={() => void downloadAiComplianceExport().catch((e: unknown) => toast.error(formatUserError(e)))} data-testid="reports-compliance-export-url">
@@ -310,7 +311,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
             <div className="overflow-x-auto mt-4">
               <table className="w-full text-sm" aria-label="Project costs">
                 <thead>
-                  <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+                  <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 pr-2">Project</th>
                     <th scope="col" className="py-2 pr-2">Cost</th>
                     <th scope="col" className="py-2 pr-2">Grade</th>
@@ -319,7 +320,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                 </thead>
                 <tbody>
                   {showback.lines.map((line) => (
-                    <tr key={line.project_name} className="border-b border-white/[0.04] text-slate-200">
+                    <tr key={line.project_name} className="border-b border-white/[0.04] text-[var(--text-primary)]">
                       <td className="py-2 pr-2">{line.project_name}</td>
                       <td className="py-2 pr-2">${line.cost_usd.toFixed(0)}/mo</td>
                       <td className="py-2 pr-2">{line.compliance_grade}</td>
@@ -401,9 +402,9 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
           >
             {migrationReport ? (
               <div className="space-y-3 text-sm">
-                <p className="text-slate-200">{migrationReport.executive_summary}</p>
+                <p className="text-[var(--text-primary)]">{migrationReport.executive_summary}</p>
                 {migrationReport.prioritized_remediation.length > 0 && (
-                  <ul className="text-xs text-slate-400 list-disc pl-4">
+                  <ul className="text-xs text-[var(--text-muted)] list-disc pl-4">
                     {migrationReport.prioritized_remediation.slice(0, 6).map((r) => (
                       <li key={r}>{r}</li>
                     ))}
@@ -412,7 +413,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs" aria-label="VM migration readiness">
                     <thead>
-                      <tr className="text-left text-slate-500">
+                      <tr className="text-left text-[var(--text-muted)]">
                         <th scope="col" className="py-1 pr-2">VM</th>
                         <th scope="col" className="py-1 pr-2">Ready</th>
                         <th scope="col" className="py-1 pr-2">Assurance</th>
@@ -425,7 +426,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                           <td className="py-1 pr-2">
                             <Link
                               to={`/platform/vms/${row.vm_id}?tab=guestHealth`}
-                              className="text-sky-300/90 hover:underline"
+                              className="text-[var(--link)]/90 hover:underline"
                             >
                               {row.vm_name}
                             </Link>
@@ -445,7 +446,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                                   : row.install_state}
                             </span>
                           </td>
-                          <td className="py-1 text-slate-500" title={row.guestkit_summary ?? row.remediation.join(' · ')}>
+                          <td className="py-1 text-[var(--text-muted)]" title={row.guestkit_summary ?? row.remediation.join(' · ')}>
                             {row.qga_gaps.join('; ') || '—'}
                           </td>
                         </tr>
@@ -455,7 +456,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[var(--text-muted)]">
                 One-click report for hypervisor migration: guest OS inventory, QGA gaps, and prioritized remediation.
               </p>
             )}
@@ -474,27 +475,27 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
                 {cap.storage_capacity_gib != null && cap.storage_capacity_gib > 0 && (
                   <p>
                     Storage:{' '}
-                    <span className="text-slate-200">
+                    <span className="text-[var(--text-primary)]">
                       {cap.storage_used_gib ?? 0} / {cap.storage_capacity_gib} GiB
                     </span>
                   </p>
                 )}
                 {cap.estimated_small_vms_addable != null && (
                   <p>
-                    Small VMs addable: <span className="text-slate-200">~{cap.estimated_small_vms_addable}</span>
+                    Small VMs addable: <span className="text-[var(--text-primary)]">~{cap.estimated_small_vms_addable}</span>
                   </p>
                 )}
                 {cap.forecast_30d_vms != null && (
                   <p>
-                    30d VM forecast: <span className="text-slate-200">{cap.forecast_30d_vms}</span>
+                    30d VM forecast: <span className="text-[var(--text-primary)]">{cap.forecast_30d_vms}</span>
                   </p>
                 )}
                 <p>
-                  Memory total: <span className="text-slate-200">{cap.memory_total_mib} MiB</span>
+                  Memory total: <span className="text-[var(--text-primary)]">{cap.memory_total_mib} MiB</span>
                 </p>
               </div>
               {cap.planner_recommendations && cap.planner_recommendations.length > 0 && (
-                <ul className="mt-3 text-xs text-slate-400 space-y-1">
+                <ul className="mt-3 text-xs text-[var(--text-muted)] space-y-1">
                   {cap.planner_recommendations.map((r) => (
                     <li key={r}>• {r}</li>
                   ))}
@@ -506,8 +507,8 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       )}
       {!loading && tab === 'reports' && compliance && (
         <MacGlassPanel title="Machina Compliance" subtitle={`Grade ${compliance.grade} · ${compliance.score}/100`}>
-          <p className="text-2xl font-bold text-slate-100 -mt-2">{compliance.score}/100</p>
-          <p className="text-sm text-slate-400 mt-1">{compliance.summary}</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] -mt-2">{compliance.score}/100</p>
+          <p className="text-sm text-[var(--text-muted)] mt-1">{compliance.summary}</p>
           <ul className="mt-3 text-xs space-y-1">
             {(compliance.checks ?? []).map((c) => (
               <li key={c.id} className={statusToneClass(c.passed ? 'ok' : 'warn')}>
@@ -556,11 +557,11 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       )}
       {!loading && tab === 'reports' && budget && (
         <MacGlassPanel title="FinOps budget guard" subtitle={budget.summary}>
-          <p className="text-2xl font-bold text-slate-100 -mt-2">
+          <p className="text-2xl font-bold text-[var(--text-primary)] -mt-2">
             ${budget.current_spend_usd.toFixed(0)}
-            <span className="text-sm font-normal text-slate-500"> / ${budget.monthly_budget_usd.toFixed(0)} budget ({budget.utilization_pct.toFixed(0)}%)</span>
+            <span className="text-sm font-normal text-[var(--text-muted)]"> / ${budget.monthly_budget_usd.toFixed(0)} budget ({budget.utilization_pct.toFixed(0)}%)</span>
           </p>
-          <p className="text-sm text-slate-400 mt-1">Status: <span className={statusToneClass(budget.status === 'over_budget' ? 'error' : budget.status === 'watch' ? 'warn' : 'ok')}>{budget.status}</span></p>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Status: <span className={statusToneClass(budget.status === 'over_budget' ? 'error' : budget.status === 'watch' ? 'warn' : 'ok')}>{budget.status}</span></p>
           {budget.alerts.length > 0 && (
             <ul className="mt-3 text-xs space-y-1">
               {budget.alerts.map((a) => (
@@ -583,7 +584,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
           {exposureFinops.vm_idle_ranking.length > 0 && (
             <ul className="mt-4 text-xs space-y-1">
               {exposureFinops.vm_idle_ranking.slice(0, 5).map((v) => (
-                <li key={v.vm_id} className="text-slate-400">
+                <li key={v.vm_id} className="text-[var(--text-muted)]">
                   #{v.rank} {v.vm_name} — ${v.waste_usd.toFixed(0)}/mo ({v.idle_ports} idle ports)
                 </li>
               ))}
@@ -598,19 +599,19 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       )}
       {!loading && tab === 'reports' && cost && (
         <MacGlassPanel title="Machina Cost Guardian" subtitle="Idle, oversized, and snapshot-heavy VMs.">
-          <p className={`text-2xl font-bold -mt-2 ${statusToneClass('ok')}`}>${cost.estimated_monthly_usd.toFixed(0)}<span className="text-sm font-normal text-slate-500"> est. / month</span></p>
+          <p className={`text-2xl font-bold -mt-2 ${statusToneClass('ok')}`}>${cost.estimated_monthly_usd.toFixed(0)}<span className="text-sm font-normal text-[var(--text-muted)]"> est. / month</span></p>
           {cost.predicted_next_month_usd != null && (
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-[var(--text-muted)] mt-1">
               Predicted next month: <span className={`font-medium ${statusToneClass('ok')}`}>${cost.predicted_next_month_usd.toFixed(0)}</span>
             </p>
           )}
-          <div className="grid gap-2 sm:grid-cols-3 text-sm text-slate-400 mt-3">
+          <div className="grid gap-2 sm:grid-cols-3 text-sm text-[var(--text-muted)] mt-3">
             <p>{cost.idle_vm_count} idle VMs</p>
             <p>{cost.oversized_vm_count} oversized</p>
             <p>{cost.snapshot_heavy_count} snapshot-heavy</p>
           </div>
           {cost.suggestions.length > 0 && (
-            <ul className="mt-3 text-xs text-slate-400 space-y-1">{cost.suggestions.map((s) => <li key={s}>• {s}</li>)}</ul>
+            <ul className="mt-3 text-xs text-[var(--text-muted)] space-y-1">{cost.suggestions.map((s) => <li key={s}>• {s}</li>)}</ul>
           )}
           <div className="flex flex-wrap gap-2 mt-3">
             <button type="button" className="btn-secondary text-xs" onClick={() => void downloadAiCostExport().catch((e: unknown) => toast.error(formatUserError(e)))} data-testid="reports-cost-export-url">
@@ -628,7 +629,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       )}
       {!loading && tab === 'reports' && attribution && attribution.teams.length > 0 && (
         <MacGlassPanel title="Team cost attribution" subtitle={attribution.summary}>
-          <ul className="text-xs space-y-2 text-slate-400 mt-2">
+          <ul className="text-xs space-y-2 text-[var(--text-muted)] mt-2">
             {attribution.teams.slice(0, 8).map((t) => (
               <li key={t.team} className="flex justify-between gap-2">
                 <span>{t.team} ({t.vm_count} VMs)</span>
@@ -675,26 +676,26 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
             <ul className="text-xs space-y-2">
               {autopilotHistory.map((h) => (
                 <li key={h.id} className="flex justify-between gap-2 border-b border-white/[0.04] pb-2">
-                  <span className="text-slate-300">{h.action.replace('ai.autopilot.', '')}</span>
-                  <span className="text-slate-500 shrink-0">{new Date(h.created_at).toLocaleString()}</span>
+                  <span className="text-[var(--text-secondary)]">{h.action.replace('ai.autopilot.', '')}</span>
+                  <span className="text-[var(--text-muted)] shrink-0">{new Date(h.created_at).toLocaleString()}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-slate-500">No autopilot runs recorded yet.</p>
+            <p className="text-sm text-[var(--text-muted)]">No autopilot runs recorded yet.</p>
           )}
         </MacGlassPanel>
       )}
       {!loading && tab === 'reports' && aiCap && (
         <MacGlassPanel title="Machina Capacity Planner" subtitle="Headroom and simple onboarding projections.">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm -mt-2">
-            <p>CPU headroom: <span className="text-slate-200">{aiCap.cpu_headroom_percent}%</span></p>
-            <p>Memory headroom: <span className="text-slate-200">{aiCap.memory_headroom_mib} MiB</span></p>
-            <p>Small VMs addable: <span className="text-slate-200">~{aiCap.estimated_small_vms_addable}</span></p>
-            {aiCap.storage_runway_days != null && <p>Storage runway: <span className="text-slate-200">{aiCap.storage_runway_days} days</span></p>}
+            <p>CPU headroom: <span className="text-[var(--text-primary)]">{aiCap.cpu_headroom_percent}%</span></p>
+            <p>Memory headroom: <span className="text-[var(--text-primary)]">{aiCap.memory_headroom_mib} MiB</span></p>
+            <p>Small VMs addable: <span className="text-[var(--text-primary)]">~{aiCap.estimated_small_vms_addable}</span></p>
+            {aiCap.storage_runway_days != null && <p>Storage runway: <span className="text-[var(--text-primary)]">{aiCap.storage_runway_days} days</span></p>}
           </div>
           {aiCap.recommendations.length > 0 && (
-            <ul className="mt-3 text-xs text-slate-400 space-y-1">{aiCap.recommendations.map((r) => <li key={r}>• {r}</li>)}</ul>
+            <ul className="mt-3 text-xs text-[var(--text-muted)] space-y-1">{aiCap.recommendations.map((r) => <li key={r}>• {r}</li>)}</ul>
           )}
           <div className="flex flex-wrap gap-2 mt-3">
             <button type="button" className="btn-secondary text-xs" onClick={() => void downloadAiCapacityExport().catch((e: unknown) => toast.error(formatUserError(e)))} data-testid="reports-capacity-export-url">
@@ -716,7 +717,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
             {security.findings.slice(0, 8).map((f) => (
               <li key={f.id} className="border-b border-white/[0.04] pb-2">
                 <span className={statusToneClass(f.severity === 'critical' ? 'error' : 'warn')}>{f.title}</span>
-                <p className="text-xs text-slate-500 mt-0.5">{f.detail}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">{f.detail}</p>
               </li>
             ))}
           </ul>
@@ -724,8 +725,8 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       )}
       {!loading && tab === 'reports' && finops && (
         <MacGlassPanel title="FinOps estimate" subtitle="Rough monthly cost from vCPU and memory rates.">
-          <p className={`text-3xl font-bold -mt-2 ${statusToneClass('ok')}`}>${finops.estimated_monthly_usd.toFixed(2)}<span className="text-sm font-normal text-slate-500"> / month</span></p>
-          <div className="grid gap-3 sm:grid-cols-3 text-sm text-slate-400 mt-3">
+          <p className={`text-3xl font-bold -mt-2 ${statusToneClass('ok')}`}>${finops.estimated_monthly_usd.toFixed(2)}<span className="text-sm font-normal text-[var(--text-muted)]"> / month</span></p>
+          <div className="grid gap-3 sm:grid-cols-3 text-sm text-[var(--text-muted)] mt-3">
             <p>{finops.total_vcpu} vCPU @ ${finops.vcpu_hour_usd}/hr</p>
             <p>{finops.total_memory_gib.toFixed(1)} GiB @ ${finops.gib_hour_usd}/hr</p>
             <p>{finops.vm_count} VMs ({finops.running_vms} running)</p>
@@ -735,7 +736,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       {!loading && tab === 'reports' && (
       <MacGlassPanel title="Workspaces" subtitle="Project quotas and VM counts.">
         <ul className="text-sm space-y-2 -mt-2">{projects.map((p) => (
-          <li key={p.name} className="flex justify-between border-b border-white/[0.04] pb-2"><span className="text-slate-200">{p.name}</span><span className="text-slate-500">{p.vm_count} VMs</span></li>
+          <li key={p.name} className="flex justify-between border-b border-white/[0.04] pb-2"><span className="text-[var(--text-primary)]">{p.name}</span><span className="text-[var(--text-muted)]">{p.vm_count} VMs</span></li>
         ))}</ul>
       </MacGlassPanel>
       )}

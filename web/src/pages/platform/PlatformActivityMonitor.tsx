@@ -22,9 +22,9 @@ function bar(label: string, value: number, tone: 'cpu' | 'mem' | 'io' | 'thermal
     tone === 'thermal' ? { warn: 70, error: 85 } : tone === 'io' ? { warn: 20, error: 50 } : { warn: 60, error: 85 }
   const unit = tone === 'thermal' ? '°C' : '%'
   return (
-    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+    <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
       <span className="w-14 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="flex-1 h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div className={`h-full rounded-full ${utilizationBarClass(value, thresholds)}`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
       </div>
       <span className="w-10 text-right">{value.toFixed(0)}{unit}</span>
@@ -55,12 +55,13 @@ export default function PlatformActivityMonitor() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Activity Monitor"
       subtitle="Fleet-wide CPU, memory, and Linux PSI — macOS Activity Monitor for your hypervisors."
-      icon={<Activity className="w-6 h-6 text-slate-400" />}
+      icon={<Activity className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentLoading={loading && !data}
       contentClassName="space-y-4"
@@ -69,9 +70,9 @@ export default function PlatformActivityMonitor() {
         <Link to="/platform/placement" className={hubLinkClasses()}>HA status & fence events →</Link>
         <Link to="/platform/developer" className={hubLinkClasses()}>Developer SDK →</Link>
         <Link to="/platform/reports?tab=runbooks" className={hubLinkClasses()}>Ops runbooks →</Link>
-        <Link to="/platform/integrations" className={hubLinkClasses()}>Classic tools →</Link>
+        <Link to="/platform/settings?section=integrations" className={hubLinkClasses()}>Classic tools →</Link>
       </div>
-      {data && <p className="text-sm text-slate-400">{data.summary}</p>}
+      {data && <p className="text-sm text-[var(--text-muted)]">{data.summary}</p>}
 
       <DetailTabs
         primary={[
@@ -91,10 +92,10 @@ export default function PlatformActivityMonitor() {
               // the fleet's peak VM, so the bar contradicted its own label.
               const memPct = Math.min(100, (vm.memory_used_mib / Math.max(1, vm.memory_mib)) * 100)
               return (
-                <li key={vm.vm_id} className="platform-mac-stat rounded-xl border border-white/[0.06] bg-slate-900/50 p-4">
+                <li key={vm.vm_id} className="platform-mac-stat rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-4">
                   <div className="flex justify-between items-center mb-2">
-                    <Link to={`/platform/vms/${vm.vm_id}`} className="font-medium text-slate-200 hover:text-blue-300">{vm.vm_name}</Link>
-                    <span className="text-xs text-slate-500">{vm.memory_used_mib} / {vm.memory_mib} MiB</span>
+                    <Link to={`/platform/vms/${vm.vm_id}`} className="font-medium text-[var(--text-primary)] hover:text-[var(--accent)]">{vm.vm_name}</Link>
+                    <span className="text-xs text-[var(--text-muted)]">{vm.memory_used_mib} / {vm.memory_mib} MiB</span>
                   </div>
                   <div className="space-y-1.5">
                     {bar('Memory', memPct, 'mem')}

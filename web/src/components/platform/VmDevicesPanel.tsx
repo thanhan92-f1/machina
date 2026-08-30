@@ -84,10 +84,10 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
   return (
     <div className="space-y-4" data-testid="vm-devices-panel">
       <MacGlassPanel title="Devices & passthrough">
-        <p className="text-xs text-slate-500 mb-4">
+        <p className="text-xs text-[var(--text-muted)] mb-4">
           TPM, watchdog, vsock, virtiofs shares, and host devices — Cockpit Machines parity. Some changes require the guest to be shut off.
         </p>
-        {loading && <p className="text-sm text-slate-400">Loading libvirt inventory…</p>}
+        {loading && <p className="text-sm text-[var(--text-muted)]">Loading libvirt inventory…</p>}
         {!loading && (
           <div className="space-y-3">
             <MacListRow
@@ -101,7 +101,7 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
               />
               {watchdogCount === 0 && (
                 <div className="flex flex-wrap gap-2 items-end pt-1">
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     Model
                     <select className="input mt-1 block text-sm" value={wdModel} onChange={(e) => setWdModel(e.target.value)}>
                       <option value="i6300esb">i6300esb</option>
@@ -109,7 +109,7 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
                       <option value="diag288">diag288</option>
                     </select>
                   </label>
-                  <label className="text-xs text-slate-500">
+                  <label className="text-xs text-[var(--text-muted)]">
                     Action
                     <select className="input mt-1 block text-sm" value={wdAction} onChange={(e) => setWdAction(e.target.value)}>
                       <option value="reset">reset</option>
@@ -159,13 +159,13 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
 
       {hostId && (usbDevices.length > 0 || pciDevices.length > 0) && (
         <MacGlassPanel title="Attach host device" data-testid="vm-hostdev-attach-panel">
-          <p className="text-xs text-slate-500 mb-3">USB and PCI passthrough from the hypervisor — Cockpit hostdev parity.</p>
+          <p className="text-xs text-[var(--text-muted)] mb-3">USB and PCI passthrough from the hypervisor — Cockpit hostdev parity.</p>
           {usbDevices.length > 0 && (
             <div className="space-y-2 mb-3">
-              <p className="text-xs font-medium text-slate-400">USB</p>
+              <p className="text-xs font-medium text-[var(--text-muted)]">USB</p>
               {usbDevices.slice(0, 8).map((d) => (
                 <div key={`${d.vendor_id}:${d.product_id}`} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                  <span className="text-slate-300 truncate">{d.description || `${d.vendor_id}:${d.product_id}`}</span>
+                  <span className="text-[var(--text-secondary)] truncate">{d.description || `${d.vendor_id}:${d.product_id}`}</span>
                   <button
                     type="button"
                     className="btn-secondary text-xs shrink-0"
@@ -180,12 +180,12 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
           )}
           {pciDevices.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-400">PCI</p>
+              <p className="text-xs font-medium text-[var(--text-muted)]">PCI</p>
               {pciDevices.slice(0, 8).map((d) => {
                 const label = [d.vendor, d.device].filter(Boolean).join(' ')
                 return (
                   <div key={d.slot} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    <span className="text-slate-300 font-mono text-xs truncate">{d.slot}{label ? ` · ${label}` : ''}</span>
+                    <span className="text-[var(--text-secondary)] font-mono text-xs truncate">{d.slot}{label ? ` · ${label}` : ''}</span>
                     <button
                       type="button"
                       className="btn-secondary text-xs shrink-0"
@@ -203,11 +203,11 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
       )}
 
       <MacGlassPanel title="Shared directories (virtiofs)">
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-[var(--text-muted)] mb-3">
           Host directory sharing via virtiofs. VM must be shut off to add or remove shares.
         </p>
         {filesystems.length === 0 ? (
-          <p className="text-sm text-slate-400">No virtiofs mounts configured.</p>
+          <p className="text-sm text-[var(--text-muted)]">No virtiofs mounts configured.</p>
         ) : (
           <div className="space-y-2">
             {filesystems.map((fs) => (
@@ -228,22 +228,22 @@ export default function VmDevicesPanel({ vmId, hostId, details, domainXml = '', 
                 )}
               </div>
             ))}
-            <p className="text-xs text-slate-500 pt-2">
-              In the guest: <code className="text-slate-300">mount -t virtiofs &lt;tag&gt; /mnt</code>
+            <p className="text-xs text-[var(--text-muted)] pt-2">
+              In the guest: <code className="text-[var(--text-secondary)]">mount -t virtiofs &lt;tag&gt; /mnt</code>
             </p>
           </div>
         )}
         {shutOff && (
           <div className="mt-4 flex flex-wrap gap-2 items-end border-t border-white/[0.06] pt-3">
-            <label className="text-xs text-slate-500">
+            <label className="text-xs text-[var(--text-muted)]">
               Host path
               <input className="input mt-1 block min-w-[16rem]" value={fsSource} onChange={(e) => setFsSource(e.target.value)} />
             </label>
-            <label className="text-xs text-slate-500">
+            <label className="text-xs text-[var(--text-muted)]">
               Mount tag
               <input className="input mt-1 block w-28" value={fsTag} onChange={(e) => setFsTag(e.target.value)} />
             </label>
-            <label className="text-xs text-slate-500 flex items-center gap-2 mt-5">
+            <label className="text-xs text-[var(--text-muted)] flex items-center gap-2 mt-5">
               <input type="checkbox" checked={fsXattr} onChange={(e) => setFsXattr(e.target.checked)} />
               xattr
             </label>

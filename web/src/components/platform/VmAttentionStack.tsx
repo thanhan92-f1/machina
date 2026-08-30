@@ -87,14 +87,14 @@ export default function VmAttentionStack({
       detail: 'Persistent configuration differs from the running guest. Shut down and start the VM to apply changes.',
       expanded: (
         <div className="space-y-3">
-          <p className="text-sm text-slate-200">{pending.pending_changes.length > 0
+          <p className="text-sm text-[var(--text-primary)]">{pending.pending_changes.length > 0
             ? 'The following changes require a full shutdown:'
             : 'Shut down and start the VM to apply pending changes.'}</p>
           {pending.pending_changes.length > 0 && (
-            <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-[var(--text-muted)] space-y-1 list-disc list-inside">
               {pending.pending_changes.slice(0, 6).map((c) => (
                 <li key={`${c.category}-${c.summary}`}>
-                  <span className="text-slate-500 uppercase tracking-wide">{c.category}</span>
+                  <span className="text-[var(--text-muted)] uppercase tracking-wide">{c.category}</span>
                   {' — '}
                   {c.summary}
                 </li>
@@ -142,7 +142,7 @@ export default function VmAttentionStack({
             )}
             <button
               type="button"
-              className="p-1 text-slate-500 hover:text-slate-300"
+              className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               aria-label="Dismiss guest agent reminder"
               onClick={() => {
                 setGuestDismissed(true)
@@ -172,12 +172,12 @@ export default function VmAttentionStack({
       expanded: (
         <ul className="space-y-2 text-xs">
           <li className="flex items-center gap-2">
-            {running ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
-            <span className="text-slate-200">VM running</span>
+            {running ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-[var(--text-muted)]" />}
+            <span className="text-[var(--text-primary)]">VM running</span>
           </li>
           <li className="flex flex-wrap items-center gap-2">
-            {ip ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
-            <span className={ip ? 'text-slate-200' : 'text-slate-400'}>{ip ? `Guest IP ${ip}` : 'Waiting for guest IP'}</span>
+            {ip ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-[var(--text-muted)]" />}
+            <span className={ip ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>{ip ? `Guest IP ${ip}` : 'Waiting for guest IP'}</span>
             {!ip && onInstallGuestTools && (
               <button type="button" className="btn-secondary text-xs" disabled={guestToolsInstalling} onClick={onInstallGuestTools}>
                 Install guest tools
@@ -185,8 +185,8 @@ export default function VmAttentionStack({
             )}
           </li>
           <li className="flex flex-wrap items-center gap-2">
-            {sshExposed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
-            <span className={sshExposed ? 'text-slate-200' : 'text-slate-400'}>
+            {sshExposed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-[var(--text-muted)]" />}
+            <span className={sshExposed ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
               {sshExposed ? 'SSH exposed on hypervisor' : 'Expose SSH for laptop access'}
             </span>
             {!sshExposed && onOpenAccess && (
@@ -217,9 +217,9 @@ export default function VmAttentionStack({
           <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-medium text-slate-100">{resolvedActive.label}</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{resolvedActive.label}</p>
               {items.length > 1 && (
-                <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                   {items.length} issue{items.length === 1 ? '' : 's'}
                 </span>
               )}

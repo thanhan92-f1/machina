@@ -192,13 +192,13 @@ export default function PlatformFirewallOverview() {
               <span className={statusPillClasses(overview.critical_count > 0 ? 'error' : 'ok')}>
                 {overview.critical_count} critical
               </span>
-              <span className="text-slate-400">{targets.length} machines</span>
+              <span className="text-[var(--text-muted)]">{targets.length} machines</span>
             </>
           )}
-          {statusLine && <span className="text-slate-500">{statusLine}</span>}
+          {statusLine && <span className="text-[var(--text-muted)]">{statusLine}</span>}
         </span>
       }
-      icon={<Shield className="w-6 h-6 text-slate-400" />}
+      icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh">
           <RefreshCw className="w-4 h-4" />
@@ -238,10 +238,10 @@ export default function PlatformFirewallOverview() {
                 </button>
               </div>
               {scoreSample && (
-                <div className="text-sm text-slate-300 space-y-2">
-                  <p>Score: <span className="font-semibold text-slate-100">{scoreSample.score}</span></p>
+                <div className="text-sm text-[var(--text-secondary)] space-y-2">
+                  <p>Score: <span className="font-semibold text-[var(--text-primary)]">{scoreSample.score}</span></p>
                   {(scoreSample.breakdown ?? []).slice(0, 3).map((b) => (
-                    <p key={b.category} className="text-xs text-slate-400">{b.category}: {b.detail} ({b.points} pts)</p>
+                    <p key={b.category} className="text-xs text-[var(--text-muted)]">{b.category}: {b.detail} ({b.points} pts)</p>
                   ))}
                 </div>
               )}
@@ -259,7 +259,7 @@ export default function PlatformFirewallOverview() {
                     vmCount={t.open_ports}
                   />
                   {t.kind === 'bare_metal' && (
-                    <p className="text-[10px] text-slate-500 text-center -mt-1">Bare metal</p>
+                    <p className="text-[10px] text-[var(--text-muted)] text-center -mt-1">Bare metal</p>
                   )}
                 </Link>
               ))}
@@ -275,7 +275,7 @@ export default function PlatformFirewallOverview() {
                   Apply auto-eligible ({operatorPlan.auto_eligible})
                 </button>
               </div>
-              <ul className="text-xs text-slate-400 space-y-1 max-h-32 overflow-y-auto">
+              <ul className="text-xs text-[var(--text-muted)] space-y-1 max-h-32 overflow-y-auto">
                 {operatorPlan.previews.slice(0, 6).map((p) => (
                   <li key={p.host_id} className="flex flex-wrap items-center gap-2">
                     <span>
@@ -303,7 +303,7 @@ export default function PlatformFirewallOverview() {
                   <button
                     key={t}
                     type="button"
-                    className={`text-xs px-2 py-1 rounded ${multisiteTab === t ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                    className={`text-xs px-3 py-1 rounded-full ${multisiteTab === t ? 'bg-[var(--accent)] text-white' : 'bg-white/10 text-[var(--text-secondary)]'}`}
                     onClick={() => {
                       setMultisiteTab(t)
                       if (t === 'drift') void getMultisiteDrift().then(setMultisiteExtra).catch(() => setMultisiteExtra(null))
@@ -319,13 +319,13 @@ export default function PlatformFirewallOverview() {
               <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 -mt-1">
                 {multisite.sites.map((s) => (
-                  <div key={s.id} className="rounded-xl border border-white/[0.06] bg-slate-950/40 px-3 py-2">
-                    <p className="text-sm text-slate-200">{s.name} <span className="text-slate-500">({s.role})</span></p>
-                    <p className="text-xs text-slate-500 mt-0.5">{s.gitops_namespace} · {s.target_count} targets · grade {(multisite.compliance_rollup?.sites ?? []).find((c) => c.site === s.name)?.grade ?? '—'}</p>
+                  <div key={s.id} className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+                    <p className="text-sm text-[var(--text-primary)]">{s.name} <span className="text-[var(--text-muted)]">({s.role})</span></p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">{s.gitops_namespace} · {s.target_count} targets · grade {(multisite.compliance_rollup?.sites ?? []).find((c) => c.site === s.name)?.grade ?? '—'}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={applyProfiles} onChange={(e) => setApplyProfiles(e.target.checked)} />
                   Apply synced profiles to online hosts
@@ -383,12 +383,12 @@ export default function PlatformFirewallOverview() {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/[0.06] bg-slate-950/40 hover:border-blue-500/30 transition text-center"
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] hover:border-[var(--accent)]/30 transition text-center"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-blue-300">
+                  <div className="w-12 h-12 rounded-xl bg-[var(--apple-fill-tertiary)] flex items-center justify-center text-[var(--accent)]">
                     {item.icon}
                   </div>
-                  <span className="text-xs text-slate-300">{item.label}</span>
+                  <span className="text-xs text-[var(--text-secondary)]">{item.label}</span>
                 </Link>
               ))}
             </div>

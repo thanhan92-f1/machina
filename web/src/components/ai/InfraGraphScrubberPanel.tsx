@@ -61,7 +61,7 @@ export default function InfraGraphScrubberPanel({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--text-muted)]">
         {showReplayWindow && (
           <label className="flex items-center gap-2">
             Replay window
@@ -87,15 +87,15 @@ export default function InfraGraphScrubberPanel({
             className="w-32"
           />
           <span>{new Date(scrubTs).toLocaleTimeString()}</span>
-          {busy && <span className="text-slate-600">…</span>}
+          {busy && <span className="text-[var(--text-faint)]">…</span>}
         </label>
       </div>
       {error && <p className={`text-xs ${statusToneClass('error')}`}>{error}</p>}
       {graphDiff && (
-        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-2 text-xs space-y-1">
-          <p className="text-cyan-200 flex items-center gap-1"><GitBranch className="w-3.5 h-3.5" /> Graph at scrubber</p>
-          <p className="text-slate-400">{graphDiff.summary}</p>
-          <p className="text-slate-500">Node delta: {graphDiff.nodeDelta >= 0 ? '+' : ''}{graphDiff.nodeDelta}</p>
+        <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-2 text-xs space-y-1">
+          <p className="text-[var(--accent)] flex items-center gap-1"><GitBranch className="w-3.5 h-3.5" /> Graph at scrubber</p>
+          <p className="text-[var(--text-muted)]">{graphDiff.summary}</p>
+          <p className="text-[var(--text-muted)]">Node delta: {graphDiff.nodeDelta >= 0 ? '+' : ''}{graphDiff.nodeDelta}</p>
           {graphDiff.added.length > 0 && <p className="text-emerald-400/90">+ {graphDiff.added.join(', ')}</p>}
           {graphDiff.removed.length > 0 && <p className="text-amber-400/90">− {graphDiff.removed.join(', ')}</p>}
         </div>

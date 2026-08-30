@@ -2,28 +2,14 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useEffect, useState, FormEvent, ReactNode } from 'react'
+import { useEffect, useState, FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { formatUserError } from '../utils/apiError'
-import {
-  Lock,
-  User,
-  ArrowRight,
-  Loader2,
-  CheckCircle,
-  Eye,
-  EyeOff,
-  Zap,
-  Server,
-  HardDrive,
-  Boxes,
-  Sparkles,
-  ShieldCheck,
-} from 'lucide-react'
+import { Lock, User, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import {
   PremiumLoginShell,
   LoginDivider,
@@ -31,51 +17,9 @@ import {
   LoginField,
   LoginRemember,
   LoginSubmit,
-  type PremiumLoginPill,
 } from '../components/PremiumLoginShell'
-
-function MachinaLogo() {
-  return (
-    <div className="w-14 h-14 rounded-[18px] flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-600 to-indigo-800 border border-white/20 shadow-xl shadow-blue-500/30">
-      <Zap className="w-7 h-7 text-white drop-shadow" aria-hidden />
-    </div>
-  )
-}
-
-const MACOS_PILLS: PremiumLoginPill[] = [
-  { icon: <Server className="w-3 h-3" aria-hidden />, label: 'Libvirt + KVM' },
-  { icon: <HardDrive className="w-3 h-3" aria-hidden />, label: 'Fleet Cloud ready' },
-  { icon: <Boxes className="w-3 h-3" aria-hidden />, label: 'KubeVirt' },
-  { icon: <Sparkles className="w-3 h-3" aria-hidden />, label: 'Zyra AI' },
-]
-
-const HERO_HIGHLIGHTS: { icon: ReactNode; title: string; description: string }[] = [
-  {
-    icon: <Server className="w-4 h-4" aria-hidden />,
-    title: 'VM lifecycle',
-    description: 'Create, snapshot, migrate, and console into QEMU/KVM and KubeVirt guests.',
-  },
-  {
-    icon: <Boxes className="w-4 h-4" aria-hidden />,
-    title: 'Fleet & multi-host',
-    description: 'HA, DRS, and reconciliation across every hypervisor in the fleet.',
-  },
-  {
-    icon: <Sparkles className="w-4 h-4" aria-hidden />,
-    title: 'Zyra AI operations',
-    description: 'Autonomous diagnostics, approvals, and natural-language ops.',
-  },
-  {
-    icon: <ShieldCheck className="w-4 h-4" aria-hidden />,
-    title: 'Security & compliance',
-    description: 'Firewall automation, PacketWolf flow correlation, and audit trails.',
-  },
-  {
-    icon: <HardDrive className="w-4 h-4" aria-hidden />,
-    title: 'Fleet Cloud native compute',
-    description: 'Flavors, networking, volumes, security groups, load balancers, and declarative stacks — no external cloud required.',
-  },
-]
+import { ZyvorMark } from '../components/ZyvorMark'
+import { ZyvorFooter } from '../components/ZyvorBrand'
 
 export default function LoginPage() {
   const saved = (() => {
@@ -101,7 +45,8 @@ export default function LoginPage() {
   })
   const { t } = useTranslation()
   const { login } = useAuth()
-  const reducedMotion = usePrefersReducedMotion()
+  const { theme, setTheme } = useTheme()
+  const isLight = theme === 'light'
   const hostLabel = typeof window !== 'undefined' ? window.location.hostname : ''
   const oidcEnabled = providers.oidc.enabled
   const pamEnabled = providers.pam.enabled
@@ -148,180 +93,146 @@ export default function LoginPage() {
     }
   }
 
-  const panelSubtitle = hostLabel
-    ? `Sign in to libvirt and automation on ${hostLabel}`
-    : 'Sign in to libvirt, Fleet Cloud, and automation on this host'
-
   return (
-    <div className={`relative min-h-screen${reducedMotion ? ' login-page-reduced-motion' : ''}`}>
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30">
-        <LanguageSwitcher />
-      </div>
-
-      <PremiumLoginShell
-        variant="macos"
-        heroWidth="58"
-        logo={<MachinaLogo />}
-        productName="Machina"
-        productSubtitle="Hypervisor control plane"
-        heroHeadline={
-          <>
-            Libvirt + Fleet Cloud
-            <br />
-            <span className="login-text-gradient">on one hypervisor host</span>
-          </>
-        }
-        heroSubheadline="QEMU/KVM under libvirt and Fleet Cloud on this host — plus KubeVirt clusters, multi-host fleet management, and Zyra AI operations, all from one control plane."
-        pills={MACOS_PILLS}
-        heroFooter={
-          <div className="space-y-6">
-            <ul className="space-y-3.5 border-t border-white/10 pt-6">
-              {HERO_HIGHLIGHTS.map((h) => (
-                <li key={h.title} className="flex items-start gap-3 text-slate-300/90">
-                  <span className="mt-0.5 text-sky-300/80 shrink-0">{h.icon}</span>
-                  <span className="text-sm leading-relaxed">
-                    <span className="font-medium text-white">{h.title}</span>
-                    {' — '}
-                    {h.description}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        }
-        mobileSubtitle="Libvirt · Fleet Cloud · KubeVirt · Zyra AI"
-        panelTitle="Welcome back"
-        panelSubtitle={panelSubtitle}
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (passwordLogin) void handleSubmit(e)
-          }}
-          autoComplete={passwordLogin ? 'on' : 'off'}
-          aria-label={t('login.title')}
-        >
-          {error ? <LoginError message={error} /> : null}
-
-          {providers.saml?.enabled && !providers.saml.login_available ? (
-            <p className="text-xs text-slate-500 mb-4" role="status">
-              SAML metadata is configured for IdP federation — browser SAML login coming soon.
-            </p>
-          ) : null}
-
-          {oidcEnabled ? (
-            <button type="button" onClick={() => beginOidcLogin()} className="login-btn-primary group w-full">
-              <span className="relative z-10">{providers.oidc.button_label}</span>
-              <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
+    <PremiumLoginShell
+      accent="orange"
+      pageThemeClass="machina-login"
+      themeSwitcher={
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 flex items-center gap-2">
+          <div className="login-theme-toggle" role="group" aria-label="Appearance">
+            <button
+              type="button"
+              aria-pressed={isLight}
+              onClick={() => setTheme('light')}
+            >
+              Light
             </button>
-          ) : null}
+            <button
+              type="button"
+              aria-pressed={!isLight}
+              onClick={() => setTheme('dark')}
+            >
+              Dark
+            </button>
+          </div>
+          <LanguageSwitcher />
+        </div>
+      }
+      logo={
+        <ZyvorMark
+          to={null}
+          size="xl"
+          tone={isLight ? 'onLight' : 'onDark'}
+          className="login-mark zyvor-mark"
+        />
+      }
+      productName="Machina"
+      heroHeadline="The private cloud that feels like home."
+      heroSubheadline={
+        hostLabel
+          ? `Libvirt, Fleet Cloud, and Zyra — on ${hostLabel}.`
+          : 'Libvirt, Fleet Cloud, and Zyra — one quiet control plane.'
+      }
+      panelTitle="Sign in to continue"
+      footer={<ZyvorFooter />}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (passwordLogin) void handleSubmit(e)
+        }}
+        autoComplete={passwordLogin ? 'on' : 'off'}
+        aria-label={t('login.title')}
+      >
+        {error ? <LoginError message={error} /> : null}
 
-          {oidcEnabled && passwordLogin ? (
-            <LoginDivider label="or sign in with password" />
-          ) : null}
+        {providers.saml?.enabled && !providers.saml.login_available ? (
+          <p className="login-hint" role="status">
+            SAML metadata is configured for IdP federation — browser SAML login coming soon.
+          </p>
+        ) : null}
 
-          {ldapEnabled ? (
-            <p className="text-xs text-slate-400 mb-4" role="status">
-              {t('login.ldapHint')}
-            </p>
-          ) : null}
+        {oidcEnabled ? (
+          <button type="button" onClick={() => beginOidcLogin()} className="login-btn-primary group w-full mb-4">
+            <span className="relative z-10">{providers.oidc.button_label}</span>
+            <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        ) : null}
 
-          {passwordLogin ? (
-            <>
-              <div className="space-y-5">
-                <LoginField label={t('login.username')} id="login-username">
-                  <User className="login-field-icon" />
-                  <input
-                    id="login-username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    autoFocus={!oidcEnabled}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="root"
-                    className="login-input"
-                  />
-                </LoginField>
+        {oidcEnabled && passwordLogin ? (
+          <LoginDivider label="or use password" />
+        ) : null}
 
-                <LoginField label="Password" id="login-password">
-                  <Lock className="login-field-icon" />
-                  <input
-                    id="login-password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    className="login-input pr-11"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </LoginField>
-              </div>
+        {ldapEnabled ? (
+          <p className="login-hint mb-4" role="status">
+            {t('login.ldapHint')}
+          </p>
+        ) : null}
 
-              <LoginRemember
-                checked={rememberMe}
-                onChange={(checked) => {
-                  setRememberMe(checked)
-                  if (!checked) localStorage.removeItem('machina-saved-login')
-                }}
+        {passwordLogin ? (
+          <>
+            <LoginField label={t('login.username')} id="login-username">
+              <User className="login-field-icon" />
+              <input
+                id="login-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="login-input"
+                placeholder={t('login.username')}
+                autoComplete="username"
+                autoFocus
+                required
+                disabled={submitting}
               />
+            </LoginField>
 
-              <LoginSubmit
-                loading={submitting}
-                disabled={!username || !password}
-                secondary={oidcEnabled}
-                className="w-full mt-4"
+            <LoginField label={t('login.password')} id="login-password">
+              <Lock className="login-field-icon" />
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="login-input pr-11"
+                placeholder={t('login.password')}
+                autoComplete="current-password"
+                required
+                disabled={submitting}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className={`h-4 w-4 relative z-10${reducedMotion ? '' : ' animate-spin'}`} />
-                    <span className="relative z-10">Signing in…</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="relative z-10">
-                      {oidcEnabled ? 'Sign in with password' : 'Sign in to Machina'}
-                    </span>
-                    {!oidcEnabled ? (
-                      <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
-                    ) : null}
-                  </>
-                )}
-              </LoginSubmit>
-            </>
-          ) : null}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </LoginField>
 
-          {pamEnabled ? (
-            <div className="mt-6 pt-5 border-t border-slate-700/50 flex items-center justify-center gap-2 text-xs text-slate-500">
-              <CheckCircle className="h-3.5 w-3.5 text-emerald-500/70" aria-hidden />
-              <span>Secured with system PAM (same as SSH)</span>
-            </div>
-          ) : null}
-        </form>
+            <LoginRemember
+              checked={rememberMe}
+              onChange={setRememberMe}
+              label="Remember username on this device"
+              hint="Only your username is stored locally — never your password."
+            />
 
-        <p className="text-xs text-center mt-4 max-w-sm mx-auto leading-relaxed text-slate-500">
-          {oidcEnabled && pamEnabled
-            ? 'Use organization SSO or your system account, depending on how this host is configured.'
-            : oidcEnabled
-              ? 'You will be redirected to your identity provider to complete sign-in.'
-              : (
+            <LoginSubmit loading={submitting} disabled={!username.trim() || !password}>
+              {submitting ? (
                 <>
-                  Same credentials as SSH. If you only use SSH keys, run{' '}
-                  <code className="text-[11px] px-1 rounded bg-slate-800/80 text-slate-300">passwd</code> on the
-                  server first.
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  <span>Signing in…</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue</span>
+                  <ArrowRight className="h-4 w-4" />
                 </>
               )}
-        </p>
-      </PremiumLoginShell>
-    </div>
+            </LoginSubmit>
+          </>
+        ) : null}
+      </form>
+    </PremiumLoginShell>
   )
 }

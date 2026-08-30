@@ -82,17 +82,17 @@ export default function MachineFinderPage() {
         )}
 
         {fleetGuestReport && (
-          <div className="rounded-xl border border-white/[0.08] bg-slate-900/60 p-4 text-sm relative">
-            <button type="button" className="absolute top-3 right-3 p-1 text-slate-500 hover:text-slate-300" aria-label="Dismiss" onClick={() => setFleetGuestReport(null)}>
+          <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm relative shadow-[var(--shadow-1)]">
+            <button type="button" className="absolute top-3 right-3 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]" aria-label="Dismiss" onClick={() => setFleetGuestReport(null)}>
               <X className="w-4 h-4" />
             </button>
-            <p className="text-slate-200 pr-8">{fleetGuestReport.summary}</p>
-            <p className="text-xs text-slate-500 mt-1">{fleetGuestReport.matched_count} matched · {fleetGuestReport.scanned_count} scanned</p>
+            <p className="text-[var(--text-primary)] pr-8">{fleetGuestReport.summary}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">{fleetGuestReport.matched_count} matched · {fleetGuestReport.scanned_count} scanned</p>
             {fleetGuestReport.matched_count > 0 && (
-              <ul className="mt-2 text-xs text-slate-400 space-y-1 max-h-32 overflow-y-auto">
+              <ul className="mt-2 text-xs text-[var(--text-secondary)] space-y-1 max-h-32 overflow-y-auto">
                 {fleetGuestReport.vms.map((v) => (
                   <li key={v.vm_id}>
-                    <Link to={`/platform/vms/${v.vm_id}?tab=guestHealth`} className="font-mono text-sky-300/90 hover:underline">{v.vm_name}</Link>
+                    <Link to={`/platform/vms/${v.vm_id}?tab=guestHealth`} className="font-mono text-[var(--link)] hover:underline">{v.vm_name}</Link>
                     {' — '}
                     <span className={statusPillClasses(installStateTone(v.install_state))}>{v.install_state}</span>
                   </li>
@@ -152,8 +152,8 @@ export default function MachineFinderPage() {
       )}
 
       {selectedVmIds.size > 0 && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[80] bg-slate-900/95 backdrop-blur border border-white/[0.08] rounded-xl shadow-2xl px-4 py-3 flex items-center gap-3 flex-wrap" data-testid="platform-vm-bulk-bar">
-          <span className="text-sm font-medium text-slate-200">{selectedVmIds.size} selected</span>
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[80] bg-[var(--apple-surface-elevated)] backdrop-blur border border-[var(--apple-hairline)] rounded-2xl shadow-[var(--shadow-3)] px-4 py-3 flex items-center gap-3 flex-wrap" data-testid="platform-vm-bulk-bar">
+          <span className="text-sm font-medium text-[var(--text-primary)]">{selectedVmIds.size} selected</span>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchPower('start')}><Play className="w-4 h-4" /> Start</button>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchPower('resume')}><RotateCcw className="w-4 h-4" /> Resume</button>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchPower('shutdown')}><Power className="w-4 h-4" /> Shutdown</button>
@@ -161,7 +161,7 @@ export default function MachineFinderPage() {
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchPower('pause')}><Pause className="w-4 h-4" /> Pause</button>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchSnapshot()}><Camera className="w-4 h-4" /> Snapshot</button>
           <button type="button" className="btn-danger text-sm inline-flex items-center gap-1" disabled={batchDeleteBusy} onClick={() => setBatchDeleteOpen(true)}><Trash2 className="w-4 h-4" /> Delete</button>
-          <button type="button" aria-label="Clear selection" onClick={() => state.setSelectedVmIds(new Set())} className="p-1.5 hover:bg-white/[0.06] rounded-lg"><X className="w-4 h-4 text-slate-400" /></button>
+          <button type="button" aria-label="Clear selection" onClick={() => state.setSelectedVmIds(new Set())} className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
         </div>
       )}
 

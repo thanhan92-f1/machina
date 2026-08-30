@@ -75,15 +75,15 @@ interface SimpleCreateVmWizardProps {
 function categoryAccent(category: OsFlavor['category']): string {
   switch (category) {
     case 'Windows':
-      return 'from-blue-600/20 to-slate-900/80 border-blue-500/40'
+      return 'from-blue-600/20 to-[var(--apple-surface)] border-[var(--accent)]/40'
     case 'Database':
-      return 'from-emerald-600/20 to-slate-900/80 border-emerald-500/35'
+      return 'from-emerald-600/20 to-[var(--apple-surface)] border-emerald-500/35'
     case 'Appliance':
-      return 'from-amber-600/15 to-slate-900/80 border-amber-500/35'
+      return 'from-amber-600/15 to-[var(--apple-surface)] border-amber-500/35'
     case 'Special':
-      return 'from-violet-600/20 to-slate-900/80 border-violet-500/35'
+      return 'from-violet-600/20 to-[var(--apple-surface)] border-violet-500/35'
     default:
-      return 'from-orange-600/15 to-slate-900/80 border-orange-500/30'
+      return 'from-orange-600/15 to-[var(--apple-surface)] border-[var(--apple-hairline)]'
   }
 }
 
@@ -279,7 +279,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
       {step === 0 && (
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-300">Virtual machine name</span>
+            <span className="text-[var(--text-secondary)]">Virtual machine name</span>
             <input
               className="input w-full mt-1 text-base"
               value={name}
@@ -288,7 +288,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
               autoFocus
             />
           </label>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[var(--text-muted)]">
             Use lowercase letters, numbers, and hyphens. Hostname for cloud-init defaults to this name.
           </p>
         </div>
@@ -303,8 +303,8 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
                 type="button"
                 className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
                   osFilter === cat
-                    ? 'border-blue-500/60 bg-blue-500/15 text-slate-100'
-                    : 'border-slate-700 text-slate-400 hover:border-slate-600'
+                    ? 'border-[var(--accent)]/60 bg-[var(--accent-soft)] text-[var(--text-primary)]'
+                    : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--apple-hairline)]'
                 }`}
                 onClick={() => setOsFilter(cat)}
               >
@@ -328,7 +328,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
                   key={flavor.id}
                   type="button"
                   className={`text-left p-3 rounded-xl border bg-gradient-to-br transition-all ${
-                    selected ? 'ring-2 ring-blue-500/80 border-blue-500/50' : 'hover:border-slate-600'
+                    selected ? 'ring-2 ring-[color-mix(in_srgb,var(--accent)_55%,transparent)] border-[var(--accent)]/50' : 'hover:border-[var(--apple-hairline)]'
                   } ${categoryAccent(flavor.category)}`}
                   onClick={() => setOs(flavor.id)}
                 >
@@ -337,8 +337,8 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
                       {flavor.icon}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-100 text-sm truncate">{flavor.label}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{flavor.subtitle}</p>
+                      <p className="font-medium text-[var(--text-primary)] text-sm truncate">{flavor.label}</p>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5 line-clamp-2">{flavor.subtitle}</p>
                     </div>
                   </div>
                 </button>
@@ -367,7 +367,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
           <VmWizardSizeStep state={sizeState} onChange={(patch) => setSizeState((s) => ({ ...s, ...patch }))} />
           {hosts.length > 0 && (
             <label className="block text-sm">
-              <span className="text-slate-300">Placement host (optional)</span>
+              <span className="text-[var(--text-secondary)]">Placement host (optional)</span>
               <select className="input w-full mt-1" value={hostId} onChange={(e) => setHostId(e.target.value)}>
                 <option value="">Automatic — controller picks host</option>
                 {hosts.map((h) => (
@@ -384,7 +384,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
       {step === 3 && (
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-300">Network</span>
+            <span className="text-[var(--text-secondary)]">Network</span>
             <select className="input w-full mt-1" value={network} onChange={(e) => setNetwork(e.target.value)}>
               {networkOptions.map((n) => (
                 <option key={n.id} value={n.id}>
@@ -394,7 +394,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
             </select>
           </label>
           {networks.length === 0 && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[var(--text-muted)]">
               No platform networks yet.{' '}
               <Link to="/platform/networks" className="underline">
                 Discover networks
@@ -404,14 +404,14 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
           )}
 
           {isWindows && (
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 space-y-2 text-sm">
-              <p className="text-slate-300 font-medium">Windows options</p>
+            <div className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-3 space-y-2 text-sm">
+              <p className="text-[var(--text-secondary)] font-medium">Windows options</p>
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={virtio} onChange={(e) => setVirtio(e.target.checked)} /> VirtIO drivers
               </label>
               {virtio && (
                 <label className="block pl-6">
-                  <span className="text-slate-400 text-xs">VirtIO ISO path on hypervisor</span>
+                  <span className="text-[var(--text-muted)] text-xs">VirtIO ISO path on hypervisor</span>
                   <input
                     className="input w-full mt-1 text-xs font-mono"
                     value={virtioIsoPath}
@@ -433,19 +433,19 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
                   disabled={!uefi}
                   onChange={(e) => setSecureBoot(e.target.checked)}
                 />{' '}
-                <span className={uefi ? undefined : 'text-slate-500'}>Secure Boot</span>
+                <span className={uefi ? undefined : 'text-[var(--text-muted)]'}>Secure Boot</span>
               </label>
               {!uefi && (
-                <p className="pl-6 text-xs text-slate-500">Secure Boot requires UEFI firmware.</p>
+                <p className="pl-6 text-xs text-[var(--text-muted)]">Secure Boot requires UEFI firmware.</p>
               )}
             </div>
           )}
 
           {!isCustomIso && !isCustomVirtInstall && (
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 space-y-3 text-sm">
-              <p className="text-slate-300 font-medium">Console graphics</p>
+            <div className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-3 space-y-3 text-sm">
+              <p className="text-[var(--text-secondary)] font-medium">Console graphics</p>
               <label className="block">
-                <span className="text-slate-400 text-xs">Protocol</span>
+                <span className="text-[var(--text-muted)] text-xs">Protocol</span>
                 <select
                   className="input w-full mt-1"
                   value={graphicsType}
@@ -457,7 +457,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
                 </select>
               </label>
               <label className="block">
-                <span className="text-slate-400 text-xs">Listen address</span>
+                <span className="text-[var(--text-muted)] text-xs">Listen address</span>
                 <select
                   className="input w-full mt-1"
                   value={graphicsListen}
@@ -472,9 +472,9 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
           )}
 
           {!isWindows && !isCustomIso && (
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 space-y-3 text-sm">
+            <div className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-3 space-y-3 text-sm">
               <label className="block">
-                <span className="text-slate-300">SSH public key (optional)</span>
+                <span className="text-[var(--text-secondary)]">SSH public key (optional)</span>
                 <textarea
                   className="input w-full mt-1 font-mono text-xs min-h-[4rem]"
                   placeholder="ssh-ed25519 AAAA… user@host"
@@ -498,7 +498,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
                   <Upload className="w-3 h-3" /> Import public key (.pub)
                 </button>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--text-muted)]">
                 Cloud-init user: {cloudInitUserForOs(os)}. Machina does not store private keys.
               </p>
             </div>
@@ -521,39 +521,39 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
             </p>
           )}
 
-          <div className="rounded-xl border border-slate-700/50 bg-slate-950/80 p-4 text-sm space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Review</p>
+          <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)]/80 p-4 text-sm space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-2">Review</p>
             <p>
-              <span className="text-slate-500">Name:</span> <span className="text-slate-100">{name.trim()}</span>
+              <span className="text-[var(--text-muted)]">Name:</span> <span className="text-[var(--text-primary)]">{name.trim()}</span>
             </p>
             <p>
-              <span className="text-slate-500">OS:</span>{' '}
-              <span className="text-slate-100">{selectedFlavor?.label ?? os}</span>
+              <span className="text-[var(--text-muted)]">OS:</span>{' '}
+              <span className="text-[var(--text-primary)]">{selectedFlavor?.label ?? os}</span>
               {matchedTemplate && (
-                <span className="text-slate-500 text-xs"> ({matchedTemplate.name}@{matchedTemplate.version})</span>
+                <span className="text-[var(--text-muted)] text-xs"> ({matchedTemplate.name}@{matchedTemplate.version})</span>
               )}
             </p>
             <p>
-              <span className="text-slate-500">Size:</span>{' '}
-              <span className="text-slate-100">
+              <span className="text-[var(--text-muted)]">Size:</span>{' '}
+              <span className="text-[var(--text-primary)]">
                 {specPreview.cores} vCPU · {specPreview.memory} RAM
                 {needsReadiness ? '' : ` · ${specPreview.disk} disk`}
               </span>
             </p>
             <p>
-              <span className="text-slate-500">Network:</span>{' '}
-              <span className="text-slate-100">{networkOptions.find((n) => n.id === network)?.label ?? network}</span>
+              <span className="text-[var(--text-muted)]">Network:</span>{' '}
+              <span className="text-[var(--text-primary)]">{networkOptions.find((n) => n.id === network)?.label ?? network}</span>
             </p>
             {!isCustomIso && !isCustomVirtInstall && (
               <p>
-                <span className="text-slate-500">Console:</span>{' '}
-                <span className="text-slate-100">{graphicsType} @ {graphicsListen}</span>
+                <span className="text-[var(--text-muted)]">Console:</span>{' '}
+                <span className="text-[var(--text-primary)]">{graphicsType} @ {graphicsListen}</span>
               </p>
             )}
             {hostId && (
               <p>
-                <span className="text-slate-500">Host:</span>{' '}
-                <span className="text-slate-100">{hosts.find((h) => h.id === hostId)?.hostname ?? hostId}</span>
+                <span className="text-[var(--text-muted)]">Host:</span>{' '}
+                <span className="text-[var(--text-primary)]">{hosts.find((h) => h.id === hostId)?.hostname ?? hostId}</span>
               </p>
             )}
           </div>

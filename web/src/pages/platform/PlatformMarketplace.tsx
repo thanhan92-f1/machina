@@ -77,9 +77,10 @@ export default function PlatformMarketplace() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
-      prepend={<PlatformBackLink to="/platform/integrations" label="Integrations" />}
+      prepend={<PlatformBackLink to="/platform/settings?section=integrations" label="Settings" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
     >
       <div className="space-y-6">

@@ -124,7 +124,7 @@ const ADMINISTRATION_ITEMS: ContextNavItem[] = [
   { to: '/platform/users', label: 'Users' },
   { to: '/platform/projects', label: 'Projects' },
   { to: '/platform/policy', label: 'Policies' },
-  { to: '/platform/integrations', label: 'Integrations' },
+  { to: '/platform/settings?section=integrations', label: 'Integrations' },
 ]
 
 /** @deprecated Use infrastructureNavItemsForTier */
@@ -162,7 +162,7 @@ const ZEUS_ITEMS: ContextNavItem[] = [
 ]
 
 const INTEGRATIONS_ITEMS: ContextNavItem[] = [
-  { to: '/platform/integrations', label: 'Overview' },
+  { to: '/platform/settings?section=integrations', label: 'Overview' },
   { to: '/platform/applications', label: 'Applications' },
 ]
 
@@ -428,7 +428,7 @@ const POWER_CONTEXT_HUB_ROOTS = new Set([
   '/platform/operations',
   '/platform/administration',
   '/platform/zeus/security',
-  '/platform/integrations',
+  '/platform/settings',
 ])
 
 export function suppressContextBar(pathname: string): boolean {
@@ -514,7 +514,7 @@ export function isContextNavActive(pathname: string, search: string, item: Conte
     '/platform/infrastructure',
     '/platform/workloads',
     '/platform/administration',
-    '/platform/integrations',
+    '/platform/settings',
     '/platform/zyra',
   ]
   if (exactHubPaths.includes(itemPath)) {

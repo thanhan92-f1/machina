@@ -96,46 +96,47 @@ function FleetCloudVolumesContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-4xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <HardDrive className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <HardDrive className="w-7 h-7 text-[var(--accent)]" />
         Volumes
       </h1>
-      <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Size (GB)</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Size (GB)</label>
           <input type="number" min={1} value={sizeGb} onChange={(e) => setSizeGb(e.target.value)}
             aria-label="Size in GB"
-            className="w-24 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="w-24 input-field text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Name</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)}
             aria-label="Volume name"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
         </div>
         <button type="button" onClick={() => void handleCreate()} disabled={creating}
-          className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed text-sm text-white">
+          className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">
           {creating ? 'Creating…' : 'Create volume'}
         </button>
         <button type="button" onClick={() => void load()}
-          className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-sm">
+          className="ml-auto btn-secondary text-sm inline-flex items-center gap-1">
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
 
-      <div className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Attach volume to instance</h2>
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Attach volume to instance</h2>
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[14rem]">
-            <label className="block text-xs text-slate-500 mb-1">Volume</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1">Volume</label>
             <select
               value={attachVolId}
               onChange={(e) => setAttachVolId(e.target.value)}
               aria-label="Volume to attach"
-              className="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm"
+              className="w-full input-field text-sm"
             >
               <option value="">Select volume…</option>
               {volumes.filter((vol) => !vol.attached_vm_id).map((vol) => (
@@ -146,12 +147,12 @@ function FleetCloudVolumesContent() {
             </select>
           </div>
           <div className="min-w-[14rem]">
-            <label className="block text-xs text-slate-500 mb-1">Instance</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1">Instance</label>
             <select
               value={attachInstId}
               onChange={(e) => setAttachInstId(e.target.value)}
               aria-label="Instance to attach to"
-              className="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm"
+              className="w-full input-field text-sm"
             >
               <option value="">Select instance…</option>
               {instances.map((i) => (
@@ -171,7 +172,7 @@ function FleetCloudVolumesContent() {
                 toast.error(formatUserError(e))
               }
             }}
-            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm text-white disabled:opacity-40"
+            className="btn-primary text-sm disabled:opacity-40"
           >
             Attach
           </button>
@@ -182,11 +183,11 @@ function FleetCloudVolumesContent() {
         <PageSkeleton />
       ) : (
         <>
-          <div className="rounded-xl border border-slate-700 overflow-hidden">
-            <div className="px-3 py-2 bg-slate-900 text-xs text-slate-500 uppercase">Volumes</div>
+          <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+            <div className="px-3 py-2 bg-[var(--apple-surface)] text-xs text-[var(--text-muted)] uppercase">Volumes</div>
             <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Volumes">
-              <thead className="bg-slate-900/80 text-slate-400 text-left">
+            <table className="apple-table" aria-label="Volumes">
+              <thead>
                 <tr>
                   <th scope="col" className="px-3 py-2">Name</th>
                   <th scope="col" className="px-3 py-2">Size</th>
@@ -195,17 +196,17 @@ function FleetCloudVolumesContent() {
                   <th scope="col" className="px-3 py-2">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-[var(--apple-hairline)]">
                 {volumes.map((v) => (
                   <tr key={v.id}>
-                    <td className="px-3 py-2 font-mono text-slate-200">
-                      <Link to={`/fleet-cloud/volumes/${v.id}`} className="hover:text-sky-300 hover:underline">
+                    <td className="px-3 py-2 font-mono text-[var(--text-primary)]">
+                      <Link to={`/fleet-cloud/volumes/${v.id}`} className="hover:opacity-90 hover:underline">
                         {v.name}
                       </Link>
                     </td>
                     <td className="px-3 py-2">{v.size_gib} GiB</td>
-                    <td className="px-3 py-2 text-slate-400">{v.status}</td>
-                    <td className="px-3 py-2 text-slate-500 font-mono text-xs">
+                    <td className="px-3 py-2 text-[var(--text-muted)]">{v.status}</td>
+                    <td className="px-3 py-2 text-[var(--text-muted)] font-mono text-xs">
                       {v.attached_vm_id ? v.attached_vm_id.slice(0, 8) : '—'}
                     </td>
                     <td className="px-3 py-2 flex flex-wrap gap-2">
@@ -226,7 +227,7 @@ function FleetCloudVolumesContent() {
                           Detach
                         </button>
                       )}
-                      <button type="button" className="text-xs text-sky-400 hover:underline"
+                      <button type="button" className="text-xs text-[var(--accent)] hover:underline"
                         onClick={async () => {
                           const n = prompt('Snapshot name', `${v.name}-snap`)
                           if (!n) return
@@ -273,32 +274,32 @@ function FleetCloudVolumesContent() {
             </table>
             </div>
             {volumes.length === 0 && (
-              <p className="p-6 text-center text-slate-500 text-sm">No volumes in this project.</p>
+              <p className="p-6 text-center text-[var(--text-muted)] text-sm">No volumes in this project.</p>
             )}
           </div>
 
           {allSnapshots.length > 0 && (
-            <div className="rounded-xl border border-slate-700 overflow-hidden">
-              <div className="px-3 py-2 bg-slate-900 text-xs text-slate-500 uppercase flex justify-between">
+            <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+              <div className="px-3 py-2 bg-[var(--apple-surface)] text-xs text-[var(--text-muted)] uppercase flex justify-between">
                 <span>Snapshots</span>
-                <Link to="/fleet-cloud/volume-snapshots" className="text-sky-400 hover:underline normal-case">View all</Link>
+                <Link to="/fleet-cloud/volume-snapshots" className="text-[var(--accent)] hover:underline normal-case">View all</Link>
               </div>
               <div className="overflow-x-auto">
-              <table className="w-full text-sm" aria-label="Volume snapshots">
-                <thead className="bg-slate-900/80 text-slate-400 text-left">
+              <table className="apple-table" aria-label="Volume snapshots">
+                <thead>
                   <tr>
                     <th scope="col" className="px-3 py-2">Name</th>
                     <th scope="col" className="px-3 py-2">Volume</th>
                     <th scope="col" className="px-3 py-2">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 font-mono text-xs">
+                <tbody className="divide-y divide-[var(--apple-hairline)] font-mono text-xs">
                   {allSnapshots.map((s) => (
                     <tr key={s.id}>
-                      <td className="px-3 py-2 text-slate-200">{s.name}</td>
-                      <td className="px-3 py-2 text-slate-500">{s.volume_id.slice(0, 8)}</td>
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{s.name}</td>
+                      <td className="px-3 py-2 text-[var(--text-muted)]">{s.volume_id.slice(0, 8)}</td>
                       <td className="px-3 py-2">
-                        <span className="text-slate-400">{s.status}</span>
+                        <span className="text-[var(--text-muted)]">{s.status}</span>
                         <button
                           type="button"
                           className={statusActionLinkClasses('error', 'ml-2')}

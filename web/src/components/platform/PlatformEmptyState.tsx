@@ -32,7 +32,7 @@ export default function PlatformEmptyState({
 
   return (
     <MacGlassPanel title={title} subtitle={subtitle} action={action}>
-      {children && <div className="text-sm text-slate-400 leading-relaxed -mt-2">{children}</div>}
+      {children && <div className="text-sm text-[var(--text-muted)] leading-relaxed -mt-2">{children}</div>}
     </MacGlassPanel>
   )
 }

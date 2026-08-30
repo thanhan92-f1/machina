@@ -82,12 +82,12 @@ export default function PlatformJarvisBriefing() {
       {!showPower && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-400/80">{ZYRA_ASSISTANT_NAME}</p>
-          <h2 className="text-xl font-semibold text-slate-50 mt-0.5">{greetingName()}.</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-0.5">{greetingName()}.</h2>
         </div>
       )}
 
       <form onSubmit={submitQuery} className="relative max-w-2xl">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" aria-hidden />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" aria-hidden />
         <input
           id="briefing-zyra-search"
           name="zyra_query"

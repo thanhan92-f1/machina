@@ -66,7 +66,7 @@ export default function ConsoleGuestFilePanel({
 
   return (
     <div
-      className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-3 space-y-2"
+      className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-2"
       data-testid="ops-shelf-file-transfer"
     >
       <p className="text-xs font-medium text-emerald-100 flex items-center gap-1.5">

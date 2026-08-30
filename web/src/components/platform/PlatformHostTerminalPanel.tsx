@@ -16,7 +16,7 @@ export default function PlatformHostTerminalPanel({ hostname, address, online = 
 
   if (!target) {
     return (
-      <p className="text-sm text-slate-500" data-testid="platform-host-terminal">
+      <p className="text-sm text-[var(--text-muted)]" data-testid="platform-host-terminal">
         No SSH target address is recorded for this host.
       </p>
     )
@@ -38,10 +38,10 @@ export default function PlatformHostTerminalPanel({ hostname, address, online = 
       subtitle={`Browser SSH to ${hostname} via machina daemon`}
     >
       <div className="space-y-3" data-testid="platform-host-terminal">
-        <p className="text-xs text-slate-500">
-          Opens a shell on <span className="font-mono text-slate-300">{target}</span>. Requires SSH keys configured on the machina daemon host.
+        <p className="text-xs text-[var(--text-muted)]">
+          Opens a shell on <span className="font-mono text-[var(--text-secondary)]">{target}</span>. Requires SSH keys configured on the machina daemon host.
         </p>
-        <label className="block text-xs text-slate-500">
+        <label className="block text-xs text-[var(--text-muted)]">
           SSH user
           <input
             className="input w-full max-w-xs text-sm mt-1"

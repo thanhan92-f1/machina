@@ -40,6 +40,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       className={embedded ? '' : 'max-w-4xl'}
@@ -48,7 +49,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
       subtitle={
         embedded ? undefined : (
           <span className="flex flex-col gap-1">
-            <span className="text-slate-400">Fleet Cloud, K8s, migration tools, and classic UI</span>
+            <span className="text-[var(--text-muted)]">Fleet Cloud, K8s, migration tools, and classic UI</span>
             {platformStatSubtitle([
               { label: 'Available', value: String(cards.length) },
               { label: 'Enabled', value: String(enabledCount) },
@@ -57,7 +58,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
           </span>
         )
       }
-      icon={embedded ? undefined : <Puzzle className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Puzzle className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-6"
     >
         {hostCount === 0 && (
@@ -81,8 +82,8 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
         </MacGlassPanel>
 
         <MacGlassPanel title="Desktop density">
-          <p className="text-sm text-slate-400 mb-3">
-            Start with <strong className="text-slate-200">Normal</strong> for a clean Finder-style desktop. Switch to Power or Advanced when you need Zeus, firewall modules, and the full sidebar.
+          <p className="text-sm text-[var(--text-muted)] mb-3">
+            Start with <strong className="text-[var(--text-primary)]">Normal</strong> for a clean Finder-style desktop. Switch to Power or Advanced when you need Zeus, firewall modules, and the full sidebar.
           </p>
           <PlatformDesktopTierPicker tier={tier} onChange={setTier} />
         </MacGlassPanel>
@@ -95,14 +96,14 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
               className={`tahoe-integration-card ${c.enabled ? 'tahoe-glass-card' : 'tahoe-integration-card-disabled'}`}
             >
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-slate-100">{c.title}</h3>
+                <h3 className="font-semibold text-[var(--text-primary)]">{c.title}</h3>
                 {c.enabled ? (
-                  <ExternalLink className="w-4 h-4 text-slate-500 shrink-0" />
+                  <ExternalLink className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                 ) : (
-                  <span className="text-[10px] uppercase text-slate-500">off</span>
+                  <span className="text-[10px] uppercase text-[var(--text-muted)]">off</span>
                 )}
               </div>
-              <p className="text-sm text-slate-400 mt-2 leading-relaxed">{c.description}</p>
+              <p className="text-sm text-[var(--text-muted)] mt-2 leading-relaxed">{c.description}</p>
               {c.enabled && c.configured === false && (
                 <p className={`text-xs mt-2 ${statusToneClass('warn')}`}>Configured but needs clouds.yaml or auth — open to finish setup.</p>
               )}
@@ -113,18 +114,18 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
         <PlatformIntegrationEmbeds />
 
         <MacGlassPanel title="Libvirt admin (classic)" subtitle="NW filters, secrets vault, and capability matrix — daemon-only routes">
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+          <p className="text-sm text-[var(--text-muted)] mb-4 leading-relaxed">
             These tools manage libvirt objects on the co-located hypervisor daemon. They open in the classic Machina shell with the same session.
           </p>
           <PlatformClassicToolLinks tools={LIBVIRT_ADMIN_TOOL_CARDS} />
         </MacGlassPanel>
 
         <MacGlassPanel title="Classic Machina tools">
-          <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+          <p className="text-sm text-[var(--text-muted)] mb-4 leading-relaxed">
             Import wizards, libvirt node tools, NW filters, secrets, and the classic audit viewer — same daemon, classic UI chrome.
           </p>
           <PlatformClassicToolLinks tools={CLASSIC_TOOL_CARDS} />
-          <p className="text-sm text-slate-400 mt-4 pt-4 border-t border-white/[0.06]">
+          <p className="text-sm text-[var(--text-muted)] mt-4 pt-4 border-t border-white/[0.06]">
             Host REST catalog:{' '}
             <Link to="/api-docs" className={`hover:underline ${hubLinkClasses()}`}>Classic API explorer</Link>
             {' · '}
@@ -133,14 +134,14 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
         </MacGlassPanel>
 
         <MacGlassPanel title="Leaving the desktop">
-          <p className="text-sm text-slate-400 leading-relaxed">
+          <p className="text-sm text-[var(--text-muted)] leading-relaxed">
             Fleet Cloud, HyperSDK, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the sidebar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
           </p>
         </MacGlassPanel>
 
         <MacGlassPanel title="Need more?">
-          <p className="text-sm text-slate-400 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-400" />
+          <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[var(--accent)]" />
             Switch to <Link to="/platform/settings?section=general" className={hubLinkClasses()}>Settings → Appearance → Advanced</Link> for the full fleet sidebar, Zeus Firewall panes, and developer SDK routes.
           </p>
         </MacGlassPanel>

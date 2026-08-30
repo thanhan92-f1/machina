@@ -44,18 +44,18 @@ function FleetCloudKeypairsContent() {
 
   return (
     <PageLayout
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<FleetCloudSubNav />}
       title="SSH keypairs"
-      icon={<Key className="w-7 h-7 text-sky-400" />}
+      icon={<Key className="w-7 h-7 text-[var(--accent)]" />}
       contentLoading={loading && keys.length === 0}
     >
-      <div className="rounded-xl border border-slate-700 p-4 space-y-3">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           <input aria-label="Keypair name" value={name} onChange={(e) => setName(e.target.value)} placeholder="name"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <button type="button" disabled={creating || !name.trim() || !publicKey.trim()}
-            className="px-3 py-1.5 rounded-lg bg-sky-600 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             onClick={async () => {
               if (!name.trim() || !publicKey.trim() || creating) return
               setCreating(true)
@@ -76,18 +76,18 @@ function FleetCloudKeypairsContent() {
         </div>
         <textarea aria-label="SSH public key" value={publicKey} onChange={(e) => setPublicKey(e.target.value)} rows={3}
           placeholder="Paste public key (ssh-rsa AAAA... or ssh-ed25519 AAAA...)"
-          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono" />
+          className="w-full input-field text-xs font-mono" />
       </div>
       <button type="button" onClick={() => void load()}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-sm">
+        className="btn-secondary text-sm inline-flex items-center gap-1">
         <RefreshCw className="w-4 h-4" /> Refresh
       </button>
       {!loading && (
-        <ul className="rounded-xl border border-slate-700 divide-y divide-slate-800">
+        <ul className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] divide-y divide-[var(--apple-hairline)]">
           {keys.map((k) => (
             <li key={k.id} className="px-4 py-3 flex justify-between items-center text-sm">
-              <span className="font-mono text-slate-200">{k.name}</span>
-              <span className="text-slate-500 text-xs">{k.fingerprint}</span>
+              <span className="font-mono text-[var(--text-primary)]">{k.name}</span>
+              <span className="text-[var(--text-muted)] text-xs">{k.fingerprint}</span>
               <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
                 onClick={async () => {
                   if (!confirm(`Delete keypair ${k.name}?`)) return

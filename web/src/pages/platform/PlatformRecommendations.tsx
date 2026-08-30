@@ -54,15 +54,16 @@ export default function PlatformRecommendations() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       loading={loading && rows.length === 0 && !error}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Recommendations"
       subtitle="Live analysis from your cluster — not static placeholders."
-      icon={<Lightbulb className="w-6 h-6 text-slate-400" />}
+      icon={<Lightbulb className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
-      className="max-w-3xl"
+      className="w-full max-w-none"
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-recommendations-page">
@@ -70,10 +71,10 @@ export default function PlatformRecommendations() {
       <ul className="space-y-4">
         {rows.map((r) => (
           <li key={r.id} className="card p-5 space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{r.impact}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{r.impact}</span>
             <h3 className="font-semibold text-lg">{r.title}</h3>
-            <p className="text-sm text-slate-400"><strong className="text-slate-300">Why?</strong> {r.why}</p>
-            <p className="text-xs text-slate-500">Risk: {r.risk}</p>
+            <p className="text-sm text-[var(--text-muted)]"><strong className="text-[var(--text-secondary)]">Why?</strong> {r.why}</p>
+            <p className="text-xs text-[var(--text-muted)]">Risk: {r.risk}</p>
             <div className="flex gap-2 pt-2">
               <button type="button" className="btn-primary text-sm" onClick={() => void execute(r)}>{r.action}</button>
             </div>

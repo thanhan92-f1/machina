@@ -15,10 +15,10 @@ import type { MissionControlFleetState } from './useMissionControlFleet'
 
 const ZONES = [
   { id: 'backup', label: 'Backup', icon: HardDrive, color: 'border-emerald-500/40' },
-  { id: 'migrate', label: 'Migrate', icon: Network, color: 'border-sky-500/40' },
-  { id: 'snapshot', label: 'Snapshot', icon: Camera, color: 'border-violet-500/40' },
+  { id: 'migrate', label: 'Migrate', icon: Network, color: 'border-[var(--accent)]/40' },
+  { id: 'snapshot', label: 'Snapshot', icon: Camera, color: 'border-[var(--accent)]/40' },
   { id: 'recovery', label: 'Recovery', icon: HardDrive, color: 'border-amber-500/40' },
-  { id: 'trace', label: 'Network Trace', icon: Network, color: 'border-cyan-500/40' },
+  { id: 'trace', label: 'Network Trace', icon: Network, color: 'border-[var(--accent)]/40' },
   { id: 'diagnose', label: 'AI Diagnose', icon: Sparkles, color: 'border-fuchsia-500/40' },
   { id: 'delete', label: 'Delete', icon: Trash2, color: 'border-red-500/40' },
 ] as const
@@ -64,8 +64,8 @@ export default function ActionDropZones({ state }: Props) {
   if (!dragVmId) return null
 
   return (
-    <section className="mc-action-zones rounded-2xl border border-dashed border-sky-400/40 bg-sky-500/5 p-4" data-testid="action-drop-zones">
-      <p className="text-sm text-sky-200 mb-3">Drop machine on an action</p>
+    <section className="mc-action-zones rounded-2xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent)]/5 p-4" data-testid="action-drop-zones">
+      <p className="text-sm text-[var(--link)] mb-3">Drop machine on an action</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
         {ZONES.map((z) => {
           const Icon = z.icon
@@ -74,15 +74,15 @@ export default function ActionDropZones({ state }: Props) {
               key={z.id}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); void handleDrop(z.id) }}
-              className={`rounded-xl border p-3 text-center text-xs transition hover:scale-[1.02] ${z.color} bg-slate-950/50`}
+              className={`rounded-xl border p-3 text-center text-xs transition hover:scale-[1.02] ${z.color} bg-[var(--apple-surface)]/50`}
             >
-              <Icon className="w-4 h-4 mx-auto mb-1 text-slate-300" />
+              <Icon className="w-4 h-4 mx-auto mb-1 text-[var(--text-secondary)]" />
               {z.label}
             </div>
           )
         })}
       </div>
-      <Link to={`/platform/vms?lens=migration`} className="text-xs text-sky-400/80 mt-2 inline-block hover:underline">Open migration planner</Link>
+      <Link to={`/platform/vms?lens=migration`} className="text-xs text-[var(--link)]/80 mt-2 inline-block hover:underline">Open migration planner</Link>
     </section>
   )
 }

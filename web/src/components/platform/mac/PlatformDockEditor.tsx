@@ -69,8 +69,8 @@ export default function PlatformDockEditor({ open, onClose }: PlatformDockEditor
       <div ref={panelRef} className="mac-menu-panel relative w-full max-w-md p-5 space-y-4" role="dialog" aria-modal="true" aria-labelledby="dock-editor-title">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 id="dock-editor-title" className="text-lg font-semibold text-white">Customize Dock</h2>
-            <p className="text-sm text-white/50">Reorder pinned apps — synced with Finder favorites.</p>
+            <h2 id="dock-editor-title" className="text-lg font-semibold text-[var(--text-primary)]">Customize Dock</h2>
+            <p className="text-sm text-[var(--text-secondary)]">Reorder pinned apps — synced with Finder favorites.</p>
           </div>
           <button type="button" onClick={onClose} className="mac-menubar-icon-btn" title="Close" aria-label="Close">
             <X className="h-4 w-4" />
@@ -82,8 +82,8 @@ export default function PlatformDockEditor({ open, onClose }: PlatformDockEditor
             if (!item) return null
             return (
               <li key={item.path} className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-2 py-1.5">
-                <GripVertical className="h-4 w-4 text-white/30 shrink-0" />
-                <span className="flex-1 text-sm text-white truncate">{item.label}</span>
+                <GripVertical className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
+                <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{item.label}</span>
                 <button type="button" className="mac-menubar-icon-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up" aria-label="Move up">
                   <ChevronUp className="h-4 w-4" />
                 </button>

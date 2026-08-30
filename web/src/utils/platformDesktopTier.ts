@@ -34,7 +34,6 @@ const NORMAL_PATHS = [
   '/platform/settings',
   '/platform/support',
   '/platform/notifications',
-  '/platform/integrations',
 ]
 
 /** Routes that require Advanced tier even when a parent prefix is allowed at Power. */
@@ -154,14 +153,8 @@ export function tierAtLeast(current: PlatformDesktopTier, min: PlatformDesktopTi
   return TIER_RANK[current] >= TIER_RANK[min]
 }
 
-export function defaultSidebarVisibleForTier(tier: PlatformDesktopTier): boolean {
-  try {
-    const raw = localStorage.getItem('machina-jarvis-shell')
-    const jarvisOn = raw === '0' ? false : raw === '1' ? true : tier === 'normal'
-    if (jarvisOn && tier === 'normal') return false
-  } catch {
-    /* ignore */
-  }
+/** Zeus Mac desktop always shows Finder sidebar (1:1). Jarvis calm no longer hides it. */
+export function defaultSidebarVisibleForTier(_tier: PlatformDesktopTier): boolean {
   return true
 }
 

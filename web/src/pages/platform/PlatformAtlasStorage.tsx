@@ -134,9 +134,10 @@ export default function PlatformAtlasStorage() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="Storage (Atlas)"
       subtitle={status?.summary ?? 'Zyvor storage control plane'}
-      icon={<Database className="w-6 h-6 text-slate-400" />}
+      icon={<Database className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
           <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh">
@@ -154,19 +155,19 @@ export default function PlatformAtlasStorage() {
       }
     >
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-slate-400">
+        <div className="flex items-center justify-center py-20 text-[var(--text-muted)]">
           <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading Atlas…
         </div>
       ) : disabled ? (
         <MacGlassPanel title="Atlas disabled">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--text-muted)]">
             The Atlas storage integration is disabled. Set <code>ATLAS_ENABLED=1</code> and{' '}
             <code>ATLAS_BASE_URL</code> on the controller to connect a Zyvor storage control plane.
           </p>
         </MacGlassPanel>
       ) : unreachable ? (
         <MacGlassPanel title="Atlas unreachable">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--text-muted)]">
             Could not reach the Atlas gateway at <code>{status?.base_url}</code>. Check the gateway and
             <code> ATLAS_BASE_URL</code>.
           </p>
@@ -194,8 +195,8 @@ export default function PlatformAtlasStorage() {
                 onClick={() => setTab(t)}
                 className={`px-3 py-2 text-sm transition ${
                   tab === t
-                    ? 'text-slate-100 border-b-2 border-blue-400'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'text-[var(--text-primary)] border-b-2 border-[var(--accent)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 {t}
@@ -206,12 +207,12 @@ export default function PlatformAtlasStorage() {
           {tab === 'Backends' && (
             <MacGlassPanel title="Storage backends" subtitle="Registered Atlas drivers (Ceph / NFS / ZFS).">
               <div className="divide-y divide-white/[0.04]">
-                {backends.length === 0 && <p className="text-sm text-slate-500 py-4">No backends registered.</p>}
+                {backends.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No backends registered.</p>}
                 {backends.map((b) => (
                   <div key={b.id} className="flex items-center justify-between py-3">
                     <div>
-                      <p className="text-sm text-slate-100">{b.name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm text-[var(--text-primary)]">{b.name}</p>
+                      <p className="text-xs text-[var(--text-muted)]">
                         {b.backend_type} · {b.mode}
                       </p>
                     </div>
@@ -225,12 +226,12 @@ export default function PlatformAtlasStorage() {
           {tab === 'Volumes' && (
             <MacGlassPanel title="Volumes" subtitle="Backend volumes provisioned through Atlas.">
               <div className="divide-y divide-white/[0.04]">
-                {volumes.length === 0 && <p className="text-sm text-slate-500 py-4">No volumes.</p>}
+                {volumes.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No volumes.</p>}
                 {volumes.map((v) => (
                   <div key={v.id} className="flex items-center justify-between py-3 gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm text-slate-100 truncate">{v.name}</p>
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="text-sm text-[var(--text-primary)] truncate">{v.name}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">
                         {fmtBytes(v.size_bytes)} · {v.backend_native_id ?? v.id}
                       </p>
                     </div>
@@ -278,12 +279,12 @@ export default function PlatformAtlasStorage() {
           {tab === 'Snapshots' && (
             <MacGlassPanel title="Snapshots" subtitle="Point-in-time snapshots of Atlas volumes.">
               <div className="divide-y divide-white/[0.04]">
-                {snapshots.length === 0 && <p className="text-sm text-slate-500 py-4">No snapshots.</p>}
+                {snapshots.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No snapshots.</p>}
                 {snapshots.map((s) => (
                   <div key={s.id} className="flex items-center justify-between py-3 gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm text-slate-100 truncate">{s.name}</p>
-                      <p className="text-xs text-slate-500 truncate">vol {s.volume_id}</p>
+                      <p className="text-sm text-[var(--text-primary)] truncate">{s.name}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">vol {s.volume_id}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatePill value={s.state} />
@@ -319,12 +320,12 @@ export default function PlatformAtlasStorage() {
           {tab === 'Backups' && (
             <MacGlassPanel title="Backups" subtitle="Volume backups written to Atlas RGW buckets (S3).">
               <div className="divide-y divide-white/[0.04]">
-                {backups.length === 0 && <p className="text-sm text-slate-500 py-4">No backups.</p>}
+                {backups.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No backups.</p>}
                 {backups.map((b) => (
                   <div key={b.id} className="flex items-center justify-between py-3 gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm text-slate-100 truncate">{b.object_key ?? b.id}</p>
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="text-sm text-[var(--text-primary)] truncate">{b.object_key ?? b.id}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">
                         vol {b.volume_id} · {b.format ?? 'manifest'}
                       </p>
                     </div>
@@ -352,17 +353,17 @@ export default function PlatformAtlasStorage() {
           {tab === 'Jobs' && (
             <MacGlassPanel title="Jobs" subtitle="Async Atlas operations (create, snapshot, backup, restore).">
               <div className="divide-y divide-white/[0.04]">
-                {jobs.length === 0 && <p className="text-sm text-slate-500 py-4">No recent jobs.</p>}
+                {jobs.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No recent jobs.</p>}
                 {jobs.map((j) => {
                   const id = j.id ?? j.job_id ?? '?'
                   return (
                     <div key={id} className="flex items-center justify-between py-3 gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm text-slate-100 truncate">{j.job_type ?? id}</p>
+                        <p className="text-sm text-[var(--text-primary)] truncate">{j.job_type ?? id}</p>
                         {j.error && <p className="text-xs text-rose-400 truncate">{j.error}</p>}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-slate-500">{j.progress_percent ?? 0}%</span>
+                        <span className="text-xs text-[var(--text-muted)]">{j.progress_percent ?? 0}%</span>
                         <StatePill value={j.state} />
                       </div>
                     </div>

@@ -82,41 +82,42 @@ function FleetCloudFlavorsContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Cpu className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Cpu className="w-7 h-7 text-[var(--accent)]" />
         Compute flavors
       </h1>
-      <p className="text-sm text-slate-400">Flavor catalog — create and delete require admin role.</p>
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300 flex items-center gap-2"><Plus className="w-4 h-4" /> Create flavor</h2>
+      <p className="text-sm text-[var(--text-muted)]">Flavor catalog — create and delete require admin role.</p>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"><Plus className="w-4 h-4" /> Create flavor</h2>
         <div className="grid sm:grid-cols-2 gap-3">
           <input aria-label="Flavor name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <input aria-label="vCPUs" value={vcpus} onChange={(e) => setVcpus(e.target.value)} placeholder="vCPUs" type="number" min={1}
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <input aria-label="RAM in MB" value={ram} onChange={(e) => setRam(e.target.value)} placeholder="RAM (MB)" type="number" min={512}
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <input aria-label="Disk in GB" value={disk} onChange={(e) => setDisk(e.target.value)} placeholder="Disk (GB)" type="number" min={0}
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
         </div>
         <button type="button" disabled={creating} onClick={() => void handleCreate()}
-          className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm disabled:opacity-50">
+          className="btn-primary text-sm disabled:opacity-50">
           Create
         </button>
       </section>
       <button type="button" onClick={() => void load()}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-sm">
+        className="btn-secondary text-sm inline-flex items-center gap-1">
         <RefreshCw className="w-4 h-4" /> Refresh
       </button>
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
       ) : (
-        <div className="rounded-xl border border-slate-700 overflow-hidden">
-          <table className="w-full text-sm" aria-label="Flavors">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+          <table className="apple-table" aria-label="Flavors">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 <th scope="col" className="px-3 py-2">vCPU</th>
@@ -125,18 +126,18 @@ function FleetCloudFlavorsContent() {
                 <th scope="col" className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-[var(--apple-hairline)]">
               {flavors.map((f) => (
                 <tr key={f.id}>
                   <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/flavors/${f.id}`} className="font-mono text-slate-200 hover:text-sky-300 hover:underline">{f.name}</Link>
-                    <span className="block text-xs text-slate-500 font-mono">{f.id}</span>
+                    <Link to={`/fleet-cloud/flavors/${f.id}`} className="font-mono text-[var(--text-primary)] hover:opacity-90 hover:underline">{f.name}</Link>
+                    <span className="block text-xs text-[var(--text-muted)] font-mono">{f.id}</span>
                   </td>
                   <td className="px-3 py-2">{f.vcpus}</td>
                   <td className="px-3 py-2">{f.memory_mib} MiB</td>
                   <td className="px-3 py-2">{f.disk_gib} GiB</td>
                   <td className="px-3 py-2 flex gap-2">
-                    <Link to={`/fleet-cloud/flavors/${f.id}`} className="text-xs text-sky-400 hover:underline">Open</Link>
+                    <Link to={`/fleet-cloud/flavors/${f.id}`} className="text-xs text-[var(--accent)] hover:underline">Open</Link>
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs inline-flex items-center gap-0.5')}
                       onClick={async () => {
                         if (!confirm(`Delete flavor ${f.name}?`)) return
@@ -154,7 +155,7 @@ function FleetCloudFlavorsContent() {
             </tbody>
           </table>
           {flavors.length === 0 && (
-            <p className="p-6 text-center text-slate-500 text-sm">No flavors returned from Compute.</p>
+            <p className="p-6 text-center text-[var(--text-muted)] text-sm">No flavors returned from Compute.</p>
           )}
         </div>
       )}

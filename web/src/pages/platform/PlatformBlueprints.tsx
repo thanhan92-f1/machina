@@ -95,12 +95,13 @@ export default function PlatformBlueprints() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Blueprint Studio"
       subtitle="macOS Shortcuts-style Launchpad — tap a blueprint to run automation across VM sets."
-      icon={<Workflow className="w-6 h-6 text-slate-400" />}
+      icon={<Workflow className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
           <button type="button" className="btn-primary text-sm flex items-center gap-1.5" onClick={() => setTab('studio')}>
@@ -111,7 +112,7 @@ export default function PlatformBlueprints() {
       }
       contentClassName="space-y-4"
     >
-      {fleet && <p className="text-sm text-slate-400">{fleet.summary}</p>}
+      {fleet && <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>}
 
       {fleet && tab === 'launchpad' && (
         <div className="grid gap-3 sm:grid-cols-3">
@@ -126,7 +127,7 @@ export default function PlatformBlueprints() {
       {tab === 'launchpad' && (
         <MacGlassPanel title="Shortcut Launchpad" subtitle="Click an icon to run — actions execute as queued tasks per VM.">
           {!fleet ? (
-            <p className="text-sm text-slate-400 py-8 text-center">Loading shortcuts…</p>
+            <p className="text-sm text-[var(--text-muted)] py-8 text-center">Loading shortcuts…</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 py-2">
               <NewLaunchpadCard label="New shortcut" subtitle="Open Studio" onClick={() => setTab('studio')} />
@@ -174,7 +175,7 @@ export default function PlatformBlueprints() {
               )}
             </div>
             {preview && (
-              <p className="text-xs text-slate-400">{preview.description} · actions: {preview.actions.join(', ')}</p>
+              <p className="text-xs text-[var(--text-muted)]">{preview.description} · actions: {preview.actions.join(', ')}</p>
             )}
           </MacGlassPanel>
           <MacGlassPanel title="Manual shortcut">
@@ -185,8 +186,8 @@ export default function PlatformBlueprints() {
           <div className="grid gap-4 md:grid-cols-2">
             {rows.map((bp) => (
               <MacGlassPanel key={bp.id} title={bp.name}>
-                <p className="text-xs text-slate-500">{bp.description || 'No description'}</p>
-                <p className="text-xs text-slate-400">{(bp.actions ?? []).join(', ')} · {bp.vm_ids?.length ?? 0} VMs</p>
+                <p className="text-xs text-[var(--text-muted)]">{bp.description || 'No description'}</p>
+                <p className="text-xs text-[var(--text-muted)]">{(bp.actions ?? []).join(', ')} · {bp.vm_ids?.length ?? 0} VMs</p>
                 <div className="flex gap-2">
                   <button type="button" className="btn-primary text-xs flex items-center gap-1" onClick={() => void runShortcut(bp.id)}>
                     <Play className="w-3 h-3" /> Run
@@ -196,7 +197,7 @@ export default function PlatformBlueprints() {
               </MacGlassPanel>
             ))}
           </div>
-          {rows.length === 0 && !error && <p className="text-slate-500 text-sm">Create a shortcut in Studio to populate the Launchpad.</p>}
+          {rows.length === 0 && !error && <p className="text-[var(--text-muted)] text-sm">Create a shortcut in Studio to populate the Launchpad.</p>}
         </>
       )}
       <ConfirmDialog

@@ -176,12 +176,12 @@ export default function InfrastructureEarthGlobe({ mission, className = '' }: Pr
 
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-slate-950 to-sky-950/40 ${className}`}
+      className={`overflow-hidden rounded-2xl border border-[var(--apple-hairline)] bg-gradient-to-b from-[var(--apple-surface)] to-[color-mix(in_srgb,var(--plasma)_12%,var(--apple-surface))] ${className}`}
       data-testid="infrastructure-earth-globe"
     >
       <div className="relative">
         <canvas ref={canvasRef} className="w-full h-[220px] sm:h-[260px]" aria-label="Infrastructure Earth globe" />
-        <p className="absolute bottom-2 left-3 text-[10px] text-slate-500">
+        <p className="absolute bottom-2 left-3 text-[10px] text-[var(--text-muted)]">
           {webGlStatus === 'active' ? 'WebGL globe' : webGlStatus === 'pending' ? 'Loading globe…' : 'Canvas globe'} · {globeSites.length} site marker{globeSites.length === 1 ? '' : 's'}
         </p>
       </div>
@@ -194,11 +194,11 @@ export default function InfrastructureEarthGlobe({ mission, className = '' }: Pr
             <Link
               key={site.name}
               to={finderHref(site.name)}
-              className={`inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-2.5 py-1.5 text-xs text-slate-200 transition hover:border-white/[0.12] hover:bg-white/[0.04] ${statusChipClasses(healthTone(site.healthPct))}`}
+              className={`inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-2.5 py-1.5 text-xs text-[var(--text-primary)] transition hover:border-white/[0.12] hover:bg-white/[0.04] ${statusChipClasses(healthTone(site.healthPct))}`}
               title={`${site.hosts} host(s) · ${site.healthPct}% healthy`}
             >
               <span className="font-medium">{site.name}</span>
-              <span className="text-slate-500">{site.hosts} · {site.healthPct}%</span>
+              <span className="text-[var(--text-muted)]">{site.hosts} · {site.healthPct}%</span>
             </Link>
           ))}
         </div>

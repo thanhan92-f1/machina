@@ -74,14 +74,14 @@ export default function AiTerminalCompanion({
         <Bot className="w-5 h-5" />
       </button>
       {open && (
-        <aside className="fixed bottom-20 right-6 z-40 w-96 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl shadow-2xl p-4 space-y-3 text-sm">
+        <aside className="fixed bottom-20 right-6 z-40 w-96 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[var(--apple-surface-elevated)] backdrop-blur-xl shadow-2xl p-4 space-y-3 text-sm">
           <div className="flex items-center justify-between">
             <p className="font-semibold flex items-center gap-2"><Terminal className="w-4 h-4" /> Zyra terminal tips</p>
-            <button type="button" onClick={() => setOpen(false)} className="text-slate-400 hover:text-white" aria-label="Close terminal tips"><X className="w-4 h-4" /></button>
+            <button type="button" onClick={() => setOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]" aria-label="Close terminal tips"><X className="w-4 h-4" /></button>
           </div>
           {vmName && (
-            <p className="text-xs text-slate-500">
-              {vmName} · <span className="text-slate-400">{suggest?.observed_state ?? '…'}</span>
+            <p className="text-xs text-[var(--text-muted)]">
+              {vmName} · <span className="text-[var(--text-muted)]">{suggest?.observed_state ?? '…'}</span>
             </p>
           )}
           <div className="flex flex-wrap gap-1">
@@ -97,20 +97,20 @@ export default function AiTerminalCompanion({
               {suggest.suggestions.map((s) => (
                 <div key={s.command} className="rounded-lg border border-white/[0.06] p-2 text-xs">
                   <div className="flex justify-between gap-2">
-                    <span className="font-medium text-slate-200">{s.label}</span>
-                    <span className="text-slate-600 shrink-0">{s.scope}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{s.label}</span>
+                    <span className="text-[var(--text-faint)] shrink-0">{s.scope}</span>
                   </div>
-                  <code className="block mt-1 text-[10px] text-slate-400 break-all">{s.command}</code>
-                  <p className="text-slate-500 mt-0.5">{s.description}</p>
+                  <code className="block mt-1 text-[10px] text-[var(--text-muted)] break-all">{s.command}</code>
+                  <p className="text-[var(--text-muted)] mt-0.5">{s.description}</p>
                   <button type="button" className="btn-secondary text-[10px] mt-1 flex items-center gap-1" onClick={() => copyCmd(s.command)}>
                     <Copy className="w-3 h-3" /> Copy
                   </button>
                 </div>
               ))}
-              <p className="text-[10px] text-slate-500">{suggest.notes}</p>
+              <p className="text-[10px] text-[var(--text-muted)]">{suggest.notes}</p>
             </div>
           )}
-          <ul className="text-xs text-slate-400 space-y-1 list-disc pl-4">
+          <ul className="text-xs text-[var(--text-muted)] space-y-1 list-disc pl-4">
             {TIPS.map((t) => <li key={t}>{t}</li>)}
           </ul>
           {platform && (
@@ -128,7 +128,7 @@ export default function AiTerminalCompanion({
               {busy ? 'Asking Zyra…' : 'Ask Zyra'}
             </button>
           )}
-          {reply && <p className="text-xs text-slate-300 whitespace-pre-wrap border-t border-white/[0.06] pt-2">{reply}</p>}
+          {reply && <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap border-t border-white/[0.06] pt-2">{reply}</p>}
         </aside>
       )}
     </>

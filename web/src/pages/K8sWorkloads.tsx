@@ -316,55 +316,58 @@ spec:
   }
 
   return (
-    <PageLayout hideHeader className="relative">
+    <PageLayout
+      hideHeader
+      className="relative"
+    >
       <Hero
+        eyebrow="Kubernetes"
         title="Kubernetes Workloads"
         subtitle="Pods show node + host IP; KubeVirt VMs merge VMI guest/pod IP & node InternalIP. Use Console / VNC to copy virtctl commands."
         icon={<Boxes className="w-6 h-6" />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="kubectl context"
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] max-w-[18rem]"
+              title="kubectl --context"
+            >
+              <option value="">Default kubeconfig context</option>
+              {contextChoices.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="px-2 py-2 text-xs rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--apple-hairline)]"
+              onClick={() => {
+                refreshChoices()
+                toast.success('Refreshing context list')
+              }}
+            >
+              Refresh contexts
+            </button>
+            <select
+              aria-label="Namespace"
+              value={namespace}
+              onChange={(e) => setNamespace(e.target.value)}
+              className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="all">All namespaces</option>
+              {namespaces.map((ns) => (
+                <option key={ns} value={ns}>{ns}</option>
+              ))}
+            </select>
+            <button onClick={() => void load(true)} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Refresh">
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        }
       />
-      <div className="flex items-center justify-between gap-3">
-        <div className="hidden md:block" />
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label="kubectl context"
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 max-w-[18rem]"
-            title="kubectl --context"
-          >
-            <option value="">Default kubeconfig context</option>
-            {contextChoices.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="px-2 py-2 text-xs rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600"
-            onClick={() => {
-              refreshChoices()
-              toast.success('Refreshing context list')
-            }}
-          >
-            Refresh contexts
-          </button>
-          <select
-            aria-label="Namespace"
-            value={namespace}
-            onChange={(e) => setNamespace(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="all">All namespaces</option>
-            {namespaces.map((ns) => (
-              <option key={ns} value={ns}>{ns}</option>
-            ))}
-          </select>
-          <button onClick={() => void load(true)} className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Refresh">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
 
       {connectionError && (
         <div className="sticky top-2 z-30">
@@ -382,12 +385,12 @@ spec:
           title="No workloads in this scope"
           description="The API is reachable but there are no deployments, pods, or services in the selected namespace(s). Install a cluster from Kubernetes overview or switch context."
           primaryAction={
-            <Link to="/k8s" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white transition">
+            <Link to="/k8s" className="btn-primary text-sm">
               Kubernetes overview
             </Link>
           }
           secondaryAction={
-            <Link to="/settings" className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-slate-200 border border-slate-600 transition">
+            <Link to="/settings" className="px-4 py-2 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] text-sm text-[var(--text-primary)] border border-[var(--apple-hairline)] transition">
               Settings
             </Link>
           }
@@ -396,9 +399,9 @@ spec:
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {Object.entries(byNs).slice(0, 9).map(([ns, counts]) => (
-          <div key={ns} className="rounded-xl border border-slate-700/50 bg-slate-800/50 px-4 py-3">
-            <div className="text-sm font-medium text-white">{ns}</div>
-            <div className="text-xs text-slate-400 mt-1">
+          <div key={ns} className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] px-4 py-3">
+            <div className="text-sm font-medium text-[var(--text-primary)]">{ns}</div>
+            <div className="text-xs text-[var(--text-muted)] mt-1">
               {counts.deployments} deployments, {counts.pods} pods, {counts.services} services
               {counts.kubevirtVms > 0 ? `, ${counts.kubevirtVms} KubeVirt VMs` : ''}
             </div>
@@ -406,14 +409,14 @@ spec:
         ))}
       </div>
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-700/50">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--apple-hairline)]">
           <h2 className="text-lg font-semibold">Deployments</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm" aria-label="Deployments">
             <thead>
-              <tr className="border-b border-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-[var(--apple-hairline)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
                 <th scope="col" className="text-left px-4 py-3">Name</th>
                 <th scope="col" className="text-left px-4 py-3">Namespace</th>
                 <th scope="col" className="text-left px-4 py-3">Ready</th>
@@ -421,7 +424,7 @@ spec:
                 <th scope="col" className="text-center px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
               {deployments.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8">
@@ -438,10 +441,10 @@ spec:
                 const replicaCurrent = d.spec?.replicas ?? 1
                 const scale = scaleValue[key] ?? replicaCurrent
                 return (
-                  <tr key={key} className="hover:bg-slate-700/30">
-                    <td className="px-4 py-3 text-white font-medium">{d.metadata.name}</td>
-                    <td className="px-4 py-3 text-slate-300">{d.metadata.namespace || 'default'}</td>
-                    <td className="px-4 py-3 text-slate-300">{d.status?.readyReplicas ?? 0}/{d.status?.replicas ?? replicaCurrent}</td>
+                  <tr key={key} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{d.metadata.name}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{d.metadata.namespace || 'default'}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{d.status?.readyReplicas ?? 0}/{d.status?.replicas ?? replicaCurrent}</td>
                     <td className="px-4 py-3">
                       <input
                         type="number"
@@ -449,13 +452,13 @@ spec:
                         min={0}
                         value={scale}
                         onChange={(e) => setScaleValue((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
-                        className="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1"
+                        className="w-20 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1"
                       />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          className="px-2 py-1 rounded-md text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30 disabled:opacity-50"
+                          className="px-2 py-1 rounded-md text-xs bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 hover:bg-[var(--accent-soft)] disabled:opacity-50"
                           disabled={acting !== null}
                           onClick={() => void runAction({
                             action: 'rollout_restart_deployment',
@@ -466,7 +469,7 @@ spec:
                           Restart
                         </button>
                         <button
-                          className="px-2 py-1 rounded-md text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 disabled:opacity-50"
+                          className="px-2 py-1 rounded-md text-xs bg-purple-500/20 text-purple-300 border border-[var(--apple-hairline)] hover:bg-purple-500/30 disabled:opacity-50"
                           disabled={acting !== null}
                           onClick={() => void runAction({
                             action: 'scale_deployment',
@@ -488,20 +491,20 @@ spec:
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700/50 text-lg font-semibold">StatefulSets</div>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--apple-hairline)] text-lg font-semibold">StatefulSets</div>
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="StatefulSets">
-              <thead><tr className="text-slate-400 text-xs border-b border-slate-700/50"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="text-[var(--text-muted)] text-xs border-b border-[var(--apple-hairline)]"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {statefulsets.map((d) => {
                   const key = `${d.metadata?.namespace || 'default'}/${d.metadata?.name}`
                   return (
-                    <tr key={key} className="hover:bg-slate-700/20">
-                      <td className="px-3 py-2 text-white">{d.metadata?.name}</td>
-                      <td className="px-3 py-2 text-slate-400">{d.metadata?.namespace || 'default'}</td>
+                    <tr key={key} className="hover:bg-[var(--surface-hover)]/20">
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{d.metadata?.name}</td>
+                      <td className="px-3 py-2 text-[var(--text-muted)]">{d.metadata?.namespace || 'default'}</td>
                       <td className="px-3 py-2 text-right">
-                        <button type="button" className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-200 border border-blue-500/30 disabled:opacity-50" disabled={acting !== null} onClick={() => void runAction({ action: 'rollout_restart_stateful_set', name: d.metadata?.name ?? '', namespace: d.metadata?.namespace || 'default' })}>Restart</button>
+                        <button type="button" className="text-xs px-2 py-1 rounded bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 disabled:opacity-50" disabled={acting !== null} onClick={() => void runAction({ action: 'rollout_restart_stateful_set', name: d.metadata?.name ?? '', namespace: d.metadata?.namespace || 'default' })}>Restart</button>
                       </td>
                     </tr>
                   )
@@ -510,20 +513,20 @@ spec:
             </table>
           </div>
         </div>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700/50 text-lg font-semibold">DaemonSets</div>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--apple-hairline)] text-lg font-semibold">DaemonSets</div>
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="DaemonSets">
-              <thead><tr className="text-slate-400 text-xs border-b border-slate-700/50"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="text-[var(--text-muted)] text-xs border-b border-[var(--apple-hairline)]"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {daemonsets.map((d) => {
                   const key = `${d.metadata?.namespace || 'default'}/${d.metadata?.name}`
                   return (
-                    <tr key={key} className="hover:bg-slate-700/20">
-                      <td className="px-3 py-2 text-white">{d.metadata?.name}</td>
-                      <td className="px-3 py-2 text-slate-400">{d.metadata?.namespace || 'default'}</td>
+                    <tr key={key} className="hover:bg-[var(--surface-hover)]/20">
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{d.metadata?.name}</td>
+                      <td className="px-3 py-2 text-[var(--text-muted)]">{d.metadata?.namespace || 'default'}</td>
                       <td className="px-3 py-2 text-right">
-                        <button type="button" className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-200 border border-blue-500/30 disabled:opacity-50" disabled={acting !== null} onClick={() => void runAction({ action: 'rollout_restart_daemon_set', name: d.metadata?.name ?? '', namespace: d.metadata?.namespace || 'default' })}>Restart</button>
+                        <button type="button" className="text-xs px-2 py-1 rounded bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 disabled:opacity-50" disabled={acting !== null} onClick={() => void runAction({ action: 'rollout_restart_daemon_set', name: d.metadata?.name ?? '', namespace: d.metadata?.namespace || 'default' })}>Restart</button>
                       </td>
                     </tr>
                   )
@@ -534,20 +537,20 @@ spec:
         </div>
       </div>
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700/50 text-lg font-semibold">Jobs</div>
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--apple-hairline)] text-lg font-semibold">Jobs</div>
         <div className="overflow-x-auto max-h-56 overflow-y-auto">
           <table className="w-full text-sm" aria-label="Jobs">
-            <thead><tr className="text-slate-400 text-xs border-b border-slate-700/50"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <thead><tr className="text-[var(--text-muted)] text-xs border-b border-[var(--apple-hairline)]"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
               {jobs.map((j) => {
                 const n = j.metadata?.name ?? ''
                 const ns = j.metadata?.namespace || 'default'
                 const key = `${ns}/${n}`
                 return (
-                  <tr key={key} className="hover:bg-slate-700/20">
-                    <td className="px-3 py-2 text-white font-mono text-xs">{n}</td>
-                    <td className="px-3 py-2 text-slate-400">{ns}</td>
+                  <tr key={key} className="hover:bg-[var(--surface-hover)]/20">
+                    <td className="px-3 py-2 text-[var(--text-primary)] font-mono text-xs">{n}</td>
+                    <td className="px-3 py-2 text-[var(--text-muted)]">{ns}</td>
                     <td className="px-3 py-2 text-right">
                       <button type="button" className="text-xs px-2 py-1 rounded bg-rose-500/20 text-rose-200 border border-rose-500/30 disabled:opacity-50" disabled={acting !== null} onClick={() => setConfirmDeleteResource({ payload: { action: 'delete_job', name: n, namespace: ns }, label: `Job ${ns}/${n}` })}>Delete</button>
                     </td>
@@ -559,12 +562,12 @@ spec:
         </div>
       </div>
 
-      <details className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden group">
-        <summary className="px-4 py-3 cursor-pointer text-lg font-semibold text-slate-200 select-none">Cluster tools (events, logs, apply, auth, Helm, API explorer)</summary>
-        <div className="p-4 space-y-6 border-t border-slate-700/40">
+      <details className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden group">
+        <summary className="px-4 py-3 cursor-pointer text-lg font-semibold text-[var(--text-primary)] select-none">Cluster tools (events, logs, apply, auth, Helm, API explorer)</summary>
+        <div className="p-4 space-y-6 border-t border-[var(--apple-hairline)]/40">
           <div className="space-y-2">
-            <div className="text-sm font-medium text-slate-300">Events</div>
-            <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600" onClick={() => {
+            <div className="text-sm font-medium text-[var(--text-secondary)]">Events</div>
+            <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)]" onClick={() => {
               void getK8sEvents({ allNamespaces: namespace === 'all', namespace: namespace === 'all' ? undefined : namespace, context: ctxTrim })
                 .then((ev) => {
                   setEventsItems(ev.items ?? [])
@@ -576,9 +579,9 @@ spec:
                 })
             }}>Load events</button>
             {eventsItems.length > 0 ? (
-              <div className="overflow-x-auto rounded border border-slate-700">
+              <div className="overflow-x-auto rounded border border-[var(--apple-hairline)]">
                 <table className="w-full text-xs text-left" aria-label="Kubernetes events">
-                  <thead className="text-slate-500 border-b border-slate-700">
+                  <thead className="text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                     <tr><th scope="col" className="px-2 py-1">Type</th><th scope="col" className="px-2 py-1">Reason</th><th scope="col" className="px-2 py-1">Message</th></tr>
                   </thead>
                   <tbody>
@@ -586,10 +589,10 @@ spec:
                       const row = asRecord(item) ?? {}
                       const meta = asRecord(row.metadata) ?? {}
                       return (
-                        <tr key={String(row.reason ?? row.type ?? i)} className="border-b border-slate-800/60">
-                          <td className="px-2 py-1 text-slate-400">{String(row.type ?? '—')}</td>
-                          <td className="px-2 py-1 text-slate-300">{String(row.reason ?? '—')}</td>
-                          <td className="px-2 py-1 text-slate-500">{String(row.message ?? meta.name ?? '—')}</td>
+                        <tr key={String(row.reason ?? row.type ?? i)} className="border-b border-[var(--apple-hairline)]/60">
+                          <td className="px-2 py-1 text-[var(--text-muted)]">{String(row.type ?? '—')}</td>
+                          <td className="px-2 py-1 text-[var(--text-secondary)]">{String(row.reason ?? '—')}</td>
+                          <td className="px-2 py-1 text-[var(--text-muted)]">{String(row.message ?? meta.name ?? '—')}</td>
                         </tr>
                       )
                     })}
@@ -597,16 +600,16 @@ spec:
                 </table>
               </div>
             ) : (
-              <p className="text-xs text-slate-500">{eventsText || 'Click Load events to fetch cluster events.'}</p>
+              <p className="text-xs text-[var(--text-muted)]">{eventsText || 'Click Load events to fetch cluster events.'}</p>
             )}
             {eventsItems.length > 0 && <JsonInspector data={eventsItems} />}
           </div>
           <div className="space-y-2">
-            <div className="text-sm font-medium text-slate-300">Pod logs</div>
+            <div className="text-sm font-medium text-[var(--text-secondary)]">Pod logs</div>
             <div className="flex flex-wrap gap-2 items-end">
-              <label className="text-xs text-slate-400">Pod <input className="ml-1 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-slate-200" value={logPod} onChange={(e) => setLogPod(e.target.value)} /></label>
-              <label className="text-xs text-slate-400">NS <input className="ml-1 bg-slate-900 border border-slate-600 rounded px-2 py-1 w-28 text-slate-200" value={logNs} onChange={(e) => setLogNs(e.target.value)} /></label>
-              <label className="text-xs text-slate-400">Container <input className="ml-1 bg-slate-900 border border-slate-600 rounded px-2 py-1 w-28 text-slate-200" value={logContainer} onChange={(e) => setLogContainer(e.target.value)} placeholder="opt" /></label>
+              <label className="text-xs text-[var(--text-muted)]">Pod <input className="ml-1 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-[var(--text-primary)]" value={logPod} onChange={(e) => setLogPod(e.target.value)} /></label>
+              <label className="text-xs text-[var(--text-muted)]">NS <input className="ml-1 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 w-28 text-[var(--text-primary)]" value={logNs} onChange={(e) => setLogNs(e.target.value)} /></label>
+              <label className="text-xs text-[var(--text-muted)]">Container <input className="ml-1 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 w-28 text-[var(--text-primary)]" value={logContainer} onChange={(e) => setLogContainer(e.target.value)} placeholder="opt" /></label>
               <button type="button" className={`text-xs px-3 py-1.5 rounded-lg border ${statusBadgeClasses('ok')} border-[color-mix(in_srgb,var(--machina-status-ok)_40%,transparent)]`} onClick={() => {
                 if (!logPod.trim()) { toast.error('Pod name required'); return }
                 void getK8sPodLogs({ pod: logPod.trim(), namespace: logNs.trim() || 'default', container: logContainer.trim() || undefined, tailLines: 500, context: ctxTrim })
@@ -614,33 +617,33 @@ spec:
                   .catch((e: unknown) => setLogOut(formatUserError(e)))
               }}>Fetch logs</button>
             </div>
-            <pre className="text-xs bg-slate-950/80 border border-slate-700 rounded p-2 max-h-56 overflow-auto text-slate-300 whitespace-pre-wrap">{logOut || '—'}</pre>
+            <pre className="text-xs bg-[var(--apple-surface)]/80 border border-[var(--apple-hairline)] rounded p-2 max-h-56 overflow-auto text-[var(--text-secondary)] whitespace-pre-wrap">{logOut || '—'}</pre>
           </div>
           <div className="space-y-2">
-            <div className="text-sm font-medium text-slate-300">kubectl apply (YAML)</div>
-            <label className="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox" checked={applyDry} onChange={(e) => setApplyDry(e.target.checked)} /> Server dry-run</label>
-            <textarea aria-label="kubectl apply YAML" className="w-full min-h-[120px] bg-slate-900 border border-slate-600 rounded p-2 text-xs font-mono text-slate-200" value={applyYaml} onChange={(e) => setApplyYaml(e.target.value)} placeholder="apiVersion: v1&#10;kind: ConfigMap&#10;..." />
+            <div className="text-sm font-medium text-[var(--text-secondary)]">kubectl apply (YAML)</div>
+            <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]"><input type="checkbox" checked={applyDry} onChange={(e) => setApplyDry(e.target.checked)} /> Server dry-run</label>
+            <textarea aria-label="kubectl apply YAML" className="w-full min-h-[120px] bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded p-2 text-xs font-mono text-[var(--text-primary)]" value={applyYaml} onChange={(e) => setApplyYaml(e.target.value)} placeholder="apiVersion: v1&#10;kind: ConfigMap&#10;..." />
             <button type="button" className={`text-xs px-3 py-1.5 rounded-lg border ${statusBadgeClasses('warn')} border-[color-mix(in_srgb,var(--machina-status-warn)_40%,transparent)]`} onClick={() => {
               void postK8sApply(applyYaml, applyDry, ctxTrim).then((r) => setApplyOut(r)).catch((e: unknown) => setApplyOut(formatUserError(e)))
             }}>Apply</button>
             {applyOut != null && (typeof applyOut === 'object' ? <JsonInspector data={applyOut} /> : (
-              <p className="text-xs text-slate-300 whitespace-pre-wrap">{String(applyOut)}</p>
+              <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{String(applyOut)}</p>
             ))}
           </div>
           <div className="space-y-2">
-            <div className="text-sm font-medium text-slate-300">kubectl auth can-i</div>
+            <div className="text-sm font-medium text-[var(--text-secondary)]">kubectl auth can-i</div>
             <div className="flex flex-wrap gap-2 items-end">
-              <input aria-label="kubectl verb" className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs w-24" value={caniVerb} onChange={(e) => setCaniVerb(e.target.value)} placeholder="verb" />
-              <input aria-label="kubectl resource" className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs flex-1 min-w-[8rem]" value={caniRes} onChange={(e) => setCaniRes(e.target.value)} placeholder="resource" />
-              <input aria-label="kubectl namespace" className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs w-28" value={caniNs} onChange={(e) => setCaniNs(e.target.value)} placeholder="-n (opt)" />
-              <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600" onClick={() => {
+              <input aria-label="kubectl verb" className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs w-24" value={caniVerb} onChange={(e) => setCaniVerb(e.target.value)} placeholder="verb" />
+              <input aria-label="kubectl resource" className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs flex-1 min-w-[8rem]" value={caniRes} onChange={(e) => setCaniRes(e.target.value)} placeholder="resource" />
+              <input aria-label="kubectl namespace" className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs w-28" value={caniNs} onChange={(e) => setCaniNs(e.target.value)} placeholder="-n (opt)" />
+              <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)]" onClick={() => {
                 void postK8sAuthCanI({ verb: caniVerb.trim(), resource: caniRes.trim(), namespace: caniNs.trim() || undefined, context: ctxTrim }).then((r) => setCaniOut(r.stdout.trim() || JSON.stringify(r))).catch((e: unknown) => setCaniOut(formatUserError(e)))
               }}>Check</button>
             </div>
             <div className={`rounded-lg border px-3 py-2 text-sm ${
               caniOut === 'yes' ? statusBadgeClasses('ok')
                 : caniOut === 'no' ? statusBadgeClasses('error')
-                  : 'border-slate-700 bg-slate-900/50 text-slate-300'
+                  : 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] text-[var(--text-secondary)]'
             }`}>
               {caniOut ? (
                 <>
@@ -650,30 +653,30 @@ spec:
                   )}
                 </>
               ) : (
-                <span className="text-slate-500">Run a check to see yes/no</span>
+                <span className="text-[var(--text-muted)]">Run a check to see yes/no</span>
               )}
             </div>
           </div>
           <div className="space-y-2">
-            <div className="text-sm font-medium text-slate-300">Helm releases</div>
-            <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600" onClick={() => {
+            <div className="text-sm font-medium text-[var(--text-secondary)]">Helm releases</div>
+            <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)]" onClick={() => {
               void getK8sHelmReleases('*', ctxTrim).then((h) => setHelmJson(h)).catch((e: unknown) => setHelmJson(formatUserError(e)))
             }}>helm list -A (JSON)</button>
             {helmJson != null && (typeof helmJson === 'object' ? <JsonInspector data={helmJson} /> : (
-              <p className="text-xs text-slate-300 whitespace-pre-wrap">{String(helmJson)}</p>
+              <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{String(helmJson)}</p>
             ))}
           </div>
           <div className="space-y-2">
-            <div className="text-sm font-medium text-slate-300">API list explorer</div>
+            <div className="text-sm font-medium text-[var(--text-secondary)]">API list explorer</div>
             <div className="flex flex-wrap gap-2">
-              <select aria-label="Resource kind" className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs" value={explorerKind} onChange={(e) => setExplorerKind(e.target.value)}>
+              <select aria-label="Resource kind" className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs" value={explorerKind} onChange={(e) => setExplorerKind(e.target.value)}>
                 <option value="ingresses">Ingresses</option>
                 <option value="cronjobs">CronJobs</option>
                 <option value="pvcs">PVCs</option>
                 <option value="pvs">PVs</option>
                 <option value="storageclasses">StorageClasses</option>
               </select>
-              <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600" onClick={() => {
+              <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)]" onClick={() => {
                 const c = ctxTrim
                 const ns = nsValue
                 const p = (() => {
@@ -687,20 +690,20 @@ spec:
               }}>Fetch</button>
             </div>
             {explorerJson != null && (typeof explorerJson === 'object' ? <JsonInspector data={explorerJson} /> : (
-              <p className="text-xs text-slate-300 whitespace-pre-wrap">{String(explorerJson)}</p>
+              <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{String(explorerJson)}</p>
             ))}
           </div>
         </div>
       </details>
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-700/50 space-y-1">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--apple-hairline)] space-y-1">
           <h2 className="text-lg font-semibold">KubeVirt VirtualMachines</h2>
-          <p className="text-xs text-slate-500">
-            Merged with <code className="bg-slate-900/80 px-1 rounded">VirtualMachineInstance</code> for guest IP, launcher <code className="text-xs bg-slate-900/80 px-1 rounded">podIP</code>, and node <code className="text-xs bg-slate-900/80 px-1 rounded">InternalIP</code>.
-            <strong className="text-slate-400">Expose / SSH</strong> opens a planner for Service type, ports, <code className="text-xs bg-slate-900/80 px-1 rounded">virtctl expose vm …</code>, and copyable SSH once a matching Service exists.
-            In-browser VNC uses machina&apos;s WebSocket proxy or run <code className="text-xs bg-slate-900/80 px-1 rounded">virtctl vnc</code> locally.
-            Libvirt VMs stay under <strong className="text-slate-400">VMs</strong>.
+          <p className="text-xs text-[var(--text-muted)]">
+            Merged with <code className="bg-[var(--apple-surface)] px-1 rounded">VirtualMachineInstance</code> for guest IP, launcher <code className="text-xs bg-[var(--apple-surface)] px-1 rounded">podIP</code>, and node <code className="text-xs bg-[var(--apple-surface)] px-1 rounded">InternalIP</code>.
+            <strong className="text-[var(--text-muted)]">Expose / SSH</strong> opens a planner for Service type, ports, <code className="text-xs bg-[var(--apple-surface)] px-1 rounded">virtctl expose vm …</code>, and copyable SSH once a matching Service exists.
+            In-browser VNC uses machina&apos;s WebSocket proxy or run <code className="text-xs bg-[var(--apple-surface)] px-1 rounded">virtctl vnc</code> locally.
+            Libvirt VMs stay under <strong className="text-[var(--text-muted)]">VMs</strong>.
           </p>
           {kubevirtListError && (
             <div className="mt-2">
@@ -724,13 +727,13 @@ spec:
               type="button"
               data-testid="kubevirt-load-crs"
               disabled={kubevirtCrBusy}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/40 px-3 py-1.5 text-xs text-violet-200 hover:bg-violet-500/10 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--accent)]/40 px-3 py-1.5 text-xs text-[var(--link)] hover:bg-[var(--accent-soft)] disabled:opacity-50"
               onClick={() => void loadKubevirtCrs()}
             >
               {kubevirtCrBusy ? 'Loading CRs…' : 'Load VirtualMachine CRs'}
             </button>
             {kubevirtVmCrs.length > 0 && (
-              <span className="text-xs text-slate-500" data-testid="kubevirt-cr-count">{kubevirtVmCrs.length} CR(s) from /k8s/kubevirt/virtualmachines</span>
+              <span className="text-xs text-[var(--text-muted)]" data-testid="kubevirt-cr-count">{kubevirtVmCrs.length} CR(s) from /k8s/kubevirt/virtualmachines</span>
             )}
           </div>
           {showKubevirtCreate && (
@@ -740,7 +743,7 @@ spec:
                 value={kubevirtCreateYaml}
                 onChange={(e) => setKubevirtCreateYaml(e.target.value)}
                 rows={12}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 p-3 font-mono text-xs text-slate-200"
+                className="w-full rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/80 p-3 font-mono text-xs text-[var(--text-primary)]"
                 spellCheck={false}
               />
               <button
@@ -757,7 +760,7 @@ spec:
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[72rem]" aria-label="KubeVirt VirtualMachines">
             <thead>
-              <tr className="border-b border-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-[var(--apple-hairline)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
                 <th scope="col" className="text-left px-4 py-3">Name</th>
                 <th scope="col" className="text-left px-4 py-3">Namespace</th>
                 <th scope="col" className="text-left px-4 py-3">Run / ready</th>
@@ -771,7 +774,7 @@ spec:
                 <th scope="col" className="text-center px-4 py-3">Lifecycle</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
               {kubevirtRows.map((v) => {
                 const key = `${v.namespace}/${v.name}`
                 const runState =
@@ -782,22 +785,22 @@ spec:
                   : v.spec_run_strategy ?? '—'
                 const rr = `${runState} / ${v.vm_ready === true ? 'yes' : v.vm_ready === false ? 'no' : '—'}`
                 return (
-                  <tr key={key} className="hover:bg-slate-700/30">
-                    <td className="px-4 py-3 text-white font-medium">{v.name}</td>
-                    <td className="px-4 py-3 text-slate-300">{v.namespace}</td>
-                    <td className="px-4 py-3 text-slate-300 font-mono text-xs">{rr}</td>
-                    <td className="px-4 py-3 text-slate-300">{v.vm_printable_status ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-400">{v.vmi_phase ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 font-mono text-xs">{v.guest_ip ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 font-mono text-xs">{v.pod_ip ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 font-mono text-xs">{v.node_name ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 font-mono text-xs">{v.node_internal_ip ?? '—'}</td>
+                  <tr key={key} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{v.name}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{v.namespace}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)] font-mono text-xs">{rr}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{v.vm_printable_status ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-muted)]">{v.vmi_phase ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{v.guest_ip ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{v.pod_ip ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{v.node_name ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{v.node_internal_ip ?? '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center justify-center gap-1">
                         <button
                           type="button"
                           title={v.virtctl_console}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-slate-700/80 text-slate-200 border border-slate-600 hover:bg-slate-600"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--surface-hover)]/80 text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)]"
                           onClick={() => copyText('virtctl console', v.virtctl_console)}
                         >
                           <Terminal className="w-3.5 h-3.5" /> Console
@@ -805,7 +808,7 @@ spec:
                         <button
                           type="button"
                           title={v.virtctl_vnc}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-violet-500/15 text-violet-200 border border-violet-500/35 hover:bg-violet-500/25"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-violet-500/15 text-[var(--link)] border border-violet-500/35 hover:bg-[var(--accent-hover)]/25"
                           onClick={() => copyText('virtctl vnc', v.virtctl_vnc)}
                         >
                           <Monitor className="w-3.5 h-3.5" /> VNC
@@ -813,7 +816,7 @@ spec:
                         <button
                           type="button"
                           title={v.virtctl_vnc_socks}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-slate-700/80 text-slate-200 border border-slate-600 hover:bg-slate-600"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--surface-hover)]/80 text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)]"
                           onClick={() => copyText('virtctl vnc --proxy-only', v.virtctl_vnc_socks)}
                         >
                           <Copy className="w-3.5 h-3.5" /> SOCKS
@@ -821,7 +824,7 @@ spec:
                         <button
                           type="button"
                           title={v.vnc_subresource_path}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-slate-700/80 text-slate-200 border border-slate-600 hover:bg-slate-600"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--surface-hover)]/80 text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)]"
                           onClick={() => copyText('VNC API path', v.vnc_subresource_path)}
                         >
                           <Copy className="w-3.5 h-3.5" /> API path
@@ -872,7 +875,7 @@ spec:
                           type="button"
                           title="Stop VM"
                           disabled={kubevirtVmBusy != null}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-slate-700/80 text-slate-200 border border-slate-600 hover:bg-slate-600 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--surface-hover)]/80 text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)] disabled:opacity-50"
                           onClick={() => void runKubevirtLifecycle(v.namespace, v.name, 'stop')}
                         >
                           <Square className="w-3.5 h-3.5" /> Stop
@@ -904,23 +907,23 @@ spec:
           </table>
         </div>
         {kubevirtRows.length === 0 && !kubevirtListError && (
-          <div className="p-6 text-center text-slate-500 text-sm">No KubeVirt VirtualMachines in scope (or CRD not installed).</div>
+          <div className="p-6 text-center text-[var(--text-muted)] text-sm">No KubeVirt VirtualMachines in scope (or CRD not installed).</div>
         )}
         {kubevirtVmCrs.length > 0 && (
-          <div className="border-t border-slate-700/50 p-4">
+          <div className="border-t border-[var(--apple-hairline)] p-4">
             <JsonInspector data={kubevirtVmCrs} />
           </div>
         )}
       </div>
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-700/50">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--apple-hairline)]">
           <h2 className="text-lg font-semibold">Pods</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm" aria-label="Pods">
             <thead>
-              <tr className="border-b border-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-[var(--apple-hairline)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
                 <th scope="col" className="text-left px-4 py-3">Name</th>
                 <th scope="col" className="text-left px-4 py-3">Namespace</th>
                 <th scope="col" className="text-left px-4 py-3">Phase</th>
@@ -930,7 +933,7 @@ spec:
                 <th scope="col" className="text-center px-4 py-3">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
               {pods.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8">
@@ -943,13 +946,13 @@ spec:
                 </tr>
               )}
               {pods.map((p) => (
-                <tr key={`${p.metadata.namespace || 'default'}/${p.metadata?.name ?? ''}`} className="hover:bg-slate-700/30">
-                  <td className="px-4 py-3 text-white font-medium">{p.metadata?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-300">{p.metadata.namespace || 'default'}</td>
-                  <td className="px-4 py-3 text-slate-300">{p.status?.phase || 'unknown'}</td>
-                  <td className="px-4 py-3 text-slate-400 font-mono text-xs">{p.status?.podIP || '—'}</td>
-                  <td className="px-4 py-3 text-slate-400 font-mono text-xs">{p.spec?.nodeName ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-400 font-mono text-xs">{p.status?.hostIP ?? '—'}</td>
+                <tr key={`${p.metadata.namespace || 'default'}/${p.metadata?.name ?? ''}`} className="hover:bg-[var(--surface-hover)]/30">
+                  <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{p.metadata?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">{p.metadata.namespace || 'default'}</td>
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">{p.status?.phase || 'unknown'}</td>
+                  <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{p.status?.podIP || '—'}</td>
+                  <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{p.spec?.nodeName ?? '—'}</td>
+                  <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{p.status?.hostIP ?? '—'}</td>
                   <td className="px-4 py-3 text-center">
                     <button
                       className={`text-xs disabled:opacity-50 hover:bg-[color-mix(in_srgb,var(--machina-status-error)_30%,transparent)] ${statusPillClasses('error')}`}
@@ -983,14 +986,14 @@ spec:
       )}
 
       {liveKubeVirt && (
-        <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="KubeVirt console">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0">
-            <span className="text-sm text-slate-200">
+        <div className="fixed inset-0 z-[80] flex flex-col bg-[var(--apple-surface)]/95 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="KubeVirt console">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--apple-hairline)] bg-[var(--apple-surface)] shrink-0">
+            <span className="text-sm text-[var(--text-primary)]">
               KubeVirt {liveKubeVirt.kind === 'vnc' ? 'VNC' : 'serial console'} — {liveKubeVirt.namespace}/{liveKubeVirt.name}
             </span>
             <button
               type="button"
-              className="px-3 py-1.5 rounded-lg text-sm bg-slate-700 hover:bg-slate-600 text-slate-100"
+              className="px-3 py-1.5 rounded-lg text-sm bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)]"
               onClick={() => setLiveKubeVirt(null)}
             >
               Close

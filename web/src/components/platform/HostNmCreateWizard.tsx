@@ -59,7 +59,7 @@ export default function HostNmCreateWizard({ hostId, classic = false, onRefresh 
           <button
             key={k}
             type="button"
-            className={kind === k ? 'btn-secondary text-xs bg-sky-900/40' : 'btn-secondary text-xs'}
+            className={kind === k ? 'btn-secondary text-xs bg-[var(--accent-soft)]' : 'btn-secondary text-xs'}
             onClick={() => setKind(k)}
           >
             {k}

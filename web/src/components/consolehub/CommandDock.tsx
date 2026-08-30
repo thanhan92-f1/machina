@@ -88,7 +88,7 @@ export default function CommandDock({
           </>
         ) : null}
         {onExplain ? (
-          <button type="button" className={`${btn} border-violet-500/40 text-violet-200`} onClick={onExplain}>
+          <button type="button" className={`${btn} border-[var(--accent)]/40 text-[var(--link)]`} onClick={onExplain}>
             <span className="inline-flex items-center gap-1"><ZoomIn className="w-3 h-3" /> Explain</span>
           </button>
         ) : null}

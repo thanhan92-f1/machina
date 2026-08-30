@@ -70,7 +70,7 @@ export default function GuestToolsStrip({
               {installing ? 'Installing…' : 'Attach virtio channel'}
             </button>
           )}
-          <button type="button" className="p-1 text-slate-500 hover:text-slate-300" onClick={dismiss} aria-label="Dismiss">
+          <button type="button" className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)]" onClick={dismiss} aria-label="Dismiss">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -83,10 +83,10 @@ export default function GuestToolsStrip({
       <div className="flex items-center gap-3 min-w-0">
         <AlertTriangle className={`w-5 h-5 shrink-0 ${statusToneClass('warn')}`} />
         <div className="min-w-0">
-          <p className="font-medium text-sm text-slate-100">Guest agent setup</p>
-          <p className="text-xs text-slate-400 mt-0.5">{detail}</p>
+          <p className="font-medium text-sm text-[var(--text-primary)]">Guest agent setup</p>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">{detail}</p>
           {(guestIp || guestHostname) && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--text-muted)] mt-1">
               {guestHostname && <span>{guestHostname} · </span>}
               {guestIp && <span>{guestIp}</span>}
             </p>

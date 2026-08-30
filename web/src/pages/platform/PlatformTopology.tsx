@@ -83,12 +83,13 @@ export default function PlatformTopology() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Topology"
       subtitle="Digital twin graph — hosts, VMs, overlay segments, and LLDP uplinks"
-      icon={<GitBranch className="w-6 h-6 text-slate-400" />}
+      icon={<GitBranch className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} label="Refresh LLDP" />}
       contentLoading={loading && !graph}
       contentClassName="space-y-4"
@@ -123,13 +124,13 @@ export default function PlatformTopology() {
           </button>
         </div>
         {similarIncidents.length > 0 ? (
-          <ul className="text-xs text-slate-400 space-y-1">
+          <ul className="text-xs text-[var(--text-muted)] space-y-1">
             {similarIncidents.map((i) => (
               <li key={i.label}>{i.label} ({i.score.toFixed(2)}) — {i.summary}</li>
             ))}
           </ul>
         ) : memorySearch.searched ? (
-          <p className="text-xs text-slate-500">{memorySearch.summary || 'No similar incidents found.'}</p>
+          <p className="text-xs text-[var(--text-muted)]">{memorySearch.summary || 'No similar incidents found.'}</p>
         ) : null}
       </MacGlassPanel>
       <div className="flex flex-wrap gap-3 text-sm">
@@ -141,12 +142,12 @@ export default function PlatformTopology() {
       <MachinaDigitalTwin />
       {trafficHosts.length > 0 && (
         <MacGlassPanel title="Live traffic overlay" subtitle="Observed connections from PacketWolf asset inventory">
-          <ul className="text-sm text-slate-300 space-y-1">
+          <ul className="text-sm text-[var(--text-secondary)] space-y-1">
             {trafficHosts.flatMap((h) => {
               const conns = (h.connections as Array<{ from?: string; to?: string }>) ?? []
               return conns.slice(0, 6).map((c, i) => (
                 <li key={`${h.host_id}-${i}`}>
-                  <span className="text-slate-500">{String(h.host_id)}</span> · {c.from} → {c.to}
+                  <span className="text-[var(--text-muted)]">{String(h.host_id)}</span> · {c.from} → {c.to}
                 </li>
               ))
             })}
@@ -160,12 +161,12 @@ export default function PlatformTopology() {
         <MacGlassPanel title="Overlay legend" subtitle="Segment nodes and LLDP uplink edges from cached cluster topology.">
           <div className="flex flex-wrap gap-4 text-sm">
             {segmentLegend.map((s) => (
-              <span key={s.id} className="flex items-center gap-2 text-violet-300">
+              <span key={s.id} className="flex items-center gap-2 text-[var(--link)]">
                 <Layers className="w-4 h-4" /> {s.name}
               </span>
             ))}
             {uplinkEdges.length > 0 && (
-              <span className="flex items-center gap-2 text-cyan-300">
+              <span className="flex items-center gap-2 text-[var(--accent)]">
                 <Cable className="w-4 h-4" /> {uplinkEdges.length} LLDP uplink(s) in graph
               </span>
             )}
@@ -177,19 +178,19 @@ export default function PlatformTopology() {
         <MacGlassPanel title="LLDP uplink strip" subtitle="Switch neighbors from topology cache (deduped chassis IDs).">
           <div className="space-y-3">
             {lldpStrip.map((entry) => (
-              <div key={entry.hostId} className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
+              <div key={entry.hostId} className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <Link to={`/platform/hosts/${entry.hostId}`} className={`text-sm font-medium hover:underline ${hubLinkClasses()}`}>
                     {entry.hostname}
                   </Link>
                   {entry.source && (
-                    <span className="text-xs text-slate-500">{entry.source.replace(/_/g, ' ')}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{entry.source.replace(/_/g, ' ')}</span>
                   )}
                 </div>
-                <ul className="text-xs font-mono space-y-1 text-slate-300">
+                <ul className="text-xs font-mono space-y-1 text-[var(--text-secondary)]">
                   {entry.neighbors.map((n) => (
                     <li key={`${n.local_interface}-${n.system_name ?? n.chassis_id}`} className="flex flex-wrap gap-x-3">
-                      <span className="text-cyan-400/90">{n.local_interface}</span>
+                      <span className="text-[var(--accent)]">{n.local_interface}</span>
                       <span>→</span>
                       <span>{n.system_name || n.chassis_id || 'switch'}</span>
                     </li>
@@ -210,20 +211,20 @@ export default function PlatformTopology() {
         <div className="space-y-4 font-mono text-xs overflow-x-auto">
         {graph?.nodes.filter((n) => n.kind === 'cluster').map((c) => (
           <div key={c.id}>
-            <p className="text-slate-300 font-semibold">▸ {c.name}</p>
+            <p className="text-[var(--text-secondary)] font-semibold">▸ {c.name}</p>
             {graph.nodes.filter((n) => n.kind === 'segment').map((seg) => (
-              <p key={seg.id} className="ml-4 mt-1 text-violet-400/90">
+              <p key={seg.id} className="ml-4 mt-1 text-[var(--accent)]/90">
                 ◆ {seg.name}
               </p>
             ))}
             {graph.nodes.filter((n) => n.kind === 'host').map((h) => (
               <div key={h.id} className="ml-4 mt-2">
-                <p className={hubLinkClasses()}>└ {h.name} <span className="text-slate-600">({h.state})</span></p>
+                <p className={hubLinkClasses()}>└ {h.name} <span className="text-[var(--text-faint)]">({h.state})</span></p>
                 {graph.edges.filter((e) => e.from === h.id && e.label === 'uplink').map((e) => {
                   const sw = graph.nodes.find((n) => n.id === e.to)
                   return sw ? (
-                    <p key={e.to} className="ml-6 text-cyan-400/80">
-                      ⇄ {sw.name} <span className="text-slate-600">(uplink)</span>
+                    <p key={e.to} className="ml-6 text-[var(--accent)]">
+                      ⇄ {sw.name} <span className="text-[var(--text-faint)]">(uplink)</span>
                     </p>
                   ) : null
                 })}
@@ -232,7 +233,7 @@ export default function PlatformTopology() {
                   return vm ? (
                     <p key={e.to} className={`ml-6 ${statusToneClass('ok')} opacity-90`}>
                       → <Link to={`/platform/vms/${vm.id}`} className="hover:underline">{vm.name}</Link>
-                      <span className="text-slate-600"> ({vm.state})</span>
+                      <span className="text-[var(--text-faint)]"> ({vm.state})</span>
                     </p>
                   ) : null
                 })}
@@ -241,7 +242,7 @@ export default function PlatformTopology() {
           </div>
         ))}
         {!graph && (
-          <p className="text-slate-500 flex items-center gap-2"><GitBranch className="w-4 h-4" /> Loading graph…</p>
+          <p className="text-[var(--text-muted)] flex items-center gap-2"><GitBranch className="w-4 h-4" /> Loading graph…</p>
         )}
         </div>
       </MacGlassPanel>

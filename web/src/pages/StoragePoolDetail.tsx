@@ -163,29 +163,29 @@ export default function StoragePoolDetail() {
     <PageLayout
       title={pool?.name ?? poolName ?? 'Storage pool'}
       subtitle={pool ? <span className="font-mono">{pool.uuid}</span> : undefined}
-      icon={<HardDrive className="w-6 h-6 text-cyan-500" />}
+      icon={<HardDrive className="w-6 h-6 text-[var(--accent)]" />}
       actions={
         pool ? (
           <>
-            <Link to="/storage" className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Back to Storage"><ArrowLeft className="w-5 h-5" /></Link>
+            <Link to="/storage" className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Back to Storage"><ArrowLeft className="w-5 h-5" /></Link>
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${poolStateBadgeClasses(pool.state)}`}>{pool.state}</span>
             {pool.state !== 'running' && (
               <button onClick={() => poolAction(startPool, 'Start pool')} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm transition flex items-center gap-1"><Play className="w-4 h-4" /> Start</button>
             )}
             {pool.state === 'running' && (
               <>
-                <button onClick={() => poolAction(refreshPool, 'Refresh pool')} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition flex items-center gap-1"><RefreshCw className="w-4 h-4" /> Refresh</button>
+                <button onClick={() => poolAction(refreshPool, 'Refresh pool')} className="px-3 py-1.5 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] rounded-lg text-sm transition flex items-center gap-1"><RefreshCw className="w-4 h-4" /> Refresh</button>
                 <button onClick={() => poolAction(stopPool, 'Stop pool')} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition flex items-center gap-1"><Square className="w-4 h-4" /> Stop</button>
               </>
             )}
-            <button onClick={toggleAutostart} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition flex items-center gap-1">
-              {pool.autostart ? <ToggleRight className={`w-4 h-4 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-4 h-4 text-slate-500" />}
+            <button onClick={toggleAutostart} className="px-3 py-1.5 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] rounded-lg text-sm transition flex items-center gap-1">
+              {pool.autostart ? <ToggleRight className={`w-4 h-4 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-4 h-4 text-[var(--text-muted)]" />}
               Autostart
             </button>
-            <button onClick={load} className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Reload"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Reload"><RefreshCw className="w-4 h-4" /></button>
           </>
         ) : (
-          <Link to="/storage" className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Back to Storage"><ArrowLeft className="w-5 h-5" /></Link>
+          <Link to="/storage" className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Back to Storage"><ArrowLeft className="w-5 h-5" /></Link>
         )
       }
       contentLoading={loading}
@@ -194,28 +194,28 @@ export default function StoragePoolDetail() {
       <>
       {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 text-center">
-          <div className="text-sm text-slate-400 mb-1">Capacity</div>
-          <div className="text-2xl font-bold">{(pool.capacity_gb ?? 0).toFixed(1)} <span className="text-sm text-slate-400 font-normal">GB</span></div>
+        <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] text-center">
+          <div className="text-sm text-[var(--text-muted)] mb-1">Capacity</div>
+          <div className="text-2xl font-bold">{(pool.capacity_gb ?? 0).toFixed(1)} <span className="text-sm text-[var(--text-muted)] font-normal">GB</span></div>
         </div>
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 text-center">
-          <div className="text-sm text-slate-400 mb-1">Used</div>
-          <div className="text-2xl font-bold">{(pool.allocation_gb ?? 0).toFixed(1)} <span className="text-sm text-slate-400 font-normal">GB</span></div>
+        <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] text-center">
+          <div className="text-sm text-[var(--text-muted)] mb-1">Used</div>
+          <div className="text-2xl font-bold">{(pool.allocation_gb ?? 0).toFixed(1)} <span className="text-sm text-[var(--text-muted)] font-normal">GB</span></div>
         </div>
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 text-center">
-          <div className="text-sm text-slate-400 mb-1">Available</div>
-          <div className={`text-2xl font-bold ${statusToneClass('ok')}`}>{(pool.available_gb ?? 0).toFixed(1)} <span className="text-sm text-slate-400 font-normal">GB</span></div>
+        <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] text-center">
+          <div className="text-sm text-[var(--text-muted)] mb-1">Available</div>
+          <div className={`text-2xl font-bold ${statusToneClass('ok')}`}>{(pool.available_gb ?? 0).toFixed(1)} <span className="text-sm text-[var(--text-muted)] font-normal">GB</span></div>
         </div>
       </div>
 
       {/* Capacity Bar */}
       {pool.capacity_gb > 0 && (
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-          <div className="flex justify-between text-sm text-slate-400 mb-2">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)]">
+          <div className="flex justify-between text-sm text-[var(--text-muted)] mb-2">
             <span>Storage Usage</span>
             <span>{usagePct.toFixed(1)}%</span>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-3">
+          <div className="w-full bg-[var(--surface-hover)] rounded-full h-3">
             <div
               role="progressbar"
               aria-label="Storage usage"
@@ -226,7 +226,7 @@ export default function StoragePoolDetail() {
               style={{ width: `${Math.min(usagePct, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-slate-500 mt-1">
+          <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
             <span>{pool.allocation_gb.toFixed(1)} GB used</span>
             <span>{pool.available_gb.toFixed(1)} GB free</span>
           </div>
@@ -237,25 +237,25 @@ export default function StoragePoolDetail() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Volumes ({volumes.length})</h2>
-          <button onClick={() => setShowCreateVol(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Create Volume</button>
+          <button onClick={() => setShowCreateVol(true)} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Create Volume</button>
         </div>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
           {volumes.length === 0 ? (
             <EmptyState title="No volumes" description="This pool is empty. Create a volume to get started." />
           ) : (
             <table className="w-full" aria-label="Storage volumes">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Type</th><th scope="col" className="px-6 py-3">Capacity</th><th scope="col" className="px-6 py-3">Used</th><th scope="col" className="px-6 py-3 hidden lg:table-cell">Path</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Type</th><th scope="col" className="px-6 py-3">Capacity</th><th scope="col" className="px-6 py-3">Used</th><th scope="col" className="px-6 py-3 hidden lg:table-cell">Path</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                 {volumes.map((v) => (
-                  <tr key={v.name} className="hover:bg-slate-700/50">
+                  <tr key={v.name} className="hover:bg-[var(--surface-hover)]/50">
                     <td className="px-6 py-3 font-medium">{v.name}</td>
-                    <td className="px-6 py-3 text-sm text-slate-400">{v.vol_type}</td>
+                    <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{v.vol_type}</td>
                     <td className="px-6 py-3 text-sm">{v.capacity_gb.toFixed(2)} GB</td>
                     <td className="px-6 py-3 text-sm">{v.allocation_gb.toFixed(2)} GB</td>
-                    <td className="px-6 py-3 text-sm text-slate-400 truncate max-w-xs hidden lg:table-cell">{v.path}</td>
+                    <td className="px-6 py-3 text-sm text-[var(--text-muted)] truncate max-w-xs hidden lg:table-cell">{v.path}</td>
                     <td className="px-6 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setResizeTarget({ pool: pool.name, vol: v.name }); setResizeGb(v.capacity_gb.toFixed(2)) }} className="p-1.5 hover:bg-blue-600/20 rounded transition" title="Resize" aria-label="Resize"><Maximize className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
+                        <button onClick={() => { setResizeTarget({ pool: pool.name, vol: v.name }); setResizeGb(v.capacity_gb.toFixed(2)) }} className="p-1.5 hover:bg-white/10 rounded transition" title="Resize" aria-label="Resize"><Maximize className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
                         <button onClick={() => { setCloneTarget({ pool: pool.name, vol: v.name }); setCloneName(`${v.name}-clone`) }} className="p-1.5 hover:bg-green-600/20 rounded transition" title="Clone" aria-label="Clone"><Copy className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>
                         <button onClick={() => setDeleteTarget({ pool: pool.name, vol: v.name })} className="p-1.5 hover:bg-red-600/20 rounded transition" title="Delete" aria-label="Delete"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
                       </div>
@@ -277,15 +277,15 @@ export default function StoragePoolDetail() {
           </button>
         </div>
         {showXml && (
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
-              <span className="text-sm text-slate-400">Pool XML Configuration</span>
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+            <div className="px-6 py-3 border-b border-[var(--apple-hairline)] flex items-center justify-between">
+              <span className="text-sm text-[var(--text-muted)]">Pool XML Configuration</span>
               <div className="flex items-center gap-3">
                 <button onClick={downloadXml} className={`text-xs transition flex items-center gap-1 ${statusActionLinkClasses('info')}`}><Download className="w-3 h-3" /> Download</button>
                 <button onClick={() => { if (poolXml) navigator.clipboard.writeText(poolXml).then(() => toast.success('XML copied')) }} className={`text-xs transition flex items-center gap-1 ${statusActionLinkClasses('info')}`}><Copy className="w-3 h-3" /> Copy</button>
               </div>
             </div>
-            <pre className="p-6 text-xs font-mono text-slate-300 overflow-x-auto max-h-[400px] whitespace-pre">{poolXml || 'Loading...'}</pre>
+            <pre className="p-6 text-xs font-mono text-[var(--text-secondary)] overflow-x-auto max-h-[400px] whitespace-pre">{poolXml || 'Loading...'}</pre>
           </div>
         )}
       </div>
@@ -295,21 +295,21 @@ export default function StoragePoolDetail() {
 
       {resizeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setResizeTarget(null)}>
-          <div className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-700/50 flex items-center justify-between">
+          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
               <span className="text-lg font-semibold">Resize Volume</span>
-              <button aria-label="Close" onClick={() => setResizeTarget(null)} className="p-1 hover:bg-slate-700 rounded transition"><X className="w-4 h-4 text-slate-400" /></button>
+              <button aria-label="Close" onClick={() => setResizeTarget(null)} className="p-1 hover:bg-[var(--surface-hover)] rounded transition"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="text-sm text-slate-400">Volume: <span className="text-white font-medium">{resizeTarget.vol}</span></div>
+              <div className="text-sm text-[var(--text-muted)]">Volume: <span className="text-[var(--text-primary)] font-medium">{resizeTarget.vol}</span></div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">New Size (GB)</label>
-                <input aria-label="New size in gigabytes" type="number" step="0.01" min="0.01" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm" />
+                <label className="block text-sm text-[var(--text-muted)] mb-1">New Size (GB)</label>
+                <input aria-label="New size in gigabytes" type="number" step="0.01" min="0.01" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-3 px-5 pb-5">
-              <button onClick={() => setResizeTarget(null)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
-              <button onClick={handleResize} disabled={!(parseFloat(resizeGb) > 0)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition">Resize</button>
+              <button onClick={() => setResizeTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+              <button onClick={handleResize} disabled={!(parseFloat(resizeGb) > 0)} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">Resize</button>
             </div>
           </div>
         </div>
@@ -317,20 +317,20 @@ export default function StoragePoolDetail() {
 
       {cloneTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCloneTarget(null)}>
-          <div className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-700/50 flex items-center justify-between">
+          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
               <span className="text-lg font-semibold">Clone Volume</span>
-              <button aria-label="Close" onClick={() => setCloneTarget(null)} className="p-1 hover:bg-slate-700 rounded transition"><X className="w-4 h-4 text-slate-400" /></button>
+              <button aria-label="Close" onClick={() => setCloneTarget(null)} className="p-1 hover:bg-[var(--surface-hover)] rounded transition"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="text-sm text-slate-400">Source: <span className="text-white font-medium">{cloneTarget.vol}</span></div>
+              <div className="text-sm text-[var(--text-muted)]">Source: <span className="text-[var(--text-primary)] font-medium">{cloneTarget.vol}</span></div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">New Volume Name</label>
-                <input aria-label="New volume name" type="text" value={cloneName} onChange={(e) => setCloneName(e.target.value)} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm" />
+                <label className="block text-sm text-[var(--text-muted)] mb-1">New Volume Name</label>
+                <input aria-label="New volume name" type="text" value={cloneName} onChange={(e) => setCloneName(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-3 px-5 pb-5">
-              <button onClick={() => setCloneTarget(null)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
+              <button onClick={() => setCloneTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
               <button onClick={handleClone} className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm text-white font-medium transition">Clone</button>
             </div>
           </div>
@@ -339,23 +339,23 @@ export default function StoragePoolDetail() {
 
       {showCreateVol && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateVol(false)}>
-          <div className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-700/50 flex items-center justify-between">
+          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
               <span className="text-lg font-semibold">Create Volume</span>
-              <button aria-label="Close" onClick={() => setShowCreateVol(false)} className="p-1 hover:bg-slate-700 rounded transition"><X className="w-4 h-4 text-slate-400" /></button>
+              <button aria-label="Close" onClick={() => setShowCreateVol(false)} className="p-1 hover:bg-[var(--surface-hover)] rounded transition"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Name</label>
-                <input type="text" value={newVolName} onChange={(e) => setNewVolName(e.target.value)} placeholder="my-volume.qcow2" className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm" />
+                <label className="block text-sm text-[var(--text-muted)] mb-1">Name</label>
+                <input type="text" value={newVolName} onChange={(e) => setNewVolName(e.target.value)} placeholder="my-volume.qcow2" className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Capacity (GB)</label>
-                <input aria-label="Volume capacity in gigabytes" type="number" step="0.01" min="0.01" value={newVolCapacity} onChange={(e) => setNewVolCapacity(e.target.value)} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm" />
+                <label className="block text-sm text-[var(--text-muted)] mb-1">Capacity (GB)</label>
+                <input aria-label="Volume capacity in gigabytes" type="number" step="0.01" min="0.01" value={newVolCapacity} onChange={(e) => setNewVolCapacity(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Format</label>
-                <select aria-label="Volume format" value={newVolFormat} onChange={(e) => setNewVolFormat(e.target.value)} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+                <label className="block text-sm text-[var(--text-muted)] mb-1">Format</label>
+                <select aria-label="Volume format" value={newVolFormat} onChange={(e) => setNewVolFormat(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm">
                   <option value="qcow2">qcow2</option>
                   <option value="raw">raw</option>
                   <option value="qcow">qcow</option>
@@ -363,8 +363,8 @@ export default function StoragePoolDetail() {
               </div>
             </div>
             <div className="flex justify-end gap-3 px-5 pb-5">
-              <button onClick={() => setShowCreateVol(false)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
-              <button onClick={handleCreateVol} disabled={creatingVol || !newVolName.trim() || !(parseFloat(newVolCapacity) > 0)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition">{creatingVol ? 'Creating…' : 'Create'}</button>
+              <button onClick={() => setShowCreateVol(false)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+              <button onClick={handleCreateVol} disabled={creatingVol || !newVolName.trim() || !(parseFloat(newVolCapacity) > 0)} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">{creatingVol ? 'Creating…' : 'Create'}</button>
             </div>
           </div>
         </div>

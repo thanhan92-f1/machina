@@ -34,7 +34,7 @@ type ScanVm = { name: string; status: string; os: string; note: string; provider
 type MigrationTab = 'radar' | 'jobs'
 
 // Reused by several "enable this backend" call-to-action links on the page.
-const INTEGRATIONS_ROUTE = '/platform/integrations'
+const INTEGRATIONS_ROUTE = '/platform/settings?section=integrations'
 
 const MIGRATION_TABS = [
   { id: 'radar' as const, label: 'Scan & migrate' },
@@ -156,11 +156,12 @@ export default function PlatformMigration() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Migration Radar"
       subtitle="Machina Migration Radar — HyperSDK scan + GuestKit offline assurance."
-      icon={<ArrowRightLeft className="w-6 h-6 text-slate-400" />}
-      className="max-w-4xl"
+      icon={<ArrowRightLeft className="w-6 h-6 text-[var(--text-muted)]" />}
+      className="w-full max-w-none"
       contentClassName="space-y-4"
     >
       <DetailTabs primary={MIGRATION_TABS} active={tab} onChange={setTab} />
@@ -169,7 +170,7 @@ export default function PlatformMigration() {
         <MacGlassPanel title="GuestKit job queue">
           <div className="flex flex-wrap gap-2 items-end mb-4">
             <label className="block flex-1 min-w-[14rem]">
-              <span className="text-xs text-slate-500">Disk path</span>
+              <span className="text-xs text-[var(--text-muted)]">Disk path</span>
               <input className="input text-sm mt-1 w-full" value={diskPath} onChange={(e) => setDiskPath(e.target.value)} />
             </label>
             <button
@@ -213,7 +214,7 @@ export default function PlatformMigration() {
               badge={jobPolling ? <Loader2 className="w-4 h-4 animate-spin text-orange-400" /> : undefined}
             />
           )}
-          {planSummary && <p className="text-xs text-slate-400 mt-2">{planSummary}</p>}
+          {planSummary && <p className="text-xs text-[var(--text-muted)] mt-2">{planSummary}</p>}
           {gkCaps && <p className="text-xs text-orange-200/80 mt-3">Capabilities: {gkCaps}</p>}
           {gkJobs.length > 0 && (
             <ul className="mt-4 divide-y divide-white/[0.04]">
@@ -237,11 +238,11 @@ export default function PlatformMigration() {
         )}
         {guestkit && (
           <>
-            <Link to="/platform/migration?tab=jobs" className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm hover:border-orange-400/50 transition">
+            <Link to="/platform/migration?tab=jobs" className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm hover:border-orange-400/50 transition">
               <p className="font-semibold text-orange-100">GuestKit jobs</p>
               <p className="text-xs text-orange-200/70 mt-1">Offline disk inspect and migrate planning.</p>
             </Link>
-            <Link to="/platform/vms/v1?tab=guestHealth&guestAction=migrate-plan" className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm hover:border-orange-400/50 transition">
+            <Link to="/platform/vms/v1?tab=guestHealth&guestAction=migrate-plan" className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm hover:border-orange-400/50 transition">
               <p className="font-semibold text-orange-100">Platform VM migrate plan</p>
               <p className="text-xs text-orange-200/70 mt-1">Run GuestKit offline KVM migration scoring on an enrolled VM disk.</p>
             </Link>
@@ -250,7 +251,7 @@ export default function PlatformMigration() {
       </div>
 
       {guestkit && gkStatus && (
-        <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-100 space-y-2">
+        <div className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm text-orange-100 space-y-2">
           <p>GuestKit {gkStatus.library_version ?? 'linked'} — {gkStatus.summary}</p>
           <div className="flex flex-wrap gap-2 items-end">
             <label className="block flex-1 min-w-[14rem]">
@@ -321,7 +322,7 @@ export default function PlatformMigration() {
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-300 mb-3">Where is your VM coming from?</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">Where is your VM coming from?</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {SOURCES.map((s) => {
             const needsHypersdk = s.id === 'vcenter' || s.id === 'esxi'
@@ -340,17 +341,17 @@ export default function PlatformMigration() {
                   else if (s.id === 'esxi') void scanSource('esxi')
                   else if (s.id === 'ova' || s.id === 'vmdk' || s.id === 'cloud') navigate('/import')
                 }}
-                className="text-left p-4 rounded-2xl border border-white/[0.08] bg-slate-900/50 hover:border-white/14 hover:bg-slate-900/70 transition disabled:opacity-55 disabled:hover:border-white/[0.08]"
+                className="text-left p-4 rounded-2xl border border-white/[0.08] bg-[var(--apple-surface)] hover:border-white/14 hover:bg-[var(--apple-surface)]/70 transition disabled:opacity-55 disabled:hover:border-white/[0.08]"
                 title={hint ?? undefined}
               >
-                <p className="font-semibold text-slate-100">{s.label}</p>
-                <p className="text-xs text-slate-400 mt-1">{hint ?? s.desc}</p>
+                <p className="font-semibold text-[var(--text-primary)]">{s.label}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{hint ?? s.desc}</p>
               </button>
             )
           })}
         </div>
         {!hypersdk && !guestkit && (
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-[var(--text-muted)]">
             No migration backends are enabled. Use OVF/OVA or cloud image import, or enable HyperSDK or GuestKit under{' '}
             <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>Integrations</Link>.
           </p>
@@ -358,8 +359,8 @@ export default function PlatformMigration() {
       </section>
 
       <section className="platform-mac-panel rounded-2xl border border-white/[0.06] p-5 space-y-4">
-        <h2 className="font-semibold text-slate-100">Scan results</h2>
-        {loading && <p className="text-sm text-slate-400">Scanning source…</p>}
+        <h2 className="font-semibold text-[var(--text-primary)]">Scan results</h2>
+        {loading && <p className="text-sm text-[var(--text-muted)]">Scanning source…</p>}
         {!loading && scan.length === 0 && (
           <PlatformEmptyState
             icon={ArrowRightLeft}
@@ -371,20 +372,20 @@ export default function PlatformMigration() {
           </PlatformEmptyState>
         )}
         {scan.length > 0 && (
-          <ul className="divide-y divide-slate-800">
+          <ul className="divide-y divide-[var(--apple-hairline)]">
             {scan.map((vm) => (
-              <li key={vm.name} className="py-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.04] bg-slate-900/30 px-3 mb-2">
+              <li key={vm.name} className="py-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.04] bg-[var(--apple-fill-tertiary)] px-3 mb-2">
                 <div>
                   <p className="font-medium">{vm.name}</p>
-                  <p className="text-xs text-slate-500">{vm.os} · {vm.note}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{vm.os} · {vm.note}</p>
                   {vm.advisor && (
                     <div className="mt-2 text-xs space-y-1">
-                      <p className="text-slate-400">Readiness: <span className={statusToneClass('ok')}>{vm.advisor.readiness_percent}%</span></p>
+                      <p className="text-[var(--text-muted)]">Readiness: <span className={statusToneClass('ok')}>{vm.advisor.readiness_percent}%</span></p>
                       {vm.advisor.guestkit_summary && (
                         <p className="text-orange-200/90">GuestKit: {vm.advisor.guestkit_summary}</p>
                       )}
                       {vm.advisor.firewall_migration_summary && (
-                        <p className="text-blue-200/90">Firewall: {vm.advisor.firewall_migration_summary}</p>
+                        <p className="text-[var(--accent)]">Firewall: {vm.advisor.firewall_migration_summary}</p>
                       )}
                       {(vm.advisor.risks ?? []).length > 0 && (
                         <ul className={`list-disc pl-4 ${statusToneClass('warn')}`}>{(vm.advisor.risks ?? []).slice(0, 3).map((r) => <li key={r}>{r}</li>)}</ul>
@@ -412,7 +413,7 @@ export default function PlatformMigration() {
             ))}
           </ul>
         )}
-        <p className="text-xs text-slate-600 flex flex-wrap gap-3">
+        <p className="text-xs text-[var(--text-faint)] flex flex-wrap gap-3">
           <Link to="/import" className={`inline-flex items-center gap-1 ${hubLinkClasses()}`}>Single-VM import <ExternalLink className="w-3 h-3" /></Link>
           <Link to={INTEGRATIONS_ROUTE} className={hubLinkClasses()}>All migration tools →</Link>
           <Link to={tasksHubHref(tier)} className={hubLinkClasses()}>View migration tasks →</Link>

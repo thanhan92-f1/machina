@@ -39,7 +39,7 @@ export default function PlatformStandardView({
   const subtitle = (
     <span className="flex flex-wrap items-center gap-2 text-sm">
       {stats && stats.length > 0 ? platformStatSubtitle(stats) : null}
-      {description ? <span className="text-slate-400">{description}</span> : null}
+      {description ? <span className="text-[var(--text-muted)]">{description}</span> : null}
       {badge}
     </span>
   )
@@ -52,7 +52,7 @@ export default function PlatformStandardView({
       onErrorRetry={onErrorRetry}
       title={title}
       subtitle={subtitle}
-      icon={<Icon className="w-6 h-6 text-slate-400" />}
+      icon={<Icon className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={actions}
       contentClassName={contentClassName}
     >

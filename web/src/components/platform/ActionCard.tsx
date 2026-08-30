@@ -12,13 +12,13 @@ interface ActionCardProps {
 
 export default function ActionCard({ to, onClick, icon, title, subtitle }: ActionCardProps) {
   const className =
-    'platform-action-card flex flex-col items-start gap-3 p-5 rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900/80 to-slate-950/80 hover:from-slate-800/80 hover:to-slate-900/80 hover:border-slate-600/60 transition-all text-left w-full'
+    'platform-action-card flex flex-col items-start gap-3 p-5 rounded-2xl border border-[var(--apple-hairline)]/80 bg-[var(--apple-surface)] hover:bg-[var(--surface-hover)] hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--apple-hairline))] transition-all text-left w-full'
   const inner = (
     <>
-      <div className="p-2.5 rounded-xl bg-slate-800/80 text-slate-200">{icon}</div>
+      <div className="p-2.5 rounded-xl bg-[var(--apple-surface)] text-[var(--text-primary)]">{icon}</div>
       <div>
-        <p className="font-semibold text-slate-100">{title}</p>
-        {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+        <p className="font-semibold text-[var(--text-primary)]">{title}</p>
+        {subtitle && <p className="text-xs text-[var(--text-muted)] mt-1">{subtitle}</p>}
       </div>
     </>
   )

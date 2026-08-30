@@ -84,10 +84,11 @@ function FleetCloudInstancesContent() {
 
   return (
     <PageLayout
+      eyebrow="Fleet Cloud"
       prepend={<><FleetCloudSubNav /></>}
-      title="Fleet Cloud Instances"
+      title="Instances"
       subtitle={`${vms.length} instance${vms.length === 1 ? '' : 's'}`}
-      icon={<Cloud className="w-7 h-7 text-sky-400" />}
+      icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       error={loadError}
       errorTitle="Failed to load instances"
       technicalDetail={loadError}
@@ -98,13 +99,13 @@ function FleetCloudInstancesContent() {
         <div className="flex gap-2">
           <Link
             to="/fleet-cloud/images"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 text-sm"
+            className="btn-secondary text-sm inline-flex items-center gap-2"
           >
             Images
           </Link>
           <Link
             to="/fleet-cloud/create"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium"
+            className="btn-primary text-sm inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Create instance
@@ -112,7 +113,7 @@ function FleetCloudInstancesContent() {
           <button
             type="button"
             onClick={() => { setLoading(true); void load() }}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 text-sm"
+            className="btn-secondary text-sm inline-flex items-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -122,18 +123,18 @@ function FleetCloudInstancesContent() {
     >
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="search"
             aria-label="Search instances"
             placeholder="Search name or ID…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`w-full pl-10 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-100 text-sm ${search ? 'pr-8' : 'pr-3'}`}
+            className={`input-field pl-10 ${search ? 'pr-8' : ''}`}
           />
           {search && (
             <button type="button" aria-label="Clear search" onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -146,8 +147,8 @@ function FleetCloudInstancesContent() {
               onClick={() => setStatusFilter(chip)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                 statusFilter === chip
-                  ? 'bg-sky-600 border-sky-500 text-white'
-                  : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                  ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                  : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
               }`}
             >
               {chip || 'All'}
@@ -162,34 +163,34 @@ function FleetCloudInstancesContent() {
           title="No instances"
           description="No VMs in this project yet."
           secondaryAction={
-            <Link to="/fleet-cloud/create" className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+            <Link to="/fleet-cloud/create" className="btn-secondary text-sm">
               Create instance
             </Link>
           }
         />
       ) : (
-      <div className="overflow-x-auto rounded-xl border border-slate-700/80">
-        <table className="w-full text-sm" aria-label="Fleet Cloud instances">
-          <thead className="bg-slate-900/80 text-slate-400 text-left">
+      <div className="overflow-x-auto apple-surface rounded-2xl">
+        <table className="apple-table" aria-label="Fleet Cloud instances">
+          <thead>
             <tr>
-              <th scope="col" className="px-4 py-3 font-medium">Name</th>
-              <th scope="col" className="px-4 py-3 font-medium">Status</th>
-              <th scope="col" className="px-4 py-3 font-medium">vCPU / RAM</th>
-              <th scope="col" className="px-4 py-3 font-medium">IP</th>
-              <th scope="col" className="px-4 py-3 font-medium text-right">Actions</th>
+              <th scope="col">Name</th>
+              <th scope="col">Status</th>
+              <th scope="col">vCPU / RAM</th>
+              <th scope="col">IP</th>
+              <th scope="col" className="text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody>
             {loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={5} className="text-center text-[var(--text-muted)]">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={5} className="text-center text-[var(--text-muted)]">
                   No instances match your filters.
                 </td>
               </tr>
@@ -197,28 +198,28 @@ function FleetCloudInstancesContent() {
             {filtered.map((vm) => {
               const status = vmDisplayStatus(vm)
               return (
-                <tr key={vm.id} className="hover:bg-slate-800/40">
-                  <td className="px-4 py-3">
+                <tr key={vm.id}>
+                  <td>
                     <Link
                       to={`/fleet-cloud/instances/${encodeURIComponent(vm.id)}`}
-                      className="font-medium text-sky-400 hover:text-sky-300 inline-flex items-center gap-1.5"
+                      className="apple-link font-medium inline-flex items-center gap-1.5"
                     >
                       {vm.name || vm.id.slice(0, 8)}
                     </Link>
-                    <div className="text-xs text-slate-500 font-mono truncate max-w-[220px]">{vm.id}</div>
+                    <div className="text-xs text-[var(--text-muted)] font-mono truncate max-w-[220px]">{vm.id}</div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     <span className={`inline-block px-2 py-0.5 rounded border text-xs ${statusBadge(status)}`}>
                       {status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="text-[var(--text-secondary)]">
                     {vm.vcpus} vCPU / {vm.memory_mib} MiB
                   </td>
-                  <td className="px-4 py-3 text-slate-400 font-mono text-xs">
+                  <td className="text-[var(--text-muted)] font-mono text-xs">
                     {vm.guest_ip || '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     <div className="flex justify-end gap-1">
                       <button
                         type="button"

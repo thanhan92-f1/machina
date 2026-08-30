@@ -37,7 +37,8 @@ export default function CapabilitiesPage() {
 
   useEffect(() => { load() }, [load])
 
-  if (loading) return <PageLayout title="Capabilities" icon={<Cpu className="w-6 h-6" />} contentLoading />
+  if (loading) return <PageLayout
+      eyebrow="System" title="Capabilities" icon={<Cpu className="w-6 h-6" />} contentLoading />
 
   const tabs = [
     { key: 'capabilities' as const, label: 'Capabilities', icon: <Cpu className="w-4 h-4" /> },
@@ -50,13 +51,13 @@ export default function CapabilitiesPage() {
       icon={<Cpu className="w-6 h-6" />}
       subtitle="libvirt-reported guest architectures and host features for this QEMU/KVM worker."
       actions={
-        <button onClick={load} className="p-2 hover:bg-slate-700 rounded transition shrink-0" title="Refresh" aria-label="Refresh">
+        <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition shrink-0" title="Refresh" aria-label="Refresh">
           <RefreshCw className="w-4 h-4" />
         </button>
       }
     >
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">View</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">View</h2>
         <ChoiceCardGrid>
           {tabs.map((t) => (
             <ChoiceCard
@@ -74,37 +75,37 @@ export default function CapabilitiesPage() {
 
       {tab === 'capabilities' && capabilities && (
         <div className="space-y-6">
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold">Host</h3>
-            <div className="flex items-center justify-between py-2 border-b border-slate-700/50">
-              <span className="text-slate-400 text-sm">Architecture</span>
+            <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]">
+              <span className="text-[var(--text-muted)] text-sm">Architecture</span>
               <span className="text-sm font-medium">{capabilities.host_arch}</span>
             </div>
-            <div className="flex items-center justify-between py-2 border-b border-slate-700/50">
-              <span className="text-slate-400 text-sm">CPU Model</span>
+            <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]">
+              <span className="text-[var(--text-muted)] text-sm">CPU Model</span>
               <span className="text-sm font-medium">{capabilities.host_cpu_model}</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-slate-400 text-sm">SPICE Graphics</span>
+              <span className="text-[var(--text-muted)] text-sm">SPICE Graphics</span>
               <span className={`text-sm font-medium px-2 py-0.5 rounded ${statusBadgeClasses(capabilities.spice_available ? 'ok' : 'neutral')}`}>
                 {capabilities.spice_available ? 'Available' : 'Not available'}
               </span>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-700/50">
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+            <div className="px-6 py-4 border-b border-[var(--apple-hairline)]">
               <h3 className="text-lg font-semibold">Guest Architectures</h3>
             </div>
-            {capabilities.guests.length === 0 ? <div className="p-8 text-center text-slate-500">No guest capabilities.</div> : (
+            {capabilities.guests.length === 0 ? <div className="p-8 text-center text-[var(--text-muted)]">No guest capabilities.</div> : (
               <table className="w-full" aria-label="Guest architectures">
-                <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">OS Type</th><th scope="col" className="px-6 py-3">Architecture</th><th scope="col" className="px-6 py-3">Machines</th></tr></thead>
-                <tbody className="divide-y divide-slate-700/50">
+                <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">OS Type</th><th scope="col" className="px-6 py-3">Architecture</th><th scope="col" className="px-6 py-3">Machines</th></tr></thead>
+                <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                   {capabilities.guests.map((g) => (
-                    <tr key={`${g.os_type}-${g.arch}`} className="hover:bg-slate-700/50">
+                    <tr key={`${g.os_type}-${g.arch}`} className="hover:bg-[var(--surface-hover)]/50">
                       <td className="px-6 py-3 text-sm font-medium">{g.os_type}</td>
                       <td className="px-6 py-3 text-sm">{g.arch}</td>
-                      <td className="px-6 py-3 text-sm text-slate-400">{g.machines.slice(0, 5).join(', ')}{g.machines.length > 5 ? ` (+${g.machines.length - 5} more)` : ''}</td>
+                      <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{g.machines.slice(0, 5).join(', ')}{g.machines.length > 5 ? ` (+${g.machines.length - 5} more)` : ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -115,11 +116,11 @@ export default function CapabilitiesPage() {
       )}
 
       {tab === 'capabilities' && !capabilities && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center text-slate-500">No capabilities data available.</div>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-8 text-center text-[var(--text-muted)]">No capabilities data available.</div>
       )}
 
       {tab === 'sysinfo' && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 sm:p-6">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4 sm:p-6">
           <SysinfoDisplay xml={sysinfo} />
         </div>
       )}

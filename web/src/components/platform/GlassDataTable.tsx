@@ -42,8 +42,8 @@ export default function GlassDataTable({
     <MacGlassPanel title={title} subtitle={subtitle} action={action}>
       <div className="overflow-x-auto -mx-1">
         <table className="w-full text-sm min-w-[420px]" aria-label={title}>
-          <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm">
-            <tr className="text-slate-400 border-b border-white/[0.06]">{columns}</tr>
+          <thead className="sticky top-0 z-10 bg-[var(--apple-surface-elevated)] backdrop-blur-sm">
+            <tr className="text-[var(--text-muted)] border-b border-white/[0.06]">{columns}</tr>
           </thead>
           <tbody>{children}</tbody>
         </table>

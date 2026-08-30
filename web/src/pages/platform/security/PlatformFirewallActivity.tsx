@@ -106,7 +106,7 @@ export default function PlatformFirewallActivity() {
       backLabel="Security Center"
       title="Firewall Activity"
       subtitle={`${blocked.length} blocked · ${allowed.length} allowed connection events`}
-      icon={<Shield className="w-6 h-6 text-slate-400" />}
+      icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       loading={loading && totalEvents === 0}
       error={error}
       onRefresh={() => void load()}
@@ -120,7 +120,7 @@ export default function PlatformFirewallActivity() {
       emptyTitle="No connection events yet"
       emptySubtitle="Enable PacketWolf for live blocked flows and connection telemetry."
     >
-      <p className="text-xs text-slate-500 mb-4">{note || 'PacketWolf provides live flows when connected'}</p>
+      <p className="text-xs text-[var(--text-muted)] mb-4">{note || 'PacketWolf provides live flows when connected'}</p>
       <div className="space-y-4">
         {blocked.length > 0 && (
           <div>

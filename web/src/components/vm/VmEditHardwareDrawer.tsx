@@ -147,7 +147,7 @@ export default function VmEditHardwareDrawer({
       <button type="button" className="fixed inset-0 z-[85] bg-black/50 backdrop-blur-sm" aria-label="Close Edit Hardware" onClick={onClose} />
       <aside
         ref={panelRef}
-        className="fixed top-0 right-0 z-[90] h-full w-full max-w-lg bg-slate-950/98 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden"
+        className="fixed top-0 right-0 z-[90] h-full w-full max-w-lg bg-[var(--apple-surface)]/98 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Edit hardware"
@@ -155,15 +155,15 @@ export default function VmEditHardwareDrawer({
       >
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
           <div>
-            <h2 className="font-semibold text-slate-100">Edit Hardware</h2>
-            <p className="text-xs text-slate-500">{vmName}</p>
+            <h2 className="font-semibold text-[var(--text-primary)]">Edit Hardware</h2>
+            <p className="text-xs text-[var(--text-muted)]">{vmName}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-slate-400"><X className="w-5 h-5" aria-hidden="true" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-[var(--text-muted)]"><X className="w-5 h-5" aria-hidden="true" /></button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading && !details ? (
-            <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
           ) : null}
 
           {SECTIONS.map(({ id, label }) => {
@@ -172,10 +172,10 @@ export default function VmEditHardwareDrawer({
               <div key={id} className="rounded-lg border border-white/[0.08] overflow-hidden" data-testid={`vm-edit-hardware-section-${id}`}>
                 <button
                   type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-slate-200 hover:bg-white/[0.04]"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--text-primary)] hover:bg-white/[0.04]"
                   onClick={() => toggle(id)}
                 >
-                  {isOpen ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
+                  {isOpen ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
                   <span className="flex-1 text-left">{label}</span>
                   <span className="flex flex-wrap gap-1 justify-end">
                     {resolveHardwareBadges(sectionBadges(id)).map((b) => (
@@ -187,7 +187,7 @@ export default function VmEditHardwareDrawer({
                   <div className="px-3 pb-3 border-t border-white/[0.06] pt-3 space-y-3">
                     {id === 'cpu' && (
                       <>
-                        <p className="text-xs text-slate-500">vCPU count, sockets, cores, threads, CPU mode.</p>
+                        <p className="text-xs text-[var(--text-muted)]">vCPU count, sockets, cores, threads, CPU mode.</p>
                         <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => setCpuOpen(true)}>
                           Edit CPU topology
                         </button>
@@ -195,7 +195,7 @@ export default function VmEditHardwareDrawer({
                     )}
                     {id === 'memory' && (
                       <>
-                        <p className="text-xs text-slate-500">Current RAM, max RAM, balloon (live when running).</p>
+                        <p className="text-xs text-[var(--text-muted)]">Current RAM, max RAM, balloon (live when running).</p>
                         <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => setMemoryOpen(true)}>
                           Edit memory
                         </button>
@@ -203,7 +203,7 @@ export default function VmEditHardwareDrawer({
                     )}
                     {id === 'firmware' && (
                       <>
-                        <p className="text-xs text-slate-500">BIOS/UEFI, Secure Boot, TPM, RNG — restart required for most changes.</p>
+                        <p className="text-xs text-[var(--text-muted)]">BIOS/UEFI, Secure Boot, TPM, RNG — restart required for most changes.</p>
                         <div className="flex flex-wrap gap-2">
                           <button type="button" className="btn-secondary text-xs" disabled={disabled || uefiBusy} onClick={() => void setFirmware(true)}>Set UEFI</button>
                           <button type="button" className="btn-secondary text-xs" disabled={disabled || uefiBusy} onClick={() => void setFirmware(false)}>Set BIOS</button>

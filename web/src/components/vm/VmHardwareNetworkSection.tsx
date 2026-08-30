@@ -69,13 +69,13 @@ export default function VmHardwareNetworkSection({
     <div className="space-y-3" data-testid="vm-hardware-network-section">
       <MacGlassPanel title={compact ? 'Network' : 'Network interfaces'} subtitle={compact ? undefined : 'Hot-plug NICs via libvirt'}>
         {loading ? (
-          <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+          <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
         ) : details?.interfaces.length ? (
-          <ul className="text-sm text-slate-400 space-y-3">
+          <ul className="text-sm text-[var(--text-muted)] space-y-3">
             {details.interfaces.map((iface) => (
               <li key={iface.mac_address} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                 <span className="flex items-center gap-2 flex-wrap">
-                  <Network className="w-4 h-4 text-slate-500" />
+                  <Network className="w-4 h-4 text-[var(--text-muted)]" />
                   <span className="font-mono text-xs">{iface.mac_address}</span>
                   · {iface.source} · {iface.model}
                   {iface.ip ? <span className="font-mono text-emerald-300/80"> · {iface.ip}</span> : null}
@@ -107,18 +107,18 @@ export default function VmHardwareNetworkSection({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-slate-500">No interfaces attached.</p>
+          <p className="text-sm text-[var(--text-muted)]">No interfaces attached.</p>
         )}
 
         {nicEditMac && (
           <div className="mt-4 p-3 rounded-lg border border-white/[0.06] space-y-3">
-            <p className="text-sm text-slate-300">Edit NIC <span className="font-mono">{nicEditMac}</span></p>
+            <p className="text-sm text-[var(--text-secondary)]">Edit NIC <span className="font-mono">{nicEditMac}</span></p>
             <div className="flex flex-wrap gap-3 items-end">
-              <label className="text-xs text-slate-500">
+              <label className="text-xs text-[var(--text-muted)]">
                 Network
                 <input className="input mt-1 block min-w-[10rem]" value={nicEditNetwork} onChange={(e) => setNicEditNetwork(e.target.value)} />
               </label>
-              <label className="text-xs text-slate-500">
+              <label className="text-xs text-[var(--text-muted)]">
                 Model
                 <select className="input mt-1 block w-28" value={nicEditModel} onChange={(e) => setNicEditModel(e.target.value)}>
                   <option value="virtio">virtio</option>
@@ -148,7 +148,7 @@ export default function VmHardwareNetworkSection({
         )}
 
         <div className="flex flex-wrap gap-3 items-end mt-4 pt-3 border-t border-white/[0.04]">
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             Network
             {platformNetworks.length > 0 ? (
               <select className="input mt-1 block min-w-[10rem]" value={nicNetwork} onChange={(e) => setNicNetwork(e.target.value)}>
@@ -158,7 +158,7 @@ export default function VmHardwareNetworkSection({
               <input className="input mt-1 block min-w-[10rem]" value={nicNetwork} onChange={(e) => setNicNetwork(e.target.value)} />
             )}
           </label>
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             Model
             <select className="input mt-1 block w-28" value={nicModel} onChange={(e) => setNicModel(e.target.value)}>
               <option value="virtio">virtio</option>

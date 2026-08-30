@@ -82,6 +82,6 @@ export function badgeToneClasses(tone: HardwareApplyBadgeMeta['tone']): string {
     case 'danger':
       return 'border-rose-500/40 text-rose-300 bg-rose-500/10'
     default:
-      return 'border-sky-500/40 text-sky-300 bg-sky-500/10'
+      return 'border-[var(--accent)]/40 text-[var(--link)] bg-[var(--accent-soft)]'
   }
 }

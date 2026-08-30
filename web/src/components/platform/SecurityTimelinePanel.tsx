@@ -15,7 +15,7 @@ export default function SecurityTimelinePanel({
   return (
     <MacGlassPanel title={title} subtitle={subtitle}>
       {events.length === 0 ? (
-        <p className="text-sm text-slate-500">No security events in this window.</p>
+        <p className="text-sm text-[var(--text-muted)]">No security events in this window.</p>
       ) : (
         <div className="rounded-xl border border-white/[0.06] overflow-clip">
           {events.slice(0, 40).map((e, i) => (

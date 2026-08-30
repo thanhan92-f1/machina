@@ -36,8 +36,8 @@ export default function RunbookExecutionSheet({ open, onClose, result }: Props) 
       <div className="space-y-4 text-sm">
         {result.steps.length > 0 && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Steps</p>
-            <ol className="list-decimal list-inside space-y-2 text-slate-300">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-2">Steps</p>
+            <ol className="list-decimal list-inside space-y-2 text-[var(--text-secondary)]">
               {result.steps.map((step, i) => (
                 <li key={`${i}-${step.slice(0, 24)}`}>{step}</li>
               ))}
@@ -47,14 +47,14 @@ export default function RunbookExecutionSheet({ open, onClose, result }: Props) 
         {result.commands.length > 0 && (
           <div>
             <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Commands</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Commands</p>
               <button type="button" className="btn-secondary text-xs inline-flex items-center gap-1" onClick={() => void copyCommands()}>
                 <Copy className="w-3 h-3" /> Copy all
               </button>
             </div>
-            <ul className="space-y-2 font-mono text-xs text-slate-400">
+            <ul className="space-y-2 font-mono text-xs text-[var(--text-muted)]">
               {result.commands.map((cmd, i) => (
-                <li key={`${i}-${cmd.slice(0, 16)}`} className="rounded-lg border border-white/[0.06] bg-slate-950/80 p-2 break-all">
+                <li key={`${i}-${cmd.slice(0, 16)}`} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] p-2 break-all">
                   {cmd}
                 </li>
               ))}

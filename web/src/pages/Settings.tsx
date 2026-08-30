@@ -140,32 +140,33 @@ export default function SettingsPage() {
 
   return (
     <PageLayout
+      eyebrow="System"
       className="w-full min-w-0 max-w-full"
       title="Settings"
       subtitle="RBAC, tokens, alerts, and schedules for the hypervisor control plane on this host."
       icon={<Settings className={`w-6 h-6 ${statusToneClass('info')}`} />}
       actions={
-        <button type="button" onClick={load} className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" aria-hidden="true" /></button>
+        <button type="button" onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" aria-hidden="true" /></button>
       }
       contentLoading={loading}
     >
-      <p className="text-xs text-slate-500 break-words">
+      <p className="text-xs text-[var(--text-muted)] break-words">
         Libvirt secrets (Ceph, iSCSI, TLS, …) are managed on the{' '}
         <Link to="/secrets" className={`underline ${statusActionLinkClasses('info')}`}>Secrets</Link> page (define XML + optional base64 value).
       </p>
 
       {integrations && (
-        <section id="integrations-status" className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-3 scroll-mt-24">
-          <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+        <section id="integrations-status" className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4 space-y-3 scroll-mt-24">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] flex items-center gap-2">
             <Activity className={`w-4 h-4 ${statusToneClass('ok')}`} />
             Integrations
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[var(--text-muted)]">
             Capability phases mirror the Platform Integrations hub — wire each backend before using operator UIs.
           </p>
           <div className="flex flex-wrap gap-2 text-xs">
             {info?.kubevirt?.exec_enabled && (
-              <span className="px-2 py-1 rounded border border-violet-500/40 text-violet-300">Kubernetes · exec enabled</span>
+              <span className="px-2 py-1 rounded border border-[var(--accent)]/40 text-[var(--link)]">Kubernetes · exec enabled</span>
             )}
             {info?.hypersdk?.enabled && (
               <span className={statusSurfaceClasses(hsPhase === 'live' ? 'ok' : 'warn', 'px-2 py-1 rounded border')}>
@@ -176,14 +177,14 @@ export default function SettingsPage() {
               <span className="px-2 py-1 rounded border border-orange-500/40 text-orange-300">GuestKit · enabled</span>
             )}
             {info?.control_plane?.proxy_url && (
-              <Link to="/platform/integrations" className="px-2 py-1 rounded border border-sky-500/40 text-sky-300 hover:bg-sky-500/10">
-                Platform Integrations →
+              <Link to="/platform/settings?section=integrations" className="px-2 py-1 rounded border border-[var(--accent)]/40 text-[var(--link)] hover:bg-[var(--accent-soft)]">
+                Settings → Apps & Integrations →
               </Link>
             )}
           </div>
           <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
             <div>
-              <dt className="text-slate-500 text-xs">Automation worker</dt>
+              <dt className="text-[var(--text-muted)] text-xs">Automation worker</dt>
               <dd>
                 {integrations.automation.last_tick_unix
                   ? `tick ${new Date(integrations.automation.last_tick_unix * 1000).toLocaleString()}`
@@ -191,27 +192,27 @@ export default function SettingsPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500 text-xs">Alerts (unacked)</dt>
+              <dt className="text-[var(--text-muted)] text-xs">Alerts (unacked)</dt>
               <dd>{integrations.automation.alerts_unacknowledged}</dd>
             </div>
             <div>
-              <dt className="text-slate-500 text-xs">Alert rules</dt>
+              <dt className="text-[var(--text-muted)] text-xs">Alert rules</dt>
               <dd>
                 {integrations.automation.alert_rules_enabled}/{integrations.automation.alert_rules_total} enabled
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500 text-xs">KubeVirt exec</dt>
+              <dt className="text-[var(--text-muted)] text-xs">KubeVirt exec</dt>
               <dd>{integrations.kubevirt.exec_enabled ? 'yes' : 'no'}</dd>
             </div>
             <div>
-              <dt className="text-slate-500 text-xs">K8s kubeconfig</dt>
+              <dt className="text-[var(--text-muted)] text-xs">K8s kubeconfig</dt>
               <dd className="font-mono text-xs break-all">
                 {integrations.k8s.kubeconfig_auto_selected ?? 'default'}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500 text-xs">Run-as-user</dt>
+              <dt className="text-[var(--text-muted)] text-xs">Run-as-user</dt>
               <dd>
                 {integrations.run_as_user.impersonation_active
                   ? String(integrations.run_as_user.mode)
@@ -222,7 +223,7 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-2 text-sm">
             <button
               type="button"
-              className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="px-3 py-2 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
               onClick={() => {
                 void navigator.clipboard.writeText(JSON.stringify(integrations, null, 2))
                 toast.success('Copied integrations JSON')
@@ -230,10 +231,10 @@ export default function SettingsPage() {
             >
               Copy JSON
             </button>
-            <Link to="/k8s" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
+            <Link to="/k8s" className="px-3 py-2 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]">
               Kubernetes
             </Link>
-            <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">
+            <Link to="/fleet-cloud/instances" className="px-3 py-2 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]">
               Fleet Cloud
             </Link>
           </div>
@@ -243,13 +244,13 @@ export default function SettingsPage() {
       <IdentitySsoPanel />
 
       {obsSettings ? (
-        <section className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-violet-400" />
+        <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4 space-y-4">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[var(--accent)]" />
             Observability
           </h2>
-          <p className="text-xs text-slate-500">
-            Writes <code className="text-slate-400">{obsSettings.config_path}</code>. Workers reload
+          <p className="text-xs text-[var(--text-muted)]">
+            Writes <code className="text-[var(--text-muted)]">{obsSettings.config_path}</code>. Workers reload
             automatically after save. Admin role required.
           </p>
           <div className="grid sm:grid-cols-2 gap-3 text-sm">
@@ -321,7 +322,7 @@ export default function SettingsPage() {
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500">OTLP interval (seconds)</label>
+              <label className="text-xs text-[var(--text-muted)]">OTLP interval (seconds)</label>
               <input
                 aria-label="OTLP interval in seconds"
                 type="number"
@@ -340,7 +341,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">OTLP endpoint</label>
+              <label className="text-xs text-[var(--text-muted)]">OTLP endpoint</label>
               <input
                 aria-label="OTLP endpoint"
                 className="input-field w-full mt-1"
@@ -355,7 +356,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">
+              <label className="text-xs text-[var(--text-muted)]">
                 OTLP authorization {obsSettings.otlp.authorization_set ? `(set: ${obsSettings.otlp.authorization})` : ''}
               </label>
               <input
@@ -369,7 +370,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">Metrics JSON remote_write URL</label>
+              <label className="text-xs text-[var(--text-muted)]">Metrics JSON remote_write URL</label>
               <input
                 aria-label="Metrics remote_write URL"
                 className="input-field w-full mt-1"
@@ -386,7 +387,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">
+              <label className="text-xs text-[var(--text-muted)]">
                 Remote_write auth{' '}
                 {obsSettings.metrics_history.remote_write_authorization_set
                   ? `(set: ${obsSettings.metrics_history.remote_write_authorization})`
@@ -407,7 +408,7 @@ export default function SettingsPage() {
             <button
               type="button"
               disabled={obsSaving}
-              className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm disabled:opacity-50"
+              className="btn-primary text-sm disabled:opacity-50"
               onClick={async () => {
                 if (!obsSettings) return
                 setObsSaving(true)
@@ -447,7 +448,7 @@ export default function SettingsPage() {
             <button
               type="button"
               disabled={auditVerifyBusy}
-              className="px-3 py-2 rounded-lg border border-slate-600 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+              className="px-3 py-2 rounded-lg border border-[var(--apple-hairline)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-50"
               onClick={async () => {
                 setAuditVerifyBusy(true)
                 setAuditVerifyResult(null)
@@ -467,15 +468,15 @@ export default function SettingsPage() {
             </button>
           </div>
           {auditVerifyResult ? (
-            <p className="text-xs text-slate-400 font-mono">{auditVerifyResult}</p>
+            <p className="text-xs text-[var(--text-muted)] font-mono">{auditVerifyResult}</p>
           ) : null}
-          <div className="border-t border-slate-700/50 pt-3 space-y-2">
+          <div className="border-t border-[var(--apple-hairline)] pt-3 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-400">Recent HTTP traces</span>
+              <span className="text-xs text-[var(--text-muted)]">Recent HTTP traces</span>
               <button
                 type="button"
                 disabled={tracesLoading}
-                className="px-2 py-1 rounded border border-slate-600 text-xs text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+                className="px-2 py-1 rounded border border-[var(--apple-hairline)] text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-50"
                 onClick={async () => {
                   setTracesLoading(true)
                   try {
@@ -493,23 +494,23 @@ export default function SettingsPage() {
               </button>
             </div>
             {httpTraces && httpTraces.length > 0 ? (
-              <ul className="text-xs font-mono text-slate-400 space-y-1 max-h-40 overflow-y-auto">
+              <ul className="text-xs font-mono text-[var(--text-muted)] space-y-1 max-h-40 overflow-y-auto">
                 {httpTraces.map((t, i) => (
                   <li key={`${t.trace_id}-${i}`}>
                     {t.method} {t.route} → {t.status} ({t.duration_ms}ms){' '}
-                    <span className="text-slate-500">{t.trace_id.slice(0, 16)}…</span>
+                    <span className="text-[var(--text-muted)]">{t.trace_id.slice(0, 16)}…</span>
                   </li>
                 ))}
               </ul>
             ) : httpTraces ? (
-              <p className="text-xs text-slate-500">No traces in buffer yet.</p>
+              <p className="text-xs text-[var(--text-muted)]">No traces in buffer yet.</p>
             ) : null}
           </div>
         </section>
       ) : null}
 
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">Section</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Section</h2>
         <ChoiceCardDenseGrid>
           {tabs.map((t) => (
             <ChoiceCard
@@ -535,54 +536,54 @@ export default function SettingsPage() {
               <option value="operator">Operator</option>
               <option value="readonly">Read-only</option>
             </select>
-            <button type="button" onClick={async () => { if (!newRoleUser) return; try { await setRole(newRoleUser, newRoleVal); toast.success('Role set'); setNewRoleUser(''); load() } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } }} aria-label="Set role" title="Set role" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
+            <button type="button" onClick={async () => { if (!newRoleUser) return; try { await setRole(newRoleUser, newRoleVal); toast.success('Role set'); setNewRoleUser(''); load() } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } }} aria-label="Set role" title="Set role" className="btn-primary text-sm shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[28rem]" aria-label="User roles">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">User</th><th scope="col" className="px-6 py-3">Role</th><th scope="col" className="px-6 py-3">Permissions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">User</th><th scope="col" className="px-6 py-3">Role</th><th scope="col" className="px-6 py-3">Permissions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {roles.map(r => (
                   <tr key={r.username} className="table-row-hover">
                     <td className="px-6 py-3 font-medium">{r.username}</td>
                     <td className="px-6 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses(userRoleTone(r.role))}`}>{r.role}</span></td>
-                    <td className="px-6 py-3 text-xs text-slate-500">{r.role === 'admin' ? 'Full access' : r.role === 'operator' ? 'Create/modify VMs' : 'View only'}</td>
+                    <td className="px-6 py-3 text-xs text-[var(--text-muted)]">{r.role === 'admin' ? 'Full access' : r.role === 'operator' ? 'Create/modify VMs' : 'View only'}</td>
                   </tr>
                 ))}
-                {roles.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No custom roles set. All users default to admin.</td></tr>}
+                {roles.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-[var(--text-muted)]">No custom roles set. All users default to admin.</td></tr>}
               </tbody>
             </table>
           </div>
 
           {osUserCap && (
             <div className="card p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2"><Shield className={`w-4 h-4 ${statusToneClass('info')}`} /> System users (PAM / UNIX)</h3>
-              <p className="text-xs text-slate-500 break-words hyphens-auto">
-                Adds or removes a UNIX account on the machina host. When <strong className="text-slate-400">systemd-homed</strong> is active and <code className="bg-slate-900/80 px-1 rounded break-all">homectl</code> is available, new users are created with <code className="bg-slate-900/80 px-1 rounded break-all">homectl create</code> (directory storage, <strong className="text-slate-400">wheel</strong>/<strong className="text-slate-400">sudo</strong> membership); otherwise <code className="bg-slate-900/80 px-1 rounded break-all">useradd</code> / <code className="bg-slate-900/80 px-1 rounded break-all">usermod</code>. Password is set with <code className="bg-slate-900/80 px-1 rounded break-all">chpasswd</code>. Optionally append the <strong className="text-slate-400">libvirt</strong> group so the account can use <code className="bg-slate-900/80 px-1 rounded break-all">qemu:///system</code> after next login (or <code className="bg-slate-900/80 px-1 rounded break-all">newgrp libvirt</code>). Removal uses <code className="bg-slate-900/80 px-1 rounded break-all">homectl remove</code> for homed-managed users, else <code className="bg-slate-900/80 px-1 rounded break-all">userdel -r</code>. The signed-in user must be in <strong className="text-slate-400">wheel</strong>, <strong className="text-slate-400">sudo</strong>, or <strong className="text-slate-400">admin</strong>. Not available when using an API token.
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2"><Shield className={`w-4 h-4 ${statusToneClass('info')}`} /> System users (PAM / UNIX)</h3>
+              <p className="text-xs text-[var(--text-muted)] break-words hyphens-auto">
+                Adds or removes a UNIX account on the machina host. When <strong className="text-[var(--text-muted)]">systemd-homed</strong> is active and <code className="bg-[var(--apple-surface)] px-1 rounded break-all">homectl</code> is available, new users are created with <code className="bg-[var(--apple-surface)] px-1 rounded break-all">homectl create</code> (directory storage, <strong className="text-[var(--text-muted)]">wheel</strong>/<strong className="text-[var(--text-muted)]">sudo</strong> membership); otherwise <code className="bg-[var(--apple-surface)] px-1 rounded break-all">useradd</code> / <code className="bg-[var(--apple-surface)] px-1 rounded break-all">usermod</code>. Password is set with <code className="bg-[var(--apple-surface)] px-1 rounded break-all">chpasswd</code>. Optionally append the <strong className="text-[var(--text-muted)]">libvirt</strong> group so the account can use <code className="bg-[var(--apple-surface)] px-1 rounded break-all">qemu:///system</code> after next login (or <code className="bg-[var(--apple-surface)] px-1 rounded break-all">newgrp libvirt</code>). Removal uses <code className="bg-[var(--apple-surface)] px-1 rounded break-all">homectl remove</code> for homed-managed users, else <code className="bg-[var(--apple-surface)] px-1 rounded break-all">userdel -r</code>. The signed-in user must be in <strong className="text-[var(--text-muted)]">wheel</strong>, <strong className="text-[var(--text-muted)]">sudo</strong>, or <strong className="text-[var(--text-muted)]">admin</strong>. Not available when using an API token.
               </p>
               {osUserCap.userAccountBackend && (
-                <p className="text-xs text-slate-400">
-                  Host account backend: <span className="font-mono text-slate-300">{osUserCap.userAccountBackend}</span>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Host account backend: <span className="font-mono text-[var(--text-secondary)]">{osUserCap.userAccountBackend}</span>
                   {osUserCap.sudoSupplementaryGroup != null && osUserCap.sudoSupplementaryGroup !== '' && (
-                    <span className="text-slate-500"> — sudo group: <span className="font-mono text-slate-300">{osUserCap.sudoSupplementaryGroup}</span></span>
+                    <span className="text-[var(--text-muted)]"> — sudo group: <span className="font-mono text-[var(--text-secondary)]">{osUserCap.sudoSupplementaryGroup}</span></span>
                   )}
                 </p>
               )}
               {osUserCap.libvirtGroupAvailable === false && (
-                <p className={`text-xs opacity-90 ${statusToneClass('warn')}`}>Host has no <code className="bg-slate-900/80 px-1 rounded">libvirt</code> UNIX group — install libvirt or create the group before enabling libvirt access for new users.</p>
+                <p className={`text-xs opacity-90 ${statusToneClass('warn')}`}>Host has no <code className="bg-[var(--apple-surface)] px-1 rounded">libvirt</code> UNIX group — install libvirt or create the group before enabling libvirt access for new users.</p>
               )}
               {(osUserCap.canDeleteOsUsers ?? osUserCap.canCreateOsUsers) ? (
                 <div className="space-y-3">
                   {osUserCap.canCreateOsUsers && (
                     <>
-                      <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer select-none">
                         <input
                           type="checkbox"
-                          className="rounded border-slate-600"
+                          className="rounded border-[var(--apple-hairline)]"
                           checked={addOsUserToLibvirt}
                           disabled={osUserCap.libvirtGroupAvailable === false}
                           onChange={e => setAddOsUserToLibvirt(e.target.checked)}
                         />
-                        Add to <code className="text-xs bg-slate-900/80 px-1 rounded">{osUserCap.libvirtGroupName ?? 'libvirt'}</code> group (libvirt / qemu system URI)
+                        Add to <code className="text-xs bg-[var(--apple-surface)] px-1 rounded">{osUserCap.libvirtGroupName ?? 'libvirt'}</code> group (libvirt / qemu system URI)
                       </label>
                       <div className="flex flex-col sm:flex-row gap-2">
                         <input value={newOsUsername} onChange={e => setNewOsUsername(e.target.value)} aria-label="New username" className="input-field flex-1" placeholder="New username" autoComplete="off" />
@@ -607,7 +608,7 @@ export default function SettingsPage() {
                               setCreatingOsUser(false)
                             }
                           }}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm transition whitespace-nowrap"
+                          className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                           {creatingOsUser ? 'Creating…' : 'Create UNIX user'}
                         </button>
@@ -615,8 +616,8 @@ export default function SettingsPage() {
                     </>
                   )}
                   {(osUserCap.canDeleteOsUsers ?? osUserCap.canCreateOsUsers) && (
-                    <div className="pt-3 border-t border-slate-700/40 space-y-2">
-                      <p className="text-xs text-slate-500">Delete a UNIX account and remove its home directory. You cannot remove the account you are signed in as.</p>
+                    <div className="pt-3 border-t border-[var(--apple-hairline)]/40 space-y-2">
+                      <p className="text-xs text-[var(--text-muted)]">Delete a UNIX account and remove its home directory. You cannot remove the account you are signed in as.</p>
                       <div className="flex flex-col sm:flex-row gap-2">
                         <input value={deleteOsUsername} onChange={e => setDeleteOsUsername(e.target.value)} aria-label="Username to remove" className="input-field flex-1" placeholder="Username to remove" autoComplete="off" />
                         <button
@@ -626,7 +627,7 @@ export default function SettingsPage() {
                             if (!u) { toast.error('Username required'); return }
                             setConfirmDeleteOsUser(true)
                           }}
-                          className="px-4 py-2 bg-red-600/90 hover:bg-red-600 rounded-lg text-sm transition whitespace-nowrap"
+                          className="btn-destructive text-sm whitespace-nowrap"
                         >
                           Remove UNIX user
                         </button>
@@ -653,7 +654,7 @@ export default function SettingsPage() {
               <option value="operator">Operator</option>
               <option value="readonly">Read-only</option>
             </select>
-            <button type="button" disabled={creatingToken || !newTokenName.trim() || !newTokenUser.trim()} onClick={async () => { if (!newTokenName.trim() || !newTokenUser.trim()) { toast.error('Token name and user are required'); return } if (creatingToken) return; setCreatingToken(true); try { const t = await createToken(newTokenName, newTokenUser, newTokenRole); setCreatedToken(t.token); toast.success('Token created'); setNewTokenName(''); load() } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } finally { setCreatingToken(false) } }} aria-label="Create token" title="Create token" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm transition shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
+            <button type="button" disabled={creatingToken || !newTokenName.trim() || !newTokenUser.trim()} onClick={async () => { if (!newTokenName.trim() || !newTokenUser.trim()) { toast.error('Token name and user are required'); return } if (creatingToken) return; setCreatingToken(true); try { const t = await createToken(newTokenName, newTokenUser, newTokenRole); setCreatedToken(t.token); toast.success('Token created'); setNewTokenName(''); load() } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } finally { setCreatingToken(false) } }} aria-label="Create token" title="Create token" className="btn-primary text-sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           {createdToken && (
             <div className={`p-3 rounded-lg border ${statusSurfaceClasses('ok')}`}>
@@ -663,38 +664,38 @@ export default function SettingsPage() {
           )}
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[36rem]" aria-label="API tokens">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Token</th><th scope="col" className="px-6 py-3">User</th><th scope="col" className="px-6 py-3">Role</th><th scope="col" className="px-6 py-3">Created</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Token</th><th scope="col" className="px-6 py-3">User</th><th scope="col" className="px-6 py-3">Role</th><th scope="col" className="px-6 py-3">Created</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {tokens.map(t => (
                   <tr key={t.name} className="table-row-hover">
                     <td className="px-6 py-3 font-medium">{t.name}</td>
-                    <td className="px-6 py-3 font-mono text-xs text-slate-400">{t.token}</td>
+                    <td className="px-6 py-3 font-mono text-xs text-[var(--text-muted)]">{t.token}</td>
                     <td className="px-6 py-3 text-sm">{t.username}</td>
-                    <td className="px-6 py-3 text-xs"><span className="px-2 py-0.5 bg-slate-700 rounded">{t.role}</span></td>
-                    <td className="px-6 py-3 text-xs text-slate-500">{t.created}</td>
+                    <td className="px-6 py-3 text-xs"><span className="px-2 py-0.5 bg-[var(--surface-hover)] rounded">{t.role}</span></td>
+                    <td className="px-6 py-3 text-xs text-[var(--text-muted)]">{t.created}</td>
                     <td className="px-6 py-3 text-right"><button onClick={async () => { try { await deleteToken(t.token); toast.success('Deleted'); load() } catch (e: unknown) { toast.error(formatUserError(e)) } }} aria-label="Delete token" title="Delete token" className="p-1 hover:bg-red-600/20 rounded"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} aria-hidden="true" /></button></td>
                   </tr>
                 ))}
-                {tokens.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No API tokens. Create one to authenticate scripts and automation.</td></tr>}
+                {tokens.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No API tokens. Create one to authenticate scripts and automation.</td></tr>}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-500 break-words">Use tokens with: <code className="bg-slate-800 px-1 rounded break-all">curl -k -H &quot;Authorization: Bearer mach_xxx...&quot; https://host:5092/api/v1/vms</code> (older installs may still have <code className="bg-slate-800 px-1 rounded">vs_</code> tokens until rotated)</p>
+          <p className="text-xs text-[var(--text-muted)] break-words">Use tokens with: <code className="bg-[var(--apple-fill-tertiary)] px-1 rounded break-all">curl -k -H &quot;Authorization: Bearer mach_xxx...&quot; https://host:5092/api/v1/vms</code> (older installs may still have <code className="bg-[var(--apple-fill-tertiary)] px-1 rounded">vs_</code> tokens until rotated)</p>
         </div>
       )}
 
       {/* ── Alerts ─────────────────────────────────────────── */}
       {tab === 'alerts' && (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-300">Alert Rules</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">Alert Rules</h3>
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[32rem]" aria-label="Alert rules">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Rule</th><th scope="col" className="px-6 py-3">Condition</th><th scope="col" className="px-6 py-3">Threshold</th><th scope="col" className="px-6 py-3">Enabled</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Rule</th><th scope="col" className="px-6 py-3">Condition</th><th scope="col" className="px-6 py-3">Threshold</th><th scope="col" className="px-6 py-3">Enabled</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {alertRules.map((r, i) => (
                   <tr key={r.id} className="table-row-hover">
                     <td className="px-6 py-3 font-medium">{r.name}</td>
-                    <td className="px-6 py-3 text-sm font-mono text-slate-400">{r.condition}</td>
+                    <td className="px-6 py-3 text-sm font-mono text-[var(--text-muted)]">{r.condition}</td>
                     <td className="px-6 py-3"><input aria-label="Alert rule threshold" type="number" value={r.threshold} onChange={e => { const next = [...alertRules]; next[i].threshold = parseFloat(e.target.value) || 0; setAlertRules(next) }} className="input-field w-20" /></td>
                     <td className="px-6 py-3"><input type="checkbox" checked={r.enabled} onChange={e => { const next = [...alertRules]; next[i].enabled = e.target.checked; setAlertRules(next) }} /></td>
                   </tr>
@@ -702,21 +703,21 @@ export default function SettingsPage() {
               </tbody>
             </table>
           </div>
-          <button onClick={async () => { try { await saveAlertRules(alertRules); toast.success('Rules saved') } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition">Save Rules</button>
+          <button onClick={async () => { try { await saveAlertRules(alertRules); toast.success('Rules saved') } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } }} className="btn-primary text-sm">Save Rules</button>
 
-          <h3 className="text-sm font-semibold text-slate-300 mt-6">Active Alerts</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mt-6">Active Alerts</h3>
           <div className="space-y-2">
             {alerts.filter(a => !a.acknowledged).map(a => (
               <div key={a.id} className={`flex items-center gap-3 p-3 rounded-lg border ${statusSurfaceClasses(a.severity === 'critical' ? 'error' : 'warn')}`}>
                 <AlertCircle className={`w-4 h-4 ${statusToneClass(a.severity === 'critical' ? 'error' : 'warn')}`} />
                 <div className="flex-1">
                   <div className="text-sm font-medium">{a.rule_name}</div>
-                  <div className="text-xs text-slate-400">{a.message} — {a.timestamp}</div>
+                  <div className="text-xs text-[var(--text-muted)]">{a.message} — {a.timestamp}</div>
                 </div>
-                <button onClick={async () => { try { await acknowledgeAlert(a.id); load() } catch (e: unknown) { toast.error(formatUserError(e)) } }} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"><Check className="w-3 h-3 inline" /> Ack</button>
+                <button onClick={async () => { try { await acknowledgeAlert(a.id); load() } catch (e: unknown) { toast.error(formatUserError(e)) } }} className="px-2 py-1 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] rounded text-xs"><Check className="w-3 h-3 inline" /> Ack</button>
               </div>
             ))}
-            {alerts.filter(a => !a.acknowledged).length === 0 && <p className="text-sm text-slate-500">No active alerts</p>}
+            {alerts.filter(a => !a.acknowledged).length === 0 && <p className="text-sm text-[var(--text-muted)]">No active alerts</p>}
           </div>
         </div>
       )}
@@ -726,25 +727,25 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-2 min-w-0 sm:flex-row sm:items-center">
             <input aria-label="Webhook URL" value={newWebhookUrl} onChange={e => setNewWebhookUrl(e.target.value)} className="input-field flex-1 min-w-0" placeholder="https://example.com/webhook" />
-            <button type="button" onClick={() => { if (!newWebhookUrl) return; const next = [...webhooks, { id: `wh-${Date.now()}`, url: newWebhookUrl, events: ['*'], enabled: true }]; setWebhooks(next); setNewWebhookUrl(''); saveWebhooks(next).then(() => toast.success('Webhook added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add webhook" title="Add webhook" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
+            <button type="button" onClick={() => { if (!newWebhookUrl) return; const next = [...webhooks, { id: `wh-${Date.now()}`, url: newWebhookUrl, events: ['*'], enabled: true }]; setWebhooks(next); setNewWebhookUrl(''); saveWebhooks(next).then(() => toast.success('Webhook added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add webhook" title="Add webhook" className="btn-primary text-sm shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[28rem]" aria-label="Webhook endpoints">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">URL</th><th scope="col" className="px-6 py-3">Events</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">URL</th><th scope="col" className="px-6 py-3">Events</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {webhooks.map((h, i) => (
                   <tr key={h.id} className="table-row-hover">
                     <td className={`px-6 py-3 text-sm font-mono truncate max-w-xs ${statusToneClass('info')}`}>{h.url}</td>
-                    <td className="px-6 py-3 text-xs text-slate-400">{h.events.join(', ')}</td>
+                    <td className="px-6 py-3 text-xs text-[var(--text-muted)]">{h.events.join(', ')}</td>
                     <td className="px-6 py-3"><input type="checkbox" checked={h.enabled} onChange={e => { const next = [...webhooks]; next[i].enabled = e.target.checked; setWebhooks(next); saveWebhooks(next).catch((e: unknown) => toast.error(formatUserError(e))) }} /></td>
                     <td className="px-6 py-3 text-right"><button onClick={() => { const next = webhooks.filter((_, j) => j !== i); setWebhooks(next); saveWebhooks(next).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Remove webhook" title="Remove webhook" className="p-1 hover:bg-red-600/20 rounded"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} aria-hidden="true" /></button></td>
                   </tr>
                 ))}
-                {webhooks.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No webhooks configured. Add one to receive VM event notifications.</td></tr>}
+                {webhooks.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-[var(--text-muted)]">No webhooks configured. Add one to receive VM event notifications.</td></tr>}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-500">Events: vm_started, vm_stopped, alert_fired, backup_completed, * (all)</p>
+          <p className="text-xs text-[var(--text-muted)]">Events: vm_started, vm_stopped, alert_fired, backup_completed, * (all)</p>
         </div>
       )}
 
@@ -764,23 +765,23 @@ export default function SettingsPage() {
               <option value="snapshot">Snapshot</option>
             </select>
             <input type="time" aria-label="Schedule time" value={newSchedTime} onChange={e => setNewSchedTime(e.target.value)} className="input-field w-full shrink-0 sm:w-28" />
-            <button type="button" onClick={() => { if (!newSchedVm) return; const next = [...schedules, { id: `sched-${Date.now()}`, vm_name: newSchedVm, action: newSchedAction, schedule: `daily ${newSchedTime}`, enabled: true, last_run: '' }]; setSchedules(next); saveSchedules(next).then(() => toast.success('Schedule added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add schedule" title="Add schedule" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
+            <button type="button" onClick={() => { if (!newSchedVm) return; const next = [...schedules, { id: `sched-${Date.now()}`, vm_name: newSchedVm, action: newSchedAction, schedule: `daily ${newSchedTime}`, enabled: true, last_run: '' }]; setSchedules(next); saveSchedules(next).then(() => toast.success('Schedule added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add schedule" title="Add schedule" className="btn-primary text-sm shrink-0"><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[40rem]" aria-label="VM schedules">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">VM</th><th scope="col" className="px-6 py-3">Action</th><th scope="col" className="px-6 py-3">Schedule</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3">Last Run</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">VM</th><th scope="col" className="px-6 py-3">Action</th><th scope="col" className="px-6 py-3">Schedule</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3">Last Run</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {schedules.map((s, i) => (
                   <tr key={s.id} className="table-row-hover">
                     <td className="px-6 py-3 font-medium">{s.vm_name}</td>
-                    <td className="px-6 py-3 text-sm"><span className="px-2 py-0.5 bg-slate-700 rounded text-xs">{s.action}</span></td>
-                    <td className="px-6 py-3 text-sm font-mono text-slate-400">{s.schedule}</td>
+                    <td className="px-6 py-3 text-sm"><span className="px-2 py-0.5 bg-[var(--surface-hover)] rounded text-xs">{s.action}</span></td>
+                    <td className="px-6 py-3 text-sm font-mono text-[var(--text-muted)]">{s.schedule}</td>
                     <td className="px-6 py-3"><input type="checkbox" checked={s.enabled} onChange={e => { const next = [...schedules]; next[i].enabled = e.target.checked; setSchedules(next); saveSchedules(next).catch((e: unknown) => toast.error(formatUserError(e))) }} /></td>
-                    <td className="px-6 py-3 text-xs text-slate-500">{s.last_run || 'never'}</td>
+                    <td className="px-6 py-3 text-xs text-[var(--text-muted)]">{s.last_run || 'never'}</td>
                     <td className="px-6 py-3 text-right"><button onClick={() => { const next = schedules.filter((_, j) => j !== i); setSchedules(next); saveSchedules(next).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Remove schedule" title="Remove schedule" className="p-1 hover:bg-red-600/20 rounded"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} aria-hidden="true" /></button></td>
                   </tr>
                 ))}
-                {schedules.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No scheduled actions. Add one to auto start/stop VMs at specific times.</td></tr>}
+                {schedules.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No scheduled actions. Add one to auto start/stop VMs at specific times.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -798,28 +799,28 @@ export default function SettingsPage() {
               <option value="webhook">Webhook</option>
             </select>
             <input aria-label="Channel configuration" value={newNotifConfig} onChange={e => setNewNotifConfig(e.target.value)} className="input-field flex-1" placeholder={newNotifType === 'slack' ? 'Slack webhook URL' : newNotifType === 'email' ? 'recipient@example.com' : newNotifType === 'telegram' ? 'bot_token:chat_id' : 'https://example.com/hook'} />
-            <button onClick={() => { if (!newNotifConfig) return; const next = [...notificationChannels, { id: `notif-${Date.now()}`, channel_type: newNotifType, config: newNotifConfig, enabled: true }]; setNotificationChannels(next); setNewNotifConfig(''); saveNotificationChannels(next).then(() => toast.success('Channel added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add channel" title="Add channel" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition"><Plus className="w-4 h-4" aria-hidden="true" /></button>
+            <button onClick={() => { if (!newNotifConfig) return; const next = [...notificationChannels, { id: `notif-${Date.now()}`, channel_type: newNotifType, config: newNotifConfig, enabled: true }]; setNotificationChannels(next); setNewNotifConfig(''); saveNotificationChannels(next).then(() => toast.success('Channel added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add channel" title="Add channel" className="btn-primary text-sm"><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[28rem]" aria-label="Notification channels">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Type</th><th scope="col" className="px-6 py-3">Config</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Type</th><th scope="col" className="px-6 py-3">Config</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {notificationChannels.map((ch, i) => (
                   <tr key={ch.id} className="table-row-hover">
                     <td className="px-6 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses(notificationChannelTone(ch.channel_type))}`}>{ch.channel_type}</span></td>
-                    <td className="px-6 py-3 text-sm font-mono text-slate-400 truncate max-w-xs">{ch.config}</td>
+                    <td className="px-6 py-3 text-sm font-mono text-[var(--text-muted)] truncate max-w-xs">{ch.config}</td>
                     <td className="px-6 py-3"><input type="checkbox" checked={ch.enabled} onChange={e => { const next = [...notificationChannels]; next[i].enabled = e.target.checked; setNotificationChannels(next); saveNotificationChannels(next).catch((e: unknown) => toast.error(formatUserError(e))) }} /></td>
                     <td className="px-6 py-3 text-right flex items-center justify-end gap-1">
-                      <button onClick={async () => { try { await testNotification(ch); toast.success('Test sent') } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } }} className="p-1 hover:bg-blue-600/20 rounded" title="Send test" aria-label="Send test"><Send className={`w-4 h-4 ${statusToneClass('info')}`} aria-hidden="true" /></button>
+                      <button onClick={async () => { try { await testNotification(ch); toast.success('Test sent') } catch (e: unknown) { toast.error(`${formatUserError(e)}`) } }} className="p-1 hover:bg-white/10 rounded" title="Send test" aria-label="Send test"><Send className={`w-4 h-4 ${statusToneClass('info')}`} aria-hidden="true" /></button>
                       <button onClick={() => { const next = notificationChannels.filter((_, j) => j !== i); setNotificationChannels(next); saveNotificationChannels(next).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Remove channel" title="Remove channel" className="p-1 hover:bg-red-600/20 rounded"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} aria-hidden="true" /></button>
                     </td>
                   </tr>
                 ))}
-                {notificationChannels.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No notification channels. Add Slack, Email, Telegram, or Webhook to receive alerts.</td></tr>}
+                {notificationChannels.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-[var(--text-muted)]">No notification channels. Add Slack, Email, Telegram, or Webhook to receive alerts.</td></tr>}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-500">Slack: paste incoming webhook URL. Email: recipient address (requires sendmail). Telegram: bot_token:chat_id format.</p>
+          <p className="text-xs text-[var(--text-muted)]">Slack: paste incoming webhook URL. Email: recipient address (requires sendmail). Telegram: bot_token:chat_id format.</p>
         </div>
       )}
 
@@ -838,27 +839,27 @@ export default function SettingsPage() {
               <option value="24">Every 24h</option>
             </select>
             <input type="number" value={newSnapRetain} onChange={e => setNewSnapRetain(e.target.value)} aria-label="Retain count" className="input-field w-24" placeholder="Retain" min="1" max="100" />
-            <button onClick={() => { if (!newSnapVm) return; const next = [...snapshotSchedules, { id: `snap-${Date.now()}`, vm_name: newSnapVm, interval_hours: parseInt(newSnapInterval) || 24, retain_count: parseInt(newSnapRetain) || 5, enabled: true, last_run: '' }]; setSnapshotSchedules(next); setNewSnapVm(''); saveSnapshotSchedules(next).then(() => toast.success('Snapshot schedule added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add snapshot schedule" title="Add snapshot schedule" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition"><Plus className="w-4 h-4" aria-hidden="true" /></button>
+            <button onClick={() => { if (!newSnapVm) return; const next = [...snapshotSchedules, { id: `snap-${Date.now()}`, vm_name: newSnapVm, interval_hours: parseInt(newSnapInterval) || 24, retain_count: parseInt(newSnapRetain) || 5, enabled: true, last_run: '' }]; setSnapshotSchedules(next); setNewSnapVm(''); saveSnapshotSchedules(next).then(() => toast.success('Snapshot schedule added')).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Add snapshot schedule" title="Add snapshot schedule" className="btn-primary text-sm"><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="card overflow-x-auto max-w-full">
             <table className="w-full min-w-[36rem]" aria-label="Snapshot schedules">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">VM</th><th scope="col" className="px-6 py-3">Interval</th><th scope="col" className="px-6 py-3">Retain</th><th scope="col" className="px-6 py-3">Last Run</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">VM</th><th scope="col" className="px-6 py-3">Interval</th><th scope="col" className="px-6 py-3">Retain</th><th scope="col" className="px-6 py-3">Last Run</th><th scope="col" className="px-6 py-3">Enabled</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {snapshotSchedules.map((s, i) => (
                   <tr key={s.id} className="table-row-hover">
                     <td className="px-6 py-3 font-medium">{s.vm_name}</td>
                     <td className="px-6 py-3 text-sm">{s.interval_hours}h</td>
                     <td className="px-6 py-3 text-sm">{s.retain_count}</td>
-                    <td className="px-6 py-3 text-xs text-slate-500">{s.last_run || 'never'}</td>
+                    <td className="px-6 py-3 text-xs text-[var(--text-muted)]">{s.last_run || 'never'}</td>
                     <td className="px-6 py-3"><input type="checkbox" checked={s.enabled} onChange={e => { const next = [...snapshotSchedules]; next[i].enabled = e.target.checked; setSnapshotSchedules(next); saveSnapshotSchedules(next).catch((e: unknown) => toast.error(formatUserError(e))) }} /></td>
                     <td className="px-6 py-3 text-right"><button onClick={() => { const next = snapshotSchedules.filter((_, j) => j !== i); setSnapshotSchedules(next); saveSnapshotSchedules(next).catch((e: unknown) => toast.error(formatUserError(e))) }} aria-label="Delete snapshot schedule" title="Delete snapshot schedule" className="p-1 hover:bg-red-600/20 rounded"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} aria-hidden="true" /></button></td>
                   </tr>
                 ))}
-                {snapshotSchedules.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No snapshot schedules. Add one to automatically snapshot VMs at regular intervals.</td></tr>}
+                {snapshotSchedules.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No snapshot schedules. Add one to automatically snapshot VMs at regular intervals.</td></tr>}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-500">Snapshots are taken automatically at the configured interval. Old snapshots beyond the retain count are pruned.</p>
+          <p className="text-xs text-[var(--text-muted)]">Snapshots are taken automatically at the configured interval. Old snapshots beyond the retain count are pruned.</p>
         </div>
       )}
       <ConfirmDialog

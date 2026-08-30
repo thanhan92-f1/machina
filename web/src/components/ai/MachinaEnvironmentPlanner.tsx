@@ -55,8 +55,8 @@ export default function MachinaEnvironmentPlanner() {
       {error && <p className={`text-xs mt-2 ${statusToneClass('error')}`}>{error}</p>}
       {summary && <p className={`text-xs mt-2 ${statusToneClass('ok')}`}>{summary}</p>}
       {plan && (
-        <div className="mt-3 text-xs space-y-1 text-slate-400">
-          <p className="text-slate-200 font-medium">{plan.label}</p>
+        <div className="mt-3 text-xs space-y-1 text-[var(--text-muted)]">
+          <p className="text-[var(--text-primary)] font-medium">{plan.label}</p>
           <p>{plan.review}</p>
           {plan.build_steps.map((s) => <p key={s}>• {s}</p>)}
         </div>

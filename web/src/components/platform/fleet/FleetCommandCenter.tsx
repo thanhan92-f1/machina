@@ -93,7 +93,7 @@ export default function FleetCommandCenter({
   ) : paused ? (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-200 hover:bg-emerald-500/10"
       onClick={() => void onPower(selectedVm, 'resume')}
     >
       <Play className="w-3.5 h-3.5" /> Resume
@@ -101,7 +101,7 @@ export default function FleetCommandCenter({
   ) : (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-200 hover:bg-emerald-500/10"
       onClick={() => void onPower(selectedVm, 'start')}
     >
       <Play className="w-3.5 h-3.5" /> Start
@@ -127,7 +127,7 @@ export default function FleetCommandCenter({
       <MetricList items={metrics} />
 
       <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-400">Power</p>
+        <p className="text-xs font-medium text-[var(--text-muted)]">Power</p>
         {primaryPowerAction}
         <div className="flex flex-wrap gap-1.5">
           {(running || paused) && (
@@ -156,7 +156,7 @@ export default function FleetCommandCenter({
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-400">Console</p>
+        <p className="text-xs font-medium text-[var(--text-muted)]">Console</p>
         <VmConsoleQuickLinks vmId={selectedVm.id} running={running} />
         <div className="flex flex-wrap gap-2">
           <Link
@@ -210,7 +210,7 @@ export default function FleetCommandCenter({
         <ConsoleTheatrePreview vmId={selectedVm.id} vmName={selectedVm.name} />
       )}
 
-      <div className="rounded-lg border border-emerald-900/40 bg-emerald-950/20 p-3 text-xs text-emerald-100/90">
+      <div className="rounded-lg border border-emerald-900/40 bg-[var(--apple-surface)] p-3 text-xs text-emerald-100/90">
         <p className="font-medium text-emerald-200/90 mb-1">Zyra says</p>
         <p>
           {healthScore != null && healthScore < 70
@@ -260,10 +260,10 @@ function MigratePicker({
   if (candidates.length === 0) return null
   return (
     <div>
-      <p className="text-xs font-medium text-slate-400 mb-1">Migrate to</p>
+      <p className="text-xs font-medium text-[var(--text-muted)] mb-1">Migrate to</p>
       <select
         aria-label="Migrate VM to host"
-        className="w-full text-xs rounded-lg bg-slate-900 border border-white/10 px-2 py-1.5"
+        className="w-full text-xs rounded-lg bg-[var(--apple-surface)] border border-white/10 px-2 py-1.5"
         defaultValue=""
         onChange={(e) => {
           const id = e.target.value

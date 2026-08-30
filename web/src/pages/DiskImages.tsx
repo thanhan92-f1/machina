@@ -271,6 +271,7 @@ export default function DiskImagesPage() {
       onErrorDismiss={() => setLoadError(null)}
     >
       <Hero
+        eyebrow="Hypervisor"
         title="Disk Images"
         subtitle={
           loading
@@ -281,7 +282,7 @@ export default function DiskImagesPage() {
         actions={
           <button
             onClick={() => void load()}
-            className="p-2 hover:bg-slate-700 rounded transition"
+            className="p-2 hover:bg-[var(--surface-hover)] rounded transition"
             title="Refresh"
             aria-label="Refresh"
           >
@@ -291,10 +292,10 @@ export default function DiskImagesPage() {
       />
 
       {!loading && scanDirectories.length > 0 && (
-        <div className="rounded-xl border border-slate-700/50 bg-slate-900/30 px-4 py-3 text-xs text-slate-400 space-y-2">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-fill-tertiary)] px-4 py-3 text-xs text-[var(--text-muted)] space-y-2">
           <p>
             Scanned directories (libvirt storage pools plus host defaults):{' '}
-            <span className="text-slate-300 font-mono break-all">{scanDirectories.join(', ')}</span>
+            <span className="text-[var(--text-secondary)] font-mono break-all">{scanDirectories.join(', ')}</span>
           </p>
           <p className={`border-t pt-2 mt-2 ${statusToneClass('warn')}`}>
             <strong className="opacity-90">mkosi temp:</strong> failed image builds may leave large folders under{' '}
@@ -306,22 +307,22 @@ export default function DiskImagesPage() {
       )}
 
       {!loading && (
-        <div className="rounded-xl border border-cyan-800/40 bg-slate-800/50 p-6 space-y-4">
+        <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--apple-surface)] p-6 space-y-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-cyan-400" aria-hidden />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-[var(--accent)]" aria-hidden />
                 Build disk (virt-image-build)
               </h2>
-              <p className="text-sm text-slate-400 max-w-3xl mt-1">
-                Runs <code className="text-slate-300">virt-builder</code> on the daemon host as a background job — same
-                log stream as <Link to="/jobs" className="text-cyan-300 hover:underline">Jobs</Link> and the step
+              <p className="text-sm text-[var(--text-muted)] max-w-3xl mt-1">
+                Runs <code className="text-[var(--text-secondary)]">virt-builder</code> on the daemon host as a background job — same
+                log stream as <Link to="/jobs" className="text-[var(--accent)] hover:underline">Jobs</Link> and the step
                 timeline used on Create VM.
               </p>
             </div>
             <Link
               to="/jobs"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--apple-hairline)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)]"
             >
               <ClipboardList className="w-4 h-4" />
               Open Jobs
@@ -329,41 +330,41 @@ export default function DiskImagesPage() {
           </div>
 
           {!vbCatalog ? (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[var(--text-muted)]">
               Could not load virt-builder catalog (daemon unreachable or browse API error).
             </p>
           ) : (
             <>
           {!vbAllowed ? (
             <p className={`text-sm ${statusToneClass('warn')}`}>
-              virt-builder is disabled in daemon config (<code className="text-slate-300">virt_builder_allowed</code>).
+              virt-builder is disabled in daemon config (<code className="text-[var(--text-secondary)]">virt_builder_allowed</code>).
             </p>
           ) : vbCatalog.virt_builder_installed === false ? (
             <p className={`text-sm ${statusToneClass('warn')}`}>
-              <code className="text-slate-300">virt-builder</code> is not available on this host (install libguestfs
+              <code className="text-[var(--text-secondary)]">virt-builder</code> is not available on this host (install libguestfs
               tools).
             </p>
           ) : vbCatalog.catalog_error ? (
             <p className="text-sm text-rose-300/90">Catalog: {vbCatalog.catalog_error}</p>
           ) : templateOptions.length === 0 ? (
-            <p className="text-sm text-slate-400">No virt-builder templates returned from the host.</p>
+            <p className="text-sm text-[var(--text-muted)]">No virt-builder templates returned from the host.</p>
           ) : (
             <>
               {outputRoots?.allowed_prefixes?.length ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[var(--text-muted)]">
                   Allowed output prefixes:{' '}
-                  <span className="font-mono text-slate-400 break-all">{outputRoots.allowed_prefixes.join(', ')}</span>
+                  <span className="font-mono text-[var(--text-muted)] break-all">{outputRoots.allowed_prefixes.join(', ')}</span>
                   {outputRoots.effective_tmpdir ? (
                     <>
                       {' '}
-                      · TMPDIR: <span className="font-mono text-slate-400">{outputRoots.effective_tmpdir}</span>
+                      · TMPDIR: <span className="font-mono text-[var(--text-muted)]">{outputRoots.effective_tmpdir}</span>
                     </>
                   ) : null}
                 </p>
               ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="vb-os" className="block text-sm text-slate-400 mb-1">
+                  <label htmlFor="vb-os" className="block text-sm text-[var(--text-muted)] mb-1">
                     Template (OS)
                   </label>
                   <select
@@ -381,7 +382,7 @@ export default function DiskImagesPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="vb-out" className="block text-sm text-slate-400 mb-1">
+                  <label htmlFor="vb-out" className="block text-sm text-[var(--text-muted)] mb-1">
                     New qcow2 path (absolute, must not exist)
                   </label>
                   <div className="flex gap-2">
@@ -398,7 +399,7 @@ export default function DiskImagesPage() {
                       type="button"
                       disabled={vbBuilding}
                       onClick={() => setOutBrowseOpen(true)}
-                      className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+                      className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-[var(--apple-hairline)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)] disabled:opacity-50"
                       title="Pick a folder, then we fill a suggested filename"
                     >
                       <FolderOpen className="w-4 h-4" />
@@ -412,7 +413,7 @@ export default function DiskImagesPage() {
                   type="button"
                   disabled={!vbReady || vbBuilding || directBuildBusy}
                   onClick={() => void runVirtImageBuild()}
-                  className="inline-flex items-center rounded-lg bg-cyan-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
+                  className="btn-primary text-sm disabled:opacity-50"
                 >
                   {vbBuilding ? 'Building…' : 'Start disk build job'}
                 </button>
@@ -421,7 +422,7 @@ export default function DiskImagesPage() {
                   disabled={!vbReady || vbBuilding || directBuildBusy || !vbOutput.trim()}
                   data-testid="virt-direct-build"
                   onClick={() => void runDirectBuild()}
-                  className="inline-flex items-center rounded-lg border border-cyan-600/50 px-4 py-2.5 text-sm text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50"
+                  className="inline-flex items-center rounded-lg border border-[var(--accent)]/40 px-4 py-2.5 text-sm text-[var(--accent)] hover:bg-[var(--accent-soft)] disabled:opacity-50"
                 >
                   {directBuildBusy ? 'Building…' : 'Direct build (sync)'}
                 </button>
@@ -430,7 +431,7 @@ export default function DiskImagesPage() {
                   disabled={!vbOs.trim() || vbProbeBusy}
                   data-testid="virt-probe-template"
                   onClick={() => void runProbe()}
-                  className="inline-flex items-center rounded-lg border border-slate-600 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+                  className="inline-flex items-center rounded-lg border border-[var(--apple-hairline)] px-4 py-2.5 text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)] disabled:opacity-50"
                 >
                   {vbProbeBusy ? 'Probing…' : 'Probe template'}
                 </button>
@@ -439,27 +440,27 @@ export default function DiskImagesPage() {
                   disabled={!vbOs.trim() || vbNotesBusy}
                   data-testid="virt-template-notes"
                   onClick={() => void loadNotes()}
-                  className="inline-flex items-center rounded-lg border border-slate-600 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+                  className="inline-flex items-center rounded-lg border border-[var(--apple-hairline)] px-4 py-2.5 text-sm text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)] disabled:opacity-50"
                 >
                   {vbNotesBusy ? 'Loading…' : 'Template notes'}
                 </button>
               </div>
               {vbProbe && (
-                <p className="text-xs text-slate-400" data-testid="virt-probe-result">
+                <p className="text-xs text-[var(--text-muted)]" data-testid="virt-probe-result">
                   Probe: {vbProbe.name_valid ? 'valid name' : 'invalid name'}
                   {vbProbe.in_cached_catalog ? ' · in catalog' : ' · not in catalog'}
                   {vbProbe.hint ? ` — ${vbProbe.hint}` : ''}
                 </p>
               )}
               {vbNotes && (
-                <pre className="text-xs text-slate-300 whitespace-pre-wrap rounded border border-slate-700 bg-slate-950/50 p-3" data-testid="virt-notes-body">{vbNotes}</pre>
+                <pre className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap rounded border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-3" data-testid="virt-notes-body">{vbNotes}</pre>
               )}
             </>
           )}
 
           {(vbBuilding || vbLog.length > 0) && vibTimeline && (
-            <div className="space-y-2 rounded-lg border border-slate-700/60 bg-slate-950/40 p-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-cyan-200/90">Build progress</h3>
+            <div className="space-y-2 rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">Build progress</h3>
               <BuildStepTimeline
                 steps={VIRT_IMAGE_TIMELINE_LABELS}
                 activeIndex={vibTimeline.activeIndex}
@@ -467,7 +468,7 @@ export default function DiskImagesPage() {
                 failed={vibTimeline.failed}
                 variant="slate"
               />
-              <pre className="max-h-64 overflow-y-auto rounded border border-slate-800 bg-black/50 p-2 font-mono text-[11px] text-slate-200 whitespace-pre-wrap break-all">
+              <pre className="max-h-64 overflow-y-auto rounded border border-[var(--apple-hairline)] bg-black/50 p-2 font-mono text-[11px] text-[var(--text-primary)] whitespace-pre-wrap break-all">
                 {vbLog.join('\n')}
               </pre>
             </div>
@@ -478,19 +479,19 @@ export default function DiskImagesPage() {
       )}
 
       {!loading && mkosiWorkspaces.length > 0 && (
-        <div className="rounded-xl border border-violet-800/40 bg-slate-800/50 p-6 space-y-3" data-testid="mkosi-workspaces-panel">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Boxes className="w-5 h-5 text-violet-400" aria-hidden />
+        <div className="rounded-xl border border-violet-800/40 bg-[var(--apple-surface)] p-6 space-y-3" data-testid="mkosi-workspaces-panel">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <Boxes className="w-5 h-5 text-[var(--accent)]" aria-hidden />
             mkosi workspaces
           </h2>
-          <p className="text-sm text-slate-400">Discovered under host mkosi-defs paths (GET /browse/mkosi-workspaces).</p>
-          <ul className="text-sm text-slate-300 space-y-2">
+          <p className="text-sm text-[var(--text-muted)]">Discovered under host mkosi-defs paths (GET /browse/mkosi-workspaces).</p>
+          <ul className="text-sm text-[var(--text-secondary)] space-y-2">
             {mkosiWorkspaces.map((ws) => (
-              <li key={ws.path} className="rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-2">
-                <span className="font-mono text-violet-200">{ws.name}</span>
-                <span className="text-slate-500 text-xs block mt-0.5">{ws.path}</span>
+              <li key={ws.path} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-3 py-2">
+                <span className="font-mono text-[var(--link)]">{ws.name}</span>
+                <span className="text-[var(--text-muted)] text-xs block mt-0.5">{ws.path}</span>
                 {ws.images.length > 0 && (
-                  <span className="text-xs text-slate-500">Images: {ws.images.join(', ')}</span>
+                  <span className="text-xs text-[var(--text-muted)]">Images: {ws.images.join(', ')}</span>
                 )}
               </li>
             ))}
@@ -500,7 +501,7 @@ export default function DiskImagesPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
         </div>
       ) : images.length === 0 ? (
         <EmptyState
@@ -512,21 +513,21 @@ export default function DiskImagesPage() {
               : 'Connect to the daemon to discover storage pool paths on this host.'
           }
           primaryAction={
-            <Link to="/create" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">
+            <Link to="/create" className="btn-primary text-sm">
               Create VM
             </Link>
           }
           secondaryAction={
-            <Link to="/import" className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
+            <Link to="/import" className="px-4 py-2 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-sm">
               Import VM
             </Link>
           }
         />
       ) : (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
           <table className="w-full" aria-label="Disk images">
             <thead>
-              <tr className="border-b border-slate-700/50 text-left text-xs text-slate-400 uppercase tracking-wide">
+              <tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)] uppercase tracking-wide">
                 <th scope="col" className="px-5 py-3">Name</th>
                 <th scope="col" className="px-5 py-3">Format</th>
                 <th scope="col" className="px-5 py-3">Size</th>
@@ -534,22 +535,22 @@ export default function DiskImagesPage() {
                 <th scope="col" className="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
               {images.map((img) => (
-                <tr key={img.path} className="hover:bg-slate-700/30 transition-colors group">
+                <tr key={img.path} className="hover:bg-[var(--surface-hover)]/30 transition-colors group">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <HardDrive className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span className="text-sm font-medium text-slate-200">{img.name}</span>
+                      <HardDrive className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                      <span className="text-sm font-medium text-[var(--text-primary)]">{img.name}</span>
                     </div>
                   </td>
                   <td className="px-5 py-3">
-                    <span className="px-2 py-0.5 rounded text-xs font-mono bg-slate-700/60 text-slate-300">
+                    <span className="px-2 py-0.5 rounded text-xs font-mono bg-[var(--surface-hover)]/60 text-[var(--text-secondary)]">
                       {img.format}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-sm text-slate-300">{formatBytes(img.size_bytes)}</td>
-                  <td className="px-5 py-3 hidden md:table-cell text-xs text-slate-500 font-mono max-w-xs truncate">
+                  <td className="px-5 py-3 text-sm text-[var(--text-secondary)]">{formatBytes(img.size_bytes)}</td>
+                  <td className="px-5 py-3 hidden md:table-cell text-xs text-[var(--text-muted)] font-mono max-w-xs truncate">
                     {img.path}
                   </td>
                   <td className="px-5 py-3 text-right">
@@ -558,7 +559,7 @@ export default function DiskImagesPage() {
                       <button
                         type="button"
                         onClick={() => setKvPath(img.path)}
-                        className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 hover:text-violet-200 text-xs font-medium transition mr-1"
+                        className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent)]/20 hover:bg-[var(--accent)]/40 text-[var(--link)] hover:text-[var(--link-hover)] text-xs font-medium transition mr-1"
                         title="Upload to Kubernetes (KubeVirt + CDI)"
                       >
                         <Boxes className="w-3.5 h-3.5" />

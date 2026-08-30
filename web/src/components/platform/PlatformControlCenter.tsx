@@ -144,9 +144,9 @@ export default function PlatformControlCenter() {
       case 'administration':
         return <Settings className={`w-4 h-4 ${statusToneClass('info')}`} />
       case 'security':
-        return <Shield className="w-4 h-4 text-violet-400" />
+        return <Shield className="w-4 h-4 text-[var(--accent)]" />
       default:
-        return <Boxes className="w-4 h-4 text-slate-400" />
+        return <Boxes className="w-4 h-4 text-[var(--text-muted)]" />
     }
   }
 
@@ -207,7 +207,7 @@ export default function PlatformControlCenter() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-sm text-slate-200 hover:bg-slate-700/80 transition"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--apple-fill-tertiary)]/80 border border-[var(--apple-hairline)] text-sm text-[var(--text-primary)] hover:bg-[var(--surface-hover)]/80 transition"
         aria-label="Control Center"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -222,9 +222,9 @@ export default function PlatformControlCenter() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
           <div className="absolute right-0 top-full mt-2 z-50 w-[22rem] glass-strong rounded-liquid-lg overflow-hidden animate-fade-in">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--apple-hairline)]">
               <span className="font-semibold text-sm">Control Center</span>
-              <button type="button" onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-800 text-slate-400" aria-label="Close control center">
+              <button type="button" onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]" aria-label="Close control center">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -267,7 +267,7 @@ export default function PlatformControlCenter() {
                 })}
                 {showPower && (
                   <ModuleTile
-                    icon={<Bot className="w-4 h-4 text-violet-400" />}
+                    icon={<Bot className="w-4 h-4 text-[var(--accent)]" />}
                     label={ZYRA_ASSISTANT_NAME}
                     value={mode === 'off' ? 'Off' : mode === 'autopilot' ? 'Autopilot' : 'Advisor'}
                     onClick={() => { openCopilot(); setOpen(false) }}
@@ -276,8 +276,8 @@ export default function PlatformControlCenter() {
               </div>
 
               {showPower && (memPct != null || activeTasks > 0) && (
-                <div className="rounded-xl border border-white/[0.06] bg-slate-950/40 p-3 space-y-2">
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500">Capacity</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3 space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Capacity</p>
                   {memPct != null && (
                     <SparklineBar label="Memory" pct={memPct} tone={memPct > 85 ? 'warn' : 'ok'} />
                   )}
@@ -292,7 +292,7 @@ export default function PlatformControlCenter() {
 
               {operatorSummary && (
                 <Row
-                  icon={<Sparkles className="w-4 h-4 text-violet-400" />}
+                  icon={<Sparkles className="w-4 h-4 text-[var(--accent)]" />}
                   label="AI operator"
                   value={operatorSummary}
                   href="/platform/zeus/security"
@@ -339,10 +339,10 @@ export default function PlatformControlCenter() {
                 onNavigate={closePanel}
               />
             </div>
-            <div className="px-4 py-3 border-t border-slate-800 space-y-2">
-              <label className="flex items-center justify-between gap-3 text-xs text-slate-300 cursor-pointer">
+            <div className="px-4 py-3 border-t border-[var(--apple-hairline)] space-y-2">
+              <label className="flex items-center justify-between gap-3 text-xs text-[var(--text-secondary)] cursor-pointer">
                 <span className="flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--link)]" />
                   Jarvis shell (minimal sidebar)
                 </span>
                 <input
@@ -353,12 +353,12 @@ export default function PlatformControlCenter() {
                     setJarvisShell(next)
                     saveJarvisShell(next)
                   }}
-                  className="rounded border-slate-600"
+                  className="rounded border-[var(--apple-hairline)]"
                 />
               </label>
               {showPower && (
               <>
-              <p className="text-[10px] uppercase tracking-wider text-slate-500">Quick actions</p>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Quick actions</p>
               <div className="flex flex-wrap gap-2">
                 <button type="button" className="btn-secondary text-xs flex items-center gap-1" disabled={syncing} onClick={() => void syncHosts()}>
                   <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} /> Sync hosts
@@ -367,7 +367,7 @@ export default function PlatformControlCenter() {
               </>
               )}
             </div>
-            <div className="px-4 py-3 border-t border-slate-800 flex gap-2">
+            <div className="px-4 py-3 border-t border-[var(--apple-hairline)] flex gap-2">
               <Link to="/platform/support" className="btn-secondary text-xs flex items-center justify-center gap-1" onClick={() => setOpen(false)}>
                 <HelpCircle className="w-3 h-3" /> Help
               </Link>
@@ -376,7 +376,7 @@ export default function PlatformControlCenter() {
               <Link to={operationsHubHref(tier)} className="btn-primary text-xs flex-1 text-center" onClick={() => setOpen(false)}>Operations</Link>
               )}
             </div>
-            <div className="px-4 pb-3 text-xs text-slate-500">
+            <div className="px-4 pb-3 text-xs text-[var(--text-muted)]">
               {running} VMs running · {hosts.filter((h) => h.state === 'online').length}/{hosts.length} hosts online
             </div>
           </div>
@@ -405,14 +405,14 @@ function ModuleTile({
   tone?: 'ok' | 'warn'
   spark?: string
 }) {
-  const cls = `rounded-xl border p-3 text-left transition hover:bg-slate-800/50 ${
-    tone === 'warn' ? statusSurfaceClasses('warn') : 'border-white/[0.06] bg-slate-950/30'
+  const cls = `rounded-xl border p-3 text-left transition hover:bg-[var(--apple-surface)] ${
+    tone === 'warn' ? statusSurfaceClasses('warn') : 'border-white/[0.06] bg-[var(--apple-surface)]'
   }`
   const inner = (
     <>
-      <div className="flex items-center gap-2 mb-1">{icon}<span className="text-xs text-slate-400">{label}</span></div>
-      <p className="font-medium text-slate-100 text-sm">{value}</p>
-      {spark && <p className="text-[10px] text-slate-500 mt-0.5">{spark}</p>}
+      <div className="flex items-center gap-2 mb-1">{icon}<span className="text-xs text-[var(--text-muted)]">{label}</span></div>
+      <p className="font-medium text-[var(--text-primary)] text-sm">{value}</p>
+      {spark && <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{spark}</p>}
     </>
   )
   if (href) {
@@ -443,10 +443,10 @@ function SparklineBar({
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-slate-400">{label}</span>
-        <span className={tone === 'warn' ? statusToneClass('warn') : 'text-slate-300'}>{caption ?? `${pct}%`}</span>
+        <span className="text-[var(--text-muted)]">{label}</span>
+        <span className={tone === 'warn' ? statusToneClass('warn') : 'text-[var(--text-secondary)]'}>{caption ?? `${pct}%`}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div
           role="progressbar"
           aria-label={label}
@@ -476,15 +476,15 @@ function Row({
   tone?: 'ok' | 'warn'
   onNavigate?: () => void
 }) {
-  const cls = `flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800/50 transition ${tone === 'warn' ? statusToneClass('warn') : ''}`
+  const cls = `flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--apple-surface)] transition ${tone === 'warn' ? statusToneClass('warn') : ''}`
   const inner = (
     <>
       {icon}
       <div className="flex-1 min-w-0">
-        <p className="text-slate-300 truncate">{label}</p>
-        <p className="text-xs text-slate-500">{value}</p>
+        <p className="text-[var(--text-secondary)] truncate">{label}</p>
+        <p className="text-xs text-[var(--text-muted)]">{value}</p>
       </div>
-      {href && <CheckCircle2 className="w-3 h-3 text-slate-600 shrink-0" />}
+      {href && <CheckCircle2 className="w-3 h-3 text-[var(--text-faint)] shrink-0" />}
     </>
   )
   if (href) {

@@ -94,7 +94,7 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
       <button type="button" className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm" aria-label="Close Hardware" onClick={onClose} />
       <aside
         ref={panelRef}
-        className="fixed top-0 right-0 z-[80] h-full w-full max-w-md bg-slate-950/95 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
+        className="fixed top-0 right-0 z-[80] h-full w-full max-w-md bg-[var(--apple-surface)]/95 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
         role="dialog"
         aria-modal="true"
         aria-label="KubeVirt hardware"
@@ -102,30 +102,30 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
       >
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
           <div>
-            <h2 className="font-semibold text-slate-100">Hardware</h2>
-            <p className="text-xs text-slate-500">{vmName} · KubeVirt</p>
+            <h2 className="font-semibold text-[var(--text-primary)]">Hardware</h2>
+            <p className="text-xs text-[var(--text-muted)]">{vmName} · KubeVirt</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-slate-400"><X className="w-5 h-5" aria-hidden="true" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-[var(--text-muted)]"><X className="w-5 h-5" aria-hidden="true" /></button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
           {loading && !summary ? (
-            <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading cluster hardware…</p>
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading cluster hardware…</p>
           ) : error ? (
             <p className="text-sm text-rose-300">{error}</p>
           ) : summary ? (
             <>
-              <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-3 text-xs text-sky-100" data-testid="vm-kubevirt-hardware-note">
+              <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] p-3 text-xs text-[var(--text-primary)]" data-testid="vm-kubevirt-hardware-note">
                 {canEdit
                   ? 'Stopped VM — patch CPU and memory on the VirtualMachine template below. Start the VM after saving.'
                   : 'Running VM — stop the guest before editing template CPU or memory.'}
               </div>
 
               {canEdit ? (
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-3 space-y-3" data-testid="vm-kubevirt-hardware-edit">
+                <div className="rounded-lg border border-emerald-500/20 bg-[var(--apple-surface)] p-3 space-y-3" data-testid="vm-kubevirt-hardware-edit">
                   <p className="text-xs font-medium text-emerald-100">Edit template</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <label className="text-xs text-slate-400">
+                    <label className="text-xs text-[var(--text-muted)]">
                       vCPUs
                       <input
                         type="number"
@@ -136,7 +136,7 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
                         data-testid="vm-kubevirt-hardware-vcpus"
                       />
                     </label>
-                    <label className="text-xs text-slate-400">
+                    <label className="text-xs text-[var(--text-muted)]">
                       Memory (GiB)
                       <input
                         type="number"
@@ -160,7 +160,7 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
                 </div>
               ) : null}
 
-              <div className="rounded-lg border border-white/[0.08] bg-slate-900/40 px-3 py-1">
+              <div className="rounded-lg border border-white/[0.08] bg-[var(--apple-surface)] px-3 py-1">
                 <VmHardwareSection label="CPU" value={summary.cpu} testId="vm-hardware-cpu" />
                 <VmHardwareSection label="Memory" value={summary.memory} testId="vm-hardware-memory" />
                 <VmHardwareSection label="Firmware" value={summary.firmware} testId="vm-hardware-firmware" />
@@ -177,30 +177,30 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
                 <VmHardwareSection label="VMI phase" value={summary.vmiPhase} testId="vm-kubevirt-hardware-vmi" />
               </div>
 
-              <div className="rounded-lg border border-violet-500/20 bg-violet-950/20 p-3 space-y-2" data-testid="vm-kubevirt-hardware-access">
-                <p className="text-xs font-medium text-violet-100 flex items-center gap-1.5"><Monitor className="w-3.5 h-3.5" /> Console access</p>
-                <p className="text-xs text-slate-400">{summary.primaryAccess}</p>
+              <div className="rounded-lg border border-violet-500/20 bg-[var(--apple-surface)] p-3 space-y-2" data-testid="vm-kubevirt-hardware-access">
+                <p className="text-xs font-medium text-[var(--text-primary)] flex items-center gap-1.5"><Monitor className="w-3.5 h-3.5" /> Console access</p>
+                <p className="text-xs text-[var(--text-muted)]">{summary.primaryAccess}</p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <code className="text-[11px] text-slate-300 break-all flex-1">{summary.virtctlVnc}</code>
+                    <code className="text-[11px] text-[var(--text-secondary)] break-all flex-1">{summary.virtctlVnc}</code>
                     <button type="button" className="btn-secondary text-xs shrink-0" onClick={() => void copy('virtctl VNC', summary.virtctlVnc)}>
                       <Copy className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="flex items-start gap-2">
-                    <code className="text-[11px] text-slate-300 break-all flex-1">{summary.virtctlConsole}</code>
+                    <code className="text-[11px] text-[var(--text-secondary)] break-all flex-1">{summary.virtctlConsole}</code>
                     <button type="button" className="btn-secondary text-xs shrink-0" onClick={() => void copy('virtctl console', summary.virtctlConsole)}>
                       <Copy className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
                 {row?.vnc_subresource_path ? (
-                  <p className="text-[11px] text-slate-500">VNC API: {row.vnc_subresource_path}</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">VNC API: {row.vnc_subresource_path}</p>
                 ) : null}
               </div>
             </>
           ) : (
-            <p className="text-sm text-slate-500">Hardware details unavailable.</p>
+            <p className="text-sm text-[var(--text-muted)]">Hardware details unavailable.</p>
           )}
 
           <div className="flex flex-wrap gap-2">

@@ -44,12 +44,13 @@ export default function PlatformSupport({ embedded }: { embedded?: boolean } = {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       className={embedded ? 'max-w-none' : 'max-w-3xl'}
       title={embedded ? undefined : 'Support Assistant'}
       subtitle={embedded ? undefined : 'About Zyvor Platform, troubleshooting, and support bundle export.'}
-      icon={embedded ? undefined : <LifeBuoy className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <LifeBuoy className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-4"
     >
 
@@ -57,7 +58,7 @@ export default function PlatformSupport({ embedded }: { embedded?: boolean } = {
       <div className="card p-5 flex flex-wrap gap-3 items-center justify-between">
         <div>
           <p className="font-medium">Export support bundle</p>
-          <p className="text-xs text-slate-500 mt-1">Cluster summary, versions, and recent events for Zyvor support.</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">Cluster summary, versions, and recent events for Zyvor support.</p>
         </div>
         <button type="button" className="btn-primary flex items-center gap-2" disabled={loading} onClick={() => void downloadBundle()}>
           {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
@@ -66,17 +67,17 @@ export default function PlatformSupport({ embedded }: { embedded?: boolean } = {
       </div>
       {bundle && (
         <div className="card p-4 space-y-3">
-          <p className="text-sm font-medium text-slate-200">Latest bundle summary</p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">Latest bundle summary</p>
           <SupportBundleSummary bundle={bundle} />
           <JsonInspector data={bundle} />
         </div>
       )}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-400">Common fixes</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)]">Common fixes</h2>
         {TIPS.map((t) => (
           <article key={t.q} className="card p-4">
             <p className="font-medium text-sm">{t.q}</p>
-            <p className="text-xs text-slate-400 mt-1">{t.a}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">{t.a}</p>
           </article>
         ))}
       </section>

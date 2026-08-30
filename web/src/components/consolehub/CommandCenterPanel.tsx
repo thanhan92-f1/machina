@@ -179,14 +179,14 @@ export default function CommandCenterPanel({
                 />
               ) : null}
               {onShareView ? (
-                <div className="rounded-lg border border-sky-500/30 bg-sky-950/20 p-3 space-y-2" data-testid="ops-shelf-collaborate">
-                  <p className="text-xs font-medium text-sky-100">Share read-only view</p>
-                  <p className="text-[11px] text-sky-200/70">Invite a teammate to watch this console in Cinema — no power or keyboard control.</p>
+                <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] p-3 space-y-2" data-testid="ops-shelf-collaborate">
+                  <p className="text-xs font-medium text-[var(--text-primary)]">Share read-only view</p>
+                  <p className="text-[11px] text-[var(--link)]/70">Invite a teammate to watch this console in Cinema — no power or keyboard control.</p>
                   <button type="button" className="btn-secondary text-xs w-full" onClick={onShareView}>
                     Copy spectator link
                   </button>
                   {shareLink ? (
-                    <p className="text-[10px] font-mono text-sky-300/80 break-all">{shareLink}</p>
+                    <p className="text-[10px] font-mono text-[var(--link)]/80 break-all">{shareLink}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -276,7 +276,7 @@ export default function CommandCenterPanel({
           <div className="pt-2 border-t border-white/5">
             <Link
               to={`/platform/vms/${vmId}`}
-              className="text-xs text-sky-400 hover:underline"
+              className="text-xs text-[var(--link)] hover:underline"
               onClick={onClose}
             >
               Open full VM detail →

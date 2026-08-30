@@ -59,8 +59,8 @@ function FleetCloudImageDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <p className="text-slate-400">Image not found.</p>
-        <Link to="/fleet-cloud/images" className="text-sky-400 hover:underline">Back to images</Link>
+        <p className="text-[var(--text-muted)]">Image not found.</p>
+        <Link to="/fleet-cloud/images" className="text-[var(--accent)] hover:underline">Back to images</Link>
       </div>
     )
   }
@@ -68,26 +68,27 @@ function FleetCloudImageDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/images" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/images" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Images
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <HardDrive className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <HardDrive className="w-7 h-7 text-[var(--accent)]" />
         {image.name}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{image.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="text-slate-200 mt-1">{image.approval_status}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Version</dt><dd className="text-slate-200 mt-1">{image.version}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">OS family</dt><dd className="text-slate-200 mt-1">{image.os_family || '—'}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Category</dt><dd className="text-slate-200 mt-1">{image.category}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Cloud-init</dt><dd className="text-slate-200 mt-1">{image.cloud_init ? 'yes' : 'no'}</dd></div>
-        <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Source disk</dt><dd className="font-mono text-slate-200 mt-1 break-all">{image.source_disk}</dd></div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono text-[var(--text-primary)] mt-1 break-all">{image.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="text-[var(--text-primary)] mt-1">{image.approval_status}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Version</dt><dd className="text-[var(--text-primary)] mt-1">{image.version}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">OS family</dt><dd className="text-[var(--text-primary)] mt-1">{image.os_family || '—'}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Category</dt><dd className="text-[var(--text-primary)] mt-1">{image.category}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Cloud-init</dt><dd className="text-[var(--text-primary)] mt-1">{image.cloud_init ? 'yes' : 'no'}</dd></div>
+        <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Source disk</dt><dd className="font-mono text-[var(--text-primary)] mt-1 break-all">{image.source_disk}</dd></div>
         {image.description && (
-          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Description</dt><dd className="text-slate-200 mt-1">{image.description}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Description</dt><dd className="text-[var(--text-primary)] mt-1">{image.description}</dd></div>
         )}
       </dl>
       <FleetCloudFooter />

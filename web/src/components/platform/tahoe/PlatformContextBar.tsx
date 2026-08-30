@@ -25,7 +25,7 @@ function ContextPill({ item, pathname, search }: { item: ContextNavItem; pathnam
     || item.to === '/platform/workloads'
     || item.to === '/platform/administration'
     || item.to === '/platform/operations'
-    || item.to === '/platform/integrations'
+    || item.to === '/platform/settings'
     || item.to === '/platform/zyra'
 
   if (hasQuery) {
@@ -162,7 +162,7 @@ export default function PlatformContextBar() {
         )}
 
         {desktop && showPlatformMenuBarForTier(tier) ? (
-          <div className="tahoe-context-status hidden md:flex items-center gap-2 shrink-0 text-[11px] text-white/55">
+          <div className="tahoe-context-status hidden md:flex items-center gap-2 shrink-0 text-[11px] text-[var(--text-muted)]">
             <Link to="/platform/hosts" className="tahoe-context-status-chip" title="Hosts">
               <Server className="w-3 h-3" />
               {desktop.hosts_online}/{desktop.hosts_total}

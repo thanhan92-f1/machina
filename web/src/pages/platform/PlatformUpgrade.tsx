@@ -85,6 +85,7 @@ export default function PlatformUpgrade() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/settings" label="Settings" />}
@@ -162,7 +163,7 @@ export default function PlatformUpgrade() {
                     <span className={`text-xs px-1.5 py-0.5 rounded ${
                       h.state === 'online'
                         ? 'bg-emerald-500/10 text-emerald-500'
-                        : 'bg-slate-500/10 text-slate-400'
+                        : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'
                     }`}>
                       {h.state}
                     </span>

@@ -60,16 +60,16 @@ export default class AppErrorBoundary extends Component<Props, State> {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center" role="alert">
         <div className="max-w-md">
-          <h2 className="text-lg font-semibold text-slate-100">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
             {chunk ? 'A newer version is available' : 'Something went wrong'}
           </h2>
-          <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+          <p className="mt-2 text-sm text-[var(--text-muted)] leading-relaxed">
             {chunk
               ? 'This tab was running an older build. Reload to load the latest version.'
               : `This ${this.props.surface ?? 'page'} hit an unexpected error. You can reload, or go back and try again.`}
           </p>
           {!chunk && (
-            <pre className="mt-3 max-h-32 overflow-auto rounded-lg bg-black/30 p-3 text-left text-[11px] text-slate-500">
+            <pre className="mt-3 max-h-32 overflow-auto rounded-lg bg-black/30 p-3 text-left text-[11px] text-[var(--text-muted)]">
               {error.message}
             </pre>
           )}

@@ -107,7 +107,7 @@ export default function ErrorBanner({
           <summary className={`text-xs cursor-pointer ${statusToneClass(s.semantic)} opacity-80 hover:opacity-100`}>
             Technical details
           </summary>
-          <pre className="mt-2 text-[11px] leading-snug text-slate-300 bg-slate-950/80 border border-slate-700/80 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-words max-h-56 overflow-y-auto">
+          <pre className="mt-2 text-[11px] leading-snug text-[var(--text-secondary)] bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-words max-h-56 overflow-y-auto">
             {technicalDetail}
           </pre>
         </details>

@@ -83,6 +83,7 @@ export default function PlatformRightsizing() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="VM Rightsizing"
       subtitle="FinOps recommendations from fleet metrics"
       icon={<DollarSign className="w-6 h-6" />}
@@ -91,7 +92,7 @@ export default function PlatformRightsizing() {
       actions={<PlatformRefreshButton onClick={() => void load()} />}
     >
       <MacGlassPanel title="Summary">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-[var(--text-muted)]">
           {oversized} oversized · {idle} idle · est. ${savings.toFixed(0)}/mo savings
         </p>
         {recs.length > 0 && (
@@ -118,9 +119,9 @@ export default function PlatformRightsizing() {
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" className="mt-1" checked={checked} onChange={() => toggle(r)} />
                   <span className="flex-1">
-                    <p className="font-medium text-slate-200">{r.vm_name}</p>
-                    <p className="text-xs text-slate-500">{r.detail}</p>
-                    <p className="text-xs text-slate-400 mt-1">{r.action} · risk {r.risk}{r.savings_usd > 0 ? ` · $${r.savings_usd.toFixed(0)}/mo` : ''}</p>
+                    <p className="font-medium text-[var(--text-primary)]">{r.vm_name}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{r.detail}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">{r.action} · risk {r.risk}{r.savings_usd > 0 ? ` · $${r.savings_usd.toFixed(0)}/mo` : ''}</p>
                   </span>
                 </label>
                 <button type="button" className="text-xs text-orange-400 mt-2 hover:underline ml-6" onClick={() => void queueAction(r)}>
@@ -129,7 +130,7 @@ export default function PlatformRightsizing() {
               </li>
             )
           })}
-          {recs.length === 0 && <li className="text-slate-500">No rightsizing opportunities detected.</li>}
+          {recs.length === 0 && <li className="text-[var(--text-muted)]">No rightsizing opportunities detected.</li>}
         </ul>
       </MacGlassPanel>
     </PlatformPageChrome>

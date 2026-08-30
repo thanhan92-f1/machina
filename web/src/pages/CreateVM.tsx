@@ -681,18 +681,19 @@ export default function CreateVMPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       className="max-w-4xl mx-auto pb-8"
       contentClassName="space-y-8"
       title="Create new guest VM"
       subtitle={
         <>
-          Define a QEMU/KVM guest on this hypervisor host via libvirt—the same <code className="text-slate-400">virt-install</code> style as{' '}
-          <span className="text-slate-400">Cockpit Machines</span>: install from media, or clone many identical workers from a Packer golden qcow2. Optional KubeVirt YAML and cluster actions are on the VM&apos;s details page when enabled.
+          Define a QEMU/KVM guest on this hypervisor host via libvirt—the same <code className="text-[var(--text-muted)]">virt-install</code> style as{' '}
+          <span className="text-[var(--text-muted)]">Cockpit Machines</span>: install from media, or clone many identical workers from a Packer golden qcow2. Optional KubeVirt YAML and cluster actions are on the VM&apos;s details page when enabled.
         </>
       }
-      icon={<Boxes className="w-6 h-6 text-cyan-400" />}
+      icon={<Boxes className="w-6 h-6 text-[var(--accent)]" />}
       actions={
-        <Link to="/vms" className="p-2 hover:bg-slate-700 rounded transition" aria-label="Back">
+        <Link to="/vms" className="p-2 hover:bg-[var(--surface-hover)] rounded transition" aria-label="Back">
           <ArrowLeft className="w-5 h-5" />
         </Link>
       }
@@ -704,7 +705,7 @@ export default function CreateVMPage() {
       onErrorDismiss={() => setCatalogWarning(null)}
     >
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">How do you want to create this VM?</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">How do you want to create this VM?</h2>
         <ChoiceCardGrid>
           <ChoiceCard
             largeIcon
@@ -738,10 +739,10 @@ export default function CreateVMPage() {
       </div>
 
       {libSummary?.dual_connection && (
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 space-y-3">
-          <h3 className="text-sm font-semibold text-white">Hypervisor scope</h3>
-          <p className="text-xs text-slate-400">Daemon is merging system + session libvirt (same pattern as Cockpit Machines). Choose where this domain should be defined.</p>
-          <div className="flex flex-wrap gap-4 text-sm text-slate-300">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] space-y-3">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Hypervisor scope</h3>
+          <p className="text-xs text-[var(--text-muted)]">Daemon is merging system + session libvirt (same pattern as Cockpit Machines). Choose where this domain should be defined.</p>
+          <div className="flex flex-wrap gap-4 text-sm text-[var(--text-secondary)]">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="machina-lv-scope" checked={createLibvirtTarget === 'default'} onChange={() => setCreateLibvirtTarget('default')} />
               Default
@@ -769,7 +770,7 @@ export default function CreateVMPage() {
             <button
               type="button"
               data-testid="create-vm-single-page"
-              className="text-xs text-slate-400 hover:text-slate-200 underline"
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] underline"
               onClick={showSinglePageForm}
             >
               Single-page form
@@ -782,7 +783,7 @@ export default function CreateVMPage() {
           <button
             type="button"
             data-testid="create-vm-guided-steps"
-            className="text-xs text-cyan-400 hover:underline"
+            className="text-xs text-[var(--accent)] hover:underline"
             onClick={showGuidedSteps}
           >
             Use guided steps
@@ -793,8 +794,8 @@ export default function CreateVMPage() {
       {/* Installation source (Cockpit-style) */}
       {(!useInstallWizard || installWizardStep === 0) && (
       <div id="create-vm-step-0" className="scroll-mt-28 space-y-4">
-      <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
           <Disc className={`w-5 h-5 ${statusToneClass('warn')}`} />
           Installation source
         </h2>
@@ -816,10 +817,10 @@ export default function CreateVMPage() {
         </ChoiceCardGrid>
 
         {installSource === 'iso' && (
-          <div className="space-y-3 pt-2 border-t border-slate-700/50">
+          <div className="space-y-3 pt-2 border-t border-[var(--apple-hairline)]">
             {isoScan.length > 0 && (
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Recently discovered ISOs</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-1">Recently discovered ISOs</label>
                 <select
                   aria-label="Recently discovered ISOs"
                   value=""
@@ -836,7 +837,7 @@ export default function CreateVMPage() {
               </div>
             )}
             <div>
-              <label htmlFor="iso-path" className="block text-sm text-slate-400 mb-1">
+              <label htmlFor="iso-path" className="block text-sm text-[var(--text-muted)] mb-1">
                 ISO file on hypervisor *
               </label>
               <div className="flex gap-2">
@@ -855,7 +856,7 @@ export default function CreateVMPage() {
                   }}
                   disabled={!canBrowseHost}
                   title={!canBrowseHost ? 'Browsing host paths requires the admin role' : undefined}
-                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
+                  className="px-3 py-2 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
                 >
                   <FolderOpen className="w-4 h-4" />
                   Browse
@@ -866,8 +867,8 @@ export default function CreateVMPage() {
         )}
 
         {installSource === 'url' && (
-          <div className="space-y-3 pt-2 border-t border-slate-700/50">
-            <label htmlFor="loc-url" className="block text-sm text-slate-400 mb-1">
+          <div className="space-y-3 pt-2 border-t border-[var(--apple-hairline)]">
+            <label htmlFor="loc-url" className="block text-sm text-[var(--text-muted)] mb-1">
               Install URL or directory tree *
             </label>
             <div className="flex flex-wrap gap-2 items-end">
@@ -883,23 +884,23 @@ export default function CreateVMPage() {
                 type="button"
                 onClick={() => void runOsDetect()}
                 disabled={osDetectBusy}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm shrink-0"
+                className="px-3 py-2 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm shrink-0"
               >
                 {osDetectBusy ? 'Detecting…' : 'Detect OS'}
               </button>
             </div>
-            <p className="text-xs text-slate-500">
-              Runs <code className="text-slate-400">osinfo-detect --type=tree</code> on the hypervisor; first stdout token fills OS variant when it succeeds.
+            <p className="text-xs text-[var(--text-muted)]">
+              Runs <code className="text-[var(--text-muted)]">osinfo-detect --type=tree</code> on the hypervisor; first stdout token fills OS variant when it succeeds.
             </p>
           </div>
         )}
 
         {installSource === 'pxe' && (
-          <div className="space-y-3 pt-2 border-t border-slate-700/50">
-            <p className="text-sm text-slate-400">
+          <div className="space-y-3 pt-2 border-t border-[var(--apple-hairline)]">
+            <p className="text-sm text-[var(--text-muted)]">
               The VM boots with an extra NIC on the libvirt network you choose for PXE (primary NIC stays on “Network” below).
             </p>
-            <label htmlFor="pxe-net" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="pxe-net" className="block text-sm text-[var(--text-muted)] mb-1">
               PXE network (libvirt network name)
             </label>
             <input
@@ -914,12 +915,12 @@ export default function CreateVMPage() {
         )}
 
         {installSource === 'download' && (
-          <div className="space-y-3 pt-2 border-t border-slate-700/50">
-            <label htmlFor="os-preset" className="block text-sm text-slate-400 mb-1">
+          <div className="space-y-3 pt-2 border-t border-[var(--apple-hairline)]">
+            <label htmlFor="os-preset" className="block text-sm text-[var(--text-muted)] mb-1">
               OS for automatic download *
             </label>
-            <p className="text-xs text-slate-500 mb-2">
-              Pick a profile — values match <code className="text-slate-400">virt-install --install os=…</code> on your libvirt/osinfo-db (no free typing).
+            <p className="text-xs text-[var(--text-muted)] mb-2">
+              Pick a profile — values match <code className="text-[var(--text-muted)]">virt-install --install os=…</code> on your libvirt/osinfo-db (no free typing).
             </p>
             <select
               id="os-preset"
@@ -940,7 +941,7 @@ export default function CreateVMPage() {
             </select>
             {MACHINA_PACKER_SCRIPT_GUESTS.find((g) => g.virtInstallDownloadOs === virtInstallInstallOs)?.family === 'rpm' && (
               <div className="space-y-2 rounded-lg border border-rose-500/30 bg-rose-950/20 p-3">
-                <label htmlFor="rhel-access-token" className="block text-sm text-slate-400">RHEL-family offline image token (POST /guest-images/rhel-url)</label>
+                <label htmlFor="rhel-access-token" className="block text-sm text-[var(--text-muted)]">RHEL-family offline image token (POST /guest-images/rhel-url)</label>
                 <input
                   id="rhel-access-token"
                   type="password"
@@ -954,7 +955,7 @@ export default function CreateVMPage() {
                   type="button"
                   data-testid="rhel-image-url"
                   disabled={rhelImageBusy || !rhelAccessToken.trim()}
-                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm"
+                  className="px-3 py-2 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm"
                   onClick={() => {
                     setRhelImageBusy(true)
                     void guestRhelImageUrl({ access_token: rhelAccessToken.trim(), rhel_version: '9' })
@@ -969,7 +970,7 @@ export default function CreateVMPage() {
                 >
                   {rhelImageBusy ? 'Resolving…' : 'Resolve RHEL image URL'}
                 </button>
-                {rhelImageHint && <p className="text-xs text-slate-400 break-all" data-testid="rhel-image-result">{rhelImageHint}</p>}
+                {rhelImageHint && <p className="text-xs text-[var(--text-muted)] break-all" data-testid="rhel-image-result">{rhelImageHint}</p>}
               </div>
             )}
           </div>
@@ -977,7 +978,7 @@ export default function CreateVMPage() {
 
         {(installSource === 'iso' || installSource === 'url' || installSource === 'download') && (
           <div>
-            <label htmlFor="extra-args" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="extra-args" className="block text-sm text-[var(--text-muted)] mb-1">
               Kernel / installer arguments (optional, virt-install --extra-args)
             </label>
             <textarea
@@ -993,17 +994,17 @@ export default function CreateVMPage() {
       </div>
 
       {libvirtTemplates.length > 0 && (
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 space-y-2" data-testid="libvirt-templates-panel">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            <LayoutTemplate className="w-5 h-5 text-cyan-400" aria-hidden />
+        <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] space-y-2" data-testid="libvirt-templates-panel">
+          <h2 className="text-base font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <LayoutTemplate className="w-5 h-5 text-[var(--accent)]" aria-hidden />
             Libvirt template catalog
           </h2>
-          <p className="text-xs text-slate-500">GET /api/v1/templates — distinct from saved golden templates below.</p>
-          <ul className="text-sm text-slate-300 space-y-1">
+          <p className="text-xs text-[var(--text-muted)]">GET /api/v1/templates — distinct from saved golden templates below.</p>
+          <ul className="text-sm text-[var(--text-secondary)] space-y-1">
             {libvirtTemplates.slice(0, 8).map((t) => (
-              <li key={t.name} className="font-mono text-cyan-200/90">
+              <li key={t.name} className="font-mono text-[var(--accent)]">
                 {t.name}
-                <span className="text-slate-500 text-xs ml-2">
+                <span className="text-[var(--text-muted)] text-xs ml-2">
                   {t.vcpus} vCPU · {t.memory_mb} MiB · {t.disk_gb} GiB
                 </span>
               </li>
@@ -1013,11 +1014,11 @@ export default function CreateVMPage() {
       )}
 
       {/* VM details */}
-      <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
-        <h2 className="text-lg font-semibold text-white">Machine details</h2>
+      <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Machine details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label htmlFor="vm-name" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="vm-name" className="block text-sm text-[var(--text-muted)] mb-1">
               Name *
             </label>
             <input
@@ -1031,7 +1032,7 @@ export default function CreateVMPage() {
             />
           </div>
           <div>
-            <label htmlFor="vcpus" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="vcpus" className="block text-sm text-[var(--text-muted)] mb-1">
               CPUs
             </label>
             <input
@@ -1045,7 +1046,7 @@ export default function CreateVMPage() {
             />
           </div>
           <div>
-            <label htmlFor="mem" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="mem" className="block text-sm text-[var(--text-muted)] mb-1">
               Memory (MiB)
             </label>
             <input
@@ -1059,7 +1060,7 @@ export default function CreateVMPage() {
             />
           </div>
           <div>
-            <label htmlFor="fw" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="fw" className="block text-sm text-[var(--text-muted)] mb-1">
               Firmware
             </label>
             <select id="fw" value={firmware} onChange={(e) => setFirmware(e.target.value)} className="input-field">
@@ -1068,7 +1069,7 @@ export default function CreateVMPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="guest-profile" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="guest-profile" className="block text-sm text-[var(--text-muted)] mb-1">
               Guest profile
             </label>
             <select
@@ -1081,20 +1082,20 @@ export default function CreateVMPage() {
               <option value="linux">Linux</option>
               <option value="windows">Windows (SPICE + virtio)</option>
             </select>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[var(--text-muted)] mt-1">
               Windows profile enables SPICE/QXL and virtio disk/NIC defaults on the server. Attach a virtio-win ISO below if your Windows installer needs drivers.
             </p>
           </div>
           {installSource === 'download' ? (
             <div>
-              <label className="block text-sm text-slate-400 mb-1">
-                <code className="text-slate-300">--os-variant</code> (from your OS pick)
+              <label className="block text-sm text-[var(--text-muted)] mb-1">
+                <code className="text-[var(--text-secondary)]">--os-variant</code> (from your OS pick)
               </label>
-              <p className="text-sm font-mono text-slate-200 bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2">{osVariant || 'generic'}</p>
+              <p className="text-sm font-mono text-[var(--text-primary)] bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2">{osVariant || 'generic'}</p>
             </div>
           ) : (
             <div>
-              <label htmlFor="osv" className="block text-sm text-slate-400 mb-1">
+              <label htmlFor="osv" className="block text-sm text-[var(--text-muted)] mb-1">
                 Operating system (optional)
               </label>
               <datalist id="machina-os-variant-list">
@@ -1113,16 +1114,16 @@ export default function CreateVMPage() {
                 placeholder="libosinfo id — empty = generic"
                 list="machina-os-variant-list"
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 Pick from libvirt/osinfo suggestions or type a short id (see also Detect OS for URL installs).
               </p>
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2 pt-4 mt-2 border-t border-slate-700/50">
+        <div className="flex flex-wrap items-center gap-2 pt-4 mt-2 border-t border-[var(--apple-hairline)]">
           <button
             type="button"
-            className="text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition"
+            className="text-xs px-3 py-1.5 rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)]/80 hover:bg-[var(--surface-hover)] text-[var(--text-primary)] transition"
             onClick={saveBrowserDefaults}
           >
             Save defaults (browser)
@@ -1130,13 +1131,13 @@ export default function CreateVMPage() {
           {(sessionRole === 'admin' || sessionRole === 'operator') && (
             <button
               type="button"
-              className="text-xs px-3 py-1.5 rounded-lg border border-cyan-700/50 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-200 transition"
+              className="text-xs px-3 py-1.5 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] hover:bg-[var(--accent-soft)] text-[var(--accent)] transition"
               onClick={() => void saveServerDefaults()}
             >
               Save defaults (hypervisor)
             </button>
           )}
-          <span className="text-xs text-slate-500">On load: server defaults, then browser overrides.</span>
+          <span className="text-xs text-[var(--text-muted)]">On load: server defaults, then browser overrides.</span>
         </div>
       </div>
       </div>
@@ -1145,9 +1146,9 @@ export default function CreateVMPage() {
       {/* Storage — Cockpit: new image vs existing volume */}
       {(!useInstallWizard || installWizardStep === 1) && (
       <div id="create-vm-step-1" className="scroll-mt-28">
-      <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <HardDrive className="w-5 h-5 text-sky-400" />
+      <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+          <HardDrive className="w-5 h-5 text-[var(--link)]" />
           Storage
         </h2>
         <ChoiceCardGrid>
@@ -1170,7 +1171,7 @@ export default function CreateVMPage() {
         </ChoiceCardGrid>
         {storageMode === 'new' ? (
           <div>
-            <label htmlFor="disk-gb" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="disk-gb" className="block text-sm text-[var(--text-muted)] mb-1">
               Disk size (GiB)
             </label>
             <input
@@ -1185,7 +1186,7 @@ export default function CreateVMPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="pool" className="block text-sm text-slate-400 mb-1">
+              <label htmlFor="pool" className="block text-sm text-[var(--text-muted)] mb-1">
                 Storage pool *
               </label>
               <select
@@ -1206,7 +1207,7 @@ export default function CreateVMPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="vol" className="block text-sm text-slate-400 mb-1">
+              <label htmlFor="vol" className="block text-sm text-[var(--text-muted)] mb-1">
                 Volume *
               </label>
               <select
@@ -1233,13 +1234,13 @@ export default function CreateVMPage() {
       {/* Network + console */}
       {(!useInstallWizard || installWizardStep === 2) && (
       <div id="create-vm-step-2" className="scroll-mt-28">
-      <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
           <Network className={`w-5 h-5 ${statusToneClass('ok')}`} />
           Networking
         </h2>
         <div>
-          <label htmlFor="net" className="block text-sm text-slate-400 mb-1">
+          <label htmlFor="net" className="block text-sm text-[var(--text-muted)] mb-1">
             Virtual network (NAT / bridge)
           </label>
           <select id="net" value={network} onChange={(e) => setNetwork(e.target.value)} className="input-field max-w-md">
@@ -1252,13 +1253,13 @@ export default function CreateVMPage() {
           </select>
         </div>
 
-        <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2 pt-2 border-t border-slate-700/50">
-          <Monitor className="w-4 h-4 text-violet-400" />
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 pt-2 border-t border-[var(--apple-hairline)]">
+          <Monitor className="w-4 h-4 text-[var(--accent)]" />
           Console (remote viewer)
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="gfx-type" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="gfx-type" className="block text-sm text-[var(--text-muted)] mb-1">
               Graphics
             </label>
             <select id="gfx-type" value={graphicsType} onChange={(e) => setGraphicsType(e.target.value as 'vnc' | 'spice')} className="input-field">
@@ -1267,7 +1268,7 @@ export default function CreateVMPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="gfx-listen" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="gfx-listen" className="block text-sm text-[var(--text-muted)] mb-1">
               Listen address
             </label>
             <select id="gfx-listen" value={graphicsListen} onChange={(e) => setGraphicsListen(e.target.value)} className="input-field">
@@ -1278,8 +1279,8 @@ export default function CreateVMPage() {
         </div>
 
         {guestProfile === 'windows' && (
-          <div className="pt-2 border-t border-slate-700/50 space-y-2">
-            <label htmlFor="virtio-win-iso" className="block text-sm text-slate-400 mb-1">virtio-win drivers ISO (recommended for Windows installs)</label>
+          <div className="pt-2 border-t border-[var(--apple-hairline)] space-y-2">
+            <label htmlFor="virtio-win-iso" className="block text-sm text-[var(--text-muted)] mb-1">virtio-win drivers ISO (recommended for Windows installs)</label>
             <div className="flex gap-2">
               <input
                 id="virtio-win-iso"
@@ -1296,13 +1297,13 @@ export default function CreateVMPage() {
                 }}
                 disabled={!canBrowseHost}
                 title={!canBrowseHost ? 'Browsing host paths requires the admin role' : undefined}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
+                className="px-3 py-2 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
               >
                 <FolderOpen className="w-4 h-4" />
                 Browse
               </button>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[var(--text-muted)]">
               This is attached as an extra CD-ROM so Windows Setup can load virtio storage/network drivers (Win10/11/Server 2019/2022).
             </p>
           </div>
@@ -1314,22 +1315,22 @@ export default function CreateVMPage() {
       {/* Optional cloud-init CD */}
       {(!useInstallWizard || installWizardStep === 3) && (
       <div id="create-vm-step-3" className="scroll-mt-28">
-      <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
-        <h2 className="text-base font-semibold text-white">Cloud-init / seed ISO (optional)</h2>
-        <p className="text-xs text-slate-500">
+      <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Cloud-init / seed ISO (optional)</h2>
+        <p className="text-xs text-[var(--text-muted)]">
           Second CD-ROM for NoCloud/autoinstall. You can either attach an existing seed ISO, or let machina generate one (Cockpit-style).
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label htmlFor="cloud-init-user" className="block text-sm text-slate-400 mb-1">User</label>
+            <label htmlFor="cloud-init-user" className="block text-sm text-[var(--text-muted)] mb-1">User</label>
             <input id="cloud-init-user" value={cloudInitUser} onChange={(e) => setCloudInitUser(e.target.value)} className="input-field" placeholder="ubuntu" />
           </div>
           <div>
-            <label htmlFor="cloud-init-password" className="block text-sm text-slate-400 mb-1">Password (optional)</label>
+            <label htmlFor="cloud-init-password" className="block text-sm text-[var(--text-muted)] mb-1">Password (optional)</label>
             <input id="cloud-init-password" value={cloudInitPassword} onChange={(e) => setCloudInitPassword(e.target.value)} className="input-field" placeholder="(leave blank to skip)" />
           </div>
           <div>
-            <label htmlFor="cloud-init-ssh-key" className="block text-sm text-slate-400 mb-1">SSH public key (optional)</label>
+            <label htmlFor="cloud-init-ssh-key" className="block text-sm text-[var(--text-muted)] mb-1">SSH public key (optional)</label>
             <input id="cloud-init-ssh-key" value={cloudInitSshKey} onChange={(e) => setCloudInitSshKey(e.target.value)} className="input-field font-mono text-xs" placeholder="ssh-ed25519 AAAA..." />
           </div>
         </div>
@@ -1349,13 +1350,13 @@ export default function CreateVMPage() {
             }}
             disabled={!canBrowseHost}
             title={!canBrowseHost ? 'Browsing host paths requires the admin role' : undefined}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
+            className="px-3 py-2 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
           >
             <FolderOpen className="w-4 h-4" />
             Browse
           </button>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
           <input type="checkbox" checked={pathCheckOff} onChange={(e) => setPathCheckOff(e.target.checked)} className="rounded" />
           Ignore path-in-use check (busy images / volumes)
         </label>
@@ -1368,7 +1369,7 @@ export default function CreateVMPage() {
           type="button"
           data-testid="cloud-init-generate"
           disabled={cloudInitGenBusy || !vmName.trim() || !cloudInitUser.trim()}
-          className="px-3 py-2 bg-violet-700 hover:bg-violet-600 disabled:opacity-50 rounded-lg text-sm"
+          className="btn-primary text-sm disabled:opacity-50"
           onClick={() => {
             setCloudInitGenBusy(true)
             void generateCloudInit(
@@ -1392,23 +1393,23 @@ export default function CreateVMPage() {
       )}
 
       {useInstallWizard && (
-        <div className="flex flex-wrap justify-between items-center gap-2 bg-slate-800/30 rounded-lg px-3 py-2 border border-slate-700/40">
+        <div className="flex flex-wrap justify-between items-center gap-2 bg-[var(--apple-fill-tertiary)]/30 rounded-lg px-3 py-2 border border-[var(--apple-hairline)]/40">
           <button
             type="button"
             disabled={installWizardStep === 0}
             onClick={() => setInstallWizardStep((s) => Math.max(0, s - 1))}
-            className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-sm"
+            className="px-4 py-2 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-40 text-sm"
           >
             Back
           </button>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-[var(--text-muted)]">
             Step {installWizardStep + 1} of {INSTALL_WIZARD_STEPS.length}
           </span>
           {installWizardStep < 4 ? (
             <button
               type="button"
               onClick={() => setInstallWizardStep((s) => Math.min(4, s + 1))}
-              className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-sm"
+              className="btn-primary text-sm"
             >
               Next
             </button>
@@ -1419,34 +1420,34 @@ export default function CreateVMPage() {
       )}
 
       {useInstallWizard && installWizardStep === 4 && (
-        <div id="create-vm-step-4" className="scroll-mt-28 bg-slate-800/50 rounded-xl p-6 border border-cyan-800/50 space-y-2 text-sm text-slate-300">
-          <h2 className="text-lg font-semibold text-white">Review</h2>
+        <div id="create-vm-step-4" className="scroll-mt-28 bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--accent)]/40 space-y-2 text-sm text-[var(--text-secondary)]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Review</h2>
           <p>
-            <span className="text-slate-500">Name:</span> {vmName.trim() || '—'}
+            <span className="text-[var(--text-muted)]">Name:</span> {vmName.trim() || '—'}
           </p>
           <p>
-            <span className="text-slate-500">Install source:</span> {installSource}
+            <span className="text-[var(--text-muted)]">Install source:</span> {installSource}
           </p>
           <p>
-            <span className="text-slate-500">CPU / RAM / disk:</span> {vcpus} vCPU — {memoryMb} MiB —{' '}
+            <span className="text-[var(--text-muted)]">CPU / RAM / disk:</span> {vcpus} vCPU — {memoryMb} MiB —{' '}
             {storageMode === 'new' ? (
               <span>new {diskGb} GiB</span>
             ) : (
               <span>
-                pool <code className="text-slate-300">{diskPool || '—'}</code> / vol{' '}
-                <code className="text-slate-300">{diskVol || '—'}</code>
+                pool <code className="text-[var(--text-secondary)]">{diskPool || '—'}</code> / vol{' '}
+                <code className="text-[var(--text-secondary)]">{diskVol || '—'}</code>
               </span>
             )}
           </p>
           <p>
-            <span className="text-slate-500">Network / console:</span> {network} — {graphicsType} @ {graphicsListen}
+            <span className="text-[var(--text-muted)]">Network / console:</span> {network} — {graphicsType} @ {graphicsListen}
           </p>
           <p>
-            <span className="text-slate-500">Cloud-init user:</span> {cloudInitUser.trim() || '—'}
+            <span className="text-[var(--text-muted)]">Cloud-init user:</span> {cloudInitUser.trim() || '—'}
           </p>
-          <p className="text-xs text-slate-500 pt-1">
+          <p className="text-xs text-[var(--text-muted)] pt-1">
             Sane defaults for this browser + hypervisor (
-            <code className="text-slate-400">{libSummary?.configured_uri ?? 'default'}</code>
+            <code className="text-[var(--text-muted)]">{libSummary?.configured_uri ?? 'default'}</code>
             ) are saved to local storage after a successful create.
           </p>
         </div>
@@ -1457,7 +1458,7 @@ export default function CreateVMPage() {
           type="button"
           onClick={handleCreate}
           disabled={submitting}
-          className="w-full sm:w-auto px-8 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg text-sm font-medium transition"
+          className="btn-primary text-sm disabled:opacity-50 w-full sm:w-auto px-8 py-3"
         >
           {submitting ? 'Creating…' : 'Create VM (install continues in Console)'}
         </button>
@@ -1467,16 +1468,16 @@ export default function CreateVMPage() {
 
       {pageFlow === 'golden' && (
         <div className="space-y-6">
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-amber-900/40 space-y-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-amber-900/40 space-y-4">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
               <Layers className={`w-5 h-5 ${statusToneClass('warn')}`} />
               Golden image source
             </h2>
-            <p className="text-sm text-slate-400">
-              After Packer writes e.g. <code className="text-slate-300">output-fedora43/fedora43.qcow2</code>, keep one canonical file on the host and reuse it: either register a{' '}
-              <span className="text-slate-200">saved template</span> JSON under{' '}
-              <code className="text-slate-300">/var/lib/machina/templates/</code> with <code className="text-slate-300">base_image</code> pointing at that path, or attach the qcow2 directly as a{' '}
-              <span className="text-slate-200">backing store</span> (thin overlay per VM).
+            <p className="text-sm text-[var(--text-muted)]">
+              After Packer writes e.g. <code className="text-[var(--text-secondary)]">output-fedora43/fedora43.qcow2</code>, keep one canonical file on the host and reuse it: either register a{' '}
+              <span className="text-[var(--text-primary)]">saved template</span> JSON under{' '}
+              <code className="text-[var(--text-secondary)]">/var/lib/machina/templates/</code> with <code className="text-[var(--text-secondary)]">base_image</code> pointing at that path, or attach the qcow2 directly as a{' '}
+              <span className="text-[var(--text-primary)]">backing store</span> (thin overlay per VM).
             </p>
             <ChoiceCardGrid>
               <ChoiceCard
@@ -1487,8 +1488,8 @@ export default function CreateVMPage() {
                 title="Saved template"
                 description={
                   <>
-                    JSON under <code className="text-slate-400">/var/lib/machina/templates/</code> with{' '}
-                    <code className="text-slate-400">base_image</code>.
+                    JSON under <code className="text-[var(--text-muted)]">/var/lib/machina/templates/</code> with{' '}
+                    <code className="text-[var(--text-muted)]">base_image</code>.
                   </>
                 }
               />
@@ -1503,8 +1504,8 @@ export default function CreateVMPage() {
             </ChoiceCardGrid>
 
             {goldenKind === 'template' && (
-              <div className="space-y-3 pt-2 border-t border-slate-700/50">
-                <label htmlFor="tmpl-sel" className="block text-sm text-slate-400 mb-1">
+              <div className="space-y-3 pt-2 border-t border-[var(--apple-hairline)]">
+                <label htmlFor="tmpl-sel" className="block text-sm text-[var(--text-muted)] mb-1">
                   Template *
                 </label>
                 <select
@@ -1523,12 +1524,12 @@ export default function CreateVMPage() {
                 </select>
                 {savedTemplates.length === 0 && (
                   <p className={`text-xs ${statusToneClass('warn')} opacity-90`}>
-                    No templates found. Add <code className="text-slate-300">/var/lib/machina/templates/mytmpl.json</code> with{' '}
-                    <code className="text-slate-300">base_image</code> set to your Packer qcow2 path, or use <span className="text-slate-200">Save template</span> on a VM details page.
+                    No templates found. Add <code className="text-[var(--text-secondary)]">/var/lib/machina/templates/mytmpl.json</code> with{' '}
+                    <code className="text-[var(--text-secondary)]">base_image</code> set to your Packer qcow2 path, or use <span className="text-[var(--text-primary)]">Save template</span> on a VM details page.
                   </p>
                 )}
                 <div>
-                  <label htmlFor="tmpl-mode" className="block text-sm text-slate-400 mb-1">
+                  <label htmlFor="tmpl-mode" className="block text-sm text-[var(--text-muted)] mb-1">
                     New disk from golden
                   </label>
                   <select
@@ -1542,17 +1543,17 @@ export default function CreateVMPage() {
                   </select>
                 </div>
                 {selectedTemplateName && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-[var(--text-muted)]">
                     {(() => {
                       const t = savedTemplates.find((x) => x.name === selectedTemplateName)
                       if (!t) return null
                       return (
                         <>
                           Template sizing: {t.vcpus} vCPU, {t.memory_mb} MiB RAM, disk hint {t.disk_gb} GiB, os_variant{' '}
-                          <code className="text-slate-400">{t.os_variant || 'generic'}</code>
+                          <code className="text-[var(--text-muted)]">{t.os_variant || 'generic'}</code>
                           {t.base_image ? (
                             <>
-                              . Golden: <code className="text-slate-400 break-all">{t.base_image}</code>
+                              . Golden: <code className="text-[var(--text-muted)] break-all">{t.base_image}</code>
                             </>
                           ) : (
                             <span className={`${statusToneClass('warn')} opacity-90`}> — add base_image in JSON for Packer golden reuse.</span>
@@ -1566,8 +1567,8 @@ export default function CreateVMPage() {
             )}
 
             {goldenKind === 'backing' && (
-              <div className="space-y-3 pt-2 border-t border-slate-700/50">
-                <label htmlFor="golden-path" className="block text-sm text-slate-400 mb-1">
+              <div className="space-y-3 pt-2 border-t border-[var(--apple-hairline)]">
+                <label htmlFor="golden-path" className="block text-sm text-[var(--text-muted)] mb-1">
                   Golden qcow2 on hypervisor *
                 </label>
                 <div className="flex gap-2">
@@ -1586,14 +1587,14 @@ export default function CreateVMPage() {
                     }}
                     disabled={!canBrowseHost}
                     title={!canBrowseHost ? 'Browsing host paths requires the admin role' : undefined}
-                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
+                    className="px-3 py-2 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm flex items-center gap-2 shrink-0"
                   >
                     <FolderOpen className="w-4 h-4" />
                     Browse
                   </button>
                 </div>
                 <div>
-                  <label htmlFor="golden-gb" className="block text-sm text-slate-400 mb-1">
+                  <label htmlFor="golden-gb" className="block text-sm text-[var(--text-muted)] mb-1">
                     Overlay disk size (GiB)
                   </label>
                   <input
@@ -1609,11 +1610,11 @@ export default function CreateVMPage() {
             )}
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
-            <h2 className="text-lg font-semibold text-white">New VM</h2>
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">New VM</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label htmlFor="g-vm-name" className="block text-sm text-slate-400 mb-1">
+                <label htmlFor="g-vm-name" className="block text-sm text-[var(--text-muted)] mb-1">
                   Name *
                 </label>
                 <input
@@ -1628,7 +1629,7 @@ export default function CreateVMPage() {
               {goldenKind === 'backing' && (
                 <>
                   <div>
-                    <label htmlFor="g-vcpus" className="block text-sm text-slate-400 mb-1">
+                    <label htmlFor="g-vcpus" className="block text-sm text-[var(--text-muted)] mb-1">
                       vCPUs
                     </label>
                     <input
@@ -1641,7 +1642,7 @@ export default function CreateVMPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="g-mem" className="block text-sm text-slate-400 mb-1">
+                    <label htmlFor="g-mem" className="block text-sm text-[var(--text-muted)] mb-1">
                       Memory (MiB)
                     </label>
                     <input
@@ -1657,12 +1658,12 @@ export default function CreateVMPage() {
                 </>
               )}
               {goldenKind === 'template' && (
-                <p className="sm:col-span-2 text-sm text-slate-500">
+                <p className="sm:col-span-2 text-sm text-[var(--text-muted)]">
                   vCPU, RAM, and OS variant for this clone come from the template JSON (applied on the server).
                 </p>
               )}
               <div>
-                <label htmlFor="g-fw" className="block text-sm text-slate-400 mb-1">
+                <label htmlFor="g-fw" className="block text-sm text-[var(--text-muted)] mb-1">
                   Firmware
                 </label>
                 <select id="g-fw" value={firmware} onChange={(e) => setFirmware(e.target.value)} className="input-field">
@@ -1673,13 +1674,13 @@ export default function CreateVMPage() {
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
               <Network className={`w-5 h-5 ${statusToneClass('ok')}`} />
               Networking &amp; console
             </h2>
             <div>
-              <label htmlFor="g-net" className="block text-sm text-slate-400 mb-1">
+              <label htmlFor="g-net" className="block text-sm text-[var(--text-muted)] mb-1">
                 Virtual network
               </label>
               <select id="g-net" value={network} onChange={(e) => setNetwork(e.target.value)} className="input-field max-w-md">
@@ -1693,7 +1694,7 @@ export default function CreateVMPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="g-gfx" className="block text-sm text-slate-400 mb-1">
+                <label htmlFor="g-gfx" className="block text-sm text-[var(--text-muted)] mb-1">
                   Graphics
                 </label>
                 <select id="g-gfx" value={graphicsType} onChange={(e) => setGraphicsType(e.target.value as 'vnc' | 'spice')} className="input-field">
@@ -1702,7 +1703,7 @@ export default function CreateVMPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="g-listen" className="block text-sm text-slate-400 mb-1">
+                <label htmlFor="g-listen" className="block text-sm text-[var(--text-muted)] mb-1">
                   Listen
                 </label>
                 <select id="g-listen" value={graphicsListen} onChange={(e) => setGraphicsListen(e.target.value)} className="input-field">
@@ -1711,7 +1712,7 @@ export default function CreateVMPage() {
                 </select>
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
               <input type="checkbox" checked={pathCheckOff} onChange={(e) => setPathCheckOff(e.target.checked)} className="rounded" />
               Ignore path-in-use check
             </label>
@@ -1729,8 +1730,8 @@ export default function CreateVMPage() {
       )}
 
       {(submitting || createLog.length > 0) && (
-        <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3 space-y-2">
-          <h4 className="text-xs font-semibold text-slate-300">Guest install (virt-install / mkosi)</h4>
+        <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-2">
+          <h4 className="text-xs font-semibold text-[var(--text-secondary)]">Guest install (virt-install / mkosi)</h4>
           <BuildStepTimeline
             steps={VM_CREATE_TIMELINE_LABELS}
             activeIndex={vmCreateTimeline.activeIndex}
@@ -1738,36 +1739,36 @@ export default function CreateVMPage() {
             failed={vmCreateTimeline.failed}
             variant="amber"
           />
-          <pre className="max-h-56 overflow-y-auto rounded bg-black/50 border border-slate-800 p-2 text-[11px] font-mono text-slate-200 whitespace-pre-wrap break-all">
-            {createLog.length ? createLog.join('\n') : <span className="text-slate-500">Starting…</span>}
+          <pre className="max-h-56 overflow-y-auto rounded bg-black/50 border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
+            {createLog.length ? createLog.join('\n') : <span className="text-[var(--text-muted)]">Starting…</span>}
           </pre>
           <div ref={logEndRef} />
         </div>
       )}
 
       {/* Golden Forge — local Packer qcow2 (job + live logs, same pattern as disk builds) */}
-      <div className="bg-slate-800/50 rounded-xl p-6 border border-violet-800/40 space-y-4">
+      <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-violet-800/40 space-y-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Terminal className="w-5 h-5 text-violet-400" aria-hidden />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Terminal className="w-5 h-5 text-[var(--accent)]" aria-hidden />
               Golden Forge
             </h2>
-            <p className="text-sm text-slate-400 max-w-3xl mt-1">
+            <p className="text-sm text-[var(--text-muted)] max-w-3xl mt-1">
               Build a reusable qcow2 on this host with the bundled script, stream logs here and under{' '}
-              <Link to="/jobs" className="text-violet-300 hover:underline">
+              <Link to="/jobs" className="text-[var(--link)] hover:underline">
                 Jobs
               </Link>
-              . Default login is usually <code className="text-slate-300">packer</code> or <code className="text-slate-300">root</code> with password <code className="text-slate-300">password</code> until you change it.
+              . Default login is usually <code className="text-[var(--text-secondary)]">packer</code> or <code className="text-[var(--text-secondary)]">root</code> with password <code className="text-[var(--text-secondary)]">password</code> until you change it.
             </p>
           </div>
         </div>
-        <p className="text-xs text-slate-500">
-          Installed: <code className="text-slate-400">{PACKER_SCRIPT_SYSTEM}</code> · from repo: <code className="text-slate-400">{PACKER_SCRIPT_REPO}</code>
+        <p className="text-xs text-[var(--text-muted)]">
+          Installed: <code className="text-[var(--text-muted)]">{PACKER_SCRIPT_SYSTEM}</code> · from repo: <code className="text-[var(--text-muted)]">{PACKER_SCRIPT_REPO}</code>
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[12rem]">
-            <label htmlFor="packer-guest" className="block text-sm text-slate-400 mb-1">
+            <label htmlFor="packer-guest" className="block text-sm text-[var(--text-muted)] mb-1">
               Profile
             </label>
             <select
@@ -1788,21 +1789,21 @@ export default function CreateVMPage() {
             type="button"
             onClick={() => void runPackerGoldenBuild()}
             disabled={packerRunning}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white"
+            className="btn-primary text-sm disabled:opacity-50 inline-flex items-center gap-2"
           >
             <Terminal className="w-4 h-4" />
             {packerRunning ? 'Building…' : 'Build golden qcow2'}
           </button>
           <Link
             to="/jobs"
-            className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm border border-slate-600 text-slate-200 hover:bg-slate-800"
+            className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm border border-[var(--apple-hairline)] text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)]"
           >
             Open Jobs
           </Link>
         </div>
         {(packerRunning || packerLog.length > 0) && (
-          <div className="rounded-lg border border-slate-700/60 bg-black/40 p-3 space-y-2">
-            <h4 className="text-xs font-semibold text-violet-200">Packer / QEMU build output</h4>
+          <div className="rounded-lg border border-[var(--apple-hairline)] bg-black/40 p-3 space-y-2">
+            <h4 className="text-xs font-semibold text-[var(--link)]">Packer / QEMU build output</h4>
             <BuildStepTimeline
               steps={GOLDEN_FORGE_TIMELINE_LABELS}
               activeIndex={goldenForgeTimeline.activeIndex}
@@ -1810,22 +1811,22 @@ export default function CreateVMPage() {
               failed={goldenForgeTimeline.failed}
               variant="violet"
             />
-            <pre className="max-h-72 overflow-y-auto rounded bg-black/60 border border-slate-800 p-2 text-[11px] font-mono text-slate-100 whitespace-pre-wrap break-all">
-              {packerLog.length ? packerLog.join('\n') : <span className="text-slate-500">Starting…</span>}
+            <pre className="max-h-72 overflow-y-auto rounded bg-black/60 border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
+              {packerLog.length ? packerLog.join('\n') : <span className="text-[var(--text-muted)]">Starting…</span>}
             </pre>
             <div ref={packerLogEndRef} />
           </div>
         )}
-        <p className="text-sm text-slate-400">
-          Then use <span className="text-slate-200">Clone from golden image</span> above, <Link to="/import" className="text-violet-300 hover:underline">Import disk</Link>, or a saved template with <code className="text-slate-300">base_image</code>.
+        <p className="text-sm text-[var(--text-muted)]">
+          Then use <span className="text-[var(--text-primary)]">Clone from golden image</span> above, <Link to="/import" className="text-[var(--link)] hover:underline">Import disk</Link>, or a saved template with <code className="text-[var(--text-secondary)]">base_image</code>.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link to="/import" className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition">
+        <Link to="/import" className="btn-primary text-sm">
           Import disk
         </Link>
-        <Link to="/disk-images" className="inline-flex items-center justify-center px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
+        <Link to="/disk-images" className="inline-flex items-center justify-center btn-secondary text-sm transition">
           Disk images
         </Link>
       </div>

@@ -12,8 +12,8 @@ export type DetailTabDef<T extends string> = {
 function tabButtonClass(active: boolean): string {
   return `px-3 py-2 text-sm whitespace-nowrap rounded-lg transition-colors ${
     active
-      ? 'bg-slate-800 text-white font-medium ring-1 ring-slate-700'
-      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+      ? 'bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] font-medium ring-1 ring-[color-mix(in_srgb,var(--apple-hairline)_80%,transparent)]'
+      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--apple-surface)]'
   }`
 }
 
@@ -108,7 +108,7 @@ export default function DetailTabs<T extends string>({
           {moreOpen && (
             <div
               role="menu"
-              className="absolute left-0 top-full z-30 mt-1 min-w-[12rem] rounded-xl border border-slate-700/80 bg-slate-900/95 backdrop-blur-md py-1 shadow-xl"
+              className="absolute left-0 top-full z-30 mt-1 min-w-[12rem] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/80 bg-[var(--apple-surface-elevated)] backdrop-blur-md py-1 shadow-xl"
             >
               {more.map((tab) => {
                 const showGroup = tab.group && tab.group !== lastGroup
@@ -116,7 +116,7 @@ export default function DetailTabs<T extends string>({
                 return (
                   <div key={tab.id}>
                     {showGroup && (
-                      <p className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-slate-500">{tab.group}</p>
+                      <p className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{tab.group}</p>
                     )}
                     <button
                       type="button"
@@ -126,7 +126,7 @@ export default function DetailTabs<T extends string>({
                         setMoreOpen(false)
                       }}
                       className={`w-full text-left px-3 py-2 text-sm ${
-                        active === tab.id ? 'bg-blue-500/15 text-blue-200' : 'text-slate-300 hover:bg-slate-800/80'
+                        active === tab.id ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'text-[var(--text-secondary)] hover:bg-[var(--apple-surface)]'
                       }`}
                     >
                       {tab.label}

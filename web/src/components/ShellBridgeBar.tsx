@@ -2,20 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { ArrowLeft, LayoutGrid, Puzzle } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { usePlatformDesktopTier } from '../hooks/usePlatformDesktopTier'
-import { hubHrefForTier } from '../utils/platformHubLinks'
 import { shellLabel } from './shellBridgeUtils'
 
 export { shellLabel } from './shellBridgeUtils'
 
+/** Compact classic↔platform bridge — Settings owns Apps & Integrations. */
 export default function ShellBridgeBar() {
   const { pathname } = useLocation()
   const { info, loading } = usePlatformInfo()
-  const [tier] = usePlatformDesktopTier()
   const label = shellLabel(pathname)
-  const integrationsHref = hubHrefForTier('integrations', tier)
   const fleetMode = Boolean(info?.control_plane?.proxy_url)
   const [stickyFleet, setStickyFleet] = useState(false)
 
@@ -28,28 +25,19 @@ export default function ShellBridgeBar() {
 
   return (
     <div
-      className="shell-bridge-bar platform-space-banner px-4 py-3"
+      className="shell-bridge-bar platform-space-banner px-4 py-1.5"
       role="navigation"
       aria-label="Return to Platform desktop"
     >
-      <div className="flex flex-wrap items-center gap-3 max-w-[160rem] mx-auto">
-        <div className="flex items-center gap-2 min-w-0">
-          <LayoutGrid className="h-4 w-4 text-sky-400 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-white">{label}</p>
-            <p className="text-xs text-white/50">Same Machina session — return to the Platform desktop anytime.</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 ml-auto">
-          <Link to="/platform" className="platform-space-banner-link platform-space-banner-link-primary">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Platform
-          </Link>
-          <Link to={integrationsHref} className="platform-space-banner-link">
-            <Puzzle className="w-3.5 h-3.5" />
-            Apps &amp; Integrations
-          </Link>
-        </div>
+      <div className="flex items-center gap-3 max-w-[90rem] mx-auto">
+        <p className="text-xs text-[var(--text-muted)] min-w-0 truncate">{label}</p>
+        <Link
+          to="/platform"
+          className="platform-space-banner-link platform-space-banner-link-primary ml-auto shrink-0"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Platform
+        </Link>
       </div>
     </div>
   )

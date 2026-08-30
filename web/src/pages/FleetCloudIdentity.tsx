@@ -49,18 +49,19 @@ function FleetCloudIdentityContent() {
     <PageLayout
       hideHeader
       prepend={<><FleetCloudSubNav /></>}
-      ><h1 className="text-2xl font-semibold flex items-center gap-2">
+      ><p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
         <KeyRound className={`w-7 h-7 ${statusToneClass('warn')}`} /> Projects
       </h1>
-      <p className="text-slate-400 text-sm">
+      <p className="text-[var(--text-muted)] text-sm">
         Project registry with membership/roles. Login identity is Machina's own PAM/OIDC/LDAP/SAML
         auth (see Settings) — add existing Machina users to a project from its detail page.
       </p>
 
-      <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-2 items-center">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-2 items-center">
         <input aria-label="New project name" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="New project name"
-          className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
-        <button type="button" className="px-3 py-1.5 rounded-lg bg-amber-700 text-white text-sm inline-flex items-center gap-1"
+          className="input-field text-sm" />
+        <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1"
           onClick={async () => {
             if (!projectName.trim()) return
             try {
@@ -75,20 +76,20 @@ function FleetCloudIdentityContent() {
       </div>
 
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : projects.length === 0 ? (
         <EmptyState title="No projects" description="No projects in the registry yet." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="w-full text-sm" aria-label="Projects">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="overflow-x-auto apple-surface rounded-2xl">
+          <table className="apple-table" aria-label="Projects">
+            <thead>
               <tr><th scope="col" className="px-3 py-2">Name</th><th scope="col" className="px-3 py-2">ID</th><th scope="col" className="px-3 py-2">Enabled</th></tr>
             </thead>
             <tbody>
               {projects.map((p) => (
-                <tr key={p.id} className="border-t border-slate-800">
+                <tr key={p.id} className="border-t border-[var(--apple-hairline)]">
                   <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/identity/projects/${p.id}`} className="text-sky-400 hover:underline">{p.name}</Link>
+                    <Link to={`/fleet-cloud/identity/projects/${p.id}`} className="text-[var(--accent)] hover:underline">{p.name}</Link>
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">{p.id}</td>
                   <td className="px-3 py-2">{p.enabled ? 'yes' : 'no'}</td>

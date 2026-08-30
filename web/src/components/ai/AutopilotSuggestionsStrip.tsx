@@ -75,9 +75,9 @@ export default function AutopilotSuggestionsStrip() {
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {proposals.map((a) => (
-          <div key={a.id} className="rounded-lg border border-white/[0.06] bg-slate-900/40 p-3 text-xs">
-            <p className="font-medium text-slate-200">{a.label}</p>
-            <p className="text-slate-500 mt-0.5 line-clamp-2">{a.review}</p>
+          <div key={a.id} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] p-3 text-xs">
+            <p className="font-medium text-[var(--text-primary)]">{a.label}</p>
+            <p className="text-[var(--text-muted)] mt-0.5 line-clamp-2">{a.review}</p>
             <div className="flex flex-wrap gap-2 mt-2">
               <button
                 type="button"

@@ -58,14 +58,14 @@ export default function PlatformMobileJumpNav() {
   return (
     <nav
       id="platform-mobile-jump"
-      className="tahoe-mobile-jump lg:hidden shrink-0 sticky z-[34] border-b border-white/[0.06] bg-slate-950/40 backdrop-blur-md"
+      className="tahoe-mobile-jump lg:hidden shrink-0 sticky z-[34] border-b border-white/[0.06] bg-[var(--apple-surface)] backdrop-blur-md"
       aria-label="Platform jump navigation"
     >
       <label htmlFor="platform-mobile-jump-select" className="sr-only">
         Navigate platform
       </label>
       <div className="flex items-center gap-2 px-4 py-2.5">
-        <Compass className="h-4 w-4 shrink-0 text-sky-400/80" aria-hidden />
+        <Compass className="h-4 w-4 shrink-0 text-[var(--link)]/80" aria-hidden />
         <select
           id="platform-mobile-jump-select"
           name="platform_jump"

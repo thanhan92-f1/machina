@@ -225,6 +225,7 @@ export default function EventsPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       className="min-w-0"
       loading={loading}
       title="Live Metrics"
@@ -240,7 +241,7 @@ export default function EventsPage() {
           <button
             type="button"
             onClick={() => downloadJSON(metrics, 'metrics.json')}
-            className="p-2 hover:bg-slate-700 rounded transition"
+            className="p-2 hover:bg-[var(--surface-hover)] rounded transition"
             title="Export JSON"
             aria-label="Export JSON"
           >
@@ -249,13 +250,13 @@ export default function EventsPage() {
           <button
             type="button"
             onClick={() => downloadCSV(metrics as unknown as Record<string, unknown>[], 'metrics.csv')}
-            className="p-2 hover:bg-slate-700 rounded transition"
+            className="p-2 hover:bg-[var(--surface-hover)] rounded transition"
             title="Export CSV"
             aria-label="Export CSV"
           >
             <Download className={`w-4 h-4 ${statusToneClass('ok')}`} aria-hidden="true" />
           </button>
-          <button type="button" onClick={load} className="p-2 hover:bg-slate-700 rounded transition" aria-label="Refresh">
+          <button type="button" onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" aria-label="Refresh">
             <RefreshCw className="w-4 h-4" aria-hidden="true" />
           </button>
         </>
@@ -272,7 +273,7 @@ export default function EventsPage() {
           title="No running VMs with metrics"
           description="Start a guest or open VM details to see per-domain CPU, memory, and throughput charts."
           primaryAction={
-            <Link to="/vms" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">
+            <Link to="/vms" className="btn-primary text-sm">
               Virtual machines
             </Link>
           }
@@ -281,38 +282,38 @@ export default function EventsPage() {
         <>
           {/* Summary */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-              <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wide">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
+              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
                 <Gauge className="w-3.5 h-3.5" /> Guests
               </div>
-              <div className="text-2xl font-semibold text-white mt-1">{metrics.length}</div>
-              <div className="text-xs text-slate-500 mt-0.5">running domains</div>
+              <div className="text-2xl font-semibold text-[var(--text-primary)] mt-1">{metrics.length}</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">running domains</div>
             </div>
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-              <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wide">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
+              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
                 <Activity className="w-3.5 h-3.5" /> Avg memory
               </div>
-              <div className={`text-2xl font-semibold mt-1 ${latest ? statusToneClass(utilizationTone(Number(latest.avgMem))) : 'text-white'}`}>
+              <div className={`text-2xl font-semibold mt-1 ${latest ? statusToneClass(utilizationTone(Number(latest.avgMem))) : 'text-[var(--text-primary)]'}`}>
                 {latest ? `${Number(latest.avgMem).toFixed(1)}%` : '—'}
               </div>
-              <div className="text-xs text-slate-500 mt-0.5">balloon / RSS derived</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">balloon / RSS derived</div>
             </div>
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-              <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wide">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
+              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
                 <Cpu className="w-3.5 h-3.5" /> Avg guest CPU
               </div>
-              <div className={`text-2xl font-semibold mt-1 ${latest ? statusToneClass(utilizationTone(Number(latest.avgCpu))) : 'text-white'}`}>
+              <div className={`text-2xl font-semibold mt-1 ${latest ? statusToneClass(utilizationTone(Number(latest.avgCpu))) : 'text-[var(--text-primary)]'}`}>
                 {latest ? `${Number(latest.avgCpu).toFixed(1)}%` : '—'}
               </div>
-              <div className="text-xs text-slate-500 mt-0.5">from cpu_time deltas</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">from cpu_time deltas</div>
             </div>
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wide">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4 col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
                 <HardDrive className="w-3.5 h-3.5" /> Host I/O (sum)
               </div>
-              <div className="text-sm font-medium text-slate-200 mt-2 space-y-0.5">
+              <div className="text-sm font-medium text-[var(--text-primary)] mt-2 space-y-0.5">
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Disk R+W</span>
+                  <span className="text-[var(--text-muted)]">Disk R+W</span>
                   <span>
                     {latest
                       ? `${formatThroughput(Number(latest.diskRdBps) + Number(latest.diskWrBps))}`
@@ -320,7 +321,7 @@ export default function EventsPage() {
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-500">Net RX+TX</span>
+                  <span className="text-[var(--text-muted)]">Net RX+TX</span>
                   <span>
                     {latest
                       ? `${formatThroughput(Number(latest.netRxBps) + Number(latest.netTxBps))}`
@@ -333,13 +334,13 @@ export default function EventsPage() {
 
           {/* Charts */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-w-0 relative z-0">
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 min-w-0">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
                   <Activity className={`w-4 h-4 ${statusToneClass('info')}`} /> Memory % (per VM)
                 </h2>
                 {vmLineOverflow > 0 && (
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-[var(--text-muted)]">
                     +{vmLineOverflow} more in table / snapshot bar
                   </span>
                 )}
@@ -378,15 +379,15 @@ export default function EventsPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-full flex items-center justify-center text-[var(--text-muted)] text-sm">
                     Collecting samples… next point in a few seconds.
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 min-w-0">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 min-w-0">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-3">
                 <Cpu className={`w-4 h-4 ${statusToneClass('warn')}`} /> Guest CPU % (estimated)
               </h2>
               <div className="h-[260px] w-full min-w-0 isolate">
@@ -423,15 +424,15 @@ export default function EventsPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-full flex items-center justify-center text-[var(--text-muted)] text-sm">
                     Collecting samples…
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 min-w-0 xl:col-span-1">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 min-w-0 xl:col-span-1">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-3">
                 <HardDrive className={`w-4 h-4 ${statusToneClass('ok')}`} /> Disk throughput (all VMs)
               </h2>
               <div className="h-[220px] w-full min-w-0">
@@ -483,16 +484,16 @@ export default function EventsPage() {
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-full flex items-center justify-center text-[var(--text-muted)] text-sm">
                     Collecting samples…
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 min-w-0 xl:col-span-1">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
-                <Network className="w-4 h-4 text-cyan-400" /> Network throughput (all VMs)
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 min-w-0 xl:col-span-1">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-3">
+                <Network className="w-4 h-4 text-[var(--accent)]" /> Network throughput (all VMs)
               </h2>
               <div className="h-[220px] w-full min-w-0">
                 {timeline.length > 1 ? (
@@ -543,7 +544,7 @@ export default function EventsPage() {
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-full flex items-center justify-center text-[var(--text-muted)] text-sm">
                     Collecting samples…
                   </div>
                 )}
@@ -553,8 +554,8 @@ export default function EventsPage() {
 
           {/* Snapshot bar + detail table */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 min-w-0">
-              <h2 className="text-sm font-semibold text-white mb-3">Memory snapshot</h2>
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 min-w-0">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Memory snapshot</h2>
               <div
                 style={{ height: Math.min(420, 48 + barData.length * 36) }}
                 className="min-h-[180px]"
@@ -577,14 +578,14 @@ export default function EventsPage() {
               </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden min-w-0">
-              <div className="px-5 py-3 border-b border-slate-700/50">
-                <h2 className="text-sm font-semibold text-white">Detail</h2>
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden min-w-0">
+              <div className="px-5 py-3 border-b border-[var(--apple-hairline)]">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Detail</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" aria-label="VM events">
                   <thead>
-                    <tr className="border-b border-slate-700/50 text-left text-slate-400">
+                    <tr className="border-b border-[var(--apple-hairline)] text-left text-[var(--text-muted)]">
                       <th scope="col" className="px-4 py-2.5">VM</th>
                       <th scope="col" className="px-4 py-2.5">Mem</th>
                       <th scope="col" className="px-4 py-2.5 hidden sm:table-cell">CPU</th>
@@ -593,11 +594,11 @@ export default function EventsPage() {
                       <th scope="col" className="px-4 py-2.5 w-10" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50">
+                  <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                     {sortedMetrics.map((m) => {
                       const ex = vmExtras[m.name]
                       return (
-                        <tr key={m.name} className="hover:bg-slate-700/40">
+                        <tr key={m.name} className="hover:bg-[var(--surface-hover)]/40">
                           <td className="px-4 py-2.5">
                             <Link
                               to={vmDetailRoute(m.name, m.libvirt_connection)}
@@ -606,13 +607,13 @@ export default function EventsPage() {
                             >
                               {m.name}
                             </Link>
-                            <div className="text-[10px] text-slate-500">
+                            <div className="text-[10px] text-[var(--text-muted)]">
                               {m.vcpus} vCPU · {m.memory_used_mb} / {m.memory_total_mb} MB
                             </div>
                           </td>
                           <td className="px-4 py-2.5">
                             <div className="flex items-center gap-2">
-                              <div className="w-20 bg-slate-700 rounded-full h-2 shrink-0">
+                              <div className="w-20 bg-[var(--surface-hover)] rounded-full h-2 shrink-0">
                                 <div
                                   role="progressbar"
                                   aria-label="Memory usage"
@@ -623,27 +624,27 @@ export default function EventsPage() {
                                   style={{ width: `${Math.min(100, m.memory_pct)}%` }}
                                 />
                               </div>
-                              <span className="text-slate-400 tabular-nums">{m.memory_pct.toFixed(0)}%</span>
+                              <span className="text-[var(--text-muted)] tabular-nums">{m.memory_pct.toFixed(0)}%</span>
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 text-slate-300 tabular-nums hidden sm:table-cell">
+                          <td className="px-4 py-2.5 text-[var(--text-secondary)] tabular-nums hidden sm:table-cell">
                             {ex ? `${ex.cpuPct.toFixed(0)}%` : '—'}
                           </td>
-                          <td className="px-4 py-2.5 text-slate-300 text-xs hidden md:table-cell">
+                          <td className="px-4 py-2.5 text-[var(--text-secondary)] text-xs hidden md:table-cell">
                             {ex ? (
                               <span>
                                 {formatThroughput(ex.rdBps)}{' '}
-                                <span className="text-slate-500">/</span> {formatThroughput(ex.wrBps)}
+                                <span className="text-[var(--text-muted)]">/</span> {formatThroughput(ex.wrBps)}
                               </span>
                             ) : (
                               '—'
                             )}
                           </td>
-                          <td className="px-4 py-2.5 text-slate-300 text-xs hidden lg:table-cell">
+                          <td className="px-4 py-2.5 text-[var(--text-secondary)] text-xs hidden lg:table-cell">
                             {ex ? (
                               <span>
                                 {formatThroughput(ex.rxBps)}{' '}
-                                <span className="text-slate-500">/</span> {formatThroughput(ex.txBps)}
+                                <span className="text-[var(--text-muted)]">/</span> {formatThroughput(ex.txBps)}
                               </span>
                             ) : (
                               '—'
@@ -652,7 +653,7 @@ export default function EventsPage() {
                           <td className="px-4 py-2.5">
                             <Link
                               to={vmDetailRoute(m.name, m.libvirt_connection)}
-                              className="inline-flex p-1 rounded hover:bg-slate-600/40 text-slate-500 hover:text-slate-300"
+                              className="inline-flex p-1 rounded hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                               aria-label={`Open ${m.name}`}
                             >
                               <ChevronRight className="w-4 h-4" />

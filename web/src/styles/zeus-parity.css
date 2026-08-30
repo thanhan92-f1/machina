@@ -1,0 +1,1375 @@
+/* Zeus OS 1:1 parity — ported from ../zeus-os/ui/src/index.css
+   Edit Zeus first, then re-port. Do not re-derive values here. */
+
+/* ── Zeus :root foundation (Classic Blue / graphite defaults) ── */
+  :root {
+    /* Elevation: the two-tier surface language. surface-1 = in-page card
+       whisper, surface-2 = overlay glass; hairline-1/2 = resting/hover borders.
+       Themes may warm these (see the Predator shell block). */
+    --surface-1: hsl(var(--foreground) / 0.02);
+    --surface-2: hsl(var(--foreground) / 0.05);
+    --hairline-1: hsl(var(--foreground) / 0.07);
+    --hairline-2: hsl(var(--foreground) / 0.1);
+    /* Apple dark graphite (~#000 / #1d1d1f) — not navy. */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 98%;
+    /* Mist Blue (iPhone Magichromatic) — brighter than tahoe-light for dark
+       graphite. --primary-foreground stays pure white for CTA contrast. */
+    --primary: 200 85% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14%;
+    /* Apple dark secondary gray (~#86868b). */
+    --muted-foreground: 240 3% 54%;
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 158 64% 52%;
+    /* Dark text — success is a medium-lightness green, too light for light/white text
+       (was 158 64% 90%, ~1.7:1 contrast). Matches the dark-on-accent pattern already
+       used by emerald-noir/nova/predator's own --success-foreground. */
+    --success-foreground: 158 64% 12%;
+    --warning: 43 96% 56%;
+    /* Same fix as --success-foreground above (was 43 96% 90%, ~1.5:1 contrast). */
+    --warning-foreground: 43 96% 12%;
+    --info: 220 70% 58%;              /* Deep Blue (Magichromatic family) */
+    --info-foreground: 199 89% 92%;
+    --danger: 0 72% 51%;
+    --danger-foreground: 0 72% 90%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    /* Focus accent — matches --primary. */
+    --ring: 200 85% 52%;
+    --radius: 0.75rem;
+    /* Semantic accent tri-token — the deliberate accent language, matched to the
+       existing literals so wiring them causes no visual shift:
+       live/running/success = emerald, interactive/info = sky, AI/secondary = violet. */
+    --accent-live: 158 73% 54%;
+    --accent-info: 200 85% 52%;       /* Mist Blue — matches Classic Blue primary */
+    --accent-alt: 270 48% 68%;        /* Lavender (Magichromatic family, dark) */
+    /* Canonical content radius + section gap (was split 0.9/1/0.75rem and
+       1.25/1.5/1.75rem). */
+    --radius-card: 0.9rem;
+    --zeus-section-gap: 1.5rem;
+    /* Reserved workspace tokens — canonical values live in zeus-reserved-workspace.css */
+    --zeus-page-section-gap: 1.75rem;
+    --zeus-section-gap: 1.75rem;
+    --zeus-scroll-pad-top: 1rem;
+    --zeus-toolbar-row-gap: 0.5rem;
+    --zeus-chip-gap: 0.4rem;
+    --zeus-comfort-line-height: 1.5;
+
+    /* ── Design system foundation tokens (2026 ref) ── */
+    --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+    --sp-5: 24px;  --sp-6: 32px;  --sp-7: 48px;  --sp-8: 64px;
+
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 16px;
+    --fs-lg: 20px; --fs-xl: 28px; --fs-2xl: 36px;
+
+    --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+    --lh-tight: 1.2;   --lh-normal: 1.5;
+
+    /* Type families. --font-display = apple.com SF / system stack; self-hosted
+       Inter sits after SF names so Linux/Windows get close metrics when SF is
+       absent. Predator overrides to Space Grotesk. --font-mono = JetBrains Mono. */
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+
+    --content-max: 100%;
+    --panel-min: 360px;
+    --hit-min: 44px;
+
+    --focus-ring: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+
+    /* ── Motion tokens ── */
+    --dur-fast: 120ms;
+    --dur-base: 200ms;
+    --dur-slow: 300ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+
+/* ── tahoe-mesh / hero / buttons / glass / empty ── */
+.tahoe-mesh {
+  pointer-events: none;
+  position: absolute;
+  inset: -4rem -2rem auto -2rem;
+  height: 28rem;
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 30%, hsl(var(--accent-info) / 0.14), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 78% 18%, hsl(var(--primary) / 0.12), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 50% 80%, hsl(var(--success) / 0.06), transparent 50%);
+  filter: blur(1px);
+  z-index: 0;
+}
+
+.tahoe-mesh-subtle {
+  height: 18rem;
+  opacity: 0.85;
+  inset: -2rem -1rem auto -1rem;
+}
+
+html[data-shell-density='calm'] .tahoe-mesh-subtle {
+  height: 14rem;
+  opacity: 0.42;
+}
+
+.tahoe-page-root {
+  position: relative;
+}
+
+.tahoe-error-panel {
+  background: linear-gradient(160deg, rgba(127, 29, 29, 0.35) 0%, hsl(var(--card) / 0.8) 100%);
+  backdrop-filter: blur(16px);
+}
+
+/* Auto-style legacy list pages inside Tahoe frame */
+.tahoe-page-root .tahoe-content > .relative.max-w-md input,
+.tahoe-page-root .tahoe-content > div.relative input[type="text"],
+.tahoe-page-root .tahoe-content > div.relative input[type="search"] {
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  background: hsl(var(--card) / 0.55);
+  backdrop-filter: blur(16px);
+  color: hsl(var(--foreground));
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  box-shadow: 0 1px 0 hsl(var(--foreground) / 0.05) inset;
+}
+
+.tahoe-page-root .tahoe-content > .relative.max-w-md input:focus,
+.tahoe-page-root .tahoe-content > div.relative input:focus {
+  outline: none;
+  border-color: hsl(var(--accent-info) / 0.4);
+  box-shadow: 0 0 0 3px hsl(var(--accent-info) / 0.1);
+}
+
+.tahoe-page-root .tahoe-content > .relative.max-w-md svg,
+.tahoe-page-root .tahoe-content > div.relative svg {
+  color: hsl(var(--muted-foreground));
+}
+
+.tahoe-page-root .rounded-lg.border.bg-card,
+.tahoe-page-root .bg-card\/50.border.rounded-lg,
+.tahoe-page-root .bg-card.border.rounded-xl,
+.tahoe-page-root .zeus-panel {
+  border-radius: 1.25rem;
+  border-color: hsl(var(--foreground) / 0.08);
+  background: linear-gradient(155deg, hsl(var(--foreground) / 0.06) 0%, hsl(var(--foreground) / 0.02) 100%);
+  backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow: 0 1px 0 hsl(var(--foreground) / 0.05) inset, 0 16px 40px -24px rgba(0, 0, 0, 0.45);
+}
+
+.tahoe-page-root table {
+  width: 100%;
+}
+
+.tahoe-page-root thead {
+  background: hsl(var(--foreground) / 0.04);
+}
+
+/* Sticky theads need an opaque background — the 4% tint above is fine for a
+   static header, but bleeds scrolled content through once pinned. */
+.tahoe-page-root thead.sticky {
+  background: hsl(var(--card));
+}
+
+.tahoe-page-root thead th {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid hsl(var(--foreground) / 0.06);
+  padding: 0.625rem 0.75rem;
+}
+
+.tahoe-page-root tbody tr {
+  border-bottom: 1px solid hsl(var(--foreground) / 0.04);
+  transition: background 0.15s ease;
+}
+
+.tahoe-page-root tbody tr:hover {
+  background: hsl(var(--foreground) / 0.03);
+}
+
+.tahoe-page-root tbody td {
+  color: hsl(var(--foreground));
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  padding: 0.625rem 0.75rem;
+}
+
+.tahoe-page-root .text-muted-foreground {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.tahoe-page-root button.bg-primary,
+.tahoe-page-root a.bg-primary,
+.tahoe-page-root .bg-primary.text-primary-foreground {
+  border-radius: 9999px !important;
+  background: hsl(var(--accent-info)) !important;
+  border: 1px solid hsl(var(--foreground) / 0.18);
+  box-shadow: 0 1px 0 hsl(var(--foreground) / 0.2) inset, 0 1px 2px rgba(0, 0, 0, 0.28);
+  font-weight: 600;
+}
+
+.tahoe-page-root .tahoe-table-wrap table thead {
+  background: transparent;
+}
+
+.tahoe-panel-inner {
+  padding: 0;
+}
+
+.tahoe-table-wrap .tahoe-panel-inner,
+.tahoe-table-wrap {
+  padding: 0;
+}
+
+.tahoe-badge-sky {
+  color: hsl(var(--info));
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.28);
+}
+
+.tahoe-badge-neutral {
+  color: hsl(var(--foreground) / 0.55);
+  background: hsl(var(--foreground) / 0.06);
+  border-color: hsl(var(--foreground) / 0.1);
+}
+
+.tahoe-badge-danger {
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.12);
+  border-color: hsl(var(--destructive) / 0.28);
+}
+
+/* Semantic status badges — glass-friendly, token-aligned */
+.badge-success,
+.badge-warning,
+.badge-info,
+.badge-danger,
+.badge-neutral {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-success {
+  color: hsl(var(--success-foreground));
+  background: hsl(var(--success) / 0.12);
+  border-color: hsl(var(--success) / 0.28);
+}
+
+.badge-warning {
+  color: hsl(var(--warning-foreground));
+  background: hsl(var(--warning) / 0.12);
+  border-color: hsl(var(--warning) / 0.28);
+}
+
+.badge-info {
+  color: hsl(var(--info-foreground));
+  background: hsl(var(--info) / 0.12);
+  border-color: hsl(var(--info) / 0.28);
+}
+
+.badge-danger {
+  color: hsl(var(--danger-foreground));
+  background: hsl(var(--danger) / 0.12);
+  border-color: hsl(var(--danger) / 0.28);
+}
+
+.badge-neutral {
+  color: hsl(var(--foreground) / 0.55);
+  background: hsl(var(--foreground) / 0.06);
+  border-color: hsl(var(--foreground) / 0.1);
+}
+
+.badge-sm {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.6875rem;
+}
+
+.badge-md {
+  padding: 0.2rem 0.55rem;
+}
+
+.badge-dot::before {
+  content: '';
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-right: 0.35rem;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.badge-success.badge-dot::before { background: hsl(var(--success-foreground)); }
+.badge-warning.badge-dot::before { background: hsl(var(--warning-foreground)); }
+.badge-info.badge-dot::before { background: hsl(var(--info-foreground)); }
+.badge-danger.badge-dot::before { background: hsl(var(--danger-foreground)); }
+.badge-neutral.badge-dot::before { background: hsl(var(--foreground) / 0.55); }
+
+.badge-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.badge-icon svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+/* ── MetricRow: aligned key-value list ── */
+.metric-list { display: flex; flex-direction: column; }
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+  gap: var(--sp-4);
+}
+
+.metric-item:last-child { border-bottom: none; }
+
+.metric-item__label {
+  font-size: var(--fs-sm);
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+}
+
+.metric-item__value {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: hsl(var(--foreground));
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-item__value--empty {
+  color: hsl(var(--muted-foreground) / 0.6);
+  cursor: help;
+  font-style: italic;
+}
+
+/* ── EmptyState bordered variant ── */
+.empty-state--bordered {
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.85rem;
+  background: hsl(var(--card) / 0.4);
+  min-height: 220px;
+}
+
+.tahoe-page-root nav[aria-label="Breadcrumb"],
+.tahoe-page-root .breadcrumbs {
+  opacity: 0.7;
+}
+
+.tahoe-hero {
+  background:
+    linear-gradient(135deg, hsl(var(--foreground) / 0.06) 0%, hsl(var(--foreground) / 0.02) 40%, transparent 100%),
+    linear-gradient(160deg, hsl(var(--card) / 0.72) 0%, hsl(var(--card) / 0.88) 100%);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow:
+    0 1px 0 hsl(var(--foreground) / 0.08) inset,
+    0 24px 48px -24px rgba(0, 0, 0, 0.55);
+}
+
+.tahoe-hero-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, hsl(var(--foreground) / 0.04) 50%, transparent 60%);
+  pointer-events: none;
+}
+
+.tahoe-hero-enter {
+  animation: tahoe-hero-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tahoe-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+html[data-zeus-reduced-motion='1'] .tahoe-hero-enter {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-zeus-reduced-motion='0']) .tahoe-hero-enter {
+    animation: none;
+  }
+}
+
+.tahoe-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, hsl(var(--accent-info) / 0.22), rgba(99, 102, 241, 0.12));
+  border: 1px solid hsl(var(--foreground) / 0.12);
+  box-shadow: 0 8px 24px -8px rgba(14, 165, 233, 0.35);
+}
+
+.tahoe-stat-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--foreground) / 0.07);
+  background: hsl(var(--foreground) / 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.tahoe-stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: hsl(var(--foreground));
+}
+
+.tahoe-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--muted-foreground));
+}
+
+.tahoe-stat-sky .tahoe-stat-value { color: hsl(var(--info)); }
+.tahoe-stat-violet .tahoe-stat-value { color: hsl(var(--primary)); }
+.tahoe-stat-emerald .tahoe-stat-value { color: hsl(var(--success)); }
+.tahoe-stat-amber .tahoe-stat-value { color: hsl(var(--warning)); }
+.tahoe-stat-red .tahoe-stat-value { color: hsl(var(--destructive)); }
+
+.tahoe-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  background: hsl(var(--card) / 0.55);
+  backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: 0 1px 0 hsl(var(--foreground) / 0.06) inset;
+}
+
+.tahoe-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 12rem;
+}
+
+.tahoe-search-wrap svg {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: hsl(var(--muted-foreground));
+}
+
+.tahoe-search {
+  width: 100%;
+  padding: 0.55rem 1rem 0.55rem 1.75rem;
+  border: none;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.tahoe-search::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.tahoe-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  border: 1px solid hsl(var(--foreground) / 0.18);
+  box-shadow:
+    0 1px 0 hsl(var(--foreground) / 0.2) inset,
+    0 1px 2px rgba(0, 0, 0, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.tahoe-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.tahoe-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tahoe-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.78);
+  background: hsl(var(--muted) / 0.55);
+  border: 1px solid hsl(var(--border));
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tahoe-btn-ghost:hover:not(:disabled) {
+  background: hsl(var(--foreground) / 0.1);
+  color: hsl(var(--foreground));
+}
+
+.tahoe-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Outlined secondary button — more visible than ghost, less prominent than primary */
+.tahoe-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.85);
+  background: hsl(var(--foreground) / 0.04);
+  border: 1px solid hsl(var(--foreground) / 0.22);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tahoe-btn-secondary:hover:not(:disabled) {
+  background: hsl(var(--foreground) / 0.09);
+  border-color: hsl(var(--foreground) / 0.35);
+  color: hsl(var(--foreground));
+}
+
+.tahoe-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Default color transition for all buttons that use hover: variants */
+button {
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Global keyboard focus — single system: --focus-ring (background + ring double ring) */
+button:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible,
+[role="button"]:focus-visible,
+a.tahoe-btn-primary:focus-visible,
+a.tahoe-btn-ghost:focus-visible,
+a.tahoe-btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tahoe-btn-primary:focus-visible,
+.tahoe-btn-ghost:focus-visible,
+.tahoe-btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tahoe-btn-destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(180deg, rgb(248, 113, 113) 0%, rgb(220, 38, 38) 100%);
+  border: 1px solid hsl(var(--foreground) / 0.15);
+  box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.45);
+}
+
+.tahoe-btn-destructive:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--destructive) / 0.75);
+}
+
+/* Button size modifiers — compose with tahoe-btn-* variant classes */
+.btn-sm.tahoe-btn-primary,
+.btn-sm.tahoe-btn-ghost,
+.btn-sm.tahoe-btn-secondary,
+.btn-sm.tahoe-btn-destructive {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  min-height: 32px;
+}
+
+.btn-lg.tahoe-btn-primary,
+.btn-lg.tahoe-btn-ghost,
+.btn-lg.tahoe-btn-secondary,
+.btn-lg.tahoe-btn-destructive {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  min-height: var(--hit-min);
+}
+
+/* Default md size: min-height = hit target */
+.tahoe-btn-primary,
+.tahoe-btn-ghost,
+.tahoe-btn-secondary,
+.tahoe-btn-destructive {
+  min-height: var(--hit-min);
+}
+
+.tahoe-glass-card {
+  /* Flat premium card — no glass blur, gradient, drop shadow, or hover lift. */
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  border: 1px solid var(--hairline-1);
+  background: var(--surface-1);
+  transition: border-color 0.2s ease;
+}
+
+.tahoe-glass-card:hover {
+  border-color: hsl(var(--muted-foreground));
+}
+
+/* Static flat card — data panels, tables, inspector (no hover) */
+.tahoe-glass-card-static {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  border: 1px solid hsl(var(--foreground) / 0.07);
+  background: hsl(var(--foreground) / 0.02);
+}
+
+.tahoe-glass-popover,
+.command-palette-glass {
+  backdrop-filter: blur(var(--zeus-glass-popover-blur, 20px)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--zeus-glass-popover-blur, 20px)) saturate(1.35);
+}
+
+.tahoe-sheet {
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  backdrop-filter: blur(var(--zeus-glass-blur-heavy, 56px)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--zeus-glass-blur-heavy, 56px)) saturate(1.4);
+  box-shadow:
+    0 0 0 1px hsl(var(--border) / 0.9) inset,
+    0 24px 64px -16px rgba(0, 0, 0, 0.45);
+}
+
+.tahoe-cni-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.tahoe-cni-bridge {
+  color: hsl(var(--primary));
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.28);
+}
+
+.tahoe-cni-macvlan {
+  color: hsl(var(--info));
+  background: rgba(20, 184, 166, 0.12);
+  border-color: rgba(20, 184, 166, 0.28);
+}
+
+.tahoe-cni-sriov {
+  color: hsl(var(--warning));
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+/* Designed empty state — the single app-wide empty moment (PageEmpty).
+   Accent comes from --primary so every theme (amber in Predator) recolors it. */
+.zeus-mission-ribbon-title,
+.zeus-empty h2 {
+  font-family: var(--font-display);
+  /* Matches Tailwind's text-xl/font-semibold (PageStates.tsx's own h2 classes) so
+     .zeus-empty h2 is unaffected; .zeus-mission-ribbon-title had no explicit size
+     anywhere and was silently inheriting plain body text (16px/400). */
+  font-size: 1.25rem;
+  font-weight: 600;
+  /* apple.com display tracking */
+  letter-spacing: -0.022em;
+}
+
+.zeus-empty {
+  background:
+    linear-gradient(160deg, hsl(var(--foreground) / 0.04) 0%, transparent 50%),
+    linear-gradient(180deg, hsl(var(--card) / 0.85) 0%, hsl(var(--background) / 0.95) 100%);
+  backdrop-filter: blur(16px);
+}
+
+.zeus-empty-orb {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  width: 16rem;
+  height: 16rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, hsl(var(--primary) / 0.08) 45%, transparent 70%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .zeus-empty-orb {
+    animation: tahoe-orb-pulse 4s ease-in-out infinite;
+  }
+  .zeus-empty-icon {
+    animation: login-float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes tahoe-orb-pulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.zeus-empty-icon {
+  background: linear-gradient(145deg, hsl(var(--primary) / 0.18), hsl(var(--primary) / 0.1));
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  box-shadow: 0 12px 32px -12px hsl(var(--primary) / 0.35);
+}
+
+/* Magichromatic empty stage — Mist/Lavender/Sage atmosphere; white card; graphite copy */
+html[data-theme='tahoe-light'] .zeus-empty {
+  border-color: hsl(200 35% 84%);
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 0%, hsl(200 85% 55% / 0.18), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 90% 15%, hsl(270 55% 62% / 0.14), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 50% 100%, hsl(145 40% 48% / 0.10), transparent 50%),
+    linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.04), 0 12px 40px -24px hsl(200 78% 40% / 0.25);
+}
+
+html[data-theme='tahoe-light'] .zeus-empty-orb {
+  background:
+    radial-gradient(circle at 35% 40%, hsl(200 85% 55% / 0.28) 0%, transparent 55%),
+    radial-gradient(circle at 65% 55%, hsl(270 55% 62% / 0.18) 0%, transparent 50%),
+    radial-gradient(circle, hsl(145 40% 48% / 0.10) 0%, transparent 70%);
+}
+
+html[data-theme='tahoe-light'] .zeus-empty-icon {
+  background: linear-gradient(145deg, hsl(200 78% 40% / 0.16), hsl(270 48% 52% / 0.10));
+  border-color: hsl(200 50% 78% / 0.65);
+  box-shadow: 0 12px 32px -14px hsl(200 78% 40% / 0.4);
+}
+
+
+/* ── tahoe-hero-flat ── */
+.tahoe-hero-flat {
+  border-radius: 1rem;
+  background: hsl(var(--card) / 0.35);
+  border-color: hsl(var(--foreground) / 0.06);
+}
+
+.tahoe-hero-flat .tahoe-hero-shine {
+  display: none;
+}
+
+.tahoe-hero-flat .tahoe-icon-badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
+}
+
+.tahoe-hero-flat .tahoe-icon-badge svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.tahoe-hero-flat .tahoe-stat-pill {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.tahoe-readable-stack-calm {
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+html[data-zeus-reduced-motion='1'] .zeus-cinematic-timeline,
+html[data-zeus-reduced-motion='1'] .mac-dock-ask-critical,
+html[data-zeus-reduced-motion='1'] .zeus-space-transition {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-zeus-reduced-motion='0']) .zeus-cinematic-timeline,
+  html:not([data-zeus-reduced-motion='0']) .mac-dock-ask-critical {
+    animation: none !important;
+  }
+}
+
+.zeus-space-pill {
+  font-size: 0.8125rem !important;
+}
+
+/* ── Classic Blue shell ── */
+/* Classic Blue — dark graphite + Mist Blue CTAs (Magichromatic family, not System Blue) */
+#root[data-ui-shell='default'],
+html[data-ui-shell='default'] {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 11%;               /* #1d1d1f */
+  --card-foreground: 0 0% 98%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 240 3% 54%; /* Apple dark secondary ~#86868b */
+  --border: 0 0% 18%;
+  --secondary: 0 0% 16%;
+  --secondary-foreground: 0 0% 98%;
+  --primary: 200 85% 52%;         /* Mist Blue — brighter for dark */
+  --primary-foreground: 0 0% 100%;
+  --ring: 200 85% 52%;
+  --info: 220 70% 58%;            /* Deep Blue */
+  --info-foreground: 199 89% 92%;
+  --accent-info: 200 85% 52%;
+  --accent-alt: 270 48% 68%;      /* Lavender */
+  --accent-live: 145 48% 52%;     /* Sage */
+}
+
+/* Classic Blue primary CTAs — Mist → Deep Blue (pairs with tahoe-light Magichromatic) */
+html[data-ui-shell='default'] .tahoe-btn-primary,
+html[data-ui-shell='default'] .tahoe-page-root button.bg-primary,
+html[data-ui-shell='default'] .tahoe-page-root a.bg-primary,
+html[data-ui-shell='default'] .tahoe-page-root .bg-primary.text-primary-foreground,
+html[data-ui-shell='default'] .zeus-home-cta.tahoe-btn-primary,
+#root[data-ui-shell='default'] .tahoe-btn-primary,
+#root[data-ui-shell='default'] .bg-primary.text-primary-foreground {
+  background: linear-gradient(135deg, hsl(200 85% 54%) 0%, hsl(210 78% 48%) 55%, hsl(220 72% 44%) 100%) !important;
+  border-color: hsl(200 60% 70% / 0.25);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 2px 10px -2px hsl(200 85% 52% / 0.55);
+}
+
+html[data-ui-shell='default'] .tahoe-btn-primary:hover:not(:disabled),
+#root[data-ui-shell='default'] .tahoe-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06) saturate(1.04);
+}
+
+html[data-ui-shell='default'] .zeus-sidebar-link-active,
+#root[data-ui-shell='default'] .zeus-sidebar-link-active {
+  background: linear-gradient(90deg, hsl(200 85% 52% / 0.22), hsl(270 48% 68% / 0.08));
+  color: hsl(200 90% 72%);
+  box-shadow: inset 3px 0 0 hsl(200 85% 52%);
+}
+
+/* Classic Blue menubar — subtle Mist→graphite (pairs with Mist CTAs) */
+html[data-ui-shell='default'] .mac-menubar,
+#root[data-ui-shell='default'] .mac-menubar {
+  background:
+    linear-gradient(90deg,
+      hsl(200 40% 12% / 0.92) 0%,
+      hsl(0 0% 8% / 0.95) 45%,
+      hsl(220 30% 10% / 0.92) 100%) !important;
+  border-bottom: 1px solid hsl(200 30% 22% / 0.55);
+  backdrop-filter: blur(14px);
+}
+
+html[data-ui-shell='default'] .zeus-sidebar,
+#root[data-ui-shell='default'] .zeus-sidebar {
+  background:
+    linear-gradient(165deg,
+      hsl(200 35% 10% / 0.96) 0%,
+      hsl(0 0% 6% / 0.98) 50%,
+      hsl(220 25% 8% / 0.96) 100%) !important;
+  border-right: 1px solid hsl(200 25% 20% / 0.5);
+}
+
+/* Classic Blue secondary — Mist kinship with primary CTAs */
+html[data-ui-shell='default'] .tahoe-btn-secondary,
+#root[data-ui-shell='default'] .tahoe-btn-secondary {
+  border-color: hsl(200 85% 52% / 0.35);
+  background: hsl(200 85% 52% / 0.08);
+  color: hsl(200 40% 88%);
+}
+
+html[data-ui-shell='default'] .tahoe-btn-secondary:hover:not(:disabled),
+#root[data-ui-shell='default'] .tahoe-btn-secondary:hover:not(:disabled) {
+  border-color: hsl(200 85% 52% / 0.55);
+  background: hsl(200 85% 52% / 0.14);
+  color: hsl(0 0% 98%);
+}
+
+/* Classic Blue scrollbar — Mist thumb */
+html[data-ui-shell='default'] ::-webkit-scrollbar-thumb,
+#root[data-ui-shell='default'] ::-webkit-scrollbar-thumb {
+  background: hsl(200 55% 42% / 0.55);
+}
+
+html[data-ui-shell='default'] ::-webkit-scrollbar-thumb:hover,
+#root[data-ui-shell='default'] ::-webkit-scrollbar-thumb:hover {
+  background: hsl(200 70% 52% / 0.7);
+}
+
+html[data-ui-shell='default'],
+#root[data-ui-shell='default'] {
+  scrollbar-color: hsl(200 55% 42% / 0.55) transparent;
+}
+
+
+/* ── Tahoe Light — iPhone 17 Magichromatic (Daylight Law 0: white cards)
+   Mist Blue primary, Sage live, Lavender alt, Cosmic Orange warm, Deep Blue info.
+   Washes are intentionally strong so the shell reads colorful, not flat grey. */
+#root[data-ui-shell='tahoe-light'],
+html[data-ui-shell='tahoe-light'] {
+  color-scheme: light;
+  --background: 210 42% 95%;        /* Mist-tinted paper (visible cool tint) */
+  --foreground: 0 0% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 11%;
+  --primary: 200 78% 40%;           /* Vivid Mist Blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 270 35% 95%;         /* Lavender-tinted panel */
+  --secondary-foreground: 0 0% 11%;
+  --muted: 145 22% 93%;             /* Sage-tinted fill */
+  --muted-foreground: 220 12% 38%;
+  --accent: 270 40% 92%;            /* Lavender wells */
+  --accent-foreground: 270 40% 28%;
+  --destructive: 4 76% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 42% 36%;           /* Sage */
+  --success-foreground: 0 0% 100%;
+  --warning: 24 95% 50%;            /* Cosmic Orange */
+  --warning-foreground: 0 0% 100%;
+  --danger: 4 76% 40%;
+  --danger-foreground: 0 0% 100%;
+  --border: 205 28% 84%;
+  --input: 205 28% 84%;
+  --ring: 200 78% 40%;
+  --info: 220 70% 38%;              /* Deep Blue */
+  --info-foreground: 0 0% 100%;
+  --accent-info: 200 78% 40%;
+  --accent-live: 145 48% 40%;
+  --accent-alt: 270 48% 52%;        /* Lavender */
+}
+
+/* Shared Magichromatic wash — painted on surfaces the UI actually shows */
+html[data-theme='tahoe-light'],
+html[data-theme='tahoe-light'] body,
+#root[data-ui-shell='tahoe-light'],
+html[data-theme='tahoe-light'] .mac-desktop-root,
+html[data-theme='tahoe-light'] .mac-desktop-main,
+html[data-theme='tahoe-light'] .tahoe-page-root {
+  background-color: hsl(210 42% 95%) !important;
+  background-image:
+    radial-gradient(ellipse 75% 50% at 8% -5%, hsl(200 85% 55% / 0.32), transparent 58%),
+    radial-gradient(ellipse 60% 45% at 95% 5%, hsl(270 55% 62% / 0.28), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 75% 105%, hsl(145 45% 48% / 0.22), transparent 55%),
+    radial-gradient(ellipse 40% 30% at 40% 60%, hsl(24 95% 55% / 0.10), transparent 50%) !important;
+  background-attachment: fixed !important;
+}
+
+html[data-theme='tahoe-light'] {
+  color-scheme: light;
+}
+
+html[data-theme='tahoe-light'] .zeus-sidebar {
+  background:
+    linear-gradient(165deg,
+      hsl(200 70% 92% / 0.92) 0%,
+      hsl(270 45% 94% / 0.90) 45%,
+      hsl(145 30% 94% / 0.92) 100%) !important;
+  border-right: 1px solid hsl(200 40% 78%);
+  backdrop-filter: blur(12px);
+}
+
+html[data-theme='tahoe-light'] .zeus-sidebar-link-active {
+  background: linear-gradient(90deg, hsl(200 78% 40% / 0.18), hsl(270 48% 52% / 0.10));
+  color: hsl(200 78% 32%);
+  box-shadow: inset 3px 0 0 hsl(200 78% 40%);
+}
+
+html[data-theme='tahoe-light'] .mac-menubar {
+  background:
+    linear-gradient(90deg,
+      hsl(200 70% 94% / 0.88) 0%,
+      hsl(270 45% 95% / 0.85) 50%,
+      hsl(145 30% 95% / 0.88) 100%) !important;
+  border-bottom: 1px solid hsl(200 35% 82%);
+  backdrop-filter: blur(14px);
+}
+
+html[data-theme='tahoe-light'] .tahoe-hero {
+  background:
+    radial-gradient(ellipse 90% 80% at 0% 0%, hsl(200 85% 55% / 0.28), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 100% 10%, hsl(270 55% 62% / 0.24), transparent 50%),
+    linear-gradient(180deg, hsl(210 50% 97%) 0%, hsl(210 35% 94%) 100%) !important;
+}
+
+html[data-theme='tahoe-light'] .tahoe-mesh {
+  background:
+    radial-gradient(ellipse 55% 45% at 85% 30%, hsl(200 85% 55% / 0.22), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 15% 75%, hsl(270 55% 60% / 0.18), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 50% 95%, hsl(24 95% 55% / 0.14), transparent 50%) !important;
+}
+
+html[data-theme='tahoe-light'] .tahoe-content {
+  background: transparent !important;
+}
+
+/* Interior Magichromatic — Command Deck + nav + CTAs match the shell washes */
+html[data-theme='tahoe-light'] .zeus-command-deck {
+  --command-deck-panel-bg: linear-gradient(
+    135deg,
+    hsl(200 70% 97% / 0.92) 0%,
+    hsl(270 40% 97% / 0.88) 55%,
+    hsl(145 30% 97% / 0.90) 100%
+  );
+}
+
+html[data-theme='tahoe-light'] .tahoe-hero-flat {
+  border-color: hsl(200 40% 82% / 0.7) !important;
+  background:
+    radial-gradient(ellipse 80% 70% at 0% 0%, hsl(200 85% 55% / 0.20), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 20%, hsl(270 55% 62% / 0.14), transparent 50%),
+    linear-gradient(180deg, hsl(210 50% 98%) 0%, hsl(200 35% 96%) 100%) !important;
+}
+
+html[data-theme='tahoe-light'] .command-deck-status-strip,
+html[data-theme='tahoe-light'] .zeus-mission-ribbon,
+html[data-theme='tahoe-light'] .hsdk-mission-ribbon .zeus-mission-ribbon,
+html[data-theme='tahoe-light'] .hsdk-mission-ribbon > .command-deck-status-strip {
+  border-color: hsl(200 40% 78% / 0.7);
+  background:
+    linear-gradient(90deg, hsl(200 70% 96% / 0.85), hsl(270 40% 97% / 0.8), hsl(145 28% 96% / 0.85));
+  box-shadow: inset 3px 0 0 hsl(200 78% 40% / 0.55);
+}
+
+html[data-theme='tahoe-light'] .command-deck-status-chip {
+  border-color: hsl(200 40% 78% / 0.65);
+  background: hsl(200 55% 96% / 0.9);
+  color: hsl(220 20% 28%);
+}
+
+html[data-theme='tahoe-light'] .command-deck-panel {
+  border-color: hsl(200 35% 84%);
+  background:
+    linear-gradient(160deg, hsl(200 60% 99%) 0%, hsl(0 0% 100%) 45%, hsl(270 30% 99%) 100%);
+  box-shadow: 0 1px 0 hsl(200 50% 90% / 0.6) inset;
+}
+
+html[data-theme='tahoe-light'] .command-deck-section-kicker {
+  color: hsl(200 78% 36%);
+}
+
+html[data-theme='tahoe-light'] .command-deck-fleet-pulse {
+  border-color: hsl(200 45% 80%);
+  background:
+    radial-gradient(ellipse 70% 60% at 15% 0%, hsl(200 85% 55% / 0.16), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 90% 30%, hsl(270 55% 62% / 0.12), transparent 50%),
+    linear-gradient(135deg, hsl(200 50% 97%), hsl(0 0% 100%));
+}
+
+html[data-theme='tahoe-light'] .command-deck-inline-btn,
+html[data-theme='tahoe-light'] .command-deck-action-cta {
+  border-color: hsl(200 78% 40% / 0.35);
+  background: linear-gradient(135deg, hsl(200 78% 40% / 0.14), hsl(270 48% 52% / 0.10));
+  color: hsl(200 78% 32%);
+}
+
+html[data-theme='tahoe-light'] .command-deck-mission-card:hover,
+html[data-theme='tahoe-light'] .command-deck-capsule-live {
+  border-color: hsl(200 55% 72%);
+  box-shadow: 0 0 0 1px hsl(200 78% 40% / 0.18), 0 8px 24px -16px hsl(200 78% 40% / 0.35);
+}
+
+html[data-theme='tahoe-light'] .tahoe-sidebar-link-active {
+  background: linear-gradient(90deg, hsl(200 78% 40% / 0.16), hsl(270 48% 52% / 0.08));
+  color: hsl(200 78% 30%);
+  box-shadow: inset 3px 0 0 0 hsl(200 78% 40%), 0 4px 16px -10px hsl(200 78% 40% / 0.4);
+}
+
+html[data-theme='tahoe-light'] .tahoe-mobile-nav-active {
+  background: linear-gradient(135deg, hsl(200 78% 40% / 0.18), hsl(270 48% 52% / 0.12));
+  color: hsl(200 78% 32%);
+  border-color: hsl(200 78% 40% / 0.3);
+}
+
+html[data-theme='tahoe-light'] .mac-desktop-tab-active {
+  background: linear-gradient(180deg, hsl(200 70% 94% / 0.9), hsl(270 40% 95% / 0.75));
+  box-shadow: inset 0 -2px 0 0 hsl(200 78% 40%);
+}
+
+html[data-theme='tahoe-light'] .tahoe-btn-primary,
+html[data-theme='tahoe-light'] .tahoe-page-root button.bg-primary,
+html[data-theme='tahoe-light'] .tahoe-page-root a.bg-primary,
+html[data-theme='tahoe-light'] .tahoe-page-root .bg-primary.text-primary-foreground,
+html[data-theme='tahoe-light'] .zeus-home-cta.tahoe-btn-primary {
+  background: linear-gradient(135deg, hsl(200 78% 42%) 0%, hsl(210 72% 38%) 55%, hsl(220 70% 36%) 100%) !important;
+  border-color: hsl(200 60% 32% / 0.35);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.28) inset,
+    0 2px 8px -2px hsl(200 78% 40% / 0.45);
+}
+
+html[data-theme='tahoe-light'] .tahoe-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05) saturate(1.05);
+}
+
+/* Command Deck stage — display type + quiet empties */
+html[data-theme='tahoe-light'] .zeus-mission-ribbon-title h1,
+html[data-theme='tahoe-light'] .zeus-command-deck .zeus-mission-ribbon h1 {
+  font-size: clamp(1.75rem, 2.5vw + 1rem, 2.5rem) !important;
+  font-weight: 600;
+  letter-spacing: -0.035em !important;
+  line-height: 1.15;
+}
+
+html[data-theme='tahoe-light'] .zeus-mission-ribbon-subtitle {
+  margin-top: 0.2rem;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+  color: hsl(220 12% 42%);
+}
+
+html[data-theme='tahoe-light'] .command-deck-panel-empty {
+  padding: 1.35rem 0.35rem 1.15rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  letter-spacing: -0.015em;
+  color: hsl(220 12% 42%);
+}
+
+html[data-theme='tahoe-light'] .command-deck-panel-empty .command-deck-inline-btn,
+html[data-theme='tahoe-light'] .command-deck-panel-empty a.command-deck-inline-btn {
+  margin-top: 0.65rem;
+  color: hsl(200 78% 32%);
+}
+
+/* Light inventory — Mist/graphite row hover (not carbon slate) */
+html[data-theme='tahoe-light'] .table-row-hover:hover {
+  background: hsl(200 55% 96% / 0.85);
+  border-left: 2px solid hsl(200 78% 40%);
+}
+
+
+/* ── Tahoe Light scrollbar ── */
+html[data-theme='tahoe-light'] ::-webkit-scrollbar-thumb {
+  background: hsl(200 55% 62%);
+}
+
+html[data-theme='tahoe-light'] ::-webkit-scrollbar-thumb:hover {
+  background: hsl(200 70% 45%);
+}
+
+
+/* ── Machina class aliases → Zeus chrome selectors ── */
+.mac-finder-sidebar,
+.platform-sidebar,
+.tahoe-sidebar {
+  /* inherit zeus-sidebar wash rules via shared selectors below */
+}
+html[data-theme='tahoe-light'] .mac-finder-sidebar,
+html[data-theme='tahoe-light'] .platform-sidebar,
+html[data-theme='tahoe-light'] .tahoe-sidebar {
+  background: inherit;
+}
+html[data-theme='tahoe-light'] .mac-menubar-inner,
+html[data-ui-shell='default'] .mac-menubar-inner {
+  /* mirror .mac-menubar */
+}
+html[data-theme='tahoe-light'] .mac-menubar-inner {
+  background:
+    radial-gradient(ellipse 90% 140% at 12% -40%, hsl(200 85% 55% / 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 120% at 88% -20%, hsl(270 55% 62% / 0.16), transparent 50%),
+    linear-gradient(180deg, hsl(210 36% 98% / 0.82) 0%, hsl(210 32% 96% / 0.72) 100%);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-bottom: 1px solid hsl(205 22% 84% / 0.65);
+}
+html[data-ui-shell='default'] .mac-menubar-inner {
+  background:
+    radial-gradient(ellipse 80% 120% at 10% -30%, hsl(200 85% 52% / 0.18), transparent 55%),
+    linear-gradient(180deg, hsl(0 0% 12% / 0.92) 0%, hsl(0 0% 8% / 0.88) 100%);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border-bottom: 1px solid hsl(0 0% 100% / 0.08);
+}
+
+/* Bridge Machina apple/plasma aliases to Zeus Mist */
+:root {
+  --accent: hsl(var(--primary));
+  --accent-hover: hsl(200 85% 46%);
+  --accent-pressed: hsl(200 85% 40%);
+  --accent-soft: hsl(var(--primary) / 0.14);
+  --plasma: hsl(var(--primary));
+  --plasma-strong: hsl(200 85% 40%);
+  --link: hsl(200 85% 62%);
+  --link-hover: hsl(200 85% 72%);
+  --apple-surface: hsl(var(--card));
+  --apple-surface-elevated: hsl(var(--card));
+  --apple-hairline: hsl(var(--border) / 0.85);
+  --apple-muted: hsl(var(--muted-foreground));
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-muted: hsl(var(--muted-foreground));
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  --radius: 0.75rem;
+  --radius-card: 0.9rem;
+}
+
+html[data-theme='tahoe-light'] {
+  --accent: hsl(var(--primary));
+  --accent-hover: hsl(200 78% 34%);
+  --accent-pressed: hsl(200 78% 28%);
+  --accent-soft: hsl(200 78% 40% / 0.12);
+  --plasma: hsl(var(--primary));
+  --link: hsl(200 78% 36%);
+  --link-hover: hsl(200 78% 30%);
+  --link-on-light: hsl(200 78% 32%);
+  --apple-surface: #ffffff;
+  --apple-surface-elevated: #ffffff;
+  --apple-hairline: hsl(205 28% 84%);
+  --apple-fill-secondary: hsl(200 48% 96% / 0.9);
+  --apple-fill-tertiary: hsl(205 22% 90%);
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-muted: hsl(220 10% 44%);
+}
+
+/* Force Mist CTAs — override Machina System Blue !important */
+.btn-primary,
+.tahoe-btn-primary,
+.tahoe-page-root .btn-primary,
+.liquid-glass-app .btn-primary,
+.machina-clean .btn-primary,
+.apple-light .btn-primary,
+html[data-theme='tahoe-light'] .btn-primary,
+html[data-ui-shell='default'] .btn-primary {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.btn-primary:hover:not(:disabled),
+.tahoe-btn-primary:hover:not(:disabled),
+html[data-theme='tahoe-light'] .btn-primary:hover:not(:disabled),
+html[data-ui-shell='default'] .btn-primary:hover:not(:disabled) {
+  background: hsl(200 85% 46%) !important;
+  filter: none;
+}
+html[data-theme='tahoe-light'] .btn-primary:hover:not(:disabled),
+html[data-theme='tahoe-light'] .tahoe-btn-primary:hover:not(:disabled) {
+  background: hsl(200 78% 34%) !important;
+}
+
+/* Flat premium cards (Zeus) */
+.tahoe-glass-card,
+.glass-card {
+  border: 1px solid hsl(var(--border) / 0.85) !important;
+  background: hsl(var(--card)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+html[data-theme='tahoe-light'] .tahoe-glass-card,
+html[data-theme='tahoe-light'] .glass-card {
+  background: #ffffff !important;
+  border-color: hsl(205 28% 84%) !important;
+}
+
+/* Body type Zeus parity */
+html.machina-clean body,
+html[data-theme='tahoe-light'] body,
+html[data-ui-shell='default'] body {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Tailwind v4 semantic color bridge (Zeus HSL tokens) ── */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+.text-foreground { color: hsl(var(--foreground)); }
+.text-muted-foreground { color: hsl(var(--muted-foreground)); }
+.text-primary { color: hsl(var(--primary)); }
+.bg-background { background-color: hsl(var(--background)); }
+.bg-card { background-color: hsl(var(--card)); }
+.bg-primary { background-color: hsl(var(--primary)); }
+.border-border { border-color: hsl(var(--border)); }

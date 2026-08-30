@@ -1,18 +1,14 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import PageLayout from '../../../components/PageLayout'
-import ConfirmDialog from '../../../components/ConfirmDialog'
 import { StructuredErrorBanner } from '../../../components/StructuredErrorBanner'
-import FleetCommandCenter from '../../../components/platform/fleet/FleetCommandCenter'
 import SimpleCreateVmWizard, {
   cloudInitUserForOs,
   sizeToSpec,
   type VmWizardPayload,
 } from '../../../components/platform/SimpleCreateVmWizard'
-import MigratePrecheckModal from '../../../components/platform/MigratePrecheckModal'
-import VmPlatformSshConnectDialog from '../../../components/vm/VmPlatformSshConnectDialog'
 import { toastQueuedOperation } from '../../../utils/platformTaskToast'
 import { useToastContext } from '../../../contexts/ToastContext'
 import { formatUserError } from '../../../utils/apiError'
@@ -24,12 +20,9 @@ import {
 } from '../../../api/platform'
 import { usePlatformDesktopTier } from '../../../hooks/usePlatformDesktopTier'
 import { dispatchOpenSpotlight, SCROLL_GEOGRAPHY_EVENT } from '../../../utils/platformJarvisShell'
-import ActionDropZones from './ActionDropZones'
-import HostMachinePanels from './HostMachinePanels'
 import MissionControlBriefing from './MissionControlBriefing'
 import MissionControlGeography from './MissionControlGeography'
 import MissionControlHero from './MissionControlHero'
-import MissionControlHostDock from './MissionControlHostDock'
 import MissionControlLaunchpad from './MissionControlLaunchpad'
 import { useMissionControlFleet } from './useMissionControlFleet'
 import EnterpriseSecurityStrip from '../../../components/platform/EnterpriseSecurityStrip'
@@ -43,7 +36,6 @@ export default function MissionControlPage() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [missingImagesCount, setMissingImagesCount] = useState(0)
   const [geoExpanded, setGeoExpanded] = useState(searchParams.get('mission') === '1')
-  const [selectedHostId, setSelectedHostId] = useState<string | null>(null)
 
   useEffect(() => {
     void listMissingTemplateImages()
@@ -74,26 +66,8 @@ export default function MissionControlPage() {
     return offline
   }, [state.hosts.length, state.onlineHosts])
 
-  const lastRunningVm = state.vms.find((v) => v.observed_state === 'running') ?? null
-  const selectedHost = selectedHostId ? state.hosts.find((h) => h.id === selectedHostId) ?? null : null
-
-  const handleSelectHost = (hostId: string | null) => {
-    setSelectedHostId(hostId)
-    if (hostId) state.setSelectedVmId(null)
-  }
-
-  // Selecting a VM (e.g. via a host's machine grid) takes over the right dock from a
-  // selected host — the two are mutually exclusive, single-selection panels.
-  useEffect(() => {
-    if (state.selectedVmId) setSelectedHostId(null)
-  }, [state.selectedVmId])
-
   const handleCreate = async (payload: VmWizardPayload) => {
     try {
-      // The launchpad opens the full wizard, so a user can pick Custom ISO, PXE/
-      // URL install, or Windows. Without these branches those choices fell through
-      // to the generic path and created a broken diskless/BIOS VM. Mirrors the
-      // canonical handler in MachineFinder/useMachineFinder.ts:handleCreate.
       if (payload.os === 'custom-iso') {
         navigate(`/platform/create-iso?name=${encodeURIComponent(payload.name)}`)
         return
@@ -129,6 +103,7 @@ export default function MissionControlPage() {
         const wr = await createPlatformVm(wbody)
         toastQueuedOperation(toast, `Creating ${payload.name}`, wr.task_id, tier)
         await state.load()
+        navigate('/platform/vms')
         return
       }
       const spec = sizeToSpec(payload.size, payload.customSpec)
@@ -159,6 +134,7 @@ export default function MissionControlPage() {
         toastQueuedOperation(toast, `Creating ${payload.name}`, r.task_id, tier)
       }
       await state.load()
+      navigate('/platform/vms')
     } catch (e: unknown) {
       toast.error(formatUserError(e))
       throw e
@@ -166,94 +142,99 @@ export default function MissionControlPage() {
   }
 
   return (
-    <PageLayout compact hideHeader contentClassName="mission-control-page pb-[calc(var(--dock-height,4.25rem)+1rem)]">
-      <div className="flex flex-col xl:flex-row xl:items-start gap-4">
-        <section className="mission-control-root flex-1 min-w-0 flex flex-col gap-4" data-testid="mission-control-page">
-          {state.error && (
-            <div className="space-y-2">
-              <StructuredErrorBanner error={{ message: state.error }} />
-              <button type="button" className="btn-secondary text-xs" onClick={() => void state.load()}>Retry</button>
-            </div>
-          )}
+    <PageLayout
+      compact
+      hideHeader
+      className="!space-y-0 w-full"
+      contentClassName="mission-control-page w-full max-w-none px-0 pb-[calc(var(--dock-height,4.25rem)+1.5rem)] pt-0"
+    >
+      <div className="mission-control-root apple-story-stack w-full" data-testid="mission-control-page">
+        {state.error && (
+          <div className="apple-section apple-section--tight space-y-3">
+            <StructuredErrorBanner error={{ message: state.error }} />
+            <button type="button" className="btn-secondary text-sm" onClick={() => void state.load()}>Retry</button>
+          </div>
+        )}
 
-          <MissionControlHero state={state} warnings={warnings} />
-          <MissionControlBriefing
-            state={state}
-            missingImagesCount={missingImagesCount}
-            onAnalyze={() => dispatchOpenSpotlight('analyze fleet health and guest agents')}
-          />
-          {tier === 'advanced' && <EnterpriseSecurityStrip />}
-          {state.attentionMode && (
-            <section className="flex flex-wrap gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3" data-testid="attention-remediation">
-              <p className="w-full text-xs font-medium text-amber-200">Attention mode — filtered to machines that need care</p>
-              {state.unprotected > 0 && (
-                <button type="button" className="btn-secondary text-xs" onClick={() => navigate('/platform/vms?folder=unprotected')}>Fix backups</button>
-              )}
-              <button type="button" className="btn-secondary text-xs" onClick={() => navigate('/platform/vms?folder=guest_agent_missing')}>Install guest agents</button>
-              <button type="button" className="btn-secondary text-xs" onClick={() => navigate('/platform/vms?folder=needs_attention')}>Review stopped VMs</button>
-              <button type="button" className="btn-secondary text-xs" onClick={() => dispatchOpenSpotlight('diagnose fleet attention items')}>Ask Zyra diagnose</button>
-            </section>
+        <MissionControlHero state={state} warnings={warnings} onCreateVm={() => setWizardOpen(true)} />
+
+        <MissionControlBriefing
+          state={state}
+          missingImagesCount={missingImagesCount}
+          onAnalyze={() => dispatchOpenSpotlight('analyze fleet health and guest agents')}
+        />
+
+        <section className="apple-section">
+          <p className="apple-eyebrow">Inventory</p>
+          {state.error && !state.loading ? (
+            <>
+              <h2 className="apple-display apple-display--sm">Inventory unavailable</h2>
+              <p className="apple-lede">
+                Host and guest lists come from the platform controller. Fix the control plane, then retry.
+              </p>
+              <div className="apple-cta-row">
+                <button type="button" className="btn-primary" onClick={() => void state.load()}>
+                  Retry inventory
+                </button>
+              </div>
+            </>
+          ) : !state.loading && state.hosts.length === 0 ? (
+            <>
+              <h2 className="apple-display apple-display--sm">No hosts yet</h2>
+              <p className="apple-lede">
+                Enroll a hypervisor, then manage guests from Machine Finder.
+              </p>
+              <div className="apple-cta-row">
+                <Link to="/platform/enroll" className="btn-primary">Add host</Link>
+                <Link to="/platform/vms" className="apple-text-link">Machine Finder <span aria-hidden>›</span></Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="apple-display apple-display--sm">
+                {state.loading ? '—' : `${state.onlineHosts}/${state.hosts.length}`} hosts online
+              </h2>
+              <p className="apple-lede">
+                {state.loading ? 'Loading inventory…' : `${state.running} VMs running. Open VM Center to operate them.`}
+              </p>
+              <div className="apple-cta-row">
+                <Link to="/platform/vms" className="apple-text-link">
+                  Open Machine Finder <span aria-hidden>›</span>
+                </Link>
+              </div>
+            </>
           )}
-          <MissionControlLaunchpad onCreateVm={() => setWizardOpen(true)} lastVm={lastRunningVm} />
-          <ActionDropZones state={state} />
-          <HostMachinePanels state={state} selectedHostId={selectedHostId} onSelectHost={handleSelectHost} />
-          <MissionControlGeography expanded={geoExpanded} onToggle={() => setGeoExpanded((v) => !v)} />
         </section>
 
-        {selectedHost ? (
-          <MissionControlHostDock
-            host={selectedHost}
-            vms={state.vmsByHost.get(selectedHost.id) ?? []}
-            onClose={() => setSelectedHostId(null)}
-          />
-        ) : (
-          <FleetCommandCenter
-            selectedVm={state.selectedVm}
-            hosts={state.hosts}
-            hostMap={state.hostMap}
-            showTheatrePreview
-            onSsh={(vm) => state.setSshVm(vm)}
-            onMigrate={(vm, destId, destName) => state.setMigrateModal({ vm, destId, destName })}
-            onPower={(vm, action) => void state.vmPowerAction(vm, action)}
-            onSnapshot={(vm) => void state.vmSnapshotAction(vm)}
-            onDelete={(vm) => void state.vmDeleteAction(vm)}
-            onAdopt={(vm) => void state.adoptVm(vm)}
-          />
+        {tier === 'advanced' && (
+          <div className="apple-section apple-section--tight">
+            <EnterpriseSecurityStrip />
+          </div>
         )}
+
+        {state.attentionMode && (
+          <section className="apple-section apple-section--tight" data-testid="attention-remediation">
+            <p className="apple-eyebrow">Attention</p>
+            <h2 className="apple-display apple-display--sm">Remediate</h2>
+            <nav className="apple-cta-row">
+              <Link to="/platform/vms?folder=unprotected" className="apple-text-link">Fix backups ›</Link>
+              <Link to="/platform/vms?folder=guest_agent_missing" className="apple-text-link">Guest agents ›</Link>
+              <Link to="/platform/vms?folder=needs_attention" className="apple-text-link">Stopped VMs ›</Link>
+              <button type="button" className="apple-text-link" onClick={() => dispatchOpenSpotlight('diagnose fleet attention items')}>
+                Ask Zyra ›
+              </button>
+            </nav>
+          </section>
+        )}
+
+        <MissionControlLaunchpad onCreateVm={() => setWizardOpen(true)} />
+
+        <div className="apple-section apple-section--tight">
+          <MissionControlGeography expanded={geoExpanded} onToggle={() => setGeoExpanded((v) => !v)} />
+        </div>
       </div>
 
       <SimpleCreateVmWizard open={wizardOpen} onClose={() => setWizardOpen(false)} onCreate={handleCreate} />
-      {state.migrateModal && (
-        <MigratePrecheckModal
-          vm={state.migrateModal.vm}
-          destHostId={state.migrateModal.destId}
-          destHostName={state.migrateModal.destName}
-          onClose={() => state.setMigrateModal(null)}
-          onDone={() => void state.load()}
-        />
-      )}
-      {state.sshVm && (
-        <VmPlatformSshConnectDialog
-          open
-          vm={state.sshVm}
-          hosts={state.hosts}
-          onClose={() => state.setSshVm(null)}
-          onNotify={(m) => toast.success(m)}
-        />
-      )}
-      <ConfirmDialog
-        open={state.deleteVmTarget !== null}
-        title="Delete VM"
-        message={`Delete ${state.deleteVmTarget?.name}? This cannot be undone.`}
-        confirmLabel="Delete"
-        variant="danger"
-        onCancel={() => state.setDeleteVmTarget(null)}
-        onConfirm={() => {
-          const vm = state.deleteVmTarget
-          state.setDeleteVmTarget(null)
-          if (vm) void state.doVmDeleteAction(vm)
-        }}
-      />
     </PageLayout>
   )
 }

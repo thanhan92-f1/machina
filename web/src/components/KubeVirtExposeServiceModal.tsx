@@ -281,31 +281,31 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[var(--apple-surface)]/80 backdrop-blur-sm">
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="expose-title"
-        className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-xl border border-slate-600 bg-slate-900 shadow-xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-xl"
       >
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-slate-700 shrink-0">
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[var(--apple-hairline)] shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <Network className="w-5 h-5 text-cyan-400 shrink-0" />
+            <Network className="w-5 h-5 text-[var(--accent)] shrink-0" />
             <div className="min-w-0">
-              <h2 id="expose-title" className="text-lg font-semibold text-white truncate">
+              <h2 id="expose-title" className="text-lg font-semibold text-[var(--text-primary)] truncate">
                 Expose VM (Service)
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5 font-mono truncate">
-                Namespace <span className="text-cyan-200/90">{vm.namespace}</span> · VM{' '}
-                <span className="text-cyan-200/90">{vm.name}</span>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5 font-mono truncate">
+                Namespace <span className="text-[var(--accent)]">{vm.namespace}</span> · VM{' '}
+                <span className="text-[var(--accent)]">{vm.name}</span>
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 shrink-0"
+            className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--apple-fill-tertiary)] shrink-0"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -321,21 +321,21 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Service name</label>
+              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Service name</label>
               <input
                 value={serviceName}
                 onChange={(e) => setServiceName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white font-mono"
+                className="w-full bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] font-mono"
                 autoComplete="off"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Service type</label>
+              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Service type</label>
               <select
                 aria-label="Service type"
                 value={svcType}
                 onChange={(e) => setSvcType(e.target.value as ServiceType)}
-                className="w-full bg-slate-950 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="ClusterIP">ClusterIP</option>
                 <option value="NodePort">NodePort</option>
@@ -346,19 +346,19 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-200">Ports</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">Ports</span>
               <button
                 type="button"
                 onClick={addRow}
-                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-slate-800 text-slate-200 border border-slate-600 hover:bg-slate-700"
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)]"
               >
                 <Plus className="w-3.5 h-3.5" /> Add port
               </button>
             </div>
-            <div className="overflow-x-auto rounded-lg border border-slate-700">
+            <div className="overflow-x-auto apple-surface rounded-2xl">
               <table className="w-full text-sm" aria-label="Exposed services">
                 <thead>
-                  <tr className="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-slate-700 bg-slate-950/80">
+                  <tr className="text-left text-xs text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--apple-hairline)] bg-[var(--apple-surface)]/80">
                     <th className="px-3 py-2">Name</th>
                     <th className="px-3 py-2">Service port</th>
                     <th className="px-3 py-2">Target (guest)</th>
@@ -367,15 +367,15 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
                     <th className="px-3 py-2 w-10" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-[var(--apple-hairline)]">
                   {rows.map((r) => (
-                    <tr key={r.id} className="bg-slate-900/50">
+                    <tr key={r.id} className="bg-[var(--apple-surface)]">
                       <td className="px-2 py-2">
                         <input
                           aria-label="Port name"
                           value={r.name}
                           onChange={(e) => updateRow(r.id, { name: e.target.value })}
-                          className="w-full min-w-[5rem] bg-slate-950 border border-slate-600 rounded px-2 py-1 text-xs font-mono text-slate-100"
+                          className="w-full min-w-[5rem] bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs font-mono text-[var(--text-primary)]"
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -386,7 +386,7 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
                           max={65535}
                           value={r.servicePort}
                           onChange={(e) => updateRow(r.id, { servicePort: Number(e.target.value) })}
-                          className="w-24 bg-slate-950 border border-slate-600 rounded px-2 py-1 text-xs font-mono"
+                          className="w-24 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs font-mono"
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -397,7 +397,7 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
                           max={65535}
                           value={r.targetPort}
                           onChange={(e) => updateRow(r.id, { targetPort: Number(e.target.value) })}
-                          className="w-24 bg-slate-950 border border-slate-600 rounded px-2 py-1 text-xs font-mono"
+                          className="w-24 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs font-mono"
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -405,7 +405,7 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
                           aria-label="Protocol"
                           value={r.protocol}
                           onChange={(e) => updateRow(r.id, { protocol: e.target.value as 'TCP' | 'UDP' })}
-                          className="w-full min-w-[4.5rem] bg-slate-950 border border-slate-600 rounded px-2 py-1 text-xs"
+                          className="w-full min-w-[4.5rem] bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs"
                         >
                           <option value="TCP">TCP</option>
                           <option value="UDP">UDP</option>
@@ -421,7 +421,7 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
                             placeholder="auto"
                             value={r.nodePort}
                             onChange={(e) => updateRow(r.id, { nodePort: e.target.value })}
-                            className="w-28 bg-slate-950 border border-slate-600 rounded px-2 py-1 text-xs font-mono"
+                            className="w-28 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs font-mono"
                           />
                         </td>
                       )}
@@ -430,7 +430,7 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
                           type="button"
                           disabled={rows.length <= 1}
                           onClick={() => removeRow(r.id)}
-                          className="p-1.5 rounded text-slate-500 hover:text-[var(--machina-status-error)] hover:bg-[color-mix(in_srgb,var(--machina-status-error)_10%,transparent)] disabled:opacity-30"
+                          className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--machina-status-error)] hover:bg-[color-mix(in_srgb,var(--machina-status-error)_10%,transparent)] disabled:opacity-30"
                           aria-label="Remove row"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -442,10 +442,10 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
               </table>
             </div>
             {rows.length > 1 && (
-              <p className="text-xs text-slate-500 mt-2">
-                KubeVirt <code className="text-slate-400">virtctl expose</code> creates one Service per command. Multiple
-                rows produce multiple commands with distinct <code className="text-slate-400">--name</code> values. For
-                several ports on one Service, use a YAML manifest and <code className="text-slate-400">kubectl apply</code>.
+              <p className="text-xs text-[var(--text-muted)] mt-2">
+                KubeVirt <code className="text-[var(--text-muted)]">virtctl expose</code> creates one Service per command. Multiple
+                rows produce multiple commands with distinct <code className="text-[var(--text-muted)]">--name</code> values. For
+                several ports on one Service, use a YAML manifest and <code className="text-[var(--text-muted)]">kubectl apply</code>.
               </p>
             )}
             {svcType === 'NodePort' && rows.some((r) => r.nodePort.trim() !== '') && (
@@ -460,46 +460,46 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-200">virtctl (run where kubeconfig reaches the cluster)</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">virtctl (run where kubeconfig reaches the cluster)</span>
               <button
                 type="button"
                 onClick={copyVirtctl}
-                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 hover:bg-cyan-500/30"
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-[var(--accent)]/20 text-[var(--accent)] border border-[var(--accent)]/40 hover:bg-[var(--accent)]/30"
               >
                 <Copy className="w-3.5 h-3.5" /> Copy
               </button>
             </div>
-            <pre className="text-xs font-mono text-slate-200 bg-slate-950 border border-slate-700 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+            <pre className="text-xs font-mono text-[var(--text-primary)] bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
               {virtctlBlock}
             </pre>
-            <p className="text-xs text-slate-500 mt-1">
-              Check <code className="text-slate-400">virtctl expose --help</code> for your version (e.g.{' '}
-              <code className="text-slate-400">--protocol</code>). Static <code className="text-slate-400">nodePort</code>{' '}
-              is usually set in Service YAML or <code className="text-slate-400">kubectl edit svc</code>, not in virtctl.
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              Check <code className="text-[var(--text-muted)]">virtctl expose --help</code> for your version (e.g.{' '}
+              <code className="text-[var(--text-muted)]">--protocol</code>). Static <code className="text-[var(--text-muted)]">nodePort</code>{' '}
+              is usually set in Service YAML or <code className="text-[var(--text-muted)]">kubectl edit svc</code>, not in virtctl.
             </p>
           </div>
 
           <div>
-            <span className="text-sm font-medium text-slate-200 block mb-2">SSH preview (existing Services for this VM)</span>
+            <span className="text-sm font-medium text-[var(--text-primary)] block mb-2">SSH preview (existing Services for this VM)</span>
             {sshPreviews.length === 0 ? (
-              <p className="text-xs text-slate-500 rounded-lg border border-slate-700/80 bg-slate-950/50 px-3 py-2">
+              <p className="text-xs text-[var(--text-muted)] rounded-lg border border-[var(--apple-hairline)]/80 bg-[var(--apple-surface)]/50 px-3 py-2">
                 No matching Service yet (selector keyed to this VM). After you run expose, refresh workloads — then copy an
-                SSH example below. Node IP uses this row&apos;s <strong className="text-slate-400">InternalIP</strong> when
-                known; replace <code className="text-slate-500">&lt;user&gt;</code> with your login.
+                SSH example below. Node IP uses this row&apos;s <strong className="text-[var(--text-muted)]">InternalIP</strong> when
+                known; replace <code className="text-[var(--text-muted)]">&lt;user&gt;</code> with your login.
               </p>
             ) : (
               <ul className="space-y-2">
                 {sshPreviews.map((p, idx) => (
                   <li
                     key={`${p.label}-${idx}`}
-                    className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-slate-700 bg-slate-950/50 px-3 py-2"
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 px-3 py-2"
                   >
-                    <span className="text-xs text-slate-500 shrink-0">{p.label}</span>
+                    <span className="text-xs text-[var(--text-muted)] shrink-0">{p.label}</span>
                     <code className={`text-xs font-mono flex-1 break-all ${statusToneClass('ok')}`}>{p.cmd}</code>
                     <button
                       type="button"
                       onClick={() => onCopy('SSH command', p.cmd)}
-                      className="inline-flex items-center justify-center gap-1 text-xs px-2 py-1 rounded-md bg-slate-800 text-slate-200 border border-slate-600 hover:bg-slate-700 shrink-0"
+                      className="inline-flex items-center justify-center gap-1 text-xs px-2 py-1 rounded-md bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)] shrink-0"
                     >
                       <Copy className="w-3.5 h-3.5" /> Copy
                     </button>
@@ -510,10 +510,10 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
           </div>
 
           {matching.length > 0 && (
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-[var(--text-muted)]">
               Matched {matching.length} Service(s) whose selector targets this VM (e.g.{' '}
-              <code className="text-slate-500">vm.kubevirt.io/name</code> or legacy KubeVirt labels) in{' '}
-              <span className="font-mono text-slate-400">{vm.namespace}</span>:{' '}
+              <code className="text-[var(--text-muted)]">vm.kubevirt.io/name</code> or legacy KubeVirt labels) in{' '}
+              <span className="font-mono text-[var(--text-muted)]">{vm.namespace}</span>:{' '}
               {matching
                 .map((s) => `${s.metadata?.name} (${s.spec?.type ?? '?'})`)
                 .join(', ')}
@@ -521,11 +521,11 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-slate-700 flex justify-end shrink-0">
+        <div className="px-5 py-3 border-t border-[var(--apple-hairline)] flex justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-600"
+            className="px-4 py-2 rounded-lg text-sm bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)] border border-[var(--apple-hairline)]"
           >
             Close
           </button>

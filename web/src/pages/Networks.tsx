@@ -138,13 +138,14 @@ export default function NetworksPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       loading={loading}
       title="Networks"
       icon={<Network className={`w-6 h-6 ${statusToneClass('info')}`} />}
       actions={
         <>
-          <button onClick={() => setShowCreate(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Create</button>
-          <button onClick={load} className="p-2 hover:bg-slate-700 rounded transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
+          <button onClick={() => setShowCreate(true)} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Create</button>
+          <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
         </>
       }
       error={loadError}
@@ -158,8 +159,8 @@ export default function NetworksPage() {
           <div className="min-w-0">
             <p className={`text-sm font-medium ${statusToneClass('warn')}`}>Libvirt networks after host reboot</p>
             <p className={`text-xs mt-1 leading-relaxed opacity-90 ${statusToneClass('warn')}`}>{libvirtBoot.detail}</p>
-            <p className="text-xs text-slate-500 mt-1.5">
-              Per-network Autostart below only applies once the libvirt daemon for NAT (<code className="text-slate-400">virtnetworkd</code> or <code className="text-slate-400">libvirtd</code>) starts at boot.
+            <p className="text-xs text-[var(--text-muted)] mt-1.5">
+              Per-network Autostart below only applies once the libvirt daemon for NAT (<code className="text-[var(--text-muted)]">virtnetworkd</code> or <code className="text-[var(--text-muted)]">libvirtd</code>) starts at boot.
             </p>
           </div>
           {libvirtBoot.systemd_unit ? (
@@ -181,29 +182,29 @@ export default function NetworksPage() {
           title="No libvirt networks"
           description="Create a NAT network for guest connectivity, or define an isolated bridge for lab topologies."
           primaryAction={
-            <button type="button" onClick={() => setShowCreate(true)} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">
+            <button type="button" onClick={() => setShowCreate(true)} className="btn-primary text-sm">
               Create network
             </button>
           }
         />
       ) : (
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
         <table className="w-full" aria-label="Virtual networks">
-          <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Active</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Bridge</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Autostart</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-          <tbody className="divide-y divide-slate-700/50">
+          <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Active</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Bridge</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Autostart</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+          <tbody className="divide-y divide-[var(--apple-hairline)]/50">
             {networks.map((net) => (
-              <tr key={net.name} className="hover:bg-slate-700/50">
+              <tr key={net.name} className="hover:bg-[var(--surface-hover)]/50">
                 <td className="px-6 py-3 font-medium"><Wifi className={`w-4 h-4 inline -mt-0.5 mr-1 ${statusToneClass('ok')}`} />{net.name}</td>
                 <td className="px-6 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses(net.active ? 'ok' : 'error')}`}>{net.active ? 'Active' : 'Inactive'}</span></td>
-                <td className="px-6 py-3 hidden md:table-cell text-sm text-slate-400 font-mono">{net.bridge || '-'}</td>
+                <td className="px-6 py-3 hidden md:table-cell text-sm text-[var(--text-muted)] font-mono">{net.bridge || '-'}</td>
                 <td className="px-6 py-3 hidden md:table-cell">
                   <button onClick={() => toggleAutostart(net)} aria-label={net.autostart ? 'Disable autostart' : 'Enable autostart'} className="flex items-center gap-1">
-                    {net.autostart ? <ToggleRight className={`w-5 h-5 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-5 h-5 text-slate-500" />}
+                    {net.autostart ? <ToggleRight className={`w-5 h-5 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-5 h-5 text-[var(--text-muted)]" />}
                   </button>
                 </td>
                 <td className="px-6 py-3">
                   <div className="flex items-center justify-end gap-1">
-                    <button type="button" onClick={() => void openEditXml(net)} className="p-1.5 hover:bg-slate-600/30 rounded transition" title="Edit XML" aria-label="Edit XML"><Pencil className="w-4 h-4 text-slate-300" /></button>
+                    <button type="button" onClick={() => void openEditXml(net)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Edit XML" aria-label="Edit XML"><Pencil className="w-4 h-4 text-[var(--text-secondary)]" /></button>
                     {!net.active && <button onClick={() => action(net.name, startNetwork, 'Start network')} className="p-1.5 hover:bg-green-600/20 rounded transition" title="Start" aria-label="Start"><Play className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>}
                     {net.active && <button onClick={() => action(net.name, stopNetwork, 'Stop network')} className="p-1.5 hover:bg-red-600/20 rounded transition" title="Stop" aria-label="Stop"><Square className={`w-4 h-4 ${statusToneClass('error')}`} /></button>}
                     <button onClick={() => setDeleteTarget(net.name)} className="p-1.5 hover:bg-red-600/20 rounded transition" title="Delete" aria-label="Delete"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
@@ -218,18 +219,18 @@ export default function NetworksPage() {
 
       {/* DHCP Leases */}
       {leases.length > 0 && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-3 border-b border-slate-700/50"><h2 className="text-sm font-semibold text-slate-300">DHCP Leases</h2></div>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-3 border-b border-[var(--apple-hairline)]"><h2 className="text-sm font-semibold text-[var(--text-secondary)]">DHCP Leases</h2></div>
           <table className="w-full" aria-label="DHCP leases">
-            <thead><tr className="border-b border-slate-700/50 text-left text-xs text-slate-500"><th scope="col" className="px-6 py-2">Network</th><th scope="col" className="px-6 py-2">IP Address</th><th scope="col" className="px-6 py-2">MAC</th><th scope="col" className="px-6 py-2">Hostname</th><th scope="col" className="px-6 py-2">Expires</th></tr></thead>
-            <tbody className="divide-y divide-slate-700/50 text-sm">
+            <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-6 py-2">Network</th><th scope="col" className="px-6 py-2">IP Address</th><th scope="col" className="px-6 py-2">MAC</th><th scope="col" className="px-6 py-2">Hostname</th><th scope="col" className="px-6 py-2">Expires</th></tr></thead>
+            <tbody className="divide-y divide-[var(--apple-hairline)]/50 text-sm">
               {leases.map((l) => (
                 <tr key={`${l.mac}-${l.ip}`} className="table-row-hover">
-                  <td className="px-6 py-2 text-slate-400">{l.network}</td>
+                  <td className="px-6 py-2 text-[var(--text-muted)]">{l.network}</td>
                   <td className={`px-6 py-2 font-mono ${statusToneClass('info')}`}>{l.ip}</td>
-                  <td className="px-6 py-2 font-mono text-xs text-slate-400">{l.mac}</td>
+                  <td className="px-6 py-2 font-mono text-xs text-[var(--text-muted)]">{l.mac}</td>
                   <td className="px-6 py-2">{l.hostname || '-'}</td>
-                  <td className="px-6 py-2 text-slate-400">{l.expiry}</td>
+                  <td className="px-6 py-2 text-[var(--text-muted)]">{l.expiry}</td>
                 </tr>
               ))}
             </tbody>
@@ -240,13 +241,13 @@ export default function NetworksPage() {
       {/* Edit network XML */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true" onClick={() => !editXmlSaving && setEditTarget(null)}>
-          <div ref={editRef} className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-700/50 flex items-center justify-between shrink-0">
+          <div ref={editRef} className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between shrink-0">
               <div>
                 <span className="text-lg font-semibold flex items-center gap-2"><Network className={`w-5 h-5 ${statusToneClass('info')}`} /> Edit network XML</span>
-                <p className="text-xs text-slate-500 mt-1 font-mono">{editTarget.name}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1 font-mono">{editTarget.name}</p>
               </div>
-              <button type="button" aria-label="Close" onClick={() => !editXmlSaving && setEditTarget(null)} className="p-1 hover:bg-slate-700 rounded"><X className="w-4 h-4 text-slate-400" /></button>
+              <button type="button" aria-label="Close" onClick={() => !editXmlSaving && setEditTarget(null)} className="p-1 hover:bg-[var(--surface-hover)] rounded"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
             </div>
             <div className="p-5 flex-1 min-h-0 flex flex-col gap-3">
               {editTarget.active && (
@@ -255,28 +256,28 @@ export default function NetworksPage() {
                 </p>
               )}
               {editXmlLoading ? (
-                <div className="flex justify-center py-12 text-slate-400 text-sm">Loading XML…</div>
+                <div className="flex justify-center py-12 text-[var(--text-muted)] text-sm">Loading XML…</div>
               ) : (
                 <>
-                  <label htmlFor="net-xml-edit" className="text-sm text-slate-400">Libvirt network XML (keep <code className="text-slate-500">&lt;name&gt;</code> equal to <span className="font-mono text-slate-300">{editTarget.name}</span>)</label>
+                  <label htmlFor="net-xml-edit" className="text-sm text-[var(--text-muted)]">Libvirt network XML (keep <code className="text-[var(--text-muted)]">&lt;name&gt;</code> equal to <span className="font-mono text-[var(--text-secondary)]">{editTarget.name}</span>)</label>
                   <textarea
                     id="net-xml-edit"
                     value={editXml}
                     onChange={e => setEditXml(e.target.value)}
                     spellCheck={false}
-                    className="w-full min-h-[280px] flex-1 font-mono text-xs bg-slate-900/80 border border-slate-600/50 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 resize-y"
+                    className="w-full min-h-[280px] flex-1 font-mono text-xs bg-[var(--apple-surface)] border border-[var(--apple-hairline)]/50 rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 resize-y"
                     disabled={editXmlSaving}
                   />
                 </>
               )}
             </div>
-            <div className="flex justify-end gap-3 px-5 pb-5 shrink-0 border-t border-slate-700/50 pt-4">
-              <button type="button" onClick={() => !editXmlSaving && setEditTarget(null)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
+            <div className="flex justify-end gap-3 px-5 pb-5 shrink-0 border-t border-[var(--apple-hairline)] pt-4">
+              <button type="button" onClick={() => !editXmlSaving && setEditTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
               <button
                 type="button"
                 disabled={editXmlSaving || editXmlLoading || !editXml.trim()}
                 onClick={() => void saveEditXml()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition disabled:opacity-50"
+                className="btn-primary text-sm disabled:opacity-50"
               >
                 {editXmlSaving ? 'Saving…' : 'Save definition'}
               </button>
@@ -288,23 +289,23 @@ export default function NetworksPage() {
       {/* Create Network Dialog */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={() => setShowCreate(false)}>
-          <div ref={createRef} className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-slate-700/50 flex items-center justify-between">
+          <div ref={createRef} className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
               <span className="text-lg font-semibold flex items-center gap-2"><Network className={`w-5 h-5 ${statusToneClass('info')}`} /> Create Network</span>
-              <button aria-label="Close" onClick={() => setShowCreate(false)} className="p-1 hover:bg-slate-700 rounded"><X className="w-4 h-4 text-slate-400" /></button>
+              <button aria-label="Close" onClick={() => setShowCreate(false)} className="p-1 hover:bg-[var(--surface-hover)] rounded"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
             </div>
             <div className="p-5 space-y-3">
-              <div><label htmlFor="net-name" className="block text-sm text-slate-400 mb-1">Name</label><input id="net-name" autoFocus value={newName} onChange={e => setNewName(e.target.value)} className="input-field" placeholder="my-network" /></div>
-              <div><label htmlFor="net-subnet" className="block text-sm text-slate-400 mb-1">Subnet Prefix</label><input id="net-subnet" value={newSubnet} onChange={e => setNewSubnet(e.target.value)} className="input-field" placeholder="192.168.100" /></div>
+              <div><label htmlFor="net-name" className="block text-sm text-[var(--text-muted)] mb-1">Name</label><input id="net-name" autoFocus value={newName} onChange={e => setNewName(e.target.value)} className="input-field" placeholder="my-network" /></div>
+              <div><label htmlFor="net-subnet" className="block text-sm text-[var(--text-muted)] mb-1">Subnet Prefix</label><input id="net-subnet" value={newSubnet} onChange={e => setNewSubnet(e.target.value)} className="input-field" placeholder="192.168.100" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="net-dhcp-start" className="block text-sm text-slate-400 mb-1">DHCP Start</label><input id="net-dhcp-start" value={newDhcpStart} onChange={e => setNewDhcpStart(e.target.value)} className="input-field" /></div>
-                <div><label htmlFor="net-dhcp-end" className="block text-sm text-slate-400 mb-1">DHCP End</label><input id="net-dhcp-end" value={newDhcpEnd} onChange={e => setNewDhcpEnd(e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="net-dhcp-start" className="block text-sm text-[var(--text-muted)] mb-1">DHCP Start</label><input id="net-dhcp-start" value={newDhcpStart} onChange={e => setNewDhcpStart(e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="net-dhcp-end" className="block text-sm text-[var(--text-muted)] mb-1">DHCP End</label><input id="net-dhcp-end" value={newDhcpEnd} onChange={e => setNewDhcpEnd(e.target.value)} className="input-field" /></div>
               </div>
-              <p className="text-xs text-slate-500">Creates a NAT network with the given subnet and DHCP range.</p>
+              <p className="text-xs text-[var(--text-muted)]">Creates a NAT network with the given subnet and DHCP range.</p>
             </div>
             <div className="flex justify-end gap-3 px-5 pb-5">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
-              <button onClick={handleCreate} disabled={creating || !newName.trim()} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition">{creating ? 'Creating…' : 'Create'}</button>
+              <button onClick={() => setShowCreate(false)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+              <button onClick={handleCreate} disabled={creating || !newName.trim()} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">{creating ? 'Creating…' : 'Create'}</button>
             </div>
           </div>
         </div>

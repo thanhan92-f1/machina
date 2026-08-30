@@ -63,9 +63,9 @@ export default function TemplateMissingImagesPanel({
       <ul className="text-xs space-y-1.5 max-h-32 overflow-y-auto">
         {missing.slice(0, 8).map((m) => (
           <li key={`${m.name}@${m.version}`} className="flex items-center justify-between gap-2">
-            <span className="text-slate-200 truncate">
+            <span className="text-[var(--text-primary)] truncate">
               {m.icon ? `${m.icon} ` : ''}{m.name}
-              <span className="text-slate-500"> @{m.version}</span>
+              <span className="text-[var(--text-muted)]"> @{m.version}</span>
             </span>
             {m.auto_fetch ? (
               <span className="shrink-0 inline-flex items-center gap-0.5 text-emerald-300/90">

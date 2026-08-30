@@ -42,7 +42,9 @@ export default function MachineFinderLensBar({ state }: Props) {
             key={l.id}
             type="button"
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-              lens === l.id ? 'bg-sky-500/20 text-sky-100 ring-1 ring-sky-500/30' : 'text-slate-400 hover:bg-white/[0.04]'
+              lens === l.id
+                ? 'bg-[var(--plasma-tint)] text-[var(--plasma-strong)] ring-1 ring-[color-mix(in_srgb,var(--plasma)_35%,transparent)]'
+                : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
             }`}
             onClick={() => setLens(l.id)}
           >
@@ -57,7 +59,9 @@ export default function MachineFinderLensBar({ state }: Props) {
               key={o.id}
               type="button"
               className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${
-                overlay === o.id ? 'bg-emerald-900/40 text-emerald-100' : 'text-slate-500 hover:text-slate-300'
+                overlay === o.id
+                  ? 'bg-[var(--verdant-tint)] text-[var(--verdant)] ring-1 ring-[color-mix(in_srgb,var(--verdant)_30%,transparent)]'
+                  : 'text-[var(--text-faint)] hover:text-[var(--text-secondary)]'
               }`}
               onClick={() => setOverlay(o.id)}
             >

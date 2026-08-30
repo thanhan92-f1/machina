@@ -198,12 +198,13 @@ export default function PlatformRuntimeEnforcement() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>← Security Center</Link>}
       title="Runtime enforcement"
       subtitle="eBPF deny rules — process · DNS · port · IP · file · cap · namespace via Tetragon TracingPolicy"
-      icon={<Shield className="w-6 h-6 text-slate-400" />}
+      icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
           <button type="button" className="btn-primary text-sm" onClick={createPolicy}>
@@ -254,7 +255,7 @@ export default function PlatformRuntimeEnforcement() {
               Detach
             </button>
             {status.attached != null && (
-              <span className="text-xs text-slate-400 self-center">
+              <span className="text-xs text-[var(--text-muted)] self-center">
                 BPF {status.attached ? 'attached' : 'detached'}
                 {status.default_deny ? ' · defaultDeny' : ''}
               </span>
@@ -265,11 +266,11 @@ export default function PlatformRuntimeEnforcement() {
 
       <MacGlassPanel title="Target hosts" subtitle="Online hosts only — select targets for apply">
         {onlineHosts.length === 0 ? (
-          <p className="text-sm text-slate-500 p-3">No online hosts. Enroll agents first.</p>
+          <p className="text-sm text-[var(--text-muted)] p-3">No online hosts. Enroll agents first.</p>
         ) : (
           <div className="p-3 flex flex-wrap gap-2">
             {onlineHosts.map((h) => (
-              <label key={h.id} className="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+              <label key={h.id} className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={selectedHosts.includes(h.id)}
@@ -294,7 +295,7 @@ export default function PlatformRuntimeEnforcement() {
 
       <MacGlassPanel title="Enforcement policies" subtitle={status?.summary}>
         {policies.length === 0 ? (
-          <p className="text-sm text-slate-500 p-3">No policies yet.</p>
+          <p className="text-sm text-[var(--text-muted)] p-3">No policies yet.</p>
         ) : (
           policies.map((p) => (
             <MacListRow
@@ -357,7 +358,7 @@ export default function PlatformRuntimeEnforcement() {
           <button type="button" className="btn-secondary text-sm" onClick={previewBundle}>
             Preview bundle ({selectedHosts[0] ?? 'select host'})
           </button>
-          {agentBundle && <p className="text-sm text-slate-400">{agentBundle}</p>}
+          {agentBundle && <p className="text-sm text-[var(--text-muted)]">{agentBundle}</p>}
         </div>
       </MacGlassPanel>
 
@@ -368,7 +369,7 @@ export default function PlatformRuntimeEnforcement() {
         subtitle={previewTitle}
         wide
       >
-        <pre className="text-xs font-mono text-slate-300 overflow-x-auto p-2 bg-slate-950/60 rounded-lg max-h-[60vh] overflow-y-auto">
+        <pre className="text-xs font-mono text-[var(--text-secondary)] overflow-x-auto p-2 bg-[var(--apple-surface)] rounded-lg max-h-[60vh] overflow-y-auto">
           {previewYaml}
         </pre>
       </MacSheet>

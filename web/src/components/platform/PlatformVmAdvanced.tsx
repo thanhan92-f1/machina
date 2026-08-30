@@ -130,14 +130,14 @@ export default function PlatformVmAdvanced({
       .catch(() => setBlockJob(null))
 
   if (loading && !domainXml) {
-    return <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading advanced controls…</p>
+    return <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading advanced controls…</p>
   }
 
   return (
     <div className="space-y-4 pt-2" data-testid="vm-advanced-panel">
       <MacGlassPanel title="Block jobs" subtitle="Commit, pull, or abort backing-chain operations">
         <div className="flex flex-wrap gap-3 items-end text-sm">
-          <label className="text-xs text-slate-500">Disk target
+          <label className="text-xs text-[var(--text-muted)]">Disk target
             <input className="input mt-1 block w-24" value={blockDisk} onChange={(e) => setBlockDisk(e.target.value)} />
           </label>
           <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('Block commit started', () => invokeVmLibvirt(vmId, 'block.commit', { disk: blockDisk }))}>Commit</button>
@@ -145,13 +145,13 @@ export default function PlatformVmAdvanced({
           <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('Block job aborted', () => invokeVmLibvirt(vmId, 'block.job.abort', { disk: blockDisk }))}>Abort</button>
           <button type="button" className="btn-secondary text-xs" onClick={refreshBlockJob}>Refresh status</button>
         </div>
-        {blockJob != null && <pre className="text-xs text-slate-400 mt-3 overflow-auto">{JSON.stringify(blockJob, null, 2)}</pre>}
+        {blockJob != null && <pre className="text-xs text-[var(--text-muted)] mt-3 overflow-auto">{JSON.stringify(blockJob, null, 2)}</pre>}
       </MacGlassPanel>
 
       <MacGlassPanel title="Disk & NIC tuning">
         <div className="grid gap-4 md:grid-cols-2 text-sm">
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">Disk cache / bus</p>
+            <p className="text-xs text-[var(--text-muted)]">Disk cache / bus</p>
             <input className="input w-full" placeholder="target vda" value={diskTuneTarget} onChange={(e) => setDiskTuneTarget(e.target.value)} />
             <select className="input w-full" aria-label="Disk cache mode" value={diskCache} onChange={(e) => setDiskCache(e.target.value)}>
               <option value="none">none</option>
@@ -163,7 +163,7 @@ export default function PlatformVmAdvanced({
             <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('Disk tune applied', () => invokeVmLibvirt(vmId, 'disk.tune', { target: diskTuneTarget, cache: diskCache }))}>Apply disk tune</button>
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">NIC model override</p>
+            <p className="text-xs text-[var(--text-muted)]">NIC model override</p>
             <input aria-label="MAC address" className="input w-full font-mono" placeholder="MAC" value={nicMac} onChange={(e) => setNicMac(e.target.value)} />
             <button type="button" className="btn-secondary text-xs" disabled={disabled || !nicMac} onClick={() => void run('NIC tune applied', () => invokeVmLibvirt(vmId, 'nic.tune', { mac_address: nicMac, model: 'virtio' }))}>Set virtio model</button>
           </div>
@@ -173,7 +173,7 @@ export default function PlatformVmAdvanced({
       <MacGlassPanel title="CPU / memory tuning" subtitle="Scheduler, memtune, live hotplug, vCPU pinning">
         <div className="grid gap-4 md:grid-cols-2 text-sm">
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">Scheduler (shares / period / quota)</p>
+            <p className="text-xs text-[var(--text-muted)]">Scheduler (shares / period / quota)</p>
             <div className="flex gap-2">
               <input aria-label="CPU shares" className="input w-20" placeholder="shares" defaultValue={cputune?.shares ?? ''} id={`sched-shares-${vmId}`} />
               <input aria-label="CPU period" className="input w-20" placeholder="period" defaultValue={cputune?.period ?? ''} id={`sched-period-${vmId}`} />
@@ -198,7 +198,7 @@ export default function PlatformVmAdvanced({
             </button>
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">Memtune (KiB)</p>
+            <p className="text-xs text-[var(--text-muted)]">Memtune (KiB)</p>
             <div className="flex gap-2">
               <input aria-label="Hard limit (KiB)" className="input w-24" placeholder="hard" value={memtune.hard_limit_kb ?? ''} onChange={(e) => setMemtune({ ...memtune, hard_limit_kb: e.target.value ? Number(e.target.value) : undefined })} />
               <input aria-label="Soft limit (KiB)" className="input w-24" placeholder="soft" value={memtune.soft_limit_kb ?? ''} onChange={(e) => setMemtune({ ...memtune, soft_limit_kb: e.target.value ? Number(e.target.value) : undefined })} />
@@ -206,7 +206,7 @@ export default function PlatformVmAdvanced({
             <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('Memtune updated', () => invokeVmLibvirt(vmId, 'memtune.set', memtune))}>Apply memtune</button>
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">Live vCPU / memory (running guest)</p>
+            <p className="text-xs text-[var(--text-muted)]">Live vCPU / memory (running guest)</p>
             <div className="flex gap-2">
               <input aria-label="Live vCPU count" className="input w-20" type="number" min={1} value={liveVcpus} onChange={(e) => setLiveVcpus(e.target.value)} />
               <input aria-label="Live memory (GiB)" className="input w-20" type="number" min={1} value={liveMemoryGiB} onChange={(e) => setLiveMemoryGiB(e.target.value)} />
@@ -217,7 +217,7 @@ export default function PlatformVmAdvanced({
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">Pin vCPU to host CPUs (comma list → bitmask)</p>
+            <p className="text-xs text-[var(--text-muted)]">Pin vCPU to host CPUs (comma list → bitmask)</p>
             <div className="flex gap-2">
               <input aria-label="vCPU index" className="input w-16" value={pinVcpu} onChange={(e) => setPinVcpu(e.target.value)} />
               <input aria-label="Host CPU list" className="input flex-1 font-mono" value={pinCpus} onChange={(e) => setPinCpus(e.target.value)} placeholder="0,1,2" />
@@ -242,11 +242,11 @@ export default function PlatformVmAdvanced({
       <MacGlassPanel title="USB & PCI passthrough" data-testid="vm-hostdev-panel">
         <div className="grid gap-4 md:grid-cols-2 text-sm">
           <div>
-            <p className="text-xs text-slate-500 mb-2">USB devices on host</p>
-            <ul className="text-xs text-slate-400 space-y-1 max-h-32 overflow-auto mb-2">
+            <p className="text-xs text-[var(--text-muted)] mb-2">USB devices on host</p>
+            <ul className="text-xs text-[var(--text-muted)] space-y-1 max-h-32 overflow-auto mb-2">
               {usbDevices.map((d) => (
                 <li key={`${d.vendor_id}-${d.product_id}`}>
-                  <button type="button" className="hover:text-sky-300" onClick={() => { setUsbVid(d.vendor_id); setUsbPid(d.product_id) }}>
+                  <button type="button" className="hover:text-[var(--link)]" onClick={() => { setUsbVid(d.vendor_id); setUsbPid(d.product_id) }}>
                     {d.vendor_id}:{d.product_id} {d.description ?? ''}
                   </button>
                 </li>
@@ -260,11 +260,11 @@ export default function PlatformVmAdvanced({
             </div>
           </div>
           <div>
-            <p className="text-xs text-slate-500 mb-2">PCI devices</p>
-            <ul className="text-xs text-slate-400 space-y-1 max-h-32 overflow-auto mb-2">
+            <p className="text-xs text-[var(--text-muted)] mb-2">PCI devices</p>
+            <ul className="text-xs text-[var(--text-muted)] space-y-1 max-h-32 overflow-auto mb-2">
               {pciDevices.map((d) => (
                 <li key={d.slot}>
-                  <button type="button" className="hover:text-sky-300 font-mono" onClick={() => setPciBdf(d.slot)}>{d.slot} {d.vendor ?? ''} {d.device ?? ''}</button>
+                  <button type="button" className="hover:text-[var(--link)] font-mono" onClick={() => setPciBdf(d.slot)}>{d.slot} {d.vendor ?? ''} {d.device ?? ''}</button>
                 </li>
               ))}
             </ul>
@@ -279,14 +279,14 @@ export default function PlatformVmAdvanced({
 
       <MacGlassPanel title="Firmware, TPM & boot order">
         <div className="flex flex-wrap gap-3 items-center text-sm mb-3">
-          <label className="flex items-center gap-2 text-slate-400">
+          <label className="flex items-center gap-2 text-[var(--text-muted)]">
             <input type="checkbox" checked={uefi} onChange={(e) => setUefi(e.target.checked)} /> UEFI firmware
           </label>
           <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('Firmware updated', () => invokeVmLibvirt(vmId, 'firmware.set', { uefi }))}>Apply firmware</button>
           <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('TPM attached', () => invokeVmLibvirt(vmId, 'tpm.attach'))}>Attach TPM</button>
           <button type="button" className="btn-secondary text-xs" disabled={disabled} onClick={() => void run('TPM detached', () => invokeVmLibvirt(vmId, 'tpm.detach'))}>Detach TPM</button>
         </div>
-        <label className="text-xs text-slate-500 block">Boot order (comma-separated: hd, cdrom, network)
+        <label className="text-xs text-[var(--text-muted)] block">Boot order (comma-separated: hd, cdrom, network)
           <input className="input mt-1 block w-full font-mono" value={bootDevices} onChange={(e) => setBootDevices(e.target.value)} />
         </label>
         <button
@@ -301,7 +301,7 @@ export default function PlatformVmAdvanced({
 
       {hostId && (
         <MacGlassPanel title="ISO library" subtitle={`Host ${hostId.slice(0, 8)}…`}>
-          <ul className="text-xs text-slate-400 space-y-1 max-h-40 overflow-auto">
+          <ul className="text-xs text-[var(--text-muted)] space-y-1 max-h-40 overflow-auto">
             {isos.length === 0 && <li>No ISO files found on host scan paths.</li>}
             {isos.map((f) => (
               <li key={f.name} className="font-mono">{f.name}{f.size_bytes ? ` · ${Math.round(f.size_bytes / 1024 / 1024)} MiB` : ''}</li>

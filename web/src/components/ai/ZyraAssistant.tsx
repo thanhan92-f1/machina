@@ -226,13 +226,13 @@ export default function ZyraAssistant() {
           if (action) void runAction(action)
         }}
       />
-      <aside className="fixed right-0 top-0 bottom-0 z-[56] w-full max-w-md border-l border-white/[0.08] bg-slate-900/98 backdrop-blur-xl flex flex-col shadow-2xl animate-fade-in">
+      <aside className="fixed right-0 top-0 bottom-0 z-[56] w-full max-w-md border-l border-white/[0.08] bg-[var(--apple-surface)]/98 backdrop-blur-xl flex flex-col shadow-2xl animate-fade-in">
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2 min-w-0">
             <Bot className="w-5 h-5 text-orange-400 shrink-0" />
             <div className="min-w-0">
               <p className="font-semibold text-sm">Zyra</p>
-              <p className="text-[10px] text-slate-500 truncate">{modeLabel}</p>
+              <p className="text-[10px] text-[var(--text-muted)] truncate">{modeLabel}</p>
             </div>
           </div>
           <select
@@ -245,7 +245,7 @@ export default function ZyraAssistant() {
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>
-          <button type="button" onClick={closeCopilot} className="p-1 text-slate-400 hover:text-white" aria-label="Close Zyra assistant"><X className="w-5 h-5" /></button>
+          <button type="button" onClick={closeCopilot} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]" aria-label="Close Zyra assistant"><X className="w-5 h-5" /></button>
         </header>
 
         {(contextVmIds.length > 0 || contextSummary || contextVmId) && (
@@ -273,8 +273,8 @@ export default function ZyraAssistant() {
             </p>
             {proposals.map((a) => (
               <div key={a.id} className="rounded-lg border border-white/[0.06] p-2 text-xs">
-                <p className="font-medium text-slate-200">{a.label}</p>
-                <p className="text-slate-500 mt-0.5 line-clamp-2">{a.review}</p>
+                <p className="font-medium text-[var(--text-primary)]">{a.label}</p>
+                <p className="text-[var(--text-muted)] mt-0.5 line-clamp-2">{a.review}</p>
                 <button
                   type="button"
                   className="btn-primary text-[10px] mt-2"
@@ -290,7 +290,7 @@ export default function ZyraAssistant() {
         {nlOpsPlan && nlOpsPlan.approval_required && (
           <div className="px-4 py-3 border-b border-white/[0.06] space-y-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-400/80">NL Ops plan (dry-run)</p>
-            <p className="text-xs text-slate-400">Risk {nlOpsPlan.risk_score}/10 · {nlOpsPlan.steps.length} step(s)</p>
+            <p className="text-xs text-[var(--text-muted)]">Risk {nlOpsPlan.risk_score}/10 · {nlOpsPlan.steps.length} step(s)</p>
             <button type="button" className="btn-primary text-xs w-full" disabled={busy} onClick={() => void queueNlOps()}>
               Queue for approval
             </button>
@@ -299,17 +299,17 @@ export default function ZyraAssistant() {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
           {messages.length === 0 && (
             <div className="space-y-3">
-              <p className="text-slate-500">
+              <p className="text-[var(--text-muted)]">
                 Ask Zyra about VM health, capacity, cost, migrations, security, guest agents, or network paths.
               </p>
               {showGuestPrompts && (
                 <div className="space-y-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Guest agent prompts</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Guest agent prompts</p>
                   {GUEST_SUGGESTED_PROMPTS.map((p) => (
                     <button
                       key={p}
                       type="button"
-                      className="block w-full text-left text-xs rounded-lg border border-white/[0.06] px-3 py-2 text-slate-300 hover:bg-white/[0.04]"
+                      className="block w-full text-left text-xs rounded-lg border border-white/[0.06] px-3 py-2 text-[var(--text-secondary)] hover:bg-white/[0.04]"
                       onClick={() => void send(p)}
                     >
                       {p}
@@ -320,8 +320,8 @@ export default function ZyraAssistant() {
             </div>
           )}
           {messages.map((m, i) => (
-            <div key={i} className={`rounded-xl px-3 py-2 ${m.role === 'user' ? 'bg-blue-500/15 ml-8' : 'bg-slate-800/80 mr-4'}`}>
-              <p className="whitespace-pre-wrap text-slate-200">{m.text}</p>
+            <div key={i} className={`rounded-xl px-3 py-2 ${m.role === 'user' ? 'bg-[var(--accent-soft)] ml-8' : 'bg-[var(--apple-surface)] mr-4'}`}>
+              <p className="whitespace-pre-wrap text-[var(--text-primary)]">{m.text}</p>
             </div>
           ))}
           {streaming && (

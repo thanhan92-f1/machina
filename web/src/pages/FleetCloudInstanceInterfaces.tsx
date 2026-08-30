@@ -77,7 +77,7 @@ function FleetCloudInstanceInterfacesContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/instances" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/instances" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -85,29 +85,30 @@ function FleetCloudInstanceInterfacesContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to={`/fleet-cloud/instances/${inst.id}`} className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to={`/fleet-cloud/instances/${inst.id}`} className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> {inst.name}
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Network className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Network className="w-7 h-7 text-[var(--accent)]" />
         Network interfaces
       </h1>
-      <p className="text-sm text-slate-400 font-mono">{inst.id}</p>
+      <p className="text-sm text-[var(--text-muted)] font-mono">{inst.id}</p>
 
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Attached interfaces ({ifaces.length})</h2>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Attached interfaces ({ifaces.length})</h2>
         {ifaces.length === 0 ? (
-          <p className="text-sm text-slate-500">No interfaces attached.</p>
+          <p className="text-sm text-[var(--text-muted)]">No interfaces attached.</p>
         ) : (
           <ul className="space-y-2 text-sm">
             {ifaces.map((i) => (
-              <li key={i.mac_address} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-800 px-3 py-2 font-mono">
-                <span className="text-slate-200">{i.ip || '—'}</span>
-                <span className="text-slate-500 text-xs">MAC {i.mac_address}</span>
-                <span className="text-slate-500 text-xs">{i.network} · {i.model}</span>
+              <li key={i.mac_address} className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--apple-hairline)] px-3 py-2 font-mono">
+                <span className="text-[var(--text-primary)]">{i.ip || '—'}</span>
+                <span className="text-[var(--text-muted)] text-xs">MAC {i.mac_address}</span>
+                <span className="text-[var(--text-muted)] text-xs">{i.network} · {i.model}</span>
                 <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
                   onClick={() => void run(() => detachVmNic(inst.id, i.mac_address), 'Interface detached')}>
                   Detach
@@ -118,18 +119,18 @@ function FleetCloudInstanceInterfacesContent() {
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Attach network</h2>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Attach network</h2>
         <div className="flex flex-wrap gap-2 items-end">
           <select value={attachNet} onChange={(e) => setAttachNet(e.target.value)}
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm min-w-[14rem]">
+            className="input-field text-sm min-w-[14rem]">
             <option value="">Select network…</option>
             {networks.map((n) => (
               <option key={n.id} value={n.name}>{n.name}</option>
             ))}
           </select>
           <button type="button" disabled={!attachNet}
-            className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-sm disabled:opacity-40"
+            className="btn-primary text-sm disabled:opacity-40"
             onClick={() => void run(
               () => attachVmNic(inst.id, attachNet),
               'Interface attached',

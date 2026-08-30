@@ -33,11 +33,11 @@ function SidebarRow({
       type="button"
       onClick={onClick}
       className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-left transition ${
-        active ? 'bg-blue-500/15 text-blue-200' : 'text-slate-300 hover:bg-slate-800/60'
+        active ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)]/60'
       }`}
     >
       <span className="truncate">{label}</span>
-      <span className="text-xs text-slate-500 shrink-0">{count}</span>
+      <span className="text-xs text-[var(--text-muted)] shrink-0">{count}</span>
     </button>
   )
 }
@@ -76,7 +76,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
   return (
     <aside className="machine-finder-sidebar w-full xl:w-56 shrink-0 space-y-4" data-testid="machine-finder-smart-folders">
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1 mb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1 mb-2">
           <FolderOpen className="w-3 h-3" /> Smart Folders
         </p>
         <div className="space-y-0.5">
@@ -93,7 +93,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
       </div>
 
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1 mb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1 mb-2">
           <Server className="w-3 h-3" /> Sources
         </p>
         <div className="space-y-0.5">
@@ -107,7 +107,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
 
       {(finder?.tags?.length ?? 0) > 0 && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1 mb-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1 mb-2">
             <Tag className="w-3 h-3" /> Tags
           </p>
           <div className="space-y-0.5">
@@ -120,7 +120,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
 
       {(finder?.projects?.length ?? 0) > 0 && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-2">Projects</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Projects</p>
           <div className="space-y-0.5">
             {(finder?.projects ?? []).map((p) => (
               <SidebarRow key={p.project} active={project === p.project} label={p.project} count={p.count} onClick={() => setFilter({ project: p.project })} />

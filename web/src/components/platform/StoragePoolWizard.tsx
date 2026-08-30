@@ -87,11 +87,11 @@ export default function StoragePoolWizard({ open, onClose, onCreated }: Props) {
       {step === 0 && (
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="text-slate-400">Pool name</span>
+            <span className="text-[var(--text-muted)]">Pool name</span>
             <input className="input w-full mt-1" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">Backend</span>
+            <span className="text-[var(--text-muted)]">Backend</span>
             <select
               className="input w-full mt-1"
               value={poolBackend}
@@ -119,14 +119,14 @@ export default function StoragePoolWizard({ open, onClose, onCreated }: Props) {
       {step === 1 && (
         <div className="space-y-3">
           <label className="block text-sm">
-            <span className="text-slate-400">{pathLabel()}</span>
+            <span className="text-[var(--text-muted)]">{pathLabel()}</span>
             <input className="input w-full mt-1 font-mono text-xs" value={path} onChange={(e) => setPath(e.target.value)} />
           </label>
-          <p className="text-xs text-slate-500">{hint()}</p>
+          <p className="text-xs text-[var(--text-muted)]">{hint()}</p>
         </div>
       )}
       {step === 2 && (
-        <div className="text-sm text-slate-300 space-y-1">
+        <div className="text-sm text-[var(--text-secondary)] space-y-1">
           <p>Name: {name}</p>
           <p>Backend: {poolBackend}</p>
           <p className="font-mono text-xs break-all">Path: {path}</p>

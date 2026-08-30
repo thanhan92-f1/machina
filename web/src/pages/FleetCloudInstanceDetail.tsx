@@ -84,7 +84,7 @@ function FleetCloudInstanceDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/instances" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/instances" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -103,54 +103,55 @@ function FleetCloudInstanceDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-4xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/instances" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/instances" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Instances
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Cloud className="w-7 h-7 text-sky-400" /> {vm.name}
+        <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+          <Cloud className="w-7 h-7 text-[var(--accent)]" /> {vm.name}
         </h1>
         <div className="flex gap-2">
           <button type="button" title="Start" onClick={() => void runAction(startVm, 'Start')}
-            className="p-2 rounded border border-slate-600 hover:bg-slate-800"><Play className="w-4 h-4" /></button>
+            className="p-2 rounded border border-[var(--apple-hairline)] hover:bg-[var(--apple-fill-tertiary)]"><Play className="w-4 h-4" /></button>
           <button type="button" title="Stop" onClick={() => void runAction(stopVm, 'Stop')}
-            className="p-2 rounded border border-slate-600 hover:bg-slate-800"><Square className="w-4 h-4" /></button>
+            className="p-2 rounded border border-[var(--apple-hairline)] hover:bg-[var(--apple-fill-tertiary)]"><Square className="w-4 h-4" /></button>
           <button type="button" title="Reboot" onClick={() => void runAction(rebootVm, 'Reboot')}
-            className="p-2 rounded border border-slate-600 hover:bg-slate-800"><RotateCcw className="w-4 h-4" /></button>
+            className="p-2 rounded border border-[var(--apple-hairline)] hover:bg-[var(--apple-fill-tertiary)]"><RotateCcw className="w-4 h-4" /></button>
           <button type="button" title="Delete" onClick={() => setConfirmDelete(true)}
             className={`p-2 rounded border border-red-600/50 ${statusActionLinkClasses('error')}`}><Trash2 className="w-4 h-4" /></button>
         </div>
       </div>
 
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono mt-1 break-all">{vm.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono mt-1 break-all">{vm.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="mt-1">
           <span className={`inline-block px-2 py-0.5 rounded border text-xs ${statusBadgeClasses(instanceStatusTone(status))}`}>{status}</span>
         </dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">vCPU</dt><dd className="mt-1">{vm.vcpus}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">RAM</dt><dd className="mt-1">{vm.memory_mib} MiB</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Project</dt><dd className="mt-1">{vm.project || '—'}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Guest IP</dt><dd className="mt-1 font-mono">{vm.guest_ip || '—'}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">vCPU</dt><dd className="mt-1">{vm.vcpus}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">RAM</dt><dd className="mt-1">{vm.memory_mib} MiB</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Project</dt><dd className="mt-1">{vm.project || '—'}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Guest IP</dt><dd className="mt-1 font-mono">{vm.guest_ip || '—'}</dd></div>
         {vm.last_error && (
-          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Last error</dt><dd className="mt-1 text-red-300">{vm.last_error}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Last error</dt><dd className="mt-1 text-red-300">{vm.last_error}</dd></div>
         )}
       </dl>
 
-      <section className="rounded-xl border border-slate-700 p-4">
-        <h2 className="text-sm font-medium text-slate-300 mb-3">Network interfaces</h2>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Network interfaces</h2>
         {nics.length === 0 ? (
-          <p className="text-sm text-slate-500">No NICs.</p>
+          <p className="text-sm text-[var(--text-muted)]">No NICs.</p>
         ) : (
-          <table className="w-full text-sm" aria-label="Network interfaces">
-            <thead className="text-slate-400 text-left">
+          <table className="apple-table" aria-label="Network interfaces">
+            <thead className="text-[var(--text-muted)] text-left">
               <tr><th scope="col" className="py-1">Network</th><th scope="col" className="py-1">MAC</th><th scope="col" className="py-1">IP</th></tr>
             </thead>
             <tbody className="font-mono text-xs">
               {nics.map((n) => (
-                <tr key={n.mac_address} className="border-t border-slate-800">
+                <tr key={n.mac_address} className="border-t border-[var(--apple-hairline)]">
                   <td className="py-2">{n.network}</td>
                   <td className="py-2">{n.mac_address}</td>
                   <td className="py-2">{n.ip || '—'}</td>
@@ -161,18 +162,18 @@ function FleetCloudInstanceDetailContent() {
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-700 p-4">
-        <h2 className="text-sm font-medium text-slate-300 mb-3">Disks</h2>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Disks</h2>
         {disks.length === 0 ? (
-          <p className="text-sm text-slate-500">No disks.</p>
+          <p className="text-sm text-[var(--text-muted)]">No disks.</p>
         ) : (
-          <table className="w-full text-sm" aria-label="Disks">
-            <thead className="text-slate-400 text-left">
+          <table className="apple-table" aria-label="Disks">
+            <thead className="text-[var(--text-muted)] text-left">
               <tr><th scope="col" className="py-1">Name</th><th scope="col" className="py-1">Size</th><th scope="col" className="py-1">Class</th></tr>
             </thead>
             <tbody className="font-mono text-xs">
               {disks.map((d) => (
-                <tr key={d.id} className="border-t border-slate-800">
+                <tr key={d.id} className="border-t border-[var(--apple-hairline)]">
                   <td className="py-2">{d.name}</td>
                   <td className="py-2">{d.size_gib} GiB</td>
                   <td className="py-2">{d.storage_class}</td>

@@ -75,12 +75,13 @@ export default function PlatformFleetSnapshots() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Fleet snapshot schedules"
       subtitle="Nightly disk snapshots across managed libvirt VMs (project or tag filter)."
-      icon={<Camera className="w-6 h-6 text-slate-400" />}
+      icon={<Camera className="w-6 h-6 text-[var(--text-muted)]" />}
       loading={loading && rows.length === 0}
       contentClassName="space-y-4"
     >
@@ -90,17 +91,17 @@ export default function PlatformFleetSnapshots() {
           <input className="input text-sm" aria-label="Schedule name" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
           <input className="input text-sm" aria-label="Project" placeholder="Project (optional)" value={project} onChange={(e) => setProject(e.target.value)} />
           <input className="input text-sm md:col-span-2" aria-label="Tag filter" placeholder="Tag filter (optional)" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} />
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
             <input type="checkbox" checked={diskOnly} onChange={(e) => setDiskOnly(e.target.checked)} /> Disk-only snapshot
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
             <input type="checkbox" checked={quiesce} onChange={(e) => setQuiesce(e.target.checked)} /> Guest quiesce (app-consistent)
           </label>
         </div>
         <button type="button" className="btn-primary text-sm mt-3 flex items-center gap-1.5" disabled={saving} onClick={() => void add()}>
           <Plus className="w-4 h-4" /> {saving ? 'Saving…' : 'Add schedule'}
         </button>
-        <p className="text-xs text-slate-500 mt-2">Runs about once per 23h per schedule. Set MACHINA_TEMPLATES_GIT_DIR for template git sync separately.</p>
+        <p className="text-xs text-[var(--text-muted)] mt-2">Runs about once per 23h per schedule. Set MACHINA_TEMPLATES_GIT_DIR for template git sync separately.</p>
       </MacGlassPanel>
 
       <MacGlassPanel title="Active schedules" subtitle={loading ? 'Loading…' : `${rows.length} schedule(s)`}>

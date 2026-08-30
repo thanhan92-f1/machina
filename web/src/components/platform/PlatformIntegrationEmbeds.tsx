@@ -9,9 +9,9 @@ import { statusToneClass } from '../../utils/semanticColors'
 
 function PreviewStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-slate-950/40 px-3 py-2 text-center min-w-[4.5rem]">
-      <p className="text-lg font-semibold text-slate-100">{value}</p>
-      <p className="text-[10px] uppercase tracking-wide text-slate-500">{label}</p>
+    <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 text-center min-w-[4.5rem]">
+      <p className="text-lg font-semibold text-[var(--text-primary)]">{value}</p>
+      <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
     </div>
   )
 }
@@ -34,13 +34,13 @@ export default function PlatformIntegrationEmbeds() {
     <div className="grid gap-4 sm:grid-cols-2">
       <MacGlassPanel title="Fleet Cloud preview">
         <div className="flex items-start gap-3">
-          <Cloud className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+          <Cloud className="w-5 h-5 text-[var(--link)] shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="text-sm text-slate-300">Native instance, network, and image inventory — live below.</p>
+            <p className="text-sm text-[var(--text-secondary)]">Native instance, network, and image inventory — live below.</p>
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 {fleetCloudLoading && !fleetCloudStats ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading Fleet Cloud inventory…
                   </span>
                 ) : fleetCloudStats ? (
@@ -63,7 +63,7 @@ export default function PlatformIntegrationEmbeds() {
                 </button>
               </div>
               {fleetCloudStats?.preview.length ? (
-                <ul className="divide-y divide-white/[0.04] rounded-xl border border-white/[0.06] bg-slate-950/30">
+                <ul className="divide-y divide-white/[0.04] rounded-xl border border-white/[0.06] bg-[var(--apple-surface)]">
                   {fleetCloudStats.preview.map((vm) => (
                     <MacListRow
                       key={vm.id}
@@ -74,7 +74,7 @@ export default function PlatformIntegrationEmbeds() {
                   ))}
                 </ul>
               ) : fleetCloudStats && fleetCloudStats.instances === 0 ? (
-                <p className="text-xs text-slate-500">No instances yet.</p>
+                <p className="text-xs text-[var(--text-muted)]">No instances yet.</p>
               ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -87,9 +87,9 @@ export default function PlatformIntegrationEmbeds() {
 
       <MacGlassPanel title="Kubernetes preview">
         <div className="flex items-start gap-3">
-          <Container className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
+          <Container className="w-5 h-5 text-[var(--accent)] shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-[var(--text-secondary)]">
               {k8sEnabled
                 ? 'KubeVirt and cluster workloads live in the K8s shell — inventory below when kubectl is reachable.'
                 : 'Enable Kubernetes / KubeVirt in daemon config to unlock cluster operations.'}
@@ -98,7 +98,7 @@ export default function PlatformIntegrationEmbeds() {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   {k8sLoading && !k8sStats ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading cluster overview…
                     </span>
                   ) : k8sStats ? (

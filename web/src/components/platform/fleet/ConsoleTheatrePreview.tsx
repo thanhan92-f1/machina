@@ -96,7 +96,7 @@ export default function ConsoleTheatrePreview({
             />
           </div>
         ) : (
-          <p className="px-3 py-3 text-xs text-slate-500">Console preview unavailable.</p>
+          <p className="px-3 py-3 text-xs text-[var(--text-muted)]">Console preview unavailable.</p>
         )}
       </div>
     )
@@ -105,8 +105,8 @@ export default function ConsoleTheatrePreview({
   return (
     <section className="rounded-lg border border-white/[0.08] bg-black/40 overflow-hidden" data-testid="console-theatre-preview">
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] text-xs gap-2">
-        <span className="text-slate-300 font-medium shrink-0">Console Theatre</span>
-        <span className={connected ? 'text-emerald-400 truncate text-right' : 'text-slate-500 truncate text-right'} title={status}>
+        <span className="text-[var(--text-secondary)] font-medium shrink-0">Console Theatre</span>
+        <span className={connected ? 'text-emerald-400 truncate text-right' : 'text-[var(--text-muted)] truncate text-right'} title={status}>
           {status}
         </span>
       </div>
@@ -131,7 +131,7 @@ export default function ConsoleTheatrePreview({
           />
         </div>
       ) : (
-        <div className="px-3 py-3 text-xs text-slate-500">
+        <div className="px-3 py-3 text-xs text-[var(--text-muted)]">
           {plan?.protocols?.includes('spice') || plan?.protocols?.includes('webrtc_spice')
             ? 'This VM uses SPICE — open SPICE or Performance above.'
             : 'Open VNC above or use ConsoleHub for serial/SSH lenses.'}

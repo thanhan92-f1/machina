@@ -13,11 +13,11 @@ function usagePct(used: number, total: number): number {
 function UsageBar({ label, pct, tone }: { label: string; pct: number; tone: string }) {
   return (
     <div className="min-w-0">
-      <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+      <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5">
         <span>{label}</span>
         <span>{pct}%</span>
       </div>
-      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -65,31 +65,31 @@ export default function MachineFinderResourceStrip() {
 
   return (
     <section
-      className="grid gap-3 sm:grid-cols-2 rounded-xl border border-white/[0.08] bg-slate-950/40 px-4 py-3"
+      className="grid gap-3 sm:grid-cols-2 rounded-xl border border-white/[0.08] bg-[var(--apple-surface)] px-4 py-3"
       data-testid="machine-finder-resource-strip"
     >
       <div className="flex gap-3 min-w-0">
-        <HardDrive className="w-4 h-4 text-sky-400 shrink-0 mt-1" />
+        <HardDrive className="w-4 h-4 text-[var(--link)] shrink-0 mt-1" />
         <div className="flex-1 min-w-0 space-y-2">
-          <p className="text-xs font-medium text-slate-300">Fleet storage</p>
-          <UsageBar label={`${storage?.total_used_gib?.toFixed(0) ?? '—'} / ${storage?.total_capacity_gib?.toFixed(0) ?? '—'} GiB · ${poolCount} pools`} pct={storagePct} tone="bg-sky-500/70" />
-          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+          <p className="text-xs font-medium text-[var(--text-secondary)]">Fleet storage</p>
+          <UsageBar label={`${storage?.total_used_gib?.toFixed(0) ?? '—'} / ${storage?.total_capacity_gib?.toFixed(0) ?? '—'} GiB · ${poolCount} pools`} pct={storagePct} tone="bg-[var(--accent)]/70" />
+          <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)]">
             <span className="inline-flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-emerald-400" /> {poolActive} active</span>
-            <span className="inline-flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-slate-500" /> {poolInactive} inactive</span>
+            <span className="inline-flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-[var(--text-muted)]" /> {poolInactive} inactive</span>
           </div>
         </div>
       </div>
       <div className="flex gap-3 min-w-0">
         <Network className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
         <div className="flex-1 min-w-0 space-y-1">
-          <p className="text-xs font-medium text-slate-300">Fleet networks</p>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs font-medium text-[var(--text-secondary)]">Fleet networks</p>
+          <p className="text-[11px] text-[var(--text-muted)]">
             {netCount} libvirt network(s)
             {network?.hosts_online != null ? ` · ${network.hosts_online} hosts online` : ''}
           </p>
-          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+          <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)]">
             <span className="inline-flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-emerald-400" /> {netActive} active</span>
-            <span className="inline-flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-slate-500" /> {netInactive} inactive</span>
+            <span className="inline-flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-[var(--text-muted)]" /> {netInactive} inactive</span>
           </div>
         </div>
       </div>

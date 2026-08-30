@@ -258,6 +258,7 @@ export default function PlatformZyraOs() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform" label="Dashboard" />}
@@ -275,9 +276,9 @@ export default function PlatformZyraOs() {
       {zeusSummary && <p className="text-sm text-orange-200/90">{zeusSummary}</p>}
       {hubSummary && (
         <MacGlassPanel title="Remediation hub" subtitle="SRE · compliance · fleet power — unified review queue">
-          <p className="text-sm text-slate-300">{hubSummary}</p>
+          <p className="text-sm text-[var(--text-secondary)]">{hubSummary}</p>
           {hubItems.length > 0 && (
-            <ul className="mt-2 text-xs space-y-1 text-slate-400">
+            <ul className="mt-2 text-xs space-y-1 text-[var(--text-muted)]">
               {hubItems.map((i) => (
                 <li key={i.id}><span className="text-orange-300/80">{i.source}</span> · {i.label} — {i.review}</li>
               ))}
@@ -292,7 +293,7 @@ export default function PlatformZyraOs() {
 
       {tab === 'fleet' && !tabContentLoading && heatmap && (
         <div className="space-y-4">
-          {fleetSummaryLine && <p className="text-sm text-slate-400">{fleetSummaryLine}</p>}
+          {fleetSummaryLine && <p className="text-sm text-[var(--text-muted)]">{fleetSummaryLine}</p>}
           {linuxHealth && (
             <MacGlassPanel title="Fleet Linux health" subtitle="PSI · thermal · SMART rollup from hypervisors">
               <div className="grid gap-3 sm:grid-cols-3 mb-3">
@@ -315,7 +316,7 @@ export default function PlatformZyraOs() {
                   tone={linuxHealth.smart_alerts > 0 ? 'warn' : 'ok'}
                 />
               </div>
-              <p className="text-sm text-slate-300">{linuxHealth.summary}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{linuxHealth.summary}</p>
               <div className="flex flex-wrap gap-3 text-xs mt-2">
                 <Link to="/platform/activity" className={hubLinkClasses()}>Activity Monitor →</Link>
                 <Link to="/platform/maintenance?tab=mission" className={hubLinkClasses()}>Maintenance mission →</Link>
@@ -323,9 +324,9 @@ export default function PlatformZyraOs() {
               {(linuxHealth.hosts ?? []).length > 0 && (
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs mt-3">
                   {(linuxHealth.hosts ?? []).slice(0, 6).map((h) => (
-                    <Link key={h.host_id} to={`/platform/hosts/${h.host_id}?tab=linux`} className="rounded-lg border border-white/[0.06] p-2 hover:bg-slate-800/40">
-                      <p className="font-medium text-slate-200">{h.hostname}</p>
-                      <p className="text-slate-500">IO {h.io_pressure_pct.toFixed(0)}% · {h.status}</p>
+                    <Link key={h.host_id} to={`/platform/hosts/${h.host_id}?tab=linux`} className="rounded-lg border border-white/[0.06] p-2 hover:bg-[var(--apple-surface)]">
+                      <p className="font-medium text-[var(--text-primary)]">{h.hostname}</p>
+                      <p className="text-[var(--text-muted)]">IO {h.io_pressure_pct.toFixed(0)}% · {h.status}</p>
                     </Link>
                   ))}
                 </div>
@@ -343,31 +344,31 @@ export default function PlatformZyraOs() {
                 Diagnose fleet
               </button>
             </div>
-            {fleetDiagnoseSummary && <p className="text-sm text-slate-300">{fleetDiagnoseSummary}</p>}
+            {fleetDiagnoseSummary && <p className="text-sm text-[var(--text-secondary)]">{fleetDiagnoseSummary}</p>}
           </MacGlassPanel>
           <MacGlassPanel title="Fleet heat map" subtitle="Hot, cold, and power-waste hosts">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
               {(heatmap.hosts ?? []).map((h) => (
                 <div key={h.host_id} className="rounded-lg border border-white/[0.06] p-2">
-                  <p className="font-medium text-slate-200">{h.hostname}</p>
-                  <p className="text-slate-500">CPU {h.cpu_percent.toFixed(0)}% · Mem {h.memory_percent.toFixed(0)}% · {h.classification}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{h.hostname}</p>
+                  <p className="text-[var(--text-muted)]">CPU {h.cpu_percent.toFixed(0)}% · Mem {h.memory_percent.toFixed(0)}% · {h.classification}</p>
                 </div>
               ))}
             </div>
           </MacGlassPanel>
           {powerSummary && (
             <MacGlassPanel title="Fleet power optimizer" subtitle="Consolidate cold hosts and relieve hotspots">
-              <p className="text-sm text-slate-300">{powerSummary}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{powerSummary}</p>
             </MacGlassPanel>
           )}
           {gpuSummary && (
             <MacGlassPanel title="GPU / NUMA placement" subtitle="Tag hosts with gpu or nvidia for affinity">
-              <p className="text-sm text-slate-300">{gpuSummary}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{gpuSummary}</p>
             </MacGlassPanel>
           )}
           {rebalance && (
             <MacGlassPanel title="Autonomous rebalancer" subtitle={rebalance.summary}>
-              <ul className="text-xs space-y-2 text-slate-400">
+              <ul className="text-xs space-y-2 text-[var(--text-muted)]">
                 {(rebalance.moves ?? []).map((m) => (
                   <li key={m.vm_id}>{m.vm_name}: {m.from_host} → {m.to_host}</li>
                 ))}
@@ -398,7 +399,7 @@ export default function PlatformZyraOs() {
                   </button>
                 )}
               </div>
-              {rebalancePreview && <p className="text-xs text-slate-400 mt-2">{rebalancePreview}</p>}
+              {rebalancePreview && <p className="text-xs text-[var(--text-muted)] mt-2">{rebalancePreview}</p>}
               {rebalanceTaskIds.length > 0 && (
                 <p className="text-xs mt-2">
                   <Link to={tasksHubHref(tier)} className={hubLinkClasses()}>
@@ -423,17 +424,17 @@ export default function PlatformZyraOs() {
                 Zeus Firewall
               </Link>
             </div>
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="text-xs text-[var(--text-muted)] mt-3">
               Threat hunting, runtime enforcement, ports, policies, and cloud rules live inside these hubs.
             </p>
           </MacGlassPanel>
           <MacGlassPanel title="Attack path discovery" subtitle="Example: attacker → db-prod">
-            <p className="text-sm text-slate-300">{attackSummary ?? 'Loading…'}</p>
-            <p className="text-xs text-slate-500 mt-2">Use Spotlight: &quot;show attack path to database VM&quot;</p>
+            <p className="text-sm text-[var(--text-secondary)]">{attackSummary ?? 'Loading…'}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-2">Use Spotlight: &quot;show attack path to database VM&quot;</p>
           </MacGlassPanel>
           {frameworksSummary && (
             <MacGlassPanel title="Compliance frameworks" subtitle="CIS · PCI · SOC2 · HIPAA mapping">
-              <p className="text-sm text-slate-300">{frameworksSummary}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{frameworksSummary}</p>
             </MacGlassPanel>
           )}
         </div>
@@ -455,7 +456,7 @@ export default function PlatformZyraOs() {
             {knowledgeHits.map((h) => (
               <li key={`${h.kind}-${h.id}`}>
                 {h.navigate ? <Link to={h.navigate} className={`hover:underline ${hubLinkClasses()}`}>{h.title}</Link> : h.title}
-                <span className="text-slate-500"> — {h.snippet}</span>
+                <span className="text-[var(--text-muted)]"> — {h.snippet}</span>
               </li>
             ))}
           </ul>
@@ -464,8 +465,8 @@ export default function PlatformZyraOs() {
 
       {tab === 'services' && !tabContentLoading && (
         <MacGlassPanel title="Service graph & infrastructure memory" subtitle="Application → VM dependencies + incident recall">
-          <p className="text-sm text-slate-400">{serviceCount} application service(s) mapped · {memoryCount} remembered incident(s)</p>
-          {serviceImpact && <p className="text-xs text-slate-400 mt-2">{serviceImpact}</p>}
+          <p className="text-sm text-[var(--text-muted)]">{serviceCount} application service(s) mapped · {memoryCount} remembered incident(s)</p>
+          {serviceImpact && <p className="text-xs text-[var(--text-muted)] mt-2">{serviceImpact}</p>}
           <Link to="/platform/applications" className={`text-xs mt-2 inline-block ${hubLinkClasses()}`}>Open applications →</Link>
         </MacGlassPanel>
       )}
@@ -560,7 +561,7 @@ export default function PlatformZyraOs() {
             >
               Plan 500 AI engineers
             </button>
-            {capacitySummary && <p className="text-sm text-slate-300 mt-2">{capacitySummary}</p>}
+            {capacitySummary && <p className="text-sm text-[var(--text-secondary)] mt-2">{capacitySummary}</p>}
           </MacGlassPanel>
         </div>
       )}

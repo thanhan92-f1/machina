@@ -7,17 +7,17 @@ type AuraTone = 'healthy' | 'warning' | 'failing' | 'migrating' | 'stopped' | 's
 export function machineAuraClass(tone: AuraTone): string {
   switch (tone) {
     case 'healthy':
-      return 'ring-2 ring-emerald-500/30 shadow-[0_0_24px_rgba(16,185,129,0.12)]'
+      return 'ring-1 ring-[color-mix(in_srgb,var(--machina-status-ok)_35%,transparent)]'
     case 'warning':
-      return 'ring-2 ring-amber-500/35 shadow-[0_0_24px_rgba(245,158,11,0.12)]'
+      return 'ring-1 ring-[color-mix(in_srgb,var(--machina-status-warn)_40%,transparent)]'
     case 'failing':
-      return 'ring-2 ring-red-500/40 shadow-[0_0_28px_rgba(239,68,68,0.15)]'
+      return 'ring-1 ring-[color-mix(in_srgb,var(--machina-status-error)_45%,transparent)]'
     case 'migrating':
-      return 'ring-2 ring-sky-500/40 shadow-[0_0_28px_rgba(56,189,248,0.15)] animate-pulse'
+      return 'ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]'
     case 'snapshot':
-      return 'ring-2 ring-violet-500/35 shadow-[0_0_24px_rgba(139,92,246,0.12)]'
+      return 'ring-1 ring-white/15'
     default:
-      return 'ring-1 ring-slate-700/50'
+      return 'ring-1 ring-[var(--apple-hairline)]'
   }
 }
 

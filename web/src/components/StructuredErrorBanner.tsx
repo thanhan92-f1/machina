@@ -24,8 +24,8 @@ export function StructuredErrorBanner({ error }: { error: StructuredPlatformErro
         </div>
       </div>
       {e.remediation && (
-        <p className="text-slate-400 pl-7 text-xs">
-          <span className="text-slate-500">Remediation:</span> {e.remediation}
+        <p className="text-[var(--text-muted)] pl-7 text-xs">
+          <span className="text-[var(--text-muted)]">Remediation:</span> {e.remediation}
         </p>
       )}
     </div>

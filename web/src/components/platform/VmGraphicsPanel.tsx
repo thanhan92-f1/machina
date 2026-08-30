@@ -44,12 +44,12 @@ function GraphicsRow({
   onUpdateListen: () => void
 }) {
   return (
-    <div className="rounded-lg border border-slate-800/80 bg-slate-950/40 p-3 space-y-2" data-testid={`vm-graphics-${kind}`}>
+    <div className="rounded-lg border border-[var(--apple-hairline)]/80 bg-[var(--apple-surface)] p-3 space-y-2" data-testid={`vm-graphics-${kind}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <Monitor className="w-4 h-4 text-slate-400" />
+          <Monitor className="w-4 h-4 text-[var(--text-muted)]" />
           {label}
-          <span className={`text-xs px-2 py-0.5 rounded-full ${present ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-700/50 text-slate-400'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${present ? 'bg-emerald-500/15 text-emerald-300' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'}`}>
             {present ? 'Configured' : 'Not configured'}
           </span>
         </div>
@@ -70,11 +70,11 @@ function GraphicsRow({
         )}
       </div>
       {present && (
-        <p className="text-xs text-slate-500">
-          Listen: <code className="text-slate-300">{listen}</code>
+        <p className="text-xs text-[var(--text-muted)]">
+          Listen: <code className="text-[var(--text-secondary)]">{listen}</code>
         </p>
       )}
-      <label className="block text-xs text-slate-400">
+      <label className="block text-xs text-[var(--text-muted)]">
         Listen address {present ? '(change removes and re-adds)' : ''}
         <select
           className="input w-full mt-1 text-sm"
@@ -154,7 +154,7 @@ export default function VmGraphicsPanel({ vmId, domainXml, disabled, onChanged }
   return (
     <>
       <MacGlassPanel title="Graphics" data-testid="vm-graphics-panel">
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-[var(--text-muted)] mb-3">
           VNC and SPICE console endpoints in domain XML. Add SPICE on VNC-only VMs (e.g. legacy e2e guests) for ConsoleHub performance mode.
         </p>
         <div className="space-y-3">
@@ -186,8 +186,8 @@ export default function VmGraphicsPanel({ vmId, domainXml, disabled, onChanged }
           />
         </div>
         {graphics.spice && (
-          <div className="mt-4 pt-3 border-t border-slate-800">
-            <p className="text-xs text-slate-500 mb-2">Legacy Cockpit shortcut: convert SPICE-only domains to VNC.</p>
+          <div className="mt-4 pt-3 border-t border-[var(--apple-hairline)]">
+            <p className="text-xs text-[var(--text-muted)] mb-2">Legacy Cockpit shortcut: convert SPICE-only domains to VNC.</p>
             <button
               type="button"
               className="btn-secondary text-sm"

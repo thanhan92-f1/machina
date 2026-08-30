@@ -248,6 +248,7 @@ export default function PlatformVirtInstallCreate() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/vms" label="Virtual Machines" />}
@@ -280,22 +281,22 @@ export default function PlatformVirtInstallCreate() {
                 <button
                   key={id}
                   type="button"
-                  className={`text-left rounded-xl border p-4 transition ${installSource === id ? 'border-sky-500/50 bg-sky-500/10' : 'border-white/[0.08] hover:border-white/20'}`}
+                  className={`text-left rounded-xl border p-4 transition ${installSource === id ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10' : 'border-white/[0.08] hover:border-white/20'}`}
                   onClick={() => setInstallSource(id)}
                 >
-                  <p className="text-sm font-medium text-slate-200">{label}</p>
-                  <p className="text-xs text-slate-500 mt-1">{hint}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{hint}</p>
                 </button>
               ))}
             </div>
             {installSource === 'import' && (
-              <p className="mt-4 text-xs text-slate-400">
+              <p className="mt-4 text-xs text-[var(--text-muted)]">
                 Choose the disk path in step 2 (Root disk source → existing path). OS variant above is used for libosinfo metadata.
               </p>
             )}
             {installSource === 'download' && (
               <div className="mt-4 space-y-2">
-                <label className="text-xs text-slate-500 block">OS profile (libosinfo short id)</label>
+                <label className="text-xs text-[var(--text-muted)] block">OS profile (libosinfo short id)</label>
                 <select aria-label="OS profile (libosinfo short id)" className="input w-full text-sm" value={installOs} onChange={(e) => {
                   setInstallOs(e.target.value)
                   const g = guestOptions.find((x) => x.id === e.target.value)
@@ -309,15 +310,15 @@ export default function PlatformVirtInstallCreate() {
             )}
             {installSource === 'url' && (
               <div className="mt-4 space-y-3">
-                <label className="text-xs text-slate-500 block">Install tree URL or path</label>
+                <label className="text-xs text-[var(--text-muted)] block">Install tree URL or path</label>
                 <input aria-label="Install tree URL or path" className="input w-full text-sm" value={locationUrl} onChange={(e) => setLocationUrl(e.target.value)} placeholder="http://mirror.example/os/ or /var/lib/libvirt/images/tree" />
                 <button type="button" className="btn-secondary text-xs" disabled={detectBusy || !locationUrl.trim()} onClick={() => void detectOsFromUrl()}>
                   {detectBusy ? 'Detecting…' : 'Detect OS (osinfo-detect)'}
                 </button>
-                <label className="text-xs text-slate-500 block">Extra kernel args (optional)</label>
+                <label className="text-xs text-[var(--text-muted)] block">Extra kernel args (optional)</label>
                 <input aria-label="Extra kernel args" className="input w-full text-sm font-mono" value={extraArgs} onChange={(e) => setExtraArgs(e.target.value)} placeholder="inst.ks=…" />
                 <div className="rounded-lg border border-white/[0.06] p-3 space-y-2">
-                  <p className="text-xs text-slate-500">RHEL image URL (RHSM offline token)</p>
+                  <p className="text-xs text-[var(--text-muted)]">RHEL image URL (RHSM offline token)</p>
                   <input aria-label="RHEL offline access token" className="input w-full text-sm" value={rhelToken} onChange={(e) => setRhelToken(e.target.value)} placeholder="offline access token" />
                   <button
                     type="button"
@@ -347,17 +348,17 @@ export default function PlatformVirtInstallCreate() {
               </div>
             )}
             {installSource === 'pxe' && (
-              <p className="mt-4 text-xs text-slate-400 flex items-start gap-2">
+              <p className="mt-4 text-xs text-[var(--text-muted)] flex items-start gap-2">
                 <Network className="w-4 h-4 shrink-0 mt-0.5" />
                 Primary NIC uses the network chosen in step 3; PXE NIC uses the PXE network below (defaults to the same).
               </p>
             )}
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-xs text-slate-500">
+              <label className="text-xs text-[var(--text-muted)]">
                 OS variant
                 <input className="input w-full text-sm mt-1" value={osVariant} onChange={(e) => setOsVariant(e.target.value)} placeholder="generic" />
               </label>
-              <label className="text-xs text-slate-500">
+              <label className="text-xs text-[var(--text-muted)]">
                 Firmware
                 <select className="input w-full text-sm mt-1" value={firmware} onChange={(e) => setFirmware(e.target.value as 'bios' | 'uefi')}>
                   <option value="uefi">UEFI</option>
@@ -384,7 +385,7 @@ export default function PlatformVirtInstallCreate() {
                   <button
                     key={id}
                     type="button"
-                    className={`text-left rounded-lg border px-3 py-2 text-sm ${storageMode === id ? 'border-sky-500/50 bg-sky-500/10' : 'border-white/[0.08]'}`}
+                    className={`text-left rounded-lg border px-3 py-2 text-sm ${storageMode === id ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10' : 'border-white/[0.08]'}`}
                     onClick={() => setStorageMode(id)}
                   >
                     {label}
@@ -405,22 +406,22 @@ export default function PlatformVirtInstallCreate() {
               {storageMode === 'backing' && (
                 <input aria-label="Backing store path" className="input w-full text-sm font-mono" value={backingStore} onChange={(e) => setBackingStore(e.target.value)} placeholder="/var/lib/libvirt/images/golden.qcow2" />
               )}
-              <label className="text-xs text-slate-500 block mt-3">Install ISO path (optional)</label>
+              <label className="text-xs text-[var(--text-muted)] block mt-3">Install ISO path (optional)</label>
               <input aria-label="Install ISO path" className="input w-full text-sm font-mono mt-1" value={installIso} onChange={(e) => setInstallIso(e.target.value)} placeholder="/var/lib/libvirt/images/install.iso" />
             </MacGlassPanel>
             <MacGlassPanel title="Unattended / cloud-init (optional)">
-              <label className="text-xs text-slate-500 flex items-center gap-2 mb-3">
+              <label className="text-xs text-[var(--text-muted)] flex items-center gap-2 mb-3">
                 <input type="checkbox" checked={unattendedInstall} onChange={(e) => setUnattendedInstall(e.target.checked)} />
                 Use virt-install --unattended (when supported on hypervisor)
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs text-slate-500">Admin password<input type="password" autoComplete="new-password" className="input w-full text-sm mt-1" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} /></label>
-                <label className="text-xs text-slate-500">User login<input className="input w-full text-sm mt-1" value={userLogin} onChange={(e) => setUserLogin(e.target.value)} /></label>
-                <label className="text-xs text-slate-500">User password<input type="password" autoComplete="new-password" className="input w-full text-sm mt-1" value={userPassword} onChange={(e) => setUserPassword(e.target.value)} /></label>
-                <label className="text-xs text-slate-500">Cloud-init user<input className="input w-full text-sm mt-1" value={cloudInitUser} onChange={(e) => setCloudInitUser(e.target.value)} /></label>
-                <label className="text-xs text-slate-500">Cloud-init password<input type="password" autoComplete="new-password" className="input w-full text-sm mt-1" value={cloudInitPassword} onChange={(e) => setCloudInitPassword(e.target.value)} /></label>
+                <label className="text-xs text-[var(--text-muted)]">Admin password<input type="password" autoComplete="new-password" className="input w-full text-sm mt-1" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} /></label>
+                <label className="text-xs text-[var(--text-muted)]">User login<input className="input w-full text-sm mt-1" value={userLogin} onChange={(e) => setUserLogin(e.target.value)} /></label>
+                <label className="text-xs text-[var(--text-muted)]">User password<input type="password" autoComplete="new-password" className="input w-full text-sm mt-1" value={userPassword} onChange={(e) => setUserPassword(e.target.value)} /></label>
+                <label className="text-xs text-[var(--text-muted)]">Cloud-init user<input className="input w-full text-sm mt-1" value={cloudInitUser} onChange={(e) => setCloudInitUser(e.target.value)} /></label>
+                <label className="text-xs text-[var(--text-muted)]">Cloud-init password<input type="password" autoComplete="new-password" className="input w-full text-sm mt-1" value={cloudInitPassword} onChange={(e) => setCloudInitPassword(e.target.value)} /></label>
               </div>
-              <label className="text-xs text-slate-500 block mt-3">SSH public key</label>
+              <label className="text-xs text-[var(--text-muted)] block mt-3">SSH public key</label>
               <textarea aria-label="SSH public key" className="input w-full text-sm font-mono mt-1 min-h-[4rem]" value={cloudInitSshKey} onChange={(e) => setCloudInitSshKey(e.target.value)} />
             </MacGlassPanel>
             <VmWizardSizeStep state={sizeState} onChange={(patch) => setSizeState((s) => ({ ...s, ...patch }))} />
@@ -429,7 +430,7 @@ export default function PlatformVirtInstallCreate() {
 
         {step === 2 && (
           <MacGlassPanel title="Networking">
-            <label className="text-xs text-slate-500 block mb-1">Primary libvirt network</label>
+            <label className="text-xs text-[var(--text-muted)] block mb-1">Primary libvirt network</label>
             <select aria-label="Primary libvirt network" className="input w-full text-sm mb-4" value={network} onChange={(e) => setNetwork(e.target.value)}>
               {networkOptions.map((n) => (
                 <option key={n.id} value={n.id}>{n.label}</option>
@@ -437,7 +438,7 @@ export default function PlatformVirtInstallCreate() {
             </select>
             {installSource === 'pxe' && (
               <>
-                <label className="text-xs text-slate-500 block mb-1">PXE network</label>
+                <label className="text-xs text-[var(--text-muted)] block mb-1">PXE network</label>
                 <select aria-label="PXE network" className="input w-full text-sm" value={pxeNetwork} onChange={(e) => setPxeNetwork(e.target.value)}>
                   {networkOptions.map((n) => (
                     <option key={n.id} value={n.id}>{n.label}</option>
@@ -450,22 +451,22 @@ export default function PlatformVirtInstallCreate() {
 
         {step === 3 && (
           <MacGlassPanel title="Review">
-            <ul className="text-sm text-slate-300 space-y-2">
-              <li><span className="text-slate-500">Name:</span> {vmName}</li>
-              <li><span className="text-slate-500">Source:</span> {installSource}</li>
-              <li><span className="text-slate-500">Size:</span> {specPreview.cores} vCPU · {specPreview.memory} · {specPreview.disk}</li>
-              <li><span className="text-slate-500">Network:</span> {network}{installSource === 'pxe' ? ` (PXE: ${pxeNetwork})` : ''}</li>
-              <li><span className="text-slate-500">Firmware:</span> {firmware.toUpperCase()}</li>
+            <ul className="text-sm text-[var(--text-secondary)] space-y-2">
+              <li><span className="text-[var(--text-muted)]">Name:</span> {vmName}</li>
+              <li><span className="text-[var(--text-muted)]">Source:</span> {installSource}</li>
+              <li><span className="text-[var(--text-muted)]">Size:</span> {specPreview.cores} vCPU · {specPreview.memory} · {specPreview.disk}</li>
+              <li><span className="text-[var(--text-muted)]">Network:</span> {network}{installSource === 'pxe' ? ` (PXE: ${pxeNetwork})` : ''}</li>
+              <li><span className="text-[var(--text-muted)]">Firmware:</span> {firmware.toUpperCase()}</li>
             </ul>
-            <p className="text-xs text-slate-500 mt-4 flex items-center gap-2">
+            <p className="text-xs text-[var(--text-muted)] mt-4 flex items-center gap-2">
               <Globe className="w-4 h-4" />
               virt-install runs on the assigned hypervisor; monitor progress in Tasks.
             </p>
           </MacGlassPanel>
         )}
       </PlatformStepWizard>
-      <p className="text-xs text-slate-500 mt-4 text-center">
-        Prefer a library ISO? <Link to="/platform/create-iso" className="text-sky-400 hover:underline">Create from ISO</Link>
+      <p className="text-xs text-[var(--text-muted)] mt-4 text-center">
+        Prefer a library ISO? <Link to="/platform/create-iso" className="text-[var(--link)] hover:underline">Create from ISO</Link>
       </p>
     </PlatformPageChrome>
   )

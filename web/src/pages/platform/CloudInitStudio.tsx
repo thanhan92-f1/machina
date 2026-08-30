@@ -40,8 +40,9 @@ export default function CloudInitStudio() {
 
   return (
     <PageLayout compact title="Cloud-Init Studio" subtitle="Edit and validate #cloud-config before deploy">
-      <PlatformPageChrome>
-        <p className="text-sm text-slate-400 mb-4">
+      <PlatformPageChrome
+      eyebrow="Platform">
+        <p className="text-sm text-[var(--text-muted)] mb-4">
           Maps to Machina <code className="text-xs">CloudInitSpec</code> on VM create. Use{' '}
           <Link to="/platform/templates" className={hubLinkClasses()}>Templates</Link> to deploy with this payload.
         </p>
@@ -61,13 +62,13 @@ export default function CloudInitStudio() {
           </button>
         </div>
         {result && (
-          <div className={`mt-4 rounded-xl border p-4 text-sm ${result.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}`}>
+          <div className={`mt-4 rounded-xl border p-4 text-sm ${result.valid ? 'border-[var(--apple-hairline)]' : 'border-amber-500/30'}`}>
             <p className={result.valid ? statusToneClass('ok') : statusToneClass('warn')}>
               {result.valid ? 'Valid cloud-config' : 'Validation issues'}
             </p>
-            {result.preview_hostname && <p className="text-xs text-slate-400 mt-1">Hostname: {result.preview_hostname}</p>}
+            {result.preview_hostname && <p className="text-xs text-[var(--text-muted)] mt-1">Hostname: {result.preview_hostname}</p>}
             {result.issues.length > 0 && (
-              <ul className="mt-2 text-xs text-slate-300 list-disc pl-4">
+              <ul className="mt-2 text-xs text-[var(--text-secondary)] list-disc pl-4">
                 {result.issues.map((i) => <li key={i}>{i}</li>)}
               </ul>
             )}

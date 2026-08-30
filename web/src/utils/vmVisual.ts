@@ -43,15 +43,16 @@ export function vmSemanticKind(state: string | undefined | null): VmSemanticKind
   return 'unknown'
 }
 
+/** iPhone 17–aligned: Sage / Mist Blue / Cosmic Orange — no purple/indigo neon. */
 export const VM_LAUNCHPAD_GRADIENTS: Record<VmSemanticKind, string> = {
-  running: 'from-emerald-500 to-emerald-900',
-  stopped: 'from-gray-500 to-gray-800',
-  paused: 'from-purple-500 to-purple-900',
-  creating: 'from-amber-500 to-amber-900',
-  failed: 'from-red-500 to-red-900',
-  migrating: 'from-blue-500 to-blue-900',
-  suspended: 'from-blue-600 to-indigo-900',
-  unknown: 'from-slate-500 to-slate-800',
+  running: 'from-emerald-600 to-emerald-800',
+  stopped: 'from-stone-400 to-stone-600',
+  paused: 'from-amber-500 to-orange-700',
+  creating: 'from-[hsl(200_85%_52%)] to-[hsl(200_70%_25%)]',
+  failed: 'from-red-500 to-red-800',
+  migrating: 'from-[hsl(200_85%_52%)] to-[hsl(220_70%_30%)]',
+  suspended: 'from-[hsl(200_70%_40%)] to-slate-700',
+  unknown: 'from-stone-400 to-stone-700',
 }
 
 export function vmLaunchpadGradient(state: string | undefined | null): string {

@@ -8,17 +8,13 @@ import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { statusBadgeClasses, statusBorderClass } from '../utils/semanticColors'
 
 interface HeroProps {
-  /** Page title (rendered as gradient headline). */
   title: string
-  /** Single-line subtitle below the title. */
   subtitle?: string
-  /** Optional icon shown next to the title. */
+  eyebrow?: string
   icon?: ReactNode
-  /** Right-side controls (primary actions, filters, etc.). */
   actions?: ReactNode
-  /** Inline children rendered under the badge row (filters, search, etc.). */
   children?: ReactNode
-  /** Hide the default capability/runtime badges (e.g. for compact pages). */
+  /** Hide capability badges (default true for quieter apple.com pages). */
   hideBadges?: boolean
 }
 
@@ -26,7 +22,6 @@ interface BadgeProps {
   on: boolean
   label: string
   icon?: ReactNode
-  /** Tooltip with the resolved value (e.g. "namespace=default"). */
   title?: string
   tone?: 'default' | 'info' | 'warn' | 'error'
 }
@@ -40,11 +35,11 @@ function Badge({ on, label, icon, title, tone = 'default' }: BadgeProps) {
         : tone === 'error'
           ? `${statusBadgeClasses('error')} border ${statusBorderClass('error')}`
           : `${statusBadgeClasses('ok')} border ${statusBorderClass('ok')}`
-  const offCls = 'border-slate-700/60 bg-slate-800/40 text-slate-400'
+  const offCls = 'border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${on ? onCls : offCls}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] ${on ? onCls : offCls}`}
     >
       {icon}
       <span>{label}</span>
@@ -52,31 +47,22 @@ function Badge({ on, label, icon, title, tone = 'default' }: BadgeProps) {
   )
 }
 
-/**
- * Aether-style page hero: gradient title, capability badges from
- * `/system/platform-info` + `/auth/providers`, and a live indicator driven by
- * the daemon SSE bus. Use at the top of any page that wants the shell look.
- */
-export default function Hero({ title, subtitle, icon, actions, children, hideBadges }: HeroProps) {
+/** Page hero — apple.com product header used across classic + Fleet Cloud routes. */
+export default function Hero({ title, subtitle, eyebrow, icon, actions, children, hideBadges = true }: HeroProps) {
   const { info, providers, liveConnected, loading } = usePlatformInfo()
 
   return (
-    <div className="mb-6 rounded-2xl border border-slate-700/40 bg-gradient-to-br from-slate-900/70 via-slate-900/40 to-slate-800/40 p-5 backdrop-blur">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            {icon && <span className="text-sky-300">{icon}</span>}
-            <h1 className="bg-gradient-to-r from-white via-sky-100 to-violet-200 bg-clip-text text-2xl font-semibold tracking-tight text-transparent">
-              {title}
-            </h1>
-          </div>
-          {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
-        </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+    <header className="apple-page-header border-b border-[var(--apple-hairline)] pb-4 mb-1">
+      <div className="min-w-0 flex-1 max-w-3xl">
+        {eyebrow ? <p className="apple-eyebrow">{eyebrow}</p> : null}
+        {icon ? <div className="mb-3 text-[var(--text-muted)]">{icon}</div> : null}
+        <h1 className="page-title">{title}</h1>
+        {subtitle ? <p className="page-lede">{subtitle}</p> : null}
       </div>
+      {actions ? <div className="apple-page-actions">{actions}</div> : null}
 
       {!hideBadges && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="w-full mt-8 flex flex-wrap items-center gap-2">
           {info?.host?.os_pretty_name ? (
             <Badge
               on
@@ -85,12 +71,7 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
               tone="info"
             />
           ) : !loading ? (
-            <Badge
-              on={false}
-              label="Host OS unknown"
-              title="platform-info did not report os_pretty_name"
-              tone="warn"
-            />
+            <Badge on={false} label="Host OS unknown" title="platform-info did not report os_pretty_name" tone="warn" />
           ) : null}
           <Badge
             on={liveConnected}
@@ -143,7 +124,7 @@ export default function Hero({ title, subtitle, icon, actions, children, hideBad
         </div>
       )}
 
-      {children && <div className="mt-4">{children}</div>}
-    </div>
+      {children ? <div className="w-full mt-8">{children}</div> : null}
+    </header>
   )
 }

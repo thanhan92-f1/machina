@@ -14,7 +14,7 @@ export default function WebRTCSpiceViewer({ vmName, libvirtConnection, platformS
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full" data-testid="webrtc-spice-console">
       <div
-        className="rounded-t-lg border border-violet-500/30 bg-violet-950/30 px-3 py-2 text-xs text-violet-100/90 shrink-0"
+        className="rounded-t-lg border border-[var(--apple-hairline)] bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--text-primary)]/90 shrink-0"
         data-testid={enableAudio ? 'spice-audio-banner' : undefined}
       >
         Performance mode — native SPICE over machina WebSocket proxy.

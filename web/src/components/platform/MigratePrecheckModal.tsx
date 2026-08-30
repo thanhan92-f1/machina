@@ -45,14 +45,14 @@ export default function MigratePrecheckModal({ vm, destHostId, destHostName, onC
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div ref={panelRef} className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl" role="dialog" aria-modal="true" aria-label="Migrate precheck" onClick={(e) => e.stopPropagation()}>
-        <div className="p-5 border-b border-slate-800">
+      <div ref={panelRef} className="w-full max-w-lg rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-2xl" role="dialog" aria-modal="true" aria-label="Migrate precheck" onClick={(e) => e.stopPropagation()}>
+        <div className="p-5 border-b border-[var(--apple-hairline)]">
           <h2 className="text-lg font-semibold">Live migrate {vm.name}</h2>
-          <p className="text-sm text-slate-400 mt-1">Target host: {destHostName}</p>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Target host: {destHostName}</p>
         </div>
         <div className="p-5 space-y-3 text-sm">
           {error && <p className={statusToneClass('error')}>{error}</p>}
-          {!precheck && !error && <p className="text-slate-400">Running pre-checks…</p>}
+          {!precheck && !error && <p className="text-[var(--text-muted)]">Running pre-checks…</p>}
           {precheck && (
             <>
               <p className={precheck.ok ? statusToneClass('ok') : statusToneClass('warn')}>
@@ -62,14 +62,14 @@ export default function MigratePrecheckModal({ vm, destHostId, destHostName, onC
                 {precheck.checks.map((c) => (
                   <li key={c.name} className={c.passed ? statusToneClass('ok') : statusToneClass('error')}>
                     {c.name}: {c.message}
-                    {c.remediation && !c.passed && <p className="text-slate-500 mt-0.5">→ {c.remediation}</p>}
+                    {c.remediation && !c.passed && <p className="text-[var(--text-muted)] mt-0.5">→ {c.remediation}</p>}
                   </li>
                 ))}
               </ul>
             </>
           )}
         </div>
-        <div className="p-5 border-t border-slate-800 flex justify-end gap-2">
+        <div className="p-5 border-t border-[var(--apple-hairline)] flex justify-end gap-2">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
           <button type="button" className="btn-primary" disabled={busy || !precheck} onClick={() => void migrate()}>
             {busy ? 'Starting…' : 'Start migration'}

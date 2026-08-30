@@ -35,11 +35,11 @@ export default function VmWindowsReadinessPanel({ report, rdpExposed, rdpHostPor
 
   return (
     <div
-      className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-3 space-y-2"
+      className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] p-3 space-y-2"
       data-testid="vm-windows-readiness-panel"
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-sky-100">Windows readiness</p>
+        <p className="text-xs font-medium text-[var(--text-primary)]">Windows readiness</p>
         <span
           className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${
             ready
@@ -61,8 +61,8 @@ export default function VmWindowsReadinessPanel({ report, rdpExposed, rdpHostPor
               ) : (
                 <CircleAlert className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
               )}
-              <span className="text-slate-300">
-                <span className="text-slate-400">{item.label}:</span> {item.status}
+              <span className="text-[var(--text-secondary)]">
+                <span className="text-[var(--text-muted)]">{item.label}:</span> {item.status}
               </span>
             </li>
           ))}

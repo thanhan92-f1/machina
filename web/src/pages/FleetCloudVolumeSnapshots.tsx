@@ -47,24 +47,25 @@ function FleetCloudVolumeSnapshotsContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-4xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Camera className="w-7 h-7 text-sky-400" />
+        <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+          <Camera className="w-7 h-7 text-[var(--accent)]" />
           Storage volume snapshots
         </h1>
-        <button type="button" onClick={() => void load()} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-sm">
+        <button type="button" onClick={() => void load()} className="btn-secondary text-sm inline-flex items-center gap-1">
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : (
-        <div className="rounded-xl border border-slate-700 overflow-hidden">
-          <table className="w-full text-sm" aria-label="Volume snapshots">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+          <table className="apple-table" aria-label="Volume snapshots">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 <th scope="col" className="px-3 py-2">Volume</th>
@@ -72,18 +73,18 @@ function FleetCloudVolumeSnapshotsContent() {
                 <th scope="col" className="px-3 py-2">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 font-mono text-xs">
+            <tbody className="divide-y divide-[var(--apple-hairline)] font-mono text-xs">
               {snapshots.map((s) => (
                 <tr key={s.id}>
-                  <td className="px-3 py-2 text-slate-200">
-                    <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-sky-300 hover:underline">{s.name || s.id.slice(0, 8)}</Link>
+                  <td className="px-3 py-2 text-[var(--text-primary)]">
+                    <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-[var(--link)] hover:underline">{s.name || s.id.slice(0, 8)}</Link>
                   </td>
                   <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/volumes/${s.volume_id}`} className="text-sky-400 hover:underline">{s.volume_name}</Link>
+                    <Link to={`/fleet-cloud/volumes/${s.volume_id}`} className="text-[var(--accent)] hover:underline">{s.volume_name}</Link>
                   </td>
-                  <td className="px-3 py-2 text-slate-400">{s.status}</td>
+                  <td className="px-3 py-2 text-[var(--text-muted)]">{s.status}</td>
                   <td className="px-3 py-2 flex flex-wrap gap-2">
-                    <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-violet-400 hover:underline">Detail</Link>
+                    <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-[var(--accent)] hover:underline">Detail</Link>
                     <button type="button" className={statusActionLinkClasses('error')} onClick={async () => {
                       if (!confirm(`Delete snapshot ${s.name || s.id}?`)) return
                       try {
@@ -97,7 +98,7 @@ function FleetCloudVolumeSnapshotsContent() {
               ))}
             </tbody>
           </table>
-          {snapshots.length === 0 && <p className="p-6 text-center text-slate-500">No snapshots.</p>}
+          {snapshots.length === 0 && <p className="p-6 text-center text-[var(--text-muted)]">No snapshots.</p>}
         </div>
       )}
       <FleetCloudFooter />

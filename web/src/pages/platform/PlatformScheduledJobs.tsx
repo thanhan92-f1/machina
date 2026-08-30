@@ -86,12 +86,13 @@ export default function PlatformScheduledJobs() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Scheduled jobs"
       subtitle="Recurring controller operations (whitelisted) — e.g. periodic host inventory refresh."
-      icon={<CalendarClock className="w-6 h-6 text-slate-400" />}
+      icon={<CalendarClock className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       loading={loading && rows.length === 0}
       contentClassName="space-y-4"
@@ -116,7 +117,7 @@ export default function PlatformScheduledJobs() {
           <button type="button" className="btn-primary text-sm mt-3 flex items-center gap-1.5" disabled={saving || !name.trim()} onClick={() => void add()}>
             <Plus className="w-4 h-4" /> {saving ? 'Saving…' : 'Add job'}
           </button>
-          <p className="text-xs text-slate-500 mt-2">Only whitelisted operations may be scheduled.</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">Only whitelisted operations may be scheduled.</p>
         </MacGlassPanel>
 
         <MacGlassPanel title="Active jobs" subtitle={loading ? 'Loading…' : `${rows.length} job(s)`}>

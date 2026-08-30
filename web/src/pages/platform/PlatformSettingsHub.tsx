@@ -45,9 +45,9 @@ function BrowserSessionInfo() {
   const max = session.max_sessions_per_user ?? 0
   const concurrent = max === 0
   return (
-    <p className="text-xs text-slate-500 pb-2">
-      Browser sessions for <span className="text-slate-300">{session.username}</span>:{' '}
-      <span className="text-slate-200">{session.active_sessions_for_user}</span>
+    <p className="text-xs text-[var(--text-muted)] pb-2">
+      Browser sessions for <span className="text-[var(--text-secondary)]">{session.username}</span>:{' '}
+      <span className="text-[var(--text-primary)]">{session.active_sessions_for_user}</span>
       {concurrent ? ' (concurrent logins allowed)' : ` / ${max} max per user`}
     </p>
   )
@@ -125,7 +125,7 @@ const SECTIONS: Array<{ id: SettingsSection; label: string; icon: React.ReactNod
   { id: 'console', label: 'Console', icon: <Terminal className="w-4 h-4" />, fullPath: '/platform/events' },
   { id: 'resources', label: 'Infrastructure', icon: <HardDrive className="w-4 h-4" />, fullPath: '/platform/infrastructure' },
   { id: 'updates', label: 'Updates', icon: <RefreshCw className="w-4 h-4" /> },
-  { id: 'integrations', label: 'Apps & Integrations', icon: <Plug className="w-4 h-4" />, fullPath: '/platform/integrations' },
+  { id: 'integrations', label: 'Apps & Integrations', icon: <Plug className="w-4 h-4" />, fullPath: '/platform/settings?section=integrations' },
   { id: 'support', label: 'Support', icon: <LifeBuoy className="w-4 h-4" />, fullPath: '/platform/support' },
   { id: 'about', label: 'About', icon: <Info className="w-4 h-4" /> },
 ]
@@ -263,9 +263,10 @@ export default function PlatformSettingsHub() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="Settings"
       subtitle="Cluster, security, integrations, and platform preferences"
-      icon={<Settings className="w-6 h-6 text-slate-400" />}
+      icon={<Settings className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-0"
     >
     <MacSettingsPane
@@ -280,8 +281,8 @@ export default function PlatformSettingsHub() {
           <PlatformSettings embedded />
           <MacSettingsGroup title="Classic daemon automation">
             <MacSettingsGroupBody>
-              <p className="text-xs text-slate-400 leading-relaxed">Single-host alerts and API tokens from the libvirt daemon — mirror of Settings → Automation in classic UI.</p>
-              <p className="text-sm text-slate-200">{daemonAlerts} active alert(s) · {daemonTokens} API token(s)</p>
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">Single-host alerts and API tokens from the libvirt daemon — mirror of Settings → Automation in classic UI.</p>
+              <p className="text-sm text-[var(--text-primary)]">{daemonAlerts} active alert(s) · {daemonTokens} API token(s)</p>
               <Link to="/settings?tab=automation" className={`text-sm inline-block ${hubLinkClasses()}`}>Open classic automation →</Link>
             </MacSettingsGroupBody>
           </MacSettingsGroup>
@@ -320,35 +321,35 @@ export default function PlatformSettingsHub() {
               onChange={(v) => void toggleAdminMfa(v)}
             />
             <MacSettingsGroupBody className="pt-0">
-              <p className="text-xs text-slate-400">Audit logging is always enabled for platform operations.</p>
+              <p className="text-xs text-[var(--text-muted)]">Audit logging is always enabled for platform operations.</p>
             </MacSettingsGroupBody>
           </MacSettingsGroup>
 
           {enterprise && (
             <MacSettingsGroup title="Keychain">
-              <p className="text-xs text-slate-500 mb-2">Fleet secrets inventory — vault, MFA, API keys, air-gap bundles.</p>
+              <p className="text-xs text-[var(--text-muted)] mb-2">Fleet secrets inventory — vault, MFA, API keys, air-gap bundles.</p>
               <Link to="/platform/enterprise?tab=keychain" className={`text-sm ${hubLinkClasses()}`}>Open Keychain →</Link>
             </MacSettingsGroup>
           )}
 
           {enterprise && (
             <MacSettingsGroup title="Enterprise security">
-              <p className="text-xs text-slate-500 mb-2">{enterprise.summary}</p>
+              <p className="text-xs text-[var(--text-muted)] mb-2">{enterprise.summary}</p>
               <div className="grid gap-3 sm:grid-cols-3 text-sm mb-3">
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Vault</p>
-                  <p className="text-lg font-semibold text-slate-100">{enterprise.vault_connected}/{enterprise.vault_providers}</p>
-                  <p className="text-[10px] text-slate-500">connected</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Vault</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{enterprise.vault_connected}/{enterprise.vault_providers}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">connected</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">MFA roles</p>
-                  <p className="text-lg font-semibold text-slate-100">{enterprise.mfa_required_roles}/{enterprise.mfa_policies}</p>
-                  <p className="text-[10px] text-slate-500">required</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">MFA roles</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{enterprise.mfa_required_roles}/{enterprise.mfa_policies}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">required</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Air-gap</p>
-                  <p className="text-lg font-semibold text-slate-100">{enterprise.air_gap_bundles}</p>
-                  <p className="text-[10px] text-slate-500">bundles</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Air-gap</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{enterprise.air_gap_bundles}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">bundles</p>
                 </div>
               </div>
             </MacSettingsGroup>
@@ -356,7 +357,7 @@ export default function PlatformSettingsHub() {
 
           <MacSettingsGroup title="Vault providers">
             {vaultProviders.length === 0 ? (
-              <p className="text-sm text-slate-500">No vault providers — run migration 029.</p>
+              <p className="text-sm text-[var(--text-muted)]">No vault providers — run migration 029.</p>
             ) : (
               <div className="space-y-2">
                 {vaultProviders.map((v) => (
@@ -371,7 +372,7 @@ export default function PlatformSettingsHub() {
           </MacSettingsGroup>
 
           <MacSettingsGroup title="Air-gap bundles">
-            <p className="text-xs text-slate-500 mb-2">Simulated sovereign export manifests — no live bundle runner.</p>
+            <p className="text-xs text-[var(--text-muted)] mb-2">Simulated sovereign export manifests — no live bundle runner.</p>
             <div className="flex gap-2 mb-3">
               <input
                 aria-label="Air-gap bundle name"
@@ -396,24 +397,24 @@ export default function PlatformSettingsHub() {
             {selectedBundle && (
               <JsonInspector data={selectedBundle.manifest_json} className="mt-2">
                 <dl className="grid gap-2 sm:grid-cols-2 text-sm">
-                  <div className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2">
-                    <dt className="text-xs text-slate-500">Bundle</dt>
-                    <dd className="text-slate-200 mt-0.5">{selectedBundle.name}</dd>
+                  <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+                    <dt className="text-xs text-[var(--text-muted)]">Bundle</dt>
+                    <dd className="text-[var(--text-primary)] mt-0.5">{selectedBundle.name}</dd>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2">
-                    <dt className="text-xs text-slate-500">Size</dt>
-                    <dd className="text-slate-200 mt-0.5">{Math.round(selectedBundle.size_bytes / 1024)} KB</dd>
+                  <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+                    <dt className="text-xs text-[var(--text-muted)]">Size</dt>
+                    <dd className="text-[var(--text-primary)] mt-0.5">{Math.round(selectedBundle.size_bytes / 1024)} KB</dd>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2 sm:col-span-2">
-                    <dt className="text-xs text-slate-500">Checksum</dt>
-                    <dd className="text-slate-200 mt-0.5 font-mono text-xs break-all">{selectedBundle.checksum}</dd>
+                  <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 sm:col-span-2">
+                    <dt className="text-xs text-[var(--text-muted)]">Checksum</dt>
+                    <dd className="text-[var(--text-primary)] mt-0.5 font-mono text-xs break-all">{selectedBundle.checksum}</dd>
                   </div>
                   {asArray(asRecord(selectedBundle.manifest_json)?.artifacts).slice(0, 6).map((item, i) => {
                     const row = asRecord(item)
                     return (
-                      <div key={String(row?.path ?? row?.name ?? i)} className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2 sm:col-span-2">
-                        <dt className="text-xs text-slate-500">Artifact</dt>
-                        <dd className="text-slate-200 mt-0.5 text-xs">{String(row?.path ?? row?.name ?? JSON.stringify(item))}</dd>
+                      <div key={String(row?.path ?? row?.name ?? i)} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 sm:col-span-2">
+                        <dt className="text-xs text-[var(--text-muted)]">Artifact</dt>
+                        <dd className="text-[var(--text-primary)] mt-0.5 text-xs">{String(row?.path ?? row?.name ?? JSON.stringify(item))}</dd>
                       </div>
                     )
                   })}
@@ -424,7 +425,7 @@ export default function PlatformSettingsHub() {
 
           <MacSettingsGroup title="Policy rules">
             {policyRules.length === 0 ? (
-              <p className="text-sm text-slate-500">No rules — <Link to="/platform/policy" className={hubLinkClasses()}>open Policy & Quotas</Link></p>
+              <p className="text-sm text-[var(--text-muted)]">No rules — <Link to="/platform/policy" className={hubLinkClasses()}>open Policy & Quotas</Link></p>
             ) : (
               policyRules.slice(0, 5).map((r) => (
                 <MacListRow key={r.id} title={r.name} subtitle={r.enabled ? 'Enabled' : 'Disabled'} />
@@ -440,7 +441,7 @@ export default function PlatformSettingsHub() {
                 href="/platform/zeus/security/firewall"
               />
             ) : (
-              <p className="text-sm text-slate-500">Firewall overview unavailable — agent may be offline.</p>
+              <p className="text-sm text-[var(--text-muted)]">Firewall overview unavailable — agent may be offline.</p>
             )}
             {firewallOverview && firewallOverview.critical_count > 0 && (
               <p className={`text-xs px-1 mt-2 ${statusToneClass('warn')}`}>
@@ -450,7 +451,7 @@ export default function PlatformSettingsHub() {
           </MacSettingsGroup>
 
           <MacSettingsGroup title="Policy Generator">
-            <p className="text-xs text-slate-500 mb-2">Export cluster policy rules and quotas as YAML.</p>
+            <p className="text-xs text-[var(--text-muted)] mb-2">Export cluster policy rules and quotas as YAML.</p>
             <button type="button" className="btn-secondary text-xs" onClick={async () => {
               try {
                 const r = await getAiPolicyExport()
@@ -469,22 +470,22 @@ export default function PlatformSettingsHub() {
         <div className="space-y-6">
           {fleetNetwork && (
             <>
-              <p className="text-sm text-slate-400">{fleetNetwork.summary}</p>
+              <p className="text-sm text-[var(--text-muted)]">{fleetNetwork.summary}</p>
               <div className="grid gap-3 sm:grid-cols-4 text-sm">
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Networks</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Networks</p>
                   <p className="text-lg font-semibold">{fleetNetwork.network_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Segments</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Segments</p>
                   <p className="text-lg font-semibold">{fleetNetwork.segment_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">IPAM pools</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">IPAM pools</p>
                   <p className="text-lg font-semibold">{fleetNetwork.ipam_pool_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Deny east-west</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Deny east-west</p>
                   <p className={`text-lg font-semibold ${statusToneClass('warn')}`}>{fleetNetwork.deny_east_west_count}</p>
                 </div>
               </div>
@@ -492,21 +493,21 @@ export default function PlatformSettingsHub() {
           )}
 
           <MacSettingsGroup title="Network Lens">
-            <p className="text-sm text-slate-400 mb-2">macOS-style reachability explain — why can&apos;t VM A reach VM B?</p>
+            <p className="text-sm text-[var(--text-muted)] mb-2">macOS-style reachability explain — why can&apos;t VM A reach VM B?</p>
             <Link to="/platform/networks?tab=lens" className={`text-sm block ${hubLinkClasses()}`}>Open Network Lens →</Link>
             <Link to="/platform/topology" className={`text-sm block mt-1 ${hubLinkClasses()}`}>Topology & digital twin →</Link>
           </MacSettingsGroup>
 
           <MacSettingsGroup title="Overlay segments">
             {(fleetNetwork?.segments ?? []).length === 0 ? (
-              <p className="text-sm text-slate-500">No overlay segments yet.</p>
+              <p className="text-sm text-[var(--text-muted)]">No overlay segments yet.</p>
             ) : (
               fleetNetwork!.segments.slice(0, 8).map((s) => (
                 <MacListRow
                   key={s.id}
                   title={s.name}
                   subtitle={`${s.cidr} · ${s.vm_count} VM(s) · east-west ${s.east_west_default}`}
-                  badge={<span className="text-[10px] text-violet-300">{s.micro_seg_grade}</span>}
+                  badge={<span className="text-[10px] text-[var(--link)]">{s.micro_seg_grade}</span>}
                   href={`/platform/networks?tab=segments`}
                 />
               ))
@@ -525,21 +526,21 @@ export default function PlatformSettingsHub() {
           <MacSettingsGroup title="Firewall">
             {firewallOverview && (
               <div className="grid gap-3 sm:grid-cols-3 text-sm mb-3">
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Targets</p>
-                  <p className="text-lg font-semibold text-slate-100">{firewallOverview.targets.length}</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Targets</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{firewallOverview.targets.length}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Critical</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Critical</p>
                   <p className={`text-lg font-semibold ${statusToneClass('error')}`}>{firewallOverview.critical_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3">
-                  <p className="text-[10px] uppercase text-slate-500">Warnings</p>
+                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                  <p className="text-[10px] uppercase text-[var(--text-muted)]">Warnings</p>
                   <p className={`text-lg font-semibold ${statusToneClass('warn')}`}>{firewallOverview.warning_count}</p>
                 </div>
               </div>
             )}
-            <label className="block text-sm text-slate-400 mb-2">
+            <label className="block text-sm text-[var(--text-muted)] mb-2">
               Risky profile change approval SLA (hours)
               <input
                 type="number"
@@ -563,15 +564,15 @@ export default function PlatformSettingsHub() {
 
       {section === 'updates' && (
         <MacSettingsGroup title="Updates">
-          <p className="text-sm text-slate-400">Controller upgrade matrix and rollout planning.</p>
+          <p className="text-sm text-[var(--text-muted)]">Controller upgrade matrix and rollout planning.</p>
           <Link to="/platform/upgrade" className={`text-sm inline-block mt-2 ${hubLinkClasses()}`}>Open upgrade matrix →</Link>
         </MacSettingsGroup>
       )}
 
       {section === 'about' && (
         <MacSettingsGroup title="About Zyvor Platform">
-          <p className="text-sm text-slate-400">Virtual datacenter control plane — KVM engine, macOS-inspired UX.</p>
-          <p className="text-xs text-slate-500 mt-2">UX batches 49–56 · Zeus Firewall macOS Security pane (AI-372–391)</p>
+          <p className="text-sm text-[var(--text-muted)]">Virtual datacenter control plane — KVM engine, macOS-inspired UX.</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">UX batches 49–56 · Zeus Firewall macOS Security pane (AI-372–391)</p>
           <Link to="/platform/support" className={`text-sm inline-block mt-3 ${hubLinkClasses()}`}>Support & diagnostics →</Link>
         </MacSettingsGroup>
       )}
@@ -640,7 +641,6 @@ export default function PlatformSettingsHub() {
 
       {section === 'integrations' && (
         <div>
-          <SettingsWorkspaceLink to="/platform/integrations" label="Open full Integrations hub" />
           <PlatformIntegrations embedded />
         </div>
       )}

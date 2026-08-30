@@ -14,13 +14,13 @@ export function MetricList({ items }: { items: MetricItem[] }) {
       {items.map((item) =>
         item.span ? (
           <div key={item.label} className="flex flex-col gap-0.5 py-1.5">
-            <dt className="text-slate-500">{item.label}</dt>
-            <dd className="text-slate-100 min-w-0">{item.value}</dd>
+            <dt className="text-[var(--text-muted)]">{item.label}</dt>
+            <dd className="text-[var(--text-primary)] min-w-0">{item.value}</dd>
           </div>
         ) : (
           <div key={item.label} className="flex items-center justify-between gap-3 py-1.5">
-            <dt className="text-slate-500 shrink-0">{item.label}</dt>
-            <dd className="text-slate-100 text-right min-w-0 truncate">{item.value}</dd>
+            <dt className="text-[var(--text-muted)] shrink-0">{item.label}</dt>
+            <dd className="text-[var(--text-primary)] text-right min-w-0 truncate">{item.value}</dd>
           </div>
         )
       )}
@@ -54,23 +54,23 @@ export function DetailPanel({
   if (empty) {
     return (
       <aside
-        className={`machine-finder-command-center xl:w-[30rem] shrink-0 rounded-xl border border-white/[0.06] bg-slate-950/50 flex items-center justify-center p-4 ${className}`}
+        className={`machine-finder-command-center xl:w-[30rem] shrink-0 rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] flex items-center justify-center p-4 ${className}`}
         data-testid={testId}
       >
-        <p className="text-sm text-slate-500">{emptyMessage ?? 'Nothing selected'}</p>
+        <p className="text-sm text-[var(--text-muted)]">{emptyMessage ?? 'Nothing selected'}</p>
       </aside>
     )
   }
 
   return (
     <aside
-      className={`machine-finder-command-center w-full xl:w-[30rem] shrink-0 flex flex-col rounded-xl border border-white/[0.06] bg-slate-950/50 ${className}`}
+      className={`machine-finder-command-center w-full xl:w-[30rem] shrink-0 flex flex-col rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] ${className}`}
       data-testid={testId}
     >
       <header className="px-4 py-3 border-b border-white/[0.06] shrink-0 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          {title && <h2 className="font-semibold text-white text-sm truncate">{title}</h2>}
-          {subtitle && <p className="text-xs text-slate-500 truncate mt-0.5">{subtitle}</p>}
+          {title && <h2 className="font-semibold text-[var(--text-primary)] text-sm truncate">{title}</h2>}
+          {subtitle && <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{subtitle}</p>}
         </div>
         {statusBadge && <div className="shrink-0">{statusBadge}</div>}
       </header>

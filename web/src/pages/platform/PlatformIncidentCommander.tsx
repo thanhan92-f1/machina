@@ -110,6 +110,7 @@ export default function PlatformIncidentCommander() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="Incident Commander"
       subtitle="Correlated war room for infrastructure outages"
       icon={<Siren className="w-6 h-6" />}
@@ -142,21 +143,21 @@ export default function PlatformIncidentCommander() {
           </div>
         }
       >
-        {rcaLoading && !fleetRca && <p className="text-sm text-slate-500">Analyzing fleet signals…</p>}
+        {rcaLoading && !fleetRca && <p className="text-sm text-[var(--text-muted)]">Analyzing fleet signals…</p>}
         {fleetRca && (
           <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-sm -mt-1">
             <p className="font-medium text-orange-200 flex items-center gap-2">
               <Sparkles className="w-4 h-4" /> Root cause ({Math.round(fleetRca.confidence * 100)}% confidence)
             </p>
-            <p className="text-slate-300 mt-1">{fleetRca.root_cause}</p>
+            <p className="text-[var(--text-secondary)] mt-1">{fleetRca.root_cause}</p>
             {(fleetRca.evidence ?? []).slice(0, 4).map((ev) => (
-              <p key={ev} className="text-xs text-slate-500 mt-1">Evidence: {ev}</p>
+              <p key={ev} className="text-xs text-[var(--text-muted)] mt-1">Evidence: {ev}</p>
             ))}
             {(fleetRca.suggested_actions ?? []).slice(0, 3).map((a) => (
               <p key={a} className={`text-xs mt-1 ${hubLinkClasses()}`}>→ {a}</p>
             ))}
             {(fleetRca.contributing_factors ?? []).length > 0 && (
-              <ul className="mt-2 text-xs text-slate-500 list-disc pl-4">
+              <ul className="mt-2 text-xs text-[var(--text-muted)] list-disc pl-4">
                 {(fleetRca.contributing_factors ?? []).slice(0, 4).map((f) => (
                   <li key={f}>{f}</li>
                 ))}
@@ -175,31 +176,31 @@ export default function PlatformIncidentCommander() {
             {incidents.map((inc) => (
               <li key={inc.id} className="rounded-lg border border-white/10 p-3">
                 <button type="button" className="text-left w-full" onClick={() => void openRoom(inc.id)}>
-                  <p className="font-medium text-slate-200">{inc.title}</p>
-                  <p className="text-xs text-slate-500">{inc.severity} · {inc.status}</p>
-                  <p className="text-xs text-slate-400 mt-1">{inc.summary}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{inc.title}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{inc.severity} · {inc.status}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{inc.summary}</p>
                 </button>
                 <button type="button" className={`text-xs mt-2 ${hubLinkClasses()}`} onClick={() => void acknowledge(inc.id)}>Acknowledge</button>
               </li>
             ))}
-            {incidents.length === 0 && <p className="text-slate-500">No active incidents.</p>}
+            {incidents.length === 0 && <p className="text-[var(--text-muted)]">No active incidents.</p>}
           </ul>
         </MacGlassPanel>
 
         {room && selected && (
           <MacGlassPanel title="War room">
-            <p className="text-sm text-slate-300">{room.incident.root_cause ?? room.incident.summary}</p>
-            <p className="text-xs text-slate-500 mt-2">{room.correlated_count} correlated signals · {room.pending_approvals} pending approvals</p>
+            <p className="text-sm text-[var(--text-secondary)]">{room.incident.root_cause ?? room.incident.summary}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-2">{room.correlated_count} correlated signals · {room.pending_approvals} pending approvals</p>
             <Link to="/platform/zyra/approvals" className={`text-xs mt-2 inline-block ${hubLinkClasses()}`}>Open Zyra approvals →</Link>
             <div className="mt-4 space-y-2 max-h-48 overflow-y-auto text-xs font-mono">
               {room.timeline.slice(0, 10).map((e, i) => (
-                <div key={`${e.at}-${i}`} className="text-slate-400">[{e.source}] {e.message}</div>
+                <div key={`${e.at}-${i}`} className="text-[var(--text-muted)]">[{e.source}] {e.message}</div>
               ))}
             </div>
             {room.runbook_steps.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs font-medium text-slate-400 mb-1">Runbook</p>
-                <ol className="text-xs text-slate-500 list-decimal list-inside space-y-1">
+                <p className="text-xs font-medium text-[var(--text-muted)] mb-1">Runbook</p>
+                <ol className="text-xs text-[var(--text-muted)] list-decimal list-inside space-y-1">
                   {room.runbook_steps.slice(0, 5).map((s) => <li key={s}>{s}</li>)}
                 </ol>
                 <div className="flex flex-wrap gap-2 mt-3">

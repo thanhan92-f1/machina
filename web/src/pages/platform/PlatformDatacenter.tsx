@@ -97,8 +97,9 @@ export default function PlatformDatacenter() {
 
   return (
     <PageLayout compact title="Datacenter" subtitle="Multi-hypervisor inventory (honest scope)">
-      <PlatformPageChrome loading={loading && hosts.length === 0 && vms.length === 0} error={error} onErrorRetry={reload}>
-        <p className="text-sm text-slate-400 mb-4">
+      <PlatformPageChrome
+      eyebrow="Platform" loading={loading && hosts.length === 0 && vms.length === 0} error={error} onErrorRetry={reload}>
+        <p className="text-sm text-[var(--text-muted)] mb-4">
           libvirt/KVM is the system of record. VMware and KubeVirt appear as import/workload planes — not full parity with every vSphere feature.
         </p>
         <div className="flex flex-wrap gap-2 mb-4">
@@ -116,11 +117,11 @@ export default function PlatformDatacenter() {
           </button>
         </div>
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-slate-300 mb-2">Hosts ({hosts.length})</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Hosts ({hosts.length})</h3>
           <ul className="flex flex-wrap gap-2 text-xs">
             {hosts.map((h) => (
               <li key={h.id}>
-                <Link to={`/platform/hosts/${h.id}`} className={`px-2 py-1 rounded-lg border border-slate-700 ${hubLinkClasses()}`}>
+                <Link to={`/platform/hosts/${h.id}`} className={`px-2 py-1 rounded-lg border border-[var(--apple-hairline)] ${hubLinkClasses()}`}>
                   {h.hostname} · {h.state}
                 </Link>
               </li>
@@ -129,20 +130,20 @@ export default function PlatformDatacenter() {
         </div>
         {bySource.map(([src, list]) => (
           <section key={src} className="mb-6">
-            <h3 className="text-sm font-semibold text-slate-200 mb-2">
-              {SOURCE_LABELS[src] ?? src} <span className="text-slate-500">({list.length})</span>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
+              {SOURCE_LABELS[src] ?? src} <span className="text-[var(--text-muted)]">({list.length})</span>
             </h3>
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
               {list.map((v) => (
-                <li key={v.id} className="rounded-lg border border-slate-800/80 px-3 py-2">
+                <li key={v.id} className="rounded-lg border border-[var(--apple-hairline)]/80 px-3 py-2">
                   <Link to={`/platform/vms/${v.id}`} className={hubLinkClasses()}>{v.name}</Link>
-                  <span className="text-xs text-slate-500 block">{v.observed_state}{v.guest_ip ? ` · ${v.guest_ip}` : ''}</span>
+                  <span className="text-xs text-[var(--text-muted)] block">{v.observed_state}{v.guest_ip ? ` · ${v.guest_ip}` : ''}</span>
                 </li>
               ))}
             </ul>
           </section>
         ))}
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           VMware import: <Link to="/platform/migration" className={hubLinkClasses()}>Migration Assistant</Link>
         </p>
       </PlatformPageChrome>

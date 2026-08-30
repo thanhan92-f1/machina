@@ -69,7 +69,7 @@ export const DASHBOARD_ZONE_DEFS: DashboardZoneDef[] = [
       { id: 'users', to: '/platform/users', label: 'Users', minTier: 'power' },
       { id: 'projects', to: '/platform/projects', label: 'Projects', minTier: 'power' },
       { id: 'policies', to: '/platform/policy', label: 'Policies', minTier: 'power' },
-      { id: 'integrations', to: '/platform/integrations', label: 'Integrations' },
+      { id: 'integrations', to: '/platform/settings?section=integrations', label: 'Integrations' },
     ],
   },
 ]

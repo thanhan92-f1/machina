@@ -71,8 +71,8 @@ function FleetCloudVolumeDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <p className="text-slate-400">Volume not found.</p>
-        <Link to="/fleet-cloud/volumes" className="text-sky-400 hover:underline">Back</Link>
+        <p className="text-[var(--text-muted)]">Volume not found.</p>
+        <Link to="/fleet-cloud/volumes" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -80,27 +80,28 @@ function FleetCloudVolumeDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/volumes" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/volumes" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Volumes
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Disc className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Disc className="w-7 h-7 text-[var(--accent)]" />
         {vol.name}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{vol.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Size</dt><dd className="text-slate-200 mt-1">{vol.size_gib} GiB</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="text-slate-200 mt-1">{vol.status}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Class</dt><dd className="text-slate-200 mt-1">{vol.volume_class}{vol.atlas_backed ? ' (Atlas)' : ''}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Attached</dt><dd className="mt-1 font-mono text-xs">
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono text-[var(--text-primary)] mt-1 break-all">{vol.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Size</dt><dd className="text-[var(--text-primary)] mt-1">{vol.size_gib} GiB</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="text-[var(--text-primary)] mt-1">{vol.status}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Class</dt><dd className="text-[var(--text-primary)] mt-1">{vol.volume_class}{vol.atlas_backed ? ' (Atlas)' : ''}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Attached</dt><dd className="mt-1 font-mono text-xs">
           {vol.attached_vm_id ? (
-            <Link to={`/fleet-cloud/instances/${vol.attached_vm_id}`} className="text-sky-400 hover:underline">{vol.attached_vm_id}</Link>
+            <Link to={`/fleet-cloud/instances/${vol.attached_vm_id}`} className="text-[var(--accent)] hover:underline">{vol.attached_vm_id}</Link>
           ) : '—'}
         </dd></div>
-        {vol.attached_device && <div><dt className="text-xs text-slate-500 uppercase">Device</dt><dd className="font-mono text-slate-200 mt-1">{vol.attached_device}</dd></div>}
+        {vol.attached_device && <div><dt className="text-xs text-[var(--text-muted)] uppercase">Device</dt><dd className="font-mono text-[var(--text-primary)] mt-1">{vol.attached_device}</dd></div>}
       </dl>
       <div className="flex flex-wrap gap-2">
         {vol.attached_vm_id && (
@@ -113,7 +114,7 @@ function FleetCloudVolumeDetailContent() {
               } catch (e: unknown) { toast.error(formatUserError(e)) }
             }}>Detach</button>
         )}
-        <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm"
+        <button type="button" className="btn-secondary text-sm"
           onClick={async () => {
             const n = prompt('New size (GiB)', String(vol.size_gib + 1))
             if (!n) return
@@ -139,10 +140,10 @@ function FleetCloudVolumeDetailContent() {
           }}>Delete</button>
       </div>
 
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-slate-300">Snapshots</h2>
-          <button type="button" className="text-xs text-sky-400 hover:underline"
+          <h2 className="text-sm font-medium text-[var(--text-secondary)]">Snapshots</h2>
+          <button type="button" className="text-xs text-[var(--accent)] hover:underline"
             onClick={async () => {
               const n = prompt('Snapshot name', `${vol.name}-snap`)
               if (!n) return
@@ -154,13 +155,13 @@ function FleetCloudVolumeDetailContent() {
             }}>+ Snapshot</button>
         </div>
         {snapshots.length === 0 ? (
-          <p className="text-sm text-slate-500">No snapshots.</p>
+          <p className="text-sm text-[var(--text-muted)]">No snapshots.</p>
         ) : (
           <ul className="text-sm font-mono space-y-1">
             {snapshots.map((s) => (
               <li key={s.id} className="flex items-center gap-2">
                 <span>{s.name}</span>
-                <span className="text-slate-500 text-xs">{s.status}</span>
+                <span className="text-[var(--text-muted)] text-xs">{s.status}</span>
                 <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
                   onClick={async () => {
                     if (!confirm(`Delete snapshot ${s.name}?`)) return

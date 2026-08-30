@@ -49,7 +49,7 @@ export default function ClassicVmSpiceToVncButton({
       <button
         type="button"
         title="virt-xml --convert-to-vnc (requires virt-xml on host; may change live graphics)"
-        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition flex items-center gap-1 text-slate-300"
+        className="px-3 py-1.5 bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded-lg text-sm transition flex items-center gap-1 text-[var(--text-secondary)]"
         onClick={() => setConfirm(true)}
         data-testid="classic-spice-to-vnc"
       >

@@ -233,12 +233,13 @@ export default function PlatformContent() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/infrastructure" label="Infrastructure" />}
       title="Content Library"
       subtitle="ISO grid with approval inbox — upload golden images for templates."
-      icon={<Disc className="w-6 h-6 text-slate-400" />}
+      icon={<Disc className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           {pending.length > 0 && (
@@ -259,11 +260,11 @@ export default function PlatformContent() {
           <h2 className={`text-sm font-semibold mb-3 ${statusToneClass('warn')}`}>Approval queue ({pending.length})</h2>
           <div className="space-y-2">
             {pending.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-4 py-3">
                 <div>
                   <p className="font-medium">{r.name}</p>
-                  <p className="text-xs text-slate-500 font-mono truncate max-w-md">{r.path}</p>
-                  {r.submitted_by && <p className="text-[10px] text-slate-600 mt-1">Submitted by {r.submitted_by}</p>}
+                  <p className="text-xs text-[var(--text-muted)] font-mono truncate max-w-md">{r.path}</p>
+                  {r.submitted_by && <p className="text-[10px] text-[var(--text-faint)] mt-1">Submitted by {r.submitted_by}</p>}
                 </div>
                 <div className="flex gap-2">
                   <button type="button" className="btn-primary text-xs flex items-center gap-1" onClick={() => void approve(r.id)}>
@@ -301,7 +302,7 @@ export default function PlatformContent() {
             key={c}
             type="button"
             onClick={() => setCategory(c)}
-            className={`px-3 py-1.5 rounded-full text-xs ${category === c ? 'bg-slate-700 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}
+            className={`px-3 py-1.5 rounded-full text-xs ${category === c ? 'bg-[var(--surface-hover)] text-[var(--text-primary)]' : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-[var(--apple-hairline)]'}`}
           >
             {c}
           </button>
@@ -313,7 +314,7 @@ export default function PlatformContent() {
           const badge = lifecycleBadge(r.status)
           const BadgeIcon = badge.icon
           return (
-            <article key={r.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-slate-900/50 p-5">
+            <article key={r.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-5">
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradientForName(r.name)} flex items-center justify-center`}>
                   <Disc className="w-5 h-5 text-white" />
@@ -325,12 +326,12 @@ export default function PlatformContent() {
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 {r.kind.toUpperCase()} · {r.category ?? guessCategory(r.name)}
               </p>
-              {r.description && <p className="text-xs text-slate-400 mt-2">{r.description}</p>}
-              <p className="text-xs font-mono text-slate-600 mt-2 truncate">{r.path}</p>
-              <p className="text-[10px] text-slate-600 mt-3">
+              {r.description && <p className="text-xs text-[var(--text-muted)] mt-2">{r.description}</p>}
+              <p className="text-xs font-mono text-[var(--text-faint)] mt-2 truncate">{r.path}</p>
+              <p className="text-[10px] text-[var(--text-faint)] mt-3">
                 {r.status === 'available'
                   ? 'Approved — safe for production VM creation.'
                   : r.status === 'pending'
@@ -385,12 +386,12 @@ export default function PlatformContent() {
                 type="file"
                 accept=".iso,application/x-cd-image"
                 aria-label="ISO file"
-                className="w-full rounded-xl border border-white/10 bg-slate-950/50 p-2 text-sm text-slate-300 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-sky-500/20 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-300 hover:file:bg-sky-500/30 disabled:opacity-50"
+                className="w-full rounded-xl border border-white/10 bg-[var(--apple-surface)]/50 p-2 text-sm text-[var(--text-secondary)] file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--accent)]/20 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[var(--link)] hover:file:bg-[var(--accent)]/30 disabled:opacity-50"
                 disabled={uploading}
                 onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
               />
               {uploadFile && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[var(--text-muted)]">
                   {uploadFile.name} — {(uploadFile.size / (1024 * 1024 * 1024)).toFixed(2)} GiB
                 </p>
               )}
@@ -398,9 +399,9 @@ export default function PlatformContent() {
               {uploading && (
                 <div className="space-y-1">
                   <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full bg-sky-500 transition-all" style={{ width: `${uploadPct}%` }} />
+                    <div className="h-full bg-[var(--accent)] transition-all" style={{ width: `${uploadPct}%` }} />
                   </div>
-                  <p className="text-xs text-slate-400">Uploading… {uploadPct}% — keep this tab open.</p>
+                  <p className="text-xs text-[var(--text-muted)]">Uploading… {uploadPct}% — keep this tab open.</p>
                 </div>
               )}
               <div className="flex gap-2">
@@ -428,7 +429,7 @@ export default function PlatformContent() {
                 value={downloadUrl}
                 onChange={(e) => setDownloadUrl(e.target.value)}
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--text-muted)]">
                 The hypervisor fetches this directly — far faster than uploading from your laptop, and it keeps
                 running if you close this tab. Several downloads can run at once.
               </p>
@@ -438,7 +439,7 @@ export default function PlatformContent() {
 
               {downloadJobs.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-white/[0.06]">
-                  <p className="text-xs text-slate-400">Downloads</p>
+                  <p className="text-xs text-[var(--text-muted)]">Downloads</p>
                   {downloadJobs.slice(0, 6).map((j) => {
                     const pct = j.bytes_total && j.bytes_total > 0
                       ? Math.min(100, Math.round(((j.bytes_done ?? 0) / j.bytes_total) * 100))
@@ -446,11 +447,11 @@ export default function PlatformContent() {
                     return (
                       <div key={j.id} className="space-y-1">
                         <div className="flex items-center justify-between gap-2 text-xs">
-                          <span className="truncate text-slate-300">{j.title.replace('Download ISO: ', '')}</span>
+                          <span className="truncate text-[var(--text-secondary)]">{j.title.replace('Download ISO: ', '')}</span>
                           <span className={
                             j.status === 'failed' ? 'text-red-300'
                               : j.status === 'completed' ? 'text-emerald-300'
-                                : 'text-slate-400'
+                                : 'text-[var(--text-muted)]'
                           }>
                             {j.status === 'running'
                               ? (pct !== null ? `${pct}%` : `${Math.round((j.bytes_done ?? 0) / (1024 * 1024))} MB`)
@@ -459,7 +460,7 @@ export default function PlatformContent() {
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
                           <div
-                            className={`h-full transition-all ${j.status === 'failed' ? 'bg-red-500' : j.status === 'completed' ? 'bg-emerald-500' : 'bg-sky-500'} ${pct === null && j.status === 'running' ? 'animate-pulse' : ''}`}
+                            className={`h-full transition-all ${j.status === 'failed' ? 'bg-red-500' : j.status === 'completed' ? 'bg-emerald-500' : 'bg-[var(--accent)]'} ${pct === null && j.status === 'running' ? 'animate-pulse' : ''}`}
                             style={{ width: j.status === 'completed' ? '100%' : `${pct ?? 100}%` }}
                           />
                         </div>

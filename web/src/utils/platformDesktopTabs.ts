@@ -19,7 +19,6 @@ export function platformDesktopTabGroup(pathname: string): string {
   if (path.startsWith('/platform/hosts/finder')) return '/platform/vms'
   if (path.startsWith('/platform/hosts')) return '/platform/hosts'
   if (path.startsWith('/platform/settings')) return '/platform/settings'
-  if (path.startsWith('/platform/integrations')) return '/platform/integrations'
   if (path.startsWith('/platform/applications')) return '/platform/applications'
   if (path.startsWith('/platform/zeus/security')) return '/platform/zeus/security'
   if (path.startsWith('/platform/zyra')) return '/platform/zyra'

@@ -189,7 +189,7 @@ export default function CinemaControlStrip({
       data-testid="cinema-control-strip"
       data-idle={idle ? 'true' : 'false'}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/10 bg-black/70 backdrop-blur-md shadow-xl">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/10 bg-black/70 backdrop-blur-md">
         {/* Power */}
         <div className="relative" ref={powerRef}>
           <button type="button" className={`${btn} ${readOnly ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={readOnly} onClick={() => !readOnly && setPowerOpen((v) => !v)} title={readOnly ? 'Read-only session' : 'Power'}>
@@ -348,7 +348,7 @@ export default function CinemaControlStrip({
 
         {/* Hardware (libvirt + KubeVirt) */}
         {onOpenHardware ? (
-          <button type="button" className={`${btn} border-emerald-500/30 text-emerald-100`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
+          <button type="button" className={`${btn} border-[var(--apple-hairline)] text-emerald-100`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
             <Cpu className="w-3.5 h-3.5" /> Hardware
           </button>
         ) : null}
@@ -374,7 +374,7 @@ export default function CinemaControlStrip({
 
         {/* AI */}
         {onOpenAi ? (
-          <button type="button" className={`${btn} border-violet-500/40 text-violet-200`} onClick={onOpenAi}>
+          <button type="button" className={`${btn} border-[var(--accent)]/40 text-[var(--link)]`} onClick={onOpenAi}>
             <Sparkles className="w-3.5 h-3.5" />
           </button>
         ) : null}
@@ -392,7 +392,7 @@ export default function CinemaControlStrip({
                 </button>
               ) : null}
               {onShareView && !readOnly ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-sky-200 hover:bg-white/10 rounded" disabled={shareBusy} data-testid="cinema-share-view" onClick={() => { onShareView(); setMoreOpen(false) }}>
+                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--link)] hover:bg-white/10 rounded" disabled={shareBusy} data-testid="cinema-share-view" onClick={() => { onShareView(); setMoreOpen(false) }}>
                   Share view
                 </button>
               ) : null}
@@ -411,7 +411,7 @@ export default function CinemaControlStrip({
                 </>
               ) : null}
               {spiceDisplay && onToggleSpiceAudio ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-violet-200 hover:bg-white/10 rounded" data-testid="cinema-spice-audio-toggle" onClick={() => { onToggleSpiceAudio(); setMoreOpen(false) }}>
+                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--link)] hover:bg-white/10 rounded" data-testid="cinema-spice-audio-toggle" onClick={() => { onToggleSpiceAudio(); setMoreOpen(false) }}>
                   {spiceAudioEnabled ? 'Disable SPICE audio' : 'Enable SPICE audio'}
                 </button>
               ) : null}

@@ -29,22 +29,22 @@ function sloTone(status: string): 'ok' | 'warn' | 'error' {
 function SloRow({ slo }: { slo: SloStatusItem }) {
   const pct = Math.min(100, Math.max(0, slo.current_pct))
   return (
-    <li className="rounded-xl border border-white/[0.06] bg-slate-900/50 p-4">
+    <li className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <div>
-          <p className="font-medium text-slate-200">{slo.name}</p>
-          <p className="text-xs text-slate-500">{slo.target}</p>
+          <p className="font-medium text-[var(--text-primary)]">{slo.name}</p>
+          <p className="text-xs text-[var(--text-muted)]">{slo.target}</p>
         </div>
         <span className={`text-xs px-2 py-0.5 rounded ${statusBadgeClasses(sloTone(slo.status))}`}>{slo.status}</span>
       </div>
-      <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+      <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1">
         <span>{pct.toFixed(2)}%</span>
-        <span className="text-slate-600">/</span>
+        <span className="text-[var(--text-faint)]">/</span>
         <span>{slo.objective_pct ?? 100}% objective</span>
-        <span className="text-slate-600">·</span>
+        <span className="text-[var(--text-faint)]">·</span>
         <span>burn {(slo.burn_rate ?? 0).toFixed(3)}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div
           role="progressbar"
           aria-label="SLO achievement"
@@ -55,7 +55,7 @@ function SloRow({ slo }: { slo: SloStatusItem }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-xs text-slate-500 mt-2">{slo.description}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-2">{slo.description}</p>
     </li>
   )
 }
@@ -90,19 +90,20 @@ export default function PlatformObservability() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       loading={loading && !overview && !error}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Observability"
       subtitle="SLO dashboards and API trace inventory."
-      icon={<Gauge className="w-6 h-6 text-slate-400" />}
+      icon={<Gauge className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       {overview && (
         <OperatingSurfaceLayout testId="platform-observability-page">
-          <p className="text-sm text-slate-400">{overview.summary}</p>
+          <p className="text-sm text-[var(--text-muted)]">{overview.summary}</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <MacStatWidget label="SLO policies" value={String((overview.slos ?? []).length)} icon={<Gauge className="w-4 h-4" />} />
             <MacStatWidget label="Traces (1h)" value={String(overview.trace_count_1h)} icon={<Activity className="w-4 h-4" />} />
@@ -141,7 +142,7 @@ export default function PlatformObservability() {
               <MacGlassPanel title="Recent API traces">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left" aria-label="Recent API traces">
-                    <thead className="text-xs text-slate-500 border-b border-slate-700">
+                    <thead className="text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                       <tr>
                         <th scope="col" className="py-2 pr-4">Time</th>
                         <th scope="col" className="py-2 pr-4">Method</th>
@@ -152,14 +153,14 @@ export default function PlatformObservability() {
                     </thead>
                     <tbody>
                       {traces.map((t) => (
-                        <tr key={t.id} className="border-b border-slate-800/60">
-                          <td className="py-2 pr-4 text-slate-500 text-xs whitespace-nowrap">{t.recorded_at}</td>
-                          <td className="py-2 pr-4 text-slate-300 font-mono text-xs">{t.method}</td>
-                          <td className="py-2 pr-4 text-slate-400 font-mono text-xs max-w-md truncate">{t.path}</td>
+                        <tr key={t.id} className="border-b border-[var(--apple-hairline)]/60">
+                          <td className="py-2 pr-4 text-[var(--text-muted)] text-xs whitespace-nowrap">{t.recorded_at}</td>
+                          <td className="py-2 pr-4 text-[var(--text-secondary)] font-mono text-xs">{t.method}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] font-mono text-xs max-w-md truncate">{t.path}</td>
                           <td className={`py-2 pr-4 text-xs ${statusToneClass(httpStatusTone(t.status_code))}`}>
                             {t.status_code}
                           </td>
-                          <td className="py-2 text-slate-400 text-xs">{t.duration_ms} ms</td>
+                          <td className="py-2 text-[var(--text-muted)] text-xs">{t.duration_ms} ms</td>
                         </tr>
                       ))}
                     </tbody>
@@ -171,7 +172,7 @@ export default function PlatformObservability() {
 
           {lens === 'metrics' && (
             <MacGlassPanel title="Fleet Prometheus" subtitle="Scrape aggregate metrics from the controller">
-              <p className="text-sm text-slate-400 mb-2">Text exposition format — suitable for Prometheus or Grafana data source.</p>
+              <p className="text-sm text-[var(--text-muted)] mb-2">Text exposition format — suitable for Prometheus or Grafana data source.</p>
               <div className="flex flex-wrap gap-3">
                 <a href={fleetPrometheusAggregateUrl()} className={`text-sm ${hubLinkClasses()}`} target="_blank" rel="noreferrer">
                   Fleet aggregate →

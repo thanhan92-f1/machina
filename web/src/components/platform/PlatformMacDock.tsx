@@ -90,7 +90,7 @@ export default function PlatformMacDock() {
       aria-label="Platform dock"
     >
       {(cpuPct != null || memPct != null) && (
-        <div className="mac-dock-stats hidden lg:flex items-center gap-2 text-[10px] text-slate-400 mr-2 pointer-events-none">
+        <div className="mac-dock-stats hidden lg:flex items-center gap-2 text-[10px] text-[var(--text-muted)] mr-2 pointer-events-none">
           <span>CPU {cpuPct ?? '—'}%</span>
           <span>·</span>
           <span>MEM {memPct ?? '—'}%</span>

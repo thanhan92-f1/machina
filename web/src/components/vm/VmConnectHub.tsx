@@ -178,8 +178,8 @@ export default function VmConnectHub({
       <div className="vm-connect-hub p-4 space-y-4 animate-fade-in" data-testid="vm-daily-access">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-slate-100 tracking-tight">Connect</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Cinema, SSH, NAT, and laptop commands in one place</p>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] tracking-tight">Connect</h3>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">Cinema, SSH, NAT, and laptop commands in one place</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {ip && (
@@ -206,26 +206,26 @@ export default function VmConnectHub({
         </div>
 
         {guestAccess?.guest_ip_private && (
-          <div className="rounded-xl border border-sky-500/25 bg-sky-950/25 px-3 py-3 space-y-2" data-testid="vm-laptop-access-checklist">
+          <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-3 py-3 space-y-2" data-testid="vm-laptop-access-checklist">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-sky-200/80">Laptop path</p>
-              <span className="text-[10px] font-medium text-sky-200/70">{laptopProgress}%</span>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--link)]/80">Laptop path</p>
+              <span className="text-[10px] font-medium text-[var(--link)]/70">{laptopProgress}%</span>
             </div>
             <div className="vm-laptop-progress" aria-hidden>
               <div className="vm-laptop-progress-bar" style={{ width: `${laptopProgress}%` }} />
             </div>
             <ul className="space-y-0.5 text-xs">
               <li className={`vm-laptop-step ${running ? 'vm-laptop-step--done' : ''}`}>
-                {running ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
-                <span className="vm-laptop-step-label text-slate-400">VM running</span>
+                {running ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-[var(--text-muted)]" />}
+                <span className="vm-laptop-step-label text-[var(--text-muted)]">VM running</span>
               </li>
               <li className={`vm-laptop-step ${ip ? 'vm-laptop-step--done' : ''}`}>
-                {ip ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
-                <span className="vm-laptop-step-label text-slate-400">{ip || 'Guest IP'}</span>
+                {ip ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-[var(--text-muted)]" />}
+                <span className="vm-laptop-step-label text-[var(--text-muted)]">{ip || 'Guest IP'}</span>
               </li>
               <li className={`vm-laptop-step ${sshExposed ? 'vm-laptop-step--done' : ''}`}>
-                {sshExposed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
-                <span className="vm-laptop-step-label text-slate-400">{sshExposed ? 'SSH exposed' : 'Expose SSH'}</span>
+                {sshExposed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Circle className="w-3.5 h-3.5 text-[var(--text-muted)]" />}
+                <span className="vm-laptop-step-label text-[var(--text-muted)]">{sshExposed ? 'SSH exposed' : 'Expose SSH'}</span>
               </li>
             </ul>
           </div>
@@ -277,10 +277,10 @@ export default function VmConnectHub({
 
         <div className="grid gap-4 md:grid-cols-2">
           <section className="space-y-2 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500">Guest ports</p>
-            {guestPortsLoading && <p className="text-xs text-slate-500">Loading…</p>}
+            <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Guest ports</p>
+            {guestPortsLoading && <p className="text-xs text-[var(--text-muted)]">Loading…</p>}
             {!guestPortsLoading && running && topPorts.length === 0 && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--text-muted)]">
                 {guestPorts && !guestPorts.agent_reachable ? 'Install guest tools for port list.' : 'No listening ports reported.'}
               </p>
             )}
@@ -291,7 +291,7 @@ export default function VmConnectHub({
                   const href = laptopHttpHref(p.port, hypervisorAddress, portForwardRules, ip)
                   return (
                     <li key={`${p.protocol}-${p.port}`} className="flex flex-wrap items-center gap-1">
-                      <span className="text-slate-300">{p.port}/{p.protocol}</span>
+                      <span className="text-[var(--text-secondary)]">{p.port}/{p.protocol}</span>
                       {exposed ? (
                         <span className="text-emerald-400/80">{exposed.host_port}→{p.port}</span>
                       ) : platformVmId ? (
@@ -306,7 +306,7 @@ export default function VmConnectHub({
                         </button>
                       ) : null}
                       {href ? (
-                        <a href={href} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline inline-flex items-center gap-0.5">
+                        <a href={href} target="_blank" rel="noreferrer" className="text-[var(--link)] hover:underline inline-flex items-center gap-0.5">
                           open <ExternalLink className="w-2.5 h-2.5" />
                         </a>
                       ) : null}
@@ -317,7 +317,7 @@ export default function VmConnectHub({
             )}
             <div className="flex flex-wrap gap-2">
               {onRefreshPorts && (
-                <button type="button" className="text-xs text-slate-400 hover:text-slate-200" onClick={onRefreshPorts}>
+                <button type="button" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]" onClick={onRefreshPorts}>
                   Refresh
                 </button>
               )}
@@ -332,7 +332,7 @@ export default function VmConnectHub({
           {platformVmId && (
             <section className="space-y-2 min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[10px] uppercase tracking-wider text-slate-500">Hypervisor NAT</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Hypervisor NAT</p>
                 {!natExpanded && onOpenAccessTab && (
                   <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={onOpenAccessTab}>
                     Access tab →
@@ -350,7 +350,7 @@ export default function VmConnectHub({
                   onNotify={notify}
                 />
               ) : (
-                <div className="rounded-lg border border-slate-800/80 p-3 text-xs text-slate-400 space-y-2 bg-slate-950/40">
+                <div className="rounded-lg border border-[var(--apple-hairline)]/80 p-3 text-xs text-[var(--text-muted)] space-y-2 bg-[var(--apple-surface)]">
                   <p>{natRuleCount > 0 ? `${natRuleCount} NAT rule(s) active` : 'No NAT rules on this hypervisor yet.'}</p>
                   <button type="button" className="btn-secondary text-xs" onClick={() => setNatOpen(true)}>
                     Show expose panel
@@ -363,7 +363,7 @@ export default function VmConnectHub({
 
         {showExport && (
           <section className="space-y-2 border-t border-white/5 pt-3">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500">Export</p>
+            <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Export</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"

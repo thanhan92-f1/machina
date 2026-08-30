@@ -12,11 +12,11 @@ type Props = {
 function UsageBar({ label, pct, detail, testId }: { label: string; pct: number; detail: string; testId: string }) {
   return (
     <div className="space-y-1" data-testid={`vm-usage-${testId}`}>
-      <div className="flex justify-between text-xs text-slate-400">
+      <div className="flex justify-between text-xs text-[var(--text-muted)]">
         <span>{label}</span>
         <span>{detail}</span>
       </div>
-      <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+      <div className="h-2 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div
           role="progressbar"
           aria-label={label}

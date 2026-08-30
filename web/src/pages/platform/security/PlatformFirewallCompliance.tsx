@@ -96,7 +96,7 @@ export default function PlatformFirewallCompliance() {
       }
       title="Firewall Compliance"
       subtitle="Production exposure, approvals, Packetwolf anomalies, and GitOps policy sync"
-      icon={<CheckCircle2 className="w-6 h-6 text-slate-400" />}
+      icon={<CheckCircle2 className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh">
           <RefreshCw className="w-4 h-4" />
@@ -113,16 +113,16 @@ export default function PlatformFirewallCompliance() {
         </button>
       }>
         {approvalsLoading ? (
-          <p className="text-sm text-slate-400">Loading…</p>
+          <p className="text-sm text-[var(--text-muted)]">Loading…</p>
         ) : approvals.length === 0 ? (
-          <p className="text-sm text-slate-400">No pending firewall change approvals.</p>
+          <p className="text-sm text-[var(--text-muted)]">No pending firewall change approvals.</p>
         ) : (
           <ul className="space-y-3">
             {approvals.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 border border-slate-700/60 rounded-lg p-3">
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--apple-hairline)] rounded-lg p-3">
                 <div>
-                  <p className="text-sm text-slate-200">{a.profile ?? 'custom'} on host {a.target_id.slice(0, 8)}…</p>
-                  <p className="text-xs text-slate-500">Requested by {a.requested_by} · {a.created_at}</p>
+                  <p className="text-sm text-[var(--text-primary)]">{a.profile ?? 'custom'} on host {a.target_id.slice(0, 8)}…</p>
+                  <p className="text-xs text-[var(--text-muted)]">Requested by {a.requested_by} · {a.created_at}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -137,7 +137,7 @@ export default function PlatformFirewallCompliance() {
                   </button>
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-200"
+                    className="text-xs px-2 py-1 rounded bg-[var(--surface-hover)] text-[var(--text-primary)]"
                     onClick={() => void rejectFirewallChange(a.id).then(() => {
                       toast.success('Firewall change rejected')
                       return loadApprovals()
@@ -157,17 +157,17 @@ export default function PlatformFirewallCompliance() {
         </button>
       }>
         {packetwolfLoading ? (
-          <p className="text-sm text-slate-400">Loading…</p>
+          <p className="text-sm text-[var(--text-muted)]">Loading…</p>
         ) : packetwolf ? (
           <JsonInspector data={packetwolf} emptyMessage="No Packetwolf data.">
             {asRecord(packetwolf) && <PacketwolfAnomalySummary data={asRecord(packetwolf)!} />}
           </JsonInspector>
         ) : (
-          <p className="text-sm text-slate-400">No Packetwolf anomaly feed — enable Zeus Firewall deep inspection.</p>
+          <p className="text-sm text-[var(--text-muted)]">No Packetwolf anomaly feed — enable Zeus Firewall deep inspection.</p>
         )}
       </MacGlassPanel>
       <MacGlassPanel title="Global temporary rule">
-        <p className="text-sm text-slate-400 mb-3">
+        <p className="text-sm text-[var(--text-muted)] mb-3">
           Records a fleet-wide time-boxed allow request for audit purposes only — this does{' '}
           <strong>not</strong> change any host firewall. No rule is actually opened and nothing
           auto-expires; treat this as a paper trail, not a live access grant.
@@ -207,7 +207,7 @@ export default function PlatformFirewallCompliance() {
             key={r}
             type="button"
             onClick={() => setKind(r)}
-            className={`text-xs px-3 py-1.5 rounded-lg ${kind === r ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+            className={`text-xs px-3 py-1.5 rounded-full ${kind === r ? 'bg-[var(--accent)] text-white' : 'bg-white/10 text-[var(--text-secondary)]'}`}
           >
             {r}
           </button>

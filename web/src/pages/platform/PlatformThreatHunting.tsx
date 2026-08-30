@@ -25,7 +25,7 @@ import { hubLinkClasses, riskTone, statusToneClass } from '../../utils/semanticC
 function LlmBadge({ powered }: { powered?: boolean }) {
   if (!powered) return null
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-violet-300/90">
+    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-[var(--link)]/90">
       <Sparkles className="w-3 h-3" aria-hidden /> AI
     </span>
   )
@@ -158,12 +158,13 @@ export default function PlatformThreatHunting() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>← Security Center</Link>}
       title="Threat hunting"
       subtitle="Search · timeline · graph · evidence · AI summary"
-      icon={<Search className="w-6 h-6 text-slate-400" />}
+      icon={<Search className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentLoading={loading && timeline.length === 0 && huntQueries.length === 0}
       contentClassName="space-y-4"
@@ -199,12 +200,12 @@ export default function PlatformThreatHunting() {
       >
         {huntSummary ? (
           <div className="space-y-2">
-            <p className="text-sm text-slate-300 flex items-start gap-2">
+            <p className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
               <LlmBadge powered={huntSummary.llm} />
               <span>{huntSummary.summary}</span>
             </p>
             {huntSummary.actions.length > 0 && (
-              <ul className="text-xs text-slate-500 list-disc pl-5 space-y-1">
+              <ul className="text-xs text-[var(--text-muted)] list-disc pl-5 space-y-1">
                 {huntSummary.actions.map((a) => (
                   <li key={a}>{a}</li>
                 ))}
@@ -212,7 +213,7 @@ export default function PlatformThreatHunting() {
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Generate an operator summary from current correlations and timeline.</p>
+          <p className="text-sm text-[var(--text-muted)]">Generate an operator summary from current correlations and timeline.</p>
         )}
       </MacGlassPanel>
 
@@ -252,7 +253,7 @@ export default function PlatformThreatHunting() {
             />
             {query && (
               <button type="button" aria-label="Clear query" onClick={() => setQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -277,7 +278,7 @@ export default function PlatformThreatHunting() {
           </button>
         </div>
         {searchMeta && (
-          <p className="text-xs text-slate-500 mt-2 flex items-center gap-2">
+          <p className="text-xs text-[var(--text-muted)] mt-2 flex items-center gap-2">
             <LlmBadge powered={searchMeta.llm} />
             <span>
               {searchMeta.query.startsWith('reverse') || huntQueries.some((q) => q.name === searchMeta.query)
@@ -292,7 +293,7 @@ export default function PlatformThreatHunting() {
         {searchHits.length > 0 && (
           <ul className="mt-2 space-y-1">
             {searchHits.map((h) => (
-              <li key={`${h.host_id}-${h.summary}`} className="text-sm text-slate-300 flex flex-wrap items-center gap-2 justify-between">
+              <li key={`${h.host_id}-${h.summary}`} className="text-sm text-[var(--text-secondary)] flex flex-wrap items-center gap-2 justify-between">
                 <span>{h.summary}</span>
                 <EbpfActionMenu
                   hostId={h.host_id}
@@ -311,7 +312,7 @@ export default function PlatformThreatHunting() {
 
       {correlations.length > 0 && (
         <MacGlassPanel title="Threat correlations" subtitle="Rule engine findings">
-          <ul className="text-sm text-slate-300 space-y-2">
+          <ul className="text-sm text-[var(--text-secondary)] space-y-2">
             {correlations.map((c) => {
               const enforce = correlationKindToEnforce(String(c.kind ?? ''))
               return (
@@ -342,7 +343,7 @@ export default function PlatformThreatHunting() {
           subtitle={attackSummary ?? 'Timeline slice'}
           action={<LlmBadge powered={attackLlm} />}
         >
-          <ol className="list-decimal pl-5 text-sm text-slate-300 space-y-1">
+          <ol className="list-decimal pl-5 text-sm text-[var(--text-secondary)] space-y-1">
             {attackChain.map((s) => (
               <li key={s}>{s}</li>
             ))}

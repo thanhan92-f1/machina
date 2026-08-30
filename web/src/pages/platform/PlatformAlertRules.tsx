@@ -87,12 +87,13 @@ export default function PlatformAlertRules() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Alert rules"
       subtitle="Threshold alerts on VM CPU / memory — fire notifications when a metric crosses a bound."
-      icon={<Gauge className="w-6 h-6 text-slate-400" />}
+      icon={<Gauge className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       loading={loading && rows.length === 0}
       contentClassName="space-y-4"

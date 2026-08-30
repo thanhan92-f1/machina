@@ -136,22 +136,23 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       error={error}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Enterprise Security'}
       subtitle={embedded ? undefined : 'Secrets inventory and link-out — vault, MFA, API keys, air-gap bundles (no live secret export).'}
-      icon={embedded ? undefined : <Lock className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Lock className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       {actionError && <ErrorBanner message={actionError} />}
       {(keychain?.summary || overview?.summary) && activeTab !== 'keychain' && (
-        <p className="text-sm text-slate-400">{overview?.summary}</p>
+        <p className="text-sm text-[var(--text-muted)]">{overview?.summary}</p>
       )}
       {activeTab === 'keychain' && keychain && (
-        <p className="text-sm text-slate-400">{keychain.summary}</p>
+        <p className="text-sm text-[var(--text-muted)]">{keychain.summary}</p>
       )}
       {activeTab === 'keychain' && keychain && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -173,9 +174,9 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
       {activeTab === 'keychain' && (
         <MacGlassPanel title="Secrets inventory" subtitle="Metadata only — manage credentials in linked panes.">
           {!keychain ? (
-            <p className="text-sm text-slate-400 py-6 text-center">Loading keychain inventory…</p>
+            <p className="text-sm text-[var(--text-muted)] py-6 text-center">Loading keychain inventory…</p>
           ) : keychain.entries.length === 0 ? (
-            <p className="text-sm text-slate-400">No credentials registered — add vault providers or API keys in Settings.</p>
+            <p className="text-sm text-[var(--text-muted)]">No credentials registered — add vault providers or API keys in Settings.</p>
           ) : (
             <div className="divide-y divide-white/[0.04] -mx-1">
               {keychain.entries.map((e) => (
@@ -185,7 +186,7 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
                   subtitle={e.summary}
                   href={entryHref(e.kind)}
                   badge={
-                    <span className="text-[10px] uppercase px-2 py-0.5 rounded border border-white/[0.08] text-slate-400">
+                    <span className="text-[10px] uppercase px-2 py-0.5 rounded border border-white/[0.08] text-[var(--text-muted)]">
                       {KIND_LABELS[e.kind] ?? e.kind}
                     </span>
                   }
@@ -195,7 +196,7 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
                         ? statusToneClass('ok')
                         : e.status === 'disconnected'
                           ? statusToneClass('warn')
-                          : 'text-slate-500'
+                          : 'text-[var(--text-muted)]'
                     }`}>
                       {e.status}
                     </span>
@@ -239,10 +240,10 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
           </div>
           <ul className="space-y-2">
             {vaults.map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 border border-slate-700/60 rounded-lg p-3">
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--apple-hairline)] rounded-lg p-3">
                 <div>
-                  <p className="text-sm text-slate-200">{v.name}</p>
-                  <p className="text-xs text-slate-500">{v.provider_type} · {v.status}{v.last_sync_at ? ` · synced ${v.last_sync_at}` : ''}</p>
+                  <p className="text-sm text-[var(--text-primary)]">{v.name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{v.provider_type} · {v.status}{v.last_sync_at ? ` · synced ${v.last_sync_at}` : ''}</p>
                 </div>
                 <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={() => void syncOne(v.id)}>Sync</button>
               </li>
@@ -253,12 +254,12 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
 
       {activeTab === 'mfa' && mfa && (
         <MacGlassPanel title="MFA compliance">
-          <p className="text-sm text-slate-400 mb-3">{mfa.summary}</p>
+          <p className="text-sm text-[var(--text-muted)] mb-3">{mfa.summary}</p>
           {(mfa.users ?? []).length === 0 ? (
-            <p className="text-sm text-slate-500">No roles require MFA yet — enable in Settings → Security.</p>
+            <p className="text-sm text-[var(--text-muted)]">No roles require MFA yet — enable in Settings → Security.</p>
           ) : (
             <table className="w-full text-sm text-left" aria-label="MFA-required users">
-              <thead className="text-xs text-slate-500 border-b border-slate-700">
+              <thead className="text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                 <tr>
                   <th scope="col" className="py-2 pr-4">User</th>
                   <th scope="col" className="py-2 pr-4">Role</th>
@@ -268,10 +269,10 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
               </thead>
               <tbody>
                 {(mfa.users ?? []).map((u) => (
-                  <tr key={u.username} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">{u.username}</td>
-                    <td className="py-2 pr-4 text-slate-400">{u.role}</td>
-                    <td className="py-2 pr-4 text-slate-400">{u.required_method}</td>
+                  <tr key={u.username} className="border-b border-[var(--apple-hairline)]/60">
+                    <td className="py-2 pr-4 text-[var(--text-primary)]">{u.username}</td>
+                    <td className="py-2 pr-4 text-[var(--text-muted)]">{u.role}</td>
+                    <td className="py-2 pr-4 text-[var(--text-muted)]">{u.required_method}</td>
                     <td className={`py-2 text-xs ${statusToneClass(u.compliant ? 'ok' : 'warn')}`}>
                       {u.compliant ? 'compliant' : 'needs enrollment'}
                     </td>
@@ -285,15 +286,15 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
 
       {activeTab === 'fips' && fips && (
         <MacGlassPanel title="FIPS crypto matrix">
-          <p className="text-sm text-slate-400 mb-2">{fips.summary}</p>
-          <p className="text-xs text-slate-500 mb-4">Runtime: {fips.openssl_version}</p>
+          <p className="text-sm text-[var(--text-muted)] mb-2">{fips.summary}</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">Runtime: {fips.openssl_version}</p>
           <ul className="space-y-3">
             {fips.profiles.map((p) => (
-              <li key={p.id} className="rounded-lg border border-slate-700/60 p-3">
-                <p className="text-sm font-medium text-slate-200">{p.name}</p>
-                <p className="text-xs text-slate-500 mt-1">TLS {p.tls_min_version} · FIPS {p.fips_mode}</p>
-                <p className="text-xs text-slate-500">{p.cipher_suites}</p>
-                <p className="text-xs text-slate-600 mt-1">{p.notes}</p>
+              <li key={p.id} className="rounded-lg border border-[var(--apple-hairline)] p-3">
+                <p className="text-sm font-medium text-[var(--text-primary)]">{p.name}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">TLS {p.tls_min_version} · FIPS {p.fips_mode}</p>
+                <p className="text-xs text-[var(--text-muted)]">{p.cipher_suites}</p>
+                <p className="text-xs text-[var(--text-faint)] mt-1">{p.notes}</p>
               </li>
             ))}
           </ul>
@@ -302,7 +303,7 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
 
       {activeTab === 'tenants' && tenants && (
         <MacGlassPanel title="Workspace isolation">
-          <p className="text-sm text-slate-400 mb-3">{tenants.summary}</p>
+          <p className="text-sm text-[var(--text-muted)] mb-3">{tenants.summary}</p>
           <div className="grid gap-2 sm:grid-cols-4 mb-4 pb-4 border-b border-white/[0.04]">
             <input className="input text-sm" aria-label="Project" value={policyProject} onChange={(e) => setPolicyProject(e.target.value)} placeholder="Project" />
             <input className="input text-sm" type="number" min={1} aria-label="Max VMs" value={policyMaxVms} onChange={(e) => setPolicyMaxVms(e.target.value)} placeholder="Max VMs" />
@@ -333,7 +334,7 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
             </button>
           </div>
           <table className="w-full text-sm text-left" aria-label="Tenant isolation policies">
-            <thead className="text-xs text-slate-500 border-b border-slate-700">
+            <thead className="text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
               <tr>
                 <th scope="col" className="py-2 pr-4">Project</th>
                 <th scope="col" className="py-2 pr-4">VMs</th>
@@ -344,11 +345,11 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
             </thead>
             <tbody>
               {(tenants.projects ?? []).map((p) => (
-                <tr key={p.project_name} className="border-b border-slate-800/60">
-                  <td className="py-2 pr-4 text-slate-200">{p.project_name}</td>
-                  <td className="py-2 pr-4 text-slate-400">{p.vm_count}{p.max_vms > 0 ? ` / ${p.max_vms}` : ''}</td>
-                  <td className="py-2 pr-4 text-slate-400">{p.network_isolation}</td>
-                  <td className="py-2 pr-4 text-slate-400">{p.enforce_quotas ? 'enforced' : 'off'}</td>
+                <tr key={p.project_name} className="border-b border-[var(--apple-hairline)]/60">
+                  <td className="py-2 pr-4 text-[var(--text-primary)]">{p.project_name}</td>
+                  <td className="py-2 pr-4 text-[var(--text-muted)]">{p.vm_count}{p.max_vms > 0 ? ` / ${p.max_vms}` : ''}</td>
+                  <td className="py-2 pr-4 text-[var(--text-muted)]">{p.network_isolation}</td>
+                  <td className="py-2 pr-4 text-[var(--text-muted)]">{p.enforce_quotas ? 'enforced' : 'off'}</td>
                   <td className={`py-2 text-xs ${statusToneClass(p.quota_status.includes('exceeded') ? 'error' : 'ok')}`}>{p.quota_status}</td>
                 </tr>
               ))}

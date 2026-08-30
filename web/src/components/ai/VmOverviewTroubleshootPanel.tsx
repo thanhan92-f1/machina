@@ -42,17 +42,17 @@ export default function VmOverviewTroubleshootPanel({
         </button>
       }
     >
-      <p className="text-sm text-slate-400 flex items-center gap-2">
+      <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
         <Stethoscope className="w-4 h-4 text-orange-400" />
         One-click RCA for stopped, missing, or unhealthy guests.
       </p>
       {error && <p className={`text-sm mt-2 ${statusToneClass('error')}`}>{error}</p>}
       {report && (
         <div className="mt-3 space-y-2 text-sm">
-          <p className="text-slate-300">
+          <p className="text-[var(--text-secondary)]">
             Severity: <span className={statusToneClass(report.severity === 'critical' ? 'error' : 'warn')}>{report.severity}</span>
           </p>
-          <ul className="text-xs text-slate-400 space-y-1">
+          <ul className="text-xs text-[var(--text-muted)] space-y-1">
             {report.findings.slice(0, 3).map((f) => (
               <li key={`${f.domain}-${f.message}`}>[{f.domain}] {f.message}</li>
             ))}

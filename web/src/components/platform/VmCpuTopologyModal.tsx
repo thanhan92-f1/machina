@@ -62,30 +62,30 @@ export default function VmCpuTopologyModal({ open, vmId, vmName, onClose, onSave
   return (
     <MacSheet open={open} onClose={onClose} title={`CPU topology — ${vmName}`} ariaLabel="CPU topology">
       {loading ? (
-        <p className="text-sm text-slate-400">Loading topology…</p>
+        <p className="text-sm text-[var(--text-muted)]">Loading topology…</p>
       ) : (
         <div className="space-y-4">
-          <p className="text-xs text-slate-500">
-            Guest state: <span className="text-slate-300 capitalize">{state || '—'}</span>
+          <p className="text-xs text-[var(--text-muted)]">
+            Guest state: <span className="text-[var(--text-secondary)] capitalize">{state || '—'}</span>
             {' · '}
-            Active vCPUs: <span className="text-slate-300">{vcpus}</span>
+            Active vCPUs: <span className="text-[var(--text-secondary)]">{vcpus}</span>
           </p>
           <div className="grid grid-cols-3 gap-3">
             <label className="block text-sm">
-              <span className="text-slate-400">Sockets</span>
+              <span className="text-[var(--text-muted)]">Sockets</span>
               <input type="number" min={1} className="input mt-1 w-full" value={sockets} onChange={(e) => setSockets(e.target.value)} />
             </label>
             <label className="block text-sm">
-              <span className="text-slate-400">Cores</span>
+              <span className="text-[var(--text-muted)]">Cores</span>
               <input type="number" min={1} className="input mt-1 w-full" value={cores} onChange={(e) => setCores(e.target.value)} />
             </label>
             <label className="block text-sm">
-              <span className="text-slate-400">Threads</span>
+              <span className="text-[var(--text-muted)]">Threads</span>
               <input type="number" min={1} className="input mt-1 w-full" value={threads} onChange={(e) => setThreads(e.target.value)} />
             </label>
           </div>
-          <p className="text-xs text-slate-500">
-            Persistent vCPUs: <span className="text-slate-200">{computed}</span>
+          <p className="text-xs text-[var(--text-muted)]">
+            Persistent vCPUs: <span className="text-[var(--text-primary)]">{computed}</span>
             {computed !== vcpus && state === 'running' && (
               <span className="text-amber-300/90"> — needs shutdown to apply topology change</span>
             )}

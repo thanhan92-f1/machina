@@ -10,12 +10,15 @@ import {
   Cpu,
   ShieldAlert,
   Shield,
-  Plug,
   UserPlus,
   Wrench,
   BrainCircuit,
   Cog,
   Building2,
+  Home,
+  Cloud,
+  HardDrive,
+  Network,
 } from 'lucide-react'
 
 export interface PlatformNavItem {
@@ -37,15 +40,29 @@ export interface PlatformNavSection {
 const ic = (Icon: React.ComponentType<{ className?: string }>) =>
   React.createElement(Icon, { className: 'w-4 h-4' })
 
-/** macOS 26 Tahoe–style Finder sidebar. */
+/** macOS 26 Tahoe–style Finder sidebar — Zeus OS 1:1 (host + platform). */
 export const PLATFORM_SIDEBAR: PlatformNavSection[] = [
   {
     label: 'Favorites',
     items: [
       { to: '/platform', label: 'Mission Control', icon: ic(LayoutDashboard) },
+      { to: '/', label: 'Dashboard', icon: ic(Home) },
+      { to: '/vms', label: 'Virtual Machines', icon: ic(Monitor) },
       { to: '/platform/vms', label: 'Machine Finder', icon: ic(Monitor) },
       { to: '/platform/hosts', label: 'Hosts', icon: ic(Server) },
       { to: '/platform/settings', label: 'Settings', icon: ic(Settings) },
+    ],
+  },
+  {
+    label: 'Host',
+    collapsible: true,
+    items: [
+      { to: '/vms', label: 'Virtual Machines', icon: ic(Monitor) },
+      { to: '/create', label: 'Create VM', icon: ic(Cpu) },
+      { to: '/networks', label: 'Networks', icon: ic(Network) },
+      { to: '/storage', label: 'Storage', icon: ic(HardDrive) },
+      { to: '/fleet-cloud', label: 'Fleet Cloud', icon: ic(Cloud) },
+      { to: '/containers', label: 'Containers', icon: ic(Package) },
     ],
   },
   {
@@ -54,7 +71,6 @@ export const PLATFORM_SIDEBAR: PlatformNavSection[] = [
     items: [
       { to: '/platform/zyra', label: 'Machina Zyra OS', icon: ic(Cpu) },
       { to: '/platform/zyra/configure', label: 'Configure Zyra', icon: ic(Cog) },
-      { to: '/platform/integrations', label: 'Apps & Integrations', icon: ic(Plug) },
       { to: '/platform/ai-providers', label: 'AI Providers', icon: ic(BrainCircuit) },
       { to: '/platform/enroll', label: 'Add Host', icon: ic(UserPlus) },
     ],
@@ -78,9 +94,10 @@ export const PLATFORM_SIDEBAR: PlatformNavSection[] = [
 /** Normal-tier sidebar favorites (flat list). */
 export const NORMAL_FAVORITE_PATHS = [
   '/platform',
+  '/',
+  '/vms',
   '/platform/vms',
   '/platform/hosts',
-  '/platform/integrations',
   '/platform/settings',
 ] as const
 

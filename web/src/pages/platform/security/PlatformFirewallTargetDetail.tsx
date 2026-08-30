@@ -158,10 +158,10 @@ export default function PlatformFirewallTargetDetail() {
         <span className="flex flex-wrap items-center gap-2 text-sm">
           <span className={statusPillClasses(scoreTone)}>Score {score}/100</span>
           <span className={statusPillClasses(inv.posture.enabled ? 'ok' : 'warn')}>{inv.posture.enabled ? 'Enabled' : 'Disabled'}</span>
-          <span className="text-slate-400">{isMetal ? 'Bare metal BMC/PXE' : detail.target.backend}</span>
+          <span className="text-[var(--text-muted)]">{isMetal ? 'Bare metal BMC/PXE' : detail.target.backend}</span>
         </span>
       ) : undefined}
-      icon={<Shield className="w-6 h-6 text-slate-400" />}
+      icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-4"
     >
       {detail && inv && (
@@ -272,7 +272,7 @@ export default function PlatformFirewallTargetDetail() {
               <div className="space-y-4 -mt-1">
                 <MacSettingsGroup title="Allowed incoming connections">
                   {services.length === 0 && inv.open_ports.length === 0 ? (
-                    <p className="px-4 py-3 text-sm text-slate-500">No mapped services — scan exposure on Advanced tab.</p>
+                    <p className="px-4 py-3 text-sm text-[var(--text-muted)]">No mapped services — scan exposure on Advanced tab.</p>
                   ) : (
                     (services.length > 0 ? services.map((s) => (
                       <MacListRow
@@ -280,7 +280,7 @@ export default function PlatformFirewallTargetDetail() {
                         title={s.name}
                         subtitle={`${s.protocol}/${s.port} · Allowed from ${formatAllowedFrom(s.allowed_from)}`}
                         badge={
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]">
                             {String(s.status)}
                           </span>
                         }
@@ -293,7 +293,7 @@ export default function PlatformFirewallTargetDetail() {
                         badge={
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             riskTone(String(p.risk)) === 'neutral'
-                              ? 'bg-slate-800 text-slate-400'
+                              ? 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'
                               : statusBadgeClasses(riskTone(String(p.risk)))
                           }`}>
                             {String(p.risk)}
@@ -307,7 +307,7 @@ export default function PlatformFirewallTargetDetail() {
                   <MacListRow
                     title="Allow SSH (admin subnet only)"
                     subtitle="Dry-run preset"
-                    trailing={<ChevronRight className="w-4 h-4 text-slate-600" />}
+                    trailing={<ChevronRight className="w-4 h-4 text-[var(--text-faint)]" />}
                     onClick={async () => {
                       try {
                         const r = await planFirewall(id, { preset: 'allow_ssh', dry_run: true })
@@ -397,7 +397,7 @@ export default function PlatformFirewallTargetDetail() {
                 </MacSettingsGroup>
                 {securePlan && (
                   <MacGlassPanel title="AI Secure Plan">
-                    <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">{securePlan}</p>
+                    <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">{securePlan}</p>
                   </MacGlassPanel>
                 )}
                 <MacSettingsGroup title="AI Explain">
@@ -415,7 +415,7 @@ export default function PlatformFirewallTargetDetail() {
                 </MacSettingsGroup>
                 {aiExplain && (
                   <MacGlassPanel title="Exposure analysis">
-                    <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">{aiExplain}</p>
+                    <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">{aiExplain}</p>
                   </MacGlassPanel>
                 )}
                 {checkpoints.length > 0 && (
@@ -449,7 +449,7 @@ export default function PlatformFirewallTargetDetail() {
                 )}
                 {timeline.length > 0 && (
                   <MacGlassPanel title="Timeline">
-                    <ul className="space-y-2 text-xs text-slate-400">
+                    <ul className="space-y-2 text-xs text-[var(--text-muted)]">
                       {timeline.map((e, i) => (
                         <li key={`${String(e.created_at)}-${i}`}>
                           {String(e.created_at || '')} — {String(e.summary || e.kind || '')}
@@ -461,9 +461,9 @@ export default function PlatformFirewallTargetDetail() {
                 <MacGlassPanel title="Score">
                   <ul className="space-y-2 text-sm">
                     {inv.score.breakdown.map((b) => (
-                      <li key={b.category} className="flex justify-between text-slate-300">
+                      <li key={b.category} className="flex justify-between text-[var(--text-secondary)]">
                         <span>{b.detail}</span>
-                        <span className={b.points < 0 ? statusToneClass('warn') : 'text-slate-500'}>{b.points}</span>
+                        <span className={b.points < 0 ? statusToneClass('warn') : 'text-[var(--text-muted)]'}>{b.points}</span>
                       </li>
                     ))}
                   </ul>
@@ -485,7 +485,7 @@ export default function PlatformFirewallTargetDetail() {
             const parsed = JSON.parse(previewSheet.body) as unknown
             return <JsonInspector data={parsed} />
           } catch {
-            return <p className="text-sm text-slate-300 whitespace-pre-wrap font-mono">{previewSheet.body}</p>
+            return <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap font-mono">{previewSheet.body}</p>
           }
         })()}
       </MacSheet>

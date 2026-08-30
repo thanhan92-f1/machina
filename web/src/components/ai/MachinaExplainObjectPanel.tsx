@@ -49,19 +49,19 @@ export default function MachinaExplainObjectPanel({
         <p className="font-medium text-orange-200 flex items-center gap-2">
           <Sparkles className="w-4 h-4" />
           {name ?? data?.name ?? id}
-          <span className="text-xs text-slate-500 font-normal">{kind}</span>
+          <span className="text-xs text-[var(--text-muted)] font-normal">{kind}</span>
         </p>
         {onClose && (
-          <button type="button" className="text-xs text-slate-500 hover:text-slate-300" onClick={onClose}>Close</button>
+          <button type="button" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]" onClick={onClose}>Close</button>
         )}
       </div>
-      {loading && <p className="text-xs text-slate-500">Loading object explain…</p>}
+      {loading && <p className="text-xs text-[var(--text-muted)]">Loading object explain…</p>}
       {error && <p className={`text-xs ${statusToneClass('error')}`}>{error}</p>}
       {data && (
         <>
-          <p className="text-slate-300">{data.purpose}</p>
+          <p className="text-[var(--text-secondary)]">{data.purpose}</p>
           {data.health_score != null && (
-            <p className="text-xs text-slate-500">Health {data.health_score}/100</p>
+            <p className="text-xs text-[var(--text-muted)]">Health {data.health_score}/100</p>
           )}
           {data.risks.length > 0 && (
             <ul className="text-xs text-amber-200/90 space-y-0.5">

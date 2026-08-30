@@ -65,7 +65,7 @@ function FleetCloudSecurityGroupDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/security-groups" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/security-groups" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -73,26 +73,27 @@ function FleetCloudSecurityGroupDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/security-groups" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/security-groups" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Security groups
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Shield className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Shield className="w-7 h-7 text-[var(--accent)]" />
         {group.name}
       </h1>
-      {group.description && <p className="text-sm text-slate-400">{group.description}</p>}
+      {group.description && <p className="text-sm text-[var(--text-muted)]">{group.description}</p>}
       <p className="text-xs text-amber-400/90">
         Advisory only — rule enforcement isn't wired to the firewall yet.
       </p>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono text-slate-200 mt-1 break-all">{group.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Rules</dt><dd className="text-slate-200 mt-1">{rules.length}</dd></div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono text-[var(--text-primary)] mt-1 break-all">{group.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Rules</dt><dd className="text-[var(--text-primary)] mt-1">{rules.length}</dd></div>
       </dl>
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-600 text-sm"
+        <button type="button" className="btn-secondary text-sm"
           onClick={async () => {
             try {
               await createSecurityGroupRule(group.id, {
@@ -116,14 +117,14 @@ function FleetCloudSecurityGroupDetailContent() {
             } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Delete group</button>
       </div>
-      <section className="rounded-xl border border-slate-700 p-4">
-        <h2 className="text-sm font-medium text-slate-300 mb-3">Rules</h2>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Rules</h2>
         {rules.length === 0 ? (
-          <p className="text-sm text-slate-500">No rules.</p>
+          <p className="text-sm text-[var(--text-muted)]">No rules.</p>
         ) : (
           <ul className="space-y-2 text-xs font-mono">
             {rules.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 px-3 py-2 text-slate-300">
+              <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--apple-hairline)] px-3 py-2 text-[var(--text-secondary)]">
                 <span>{r.direction}</span>
                 <span>{r.protocol || 'any'}</span>
                 {(r.port_min != null || r.port_max != null) && (

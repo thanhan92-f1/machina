@@ -57,24 +57,25 @@ function FleetCloudLoadBalancersContent() {
 
   return (
     <PageLayout hideHeader prepend={<><FleetCloudSubNav /></>}>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
         <Scale className={`w-7 h-7 ${statusToneClass('ok')}`} /> Load balancers
       </h1>
-      <p className="text-slate-400 text-sm">
+      <p className="text-[var(--text-muted)] text-sm">
         Native, kernel-level L4 (TCP/UDP) load balancing — a weighted round-robin iptables rule set on the
         chosen host, no external cloud or amphora VM required.
       </p>
 
-      <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Name" className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Name" className="input-field text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Host</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Host</label>
           <select value={hostId} onChange={(e) => setHostId(e.target.value)}
             aria-label="Host"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm min-w-[14rem]">
+            className="input-field text-sm min-w-[14rem]">
             <option value="">Select host…</option>
             {hosts.map((h) => (
               <option key={h.id} value={h.id}>{h.hostname}</option>
@@ -82,12 +83,12 @@ function FleetCloudLoadBalancersContent() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Listener port</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Listener port</label>
           <input value={listenerPort} onChange={(e) => setListenerPort(e.target.value)} aria-label="Listener port"
-            className="w-24 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="w-24 input-field text-sm" />
         </div>
         <button type="button" disabled={!name.trim() || !hostId || !Number(listenerPort)}
-          className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm disabled:opacity-40 inline-flex items-center gap-1"
+          className="btn-primary text-sm disabled:opacity-40 inline-flex items-center gap-1"
           onClick={async () => {
             try {
               await createLoadBalancer({ name: name.trim(), host_id: hostId, listener_port: Number(listenerPort) })
@@ -101,13 +102,13 @@ function FleetCloudLoadBalancersContent() {
       </div>
 
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400 mx-auto" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : lbs.length === 0 ? (
         <EmptyState title="No load balancers" description="Create one above — pick a host and listener port, then add members." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="w-full text-sm" aria-label="Load balancers">
-            <thead className="bg-slate-900/80 text-slate-400 text-left">
+        <div className="overflow-x-auto apple-surface rounded-2xl">
+          <table className="apple-table" aria-label="Load balancers">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 <th scope="col" className="px-3 py-2">Listener</th>
@@ -118,9 +119,9 @@ function FleetCloudLoadBalancersContent() {
             </thead>
             <tbody>
               {lbs.map((lb) => (
-                <tr key={lb.id} className="border-t border-slate-800">
+                <tr key={lb.id} className="border-t border-[var(--apple-hairline)]">
                   <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/load-balancers/${lb.id}`} className="text-sky-400 hover:underline">{lb.name}</Link>
+                    <Link to={`/fleet-cloud/load-balancers/${lb.id}`} className="text-[var(--accent)] hover:underline">{lb.name}</Link>
                   </td>
                   <td className="px-3 py-2 font-mono">{lb.protocol}/{lb.listener_port}</td>
                   <td className="px-3 py-2 font-mono text-xs">{hosts.find((h) => h.id === lb.host_id)?.hostname ?? lb.host_id}</td>

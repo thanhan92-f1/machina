@@ -86,17 +86,17 @@ function SnapshotTableRows({
       {nodes.map(({ snap, children }) => (
         <Fragment key={snap.name}>
           <tr className="table-row-hover">
-            <td className="px-6 py-3 text-sm text-slate-500" style={{ paddingLeft: `${1.5 + depth * 1}rem` }}>
-              {snap.parent ? <span className="text-slate-600 mr-1">↳</span> : null}
-              <span className="font-medium text-slate-200">{snap.name}</span>
-              {snap.description ? <span className="text-xs text-slate-500 ml-2">{snap.description}</span> : null}
+            <td className="px-6 py-3 text-sm text-[var(--text-muted)]" style={{ paddingLeft: `${1.5 + depth * 1}rem` }}>
+              {snap.parent ? <span className="text-[var(--text-faint)] mr-1">↳</span> : null}
+              <span className="font-medium text-[var(--text-primary)]">{snap.name}</span>
+              {snap.description ? <span className="text-xs text-[var(--text-muted)] ml-2">{snap.description}</span> : null}
             </td>
-            <td className="px-6 py-3 text-sm text-slate-400">{snap.state}</td>
-            <td className="px-6 py-3 text-sm text-slate-400">{snap.creation_time ? new Date(snap.creation_time * 1000).toLocaleString() : '-'}</td>
+            <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{snap.state}</td>
+            <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{snap.creation_time ? new Date(snap.creation_time * 1000).toLocaleString() : '-'}</td>
             <td className="px-6 py-3">{snap.is_current && <span className={`text-xs font-medium ${statusToneClass('ok')}`}>Current</span>}</td>
             <td className="px-6 py-3 text-right">
               <div className="flex items-center justify-end gap-1">
-                <button type="button" onClick={() => onRevert(snap.name)} className="p-1 hover:bg-blue-600/20 rounded transition" title="Revert" aria-label={`Revert ${snap.name}`}>
+                <button type="button" onClick={() => onRevert(snap.name)} className="p-1 hover:bg-white/10 rounded transition" title="Revert" aria-label={`Revert ${snap.name}`}>
                   <RotateCw className={`w-4 h-4 ${statusToneClass('info')}`} />
                 </button>
                 <button type="button" onClick={() => onDelete(snap.name)} className="p-1 hover:bg-red-600/20 rounded transition" title="Delete" aria-label={`Delete ${snap.name}`}>
@@ -1273,7 +1273,7 @@ export default function VMDetailsPage() {
         emptyState={
           !loadError ? (
             <div className="space-y-4">
-              <div className="text-center text-slate-500 py-12">VM not found</div>
+              <div className="text-center text-[var(--text-muted)] py-12">VM not found</div>
               <Link to="/vms" className={`inline-flex items-center gap-2 text-sm ${statusActionLinkClasses('info')}`}>
                 <ArrowLeft className="w-4 h-4" /> Back to VMs
               </Link>
@@ -1304,11 +1304,11 @@ export default function VMDetailsPage() {
   return (
     <PageLayout hideHeader title={vm.name}>
       {/* Header + lifecycle actions (sticky while scrolling) */}
-      <div className="classic-detail-chrome-sticky -mx-1 px-1 py-2 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 space-y-3">
+      <div className="classic-detail-chrome-sticky -mx-1 px-1 py-2 bg-[var(--apple-surface)]/90 backdrop-blur-md border-b border-[var(--apple-hairline)]/80 space-y-3">
       <div className="flex items-center gap-4">
-        <Link to="/vms" className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Back to VM list"><ArrowLeft className="w-5 h-5" /></Link>
+        <Link to="/vms" className="p-2 hover:bg-white/10 rounded-full transition" aria-label="Back to VM list"><ArrowLeft className="w-5 h-5" /></Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{vm.name}</h1>
+          <h1 className="page-title tracking-tight">{vm.name}</h1>
           <div className="flex items-center gap-3 mt-1">
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
             {vm.libvirt_connection === 'session' && (
@@ -1316,7 +1316,7 @@ export default function VMDetailsPage() {
                 session
               </span>
             )}
-            <span className="text-sm text-slate-500 font-mono">{vm.uuid}</span>
+            <span className="text-sm text-[var(--text-muted)] font-mono">{vm.uuid}</span>
             {vm.guest_ip && (
               <span className={`text-sm font-mono ${statusToneClass('ok')} opacity-90`} title="From libvirt lease / ARP / guest agent">
                 · {vm.guest_ip}
@@ -1331,12 +1331,12 @@ export default function VMDetailsPage() {
               </span>
             ))}
             <form className="inline-flex items-center gap-1" onSubmit={async (e) => { e.preventDefault(); const tag = newTag.trim(); if (!tag || vmTags.includes(tag)) return; const next = [...vmTags, tag]; try { await apiSetVmTags(vm.name, next); setVmTags(next); setNewTag('') } catch (e: unknown) { toast.error(formatUserError(e)) } }}>
-              <input type="text" aria-label="Add tag" value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="+ tag" className="w-16 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-300" />
+              <input type="text" aria-label="Add tag" value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="+ tag" className="w-16 px-1.5 py-0.5 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded text-xs focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-secondary)]" />
             </form>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <Link to={vmConsoleRoute(vm.name, conn)} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition flex items-center gap-1"><Terminal className="w-4 h-4" /> Console</Link>
+          <Link to={vmConsoleRoute(vm.name, conn)} className="btn-secondary text-sm inline-flex items-center gap-1"><Terminal className="w-4 h-4" /> Console</Link>
           <RdpConsoleLink vmName={vm.name} connection={conn} />
           <ClassicVmSpiceToVncButton
             vmName={vm.name}
@@ -1350,40 +1350,40 @@ export default function VMDetailsPage() {
             }}
             onError={(msg) => toast.error(msg)}
           />
-          <button type="button" onClick={openVmSshDialog} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition flex items-center gap-1">
+          <button type="button" onClick={openVmSshDialog} className="btn-secondary text-sm inline-flex items-center gap-1">
             <Terminal className="w-4 h-4" /> SSH
           </button>
-          {vm.state === 'shutoff' && <button onClick={() => action(startVM, 'Start')} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm transition flex items-center gap-1"><Play className="w-4 h-4" /> Start</button>}
+          {vm.state === 'shutoff' && <button onClick={() => action(startVM, 'Start')} className="btn-primary text-sm inline-flex items-center gap-1"><Play className="w-4 h-4" /> Start</button>}
           {vm.state === 'running' && (
             <>
-              <button onClick={() => action(shutdownVM, 'Shutdown')} className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-sm transition flex items-center gap-1"><Power className="w-4 h-4" /> Shutdown</button>
-              <button onClick={() => action(rebootVM, 'Reboot')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><RotateCcw className="w-4 h-4" /> Reboot</button>
-              <button onClick={() => action(stopVM, 'Force Stop')} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition flex items-center gap-1"><Square className="w-4 h-4" /> Stop</button>
-              <button onClick={() => action(pauseVM, 'Pause')} className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition flex items-center gap-1"><Pause className="w-4 h-4" /> Pause</button>
-              <button onClick={() => action(managedSave, 'Managed Save')} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm transition flex items-center gap-1"><Save className="w-4 h-4" /> Save</button>
+              <button onClick={() => action(shutdownVM, 'Shutdown')} className="btn-secondary text-sm inline-flex items-center gap-1"><Power className="w-4 h-4" /> Shutdown</button>
+              <button onClick={() => action(rebootVM, 'Reboot')} className="btn-primary text-sm inline-flex items-center gap-1"><RotateCcw className="w-4 h-4" /> Reboot</button>
+              <button onClick={() => action(stopVM, 'Force Stop')} className="btn-destructive text-sm inline-flex items-center gap-1"><Square className="w-4 h-4" /> Stop</button>
+              <button onClick={() => action(pauseVM, 'Pause')} className="px-3 py-1.5 bg-[var(--apple-fill-secondary)] hover:bg-[var(--surface-hover)] rounded-lg text-sm transition flex items-center gap-1"><Pause className="w-4 h-4" /> Pause</button>
+              <button onClick={() => action(managedSave, 'Managed Save')} className="btn-secondary text-sm inline-flex items-center gap-1"><Save className="w-4 h-4" /> Save</button>
             </>
           )}
-          {vm.state === 'paused' && <button onClick={() => action(resumeVM, 'Resume')} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm transition flex items-center gap-1"><RefreshCw className="w-4 h-4" /> Resume</button>}
-          {hasSave && <button onClick={() => action(managedSaveRemove, 'Remove Save')} className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 rounded-lg text-sm transition flex items-center gap-1"><Save className="w-4 h-4" /> Remove Save</button>}
+          {vm.state === 'paused' && <button onClick={() => action(resumeVM, 'Resume')} className="btn-primary text-sm inline-flex items-center gap-1"><RefreshCw className="w-4 h-4" /> Resume</button>}
+          {hasSave && <button onClick={() => action(managedSaveRemove, 'Remove Save')} className="btn-secondary text-sm inline-flex items-center gap-1"><Save className="w-4 h-4" /> Remove Save</button>}
         </div>
       </div>
       </div>
 
       {/* Settings Bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-slate-500 mr-1"><Settings className="w-3.5 h-3.5 inline -mt-0.5" /> Settings:</span>
-        <button onClick={() => openDialog('vcpus')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Cpu className="w-3 h-3 inline -mt-0.5" /> vCPUs</button>
-        <button onClick={() => openDialog('memory')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><MemoryStick className="w-3 h-3 inline -mt-0.5" /> Memory</button>
-        {vm.state === 'running' && <button onClick={() => openDialog('balloon')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><MemoryStick className="w-3 h-3 inline -mt-0.5" /> Balloon</button>}
-        <button onClick={() => openDialog('boot-order')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Settings className="w-3 h-3 inline -mt-0.5" /> Boot Order</button>
-        <button onClick={() => openDialog('cdrom')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Disc className="w-3 h-3 inline -mt-0.5" /> CD-ROM</button>
-        <button onClick={() => openDialog('clone')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Copy className="w-3 h-3 inline -mt-0.5" /> Clone</button>
-        {vm.state === 'shutoff' && <button onClick={() => openDialog('rename')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Pencil className="w-3 h-3 inline -mt-0.5" /> Rename</button>}
-        <button onClick={() => openDialog('migrate')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><ArrowRightLeft className="w-3 h-3 inline -mt-0.5" /> Migrate</button>
-        <button disabled={backingUp} onClick={() => setConfirmBackup(true)} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition disabled:opacity-50"><Archive className="w-3 h-3 inline -mt-0.5" /> {backingUp ? '...' : 'Backup'}</button>
-        <button onClick={() => openDialog('save-template')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Layers className="w-3 h-3 inline -mt-0.5" /> Save Template</button>
-        <button type="button" onClick={() => setTab('advanced')} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition"><Sliders className="w-3 h-3 inline -mt-0.5" /> Advanced</button>
-        <button onClick={load} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs transition" aria-label="Refresh"><RefreshCw className="w-3 h-3" /></button>
+        <span className="text-xs text-[var(--text-muted)] mr-1"><Settings className="w-3.5 h-3.5 inline -mt-0.5" /> Settings:</span>
+        <button onClick={() => openDialog('vcpus')} className="btn-ghost text-xs"><Cpu className="w-3 h-3 inline -mt-0.5" /> vCPUs</button>
+        <button onClick={() => openDialog('memory')} className="btn-ghost text-xs"><MemoryStick className="w-3 h-3 inline -mt-0.5" /> Memory</button>
+        {vm.state === 'running' && <button onClick={() => openDialog('balloon')} className="btn-ghost text-xs"><MemoryStick className="w-3 h-3 inline -mt-0.5" /> Balloon</button>}
+        <button onClick={() => openDialog('boot-order')} className="btn-ghost text-xs"><Settings className="w-3 h-3 inline -mt-0.5" /> Boot Order</button>
+        <button onClick={() => openDialog('cdrom')} className="btn-ghost text-xs"><Disc className="w-3 h-3 inline -mt-0.5" /> CD-ROM</button>
+        <button onClick={() => openDialog('clone')} className="btn-ghost text-xs"><Copy className="w-3 h-3 inline -mt-0.5" /> Clone</button>
+        {vm.state === 'shutoff' && <button onClick={() => openDialog('rename')} className="btn-ghost text-xs"><Pencil className="w-3 h-3 inline -mt-0.5" /> Rename</button>}
+        <button onClick={() => openDialog('migrate')} className="btn-ghost text-xs"><ArrowRightLeft className="w-3 h-3 inline -mt-0.5" /> Migrate</button>
+        <button disabled={backingUp} onClick={() => setConfirmBackup(true)} className="btn-ghost text-xs disabled:opacity-50"><Archive className="w-3 h-3 inline -mt-0.5" /> {backingUp ? '...' : 'Backup'}</button>
+        <button onClick={() => openDialog('save-template')} className="btn-ghost text-xs"><Layers className="w-3 h-3 inline -mt-0.5" /> Save Template</button>
+        <button type="button" onClick={() => setTab('advanced')} className="btn-ghost text-xs"><Sliders className="w-3 h-3 inline -mt-0.5" /> Advanced</button>
+        <button onClick={load} className="btn-ghost text-xs" aria-label="Refresh"><RefreshCw className="w-3 h-3" /></button>
       </div>
 
       <VmDailyAccessStrip
@@ -1418,7 +1418,7 @@ export default function VMDetailsPage() {
 
       {/* Tabs — card picker */}
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">VM details</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">VM details</h2>
         <ChoiceCardDenseGrid>
           {tabs.map((t) => (
             <ChoiceCard
@@ -1438,7 +1438,7 @@ export default function VMDetailsPage() {
 
       {tab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
             <h3 className="text-lg font-semibold">Configuration</h3>
             <EditableRow label="vCPUs" value={vm.vcpus} onEdit={() => openDialog('vcpus')} />
             <EditableRow label="Memory" value={`${vm.memory_mb} MB`} onEdit={() => openDialog('memory')} />
@@ -1447,19 +1447,19 @@ export default function VMDetailsPage() {
             <InfoRow label="Persistent" value={vm.persistent ? 'Yes' : 'No'} />
             <InfoRow label="Managed Save" value={hasSave ? 'Yes' : 'No'} />
             <div className="flex items-center justify-between py-2">
-              <span className="text-slate-400 text-sm">Autostart</span>
+              <span className="text-[var(--text-muted)] text-sm">Autostart</span>
               <button onClick={toggleAutostart} className="flex items-center gap-2 text-sm">
-                {vm.autostart ? <ToggleRight className={`w-5 h-5 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-5 h-5 text-slate-500" />}
-                <span className={vm.autostart ? statusToneClass('ok') : 'text-slate-500'}>{vm.autostart ? 'Enabled' : 'Disabled'}</span>
+                {vm.autostart ? <ToggleRight className={`w-5 h-5 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-5 h-5 text-[var(--text-muted)]" />}
+                <span className={vm.autostart ? statusToneClass('ok') : 'text-[var(--text-muted)]'}>{vm.autostart ? 'Enabled' : 'Disabled'}</span>
               </button>
             </div>
-            <p className="text-xs text-slate-500 leading-snug">
+            <p className="text-xs text-[var(--text-muted)] leading-snug">
               Starts when libvirt starts. If guests do not come up after a host reboot, check Host overview for systemd/libvirt boot settings.
             </p>
           </div>
 
           {bootConfig && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Boot Configuration</h3>
                 <div className="flex gap-2">
@@ -1487,15 +1487,15 @@ export default function VMDetailsPage() {
           )}
 
           {(guestApiHostname || vm?.state === 'running') && (
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex flex-wrap items-center justify-between gap-3" data-testid="vm-api-hostname">
+            <div className="bg-[var(--apple-surface)] rounded-xl p-4 border border-[var(--apple-hairline)] flex flex-wrap items-center justify-between gap-3" data-testid="vm-api-hostname">
               <div>
-                <div className="text-xs text-slate-500">Guest hostname (GET /vms/…/hostname)</div>
-                <div className="text-sm font-mono text-slate-200">{guestApiHostname ?? '—'}</div>
+                <div className="text-xs text-[var(--text-muted)]">Guest hostname (GET /vms/…/hostname)</div>
+                <div className="text-sm font-mono text-[var(--text-primary)]">{guestApiHostname ?? '—'}</div>
               </div>
               <button
                 type="button"
                 disabled={guestHostnameBusy || vm?.state !== 'running'}
-                className="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50"
+                className="text-xs px-2 py-1 rounded bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] disabled:opacity-50"
                 onClick={() => {
                   if (!name) return
                   setGuestHostnameBusy(true)
@@ -1511,17 +1511,17 @@ export default function VMDetailsPage() {
           )}
 
           {guestIps.length > 0 && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="text-lg font-semibold">Guest IP addresses</h3>
                 {guestIfQueriedAt && (
-                  <span className="text-xs text-slate-500 font-mono" title="Hypervisor-side snapshot time">
+                  <span className="text-xs text-[var(--text-muted)] font-mono" title="Hypervisor-side snapshot time">
                     Snapshot: {new Date(guestIfQueriedAt).toLocaleString()}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">
-                Rows merge libvirt DHCP <strong className="text-slate-400">lease</strong>, kernel <strong className="text-slate-400">ARP</strong>, then QEMU guest <strong className="text-slate-400">agent</strong>; first hit wins per address. When libvirt exposes DHCP leases, machina adds hostname/expiry; PTR (reverse DNS) is resolved on the hypervisor when possible.
+              <p className="text-xs text-[var(--text-muted)]">
+                Rows merge libvirt DHCP <strong className="text-[var(--text-muted)]">lease</strong>, kernel <strong className="text-[var(--text-muted)]">ARP</strong>, then QEMU guest <strong className="text-[var(--text-muted)]">agent</strong>; first hit wins per address. When libvirt exposes DHCP leases, machina adds hostname/expiry; PTR (reverse DNS) is resolved on the hypervisor when possible.
               </p>
               {guestIps.map((ip) => {
                 const { xmlGateway, heuristicGateway } = guestIpv4GatewayHints(
@@ -1536,41 +1536,41 @@ export default function VMDetailsPage() {
                       : `DHCP expires in ~${Math.max(1, Math.round(ip.lease_seconds_remaining / 60))} min`
                     : null
                 return (
-                  <div key={ip.address} className="py-3 border-b border-slate-700/30 space-y-2">
+                  <div key={ip.address} className="py-3 border-b border-[var(--apple-hairline)]/30 space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <span className={`text-sm font-medium ${statusToneClass('info')}`}>
                           {ip.address}/{ip.prefix}
                         </span>
-                        <span className="text-xs text-slate-500 ml-2">{ip.ip_type}</span>
+                        <span className="text-xs text-[var(--text-muted)] ml-2">{ip.ip_type}</span>
                       </div>
                       <span
-                        className="text-xs uppercase tracking-wide px-2 py-0.5 rounded bg-slate-700/80 text-slate-300 shrink-0"
+                        className="text-xs uppercase tracking-wide px-2 py-0.5 rounded bg-[var(--surface-hover)]/80 text-[var(--text-secondary)] shrink-0"
                         title="Discovery source"
                       >
                         {ip.source || '—'}
                       </span>
                       <div className="text-right min-w-0">
-                        <div className="text-xs font-mono text-slate-400 truncate">{ip.mac}</div>
-                        <div className="text-xs text-slate-500 truncate">{ip.name}</div>
+                        <div className="text-xs font-mono text-[var(--text-muted)] truncate">{ip.mac}</div>
+                        <div className="text-xs text-[var(--text-muted)] truncate">{ip.name}</div>
                       </div>
                     </div>
-                    <div className="text-xs text-slate-500 space-y-1 pl-0.5 border-l border-slate-600/40">
+                    <div className="text-xs text-[var(--text-muted)] space-y-1 pl-0.5 border-l border-[var(--apple-hairline)]/40">
                       {ip.dhcp_hostname ? (
                         <div>
                           DHCP name:{' '}
-                          <span className="text-slate-300">{ip.dhcp_hostname}</span>
+                          <span className="text-[var(--text-secondary)]">{ip.dhcp_hostname}</span>
                         </div>
                       ) : null}
                       {ip.dns_ptr ? (
                         <div>
-                          PTR: <span className="font-mono text-slate-300">{ip.dns_ptr}</span>
+                          PTR: <span className="font-mono text-[var(--text-secondary)]">{ip.dns_ptr}</span>
                         </div>
                       ) : null}
                       {xmlGateway ? (
                         <div>
                           Gateway from libvirt network XML:{' '}
-                          <code className="text-slate-300">{xmlGateway}</code>
+                          <code className="text-[var(--text-secondary)]">{xmlGateway}</code>
                         </div>
                       ) : null}
                       {heuristicGateway ? (
@@ -1578,15 +1578,15 @@ export default function VMDetailsPage() {
                           {xmlGateway && xmlGateway !== heuristicGateway ? (
                             <>
                               Heuristic (.1 on subnet):{' '}
-                              <code className="text-slate-300">{heuristicGateway}</code>
+                              <code className="text-[var(--text-secondary)]">{heuristicGateway}</code>
                             </>
                           ) : !xmlGateway ? (
                             <>
                               Typical default gateway (subnet +1 guess):{' '}
-                              <code className="text-slate-300">{heuristicGateway}</code>
+                              <code className="text-[var(--text-secondary)]">{heuristicGateway}</code>
                             </>
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-[var(--text-muted)]">
                               Matches common .1 heuristic on this subnet.
                             </span>
                           )}
@@ -1602,7 +1602,7 @@ export default function VMDetailsPage() {
                           className={
                             ip.lease_seconds_remaining != null && ip.lease_seconds_remaining < 0
                               ? `${statusToneClass('error')} opacity-90`
-                              : 'text-slate-400'
+                              : 'text-[var(--text-muted)]'
                           }
                         >
                           {leaseHint}
@@ -1624,7 +1624,7 @@ export default function VMDetailsPage() {
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                <div className="text-sm font-medium text-slate-100">Guest agent</div>
+                <div className="text-sm font-medium text-[var(--text-primary)]">Guest agent</div>
                 {platformDoctor?.vm_id && (
                   <Link
                     to={`/platform/vms/${platformDoctor.vm_id}?tab=guestHealth`}
@@ -1634,7 +1634,7 @@ export default function VMDetailsPage() {
                   </Link>
                 )}
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-[var(--text-muted)]">
                 Guest agent {guestHealth.agent_reachable ? 'reachable' : 'unreachable'}
                 {guestHealth.metrics_available ? ' · metrics ok' : ''}
                 {guestHealth.os_pretty_name ? ` · ${guestHealth.os_pretty_name}` : ''}
@@ -1734,9 +1734,9 @@ export default function VMDetailsPage() {
           )}
 
           {platformDoctor && (
-            <div className="rounded-xl p-4 border border-orange-500/30 bg-orange-950/20">
-              <div className="text-sm font-medium text-slate-100 mb-1">Zyra SRE</div>
-              <p className="text-xs text-slate-400">
+            <div className="rounded-xl p-4 border border-[var(--apple-hairline)] bg-[var(--apple-surface)]">
+              <div className="text-sm font-medium text-[var(--text-primary)] mb-1">Zyra SRE</div>
+              <p className="text-xs text-[var(--text-muted)]">
                 Platform score: <span className="text-orange-300 font-semibold">{platformDoctor.score_numeric}/100</span>
                 {' · '}{platformDoctor.score_label}
               </p>
@@ -1747,7 +1747,7 @@ export default function VMDetailsPage() {
           )}
 
           {guestObs && guestObs.filesystems.length > 0 && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
               <h3 className="text-lg font-semibold">Guest filesystems (qemu-guest-agent)</h3>
               {guestObs.hostname && (
                 <InfoRow label="Guest hostname" value={guestObs.hostname} />
@@ -1755,22 +1755,22 @@ export default function VMDetailsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" aria-label="Filesystem mounts">
                   <thead>
-                    <tr className="text-left text-slate-400 border-b border-slate-700/50">
+                    <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                       <th scope="col" className="py-2 pr-4 font-medium">Mount</th>
                       <th scope="col" className="py-2 pr-4 font-medium">Type</th>
                       <th scope="col" className="py-2 pr-4 font-medium text-right">Used</th>
                       <th scope="col" className="py-2 font-medium text-right">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/40">
+                  <tbody className="divide-y divide-[var(--apple-hairline)]/40">
                     {guestObs.filesystems.map((fs) => {
                       const pct = fs.total_bytes > 0 ? (fs.used_bytes / fs.total_bytes) * 100 : 0
                       return (
                         <tr key={fs.mountpoint}>
-                          <td className="py-2 pr-4 font-mono text-slate-200">{fs.mountpoint}</td>
-                          <td className="py-2 pr-4 text-slate-400">{fs.fs_type || '—'}</td>
-                          <td className="py-2 pr-4 text-right text-slate-300">{formatBytes(fs.used_bytes)}</td>
-                          <td className="py-2 text-right text-slate-400">{formatBytes(fs.total_bytes)} ({pct.toFixed(0)}%)</td>
+                          <td className="py-2 pr-4 font-mono text-[var(--text-primary)]">{fs.mountpoint}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)]">{fs.fs_type || '—'}</td>
+                          <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">{formatBytes(fs.used_bytes)}</td>
+                          <td className="py-2 text-right text-[var(--text-muted)]">{formatBytes(fs.total_bytes)} ({pct.toFixed(0)}%)</td>
                         </tr>
                       )
                     })}
@@ -1781,7 +1781,7 @@ export default function VMDetailsPage() {
           )}
 
           {metrics && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
               <h3 className="text-lg font-semibold">Live Metrics</h3>
               <InfoRow label="Memory Used" value={`${metrics.memory_used_mb} / ${metrics.memory_total_mb} MB (${metrics.memory_pct.toFixed(1)}%)`} />
               <InfoRow label="Disk Read" value={formatBytes(metrics.disk_rd_bytes)} />
@@ -1799,14 +1799,14 @@ export default function VMDetailsPage() {
                 />
               )}
               <div className="mt-2">
-                <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Memory</span><span>{metrics.memory_pct.toFixed(0)}%</span></div>
-                <div className="w-full bg-slate-700 rounded-full h-2"><div className={`h-2 rounded-full transition-all ${statusBgClass(utilizationTone(metrics.memory_pct))}`} style={{ width: `${metrics.memory_pct}%` }} /></div>
+                <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1"><span>Memory</span><span>{metrics.memory_pct.toFixed(0)}%</span></div>
+                <div className="w-full bg-[var(--surface-hover)] rounded-full h-2"><div className={`h-2 rounded-full transition-all ${statusBgClass(utilizationTone(metrics.memory_pct))}`} style={{ width: `${metrics.memory_pct}%` }} /></div>
               </div>
             </div>
           )}
 
           {(cpuTune || memTune) && (
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
               <h3 className="text-lg font-semibold">Resource Limits</h3>
               {cpuTune && (
                 <>
@@ -1824,11 +1824,11 @@ export default function VMDetailsPage() {
               )}
               {cpuTune && cpuTune.vcpupin.length > 0 && (
                 <div className="pt-2">
-                  <span className="text-sm text-slate-400">vCPU Pinning</span>
+                  <span className="text-sm text-[var(--text-muted)]">vCPU Pinning</span>
                   <div className="mt-1 space-y-1">
                     {cpuTune.vcpupin.map((pin) => (
-                      <div key={pin.vcpu} className="flex items-center justify-between py-1 border-b border-slate-700/30">
-                        <span className="text-xs text-slate-400">vCPU {pin.vcpu}</span>
+                      <div key={pin.vcpu} className="flex items-center justify-between py-1 border-b border-[var(--apple-hairline)]/30">
+                        <span className="text-xs text-[var(--text-muted)]">vCPU {pin.vcpu}</span>
                         <span className="text-xs font-mono font-medium">{pin.cpuset}</span>
                       </div>
                     ))}
@@ -1843,8 +1843,8 @@ export default function VMDetailsPage() {
       {/* Per-VM Metrics Charts (below overview, visible when running) */}
       {tab === 'overview' && metricsHistory.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4"><MemoryStick className={`w-4 h-4 ${statusToneClass('info')}`} /> Memory Usage</h3>
+          <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4"><MemoryStick className={`w-4 h-4 ${statusToneClass('info')}`} /> Memory Usage</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
                 <defs><linearGradient id="memG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
@@ -1856,8 +1856,8 @@ export default function VMDetailsPage() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4"><HardDrive className={`w-4 h-4 ${statusToneClass('ok')}`} /> Disk I/O</h3>
+          <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4"><HardDrive className={`w-4 h-4 ${statusToneClass('ok')}`} /> Disk I/O</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
                 <defs>
@@ -1873,8 +1873,8 @@ export default function VMDetailsPage() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 lg:col-span-2">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4"><Network className="w-4 h-4 text-cyan-400" /> Network Throughput</h3>
+          <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] lg:col-span-2">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4"><Network className="w-4 h-4 text-[var(--accent)]" /> Network Throughput</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
                 <defs>
@@ -1902,26 +1902,26 @@ export default function VMDetailsPage() {
               type="button"
               onClick={() => void loadKubevirtExport()}
               disabled={kubevirtLoading}
-              className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg text-sm transition flex items-center gap-1"
+              className="btn-primary text-sm disabled:opacity-50 inline-flex items-center gap-1"
               title="CDI upload DataVolume + KubeVirt VM (virtio root + virtio-win CDROM containerDisk)"
             >
               <Archive className="w-4 h-4" aria-hidden />
               {kubevirtLoading ? 'Loading…' : 'KubeVirt YAML'}
             </button>
-            <button onClick={() => openDialog('attach-disk')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Attach Disk</button>
+            <button onClick={() => openDialog('attach-disk')} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Attach Disk</button>
           </div>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
             <table className="w-full" aria-label="Disk devices">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Target</th><th scope="col" className="px-6 py-3">Bus</th><th scope="col" className="px-6 py-3">Cache</th><th scope="col" className="px-6 py-3">Device</th><th scope="col" className="px-6 py-3">Driver</th><th scope="col" className="px-6 py-3">Source</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Target</th><th scope="col" className="px-6 py-3">Bus</th><th scope="col" className="px-6 py-3">Cache</th><th scope="col" className="px-6 py-3">Device</th><th scope="col" className="px-6 py-3">Driver</th><th scope="col" className="px-6 py-3">Source</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {vm.disks.map((d) => (
                   <tr key={d.target} className="table-row-hover">
                     <td className="px-6 py-3 font-mono text-sm">{d.target}</td>
-                    <td className="px-6 py-3 text-sm text-slate-400">{d.bus || '—'}</td>
-                    <td className="px-6 py-3 text-sm text-slate-400">{d.cache || '—'}</td>
+                    <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{d.bus || '—'}</td>
+                    <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{d.cache || '—'}</td>
                     <td className="px-6 py-3 text-sm">{d.device}</td>
                     <td className="px-6 py-3 text-sm">{d.driver}</td>
-                    <td className="px-6 py-3 text-sm text-slate-400 truncate max-w-xs">{d.source}</td>
+                    <td className="px-6 py-3 text-sm text-[var(--text-muted)] truncate max-w-xs">{d.source}</td>
                     <td className="px-6 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {d.device === 'disk' && (
@@ -1943,7 +1943,7 @@ export default function VMDetailsPage() {
                             <Sliders className={`w-4 h-4 ${statusToneClass('warn')}`} />
                           </button>
                         )}
-                        {d.device === 'disk' && <button onClick={() => { setResizeTarget(d.target); setResizeGb(20); setDialog('resize-disk') }} className="p-1 hover:bg-blue-600/20 rounded transition" title="Resize disk" aria-label={`Resize ${d.target}`}>
+                        {d.device === 'disk' && <button onClick={() => { setResizeTarget(d.target); setResizeGb(20); setDialog('resize-disk') }} className="p-1 hover:bg-white/10 rounded transition" title="Resize disk" aria-label={`Resize ${d.target}`}>
                           <HardDrive className={`w-4 h-4 ${statusToneClass('info')}`} />
                         </button>}
                         <button onClick={() => setDetachDiskTarget(d.target)} className="p-1 hover:bg-red-600/20 rounded transition" title="Detach disk" aria-label={`Detach ${d.target}`}>
@@ -1953,7 +1953,7 @@ export default function VMDetailsPage() {
                     </td>
                   </tr>
                 ))}
-                {vm.disks.length === 0 && <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-500">No disks attached</td></tr>}
+                {vm.disks.length === 0 && <tr><td colSpan={7} className="px-6 py-8 text-center text-[var(--text-muted)]">No disks attached</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1964,28 +1964,28 @@ export default function VMDetailsPage() {
 
       {tab === 'network' && (
         <div className="space-y-4">
-          <details className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 group">
-            <summary className="cursor-pointer text-sm font-medium text-slate-200 list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
-              <span className="text-slate-400 group-open:rotate-90 transition">▸</span>
+          <details className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4 group">
+            <summary className="cursor-pointer text-sm font-medium text-[var(--text-primary)] list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+              <span className="text-[var(--text-muted)] group-open:rotate-90 transition">▸</span>
               Guest networking basics (NAT vs bridge, no DHCP)
             </summary>
-            <div className="mt-3 text-xs text-slate-400 space-y-2 pl-1 border-l-2 border-slate-600/50 ml-1">
+            <div className="mt-3 text-xs text-[var(--text-muted)] space-y-2 pl-1 border-l-2 border-[var(--apple-hairline)]/50 ml-1">
               <p>
-                <strong className="text-slate-300">NAT (default network)</strong>: libvirt&apos;s virtual router gives guests private IPs (usually DHCP). Outbound traffic is masqueraded on the host; inbound needs port forwards or host hooks.
+                <strong className="text-[var(--text-secondary)]">NAT (default network)</strong>: libvirt&apos;s virtual router gives guests private IPs (usually DHCP). Outbound traffic is masqueraded on the host; inbound needs port forwards or host hooks.
               </p>
               <p>
-                <strong className="text-slate-300">Bridged / macvtap</strong>: the VM sits on the same L2 segment as a physical NIC or bridge—DHCP often comes from your LAN router. Misconfigured firewall or Spanning Tree can still block traffic.
+                <strong className="text-[var(--text-secondary)]">Bridged / macvtap</strong>: the VM sits on the same L2 segment as a physical NIC or bridge—DHCP often comes from your LAN router. Misconfigured firewall or Spanning Tree can still block traffic.
               </p>
               <p>
-                <strong className="text-slate-300">No DHCP</strong>: check the NIC is attached to an active libvirt network, guest OS has a driver (virtio), and cloud-init / NetworkManager aren&apos;t pinning a wrong config. Use the Overview &quot;Guest IP addresses&quot; panel to see whether libvirt sees a lease, ARP, or agent-reported address.
+                <strong className="text-[var(--text-secondary)]">No DHCP</strong>: check the NIC is attached to an active libvirt network, guest OS has a driver (virtio), and cloud-init / NetworkManager aren&apos;t pinning a wrong config. Use the Overview &quot;Guest IP addresses&quot; panel to see whether libvirt sees a lease, ARP, or agent-reported address.
               </p>
               <p>
-                <strong className="text-slate-300">Routing</strong>: many libvirt NAT networks use{' '}
-                <code className="text-slate-400">.1</code> as the default gateway on the guest subnet (e.g. 192.168.122.1 for 192.168.122.0/24). Bridged guests usually take the same gateway as other LAN hosts. If ping fails, verify firewall/NFT on the host and that the guest actually obtained an address.
+                <strong className="text-[var(--text-secondary)]">Routing</strong>: many libvirt NAT networks use{' '}
+                <code className="text-[var(--text-muted)]">.1</code> as the default gateway on the guest subnet (e.g. 192.168.122.1 for 192.168.122.0/24). Bridged guests usually take the same gateway as other LAN hosts. If ping fails, verify firewall/NFT on the host and that the guest actually obtained an address.
               </p>
               {guestIps.filter((g) => g.ip_type === 'ipv4').length > 0 && (
                 <div className="pt-1">
-                  <span className="text-slate-300 font-medium">Snapshot predicted gateways</span>
+                  <span className="text-[var(--text-secondary)] font-medium">Snapshot predicted gateways</span>
                   <ul className="list-disc list-inside mt-1 space-y-0.5">
                     {guestIps
                       .filter((g) => g.ip_type === 'ipv4')
@@ -1998,20 +1998,20 @@ export default function VMDetailsPage() {
                         const showHeuristic = heuristicGateway && (!xmlGateway || xmlGateway !== heuristicGateway)
                         return (
                           <li key={`${g.address}-${g.prefix}`}>
-                            <span className="font-mono text-slate-300">{g.address}/{g.prefix}</span>
+                            <span className="font-mono text-[var(--text-secondary)]">{g.address}/{g.prefix}</span>
                             {xmlGateway ? (
                               <>
                                 {' '}
-                                → libvirt XML gateway <code className="text-slate-300">{xmlGateway}</code>
+                                → libvirt XML gateway <code className="text-[var(--text-secondary)]">{xmlGateway}</code>
                               </>
                             ) : null}
                             {showHeuristic ? (
                               <>
                                 {xmlGateway ? ' · ' : ' '}
-                                heuristic <code className="text-slate-300">{heuristicGateway}</code>
+                                heuristic <code className="text-[var(--text-secondary)]">{heuristicGateway}</code>
                               </>
                             ) : !xmlGateway && !heuristicGateway ? (
-                              <span className="text-slate-500"> (prefix unsupported for guess)</span>
+                              <span className="text-[var(--text-muted)]"> (prefix unsupported for guess)</span>
                             ) : null}
                           </li>
                         )
@@ -2022,8 +2022,8 @@ export default function VMDetailsPage() {
             </div>
           </details>
           {platformVmId && classicGuestIp ? (
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-              <h3 className="text-sm font-semibold text-slate-200 mb-3">Hypervisor NAT (port forwards)</h3>
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Hypervisor NAT (port forwards)</h3>
               <VmPortForwardPanel
                 platformVmId={platformVmId}
                 vmName={vm.name}
@@ -2035,12 +2035,12 @@ export default function VMDetailsPage() {
             </div>
           ) : null}
           <div className="flex justify-end">
-            <button onClick={() => { setNicNetwork(networks[0]?.name || 'default'); setDialog('attach-nic') }} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Add NIC</button>
+            <button onClick={() => { setNicNetwork(networks[0]?.name || 'default'); setDialog('attach-nic') }} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Add NIC</button>
           </div>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
             <table className="w-full" aria-label="Network interfaces">
-              <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">MAC Address</th><th scope="col" className="px-6 py-3">Source</th><th scope="col" className="px-6 py-3">Model</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">MAC Address</th><th scope="col" className="px-6 py-3">Source</th><th scope="col" className="px-6 py-3">Model</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                 {vm.interfaces.map((iface) => (
                   <tr key={iface.mac_address} className="table-row-hover">
                     <td className="px-6 py-3 font-mono text-sm">{iface.mac_address}</td>
@@ -2069,7 +2069,7 @@ export default function VMDetailsPage() {
                     </td>
                   </tr>
                 ))}
-                {vm.interfaces.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No network interfaces</td></tr>}
+                {vm.interfaces.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-[var(--text-muted)]">No network interfaces</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2081,15 +2081,15 @@ export default function VMDetailsPage() {
       {tab === 'snapshots' && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button onClick={() => openDialog('snapshot')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition flex items-center gap-1"><Plus className="w-4 h-4" /> Create Snapshot</button>
+            <button onClick={() => openDialog('snapshot')} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Create Snapshot</button>
           </div>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
             {snapshots.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">No snapshots. Create one to save the current VM state.</div>
+              <div className="p-8 text-center text-[var(--text-muted)]">No snapshots. Create one to save the current VM state.</div>
             ) : (
               <table className="w-full" aria-label="VM snapshots">
-                <thead><tr className="border-b border-slate-700/50 text-left text-sm text-slate-400"><th scope="col" className="px-6 py-3">Snapshot</th><th scope="col" className="px-6 py-3">State</th><th scope="col" className="px-6 py-3">Created</th><th scope="col" className="px-6 py-3">Current</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-                <tbody className="divide-y divide-slate-700/30">
+                <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Snapshot</th><th scope="col" className="px-6 py-3">State</th><th scope="col" className="px-6 py-3">Created</th><th scope="col" className="px-6 py-3">Current</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
+                <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                   <SnapshotTableRows
                     nodes={snapshotRoots}
                     depth={0}
@@ -2120,13 +2120,13 @@ export default function VMDetailsPage() {
               }}
             />
           ) : null}
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 space-y-3">
-            <h3 className="text-lg font-semibold text-slate-200">Virtual hardware</h3>
-            <p className="text-xs text-slate-500">TPM, watchdog, sound, extra serial, and video — shut off the guest when libvirt requires a static config change.</p>
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 space-y-3">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Virtual hardware</h3>
+            <p className="text-xs text-[var(--text-muted)]">TPM, watchdog, sound, extra serial, and video — shut off the guest when libvirt requires a static config change.</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition"
+                className="btn-secondary text-sm"
                 onClick={() => {
                   if (!name) return
                   void attachVmTpm(name, conn).then(() => { toast.success('TPM 2.0 attached'); load(); setVmXml('') }).catch((e: unknown) => toast.error(formatUserError(e)))
@@ -2136,7 +2136,7 @@ export default function VMDetailsPage() {
               </button>
               <button
                 type="button"
-                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition"
+                className="btn-secondary text-sm"
                 onClick={() => {
                   if (!name) return
                   void detachVmTpm(name, conn).then(() => { toast.success('TPM removed'); load(); setVmXml('') }).catch((e: unknown) => toast.error(formatUserError(e)))
@@ -2144,10 +2144,10 @@ export default function VMDetailsPage() {
               >
                 Remove TPM
               </button>
-              <button type="button" className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition" onClick={() => openDialog('watchdog')}>Watchdog…</button>
-              <button type="button" className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition" onClick={() => openDialog('sound')}>Sound…</button>
-              <button type="button" className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition" onClick={() => openDialog('serial')}>Extra serial…</button>
-              <button type="button" className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition" onClick={() => openDialog('video')}>Video model…</button>
+              <button type="button" className="btn-secondary text-sm" onClick={() => openDialog('watchdog')}>Watchdog…</button>
+              <button type="button" className="btn-secondary text-sm" onClick={() => openDialog('sound')}>Sound…</button>
+              <button type="button" className="btn-secondary text-sm" onClick={() => openDialog('serial')}>Extra serial…</button>
+              <button type="button" className="btn-secondary text-sm" onClick={() => openDialog('video')}>Video model…</button>
             </div>
           </div>
 
@@ -2155,24 +2155,24 @@ export default function VMDetailsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center gap-2"><FolderOpen className={`w-5 h-5 ${statusToneClass('ok')}`} /> Shared directories</h3>
-              <span className="text-xs text-slate-500">virtiofs (Linux guests)</span>
+              <span className="text-xs text-[var(--text-muted)]">virtiofs (Linux guests)</span>
             </div>
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 space-y-4">
-              <p className="text-xs text-slate-500">
-                Cockpit-style host directory sharing via <code className="text-slate-300">virtiofs</code>. VM must be <strong>shut off</strong> to add/remove.
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 space-y-4">
+              <p className="text-xs text-[var(--text-muted)]">
+                Cockpit-style host directory sharing via <code className="text-[var(--text-secondary)]">virtiofs</code>. VM must be <strong>shut off</strong> to add/remove.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Source path (host)</label>
+                  <label className="block text-xs text-[var(--text-muted)] mb-1">Source path (host)</label>
                   <input aria-label="Source path (host)" value={shareSourceDir} onChange={(e) => setShareSourceDir(e.target.value)} placeholder="/data/share" className="input-field w-full" />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Mount tag</label>
+                  <label className="block text-xs text-[var(--text-muted)] mb-1">Mount tag</label>
                   <input aria-label="Mount tag" value={shareMountTag} onChange={(e) => setShareMountTag(e.target.value)} placeholder="hostshare" className="input-field w-full font-mono text-xs" />
                 </div>
                 <div className="flex items-end gap-3">
-                  <label className="flex items-center gap-2 text-sm text-slate-300 pb-2 cursor-pointer select-none">
-                    <input type="checkbox" className="rounded border-slate-600" checked={shareXattr} onChange={(e) => setShareXattr(e.target.checked)} />
+                  <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] pb-2 cursor-pointer select-none">
+                    <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={shareXattr} onChange={(e) => setShareXattr(e.target.checked)} />
                     <span>Extended attributes (xattr)</span>
                   </label>
                   <button
@@ -2191,16 +2191,16 @@ export default function VMDetailsPage() {
                         toast.error(formatUserError(e))
                       }
                     }}
-                    className="ml-auto px-3 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-sm transition"
+                    className="ml-auto btn-primary text-sm"
                   >
                     Share
                   </button>
                 </div>
               </div>
-              <div className="bg-slate-900/40 rounded-lg border border-slate-700/40 overflow-hidden">
+              <div className="bg-[var(--apple-surface)] rounded-lg border border-[var(--apple-hairline)]/40 overflow-hidden">
                 <table className="w-full" aria-label="virtio-fs shares">
                   <thead>
-                    <tr className="border-b border-slate-700/50 text-left text-xs text-slate-500">
+                    <tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]">
                       <th scope="col" className="px-5 py-2">Mount tag</th>
                       <th scope="col" className="px-5 py-2">Source</th>
                       <th scope="col" className="px-5 py-2">Driver</th>
@@ -2208,16 +2208,16 @@ export default function VMDetailsPage() {
                       <th scope="col" className="px-5 py-2 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/30 text-sm">
+                  <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-sm">
                     {(vm?.filesystems || []).length === 0 ? (
-                      <tr><td colSpan={5} className="px-5 py-6 text-center text-slate-500">No shared directories configured.</td></tr>
+                      <tr><td colSpan={5} className="px-5 py-6 text-center text-[var(--text-muted)]">No shared directories configured.</td></tr>
                     ) : (
                       (vm?.filesystems || []).map((fs, i) => (
                         <tr key={`${fs.mount_tag}-${i}`} className="table-row-hover">
                           <td className={`px-5 py-2 font-mono text-xs ${statusToneClass('ok')}`}>{fs.mount_tag}</td>
-                          <td className="px-5 py-2 font-mono text-xs text-slate-300 break-all">{fs.source}</td>
-                          <td className="px-5 py-2 text-slate-300">{fs.driver || '-'}</td>
-                          <td className="px-5 py-2 text-slate-300">{fs.xattr ? 'on' : 'off'}</td>
+                          <td className="px-5 py-2 font-mono text-xs text-[var(--text-secondary)] break-all">{fs.source}</td>
+                          <td className="px-5 py-2 text-[var(--text-secondary)]">{fs.driver || '-'}</td>
+                          <td className="px-5 py-2 text-[var(--text-secondary)]">{fs.xattr ? 'on' : 'off'}</td>
                           <td className="px-5 py-2 text-right">
                             <button
                               type="button"
@@ -2233,19 +2233,19 @@ export default function VMDetailsPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-slate-500">
-                Inside the guest: <code className="text-slate-300">mount -t virtiofs &lt;mount_tag&gt; /mnt</code>
+              <p className="text-xs text-[var(--text-muted)]">
+                Inside the guest: <code className="text-[var(--text-secondary)]">mount -t virtiofs &lt;mount_tag&gt; /mnt</code>
               </p>
             </div>
           </div>
 
-          <details className="rounded-xl border border-slate-700/50 bg-slate-800/30 overflow-hidden group">
-            <summary className="px-5 py-3 cursor-pointer text-sm font-semibold text-slate-200 select-none flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-slate-400" />
+          <details className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-fill-tertiary)]/30 overflow-hidden group">
+            <summary className="px-5 py-3 cursor-pointer text-sm font-semibold text-[var(--text-primary)] select-none flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[var(--text-muted)]" />
               Advanced passthrough (USB, PCI, IOMMU)
-              <span className="text-xs font-normal text-slate-500 ml-1">— expand for host devices and VFIO groups</span>
+              <span className="text-xs font-normal text-[var(--text-muted)] ml-1">— expand for host devices and VFIO groups</span>
             </summary>
-            <div className="p-5 pt-0 space-y-6 border-t border-slate-700/40">
+            <div className="p-5 pt-0 space-y-6 border-t border-[var(--apple-hairline)]/40">
           {/* USB Devices */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -2255,35 +2255,35 @@ export default function VMDetailsPage() {
                 onClick={() => setDialog('attach-usb')}
                 disabled={!canUsbPci}
                 title={!canUsbPci ? 'USB passthrough requires operator or admin' : undefined}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm transition flex items-center gap-1"
+                className="btn-primary text-sm inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" /> Attach USB
               </button>
             </div>
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
               <table className="w-full" aria-label="USB devices">
-                <thead><tr className="border-b border-slate-700/50 text-left text-xs text-slate-500"><th scope="col" className="px-6 py-2">Bus</th><th scope="col" className="px-6 py-2">Device</th><th scope="col" className="px-6 py-2">ID</th><th scope="col" className="px-6 py-2">Description</th><th scope="col" className="px-6 py-2 text-right">Actions</th></tr></thead>
-                <tbody className="divide-y divide-slate-700/30 text-sm">
+                <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-6 py-2">Bus</th><th scope="col" className="px-6 py-2">Device</th><th scope="col" className="px-6 py-2">ID</th><th scope="col" className="px-6 py-2">Description</th><th scope="col" className="px-6 py-2 text-right">Actions</th></tr></thead>
+                <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-sm">
                   {usbDevices.map((d) => (
                     <tr key={`${d.vendor_id}:${d.product_id}`} className="table-row-hover">
                       <td className="px-6 py-2 font-mono text-xs">{d.bus}</td>
                       <td className="px-6 py-2 font-mono text-xs">{d.device}</td>
                       <td className={`px-6 py-2 font-mono ${statusToneClass('info')}`}>{d.vendor_id}:{d.product_id}</td>
-                      <td className="px-6 py-2 text-slate-300">{d.description}</td>
+                      <td className="px-6 py-2 text-[var(--text-secondary)]">{d.description}</td>
                       <td className="px-6 py-2 text-right">
                         <button
                           type="button"
                           onClick={() => void handleAttachUsb(d.vendor_id, d.product_id)}
                           disabled={!canUsbPci}
                           title={!canUsbPci ? 'USB passthrough requires operator or admin' : undefined}
-                          className={`px-2 py-0.5 hover:bg-blue-600/30 disabled:opacity-50 rounded text-xs transition ${statusBadgeClasses('info')}`}
+                          className={`px-2 py-0.5 hover:bg-white/10 disabled:opacity-50 rounded text-xs transition ${statusBadgeClasses('info')}`}
                         >
                           Attach
                         </button>
                       </td>
                     </tr>
                   ))}
-                  {usbDevices.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No USB devices found on host</td></tr>}
+                  {usbDevices.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-[var(--text-muted)]">No USB devices found on host</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -2292,20 +2292,20 @@ export default function VMDetailsPage() {
           {/* PCI Devices */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2"><Monitor className="w-5 h-5 text-purple-400" /> PCI Devices</h3>
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
               <table className="w-full" aria-label="PCI devices">
-                <thead><tr className="border-b border-slate-700/50 text-left text-xs text-slate-500"><th scope="col" className="px-6 py-2">Slot</th><th scope="col" className="px-6 py-2">Class</th><th scope="col" className="px-6 py-2">Vendor</th><th scope="col" className="px-6 py-2">Device</th><th scope="col" className="px-6 py-2">IOMMU Group</th></tr></thead>
-                <tbody className="divide-y divide-slate-700/30 text-sm">
+                <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-6 py-2">Slot</th><th scope="col" className="px-6 py-2">Class</th><th scope="col" className="px-6 py-2">Vendor</th><th scope="col" className="px-6 py-2">Device</th><th scope="col" className="px-6 py-2">IOMMU Group</th></tr></thead>
+                <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-sm">
                   {pciDevices.map((d) => (
                     <tr key={d.slot} className="table-row-hover">
                       <td className={`px-6 py-2 font-mono text-xs ${statusToneClass('info')}`}>{d.slot}</td>
-                      <td className="px-6 py-2 text-slate-300">{d.class}</td>
-                      <td className="px-6 py-2 text-slate-300">{d.vendor}</td>
-                      <td className="px-6 py-2 text-slate-300">{d.device}</td>
-                      <td className="px-6 py-2 font-mono text-xs text-slate-400">{d.iommu_group || '-'}</td>
+                      <td className="px-6 py-2 text-[var(--text-secondary)]">{d.class}</td>
+                      <td className="px-6 py-2 text-[var(--text-secondary)]">{d.vendor}</td>
+                      <td className="px-6 py-2 text-[var(--text-secondary)]">{d.device}</td>
+                      <td className="px-6 py-2 font-mono text-xs text-[var(--text-muted)]">{d.iommu_group || '-'}</td>
                     </tr>
                   ))}
-                  {pciDevices.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No PCI devices found or lspci not available</td></tr>}
+                  {pciDevices.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-[var(--text-muted)]">No PCI devices found or lspci not available</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -2315,20 +2315,20 @@ export default function VMDetailsPage() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-orange-400" /> IOMMU Groups</h3>
             {iommuGroups.length === 0 ? (
-              <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center text-slate-500">No IOMMU groups found. IOMMU may not be enabled or /sys/kernel/iommu_groups is empty.</div>
+              <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-8 text-center text-[var(--text-muted)]">No IOMMU groups found. IOMMU may not be enabled or /sys/kernel/iommu_groups is empty.</div>
             ) : (
               <div className="space-y-3">
                 {iommuGroups.map((g) => (
-                  <div key={g.group_id} className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                    <div className="px-5 py-2.5 bg-slate-800/80 border-b border-slate-700/50 text-sm font-medium text-orange-400">Group {g.group_id} ({g.devices.length} device{g.devices.length !== 1 ? 's' : ''})</div>
+                  <div key={g.group_id} className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+                    <div className="px-5 py-2.5 bg-[var(--apple-fill-tertiary)]/80 border-b border-[var(--apple-hairline)] text-sm font-medium text-orange-400">Group {g.group_id} ({g.devices.length} device{g.devices.length !== 1 ? 's' : ''})</div>
                     <table className="w-full" aria-label="IOMMU group devices">
-                      <thead><tr className="border-b border-slate-700/50 text-left text-xs text-slate-500"><th scope="col" className="px-5 py-2">BDF</th><th scope="col" className="px-5 py-2">Vendor</th><th scope="col" className="px-5 py-2">Device</th></tr></thead>
-                      <tbody className="divide-y divide-slate-700/30 text-sm">
+                      <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-5 py-2">BDF</th><th scope="col" className="px-5 py-2">Vendor</th><th scope="col" className="px-5 py-2">Device</th></tr></thead>
+                      <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-sm">
                         {g.devices.map((d) => (
                           <tr key={d.bdf} className="table-row-hover">
                             <td className={`px-5 py-2 font-mono text-xs ${statusToneClass('info')}`}>{d.bdf}</td>
-                            <td className="px-5 py-2 text-slate-300">{d.vendor || '-'}</td>
-                            <td className="px-5 py-2 text-slate-300">{d.device_name || '-'}</td>
+                            <td className="px-5 py-2 text-[var(--text-secondary)]">{d.vendor || '-'}</td>
+                            <td className="px-5 py-2 text-[var(--text-secondary)]">{d.device_name || '-'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2351,36 +2351,36 @@ export default function VMDetailsPage() {
             These actions map directly to libvirt (<code className="opacity-90">virsh blockcommit</code>, <code className="opacity-90">undefine --nvram</code>, etc.). Wrong options can destroy data or make a VM unbootable. Prefer shutoff VMs for delete and PCI attach unless you know the guest is safe.
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2"><Trash2 className={`w-5 h-5 ${statusToneClass('error')}`} /> Delete VM</h3>
-            <p className="text-xs text-slate-400">Optional <code className="text-slate-300">undefine</code> flags (query params on DELETE). Typically use with VM shut off.</p>
+            <p className="text-xs text-[var(--text-muted)]">Optional <code className="text-[var(--text-secondary)]">undefine</code> flags (query params on DELETE). Typically use with VM shut off.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_managed_save} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_managed_save: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_managed_save} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_managed_save: e.target.checked }))} />
                 <span>Remove managed save image</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_snapshots_metadata} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_snapshots_metadata: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_snapshots_metadata} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_snapshots_metadata: e.target.checked }))} />
                 <span>Drop snapshot metadata only</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_nvram} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_nvram: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_nvram} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_nvram: e.target.checked }))} />
                 <span>Delete UEFI NVRAM file</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_keep_nvram} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_keep_nvram: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_keep_nvram} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_keep_nvram: e.target.checked }))} />
                 <span>Keep NVRAM (exclusive with delete NVRAM)</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_checkpoints_metadata} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_checkpoints_metadata: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_checkpoints_metadata} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_checkpoints_metadata: e.target.checked }))} />
                 <span>Remove checkpoint metadata</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_tpm} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_tpm: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_tpm} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_tpm: e.target.checked }))} />
                 <span>Delete TPM state</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                <input type="checkbox" className="rounded border-slate-600" checked={!!deleteUndefine.undefine_keep_tpm} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_keep_tpm: e.target.checked }))} />
+              <label className="flex items-center gap-2 cursor-pointer text-[var(--text-secondary)]">
+                <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={!!deleteUndefine.undefine_keep_tpm} onChange={(e) => setDeleteUndefine((p) => ({ ...p, undefine_keep_tpm: e.target.checked }))} />
                 <span>Keep TPM (exclusive with delete TPM)</span>
               </label>
             </div>
@@ -2393,31 +2393,31 @@ export default function VMDetailsPage() {
               onClick={() => openDialog('delete-vm')}
               disabled={!canDestroyVm}
               title={!canDestroyVm ? 'Destroying VMs requires the admin role' : undefined}
-              className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition"
+              className="btn-destructive text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Delete this VM…
             </button>
             {!canDestroyVm && (
-              <p className="text-xs text-slate-500">Your role cannot destroy guests. Ask an admin to grant the admin role in machina&apos;s roles map.</p>
+              <p className="text-xs text-[var(--text-muted)]">Your role cannot destroy guests. Ask an admin to grant the admin role in machina&apos;s roles map.</p>
             )}
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold">CPU / memory tuning</h3>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => openDialog('scheduler-tune')} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">Edit scheduler (shares / vCPU bandwidth)</button>
-              <button type="button" onClick={() => openDialog('memtune')} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">Edit memtune (KiB)</button>
-              <button type="button" onClick={() => openDialog('numa-tune')} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">NUMA memory tuning</button>
-              <button type="button" onClick={() => openDialog('emulator-pin')} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">Pin QEMU emulator threads</button>
-              <button type="button" onClick={() => openDialog('pin-vcpu')} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">Pin vCPU to host CPUs</button>
+              <button type="button" onClick={() => openDialog('scheduler-tune')} className="btn-secondary text-sm">Edit scheduler (shares / vCPU bandwidth)</button>
+              <button type="button" onClick={() => openDialog('memtune')} className="btn-secondary text-sm">Edit memtune (KiB)</button>
+              <button type="button" onClick={() => openDialog('numa-tune')} className="btn-secondary text-sm">NUMA memory tuning</button>
+              <button type="button" onClick={() => openDialog('emulator-pin')} className="btn-secondary text-sm">Pin QEMU emulator threads</button>
+              <button type="button" onClick={() => openDialog('pin-vcpu')} className="btn-secondary text-sm">Pin vCPU to host CPUs</button>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold">Block jobs (snapshots / backing chain)</h3>
             <div className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Disk target</label>
+                <label className="block text-xs text-[var(--text-muted)] mb-1">Disk target</label>
                 <select aria-label="Disk target" value={blockDisk} onChange={(e) => setBlockDisk(e.target.value)} className="input-field min-w-[120px]">
                   <option value="">Select…</option>
                   {vm.disks.filter((d) => d.device === 'disk').map((d) => (
@@ -2425,10 +2425,10 @@ export default function VMDetailsPage() {
                   ))}
                 </select>
               </div>
-              <button type="button" onClick={handleBlockJobRefresh} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">Refresh job status</button>
+              <button type="button" onClick={handleBlockJobRefresh} className="btn-secondary text-sm">Refresh job status</button>
               <button
                 type="button"
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition"
+                className="btn-secondary text-sm"
                 disabled={!name}
                 onClick={async () => {
                   if (!name) return
@@ -2442,37 +2442,37 @@ export default function VMDetailsPage() {
               >
                 Job stats API
               </button>
-              <button type="button" onClick={() => openDialog('block-commit')} className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition">Block commit…</button>
-              <button type="button" onClick={handleBlockPull} className="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-sm transition">Block pull</button>
-              <button type="button" onClick={() => handleBlockAbort(false, false)} className="px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition">Abort job</button>
-              <button type="button" onClick={() => handleBlockAbort(true, true)} className="px-3 py-2 bg-orange-700 hover:bg-orange-600 rounded-lg text-sm transition">Abort (async + pivot)</button>
+              <button type="button" onClick={() => openDialog('block-commit')} className="btn-primary text-sm">Block commit…</button>
+              <button type="button" onClick={handleBlockPull} className="btn-primary text-sm">Block pull</button>
+              <button type="button" onClick={() => handleBlockAbort(false, false)} className="px-3 py-2 bg-[var(--apple-fill-secondary)] hover:bg-[var(--surface-hover)] rounded-lg text-sm transition">Abort job</button>
+              <button type="button" onClick={() => handleBlockAbort(true, true)} className="btn-secondary text-sm">Abort (async + pivot)</button>
             </div>
             {blockJob !== undefined && (
               blockJob === null ? (
-                <p className="text-sm text-slate-400">No active block job on this disk.</p>
+                <p className="text-sm text-[var(--text-muted)]">No active block job on this disk.</p>
               ) : (
-                <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 space-y-3">
+                <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
                   <div className="flex flex-wrap gap-3 text-sm">
-                    <span className="text-slate-300">Operation type: <strong className="text-slate-100">{blockJob.job_type}</strong></span>
-                    <span className="text-slate-300">Progress: <strong className={statusToneClass('ok')}>{blockJob.end > 0 ? Math.round((blockJob.cur / blockJob.end) * 100) : 0}%</strong></span>
+                    <span className="text-[var(--text-secondary)]">Operation type: <strong className="text-[var(--text-primary)]">{blockJob.job_type}</strong></span>
+                    <span className="text-[var(--text-secondary)]">Progress: <strong className={statusToneClass('ok')}>{blockJob.end > 0 ? Math.round((blockJob.cur / blockJob.end) * 100) : 0}%</strong></span>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-2 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
                     <div className={`h-full rounded-full transition-all ${statusBgClass('info')}`} style={{ width: `${blockJob.end > 0 ? Math.min(100, (blockJob.cur / blockJob.end) * 100) : 0}%` }} />
                   </div>
-                  <p className="text-xs text-slate-500">{blockJob.cur.toLocaleString()} / {blockJob.end.toLocaleString()} bytes · bandwidth {blockJob.bandwidth}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{blockJob.cur.toLocaleString()} / {blockJob.end.toLocaleString()} bytes · bandwidth {blockJob.bandwidth}</p>
                 </div>
               )
             )}
             {jobStats && (
-              <p className="text-xs text-slate-400 mt-2">API stats: {jobStats.cur} / {jobStats.end} · {jobStats.job_type ?? 'job'}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">API stats: {jobStats.cur} / {jobStats.end} · {jobStats.job_type ?? 'job'}</p>
             )}
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold">CPU compatibility</h3>
             <button
               type="button"
-              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition"
+              className="btn-secondary text-sm"
               onClick={async () => {
                 if (!name) return
                 try {
@@ -2501,9 +2501,9 @@ export default function VMDetailsPage() {
             )}
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold">PCI passthrough (VFIO)</h3>
-            <p className="text-xs text-slate-400">BDF like <code className="text-slate-300">0000:03:00.0</code>. Detach the node device from the host first when required.</p>
+            <p className="text-xs text-[var(--text-muted)]">BDF like <code className="text-[var(--text-secondary)]">0000:03:00.0</code>. Detach the node device from the host first when required.</p>
             <div className="flex flex-wrap gap-2 items-end">
               <input aria-label="PCI BDF address" value={pciBdf} onChange={(e) => setPciBdf(e.target.value)} placeholder="0000:03:00.0" className="input-field flex-1 min-w-[200px]" />
               <button
@@ -2521,7 +2521,7 @@ export default function VMDetailsPage() {
                     toast.error(`${formatUserError(e)}`)
                   }
                 }}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm transition"
+                className="btn-primary text-sm disabled:opacity-50"
               >
                 Attach
               </button>
@@ -2540,16 +2540,16 @@ export default function VMDetailsPage() {
                     toast.error(`${formatUserError(e)}`)
                   }
                 }}
-                className="px-3 py-2 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 rounded-lg text-sm transition"
+                className="px-3 py-2 bg-[var(--apple-fill-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm transition"
               >
                 Detach
               </button>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
             <h3 className="text-lg font-semibold">Host node device</h3>
-            <p className="text-xs text-slate-400">Name from <strong className="text-slate-300">Devices</strong> page or <code className="text-slate-300">pci_0000_03_00_0</code> style libvirt id.</p>
+            <p className="text-xs text-[var(--text-muted)]">Name from <strong className="text-[var(--text-secondary)]">Devices</strong> page or <code className="text-[var(--text-secondary)]">pci_0000_03_00_0</code> style libvirt id.</p>
             <div className="flex flex-wrap gap-2 items-end">
               <input aria-label="Host node device name" value={nodedevName} onChange={(e) => setNodedevName(e.target.value)} placeholder="pci_0000_03_00_0" className="input-field flex-1 min-w-[220px]" />
               <button
@@ -2565,7 +2565,7 @@ export default function VMDetailsPage() {
                     toast.error(`${formatUserError(e)}`)
                   }
                 }}
-                className="px-3 py-2 bg-orange-700 hover:bg-orange-600 disabled:opacity-50 rounded-lg text-sm transition"
+                className="btn-secondary text-sm disabled:opacity-50"
               >
                 Detach from host
               </button>
@@ -2582,7 +2582,7 @@ export default function VMDetailsPage() {
                     toast.error(`${formatUserError(e)}`)
                   }
                 }}
-                className="px-3 py-2 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 rounded-lg text-sm transition"
+                className="px-3 py-2 bg-[var(--apple-fill-secondary)] hover:bg-[var(--surface-hover)] disabled:opacity-50 rounded-lg text-sm transition"
               >
                 Reattach to host
               </button>
@@ -2594,26 +2594,26 @@ export default function VMDetailsPage() {
       {/* ── XML Tab ──────────────────────────────────────────────── */}
 
       {tab === 'xml' && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
-            <span className="text-sm text-slate-400">Domain XML Configuration</span>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-3 border-b border-[var(--apple-hairline)] flex items-center justify-between">
+            <span className="text-sm text-[var(--text-muted)]">Domain XML Configuration</span>
             <div className="flex items-center gap-3">
               <button onClick={downloadXml} className={`text-xs transition flex items-center gap-1 ${statusActionLinkClasses('info')}`}><Download className="w-3 h-3" /> Download</button>
               <button onClick={() => { if (vmXml) navigator.clipboard.writeText(vmXml).then(() => toast.success('XML copied')) }} className={`text-xs transition flex items-center gap-1 ${statusActionLinkClasses('info')}`}><Copy className="w-3 h-3" /> Copy</button>
             </div>
           </div>
-          <pre className="p-6 text-xs font-mono text-slate-300 overflow-x-auto max-h-[600px] whitespace-pre">{vmXml || 'Loading...'}</pre>
+          <pre className="p-6 text-xs font-mono text-[var(--text-secondary)] overflow-x-auto max-h-[600px] whitespace-pre">{vmXml || 'Loading...'}</pre>
         </div>
       )}
 
       {/* ── Logs Tab ────────────────────────────────────────────── */}
 
       {tab === 'logs' && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-3 border-b border-slate-700/50 flex items-center justify-between">
-            <span className="text-sm text-slate-400">QEMU Log ({`/var/log/libvirt/qemu/${vm.name}.log`})</span>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-3 border-b border-[var(--apple-hairline)] flex items-center justify-between">
+            <span className="text-sm text-[var(--text-muted)]">QEMU Log ({`/var/log/libvirt/qemu/${vm.name}.log`})</span>
             <div className="flex items-center gap-3">
-              <select aria-label="Log lines" value={logsLines} onChange={(e) => setLogsLines(parseInt(e.target.value))} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300">
+              <select aria-label="Log lines" value={logsLines} onChange={(e) => setLogsLines(parseInt(e.target.value))} className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-xs text-[var(--text-secondary)]">
                 <option value={500}>500 lines</option>
                 <option value={1000}>1000 lines</option>
                 <option value={2000}>2000 lines</option>
@@ -2622,7 +2622,7 @@ export default function VMDetailsPage() {
               <button onClick={() => { if (name) getVMLogs(name, logsLines, conn).then((r) => setLogsContent(r.content)).catch(() => setLogsContent('Failed to load logs')) }} className={`text-xs transition flex items-center gap-1 ${statusActionLinkClasses('info')}`}><RefreshCw className="w-3 h-3" /> Refresh</button>
             </div>
           </div>
-          <pre className="p-6 text-xs font-mono text-slate-300 overflow-x-auto max-h-[600px] overflow-y-auto whitespace-pre">{logsContent || 'No log content available.'}</pre>
+          <pre className="p-6 text-xs font-mono text-[var(--text-secondary)] overflow-x-auto max-h-[600px] overflow-y-auto whitespace-pre">{logsContent || 'No log content available.'}</pre>
         </div>
       )}
 
@@ -2632,75 +2632,75 @@ export default function VMDetailsPage() {
         <DialogOverlay onClose={() => setDialog(null)}>
           {dialog === 'vcpus' && (
             <DialogBox title="Set vCPUs" icon={<Cpu className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleSetVcpus} confirmLabel="Apply">
-              <label htmlFor="dlg-vcpus" className="block text-sm text-slate-400 mb-1">vCPU Count (1-256)</label>
+              <label htmlFor="dlg-vcpus" className="block text-sm text-[var(--text-muted)] mb-1">vCPU Count (1-256)</label>
               <input id="dlg-vcpus" type="number" min={1} max={256} autoFocus value={editVcpus} onChange={(e) => setEditVcpus(parseInt(e.target.value) || 1)} className="input-field" />
-              <p className="text-xs text-slate-500 mt-2">Changes to a running VM take effect on next reboot.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Changes to a running VM take effect on next reboot.</p>
             </DialogBox>
           )}
 
           {dialog === 'memory' && (
             <DialogBox title="Set Memory" icon={<MemoryStick className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleSetMemory} confirmLabel="Apply">
-              <label htmlFor="dlg-mem" className="block text-sm text-slate-400 mb-1">Memory (MB, 64 - 1048576)</label>
+              <label htmlFor="dlg-mem" className="block text-sm text-[var(--text-muted)] mb-1">Memory (MB, 64 - 1048576)</label>
               <input id="dlg-mem" type="number" min={64} max={1048576} autoFocus value={editMemory} onChange={(e) => setEditMemory(parseInt(e.target.value) || 1024)} className="input-field" />
-              <p className="text-xs text-slate-500 mt-2">Sets the maximum memory allocation. Takes effect on next reboot.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Sets the maximum memory allocation. Takes effect on next reboot.</p>
             </DialogBox>
           )}
 
           {dialog === 'balloon' && (
             <DialogBox title="Memory Balloon" icon={<MemoryStick className="w-5 h-5 text-purple-400" />} onClose={() => setDialog(null)} onConfirm={handleBalloon} confirmLabel="Apply">
-              <label htmlFor="dlg-balloon" className="block text-sm text-slate-400 mb-1">Target Memory (MB)</label>
+              <label htmlFor="dlg-balloon" className="block text-sm text-[var(--text-muted)] mb-1">Target Memory (MB)</label>
               <input id="dlg-balloon" type="number" min={64} autoFocus value={balloonMb} onChange={(e) => setBalloonMb(parseInt(e.target.value) || 64)} className="input-field" />
-              <p className="text-xs text-slate-500 mt-2">Dynamically adjust memory on a running VM. The guest must have balloon drivers installed.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Dynamically adjust memory on a running VM. The guest must have balloon drivers installed.</p>
             </DialogBox>
           )}
 
           {dialog === 'clone' && (
             <DialogBox title="Clone VM" icon={<Copy className={`w-5 h-5 ${statusToneClass('ok')}`} />} onClose={() => setDialog(null)} onConfirm={handleClone} confirmLabel="Clone">
-              <label htmlFor="dlg-clone" className="block text-sm text-slate-400 mb-1">New VM Name</label>
+              <label htmlFor="dlg-clone" className="block text-sm text-[var(--text-muted)] mb-1">New VM Name</label>
               <input id="dlg-clone" type="text" autoFocus value={cloneName} onChange={(e) => setCloneName(e.target.value)} className="input-field" placeholder="my-vm-clone" />
-              <label htmlFor="dlg-clone-mode" className="block text-sm text-slate-400 mb-1 mt-3">Disk mode</label>
+              <label htmlFor="dlg-clone-mode" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Disk mode</label>
               <select id="dlg-clone-mode" className="input-field" value={cloneMode} onChange={(e) => setCloneMode(e.target.value as 'linked' | 'full' | 'xml')}>
                 <option value="linked">Linked clone (qcow2 backing file)</option>
                 <option value="full">Full clone (independent copy)</option>
                 <option value="xml">XML only (shared disk — not recommended)</option>
               </select>
-              <p className="text-xs text-slate-500 mt-2">Linked and full clones create a new disk image and new MAC addresses. Linked shares blocks with the source until written.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Linked and full clones create a new disk image and new MAC addresses. Linked shares blocks with the source until written.</p>
             </DialogBox>
           )}
 
           {dialog === 'rename' && (
             <DialogBox title="Rename VM" icon={<Pencil className={`w-5 h-5 ${statusToneClass('warn')}`} />} onClose={() => setDialog(null)} onConfirm={handleRename} confirmLabel="Rename">
-              <label htmlFor="dlg-rename" className="block text-sm text-slate-400 mb-1">New Name</label>
+              <label htmlFor="dlg-rename" className="block text-sm text-[var(--text-muted)] mb-1">New Name</label>
               <input id="dlg-rename" type="text" autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} className="input-field" />
-              <p className="text-xs text-slate-500 mt-2">VM must be shut off to rename.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">VM must be shut off to rename.</p>
             </DialogBox>
           )}
 
           {dialog === 'migrate' && (
-            <DialogBox title="Migrate VM" icon={<ArrowRightLeft className="w-5 h-5 text-cyan-400" />} onClose={() => setDialog(null)} onConfirm={handleMigrate} confirmLabel="Migrate">
-              <label htmlFor="dlg-migrate" className="block text-sm text-slate-400 mb-1">Destination URI</label>
+            <DialogBox title="Migrate VM" icon={<ArrowRightLeft className="w-5 h-5 text-[var(--accent)]" />} onClose={() => setDialog(null)} onConfirm={handleMigrate} confirmLabel="Migrate">
+              <label htmlFor="dlg-migrate" className="block text-sm text-[var(--text-muted)] mb-1">Destination URI</label>
               <input id="dlg-migrate" type="text" autoFocus value={migrateUri} onChange={(e) => setMigrateUri(e.target.value)} className="input-field" placeholder="qemu+ssh://host/system" />
               <div className="flex items-center gap-2 mt-3">
-                <input id="dlg-live" type="checkbox" checked={migrateLive} onChange={(e) => setMigrateLive(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
-                <label htmlFor="dlg-live" className="text-sm text-slate-300">Live migration (minimal downtime)</label>
+                <input id="dlg-live" type="checkbox" checked={migrateLive} onChange={(e) => setMigrateLive(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
+                <label htmlFor="dlg-live" className="text-sm text-[var(--text-secondary)]">Live migration (minimal downtime)</label>
               </div>
-              <label htmlFor="dlg-mig-bw" className="block text-sm text-slate-400 mb-1 mt-3">Bandwidth limit (MiB/s, optional)</label>
+              <label htmlFor="dlg-mig-bw" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Bandwidth limit (MiB/s, optional)</label>
               <input id="dlg-mig-bw" type="number" min={1} className="input-field" value={migrateBandwidth} onChange={(e) => setMigrateBandwidth(e.target.value)} placeholder="e.g. 200" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-sm text-slate-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-sm text-[var(--text-secondary)]">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={migrateUnsafe} onChange={(e) => setMigrateUnsafe(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                  <input type="checkbox" checked={migrateUnsafe} onChange={(e) => setMigrateUnsafe(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   Unsafe migration
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={migratePostcopy} onChange={(e) => setMigratePostcopy(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                  <input type="checkbox" checked={migratePostcopy} onChange={(e) => setMigratePostcopy(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   Post-copy
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={migrateTunnelled} onChange={(e) => setMigrateTunnelled(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                  <input type="checkbox" checked={migrateTunnelled} onChange={(e) => setMigrateTunnelled(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   Tunnelled
                 </label>
               </div>
-              <p className="text-xs text-slate-500 mt-2">Allowed URI schemes: qemu://, qemu+ssh://, qemu+tcp://, qemu+tls://, qemu+unix://</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Allowed URI schemes: qemu://, qemu+ssh://, qemu+tcp://, qemu+tls://, qemu+unix://</p>
             </DialogBox>
           )}
 
@@ -2723,12 +2723,12 @@ export default function VMDetailsPage() {
               onConfirm={handleCreateSnapshot}
               confirmLabel="Create"
             >
-              <label htmlFor="dlg-snap-name" className="block text-sm text-slate-400 mb-1">Snapshot Name</label>
+              <label htmlFor="dlg-snap-name" className="block text-sm text-[var(--text-muted)] mb-1">Snapshot Name</label>
               <input id="dlg-snap-name" type="text" autoFocus value={snapName} onChange={(e) => setSnapName(e.target.value)} className="input-field" placeholder="before-upgrade" />
-              <label htmlFor="dlg-snap-desc" className="block text-sm text-slate-400 mb-1 mt-3">Description (optional)</label>
+              <label htmlFor="dlg-snap-desc" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Description (optional)</label>
               <input id="dlg-snap-desc" type="text" value={snapDesc} onChange={(e) => setSnapDesc(e.target.value)} className="input-field" placeholder="Snapshot before kernel upgrade" />
 
-              <label htmlFor="dlg-snap-mode" className="block text-sm text-slate-400 mb-1 mt-3">Storage mode</label>
+              <label htmlFor="dlg-snap-mode" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Storage mode</label>
               <select id="dlg-snap-mode" value={snapStorageMode} onChange={(e) => setSnapStorageMode(e.target.value as 'auto' | 'external' | 'internal')} className="input-field">
                 <option value="auto">Auto (Cockpit-style: external on new libvirt)</option>
                 <option value="external">External (overlay files)</option>
@@ -2736,17 +2736,17 @@ export default function VMDetailsPage() {
               </select>
 
               <div className="flex items-center gap-2 mt-3">
-                <input id="dlg-snap-disk-only" type="checkbox" checked={snapDiskOnly} onChange={(e) => setSnapDiskOnly(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
-                <label htmlFor="dlg-snap-disk-only" className="text-sm text-slate-300">Disk-only snapshot (faster, no memory state)</label>
+                <input id="dlg-snap-disk-only" type="checkbox" checked={snapDiskOnly} onChange={(e) => setSnapDiskOnly(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
+                <label htmlFor="dlg-snap-disk-only" className="text-sm text-[var(--text-secondary)]">Disk-only snapshot (faster, no memory state)</label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
-                  <input type="checkbox" checked={snapAtomic} onChange={(e) => setSnapAtomic(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-secondary)]">
+                  <input type="checkbox" checked={snapAtomic} onChange={(e) => setSnapAtomic(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   Atomic (all-or-nothing)
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
-                  <input type="checkbox" checked={snapReuseExternal} onChange={(e) => setSnapReuseExternal(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-secondary)]">
+                  <input type="checkbox" checked={snapReuseExternal} onChange={(e) => setSnapReuseExternal(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   Reuse existing external files (dangerous)
                 </label>
               </div>
@@ -2754,7 +2754,7 @@ export default function VMDetailsPage() {
               {(snapStorageMode === 'external' || snapStorageMode === 'auto') && (
                 <div className="mt-4 space-y-3">
                   <div>
-                    <label htmlFor="dlg-snap-diskdir" className="block text-sm text-slate-400 mb-1">External disk snapshot directory (optional)</label>
+                    <label htmlFor="dlg-snap-diskdir" className="block text-sm text-[var(--text-muted)] mb-1">External disk snapshot directory (optional)</label>
                     <input
                       id="dlg-snap-diskdir"
                       type="text"
@@ -2763,13 +2763,13 @@ export default function VMDetailsPage() {
                       className="input-field"
                       placeholder="Leave empty to let libvirt auto-generate"
                     />
-                    <p className="text-xs text-slate-500 mt-1">If set, Machina generates per-disk overlay files under this directory.</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">If set, Machina generates per-disk overlay files under this directory.</p>
                   </div>
 
                   {!snapDiskOnly && vm?.state === 'running' && (
                     <div className="space-y-2">
                       <div>
-                        <label htmlFor="dlg-snap-mem-mode" className="block text-sm text-slate-400 mb-1">Memory snapshot</label>
+                        <label htmlFor="dlg-snap-mem-mode" className="block text-sm text-[var(--text-muted)] mb-1">Memory snapshot</label>
                         <select
                           id="dlg-snap-mem-mode"
                           value={snapMemorySnapshot}
@@ -2785,7 +2785,7 @@ export default function VMDetailsPage() {
                       {((snapMemorySnapshot || (snapStorageMode === 'external' ? 'external' : '')) === 'external') && (
                         <>
                           <div>
-                            <label htmlFor="dlg-snap-memfile" className="block text-sm text-slate-400 mb-1">Memory file (optional)</label>
+                            <label htmlFor="dlg-snap-memfile" className="block text-sm text-[var(--text-muted)] mb-1">Memory file (optional)</label>
                             <input
                               id="dlg-snap-memfile"
                               type="text"
@@ -2796,7 +2796,7 @@ export default function VMDetailsPage() {
                             />
                           </div>
                           <div>
-                            <label htmlFor="dlg-snap-memdir" className="block text-sm text-slate-400 mb-1">External memory directory (optional)</label>
+                            <label htmlFor="dlg-snap-memdir" className="block text-sm text-[var(--text-muted)] mb-1">External memory directory (optional)</label>
                             <input
                               id="dlg-snap-memdir"
                               type="text"
@@ -2815,19 +2815,19 @@ export default function VMDetailsPage() {
 
               <div className="mt-5">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-sm font-semibold text-slate-200">Per-disk options</span>
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">Per-disk options</span>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => setSnapDisks((p) => p.map((d) => ({ ...d, snapshot: 'external', driver: d.driver || 'qcow2' })))}
-                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs transition"
+                      className="px-2 py-1 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] rounded text-xs transition"
                     >
                       All external
                     </button>
                     <button
                       type="button"
                       onClick={() => setSnapDisks((p) => p.map((d) => ({ ...d, snapshot: 'no', file: '' })))}
-                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs transition"
+                      className="px-2 py-1 bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] rounded text-xs transition"
                     >
                       All no
                     </button>
@@ -2835,21 +2835,21 @@ export default function VMDetailsPage() {
                 </div>
 
                 {snapDisks.length === 0 ? (
-                  <div className="text-xs text-slate-500">No disks detected for this VM.</div>
+                  <div className="text-xs text-[var(--text-muted)]">No disks detected for this VM.</div>
                 ) : (
                   <div className="space-y-2">
                     {snapDisks.map((d, idx) => {
                       const mode = (d.snapshot || '').toString()
                       const isExternal = mode === 'external' || mode === ''
                       return (
-                        <div key={`${d.name}-${idx}`} className="p-3 bg-slate-900/60 border border-slate-700/60 rounded-lg">
+                        <div key={`${d.name}-${idx}`} className="p-3 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg">
                           <div className="flex flex-wrap items-end gap-2">
                             <div className="min-w-[90px]">
-                              <label className="block text-xs text-slate-500 mb-1">Disk</label>
-                              <div className="text-sm font-mono text-slate-200">{d.name}</div>
+                              <label className="block text-xs text-[var(--text-muted)] mb-1">Disk</label>
+                              <div className="text-sm font-mono text-[var(--text-primary)]">{d.name}</div>
                             </div>
                             <div className="min-w-[160px]">
-                              <label className="block text-xs text-slate-500 mb-1">Snapshot</label>
+                              <label className="block text-xs text-[var(--text-muted)] mb-1">Snapshot</label>
                               <select
                                 aria-label="Snapshot mode"
                                 value={d.snapshot || ''}
@@ -2866,7 +2866,7 @@ export default function VMDetailsPage() {
                               </select>
                             </div>
                             <div className="flex-1 min-w-[240px]">
-                              <label className="block text-xs text-slate-500 mb-1">External file override (optional)</label>
+                              <label className="block text-xs text-[var(--text-muted)] mb-1">External file override (optional)</label>
                               <input
                                 value={d.file || ''}
                                 onChange={(e) => setSnapDisks((p) => p.map((x, j) => (j === idx ? { ...x, file: e.target.value } : x)))}
@@ -2876,7 +2876,7 @@ export default function VMDetailsPage() {
                               />
                             </div>
                             <div className="min-w-[120px]">
-                              <label className="block text-xs text-slate-500 mb-1">Driver</label>
+                              <label className="block text-xs text-[var(--text-muted)] mb-1">Driver</label>
                               <input
                                 value={d.driver || ''}
                                 onChange={(e) => setSnapDisks((p) => p.map((x, j) => (j === idx ? { ...x, driver: e.target.value } : x)))}
@@ -2897,21 +2897,21 @@ export default function VMDetailsPage() {
 
           {dialog === 'boot-order' && (
             <DialogBox title="Edit Boot Order" icon={<Settings className="w-5 h-5 text-orange-400" />} onClose={() => setDialog(null)} onConfirm={handleSetBootOrder} confirmLabel="Save">
-              <p className="text-sm text-slate-400 mb-3">Drag to reorder boot devices. VM must be restarted for changes to take effect.</p>
+              <p className="text-sm text-[var(--text-muted)] mb-3">Drag to reorder boot devices. VM must be restarted for changes to take effect.</p>
               <div className="space-y-2">
                 {bootDevices.map((dev, i) => (
-                  <div key={dev} className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
-                    <span className="text-xs text-slate-500 w-4">{i + 1}.</span>
+                  <div key={dev} className="flex items-center gap-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2">
+                    <span className="text-xs text-[var(--text-muted)] w-4">{i + 1}.</span>
                     <span className="flex-1 text-sm font-medium">{dev}</span>
-                    <button onClick={() => moveBootDevice(i, -1)} disabled={i === 0} className="p-1.5 hover:bg-slate-700 rounded disabled:opacity-30" aria-label="Move up"><ChevronUp className="w-4 h-4" /></button>
-                    <button onClick={() => moveBootDevice(i, 1)} disabled={i === bootDevices.length - 1} className="p-1.5 hover:bg-slate-700 rounded disabled:opacity-30" aria-label="Move down"><ChevronDown className="w-4 h-4" /></button>
+                    <button onClick={() => moveBootDevice(i, -1)} disabled={i === 0} className="p-1.5 hover:bg-[var(--surface-hover)] rounded disabled:opacity-30" aria-label="Move up"><ChevronUp className="w-4 h-4" /></button>
+                    <button onClick={() => moveBootDevice(i, 1)} disabled={i === bootDevices.length - 1} className="p-1.5 hover:bg-[var(--surface-hover)] rounded disabled:opacity-30" aria-label="Move down"><ChevronDown className="w-4 h-4" /></button>
                     <button onClick={() => setBootDevices(bootDevices.filter((_, j) => j !== i))} className="p-1.5 hover:bg-red-600/20 rounded" aria-label="Remove"><X className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
                   </div>
                 ))}
               </div>
               <div className="flex gap-2 mt-3">
                 {['hd', 'cdrom', 'network', 'fd'].filter(d => !bootDevices.includes(d)).map(d => (
-                  <button key={d} onClick={() => setBootDevices([...bootDevices, d])} className="px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs hover:bg-slate-700 transition">+ {d}</button>
+                  <button key={d} onClick={() => setBootDevices([...bootDevices, d])} className="px-2 py-1 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded text-xs hover:bg-[var(--surface-hover)] transition">+ {d}</button>
                 ))}
               </div>
             </DialogBox>
@@ -2923,11 +2923,11 @@ export default function VMDetailsPage() {
             <DialogBox title="CD-ROM Management" icon={<Disc className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleInsertCdrom} confirmLabel="Mount ISO">
               {/* Show existing CD-ROM devices */}
               {cdromDisks.length > 0 && (
-                <div className="mb-4 p-3 bg-slate-900 rounded-lg border border-slate-700">
-                  <span className="text-xs text-slate-500 block mb-2">Current CD-ROM devices:</span>
+                <div className="mb-4 p-3 bg-[var(--apple-surface)] rounded-lg border border-[var(--apple-hairline)]">
+                  <span className="text-xs text-[var(--text-muted)] block mb-2">Current CD-ROM devices:</span>
                   {cdromDisks.map((d) => (
                     <div key={d.target} className="flex items-center justify-between py-1">
-                      <span className="text-sm"><span className={`font-mono ${statusToneClass('info')}`}>{d.target}</span> {d.source ? <span className="text-slate-400 text-xs ml-2">{d.source.split('/').pop()}</span> : <span className="text-slate-500 text-xs ml-2">(empty)</span>}</span>
+                      <span className="text-sm"><span className={`font-mono ${statusToneClass('info')}`}>{d.target}</span> {d.source ? <span className="text-[var(--text-muted)] text-xs ml-2">{d.source.split('/').pop()}</span> : <span className="text-[var(--text-muted)] text-xs ml-2">(empty)</span>}</span>
                       {d.source && <button onClick={() => { if (name) { ejectCdrom(name, d.target, conn).then(() => { toast.success('CD-ROM ejected'); setDialog(null); load() }).catch((e: unknown) => toast.error(`Eject failed: ${formatUserError(e)}`)) } }} className={`px-2 py-0.5 rounded text-xs transition ${statusBadgeClasses('error')}`}>Eject</button>}
                     </div>
                   ))}
@@ -2938,7 +2938,7 @@ export default function VMDetailsPage() {
                   No CD-ROM drive found. A new one will be attached automatically.
                 </div>
               )}
-              <label htmlFor="dlg-iso" className="block text-sm text-slate-400 mb-1">ISO File</label>
+              <label htmlFor="dlg-iso" className="block text-sm text-[var(--text-muted)] mb-1">ISO File</label>
               <div className="space-y-2">
                 {isoFiles.length > 0 ? (
                   <select id="dlg-iso" autoFocus value={cdromPath} onChange={(e) => setCdromPath(e.target.value)} className="input-field">
@@ -2962,7 +2962,7 @@ export default function VMDetailsPage() {
                   />
                   <button
                     type="button"
-                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-600 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-50 text-sm text-slate-200 transition"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--apple-hairline)] bg-[var(--surface-hover)]/50 hover:bg-[var(--surface-hover)] disabled:opacity-50 text-sm text-[var(--text-primary)] transition"
                     onClick={() => {
                       if (canBrowseHost) setCdromBrowseOpen(true)
                     }}
@@ -2974,21 +2974,21 @@ export default function VMDetailsPage() {
                   </button>
                 </div>
               </div>
-              <label htmlFor="dlg-cdtarget" className="block text-sm text-slate-400 mb-1 mt-3">Target Device</label>
+              <label htmlFor="dlg-cdtarget" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Target Device</label>
               <select id="dlg-cdtarget" value={cdromTarget} onChange={(e) => setCdromTarget(e.target.value)} className="input-field">
                 {cdromDisks.length > 0
                   ? cdromDisks.map(d => <option key={d.target} value={d.target}>{d.target}</option>)
                   : <><option value="sda">sda</option><option value="sdb">sdb</option><option value="hda">hda</option></>
                 }
               </select>
-              <p className="text-xs text-slate-500 mt-2">Enter the full path to an ISO file on the host. The VM {vm?.state === 'running' ? 'will see the change immediately' : 'will see it on next start'}.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Enter the full path to an ISO file on the host. The VM {vm?.state === 'running' ? 'will see the change immediately' : 'will see it on next start'}.</p>
             </DialogBox>
             )
           })()}
 
           {dialog === 'attach-disk' && (
             <DialogBox title="Attach Disk" icon={<HardDrive className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleAttachDisk} confirmLabel="Attach">
-              <label htmlFor="dlg-disk-src" className="block text-sm text-slate-400 mb-1">Disk Image Path</label>
+              <label htmlFor="dlg-disk-src" className="block text-sm text-[var(--text-muted)] mb-1">Disk Image Path</label>
               <div className="flex gap-2">
                 <input
                   id="dlg-disk-src"
@@ -3001,7 +3001,7 @@ export default function VMDetailsPage() {
                 />
                 <button
                   type="button"
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-600 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-50 text-sm text-slate-200 transition"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--apple-hairline)] bg-[var(--surface-hover)]/50 hover:bg-[var(--surface-hover)] disabled:opacity-50 text-sm text-[var(--text-primary)] transition"
                   onClick={() => {
                     if (canBrowseHost) setAttachDiskBrowseOpen(true)
                   }}
@@ -3014,11 +3014,11 @@ export default function VMDetailsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div>
-                  <label htmlFor="dlg-disk-target" className="block text-sm text-slate-400 mb-1">Target Device</label>
+                  <label htmlFor="dlg-disk-target" className="block text-sm text-[var(--text-muted)] mb-1">Target Device</label>
                   <input id="dlg-disk-target" type="text" value={attachTarget} onChange={(e) => setAttachTarget(e.target.value)} className="input-field" />
                 </div>
                 <div>
-                  <label htmlFor="dlg-disk-driver" className="block text-sm text-slate-400 mb-1">Driver</label>
+                  <label htmlFor="dlg-disk-driver" className="block text-sm text-[var(--text-muted)] mb-1">Driver</label>
                   <select id="dlg-disk-driver" value={attachDriver} onChange={(e) => setAttachDriver(e.target.value)} className="input-field">
                     <option value="qcow2">qcow2</option>
                     <option value="raw">raw</option>
@@ -3027,7 +3027,7 @@ export default function VMDetailsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div>
-                  <label htmlFor="dlg-disk-bus" className="block text-sm text-slate-400 mb-1">Bus</label>
+                  <label htmlFor="dlg-disk-bus" className="block text-sm text-[var(--text-muted)] mb-1">Bus</label>
                   <select id="dlg-disk-bus" value={attachBus} onChange={(e) => setAttachBus(e.target.value)} className="input-field">
                     <option value="virtio">virtio</option>
                     <option value="sata">sata</option>
@@ -3036,7 +3036,7 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="dlg-disk-cache" className="block text-sm text-slate-400 mb-1">Cache (optional)</label>
+                  <label htmlFor="dlg-disk-cache" className="block text-sm text-[var(--text-muted)] mb-1">Cache (optional)</label>
                   <select id="dlg-disk-cache" value={attachCache} onChange={(e) => setAttachCache(e.target.value)} className="input-field">
                     <option value="">default</option>
                     <option value="none">none</option>
@@ -3045,7 +3045,7 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="dlg-disk-discard" className="block text-sm text-slate-400 mb-1">Discard (optional)</label>
+                  <label htmlFor="dlg-disk-discard" className="block text-sm text-[var(--text-muted)] mb-1">Discard (optional)</label>
                   <select id="dlg-disk-discard" value={attachDiscard} onChange={(e) => setAttachDiscard(e.target.value)} className="input-field">
                     <option value="">—</option>
                     <option value="unmap">unmap</option>
@@ -3053,12 +3053,12 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-2 justify-center">
-                  <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                    <input type="checkbox" checked={attachReadonly} onChange={(e) => setAttachReadonly(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                  <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
+                    <input type="checkbox" checked={attachReadonly} onChange={(e) => setAttachReadonly(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                     Read-only
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                    <input type="checkbox" checked={attachShareable} onChange={(e) => setAttachShareable(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+                  <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
+                    <input type="checkbox" checked={attachShareable} onChange={(e) => setAttachShareable(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                     Shareable
                   </label>
                 </div>
@@ -3068,10 +3068,10 @@ export default function VMDetailsPage() {
 
           {dialog === 'disk-tune' && (
             <DialogBox title={`Tune disk ${tuneDiskTarget}`} icon={<Sliders className={`w-5 h-5 ${statusToneClass('warn')}`} />} onClose={() => setDialog(null)} onConfirm={handleDiskTune} confirmLabel="Apply">
-              <p className="text-xs text-slate-500 mb-2">Leave fields empty to skip. Readonly/shareable: choose “no change”, on, or off.</p>
+              <p className="text-xs text-[var(--text-muted)] mb-2">Leave fields empty to skip. Readonly/shareable: choose “no change”, on, or off.</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Bus</label>
+                  <label className="block text-sm text-[var(--text-muted)] mb-1">Bus</label>
                   <select aria-label="Bus" value={tuneBus} onChange={(e) => setTuneBus(e.target.value)} className="input-field">
                     <option value="">no change</option>
                     <option value="virtio">virtio</option>
@@ -3081,7 +3081,7 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Cache</label>
+                  <label className="block text-sm text-[var(--text-muted)] mb-1">Cache</label>
                   <select aria-label="Cache" value={tuneCache} onChange={(e) => setTuneCache(e.target.value)} className="input-field">
                     <option value="">no change</option>
                     <option value="none">none</option>
@@ -3090,7 +3090,7 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Discard</label>
+                  <label className="block text-sm text-[var(--text-muted)] mb-1">Discard</label>
                   <select aria-label="Discard" value={tuneDiscard} onChange={(e) => setTuneDiscard(e.target.value)} className="input-field">
                     <option value="">no change</option>
                     <option value="unmap">unmap</option>
@@ -3098,7 +3098,7 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Read-only</label>
+                  <label className="block text-sm text-[var(--text-muted)] mb-1">Read-only</label>
                   <select aria-label="Read-only" value={tuneRo} onChange={(e) => setTuneRo(e.target.value)} className="input-field">
                     <option value="">no change</option>
                     <option value="true">yes</option>
@@ -3106,7 +3106,7 @@ export default function VMDetailsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Shareable</label>
+                  <label className="block text-sm text-[var(--text-muted)] mb-1">Shareable</label>
                   <select aria-label="Shareable" value={tuneShare} onChange={(e) => setTuneShare(e.target.value)} className="input-field">
                     <option value="">no change</option>
                     <option value="true">yes</option>
@@ -3119,8 +3119,8 @@ export default function VMDetailsPage() {
 
           {dialog === 'nic-tune' && (
             <DialogBox title="Tune network interface" icon={<Sliders className={`w-5 h-5 ${statusToneClass('warn')}`} />} onClose={() => setDialog(null)} onConfirm={handleNicTune} confirmLabel="Apply">
-              <p className="text-xs text-slate-500 mb-2 font-mono">{tuneMac}</p>
-              <label className="block text-sm text-slate-400 mb-1">Model</label>
+              <p className="text-xs text-[var(--text-muted)] mb-2 font-mono">{tuneMac}</p>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">Model</label>
               <select aria-label="NIC model" value={tuneNicModel} onChange={(e) => setTuneNicModel(e.target.value)} className="input-field">
                 <option value="virtio">virtio</option>
                 <option value="e1000">e1000</option>
@@ -3128,7 +3128,7 @@ export default function VMDetailsPage() {
                 <option value="rtl8139">rtl8139</option>
                 <option value="vmxnet3">vmxnet3</option>
               </select>
-              <label className="block text-sm text-slate-400 mb-1 mt-3">Libvirt network name</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Libvirt network name</label>
               <input aria-label="Libvirt network name" type="text" value={tuneNicNet} onChange={(e) => setTuneNicNet(e.target.value)} className="input-field" placeholder="default" />
             </DialogBox>
           )}
@@ -3145,13 +3145,13 @@ export default function VMDetailsPage() {
 
           {dialog === 'watchdog' && (
             <DialogBox title="Attach watchdog" icon={<Settings className={`w-5 h-5 ${statusToneClass('error')}`} />} onClose={() => setDialog(null)} onConfirm={handleWatchdogAttach} confirmLabel="Attach">
-              <label className="block text-sm text-slate-400 mb-1">Model</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">Model</label>
               <select aria-label="Watchdog model" value={wdModel} onChange={(e) => setWdModel(e.target.value)} className="input-field">
                 <option value="i6300esb">i6300esb</option>
                 <option value="ib700">ib700</option>
                 <option value="diag288">diag288</option>
               </select>
-              <label className="block text-sm text-slate-400 mb-1 mt-3">Action</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Action</label>
               <select aria-label="Watchdog action" value={wdAction} onChange={(e) => setWdAction(e.target.value)} className="input-field">
                 <option value="reset">reset</option>
                 <option value="shutdown">shutdown</option>
@@ -3164,7 +3164,7 @@ export default function VMDetailsPage() {
           )}
 
           {dialog === 'sound' && (
-            <DialogBox title="Attach sound" icon={<Settings className="w-5 h-5 text-cyan-400" />} onClose={() => setDialog(null)} onConfirm={handleSoundAttach} confirmLabel="Attach">
+            <DialogBox title="Attach sound" icon={<Settings className="w-5 h-5 text-[var(--accent)]" />} onClose={() => setDialog(null)} onConfirm={handleSoundAttach} confirmLabel="Attach">
               <select aria-label="Sound model" value={sndModel} onChange={(e) => setSndModel(e.target.value)} className="input-field">
                 <option value="ich6">ich6 (Intel HD Audio)</option>
                 <option value="ich9">ich9</option>
@@ -3175,9 +3175,9 @@ export default function VMDetailsPage() {
 
           {dialog === 'serial' && (
             <DialogBox title="Extra serial + console" icon={<Terminal className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleSerialAttach} confirmLabel="Attach">
-              <label className="block text-sm text-slate-400 mb-1">Guest serial port index</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">Guest serial port index</label>
               <input aria-label="Guest serial port index" type="number" min={1} max={32} value={serPort} onChange={(e) => setSerPort(parseInt(e.target.value, 10) || 1)} className="input-field" />
-              <p className="text-xs text-slate-500 mt-2">Adds PTY serial and matching console (e.g. 1 → ttyS1).</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Adds PTY serial and matching console (e.g. 1 → ttyS1).</p>
             </DialogBox>
           )}
 
@@ -3195,15 +3195,15 @@ export default function VMDetailsPage() {
 
           {dialog === 'resize-disk' && (
             <DialogBox title={`Resize Disk (${resizeTarget})`} icon={<HardDrive className={`w-5 h-5 ${statusToneClass('ok')}`} />} onClose={() => setDialog(null)} onConfirm={handleResizeDisk} confirmLabel="Resize">
-              <label htmlFor="dlg-resize" className="block text-sm text-slate-400 mb-1">New Size (GB)</label>
+              <label htmlFor="dlg-resize" className="block text-sm text-[var(--text-muted)] mb-1">New Size (GB)</label>
               <input id="dlg-resize" type="number" min={1} max={10240} autoFocus value={resizeGb} onChange={(e) => setResizeGb(parseInt(e.target.value) || 1)} className="input-field" />
-              <p className="text-xs text-slate-500 mt-2">Can only grow, not shrink. VM must be running with guest agent or shut off.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Can only grow, not shrink. VM must be running with guest agent or shut off.</p>
             </DialogBox>
           )}
 
           {dialog === 'attach-nic' && (
-            <DialogBox title="Add Network Interface" icon={<Network className="w-5 h-5 text-cyan-400" />} onClose={() => setDialog(null)} onConfirm={handleAttachNic} confirmLabel="Attach">
-              <label htmlFor="dlg-nic-net" className="block text-sm text-slate-400 mb-1">Network</label>
+            <DialogBox title="Add Network Interface" icon={<Network className="w-5 h-5 text-[var(--accent)]" />} onClose={() => setDialog(null)} onConfirm={handleAttachNic} confirmLabel="Attach">
+              <label htmlFor="dlg-nic-net" className="block text-sm text-[var(--text-muted)] mb-1">Network</label>
               {networks.length > 0 ? (
                 <select id="dlg-nic-net" autoFocus value={nicNetwork} onChange={(e) => setNicNetwork(e.target.value)} className="input-field">
                   {networks.map(n => <option key={n.name} value={n.name}>{n.name}{n.active ? '' : ' (inactive)'}</option>)}
@@ -3211,7 +3211,7 @@ export default function VMDetailsPage() {
               ) : (
                 <input id="dlg-nic-net" type="text" autoFocus value={nicNetwork} onChange={(e) => setNicNetwork(e.target.value)} className="input-field" placeholder="default" />
               )}
-              <label htmlFor="dlg-nic-model" className="block text-sm text-slate-400 mb-1 mt-3">Model</label>
+              <label htmlFor="dlg-nic-model" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Model</label>
               <select id="dlg-nic-model" value={nicModel} onChange={(e) => setNicModel(e.target.value)} className="input-field">
                 <option value="virtio">virtio</option>
                 <option value="e1000">e1000</option>
@@ -3222,16 +3222,16 @@ export default function VMDetailsPage() {
 
           {dialog === 'save-template' && (
             <DialogBox title="Save as Template" icon={<Layers className="w-5 h-5 text-purple-400" />} onClose={() => setDialog(null)} onConfirm={handleSaveTemplate} confirmLabel="Save">
-              <label htmlFor="dlg-template-name" className="block text-sm text-slate-400 mb-1">Template Name</label>
+              <label htmlFor="dlg-template-name" className="block text-sm text-[var(--text-muted)] mb-1">Template Name</label>
               <input id="dlg-template-name" type="text" autoFocus value={templateName} onChange={(e) => setTemplateName(e.target.value)} className="input-field" placeholder="my-vm-template" />
-              <p className="text-xs text-slate-500 mt-2">Saves the VM configuration as a reusable template. Disk images are not included.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Saves the VM configuration as a reusable template. Disk images are not included.</p>
             </DialogBox>
           )}
 
           {dialog === 'linux-ssh-key' && (
             <DialogBox
               title="Inject SSH key"
-              icon={<Terminal className="w-5 h-5 text-cyan-400" />}
+              icon={<Terminal className="w-5 h-5 text-[var(--accent)]" />}
               onClose={() => setDialog(null)}
               onConfirm={() =>
                 void runLinuxOffline('SSH key injected', () =>
@@ -3241,11 +3241,11 @@ export default function VMDetailsPage() {
               confirmLabel="Inject"
               confirmDisabled={!linuxUser.trim() || !linuxPubkey.trim() || guestToolsBusy}
             >
-              <label htmlFor="dlg-linux-user" className="block text-sm text-slate-400 mb-1">User</label>
+              <label htmlFor="dlg-linux-user" className="block text-sm text-[var(--text-muted)] mb-1">User</label>
               <input id="dlg-linux-user" type="text" autoFocus value={linuxUser} onChange={(e) => setLinuxUser(e.target.value)} className="input-field" placeholder="root" />
-              <label htmlFor="dlg-linux-pubkey" className="block text-sm text-slate-400 mb-1 mt-3">Public key</label>
+              <label htmlFor="dlg-linux-pubkey" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">Public key</label>
               <textarea id="dlg-linux-pubkey" rows={4} value={linuxPubkey} onChange={(e) => setLinuxPubkey(e.target.value)} className="input-field font-mono text-xs" placeholder="ssh-ed25519 AAAA… comment" />
-              <p className="text-xs text-slate-500 mt-2">VM must be shut off. Appends to ~/.ssh/authorized_keys via GuestKit.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">VM must be shut off. Appends to ~/.ssh/authorized_keys via GuestKit.</p>
             </DialogBox>
           )}
 
@@ -3262,18 +3262,18 @@ export default function VMDetailsPage() {
               confirmLabel="Reset"
               confirmDisabled={!linuxUser.trim() || !linuxPassword || guestToolsBusy}
             >
-              <label htmlFor="dlg-linux-pw-user" className="block text-sm text-slate-400 mb-1">User</label>
+              <label htmlFor="dlg-linux-pw-user" className="block text-sm text-[var(--text-muted)] mb-1">User</label>
               <input id="dlg-linux-pw-user" type="text" autoFocus value={linuxUser} onChange={(e) => setLinuxUser(e.target.value)} className="input-field" placeholder="root" />
-              <label htmlFor="dlg-linux-pw" className="block text-sm text-slate-400 mb-1 mt-3">New password</label>
+              <label htmlFor="dlg-linux-pw" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">New password</label>
               <input id="dlg-linux-pw" type="password" value={linuxPassword} onChange={(e) => setLinuxPassword(e.target.value)} className="input-field" autoComplete="new-password" />
-              <p className="text-xs text-slate-500 mt-2">Writes a SHA-512 crypt hash into /etc/shadow offline. VM must be shut off.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Writes a SHA-512 crypt hash into /etc/shadow offline. VM must be shut off.</p>
             </DialogBox>
           )}
 
           {dialog === 'linux-hostname' && (
             <DialogBox
               title="Set hostname"
-              icon={<Settings className="w-5 h-5 text-slate-300" />}
+              icon={<Settings className="w-5 h-5 text-[var(--text-secondary)]" />}
               onClose={() => setDialog(null)}
               onConfirm={() =>
                 void runLinuxOffline('Hostname set', () =>
@@ -3283,9 +3283,9 @@ export default function VMDetailsPage() {
               confirmLabel="Apply"
               confirmDisabled={!linuxHostname.trim() || guestToolsBusy}
             >
-              <label htmlFor="dlg-linux-hn" className="block text-sm text-slate-400 mb-1">Hostname</label>
+              <label htmlFor="dlg-linux-hn" className="block text-sm text-[var(--text-muted)] mb-1">Hostname</label>
               <input id="dlg-linux-hn" type="text" autoFocus value={linuxHostname} onChange={(e) => setLinuxHostname(e.target.value)} className="input-field" placeholder="web-01" />
-              <p className="text-xs text-slate-500 mt-2">Updates /etc/hostname and the 127.0.1.1 line in /etc/hosts. VM must be shut off.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">Updates /etc/hostname and the 127.0.1.1 line in /etc/hosts. VM must be shut off.</p>
             </DialogBox>
           )}
 
@@ -3299,12 +3299,12 @@ export default function VMDetailsPage() {
               confirmDanger
               confirmDisabled={!vm?.name || deleteVmTypeConfirm !== vm.name}
             >
-              <p className="text-sm text-slate-300 mb-3">
+              <p className="text-sm text-[var(--text-secondary)] mb-3">
                 This will stop <strong>{vm?.name}</strong> if running, then remove the libvirt definition.
               </p>
 
               {/* Disk deletion */}
-              <div className={`rounded-lg border p-3 mb-3 ${deleteUndefine.delete_disks ? statusSurfaceClasses('error') : 'border-slate-700/50 bg-slate-800/40'}`}>
+              <div className={`rounded-lg border p-3 mb-3 ${deleteUndefine.delete_disks ? statusSurfaceClasses('error') : 'border-[var(--apple-hairline)] bg-[var(--apple-surface)]'}`}>
                 <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -3313,8 +3313,8 @@ export default function VMDetailsPage() {
                     className="mt-0.5 accent-red-500 w-4 h-4 shrink-0"
                   />
                   <div>
-                    <span className="text-sm font-medium text-slate-200">Also delete disk image files</span>
-                    <p className="text-xs text-slate-400 mt-0.5">Permanently removes the backing <code>.qcow2</code> / <code>.raw</code> files from the host. Cannot be undone.</p>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Also delete disk image files</span>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Permanently removes the backing <code>.qcow2</code> / <code>.raw</code> files from the host. Cannot be undone.</p>
                     {deleteUndefine.delete_disks && vm?.disks && vm.disks.filter(d => d.device === 'disk').length > 0 && (
                       <ul className="mt-1.5 space-y-0.5">
                         {vm.disks.filter(d => d.device === 'disk').map(d => (
@@ -3329,8 +3329,8 @@ export default function VMDetailsPage() {
                 </label>
               </div>
 
-              <label htmlFor="dlg-delete-vm-confirm" className="block text-xs text-slate-400 mb-1">
-                Type the VM name <span className="font-mono text-slate-200">{vm?.name}</span> to confirm:
+              <label htmlFor="dlg-delete-vm-confirm" className="block text-xs text-[var(--text-muted)] mb-1">
+                Type the VM name <span className="font-mono text-[var(--text-primary)]">{vm?.name}</span> to confirm:
               </label>
               <input
                 id="dlg-delete-vm-confirm"
@@ -3347,44 +3347,44 @@ export default function VMDetailsPage() {
 
           {dialog === 'scheduler-tune' && (
             <DialogBox title="Scheduler tuning" icon={<Cpu className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleSchedulerSave} confirmLabel="Apply">
-              <p className="text-xs text-slate-500 mb-3">Only filled fields are sent; others stay unchanged in libvirt.</p>
-              <label className="block text-sm text-slate-400 mb-1">cpu_shares</label>
+              <p className="text-xs text-[var(--text-muted)] mb-3">Only filled fields are sent; others stay unchanged in libvirt.</p>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">cpu_shares</label>
               <input aria-label="cpu_shares" className="input-field mb-2" value={schedShares} onChange={(e) => setSchedShares(e.target.value)} placeholder="e.g. 1024" />
-              <label className="block text-sm text-slate-400 mb-1">vcpu_period (µs)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">vcpu_period (µs)</label>
               <input aria-label="vcpu_period (µs)" className="input-field mb-2" value={schedPeriod} onChange={(e) => setSchedPeriod(e.target.value)} />
-              <label className="block text-sm text-slate-400 mb-1">vcpu_quota (µs)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">vcpu_quota (µs)</label>
               <input aria-label="vcpu_quota (µs)" className="input-field" value={schedQuota} onChange={(e) => setSchedQuota(e.target.value)} />
             </DialogBox>
           )}
 
           {dialog === 'memtune' && (
             <DialogBox title="Memory tuning (KiB)" icon={<MemoryStick className="w-5 h-5 text-purple-400" />} onClose={() => setDialog(null)} onConfirm={handleMemtuneSave} confirmLabel="Apply">
-              <p className="text-xs text-slate-500 mb-3">Values are KiB (same unit as libvirt memtune XML). Leave blank to leave unchanged.</p>
-              <label className="block text-sm text-slate-400 mb-1">hard_limit_kb</label>
+              <p className="text-xs text-[var(--text-muted)] mb-3">Values are KiB (same unit as libvirt memtune XML). Leave blank to leave unchanged.</p>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">hard_limit_kb</label>
               <input aria-label="hard_limit_kb" className="input-field mb-2" value={memHardKb} onChange={(e) => setMemHardKb(e.target.value)} />
-              <label className="block text-sm text-slate-400 mb-1">soft_limit_kb</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">soft_limit_kb</label>
               <input aria-label="soft_limit_kb" className="input-field mb-2" value={memSoftKb} onChange={(e) => setMemSoftKb(e.target.value)} />
-              <label className="block text-sm text-slate-400 mb-1">swap_hard_limit_kb</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">swap_hard_limit_kb</label>
               <input aria-label="swap_hard_limit_kb" className="input-field" value={memSwapKb} onChange={(e) => setMemSwapKb(e.target.value)} />
             </DialogBox>
           )}
 
           {dialog === 'numa-tune' && (
-            <DialogBox title="NUMA memory tuning" icon={<Cpu className="w-5 h-5 text-violet-400" />} onClose={() => setDialog(null)} onConfirm={() => void handleNumaSave()} confirmLabel="Apply">
-              <p className="text-xs text-slate-500 mb-2">Maps to libvirt <code className="text-slate-400">numatune</code>. Mode is the raw libvirt mem mode integer; leave blank to skip updating mode.</p>
-              <label className="block text-sm text-slate-400 mb-1">node_set (e.g. 0-1 or 0)</label>
+            <DialogBox title="NUMA memory tuning" icon={<Cpu className="w-5 h-5 text-[var(--accent)]" />} onClose={() => setDialog(null)} onConfirm={() => void handleNumaSave()} confirmLabel="Apply">
+              <p className="text-xs text-[var(--text-muted)] mb-2">Maps to libvirt <code className="text-[var(--text-muted)]">numatune</code>. Mode is the raw libvirt mem mode integer; leave blank to skip updating mode.</p>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">node_set (e.g. 0-1 or 0)</label>
               <input aria-label="node_set" className="input-field mb-3" value={numaNodeSet} onChange={(e) => setNumaNodeSet(e.target.value)} placeholder="0" />
-              <label className="block text-sm text-slate-400 mb-1">mode (optional)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">mode (optional)</label>
               <input aria-label="mode" className="input-field" value={numaModeInput} onChange={(e) => setNumaModeInput(e.target.value)} placeholder="strict / preferred / … as int" />
             </DialogBox>
           )}
 
           {dialog === 'emulator-pin' && (
             <DialogBox title="Pin QEMU emulator to host CPUs" icon={<Cpu className={`w-5 h-5 ${statusToneClass('warn')}`} />} onClose={() => setDialog(null)} onConfirm={() => void handleEmulatorPinSave()} confirmLabel="Apply">
-              <p className="text-xs text-slate-500 mb-2">Host CPUs 0–63 (first 64 logical CPUs), same grid as vCPU pinning.</p>
-              <div className="max-h-40 overflow-y-auto border border-slate-700 rounded p-2 grid grid-cols-8 gap-1">
+              <p className="text-xs text-[var(--text-muted)] mb-2">Host CPUs 0–63 (first 64 logical CPUs), same grid as vCPU pinning.</p>
+              <div className="max-h-40 overflow-y-auto border border-[var(--apple-hairline)] rounded p-2 grid grid-cols-8 gap-1">
                 {emuPinMap.map((on, i) => (
-                  <label key={i} className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer">
+                  <label key={i} className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] cursor-pointer">
                     <input type="checkbox" checked={on} onChange={(e) => setEmuPinMap((m) => { const n = [...m]; n[i] = e.target.checked; return n })} />
                     {i}
                   </label>
@@ -3394,13 +3394,13 @@ export default function VMDetailsPage() {
           )}
 
           {dialog === 'pin-vcpu' && (
-            <DialogBox title="Pin vCPU to host CPUs" icon={<Cpu className="w-5 h-5 text-cyan-400" />} onClose={() => setDialog(null)} onConfirm={handlePinSave} confirmLabel="Apply pin">
-              <label className="block text-sm text-slate-400 mb-1">vCPU index</label>
+            <DialogBox title="Pin vCPU to host CPUs" icon={<Cpu className="w-5 h-5 text-[var(--accent)]" />} onClose={() => setDialog(null)} onConfirm={handlePinSave} confirmLabel="Apply pin">
+              <label className="block text-sm text-[var(--text-muted)] mb-1">vCPU index</label>
               <input aria-label="vCPU index" type="number" min={0} max={Math.max(0, (vm?.vcpus ?? 1) - 1)} className="input-field mb-3" value={pinVcpuN} onChange={(e) => setPinVcpuN(parseInt(e.target.value, 10) || 0)} />
-              <p className="text-xs text-slate-500 mb-2">Host CPUs 0–63 (first 64 logical CPUs).</p>
-              <div className="max-h-40 overflow-y-auto border border-slate-700 rounded p-2 grid grid-cols-8 gap-1">
+              <p className="text-xs text-[var(--text-muted)] mb-2">Host CPUs 0–63 (first 64 logical CPUs).</p>
+              <div className="max-h-40 overflow-y-auto border border-[var(--apple-hairline)] rounded p-2 grid grid-cols-8 gap-1">
                 {pinMap.map((on, i) => (
-                  <label key={i} className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer">
+                  <label key={i} className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] cursor-pointer">
                     <input type="checkbox" checked={on} onChange={(e) => setPinMap((m) => { const n = [...m]; n[i] = e.target.checked; return n })} />
                     {i}
                   </label>
@@ -3411,14 +3411,14 @@ export default function VMDetailsPage() {
 
           {dialog === 'block-commit' && (
             <DialogBox title="Block commit" icon={<HardDrive className={`w-5 h-5 ${statusToneClass('info')}`} />} onClose={() => setDialog(null)} onConfirm={handleBlockCommit} confirmLabel="Start commit">
-              <p className="text-xs text-slate-500 mb-2">Disk: <code className="text-slate-300">{blockDisk || '—'}</code></p>
-              <label className="block text-sm text-slate-400 mb-1">Base (optional)</label>
+              <p className="text-xs text-[var(--text-muted)] mb-2">Disk: <code className="text-[var(--text-secondary)]">{blockDisk || '—'}</code></p>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">Base (optional)</label>
               <input aria-label="Base (optional)" className="input-field mb-2" value={blockBase} onChange={(e) => setBlockBase(e.target.value)} placeholder="backing file name or leave empty" />
-              <label className="block text-sm text-slate-400 mb-1">Top (optional)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">Top (optional)</label>
               <input aria-label="Top (optional)" className="input-field mb-2" value={blockTop} onChange={(e) => setBlockTop(e.target.value)} />
-              <label className="flex items-center gap-2 text-sm text-slate-300 mb-1"><input type="checkbox" checked={blockShallow} onChange={(e) => setBlockShallow(e.target.checked)} /> Shallow</label>
-              <label className="flex items-center gap-2 text-sm text-slate-300 mb-1"><input type="checkbox" checked={blockDelete} onChange={(e) => setBlockDelete(e.target.checked)} /> Delete merged images</label>
-              <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={blockActive} onChange={(e) => setBlockActive(e.target.checked)} /> Active commit</label>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] mb-1"><input type="checkbox" checked={blockShallow} onChange={(e) => setBlockShallow(e.target.checked)} /> Shallow</label>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] mb-1"><input type="checkbox" checked={blockDelete} onChange={(e) => setBlockDelete(e.target.checked)} /> Delete merged images</label>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><input type="checkbox" checked={blockActive} onChange={(e) => setBlockActive(e.target.checked)} /> Active commit</label>
             </DialogBox>
           )}
         </DialogOverlay>
@@ -3506,74 +3506,74 @@ export default function VMDetailsPage() {
           }}
         >
           <div
-            className="bg-slate-900 border border-slate-600 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+            className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-slate-700 flex items-center justify-between gap-2">
-              <h2 id="kubevirt-export-title" className="text-lg font-semibold text-slate-100">
+            <div className="p-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-2">
+              <h2 id="kubevirt-export-title" className="text-lg font-semibold text-[var(--text-primary)]">
                 KubeVirt migration bundle
               </h2>
               <button
                 type="button"
-                className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                className="text-xs px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)]"
                 onClick={() => setKubevirtOpen(false)}
               >
                 Close
               </button>
             </div>
-            <div className="p-4 overflow-y-auto space-y-3 text-sm text-slate-300">
-              <p className="text-sm text-slate-300 leading-relaxed">
+            <div className="p-4 overflow-y-auto space-y-3 text-sm text-[var(--text-secondary)]">
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                 Move this QEMU/KVM guest from the bare-metal libvirt host into a Kubernetes cluster: CDI upload DataVolume plus KubeVirt{' '}
-                <code className="text-slate-200">VirtualMachine</code> YAML. When <code className="text-slate-200">[kubevirt] exec_enabled</code> is true, the buttons below run{' '}
-                <code className="text-slate-200">virtctl</code>/<code className="text-slate-200">kubectl</code> on the daemon host.
+                <code className="text-[var(--text-primary)]">VirtualMachine</code> YAML. When <code className="text-[var(--text-primary)]">[kubevirt] exec_enabled</code> is true, the buttons below run{' '}
+                <code className="text-[var(--text-primary)]">virtctl</code>/<code className="text-[var(--text-primary)]">kubectl</code> on the daemon host.
               </p>
-              <p className="text-xs text-slate-400">
-                Libvirt root disk <code className="text-slate-200">{kubevirtBundle.libvirt_root_disk}</code> → DataVolume{' '}
-                <code className="text-slate-200">{kubevirtBundle.datavolume_name}</code> / VM{' '}
-                <code className="text-slate-200">{kubevirtBundle.virtual_machine_name}</code> in namespace{' '}
-                <code className="text-slate-200">{kubevirtBundle.namespace}</code>. The VM includes a virtio-win CDROM via{' '}
-                <code className="text-slate-200">containerDisk</code> (cluster pulls the image instead of attaching <code className="text-slate-200">virtio-win.iso</code> from the hypervisor). Override image in{' '}
-                <code className="text-slate-200">[kubevirt] virtio_container_disk_image</code> in machina config.
+              <p className="text-xs text-[var(--text-muted)]">
+                Libvirt root disk <code className="text-[var(--text-primary)]">{kubevirtBundle.libvirt_root_disk}</code> → DataVolume{' '}
+                <code className="text-[var(--text-primary)]">{kubevirtBundle.datavolume_name}</code> / VM{' '}
+                <code className="text-[var(--text-primary)]">{kubevirtBundle.virtual_machine_name}</code> in namespace{' '}
+                <code className="text-[var(--text-primary)]">{kubevirtBundle.namespace}</code>. The VM includes a virtio-win CDROM via{' '}
+                <code className="text-[var(--text-primary)]">containerDisk</code> (cluster pulls the image instead of attaching <code className="text-[var(--text-primary)]">virtio-win.iso</code> from the hypervisor). Override image in{' '}
+                <code className="text-[var(--text-primary)]">[kubevirt] virtio_container_disk_image</code> in machina config.
               </p>
-              <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3 space-y-2">
-                <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">Cluster steps (tick when done)</div>
-                <label className="flex items-start gap-2 cursor-pointer text-xs text-slate-300">
+              <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-2">
+                <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Cluster steps (tick when done)</div>
+                <label className="flex items-start gap-2 cursor-pointer text-xs text-[var(--text-secondary)]">
                   <input
                     type="checkbox"
-                    className="mt-0.5 rounded border-slate-600 bg-slate-900"
+                    className="mt-0.5 rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]"
                     checked={kubevirtDoneUpload}
                     onChange={(e) => setKubevirtDoneUpload(e.target.checked)}
                   />
                   <span>
-                    <strong className="text-slate-200">1.</strong> Run <code className="text-slate-400">virtctl image-upload …</code> on a machine with kubeconfig so the libvirt qcow2 fills the upload DataVolume.
+                    <strong className="text-[var(--text-primary)]">1.</strong> Run <code className="text-[var(--text-muted)]">virtctl image-upload …</code> on a machine with kubeconfig so the libvirt qcow2 fills the upload DataVolume.
                   </span>
                 </label>
-                <label className="flex items-start gap-2 cursor-pointer text-xs text-slate-300">
+                <label className="flex items-start gap-2 cursor-pointer text-xs text-[var(--text-secondary)]">
                   <input
                     type="checkbox"
-                    className="mt-0.5 rounded border-slate-600 bg-slate-900"
+                    className="mt-0.5 rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]"
                     checked={kubevirtDoneApply}
                     onChange={(e) => setKubevirtDoneApply(e.target.checked)}
                   />
                   <span>
-                    <strong className="text-slate-200">2.</strong> <code className="text-slate-400">kubectl apply -f</code> the YAML (or paste from below).
+                    <strong className="text-[var(--text-primary)]">2.</strong> <code className="text-[var(--text-muted)]">kubectl apply -f</code> the YAML (or paste from below).
                   </span>
                 </label>
-                <label className="flex items-start gap-2 cursor-pointer text-xs text-slate-300">
+                <label className="flex items-start gap-2 cursor-pointer text-xs text-[var(--text-secondary)]">
                   <input
                     type="checkbox"
-                    className="mt-0.5 rounded border-slate-600 bg-slate-900"
+                    className="mt-0.5 rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]"
                     checked={kubevirtDoneStart}
                     onChange={(e) => setKubevirtDoneStart(e.target.checked)}
                   />
                   <span className="flex-1 min-w-0">
-                    <strong className="text-slate-200">3.</strong> Start the VM when ready:{' '}
-                    <code className="text-slate-400 break-all">
+                    <strong className="text-[var(--text-primary)]">3.</strong> Start the VM when ready:{' '}
+                    <code className="text-[var(--text-muted)] break-all">
                       virtctl start {kubevirtBundle.virtual_machine_name} -n {kubevirtBundle.namespace}
                     </code>
                     <button
                       type="button"
-                      className="ml-2 text-violet-400 hover:text-violet-300 underline-offset-2 hover:underline"
+                      className="ml-2 text-[var(--accent)] hover:text-[var(--link)] underline-offset-2 hover:underline"
                       onClick={() => {
                         const cmd = `virtctl start ${kubevirtBundle.virtual_machine_name} -n ${kubevirtBundle.namespace}`
                         void navigator.clipboard.writeText(cmd)
@@ -3586,18 +3586,18 @@ export default function VMDetailsPage() {
                 </label>
               </div>
               {kubevirtBundle.cluster_exec_enabled && (
-                <div className="rounded-lg border border-violet-800/40 bg-violet-950/20 p-3 space-y-2">
-                  <div className="text-xs font-medium text-violet-300 uppercase tracking-wide">Run on daemon host</div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    <code className="text-slate-300">[kubevirt] exec_enabled = true</code> — uses this machine&apos;s kubeconfig (set{' '}
-                    <code className="text-slate-300">kubeconfig_path</code> in machina config if needed).{' '}
-                    <strong className="text-slate-300">virtctl image-upload</strong> may run for a long time; the browser request blocks until it finishes.
+                <div className="rounded-lg border border-violet-800/40 bg-[var(--apple-surface)] p-3 space-y-2">
+                  <div className="text-xs font-medium text-[var(--link)] uppercase tracking-wide">Run on daemon host</div>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                    <code className="text-[var(--text-secondary)]">[kubevirt] exec_enabled = true</code> — uses this machine&apos;s kubeconfig (set{' '}
+                    <code className="text-[var(--text-secondary)]">kubeconfig_path</code> in machina config if needed).{' '}
+                    <strong className="text-[var(--text-secondary)]">virtctl image-upload</strong> may run for a long time; the browser request blocks until it finishes.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       disabled={kubevirtExecBusy !== null}
-                      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-violet-100"
+                      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-[var(--text-primary)]"
                       onClick={() => { void runKubevirtClusterStep('upload') }}
                     >
                       {kubevirtExecBusy === 'upload' ? 'Upload…' : 'virtctl image-upload'}
@@ -3605,7 +3605,7 @@ export default function VMDetailsPage() {
                     <button
                       type="button"
                       disabled={kubevirtExecBusy !== null}
-                      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-violet-100"
+                      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-[var(--text-primary)]"
                       onClick={() => { void runKubevirtClusterStep('apply') }}
                     >
                       {kubevirtExecBusy === 'apply' ? 'Apply…' : 'kubectl apply'}
@@ -3613,7 +3613,7 @@ export default function VMDetailsPage() {
                     <button
                       type="button"
                       disabled={kubevirtExecBusy !== null}
-                      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-violet-100"
+                      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-[var(--text-primary)]"
                       onClick={() => { void runKubevirtClusterStep('start') }}
                     >
                       {kubevirtExecBusy === 'start' ? 'Start…' : 'virtctl start'}
@@ -3637,7 +3637,7 @@ export default function VMDetailsPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+                  className="text-xs px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)]"
                   onClick={() => {
                     void navigator.clipboard.writeText(kubevirtBundle.yaml)
                     toast.success('YAML copied')
@@ -3647,7 +3647,7 @@ export default function VMDetailsPage() {
                 </button>
                 <button
                   type="button"
-                  className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+                  className="text-xs px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)]"
                   onClick={() => {
                     void navigator.clipboard.writeText(kubevirtBundle.virtctl_image_upload_example)
                     toast.success('virtctl command copied')
@@ -3691,8 +3691,8 @@ export default function VMDetailsPage() {
 
 function InfoRow({ label, value }: { label: string; value: string | number | boolean }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
-      <span className="text-slate-400 text-sm">{label}</span>
+    <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]/30">
+      <span className="text-[var(--text-muted)] text-sm">{label}</span>
       <span className="text-sm font-medium">{String(value)}</span>
     </div>
   )
@@ -3700,11 +3700,11 @@ function InfoRow({ label, value }: { label: string; value: string | number | boo
 
 function EditableRow({ label, value, onEdit }: { label: string; value: string | number; onEdit: () => void }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
-      <span className="text-slate-400 text-sm">{label}</span>
+    <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]/30">
+      <span className="text-[var(--text-muted)] text-sm">{label}</span>
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{String(value)}</span>
-        <button onClick={onEdit} className="p-1.5 hover:bg-slate-700 rounded transition" aria-label={`Edit ${label}`}><Pencil className="w-4 h-4 text-slate-500 hover:text-[var(--machina-status-info)]" /></button>
+        <button onClick={onEdit} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" aria-label={`Edit ${label}`}><Pencil className="w-4 h-4 text-[var(--text-muted)] hover:text-[var(--machina-status-info)]" /></button>
       </div>
     </div>
   )
@@ -3735,21 +3735,21 @@ function DialogBox({ title, icon, onClose, onConfirm, confirmLabel, children, co
   confirmDanger?: boolean
 }) {
   const confirmClass = confirmDanger
-    ? 'bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed'
-    : 'bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed'
+    ? 'btn-destructive disabled:opacity-40 disabled:cursor-not-allowed'
+    : 'btn-primary disabled:opacity-40 disabled:cursor-not-allowed'
   return (
     <form
-      className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fade-in"
+      className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fade-in"
       onClick={(e) => e.stopPropagation()}
       onSubmit={(e) => { e.preventDefault(); if (!confirmDisabled) onConfirm() }}
     >
-      <div className="p-5 border-b border-slate-700/50 flex items-center justify-between">
+      <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
         <span className="text-lg font-semibold flex items-center gap-2">{icon} {title}</span>
-        <button type="button" onClick={onClose} className="p-1 hover:bg-slate-700 rounded transition" aria-label="Close"><X className="w-4 h-4 text-slate-400" /></button>
+        <button type="button" onClick={onClose} className="p-1 hover:bg-[var(--surface-hover)] rounded transition" aria-label="Close"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
       </div>
       <div className="p-5 space-y-1">{children}</div>
       <div className="flex justify-end gap-3 px-5 pb-5">
-        <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">Cancel</button>
+        <button type="button" onClick={onClose} className="btn-secondary text-sm font-medium transition">Cancel</button>
         <button type="submit" disabled={confirmDisabled} className={`px-4 py-2 rounded-lg text-sm text-white font-medium transition ${confirmClass}`}>{confirmLabel}</button>
       </div>
     </form>

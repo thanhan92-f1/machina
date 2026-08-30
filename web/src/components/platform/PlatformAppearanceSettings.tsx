@@ -18,10 +18,36 @@ import PlatformDesktopTierPicker from './PlatformDesktopTierPicker'
 import { useTheme, type AppTheme } from '../../contexts/ThemeContext'
 
 const THEME_OPTIONS: { value: AppTheme; label: string; description: string; preview: string }[] = [
-  { value: 'dark', label: 'Liquid Glass', description: 'Modern translucent glass — macOS Tahoe style', preview: 'bg-gradient-to-br from-sky-950 via-slate-900 to-purple-950' },
-  { value: 'steel', label: 'Steel', description: 'Classic dark steel — high contrast, professional', preview: 'bg-gradient-to-br from-[#06080d] via-[#0b1017] to-[#101722]' },
-  { value: 'aurora', label: 'Aurora', description: 'Deep space purple — cosmic dark', preview: 'bg-gradient-to-br from-[#030712] via-[#0a0618] to-[#12082a]' },
-  { value: 'rack', label: 'Rack', description: 'Equipment-panel dark — orange signal accents', preview: 'bg-gradient-to-br from-[#0b0e13] via-[#12171f] to-[#1a212b]' },
+  {
+    value: 'dark',
+    label: 'Classic Blue',
+    description: 'Zeus Classic Blue — graphite canvas with Mist Blue CTAs',
+    preview: 'bg-black',
+  },
+  {
+    value: 'steel',
+    label: 'Dark Steel',
+    description: 'Cool graphite metal — high contrast, professional',
+    preview: 'bg-gradient-to-br from-[#06080d] via-[#0b1017] to-[#101722]',
+  },
+  {
+    value: 'aurora',
+    label: 'Aurora',
+    description: 'Deep space tint — soft violet night (no neon glow)',
+    preview: 'bg-gradient-to-br from-[#030712] via-[#0a0618] to-[#12082a]',
+  },
+  {
+    value: 'rack',
+    label: 'Rack',
+    description: 'Equipment-panel dark with muted orange signal accents',
+    preview: 'bg-gradient-to-br from-[#0b0e13] via-[#12171f] to-[#1a212b]',
+  },
+  {
+    value: 'light',
+    label: 'Tahoe Light',
+    description: 'Zeus Magichromatic — Mist Blue / Sage / Lavender on mist paper',
+    preview: 'bg-gradient-to-br from-[#d6eaf8] via-[#ebe4f5] to-[#ddeee4]',
+  },
 ]
 
 const SWATCH_CLASS: Record<PlatformWallpaper, string> = {
@@ -57,11 +83,11 @@ export default function PlatformAppearanceSettings() {
       {general && (
         <MacSettingsGroup title="Fleet summary">
           <MacSettingsGroupBody>
-            <p className="text-sm text-slate-300 leading-relaxed">{general.summary}</p>
-            <div className="grid gap-2 sm:grid-cols-3 text-sm text-slate-400">
-              <div>Cluster: <span className="text-slate-100">{general.cluster_name}</span></div>
-              <div>Controller: <span className="text-slate-100">{general.controller_version}</span></div>
-              <div>VMs: <span className="text-slate-100">{general.vm_count}</span></div>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{general.summary}</p>
+            <div className="grid gap-2 sm:grid-cols-3 text-sm text-[var(--text-muted)]">
+              <div>Cluster: <span className="text-[var(--text-primary)]">{general.cluster_name}</span></div>
+              <div>Controller: <span className="text-[var(--text-primary)]">{general.controller_version}</span></div>
+              <div>VMs: <span className="text-[var(--text-primary)]">{general.vm_count}</span></div>
             </div>
           </MacSettingsGroupBody>
         </MacSettingsGroup>
@@ -70,7 +96,7 @@ export default function PlatformAppearanceSettings() {
       <MacSettingsGroup title="Desktop density">
         <MacSettingsGroupBody>
           <PlatformDesktopTierPicker tier={tier} onChange={setTier} />
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
             Normal hides the status strip and most sidebar apps. Advanced restores the full fleet surface.
           </p>
         </MacSettingsGroupBody>
@@ -78,7 +104,7 @@ export default function PlatformAppearanceSettings() {
 
       <MacSettingsGroup title="Dock">
         <MacSettingsGroupBody>
-          <p className="text-sm text-slate-300 leading-relaxed">Pin apps to the Machina dock — same as macOS Customize Dock.</p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">Pin apps to the Machina dock — same as macOS Customize Dock.</p>
           <button type="button" className="btn-primary text-sm inline-flex items-center gap-2" onClick={openPlatformDockEditor}>
             <LayoutGrid className="w-4 h-4" /> Customize Dock…
           </button>
@@ -88,26 +114,28 @@ export default function PlatformAppearanceSettings() {
       <MacSettingsGroup title="Appearance">
         <MacSettingsGroupBody>
           <div>
-            <p className="text-sm text-slate-300 leading-relaxed mb-3">Color theme — applies everywhere across the platform.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">Color theme — applies everywhere across the platform.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {THEME_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setTheme(opt.value)}
                   className={`rounded-xl border p-3 text-left transition ${
-                    theme === opt.value ? 'border-sky-400/50 ring-1 ring-sky-400/30' : 'border-white/[0.08] hover:border-white/20'
+                    theme === opt.value
+                      ? 'border-[var(--accent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]'
+                      : 'border-white/[0.08] hover:border-white/20'
                   }`}
                 >
                   <div className={`h-12 rounded-lg mb-2 ${opt.preview}`} />
-                  <p className="text-xs font-medium text-slate-100">{opt.label}</p>
-                  <p className="text-[11px] text-slate-400 leading-snug mt-0.5">{opt.description}</p>
+                  <p className="text-xs font-medium text-[var(--text-primary)]">{opt.label}</p>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-snug mt-0.5">{opt.description}</p>
                 </button>
               ))}
             </div>
           </div>
           <div className="border-t border-white/[0.06] pt-4">
-            <p className="text-sm text-slate-300 leading-relaxed mb-3">Desktop wallpaper for the Machina Platform shell (macOS Tahoe style).</p>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">Desktop wallpaper for the Machina Platform shell (macOS Tahoe style).</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(Object.keys(PLATFORM_WALLPAPER_LABELS) as PlatformWallpaper[]).map((key) => (
                 <button
@@ -115,11 +143,13 @@ export default function PlatformAppearanceSettings() {
                   type="button"
                   onClick={() => pick(key)}
                   className={`rounded-xl border p-2 text-left transition ${
-                    wallpaper === key ? 'border-sky-400/50 ring-1 ring-sky-400/30' : 'border-white/[0.08] hover:border-white/20'
+                    wallpaper === key
+                      ? 'border-[var(--accent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]'
+                      : 'border-white/[0.08] hover:border-white/20'
                   }`}
                 >
                   <div className={`h-16 rounded-lg mb-2 ${SWATCH_CLASS[key]}`} />
-                  <span className="text-xs text-slate-200">{PLATFORM_WALLPAPER_LABELS[key]}</span>
+                  <span className="text-xs text-[var(--text-primary)]">{PLATFORM_WALLPAPER_LABELS[key]}</span>
                 </button>
               ))}
             </div>

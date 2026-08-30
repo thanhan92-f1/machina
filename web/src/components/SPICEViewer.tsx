@@ -67,9 +67,9 @@ export default function SPICEViewer({
   if (port <= 0 && !autoConnect) {
     return (
       <div className="flex flex-col items-center justify-center bg-black rounded-lg p-12 text-center" style={{ minHeight: '500px' }}>
-        <Monitor className="w-16 h-16 text-slate-600 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-400 mb-2">SPICE Not Available</h3>
-        <p className="text-sm text-slate-500 max-w-md">
+        <Monitor className="w-16 h-16 text-[var(--text-faint)] mb-4" />
+        <h3 className="text-lg font-semibold text-[var(--text-muted)] mb-2">SPICE Not Available</h3>
+        <p className="text-sm text-[var(--text-muted)] max-w-md">
           VM '{vmName}' doesn't have a SPICE port assigned. Make sure the VM has SPICE graphics configured with QXL video.
         </p>
       </div>
@@ -79,9 +79,9 @@ export default function SPICEViewer({
   if (tokenError) {
     return (
       <div className="flex flex-col items-center justify-center bg-black rounded-lg p-12 text-center" style={{ minHeight: '500px' }}>
-        <Monitor className="w-16 h-16 text-slate-600 mb-4" />
+        <Monitor className="w-16 h-16 text-[var(--text-faint)] mb-4" />
         <h3 className="text-lg font-semibold text-red-400 mb-2">Authentication Failed</h3>
-        <p className="text-sm text-slate-500 max-w-md">Failed to obtain WebSocket token.</p>
+        <p className="text-sm text-[var(--text-muted)] max-w-md">Failed to obtain WebSocket token.</p>
       </div>
     )
   }
@@ -107,14 +107,14 @@ export default function SPICEViewer({
   return (
     <div className={cockpitMode ? 'flex flex-col flex-1 min-h-0 w-full h-full' : fullscreen ? 'fixed inset-0 z-50 bg-black flex flex-col' : ''}>
       {!cockpitMode ? (
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 rounded-t-lg shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--apple-fill-tertiary)] border-b border-[var(--apple-hairline)] rounded-t-lg shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-          <span className="text-sm text-slate-300">SPICE — {vmName}</span>
-          {port > 0 ? <span className="text-xs text-slate-500">port {port}</span> : null}
+          <span className="text-sm text-[var(--text-secondary)]">SPICE — {vmName}</span>
+          {port > 0 ? <span className="text-xs text-[var(--text-muted)]">port {port}</span> : null}
         </div>
-        <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-slate-700 rounded transition" title="Fullscreen" aria-label="Fullscreen">
-          {fullscreen ? <Minimize className="w-4 h-4 text-slate-400" /> : <Maximize className="w-4 h-4 text-slate-400" />}
+        <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+          {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
         </button>
       </div>
       ) : null}

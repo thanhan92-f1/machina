@@ -78,13 +78,13 @@ export default function HealthCheckPanel({ vmId, report, loading, onRefresh, onT
             VM health: {report.score} · {report.checks_passed}/{report.checks_total} checks passed
           </p>
           {report.issues.length === 0 ? (
-            <p className="text-sm text-slate-400">All checks passed.</p>
+            <p className="text-sm text-[var(--text-muted)]">All checks passed.</p>
           ) : (
             <ul className="space-y-3 text-sm">
               {report.issues.map((issue, i) => (
-                <li key={`${issue.id}-${i}`} className="border border-slate-800 rounded-lg p-3">
+                <li key={`${issue.id}-${i}`} className="border border-[var(--apple-hairline)] rounded-lg p-3">
                   <p className={statusToneClass(issue.severity === 'warning' ? 'warn' : 'error')}>{issue.message}</p>
-                  {issue.remediation && <p className="text-xs text-slate-500 mt-1">{issue.remediation}</p>}
+                  {issue.remediation && <p className="text-xs text-[var(--text-muted)] mt-1">{issue.remediation}</p>}
                   {issue.fix_label && issue.fix_action && (
                     <button type="button" className="btn-primary text-xs mt-2" onClick={() => void fix(issue)}>
                       {issue.fix_label}

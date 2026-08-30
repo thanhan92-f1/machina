@@ -101,7 +101,7 @@ export default function RdpConsolePage() {
         {t('rdp.back')}
       </Link>
       <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Monitor className="w-7 h-7 text-sky-400" aria-hidden />
+        <Monitor className="w-7 h-7 text-[var(--link)]" aria-hidden />
         {t('rdp.pageTitle', { name })}
       </h1>
 
@@ -113,7 +113,7 @@ export default function RdpConsolePage() {
         <div className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-2 text-sm">
           <p>
             <span className="text-slate-500">{t('rdp.endpoint')}:</span>{' '}
-            <code className="text-sky-300">
+            <code className="text-[var(--link)]">
               {info.host}:{info.port}
             </code>
           </p>

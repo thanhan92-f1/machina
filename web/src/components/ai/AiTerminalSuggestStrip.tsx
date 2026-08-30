@@ -53,17 +53,17 @@ export default function AiTerminalSuggestStrip({
       {suggest.suggestions.map((s) => (
         <div key={s.command} className="rounded-lg border border-white/[0.06] p-2 text-xs">
           <div className="flex justify-between gap-2">
-            <span className="font-medium text-slate-200">{s.label}</span>
-            <span className="text-slate-600 shrink-0">{s.scope}</span>
+            <span className="font-medium text-[var(--text-primary)]">{s.label}</span>
+            <span className="text-[var(--text-faint)] shrink-0">{s.scope}</span>
           </div>
-          <code className="block mt-1 text-[10px] text-slate-400 break-all">{s.command}</code>
-          <p className="text-slate-500 mt-0.5">{s.description}</p>
+          <code className="block mt-1 text-[10px] text-[var(--text-muted)] break-all">{s.command}</code>
+          <p className="text-[var(--text-muted)] mt-0.5">{s.description}</p>
           <button type="button" className="btn-secondary text-[10px] mt-1 flex items-center gap-1" onClick={() => copyCmd(s.command)}>
             <Copy className="w-3 h-3" /> Copy
           </button>
         </div>
       ))}
-      {suggest.notes && <p className="text-[10px] text-slate-500">{suggest.notes}</p>}
+      {suggest.notes && <p className="text-[10px] text-[var(--text-muted)]">{suggest.notes}</p>}
     </div>
   )
 
@@ -92,7 +92,7 @@ export default function AiTerminalSuggestStrip({
     >
       {error && <p className="text-sm text-red-400">{error}</p>}
       {!suggest && !busy && !error && (
-        <p className="text-sm text-slate-500">Load Zyra-suggested commands for this VM or SSH session.</p>
+        <p className="text-sm text-[var(--text-muted)]">Load Zyra-suggested commands for this VM or SSH session.</p>
       )}
       {body}
     </MacGlassPanel>

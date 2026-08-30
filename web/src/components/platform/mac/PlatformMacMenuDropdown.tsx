@@ -71,7 +71,7 @@ export function PlatformMacMenuItem({
 }) {
   if (header) {
     return (
-      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 pointer-events-none">
+      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] pointer-events-none">
         {label}
       </div>
     )
@@ -81,10 +81,10 @@ export function PlatformMacMenuItem({
   return (
     <button type="button" onClick={onClick} disabled={disabled} className={cls}>
       <span className="flex items-center gap-2 min-w-0">
-        <span className="w-3 shrink-0 text-xs text-sky-300">{checked ? '✓' : ''}</span>
+        <span className="w-3 shrink-0 text-xs text-[var(--link)]">{checked ? '✓' : ''}</span>
         <span className="truncate">{label}</span>
       </span>
-      {shortcut ? <span className="text-xs text-white/40 shrink-0">{shortcut}</span> : null}
+      {shortcut ? <span className="text-xs text-[var(--text-muted)] shrink-0">{shortcut}</span> : null}
     </button>
   )
 }

@@ -57,24 +57,24 @@ export default function PlatformStepWizard({
 
   const panel = (
       <div
-        className={`w-full ${maxWidthClass} ${embedded ? '' : 'max-h-[min(90vh,720px)]'} flex flex-col rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl overflow-hidden`}
+        className={`w-full ${maxWidthClass} ${embedded ? '' : 'max-h-[min(90vh,720px)]'} flex flex-col rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-2xl overflow-hidden`}
         role={embedded ? undefined : 'dialog'}
         aria-modal={embedded ? undefined : true}
         aria-labelledby={embedded ? undefined : titleId}
         onClick={embedded ? undefined : (e) => e.stopPropagation()}
       >
-        <div className="shrink-0 px-6 py-4 border-b border-slate-800">
+        <div className="shrink-0 px-6 py-4 border-b border-[var(--apple-hairline)]">
           <h2 id={titleId} className="text-xl font-semibold">{title}</h2>
-          {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
-          <p className="text-sm text-slate-500 mt-1">
+          {subtitle && <p className="text-sm text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
+          <p className="text-sm text-[var(--text-muted)] mt-1">
             Step {step + 1} of {steps.length} — {steps[step]}
           </p>
           <div className="flex gap-1.5 mt-3">
             {steps.map((label, i) => (
               <div key={label} className="flex-1 flex flex-col gap-1 min-w-0">
-                <div className={`h-1 rounded-full ${i <= step ? 'bg-blue-500' : 'bg-slate-800'}`} title={label} />
+                <div className={`h-1 rounded-full ${i <= step ? 'bg-[var(--accent)]' : 'bg-[var(--apple-fill-tertiary)]'}`} title={label} />
                 <span
-                  className={`text-[10px] truncate hidden sm:block ${i === step ? 'text-slate-200' : 'text-slate-600'}`}
+                  className={`text-[10px] truncate hidden sm:block ${i === step ? 'text-[var(--text-primary)]' : 'text-[var(--text-faint)]'}`}
                 >
                   {label}
                 </span>
@@ -85,7 +85,7 @@ export default function PlatformStepWizard({
 
         <div className="flex-1 min-h-0 overflow-y-auto p-6">{children}</div>
 
-        <div className="shrink-0 px-6 py-4 border-t border-slate-800 flex items-center justify-between gap-2 bg-slate-900/95">
+        <div className="shrink-0 px-6 py-4 border-t border-[var(--apple-hairline)] flex items-center justify-between gap-2 bg-[var(--apple-surface-elevated)]">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={busy}>
             Cancel
           </button>

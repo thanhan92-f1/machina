@@ -44,16 +44,16 @@ export default function VmConsoleQuickLinks({ vmId, running = true, compact = fa
   }, [vmId, running])
 
   if (!running) {
-    return <p className={`text-xs text-slate-500 ${className}`}>Start the VM to open a graphical console.</p>
+    return <p className={`text-xs text-[var(--text-muted)] ${className}`}>Start the VM to open a graphical console.</p>
   }
 
   if (loading && !plan) {
-    return <p className={`text-xs text-slate-500 ${className}`}>Loading console options…</p>
+    return <p className={`text-xs text-[var(--text-muted)] ${className}`}>Loading console options…</p>
   }
 
   const protocols = sortedDisplayProtocols(plan?.protocols ?? ['novnc'], plan?.recommended ?? 'novnc')
   if (protocols.length === 0) {
-    return <p className={`text-xs text-slate-500 ${className}`}>No console protocols reported for this VM.</p>
+    return <p className={`text-xs text-[var(--text-muted)] ${className}`}>No console protocols reported for this VM.</p>
   }
 
   return (

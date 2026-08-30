@@ -38,6 +38,7 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       loading={loading && rows.length === 0}
@@ -45,7 +46,7 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'API keys'}
       subtitle={embedded ? undefined : 'Bearer tokens for automation (machina_*)'}
-      icon={embedded ? undefined : <Key className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Key className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -59,7 +60,7 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
           <div className={`rounded-xl p-4 text-sm ${statusSurfaceClasses('warn')}`}>
             <p className={`mb-2 ${statusToneClass('warn')}`}>Copy this token now — it will not be shown again:</p>
             <div className="flex items-start gap-2">
-              <code className="flex-1 break-all text-xs text-slate-300">{newToken}</code>
+              <code className="flex-1 break-all text-xs text-[var(--text-secondary)]">{newToken}</code>
               <button
                 type="button"
                 className="btn-secondary text-xs shrink-0 inline-flex items-center gap-1"
@@ -90,11 +91,11 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
             finally { setCreating(false) }
           }}>
             <label className="block space-y-1">
-              <span className="text-xs text-slate-400">Name</span>
+              <span className="text-xs text-[var(--text-muted)]">Name</span>
               <input className="input w-full" placeholder="automation" value={name} onChange={(e) => setName(e.target.value)} />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs text-slate-400">Role</span>
+              <span className="text-xs text-[var(--text-muted)]">Role</span>
               <select className="input w-full" value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="admin">admin</option>
                 <option value="operator">operator</option>
@@ -124,9 +125,9 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
         >
           {rows.map((k) => (
             <tr key={k.id} className="border-b border-white/[0.04]">
-              <td className="p-3 text-slate-200">{k.name}</td>
+              <td className="p-3 text-[var(--text-primary)]">{k.name}</td>
               <td className="p-3 capitalize">{k.role}</td>
-              <td className="p-3 text-slate-500">{k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}</td>
+              <td className="p-3 text-[var(--text-muted)]">{k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}</td>
               <td className="p-3 text-right">
                 <div className="inline-flex items-center gap-2">
                   <button

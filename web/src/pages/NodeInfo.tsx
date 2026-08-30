@@ -81,25 +81,25 @@ function HostProcessTableBlock({
     variant === 'memory'
       ? 'Highest RSS from ps; full argv from /proc (all Linux distros).'
       : 'Highest %CPU from ps; full argv from /proc (same columns as the memory list).'
-  const headCpu = variant === 'cpu' ? 'text-cyan-200/95 font-semibold' : ''
-  const headRss = variant === 'memory' ? 'text-cyan-200/95 font-semibold' : ''
-  const cellCpu = variant === 'cpu' ? 'text-cyan-100' : 'text-slate-200'
-  const cellRss = variant === 'memory' ? 'text-slate-100' : 'text-slate-200'
+  const headCpu = variant === 'cpu' ? 'text-[var(--accent)]/95 font-semibold' : ''
+  const headRss = variant === 'memory' ? 'text-[var(--accent)]/95 font-semibold' : ''
+  const cellCpu = variant === 'cpu' ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'
+  const cellRss = variant === 'memory' ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'
   const headerIcon =
     variant === 'memory' ? (
-      <ListOrdered className="w-5 h-5 text-cyan-400" />
+      <ListOrdered className="w-5 h-5 text-[var(--accent)]" />
     ) : (
       <Cpu className={`w-5 h-5 ${statusToneClass('warn')}`} />
     )
 
   return (
-    <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
+    <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+      <div className="px-6 py-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           {headerIcon}
           {title}
         </h2>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-[var(--text-muted)]">
           {hintLead}
           {canKillHostProcess
             ? ' Term / Kill send signals as the daemon user (root).'
@@ -109,7 +109,7 @@ function HostProcessTableBlock({
       <div className="overflow-x-auto">
         <table className="w-full text-sm" aria-label="Running processes">
           <thead>
-            <tr className="text-left text-slate-400 border-b border-slate-700/50">
+            <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
               <th scope="col" className="px-6 py-3 font-medium">PID</th>
               <th scope="col" className="px-6 py-3 font-medium">User</th>
               <th scope="col" className={`px-6 py-3 font-medium text-right ${headCpu}`}>CPU%</th>
@@ -121,15 +121,15 @@ function HostProcessTableBlock({
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700/50">
+          <tbody className="divide-y divide-[var(--apple-hairline)]/50">
             {processes.map((p) => (
-              <tr key={`${variant}-${p.pid}`} className="hover:bg-slate-700/30">
-                <td className="px-6 py-3 font-mono text-slate-300">{p.pid}</td>
-                <td className="px-6 py-3 text-slate-300">{p.user}</td>
+              <tr key={`${variant}-${p.pid}`} className="hover:bg-[var(--surface-hover)]/30">
+                <td className="px-6 py-3 font-mono text-[var(--text-secondary)]">{p.pid}</td>
+                <td className="px-6 py-3 text-[var(--text-secondary)]">{p.user}</td>
                 <td className={`px-6 py-3 text-right ${cellCpu}`}>{p.cpu_percent.toFixed(1)}</td>
                 <td className={`px-6 py-3 text-right ${cellRss}`}>{formatBytes(p.rss_kb * 1024)}</td>
-                <td className="px-6 py-3 font-mono text-xs text-slate-400 truncate max-w-[10rem]" title={p.command}>{p.command}</td>
-                <td className="px-6 py-3 font-mono text-xs text-slate-500 truncate max-w-xl hidden xl:table-cell" title={p.args || ''}>{p.args || '—'}</td>
+                <td className="px-6 py-3 font-mono text-xs text-[var(--text-muted)] truncate max-w-[10rem]" title={p.command}>{p.command}</td>
+                <td className="px-6 py-3 font-mono text-xs text-[var(--text-muted)] truncate max-w-xl hidden xl:table-cell" title={p.args || ''}>{p.args || '—'}</td>
                 {canKillHostProcess && (
                   <td className="px-6 py-3 text-right whitespace-nowrap">
                     <div className="inline-flex flex-wrap items-center justify-end gap-1">
@@ -138,7 +138,7 @@ function HostProcessTableBlock({
                         title="Send SIGTERM"
                         disabled={killBusyPid !== null}
                         onClick={() => void onKill(p, 'TERM')}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-slate-600/30 text-slate-200 border border-slate-500/40 hover:bg-slate-600/45 disabled:opacity-50 transition"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)] disabled:opacity-50 transition"
                       >
                         Term
                       </button>
@@ -523,12 +523,13 @@ export default function NodeInfoPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       loading={loading}
       title="Host overview"
       subtitle={node ? `${node.hostname} — hypervisor worker: usage, mounts, top processes, and libvirt health (read-only)` : undefined}
       icon={<Server className={`w-6 h-6 ${statusToneClass('info')}`} />}
       actions={
-        <button onClick={load} className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
+        <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
       }
     >
       {node && (
@@ -561,14 +562,14 @@ export default function NodeInfoPage() {
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${statusSurfaceClasses(health.libvirt ? 'ok' : 'error')}`}>
           {health.libvirt ? <CheckCircle className={`w-5 h-5 ${statusToneClass('ok')}`} /> : <XCircle className={`w-5 h-5 ${statusToneClass('error')}`} />}
           <span className="text-sm">Virtualization (libvirt): <strong className={statusToneClass(health.libvirt ? 'ok' : 'error')}>{health.status}</strong></span>
-          <span className="text-xs text-slate-500 ml-auto">{node.hypervisor} {node.hypervisor_version} / libvirt {node.lib_version}</span>
+          <span className="text-xs text-[var(--text-muted)] ml-auto">{node.hypervisor} {node.hypervisor_version} / libvirt {node.lib_version}</span>
         </div>
       )}
 
       {/* System Info */}
       {sysInfo && (
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2"><Monitor className="w-5 h-5 text-cyan-400" /> System Configuration</h2>
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Monitor className="w-5 h-5 text-[var(--accent)]" /> System Configuration</h2>
           <InfoRow label="OS" value={sysInfo.os_pretty_name || `${sysInfo.os_name} ${sysInfo.os_version}`} />
           <InfoRow label="Kernel" value={sysInfo.kernel_version} />
           {sysInfo.architecture && <InfoRow label="Architecture" value={sysInfo.architecture} />}
@@ -604,8 +605,8 @@ export default function NodeInfoPage() {
           {sysInfo.boot_id && <InfoRow label="Boot ID" value={sysInfo.boot_id} />}
 
           {/* Editable Hostname */}
-          <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
-            <span className="text-slate-400 text-sm">Hostname</span>
+          <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]/30">
+            <span className="text-[var(--text-muted)] text-sm">Hostname</span>
             {editingHostname ? (
               <div className="flex items-center gap-2">
                 <input
@@ -613,7 +614,7 @@ export default function NodeInfoPage() {
                   aria-label="Hostname"
                   value={hostnameInput}
                   onChange={e => setHostnameInput(e.target.value)}
-                  className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--machina-status-info)]"
+                  className="bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--machina-status-info)]"
                   autoFocus
                 />
                 <button
@@ -639,14 +640,14 @@ export default function NodeInfoPage() {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{sysInfo.hostname}</span>
-                <button aria-label="Edit hostname" onClick={() => { setHostnameInput(sysInfo.hostname); setEditingHostname(true) }} className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition"><Pencil className="w-3.5 h-3.5" /></button>
+                <button aria-label="Edit hostname" onClick={() => { setHostnameInput(sysInfo.hostname); setEditingHostname(true) }} className="p-1 hover:bg-[var(--surface-hover)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"><Pencil className="w-3.5 h-3.5" /></button>
               </div>
             )}
           </div>
 
           {/* Editable Timezone */}
-          <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
-            <span className="text-slate-400 text-sm">Timezone</span>
+          <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]/30">
+            <span className="text-[var(--text-muted)] text-sm">Timezone</span>
             {editingTimezone ? (
               <div className="flex items-center gap-2">
                 <input
@@ -655,7 +656,7 @@ export default function NodeInfoPage() {
                   value={timezoneInput}
                   onChange={e => setTimezoneInput(e.target.value)}
                   placeholder="e.g. America/New_York"
-                  className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--machina-status-info)]"
+                  className="bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded px-2 py-1 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--machina-status-info)]"
                   autoFocus
                 />
                 <button
@@ -681,7 +682,7 @@ export default function NodeInfoPage() {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{sysInfo.timezone}</span>
-                <button aria-label="Edit timezone" onClick={() => { setTimezoneInput(sysInfo.timezone); setEditingTimezone(true) }} className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition"><Pencil className="w-3.5 h-3.5" /></button>
+                <button aria-label="Edit timezone" onClick={() => { setTimezoneInput(sysInfo.timezone); setEditingTimezone(true) }} className="p-1 hover:bg-[var(--surface-hover)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"><Pencil className="w-3.5 h-3.5" /></button>
               </div>
             )}
           </div>
@@ -689,184 +690,184 @@ export default function NodeInfoPage() {
       )}
 
       {sysInfo && (
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Activity className={`w-5 h-5 ${statusToneClass('ok')}`} /> Raw systemd diagnostics
           </h2>
-          <p className="text-xs text-slate-500">
-            Extended snapshot: raw <code className="text-slate-400">hostnamectl</code>/<code className="text-slate-400">timedatectl</code>,{' '}
-            <code className="text-slate-400">resolvectl</code>, sockets/timers/jobs, unit lists, target dependencies,{' '}
-            <code className="text-slate-400">journalctl --list-boots</code>, and more (truncated server-side).
+          <p className="text-xs text-[var(--text-muted)]">
+            Extended snapshot: raw <code className="text-[var(--text-muted)]">hostnamectl</code>/<code className="text-[var(--text-muted)]">timedatectl</code>,{' '}
+            <code className="text-[var(--text-muted)]">resolvectl</code>, sockets/timers/jobs, unit lists, target dependencies,{' '}
+            <code className="text-[var(--text-muted)]">journalctl --list-boots</code>, and more (truncated server-side).
           </p>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40" open>
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl --version (full)</summary>
-            <pre className="px-3 pb-3 text-xs text-cyan-300/90 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]" open>
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl --version (full)</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--accent)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.systemd_version_full || sysInfo.systemd_version || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40" open>
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemd-analyze critical-chain (top)</summary>
-            <div className="px-3 pb-3 border-t border-slate-700/30 pt-2 space-y-1 max-h-56 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]" open>
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemd-analyze critical-chain (top)</summary>
+            <div className="px-3 pb-3 border-t border-[var(--apple-hairline)]/30 pt-2 space-y-1 max-h-56 overflow-y-auto">
               {sysInfo.critical_chain_top?.length ? sysInfo.critical_chain_top.map((line, idx) => (
-                <pre key={`${idx}-${line}`} className="text-xs text-slate-300 whitespace-pre-wrap break-words font-mono">{line}</pre>
-              )) : <div className="text-xs text-slate-500">No critical-chain data.</div>}
+                <pre key={`${idx}-${line}`} className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words font-mono">{line}</pre>
+              )) : <div className="text-xs text-[var(--text-muted)]">No critical-chain data.</div>}
             </div>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemd-analyze blame (top)</summary>
-            <div className="px-3 pb-3 border-t border-slate-700/30 pt-2 space-y-0.5 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemd-analyze blame (top)</summary>
+            <div className="px-3 pb-3 border-t border-[var(--apple-hairline)]/30 pt-2 space-y-0.5 max-h-72 overflow-y-auto">
               {sysInfo.systemd_analyze_blame_top?.length ? sysInfo.systemd_analyze_blame_top.map((line, idx) => (
-                <pre key={`${idx}-${line}`} className="text-xs text-slate-300 whitespace-pre-wrap break-words font-mono">{line}</pre>
-              )) : <div className="text-xs text-slate-500">No blame data.</div>}
+                <pre key={`${idx}-${line}`} className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words font-mono">{line}</pre>
+              )) : <div className="text-xs text-[var(--text-muted)]">No blame data.</div>}
             </div>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">loginctl list-users</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-48 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">loginctl list-users</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-48 overflow-y-auto">
               {(sysInfo.loginctl_users_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">loginctl list-sessions</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">loginctl list-sessions</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.loginctl_sessions_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl show (manager, truncated)</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-80 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl show (manager, truncated)</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-80 overflow-y-auto">
               {(sysInfo.systemctl_show_manager || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-units --type=mount --state=active</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-units --type=mount --state=active</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.mount_units_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-units --state=failed</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-48 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-units --state=failed</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-48 overflow-y-auto">
               {(sysInfo.failed_units_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-dependencies systemd-networkd</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-dependencies systemd-networkd</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.networkd_dependencies_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">hostnamectl (raw)</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">hostnamectl (raw)</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.hostnamectl_status_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">timedatectl (raw)</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">timedatectl (raw)</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.timedatectl_status_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">timedatectl show</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">timedatectl show</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.timedatectl_show_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl show-environment</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl show-environment</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.systemctl_show_environment_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-sockets</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-sockets</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.systemctl_list_sockets_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-timers --all</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-timers --all</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.systemctl_list_timers_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-jobs</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-48 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-jobs</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-48 overflow-y-auto">
               {(sysInfo.systemctl_list_jobs_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl status systemd-networkd</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl status systemd-networkd</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.systemctl_status_networkd_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl status systemd-resolved</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl status systemd-resolved</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.systemctl_status_resolved_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-dependencies systemd-resolved</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-dependencies systemd-resolved</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.resolved_dependencies_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">resolvectl status</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-80 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">resolvectl status</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-80 overflow-y-auto">
               {(sysInfo.resolvectl_status_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">resolvectl statistics</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-48 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">resolvectl statistics</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-48 overflow-y-auto">
               {(sysInfo.resolvectl_statistics_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">bootctl status</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-64 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">bootctl status</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-64 overflow-y-auto">
               {(sysInfo.bootctl_status_text || '').trim() || 'No output (not using systemd-boot or bootctl missing).'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-unit-files (enabled services)</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-unit-files (enabled services)</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.enabled_service_unit_files_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-units (running services)</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-units (running services)</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.running_service_units_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">loginctl list-seats</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-40 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">loginctl list-seats</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-40 overflow-y-auto">
               {(sysInfo.loginctl_list_seats_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">journalctl --list-boots</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-56 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">journalctl --list-boots</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-56 overflow-y-auto">
               {(sysInfo.journalctl_list_boots_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemd-analyze verify</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemd-analyze verify</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.systemd_analyze_verify_text || '').trim() || 'No output.'}
             </pre>
           </details>
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/40">
-            <summary className="px-3 py-2 text-sm text-slate-300 cursor-pointer hover:text-white">systemctl list-dependencies default.target</summary>
-            <pre className="px-3 pb-3 text-xs text-slate-400 font-mono whitespace-pre-wrap break-words border-t border-slate-700/30 pt-2 max-h-72 overflow-y-auto">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-surface)]">
+            <summary className="px-3 py-2 text-sm text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">systemctl list-dependencies default.target</summary>
+            <pre className="px-3 pb-3 text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap break-words border-t border-[var(--apple-hairline)]/30 pt-2 max-h-72 overflow-y-auto">
               {(sysInfo.default_target_dependencies_text || '').trim() || 'No output.'}
             </pre>
           </details>
@@ -880,10 +881,10 @@ export default function NodeInfoPage() {
           <ResourceGauge icon={<MemoryStick className={`w-5 h-5 ${statusToneClass('ok')}`} />} label="Memory" value={stats.memory_percent} subtitle={`${(stats.memory_used_mb / 1024).toFixed(1)} / ${(stats.memory_total_mb / 1024).toFixed(1)} GB`} />
           <ResourceGauge icon={<Database className="w-5 h-5 text-orange-400" />} label="Disk" value={stats.disk_percent} subtitle={`${stats.disk_used_gb.toFixed(0)} / ${stats.disk_total_gb.toFixed(0)} GB`} />
           <ResourceGauge icon={<HardDrive className="w-5 h-5 text-purple-400" />} label="Swap" value={stats.swap_total_mb > 0 ? (stats.swap_used_mb / stats.swap_total_mb * 100) : 0} subtitle={`${(stats.swap_used_mb / 1024).toFixed(1)} / ${(stats.swap_total_mb / 1024).toFixed(1)} GB`} />
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-1"><Clock className="w-4 h-4 text-cyan-400" /><span className="text-xs text-slate-500">Uptime</span></div>
+          <div className="bg-[var(--apple-surface)] rounded-xl p-4 border border-[var(--apple-hairline)] flex flex-col justify-center">
+            <div className="flex items-center gap-2 mb-1"><Clock className="w-4 h-4 text-[var(--accent)]" /><span className="text-xs text-[var(--text-muted)]">Uptime</span></div>
             <div className="text-lg font-bold">{formatUptime(stats.uptime_secs)}</div>
-            <div className="text-xs text-slate-500">{stats.processes} processes</div>
+            <div className="text-xs text-[var(--text-muted)]">{stats.processes} processes</div>
           </div>
         </div>
       )}
@@ -900,7 +901,7 @@ export default function NodeInfoPage() {
 
       {/* Hardware Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Server className={`w-5 h-5 ${statusToneClass('info')}`} /> System</h2>
           <InfoRow label="Hostname" value={node.hostname} />
           <InfoRow label="Hypervisor" value={`${node.hypervisor} ${node.hypervisor_version}`} />
@@ -910,7 +911,7 @@ export default function NodeInfoPage() {
           {stats && <InfoRow label="Processes" value={stats.processes} />}
         </div>
 
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Cpu className="w-5 h-5 text-purple-400" /> CPU</h2>
           <InfoRow label="Architecture" value={node.cpu_model} />
           <InfoRow label="Cores" value={node.cpu_cores} />
@@ -921,7 +922,7 @@ export default function NodeInfoPage() {
           {stats && <InfoRow label="Current Load" value={`${stats.load_1.toFixed(2)} / ${stats.load_5.toFixed(2)} / ${stats.load_15.toFixed(2)}`} />}
         </div>
 
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><MemoryStick className={`w-5 h-5 ${statusToneClass('ok')}`} /> Memory</h2>
           <InfoRow label="Total RAM" value={`${(node.memory_mb / 1024).toFixed(1)} GB`} />
           {stats && (
@@ -937,18 +938,18 @@ export default function NodeInfoPage() {
 
       {/* Platform inventory — sysfs CPU topology + DMI + libvirt reconciliation */}
       {hardwareInventory && (
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-4">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <FolderTree className="w-5 h-5 text-cyan-400" /> Platform inventory
+                <FolderTree className="w-5 h-5 text-[var(--accent)]" /> Platform inventory
               </h2>
-              <p className="text-xs text-slate-500 mt-1 max-w-3xl">
+              <p className="text-xs text-[var(--text-muted)] mt-1 max-w-3xl">
                 Kernel-exposed CPU topology and SMBIOS/DMI tables (same conceptual sources as proprietary hypervisors use for sockets/cores/threads/NUMA),
                 cross-checked with libvirt&apos;s node caps for audit-style reconciliation.
               </p>
             </div>
-            <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">
+            <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
               {hardwareInventory.collected_at_rfc3339}
             </span>
           </div>
@@ -963,7 +964,7 @@ export default function NodeInfoPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-300">Firmware / chassis (DMI)</h3>
+              <h3 className="text-sm font-medium text-[var(--text-secondary)]">Firmware / chassis (DMI)</h3>
               <InfoRow label="Hardware UUID" value={hardwareInventory.dmi.product_uuid ?? '—'} />
               <InfoRow label="Serial / tag" value={hardwareInventory.dmi.product_serial || '—'} />
               <InfoRow label="Vendor" value={hardwareInventory.dmi.sys_vendor || '—'} />
@@ -972,46 +973,46 @@ export default function NodeInfoPage() {
               <InfoRow label="BIOS" value={[hardwareInventory.dmi.bios_version, hardwareInventory.dmi.bios_date].filter(Boolean).join(' · ') || '—'} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-300">CPU identity (/proc/cpuinfo)</h3>
+              <h3 className="text-sm font-medium text-[var(--text-secondary)]">CPU identity (/proc/cpuinfo)</h3>
               <InfoRow label="Vendor" value={hardwareInventory.cpuinfo_vendor_id ?? '—'} />
               <InfoRow label="Model" value={hardwareInventory.cpuinfo_model_name ?? '—'} />
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-slate-300 mb-2">Topology (sysfs)</h3>
+            <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Topology (sysfs)</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div className="rounded-lg bg-slate-900/40 border border-slate-700/40 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Online CPUs</div>
-                <div className="text-xl font-semibold text-white">{hardwareInventory.cpu_topology.logical_cpus}</div>
+              <div className="rounded-lg bg-[var(--apple-surface)] border border-[var(--apple-hairline)]/40 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Online CPUs</div>
+                <div className="text-xl font-semibold text-[var(--text-primary)]">{hardwareInventory.cpu_topology.logical_cpus}</div>
               </div>
-              <div className="rounded-lg bg-slate-900/40 border border-slate-700/40 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Sockets</div>
-                <div className="text-xl font-semibold text-white">{hardwareInventory.cpu_topology.sockets}</div>
+              <div className="rounded-lg bg-[var(--apple-surface)] border border-[var(--apple-hairline)]/40 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Sockets</div>
+                <div className="text-xl font-semibold text-[var(--text-primary)]">{hardwareInventory.cpu_topology.sockets}</div>
               </div>
-              <div className="rounded-lg bg-slate-900/40 border border-slate-700/40 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Physical cores</div>
-                <div className="text-xl font-semibold text-white">{hardwareInventory.cpu_topology.physical_cores}</div>
+              <div className="rounded-lg bg-[var(--apple-surface)] border border-[var(--apple-hairline)]/40 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Physical cores</div>
+                <div className="text-xl font-semibold text-[var(--text-primary)]">{hardwareInventory.cpu_topology.physical_cores}</div>
               </div>
-              <div className="rounded-lg bg-slate-900/40 border border-slate-700/40 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Threads / core (max)</div>
-                <div className="text-xl font-semibold text-white">{hardwareInventory.cpu_topology.threads_per_core_max}</div>
+              <div className="rounded-lg bg-[var(--apple-surface)] border border-[var(--apple-hairline)]/40 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Threads / core (max)</div>
+                <div className="text-xl font-semibold text-[var(--text-primary)]">{hardwareInventory.cpu_topology.threads_per_core_max}</div>
               </div>
             </div>
-            <div className="rounded-lg bg-slate-900/50 border border-slate-700/40 p-4 font-mono text-xs text-slate-300 leading-relaxed">
-              <div className="text-slate-400 mb-3 select-none">
+            <div className="rounded-lg bg-[var(--apple-surface)] border border-[var(--apple-hairline)]/40 p-4 font-mono text-xs text-[var(--text-secondary)] leading-relaxed">
+              <div className="text-[var(--text-muted)] mb-3 select-none">
                 {(hardwareInventory.dmi.sys_vendor || 'Host').trim() || 'Host'} · {(hardwareInventory.dmi.product_name || 'platform').trim() || 'platform'}
               </div>
               {hardwareInventory.cpu_topology.socket_package_ids.length === 0 ? (
-                <p className="text-slate-500">No sysfs topology (non-Linux host or cpus offline).</p>
+                <p className="text-[var(--text-muted)]">No sysfs topology (non-Linux host or cpus offline).</p>
               ) : (
                 hardwareInventory.cpu_topology.socket_package_ids.map((pkgId, i) => (
-                  <div key={`${pkgId}-${i}`} className="border-l border-slate-600 ml-1 pl-3 pb-2 last:pb-0">
+                  <div key={`${pkgId}-${i}`} className="border-l border-[var(--apple-hairline)] ml-1 pl-3 pb-2 last:pb-0">
                     <span className={`${statusToneClass('ok')} opacity-90`}>Socket</span>{' '}
-                    <span className="text-white">{pkgId}</span>
-                    <span className="text-slate-500"> — </span>
+                    <span className="text-[var(--text-primary)]">{pkgId}</span>
+                    <span className="text-[var(--text-muted)]"> — </span>
                     <span>{hardwareInventory.cpu_topology.cores_per_socket[i] ?? 0} cores</span>
-                    <span className="text-slate-500"> × </span>
+                    <span className="text-[var(--text-muted)]"> × </span>
                     <span>≤{hardwareInventory.cpu_topology.threads_per_core_max} threads/core</span>
                   </div>
                 ))
@@ -1021,21 +1022,21 @@ export default function NodeInfoPage() {
 
           {hardwareInventory.numa_nodes.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-slate-300 mb-2">NUMA (sysfs)</h3>
-              <div className="overflow-x-auto rounded-lg border border-slate-700/40">
+              <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-2">NUMA (sysfs)</h3>
+              <div className="overflow-x-auto apple-surface rounded-2xl/40">
                 <table className="w-full text-sm" aria-label="NUMA topology">
                   <thead>
-                    <tr className="text-left text-slate-400 border-b border-slate-700/50">
+                    <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                       <th scope="col" className="px-4 py-2">Node</th>
                       <th scope="col" className="px-4 py-2">CPUs</th>
                       <th scope="col" className="px-4 py-2">Memory</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/40">
+                  <tbody className="divide-y divide-[var(--apple-hairline)]/40">
                     {hardwareInventory.numa_nodes.map((nn) => (
                       <tr key={nn.node_id}>
                         <td className="px-4 py-2 font-mono">{nn.node_id}</td>
-                        <td className="px-4 py-2 font-mono text-xs text-slate-300">{nn.cpu_list || '—'}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-[var(--text-secondary)]">{nn.cpu_list || '—'}</td>
                         <td className="px-4 py-2">{formatBytes(nn.memory_total_kb * 1024)}</td>
                       </tr>
                     ))}
@@ -1047,7 +1048,7 @@ export default function NodeInfoPage() {
 
           {hardwareInventory.libvirt && (
             <div>
-              <h3 className="text-sm font-medium text-slate-300 mb-2">Libvirt node caps (reconciliation)</h3>
+              <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Libvirt node caps (reconciliation)</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <InfoRow label="libvirt model" value={hardwareInventory.libvirt.cpu_model} />
                 <InfoRow label="NUMA cells (libvirt)" value={hardwareInventory.libvirt.numa_nodes} />
@@ -1058,9 +1059,9 @@ export default function NodeInfoPage() {
             </div>
           )}
 
-          <details className="rounded-lg border border-slate-700/40 bg-slate-900/30">
-            <summary className="px-3 py-2 text-xs text-slate-400 cursor-pointer hover:text-slate-300">Data sources</summary>
-            <ul className="px-4 pb-3 text-[11px] font-mono text-slate-500 space-y-0.5">
+          <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-fill-tertiary)]">
+            <summary className="px-3 py-2 text-xs text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-secondary)]">Data sources</summary>
+            <ul className="px-4 pb-3 text-[11px] font-mono text-[var(--text-muted)] space-y-0.5">
               {hardwareInventory.sources.map((s) => (
                 <li key={s}>{s}</li>
               ))}
@@ -1070,33 +1071,33 @@ export default function NodeInfoPage() {
       )}
 
       {hardwareInventoryHistory && (
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 space-y-3">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <div className="flex flex-wrap justify-between gap-2 items-start">
             <div>
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <ScrollText className="w-5 h-5 text-slate-400" /> Inventory history
+                <ScrollText className="w-5 h-5 text-[var(--text-muted)]" /> Inventory history
               </h2>
-              <p className="text-xs text-slate-500 mt-1 max-w-3xl">
+              <p className="text-xs text-[var(--text-muted)] mt-1 max-w-3xl">
                 JSON Lines on the hypervisor (daemon appends on a schedule; default hourly). Newest snapshots first — useful for spotting UUID / topology drift over time.
               </p>
             </div>
             <span
-              className="text-[10px] text-slate-500 font-mono truncate max-w-[min(100%,28rem)] text-right"
+              className="text-[10px] text-[var(--text-muted)] font-mono truncate max-w-[min(100%,28rem)] text-right"
               title={hardwareInventoryHistory.path}
             >
               {hardwareInventoryHistory.path}
             </span>
           </div>
           {hardwareInventoryHistory.entries.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No snapshots yet. Tune <code className="text-slate-400">[inventory_history]</code> in{' '}
-              <code className="text-slate-400">config.toml</code> (enable, interval, max file size).
+            <p className="text-sm text-[var(--text-muted)]">
+              No snapshots yet. Tune <code className="text-[var(--text-muted)]">[inventory_history]</code> in{' '}
+              <code className="text-[var(--text-muted)]">config.toml</code> (enable, interval, max file size).
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-700/40">
+            <div className="overflow-x-auto apple-surface rounded-2xl/40">
               <table className="w-full text-sm" aria-label="Hardware inventory history">
                 <thead>
-                  <tr className="text-left text-slate-400 border-b border-slate-700/50">
+                  <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                     <th scope="col" className="px-4 py-2 whitespace-nowrap">Collected (UTC)</th>
                     <th scope="col" className="px-4 py-2">CPUs</th>
                     <th scope="col" className="px-4 py-2">Sockets</th>
@@ -1105,10 +1106,10 @@ export default function NodeInfoPage() {
                     <th scope="col" className="px-4 py-2">Alerts</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/40">
+                <tbody className="divide-y divide-[var(--apple-hairline)]/40">
                   {hardwareInventoryHistory.entries.map((e, idx) => (
-                    <tr key={`${e.collected_at_rfc3339}-${idx}`} className="hover:bg-slate-700/25">
-                      <td className="px-4 py-2 font-mono text-xs whitespace-nowrap text-slate-300">{e.collected_at_rfc3339}</td>
+                    <tr key={`${e.collected_at_rfc3339}-${idx}`} className="hover:bg-[var(--surface-hover)]/25">
+                      <td className="px-4 py-2 font-mono text-xs whitespace-nowrap text-[var(--text-secondary)]">{e.collected_at_rfc3339}</td>
                       <td className="px-4 py-2 tabular-nums">{e.cpu_topology.logical_cpus}</td>
                       <td className="px-4 py-2 tabular-nums">{e.cpu_topology.sockets}</td>
                       <td className="px-4 py-2 tabular-nums">{e.cpu_topology.physical_cores}</td>
@@ -1121,7 +1122,7 @@ export default function NodeInfoPage() {
                             {e.consistency_notes.length} note{e.consistency_notes.length === 1 ? '' : 's'}
                           </span>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-[var(--text-muted)]">—</span>
                         )}
                       </td>
                     </tr>
@@ -1135,40 +1136,40 @@ export default function NodeInfoPage() {
 
       {/* Storage Overview (root aggregate) */}
       {stats && (
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+        <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)]">
           <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Database className="w-5 h-5 text-orange-400" /> Root filesystem</h2>
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <div className="text-xs text-slate-500 mb-1">Total</div>
+              <div className="text-xs text-[var(--text-muted)] mb-1">Total</div>
               <div className="text-2xl font-bold">{stats.disk_total_gb.toFixed(0)} GB</div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 mb-1">Used</div>
+              <div className="text-xs text-[var(--text-muted)] mb-1">Used</div>
               <div className="text-2xl font-bold text-orange-400">{stats.disk_used_gb.toFixed(0)} GB</div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 mb-1">Free</div>
+              <div className="text-xs text-[var(--text-muted)] mb-1">Free</div>
               <div className={`text-2xl font-bold ${statusToneClass('ok')}`}>{(stats.disk_total_gb - stats.disk_used_gb).toFixed(0)} GB</div>
             </div>
           </div>
-          <div className="mt-4 w-full bg-slate-700 rounded-full h-3">
-            <div className={`h-3 rounded-full transition-all ${stats.disk_percent > 90 ? 'bg-red-500' : stats.disk_percent > 70 ? 'bg-yellow-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(stats.disk_percent, 100)}%` }} />
+          <div className="mt-4 w-full bg-[var(--surface-hover)] rounded-full h-3">
+            <div className={`h-3 rounded-full transition-all ${stats.disk_percent > 90 ? 'bg-red-500' : stats.disk_percent > 70 ? 'bg-yellow-500' : 'bg-[var(--accent)]'}`} style={{ width: `${Math.min(stats.disk_percent, 100)}%` }} />
           </div>
-          <div className="text-xs text-slate-500 mt-1 text-right">{stats.disk_percent.toFixed(1)}% used (/) </div>
+          <div className="text-xs text-[var(--text-muted)] mt-1 text-right">{stats.disk_percent.toFixed(1)}% used (/) </div>
         </div>
       )}
 
       {/* All mounts — df */}
       {filesystems.length > 0 && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-lg font-semibold flex items-center gap-2"><FolderTree className={`w-5 h-5 ${statusToneClass('warn')}`} /> Filesystems</h2>
-            <span className="text-xs text-slate-500">Per mount from the hypervisor (same idea as Cockpit Storage)</span>
+            <span className="text-xs text-[var(--text-muted)]">Per mount from the hypervisor (same idea as Cockpit Storage)</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm" aria-label="Filesystem mounts">
               <thead>
-                <tr className="text-left text-slate-400 border-b border-slate-700/50">
+                <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                   <th scope="col" className="px-6 py-3 font-medium">Mounted on</th>
                   <th scope="col" className="px-6 py-3 font-medium hidden lg:table-cell">Device</th>
                   <th scope="col" className="px-6 py-3 font-medium">Type</th>
@@ -1178,15 +1179,15 @@ export default function NodeInfoPage() {
                   <th scope="col" className="px-6 py-3 font-medium text-right">Use</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                 {filesystems.map((row) => (
-                  <tr key={`${row.source}-${row.mount_point}`} className="hover:bg-slate-700/30">
-                    <td className="px-6 py-3 font-mono text-slate-200">{row.mount_point}</td>
-                    <td className="px-6 py-3 font-mono text-slate-400 text-xs max-w-[14rem] truncate hidden lg:table-cell" title={row.source}>{row.source}</td>
-                    <td className="px-6 py-3 text-slate-300">{row.fstype}</td>
-                    <td className="px-6 py-3 text-right text-slate-200">{formatBytes(row.size_bytes)}</td>
-                    <td className="px-6 py-3 text-right text-slate-300 hidden md:table-cell">{formatBytes(row.used_bytes)}</td>
-                    <td className="px-6 py-3 text-right text-slate-300 hidden md:table-cell">{formatBytes(row.avail_bytes)}</td>
+                  <tr key={`${row.source}-${row.mount_point}`} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-6 py-3 font-mono text-[var(--text-primary)]">{row.mount_point}</td>
+                    <td className="px-6 py-3 font-mono text-[var(--text-muted)] text-xs max-w-[14rem] truncate hidden lg:table-cell" title={row.source}>{row.source}</td>
+                    <td className="px-6 py-3 text-[var(--text-secondary)]">{row.fstype}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-primary)]">{formatBytes(row.size_bytes)}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-secondary)] hidden md:table-cell">{formatBytes(row.used_bytes)}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-secondary)] hidden md:table-cell">{formatBytes(row.avail_bytes)}</td>
                     <td className="px-6 py-3 text-right">
                       <span className={`${statusToneClass(utilizationTone(row.use_percent))}${row.use_percent > 75 ? ' font-medium' : ''}`}>
                         {row.use_percent.toFixed(0)}%
@@ -1220,34 +1221,34 @@ export default function NodeInfoPage() {
         />
       )}
 
-      <div className="rounded-lg border border-slate-700/40 bg-slate-900/30 px-4 py-3 text-xs text-slate-400 leading-relaxed">
-        <span className="font-medium text-slate-300">How this works across distros: </span>
-        Updates use apt on Debian/Ubuntu (before dnf so WSL/mixed installs stay correct), then microdnf/dnf, yum, Alpine <code className="text-slate-500">apk</code>, pacman, zypper.
-        User and group tables prefer <code className="text-slate-500">getent</code> (honours LDAP/NIS), falling back to <code className="text-slate-500">/etc/passwd</code> / <code className="text-slate-500">/etc/group</code>.
-        Network totals are cumulative since boot from <code className="text-slate-500">/proc/net/dev</code>; live throughput uses two samples on demand (blocks the chosen interval on the daemon). Firewall detection matches Host networking (ufw vs firewalld vs iptables).
-        Process tables use <code className="text-slate-500">ps</code> sorted by <code className="text-slate-500">-rss</code> or <code className="text-slate-500">-pcpu</code> (two separate snapshots).
+      <div className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-fill-tertiary)] px-4 py-3 text-xs text-[var(--text-muted)] leading-relaxed">
+        <span className="font-medium text-[var(--text-secondary)]">How this works across distros: </span>
+        Updates use apt on Debian/Ubuntu (before dnf so WSL/mixed installs stay correct), then microdnf/dnf, yum, Alpine <code className="text-[var(--text-muted)]">apk</code>, pacman, zypper.
+        User and group tables prefer <code className="text-[var(--text-muted)]">getent</code> (honours LDAP/NIS), falling back to <code className="text-[var(--text-muted)]">/etc/passwd</code> / <code className="text-[var(--text-muted)]">/etc/group</code>.
+        Network totals are cumulative since boot from <code className="text-[var(--text-muted)]">/proc/net/dev</code>; live throughput uses two samples on demand (blocks the chosen interval on the daemon). Firewall detection matches Host networking (ufw vs firewalld vs iptables).
+        Process tables use <code className="text-[var(--text-muted)]">ps</code> sorted by <code className="text-[var(--text-muted)]">-rss</code> or <code className="text-[var(--text-muted)]">-pcpu</code> (two separate snapshots).
       </div>
 
       {!loading && pkgUpdates && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-4">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Package className={`w-5 h-5 ${statusToneClass('ok')}`} /> Package updates</h2>
-          <div className="text-sm text-slate-300 space-y-1">
-            <div><span className="text-slate-500">Backend:</span> <code className={statusToneClass('warn')}>{pkgUpdates.backend}</code></div>
+          <div className="text-sm text-[var(--text-secondary)] space-y-1">
+            <div><span className="text-[var(--text-muted)]">Backend:</span> <code className={statusToneClass('warn')}>{pkgUpdates.backend}</code></div>
             {pkgUpdates.summary && <div>{pkgUpdates.summary}</div>}
-            {pkgUpdates.pending_count != null && <div><span className="text-slate-500">Pending count:</span> {pkgUpdates.pending_count}</div>}
+            {pkgUpdates.pending_count != null && <div><span className="text-[var(--text-muted)]">Pending count:</span> {pkgUpdates.pending_count}</div>}
             {pkgUpdates.reboot_required && (
               <div className={`rounded-md px-3 py-2 text-sm ${statusSurfaceClasses('warn')}`}>
                 A reboot appears to be required on this host (e.g. Debian/Ubuntu <code className="opacity-90">/var/run/reboot-required</code> is present). Plan maintenance before applying kernel or libc upgrades.
               </div>
             )}
-            {pkgUpdates.hint && <div className="text-slate-500 text-xs">{pkgUpdates.hint}</div>}
+            {pkgUpdates.hint && <div className="text-[var(--text-muted)] text-xs">{pkgUpdates.hint}</div>}
             {pkgUpdates.error && <div className={`text-xs break-words ${statusToneClass('error')}`}>{pkgUpdates.error}</div>}
           </div>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
             The probe above is read-only. Upgrade, install, and remove require a browser session (not an API token), use the same backend as the probe, and are limited to one action at a time on the daemon (commands may run up to an hour).
           </p>
           {pkgUpdates.backend !== 'unknown' && (
-            <div className="space-y-3 pt-1 border-t border-slate-700/50">
+            <div className="space-y-3 pt-1 border-t border-[var(--apple-hairline)]">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -1262,7 +1263,7 @@ export default function NodeInfoPage() {
                   type="button"
                   onClick={() => void runPackageUpgradeDryRun()}
                   disabled={pkgMutBusy}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-600/25 text-slate-200 border border-slate-500/40 hover:bg-slate-600/40 disabled:opacity-50 transition"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] border border-[var(--apple-hairline)] hover:bg-[var(--surface-hover)] disabled:opacity-50 transition"
                 >
                   Dry-run / preview upgrade
                 </button>
@@ -1271,14 +1272,14 @@ export default function NodeInfoPage() {
                     type="button"
                     onClick={() => void runPackageAutoremove()}
                     disabled={pkgMutBusy}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-violet-600/20 text-violet-100 border border-violet-500/35 hover:bg-violet-600/30 disabled:opacity-50 transition"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--accent)]/20 text-[var(--text-primary)] border border-violet-500/35 hover:bg-[var(--accent)]/30 disabled:opacity-50 transition"
                   >
                     apt autoremove
                   </button>
                 )}
               </div>
               <div className="flex flex-col sm:flex-row sm:items-end gap-2">
-                <label className="flex-1 flex flex-col gap-1 text-xs text-slate-400">
+                <label className="flex-1 flex flex-col gap-1 text-xs text-[var(--text-muted)]">
                   <span>Install packages (space or comma separated, max 32)</span>
                   <input
                     type="text"
@@ -1286,21 +1287,21 @@ export default function NodeInfoPage() {
                     onChange={(e) => setPkgInstallInput(e.target.value)}
                     disabled={pkgMutBusy}
                     placeholder="e.g. htop curl"
-                    className="bg-slate-900 border border-slate-600 rounded-lg text-sm py-2 px-3 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
+                    className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm py-2 px-3 text-[var(--text-primary)] placeholder:text-[var(--text-faint)] disabled:opacity-50"
                   />
                 </label>
                 <button
                   type="button"
                   onClick={() => void runPackageInstall()}
                   disabled={pkgMutBusy}
-                  className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-sky-600/20 text-sky-200 border border-sky-600/35 hover:bg-sky-600/30 disabled:opacity-50 transition sm:shrink-0"
+                  className="btn-secondary text-sm disabled:opacity-50 transition sm:shrink-0"
                 >
                   <PlusCircle className="w-4 h-4 shrink-0" />
                   Install
                 </button>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-end gap-2">
-                <label className="flex-1 flex flex-col gap-1 text-xs text-slate-400">
+                <label className="flex-1 flex flex-col gap-1 text-xs text-[var(--text-muted)]">
                   <span>Remove packages (space or comma separated, max 32)</span>
                   <input
                     type="text"
@@ -1308,16 +1309,16 @@ export default function NodeInfoPage() {
                     onChange={(e) => setPkgRemoveInput(e.target.value)}
                     disabled={pkgMutBusy}
                     placeholder="e.g. cowsay"
-                    className="bg-slate-900 border border-slate-600 rounded-lg text-sm py-2 px-3 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
+                    className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm py-2 px-3 text-[var(--text-primary)] placeholder:text-[var(--text-faint)] disabled:opacity-50"
                   />
                 </label>
-                <label className="flex items-center gap-2 text-xs text-slate-400 sm:pb-2 shrink-0">
+                <label className="flex items-center gap-2 text-xs text-[var(--text-muted)] sm:pb-2 shrink-0">
                   <input
                     type="checkbox"
                     checked={pkgRemovePurge}
                     onChange={(e) => setPkgRemovePurge(e.target.checked)}
                     disabled={pkgMutBusy}
-                    className="rounded border-slate-500"
+                    className="rounded border-[var(--apple-hairline)]"
                   />
                   Purge (apt: remove config files)
                 </label>
@@ -1339,11 +1340,11 @@ export default function NodeInfoPage() {
                 <span className={statusToneClass(pkgActionResult.ok ? 'ok' : 'error')}>
                   {pkgActionResult.ok ? 'Finished successfully' : 'Finished with errors'}
                 </span>
-                <span className="text-slate-500">exit {pkgActionResult.exit_code}</span>
+                <span className="text-[var(--text-muted)]">exit {pkgActionResult.exit_code}</span>
               </div>
-              <div className="text-slate-500 font-mono break-all">{pkgActionResult.command}</div>
+              <div className="text-[var(--text-muted)] font-mono break-all">{pkgActionResult.command}</div>
               {(pkgActionResult.stdout || pkgActionResult.stderr) && (
-                <pre className="max-h-64 overflow-auto rounded-lg bg-slate-950/80 border border-slate-700/60 p-3 text-slate-300 whitespace-pre-wrap break-words">
+                <pre className="max-h-64 overflow-auto rounded-lg bg-[var(--apple-surface)]/80 border border-[var(--apple-hairline)] p-3 text-[var(--text-secondary)] whitespace-pre-wrap break-words">
                   {pkgActionResult.stdout ? `--- stdout ---\n${pkgActionResult.stdout}\n` : ''}
                   {pkgActionResult.stderr ? `--- stderr ---\n${pkgActionResult.stderr}` : ''}
                 </pre>
@@ -1354,30 +1355,30 @@ export default function NodeInfoPage() {
       )}
 
       {linuxObs?.pressure.available && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-3">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-6 space-y-3">
           <h2 className="text-lg font-semibold">Resource pressure (PSI)</h2>
-          <p className="text-xs text-slate-500">From <code className="text-slate-600">/proc/pressure/*</code> — Linux kernel stall metrics (same on all distros with PSI enabled).</p>
+          <p className="text-xs text-[var(--text-muted)]">From <code className="text-[var(--text-faint)]">/proc/pressure/*</code> — Linux kernel stall metrics (same on all distros with PSI enabled).</p>
           <div className="grid sm:grid-cols-3 gap-4 text-sm">
             <div>
-              <div className="text-slate-500 mb-1">CPU</div>
-              <div className="text-slate-200">some {linuxObs.pressure.cpu.some.toFixed(1)}% · full {linuxObs.pressure.cpu.full.toFixed(1)}%</div>
+              <div className="text-[var(--text-muted)] mb-1">CPU</div>
+              <div className="text-[var(--text-primary)]">some {linuxObs.pressure.cpu.some.toFixed(1)}% · full {linuxObs.pressure.cpu.full.toFixed(1)}%</div>
             </div>
             <div>
-              <div className="text-slate-500 mb-1">Memory</div>
-              <div className="text-slate-200">some {linuxObs.pressure.memory.some.toFixed(1)}% · full {linuxObs.pressure.memory.full.toFixed(1)}%</div>
+              <div className="text-[var(--text-muted)] mb-1">Memory</div>
+              <div className="text-[var(--text-primary)]">some {linuxObs.pressure.memory.some.toFixed(1)}% · full {linuxObs.pressure.memory.full.toFixed(1)}%</div>
             </div>
             <div>
-              <div className="text-slate-500 mb-1">I/O</div>
-              <div className="text-slate-200">some {linuxObs.pressure.io.some.toFixed(1)}% · full {linuxObs.pressure.io.full.toFixed(1)}%</div>
+              <div className="text-[var(--text-muted)] mb-1">I/O</div>
+              <div className="text-[var(--text-primary)]">some {linuxObs.pressure.io.some.toFixed(1)}% · full {linuxObs.pressure.io.full.toFixed(1)}%</div>
             </div>
           </div>
           {linuxObs.disk_io.length > 0 && (
-            <div className="pt-2 border-t border-slate-700/50">
-              <div className="text-slate-500 text-xs mb-2">Block devices (/proc/diskstats)</div>
+            <div className="pt-2 border-t border-[var(--apple-hairline)]">
+              <div className="text-[var(--text-muted)] text-xs mb-2">Block devices (/proc/diskstats)</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs" aria-label="Block device I/O">
                   <thead>
-                    <tr className="text-slate-400 text-left">
+                    <tr className="text-[var(--text-muted)] text-left">
                       <th scope="col" className="py-1 pr-3">Device</th>
                       <th scope="col" className="py-1 pr-3 text-right">Read</th>
                       <th scope="col" className="py-1 text-right">Write</th>
@@ -1385,10 +1386,10 @@ export default function NodeInfoPage() {
                   </thead>
                   <tbody>
                     {linuxObs.disk_io.slice(0, 8).map((d) => (
-                      <tr key={d.device} className="border-t border-slate-700/30">
-                        <td className="py-1 pr-3 font-mono text-slate-300">{d.device}</td>
-                        <td className="py-1 pr-3 text-right text-slate-400">{formatBytes(d.read_bytes)}</td>
-                        <td className="py-1 text-right text-slate-400">{formatBytes(d.write_bytes)}</td>
+                      <tr key={d.device} className="border-t border-[var(--apple-hairline)]/30">
+                        <td className="py-1 pr-3 font-mono text-[var(--text-secondary)]">{d.device}</td>
+                        <td className="py-1 pr-3 text-right text-[var(--text-muted)]">{formatBytes(d.read_bytes)}</td>
+                        <td className="py-1 text-right text-[var(--text-muted)]">{formatBytes(d.write_bytes)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1397,8 +1398,8 @@ export default function NodeInfoPage() {
             </div>
           )}
           {linuxObs.smart.some((s) => s.probed) && (
-            <div className="pt-2 border-t border-slate-700/50 space-y-1">
-              <div className="text-slate-500 text-xs">SMART (smartctl -H)</div>
+            <div className="pt-2 border-t border-[var(--apple-hairline)] space-y-1">
+              <div className="text-[var(--text-muted)] text-xs">SMART (smartctl -H)</div>
               {linuxObs.smart.filter((s) => s.probed).map((s) => (
                 <div key={s.device} className={`text-xs ${statusToneClass(s.passed ? 'ok' : 'error')}`}>
                   {s.device}: {s.summary || (s.passed ? 'PASSED' : 'FAILED')}
@@ -1407,10 +1408,10 @@ export default function NodeInfoPage() {
             </div>
           )}
           {linuxObs.cgroup?.available && (
-            <div className="pt-2 border-t border-slate-700/50 text-sm">
-              <div className="text-slate-500 text-xs mb-1">Daemon cgroup v2 ({linuxObs.cgroup.unified_path || 'self'})</div>
+            <div className="pt-2 border-t border-[var(--apple-hairline)] text-sm">
+              <div className="text-[var(--text-muted)] text-xs mb-1">Daemon cgroup v2 ({linuxObs.cgroup.unified_path || 'self'})</div>
               {linuxObs.cgroup.memory_current_bytes != null && (
-                <div className="text-slate-300">
+                <div className="text-[var(--text-secondary)]">
                   memory.current {formatBytes(linuxObs.cgroup.memory_current_bytes)}
                   {linuxObs.cgroup.memory_max_bytes != null
                     ? ` / ${formatBytes(linuxObs.cgroup.memory_max_bytes)}`
@@ -1420,12 +1421,12 @@ export default function NodeInfoPage() {
             </div>
           )}
           {(linuxObs.thermal?.length ?? 0) > 0 && (
-            <div className="pt-2 border-t border-slate-700/50 text-sm">
-              <div className="text-slate-500 text-xs mb-2">Hardware temperature (hwmon)</div>
+            <div className="pt-2 border-t border-[var(--apple-hairline)] text-sm">
+              <div className="text-[var(--text-muted)] text-xs mb-2">Hardware temperature (hwmon)</div>
               <div className="grid sm:grid-cols-2 gap-2">
                 {linuxObs.thermal!.map((t) => (
-                  <div key={t.sensor} className="text-slate-300 text-xs">
-                    <span className="text-slate-400">{t.sensor}:</span>{' '}
+                  <div key={t.sensor} className="text-[var(--text-secondary)] text-xs">
+                    <span className="text-[var(--text-muted)]">{t.sensor}:</span>{' '}
                     {t.temp_celsius.toFixed(1)} °C
                     {t.critical_celsius != null ? ` (crit ${t.critical_celsius.toFixed(0)} °C)` : ''}
                   </div>
@@ -1434,21 +1435,21 @@ export default function NodeInfoPage() {
             </div>
           )}
           {linuxObs.bpf?.available && (
-            <div className="pt-2 border-t border-slate-700/50 text-sm">
-              <div className="text-slate-500 text-xs mb-1">eBPF (bpftool)</div>
-              <div className="text-slate-300 text-xs">
+            <div className="pt-2 border-t border-[var(--apple-hairline)] text-sm">
+              <div className="text-[var(--text-muted)] text-xs mb-1">eBPF (bpftool)</div>
+              <div className="text-[var(--text-secondary)] text-xs">
                 {linuxObs.bpf.program_count} programs · {linuxObs.bpf.map_count} maps ·{' '}
                 {linuxObs.bpf.cgroup_program_count} cgroup
               </div>
             </div>
           )}
           {linuxAudit?.available && (linuxAudit.events?.length ?? 0) > 0 && (
-            <div className="pt-2 border-t border-slate-700/50 text-sm overflow-x-auto max-h-48 overflow-y-auto">
-              <div className="text-slate-500 text-xs mb-2">
+            <div className="pt-2 border-t border-[var(--apple-hairline)] text-sm overflow-x-auto max-h-48 overflow-y-auto">
+              <div className="text-[var(--text-muted)] text-xs mb-2">
                 Linux auditd ({linuxAudit.source}) — {linuxAudit.avc_count} AVC in window
               </div>
               {linuxAudit.events.slice(-12).map((ev, i) => (
-                <div key={`${ev.timestamp}-${i}`} className="text-xs text-slate-400 font-mono mb-1">
+                <div key={`${ev.timestamp}-${i}`} className="text-xs text-[var(--text-muted)] font-mono mb-1">
                   <span className={`${statusToneClass('warn')} opacity-90`}>{ev.event_type}</span>{' '}
                   {ev.summary}
                 </div>
@@ -1456,11 +1457,11 @@ export default function NodeInfoPage() {
             </div>
           )}
           {(linuxObs.vm_cgroups?.length ?? 0) > 0 && (
-            <div className="pt-2 border-t border-slate-700/50 text-sm overflow-x-auto">
-              <div className="text-slate-500 text-xs mb-2">VM cgroups (machine-qemu)</div>
+            <div className="pt-2 border-t border-[var(--apple-hairline)] text-sm overflow-x-auto">
+              <div className="text-[var(--text-muted)] text-xs mb-2">VM cgroups (machine-qemu)</div>
               <table className="w-full text-xs" aria-label="VM cgroups">
                 <thead>
-                  <tr className="text-slate-500 text-left">
+                  <tr className="text-[var(--text-muted)] text-left">
                     <th scope="col" className="pr-3 pb-1">VM</th>
                     <th scope="col" className="pr-3 pb-1">Memory</th>
                     <th scope="col" className="pb-1">CPU use</th>
@@ -1468,7 +1469,7 @@ export default function NodeInfoPage() {
                 </thead>
                 <tbody>
                   {linuxObs.vm_cgroups!.map((cg) => (
-                    <tr key={cg.vm_name} className="text-slate-300">
+                    <tr key={cg.vm_name} className="text-[var(--text-secondary)]">
                       <td className="pr-3 py-0.5 font-mono">{cg.vm_name}</td>
                       <td className="pr-3 py-0.5">
                         {cg.memory_current_bytes != null
@@ -1491,32 +1492,32 @@ export default function NodeInfoPage() {
       )}
 
       {securitySummary && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-2">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-6 space-y-2">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-orange-400" /> Firewall &amp; host networking stack</h2>
-          <div className="text-sm text-slate-300 grid sm:grid-cols-2 gap-2">
-            <div><span className="text-slate-500">Network tooling:</span> <code className="text-cyan-300/90">{securitySummary.network_backend}</code></div>
-            <div><span className="text-slate-500">Firewall:</span> <code className="text-cyan-300/90">{securitySummary.firewall_backend}</code></div>
-            {securitySummary.ufw_status_line && <div className="sm:col-span-2 text-xs font-mono text-slate-400">{securitySummary.ufw_status_line}</div>}
+          <div className="text-sm text-[var(--text-secondary)] grid sm:grid-cols-2 gap-2">
+            <div><span className="text-[var(--text-muted)]">Network tooling:</span> <code className="text-[var(--accent)]">{securitySummary.network_backend}</code></div>
+            <div><span className="text-[var(--text-muted)]">Firewall:</span> <code className="text-[var(--accent)]">{securitySummary.firewall_backend}</code></div>
+            {securitySummary.ufw_status_line && <div className="sm:col-span-2 text-xs font-mono text-[var(--text-muted)]">{securitySummary.ufw_status_line}</div>}
             {securitySummary.firewalld_default_zone && (
-              <div className="sm:col-span-2"><span className="text-slate-500">firewalld default zone:</span> <code className="text-cyan-300/90">{securitySummary.firewalld_default_zone}</code></div>
+              <div className="sm:col-span-2"><span className="text-[var(--text-muted)]">firewalld default zone:</span> <code className="text-[var(--accent)]">{securitySummary.firewalld_default_zone}</code></div>
             )}
             {securitySummary.selinux_mode && (
-              <div><span className="text-slate-500">SELinux:</span> <code className="text-cyan-300/90">{securitySummary.selinux_mode}</code></div>
+              <div><span className="text-[var(--text-muted)]">SELinux:</span> <code className="text-[var(--accent)]">{securitySummary.selinux_mode}</code></div>
             )}
           </div>
         </div>
       )}
 
       {netCounters.length > 0 && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><Network className="w-5 h-5 text-sky-400" /> Network I/O (since boot)</h2>
-            <span className="text-xs text-slate-500">From /proc/net/dev — same counters on Ubuntu, Fedora, Arch, …</span>
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Network className="w-5 h-5 text-[var(--link)]" /> Network I/O (since boot)</h2>
+            <span className="text-xs text-[var(--text-muted)]">From /proc/net/dev — same counters on Ubuntu, Fedora, Arch, …</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm" aria-label="Network I/O counters">
               <thead>
-                <tr className="text-left text-slate-400 border-b border-slate-700/50">
+                <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                   <th scope="col" className="px-6 py-3 font-medium">Interface</th>
                   <th scope="col" className="px-6 py-3 font-medium text-right">RX</th>
                   <th scope="col" className="px-6 py-3 font-medium text-right hidden md:table-cell">RX pkt</th>
@@ -1524,14 +1525,14 @@ export default function NodeInfoPage() {
                   <th scope="col" className="px-6 py-3 font-medium text-right hidden md:table-cell">TX pkt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                 {netCounters.filter((r) => r.iface !== 'lo').map((r) => (
-                  <tr key={r.iface} className="hover:bg-slate-700/30">
-                    <td className="px-6 py-3 font-mono text-slate-200">{r.iface}</td>
-                    <td className="px-6 py-3 text-right text-slate-200">{formatBytes(r.rx_bytes)}</td>
-                    <td className="px-6 py-3 text-right text-slate-400 hidden md:table-cell">{r.rx_packets.toLocaleString()}</td>
-                    <td className="px-6 py-3 text-right text-slate-200">{formatBytes(r.tx_bytes)}</td>
-                    <td className="px-6 py-3 text-right text-slate-400 hidden md:table-cell">{r.tx_packets.toLocaleString()}</td>
+                  <tr key={r.iface} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-6 py-3 font-mono text-[var(--text-primary)]">{r.iface}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-primary)]">{formatBytes(r.rx_bytes)}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-muted)] hidden md:table-cell">{r.rx_packets.toLocaleString()}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-primary)]">{formatBytes(r.tx_bytes)}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-muted)] hidden md:table-cell">{r.tx_packets.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1540,11 +1541,11 @@ export default function NodeInfoPage() {
         </div>
       )}
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--apple-hairline)] flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2"><Activity className={`w-5 h-5 ${statusToneClass('ok')}`} /> Live throughput</h2>
-            <p className="text-xs text-slate-500 mt-1">Two reads of <code className="text-slate-600">/proc/net/dev</code>; excludes <code className="text-slate-600">lo</code>. Same on all Linux distros.</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">Two reads of <code className="text-[var(--text-faint)]">/proc/net/dev</code>; excludes <code className="text-[var(--text-faint)]">lo</code>. Same on all Linux distros.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -1552,7 +1553,7 @@ export default function NodeInfoPage() {
               value={rateSampleMs}
               onChange={(e) => setRateSampleMs(Number(e.target.value))}
               disabled={netRatesLoading}
-              className="bg-slate-900 border border-slate-600 rounded-lg text-sm py-1.5 px-2 text-slate-200"
+              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm py-1.5 px-2 text-[var(--text-primary)]"
             >
               <option value={250}>250 ms window</option>
               <option value={500}>500 ms</option>
@@ -1572,10 +1573,10 @@ export default function NodeInfoPage() {
         </div>
         {netRates && netRates.interfaces.length > 0 && (
           <div className="overflow-x-auto">
-            <p className="text-xs text-slate-500 px-6 pt-3">Averaged over {netRates.sample_interval_ms} ms</p>
+            <p className="text-xs text-[var(--text-muted)] px-6 pt-3">Averaged over {netRates.sample_interval_ms} ms</p>
             <table className="w-full text-sm" aria-label="Network interface rates">
               <thead>
-                <tr className="text-left text-slate-400 border-b border-slate-700/50">
+                <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                   <th scope="col" className="px-6 py-3 font-medium">Interface</th>
                   <th scope="col" className="px-6 py-3 font-medium text-right">RX</th>
                   <th scope="col" className="px-6 py-3 font-medium text-right">TX</th>
@@ -1583,14 +1584,14 @@ export default function NodeInfoPage() {
                   <th scope="col" className="px-6 py-3 font-medium text-right hidden md:table-cell">TX pkt/s</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                 {netRates.interfaces.map((r) => (
-                  <tr key={r.iface} className="hover:bg-slate-700/30">
-                    <td className="px-6 py-3 font-mono text-slate-200">{r.iface}</td>
-                    <td className="px-6 py-3 text-right text-slate-200">{formatBytes(r.rx_bytes_per_sec)}/s</td>
-                    <td className="px-6 py-3 text-right text-slate-200">{formatBytes(r.tx_bytes_per_sec)}/s</td>
-                    <td className="px-6 py-3 text-right text-slate-400 hidden md:table-cell">{r.rx_packets_per_sec.toFixed(0)}</td>
-                    <td className="px-6 py-3 text-right text-slate-400 hidden md:table-cell">{r.tx_packets_per_sec.toFixed(0)}</td>
+                  <tr key={r.iface} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-6 py-3 font-mono text-[var(--text-primary)]">{r.iface}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-primary)]">{formatBytes(r.rx_bytes_per_sec)}/s</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-primary)]">{formatBytes(r.tx_bytes_per_sec)}/s</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-muted)] hidden md:table-cell">{r.rx_packets_per_sec.toFixed(0)}</td>
+                    <td className="px-6 py-3 text-right text-[var(--text-muted)] hidden md:table-cell">{r.tx_packets_per_sec.toFixed(0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1598,26 +1599,26 @@ export default function NodeInfoPage() {
           </div>
         )}
         {netRates && netRates.interfaces.length === 0 && !netRatesLoading && (
-          <p className="text-sm text-slate-500 px-6 py-4">No non-loopback interfaces in sample.</p>
+          <p className="text-sm text-[var(--text-muted)] px-6 py-4">No non-loopback interfaces in sample.</p>
         )}
         {!netRates && !netRatesLoading && (
-          <p className="text-sm text-slate-500 px-6 py-4">Choose a window and click Sample now. The API blocks for that duration on the hypervisor (not run on every auto-refresh).</p>
+          <p className="text-sm text-[var(--text-muted)] px-6 py-4">Choose a window and click Sample now. The API blocks for that duration on the hypervisor (not run on every auto-refresh).</p>
         )}
       </div>
 
       {passwdUsers.length > 0 && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><Users className="w-5 h-5 text-violet-400" /> Accounts (passwd)</h2>
-            <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
-              <input type="checkbox" checked={showSystemAccounts} onChange={(e) => setShowSystemAccounts(e.target.checked)} className="rounded border-slate-600 bg-slate-900" />
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-4 border-b border-[var(--apple-hairline)] flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Users className="w-5 h-5 text-[var(--accent)]" /> Accounts (passwd)</h2>
+            <label className="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer">
+              <input type="checkbox" checked={showSystemAccounts} onChange={(e) => setShowSystemAccounts(e.target.checked)} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
               Show system accounts (UID {'<'} 1000)
             </label>
           </div>
           <div className="overflow-x-auto max-h-80 overflow-y-auto">
             <table className="w-full text-sm" aria-label="System users">
-              <thead className="sticky top-0 bg-slate-800 z-10">
-                <tr className="text-left text-slate-400 border-b border-slate-700/50">
+              <thead className="sticky top-0 bg-[var(--apple-fill-tertiary)] z-10">
+                <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                   <th scope="col" className="px-6 py-3 font-medium">User</th>
                   <th scope="col" className="px-6 py-3 font-medium">UID</th>
                   <th scope="col" className="px-6 py-3 font-medium">GID</th>
@@ -1625,14 +1626,14 @@ export default function NodeInfoPage() {
                   <th scope="col" className="px-6 py-3 font-medium hidden md:table-cell">Shell</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                 {passwdUsers.filter((u) => showSystemAccounts || !u.system_account).map((u) => (
-                  <tr key={`${u.username}-${u.uid}`} className="hover:bg-slate-700/30">
-                    <td className="px-6 py-2 font-mono text-slate-200">{u.username}{u.system_account && <span className="text-slate-500 text-[10px] ml-1">sys</span>}</td>
-                    <td className="px-6 py-2 text-slate-300">{u.uid}</td>
-                    <td className="px-6 py-2 text-slate-300">{u.gid}</td>
-                    <td className="px-6 py-2 text-slate-400 text-xs hidden lg:table-cell truncate max-w-xs" title={u.home}>{u.home}</td>
-                    <td className="px-6 py-2 text-slate-400 text-xs hidden md:table-cell truncate max-w-[12rem]" title={u.shell}>{u.shell}</td>
+                  <tr key={`${u.username}-${u.uid}`} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-6 py-2 font-mono text-[var(--text-primary)]">{u.username}{u.system_account && <span className="text-[var(--text-muted)] text-[10px] ml-1">sys</span>}</td>
+                    <td className="px-6 py-2 text-[var(--text-secondary)]">{u.uid}</td>
+                    <td className="px-6 py-2 text-[var(--text-secondary)]">{u.gid}</td>
+                    <td className="px-6 py-2 text-[var(--text-muted)] text-xs hidden lg:table-cell truncate max-w-xs" title={u.home}>{u.home}</td>
+                    <td className="px-6 py-2 text-[var(--text-muted)] text-xs hidden md:table-cell truncate max-w-[12rem]" title={u.shell}>{u.shell}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1642,26 +1643,26 @@ export default function NodeInfoPage() {
       )}
 
       {groups.length > 0 && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700/50">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="px-6 py-4 border-b border-[var(--apple-hairline)]">
             <h2 className="text-lg font-semibold flex items-center gap-2"><UserSquare className="w-5 h-5 text-fuchsia-400" /> Groups (first rows)</h2>
-            <p className="text-xs text-slate-500 mt-1">Truncated list from getent/file; large LDAP domains may be incomplete.</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">Truncated list from getent/file; large LDAP domains may be incomplete.</p>
           </div>
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="System groups">
-              <thead className="sticky top-0 bg-slate-800 z-10">
-                <tr className="text-left text-slate-400 border-b border-slate-700/50">
+              <thead className="sticky top-0 bg-[var(--apple-fill-tertiary)] z-10">
+                <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                   <th scope="col" className="px-6 py-3 font-medium">Group</th>
                   <th scope="col" className="px-6 py-3 font-medium">GID</th>
                   <th scope="col" className="px-6 py-3 font-medium">Members</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
                 {groups.map((g) => (
-                  <tr key={`${g.name}-${g.gid}`} className="hover:bg-slate-700/30">
-                    <td className="px-6 py-2 font-mono text-slate-200">{g.name}</td>
-                    <td className="px-6 py-2 text-slate-300">{g.gid}</td>
-                    <td className="px-6 py-2 text-slate-400 text-xs break-all">{g.members.length ? g.members.join(', ') : '—'}</td>
+                  <tr key={`${g.name}-${g.gid}`} className="hover:bg-[var(--surface-hover)]/30">
+                    <td className="px-6 py-2 font-mono text-[var(--text-primary)]">{g.name}</td>
+                    <td className="px-6 py-2 text-[var(--text-secondary)]">{g.gid}</td>
+                    <td className="px-6 py-2 text-[var(--text-muted)] text-xs break-all">{g.members.length ? g.members.join(', ') : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1671,12 +1672,12 @@ export default function NodeInfoPage() {
       )}
 
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">Cockpit host inventory</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Cockpit host inventory</h2>
         <HostCockpitPanels classic section="all" />
       </div>
 
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">Host tools</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Host tools</h2>
         <ChoiceCardGrid>
           <ChoiceLinkCard to="/services" icon={<Server className="w-4 h-4" />} title="Systemd services" description="Unit status, start/stop, and journal tails." />
           <ChoiceLinkCard to="/logs" icon={<ScrollText className="w-4 h-4" />} title="Journal logs" description="Filter and follow messages on the hypervisor." />
@@ -1741,24 +1742,24 @@ function ResourceGauge({ icon, label, value, subtitle }: { icon: React.ReactNode
   const color = statusToneClass(tone)
   const barColor = statusBgClass(tone)
   return (
-    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+    <div className="bg-[var(--apple-surface)] rounded-xl p-4 border border-[var(--apple-hairline)]">
       <div className="flex items-center gap-2 mb-2">
         {icon}
         <span className="text-sm font-medium flex-1">{label}</span>
         <span className={`text-lg font-bold ${color}`}>{value.toFixed(1)}%</span>
       </div>
-      <div className="w-full bg-slate-700 rounded-full h-2 mb-1.5">
+      <div className="w-full bg-[var(--surface-hover)] rounded-full h-2 mb-1.5">
         <div className={`${barColor} h-2 rounded-full transition-all`} style={{ width: `${Math.min(value, 100)}%` }} />
       </div>
-      <div className="text-xs text-slate-500">{subtitle}</div>
+      <div className="text-xs text-[var(--text-muted)]">{subtitle}</div>
     </div>
   )
 }
 
 function ChartCard({ title, color, dataKey, data, unit, domain }: { title: string; color: string; dataKey: string; data: StatsPoint[]; unit: string; domain?: [number, number] }) {
   return (
-    <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-      <h2 className="text-sm font-semibold text-white mb-3">{title}</h2>
+    <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)]">
+      <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">{title}</h2>
       <ResponsiveContainer width="100%" height={160}>
         <AreaChart data={data}>
           <defs>
@@ -1780,8 +1781,8 @@ function ChartCard({ title, color, dataKey, data, unit, domain }: { title: strin
 
 function InfoRow({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
-      <span className="text-slate-400 text-sm">{label}</span>
+    <div className="flex items-center justify-between py-2 border-b border-[var(--apple-hairline)]/30">
+      <span className="text-[var(--text-muted)] text-sm">{label}</span>
       <span className="text-sm font-medium">{String(value)}</span>
     </div>
   )

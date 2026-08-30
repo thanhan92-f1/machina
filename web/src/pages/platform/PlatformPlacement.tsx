@@ -112,13 +112,14 @@ export default function PlatformPlacement() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       loading={loading && !settings && !ha}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Placement & HA"
       subtitle="DRS-style recommendations and high-availability status"
-      icon={<Activity className="w-6 h-6 text-slate-400" />}
+      icon={<Activity className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           <button type="button" className="btn-secondary text-xs" onClick={async () => {
@@ -169,11 +170,11 @@ export default function PlatformPlacement() {
         ) : (
           <ul className="space-y-3 text-sm">
             {rows.map((r) => (
-              <li key={`${r.vm_id}-${r.to_host_id}`} className="border-b border-slate-800 pb-3">
+              <li key={`${r.vm_id}-${r.to_host_id}`} className="border-b border-[var(--apple-hairline)] pb-3">
                 <div className="flex flex-wrap justify-between gap-4 items-start">
                   <Link to={`/platform/vms/${r.vm_id}`} className={`font-medium ${hubLinkClasses()}`}>{r.vm_name}</Link>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-slate-500">score {r.score.toFixed(1)}</span>
+                    <span className="text-[var(--text-muted)]">score {r.score.toFixed(1)}</span>
                     <button
                       type="button"
                       className="btn-primary text-xs"
@@ -184,8 +185,8 @@ export default function PlatformPlacement() {
                     </button>
                   </div>
                 </div>
-                <p className="text-slate-400 mt-1">{r.from_host_name} → {r.to_host_name}</p>
-                <p className="text-slate-500 mt-1">{r.reason}</p>
+                <p className="text-[var(--text-muted)] mt-1">{r.from_host_name} → {r.to_host_name}</p>
+                <p className="text-[var(--text-muted)] mt-1">{r.reason}</p>
               </li>
             ))}
           </ul>
@@ -193,14 +194,14 @@ export default function PlatformPlacement() {
       </MacGlassPanel>
       {migrations.length > 0 && (
         <MacGlassPanel title="Recent migrations">
-          <ul className="space-y-2 text-sm text-slate-400">{migrations.slice(0, 10).map((m) => (
+          <ul className="space-y-2 text-sm text-[var(--text-muted)]">{migrations.slice(0, 10).map((m) => (
             <li key={m.id}>{m.status} · VM {m.vm_id.slice(0, 8)} · {m.progress}%</li>
           ))}</ul>
         </MacGlassPanel>
       )}
       {fences.length > 0 && (
         <MacGlassPanel title="Fence events">
-          <ul className="space-y-2 text-sm text-slate-400">{fences.slice(0, 10).map((f) => (
+          <ul className="space-y-2 text-sm text-[var(--text-muted)]">{fences.slice(0, 10).map((f) => (
             <li key={f.id} className={statusToneClass(f.success ? 'ok' : 'error')}>
               host {f.host_id.slice(0, 8)} — {f.message || f.action}
             </li>
@@ -209,9 +210,9 @@ export default function PlatformPlacement() {
       )}
       {ha && ha.events.length > 0 && (
         <MacGlassPanel title="Recent HA events">
-          <ul className="space-y-2 text-sm text-slate-400">
+          <ul className="space-y-2 text-sm text-[var(--text-muted)]">
             {ha.events.slice(0, 15).map((e) => (
-              <li key={e.id}><span className="text-slate-300">{e.action}</span> — {e.message}</li>
+              <li key={e.id}><span className="text-[var(--text-secondary)]">{e.action}</span> — {e.message}</li>
             ))}
           </ul>
         </MacGlassPanel>

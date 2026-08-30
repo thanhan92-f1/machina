@@ -51,33 +51,34 @@ function FleetCloudServerGroupsContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Layers className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Layers className="w-7 h-7 text-[var(--accent)]" />
         Anti-affinity groups
       </h1>
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-[var(--text-muted)]">
         Machina's placement engine avoids co-locating VMs that share a group on the same host.
       </p>
-      <div className="rounded-xl border border-slate-700 p-4 flex flex-wrap gap-3 items-end">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Group name</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">Group name</label>
           <input value={groupName} onChange={(e) => setGroupName(e.target.value)}
             aria-label="Group name"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">VM</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1">VM</label>
           <select value={vmId} onChange={(e) => setVmId(e.target.value)}
             aria-label="VM"
-            className="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm">
+            className="input-field text-sm">
             {vms.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select>
         </div>
         <button type="button" disabled={!groupName.trim() || !vmId}
-          className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-sm disabled:opacity-40"
+          className="btn-primary text-sm disabled:opacity-40"
           onClick={async () => {
             const vm = vms.find((v) => v.id === vmId)
             if (!vm) return
@@ -94,20 +95,20 @@ function FleetCloudServerGroupsContent() {
         </button>
       </div>
       <button type="button" onClick={() => void load()}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-sm">
+        className="btn-secondary text-sm inline-flex items-center gap-1">
         <RefreshCw className="w-4 h-4" /> Refresh
       </button>
       {loading ? (
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
       ) : (
-        <ul className="rounded-xl border border-slate-700 divide-y divide-slate-800">
+        <ul className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] divide-y divide-[var(--apple-hairline)]">
           {groups.map((g) => (
             <li key={g.name} className="px-4 py-3 flex flex-wrap justify-between gap-2 text-sm">
               <div>
-                <Link to={`/fleet-cloud/server-groups/${encodeURIComponent(g.name)}`} className="font-mono text-slate-200 hover:text-sky-300 hover:underline">{g.name}</Link>
-                <span className="ml-2 text-xs text-slate-500">anti-affinity</span>
+                <Link to={`/fleet-cloud/server-groups/${encodeURIComponent(g.name)}`} className="font-mono text-[var(--text-primary)] hover:opacity-90 hover:underline">{g.name}</Link>
+                <span className="ml-2 text-xs text-[var(--text-muted)]">anti-affinity</span>
                 {g.members.length > 0 && (
-                  <span className="block text-xs text-slate-400 mt-1">{g.members.length} member(s)</span>
+                  <span className="block text-xs text-[var(--text-muted)] mt-1">{g.members.length} member(s)</span>
                 )}
               </div>
               <button type="button" className={statusActionLinkClasses('error', 'text-xs self-start')}
@@ -124,7 +125,7 @@ function FleetCloudServerGroupsContent() {
             </li>
           ))}
           {groups.length === 0 && (
-            <li className="px-4 py-6 text-center text-slate-500">No anti-affinity groups yet.</li>
+            <li className="px-4 py-6 text-center text-[var(--text-muted)]">No anti-affinity groups yet.</li>
           )}
         </ul>
       )}

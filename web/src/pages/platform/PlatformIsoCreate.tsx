@@ -130,6 +130,7 @@ export default function PlatformIsoCreate() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/content" label="Content Library" />}
@@ -168,7 +169,7 @@ export default function PlatformIsoCreate() {
                   key={img.id}
                   type="button"
                   className={`text-left rounded-xl border px-3 py-2 text-sm ${
-                    isoPath === img.path ? 'border-sky-500/50 bg-sky-500/10' : 'border-white/10 hover:border-white/20'
+                    isoPath === img.path ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10' : 'border-white/10 hover:border-white/20'
                   }`}
                   onClick={() => setIsoPath(img.path)}
                 >
@@ -176,7 +177,7 @@ export default function PlatformIsoCreate() {
                     <Disc className="w-4 h-4 shrink-0" />
                     {img.name}
                   </span>
-                  <span className="text-xs text-slate-500 font-mono block mt-0.5 truncate">{img.path}</span>
+                  <span className="text-xs text-[var(--text-muted)] font-mono block mt-0.5 truncate">{img.path}</span>
                 </button>
               ))}
             </div>
@@ -184,7 +185,7 @@ export default function PlatformIsoCreate() {
           {step === 1 && (
             <div className="space-y-4">
               <label className="block text-sm">
-                <span className="text-slate-300">VM name</span>
+                <span className="text-[var(--text-secondary)]">VM name</span>
                 <input className="input w-full mt-1" value={vmName} onChange={(e) => setVmName(e.target.value)} />
               </label>
               <VmWizardSizeStep state={sizeState} onChange={(patch) => setSizeState((s) => ({ ...s, ...patch }))} />
@@ -193,7 +194,7 @@ export default function PlatformIsoCreate() {
           {step === 2 && (
             <div className="space-y-4">
               <label className="block text-sm">
-                <span className="text-slate-300">Network</span>
+                <span className="text-[var(--text-secondary)]">Network</span>
                 <select className="input w-full mt-1" value={network} onChange={(e) => setNetwork(e.target.value)}>
                   {networkOptions.map((n) => (
                     <option key={n.id} value={n.id}>
@@ -203,7 +204,7 @@ export default function PlatformIsoCreate() {
                 </select>
               </label>
               <label className="block text-sm">
-                <span className="text-slate-300">SSH public key (optional)</span>
+                <span className="text-[var(--text-secondary)]">SSH public key (optional)</span>
                 <textarea
                   className="input w-full mt-1 font-mono text-xs min-h-[4rem]"
                   value={sshPubkey}
@@ -228,7 +229,7 @@ export default function PlatformIsoCreate() {
           )}
           {step === 3 && (
             <MacGlassPanel title="Review" subtitle={selected?.name}>
-              <ul className="text-sm space-y-1 text-slate-300">
+              <ul className="text-sm space-y-1 text-[var(--text-secondary)]">
                 <li>
                   ISO: <span className="font-mono text-xs">{isoPath}</span>
                 </li>

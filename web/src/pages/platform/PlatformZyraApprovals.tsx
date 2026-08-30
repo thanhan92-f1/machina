@@ -71,6 +71,7 @@ export default function PlatformZyraApprovals() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="Zyra approvals"
       subtitle="Review and execute pending AI actions from Zeus, NL Ops, and firewall automation"
       icon={<ShieldCheck className="w-6 h-6 text-orange-400" />}
@@ -104,7 +105,7 @@ export default function PlatformZyraApprovals() {
       </MacGlassPanel>
 
       {actions.length > 0 && (
-        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+        <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/80" />
           Executed actions are audited on the controller — reject to discard without side effects.
         </p>

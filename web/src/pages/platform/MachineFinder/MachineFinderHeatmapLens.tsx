@@ -16,14 +16,14 @@ export default function MachineFinderHeatmapLens() {
   }, [])
 
   if (error) return <p className="text-sm text-red-300 p-4">{error}</p>
-  if (!data) return <p className="text-sm text-slate-500 p-4">Loading heatmap…</p>
+  if (!data) return <p className="text-sm text-[var(--text-muted)] p-4">Loading heatmap…</p>
 
   const cells = data.hosts ?? []
 
   return (
     <div className="card p-4 space-y-3" data-testid="machine-finder-heatmap">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-white">Fleet heatmap</h3>
+        <h3 className="font-medium text-[var(--text-primary)]">Fleet heatmap</h3>
         <Link to="/platform/zyra" className="btn-secondary text-xs">Open Zyra OS</Link>
       </div>
       {data.hotspots?.length > 0 && (
@@ -39,13 +39,13 @@ export default function MachineFinderHeatmapLens() {
               style={{ background: `rgba(239, 68, 68, ${intensity / 200})` }}
             >
               <p className="font-medium truncate">{cell.hostname}</p>
-              <p className="text-slate-400">CPU {cell.cpu_percent.toFixed(0)}% · {cell.vm_count} VMs</p>
-              <p className="text-slate-500 capitalize">{cell.classification}</p>
+              <p className="text-[var(--text-muted)]">CPU {cell.cpu_percent.toFixed(0)}% · {cell.vm_count} VMs</p>
+              <p className="text-[var(--text-muted)] capitalize">{cell.classification}</p>
             </div>
           )
         })}
       </div>
-      {cells.length === 0 && <p className="text-sm text-slate-500">No heatmap data yet.</p>}
+      {cells.length === 0 && <p className="text-sm text-[var(--text-muted)]">No heatmap data yet.</p>}
     </div>
   )
 }

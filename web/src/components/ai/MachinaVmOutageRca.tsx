@@ -36,10 +36,10 @@ export default function MachinaVmOutageRca({ vmId, vmName }: { vmId: string; vmN
       {error && <p className={`text-xs ${statusToneClass('error')}`}>{error}</p>}
       {analysis && (
         <>
-          <p className="text-sm text-slate-300">{analysis.root_cause}</p>
-          <p className="text-xs text-slate-500">{Math.round(analysis.confidence * 100)}% confidence</p>
+          <p className="text-sm text-[var(--text-secondary)]">{analysis.root_cause}</p>
+          <p className="text-xs text-[var(--text-muted)]">{Math.round(analysis.confidence * 100)}% confidence</p>
           {(analysis.evidence ?? []).slice(0, 3).map((ev) => (
-            <p key={ev} className="text-xs text-slate-500">Evidence: {ev}</p>
+            <p key={ev} className="text-xs text-[var(--text-muted)]">Evidence: {ev}</p>
           ))}
           {(analysis.suggested_actions ?? []).slice(0, 2).map((a) => (
             <p key={a} className={`text-xs ${hubLinkClasses()}`}>→ {a}</p>

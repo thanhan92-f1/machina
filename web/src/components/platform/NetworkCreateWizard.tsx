@@ -82,35 +82,35 @@ export default function NetworkCreateWizard({ open, onClose, onCreated, suggestD
               <button
                 key={p.name}
                 type="button"
-                className={`text-left p-3 rounded-xl border ${name === p.name ? 'border-blue-500/60 bg-blue-500/10' : 'border-slate-800'}`}
+                className={`text-left p-3 rounded-xl border ${name === p.name ? 'border-[var(--accent)]/60 bg-[var(--accent-soft)]' : 'border-[var(--apple-hairline)]'}`}
                 onClick={() => {
                   setName(p.name)
                   setBridge(p.bridge)
                 }}
               >
-                <p className="font-medium text-slate-100">{p.label}</p>
-                <p className="text-xs text-slate-500">{p.desc}</p>
+                <p className="font-medium text-[var(--text-primary)]">{p.label}</p>
+                <p className="text-xs text-[var(--text-muted)]">{p.desc}</p>
               </button>
             ))}
           </div>
           <label className="block text-sm">
-            <span className="text-slate-400">Custom name</span>
+            <span className="text-[var(--text-muted)]">Custom name</span>
             <input className="input w-full mt-1" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label className="block text-sm">
-            <span className="text-slate-400">VLAN ID (optional)</span>
+            <span className="text-[var(--text-muted)]">VLAN ID (optional)</span>
             <input className="input w-full mt-1" value={vlan} onChange={(e) => setVlan(e.target.value)} placeholder="e.g. 100" />
           </label>
         </div>
       )}
       {step === 1 && (
         <label className="block text-sm">
-          <span className="text-slate-400">Linux bridge</span>
+          <span className="text-[var(--text-muted)]">Linux bridge</span>
           <input className="input w-full mt-1 font-mono" value={bridge} onChange={(e) => setBridge(e.target.value)} />
         </label>
       )}
       {step === 2 && (
-        <div className="text-sm text-slate-300 space-y-1">
+        <div className="text-sm text-[var(--text-secondary)] space-y-1">
           <p>Name: {name}</p>
           <p>Bridge: {bridge}</p>
           {vlan && <p>VLAN: {vlan}</p>}

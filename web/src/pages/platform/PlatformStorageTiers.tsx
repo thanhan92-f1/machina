@@ -33,6 +33,7 @@ export default function PlatformStorageTiers() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/storage" label="Disk Utility" />}

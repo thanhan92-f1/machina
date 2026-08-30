@@ -21,9 +21,9 @@ export default function ConsoleLoginRecoveryCard({
   if (hints.auth_mode !== 'ssh_key') return null
 
   return (
-    <div className="shrink-0 rounded-lg border border-violet-500/30 bg-violet-950/25 px-3 py-2 text-xs text-violet-100/95 space-y-2" data-testid="console-login-recovery">
+    <div className="shrink-0 rounded-lg border border-[var(--apple-hairline)] bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--text-primary)]/95 space-y-2" data-testid="console-login-recovery">
       <p className="font-medium">This VM is SSH-key only</p>
-      <p className="text-violet-200/80">Serial may show a login prompt, but no password was set. Use Shell in ConsoleHub or expose SSH for your laptop.</p>
+      <p className="text-[var(--link)]/80">Serial may show a login prompt, but no password was set. Use Shell in ConsoleHub or expose SSH for your laptop.</p>
       <div className="flex flex-wrap gap-2">
         {onSwitchToShell ? (
           <button type="button" className="btn-secondary text-xs" onClick={onSwitchToShell}>

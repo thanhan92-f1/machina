@@ -37,7 +37,7 @@ export default function CopyButton({
           toast.error('Could not copy to clipboard')
         }
       }}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-xs transition ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-xs transition ${className}`}
     >
       {copied ? <Check className={`w-3.5 h-3.5 ${statusToneClass('ok')}`} /> : <Copy className="w-3.5 h-3.5" />}
       {label}

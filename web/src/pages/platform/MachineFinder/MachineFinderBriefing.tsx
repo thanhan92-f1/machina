@@ -34,13 +34,13 @@ export default function MachineFinderBriefing({ state }: Props) {
   }, [state.vms.length, state.finder?.summary])
 
   return (
-    <section className="machine-finder-briefing rounded-xl border border-white/[0.08] bg-gradient-to-r from-slate-900/80 to-slate-950/60 px-4 py-3" data-testid="machine-finder-briefing">
+    <section className="machine-finder-briefing rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-4 py-3 shadow-[var(--shadow-1)]" data-testid="machine-finder-briefing">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-2 min-w-0">
-          <Sparkles className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
+          <Sparkles className="w-4 h-4 text-[var(--machina-accent-ai)] mt-0.5 shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-medium text-sky-300/90">{ZYRA_ASSISTANT_NAME} Briefing</p>
-            <p className="text-sm text-slate-200 mt-0.5">
+            <p className="text-xs font-medium text-[var(--machina-accent-ai)]">{ZYRA_ASSISTANT_NAME} Briefing</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
               {loading ? 'Scanning fleet…' : summaryText ?? state.finder?.summary ?? 'Fleet overview loading…'}
             </p>
           </div>

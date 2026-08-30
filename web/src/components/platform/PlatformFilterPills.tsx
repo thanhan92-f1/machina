@@ -27,7 +27,7 @@ export default function PlatformFilterPills({
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
             value === o.id
               ? `${navActiveChipClasses()} px-3 py-1.5 rounded-full text-xs font-medium border`
-              : 'bg-slate-900/60 text-slate-400 border border-white/[0.06] hover:border-white/10'
+              : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-white/[0.06] hover:border-white/10'
           }`}
         >
           {o.label}

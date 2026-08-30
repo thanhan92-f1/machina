@@ -68,7 +68,7 @@ export default function PlatformFirewallServices() {
       testId="platform-firewall-services-page"
       title="Allowed Apps & Services"
       subtitle={`${visible.length} service${visible.length === 1 ? '' : 's'} · deduplicated rules per host`}
-      icon={<Server className="w-6 h-6 text-slate-400" />}
+      icon={<Server className="w-6 h-6 text-[var(--text-muted)]" />}
       loading={loading && services.length === 0}
       error={error}
       onRefresh={() => void load()}
@@ -93,28 +93,28 @@ export default function PlatformFirewallServices() {
           />
           {filter && (
             <button type="button" aria-label="Clear filter" onClick={() => setFilter('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
-        <span className="text-sm text-slate-500 self-center">{visible.length} service(s)</span>
+        <span className="text-sm text-[var(--text-muted)] self-center">{visible.length} service(s)</span>
       </div>
       <div className="space-y-2">
         {visible.map((s) => (
           <article
             key={s.key}
-            className="rounded-xl border border-white/[0.08] bg-slate-950/40 px-4 py-3 flex flex-wrap items-start justify-between gap-3"
+            className="rounded-xl border border-white/[0.08] bg-[var(--apple-surface)] px-4 py-3 flex flex-wrap items-start justify-between gap-3"
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-slate-100 text-[15px] leading-snug">{s.name}</p>
-              <p className="text-[13px] text-slate-400 mt-1 leading-relaxed">
-                <span className="text-slate-300">{s.target}</span>
+              <p className="font-medium text-[var(--text-primary)] text-[15px] leading-snug">{s.name}</p>
+              <p className="text-[13px] text-[var(--text-muted)] mt-1 leading-relaxed">
+                <span className="text-[var(--text-secondary)]">{s.target}</span>
                 {' · '}
-                <span className="font-mono text-slate-300">{s.protocol}/{s.port}</span>
+                <span className="font-mono text-[var(--text-secondary)]">{s.protocol}/{s.port}</span>
               </p>
-              <p className="text-[13px] text-slate-500 mt-1">
-                Allowed from: <span className="text-slate-300">{formatAllowedFrom(s.allowed_from)}</span>
+              <p className="text-[13px] text-[var(--text-muted)] mt-1">
+                Allowed from: <span className="text-[var(--text-secondary)]">{formatAllowedFrom(s.allowed_from)}</span>
               </p>
               {s.recommendation && (
                 <p className={`text-[13px] mt-2 leading-relaxed ${statusToneClass('warn')}`}>{s.recommendation}</p>

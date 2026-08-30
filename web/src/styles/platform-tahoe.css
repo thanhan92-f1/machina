@@ -32,14 +32,14 @@
 .tahoe-remediate-strip {
   padding: 0.875rem 1.125rem;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  background: hsl(var(--card) / 0.65);
   backdrop-filter: blur(16px);
 }
 
 .tahoe-remediate-summary {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   margin-bottom: 0.625rem;
 }
 
@@ -51,28 +51,28 @@
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  background: hsl(var(--foreground) / 0.04);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .tahoe-remediate-chip:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: hsl(var(--foreground) / 0.07);
+  border-color: hsl(var(--foreground) / 0.14);
 }
 
 .tahoe-remediate-more {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   padding: 0.35rem 0.65rem;
   border-radius: 9999px;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
 .tahoe-remediate-more:hover {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: hsl(var(--foreground) / 0.05);
 }
 
 .tahoe-hero-shine {
@@ -89,9 +89,9 @@
   width: 3.25rem;
   height: 3.25rem;
   border-radius: 1rem;
-  background: linear-gradient(145deg, rgba(56, 189, 248, 0.22), rgba(99, 102, 241, 0.12));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px -8px rgba(14, 165, 233, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .tahoe-stat-pill {
@@ -109,15 +109,15 @@
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: rgb(248, 250, 252);
+  color: var(--text-primary);
 }
 
 .tahoe-stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--text-muted);
 }
 
 .tahoe-stat-sky .tahoe-stat-value { color: rgb(125, 211, 252); }
@@ -132,10 +132,10 @@
   gap: 0.75rem;
   padding: 0.5rem 0.5rem 0.5rem 1rem;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  background: hsl(var(--card) / 0.72);
   backdrop-filter: blur(20px) saturate(1.3);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  box-shadow: 0 1px 0 hsl(var(--foreground) / 0.04) inset;
 }
 
 .tahoe-btn-primary {
@@ -146,23 +146,26 @@
   padding: 0.55rem 1.15rem;
   border-radius: 9999px;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(180deg, rgb(56, 189, 248) 0%, rgb(37, 99, 235) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.25) inset,
-    0 8px 20px -6px rgba(37, 99, 235, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  font-weight: 510;
+  color: var(--text-on-accent, #ffffff);
+  background: var(--accent, hsl(200 78% 40%));
+  border: none;
+  box-shadow: none;
+  transition: background 0.18s ease, opacity 0.15s ease, transform 0.12s ease;
 }
 
 .tahoe-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--accent, hsl(200 78% 40%)) 88%, white);
+  filter: none;
+  transform: none;
+}
+
+.tahoe-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .tahoe-btn-primary:disabled {
-  opacity: 0.55;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -175,15 +178,15 @@
   border-radius: 9999px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.65);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  background: hsl(var(--foreground) / 0.06);
+  border: 1px solid hsl(var(--foreground) / 0.1);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .tahoe-btn-ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: hsl(var(--foreground) / 0.1);
+  color: var(--text-primary);
 }
 
 .tahoe-empty {
@@ -197,23 +200,19 @@
   position: absolute;
   left: 50%;
   top: 35%;
-  width: 16rem;
-  height: 16rem;
+  width: 12rem;
+  height: 12rem;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, rgba(99, 102, 241, 0.08) 45%, transparent 70%);
-  animation: tahoe-orb-pulse 4s ease-in-out infinite;
-}
-
-@keyframes tahoe-orb-pulse {
-  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+  animation: none;
+  opacity: 0.8;
 }
 
 .tahoe-empty-icon {
-  background: linear-gradient(145deg, rgba(56, 189, 248, 0.18), rgba(99, 102, 241, 0.1));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 32px -12px rgba(14, 165, 233, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .tahoe-skeleton-block {
@@ -243,15 +242,15 @@
   border-radius: 0.625rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  background: hsl(var(--foreground) / 0.06);
+  border: 1px solid hsl(var(--foreground) / 0.1);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .platform-space-banner-link:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: white;
+  background: hsl(var(--foreground) / 0.1);
+  color: var(--text-primary);
 }
 
 .platform-space-banner-link-primary {
@@ -279,7 +278,7 @@
 }
 
 .tahoe-page-root .tahoe-content thead th {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -292,7 +291,7 @@
   font-size: 0.9375rem;
   line-height: 1.45;
   padding: 0.625rem 0.75rem;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--text-primary);
 }
 
 .tahoe-page-root .tahoe-content tbody tr {
@@ -350,16 +349,16 @@
   border-radius: 0.75rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  background: hsl(var(--foreground) / 0.05);
+  border: 1px solid hsl(var(--foreground) / 0.1);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .tahoe-quick-nav-link:hover {
-  background: rgba(56, 189, 248, 0.1);
-  border-color: rgba(56, 189, 248, 0.25);
-  color: rgb(186, 230, 253);
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary) / 0.25);
+  color: hsl(var(--primary));
 }
 
 .tahoe-sidebar-link {

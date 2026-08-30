@@ -17,7 +17,7 @@ export default function PlatformDesktopTierPicker({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-300 leading-relaxed">
+      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
         Choose how much of the Machina fleet desktop to show — like macOS simplicity vs. pro tools.
       </p>
       <div className="grid gap-2 sm:grid-cols-3">
@@ -27,11 +27,11 @@ export default function PlatformDesktopTierPicker({
             type="button"
             onClick={() => onChange(key)}
             className={`rounded-xl border p-3 text-left transition ${
-              tier === key ? 'border-sky-400/50 ring-1 ring-sky-400/30 bg-sky-500/5' : 'border-white/[0.08] hover:border-white/20'
+              tier === key ? 'border-[var(--accent)]/50 ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)] bg-[var(--accent)]/5' : 'border-white/[0.08] hover:border-white/20'
             }`}
           >
-            <span className="text-sm font-medium text-slate-100 block">{PLATFORM_DESKTOP_TIER_LABELS[key]}</span>
-            <span className="text-xs text-slate-400 mt-1 block leading-snug">{PLATFORM_DESKTOP_TIER_HINTS[key]}</span>
+            <span className="text-sm font-medium text-[var(--text-primary)] block">{PLATFORM_DESKTOP_TIER_LABELS[key]}</span>
+            <span className="text-xs text-[var(--text-muted)] mt-1 block leading-snug">{PLATFORM_DESKTOP_TIER_HINTS[key]}</span>
           </button>
         ))}
       </div>

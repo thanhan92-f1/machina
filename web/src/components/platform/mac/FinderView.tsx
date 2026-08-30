@@ -103,7 +103,7 @@ export default function FinderView({
           </button>
         </div>
 
-        {title ? <span className="text-sm font-medium text-white/90 hidden sm:inline">{title}</span> : null}
+        {title ? <span className="text-sm font-medium text-[var(--text-primary)] hidden sm:inline">{title}</span> : null}
         {pathSegments && pathSegments.length ? (
           <div className="hidden md:block min-w-0 flex-1 max-w-md">
             <FinderPathBar segments={pathSegments} />
@@ -111,14 +111,14 @@ export default function FinderView({
         ) : null}
 
         <div className="relative flex-1 min-w-[140px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
           <input
             type="search"
             aria-label={searchPlaceholder || 'Search'}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="mac-finder-search w-full pl-8 pr-3 py-1.5 text-sm rounded-lg text-white/90"
+            className="mac-finder-search w-full pl-8 pr-3 py-1.5 text-sm rounded-lg text-[var(--text-primary)]"
           />
         </div>
 
@@ -128,7 +128,7 @@ export default function FinderView({
           <button
             type="button"
             onClick={() => onViewModeChange('icons')}
-            className={`tahoe-segment-item p-1.5 rounded-md ${viewMode === 'icons' ? 'tahoe-segment-active' : 'text-white/50'}`}
+            className={`tahoe-segment-item p-1.5 rounded-md ${viewMode === 'icons' ? 'tahoe-segment-active' : 'text-[var(--text-muted)]'}`}
             title="Icon view"
           >
             <LayoutGrid className="h-4 w-4" />
@@ -138,7 +138,7 @@ export default function FinderView({
           <button
             type="button"
             onClick={() => onViewModeChange('list')}
-            className={`tahoe-segment-item p-1.5 rounded-md ${viewMode === 'list' ? 'tahoe-segment-active' : 'text-white/50'}`}
+            className={`tahoe-segment-item p-1.5 rounded-md ${viewMode === 'list' ? 'tahoe-segment-active' : 'text-[var(--text-muted)]'}`}
             title="List view"
           >
             <List className="h-4 w-4" />
@@ -148,7 +148,7 @@ export default function FinderView({
             <button
               type="button"
               onClick={() => onViewModeChange('columns')}
-              className={`tahoe-segment-item p-1.5 rounded-md ${viewMode === 'columns' ? 'tahoe-segment-active' : 'text-white/50'}`}
+              className={`tahoe-segment-item p-1.5 rounded-md ${viewMode === 'columns' ? 'tahoe-segment-active' : 'text-[var(--text-muted)]'}`}
               title="Column view"
             >
               <Columns3 className="h-4 w-4" />
@@ -193,7 +193,7 @@ export default function FinderView({
               type="button"
               aria-label="Resize inspector"
               onMouseDown={startResize}
-              className="mac-finder-split-handle hidden lg:block w-1 shrink-0 cursor-col-resize hover:bg-sky-400/40 transition-colors"
+              className="mac-finder-split-handle hidden lg:block w-1 shrink-0 cursor-col-resize hover:bg-[var(--accent)]/40 transition-colors"
             />
             <aside
               className="mac-finder-inspector hidden lg:flex flex-col min-w-0 border-l border-white/[0.06] shrink-0 tahoe-glass-card rounded-none border-y-0 border-r-0"

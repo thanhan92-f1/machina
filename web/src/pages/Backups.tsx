@@ -31,7 +31,7 @@ function StatusBadge({ status }: { status: string }) {
     case 'failed':
       return <span className={`flex items-center gap-1 text-xs ${statusToneClass('error')}`}><XCircle className="w-3 h-3" /> Failed</span>
     default:
-      return <span className="flex items-center gap-1 text-slate-400 text-xs"><AlertCircle className="w-3 h-3" /> {status}</span>
+      return <span className="flex items-center gap-1 text-[var(--text-muted)] text-xs"><AlertCircle className="w-3 h-3" /> {status}</span>
   }
 }
 
@@ -198,14 +198,15 @@ export default function BackupsPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       title="Backups"
       icon={<Archive className="w-6 h-6" />}
       actions={
         <>
-          <button onClick={load} className="p-2 hover:bg-slate-700 rounded transition" title="Refresh" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
+          <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Refresh" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-lg transition-all text-sm font-medium shadow-lg shadow-blue-600/20"
+            className="btn-primary text-sm inline-flex items-center gap-2"
           >
             <Play className="w-4 h-4" />
             New Backup
@@ -217,14 +218,14 @@ export default function BackupsPage() {
 
       {/* Schedule card */}
       {schedule && schedule.installed && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 flex items-center justify-between">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-slate-400" />
+            <Clock className="w-5 h-5 text-[var(--text-muted)]" />
             <div>
               <span className="text-sm font-medium">Scheduled Backup</span>
-              <span className="text-xs text-slate-400 ml-2">Daily at 2:00 AM</span>
+              <span className="text-xs text-[var(--text-muted)] ml-2">Daily at 2:00 AM</span>
               {schedule.next_run && schedule.enabled && (
-                <span className="text-xs text-slate-500 ml-2">Next: {schedule.next_run}</span>
+                <span className="text-xs text-[var(--text-muted)] ml-2">Next: {schedule.next_run}</span>
               )}
             </div>
           </div>
@@ -232,7 +233,7 @@ export default function BackupsPage() {
             {schedule.enabled ? (
               <><ToggleRight className={`w-6 h-6 ${statusToneClass('ok')}`} /> <span className={statusToneClass('ok')}>Enabled</span></>
             ) : (
-              <><ToggleLeft className="w-6 h-6 text-slate-500" /> <span className="text-slate-500">Disabled</span></>
+              <><ToggleLeft className="w-6 h-6 text-[var(--text-muted)]" /> <span className="text-[var(--text-muted)]">Disabled</span></>
             )}
           </button>
         </div>
@@ -240,16 +241,16 @@ export default function BackupsPage() {
 
       {/* Backup form */}
       {showForm && (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 space-y-4">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-6 space-y-4">
           <h2 className="text-lg font-semibold">Create Backup</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">VM (leave empty for all)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">VM (leave empty for all)</label>
               <select
                 aria-label="VM (leave empty for all)"
                 value={vmName}
                 onChange={(e) => setVmName(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                className="w-full bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]"
               >
                 <option value="">All VMs</option>
                 {vms.map((vm) => (
@@ -258,25 +259,25 @@ export default function BackupsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">NFS Target (optional)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">NFS Target (optional)</label>
               <input
                 aria-label="NFS target (optional)"
                 type="text"
                 value={nfsTarget}
                 onChange={(e) => setNfsTarget(e.target.value)}
                 placeholder="192.168.1.100:/backups"
-                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                className="w-full bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Retention (keep last N)</label>
+              <label className="block text-sm text-[var(--text-muted)] mb-1">Retention (keep last N)</label>
               <input
                 aria-label="Retention count"
                 type="number"
                 value={retain}
                 onChange={(e) => setRetain(parseInt(e.target.value) || 0)}
                 min={0}
-                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                className="w-full bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]"
               />
             </div>
             <div className="flex flex-col gap-3 pt-4">
@@ -285,7 +286,7 @@ export default function BackupsPage() {
                   type="checkbox"
                   checked={withDisks}
                   onChange={(e) => { setWithDisks(e.target.checked); if (!e.target.checked) setIncremental(false) }}
-                  className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-blue-600 focus:ring-[var(--machina-status-info)]"
+                  className="w-4 h-4 rounded bg-[var(--apple-surface)] border-[var(--apple-hairline)] text-[var(--accent)] focus:ring-[var(--machina-status-info)]"
                 />
                 <span className="text-sm">Include disk images</span>
                 {withDisks && <span className={`text-xs ${statusToneClass('warn')}`}>May be very large</span>}
@@ -296,7 +297,7 @@ export default function BackupsPage() {
                     type="checkbox"
                     checked={incremental}
                     onChange={(e) => setIncremental(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-900 border-slate-600 text-blue-600 focus:ring-[var(--machina-status-info)]"
+                    className="w-4 h-4 rounded bg-[var(--apple-surface)] border-[var(--apple-hairline)] text-[var(--accent)] focus:ring-[var(--machina-status-info)]"
                   />
                   <span className="text-sm flex items-center gap-1"><Layers className="w-3 h-3" /> Incremental (hardlink unchanged)</span>
                 </label>
@@ -304,11 +305,11 @@ export default function BackupsPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition">Cancel</button>
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">Cancel</button>
             <button
               onClick={handleBackup}
               disabled={running}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg transition text-sm font-medium"
+              className="flex items-center gap-2 btn-primary text-sm disabled:opacity-50"
             >
               {running ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               {running ? 'Running...' : 'Start Backup'}
@@ -318,13 +319,13 @@ export default function BackupsPage() {
       )}
 
       {/* Backup list */}
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
         {backups.length === 0 ? (
           <EmptyState title="No backups" description="Create a backup to protect your VMs. Backups are stored at the configured target path." />
         ) : (
           <table className="w-full" aria-label="Backup jobs">
             <thead>
-              <tr className="border-b border-slate-700/50 text-left text-sm text-slate-400">
+              <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">
                 <th scope="col" className="px-4 py-3">Backup ID</th>
                 <th scope="col" className="px-4 py-3">Status</th>
                 <th scope="col" className="px-4 py-3">Scope</th>
@@ -335,19 +336,19 @@ export default function BackupsPage() {
                 <th scope="col" className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/50">
               {backups.map((b) => (
-                <tr key={b.id} className="hover:bg-slate-700/50">
+                <tr key={b.id} className="hover:bg-[var(--surface-hover)]/50">
                   <td className="px-4 py-3 font-medium font-mono text-sm">{b.id}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={b.status} />
                     {b.status === 'running' && b.progress !== '' && (
-                      <div className="mt-1 w-20 bg-slate-700 rounded-full h-1.5">
+                      <div className="mt-1 w-20 bg-[var(--surface-hover)] rounded-full h-1.5">
                         <div className={`h-1.5 rounded-full transition-all ${statusBgClass('info')}`} style={{ width: `${parseInt(b.progress) || 0}%` }} />
                       </div>
                     )}
                     {(statusDetail[b.id]?.message || b.status_message) && (
-                      <p className="text-[11px] text-slate-500 mt-1 max-w-[12rem] truncate" title={statusDetail[b.id]?.message || b.status_message}>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-1 max-w-[12rem] truncate" title={statusDetail[b.id]?.message || b.status_message}>
                         {statusDetail[b.id]?.message || b.status_message}
                       </p>
                     )}
@@ -359,18 +360,18 @@ export default function BackupsPage() {
                       <span className={`flex items-center gap-1 ${statusToneClass('ok')}`}><Server className="w-3 h-3" /> {b.vm_filter}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-400 hidden md:table-cell">{b.vm_count}</td>
-                  <td className="px-4 py-3 text-sm text-slate-400 hidden lg:table-cell">
+                  <td className="px-4 py-3 text-sm text-[var(--text-muted)] hidden md:table-cell">{b.vm_count}</td>
+                  <td className="px-4 py-3 text-sm text-[var(--text-muted)] hidden lg:table-cell">
                     {b.nfs_target === 'local' ? 'Local' : b.nfs_target}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {b.with_disks ? (
                       <span className={`flex items-center gap-1 ${statusToneClass('warn')}`}><HardDrive className="w-3 h-3" /> Yes</span>
                     ) : (
-                      <span className="text-slate-500">No</span>
+                      <span className="text-[var(--text-muted)]">No</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-400">{b.size}</td>
+                  <td className="px-4 py-3 text-sm text-[var(--text-muted)]">{b.size}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       {b.status === 'running' && (
@@ -379,14 +380,14 @@ export default function BackupsPage() {
                           data-testid={`backup-status-${b.id}`}
                           onClick={() => void refreshBackupStatus(b.id).catch((e: unknown) => toast.error(formatUserError(e)))}
                           disabled={statusBusy === b.id}
-                          className="p-1.5 hover:bg-slate-600/40 rounded transition"
+                          className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
                           title="Refresh live backup status"
                           aria-label="Refresh live backup status"
                         >
                           {statusBusy === b.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[var(--text-secondary)]" />
                           ) : (
-                            <RefreshCw className="w-4 h-4 text-slate-300" />
+                            <RefreshCw className="w-4 h-4 text-[var(--text-secondary)]" />
                           )}
                         </button>
                       )}
@@ -407,13 +408,13 @@ export default function BackupsPage() {
                       )}
                       <a
                         href={downloadBackupUrl(b.id)}
-                        className="p-1.5 hover:bg-cyan-600/20 rounded transition"
+                        className="p-1.5 hover:bg-[var(--accent-soft)] rounded transition"
                         title="Download as tar.gz"
                         aria-label="Download as tar.gz"
                       >
-                        <Download className="w-4 h-4 text-cyan-400" />
+                        <Download className="w-4 h-4 text-[var(--accent)]" />
                       </a>
-                      <button onClick={() => setRestoreTarget(b)} className="p-1.5 hover:bg-blue-600/20 rounded transition" title="Restore" aria-label="Restore">
+                      <button onClick={() => setRestoreTarget(b)} className="p-1.5 hover:bg-white/10 rounded transition" title="Restore" aria-label="Restore">
                         <RotateCcw className={`w-4 h-4 ${statusToneClass('info')}`} />
                       </button>
                       <button onClick={() => setDeleteTarget(b)} className="p-1.5 hover:bg-red-600/20 rounded transition" title="Delete" aria-label="Delete">
@@ -431,7 +432,7 @@ export default function BackupsPage() {
       {/* Verify result dialog */}
       {verifyResult && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setVerifyResult(null)}>
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               {verifyResult.verified ? (
                 <><CheckCircle className={`w-5 h-5 ${statusToneClass('ok')}`} /> Verification Passed</>
@@ -440,19 +441,19 @@ export default function BackupsPage() {
               )}
             </h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-slate-400">Backup</span><span className="font-mono">{verifyResult.backup_id}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Files checked</span><span>{verifyResult.files_checked}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">OK</span><span className={statusToneClass('ok')}>{verifyResult.files_ok}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--text-muted)]">Backup</span><span className="font-mono">{verifyResult.backup_id}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--text-muted)]">Files checked</span><span>{verifyResult.files_checked}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--text-muted)]">OK</span><span className={statusToneClass('ok')}>{verifyResult.files_ok}</span></div>
               {verifyResult.files_failed > 0 && (
                 <>
-                  <div className="flex justify-between"><span className="text-slate-400">Failed</span><span className={statusToneClass('error')}>{verifyResult.files_failed}</span></div>
-                  <div className={`mt-2 bg-slate-900 rounded p-2 text-xs font-mono max-h-32 overflow-y-auto ${statusToneClass('error')} opacity-80`}>
+                  <div className="flex justify-between"><span className="text-[var(--text-muted)]">Failed</span><span className={statusToneClass('error')}>{verifyResult.files_failed}</span></div>
+                  <div className={`mt-2 bg-[var(--apple-surface)] rounded p-2 text-xs font-mono max-h-32 overflow-y-auto ${statusToneClass('error')} opacity-80`}>
                     {verifyResult.failed_files.map((f) => <div key={f}>{f}</div>)}
                   </div>
                 </>
               )}
             </div>
-            <button onClick={() => setVerifyResult(null)} className="mt-4 w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">Close</button>
+            <button onClick={() => setVerifyResult(null)} className="mt-4 w-full btn-secondary text-sm transition">Close</button>
           </div>
         </div>
       )}

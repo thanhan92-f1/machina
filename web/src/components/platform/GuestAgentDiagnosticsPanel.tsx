@@ -152,7 +152,7 @@ export default function GuestAgentDiagnosticsPanel({
 
   if (loading && !report) {
     return (
-      <p className="text-sm text-slate-500 flex items-center gap-2">
+      <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin" /> Testing guest agent…
       </p>
     )
@@ -161,8 +161,8 @@ export default function GuestAgentDiagnosticsPanel({
   if (error && !report) {
     return (
       <div className={`rounded-xl border p-4 text-sm ${statusSurfaceClasses('error')}`}>
-        <p className="text-slate-200 font-medium">Could not load guest health</p>
-        <p className="text-xs text-slate-400 mt-1">{error}</p>
+        <p className="text-[var(--text-primary)] font-medium">Could not load guest health</p>
+        <p className="text-xs text-[var(--text-muted)] mt-1">{error}</p>
         {onRefresh && (
           <button type="button" className="btn-secondary text-xs mt-3" onClick={onRefresh}>
             Retry
@@ -176,10 +176,10 @@ export default function GuestAgentDiagnosticsPanel({
     const stopped = vmState === 'stopped' || vmState === 'shut off'
     return (
       <div className={`rounded-xl border p-4 text-sm ${statusSurfaceClasses(stopped ? 'neutral' : 'warn')}`}>
-        <p className="text-slate-200 font-medium">
+        <p className="text-[var(--text-primary)] font-medium">
           {stopped ? 'Start the VM to test the guest agent' : 'Guest health not available yet'}
         </p>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-[var(--text-muted)] mt-1">
           {stopped
             ? 'The QEMU guest agent channel is probed while the VM is running.'
             : 'Run a guest health check or wait for the next refresh.'}
@@ -213,30 +213,30 @@ export default function GuestAgentDiagnosticsPanel({
       <div className={`rounded-xl border p-4 backdrop-blur-sm ${statusSurfaceClasses(tone)}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-medium text-slate-100">Guest agent</p>
-            <p className="text-xs text-slate-400 mt-0.5">{report.summary}</p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">Guest agent</p>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">{report.summary}</p>
             {osPill && (
-              <p className="text-xs text-slate-300 mt-2 font-medium">{osPill}</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-2 font-medium">{osPill}</p>
             )}
           </div>
           <span className={statusPillClasses(tone)}>{installStateLabel(report.install_state)}</span>
         </div>
         {report.agent_version && (
-          <p className="text-xs text-slate-500 mt-2 font-mono">Agent {report.agent_version}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-mono">Agent {report.agent_version}</p>
         )}
         {lastRefreshedAt && (
-          <p className="text-xs text-slate-600 mt-1">
+          <p className="text-xs text-[var(--text-faint)] mt-1">
             Last refreshed {lastRefreshedAt.toLocaleTimeString()}
           </p>
         )}
       </div>
 
       {obs?.time && (
-        <div className="rounded-lg border border-white/[0.06] bg-slate-900/40 px-3 py-2 text-sm flex items-start gap-2">
+        <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 text-sm flex items-start gap-2">
           <Clock className={`w-4 h-4 shrink-0 mt-0.5 ${Math.abs(obs.time.delta_ms) > 5000 ? statusToneClass('warn') : statusToneClass('ok')}`} />
           <div>
-            <p className="text-slate-200">Guest vs host time</p>
-            <p className="text-xs text-slate-500 mt-0.5 font-mono">
+            <p className="text-[var(--text-primary)]">Guest vs host time</p>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5 font-mono">
               Δ {formatDeltaMs(obs.time.delta_ms)} · guest {new Date(obs.time.guest_time_rfc3339).toLocaleString()}
             </p>
           </div>
@@ -254,7 +254,7 @@ export default function GuestAgentDiagnosticsPanel({
           {(report.checks ?? []).map((c) => (
             <li
               key={c.id}
-              className="flex items-start gap-2 rounded-lg border border-white/[0.06] bg-slate-900/40 px-3 py-2 text-sm"
+              className="flex items-start gap-2 rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 text-sm"
             >
               {c.passed ? (
                 <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${statusToneClass('ok')}`} />
@@ -262,8 +262,8 @@ export default function GuestAgentDiagnosticsPanel({
                 <XCircle className={`w-4 h-4 shrink-0 mt-0.5 ${statusToneClass('error')}`} />
               )}
               <div className="min-w-0">
-                <p className="text-slate-200">{c.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{c.detail}</p>
+                <p className="text-[var(--text-primary)]">{c.label}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">{c.detail}</p>
               </div>
             </li>
           ))}
@@ -272,15 +272,15 @@ export default function GuestAgentDiagnosticsPanel({
 
       {obs?.users && obs.users.length > 0 && (
         <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-3 py-2 bg-slate-900/60 flex items-center gap-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] px-3 py-2 bg-[var(--apple-surface)] flex items-center gap-1">
             <Users className="w-3 h-3" /> Users & sessions
           </p>
           <ul className="text-xs divide-y divide-white/[0.04]">
             {obs.users.map((u) => (
-              <li key={`${u.username}-${u.login_time ?? ''}`} className="px-3 py-2 text-slate-300">
+              <li key={`${u.username}-${u.login_time ?? ''}`} className="px-3 py-2 text-[var(--text-secondary)]">
                 <span className="font-medium">{u.username}</span>
                 {u.login_time && (
-                  <span className="text-slate-500"> · {new Date(u.login_time).toLocaleString()}</span>
+                  <span className="text-[var(--text-muted)]"> · {new Date(u.login_time).toLocaleString()}</span>
                 )}
               </li>
             ))}
@@ -290,12 +290,12 @@ export default function GuestAgentDiagnosticsPanel({
 
       {obs?.filesystems && obs.filesystems.length > 0 && (
         <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-3 py-2 bg-slate-900/60">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] px-3 py-2 bg-[var(--apple-surface)]">
             Guest filesystems
           </p>
           <table className="w-full text-xs" aria-label="Guest filesystems">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-white/[0.06]">
+              <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                 <th className="px-3 py-2">Mount</th>
                 <th className="px-3 py-2 text-right">Used</th>
                 <th className="px-3 py-2 text-right">Total</th>
@@ -306,9 +306,9 @@ export default function GuestAgentDiagnosticsPanel({
                 const pct = fs.total_bytes > 0 ? Math.round((fs.used_bytes / fs.total_bytes) * 100) : 0
                 return (
                   <tr key={fs.mountpoint} className="border-b border-white/[0.04]">
-                    <td className="px-3 py-2 font-mono text-slate-300">{fs.mountpoint}</td>
-                    <td className="px-3 py-2 text-right text-slate-400">{pct}%</td>
-                    <td className="px-3 py-2 text-right text-slate-500">
+                    <td className="px-3 py-2 font-mono text-[var(--text-secondary)]">{fs.mountpoint}</td>
+                    <td className="px-3 py-2 text-right text-[var(--text-muted)]">{pct}%</td>
+                    <td className="px-3 py-2 text-right text-[var(--text-muted)]">
                       {(fs.used_bytes / 1024 ** 3).toFixed(1)} / {(fs.total_bytes / 1024 ** 3).toFixed(1)} GiB
                     </td>
                   </tr>
@@ -320,25 +320,25 @@ export default function GuestAgentDiagnosticsPanel({
       )}
 
       {obs?.ip_addresses && obs.ip_addresses.length > 0 && (
-        <div className="text-xs text-slate-400 space-y-1">
-          <p className="font-semibold text-slate-300">Internal IPs</p>
+        <div className="text-xs text-[var(--text-muted)] space-y-1">
+          <p className="font-semibold text-[var(--text-secondary)]">Internal IPs</p>
           {obs.ip_addresses
             .filter((a) => a.ip_type !== 'ipv6' && !a.address.startsWith('127.'))
             .map((a) => (
               <p key={`${a.name}-${a.address}`} className="font-mono">
                 {a.address}
-                <span className="text-slate-500"> · {a.name}</span>
-                {a.source ? <span className="text-slate-600"> ({a.source})</span> : null}
+                <span className="text-[var(--text-muted)]"> · {a.name}</span>
+                {a.source ? <span className="text-[var(--text-faint)]"> ({a.source})</span> : null}
               </p>
             ))}
         </div>
       )}
 
       {agentActive && (
-        <div className="rounded-xl border border-white/[0.06] bg-slate-900/40 p-3 space-y-3">
+        <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-slate-200 flex items-center gap-2">
-              <Network className="w-4 h-4 text-slate-400" />
+            <p className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+              <Network className="w-4 h-4 text-[var(--text-muted)]" />
               Guest network
             </p>
             <button
@@ -352,34 +352,34 @@ export default function GuestAgentDiagnosticsPanel({
             </button>
           </div>
           {net && (
-            <div className="text-xs text-slate-400 space-y-1">
+            <div className="text-xs text-[var(--text-muted)] space-y-1">
               {(net.backend || net.backend_detail) && (
-                <p className="text-slate-500">
+                <p className="text-[var(--text-muted)]">
                   Stack:{' '}
-                  <span className="text-slate-300 font-mono">{net.backend || 'unknown'}</span>
+                  <span className="text-[var(--text-secondary)] font-mono">{net.backend || 'unknown'}</span>
                   {net.backend_detail ? (
-                    <span className="text-slate-600"> — {net.backend_detail}</span>
+                    <span className="text-[var(--text-faint)]"> — {net.backend_detail}</span>
                   ) : null}
                 </p>
               )}
               {net.interfaces.map((i) => (
                 <p key={i.name} className="font-mono">
                   {i.name}
-                  {i.mac ? <span className="text-slate-600"> · {i.mac}</span> : null}
+                  {i.mac ? <span className="text-[var(--text-faint)]"> · {i.mac}</span> : null}
                   {i.addresses.length
                     ? ` · ${i.addresses.join(', ')}`
                     : ' · (no IPv4)'}
                 </p>
               ))}
               {net.default_gateway && (
-                <p className="font-mono text-slate-300">
+                <p className="font-mono text-[var(--text-secondary)]">
                   default via {net.default_gateway}
                 </p>
               )}
               {net.routes.length > 0 && (
                 <details className="mt-1">
-                  <summary className="cursor-pointer text-slate-500">Routes ({net.routes.length})</summary>
-                  <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-slate-500">
+                  <summary className="cursor-pointer text-[var(--text-muted)]">Routes ({net.routes.length})</summary>
+                  <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-[var(--text-muted)]">
                     {net.routes.join('\n')}
                   </pre>
                 </details>
@@ -387,7 +387,7 @@ export default function GuestAgentDiagnosticsPanel({
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <label className="text-xs text-slate-500 space-y-1">
+            <label className="text-xs text-[var(--text-muted)] space-y-1">
               <span>Interface</span>
               <input
                 className="input w-full text-xs font-mono"
@@ -402,7 +402,7 @@ export default function GuestAgentDiagnosticsPanel({
                 ))}
               </datalist>
             </label>
-            <label className="text-xs text-slate-500 space-y-1">
+            <label className="text-xs text-[var(--text-muted)] space-y-1">
               <span>IPv4 CIDR</span>
               <input
                 className="input w-full text-xs font-mono"
@@ -411,7 +411,7 @@ export default function GuestAgentDiagnosticsPanel({
                 placeholder="192.168.122.50/24"
               />
             </label>
-            <label className="text-xs text-slate-500 space-y-1">
+            <label className="text-xs text-[var(--text-muted)] space-y-1">
               <span>Gateway</span>
               <input
                 className="input w-full text-xs font-mono"
@@ -420,7 +420,7 @@ export default function GuestAgentDiagnosticsPanel({
                 placeholder="192.168.122.1"
               />
             </label>
-            <label className="text-xs text-slate-500 space-y-1 sm:col-span-2">
+            <label className="text-xs text-[var(--text-muted)] space-y-1 sm:col-span-2">
               <span>DNS (space or comma separated)</span>
               <input
                 className="input w-full text-xs font-mono"
@@ -429,7 +429,7 @@ export default function GuestAgentDiagnosticsPanel({
                 placeholder="1.1.1.1 8.8.8.8"
               />
             </label>
-            <label className="text-xs text-slate-500 space-y-1">
+            <label className="text-xs text-[var(--text-muted)] space-y-1">
               <span>Extra route</span>
               <input
                 className="input w-full text-xs font-mono"
@@ -477,7 +477,7 @@ export default function GuestAgentDiagnosticsPanel({
             {actionBusy === 'net' ? <Loader2 className="w-3 h-3 animate-spin inline" /> : null}
             Apply network
           </button>
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] text-[var(--text-faint)]">
             Auto-detects NetworkManager, systemd-networkd, netplan, or wicked; falls back to{' '}
             <code className="font-mono">ip</code> if needed. NM / netplan / wicked / networkd write
             persistent config under <code className="font-mono">/etc</code>; iproute2 fallback is
@@ -565,7 +565,7 @@ export default function GuestAgentDiagnosticsPanel({
         )}
       </div>
       {onInstall && report.install_state !== 'running' && (
-        <p className="text-[11px] text-slate-600">
+        <p className="text-[11px] text-[var(--text-faint)]">
           Attach virtio channel only adds the QEMU guest-agent serial device. It does not inject
           guestkit-agent into the disk — install or start the agent inside the guest after the
           channel is present.

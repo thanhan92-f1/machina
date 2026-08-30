@@ -43,9 +43,9 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
     obs?.ip_addresses?.filter((a) => a.ip_type !== 'ipv6' && !a.address.startsWith('127.')) ?? []
 
   return (
-    <div className={`rounded-xl border border-white/[0.06] bg-slate-900/40 p-3 text-sm space-y-2 ${className}`}>
+    <div className={`rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3 text-sm space-y-2 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
           <Cloud className="w-3.5 h-3.5" /> Live guest observability
         </p>
         <button
@@ -61,12 +61,12 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
       </div>
       {error && <p className="text-xs text-amber-300/90">{error}</p>}
       {!obs && !error && loading && (
-        <p className="text-xs text-slate-500 flex items-center gap-2">
+        <p className="text-xs text-[var(--text-muted)] flex items-center gap-2">
           <Loader2 className="w-3 h-3 animate-spin" /> Pulling guest agent snapshot…
         </p>
       )}
       {!obs && !error && !loading && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           Guest agent did not return observability data yet. Refresh after the agent is active.
         </p>
       )}
@@ -74,28 +74,28 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
         <dl className="grid gap-2 text-xs sm:grid-cols-2">
           {(obs.os_pretty_name || obs.os_kernel) && (
             <div className="sm:col-span-2">
-              <dt className="text-slate-500">Guest OS</dt>
-              <dd className="text-slate-200">
+              <dt className="text-[var(--text-muted)]">Guest OS</dt>
+              <dd className="text-[var(--text-primary)]">
                 {[obs.os_pretty_name, obs.os_kernel, obs.os_arch].filter(Boolean).join(' · ')}
               </dd>
             </div>
           )}
           {obs.cloud_init_status && (
             <div>
-              <dt className="text-slate-500">Cloud-init</dt>
-              <dd className="text-slate-200 font-mono">{obs.cloud_init_status}</dd>
+              <dt className="text-[var(--text-muted)]">Cloud-init</dt>
+              <dd className="text-[var(--text-primary)] font-mono">{obs.cloud_init_status}</dd>
             </div>
           )}
           {obs.hostname && (
             <div>
-              <dt className="text-slate-500">Hostname</dt>
-              <dd className="text-slate-200 font-mono">{obs.hostname}</dd>
+              <dt className="text-[var(--text-muted)]">Hostname</dt>
+              <dd className="text-[var(--text-primary)] font-mono">{obs.hostname}</dd>
             </div>
           )}
           {obs.time && (
             <div>
-              <dt className="text-slate-500">Clock skew</dt>
-              <dd className="text-slate-200 font-mono">
+              <dt className="text-[var(--text-muted)]">Clock skew</dt>
+              <dd className="text-[var(--text-primary)] font-mono">
                 {Math.abs(obs.time.delta_ms) < 1000
                   ? `${obs.time.delta_ms} ms`
                   : `${(obs.time.delta_ms / 1000).toFixed(1)} s`}
@@ -104,7 +104,7 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
           )}
           {(obs.users?.length ?? 0) > 0 && (
             <div className="sm:col-span-2">
-              <dt className="text-slate-500 mb-1">Sessions</dt>
+              <dt className="text-[var(--text-muted)] mb-1">Sessions</dt>
               <dd className="flex flex-wrap gap-1">
                 {obs.users!.slice(0, 8).map((u) => (
                   <span key={`${u.username}-${u.login_time ?? ''}`} className={statusPillClasses('neutral')}>
@@ -116,12 +116,12 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
           )}
           {ipv4.length > 0 && (
             <div className="sm:col-span-2">
-              <dt className="text-slate-500 mb-1">Internal IPs</dt>
-              <dd className="flex flex-wrap gap-1 font-mono text-slate-300">
+              <dt className="text-[var(--text-muted)] mb-1">Internal IPs</dt>
+              <dd className="flex flex-wrap gap-1 font-mono text-[var(--text-secondary)]">
                 {ipv4.slice(0, 6).map((a) => (
                   <span key={`${a.name}-${a.address}`} className={statusPillClasses('neutral')}>
                     {a.address}
-                    <span className="text-slate-500"> · {a.name}</span>
+                    <span className="text-[var(--text-muted)]"> · {a.name}</span>
                   </span>
                 ))}
               </dd>
@@ -129,7 +129,7 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
           )}
           {(obs.filesystems?.length ?? 0) > 0 && (
             <div className="sm:col-span-2">
-              <dt className="text-slate-500 mb-1">Filesystems</dt>
+              <dt className="text-[var(--text-muted)] mb-1">Filesystems</dt>
               <dd className="flex flex-wrap gap-1">
                 {obs.filesystems!.slice(0, 6).map((fs) => {
                   const pct = fs.total_bytes > 0 ? Math.round((fs.used_bytes / fs.total_bytes) * 100) : 0
@@ -144,7 +144,7 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
           )}
           {obs.fs_freeze?.frozen && (
             <div className="sm:col-span-2">
-              <dt className="text-slate-500">Filesystem freeze</dt>
+              <dt className="text-[var(--text-muted)]">Filesystem freeze</dt>
               <dd className="text-amber-200/90">{obs.fs_freeze.detail}</dd>
             </div>
           )}

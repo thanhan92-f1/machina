@@ -108,17 +108,18 @@ export default function SpritesPage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       title="Sprites"
       subtitle="Instant, disposable sandbox VMs — TTL-reaped, no persistent state."
       icon={<Zap className="w-6 h-6" />}
       actions={
         <div className="flex items-center gap-2">
-          <button onClick={load} className="p-2 hover:bg-slate-700 rounded transition" title="Refresh" aria-label="Refresh">
+          <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Refresh" aria-label="Refresh">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
+            className="btn-primary text-sm inline-flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             New Sprite
@@ -138,10 +139,10 @@ export default function SpritesPage() {
           description="Sprites are throwaway sandbox VMs cloned from a golden image and torn down automatically after their TTL — useful for AI-agent or CI sandboxes that don't need to persist."
         />
       ) : (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
           <table className="w-full" aria-label="Sprites">
             <thead>
-              <tr className="border-b border-slate-700/50 text-left text-sm text-slate-400">
+              <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">
                 <th scope="col" className="px-6 py-3">Sprite</th>
                 <th scope="col" className="px-6 py-3">State</th>
                 <th scope="col" className="px-6 py-3">Backend</th>
@@ -151,28 +152,28 @@ export default function SpritesPage() {
                 <th scope="col" className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/50">
               {sprites.map((s) => (
-                <tr key={s.sprite_id} className="hover:bg-slate-700/50">
+                <tr key={s.sprite_id} className="hover:bg-[var(--surface-hover)]/50">
                   <td className="px-6 py-3 font-mono text-xs">{s.sprite_id}</td>
                   <td className="px-6 py-3">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses(stateTone(s.state))}`}>
                       {s.state}
                     </span>
                   </td>
-                  <td className="px-6 py-3 text-sm text-slate-300">{backendLabel(s.backend ?? 'libvirt')}</td>
-                  <td className="px-6 py-3 text-sm text-slate-400 hidden md:table-cell">{s.vsock_cid ?? '—'}</td>
-                  <td className="px-6 py-3 text-sm text-slate-400 hidden md:table-cell">
+                  <td className="px-6 py-3 text-sm text-[var(--text-secondary)]">{backendLabel(s.backend ?? 'libvirt')}</td>
+                  <td className="px-6 py-3 text-sm text-[var(--text-muted)] hidden md:table-cell">{s.vsock_cid ?? '—'}</td>
+                  <td className="px-6 py-3 text-sm text-[var(--text-muted)] hidden md:table-cell">
                     {s.network_egress ? (
-                      <span className="inline-flex items-center gap-1 text-blue-400" title="Attached to the default NAT network">
+                      <span className="inline-flex items-center gap-1 text-[var(--accent)]" title="Attached to the default NAT network">
                         <Globe className="w-3.5 h-3.5" />
                         Egress
                       </span>
                     ) : (
-                      <span className="text-slate-500">vsock only</span>
+                      <span className="text-[var(--text-muted)]">vsock only</span>
                     )}
                   </td>
-                  <td className="px-6 py-3 text-sm text-slate-400">{timeUntil(s.expires_at)}</td>
+                  <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{timeUntil(s.expires_at)}</td>
                   <td className="px-6 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -264,30 +265,30 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
     >
       <div
         ref={panelRef}
-        className="bg-slate-900 border border-slate-600 rounded-xl shadow-xl w-full max-w-md flex flex-col"
+        className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl shadow-xl w-full max-w-md flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-sprite-title"
       >
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between gap-2">
-          <h2 id="new-sprite-title" className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-400" />
+        <div className="p-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-2">
+          <h2 id="new-sprite-title" className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <Zap className="w-5 h-5 text-[var(--accent)]" />
             New Sprite
           </h2>
-          <button type="button" className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400" onClick={onClose} aria-label="Close">
+          <button type="button" className="p-1.5 rounded-lg hover:bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]" onClick={onClose} aria-label="Close">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-4 space-y-4 text-sm">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" htmlFor="sprite-golden-image">
+            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide" htmlFor="sprite-golden-image">
               Golden image
             </label>
             {imagesError ? (
               <p className="text-xs text-red-400">{imagesError}</p>
             ) : images.length === 0 ? (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--text-muted)]">
                 No golden images found. Copy a qcow2 into the sprite-images registry on the daemon host first.
               </p>
             ) : (
@@ -295,7 +296,7 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                 id="sprite-golden-image"
                 value={goldenImage}
                 onChange={(e) => setGoldenImage(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-100"
+                className="w-full bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-[var(--text-primary)]"
               >
                 {images.map((name) => (
                   <option key={name} value={name}>{name}</option>
@@ -306,7 +307,7 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" htmlFor="sprite-vcpus">vCPUs</label>
+              <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide" htmlFor="sprite-vcpus">vCPUs</label>
               <input
                 id="sprite-vcpus"
                 type="number"
@@ -314,11 +315,11 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                 max={8}
                 value={vcpus}
                 onChange={(e) => setVcpus(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-100"
+                className="w-full bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-[var(--text-primary)]"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" htmlFor="sprite-memory">Memory (MB)</label>
+              <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide" htmlFor="sprite-memory">Memory (MB)</label>
               <input
                 id="sprite-memory"
                 type="number"
@@ -327,18 +328,18 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                 step={128}
                 value={memoryMb}
                 onChange={(e) => setMemoryMb(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-100"
+                className="w-full bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-[var(--text-primary)]"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" htmlFor="sprite-ttl">Time to live</label>
+            <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide" htmlFor="sprite-ttl">Time to live</label>
             <select
               id="sprite-ttl"
               value={ttlSeconds}
               onChange={(e) => setTtlSeconds(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-100"
+              className="w-full bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-[var(--text-primary)]"
             >
               {TTL_PRESETS.map((p) => (
                 <option key={p.seconds} value={p.seconds}>{p.label}</option>
@@ -347,7 +348,7 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Backend</span>
+            <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Backend</span>
             <div className="flex gap-2">
               {(['libvirt', 'cloudhypervisor', 'firecracker'] as const).map((b) => (
                 <button
@@ -356,8 +357,8 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                   onClick={() => setBackend(b)}
                   className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${
                     backend === b
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'
+                      ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                      : 'bg-[var(--apple-fill-tertiary)] border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
                   {backendLabel(b)}
@@ -371,22 +372,22 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
               type="checkbox"
               checked={networkEgress}
               onChange={(e) => setNetworkEgress(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+              className="mt-0.5 w-4 h-4 rounded border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] text-[var(--accent)] focus:ring-[var(--accent)]"
             />
-            <span className="text-sm text-slate-300">
+            <span className="text-sm text-[var(--text-secondary)]">
               Network egress
-              <span className="block text-xs text-slate-500 mt-0.5">
+              <span className="block text-xs text-[var(--text-muted)] mt-0.5">
                 Attach to the host&rsquo;s default NAT network for outbound internet access. Shares that network with
                 regular VMs on this host — no per-sprite isolation.
               </span>
             </span>
           </label>
         </div>
-        <div className="p-4 border-t border-slate-700 flex items-center justify-end gap-2">
+        <div className="p-4 border-t border-[var(--apple-hairline)] flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+            className="px-3 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] transition"
           >
             Cancel
           </button>
@@ -394,7 +395,7 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
             type="button"
             disabled={!goldenImage || submitting}
             onClick={handleSubmit}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition"
+            className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? 'Creating…' : 'Create'}
           </button>

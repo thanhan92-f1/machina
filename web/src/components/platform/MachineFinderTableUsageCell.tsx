@@ -10,13 +10,13 @@ type Props = {
 }
 
 function MiniBar({ pct, tone }: { pct: number | null; tone: string }) {
-  if (pct == null) return <span className="text-slate-600 text-[10px]">—</span>
+  if (pct == null) return <span className="text-[var(--text-faint)] text-[10px]">—</span>
   return (
     <div className="flex items-center gap-1.5 min-w-[5.5rem]">
-      <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="flex-1 h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div className={`h-full ${tone}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
-      <span className="text-[10px] tabular-nums text-slate-500 w-8 text-right">{pct}%</span>
+      <span className="text-[10px] tabular-nums text-[var(--text-muted)] w-8 text-right">{pct}%</span>
     </div>
   )
 }
@@ -51,13 +51,13 @@ export default function MachineFinderTableUsageCell({ vmId, running, memoryMib }
   }, [vmId, running, memoryMib])
 
   if (!running) {
-    return <span className="text-slate-600 text-xs">—</span>
+    return <span className="text-[var(--text-faint)] text-xs">—</span>
   }
 
   return (
     <div className="space-y-1" data-testid={`vm-usage-${vmId}`}>
-      <MiniBar pct={cpuPct} tone="bg-sky-500/70" />
-      <MiniBar pct={memPct} tone="bg-violet-500/70" />
+      <MiniBar pct={cpuPct} tone="bg-[var(--accent)]/70" />
+      <MiniBar pct={memPct} tone="bg-[var(--accent)]" />
     </div>
   )
 }

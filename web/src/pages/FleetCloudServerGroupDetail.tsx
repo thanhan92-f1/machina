@@ -57,7 +57,7 @@ function FleetCloudServerGroupDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/server-groups" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/server-groups" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -65,24 +65,25 @@ function FleetCloudServerGroupDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/server-groups" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/server-groups" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Server groups
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Layers className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Layers className="w-7 h-7 text-[var(--accent)]" />
         {group.name}
       </h1>
-      <dl className="rounded-xl border border-slate-700 p-4 text-sm space-y-3">
-        <div><dt className="text-xs text-slate-500 uppercase">Policy</dt><dd className="text-slate-200 mt-1">anti-affinity</dd></div>
+      <dl className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm space-y-3">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Policy</dt><dd className="text-[var(--text-primary)] mt-1">anti-affinity</dd></div>
         <div>
-          <dt className="text-xs text-slate-500 uppercase">Members ({group.members.length})</dt>
-          <ul className="mt-1 font-mono text-xs text-slate-400 space-y-1">
+          <dt className="text-xs text-[var(--text-muted)] uppercase">Members ({group.members.length})</dt>
+          <ul className="mt-1 font-mono text-xs text-[var(--text-muted)] space-y-1">
             {group.members.map((m) => (
               <li key={m.id} className="flex items-center gap-2">
-                <Link to={`/fleet-cloud/instances/${m.id}`} className="text-sky-400 hover:underline">{m.name}</Link>
+                <Link to={`/fleet-cloud/instances/${m.id}`} className="text-[var(--accent)] hover:underline">{m.name}</Link>
                 <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
                   onClick={async () => {
                     try {

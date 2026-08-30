@@ -51,7 +51,7 @@ export default function VmWizardReadinessBanner({
 
   if (loading) {
     return (
-      <p className="text-sm text-slate-500 flex items-center gap-2">
+      <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin" /> Checking template readiness…
       </p>
     )
@@ -110,7 +110,7 @@ export default function VmWizardReadinessBanner({
       </p>
       <p className="text-xs mt-1 opacity-90">{readiness.remediation}</p>
       {!readiness.disk_exists && (
-        <p className="text-xs mt-2 font-mono text-slate-400 break-all">{readiness.source_disk}</p>
+        <p className="text-xs mt-2 font-mono text-[var(--text-muted)] break-all">{readiness.source_disk}</p>
       )}
       {canPrefetch && templateName && templateVersion && (
         <button

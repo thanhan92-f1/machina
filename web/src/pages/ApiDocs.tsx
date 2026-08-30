@@ -23,7 +23,7 @@ interface OpenApiSpec {
 
 const METHOD_COLORS: Record<string, string> = {
   get: 'bg-green-600/20 text-green-400 border-green-600/30',
-  post: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
+  post: 'bg-blue-600/20 text-[var(--accent)] border-blue-600/30',
   put: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30',
   delete: 'bg-red-600/20 text-red-400 border-red-600/30',
   patch: 'bg-purple-600/20 text-purple-400 border-purple-600/30',
@@ -108,11 +108,12 @@ export default function ApiDocs() {
 
   return (
     <PageLayout
+      eyebrow="Developers"
       title={spec?.info.title}
       subtitle={
         spec ? (
           <>
-            <span className="text-slate-500">Version {spec.info.version}</span>
+            <span className="text-[var(--text-muted)]">Version {spec.info.version}</span>
             {spec.info.description && (
               <span className="block mt-2 max-w-4xl leading-relaxed">{spec.info.description}</span>
             )}
@@ -124,18 +125,18 @@ export default function ApiDocs() {
       contentClassName="space-y-6"
     >
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
         <input
           type="text"
           aria-label="Search API endpoints"
           placeholder="Search endpoints by path, method, or description..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className={`w-full pl-10 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-200 ${search ? 'pr-8' : 'pr-4'}`}
+          className={`w-full pl-10 py-2.5 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] ${search ? 'pr-8' : 'pr-4'}`}
         />
         {search && (
           <button type="button" aria-label="Clear search" onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -148,10 +149,10 @@ export default function ApiDocs() {
               key={tag}
               type="button"
               onClick={() => setSearch(tag)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition ${
                 search.toLowerCase() === tag.toLowerCase()
-                  ? 'bg-sky-600/30 border-sky-500/50 text-sky-200'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  ? 'bg-[var(--accent)]/20 border-[var(--accent)]/50 text-white'
+                  : 'bg-[var(--apple-fill-tertiary)] border-[var(--apple-hairline)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--apple-hairline)]'
               }`}
             >
               {tag}
@@ -161,7 +162,7 @@ export default function ApiDocs() {
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="px-2.5 py-1 rounded-lg text-xs text-slate-500 hover:text-slate-300"
+              className="px-2.5 py-1 rounded-lg text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             >
               Clear
             </button>
@@ -169,22 +170,22 @@ export default function ApiDocs() {
         </div>
       )}
 
-      <div className="text-xs text-slate-500">{filtered.length} of {endpoints.length} endpoints</div>
+      <div className="text-xs text-[var(--text-muted)]">{filtered.length} of {endpoints.length} endpoints</div>
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 divide-y divide-slate-700/30 overflow-hidden">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 divide-y divide-[var(--apple-hairline)]/30 overflow-hidden">
         {filtered.map((ep, i) => {
           const key = `${ep.method}-${ep.path}`
           return (
             <div key={`${key}-${i}`}>
-              <div className="flex items-center gap-4 px-5 py-3 hover:bg-slate-700/20 transition">
-                <span className={`px-2.5 py-0.5 rounded text-xs font-bold border ${METHOD_COLORS[ep.method.toLowerCase()] || 'bg-slate-600/20 text-slate-400'}`} style={{ minWidth: '60px', textAlign: 'center' }}>
+              <div className="flex items-center gap-4 px-5 py-3 hover:bg-[var(--surface-hover)]/20 transition">
+                <span className={`px-2.5 py-0.5 rounded text-xs font-bold border ${METHOD_COLORS[ep.method.toLowerCase()] || 'bg-[var(--apple-fill-secondary)]/20 text-[var(--text-muted)]'}`} style={{ minWidth: '60px', textAlign: 'center' }}>
                   {ep.method}
                 </span>
-                <code className="text-sm font-mono text-blue-300 flex-shrink-0">{ep.path}</code>
-                <span className="text-sm text-slate-400 truncate">{ep.summary}</span>
+                <code className="text-sm font-mono text-[var(--accent)] flex-shrink-0">{ep.path}</code>
+                <span className="text-sm text-[var(--text-muted)] truncate">{ep.summary}</span>
                 <div className="flex gap-1 ml-auto flex-shrink-0">
                   {ep.tags.map((t) => (
-                    <span key={t} className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] text-slate-400">{t}</span>
+                    <span key={t} className="px-1.5 py-0.5 bg-[var(--surface-hover)] rounded text-[10px] text-[var(--text-muted)]">{t}</span>
                   ))}
                 </div>
                 <button
@@ -198,10 +199,10 @@ export default function ApiDocs() {
                       setTryResponse(null)
                     }
                   }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition flex-shrink-0 ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition flex-shrink-0 ${
                     tryEndpoint === key
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--surface-hover)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)]'
                   }`}
                 >
                   <Play className="w-3 h-3" />
@@ -209,18 +210,18 @@ export default function ApiDocs() {
                 </button>
               </div>
               {tryEndpoint === key && (
-                <div className="bg-slate-900 border-t border-slate-700/30 px-5 py-4 space-y-3">
+                <div className="bg-[var(--apple-surface)] border-t border-[var(--apple-hairline)]/30 px-5 py-4 space-y-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">URL</label>
-                    <input value={tryPath} onChange={e => setTryPath(e.target.value)} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-200 font-mono text-xs" />
+                    <label className="block text-xs text-[var(--text-muted)] mb-1">URL</label>
+                    <input value={tryPath} onChange={e => setTryPath(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] font-mono text-xs" />
                   </div>
                   {ep.method !== 'GET' && (
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Request Body (JSON)</label>
-                      <textarea value={tryBody} onChange={e => setTryBody(e.target.value)} rows={4} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-200 font-mono text-xs" placeholder='{"key": "value"}' />
+                      <label className="block text-xs text-[var(--text-muted)] mb-1">Request Body (JSON)</label>
+                      <textarea value={tryBody} onChange={e => setTryBody(e.target.value)} rows={4} className="w-full px-3 py-2 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] font-mono text-xs" placeholder='{"key": "value"}' />
                     </div>
                   )}
-                  <button onClick={() => tryIt(ep.method, tryPath, tryBody)} disabled={tryLoading} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg text-sm font-medium transition">
+                  <button onClick={() => tryIt(ep.method, tryPath, tryBody)} disabled={tryLoading} className="btn-primary text-sm disabled:opacity-50">
                     {tryLoading ? 'Sending...' : 'Send Request'}
                   </button>
                   {tryResponse && (
@@ -230,7 +231,7 @@ export default function ApiDocs() {
                           {tryResponse.status || 'Error'}
                         </span>
                       </div>
-                      <pre className="bg-slate-950 rounded-lg p-3 text-xs font-mono text-slate-300 overflow-auto max-h-64">{tryResponse.body}</pre>
+                      <pre className="bg-[var(--apple-surface)] rounded-lg p-3 text-xs font-mono text-[var(--text-secondary)] overflow-auto max-h-64">{tryResponse.body}</pre>
                     </div>
                   )}
                 </div>
@@ -239,7 +240,7 @@ export default function ApiDocs() {
           )
         })}
         {filtered.length === 0 && (
-          <div className="px-6 py-8 text-center text-slate-500">No endpoints match your search</div>
+          <div className="px-6 py-8 text-center text-[var(--text-muted)]">No endpoints match your search</div>
         )}
       </div>
     </PageLayout>

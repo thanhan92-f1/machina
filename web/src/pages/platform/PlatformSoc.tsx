@@ -300,6 +300,7 @@ export default function PlatformSoc() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="Security Operations Center"
       subtitle="Unified detection, hunting, ASM, and SIEM export"
       icon={<Shield className="w-5 h-5" />}
@@ -341,12 +342,12 @@ export default function PlatformSoc() {
           </div>
           <MacGlassPanel title="Recent events">
             {events.length === 0 ? (
-              <p className="text-sm text-slate-500 p-3">No SOC events yet — ingestion runs every 2 minutes.</p>
+              <p className="text-sm text-[var(--text-muted)] p-3">No SOC events yet — ingestion runs every 2 minutes.</p>
             ) : (
               <ul className="divide-y divide-white/5">
                 {events.slice(0, 12).map((e) => (
                   <li key={e.id} className="px-3 py-2 text-sm flex justify-between gap-2">
-                    <span className="text-slate-200 truncate">{e.summary}</span>
+                    <span className="text-[var(--text-primary)] truncate">{e.summary}</span>
                     <span className={`text-xs shrink-0 ${statusToneClass(e.severity === 'high' ? 'error' : 'neutral')}`}>
                       {e.source} · {e.severity}
                     </span>
@@ -362,7 +363,7 @@ export default function PlatformSoc() {
         <div className="grid gap-4 lg:grid-cols-2">
           <MacGlassPanel title="Alert queue">
             {alerts.length === 0 ? (
-              <p className="text-sm text-slate-500 p-3">No open alerts.</p>
+              <p className="text-sm text-[var(--text-muted)] p-3">No open alerts.</p>
             ) : (
               <ul className="divide-y divide-white/5">
                 {alerts.map((a) => (
@@ -370,13 +371,13 @@ export default function PlatformSoc() {
                     <button
                       type="button"
                       className={`w-full text-left px-3 py-3 flex flex-wrap items-center justify-between gap-2 ${
-                        selectedAlertId === a.id ? 'bg-sky-500/10' : 'hover:bg-white/[0.02]'
+                        selectedAlertId === a.id ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'
                       }`}
                       onClick={() => setSelectedAlertId(a.id)}
                     >
                       <div>
-                        <p className="font-medium text-sm text-slate-100">{a.title}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="font-medium text-sm text-[var(--text-primary)]">{a.title}</p>
+                        <p className="text-xs text-[var(--text-muted)]">
                           {a.severity} · {a.status} · {a.event_count} events
                           {a.assigned_to ? ` · ${a.assigned_to}` : ''}
                         </p>
@@ -398,7 +399,7 @@ export default function PlatformSoc() {
             <SocAlertDetailPanel alert={selectedAlert} onUpdated={() => void load()} />
           ) : (
             <MacGlassPanel title="Alert detail">
-              <p className="text-sm text-slate-500 p-3">Select an alert to view details.</p>
+              <p className="text-sm text-[var(--text-muted)] p-3">Select an alert to view details.</p>
             </MacGlassPanel>
           )}
         </div>
@@ -408,7 +409,7 @@ export default function PlatformSoc() {
         <MacGlassPanel title="Detection rules">
           <ul className="divide-y divide-white/5">
             {rules.length === 0 && (
-              <li className="px-3 py-6 text-sm text-slate-500 text-center">No detection rules configured yet.</li>
+              <li className="px-3 py-6 text-sm text-[var(--text-muted)] text-center">No detection rules configured yet.</li>
             )}
             {rules.map((r) => (
               <li key={r.id} className="px-3 py-3 flex flex-wrap items-center justify-between gap-2">
@@ -417,7 +418,7 @@ export default function PlatformSoc() {
                     {r.name}
                     {r.builtin && <span className={statusBadgeClasses('neutral')}>built-in</span>}
                   </p>
-                  <p className="text-xs text-slate-500">{r.description}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{r.description}</p>
                 </div>
                 <div className="flex gap-2">
                   <button type="button" className="btn-secondary text-xs" onClick={() => void runRuleTest(r.id)}>
@@ -449,7 +450,7 @@ export default function PlatformSoc() {
           </div>
           <MacGlassPanel title="Findings">
             {(asm?.open_port_findings ?? []).length === 0 ? (
-              <p className="text-sm text-slate-500 p-3">No high-risk exposure findings.</p>
+              <p className="text-sm text-[var(--text-muted)] p-3">No high-risk exposure findings.</p>
             ) : (
               <ul>
                 {(asm?.open_port_findings ?? []).map((f, i) => (
@@ -464,7 +465,7 @@ export default function PlatformSoc() {
           </MacGlassPanel>
           {asm?.recommendations?.length ? (
             <MacGlassPanel title="Recommendations">
-              <ul className="p-3 text-sm text-slate-300 space-y-1 list-disc list-inside">
+              <ul className="p-3 text-sm text-[var(--text-secondary)] space-y-1 list-disc list-inside">
                 {asm.recommendations.map((r) => (
                   <li key={r}>{r}</li>
                 ))}
@@ -492,7 +493,7 @@ export default function PlatformSoc() {
             <div className="space-y-4">
               <MacGlassPanel title="SOAR playbooks">
                 {playbooks.length === 0 ? (
-                  <p className="text-sm text-slate-500 p-3">No playbooks configured.</p>
+                  <p className="text-sm text-[var(--text-muted)] p-3">No playbooks configured.</p>
                 ) : (
                   <ul className="divide-y divide-white/5">
                     {playbooks.map((p) => (
@@ -500,7 +501,7 @@ export default function PlatformSoc() {
                         <button
                           type="button"
                           className={`w-full text-left px-3 py-3 ${
-                            selectedPlaybookId === p.id && !newPlaybook ? 'bg-sky-500/10' : 'hover:bg-white/[0.02]'
+                            selectedPlaybookId === p.id && !newPlaybook ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'
                           }`}
                           onClick={() => {
                             setSelectedPlaybookId(p.id)
@@ -508,14 +509,14 @@ export default function PlatformSoc() {
                             setPlaybookDetail(null)
                           }}
                         >
-                          <p className="font-medium text-sm text-slate-100 flex items-center gap-2">
+                          <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2">
                             {p.name}
                             <span className={statusBadgeClasses(p.enabled ? 'ok' : 'neutral')}>
                               {p.enabled ? 'enabled' : 'disabled'}
                             </span>
                           </p>
-                          <p className="text-xs text-slate-500 mt-1">{p.description}</p>
-                          <p className="text-[10px] text-slate-600 mt-1">
+                          <p className="text-xs text-[var(--text-muted)] mt-1">{p.description}</p>
+                          <p className="text-[10px] text-[var(--text-faint)] mt-1">
                             {(p.steps_json?.length ?? 0)} step(s) · min {(p.trigger_json?.min_severity as string) ?? 'high'}
                           </p>
                         </button>
@@ -526,12 +527,12 @@ export default function PlatformSoc() {
               </MacGlassPanel>
               <MacGlassPanel title="Recent runs">
                 {playbookRuns.length === 0 ? (
-                  <p className="text-sm text-slate-500 p-3">No playbook runs yet.</p>
+                  <p className="text-sm text-[var(--text-muted)] p-3">No playbook runs yet.</p>
                 ) : (
                   <ul className="divide-y divide-white/5">
                     {playbookRuns.map((r) => (
                       <li key={r.id} className="px-3 py-2 text-sm flex justify-between gap-2">
-                        <span className="text-slate-300 truncate">{r.playbook_id.slice(0, 8)}…</span>
+                        <span className="text-[var(--text-secondary)] truncate">{r.playbook_id.slice(0, 8)}…</span>
                         <span className={`text-xs shrink-0 ${statusToneClass(r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'error' : 'neutral')}`}>
                           {r.status}
                         </span>
@@ -590,7 +591,7 @@ export default function PlatformSoc() {
             )}
             <div className="p-3 space-y-3 max-w-xl">
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">HEC URL</span>
+                <span className="text-[var(--text-muted)] text-xs">HEC URL</span>
                 <input
                   className="input w-full mt-1 text-sm"
                   value={splunkUrl}
@@ -599,7 +600,7 @@ export default function PlatformSoc() {
                 />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">HEC token (leave blank to keep)</span>
+                <span className="text-[var(--text-muted)] text-xs">HEC token (leave blank to keep)</span>
                 <input
                   className="input w-full mt-1 text-sm"
                   type="password"
@@ -610,7 +611,7 @@ export default function PlatformSoc() {
                 />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Index</span>
+                <span className="text-[var(--text-muted)] text-xs">Index</span>
                 <input
                   className="input w-full mt-1 text-sm"
                   value={splunkIndex}
@@ -655,15 +656,15 @@ export default function PlatformSoc() {
             )}
             <div className="p-3 space-y-3 max-w-xl">
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Elasticsearch URL</span>
+                <span className="text-[var(--text-muted)] text-xs">Elasticsearch URL</span>
                 <input className="input w-full mt-1 text-sm" value={elasticUrl} onChange={(e) => setElasticUrl(e.target.value)} placeholder="https://elastic:9200" />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">API key (leave blank to keep)</span>
+                <span className="text-[var(--text-muted)] text-xs">API key (leave blank to keep)</span>
                 <input className="input w-full mt-1 text-sm" type="password" autoComplete="off" value={elasticKey} onChange={(e) => setElasticKey(e.target.value)} placeholder="••••••••" />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Index</span>
+                <span className="text-[var(--text-muted)] text-xs">Index</span>
                 <input className="input w-full mt-1 text-sm" value={elasticIndex} onChange={(e) => setElasticIndex(e.target.value)} />
               </label>
               <label className="flex items-center gap-2 text-sm">
@@ -685,27 +686,27 @@ export default function PlatformSoc() {
             )}
             <div className="p-3 space-y-3 max-w-xl">
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">DCE endpoint</span>
+                <span className="text-[var(--text-muted)] text-xs">DCE endpoint</span>
                 <input className="input w-full mt-1 text-sm" value={sentinelDce} onChange={(e) => setSentinelDce(e.target.value)} />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">DCR immutable ID</span>
+                <span className="text-[var(--text-muted)] text-xs">DCR immutable ID</span>
                 <input className="input w-full mt-1 text-sm" value={sentinelDcr} onChange={(e) => setSentinelDcr(e.target.value)} />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Stream name</span>
+                <span className="text-[var(--text-muted)] text-xs">Stream name</span>
                 <input className="input w-full mt-1 text-sm" value={sentinelStream} onChange={(e) => setSentinelStream(e.target.value)} />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Tenant ID</span>
+                <span className="text-[var(--text-muted)] text-xs">Tenant ID</span>
                 <input className="input w-full mt-1 text-sm" value={sentinelTenant} onChange={(e) => setSentinelTenant(e.target.value)} />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Client ID</span>
+                <span className="text-[var(--text-muted)] text-xs">Client ID</span>
                 <input className="input w-full mt-1 text-sm" value={sentinelClientId} onChange={(e) => setSentinelClientId(e.target.value)} />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Client secret (leave blank to keep)</span>
+                <span className="text-[var(--text-muted)] text-xs">Client secret (leave blank to keep)</span>
                 <input className="input w-full mt-1 text-sm" type="password" autoComplete="off" value={sentinelSecret} onChange={(e) => setSentinelSecret(e.target.value)} placeholder="••••••••" />
               </label>
               <label className="flex items-center gap-2 text-sm">
@@ -727,15 +728,15 @@ export default function PlatformSoc() {
             )}
             <div className="p-3 space-y-3 max-w-xl">
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">QRadar URL</span>
+                <span className="text-[var(--text-muted)] text-xs">QRadar URL</span>
                 <input className="input w-full mt-1 text-sm" value={qradarUrl} onChange={(e) => setQradarUrl(e.target.value)} />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">API token (leave blank to keep)</span>
+                <span className="text-[var(--text-muted)] text-xs">API token (leave blank to keep)</span>
                 <input className="input w-full mt-1 text-sm" type="password" autoComplete="off" value={qradarToken} onChange={(e) => setQradarToken(e.target.value)} placeholder="••••••••" />
               </label>
               <label className="block text-sm">
-                <span className="text-slate-400 text-xs">Log source ID</span>
+                <span className="text-[var(--text-muted)] text-xs">Log source ID</span>
                 <input className="input w-full mt-1 text-sm" value={qradarLogSource} onChange={(e) => setQradarLogSource(e.target.value)} />
               </label>
               <label className="flex items-center gap-2 text-sm">

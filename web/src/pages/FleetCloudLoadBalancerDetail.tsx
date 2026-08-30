@@ -81,7 +81,7 @@ function FleetCloudLoadBalancerDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/load-balancers" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/load-balancers" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -89,50 +89,51 @@ function FleetCloudLoadBalancerDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-4xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/load-balancers" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/load-balancers" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Load balancers
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
         <Scale className={`w-7 h-7 ${statusToneClass('ok')}`} /> {lb.name}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">Listener</dt><dd className="font-mono mt-1">{lb.protocol}/{lb.listener_port}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Status</dt><dd className="mt-1">{lb.status}</dd></div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Listener</dt><dd className="font-mono mt-1">{lb.protocol}/{lb.listener_port}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="mt-1">{lb.status}</dd></div>
         {lb.status_message && (
-          <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Status detail</dt><dd className="mt-1 text-amber-300">{lb.status_message}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Status detail</dt><dd className="mt-1 text-amber-300">{lb.status_message}</dd></div>
         )}
       </dl>
 
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Members</h2>
-        <p className="text-xs text-slate-500">
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Members</h2>
+        <p className="text-xs text-[var(--text-muted)]">
           Traffic to {lb.protocol}/{lb.listener_port} on this host is split across enabled members by weight
           (kernel-level, weighted-random DNAT — no active health checks yet; disable a member manually to pull it
           out of rotation).
         </p>
         <div className="flex flex-wrap gap-2 items-end">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">VM</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1">VM</label>
             <select aria-label="Member VM" value={memberVmId} onChange={(e) => setMemberVmId(e.target.value)}
-              className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm min-w-[12rem]">
+              className="input-field text-sm min-w-[12rem]">
               <option value="">VM…</option>
               {vms.map((v) => <option key={v.id} value={v.id}>{v.name}{v.guest_ip ? ` (${v.guest_ip})` : ''}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Port</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1">Port</label>
             <input aria-label="Member port" value={memberPort} onChange={(e) => setMemberPort(e.target.value)}
-              className="w-20 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
+              className="w-20 input-field text-sm" />
           </div>
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Weight</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1">Weight</label>
             <input aria-label="Member weight" value={memberWeight} onChange={(e) => setMemberWeight(e.target.value)}
-              className="w-16 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm" />
+              className="w-16 input-field text-sm" />
           </div>
-          <button type="button" className="px-2 py-1.5 rounded bg-emerald-700 text-white text-sm inline-flex items-center gap-1"
+          <button type="button" className="btn-primary text-sm inline-flex items-center gap-1"
             disabled={!memberVmId || !Number(memberPort)}
             onClick={async () => {
               try {
@@ -150,11 +151,11 @@ function FleetCloudLoadBalancerDetailContent() {
         </div>
 
         {members.length === 0 ? (
-          <p className="text-sm text-slate-500">No members yet — traffic to the listener port is dropped until at least one is added.</p>
+          <p className="text-sm text-[var(--text-muted)]">No members yet — traffic to the listener port is dropped until at least one is added.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
-            <table className="w-full text-sm" aria-label="Members">
-              <thead className="bg-slate-900/60 text-slate-400 text-left">
+          <div className="overflow-x-auto apple-surface rounded-2xl">
+            <table className="apple-table" aria-label="Members">
+              <thead className="bg-[var(--apple-surface)] text-[var(--text-muted)] text-left">
                 <tr>
                   <th scope="col" className="px-3 py-2">VM</th>
                   <th scope="col" className="px-3 py-2">Address</th>
@@ -165,7 +166,7 @@ function FleetCloudLoadBalancerDetailContent() {
               </thead>
               <tbody>
                 {members.map((m) => (
-                  <tr key={m.id} className="border-t border-slate-800">
+                  <tr key={m.id} className="border-t border-[var(--apple-hairline)]">
                     <td className="px-3 py-2">{m.vm_name}</td>
                     <td className="px-3 py-2 font-mono">{m.vm_ip ? `${m.vm_ip}:${m.port}` : <span className="text-amber-400">no guest IP yet</span>}</td>
                     <td className="px-3 py-2">{m.weight}</td>

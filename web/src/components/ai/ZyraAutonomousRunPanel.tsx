@@ -114,11 +114,11 @@ export default function ZyraAutonomousRunPanel() {
             <p className="font-medium text-orange-200 flex items-center gap-2">
               <Sparkles className="w-4 h-4" /> Plan ({steps.length} steps{plannedAgent ? ` · ${plannedAgent}` : ''})
             </p>
-            <ol className="list-decimal list-inside text-xs text-slate-400 space-y-1">
+            <ol className="list-decimal list-inside text-xs text-[var(--text-muted)] space-y-1">
               {steps.map((s) => (
                 <li key={s.title}>
-                  <span className="text-slate-300">{s.title}</span>
-                  {s.detail && <span className="text-slate-500"> — {s.detail}</span>}
+                  <span className="text-[var(--text-secondary)]">{s.title}</span>
+                  {s.detail && <span className="text-[var(--text-muted)]"> — {s.detail}</span>}
                 </li>
               ))}
             </ol>

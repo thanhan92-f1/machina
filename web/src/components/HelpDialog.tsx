@@ -27,7 +27,7 @@ const TABS: { id: HelpTab; label: string; icon: React.ReactNode }[] = [
 
 function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-xs font-mono text-slate-300 min-w-[1.5rem] text-center">
+    <kbd className="px-1.5 py-0.5 bg-[var(--surface-hover)] border border-[var(--apple-hairline)] rounded text-xs font-mono text-[var(--text-secondary)] min-w-[1.5rem] text-center">
       {children}
     </kbd>
   )
@@ -93,11 +93,11 @@ export default function HelpDialog({ open, tab, onClose, onTabChange }: HelpDial
               <div className="space-y-3">
                 {helpShortcuts.map((s) => (
                   <div key={s.description} className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-slate-300">{s.description}</span>
+                    <span className="text-sm text-[var(--text-secondary)]">{s.description}</span>
                     <div className="flex items-center gap-1 shrink-0">
                       {s.keys.map((k, i) => (
                         <span key={`${s.description}-${k}-${i}`} className="flex items-center gap-1">
-                          {i > 0 && <span className="text-slate-600 text-xs">+</span>}
+                          {i > 0 && <span className="text-[var(--text-faint)] text-xs">+</span>}
                           <Kbd>{k}</Kbd>
                         </span>
                       ))}
@@ -105,9 +105,9 @@ export default function HelpDialog({ open, tab, onClose, onTabChange }: HelpDial
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-700/50">
+              <p className="text-xs text-[var(--text-muted)] mt-4 pt-3 border-t border-[var(--apple-hairline)]">
                 Shortcuts are disabled when typing in input fields. Open{' '}
-                <strong className="text-slate-400">Help → Platform</strong> for Zyvor Platform guidance.
+                <strong className="text-[var(--text-muted)]">Help → Platform</strong> for Zyvor Platform guidance.
               </p>
             </div>
           ) : tab === 'platform' ? (

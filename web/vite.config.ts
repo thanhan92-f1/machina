@@ -6,8 +6,23 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-/** Dev proxy → local daemon (HTTPS + self-signed cert from install.sh). */
-const daemonTarget = 'https://localhost:5092'
+/** Dev proxy → daemon (HTTPS + self-signed). Override: MACHINA_DAEMON_URL=https://host:5092 */
+const daemonTarget = process.env.MACHINA_DAEMON_URL || 'https://localhost:5092'
+
+/**
+ * TLS daemons set `Secure` on `machina_session`. Browsers drop that cookie on
+ * plain http://localhost Vite, so login looks successful but never sticks.
+ */
+function stripSecureCookies(proxy: { on: (event: string, fn: (...args: unknown[]) => void) => void }) {
+  proxy.on('proxyRes', (proxyRes: { headers: Record<string, string | string[] | undefined> }) => {
+    const raw = proxyRes.headers['set-cookie']
+    if (!raw) return
+    const list = Array.isArray(raw) ? raw : [raw]
+    proxyRes.headers['set-cookie'] = list.map((c) =>
+      c.replace(/;\s*Secure/gi, '').replace(/;\s*SameSite=Strict/gi, '; SameSite=Lax'),
+    )
+  })
+}
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -25,11 +40,13 @@ export default defineConfig({
         target: daemonTarget,
         changeOrigin: true,
         secure: false,
+        configure: stripSecureCookies,
       },
       '/ws': {
         target: daemonTarget,
         ws: true,
         secure: false,
+        configure: stripSecureCookies,
       },
     },
   },

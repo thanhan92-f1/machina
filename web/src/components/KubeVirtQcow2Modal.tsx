@@ -165,7 +165,7 @@ function ModalShell({
   return (
     <div
       ref={panelRef}
-      className="bg-slate-900 border border-slate-600 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+      className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
       onClick={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
@@ -173,9 +173,9 @@ function ModalShell({
     >
       <ModalHeader onClose={onClose} />
       <div className="p-4 overflow-y-auto space-y-4 text-sm">
-        <p className="text-slate-300 leading-relaxed">
-          CDI <code className="text-slate-200">image-upload</code> + KubeVirt VM for{' '}
-          <code className="text-slate-200 break-all">{qcow2Path}</code>. Guest profiles follow hyper2kvm: Linux (SSH
+        <p className="text-[var(--text-secondary)] leading-relaxed">
+          CDI <code className="text-[var(--text-primary)]">image-upload</code> + KubeVirt VM for{' '}
+          <code className="text-[var(--text-primary)] break-all">{qcow2Path}</code>. Guest profiles follow hyper2kvm: Linux (SSH
           :22); Windows (RDP :3389, virtio-win CDROM).
         </p>
         {children}
@@ -186,12 +186,12 @@ function ModalShell({
 
 function ModalHeader({ onClose }: { onClose: () => void }) {
   return (
-    <div className="p-4 border-b border-slate-700 flex items-center justify-between gap-2">
-      <h2 id="kv-qcow2-title" className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-        <Boxes className="w-5 h-5 text-violet-400" />
+    <div className="p-4 border-b border-[var(--apple-hairline)] flex items-center justify-between gap-2">
+      <h2 id="kv-qcow2-title" className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+        <Boxes className="w-5 h-5 text-[var(--accent)]" />
         Upload qcow2 to Kubernetes
       </h2>
-      <button type="button" className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400" onClick={onClose} aria-label="Close">
+      <button type="button" className="p-1.5 rounded-lg hover:bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]" onClick={onClose} aria-label="Close">
         <X className="w-4 h-4" />
       </button>
     </div>
@@ -199,7 +199,7 @@ function ModalHeader({ onClose }: { onClose: () => void }) {
 }
 
 function FieldLabel({ children }: { children: ReactNode }) {
-  return <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">{children}</div>
+  return <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">{children}</div>
 }
 
 function GuestOsFields({
@@ -214,7 +214,7 @@ function GuestOsFields({
   onPostBundle: () => void
 }) {
   return (
-    <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3 space-y-3">
+    <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-3">
       <FieldLabel>Guest OS</FieldLabel>
       <select
         aria-label="Guest OS"
@@ -227,10 +227,10 @@ function GuestOsFields({
         <option value="windows">Windows</option>
       </select>
       <div className="flex flex-wrap gap-3">
-        <button type="button" className="text-xs text-violet-400 hover:underline" onClick={onRegenerate}>
+        <button type="button" className="text-xs text-[var(--accent)] hover:underline" onClick={onRegenerate}>
           Regenerate YAML (GET)
         </button>
-        <button type="button" data-testid="kubevirt-post-bundle" className="text-xs text-cyan-400 hover:underline" onClick={onPostBundle}>
+        <button type="button" data-testid="kubevirt-post-bundle" className="text-xs text-[var(--accent)] hover:underline" onClick={onPostBundle}>
           Rebuild bundle (POST)
         </button>
       </div>
@@ -251,7 +251,7 @@ function OverrideFields(props: {
   setVirtioCdrom: (v: boolean | null) => void
 }) {
   return (
-    <div className="rounded-lg border border-slate-700/60 bg-slate-950/40 p-3 space-y-2">
+    <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-2">
       <FieldLabel>Overrides (optional)</FieldLabel>
       <div className="grid gap-2 sm:grid-cols-2">
         <input
@@ -290,7 +290,7 @@ function OverrideFields(props: {
           className="input-field text-sm"
         />
       </div>
-      <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+      <label className="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer">
         <input
           type="checkbox"
           checked={props.virtioCdrom === true}
@@ -305,7 +305,7 @@ function OverrideFields(props: {
 function Spinner() {
   return (
     <div role="status" aria-label="Loading" className="flex justify-center py-8">
-      <Loader2 className="w-6 h-6 animate-spin text-violet-400" aria-hidden="true" />
+      <Loader2 className="w-6 h-6 animate-spin text-[var(--accent)]" aria-hidden="true" />
     </div>
   )
 }
@@ -325,13 +325,13 @@ function BundleView({
 }) {
   return (
     <>
-      <p className="text-xs text-slate-400">
-        Profile <span className="text-slate-200">{bundle.guest_os ?? 'linux'}</span> · DataVolume{' '}
-        <code className="text-slate-300">{bundle.datavolume_name}</code> · VM{' '}
-        <code className="text-slate-300">{bundle.virtual_machine_name}</code> · namespace{' '}
-        <code className="text-slate-300">{bundle.namespace}</code>
+      <p className="text-xs text-[var(--text-muted)]">
+        Profile <span className="text-[var(--text-primary)]">{bundle.guest_os ?? 'linux'}</span> · DataVolume{' '}
+        <code className="text-[var(--text-secondary)]">{bundle.datavolume_name}</code> · VM{' '}
+        <code className="text-[var(--text-secondary)]">{bundle.virtual_machine_name}</code> · namespace{' '}
+        <code className="text-[var(--text-secondary)]">{bundle.namespace}</code>
         {bundle.cluster_exec_enabled ? (
-          <span className="text-violet-300"> · daemon exec enabled</span>
+          <span className="text-[var(--link)]"> · daemon exec enabled</span>
         ) : (
           <span className={statusToneClass('warn')}> · enable [kubevirt] exec_enabled for one-click upload</span>
         )}
@@ -350,7 +350,7 @@ function BundleView({
         </div>
       )}
       {execLast && (
-        <pre className="text-[10px] font-mono text-slate-200 bg-black/40 border border-slate-800 rounded-lg p-2 max-h-28 overflow-y-auto whitespace-pre-wrap">
+        <pre className="text-[10px] font-mono text-[var(--text-primary)] bg-black/40 border border-[var(--apple-hairline)] rounded-lg p-2 max-h-28 overflow-y-auto whitespace-pre-wrap">
           exit {execLast.exit_code}
           {'\n'}
           {execLast.stderr}
@@ -372,7 +372,7 @@ function BundleView({
           }}
         />
       </div>
-      <pre className="text-[11px] font-mono text-slate-200 bg-black/40 border border-slate-800 rounded-lg p-3 max-h-[35vh] overflow-y-auto whitespace-pre-wrap">
+      <pre className="text-[11px] font-mono text-[var(--text-primary)] bg-black/40 border border-[var(--apple-hairline)] rounded-lg p-3 max-h-[35vh] overflow-y-auto whitespace-pre-wrap">
         {bundle.yaml}
       </pre>
     </>
@@ -395,7 +395,7 @@ function ExecBtn({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-violet-100"
+      className="text-xs px-2 py-1 rounded bg-violet-900/80 hover:bg-violet-800 disabled:opacity-50 text-[var(--text-primary)]"
     >
       {busy ? '…' : children}
     </button>
@@ -406,7 +406,7 @@ function CopyBtn({ onClick, label = 'Copy YAML' }: { onClick: () => void; label?
   return (
     <button
       type="button"
-      className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 inline-flex items-center gap-1"
+      className="text-xs px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] inline-flex items-center gap-1"
       onClick={onClick}
     >
       <Copy className="w-3 h-3" />

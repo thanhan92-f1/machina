@@ -21,13 +21,13 @@ export default function MigrationHeroZone({ state, compact }: Props) {
   return (
     <section
       className={`machine-finder-migrate-zone rounded-2xl border border-dashed transition ${
-        dragVmId ? 'border-sky-400/50 bg-sky-500/5' : 'border-white/[0.12] bg-slate-900/30'
+        dragVmId ? 'border-[var(--accent)]/50 bg-[var(--plasma-tint)]' : 'border-[var(--apple-hairline)] bg-[var(--apple-surface)]'
       } ${compact ? 'p-3' : 'p-5'}`}
       data-testid="machine-finder-migrate-zone"
     >
       <div className="flex items-center gap-2 mb-3">
-        <Server className="w-4 h-4 text-sky-400" />
-        <h3 className="text-sm font-medium text-slate-200">
+        <Server className="w-4 h-4 text-[var(--link)]" />
+        <h3 className="text-sm font-medium text-[var(--text-primary)]">
           {dragVmId ? 'Drop machine on a destination host' : 'Migration zone — drag a machine here'}
         </h3>
       </div>
@@ -69,11 +69,11 @@ function HostDropTarget({
       onDragLeave={onDragLeave}
       onDrop={(e) => { e.preventDefault(); onDrop() }}
       className={`rounded-xl border p-3 text-sm transition ${
-        active ? 'border-blue-500 bg-blue-500/15 scale-[1.02]' : 'border-white/[0.06] bg-slate-950/40'
+        active ? 'border-[var(--accent)] bg-[var(--plasma-tint)] scale-[1.02]' : 'border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)]'
       }`}
     >
-      <p className="font-medium truncate">{host.hostname}</p>
-      <p className="text-xs text-slate-500">{host.state} · {vmCount} VMs</p>
+      <p className="font-medium truncate text-[var(--text-primary)]">{host.hostname}</p>
+      <p className="text-xs text-[var(--text-muted)]">{host.state} · {vmCount} VMs</p>
     </div>
   )
 }

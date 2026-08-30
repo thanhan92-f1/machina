@@ -135,6 +135,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       loading={loading && providers.length === 0}
@@ -142,7 +143,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'AI Providers'}
       subtitle={embedded ? undefined : 'Multi-LLM BYOK — OpenAI, Anthropic, Gemini, Ollama, vLLM, and custom endpoints'}
-      icon={embedded ? undefined : <Bot className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Bot className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -189,7 +190,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
               <button type="button" className="font-medium text-left hover:text-orange-300" onClick={() => setSelected(p.id)}>
                 {p.name} {p.is_default ? '· default' : ''}
               </button>
-              <span className="text-xs text-slate-500">{p.kind}</span>
+              <span className="text-xs text-[var(--text-muted)]">{p.kind}</span>
               {p.api_key_configured ? <span className="text-xs text-emerald-400">key ok</span> : <span className="text-xs text-amber-400">no key</span>}
               <button type="button" className="btn-secondary text-xs ml-auto" onClick={async () => {
                 try {
@@ -209,10 +210,10 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
               <button type="button" className="btn-secondary text-xs" onClick={() => setDeleteProviderId(p.id)}>Delete</button>
             </div>
           ))}
-          {providers.length === 0 && <p className="text-sm text-slate-500">No providers yet — add one above or configure legacy Zyra AI in General.</p>}
+          {providers.length === 0 && <p className="text-sm text-[var(--text-muted)]">No providers yet — add one above or configure legacy Zyra AI in General.</p>}
         </div>
         {selected && models.length > 0 && (
-          <div className="mt-4 text-xs text-slate-400">
+          <div className="mt-4 text-xs text-[var(--text-muted)]">
             Models: {models.map((m) => m.display_name).join(', ')}
           </div>
         )}
@@ -225,7 +226,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
             const modelsForRule = draft.provider_id ? (ruleModels[draft.provider_id] ?? []) : []
             return (
               <div key={tc} className="grid gap-2 sm:grid-cols-[10rem_1fr_1fr_auto_auto] items-center text-sm border border-white/[0.06] rounded-lg p-2">
-                <span className="font-medium text-slate-200">{TASK_CLASS_LABELS[tc]}</span>
+                <span className="font-medium text-[var(--text-primary)]">{TASK_CLASS_LABELS[tc]}</span>
                 <select
                   aria-label="Provider"
                   className="input text-xs"
@@ -249,7 +250,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
                   <option value="">Any model</option>
                   {modelsForRule.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
                 </select>
-                <label className="flex items-center gap-1 text-xs text-slate-400">
+                <label className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                   <input
                     type="checkbox"
                     checked={draft.enabled}
@@ -262,7 +263,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
             )
           })}
           {rules.length === 0 && providers.length > 0 && (
-            <p className="text-xs text-slate-500">No custom rules yet — defaults apply until you save a row.</p>
+            <p className="text-xs text-[var(--text-muted)]">No custom rules yet — defaults apply until you save a row.</p>
           )}
         </div>
       </MacGlassPanel>

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  Boxes,
   Activity,
   Bell,
   FileBarChart,
@@ -57,7 +56,6 @@ const ICON_BY_PATH: Record<string, LucideIcon> = {
   '/platform/maintenance': Download,
   '/platform/notifications': Bell,
   '/platform/zyra': Sparkles,
-  '/platform/integrations': Boxes,
   '/platform/infrastructure': Server,
   '/platform/workloads': Monitor,
   '/platform/administration': Settings,
@@ -80,7 +78,6 @@ const LABEL_BY_PATH: Record<string, string> = {
   '/platform/topology': 'Topology',
   '/platform/maintenance': 'Updates',
   '/platform/notifications': 'Alerts',
-  '/platform/integrations': 'Apps',
   '/platform/infrastructure': 'Infrastructure',
   '/platform/workloads': 'Workloads',
   '/platform/administration': 'Admin',

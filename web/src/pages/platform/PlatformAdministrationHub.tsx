@@ -17,12 +17,12 @@ function NavCard({ to, icon, title, subtitle }: NavCardProps) {
       to={to}
       className="group flex items-start gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5 transition hover:border-white/[0.16] hover:bg-white/[0.07]"
     >
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] text-slate-300 group-hover:text-white">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
         {icon}
       </span>
       <div>
-        <div className="text-sm font-semibold text-slate-100 group-hover:text-white">{title}</div>
-        <div className="mt-0.5 text-xs text-slate-500">{subtitle}</div>
+        <div className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--text-primary)]">{title}</div>
+        <div className="mt-0.5 text-xs text-[var(--text-muted)]">{subtitle}</div>
       </div>
     </Link>
   )
@@ -31,9 +31,10 @@ function NavCard({ to, icon, title, subtitle }: NavCardProps) {
 export default function PlatformAdministrationHub() {
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       title="Administration"
       subtitle="Users, access control, and platform configuration"
-      icon={<LayoutGrid className="w-6 h-6 text-slate-400" />}
+      icon={<LayoutGrid className="w-6 h-6 text-[var(--text-muted)]" />}
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <NavCard to="/platform/settings" icon={<Settings className="w-5 h-5" />} title="Settings" subtitle="Platform and integrations configuration" />

@@ -70,13 +70,13 @@ function nodePlaneUi(plane: string | undefined): { label: string; title: string;
         label: 'Control plane',
         title:
           'Has node-role.kubernetes.io/control-plane or /master (API/etcd scheduling).',
-        className: 'bg-violet-500/20 text-violet-100 border-violet-500/40',
+        className: 'bg-violet-500/20 text-[var(--text-primary)] border-[var(--accent)]/40',
       }
     case 'worker':
       return {
         label: 'Data plane',
         title: 'Worker role only — primary workload / pod scheduling pool.',
-        className: 'bg-cyan-500/15 text-cyan-100 border-cyan-500/35',
+        className: 'bg-[var(--accent)]/15 text-[var(--text-primary)] border-[var(--accent)]/40',
       }
     case 'mixed':
       return {
@@ -89,7 +89,7 @@ function nodePlaneUi(plane: string | undefined): { label: string; title: string;
       return {
         label: 'Unknown',
         title: 'Could not infer from node-role labels (expect control-plane, master, or worker).',
-        className: 'bg-slate-600/50 text-slate-200 border-slate-500/40',
+        className: 'bg-[var(--apple-fill-secondary)]/50 text-[var(--text-primary)] border-[var(--apple-hairline)]',
       }
   }
 }
@@ -241,7 +241,7 @@ function PressureChips({ n }: { n: K8sNodeInfo }) {
           className={`px-1 rounded text-[10px] font-bold border ${
             c.on
               ? `${statusBadgeClasses('error')} ${statusBorderClass('error')}`
-              : 'bg-slate-800/80 text-slate-500 border-slate-600/50'
+              : 'bg-[var(--apple-fill-tertiary)]/80 text-[var(--text-muted)] border-[var(--apple-hairline)]/50'
           }`}
         >
           {c.k}
@@ -253,23 +253,23 @@ function PressureChips({ n }: { n: K8sNodeInfo }) {
 
 function RollupStrip({ title, r }: { title: string; r: K8sPlaneRollup }) {
   return (
-    <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 px-4 py-3">
-      <div className="text-xs text-slate-500 mb-2">{title}</div>
+    <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] px-4 py-3">
+      <div className="text-xs text-[var(--text-muted)] mb-2">{title}</div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
         <div>
-          <span className="text-slate-500 text-xs">Nodes</span>
-          <div className="font-semibold text-white">{r.node_count}</div>
-          <div className="text-[10px] text-slate-500">{r.ready_node_count} ready</div>
+          <span className="text-[var(--text-muted)] text-xs">Nodes</span>
+          <div className="font-semibold text-[var(--text-primary)]">{r.node_count}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">{r.ready_node_count} ready</div>
         </div>
         <div>
-          <span className="text-slate-500 text-xs">CPU cap / alloc</span>
-          <div className="text-slate-200 font-mono text-xs">
+          <span className="text-[var(--text-muted)] text-xs">CPU cap / alloc</span>
+          <div className="text-[var(--text-primary)] font-mono text-xs">
             {fmtMilliCpu(r.cpu_capacity_millicores)} / {fmtMilliCpu(r.cpu_allocatable_millicores)}
           </div>
         </div>
         <div className="col-span-2 sm:col-span-1">
-          <span className="text-slate-500 text-xs">Memory cap / alloc</span>
-          <div className="text-slate-200 font-mono text-xs">
+          <span className="text-[var(--text-muted)] text-xs">Memory cap / alloc</span>
+          <div className="text-[var(--text-primary)] font-mono text-xs">
             {formatBytes(Math.max(0, r.memory_capacity_bytes))} /{' '}
             {formatBytes(Math.max(0, r.memory_allocatable_bytes))}
           </div>
@@ -572,6 +572,7 @@ export default function K8sOverviewPage() {
 
   return (
     <PageLayout
+      eyebrow="Kubernetes"
       title="Kubernetes Cluster"
       subtitle="Auto-detects distro (k3s, RKE2, cloud, kind, …), host agents, and expands resource counts. Safe kubectl node actions below."
       icon={<Server className={`w-6 h-6 ${statusToneClass('info')}`} />}
@@ -582,7 +583,7 @@ export default function K8sOverviewPage() {
               <Link to="/platform" className="px-3 py-2 rounded-lg text-xs font-medium border border-orange-500/40 text-orange-200 hover:bg-orange-500/10 inline-flex items-center gap-1.5">
                 <LayoutGrid className="w-3.5 h-3.5" /> Platform
               </Link>
-              <Link to="/platform/integrations" className="px-3 py-2 rounded-lg text-xs font-medium border border-slate-600 text-slate-300 hover:bg-slate-800 inline-flex items-center gap-1.5">
+              <Link to="/platform/settings?section=integrations" className="px-3 py-2 rounded-lg text-xs font-medium border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] inline-flex items-center gap-1.5">
                 <Puzzle className="w-3.5 h-3.5" /> Integrations
               </Link>
             </>
@@ -591,7 +592,7 @@ export default function K8sOverviewPage() {
             aria-label="kubectl context"
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 max-w-[18rem]"
+            className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] max-w-[18rem]"
             title="kubectl --context"
           >
             <option value="">Default kubeconfig context</option>
@@ -604,11 +605,11 @@ export default function K8sOverviewPage() {
           <button
             type="button"
             onClick={() => void exportAuditJson()}
-            className="px-3 py-2 rounded-lg text-xs font-medium bg-slate-700/80 border border-slate-600 text-slate-100 hover:bg-slate-600/80"
+            className="px-3 py-2 rounded-lg text-xs font-medium bg-[var(--surface-hover)]/80 border border-[var(--apple-hairline)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]/80"
           >
             Audit JSON
           </button>
-          <button onClick={() => void load(true)} className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Refresh">
+          <button onClick={() => void load(true)} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Refresh">
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </>
@@ -624,30 +625,30 @@ export default function K8sOverviewPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-violet-500/25 bg-violet-950/20 px-4 py-3 text-sm text-violet-100/90">
+      <div className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-4 py-3 text-sm text-[var(--text-primary)]/90">
         Tetragon + PacketWolf sensors enrich K8s node events with namespace/pod/container metadata.{' '}
-        <Link to="/platform/zeus/security" className="text-violet-300 underline">Open Security Center</Link>
+        <Link to="/platform/zeus/security" className="text-[var(--link)] underline">Open Security Center</Link>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {counts.map((c) => (
           <div
             key={c.label}
-            className="bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3"
+            className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl px-4 py-3"
             data-testid={c.label === 'Live API nodes' ? 'k8s-live-nodes-stat' : undefined}
           >
-            <div className="text-xs text-slate-400">{c.label}</div>
-            <div className="text-2xl font-semibold text-white">{c.value}</div>
+            <div className="text-xs text-[var(--text-muted)]">{c.label}</div>
+            <div className="text-2xl font-semibold text-[var(--text-primary)]">{c.value}</div>
           </div>
         ))}
       </div>
 
       {k8sMetrics && (
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-3">
+        <div className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl p-5 space-y-3">
           <div>
-            <h2 className="text-lg font-semibold text-white">Live utilization (metrics-server)</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              From <code className="text-slate-300">kubectl top</code>. Install metrics-server if empty.
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Live utilization (metrics-server)</h2>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              From <code className="text-[var(--text-secondary)]">kubectl top</code>. Install metrics-server if empty.
             </p>
           </div>
           {!k8sMetrics.metrics_available && (
@@ -658,12 +659,12 @@ export default function K8sOverviewPage() {
           {k8sMetrics.metrics_available && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
               <div>
-                <h3 className="text-xs font-medium text-slate-400 uppercase mb-2">Nodes</h3>
-                <ul className="space-y-1 text-slate-200">
+                <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase mb-2">Nodes</h3>
+                <ul className="space-y-1 text-[var(--text-primary)]">
                   {k8sMetrics.nodes_top.slice(0, 12).map((row) => (
                     <li key={row.name} className="flex justify-between gap-2 font-mono text-xs">
                       <span>{row.name}</span>
-                      <span className="text-slate-400">
+                      <span className="text-[var(--text-muted)]">
                         {row.cpu} ({row.cpu_percent}) · {row.memory} ({row.memory_percent})
                       </span>
                     </li>
@@ -671,12 +672,12 @@ export default function K8sOverviewPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-xs font-medium text-slate-400 uppercase mb-2">Pods (top 12)</h3>
-                <ul className="space-y-1 text-slate-200">
+                <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase mb-2">Pods (top 12)</h3>
+                <ul className="space-y-1 text-[var(--text-primary)]">
                   {k8sMetrics.pods_top.slice(0, 12).map((row) => (
                     <li key={row.name} className="flex justify-between gap-2 font-mono text-xs">
                       <span className="truncate">{row.name}</span>
-                      <span className="text-slate-400 shrink-0">
+                      <span className="text-[var(--text-muted)] shrink-0">
                         {row.cpu} · {row.memory}
                       </span>
                     </li>
@@ -689,10 +690,10 @@ export default function K8sOverviewPage() {
       )}
 
       {clusterInventory && (
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-4">
+        <div className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl p-5 space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Cluster hardware inventory</h2>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">{clusterInventory.disclaimer}</p>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Cluster hardware inventory</h2>
+            <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">{clusterInventory.disclaimer}</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <RollupStrip title="All nodes (each counted once)" r={clusterInventory.totals_all_nodes} />
@@ -706,8 +707,8 @@ export default function K8sOverviewPage() {
             />
           </div>
           {Object.keys(clusterInventory.by_plane).length > 0 && (
-            <details className="rounded-lg border border-slate-700/40 bg-slate-900/30">
-              <summary className="cursor-pointer px-3 py-2 text-xs text-slate-400 hover:text-slate-300">
+            <details className="rounded-lg border border-[var(--apple-hairline)]/40 bg-[var(--apple-fill-tertiary)]">
+              <summary className="cursor-pointer px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 By segment (each node appears in exactly one bucket)
               </summary>
               <div className="px-3 pb-3 grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -718,8 +719,8 @@ export default function K8sOverviewPage() {
             </details>
           )}
 
-          <div className="rounded-xl border border-slate-700/40 bg-slate-900/35 px-4 py-3 space-y-2">
-              <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+          <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-surface)]/35 px-4 py-3 space-y-2">
+              <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
                 API server &amp; control-plane health probes
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
@@ -736,7 +737,7 @@ export default function K8sOverviewPage() {
                   readyz {clusterInventory?.cluster_readyz_ok ? 'ok' : 'fail'}
                 </span>
                 {clusterInventory?.apiserver_git_version && (
-                  <span className="px-2 py-1 rounded-md bg-slate-800 border border-slate-600 text-slate-200">
+                  <span className="px-2 py-1 rounded-md bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] text-[var(--text-primary)]">
                     API {clusterInventory.apiserver_major_minor || '—'} ({clusterInventory.apiserver_git_version})
                   </span>
                 )}
@@ -750,12 +751,12 @@ export default function K8sOverviewPage() {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
+              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
                 livez/readyz use aggregated API health checks (RBAC or endpoint availability may show fail even when workloads run).
                 Version skew compares kubelet vs API server minor only.
               </p>
               {(clusterInventory?.cluster_health_notes?.length ?? 0) > 0 && (
-                <ul className="text-[11px] text-slate-400 list-disc pl-5 space-y-0.5">
+                <ul className="text-[11px] text-[var(--text-muted)] list-disc pl-5 space-y-0.5">
                   {clusterInventory?.cluster_health_notes?.map((note) => (
                     <li key={note}>{note}</li>
                   ))}
@@ -771,15 +772,15 @@ export default function K8sOverviewPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {clusterInventory.topology_nodes_by_zone &&
                   Object.keys(clusterInventory.topology_nodes_by_zone).length > 0 && (
-                    <div className="rounded-xl border border-slate-700/40 bg-slate-900/30 px-3 py-2">
-                      <div className="text-xs text-slate-500 mb-2">Nodes by zone</div>
+                    <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-fill-tertiary)] px-3 py-2">
+                      <div className="text-xs text-[var(--text-muted)] mb-2">Nodes by zone</div>
                       <div className="flex flex-wrap gap-1.5">
                         {Object.entries(clusterInventory.topology_nodes_by_zone).map(([z, c]) => (
                           <span
                             key={z}
-                            className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-600/50 text-slate-200"
+                            className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--apple-fill-tertiary)]/80 border border-[var(--apple-hairline)]/50 text-[var(--text-primary)]"
                           >
-                            {z}: <span className="font-semibold text-white">{c}</span>
+                            {z}: <span className="font-semibold text-[var(--text-primary)]">{c}</span>
                           </span>
                         ))}
                       </div>
@@ -787,15 +788,15 @@ export default function K8sOverviewPage() {
                   )}
                 {clusterInventory.topology_nodes_by_region &&
                   Object.keys(clusterInventory.topology_nodes_by_region).length > 0 && (
-                    <div className="rounded-xl border border-slate-700/40 bg-slate-900/30 px-3 py-2">
-                      <div className="text-xs text-slate-500 mb-2">Nodes by region</div>
+                    <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-fill-tertiary)] px-3 py-2">
+                      <div className="text-xs text-[var(--text-muted)] mb-2">Nodes by region</div>
                       <div className="flex flex-wrap gap-1.5">
                         {Object.entries(clusterInventory.topology_nodes_by_region).map(([r, c]) => (
                           <span
                             key={r}
-                            className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-600/50 text-slate-200"
+                            className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--apple-fill-tertiary)]/80 border border-[var(--apple-hairline)]/50 text-[var(--text-primary)]"
                           >
-                            {r}: <span className="font-semibold text-white">{c}</span>
+                            {r}: <span className="font-semibold text-[var(--text-primary)]">{c}</span>
                           </span>
                         ))}
                       </div>
@@ -805,21 +806,21 @@ export default function K8sOverviewPage() {
             )}
 
           {clusterInventory?.taints_by_plane && Object.keys(clusterInventory.taints_by_plane).length > 0 && (
-            <div className="rounded-xl border border-slate-700/40 bg-slate-900/30 px-3 py-3">
-              <div className="text-xs text-slate-500 mb-2">
+            <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-fill-tertiary)] px-3 py-3">
+              <div className="text-xs text-[var(--text-muted)] mb-2">
                 Taints (NoSchedule / NoExecute) footprint by plane segment
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {Object.entries(clusterInventory.taints_by_plane).map(([plane, t]) => (
                   <div
                     key={plane}
-                    className="rounded-lg border border-slate-700/50 bg-slate-900/40 px-3 py-2 text-xs"
+                    className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-3 py-2 text-xs"
                   >
-                    <div className="text-slate-400 capitalize mb-1">{plane.replace(/_/g, ' ')}</div>
-                    <div className="text-slate-200">
-                      <span className="text-slate-500">nodes </span>
+                    <div className="text-[var(--text-muted)] capitalize mb-1">{plane.replace(/_/g, ' ')}</div>
+                    <div className="text-[var(--text-primary)]">
+                      <span className="text-[var(--text-muted)]">nodes </span>
                       {t.nodes_total}
-                      <span className="text-slate-500"> · with harsh taints </span>
+                      <span className="text-[var(--text-muted)]"> · with harsh taints </span>
                       <span className={statusToneClass('warn')}>{t.nodes_with_scheduling_taints}</span>
                     </div>
                   </div>
@@ -831,10 +832,10 @@ export default function K8sOverviewPage() {
           {clusterInventory &&
             ((clusterInventory.running_pods_total ?? 0) > 0 ||
               (clusterInventory.pending_pods_unscheduled ?? 0) > 0) && (
-              <div className="rounded-xl border border-slate-700/40 bg-slate-900/30 px-3 py-3 space-y-2">
-                <div className="text-xs text-slate-500">
+              <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-fill-tertiary)] px-3 py-3 space-y-2">
+                <div className="text-xs text-[var(--text-muted)]">
                   Running pods by plane (assigned node&apos;s role segment){' '}
-                  <span className="text-slate-600">
+                  <span className="text-[var(--text-faint)]">
                     · total running {clusterInventory.running_pods_total ?? 0}
                     {(clusterInventory.pending_pods_unscheduled ?? 0) > 0 && (
                       <>
@@ -849,7 +850,7 @@ export default function K8sOverviewPage() {
                     Object.entries(clusterInventory.running_pods_by_plane).map(([plane, c]) => (
                       <span
                         key={plane}
-                        className="text-[11px] px-2 py-0.5 rounded-md bg-cyan-950/40 border border-cyan-800/40 text-cyan-100"
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--accent-soft)] border border-[var(--accent)]/40 text-[var(--text-primary)]"
                       >
                         {planeSegmentRollupTitle(plane)}: <span className="font-semibold">{c}</span>
                       </span>
@@ -858,33 +859,33 @@ export default function K8sOverviewPage() {
               </div>
             )}
 
-          <div className="rounded-xl border border-violet-700/35 bg-violet-950/20 px-4 py-4 space-y-3">
-              <h3 className="text-sm font-semibold text-violet-100">Upgrade windows &amp; version skew</h3>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+          <div className="rounded-xl border border-violet-700/35 bg-[var(--apple-surface)] px-4 py-4 space-y-3">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Upgrade windows &amp; version skew</h3>
+              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
                 {clusterInventory.upgrade_insights?.disclaimer ??
                   'Version skew and etcd visibility depend on cluster style (stacked kubeadm vs managed vs embedded etcd).'}
               </p>
               <div className="flex flex-wrap gap-2 text-xs">
                 {(clusterInventory.upgrade_insights?.inferred_etcd_member_pods_running ?? 0) > 0 && (
-                  <span className="px-2 py-1 rounded-md bg-violet-500/15 border border-violet-500/35 text-violet-100">
+                  <span className="px-2 py-1 rounded-md bg-violet-500/15 border border-violet-500/35 text-[var(--text-primary)]">
                     etcd-like pods running:{' '}
                     {clusterInventory.upgrade_insights?.inferred_etcd_member_pods_running}
                   </span>
                 )}
                 {clusterInventory.upgrade_insights?.max_kubelet_minor_lag_behind_apiserver != null && (
-                  <span className="px-2 py-1 rounded-md bg-slate-800 border border-slate-600 text-slate-200">
+                  <span className="px-2 py-1 rounded-md bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] text-[var(--text-primary)]">
                     max kubelet minor lag (behind API):{' '}
                     {clusterInventory.upgrade_insights.max_kubelet_minor_lag_behind_apiserver}
                   </span>
                 )}
                 {(clusterInventory.upgrade_insights?.kube_apiserver_pod_image_minors?.length ?? 0) > 0 && (
-                  <span className="px-2 py-1 rounded-md bg-slate-800 border border-slate-600 text-slate-200 font-mono text-[11px]">
+                  <span className="px-2 py-1 rounded-md bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] text-[var(--text-primary)] font-mono text-[11px]">
                     apiserver image minor(s):{' '}
                     {clusterInventory.upgrade_insights?.kube_apiserver_pod_image_minors?.join(', ')}
                   </span>
                 )}
                 {(clusterInventory.upgrade_insights?.etcd_pod_image_minors?.length ?? 0) > 0 && (
-                  <span className="px-2 py-1 rounded-md bg-slate-800 border border-slate-600 text-slate-200 font-mono text-[11px]">
+                  <span className="px-2 py-1 rounded-md bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] text-[var(--text-primary)] font-mono text-[11px]">
                     etcd image minor(s):{' '}
                     {clusterInventory.upgrade_insights?.etcd_pod_image_minors?.join(', ')}
                   </span>
@@ -893,7 +894,7 @@ export default function K8sOverviewPage() {
               {(clusterInventory.upgrade_insights?.nodes_kubelet_newer_than_apiserver?.length ?? 0) > 0 && (
                 <div className="text-xs">
                   <span className={statusToneClass('error')}>Kubelet newer than API server (unsupported): </span>
-                  <span className="text-slate-300 font-mono">
+                  <span className="text-[var(--text-secondary)] font-mono">
                     {clusterInventory.upgrade_insights?.nodes_kubelet_newer_than_apiserver?.join(', ')}
                   </span>
                 </div>
@@ -903,7 +904,7 @@ export default function K8sOverviewPage() {
                   <span className={statusToneClass('warn')}>
                     Same major, kubelet minor lag exceeds supported skew (3 minors):{' '}
                   </span>
-                  <span className="text-slate-300 font-mono">
+                  <span className="text-[var(--text-secondary)] font-mono">
                     {clusterInventory.upgrade_insights?.nodes_kubelet_minor_lag_exceeds_policy?.join(', ')}
                   </span>
                 </div>
@@ -911,7 +912,7 @@ export default function K8sOverviewPage() {
               {(clusterInventory.upgrade_insights?.nodes_kubelet_major_behind_apiserver?.length ?? 0) > 0 && (
                 <div className="text-xs">
                   <span className={statusToneClass('error')}>Kubelet major older than API server: </span>
-                  <span className="text-slate-300 font-mono text-[11px] break-words">
+                  <span className="text-[var(--text-secondary)] font-mono text-[11px] break-words">
                     {clusterInventory.upgrade_insights?.nodes_kubelet_major_behind_apiserver?.join(' · ')}
                   </span>
                 </div>
@@ -924,11 +925,11 @@ export default function K8sOverviewPage() {
                 </ul>
               )}
               {(clusterInventory.upgrade_insights?.suggested_upgrade_order?.length ?? 0) > 0 && (
-                <details className="rounded-lg border border-slate-700/50 bg-slate-900/40">
-                  <summary className="cursor-pointer px-3 py-2 text-xs text-slate-400 hover:text-slate-300">
+                <details className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)]">
+                  <summary className="cursor-pointer px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                     Suggested upgrade order (generic)
                   </summary>
-                  <ol className="list-decimal pl-8 pr-3 pb-3 text-[11px] text-slate-400 space-y-1">
+                  <ol className="list-decimal pl-8 pr-3 pb-3 text-[11px] text-[var(--text-muted)] space-y-1">
                     {clusterInventory.upgrade_insights?.suggested_upgrade_order?.map((line) => (
                       <li key={line}>{line}</li>
                     ))}
@@ -938,14 +939,14 @@ export default function K8sOverviewPage() {
           </div>
 
           {(clusterInventory?.etcd_placement_pods?.length ?? 0) > 0 && (
-            <div className="rounded-xl border border-slate-700/40 bg-slate-900/25 overflow-hidden">
-              <div className="px-3 py-2 border-b border-slate-700/40 text-xs text-slate-500">
+            <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-surface)]/25 overflow-hidden">
+              <div className="px-3 py-2 border-b border-[var(--apple-hairline)]/40 text-xs text-[var(--text-muted)]">
                 etcd placement (inferred from pods — not Raft membership API)
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs" aria-label="etcd pods">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b border-slate-700/40">
+                    <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]/40">
                       <th scope="col" className="px-3 py-2">Pod</th>
                       <th scope="col" className="px-3 py-2">Node</th>
                       <th scope="col" className="px-3 py-2">Plane</th>
@@ -953,7 +954,7 @@ export default function K8sOverviewPage() {
                       <th scope="col" className="px-3 py-2">Tag</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/30 text-slate-300">
+                  <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-[var(--text-secondary)]">
                     {clusterInventory.etcd_placement_pods?.map((p) => (
                       <tr key={`${p.namespace}/${p.name}`}>
                         <td className="px-3 py-2 font-mono">
@@ -972,14 +973,14 @@ export default function K8sOverviewPage() {
           )}
 
           {(clusterInventory?.control_plane_stack_pods?.length ?? 0) > 0 && (
-            <details className="rounded-xl border border-slate-700/40 bg-slate-900/25">
-              <summary className="cursor-pointer px-3 py-2 text-xs text-slate-400 hover:text-slate-300">
+            <details className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-surface)]/25">
+              <summary className="cursor-pointer px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 Control plane static pods ({clusterInventory.control_plane_stack_pods?.length})
               </summary>
-              <div className="overflow-x-auto border-t border-slate-700/40">
+              <div className="overflow-x-auto border-t border-[var(--apple-hairline)]/40">
                 <table className="w-full text-xs" aria-label="Control plane pods">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b border-slate-700/40">
+                    <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]/40">
                       <th scope="col" className="px-3 py-2">Component</th>
                       <th scope="col" className="px-3 py-2">Pod</th>
                       <th scope="col" className="px-3 py-2">Node</th>
@@ -987,7 +988,7 @@ export default function K8sOverviewPage() {
                       <th scope="col" className="px-3 py-2">Tag</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/30 text-slate-300">
+                  <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-[var(--text-secondary)]">
                     {clusterInventory.control_plane_stack_pods?.map((p) => (
                       <tr key={`${p.namespace}/${p.name}`}>
                         <td className="px-3 py-2">{p.component}</td>
@@ -1008,33 +1009,33 @@ export default function K8sOverviewPage() {
           {extendedInsightsHasContent(clusterInventory.extended) && (
             <details
               open
-              className="rounded-xl border border-cyan-800/35 bg-slate-900/25"
+              className="rounded-xl border border-[var(--accent)]/40 bg-[var(--apple-surface)]/25"
             >
-              <summary className="cursor-pointer px-3 py-2 text-xs text-cyan-200/90 hover:text-cyan-100">
+              <summary className="cursor-pointer px-3 py-2 text-xs text-[var(--accent)] hover:text-[var(--text-primary)]">
                 Admission webhooks, addons, GPUs, etcd snapshot, operator alerts
               </summary>
-              <div className="border-t border-cyan-900/30 p-3 space-y-4 text-xs text-slate-300">
+              <div className="border-t border-[var(--accent)]/40 p-3 space-y-4 text-xs text-[var(--text-secondary)]">
                 {clusterInventory.extended?.daemon_machine_product_uuid != null &&
                   clusterInventory.extended.daemon_machine_product_uuid !== '' && (
                     <div>
-                      <div className="text-[11px] text-slate-500 mb-1">Machina host product UUID (DMI)</div>
-                      <code className="text-[11px] bg-slate-950/80 px-2 py-1 rounded border border-slate-700/60 break-all">
+                      <div className="text-[11px] text-[var(--text-muted)] mb-1">Machina host product UUID (DMI)</div>
+                      <code className="text-[11px] bg-[var(--apple-surface)]/80 px-2 py-1 rounded border border-[var(--apple-hairline)] break-all">
                         {clusterInventory.extended.daemon_machine_product_uuid}
                       </code>
                     </div>
                   )}
                 {(clusterInventory.extended?.validating_webhooks?.length ?? 0) > 0 && (
                   <div>
-                    <div className="text-[11px] text-slate-500 mb-2">ValidatingWebhookConfiguration (summary)</div>
-                    <div className="overflow-x-auto rounded-lg border border-slate-700/40">
+                    <div className="text-[11px] text-[var(--text-muted)] mb-2">ValidatingWebhookConfiguration (summary)</div>
+                    <div className="overflow-x-auto apple-surface rounded-2xl/40">
                       <table className="w-full text-xs" aria-label="Validating webhook configurations">
                         <thead>
-                          <tr className="text-left text-slate-500 border-b border-slate-700/40">
+                          <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]/40">
                             <th scope="col" className="px-3 py-2">Name</th>
                             <th scope="col" className="px-3 py-2">Webhook rules</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-700/30">
+                        <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                           {clusterInventory.extended?.validating_webhooks?.map((w) => (
                             <tr key={w.name}>
                               <td className="px-3 py-2 font-mono">{w.name}</td>
@@ -1048,16 +1049,16 @@ export default function K8sOverviewPage() {
                 )}
                 {(clusterInventory.extended?.mutating_webhooks?.length ?? 0) > 0 && (
                   <div>
-                    <div className="text-[11px] text-slate-500 mb-2">MutatingWebhookConfiguration (summary)</div>
-                    <div className="overflow-x-auto rounded-lg border border-slate-700/40">
+                    <div className="text-[11px] text-[var(--text-muted)] mb-2">MutatingWebhookConfiguration (summary)</div>
+                    <div className="overflow-x-auto apple-surface rounded-2xl/40">
                       <table className="w-full text-xs" aria-label="Mutating webhook configurations">
                         <thead>
-                          <tr className="text-left text-slate-500 border-b border-slate-700/40">
+                          <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]/40">
                             <th scope="col" className="px-3 py-2">Name</th>
                             <th scope="col" className="px-3 py-2">Webhook rules</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-700/30">
+                        <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                           {clusterInventory.extended?.mutating_webhooks?.map((w) => (
                             <tr key={w.name}>
                               <td className="px-3 py-2 font-mono">{w.name}</td>
@@ -1071,17 +1072,17 @@ export default function K8sOverviewPage() {
                 )}
                 {(clusterInventory.extended?.addon_daemonsets?.length ?? 0) > 0 && (
                   <div>
-                    <div className="text-[11px] text-slate-500 mb-2">Notable addon DaemonSets</div>
-                    <div className="overflow-x-auto rounded-lg border border-slate-700/40">
+                    <div className="text-[11px] text-[var(--text-muted)] mb-2">Notable addon DaemonSets</div>
+                    <div className="overflow-x-auto apple-surface rounded-2xl/40">
                       <table className="w-full text-xs" aria-label="Addon DaemonSets">
                         <thead>
-                          <tr className="text-left text-slate-500 border-b border-slate-700/40">
+                          <tr className="text-left text-[var(--text-muted)] border-b border-[var(--apple-hairline)]/40">
                             <th scope="col" className="px-3 py-2">Namespace</th>
                             <th scope="col" className="px-3 py-2">Name</th>
                             <th scope="col" className="px-3 py-2">Primary image</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-700/30">
+                        <tbody className="divide-y divide-[var(--apple-hairline)]/30">
                           {clusterInventory.extended?.addon_daemonsets?.map((d) => (
                             <tr key={`${d.namespace}/${d.name}`}>
                               <td className="px-3 py-2 font-mono">{d.namespace}</td>
@@ -1097,7 +1098,7 @@ export default function K8sOverviewPage() {
                 {clusterInventory.extended?.gpu_allocatable_cluster_totals &&
                   Object.keys(clusterInventory.extended.gpu_allocatable_cluster_totals).length > 0 && (
                     <div>
-                      <div className="text-[11px] text-slate-500 mb-2">GPU allocatable (cluster rollup)</div>
+                      <div className="text-[11px] text-[var(--text-muted)] mb-2">GPU allocatable (cluster rollup)</div>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(clusterInventory.extended.gpu_allocatable_cluster_totals).map(([k, v]) => (
                           <span
@@ -1128,7 +1129,7 @@ export default function K8sOverviewPage() {
                 ) : null}
                 {(clusterInventory.extended?.operator_alerts?.length ?? 0) > 0 && (
                   <div>
-                    <div className="text-[11px] text-slate-500 mb-1">Operator-style alerts</div>
+                    <div className="text-[11px] text-[var(--text-muted)] mb-1">Operator-style alerts</div>
                     <ul className={`text-[11px] list-disc pl-5 space-y-1 ${statusToneClass('warn')}`}>
                       {clusterInventory.extended?.operator_alerts?.map((a) => (
                         <li key={a}>{a}</li>
@@ -1140,33 +1141,33 @@ export default function K8sOverviewPage() {
             </details>
           )}
 
-          <details className="rounded-xl border border-slate-700/40 bg-slate-900/20">
-            <summary className="cursor-pointer px-3 py-2 text-xs text-slate-400 hover:text-slate-300">
+          <details className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/40 bg-[var(--apple-surface)]/20">
+            <summary className="cursor-pointer px-3 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               Cluster inventory history (JSONL on daemon host)
             </summary>
-            <div className="border-t border-slate-700/40 p-3 space-y-2">
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Requires <code className="text-slate-400">[k8s_inventory_history]</code> with{' '}
-                <code className="text-slate-400">enabled = true</code> in machina config; reads append-only lines from the daemon.
+            <div className="border-t border-[var(--apple-hairline)]/40 p-3 space-y-2">
+              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                Requires <code className="text-[var(--text-muted)]">[k8s_inventory_history]</code> with{' '}
+                <code className="text-[var(--text-muted)]">enabled = true</code> in machina config; reads append-only lines from the daemon.
               </p>
               <button
                 type="button"
                 disabled={invHistLoading}
                 onClick={() => void loadInventoryHistory()}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-slate-700/80 border border-slate-600 text-slate-100 hover:bg-slate-600/80 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--surface-hover)]/80 border border-[var(--apple-hairline)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]/80 disabled:opacity-50"
               >
                 {invHistLoading ? 'Loading…' : 'Load recent snapshots'}
               </button>
               {invHistErr && <div className={`text-[11px] ${statusToneClass('error')}`}>{invHistErr}</div>}
               {invHist && (
                 <div className="space-y-2">
-                  <div className="text-[11px] text-slate-500">
-                    Path: <code className="text-slate-400 break-all">{invHist.path}</code>
+                  <div className="text-[11px] text-[var(--text-muted)]">
+                    Path: <code className="text-[var(--text-muted)] break-all">{invHist.path}</code>
                   </div>
-                  <div className="text-[11px] text-slate-400">{invHist.entries.length} snapshot(s)</div>
-                  <div className="overflow-x-auto rounded-lg border border-slate-700/50">
+                  <div className="text-[11px] text-[var(--text-muted)]">{invHist.entries.length} snapshot(s)</div>
+                  <div className="overflow-x-auto apple-surface rounded-2xl/50">
                     <table className="w-full text-[11px] text-left" aria-label="Node inventory snapshots">
-                      <thead className="text-slate-500 border-b border-slate-700/50">
+                      <thead className="text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                         <tr>
                           <th scope="col" className="px-3 py-2">Snapshot</th>
                           <th scope="col" className="px-3 py-2">When</th>
@@ -1176,9 +1177,9 @@ export default function K8sOverviewPage() {
                         {asArray(invHist.entries).slice(0, 12).map((entry, i) => {
                           const row = asRecord(entry) ?? {}
                           return (
-                            <tr key={String(row.id ?? row.name ?? i)} className="border-b border-slate-800/60">
-                              <td className="px-3 py-2 text-slate-300">{String(row.id ?? row.name ?? i + 1)}</td>
-                              <td className="px-3 py-2 text-slate-500">{String(row.timestamp ?? row.created_at ?? '—')}</td>
+                            <tr key={String(row.id ?? row.name ?? i)} className="border-b border-[var(--apple-hairline)]/60">
+                              <td className="px-3 py-2 text-[var(--text-secondary)]">{String(row.id ?? row.name ?? i + 1)}</td>
+                              <td className="px-3 py-2 text-[var(--text-muted)]">{String(row.timestamp ?? row.created_at ?? '—')}</td>
                             </tr>
                           )
                         })}
@@ -1194,8 +1195,8 @@ export default function K8sOverviewPage() {
       )}
 
       {environment && (
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-4">
-          <h2 className="text-lg font-semibold text-white">Detection &amp; host</h2>
+        <div className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl p-5 space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Detection &amp; host</h2>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className={statusPillClasses(environment.kubectl_on_path ? 'ok' : 'warn')}>
               kubectl {environment.kubectl_on_path ? 'available' : 'missing / failing'}
@@ -1203,59 +1204,59 @@ export default function K8sOverviewPage() {
             <span className={statusPillClasses(environment.kubectl_server_reachable ? 'ok' : 'neutral')}>
               API {environment.kubectl_server_reachable ? 'reachable' : 'unreachable'}
             </span>
-            <span className="px-2 py-1 rounded-md bg-blue-500/15 border border-blue-500/40 text-blue-200">
+            <span className="px-2 py-1 rounded-md bg-[var(--accent-soft)] border border-[var(--accent)]/40 text-[var(--accent)]">
               cluster: <span className="font-mono">{environment.cluster_distribution}</span>
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-300">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-[var(--text-secondary)]">
             <div className="space-y-1">
-              <div><span className="text-slate-500">kubectl client:</span> {environment.kubectl_client_version ?? '—'}</div>
-              <div><span className="text-slate-500">Current context:</span> {environment.current_context ?? '—'}</div>
-              <div><span className="text-slate-500">Kubeconfig:</span> {environment.kubeconfig_hint ?? '—'}{environment.kubeconfig_from_env ? ' (KUBECONFIG)' : ''}</div>
+              <div><span className="text-[var(--text-muted)]">kubectl client:</span> {environment.kubectl_client_version ?? '—'}</div>
+              <div><span className="text-[var(--text-muted)]">Current context:</span> {environment.current_context ?? '—'}</div>
+              <div><span className="text-[var(--text-muted)]">Kubeconfig:</span> {environment.kubeconfig_hint ?? '—'}{environment.kubeconfig_from_env ? ' (KUBECONFIG)' : ''}</div>
               {environment.kubeconfig_auto_selected && (
                 <div className={statusToneClass('ok')}>
-                  <span className="text-slate-500">Machina auto-selected:</span>{' '}
-                  <code className="text-xs bg-slate-900/80 px-1 rounded break-all">{environment.kubeconfig_auto_selected}</code>
-                  <span className="text-slate-500 text-xs"> (used because default config did not reach the API)</span>
+                  <span className="text-[var(--text-muted)]">Machina auto-selected:</span>{' '}
+                  <code className="text-xs bg-[var(--apple-surface)] px-1 rounded break-all">{environment.kubeconfig_auto_selected}</code>
+                  <span className="text-[var(--text-muted)] text-xs"> (used because default config did not reach the API)</span>
                 </div>
               )}
             </div>
             <div className="space-y-1 text-xs">
-              <div className="text-slate-400 font-medium">k3s / RKE2 on this host</div>
+              <div className="text-[var(--text-muted)] font-medium">k3s / RKE2 on this host</div>
               <div>k3s config / data: {environment.host.k3s_config_present ? 'yes' : 'no'} / {environment.host.k3s_data_dir_present ? 'yes' : 'no'} · systemd k3s: <span className="font-mono">{environment.host.k3s_systemd}</span> · agent: <span className="font-mono">{environment.host.k3s_agent_systemd}</span></div>
               <div>RKE2 config / data: {environment.host.rke2_config_present ? 'yes' : 'no'} / {environment.host.rke2_data_dir_present ? 'yes' : 'no'} · server: <span className="font-mono">{environment.host.rke2_server_systemd}</span></div>
               <div>k3s binary: {environment.host.k3s_binary_version ?? '—'} · rke2 binary: {environment.host.rke2_binary_version ?? '—'}</div>
               <div>helm: {environment.host.helm_version ?? '—'} · crictl: {environment.host.crictl_version ?? '—'}</div>
-              <details className={`group mt-2 rounded-lg border bg-slate-950/50 ${statusBorderClass('warn')}`}>
-                <summary className={`cursor-pointer list-none px-2 py-1.5 text-[11px] hover:bg-slate-900/60 rounded-md ${statusToneClass('warn')}`}>
+              <details className={`group mt-2 rounded-lg border bg-[var(--apple-surface)]/50 ${statusBorderClass('warn')}`}>
+                <summary className={`cursor-pointer list-none px-2 py-1.5 text-[11px] hover:bg-[var(--apple-surface)] rounded-md ${statusToneClass('warn')}`}>
                   <span className="font-medium">Host:</span> install / uninstall k3s (get.k3s.io and upstream scripts)
                 </summary>
-                <div className="px-2 pb-3 pt-1 space-y-2 text-[11px] text-slate-400">
+                <div className="px-2 pb-3 pt-1 space-y-2 text-[11px] text-[var(--text-muted)]">
                   <p>
-                    Runs on the machine where <code className="text-slate-300">machina-daemon</code> executes (stock unit is root).
-                    Optional <code className="text-slate-300">INSTALL_K3S_EXEC</code> flags — e.g. disable bundled networking for Cilium:{' '}
-                    <code className="break-all text-slate-500">
+                    Runs on the machine where <code className="text-[var(--text-secondary)]">machina-daemon</code> executes (stock unit is root).
+                    Optional <code className="text-[var(--text-secondary)]">INSTALL_K3S_EXEC</code> flags — e.g. disable bundled networking for Cilium:{' '}
+                    <code className="break-all text-[var(--text-muted)]">
                       --disable=traefik --flannel-backend=none --disable-network-policy --disable-kube-proxy
                     </code>
                   </p>
                   <label className="block space-y-1">
-                    <span className="text-slate-500">INSTALL_K3S_VERSION (optional)</span>
+                    <span className="text-[var(--text-muted)]">INSTALL_K3S_VERSION (optional)</span>
                     <input
                       type="text"
                       value={k3sInstallVersion}
                       onChange={(e) => setK3sInstallVersion(e.target.value)}
                       placeholder="e.g. v1.30.3+k3s1"
-                      className="w-full font-mono text-xs bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200 placeholder:text-slate-600"
+                      className="w-full font-mono text-xs bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)] placeholder:text-[var(--text-faint)]"
                     />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-slate-500">INSTALL_K3S_EXEC (optional)</span>
+                    <span className="text-[var(--text-muted)]">INSTALL_K3S_EXEC (optional)</span>
                     <textarea
                       value={k3sInstallExec}
                       onChange={(e) => setK3sInstallExec(e.target.value)}
                       rows={2}
                       placeholder="--disable=traefik …"
-                      className="w-full font-mono text-xs bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200 placeholder:text-slate-600"
+                      className="w-full font-mono text-xs bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)] placeholder:text-[var(--text-faint)]"
                     />
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -1284,24 +1285,24 @@ export default function K8sOverviewPage() {
                   </div>
                 </div>
               </details>
-              <details className="group mt-2 rounded-lg border border-cyan-500/25 bg-slate-950/50">
-                <summary className="cursor-pointer list-none px-2 py-1.5 text-[11px] text-cyan-100/90 hover:bg-slate-900/60 rounded-md">
+              <details className="group mt-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--apple-surface)]/50">
+                <summary className="cursor-pointer list-none px-2 py-1.5 text-[11px] text-[var(--text-primary)] hover:bg-[var(--apple-surface)] rounded-md">
                   <span className="font-medium">Cluster bootstrap:</span> k3s → Cilium → metrics → KubeVirt/CDI (daemon, phased)
                 </summary>
-                <div className="px-2 pb-3 pt-1 space-y-3 text-[11px] text-slate-400">
+                <div className="px-2 pb-3 pt-1 space-y-3 text-[11px] text-[var(--text-muted)]">
                   <p>
-                    Executes in <code className="text-slate-300">machina-daemon</code> (
-                    <code className="text-slate-300">cluster_bootstrap.rs</code>) on this host — same steps as the legacy shell recipe.
+                    Executes in <code className="text-[var(--text-secondary)]">machina-daemon</code> (
+                    <code className="text-[var(--text-secondary)]">cluster_bootstrap.rs</code>) on this host — same steps as the legacy shell recipe.
                     Long-running; use phased buttons if you install manually between steps. Requires outbound HTTPS.
                   </p>
                   <label className="block space-y-1">
-                    <span className="text-slate-500">SERVER_IP / API address (optional)</span>
+                    <span className="text-[var(--text-muted)]">SERVER_IP / API address (optional)</span>
                     <input
                       type="text"
                       value={bootstrapServerIp}
                       onChange={(e) => setBootstrapServerIp(e.target.value)}
                       placeholder="Default: first address from hostname -I"
-                      className="w-full font-mono text-xs bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200 placeholder:text-slate-600"
+                      className="w-full font-mono text-xs bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)] placeholder:text-[var(--text-faint)]"
                     />
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1309,7 +1310,7 @@ export default function K8sOverviewPage() {
                       type="checkbox"
                       checked={bootstrapInstallMetrics}
                       onChange={(e) => setBootstrapInstallMetrics(e.target.checked)}
-                      className="rounded border-slate-600"
+                      className="rounded border-[var(--apple-hairline)]"
                     />
                     <span>Install metrics-server on full pipeline (recommended for k3s labs)</span>
                   </label>
@@ -1318,7 +1319,7 @@ export default function K8sOverviewPage() {
                       type="checkbox"
                       checked={bootstrapSkipKv}
                       onChange={(e) => setBootstrapSkipKv(e.target.checked)}
-                      className="rounded border-slate-600"
+                      className="rounded border-[var(--apple-hairline)]"
                     />
                     <span>Full pipeline only: skip KubeVirt / CDI / virtctl (stop after Cilium + metrics)</span>
                   </label>
@@ -1339,8 +1340,8 @@ export default function K8sOverviewPage() {
                         onClick={() => void runClusterBootstrap(phase)}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium disabled:opacity-50 ${
                           primary
-                            ? 'bg-cyan-700/90 text-white hover:bg-cyan-600'
-                            : 'bg-slate-700/80 border border-slate-600 text-slate-100 hover:bg-slate-600/80'
+                            ? 'bg-[var(--accent)] text-white hover:opacity-90'
+                            : 'bg-[var(--surface-hover)]/80 border border-[var(--apple-hairline)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]/80'
                         }`}
                       >
                         {bootstrapBusy === phase ? (
@@ -1351,9 +1352,9 @@ export default function K8sOverviewPage() {
                     ))}
                   </div>
                   {bootstrapLastLog ? (
-                    <details className="rounded-md border border-slate-700/60 bg-slate-900/40">
-                      <summary className="cursor-pointer px-2 py-1.5 text-slate-400">Last bootstrap output</summary>
-                      <pre className="px-2 pb-2 text-[10px] text-slate-500 whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                    <details className="rounded-md border border-[var(--apple-hairline)] bg-[var(--apple-surface)]">
+                      <summary className="cursor-pointer px-2 py-1.5 text-[var(--text-muted)]">Last bootstrap output</summary>
+                      <pre className="px-2 pb-2 text-[10px] text-[var(--text-muted)] whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
                         {bootstrapLastLog}
                       </pre>
                     </details>
@@ -1364,8 +1365,8 @@ export default function K8sOverviewPage() {
           </div>
           {(environment.cluster_distribution_hints?.length ?? 0) > 0 && (
             <div>
-              <div className="text-xs text-slate-500 mb-1">Detection hints</div>
-              <ul className="text-xs text-slate-400 list-disc pl-5 space-y-0.5">
+              <div className="text-xs text-[var(--text-muted)] mb-1">Detection hints</div>
+              <ul className="text-xs text-[var(--text-muted)] list-disc pl-5 space-y-0.5">
                 {environment.cluster_distribution_hints.map((h) => (
                   <li key={h}>{h}</li>
                 ))}
@@ -1374,12 +1375,12 @@ export default function K8sOverviewPage() {
           )}
           {Object.keys(environment.snippets).length > 0 && (
             <div className="space-y-2">
-              <div className="text-xs text-slate-500">kubectl snippets (truncated)</div>
+              <div className="text-xs text-[var(--text-muted)]">kubectl snippets (truncated)</div>
               <div className="space-y-2 max-h-[28rem] overflow-y-auto">
                 {Object.entries(environment.snippets).map(([key, text]) => (
-                  <details key={key} className="group border border-slate-700/60 rounded-lg bg-slate-900/40">
-                    <summary className="cursor-pointer px-3 py-2 text-xs font-mono text-slate-300 hover:bg-slate-800/60 rounded-lg">{key}</summary>
-                    <pre className="px-3 pb-3 text-[11px] text-slate-400 whitespace-pre-wrap break-words max-h-64 overflow-y-auto">{text}</pre>
+                  <details key={key} className="group border border-[var(--apple-hairline)] rounded-lg bg-[var(--apple-surface)]">
+                    <summary className="cursor-pointer px-3 py-2 text-xs font-mono text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)]/60 rounded-lg">{key}</summary>
+                    <pre className="px-3 pb-3 text-[11px] text-[var(--text-muted)] whitespace-pre-wrap break-words max-h-64 overflow-y-auto">{text}</pre>
                   </details>
                 ))}
               </div>
@@ -1388,50 +1389,50 @@ export default function K8sOverviewPage() {
         </div>
       )}
 
-      <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex flex-wrap items-center gap-3">
-        <span className="text-sm text-slate-300">API server version: <span className={`font-medium ${statusToneClass('ok')}`}>{overview?.version || 'unknown'}</span></span>
+      <div className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl p-4 flex flex-wrap items-center gap-3">
+        <span className="text-sm text-[var(--text-secondary)]">API server version: <span className={`font-medium ${statusToneClass('ok')}`}>{overview?.version || 'unknown'}</span></span>
         {overview?.distribution && (
-          <span className="text-sm text-slate-400">Detected: <span className="font-mono text-slate-200">{overview.distribution}</span></span>
+          <span className="text-sm text-[var(--text-muted)]">Detected: <span className="font-mono text-[var(--text-primary)]">{overview.distribution}</span></span>
         )}
-        <Link to="/k8s/workloads" className="text-sm text-blue-300 hover:text-blue-200 underline underline-offset-4">
+        <Link to="/k8s/workloads" className="text-sm text-[var(--accent)] hover:text-[var(--accent)] underline underline-offset-4">
           Open workloads view
         </Link>
         <Link
           to="/k8s/kata"
-          className="text-sm text-cyan-300 hover:text-cyan-200 underline underline-offset-4 inline-flex items-center gap-1"
+          className="text-sm text-[var(--accent)] hover:text-[var(--accent)] underline underline-offset-4 inline-flex items-center gap-1"
         >
           <Package className="w-3.5 h-3.5" aria-hidden />
           Kata Containers / Cloud Hypervisor
         </Link>
       </div>
 
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-700/50 space-y-3">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--apple-hairline)] space-y-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="text-lg font-semibold">Nodes</h2>
-              <p className="text-xs text-slate-500 mt-1">
-                <span className="text-slate-400">Control vs data plane</span> is inferred from{' '}
-                <code className="text-[10px] bg-slate-900/80 px-1 rounded">node-role.kubernetes.io/*</code>{' '}
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                <span className="text-[var(--text-muted)]">Control vs data plane</span> is inferred from{' '}
+                <code className="text-[10px] bg-[var(--apple-surface)] px-1 rounded">node-role.kubernetes.io/*</code>{' '}
                 labels. Pressure chips use Node conditions (M/D/P/N). Actions: cordon, uncordon, drain.
               </p>
             </div>
             <button
               type="button"
               onClick={() => exportCsv()}
-              className="inline-flex items-center gap-2 self-start px-3 py-2 rounded-lg text-xs font-medium bg-slate-700/80 border border-slate-600 text-slate-100 hover:bg-slate-600/80"
+              className="inline-flex items-center gap-2 self-start px-3 py-2 rounded-lg text-xs font-medium bg-[var(--surface-hover)]/80 border border-[var(--apple-hairline)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]/80"
             >
               <Download className="w-4 h-4" aria-hidden />
               Export CSV ({filteredNodes.length})
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-500">Filters</span>
+            <span className="text-[var(--text-muted)]">Filters</span>
             <select
               aria-label="Filter by plane"
               value={filterPlane}
               onChange={(e) => setFilterPlane(e.target.value)}
-              className="bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200"
+              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)]"
             >
               <option value="all">All planes</option>
               <option value="control_plane">Control plane</option>
@@ -1446,7 +1447,7 @@ export default function K8sOverviewPage() {
                 const v = e.target.value
                 if (v === 'ready' || v === 'not_ready' || v === 'all') setFilterReady(v)
               }}
-              className="bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200"
+              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)]"
             >
               <option value="all">Ready: any</option>
               <option value="ready">Ready only</option>
@@ -1456,7 +1457,7 @@ export default function K8sOverviewPage() {
               aria-label="Filter by zone"
               value={filterZone}
               onChange={(e) => setFilterZone(e.target.value)}
-              className="bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200 max-w-[12rem]"
+              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)] max-w-[12rem]"
             >
               <option value="all">Zone: any</option>
               {zoneOptions.map((z) => (
@@ -1469,7 +1470,7 @@ export default function K8sOverviewPage() {
               aria-label="Filter by instance type"
               value={filterInstance}
               onChange={(e) => setFilterInstance(e.target.value)}
-              className="bg-slate-900 border border-slate-600 rounded-md px-2 py-1.5 text-slate-200 max-w-[14rem]"
+              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-md px-2 py-1.5 text-[var(--text-primary)] max-w-[14rem]"
             >
               <option value="all">Instance type: any</option>
               {instanceOptions.map((z) => (
@@ -1483,7 +1484,7 @@ export default function K8sOverviewPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm" aria-label="Cluster nodes">
             <thead>
-              <tr className="border-b border-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-[var(--apple-hairline)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
                 <th scope="col" className="text-left px-4 py-3">Node</th>
                 <th
                   scope="col"
@@ -1523,11 +1524,11 @@ export default function K8sOverviewPage() {
                 <th scope="col" className="text-center px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
               {filteredNodes.map((n) => (
-                <tr key={n.name} className="hover:bg-slate-700/30">
+                <tr key={n.name} className="hover:bg-[var(--surface-hover)]/30">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-white">{n.name}</div>
+                    <div className="font-medium text-[var(--text-primary)]">{n.name}</div>
                     <div className="mt-1.5 sm:hidden">
                       <NodePlaneBadge plane={n.plane} />
                     </div>
@@ -1538,22 +1539,22 @@ export default function K8sOverviewPage() {
                         Match
                       </span>
                     ) : (
-                      <span className="text-slate-600">—</span>
+                      <span className="text-[var(--text-faint)]">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{n.roles.join(', ')}</td>
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">{n.roles.join(', ')}</td>
                   <td className="px-4 py-3 align-top hidden sm:table-cell">
                     <NodePlaneBadge plane={n.plane} />
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-400 font-mono hidden md:table-cell">
+                  <td className="px-4 py-3 text-xs text-[var(--text-muted)] font-mono hidden md:table-cell">
                     {fmtMilliCpu(n.cpu_capacity_millicores)} / {fmtMilliCpu(n.cpu_allocatable_millicores)}
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-400 font-mono hidden lg:table-cell">
+                  <td className="px-4 py-3 text-xs text-[var(--text-muted)] font-mono hidden lg:table-cell">
                     {n.memory_capacity_bytes != null ? formatBytes(n.memory_capacity_bytes) : '—'} /{' '}
                     {n.memory_allocatable_bytes != null ? formatBytes(n.memory_allocatable_bytes) : '—'}
                   </td>
                   <td
-                    className="px-4 py-3 text-xs text-slate-400 max-w-[12rem] truncate hidden xl:table-cell"
+                    className="px-4 py-3 text-xs text-[var(--text-muted)] max-w-[12rem] truncate hidden xl:table-cell"
                     title={topologyHintText(n.topology_hints)}
                   >
                     {topologyHintText(n.topology_hints)}
@@ -1567,7 +1568,7 @@ export default function K8sOverviewPage() {
                         Cordoned
                       </span>
                     ) : (
-                      <span className="text-slate-500">Schedulable</span>
+                      <span className="text-[var(--text-muted)]">Schedulable</span>
                     )}
                   </td>
                   <td className="px-4 py-3 hidden xl:table-cell text-xs">
@@ -1582,11 +1583,11 @@ export default function K8sOverviewPage() {
                     ) : n.kubelet_minor_matches_apiserver === true ? (
                       <span className={`${statusToneClass('ok')}`}>Match</span>
                     ) : (
-                      <span className="text-slate-500">—</span>
+                      <span className="text-[var(--text-muted)]">—</span>
                     )}
                   </td>
                   <td
-                    className="px-4 py-3 text-[11px] text-slate-400 font-mono max-w-[14rem] truncate hidden 2xl:table-cell"
+                    className="px-4 py-3 text-[11px] text-[var(--text-muted)] font-mono max-w-[14rem] truncate hidden 2xl:table-cell"
                     title={
                       n.taints?.length
                         ? n.taints.map((t) => `${t.key}${t.value != null ? `=${t.value}` : ''}:${t.effect}`).join('; ')
@@ -1603,8 +1604,8 @@ export default function K8sOverviewPage() {
                       {n.ready ? 'Ready' : 'Not ready'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-400 hidden lg:table-cell">{n.kubelet_version}</td>
-                  <td className="px-4 py-3 text-slate-400 hidden 2xl:table-cell">{n.os_image}</td>
+                  <td className="px-4 py-3 text-[var(--text-muted)] hidden lg:table-cell">{n.kubelet_version}</td>
+                  <td className="px-4 py-3 text-[var(--text-muted)] hidden 2xl:table-cell">{n.os_image}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <button
@@ -1643,13 +1644,13 @@ export default function K8sOverviewPage() {
           />
         )}
         {nodes.length > 0 && filteredNodes.length === 0 && (
-          <div className="p-8 text-center text-slate-500">No nodes match filters</div>
+          <div className="p-8 text-center text-[var(--text-muted)]">No nodes match filters</div>
         )}
       </div>
 
       {lastCommand && (
-        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
-          <div className="text-xs text-slate-400 mb-1">Last executed command</div>
+        <div className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl p-4">
+          <div className="text-xs text-[var(--text-muted)] mb-1">Last executed command</div>
           <code className={`text-xs break-all ${statusToneClass('ok')}`}>{lastCommand}</code>
         </div>
       )}

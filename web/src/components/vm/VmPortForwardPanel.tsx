@@ -238,7 +238,7 @@ export default function VmPortForwardPanel({
 
   if (!ip) {
     return (
-      <p className={`text-sm text-slate-500 ${className}`} data-testid="vm-port-forward-panel">
+      <p className={`text-sm text-[var(--text-muted)] ${className}`} data-testid="vm-port-forward-panel">
         Guest IP required — start the VM and install guest tools to manage hypervisor NAT rules.
       </p>
     )
@@ -246,16 +246,16 @@ export default function VmPortForwardPanel({
 
   return (
     <div className={`space-y-4 ${className}`} data-testid="vm-port-forward-panel">
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-[var(--text-muted)]">
         Expose any guest TCP service on the hypervisor. From your laptop use{' '}
-        <span className="font-mono text-slate-400">{publicHostname(hypervisorAddress) || 'hypervisor-ip'}:host-port</span> →{' '}
-        <span className="font-mono text-slate-400">{ip}:guest-port</span>.
+        <span className="font-mono text-[var(--text-muted)]">{publicHostname(hypervisorAddress) || 'hypervisor-ip'}:host-port</span> →{' '}
+        <span className="font-mono text-[var(--text-muted)]">{ip}:guest-port</span>.
       </p>
 
       {!compact ? (
         <>
       <section className="space-y-2">
-        <p className="text-[10px] uppercase tracking-wider text-slate-500">Known services</p>
+        <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Known services</p>
         <div className="flex flex-wrap gap-2">
           {KNOWN_PORT_FORWARD_SERVICES.map((service) => {
             const active = rules.some((rule) => ruleMatchesService(rule, service))
@@ -278,7 +278,7 @@ export default function VmPortForwardPanel({
 
       {customServices.length > 0 && (
         <section className="space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500">Your saved services</p>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Your saved services</p>
           <div className="flex flex-wrap gap-2">
             {customServices.map((service) => {
               const active = rules.some((rule) => ruleMatchesService(rule, service))
@@ -295,7 +295,7 @@ export default function VmPortForwardPanel({
                   </button>
                   <button
                     type="button"
-                    className="text-slate-500 hover:text-red-400 p-0.5"
+                    className="text-[var(--text-muted)] hover:text-red-400 p-0.5"
                     aria-label={`Remove saved ${service.name}`}
                     onClick={() => removeCustomTemplate(service.id)}
                   >
@@ -308,11 +308,11 @@ export default function VmPortForwardPanel({
         </section>
       )}
 
-      <section className="space-y-2 rounded-lg border border-slate-800/80 p-3">
-        <p className="text-[10px] uppercase tracking-wider text-slate-500">Custom service</p>
+      <section className="space-y-2 rounded-lg border border-[var(--apple-hairline)]/80 p-3">
+        <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Custom service</p>
         <div className="flex flex-wrap gap-2 items-end text-sm">
           <label className="space-y-1 min-w-[8rem]">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Name</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Name</span>
             <input
               className="input py-1 text-xs"
               value={customName}
@@ -323,7 +323,7 @@ export default function VmPortForwardPanel({
             />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Guest port</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Guest port</span>
             <input
               className="input w-20 py-1 text-xs font-mono"
               value={customGuestPort}
@@ -334,7 +334,7 @@ export default function VmPortForwardPanel({
             />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Host port</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Host port</span>
             <input
               className="input w-20 py-1 text-xs font-mono"
               value={customHostPort}
@@ -345,7 +345,7 @@ export default function VmPortForwardPanel({
             />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Access</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Access</span>
             <select
               className="input py-1 text-xs"
               value={customAccess}
@@ -370,11 +370,11 @@ export default function VmPortForwardPanel({
         </div>
       </section>
 
-      <details className="text-xs text-slate-500">
-        <summary className="cursor-pointer text-slate-400 hover:text-slate-300">Manual port mapping</summary>
+      <details className="text-xs text-[var(--text-muted)]">
+        <summary className="cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-secondary)]">Manual port mapping</summary>
         <div className="flex flex-wrap gap-2 items-end text-sm mt-2">
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Host port</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Host port</span>
             <input
               className="input w-20 py-1 text-xs font-mono"
               value={manualHostPort}
@@ -382,9 +382,9 @@ export default function VmPortForwardPanel({
               aria-label="Manual host port"
             />
           </label>
-          <span className="text-slate-500 pb-1">→ guest</span>
+          <span className="text-[var(--text-muted)] pb-1">→ guest</span>
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500">Guest port</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Guest port</span>
             <input
               className="input w-16 py-1 text-xs font-mono"
               value={manualGuestPort}
@@ -425,8 +425,8 @@ export default function VmPortForwardPanel({
 
       {rules.length > 0 && (
         <section className="space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500">Active exposure</p>
-          <ul className="text-xs space-y-2 rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Active exposure</p>
+          <ul className="text-xs space-y-2 rounded-lg border border-emerald-500/20 bg-[var(--apple-surface)] p-3">
             {rules.map((rule) => {
               const service = resolveServiceForRule(rule, catalog)
               if (!service) return null
@@ -435,13 +435,13 @@ export default function VmPortForwardPanel({
               return (
                 <li key={rule.id} className="flex flex-wrap items-center gap-2">
                   <span className="text-emerald-200/90 font-medium">{service.name}</span>
-                  <span className="text-slate-500 font-mono">
+                  <span className="text-[var(--text-muted)] font-mono">
                     {rule.host_port}→{rule.vm_port}
                   </span>
                   <code className="font-mono text-emerald-100/90 break-all">{access}</code>
                   <button
                     type="button"
-                    className="text-slate-400 hover:text-slate-200"
+                    className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                     aria-label={`Copy ${service.name} access`}
                     onClick={() => void copyText(access)}
                   >
@@ -452,7 +452,7 @@ export default function VmPortForwardPanel({
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sky-400 hover:text-sky-300 inline-flex items-center gap-0.5"
+                      className="text-[var(--link)] hover:text-[var(--link)] inline-flex items-center gap-0.5"
                     >
                       open <ExternalLink className="w-3 h-3" />
                     </a>
@@ -472,9 +472,9 @@ export default function VmPortForwardPanel({
         </section>
       )}
 
-      {loading && <p className="text-xs text-slate-500">Loading rules…</p>}
+      {loading && <p className="text-xs text-[var(--text-muted)]">Loading rules…</p>}
       {!loading && rules.length === 0 && !compact && (
-        <p className="text-xs text-slate-500">No NAT rules on this hypervisor yet.</p>
+        <p className="text-xs text-[var(--text-muted)]">No NAT rules on this hypervisor yet.</p>
       )}
     </div>
   )

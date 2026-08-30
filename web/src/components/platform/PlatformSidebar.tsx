@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { ChevronDown, ChevronLeft, ChevronRight, Boxes, FolderOpen, Plug } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Boxes, FolderOpen, Plug, Server } from 'lucide-react'
+import { ZyvorMark } from '../ZyvorMark'
 import { sidebarForTier } from '../../utils/platformNavFilter'
 import { integrationNavItems } from '../../utils/platformIntegrationsNav'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
@@ -14,6 +15,7 @@ import type { PlatformNavSection } from '../../utils/platformNav'
 const SECTION_COLLAPSE_PREFIX = 'machina-sidebar-section-'
 
 const SECTION_ICONS: Record<string, typeof Plug> = {
+  Host: Server,
   Fleet: Plug,
   Platform: FolderOpen,
   'Connected platforms': Boxes,
@@ -73,15 +75,21 @@ export default function PlatformSidebar() {
   return (
     <>
       <aside
-        className={`mac-finder-sidebar tahoe-sidebar tahoe-sidebar-expanded platform-sidebar glass glass-elevated hidden lg:flex flex-col shrink-0 border-r border-white/[0.06] ${
+        className={`mac-finder-sidebar tahoe-sidebar tahoe-sidebar-expanded platform-sidebar glass glass-elevated hidden lg:flex flex-col shrink-0 border-r border-[var(--apple-hairline)] ${
           collapsed ? 'w-[60px]' : 'w-[280px]'
         }`}
-        aria-label="Platform Finder"
+        aria-label="Finder"
       >
         {!collapsed && (
-          <div className="px-5 py-4 border-b border-white/[0.06]">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">Desktop</p>
-            <p className="text-sm text-white/75 mt-1">Machina Platform</p>
+          <div className="px-5 py-4 border-b border-[var(--apple-hairline)] space-y-2">
+            <ZyvorMark to="/" size="sm" />
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Desktop</p>
+            <p className="text-sm text-[var(--text-secondary)]">Machina</p>
+          </div>
+        )}
+        {collapsed && (
+          <div className="flex justify-center py-3 border-b border-[var(--apple-hairline)]">
+            <ZyvorMark to="/" size="sm" showWordmark={false} />
           </div>
         )}
         <SidebarNav
@@ -91,11 +99,11 @@ export default function PlatformSidebar() {
           onToggleSection={toggleSection}
           railAttention={railAttention}
         />
-        <div className="border-t border-white/[0.06] p-3">
+        <div className="border-t border-[var(--apple-hairline)] p-3">
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs text-white/50 hover:bg-white/5 hover:text-white/90 transition"
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-hover,rgba(16,20,28,0.035))] hover:text-[var(--text-primary)] transition"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : (
@@ -147,7 +155,7 @@ function SidebarNav({
                 <button
                   type="button"
                   onClick={() => onToggleSection(section.label)}
-                  className="tahoe-sidebar-section-header flex w-full items-center gap-1.5 px-3 py-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/35 hover:text-white/55 transition"
+                  className="tahoe-sidebar-section-header flex w-full items-center gap-1.5 px-3 py-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
                 >
                   <ChevronDown
                     className={`h-3 w-3 shrink-0 transition-transform ${isSectionClosed ? '-rotate-90' : ''}`}
@@ -156,7 +164,7 @@ function SidebarNav({
                   <span className="truncate">{section.label}</span>
                 </button>
               ) : (
-                <p className="tahoe-sidebar-section-header flex items-center gap-1.5 px-3 py-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                <p className="tahoe-sidebar-section-header flex items-center gap-1.5 px-3 py-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   {SectionIcon ? <SectionIcon className="h-3 w-3 shrink-0 opacity-60" /> : null}
                   <span>{section.label}</span>
                 </p>
@@ -168,15 +176,15 @@ function SidebarNav({
                   <li key={item.to}>
                     <NavLink
                       to={item.to}
-                      end={item.to === '/platform'}
+                      end={item.to === '/platform' || item.to === '/' || item.to === '/vms' || item.to === '/fleet-cloud'}
                       title={collapsed ? item.label : undefined}
                       className={({ isActive }) =>
                         `tahoe-sidebar-link platform-rail-link flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 ${
                           collapsed ? 'justify-center rounded-xl' : 'rounded-full'
                         } ${
                           isActive
-                            ? 'tahoe-sidebar-link-active text-white'
-                            : 'text-white/55 hover:text-white/90 hover:bg-white/[0.04]'
+                            ? 'tahoe-sidebar-link-active text-[var(--text-primary)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover,rgba(255,255,255,0.04))]'
                         } ${railClassFor(item.to, isActive)}`
                       }
                     >

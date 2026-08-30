@@ -37,9 +37,9 @@ import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses } from '../../utils/semanticColors'
 
 const PRESETS = [
-  { name: 'Finance Application', description: 'ERP, databases & reporting', icon: <Landmark className="w-5 h-5" />, gradient: 'from-emerald-500 to-teal-600' },
-  { name: 'Web Stack', description: 'Load balancer, app & cache VMs', icon: <Globe className="w-5 h-5" />, gradient: 'from-blue-500 to-indigo-600' },
-  { name: 'Database Cluster', description: 'Primary, replica & backup', icon: <Database className="w-5 h-5" />, gradient: 'from-violet-500 to-purple-600' },
+  { name: 'Finance Application', description: 'ERP, databases & reporting', icon: <Landmark className="w-5 h-5" />, gradient: 'from-[var(--apple-surface-elevated)] to-[var(--apple-surface)]' },
+  { name: 'Web Stack', description: 'Load balancer, app & cache VMs', icon: <Globe className="w-5 h-5" />, gradient: 'from-[var(--apple-surface-elevated)] to-[var(--apple-surface)]' },
+  { name: 'Database Cluster', description: 'Primary, replica & backup', icon: <Database className="w-5 h-5" />, gradient: 'from-[var(--apple-surface-elevated)] to-[var(--apple-surface)]' },
 ] as const
 
 function uniqueAppName(base: string, existing: string[]): string {
@@ -149,7 +149,7 @@ export default function ApplicationLaunchpad() {
   )
 
   if (loading && rows.length === 0 && !error) {
-    return <p className="text-sm text-slate-500 py-8 text-center" aria-busy="true">Loading applications…</p>
+    return <p className="text-sm text-[var(--text-muted)] py-8 text-center" aria-busy="true">Loading applications…</p>
   }
 
   return (
@@ -168,7 +168,7 @@ export default function ApplicationLaunchpad() {
       {error && <ErrorBanner message={error} />}
 
       <section>
-        <p className="text-xs font-medium text-slate-500 mb-4 uppercase tracking-wider">Your applications</p>
+        <p className="text-xs font-medium text-[var(--text-muted)] mb-4 uppercase tracking-wider">Your applications</p>
         <div className="platform-launchpad-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-4 gap-y-8">
           <NewLaunchpadCard onClick={() => openCreate()} />
           {PRESETS.filter((p) => !rows.some((r) => r.name === p.name)).map((p) => (
@@ -214,7 +214,7 @@ export default function ApplicationLaunchpad() {
       >
         <div className="space-y-5">
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-2">Quick templates</p>
+            <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Quick templates</p>
             <div className="grid gap-2 sm:grid-cols-3">
               {PRESETS.map((p) => (
                 <PresetTemplateCard
@@ -229,23 +229,23 @@ export default function ApplicationLaunchpad() {
             </div>
           </div>
           <label className="block text-sm">
-            <span className="text-slate-400">Application name</span>
+            <span className="text-[var(--text-muted)]">Application name</span>
             <input
               className="input w-full mt-1.5"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Finance Application"
             />
-            <span className="text-xs text-slate-500 mt-1 block">Spaces are fine. Duplicates get a numeric suffix automatically.</span>
+            <span className="text-xs text-[var(--text-muted)] mt-1 block">Spaces are fine. Duplicates get a numeric suffix automatically.</span>
           </label>
           <div>
-            <p className="text-sm text-slate-400 mb-2">Include VMs ({selectedVmIds.size} selected)</p>
+            <p className="text-sm text-[var(--text-muted)] mb-2">Include VMs ({selectedVmIds.size} selected)</p>
             {vms.length === 0 ? (
-              <p className="text-sm text-slate-500 rounded-xl border border-dashed border-slate-700 p-4">
+              <p className="text-sm text-[var(--text-muted)] rounded-xl border border-dashed border-[var(--apple-hairline)] p-4">
                 No VMs yet. <Link to="/platform/vms" className={`hover:underline ${hubLinkClasses()}`}>Create a VM</Link> first, then return here.
               </p>
             ) : (
-              <ul className="space-y-1.5 max-h-48 overflow-y-auto rounded-xl border border-white/[0.06] bg-slate-950/40 p-2">
+              <ul className="space-y-1.5 max-h-48 overflow-y-auto rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-2">
                 {vms.map((vm) => (
                   <li key={vm.id}>
                     <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.03] cursor-pointer">
@@ -253,11 +253,11 @@ export default function ApplicationLaunchpad() {
                         type="checkbox"
                         checked={selectedVmIds.has(vm.id)}
                         onChange={() => toggleVm(vm.id)}
-                        className="rounded border-slate-600"
+                        className="rounded border-[var(--apple-hairline)]"
                       />
-                      <Monitor className="w-4 h-4 text-slate-500 shrink-0" />
-                      <span className="text-sm text-slate-200 flex-1 truncate">{vm.name}</span>
-                      <span className="text-xs text-slate-500 capitalize">{vm.observed_state}</span>
+                      <Monitor className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                      <span className="text-sm text-[var(--text-primary)] flex-1 truncate">{vm.name}</span>
+                      <span className="text-xs text-[var(--text-muted)] capitalize">{vm.observed_state}</span>
                     </label>
                   </li>
                 ))}
@@ -286,14 +286,14 @@ export default function ApplicationLaunchpad() {
               <Boxes className="w-9 h-9" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-2">Virtual machines</p>
+              <p className="text-xs text-[var(--text-muted)] mb-2">Virtual machines</p>
               {activeVmNames.length === 0 ? (
-                <p className="text-sm text-slate-500">No VMs linked to this group yet.</p>
+                <p className="text-sm text-[var(--text-muted)]">No VMs linked to this group yet.</p>
               ) : (
-                <ul className="space-y-1 text-sm text-slate-300">
+                <ul className="space-y-1 text-sm text-[var(--text-secondary)]">
                   {activeVmNames.map((v) => (
                     <li key={v} className="flex items-center gap-2">
-                      <Monitor className="w-3.5 h-3.5 text-slate-500" /> {v}
+                      <Monitor className="w-3.5 h-3.5 text-[var(--text-muted)]" /> {v}
                     </li>
                   ))}
                 </ul>

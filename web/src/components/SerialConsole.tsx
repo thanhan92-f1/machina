@@ -119,8 +119,8 @@ export default function SerialConsole({ vmName, libvirtConnection, wsUrl: wsUrlO
   const clear = () => xtermRef.current?.clear()
 
   return (
-    <div className={fullscreen ? 'fixed inset-0 z-50 bg-slate-900 flex flex-col' : ''}>
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 rounded-t-lg">
+    <div className={fullscreen ? 'fixed inset-0 z-50 bg-[var(--apple-surface)] flex flex-col' : ''}>
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--apple-fill-tertiary)] border-b border-[var(--apple-hairline)] rounded-t-lg">
         <div className="flex items-center gap-3">
           <div
             className={`w-2.5 h-2.5 rounded-full ${statusBgClass(connected ? 'ok' : 'error')}`}
@@ -128,13 +128,13 @@ export default function SerialConsole({ vmName, libvirtConnection, wsUrl: wsUrlO
             title={connected ? 'Connected' : 'Disconnected'}
             aria-label={connected ? 'Connected' : 'Disconnected'}
           />
-          <span className="text-sm text-slate-300">Serial Console — {vmName}</span>
+          <span className="text-sm text-[var(--text-secondary)]">Serial Console — {vmName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={clear} className="p-1.5 hover:bg-slate-700 rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-slate-400" /></button>
-          <button onClick={reconnect} className="p-1.5 hover:bg-slate-700 rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-slate-400" /></button>
-          <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-slate-700 rounded transition" title="Fullscreen" aria-label="Fullscreen">
-            {fullscreen ? <Minimize className="w-4 h-4 text-slate-400" /> : <Maximize className="w-4 h-4 text-slate-400" />}
+          <button onClick={clear} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" /></button>
+          <button onClick={reconnect} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" /></button>
+          <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+            {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
           </button>
         </div>
       </div>

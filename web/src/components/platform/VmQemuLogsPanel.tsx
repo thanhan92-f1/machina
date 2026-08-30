@@ -38,14 +38,14 @@ export default function VmQemuLogsPanel({ vmId, vmName }: VmQemuLogsPanelProps) 
   return (
     <MacGlassPanel title="QEMU log">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <p className="text-xs text-slate-500 font-mono truncate">{logPath || '—'}</p>
+        <p className="text-xs text-[var(--text-muted)] font-mono truncate">{logPath || '—'}</p>
         <button type="button" className="btn-secondary text-xs shrink-0" onClick={() => void load()} disabled={loading}>
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           Refresh
         </button>
       </div>
       {error && <p className="text-sm text-amber-300 mb-2">{error}</p>}
-      <pre className="text-xs text-slate-300 bg-black/40 rounded-lg p-3 max-h-[28rem] overflow-auto whitespace-pre-wrap font-mono">
+      <pre className="text-xs text-[var(--text-secondary)] bg-black/40 rounded-lg p-3 max-h-[28rem] overflow-auto whitespace-pre-wrap font-mono">
         {loading && !content ? 'Loading…' : content || '(empty log)'}
       </pre>
     </MacGlassPanel>

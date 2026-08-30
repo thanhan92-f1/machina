@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { Link } from 'react-router'
-import { Monitor, Plus, RefreshCw, Search, Sparkles } from 'lucide-react'
+import { Plus, RefreshCw, Search, Sparkles } from 'lucide-react'
 import { dispatchOpenSpotlight } from '../../../utils/platformJarvisShell'
 import type { MachineFinderState } from './useMachineFinder'
 
@@ -23,18 +23,16 @@ export default function MachineFinderCommandBar({ state }: Props) {
   } = state
 
   return (
-    <header className="machine-finder-command-bar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-testid="machine-finder-command-bar">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <Monitor className="w-6 h-6 text-slate-400 shrink-0" />
-          <h1 className="text-xl font-semibold text-white truncate">Machine Finder</h1>
-        </div>
-        <p className="text-sm text-slate-400 mt-0.5 truncate">{statsSubtitle}</p>
+    <header className="machine-finder-command-bar apple-page-header border-b border-[var(--apple-hairline)] pb-8" data-testid="machine-finder-command-bar">
+      <div className="min-w-0 flex-1 max-w-3xl">
+        <p className="apple-eyebrow">VM Center</p>
+        <h1 className="page-title">Machine Finder</h1>
+        <p className="page-lede">{statsSubtitle}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 flex-1 sm:justify-end">
+      <div className="apple-page-actions flex-1 sm:justify-end min-w-0">
         <div className="relative flex-1 min-w-[12rem] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)] pointer-events-none" />
           <input
             id="machine-finder-search"
             name="machine_search"
@@ -47,8 +45,8 @@ export default function MachineFinderCommandBar({ state }: Props) {
                 dispatchOpenSpotlight(search.trim() || undefined)
               }
             }}
-            placeholder="Search machines… (⌘K / Ctrl+K)"
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-900/60 border border-white/[0.08] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500/40"
+            placeholder="Search machines… (⌘K)"
+            className="input-field w-full pl-9 pr-3 py-2.5 text-sm"
             data-testid="machine-finder-search"
           />
         </div>
@@ -59,9 +57,9 @@ export default function MachineFinderCommandBar({ state }: Props) {
         <button type="button" className="btn-secondary text-sm" onClick={() => state.setLens('migration')}>
           Migrate
         </button>
-        <Link to="/platform/vm-builder" className="btn-secondary text-sm">AI Builder</Link>
+        <Link to="/platform/vm-builder" className="btn-secondary text-sm hidden lg:inline-flex">AI Builder</Link>
         <button type="button" className="btn-secondary text-sm hidden sm:inline-flex" onClick={() => setWindowsOpen(true)}>Windows</button>
-        <button type="button" className="btn-secondary p-2" onClick={() => void load()} aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
+        <button type="button" className="btn-secondary p-2.5" onClick={() => void load()} aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
         <button
           type="button"
           className="btn-primary text-sm inline-flex items-center gap-1"

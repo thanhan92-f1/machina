@@ -123,17 +123,17 @@ export default function PlatformMacAppMenus() {
         <PlatformMacMenuItem label="About Machina Platform" onClick={() => go('/platform/settings?section=about')} />
         <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => go('/platform/settings')} />
         <PlatformMacMenuItem label="Customize Dock…" onClick={() => { openPlatformDockEditor(); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="Add Host…" onClick={() => go('/platform/enroll')} />
         <PlatformMacMenuItem label="Platform Support" onClick={() => go('/platform/support')} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="Sign Out" onClick={() => { void logout(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
       <PlatformMacMenuDropdown label="Go" open={openMenu === 'go'} onToggle={() => toggleMenu('go')} onClose={closeMenu}>
         {navSections.map((section, idx) => (
           <div key={section.label}>
-            {idx > 0 && <div className="my-1 border-t border-white/[0.08]" />}
+            {idx > 0 && <div className="my-1 border-t border-[var(--apple-hairline)]" />}
             <PlatformMacMenuItem label={section.label} header />
             {section.items.map((item, itemIdx) => {
               const prev = section.items[itemIdx - 1]
@@ -151,18 +151,18 @@ export default function PlatformMacAppMenus() {
             })}
           </div>
         ))}
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="All destinations…" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
       <PlatformMacMenuDropdown label="View" open={openMenu === 'view'} onToggle={() => toggleMenu('view')} onClose={closeMenu}>
         <PlatformMacMenuItem label="Show Sidebar" shortcut="⌘⌥S" checked={sidebarVisible} onClick={() => { toggleSidebar(); closeMenu() }} />
         <PlatformMacMenuItem label="Show Inspector" shortcut="⌘⌥I" checked={inspectorVisible} onClick={() => { toggleInspector(); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.normal} checked={tier === 'normal'} onClick={() => pickTier('normal')} />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.power} checked={tier === 'power'} onClick={() => pickTier('power')} />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.advanced} checked={tier === 'advanced'} onClick={() => pickTier('advanced')} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="Mission Control" shortcut="F3" onClick={() => { dispatchOpenMissionControl(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
@@ -178,7 +178,7 @@ export default function PlatformMacAppMenus() {
                 onClick={() => go(tab.path)}
               />
             ))}
-            <div className="my-1 border-t border-white/[0.08]" />
+            <div className="my-1 border-t border-[var(--apple-hairline)]" />
           </>
         )}
         <PlatformMacMenuItem label="Spotlight…" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
@@ -189,10 +189,10 @@ export default function PlatformMacAppMenus() {
       <PlatformMacMenuDropdown label="Help" open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={closeMenu}>
         <PlatformMacMenuItem label="Platform guide…" onClick={() => { dispatchOpenHelp('platform'); closeMenu() }} />
         <PlatformMacMenuItem label="Keyboard shortcuts" onClick={() => { dispatchOpenHelp('shortcuts'); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label={`${ASK_ZYRA_LABEL}…`} shortcut="⌘⇧A" onClick={() => { openCopilot(); closeMenu() }} />
         <PlatformMacMenuItem label="Spotlight Search" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
-        <div className="my-1 border-t border-white/[0.08]" />
+        <div className="my-1 border-t border-[var(--apple-hairline)]" />
         {helpNavItems.map((item) => (
           <PlatformMacMenuItem key={item.path} label={item.label} onClick={() => go(item.path)} />
         ))}
@@ -215,12 +215,12 @@ export default function PlatformMacAppMenus() {
           value={zyraQuery}
           onChange={(e) => setZyraQuery(e.target.value)}
           placeholder={ZYRA_SEARCH_PLACEHOLDER}
-          className="w-full rounded-lg bg-white/[0.06] border border-white/[0.08] px-3 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500/40"
+          className="w-full rounded-lg bg-white/[0.06] border border-[var(--apple-hairline)] px-3 py-1 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)]/40"
           data-testid="menubar-zyra-search"
         />
       </form>
 
-      <div className="hidden xl:flex items-center gap-2 ml-2 pl-2 border-l border-white/[0.08] text-xs text-white/50">
+      <div className="hidden xl:flex items-center gap-2 ml-2 pl-2 border-l border-[var(--apple-hairline)] text-xs text-[var(--text-muted)]">
         <ConnectionStatus />
         <span className="inline-flex items-center gap-1">
           <User className="w-3 h-3" />

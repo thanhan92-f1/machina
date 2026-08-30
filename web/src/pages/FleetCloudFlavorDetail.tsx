@@ -54,7 +54,7 @@ function FleetCloudFlavorDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/flavors" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/flavors" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -62,23 +62,24 @@ function FleetCloudFlavorDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/flavors" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/flavors" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Flavors
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
-        <Cpu className="w-7 h-7 text-sky-400" />
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
+        <Cpu className="w-7 h-7 text-[var(--accent)]" />
         {flavor.name}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm font-mono">
-        <div><dt className="text-xs text-slate-500 uppercase font-sans">ID</dt><dd className="text-slate-200 mt-1">{flavor.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase font-sans">vCPU</dt><dd className="text-slate-200 mt-1">{flavor.vcpus}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase font-sans">RAM</dt><dd className="text-slate-200 mt-1">{flavor.memory_mib} MiB</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase font-sans">Disk</dt><dd className="text-slate-200 mt-1">{flavor.disk_gib} GiB</dd></div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm font-mono">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase font-sans">ID</dt><dd className="text-[var(--text-primary)] mt-1">{flavor.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase font-sans">vCPU</dt><dd className="text-[var(--text-primary)] mt-1">{flavor.vcpus}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase font-sans">RAM</dt><dd className="text-[var(--text-primary)] mt-1">{flavor.memory_mib} MiB</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase font-sans">Disk</dt><dd className="text-[var(--text-primary)] mt-1">{flavor.disk_gib} GiB</dd></div>
       </dl>
-      <Link to="/fleet-cloud/create" className="inline-block px-3 py-2 rounded-lg bg-sky-600 text-white text-sm">Create instance with this flavor</Link>
+      <Link to="/fleet-cloud/create" className="btn-primary text-sm">Create instance with this flavor</Link>
       <FleetCloudFooter />
     </PageLayout>
   )

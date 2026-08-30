@@ -291,7 +291,7 @@ export default function PlatformConsoleHub() {
   }
 
   if (!vmName) {
-    return <div className="flex items-center justify-center flex-1 text-slate-500 text-sm p-8">Loading…</div>
+    return <div className="flex items-center justify-center flex-1 text-[var(--text-muted)] text-sm p-8">Loading…</div>
   }
 
   return (

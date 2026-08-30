@@ -102,6 +102,7 @@ export default function FleetPage() {
 
   return (
     <PageLayout
+      eyebrow="Fleet"
       title={t('fleet.title')}
       subtitle={t('fleet.subtitle')}
       icon={<Server className="w-8 h-8" />}
@@ -122,17 +123,17 @@ export default function FleetPage() {
       }
     >
       {!enabled ? (
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/40 px-4 py-3 space-y-2">
-          <p className="text-slate-400 text-sm">{t('fleet.disabledHint')}</p>
-          <p className="text-xs text-slate-500">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] px-4 py-3 space-y-2">
+          <p className="text-[var(--text-muted)] text-sm">{t('fleet.disabledHint')}</p>
+          <p className="text-xs text-[var(--text-muted)]">
             Enable fleet mode in machina config, or return to the{' '}
             <Link to="/platform" className={hubLinkClasses()}>Platform desktop</Link>
             {' · '}
-            <Link to="/platform/integrations" className={hubLinkClasses()}>Apps &amp; Integrations</Link>
+            <Link to="/platform/settings?section=integrations" className={hubLinkClasses()}>Settings · Integrations</Link>
           </p>
         </div>
       ) : (
-        <p className="text-slate-400 text-sm">
+        <p className="text-[var(--text-muted)] text-sm">
           {primaryPeer ? t('fleet.primaryPeer', { name: primaryPeer }) : null}
           {standbyPeer ? ` · ${t('fleet.standbyPeer', { name: standbyPeer })}` : null}
         </p>
@@ -146,10 +147,10 @@ export default function FleetPage() {
           {peers.map((p) => (
             <div
               key={p.name}
-              className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4"
+              className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4"
             >
-              <div className="font-medium text-slate-100">{p.name}</div>
-              <div className="text-xs text-slate-500 truncate" title={p.url}>
+              <div className="font-medium text-[var(--text-primary)]">{p.name}</div>
+              <div className="text-xs text-[var(--text-muted)] truncate" title={p.url}>
                 {p.url}
               </div>
               <div className="mt-2 text-sm">
@@ -157,16 +158,16 @@ export default function FleetPage() {
                   {p.reachable ? t('fleet.reachable') : t('fleet.unreachable')}
                 </span>
                 {p.version ? (
-                  <span className="text-slate-500 ml-2">v{p.version}</span>
+                  <span className="text-[var(--text-muted)] ml-2">v{p.version}</span>
                 ) : null}
                 {p.vm_count != null ? (
-                  <span className="text-slate-500 ml-2">
+                  <span className="text-[var(--text-muted)] ml-2">
                     {t('fleet.vmCount', { count: p.vm_count })}
                   </span>
                 ) : null}
               </div>
               {p.host_cpu_percent != null ? (
-                <div className="mt-2 text-xs text-slate-400">
+                <div className="mt-2 text-xs text-[var(--text-muted)]">
                   CPU {p.host_cpu_percent.toFixed(0)}%
                   {p.host_memory_percent != null
                     ? ` · mem ${p.host_memory_percent.toFixed(0)}%`
@@ -195,18 +196,18 @@ export default function FleetPage() {
 
       {enabled ? (
         <section
-          className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-3"
+          className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4 space-y-3"
           aria-labelledby="fleet-prometheus-heading"
         >
           <h2
             id="fleet-prometheus-heading"
             className="text-lg font-semibold flex items-center gap-2"
           >
-            <BarChart3 className="w-5 h-5 text-sky-400" />
+            <BarChart3 className="w-5 h-5 text-[var(--link)]" />
             {t('fleet.prometheusTitle')}
           </h2>
-          <p className="text-xs text-slate-500">{t('fleet.prometheusHint')}</p>
-          <code className="block text-xs text-slate-300 break-all bg-slate-900/60 rounded-lg px-3 py-2 border border-slate-700/40">
+          <p className="text-xs text-[var(--text-muted)]">{t('fleet.prometheusHint')}</p>
+          <code className="block text-xs text-[var(--text-secondary)] break-all bg-[var(--apple-surface)] rounded-lg px-3 py-2 border border-[var(--apple-hairline)]/40">
             {fleetPrometheusAggregateUrl()}
           </code>
           <div className="flex flex-wrap gap-2">
@@ -239,10 +240,10 @@ export default function FleetPage() {
             </button>
           </div>
           {promTargets && (
-            <div className="text-xs text-slate-400 space-y-1" data-testid="fleet-prometheus-targets">
+            <div className="text-xs text-[var(--text-muted)] space-y-1" data-testid="fleet-prometheus-targets">
               <p>{promTargets.note}</p>
               <p>
-                Metrics path: <code className="text-slate-300">{promTargets.metrics_path}</code> ·{' '}
+                Metrics path: <code className="text-[var(--text-secondary)]">{promTargets.metrics_path}</code> ·{' '}
                 {promTargets.scrape_configs.length} scrape config(s)
               </p>
             </div>
@@ -250,14 +251,14 @@ export default function FleetPage() {
         </section>
       ) : null}
 
-      <section className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-3">
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4 space-y-3">
         <h2 className="text-lg font-semibold">VM placement</h2>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           Rank hypervisors by capacity headroom (CPU, memory, disk) minus requested VM size.
         </p>
         <div className="flex flex-wrap gap-3 items-end text-sm">
           <label>
-            <span className="text-xs text-slate-500">vCPUs</span>
+            <span className="text-xs text-[var(--text-muted)]">vCPUs</span>
             <input
               type="number"
               min={1}
@@ -267,7 +268,7 @@ export default function FleetPage() {
             />
           </label>
           <label>
-            <span className="text-xs text-slate-500">Memory (MiB)</span>
+            <span className="text-xs text-[var(--text-muted)]">Memory (MiB)</span>
             <input
               type="number"
               min={256}
@@ -295,7 +296,7 @@ export default function FleetPage() {
             {placementBusy ? 'Ranking…' : 'Suggest peer'}
           </button>
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">VM name (peer create)</span>
+            <span className="text-xs text-[var(--text-muted)]">VM name (peer create)</span>
             <input
               className="input-field w-40"
               value={createVmName}
@@ -342,7 +343,7 @@ export default function FleetPage() {
           </button>
         </div>
         {placement && placement.length > 0 ? (
-          <ul className="text-xs text-slate-400 space-y-1">
+          <ul className="text-xs text-[var(--text-muted)] space-y-1">
             {placement.map((c) => (
               <li key={c.peer}>
                 <span className={c.recommended ? `${statusToneClass('ok')} font-medium` : ''}>
@@ -360,44 +361,44 @@ export default function FleetPage() {
       </section>
 
       {metrics ? (
-        <section className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4">
+        <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4">
           <h2 className="text-lg font-semibold mb-3">Fleet capacity</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
             <div>
-              <div className="text-slate-500 text-xs">Local CPU</div>
-              <div className="text-slate-100">{(metrics.local.host_cpu_percent ?? 0).toFixed(1)}%</div>
+              <div className="text-[var(--text-muted)] text-xs">Local CPU</div>
+              <div className="text-[var(--text-primary)]">{(metrics.local.host_cpu_percent ?? 0).toFixed(1)}%</div>
             </div>
             <div>
-              <div className="text-slate-500 text-xs">Local memory</div>
-              <div className="text-slate-100">{(metrics.local.host_memory_percent ?? 0).toFixed(1)}%</div>
+              <div className="text-[var(--text-muted)] text-xs">Local memory</div>
+              <div className="text-[var(--text-primary)]">{(metrics.local.host_memory_percent ?? 0).toFixed(1)}%</div>
             </div>
             {metrics.local.host_disk_percent != null ? (
               <div>
-                <div className="text-slate-500 text-xs">Local disk</div>
-                <div className="text-slate-100">{metrics.local.host_disk_percent.toFixed(1)}%</div>
+                <div className="text-[var(--text-muted)] text-xs">Local disk</div>
+                <div className="text-[var(--text-primary)]">{metrics.local.host_disk_percent.toFixed(1)}%</div>
               </div>
             ) : null}
             <div>
-              <div className="text-slate-500 text-xs">Local VMs</div>
-              <div className="text-slate-100">
+              <div className="text-[var(--text-muted)] text-xs">Local VMs</div>
+              <div className="text-[var(--text-primary)]">
                 {metrics.local.vms_running} / {metrics.local.vm_count} running
               </div>
             </div>
             <div>
-              <div className="text-slate-500 text-xs">Load (1m)</div>
-              <div className="text-slate-100">{(metrics.local.load_1 ?? 0).toFixed(2)}</div>
+              <div className="text-[var(--text-muted)] text-xs">Load (1m)</div>
+              <div className="text-[var(--text-primary)]">{(metrics.local.load_1 ?? 0).toFixed(2)}</div>
             </div>
             {metrics.local.capacity ? (
               <div>
-                <div className="text-slate-500 text-xs">Capacity score</div>
-                <div className="text-slate-100">
+                <div className="text-[var(--text-muted)] text-xs">Capacity score</div>
+                <div className="text-[var(--text-primary)]">
                   {metrics.local.capacity.score} ({metrics.local.capacity.label})
                 </div>
               </div>
             ) : null}
           </div>
           {metrics.peers.some((p) => p.capacity) ? (
-            <ul className="mt-3 text-xs text-slate-400 space-y-1">
+            <ul className="mt-3 text-xs text-[var(--text-muted)] space-y-1">
               {metrics.peers
                 .filter((p) => p.capacity)
                 .map((p) => (
@@ -414,7 +415,7 @@ export default function FleetPage() {
       ) : null}
 
       {fleetAlerts.length > 0 ? (
-        <section className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4">
+        <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4">
           <h2 className="text-lg font-semibold mb-2">
             Fleet alerts
             {fleetAlertsTotal > 0 ? (
@@ -426,13 +427,13 @@ export default function FleetPage() {
           <div className="space-y-3 text-sm">
             {fleetAlerts.map((row) => (
               <div key={row.peer}>
-                <div className="font-medium text-slate-200">{row.peer}</div>
+                <div className="font-medium text-[var(--text-primary)]">{row.peer}</div>
                 {row.error ? (
                   <p className={`text-xs ${statusToneClass('warn')}`}>{row.error}</p>
                 ) : row.alerts.length === 0 ? (
-                  <p className="text-xs text-slate-500">No alerts</p>
+                  <p className="text-xs text-[var(--text-muted)]">No alerts</p>
                 ) : (
-                  <ul className="mt-1 text-xs text-slate-400 list-disc pl-4">
+                  <ul className="mt-1 text-xs text-[var(--text-muted)] list-disc pl-4">
                     {row.alerts
                       .filter((a) => !a.acknowledged)
                       .slice(0, 5)
@@ -453,9 +454,9 @@ export default function FleetPage() {
         <h2 id="fleet-vms-heading" className="text-lg font-semibold mb-3">
           {t('fleet.allVms')}
         </h2>
-        <div className="overflow-x-auto rounded-xl border border-slate-700/50">
+        <div className="overflow-x-auto apple-surface rounded-2xl/50">
           <table className="w-full text-sm" aria-label="Fleet hosts">
-            <thead className="bg-slate-800/60 text-slate-400">
+            <thead className="bg-[var(--apple-fill-tertiary)]/60 text-[var(--text-muted)]">
               <tr>
                 <th scope="col" className="px-4 py-2 text-left">{t('fleet.colName')}</th>
                 <th scope="col" className="px-4 py-2 text-left">{t('fleet.colPeer')}</th>
@@ -465,7 +466,7 @@ export default function FleetPage() {
             </thead>
             <tbody>
               {vms.map((vm) => (
-                <tr key={`${vm.peer}/${vm.name}`} className="border-t border-slate-700/40">
+                <tr key={`${vm.peer}/${vm.name}`} className="border-t border-[var(--apple-hairline)]/40">
                   <td className="px-4 py-2">
                     {vm.peer === 'local' ? (
                       <Link
@@ -478,7 +479,7 @@ export default function FleetPage() {
                       vm.name
                     )}
                   </td>
-                  <td className="px-4 py-2 text-slate-400">{vm.peer}</td>
+                  <td className="px-4 py-2 text-[var(--text-muted)]">{vm.peer}</td>
                   <td className="px-4 py-2">
                     <VmStatusBadge state={vm.state} />
                   </td>
@@ -517,7 +518,7 @@ export default function FleetPage() {
                         </button>
                       </div>
                     ) : (
-                      <span className="text-slate-600 text-xs">{t('fleet.localHost')}</span>
+                      <span className="text-[var(--text-faint)] text-xs">{t('fleet.localHost')}</span>
                     )}
                   </td>
                 </tr>
@@ -525,7 +526,7 @@ export default function FleetPage() {
             </tbody>
           </table>
           {vms.length === 0 ? (
-            <p className="p-4 text-slate-500 text-sm">{t('fleet.noVms')}</p>
+            <p className="p-4 text-[var(--text-muted)] text-sm">{t('fleet.noVms')}</p>
           ) : null}
         </div>
       </section>

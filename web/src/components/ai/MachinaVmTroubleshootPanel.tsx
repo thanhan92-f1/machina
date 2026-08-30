@@ -33,7 +33,7 @@ export default function MachinaVmTroubleshootPanel({
   }, [vmId, vmName, activeSymptom])
 
   return (
-    <div className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-slate-900/50 p-5 space-y-4">
+    <div className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold flex items-center gap-2">
           <Stethoscope className="w-4 h-4 text-orange-400" />
@@ -54,7 +54,7 @@ export default function MachinaVmTroubleshootPanel({
       {error && <p className={`text-sm ${statusToneClass('error')}`}>{error}</p>}
       {report && (
         <>
-          <p className="text-sm text-slate-300">
+          <p className="text-sm text-[var(--text-secondary)]">
             {report.vm_name} · severity{' '}
             <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full ${statusBadgeClasses(riskTone(report.severity))}`}>
               {report.severity}
@@ -63,23 +63,23 @@ export default function MachinaVmTroubleshootPanel({
           <div className="grid gap-2 sm:grid-cols-2 text-xs">
             {report.checks.map((c) => (
               <div key={c.domain} className="rounded-lg border border-white/[0.06] p-2">
-                <p className="font-medium text-slate-200 capitalize">{c.domain}</p>
+                <p className="font-medium text-[var(--text-primary)] capitalize">{c.domain}</p>
                 <p className={`${statusToneClass(c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'error')}`}>{c.status}</p>
-                <p className="text-slate-500 mt-0.5">{c.detail}</p>
+                <p className="text-[var(--text-muted)] mt-0.5">{c.detail}</p>
               </div>
             ))}
           </div>
           {report.findings.length > 0 && (
             <ul className="text-sm space-y-1">
               {report.findings.map((f) => (
-                <li key={`${f.domain}-${f.message}`} className="text-slate-400">
+                <li key={`${f.domain}-${f.message}`} className="text-[var(--text-muted)]">
                   [{f.domain}] {f.message}
                 </li>
               ))}
             </ul>
           )}
           {report.recommended_actions.length > 0 && (
-            <ul className="text-xs text-slate-500 space-y-0.5">
+            <ul className="text-xs text-[var(--text-muted)] space-y-0.5">
               {report.recommended_actions.map((a) => (
                 <li key={a}>→ {a}</li>
               ))}

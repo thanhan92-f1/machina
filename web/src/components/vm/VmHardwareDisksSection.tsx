@@ -89,13 +89,13 @@ export default function VmHardwareDisksSection({
     <div className="space-y-3" data-testid="vm-hardware-disks-section">
       <MacGlassPanel title={panelTitle ?? 'Disks'} subtitle={subtitle}>
         {loading ? (
-          <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
+          <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</p>
         ) : details?.disks.length ? (
-          <ul className="text-sm text-slate-400 space-y-3">
+          <ul className="text-sm text-[var(--text-muted)] space-y-3">
             {details.disks.map((d) => (
               <li key={d.target} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                 <span className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-slate-200">{d.target}</span>
+                  <span className="font-mono text-[var(--text-primary)]">{d.target}</span>
                   <VmPendingBadge pending={pending} category="disk" />
                   {' · '}{d.device}
                   {d.bus ? ` · ${d.bus}` : ''}
@@ -157,14 +157,14 @@ export default function VmHardwareDisksSection({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-slate-500">No disks reported from libvirt.</p>
+          <p className="text-sm text-[var(--text-muted)]">No disks reported from libvirt.</p>
         )}
       </MacGlassPanel>
 
       {diskEditTarget && (
         <MacGlassPanel title={`Edit disk ${diskEditTarget}`}>
           <div className="flex flex-wrap gap-3 items-end">
-            <label className="text-xs text-slate-500">
+            <label className="text-xs text-[var(--text-muted)]">
               Bus
               <select className="input mt-1 block" value={diskEditBus} onChange={(e) => setDiskEditBus(e.target.value)}>
                 <option value="virtio">virtio</option>
@@ -173,7 +173,7 @@ export default function VmHardwareDisksSection({
                 <option value="ide">ide</option>
               </select>
             </label>
-            <label className="text-xs text-slate-500">
+            <label className="text-xs text-[var(--text-muted)]">
               Cache
               <select className="input mt-1 block" value={diskEditCache} onChange={(e) => setDiskEditCache(e.target.value)}>
                 <option value="none">none</option>
@@ -183,7 +183,7 @@ export default function VmHardwareDisksSection({
                 <option value="unsafe">unsafe</option>
               </select>
             </label>
-            <label className="text-xs text-slate-500 flex items-center gap-2 mt-5">
+            <label className="text-xs text-[var(--text-muted)] flex items-center gap-2 mt-5">
               <input type="checkbox" checked={diskEditReadonly} onChange={(e) => setDiskEditReadonly(e.target.checked)} />
               Read-only
             </label>
@@ -210,7 +210,7 @@ export default function VmHardwareDisksSection({
 
       {!compact && platformDisks.length > 0 && (
         <MacGlassPanel title="Platform disk records">
-          <ul className="text-sm text-slate-400 space-y-2">
+          <ul className="text-sm text-[var(--text-muted)] space-y-2">
             {platformDisks.map((d) => (
               <li key={d.id}>{d.name} · {d.size_gib} GiB · {d.storage_class}{d.path ? ` · ${d.path}` : ''}</li>
             ))}
@@ -220,7 +220,7 @@ export default function VmHardwareDisksSection({
 
       <MacGlassPanel title="Attach disk">
         <div className="flex flex-wrap gap-3 items-end">
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             Path
             <div className="mt-1 flex gap-2 min-w-[14rem]">
               <input className="input flex-1 min-w-0 font-mono text-xs" value={attachPath} onChange={(e) => setAttachPath(e.target.value)} />
@@ -231,7 +231,7 @@ export default function VmHardwareDisksSection({
               ) : null}
             </div>
           </label>
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             Target
             <input className="input mt-1 block w-20" value={attachDev} onChange={(e) => setAttachDev(e.target.value)} />
           </label>
@@ -243,7 +243,7 @@ export default function VmHardwareDisksSection({
 
       <MacGlassPanel title="Insert ISO">
         <div className="flex flex-wrap gap-3 items-end">
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             ISO path
             <div className="mt-1 flex gap-2 min-w-[14rem]">
               <input list="vm-hw-iso-list" className="input flex-1 font-mono text-xs" value={isoPath} onChange={(e) => setIsoPath(e.target.value)} />
@@ -260,7 +260,7 @@ export default function VmHardwareDisksSection({
               ) : null}
             </div>
           </label>
-          <label className="text-xs text-slate-500">
+          <label className="text-xs text-[var(--text-muted)]">
             CD-ROM
             <select className="input mt-1 block w-24" value={isoTarget} onChange={(e) => setIsoTarget(e.target.value)}>
               {/* Empty = the daemon picks a free target. Hard-coding sda collided
@@ -285,7 +285,7 @@ export default function VmHardwareDisksSection({
       {!compact && (
         <MacGlassPanel title="Resize block device">
           <div className="flex flex-wrap gap-3 items-end">
-            <label className="text-xs text-slate-500">
+            <label className="text-xs text-[var(--text-muted)]">
               Target
               <select className="input mt-1 block" value={resizeTarget} onChange={(e) => setResizeTarget(e.target.value)}>
                 <option value="">Select…</option>
@@ -294,7 +294,7 @@ export default function VmHardwareDisksSection({
                 ))}
               </select>
             </label>
-            <label className="text-xs text-slate-500">
+            <label className="text-xs text-[var(--text-muted)]">
               GiB
               <input type="number" min={1} className="input mt-1 block w-20" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} />
             </label>

@@ -10,20 +10,20 @@ export type GlassCardProps = HTMLMotionProps<'div'> & {
   hover?: boolean
 }
 
+/** Zeus flat premium card — hairline + surface, no content blur/lift. */
 export function GlassCard({
-  elevated = true,
-  strong = false,
-  hover = true,
+  elevated: _elevated = true,
+  strong: _strong = false,
+  hover = false,
   className = '',
   children,
   ...props
 }: GlassCardProps) {
-  const glassClass = strong ? 'glass-strong' : elevated ? 'glass-elevated glass' : 'glass'
   return (
     <motion.div
-      whileHover={hover ? { scale: 1.005 } : undefined}
+      whileHover={hover ? { scale: 1.002 } : undefined}
       transition={spring}
-      className={`${glassClass} ${hover ? 'glass-hover-lift' : ''} ${className}`.trim()}
+      className={`tahoe-glass-card rounded-[var(--radius-card,0.9rem)] ${className}`.trim()}
       {...props}
     >
       {children}

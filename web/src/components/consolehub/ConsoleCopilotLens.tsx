@@ -41,8 +41,8 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-[320px] rounded-lg border border-violet-500/25 bg-violet-950/15 p-4 gap-3 text-sm">
-      <div className="flex items-center gap-2 text-violet-100 font-medium">
+    <div className="flex flex-col flex-1 min-h-[320px] rounded-lg border border-[var(--apple-hairline)] bg-[var(--accent-soft)] p-4 gap-3 text-sm">
+      <div className="flex items-center gap-2 text-[var(--text-primary)] font-medium">
         <Bot className="w-4 h-4" /> Zyra Console Copilot
       </div>
       <p className="text-xs text-slate-400">

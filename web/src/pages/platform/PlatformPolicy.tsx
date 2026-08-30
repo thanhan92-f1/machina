@@ -76,6 +76,7 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       hideHeader={embedded}
       compact={embedded}
       loading={loading && rules.length === 0 && quotas.length === 0}
@@ -83,7 +84,7 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Policy & Quotas'}
       subtitle={embedded ? undefined : 'Controller policy rules and per-project resource limits.'}
-      icon={embedded ? undefined : <Shield className="w-6 h-6 text-slate-400" />}
+      icon={embedded ? undefined : <Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -96,7 +97,7 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
         }
       >
         {rules.length === 0 ? (
-          <p className="text-sm text-slate-400">No policy rules configured.</p>
+          <p className="text-sm text-[var(--text-muted)]">No policy rules configured.</p>
         ) : (
           <ul className="divide-y divide-white/[0.04] -mx-1">
             {rules.map((r) => (
@@ -112,11 +113,11 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
       </MacGlassPanel>
       <MacGlassPanel title="Project quotas">
         <div className="grid gap-3 sm:grid-cols-3 max-w-xl mb-4">
-          <label className="block text-xs text-slate-500">
+          <label className="block text-xs text-[var(--text-muted)]">
             Project
             <input className="input text-sm mt-1 w-full" value={project} onChange={(e) => setProject(e.target.value)} />
           </label>
-          <label className="block text-xs text-slate-500">
+          <label className="block text-xs text-[var(--text-muted)]">
             Max VMs
             <input type="number" className="input text-sm mt-1 w-full" value={maxVms} onChange={(e) => setMaxVms(Number(e.target.value))} />
           </label>

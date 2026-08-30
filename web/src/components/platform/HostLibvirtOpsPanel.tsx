@@ -69,7 +69,7 @@ export default function HostLibvirtOpsPanel({ hostId, online = true }: Props) {
   if (!online) {
     return (
       <MacGlassPanel title="Host libvirt ops" subtitle="POST /api/v1/hosts/{id}/libvirt">
-        <p className="text-sm text-slate-500">Host is offline — reconnect the agent to manage storage pools and networks.</p>
+        <p className="text-sm text-[var(--text-muted)]">Host is offline — reconnect the agent to manage storage pools and networks.</p>
       </MacGlassPanel>
     )
   }
@@ -77,14 +77,14 @@ export default function HostLibvirtOpsPanel({ hostId, online = true }: Props) {
   return (
     <MacGlassPanel title="Host libvirt ops" subtitle="Storage pools and virtual networks via agent libvirt RPC">
       {loading ? (
-        <div role="status" className="flex items-center gap-2 text-sm text-slate-400 py-4">
+        <div role="status" className="flex items-center gap-2 text-sm text-[var(--text-muted)] py-4">
           <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           Loading host libvirt inventory…
         </div>
       ) : (
         <div className="space-y-4">
           <div>
-            <p className="text-xs text-slate-500 mb-2">Storage pools</p>
+            <p className="text-xs text-[var(--text-muted)] mb-2">Storage pools</p>
             <div className="flex flex-wrap gap-2 items-center">
               <select id="host-libvirt-storage-pool" name="storage_pool" aria-label="Storage pool" className="input text-sm min-w-[10rem]" value={selectedPool} onChange={(e) => setSelectedPool(e.target.value)}>
                 {pools.map((p) => (
@@ -147,7 +147,7 @@ export default function HostLibvirtOpsPanel({ hostId, online = true }: Props) {
                 value={volumeSizeGiB}
                 onChange={(e) => setVolumeSizeGiB(e.target.value)}
               />
-              <span className="text-xs text-slate-500">GiB</span>
+              <span className="text-xs text-[var(--text-muted)]">GiB</span>
               <button
                 type="button"
                 className="btn-secondary text-xs"
@@ -166,7 +166,7 @@ export default function HostLibvirtOpsPanel({ hostId, online = true }: Props) {
           </div>
 
           <div>
-            <p className="text-xs text-slate-500 mb-2">Virtual networks</p>
+            <p className="text-xs text-[var(--text-muted)] mb-2">Virtual networks</p>
             <div className="flex flex-wrap gap-2 items-center">
               <select id="host-libvirt-network" name="virtual_network" aria-label="Virtual network" className="input text-sm min-w-[10rem]" value={selectedNetwork} onChange={(e) => setSelectedNetwork(e.target.value)}>
                 {networks.map((n) => (

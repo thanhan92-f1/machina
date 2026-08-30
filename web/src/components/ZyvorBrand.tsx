@@ -110,7 +110,7 @@ export function ZyvorFooter({ className = '', hostOs }: FooterProps) {
       role="contentinfo"
     >
       <div
-        className="text-[11px] text-slate-500"
+        className="text-[11px] text-[var(--text-muted)]"
         title="Daemon host operating system"
       >
         {hostOs}

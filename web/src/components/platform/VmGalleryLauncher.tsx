@@ -20,11 +20,11 @@ function VmGalleryTile({ vm }: { vm: PlatformVm }) {
 
   return (
     <article
-      className="group relative rounded-xl border border-white/[0.08] bg-slate-950/60 overflow-hidden min-w-[220px] max-w-[280px] flex-shrink-0 transition hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-900/10"
+  className="group relative rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden min-w-[220px] max-w-[280px] flex-shrink-0 transition hover:border-[color-mix(in_srgb,var(--accent)_35%,transparent)] hover:shadow-[var(--shadow-2)]"
       data-testid={`vm-gallery-tile-${vm.name}`}
     >
       <div
-        className="h-28 relative bg-gradient-to-br from-slate-900 to-black"
+        className="h-28 relative bg-gradient-to-br from-[var(--apple-surface)] to-black"
         style={poster ? { backgroundImage: `url(${poster})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
       >
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" />
@@ -35,7 +35,7 @@ function VmGalleryTile({ vm }: { vm: PlatformVm }) {
         </div>
       </div>
       <div className="p-3 space-y-2">
-        <h3 className="font-semibold text-sm text-slate-100 truncate">{vm.name}</h3>
+        <h3 className="font-semibold text-sm text-[var(--text-primary)] truncate">{vm.name}</h3>
         {vm.guest_ip ? <p className="text-[11px] font-mono text-emerald-300/80 truncate">{vm.guest_ip}</p> : null}
         <div className="flex flex-wrap gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
           <Link to={cinemaHubPath(vm.id)} className="btn-primary text-xs py-1 px-2 inline-flex items-center gap-1 flex-1 justify-center">
@@ -55,7 +55,7 @@ export default function VmGalleryLauncher({ vms, title, emptyLabel = 'No machine
 
   return (
     <section className="space-y-2" data-testid="vm-gallery-row">
-      <h2 className="text-sm font-semibold text-slate-300">{title}</h2>
+      <h2 className="text-sm font-semibold text-[var(--text-secondary)]">{title}</h2>
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {vms.map((vm) => (
           <div key={vm.id} className="snap-start">

@@ -57,13 +57,14 @@ export default function PlatformNotifications() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       loading={loading && rows.length === 0}
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Alerts"
       subtitle="Notification Center — actionable alerts, not just log lines."
-      icon={<Bell className="w-6 h-6 text-slate-400" />}
+      icon={<Bell className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           {unread > 0 && (
@@ -88,13 +89,13 @@ export default function PlatformNotifications() {
       }
       contentClassName="space-y-4"
     >
-      <label className="flex items-center gap-2 text-sm text-slate-400">
+      <label className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
         <input type="checkbox" checked={undeliveredOnly} onChange={(e) => setUndeliveredOnly(e.target.checked)} />
         Undelivered only
       </label>
       {rows.length === 0 && !error ? (
         <PlatformEmptyState title="No alerts" subtitle="You're all caught up — warnings and failures will appear here.">
-          <Bell className="w-8 h-8 text-slate-600 mx-auto mt-2" />
+          <Bell className="w-8 h-8 text-[var(--text-faint)] mx-auto mt-2" />
         </PlatformEmptyState>
       ) : (
         <ul className="space-y-3">
@@ -114,12 +115,12 @@ export default function PlatformNotifications() {
                   : null
             return (
               <li key={n.id} className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
-                n.delivered ? 'border-white/[0.04] bg-slate-900/30 opacity-70' : statusSurfaceClasses('warn')
+                n.delivered ? 'border-white/[0.04] bg-[var(--apple-fill-tertiary)] opacity-70' : statusSurfaceClasses('warn')
               }`}>
                 <div>
-                  <span className={n.delivered ? 'text-slate-500' : `${statusToneClass('warn')} font-medium`}>{n.kind}</span>
-                  <div className="text-xs text-slate-500 mt-1">{new Date(n.created_at).toLocaleString()}</div>
-                  {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
+                  <span className={n.delivered ? 'text-[var(--text-muted)]' : `${statusToneClass('warn')} font-medium`}>{n.kind}</span>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                  {description && <p className="text-sm text-[var(--text-muted)] mt-1">{description}</p>}
                 </div>
                 <div className="flex gap-2 shrink-0 flex-wrap">
                   <ExplainButton screen="notification" objectRef={{ kind: n.kind, ...n.payload }} />
@@ -151,9 +152,9 @@ export default function PlatformNotifications() {
       )}
       {runbook && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50" onClick={() => setRunbook(null)}>
-          <div ref={runbookRef} className="max-w-lg w-full rounded-2xl bg-slate-900 border border-white/10 p-5" role="dialog" aria-modal="true" aria-label={runbook.title} onClick={(e) => e.stopPropagation()}>
+          <div ref={runbookRef} className="max-w-lg w-full rounded-2xl bg-[var(--apple-surface)] border border-white/10 p-5" role="dialog" aria-modal="true" aria-label={runbook.title} onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold mb-2">{runbook.title}</h3>
-            <ol className="text-sm text-slate-300 space-y-2 list-decimal pl-5">{runbook.steps.map((s) => <li key={s}>{s}</li>)}</ol>
+            <ol className="text-sm text-[var(--text-secondary)] space-y-2 list-decimal pl-5">{runbook.steps.map((s) => <li key={s}>{s}</li>)}</ol>
             <button type="button" className="btn-secondary mt-4 w-full" onClick={() => setRunbook(null)}>Close</button>
           </div>
         </div>

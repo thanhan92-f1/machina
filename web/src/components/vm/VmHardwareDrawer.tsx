@@ -125,7 +125,7 @@ export default function VmHardwareDrawer({
       <button type="button" className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-sm" aria-label="Close Hardware" onClick={onClose} />
       <aside
         ref={panelRef}
-        className="fixed top-0 right-0 z-[80] h-full w-full max-w-md bg-slate-950/95 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
+        className="fixed top-0 right-0 z-[80] h-full w-full max-w-md bg-[var(--apple-surface)]/95 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
         role="dialog"
         aria-modal="true"
         aria-label="Hardware"
@@ -133,17 +133,17 @@ export default function VmHardwareDrawer({
       >
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
           <div>
-            <h2 className="font-semibold text-slate-100">Hardware</h2>
-            <p className="text-xs text-slate-500">{vmName}</p>
+            <h2 className="font-semibold text-[var(--text-primary)]">Hardware</h2>
+            <p className="text-xs text-[var(--text-muted)]">{vmName}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-slate-400"><X className="w-5 h-5" aria-hidden="true" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-[var(--text-muted)]"><X className="w-5 h-5" aria-hidden="true" /></button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
           {loading && !summary && !report ? (
-            <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading hardware…</p>
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading hardware…</p>
           ) : summary || report ? (
-            <div className="rounded-lg border border-white/[0.08] bg-slate-900/40 px-3 py-1">
+            <div className="rounded-lg border border-white/[0.08] bg-[var(--apple-surface)] px-3 py-1">
               <VmHardwareSection label="CPU" value={cpu.value} badges={cpu.badges} badge={pendingBadge} testId="vm-hardware-cpu" />
               <VmHardwareSection label="Memory" value={memory.value} badges={memory.badges} badge={pendingBadge} testId="vm-hardware-memory" />
               <VmHardwareSection label="Firmware" value={firmware.value} badges={firmware.badges} badge={pendingBadge} testId="vm-hardware-firmware" />
@@ -157,7 +157,7 @@ export default function VmHardwareDrawer({
               <VmHardwareSection label="Migration" value={migration.value} badges={migration.badges} testId="vm-hardware-migration" />
             </div>
           ) : (
-            <p className="text-sm text-slate-500">Hardware details unavailable.</p>
+            <p className="text-sm text-[var(--text-muted)]">Hardware details unavailable.</p>
           )}
 
           {report?.windows_readiness ? (
@@ -172,10 +172,10 @@ export default function VmHardwareDrawer({
             <VmHardwareCompatPanel loading={compatLoading} report={compat} domainCaps={domainCaps} error={compatError} />
           ) : null}
 
-          <div className="rounded-lg border border-violet-500/20 bg-violet-950/20 p-3 space-y-2" data-testid="vm-hardware-access-section">
-            <p className="text-xs font-medium text-violet-100 flex items-center gap-1.5"><Monitor className="w-3.5 h-3.5" /> Display &amp; Access</p>
-            <p className="text-xs text-slate-400">Primary: {primaryAccess}</p>
-            <p className="text-xs text-slate-400">
+          <div className="rounded-lg border border-violet-500/20 bg-[var(--apple-surface)] p-3 space-y-2" data-testid="vm-hardware-access-section">
+            <p className="text-xs font-medium text-[var(--text-primary)] flex items-center gap-1.5"><Monitor className="w-3.5 h-3.5" /> Display &amp; Access</p>
+            <p className="text-xs text-[var(--text-muted)]">Primary: {primaryAccess}</p>
+            <p className="text-xs text-[var(--text-muted)]">
               RDP 3389: {rdpExposed ? `exposed :${rdpHostPort}` : 'not exposed'}
             </p>
             <div className="flex flex-wrap gap-2 pt-1">

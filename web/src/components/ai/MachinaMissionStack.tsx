@@ -67,10 +67,10 @@ export default function MachinaMissionStack() {
       </div>
       {error && <p className={`text-xs mt-2 ${statusToneClass('error')}`}>{error}</p>}
       {executeSummary && <p className={`text-xs mt-2 ${statusToneClass('ok')}`}>{executeSummary}</p>}
-      {stackStatus && <p className="text-xs text-slate-500 mt-1">Stack status: {stackStatus}</p>}
+      {stackStatus && <p className="text-xs text-[var(--text-muted)] mt-1">Stack status: {stackStatus}</p>}
       {plan && (
-        <div className="mt-3 text-xs space-y-2 text-slate-400">
-          <p className="text-slate-200 font-medium">{plan.label}</p>
+        <div className="mt-3 text-xs space-y-2 text-[var(--text-muted)]">
+          <p className="text-[var(--text-primary)] font-medium">{plan.label}</p>
           <p>{plan.review}</p>
           {plan.phases.map((ph) => (
             <div key={ph.name}>

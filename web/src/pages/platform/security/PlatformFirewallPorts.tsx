@@ -58,7 +58,7 @@ export default function PlatformFirewallPorts() {
       testId="platform-firewall-ports-page"
       title="Open Ports"
       subtitle={`${filtered.length} listening port${filtered.length === 1 ? '' : 's'} across the fleet`}
-      icon={<Network className="w-6 h-6 text-slate-400" />}
+      icon={<Network className="w-6 h-6 text-[var(--text-muted)]" />}
       loading={loading && ports.length === 0}
       error={error}
       onRefresh={() => void load()}
@@ -69,7 +69,7 @@ export default function PlatformFirewallPorts() {
       ]}
       insight={explain ? (
         <MacGlassPanel title="Zeus insight" subtitle="Exposure recommendation">
-          <p className="text-sm text-slate-300">{explain}</p>
+          <p className="text-sm text-[var(--text-secondary)]">{explain}</p>
         </MacGlassPanel>
       ) : undefined}
       filters={[

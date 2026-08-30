@@ -92,33 +92,38 @@ export default function FleetCloudCreateInstancePage() {
 
   if (loading) {
     return (
-      <PageLayout hideHeader className="max-w-3xl" prepend={<><FleetCloudSubNav /></>}>
-        <div className="text-slate-500 py-12 text-center flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
-          Loading catalogs…
-        </div>
-      </PageLayout>
+      <PageLayout
+        className="w-full max-w-none"
+        prepend={<><FleetCloudSubNav /></>}
+        eyebrow="Fleet Cloud"
+        title="Create instance"
+        subtitle="Pick an image and flavor to launch a new Fleet Cloud VM."
+        icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
+        contentLoading
+      />
     )
   }
 
   return (
     <PageLayout
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
-      title="Create Fleet Cloud instance"
-      icon={<Cloud className="w-7 h-7 text-sky-400" />}
+      eyebrow="Fleet Cloud"
+      title="Create instance"
+      subtitle="Pick an image and flavor to launch a new Fleet Cloud VM."
+      icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       actions={
         <div className="flex items-center gap-3">
           <button
             type="button"
             disabled={!canCreate || submitting}
             onClick={() => void handleCreate()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-50 text-sm"
+            className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             Create instance
           </button>
-          <Link to="/fleet-cloud/instances" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+          <Link to="/fleet-cloud/instances" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
             <ArrowLeft className="w-4 h-4" />
             Instances
           </Link>
@@ -126,21 +131,21 @@ export default function FleetCloudCreateInstancePage() {
       }
     >
       <div>
-        <label className="block text-sm text-slate-400 mb-1">Instance name</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-1">Instance name</label>
         <input
           aria-label="Instance name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-100"
+          className="w-full input-field text-[var(--text-primary)]"
           placeholder="my-vm"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-slate-400 mb-2">Image</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-2">Image</label>
         {images.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No images in the catalog. <Link to="/fleet-cloud/images" className="text-sky-400 hover:underline">Register one</Link> first.
+          <p className="text-sm text-[var(--text-muted)]">
+            No images in the catalog. <Link to="/fleet-cloud/images" className="text-[var(--accent)] hover:underline">Register one</Link> first.
           </p>
         ) : (
           <ChoiceCardGrid>
@@ -160,15 +165,15 @@ export default function FleetCloudCreateInstancePage() {
       </div>
 
       <div>
-        <label className="block text-sm text-slate-400 mb-2">Flavor</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-2">Flavor</label>
         {flavors.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No flavors. <Link to="/fleet-cloud/flavors" className="text-sky-400 hover:underline">Create one</Link> first.
+          <p className="text-sm text-[var(--text-muted)]">
+            No flavors. <Link to="/fleet-cloud/flavors" className="text-[var(--accent)] hover:underline">Create one</Link> first.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-700">
-            <table className="w-full text-sm" aria-label="Flavors">
-              <thead className="bg-slate-900 text-slate-400 text-left">
+          <div className="overflow-x-auto apple-surface rounded-2xl">
+            <table className="apple-table" aria-label="Flavors">
+              <thead className="bg-[var(--apple-surface)] text-[var(--text-muted)] text-left">
                 <tr>
                   <th scope="col" className="px-3 py-2" />
                   <th scope="col" className="px-3 py-2">Name</th>
@@ -177,17 +182,17 @@ export default function FleetCloudCreateInstancePage() {
                   <th scope="col" className="px-3 py-2">Disk</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-[var(--apple-hairline)]">
                 {flavors.map((f) => (
                   <tr
                     key={f.id}
-                    className={`cursor-pointer hover:bg-slate-800/50 ${flavorId === f.id ? 'bg-sky-500/10' : ''}`}
+                    className={`cursor-pointer hover:bg-[var(--apple-surface)] ${flavorId === f.id ? 'bg-[color-mix(in_srgb,var(--accent)_10%,transparent)]' : ''}`}
                     onClick={() => setFlavorId(f.id)}
                   >
                     <td className="px-3 py-2">
                       <input type="radio" checked={flavorId === f.id} readOnly />
                     </td>
-                    <td className="px-3 py-2 text-slate-200">{f.name}</td>
+                    <td className="px-3 py-2 text-[var(--text-primary)]">{f.name}</td>
                     <td className="px-3 py-2">{f.vcpus}</td>
                     <td className="px-3 py-2">{f.memory_mib} MiB</td>
                     <td className="px-3 py-2">{f.disk_gib} GiB</td>
@@ -200,9 +205,9 @@ export default function FleetCloudCreateInstancePage() {
       </div>
 
       <div>
-        <label className="block text-sm text-slate-400 mb-2">Network</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-2">Network</label>
         {networks.length === 0 ? (
-          <p className="text-sm text-slate-500">No networks available.</p>
+          <p className="text-sm text-[var(--text-muted)]">No networks available.</p>
         ) : (
           <ChoiceCardGrid>
             {networks.map((net) => (
@@ -220,19 +225,19 @@ export default function FleetCloudCreateInstancePage() {
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl border border-slate-700 p-4">
-        <h2 className="text-sm font-medium text-slate-300">Cloud-init (optional)</h2>
+      <div className="space-y-3 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Cloud-init (optional)</h2>
         <div className="grid sm:grid-cols-2 gap-3">
           <input aria-label="Cloud-init user" value={cloudInitUser} onChange={(e) => setCloudInitUser(e.target.value)}
             placeholder="Login user (default: ubuntu)"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <input aria-label="Cloud-init password" type="password" autoComplete="new-password" value={cloudInitPassword} onChange={(e) => setCloudInitPassword(e.target.value)}
             placeholder="Password (optional)"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
         </div>
         <textarea aria-label="SSH public key" value={cloudInitSshPubkey} onChange={(e) => setCloudInitSshPubkey(e.target.value)} rows={2}
           placeholder="SSH public key (optional) — or pick a saved keypair on the Keys page and paste its key here"
-          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono" />
+          className="w-full input-field text-xs font-mono" />
       </div>
 
       <FleetCloudFooter />

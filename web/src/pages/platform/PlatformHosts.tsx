@@ -113,7 +113,7 @@ export default function PlatformHosts() {
     <div className="card overflow-x-auto">
       <table className="w-full text-sm" aria-label="Managed hosts">
         <thead>
-          <tr className="text-slate-400 border-b border-white/[0.06]">
+          <tr className="text-[var(--text-muted)] border-b border-white/[0.06]">
             <th scope="col" className="p-3 text-left">Host</th>
             <th scope="col" className="p-3">State</th>
             <th scope="col" className="p-3">VMs</th>
@@ -125,7 +125,7 @@ export default function PlatformHosts() {
           {visibleHosts.map((h) => (
             <tr
               key={h.id}
-              className={`border-b border-slate-900/80 cursor-pointer ${selectedId === h.id ? 'bg-sky-500/10' : 'hover:bg-white/[0.02]'}`}
+              className={`border-b border-[var(--apple-hairline)] cursor-pointer ${selectedId === h.id ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'}`}
               onClick={() => setSelectedId(h.id)}
             >
               <td className="p-3"><Link to={`/platform/hosts/${h.id}`} className={`hover:underline ${hubLinkClasses()}`} onClick={(e) => e.stopPropagation()}>{h.hostname}</Link></td>
@@ -162,7 +162,7 @@ export default function PlatformHosts() {
           type="button"
           onClick={() => setSelectedId(h.id)}
           className={`platform-mac-stat rounded-2xl border p-5 space-y-3 text-left transition ${
-            selectedId === h.id ? 'border-sky-400/40 ring-1 ring-sky-400/20' : 'border-white/[0.06]'
+            selectedId === h.id ? 'border-[var(--accent)]/40 ring-1 ring-[var(--accent)]/20' : 'border-white/[0.06]'
           }`}
         >
           <div className="flex items-start gap-3">
@@ -170,15 +170,15 @@ export default function PlatformHosts() {
               <Server className="w-6 h-6" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="font-semibold text-white truncate block">{h.hostname}</span>
+              <span className="font-semibold text-[var(--text-primary)] truncate block">{h.hostname}</span>
               <p className={`text-xs capitalize mt-0.5 ${
-                hostTone(h) === 'default' ? 'text-slate-500' : statusToneClass(hostTone(h) === 'ok' ? 'ok' : 'warn')
+                hostTone(h) === 'default' ? 'text-[var(--text-muted)]' : statusToneClass(hostTone(h) === 'ok' ? 'ok' : 'warn')
               }`}>
                 {h.maintenance_mode ? 'maintenance' : h.state}
               </p>
             </div>
           </div>
-          <p className="text-xs text-white/50">
+          <p className="text-xs text-[var(--text-muted)]">
             {h.vm_count} VM(s) · {h.cpu_percent != null ? `${h.cpu_percent.toFixed(0)}% CPU` : 'CPU —'}
             {linuxByHost[h.id] && linuxByHost[h.id].status !== 'ok' ? (
               <>
@@ -197,12 +197,12 @@ export default function PlatformHosts() {
   const inspector = selected ? (
     <div className="platform-finder-inspector p-4 space-y-4">
       <div>
-        <h3 className="font-semibold text-white">{selected.hostname}</h3>
+        <h3 className="font-semibold text-[var(--text-primary)]">{selected.hostname}</h3>
         <p className="platform-finder-inspector-subtitle mt-1">{selected.address || '—'}</p>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs">
-        <div><dt className="platform-finder-inspector-label">State</dt><dd className="text-white capitalize">{selected.state}</dd></div>
-        <div><dt className="platform-finder-inspector-label">VMs</dt><dd className="text-white">{selected.vm_count}</dd></div>
+        <div><dt className="platform-finder-inspector-label">State</dt><dd className="text-[var(--text-primary)] capitalize">{selected.state}</dd></div>
+        <div><dt className="platform-finder-inspector-label">VMs</dt><dd className="text-[var(--text-primary)]">{selected.vm_count}</dd></div>
         <div><dt className="platform-finder-inspector-label">Validation</dt><dd className="capitalize">{selected.validation_status || 'pending'}</dd></div>
         <div><dt className="platform-finder-inspector-label">CPU</dt><dd>{selected.cpu_percent != null ? `${selected.cpu_percent.toFixed(0)}%` : '—'}</dd></div>
       </dl>
@@ -231,7 +231,7 @@ export default function PlatformHosts() {
             key={h.id}
             type="button"
             onClick={() => setSelectedId(h.id)}
-            className={`w-full text-left px-3 py-2 text-sm border-b border-white/[0.04] ${selectedId === h.id ? 'bg-sky-500/15 text-sky-100' : 'text-white/80 hover:bg-white/[0.03]'}`}
+            className={`w-full text-left px-3 py-2 text-sm border-b border-white/[0.04] ${selectedId === h.id ? 'bg-[var(--accent)]/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--apple-surface)]'}`}
           >
             {h.hostname}
           </button>
@@ -255,11 +255,11 @@ export default function PlatformHosts() {
       subtitle={
         <span aria-live="polite" className="flex flex-wrap items-center gap-2 text-sm">
           <span className={statusPillClasses(fleetTone)}>{online} / {hosts.length} online</span>
-          <span className="text-slate-400">{totalVms} VM{totalVms === 1 ? '' : 's'} fleet-wide</span>
-          {filterOffline && <span className="text-slate-500">Showing offline only</span>}
+          <span className="text-[var(--text-muted)]">{totalVms} VM{totalVms === 1 ? '' : 's'} fleet-wide</span>
+          {filterOffline && <span className="text-[var(--text-muted)]">Showing offline only</span>}
         </span>
       }
-      icon={<Server className="w-6 h-6 text-slate-400" />}
+      icon={<Server className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
           <button type="button" className="btn-secondary text-sm" onClick={async () => {

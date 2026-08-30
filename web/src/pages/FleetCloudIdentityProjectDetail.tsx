@@ -77,7 +77,7 @@ function FleetCloudIdentityProjectDetailContent() {
     return (
       <div className="space-y-4">
         <FleetCloudSubNav />
-        <Link to="/fleet-cloud/identity" className="text-sky-400 hover:underline">Back</Link>
+        <Link to="/fleet-cloud/identity" className="text-[var(--accent)] hover:underline">Back</Link>
       </div>
     )
   }
@@ -85,31 +85,32 @@ function FleetCloudIdentityProjectDetailContent() {
   return (
     <PageLayout
       hideHeader
-      className="max-w-3xl"
+      className="w-full max-w-none"
       prepend={<><FleetCloudSubNav /></>}
     >
-      <Link to="/fleet-cloud/identity" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-200 text-sm">
+      <Link to="/fleet-cloud/identity" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm">
         <ArrowLeft className="w-4 h-4" /> Projects
       </Link>
-      <h1 className="text-2xl font-semibold flex items-center gap-2">
+      <p className="apple-eyebrow">Fleet Cloud</p>
+      <h1 className="page-title flex items-center gap-3">
         <KeyRound className={`w-7 h-7 ${statusToneClass('warn')}`} /> {project.name}
       </h1>
-      <dl className="grid sm:grid-cols-2 gap-4 rounded-xl border border-slate-700 p-4 text-sm">
-        <div><dt className="text-xs text-slate-500 uppercase">ID</dt><dd className="font-mono mt-1 break-all">{project.id}</dd></div>
-        <div><dt className="text-xs text-slate-500 uppercase">Enabled</dt><dd className="mt-1">{project.enabled ? 'yes' : 'no'}</dd></div>
-        <div className="sm:col-span-2"><dt className="text-xs text-slate-500 uppercase">Description</dt><dd className="mt-1">{project.description || '—'}</dd></div>
+      <dl className="grid sm:grid-cols-2 gap-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 text-sm">
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">ID</dt><dd className="font-mono mt-1 break-all">{project.id}</dd></div>
+        <div><dt className="text-xs text-[var(--text-muted)] uppercase">Enabled</dt><dd className="mt-1">{project.enabled ? 'yes' : 'no'}</dd></div>
+        <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Description</dt><dd className="mt-1">{project.description || '—'}</dd></div>
       </dl>
 
-      <section className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300">Members</h2>
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Members</h2>
         <div className="flex flex-wrap gap-2">
           <select aria-label="User" value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)}
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
+            className="input-field text-sm">
             <option value="">User…</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.username}</option>)}
           </select>
           <select aria-label="Role" value={grantRole} onChange={(e) => setGrantRole(e.target.value)}
-            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-sm">
+            className="input-field text-sm">
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
           <button type="button" className="px-2 py-1 rounded bg-amber-700 text-white text-sm"
@@ -123,13 +124,13 @@ function FleetCloudIdentityProjectDetailContent() {
             }}>Add</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" aria-label="Project members">
-            <thead className="text-slate-400 text-left">
+          <table className="apple-table" aria-label="Project members">
+            <thead className="text-[var(--text-muted)] text-left">
               <tr><th scope="col" className="py-1">User</th><th scope="col" className="py-1">Role</th><th scope="col" /></tr>
             </thead>
             <tbody>
               {members.map((m) => (
-                <tr key={m.user_id} className="border-t border-slate-800">
+                <tr key={m.user_id} className="border-t border-[var(--apple-hairline)]">
                   <td className="py-2">{m.username}</td>
                   <td className="py-2">{m.role}</td>
                   <td className="py-2 text-right">
@@ -145,7 +146,7 @@ function FleetCloudIdentityProjectDetailContent() {
               ))}
             </tbody>
           </table>
-          {members.length === 0 && <p className="text-slate-500 text-sm py-2">No members.</p>}
+          {members.length === 0 && <p className="text-[var(--text-muted)] text-sm py-2">No members.</p>}
         </div>
       </section>
       <FleetCloudFooter />

@@ -81,16 +81,16 @@ export default function GuestkitOfflineAssurancePanel({ vmId, vmState, guestkitE
   if (!guestkitEnabled) {
     return (
       <div className={`rounded-xl border p-4 text-sm ${statusSurfaceClasses('neutral')}`}>
-        <p className="font-medium text-slate-200 flex items-center gap-2">
+        <p className="font-medium text-[var(--text-primary)] flex items-center gap-2">
           <HardDrive className="w-4 h-4" />
           Offline disk assurance (GuestKit)
         </p>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-[var(--text-muted)] mt-2">
           Offline disk assurance isn't active on this controller. When an administrator enables it,
           stopped VM disks are scored for KVM migration — boot blockers, drivers, and readiness —
           without powering the guest on.
         </p>
-        <p className="text-[10px] text-slate-600 mt-1">
+        <p className="text-[10px] text-[var(--text-faint)] mt-1">
           Administrator setting: <span className="font-mono">GUESTKIT_ENABLED=1</span> on the controller.
         </p>
         <Link to="/platform/migration" className={`text-xs mt-2 inline-block ${hubLinkClasses()}`}>
@@ -101,7 +101,7 @@ export default function GuestkitOfflineAssurancePanel({ vmId, vmState, guestkitE
   }
 
   return (
-    <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-50 space-y-3">
+    <div className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm text-orange-50 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-orange-100 flex items-center gap-2">

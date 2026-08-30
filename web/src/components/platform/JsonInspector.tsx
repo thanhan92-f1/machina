@@ -39,22 +39,22 @@ export default function JsonInspector({
   className?: string
 }) {
   const [raw, setRaw] = useState(false)
-  if (data == null) return <p className="text-sm text-slate-500">{emptyMessage}</p>
+  if (data == null) return <p className="text-sm text-[var(--text-muted)]">{emptyMessage}</p>
 
   return (
     <div className={`space-y-3 ${className}`}>
       {!raw && (children ?? (
         <dl className="grid gap-2 sm:grid-cols-2 text-sm">
           {recordEntries(asRecord(data) ?? { value: data }).map(([k, v]) => (
-            <div key={k} className="rounded-lg border border-white/[0.06] bg-slate-950/30 px-3 py-2">
-              <dt className="text-xs text-slate-500 capitalize">{k.replace(/_/g, ' ')}</dt>
-              <dd className="text-slate-200 mt-0.5 break-words">{summarizeJsonValue(v)}</dd>
+            <div key={k} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+              <dt className="text-xs text-[var(--text-muted)] capitalize">{k.replace(/_/g, ' ')}</dt>
+              <dd className="text-[var(--text-primary)] mt-0.5 break-words">{summarizeJsonValue(v)}</dd>
             </div>
           ))}
         </dl>
       ))}
       {raw && (
-        <pre className="text-xs text-slate-300 whitespace-pre-wrap overflow-x-auto max-h-96 bg-slate-950/50 rounded-lg p-3 border border-white/[0.06]">
+        <pre className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap overflow-x-auto max-h-96 bg-[var(--apple-surface)] rounded-lg p-3 border border-white/[0.06]">
           {JSON.stringify(data, null, 2)}
         </pre>
       )}

@@ -46,9 +46,9 @@ const CMD_WAIT = `kubectl -n kube-system wait --timeout=10m --for=condition=Read
 function CopyBlock({ label, text }: { label: string; text: string }) {
   const toast = useToastContext()
   return (
-    <div className="relative group rounded-lg border border-slate-700 bg-slate-900/80 overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/80 bg-slate-800/60">
-        <span className="text-xs text-slate-400">{label}</span>
+    <div className="relative group rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--apple-hairline)]/80 bg-[var(--apple-fill-tertiary)]/60">
+        <span className="text-xs text-[var(--text-muted)]">{label}</span>
         <button
           type="button"
           onClick={() =>
@@ -62,7 +62,7 @@ function CopyBlock({ label, text }: { label: string; text: string }) {
           <Copy className="w-3 h-3" /> Copy
         </button>
       </div>
-      <pre className="p-3 text-xs font-mono text-slate-200 overflow-x-auto whitespace-pre-wrap break-all">{text.trim()}</pre>
+      <pre className="p-3 text-xs font-mono text-[var(--text-primary)] overflow-x-auto whitespace-pre-wrap break-all">{text.trim()}</pre>
     </div>
   )
 }
@@ -134,19 +134,19 @@ function KataAutomateSection() {
   )
 
   const btnClass =
-    'px-3 py-2 rounded-lg text-sm font-medium transition border disabled:opacity-45 disabled:cursor-not-allowed border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-100 inline-flex items-center justify-center gap-2 min-h-[2.5rem]'
+    'px-3 py-2 rounded-lg text-sm font-medium transition border disabled:opacity-45 disabled:cursor-not-allowed border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] inline-flex items-center justify-center gap-2 min-h-[2.5rem]'
 
   return (
-    <section className="rounded-xl border border-cyan-800/40 bg-cyan-950/20 p-5 space-y-4">
+    <section className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)] p-5 space-y-4">
       <div className="flex flex-wrap items-start gap-3 justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Terminal className="w-5 h-5 text-cyan-400" /> Automate from the machina daemon host
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-[var(--accent)]" /> Automate from the machina daemon host
           </h2>
-          <p className="text-sm text-slate-400 mt-1 max-w-prose">
-            Runs allowlisted <code className="text-slate-300">helm</code> / <code className="text-slate-300">kubectl</code> on whatever machine runs <strong className="text-slate-300">machina-daemon</strong> — that is <strong className="text-slate-300">not</strong> automatically a Kubernetes
+          <p className="text-sm text-[var(--text-muted)] mt-1 max-w-prose">
+            Runs allowlisted <code className="text-[var(--text-secondary)]">helm</code> / <code className="text-[var(--text-secondary)]">kubectl</code> on whatever machine runs <strong className="text-[var(--text-secondary)]">machina-daemon</strong> — that is <strong className="text-[var(--text-secondary)]">not</strong> automatically a Kubernetes
             control-plane node. It is often a lab workstation with kubeconfig, or the same box as your libvirt hypervisor. Needs kube API reachability (same as other Kubernetes pages). Requires{' '}
-            <strong className="text-slate-300">operator or admin</strong> session role. Install Machina with <code className="text-slate-400">install.sh</code> to get Helm on the host if it was missing.
+            <strong className="text-[var(--text-secondary)]">operator or admin</strong> session role. Install Machina with <code className="text-[var(--text-muted)]">install.sh</code> to get Helm on the host if it was missing.
           </p>
         </div>
       </div>
@@ -172,14 +172,14 @@ function KataAutomateSection() {
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[12rem]">
-          <label htmlFor="kata-ctx" className="block text-xs text-slate-500 mb-1">
+          <label htmlFor="kata-ctx" className="block text-xs text-[var(--text-muted)] mb-1">
             kubectl context (optional)
           </label>
           <select
             id="kata-ctx"
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            className="input-field w-full text-sm text-slate-200"
+            className="input-field w-full text-sm text-[var(--text-primary)]"
             title="kubectl --context (shared with other K8s pages)"
           >
             <option value="">Default kubeconfig context</option>
@@ -200,21 +200,21 @@ function KataAutomateSection() {
         >
           <RefreshCw className="w-4 h-4" /> Refresh contexts
         </button>
-        <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer shrink-0">
-          <input type="checkbox" className="rounded border-slate-600" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
+        <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer shrink-0">
+          <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
           Dry-run (Helm: render only; kubectl apply: server dry-run)
         </label>
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-slate-500">
-          <strong className="text-slate-400">Helm install</strong> uses the official OCI chart; chart version follows the latest <code className="text-slate-400">kata-containers</code> GitHub release (with a daemon fallback if <code className="text-slate-400">curl</code> fails). For <strong className="text-slate-300">k3s</strong> / <strong className="text-slate-300">RKE2</strong> clusters, the daemon adds <code className="text-slate-400">--set k8sDistribution=…</code> so containerd config paths match the node. Sample workloads still use allowlisted <code className="text-slate-400">kubectl apply -f</code> URLs.
+        <p className="text-xs text-[var(--text-muted)]">
+          <strong className="text-[var(--text-muted)]">Helm install</strong> uses the official OCI chart; chart version follows the latest <code className="text-[var(--text-muted)]">kata-containers</code> GitHub release (with a daemon fallback if <code className="text-[var(--text-muted)]">curl</code> fails). For <strong className="text-[var(--text-secondary)]">k3s</strong> / <strong className="text-[var(--text-secondary)]">RKE2</strong> clusters, the daemon adds <code className="text-[var(--text-muted)]">--set k8sDistribution=…</code> so containerd config paths match the node. Sample workloads still use allowlisted <code className="text-[var(--text-muted)]">kubectl apply -f</code> URLs.
         </p>
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Install sequence</p>
+        <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Install sequence</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className={`${btnClass} border-cyan-700/50 bg-cyan-950/40 hover:bg-cyan-900/50`}
+            className={`${btnClass} border-[var(--accent)]/40 bg-[var(--accent-soft)] hover:bg-[var(--accent-soft)]`}
             disabled={!canRunHelm || busy !== null}
             onClick={() => void runOne('helm_install')}
             title={!canRunHelm && canWrite ? 'Requires kubectl, API reachability, and helm on PATH' : undefined}
@@ -235,7 +235,7 @@ function KataAutomateSection() {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Upstream examples (default namespace)</p>
+        <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Upstream examples (default namespace)</p>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -259,13 +259,13 @@ function KataAutomateSection() {
       </div>
 
       {lastOut && (
-        <details open className="rounded-lg border border-slate-700 bg-slate-900/60 overflow-hidden">
-          <summary className="px-3 py-2 text-xs text-slate-400 cursor-pointer select-none">Last command result</summary>
+        <details open className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+          <summary className="px-3 py-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">Last command result</summary>
           <div className="px-3 pb-3 space-y-2 text-xs">
-            <div className="font-mono text-slate-500 break-all">{lastOut.command}</div>
+            <div className="font-mono text-[var(--text-muted)] break-all">{lastOut.command}</div>
             <div className={statusToneClass(lastOut.ok ? 'ok' : 'error')}>exit {lastOut.exit_code}</div>
             {lastOut.stdout.trim() ? (
-              <pre className="text-slate-300 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{lastOut.stdout}</pre>
+              <pre className="text-[var(--text-secondary)] whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{lastOut.stdout}</pre>
             ) : null}
             {lastOut.stderr.trim() ? (
               <pre className={`whitespace-pre-wrap break-words max-h-48 overflow-y-auto opacity-90 ${statusToneClass('warn')}`}>{lastOut.stderr}</pre>
@@ -280,16 +280,17 @@ function KataAutomateSection() {
 export default function KataContainersPage() {
   return (
     <PageLayout
+      eyebrow="Kubernetes"
       className="max-w-4xl"
       contentClassName="space-y-8"
       title="Kata Containers on Kubernetes"
       subtitle={
         <>
-          Install <strong className="text-slate-300">kata-deploy</strong> with the{' '}
+          Install <strong className="text-[var(--text-secondary)]">kata-deploy</strong> with the{' '}
           <a href="https://kata-containers.github.io/kata-containers/installation/" className={statusActionLinkClasses('info')} target="_blank" rel="noreferrer">
             upstream Helm chart
           </a>
-          , then run pods with <code className="text-slate-300">runtimeClassName</code> — for example <code className="text-slate-300">kata-clh</code> for{' '}
+          , then run pods with <code className="text-[var(--text-secondary)]">runtimeClassName</code> — for example <code className="text-[var(--text-secondary)]">kata-clh</code> for{' '}
           <a
             href="https://github.com/cloud-hypervisor/cloud-hypervisor"
             target="_blank"
@@ -298,19 +299,19 @@ export default function KataContainersPage() {
           >
             Cloud Hypervisor <ExternalLink className="w-3 h-3" />
           </a>
-          . The automation panel runs the same allowlisted <code className="text-slate-500">helm</code> / <code className="text-slate-500">kubectl</code> commands on the daemon host.
+          . The automation panel runs the same allowlisted <code className="text-[var(--text-muted)]">helm</code> / <code className="text-[var(--text-muted)]">kubectl</code> commands on the daemon host.
         </>
       }
-      icon={<Package className="w-7 h-7 text-cyan-400" />}
+      icon={<Package className="w-7 h-7 text-[var(--accent)]" />}
     >
       <KataAutomateSection />
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
           <Server className={`w-5 h-5 ${statusToneClass('ok')}`} /> 1. Helm — install or upgrade kata-deploy
         </h2>
-        <p className="text-sm text-slate-400">
-          Installs RBAC, DaemonSet, RuntimeClasses, and related objects via the OCI chart on <code className="text-slate-400">ghcr.io</code>. Requires Helm 3.8+, <code className="text-slate-400">curl</code> (to read the latest release tag), and cluster pull access to the registry.
+        <p className="text-sm text-[var(--text-muted)]">
+          Installs RBAC, DaemonSet, RuntimeClasses, and related objects via the OCI chart on <code className="text-[var(--text-muted)]">ghcr.io</code>. Requires Helm 3.8+, <code className="text-[var(--text-muted)]">curl</code> (to read the latest release tag), and cluster pull access to the registry.
         </p>
         <p className={`text-xs rounded-lg border px-3 py-2 ${statusSurfaceClasses('warn')}`}>
           <strong className={statusToneClass('warn')}>k3s / RKE2:</strong> If kata-deploy logs say it cannot read{' '}
@@ -323,47 +324,47 @@ export default function KataContainersPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">2. Wait for the installer pod</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">2. Wait for the installer pod</h2>
         <CopyBlock label="kubectl wait" text={CMD_WAIT} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">3. RuntimeClass objects</h2>
-        <p className="text-sm text-slate-400">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">3. RuntimeClass objects</h2>
+        <p className="text-sm text-[var(--text-muted)]">
           The chart applies official RuntimeClasses with selectors so workloads land on nodes labeled{' '}
-          <code className="text-slate-300">katacontainers.io/kata-runtime=true</code> (set by kata-deploy on capable nodes).
+          <code className="text-[var(--text-secondary)]">katacontainers.io/kata-runtime=true</code> (set by kata-deploy on capable nodes).
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">4. Choose a runtime in your Pod spec</h2>
-        <p className="text-sm text-slate-400">
-          Set <code className="text-slate-300">spec.runtimeClassName</code> on the Pod (or Deployment template).
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">4. Choose a runtime in your Pod spec</h2>
+        <p className="text-sm text-[var(--text-muted)]">
+          Set <code className="text-[var(--text-secondary)]">spec.runtimeClassName</code> on the Pod (or Deployment template).
         </p>
-        <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
           <table className="w-full text-sm" aria-label="Kata runtime classes">
             <thead>
-              <tr className="border-b border-slate-700/50 text-left text-slate-400">
+              <tr className="border-b border-[var(--apple-hairline)] text-left text-[var(--text-muted)]">
                 <th scope="col" className="px-4 py-2">RuntimeClass</th>
                 <th scope="col" className="px-4 py-2">VMM / notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/40 text-slate-200">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/40 text-[var(--text-primary)]">
               <tr>
-                <td className="px-4 py-2 font-mono text-cyan-300">kata-clh</td>
-                <td className="px-4 py-2 text-slate-400">Cloud Hypervisor (Rust, lightweight)</td>
+                <td className="px-4 py-2 font-mono text-[var(--accent)]">kata-clh</td>
+                <td className="px-4 py-2 text-[var(--text-muted)]">Cloud Hypervisor (Rust, lightweight)</td>
               </tr>
               <tr>
                 <td className="px-4 py-2 font-mono">kata-dragonball</td>
-                <td className="px-4 py-2 text-slate-400">Dragonball (Rust, integrated in Kata)</td>
+                <td className="px-4 py-2 text-[var(--text-muted)]">Dragonball (Rust, integrated in Kata)</td>
               </tr>
               <tr>
                 <td className="px-4 py-2 font-mono">kata-stratovirt</td>
-                <td className="px-4 py-2 text-slate-400">StratoVirt</td>
+                <td className="px-4 py-2 text-[var(--text-muted)]">StratoVirt</td>
               </tr>
               <tr>
                 <td className="px-4 py-2 font-mono">kata-qemu</td>
-                <td className="px-4 py-2 text-slate-400">QEMU (traditional, feature-rich)</td>
+                <td className="px-4 py-2 text-[var(--text-muted)]">QEMU (traditional, feature-rich)</td>
               </tr>
             </tbody>
           </table>
@@ -378,13 +379,13 @@ export default function KataContainersPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">5. Example workloads (upstream YAML)</h2>
-        <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">5. Example workloads (upstream YAML)</h2>
+        <ul className="text-sm text-[var(--text-muted)] space-y-2 list-disc list-inside">
           <li>
             <a className={statusActionLinkClasses('info')} href={`${KATA_EXAMPLES}/test-deploy-kata-clh.yaml`} target="_blank" rel="noreferrer">
               test-deploy-kata-clh.yaml
             </a>{' '}
-            — sample Deployment + Service using <code className="text-slate-400">kata-clh</code>
+            — sample Deployment + Service using <code className="text-[var(--text-muted)]">kata-clh</code>
           </li>
           <li>
             <a className={statusActionLinkClasses('info')} href={`${KATA_EXAMPLES}/test-deploy-kata-dragonball.yaml`} target="_blank" rel="noreferrer">
@@ -402,23 +403,23 @@ export default function KataContainersPage() {
             </a>
           </li>
         </ul>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--text-muted)]">
           Apply with e.g.{' '}
-          <code className="text-slate-400">kubectl apply -f &lt;url&gt;</code>. Verify with{' '}
-          <code className="text-slate-400">kubectl describe pod &lt;pod&gt;</code> — expect{' '}
-          <span className="text-slate-300">Runtime Class Name: kata-clh</span> and scheduling to a Kata-labeled node.
+          <code className="text-[var(--text-muted)]">kubectl apply -f &lt;url&gt;</code>. Verify with{' '}
+          <code className="text-[var(--text-muted)]">kubectl describe pod &lt;pod&gt;</code> — expect{' '}
+          <span className="text-[var(--text-secondary)]">Runtime Class Name: kata-clh</span> and scheduling to a Kata-labeled node.
         </p>
       </section>
 
-      <section className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-2">
-        <h2 className="text-base font-semibold text-white">Why Cloud Hypervisor with Kata?</h2>
-        <ul className="text-sm text-slate-400 space-y-1.5 list-disc list-inside">
+      <section className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl p-5 space-y-2">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Why Cloud Hypervisor with Kata?</h2>
+        <ul className="text-sm text-[var(--text-muted)] space-y-1.5 list-disc list-inside">
           <li>Small VMM attack surface and fast startup vs full QEMU for many tenant-isolation cases.</li>
           <li>Modern virtio stack (e.g. virtio-fs), optional hotplug, KVM-backed — good fit for sandboxed Kubernetes pods.</li>
           <li>Rust implementation — aligns with other Rust components in the Kata ecosystem.</li>
         </ul>
-        <p className="text-xs text-slate-500 pt-1">
-          Tune paths and hypervisor choice in Kata&apos;s <code className="text-slate-400">configuration.toml</code> on the node when you need stricter defaults; the RuntimeClass selects which Kata &quot;stack&quot; the kubelet passes to containerd.
+        <p className="text-xs text-[var(--text-muted)] pt-1">
+          Tune paths and hypervisor choice in Kata&apos;s <code className="text-[var(--text-muted)]">configuration.toml</code> on the node when you need stricter defaults; the RuntimeClass selects which Kata &quot;stack&quot; the kubelet passes to containerd.
         </p>
       </section>
 

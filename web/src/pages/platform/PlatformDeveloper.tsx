@@ -53,12 +53,13 @@ export default function PlatformDeveloper() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Developer"
       subtitle="TypeScript SDK, OpenAPI console, and Terraform schemas."
-      icon={<Code2 className="w-6 h-6 text-slate-400" />}
+      icon={<Code2 className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -96,35 +97,35 @@ export default function PlatformDeveloper() {
         <PlatformApiConsole />
       ) : overview ? (
         <>
-          <p className="text-sm text-slate-400">{overview.summary}</p>
+          <p className="text-sm text-[var(--text-muted)]">{overview.summary}</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <MacStatWidget label="SDK version" value={overview.sdk_typescript.version} icon={<Package className="w-4 h-4" />} />
             <MacStatWidget label="Terraform resources" value={String(overview.terraform.resources?.length ?? 0)} icon={<Code2 className="w-4 h-4" />} />
             <MacStatWidget label="OpenAPI" value="v1" icon={<Terminal className="w-4 h-4" />} />
           </div>
           <MacGlassPanel title="TypeScript SDK">
-            <p className="text-sm text-slate-300 mb-2">Path: <code className="text-blue-300">{overview.sdk_typescript.path}</code></p>
+            <p className="text-sm text-[var(--text-secondary)] mb-2">Path: <code className="text-[var(--accent)]">{overview.sdk_typescript.path}</code></p>
             <div className="flex items-start gap-2">
-              <pre className="text-xs bg-slate-950/80 rounded-lg p-3 overflow-x-auto text-slate-300 flex-1">{overview.sdk_typescript.install}</pre>
+              <pre className="text-xs bg-[var(--apple-surface)]/80 rounded-lg p-3 overflow-x-auto text-[var(--text-secondary)] flex-1">{overview.sdk_typescript.install}</pre>
               <CopyButton text={overview.sdk_typescript.install} label="Copy install" />
             </div>
             <ul className="mt-3 flex flex-wrap gap-2">
               {(overview.sdk_typescript.resources ?? []).map((r) => (
-                <li key={r} className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">{r}</li>
+                <li key={r} className="text-xs px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] text-[var(--text-secondary)]">{r}</li>
               ))}
             </ul>
           </MacGlassPanel>
           <MacGlassPanel title="Terraform">
-            <p className="text-sm text-slate-300 mb-2">
-              Provider: <code className="text-blue-300">{overview.terraform.provider_source}</code>
-              · Examples: <code className="text-blue-300">{overview.terraform.examples_path}</code>
+            <p className="text-sm text-[var(--text-secondary)] mb-2">
+              Provider: <code className="text-[var(--accent)]">{overview.terraform.provider_source}</code>
+              · Examples: <code className="text-[var(--accent)]">{overview.terraform.examples_path}</code>
             </p>
-            <p className="text-sm text-slate-400 mb-3">
+            <p className="text-sm text-[var(--text-muted)] mb-3">
               OpenAPI spec: <a className={`hover:underline ${hubLinkClasses()}`} href={overview.openapi_url}>{overview.openapi_url}</a>
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left" aria-label="API resources">
-                <thead className="text-xs text-slate-500 border-b border-slate-700">
+                <thead className="text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
                   <tr>
                     <th scope="col" className="py-2 pr-4">Resource</th>
                     <th scope="col" className="py-2 pr-4">Kind</th>
@@ -134,11 +135,11 @@ export default function PlatformDeveloper() {
                 </thead>
                 <tbody>
                   {schemas.map((row) => (
-                    <tr key={row.name} className="border-b border-slate-800/60">
-                      <td className="py-2 pr-4 text-slate-200">{row.name}</td>
-                      <td className="py-2 pr-4 text-slate-400">{row.kind}</td>
-                      <td className="py-2 pr-4 text-slate-400 font-mono text-xs">{row.api_path}</td>
-                      <td className="py-2 text-slate-500 text-xs">{row.attributes.join(', ')}</td>
+                    <tr key={row.name} className="border-b border-[var(--apple-hairline)]/60">
+                      <td className="py-2 pr-4 text-[var(--text-primary)]">{row.name}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)]">{row.kind}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)] font-mono text-xs">{row.api_path}</td>
+                      <td className="py-2 text-[var(--text-muted)] text-xs">{row.attributes.join(', ')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -146,14 +147,14 @@ export default function PlatformDeveloper() {
             </div>
           </MacGlassPanel>
           <MacGlassPanel title="Agent & metrics ingest" subtitle="Push endpoints for machina-agent, Prometheus, and security sensors">
-            <p className="text-sm text-slate-400 mb-3 leading-relaxed">
+            <p className="text-sm text-[var(--text-muted)] mb-3 leading-relaxed">
               These routes are for agents and observability pipelines — not browser forms. Use the API Console tab to try authenticated POSTs, or copy the examples below into your agent install.
             </p>
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-slate-500 mb-1">Zyra security telemetry (controller)</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Zyra security telemetry (controller)</p>
                 <div className="flex items-start gap-2">
-                  <pre className="text-xs bg-slate-950/80 rounded-lg p-3 overflow-x-auto text-slate-300 flex-1">{`POST /api/v1/zyra-security/ingest/{host_id}
+                  <pre className="text-xs bg-[var(--apple-surface)]/80 rounded-lg p-3 overflow-x-auto text-[var(--text-secondary)] flex-1">{`POST /api/v1/zyra-security/ingest/{host_id}
 Authorization: Bearer <controller-jwt-or-api-key>
 Content-Type: application/json
 
@@ -165,9 +166,9 @@ Content-Type: application/json
                 </div>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">Prometheus remote-write (daemon)</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Prometheus remote-write (daemon)</p>
                 <div className="flex items-start gap-2">
-                  <pre className="text-xs bg-slate-950/80 rounded-lg p-3 overflow-x-auto text-slate-300 flex-1">{`POST /api/v1/metrics/ingest/remote-write
+                  <pre className="text-xs bg-[var(--apple-surface)]/80 rounded-lg p-3 overflow-x-auto text-[var(--text-secondary)] flex-1">{`POST /api/v1/metrics/ingest/remote-write
 Authorization: Bearer <session-or-token>
 Content-Type: application/x-protobuf`}</pre>
                   <CopyButton
@@ -177,9 +178,9 @@ Content-Type: application/x-protobuf`}</pre>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">Prometheus text scrape ingest (daemon)</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Prometheus text scrape ingest (daemon)</p>
                 <div className="flex items-start gap-2">
-                  <pre className="text-xs bg-slate-950/80 rounded-lg p-3 overflow-x-auto text-slate-300 flex-1">{`POST /api/v1/metrics/ingest/prometheus
+                  <pre className="text-xs bg-[var(--apple-surface)]/80 rounded-lg p-3 overflow-x-auto text-[var(--text-secondary)] flex-1">{`POST /api/v1/metrics/ingest/prometheus
 Content-Type: text/plain`}</pre>
                   <CopyButton
                     text={`curl -sS -X POST "$DAEMON/api/v1/metrics/ingest/prometheus" -H "Authorization: Bearer $TOKEN" -H "Content-Type: text/plain" --data-binary @scrape.txt`}
@@ -188,7 +189,7 @@ Content-Type: text/plain`}</pre>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="text-xs text-[var(--text-muted)] mt-3">
               Configure remote-write auth in <Link to="/settings" className={hubLinkClasses()}>Settings → Observability</Link>.
               Security sensors enroll via <Link to="/platform/zeus/security" className={hubLinkClasses()}>Security Center</Link>.
             </p>

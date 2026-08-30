@@ -48,7 +48,7 @@ function threatStatTone(score: number): 'ok' | 'warn' | 'default' {
 
 function SecurityGraphViz({ graph }: { graph: SecurityGraph | null }) {
   if (!graph?.nodes?.length) {
-    return <p className="text-sm text-slate-500">Security graph will populate when hosts and users are enrolled.</p>
+    return <p className="text-sm text-[var(--text-muted)]">Security graph will populate when hosts and users are enrolled.</p>
   }
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -58,11 +58,11 @@ function SecurityGraphViz({ graph }: { graph: SecurityGraph | null }) {
           className={`rounded-lg border px-3 py-2 text-sm ${
             n.risk === 'high'
               ? statusSurfaceClasses('error')
-              : 'border-white/[0.08] bg-slate-900/40 text-slate-200'
+              : 'border-white/[0.08] bg-[var(--apple-surface)] text-[var(--text-primary)]'
           }`}
         >
           <p className="font-medium truncate">{n.label}</p>
-          <p className="text-xs text-slate-500">{n.kind}{n.risk ? ` · ${n.risk} risk` : ''}</p>
+          <p className="text-xs text-[var(--text-muted)]">{n.kind}{n.risk ? ` · ${n.risk} risk` : ''}</p>
         </div>
       ))}
     </div>
@@ -148,6 +148,7 @@ export default function PlatformSecurityCenter() {
 
   return (
     <PlatformPageChrome
+      eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
       contentLoading={loading && !threat}
@@ -161,10 +162,10 @@ export default function PlatformSecurityCenter() {
               {status.fabric_reachable ? 'Fabric online' : 'Fabric unreachable'}
             </span>
           )}
-          <span className="text-slate-400">PacketWolf eBPF · observe, understand, secure</span>
+          <span className="text-[var(--text-muted)]">PacketWolf eBPF · observe, understand, secure</span>
         </span>
       }
-      icon={<Shield className="w-6 h-6 text-slate-400" />}
+      icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
@@ -174,7 +175,7 @@ export default function PlatformSecurityCenter() {
           title="PacketWolf fabric unreachable"
           subtitle={status.packetwolf.summary}
           action={
-            <Link to="/platform/integrations" className="btn-primary text-sm">Wire in Integrations</Link>
+            <Link to="/platform/settings?section=integrations" className="btn-primary text-sm">Wire in Settings</Link>
           }
         />
       )}
@@ -193,7 +194,7 @@ export default function PlatformSecurityCenter() {
 
       {fabricHealth && (fabricHealth.issues?.length ?? 0) > 0 && (
         <MacGlassPanel title="Fabric health" subtitle={fabricHealth.summary ?? fabricHealth.status}>
-          <ul className="text-sm text-slate-300 space-y-1">
+          <ul className="text-sm text-[var(--text-secondary)] space-y-1">
             {fabricHealth.issues?.slice(0, 5).map((issue) => (
               <li key={`${String(issue.host_id ?? '')}-${issue.summary}`} className={statusToneClass('warn')}>
                 {issue.summary}
@@ -254,17 +255,17 @@ export default function PlatformSecurityCenter() {
             }
           >
             {sensorMatrix.length === 0 ? (
-              <p className="text-sm text-slate-500">No hosts enrolled.</p>
+              <p className="text-sm text-[var(--text-muted)]">No hosts enrolled.</p>
             ) : (
               <ul className="text-sm space-y-2">
                 {sensorMatrix.slice(0, 12).map((row) => (
                   <li key={row.host_id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
-                    <span className="text-slate-300">
+                    <span className="text-[var(--text-secondary)]">
                       {row.hostname || row.host_id}
                       <span className={`ml-2 text-xs ${statusToneClass(row.tetragon_status === 'healthy' ? 'ok' : 'warn')}`}>
                         {row.tetragon_status}
                       </span>
-                      <span className="text-slate-500 text-xs ml-2">{row.host_state}</span>
+                      <span className="text-[var(--text-muted)] text-xs ml-2">{row.host_state}</span>
                     </span>
                     <Link to={`/platform/zyra/machines/${row.host_id}`} className={`text-xs ${hubLinkClasses()}`}>
                       Machine security
@@ -283,9 +284,9 @@ export default function PlatformSecurityCenter() {
               <ul className="text-sm space-y-2">
                 {sensorRegistry.slice(0, 10).map((row, i) => (
                   <li key={String(row.id ?? row.host_id ?? i)} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
-                    <span className="text-slate-300">
+                    <span className="text-[var(--text-secondary)]">
                       {String(row.hostname ?? row.name ?? row.host_id ?? 'sensor')}
-                      {row.kind ? <span className="text-slate-500 text-xs ml-2">{String(row.kind)}</span> : null}
+                      {row.kind ? <span className="text-[var(--text-muted)] text-xs ml-2">{String(row.kind)}</span> : null}
                     </span>
                     <span className={`text-xs ${statusToneClass(row.healthy === false || row.status === 'unhealthy' ? 'warn' : 'ok')}`}>
                       {String(row.status ?? (row.healthy === false ? 'unhealthy' : 'healthy'))}
@@ -298,7 +299,7 @@ export default function PlatformSecurityCenter() {
 
           <MacGlassPanel title="Critical" subtitle="Requires attention">
             {critical.length === 0 ? (
-              <p className="text-sm text-slate-500">No critical security events in the current window.</p>
+              <p className="text-sm text-[var(--text-muted)]">No critical security events in the current window.</p>
             ) : (
               <ul className="space-y-2">
                 {critical.slice(0, 8).map((ev, i) => (
@@ -335,9 +336,9 @@ export default function PlatformSecurityCenter() {
             </div>
             {nlResults && (
               <div className="space-y-2">
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-[var(--text-muted)]">
                   {nlResults}
-                  {nlLlm ? <span className="text-violet-300/80 ml-1">· AI</span> : null}
+                  {nlLlm ? <span className="text-[var(--link)]/80 ml-1">· AI</span> : null}
                 </p>
                 <EbpfActionMenu suggestedKind="deny_process" suggestedMatch={nlQuery.trim() || '/usr/bin/nc'} huntQueryId="reverse-shell" compact />
               </div>
@@ -359,17 +360,17 @@ export default function PlatformSecurityCenter() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Link to="/platform/zeus/security/firewall" className="rounded-xl border border-white/[0.08] p-4 hover:border-blue-500/40 transition">
-              <p className="font-semibold text-slate-100">Machine Security (Firewall)</p>
-              <p className="text-xs text-slate-500 mt-1">Host firewall profiles, ports, lockdown</p>
+            <Link to="/platform/zeus/security/firewall" className="rounded-xl border border-white/[0.08] p-4 hover:border-[var(--accent)]/40 transition">
+              <p className="font-semibold text-[var(--text-primary)]">Machine Security (Firewall)</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Host firewall profiles, ports, lockdown</p>
             </Link>
-            <Link to="/platform/zeus/security/activity" className="rounded-xl border border-white/[0.08] p-4 hover:border-blue-500/40 transition">
-              <p className="font-semibold text-slate-100">Firewall Activity</p>
-              <p className="text-xs text-slate-500 mt-1">Blocked and allowed connections</p>
+            <Link to="/platform/zeus/security/activity" className="rounded-xl border border-white/[0.08] p-4 hover:border-[var(--accent)]/40 transition">
+              <p className="font-semibold text-[var(--text-primary)]">Firewall Activity</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Blocked and allowed connections</p>
             </Link>
-            <Link to="/platform/zeus/security/ports" className="rounded-xl border border-white/[0.08] p-4 hover:border-blue-500/40 transition">
-              <p className="font-semibold text-slate-100">Open Ports</p>
-              <p className="text-xs text-slate-500 mt-1">Exposure scanner with process metadata</p>
+            <Link to="/platform/zeus/security/ports" className="rounded-xl border border-white/[0.08] p-4 hover:border-[var(--accent)]/40 transition">
+              <p className="font-semibold text-[var(--text-primary)]">Open Ports</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Exposure scanner with process metadata</p>
             </Link>
           </div>
 

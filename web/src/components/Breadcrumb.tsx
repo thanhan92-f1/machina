@@ -3,18 +3,16 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { Link, useLocation } from 'react-router'
-import { ChevronRight, Home } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { routeLabels } from '../utils/routes'
 import { useBreadcrumbNameValue } from '../contexts/BreadcrumbNameContext'
 
-// Matches UUIDs, raw hex IDs, and other non-human-readable path segments
 const ID_PATTERN = /^[0-9a-f]{8,}(-[0-9a-f]{4,})*$/i
 
 export default function Breadcrumb() {
   const { pathname } = useLocation()
   const entityName = useBreadcrumbNameValue()
 
-  // Don't render on Dashboard (root)
   if (pathname === '/') return null
 
   const segments = pathname.split('/').filter(Boolean)
@@ -35,20 +33,21 @@ export default function Breadcrumb() {
   if (crumbs.length === 0) return null
 
   return (
-    <nav className="liquid-glass-breadcrumb mb-6 flex items-center gap-1.5 text-sm flex-wrap">
-      <Link to="/" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-1">
-        <Home className="w-3.5 h-3.5" strokeWidth={1.75} />
-        <span className="hidden sm:inline">Dashboard</span>
+    <nav className="mb-10 flex items-center gap-2 text-[13px] tracking-tight" aria-label="Breadcrumb">
+      <Link to="/" className="text-[var(--text-muted)] hover:text-[var(--link)] transition-colors">
+        Home
       </Link>
       {crumbs.map((crumb, i) => {
         const isLast = i === crumbs.length - 1
         return (
-          <span key={crumb.path} className="flex items-center gap-1.5">
-            <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)]" strokeWidth={1.75} />
+          <span key={crumb.path} className="flex items-center gap-2 min-w-0">
+            <ChevronRight className="w-3 h-3 text-[var(--text-muted)] opacity-50 shrink-0" strokeWidth={1.75} />
             {isLast ? (
-              <span className="text-[var(--text-primary)] font-medium">{crumb.label}</span>
+              <span className="text-[var(--text-secondary)] truncate">{crumb.label}</span>
             ) : (
-              <Link to={crumb.path} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">{crumb.label}</Link>
+              <Link to={crumb.path} className="text-[var(--text-muted)] hover:text-[var(--link)] transition-colors truncate">
+                {crumb.label}
+              </Link>
             )}
           </span>
         )

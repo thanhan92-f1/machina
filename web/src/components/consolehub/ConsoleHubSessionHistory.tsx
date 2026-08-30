@@ -58,7 +58,7 @@ export default function ConsoleHubSessionHistory({ sessions, loading, onOpenRepl
             {s.replay_available && onOpenReplay ? (
               <button
                 type="button"
-                className="text-sky-300 hover:text-sky-200"
+                className="text-[var(--link)] hover:text-[var(--link)]"
                 data-testid={`consolehub-replay-${s.session_id.slice(0, 8)}`}
                 onClick={() => void onOpenReplay(s.session_id)}
               >

@@ -84,7 +84,7 @@ export function ZyvorAiLogo({
       {showWordmark ? (
         <span className={`font-semibold tracking-tight text-white ${WORDMARK_SIZES[size]}`}>
           <span style={{ color: ORANGE }}>Zyvor</span>
-          <span className="text-slate-100">AI</span>
+          <span className="text-[var(--text-primary)]">AI</span>
         </span>
       ) : null}
     </span>

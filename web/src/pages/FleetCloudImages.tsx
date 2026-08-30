@@ -68,10 +68,11 @@ function FleetCloudImagesContent() {
 
   return (
     <PageLayout
+      eyebrow="Fleet Cloud"
       prepend={<><FleetCloudSubNav /></>}
       title="Images"
       subtitle="Golden-image catalog for instance creation."
-      icon={<Cloud className="w-7 h-7 text-sky-400" />}
+      icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       error={loadError}
       errorTitle="Failed to load images"
       technicalDetail={loadError}
@@ -82,13 +83,13 @@ function FleetCloudImagesContent() {
         <div className="flex gap-2 flex-wrap">
           <Link
             to="/disk-images"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-sm"
+            className="btn-secondary text-sm inline-flex items-center gap-2"
           >
             Manage disk images
           </Link>
           <Link
             to="/fleet-cloud/create"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm"
+            className="btn-primary text-sm inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Boot instance
@@ -96,7 +97,7 @@ function FleetCloudImagesContent() {
           <button
             type="button"
             onClick={() => { setLoading(true); void load() }}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 text-sm"
+            className="btn-secondary text-sm inline-flex items-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -104,18 +105,18 @@ function FleetCloudImagesContent() {
         </div>
       }
     >
-      <div className="rounded-xl border border-slate-700 p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-300 flex items-center gap-2"><Plus className="w-4 h-4" /> Register image</h2>
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"><Plus className="w-4 h-4" /> Register image</h2>
         <div className="grid sm:grid-cols-3 gap-3">
           <input aria-label="Image name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <input aria-label="Version" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="Version"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm" />
+            className="input-field text-sm" />
           <input aria-label="Source disk path" value={sourceDisk} onChange={(e) => setSourceDisk(e.target.value)} placeholder="/path/to/golden.qcow2"
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm font-mono" />
+            className="input-field text-sm font-mono" />
         </div>
         <button type="button" disabled={creating || !name.trim() || !sourceDisk.trim()}
-          className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm disabled:opacity-40"
+          className="btn-primary text-sm disabled:opacity-40"
           onClick={async () => {
             setCreating(true)
             try {
@@ -127,9 +128,9 @@ function FleetCloudImagesContent() {
           }}>{creating ? 'Registering…' : 'Register'}</button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-700/80">
-        <table className="w-full text-sm" aria-label="Images">
-          <thead className="bg-slate-900/80 text-slate-400 text-left">
+      <div className="overflow-x-auto apple-surface rounded-2xl">
+        <table className="apple-table" aria-label="Images">
+          <thead>
             <tr>
               <th scope="col" className="px-4 py-3">Name</th>
               <th scope="col" className="px-4 py-3">Version</th>
@@ -138,24 +139,24 @@ function FleetCloudImagesContent() {
               <th scope="col" className="px-4 py-3 w-16" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-[var(--apple-hairline)]">
             {loading && images.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-muted)]">Loading…</td></tr>
             )}
             {!loading && images.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No images found.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-muted)]">No images found.</td></tr>
             )}
             {images.map((img) => (
-              <tr key={img.id} className="hover:bg-slate-800/40">
+              <tr key={img.id} className="hover:bg-[var(--apple-surface)]">
                 <td className="px-4 py-3">
-                  <Link to={`/fleet-cloud/images/${img.id}`} className="text-slate-200 hover:text-sky-300 hover:underline">
+                  <Link to={`/fleet-cloud/images/${img.id}`} className="text-[var(--text-primary)] hover:opacity-90 hover:underline">
                     {img.name}
                   </Link>
-                  <div className="text-xs text-slate-500 font-mono truncate max-w-xs">{img.id}</div>
+                  <div className="text-xs text-[var(--text-muted)] font-mono truncate max-w-xs">{img.id}</div>
                 </td>
-                <td className="px-4 py-3 text-slate-300">{img.version}</td>
-                <td className="px-4 py-3 text-slate-300">{img.approval_status}</td>
-                <td className="px-4 py-3 text-slate-500 font-mono text-xs truncate max-w-xs">{img.source_disk}</td>
+                <td className="px-4 py-3 text-[var(--text-secondary)]">{img.version}</td>
+                <td className="px-4 py-3 text-[var(--text-secondary)]">{img.approval_status}</td>
+                <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs truncate max-w-xs">{img.source_disk}</td>
                 <td className="px-4 py-3">
                   <button
                     type="button"

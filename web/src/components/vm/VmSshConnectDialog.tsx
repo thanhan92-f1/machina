@@ -120,16 +120,16 @@ export default function VmSshConnectDialog({
       onClick={onClose}
     >
       <div
-        className="bg-slate-800 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4"
+        className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4"
         data-testid="vm-ssh-connect-dialog"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 border-b border-slate-700/50 flex items-center justify-between">
+        <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
           <span className="text-lg font-semibold flex items-center gap-2">
             <Terminal className={`w-5 h-5 ${statusToneClass('ok')}`} /> SSH — {vmName}
           </span>
-          <button type="button" onClick={onClose} className="p-1 hover:bg-slate-700 rounded transition" aria-label="Close">
-            <X className="w-4 h-4 text-slate-400" />
+          <button type="button" onClick={onClose} className="p-1 hover:bg-[var(--surface-hover)] rounded transition" aria-label="Close">
+            <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
         <div className="p-5 space-y-3">
@@ -150,7 +150,7 @@ export default function VmSshConnectDialog({
           ) : null}
           {!useNat ? (
             <>
-              <label htmlFor="vm-ssh-ip" className="block text-sm text-slate-400 mb-1">
+              <label htmlFor="vm-ssh-ip" className="block text-sm text-[var(--text-muted)] mb-1">
                 Guest IP (guest agent first; edit if needed)
               </label>
               <input
@@ -165,11 +165,11 @@ export default function VmSshConnectDialog({
               />
             </>
           ) : (
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-[var(--text-secondary)]">
               Target: <span className="font-mono text-emerald-300">{connectHost}{connectPort ? `:${connectPort}` : ''}</span>
             </p>
           )}
-          <label htmlFor="vm-ssh-user" className="block text-sm text-slate-400 mb-1 mt-3">
+          <label htmlFor="vm-ssh-user" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">
             SSH user
           </label>
           <input
@@ -183,14 +183,14 @@ export default function VmSshConnectDialog({
           />
           {detectedIps.length > 0 && !useNat && (
             <div>
-              <span className="text-xs text-slate-500">Detected IPs:</span>
+              <span className="text-xs text-[var(--text-muted)]">Detected IPs:</span>
               <div className="flex flex-wrap gap-1 mt-1">
                 {detectedIps.map((addr) => (
                   <button
                     key={addr}
                     type="button"
                     onClick={() => setIp(addr)}
-                    className="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-xs font-mono hover:bg-slate-700 transition text-sky-300"
+                    className="px-2 py-0.5 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded text-xs font-mono hover:bg-[var(--surface-hover)] transition text-[var(--link)]"
                   >
                     {addr}
                   </button>
@@ -198,7 +198,7 @@ export default function VmSshConnectDialog({
               </div>
             </div>
           )}
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[var(--text-muted)]">
             In-browser SSH uses hypervisor keys. From your laptop use the copied command with your cloud-init private key.
           </p>
         </div>

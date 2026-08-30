@@ -53,7 +53,7 @@ export default function ZeroPanicRecoveryBar({
         {onOpenSerial ? <button type="button" className={btn} onClick={onOpenSerial}>Open Serial</button> : null}
         {onOpenSsh ? <button type="button" className={btn} onClick={onOpenSsh}>SSH</button> : null}
         {onOpenEvents ? <button type="button" className={btn} onClick={onOpenEvents}>View Events</button> : null}
-        {onAiDiagnose ? <button type="button" className={`${btn} border-violet-500/40`} onClick={onAiDiagnose}>Ask AI</button> : null}
+        {onAiDiagnose ? <button type="button" className={`${btn} border-[var(--accent)]/40`} onClick={onAiDiagnose}>Ask AI</button> : null}
       </div>
       {recipe && onRunRecipe ? (
         <div className="pt-2 border-t border-amber-500/20">

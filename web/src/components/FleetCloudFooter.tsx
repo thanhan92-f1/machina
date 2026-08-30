@@ -11,12 +11,12 @@ export default function FleetCloudFooter() {
   const { info } = usePlatformInfo()
 
   return (
-    <footer className="rounded-xl border border-slate-700/50 bg-slate-900/30 px-4 py-3 text-xs text-slate-500 space-y-2">
+    <footer className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-fill-tertiary)] px-4 py-3 text-xs text-[var(--text-muted)] space-y-2">
       <p>
         Push qcow2 from{' '}
-        <Link to="/disk-images" className="text-sky-400 hover:underline">Disk images</Link>
+        <Link to="/disk-images" className="text-[var(--link)] hover:underline">Disk images</Link>
         . Import exported disks via{' '}
-        <Link to="/import" className="text-sky-400 hover:underline">Import VM</Link>.
+        <Link to="/import" className="text-[var(--link)] hover:underline">Import VM</Link>.
       </p>
       {info?.hypersdk?.enabled && (
         <p>
@@ -28,7 +28,7 @@ export default function FleetCloudFooter() {
             }
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-sky-400 hover:underline"
+            className="inline-flex items-center gap-1 text-[var(--link)] hover:underline"
           >
             HyperSDK dashboard — bulk export and migrations
             <ExternalLink className="w-3 h-3" />

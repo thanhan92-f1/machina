@@ -3,21 +3,12 @@
 // https://zyvor.dev · info@zyvor.dev
 
 /**
- * Premium login shell — split hero + form panel.
- * `variant="macos"`: Machina — macOS Tahoe liquid glass split login.
+ * Machina marketing login — oversized product name, then sign-in.
+ * Black + Zyvor orange; light/dark atmospheres follow shell theme.
  */
-import type { CSSProperties, ReactNode } from 'react';
-import { AlertCircle, Sparkles } from 'lucide-react';
-import { statusSurfaceClasses, statusToneClass } from '../utils/semanticColors';
-
-export type LoginOrb = {
-  size: number;
-  top: string;
-  left: string;
-  delay: string;
-  duration: string;
-  hue?: 'blue' | 'violet' | 'cyan' | 'red';
-};
+import type { ReactNode } from 'react';
+import { AlertCircle } from 'lucide-react';
+import { ZyvorMark } from './ZyvorMark';
 
 export type PremiumLoginFeature = {
   icon: ReactNode;
@@ -42,264 +33,120 @@ export type LoginAccent =
   | 'rose'
   | 'cyan'
   | 'copper'
-  | 'steel';
-
-const DEFAULT_ORBS: LoginOrb[] = [
-  { size: 340, top: '4%', left: '6%', delay: '0s', duration: '11s', hue: 'blue' },
-  { size: 220, top: '55%', left: '12%', delay: '2.2s', duration: '13s', hue: 'violet' },
-  { size: 180, top: '18%', left: '58%', delay: '0.8s', duration: '9s', hue: 'cyan' },
-  { size: 400, top: '58%', left: '68%', delay: '3.2s', duration: '15s', hue: 'red' },
-];
-
-const PARTICLE_SEEDS = Array.from({ length: 28 }, (_, i) => ({
-  id: i,
-  left: `${(i * 17 + 7) % 100}%`,
-  top: `${(i * 23 + 11) % 100}%`,
-  delay: `${(i % 7) * 0.45}s`,
-  size: 2 + (i % 3),
-}));
-
-export type LoginShellVariant = 'premium' | 'secure' | 'macos';
+  | 'steel'
+  | 'zeus';
 
 export type PremiumLoginShellProps = {
-  variant?: LoginShellVariant;
   accent?: LoginAccent;
   pageThemeClass?: string;
+  /** @deprecated unused */
   heroWidth?: '55' | '58';
   themeSwitcher?: ReactNode;
-  logo: ReactNode;
+  /** Optional override; default is ZyvorMark */
+  logo?: ReactNode;
   productName: string;
   productSubtitle?: string;
-  heroHeadline: ReactNode;
-  heroSubheadline: string;
+  /** Marketing line under the product name */
+  heroHeadline?: ReactNode;
+  /** Quiet supporting sentence */
+  heroSubheadline?: string;
+  /** @deprecated unused */
   pills?: PremiumLoginPill[];
+  /** @deprecated unused */
   features?: PremiumLoginFeature[];
+  /** @deprecated unused */
   heroFooter?: ReactNode;
-  orbs?: LoginOrb[];
   mobileSubtitle?: string;
+  /** Label above the form card */
   panelTitle?: string;
+  /** @deprecated unused for marketing layout */
   panelSubtitle?: string;
   panelHint?: ReactNode;
   footer?: ReactNode;
   formClassName?: string;
-  /** Shown above panel title on desktop when `variant="secure"` (e.g. ZyvorAI wordmark). */
-  panelLogo?: ReactNode;
   children: ReactNode;
 };
 
 export function PremiumLoginShell({
-  variant = 'premium',
-  accent = 'blue',
+  accent = 'orange',
   pageThemeClass = '',
-  heroWidth = '58',
   themeSwitcher,
   logo,
   productName,
   productSubtitle,
   heroHeadline,
   heroSubheadline,
-  pills = [],
-  features = [],
-  heroFooter,
-  orbs = DEFAULT_ORBS,
   mobileSubtitle,
-  panelTitle = 'Welcome back',
-  panelSubtitle = 'Sign in to continue',
+  panelTitle = 'Sign in',
   panelHint,
   footer,
   formClassName = '',
-  panelLogo,
   children,
 }: PremiumLoginShellProps) {
-  const isSecure = variant === 'secure';
-  const isMacos = variant === 'macos';
   const accentClass = accent === 'blue' ? '' : `login-accent-${accent}`;
-  const heroClass = heroWidth === '55' ? 'lg:w-[55%]' : 'lg:w-[58%]';
-  const beamClass = heroWidth === '55' ? 'login-beam-w55' : 'login-beam-w58';
-  const pageClass = [
-    'login-page',
-    'flex-1 flex flex-col lg:flex-row relative overflow-hidden',
-    accentClass,
-    isSecure ? 'login-page-secure' : '',
-    isMacos ? 'login-page-macos' : '',
-    pageThemeClass,
-  ]
-    .filter(Boolean)
-    .join(' ');
-  const cardClass = isSecure
-    ? 'login-secure-card p-8'
-    : 'login-glass login-glass-border liquid-glass-login-panel rounded-liquid-lg p-8 shadow-2xl';
+  const tagline = heroSubheadline ?? productSubtitle ?? mobileSubtitle;
+  const marketingLine =
+    heroHeadline ??
+    'Private cloud, built to feel inevitable.';
+  const mark = logo ?? <ZyvorMark to={null} size="xl" className="login-mark zyvor-mark" />;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className={pageClass}>
-        {!isSecure ? (
-          <>
-            <div className="login-aurora" aria-hidden />
-            {!isMacos ? <div className="login-scanline" aria-hidden /> : null}
-          </>
-        ) : null}
+    <div className={`login-page min-h-screen flex flex-col ${accentClass} ${pageThemeClass}`.trim()}>
+      <div className="login-atmosphere" aria-hidden="true" />
+      {themeSwitcher}
 
-        {themeSwitcher}
-
-        <aside
-          className={`login-hero hidden lg:flex ${heroClass} flex-col justify-between p-10 xl:p-12 overflow-hidden relative`}
-        >
-          <div className="login-hero-mesh" aria-hidden />
-          {!isSecure ? <div className="login-spotlight" aria-hidden /> : null}
-
-          {!isSecure
-            ? orbs.map((orb) => (
-                <div
-                  key={`${orb.hue}-${orb.size}`}
-                  className={`login-orb login-orb-${orb.hue ?? 'blue'}`}
-                  style={
-                    {
-                      width: orb.size,
-                      height: orb.size,
-                      top: orb.top,
-                      left: orb.left,
-                      '--login-delay': orb.delay,
-                      '--login-duration': orb.duration,
-                    } as CSSProperties
-                  }
-                />
-              ))
-            : null}
-
-          {!isSecure && !isMacos ? (
-            <div className="login-particles" aria-hidden>
-              {PARTICLE_SEEDS.map((p) => (
-                <span
-                  key={p.id}
-                  className="login-particle"
-                  style={{
-                    left: p.left,
-                    top: p.top,
-                    width: p.size,
-                    height: p.size,
-                    animationDelay: p.delay,
-                  }}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          <div className="relative z-10">
-            <div className="login-fade-in flex items-center gap-4 mb-8">
-              <div className="login-logo-ring">{logo}</div>
-              <div>
-                <span className="text-4xl font-bold tracking-tight text-white block">{productName}</span>
-                {productSubtitle ? (
-                  <span
-                    className={`text-xs font-medium uppercase tracking-[0.28em] mt-0.5 block ${
-                      isSecure ? 'text-slate-400' : 'text-sky-300/80'
-                    }`}
-                  >
-                    {productSubtitle}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            <h2 className="login-fade-in login-fade-in-d1 text-4xl xl:text-[2.75rem] font-extrabold text-white leading-[1.08] mb-4 max-w-xl">
-              {heroHeadline}
-            </h2>
-            <p className="login-fade-in login-fade-in-d2 text-lg text-slate-300/90 max-w-lg leading-relaxed">
-              {heroSubheadline}
+      <main className="login-panel" aria-label="Sign in">
+        <div className="login-stage relative z-10">
+          <div className="login-brand">
+            <div className="login-logo">{mark}</div>
+            <span className="login-eyebrow">Zyvor</span>
+            <p className="login-product" aria-label={productName}>
+              {productName}
             </p>
-            {pills.length > 0 ? (
-              <div className="login-fade-in login-fade-in-d3 flex flex-wrap gap-2 mt-6">
-                {pills.map((pill) => (
-                  <span
-                    key={pill.label}
-                    className={`login-stat-pill${pill.glow ? ' login-stat-pill-glow' : ''}`}
-                  >
-                    {pill.icon}
-                    {pill.label}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            <h1 className="login-headline">{marketingLine}</h1>
+            {tagline ? <p className="login-tagline">{tagline}</p> : null}
           </div>
 
-          {features.length > 0 ? (
-            <div className="relative z-10 space-y-2.5 max-h-[42vh] overflow-y-auto login-feature-scroll pr-1">
-              {features.map((f, i) => (
-                <div
-                  key={f.title}
-                  className={`login-feature-card login-fade-in flex items-start gap-4 p-4 rounded-xl backdrop-blur-md ${
-                    f.highlight
-                      ? 'login-feature-card-highlight'
-                      : 'bg-white/[0.04] border border-white/10 hover:border-white/20'
-                  }`}
-                  style={{ animationDelay: `${0.35 + i * 0.07}s`, opacity: 0 }}
-                >
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-br ${
-                      f.gradient ?? 'from-blue-500/95 to-indigo-800/95'
-                    } shadow-lg ${f.glow ?? 'shadow-blue-500/25'}`}
-                  >
-                    {f.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white flex items-center gap-2">
-                      {f.title}
-                      {f.highlight ? (
-                        <Sparkles className={`w-3.5 h-3.5 ${statusToneClass('warn')} opacity-90 shrink-0`} aria-hidden />
-                      ) : null}
-                    </div>
-                    <p className="text-xs mt-1 text-slate-400 leading-relaxed">{f.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {heroFooter ? <div className="relative z-10 login-fade-in login-fade-in-d4">{heroFooter}</div> : null}
-        </aside>
-
-        {!isSecure ? <div className={`login-beam hidden lg:block ${beamClass}`} aria-hidden /> : null}
-
-        <main id="main-content" className="login-panel flex-1 flex items-center justify-center relative px-6 py-12 min-h-screen lg:min-h-0">
-          <div className="login-panel-grid" aria-hidden />
-          {!isSecure ? <div className="login-panel-glow" aria-hidden /> : null}
-          <div className="w-full max-w-[420px] relative z-10">
-            <div className="lg:hidden text-center mb-8">
-              <div className="login-logo-ring inline-block mb-4">{panelLogo ?? logo}</div>
-              <h1 className="text-2xl font-bold text-white">{productName}</h1>
-              <p className="text-sm mt-1 text-slate-400">{mobileSubtitle ?? productSubtitle ?? panelSubtitle}</p>
-            </div>
-
-            <div className="hidden lg:block mb-8">
-              {isSecure && panelLogo ? <div className="mb-6">{panelLogo}</div> : null}
-              <h2 className="text-2xl font-bold mb-1 text-white">{panelTitle}</h2>
-              <p className="text-sm text-slate-400">{panelSubtitle}</p>
-            </div>
-
-            <div className={`${cardClass} ${formClassName}`.trim()}>{children}</div>
-
-            {panelHint ? (
-              <p
-                className={`text-center mt-4 max-w-sm mx-auto leading-relaxed ${
-                  isSecure ? 'login-trust-line' : 'text-xs text-slate-500'
-                }`}
-              >
-                {panelHint}
-              </p>
-            ) : null}
+          <div className="login-card">
+            <span className="login-card-label">{panelTitle}</span>
+            <div className={`login-form-block ${formClassName}`.trim()}>{children}</div>
+            {panelHint ? <p className="login-hint">{panelHint}</p> : null}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
+
       {footer}
     </div>
   );
 }
 
-export function LoginError({ message }: { message: string }) {
+export type LoginErrorVariant = 'credentials' | 'network' | 'generic';
+
+export function LoginError({
+  message,
+  variant = 'generic',
+}: {
+  message: string;
+  variant?: LoginErrorVariant;
+}) {
+  const title =
+    variant === 'network'
+      ? 'Connection problem'
+      : variant === 'credentials'
+        ? 'Sign-in failed'
+        : 'Unable to sign in';
+
   return (
-    <div className={`flex items-center gap-2.5 rounded-xl p-3 mb-6 login-shake ${statusSurfaceClasses('error')}`} role="alert">
-      <AlertCircle className={`h-4 w-4 ${statusToneClass('error')} shrink-0`} aria-hidden />
-      <span className={`text-sm ${statusToneClass('error')}`}>{message}</span>
+    <div
+      className="flex items-start gap-2.5 bg-destructive/10 border border-destructive/30 rounded-xl p-3 mb-6 login-shake"
+      role="alert"
+      aria-live="assertive"
+    >
+      <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" aria-hidden />
+      <div>
+        <p className="text-sm font-medium text-destructive">{title}</p>
+        <p className="text-sm text-destructive/90 mt-0.5">{message}</p>
+      </div>
     </div>
   );
 }
@@ -314,8 +161,8 @@ export function LoginField({
   children: ReactNode;
 }) {
   return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">
+    <div className="mb-4">
+      <label htmlFor={id} className="block text-[13px] font-medium mb-1.5 tracking-[-0.01em]" style={{ color: 'var(--login-ink-secondary, #6e6e73)' }}>
         {label}
       </label>
       <div className="relative group">{children}</div>
@@ -328,17 +175,18 @@ export function LoginSubmit({
   disabled,
   children,
   className = '',
-  secondary = false,
 }: {
   loading?: boolean;
   disabled?: boolean;
   children: ReactNode;
   className?: string;
-  secondary?: boolean;
 }) {
-  const base = secondary ? 'login-btn-secondary' : 'login-btn-primary group';
   return (
-    <button type="submit" disabled={disabled || loading} className={`${base} ${className}`.trim()}>
+    <button
+      type="submit"
+      disabled={disabled || loading}
+      className={`login-btn-primary ${className}`.trim()}
+    >
       {children}
     </button>
   );
@@ -348,29 +196,93 @@ export function LoginRemember({
   checked,
   onChange,
   label = 'Remember me on this device',
+  hint,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
+  hint?: string;
 }) {
   return (
-    <label className="flex items-center gap-2.5 mt-5 cursor-pointer select-none">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded border-slate-600 bg-slate-900 accent-blue-500"
-      />
-      <span className="text-sm text-slate-400">{label}</span>
-    </label>
+    <div className="mt-5">
+      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="w-4 h-4 rounded border-border bg-card accent-primary"
+        />
+        <span className="text-sm" style={{ color: 'var(--login-ink-secondary, #6e6e73)' }}>{label}</span>
+      </label>
+      {hint ? <p className="text-xs mt-1.5 ml-[1.625rem]" style={{ color: 'var(--login-ink-muted, #86868b)' }}>{hint}</p> : null}
+    </div>
+  );
+}
+
+export function LoginSsoButton({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+  description?: string;
+}) {
+  return (
+    <a href={href} className="login-btn-secondary mb-3">
+      {label}
+    </a>
+  );
+}
+
+export function LoginMethodToggle({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Sign-in method"
+      className="login-method-toggle"
+    >
+      {options.map((opt) => {
+        const selected = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(opt.value)}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 export function LoginDivider({ label = 'or' }: { label?: string }) {
   return (
-    <div className="relative py-3 mt-4 text-center text-xs uppercase tracking-[0.22em] text-slate-500">
-      <span className="relative px-2 bg-slate-900/40">{label}</span>
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-slate-700/60" />
+    <div
+      className="relative py-3 mt-2 text-center text-[11px] uppercase tracking-[0.16em]"
+      style={{ color: 'var(--login-ink-muted, #86868b)' }}
+    >
+      <span
+        className="relative z-[1] px-3"
+        style={{ background: 'var(--login-card, #fff)' }}
+      >
+        {label}
+      </span>
+      <div
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t"
+        style={{ borderColor: 'var(--login-line, rgba(0,0,0,0.08))' }}
+      />
     </div>
   );
 }

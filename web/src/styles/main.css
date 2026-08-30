@@ -2,35 +2,82 @@
 @import "./platform-tahoe.css";
 @import "./zyvor-secure-login.css";
 @import "./zyvor-macos-login.css";
+@import "./machina-daylight.css";
+@import "./machina-apple-ux.css";
+/* Zeus OS 1:1 SoT — must load last so Mist/Tahoe Light win over System Blue forks */
+@import "./zeus-parity.css";
+@import "./zyvor-premium-login.css";
 
 @theme inline {
   --radius-liquid: 22px;
   --radius-liquid-lg: 28px;
 }
 
-/* Layout width (matches HyperSDK dashboard inner wrappers: max-width 1400px, centered) */
+/* Layout width — zyvor.dev / apple.com product rhythm (not a wide admin console) */
 :root {
-  --layout-max-width: 87.5rem;
+  --layout-max-width: 73.75rem; /* 1180px */
   --dock-height: 4.25rem;
+  --page-gutter: clamp(0.85rem, 2vw, 1.5rem);
+  --section-gap: clamp(2.5rem, 5vw, 4.5rem);
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
 
-  /* macOS Tahoe Liquid Glass design tokens */
-  --radius-liquid: 22px;
-  --radius-liquid-lg: 28px;
-  --blur-liquid: 24px;
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
+  /* Apple.com / iPhone-style system tokens */
+  --radius-liquid: 12px;
+  --radius-liquid-lg: 20px;
+  --blur-liquid: 20px;
+  /* Mist Blue (Zeus Classic Blue) — before zeus-parity overrides */
+  --accent: hsl(200 85% 52%);
+  --accent-hover: hsl(200 85% 56%);
+  --accent-pressed: hsl(200 85% 48%);
+  --accent-soft: hsl(200 85% 52% / 0.14);
+  --link: #2997ff;
+  --link-hover: #64b5ff;
+  --link-on-light: #0066cc;
+  --zyvor-accent: #cc420a;
+  --apple-fill-secondary: rgba(255, 255, 255, 0.12);
+  --apple-fill-tertiary: rgba(255, 255, 255, 0.06);
+  --apple-surface: #161617;
+  --apple-surface-elevated: #1d1d1f;
+  --apple-hairline: rgba(255, 255, 255, 0.08);
+  --apple-muted: #86868b;
 
-  --glass-bg: rgba(20, 22, 28, 0.68);
-  --glass-bg-elevated: rgba(28, 31, 40, 0.82);
-  --glass-bg-strong: rgba(36, 39, 50, 0.92);
+  --glass-bg: rgba(22, 22, 23, 0.72);
+  --glass-bg-elevated: rgba(29, 29, 31, 0.88);
+  --glass-bg-strong: rgba(29, 29, 31, 0.96);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-strong: rgba(255, 255, 255, 0.15);
-  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
-  --glass-highlight: rgba(255, 255, 255, 0.13);
-  --glass-tint: rgba(180, 200, 255, 0.015);
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #8898aa;
+  --glass-border-strong: rgba(255, 255, 255, 0.12);
+  --glass-shadow: none;
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-tint: transparent;
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a6;
+  --text-muted: #86868b;
+  --page-bg: #000000;
+
+  /* Daylight token names also exist on carbon so components can share vars */
+  --surface-0: #0c0e12;
+  --surface-1: #14181f;
+  --surface-2: #1a1f28;
+  --surface-3: #222833;
+  --surface-hover: rgba(255, 255, 255, 0.04);
+  --surface-active: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --plasma: hsl(200 85% 52%);
+  --plasma-strong: hsl(200 85% 56%);
+  --plasma-tint: hsl(200 85% 52% / 0.14);
+  --amber: #ff9f0a;
+  --ember: #ff3b30;
+  --verdant: #34c759;
+  --mark-nominal: #8e8e93;
+  --mark-track: rgba(255, 255, 255, 0.1);
+  --text-faint: #636366;
+  --text-on-accent: #ffffff;
 }
 
 .light-glass {
@@ -54,13 +101,95 @@ html {
 body {
   margin: 0;
   overflow-y: auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', 'Segoe UI', 'Roboto',
-    'Helvetica Neue', sans-serif;
-  font-feature-settings: 'ss02', 'ss03';
+  font-family: var(--font-display, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', sans-serif);
+  font-size: 17px;
+  line-height: 1.47059;
+  letter-spacing: -0.022em;
+  font-feature-settings: 'kern' 1, 'liga' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--page-bg, #0f172a);
+  background-color: var(--page-bg, #000000);
   color: var(--text-primary);
+}
+
+h1, h2, h3, .page-title, .section-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.page-title {
+  font-size: clamp(1.375rem, 2.2vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+
+.page-lede {
+  margin-top: 0.35rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  max-width: 42rem;
+}
+
+.section-title {
+  font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+code, .font-mono, pre {
+  font-family: var(--font-mono);
+}
+
+/* Light theme tokens + Law 0/1 surfaces live in machina-daylight.css (Zeus Daylight Contract).
+   Do not re-declare competing --page-bg / --text-* here. */
+
+.apple-light-shell {
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+/* Shared Apple surface / table helpers */
+.apple-surface {
+  background: var(--apple-surface);
+  border: 1px solid var(--apple-hairline);
+  border-radius: var(--radius-liquid-lg);
+}
+.apple-surface-elevated {
+  background: var(--apple-surface-elevated);
+  border: 1px solid var(--apple-hairline);
+  border-radius: var(--radius-liquid-lg);
+}
+.apple-link {
+  color: var(--link);
+  text-decoration: none;
+}
+.apple-link:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+.apple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.apple-table th {
+  text-align: left;
+  font-weight: 510;
+  color: var(--text-muted);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--apple-hairline);
+}
+.apple-table td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--apple-hairline);
+  color: var(--text-primary);
+}
+.apple-table tr:hover td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 code {
@@ -283,10 +412,10 @@ code {
   z-index: 25;
   margin: 0 -0.25rem 0.75rem;
   padding: 0.35rem 0.25rem 0.65rem;
-  background: rgba(8, 12, 22, 0.82);
+  background: hsl(var(--card) / 0.88);
   backdrop-filter: blur(calc(var(--blur-liquid) + 6px)) saturate(1.3);
   -webkit-backdrop-filter: blur(calc(var(--blur-liquid) + 6px)) saturate(1.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid hsl(var(--foreground) / 0.08);
 }
 
 .mac-popout-root .platform-detail-tabs-sticky {
@@ -332,10 +461,11 @@ code {
   position: sticky;
   top: 2.75rem;
   z-index: 35;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(8, 12, 22, 0.55);
+  border-bottom: 1px solid hsl(var(--foreground) / 0.08);
+  background: hsl(var(--card) / 0.72);
   backdrop-filter: blur(calc(var(--blur-liquid) + 4px)) saturate(1.35);
   -webkit-backdrop-filter: blur(calc(var(--blur-liquid) + 4px)) saturate(1.35);
+  color: hsl(var(--foreground) / 0.9);
 }
 
 .tahoe-context-bar-inner {
@@ -352,20 +482,20 @@ code {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(186, 230, 253, 0.9);
+  background: hsl(var(--foreground) / 0.06);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  color: hsl(var(--primary));
 }
 
 .tahoe-context-app-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
+  color: hsl(var(--foreground) / 0.9);
   transition: color 0.15s ease;
 }
 
 a.tahoe-context-app-title:hover {
-  color: rgb(186, 230, 253);
+  color: hsl(var(--primary));
 }
 
 .tahoe-context-pills {
@@ -379,10 +509,10 @@ a.tahoe-context-app-title:hover {
 
 .tahoe-mobile-jump-select {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid hsl(var(--foreground) / 0.12);
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.88);
+  background: hsl(var(--foreground) / 0.04);
+  color: hsl(var(--foreground) / 0.9);
   font-size: 0.8125rem;
   padding: 0.45rem 0.75rem;
   outline: none;
@@ -390,11 +520,11 @@ a.tahoe-context-app-title:hover {
 }
 
 .tahoe-mobile-jump-select:focus {
-  border-color: rgba(56, 189, 248, 0.35);
-  background: rgba(56, 189, 248, 0.06);
+  border-color: hsl(var(--primary) / 0.4);
+  background: hsl(var(--primary) / 0.08);
 }
 .tahoe-mobile-jump-select:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline: 2px solid hsl(var(--primary) / 0.55);
   outline-offset: 2px;
 }
 
@@ -407,27 +537,27 @@ a.tahoe-context-app-title:hover {
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.55);
+  color: hsl(var(--foreground) / 0.58);
   border: 1px solid transparent;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .tahoe-context-pill:hover {
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0.05);
+  color: hsl(var(--foreground) / 0.9);
+  background: hsl(var(--foreground) / 0.06);
   transform: translateY(-1px);
 }
 
 .tahoe-context-pill-active {
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.22);
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.12);
+  border-color: hsl(var(--primary) / 0.22);
 }
 
 .tahoe-context-more {
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: hsl(var(--foreground) / 0.04);
+  border-color: hsl(var(--foreground) / 0.08);
 }
 
 .tahoe-context-overflow-menu {
@@ -440,10 +570,11 @@ a.tahoe-context-app-title:hover {
   min-width: 11rem;
   padding: 0.35rem;
   border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid hsl(var(--foreground) / 0.12);
+  background: hsl(var(--card) / 0.98);
   backdrop-filter: blur(16px);
-  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.65);
+  box-shadow: var(--shadow-2, 0 16px 40px -16px rgba(0, 0, 0, 0.35));
+  color: hsl(var(--foreground) / 0.9);
 }
 
 .tahoe-context-overflow-item {
@@ -451,18 +582,18 @@ a.tahoe-context-app-title:hover {
   padding: 0.45rem 0.65rem;
   border-radius: 0.5rem;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: hsl(var(--foreground) / 0.72);
   transition: background 0.12s ease, color 0.12s ease;
 }
 
 .tahoe-context-overflow-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
+  background: hsl(var(--foreground) / 0.06);
+  color: hsl(var(--foreground));
 }
 
 .tahoe-context-overflow-item-active {
-  background: rgba(56, 189, 248, 0.12);
-  color: rgb(186, 230, 253);
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
 }
 
 .tahoe-context-status-chip {
@@ -471,14 +602,15 @@ a.tahoe-context-app-title:hover {
   gap: 0.35rem;
   padding: 0.25rem 0.55rem;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  background: hsl(var(--foreground) / 0.04);
+  color: hsl(var(--foreground) / 0.78);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .tahoe-context-status-chip:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.9);
+  background: hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground) / 0.95);
 }
 
 .tahoe-sidebar-link-active {
@@ -505,10 +637,10 @@ a.tahoe-context-app-title:hover {
 .tahoe-mesh {
   position: absolute;
   inset: 0;
-  opacity: 0.5;
+  opacity: 0.35;
   background:
-    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(56, 189, 248, 0.08), transparent 55%),
-    radial-gradient(ellipse 60% 45% at 90% 20%, rgba(249, 115, 22, 0.06), transparent 50%);
+    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(255, 255, 255, 0.04), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 90% 20%, rgba(0, 113, 227, 0.04), transparent 50%);
   pointer-events: none;
 }
 
@@ -535,11 +667,14 @@ a.tahoe-context-app-title:hover {
 }
 
 .tahoe-glass-card:hover {
-  border-color: rgba(56, 189, 248, 0.2);
+  border-color: var(--apple-hairline, rgba(255, 255, 255, 0.12));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    var(--glass-shadow);
 }
 
 .tahoe-segment-active {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(99, 102, 241, 0.2));
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
@@ -577,13 +712,13 @@ a.tahoe-context-app-title:hover {
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 0.75rem;
-  color: rgba(248, 250, 252, 0.9);
+  color: hsl(var(--foreground) / 0.9);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease;
 }
 
 .mac-dock-item:hover {
   transform: scale(1.14) translateY(-5px);
-  background: rgba(255, 255, 255, 0.08);
+  background: hsl(var(--foreground) / 0.08);
 }
 
 .mac-dock-item:hover .mac-dock-tooltip {
@@ -601,28 +736,30 @@ a.tahoe-context-app-title:hover {
   font-size: 0.65rem;
   font-weight: 500;
   white-space: nowrap;
-  color: rgba(248, 250, 252, 0.95);
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: hsl(var(--foreground) / 0.95);
+  background: hsl(var(--card) / 0.96);
+  border: 1px solid hsl(var(--foreground) / 0.1);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
   z-index: 5;
+  box-shadow: var(--shadow-2, 0 8px 24px hsl(0 0% 0% / 0.18));
 }
 
 .mac-dock-item-active {
-  background: rgba(56, 189, 248, 0.12);
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
 }
 
 .mac-dock-item-preview {
   opacity: 0.55;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed hsl(var(--foreground) / 0.18);
+  background: hsl(var(--foreground) / 0.03);
 }
 
 .mac-dock-item-preview:hover {
   opacity: 0.85;
-  background: rgba(255, 255, 255, 0.07);
+  background: hsl(var(--foreground) / 0.07);
 }
 
 .mac-dock-dot {
@@ -633,15 +770,15 @@ a.tahoe-context-app-title:hover {
   width: 0.2rem;
   height: 0.2rem;
   border-radius: 9999px;
-  background: rgba(248, 250, 252, 0.9);
-  box-shadow: 0 0 4px rgba(56, 189, 248, 0.5);
+  background: hsl(var(--primary));
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.45);
 }
 
 .mac-dock-divider {
   width: 1px;
   height: 2.25rem;
   margin: 0 0.25rem;
-  background: rgba(255, 255, 255, 0.12);
+  background: hsl(var(--foreground) / 0.12);
 }
 
 .mac-dock-spotlight {
@@ -653,26 +790,25 @@ a.tahoe-context-app-title:hover {
   padding-left: 0.85rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  color: rgba(248, 250, 252, 0.85);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  color: hsl(var(--foreground) / 0.85);
+  background: hsl(var(--foreground) / 0.06);
+  border: 1px solid hsl(var(--foreground) / 0.1);
   transition: transform 0.2s ease, background 0.15s ease;
 }
 
 .mac-dock-spotlight:hover {
   transform: scale(1.05);
-  background: rgba(255, 255, 255, 0.1);
+  background: hsl(var(--foreground) / 0.1);
 }
 
 .mac-dock-ask {
-  color: rgba(251, 191, 36, 0.95);
-  border-color: rgba(251, 191, 36, 0.2);
-  background: rgba(251, 191, 36, 0.08);
+  color: hsl(var(--warning-hsl, 18 92% 48%) / 0.95);
+  border-color: hsl(var(--warning-hsl, 18 92% 48%) / 0.22);
+  background: hsl(var(--warning-hsl, 18 92% 48%) / 0.1);
 }
 
 .mac-dock-ask:hover {
-  background: rgba(251, 191, 36, 0.14);
+  background: hsl(var(--warning-hsl, 18 92% 48%) / 0.16);
 }
 
 .mac-dock-inner-scroll {
@@ -734,11 +870,21 @@ a.tahoe-context-app-title:hover {
   --mc-carbon: #0a0a0c;
   --mc-horizon: rgba(56, 189, 248, 0.12);
   --mc-glass: rgba(15, 23, 42, 0.55);
+  width: 100%;
+  max-width: none;
 }
 
 .mc-hero {
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mac-desktop-root .mission-control-page,
+.mac-desktop-main .mission-control-root {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .mc-host-panel,
@@ -803,8 +949,9 @@ a.tahoe-context-app-title:hover {
   pointer-events: none;
   padding: 0.35rem 0.65rem;
   border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: hsl(var(--foreground) / 0.06);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  color: hsl(var(--foreground) / 0.78);
 }
 
 .mac-dock-attention-dot {
@@ -866,27 +1013,26 @@ a.tahoe-context-app-title:hover {
   }
 }
 
-/* Machina semantic status tokens (color system v1) */
+/* Machina semantic status tokens — quiet Apple system colors (no neon purple/cyan) */
 :root {
-  --machina-status-ok: rgb(52, 211, 153);
-  --machina-status-warn: rgb(251, 191, 36);
-  --machina-status-error: rgb(248, 113, 113);
-  --machina-status-info: rgb(96, 165, 250);
-  --machina-status-neutral: rgb(148, 163, 184);
-  --machina-accent: rgb(56, 189, 248);
-  --machina-accent-ai: rgb(168, 85, 247);
+  --machina-status-ok: #34c759;
+  --machina-status-warn: #ff9f0a;
+  --machina-status-error: #ff3b30;
+  --machina-status-info: #0071e3;
+  --machina-status-neutral: #8e8e93;
+  --machina-accent: #0071e3;
+  --machina-accent-ai: #0071e3;
   --machina-accent-network: var(--machina-accent);
   --machina-accent-security: var(--machina-status-error);
 
-  /* VM state palette (HyperSDK k8s-vms aligned) */
-  --machina-vm-running: #10b981;
-  --machina-vm-stopped: #6b7280;
-  --machina-vm-paused: #a855f7;
-  --machina-vm-creating: #f59e0b;
-  --machina-vm-failed: #ef4444;
-  --machina-vm-migrating: #3b82f6;
-  --machina-vm-suspended: #3b82f6;
-  --machina-vm-unknown: #94a3b8;
+  --machina-vm-running: #34c759;
+  --machina-vm-stopped: #8e8e93;
+  --machina-vm-paused: #ff9f0a;
+  --machina-vm-creating: #0071e3;
+  --machina-vm-failed: #ff3b30;
+  --machina-vm-migrating: #0071e3;
+  --machina-vm-suspended: #0071e3;
+  --machina-vm-unknown: #8e8e93;
 }
 
 /* Usage: network/nav → --machina-accent-network; AI/copilot → --machina-accent-ai; risk → --machina-accent-security */
@@ -996,71 +1142,231 @@ a.tahoe-context-app-title:hover {
 .machina-vm-card-accent--suspended { border-left-color: var(--machina-vm-migrating); }
 .machina-vm-card-accent--unknown { border-left-color: var(--machina-vm-unknown); }
 
-/* Retrofit legacy platform cards/tables to glass inside desktop shell */
+/* Quieter cards — Apple product surfaces */
 .tahoe-page-root .card,
 .liquid-glass-app .card {
-  border-radius: var(--radius-liquid);
-  border: 1px solid var(--glass-border);
-  background: var(--glass-panel);
-  backdrop-filter: blur(var(--blur-liquid)) saturate(1.2);
-  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.2);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, var(--glass-shadow);
+  border-radius: var(--radius-liquid-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(29, 29, 31, 0.92);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  box-shadow: none;
 }
 
+/* Apple.com / iPhone-style buttons — global (all themes) */
+.btn-primary,
+.tahoe-btn-primary,
 .tahoe-page-root .btn-primary,
-.liquid-glass-app .btn-primary {
+.liquid-glass-app .btn-primary,
+.machina-clean .btn-primary,
+.steel-theme .btn-primary,
+.aurora-theme .btn-primary,
+.rack-theme .btn-primary,
+.apple-light .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.875rem;
+  padding: 0.7rem 1.4rem;
+  min-height: 2.75rem;
+  font-size: 1.0625rem;
   font-weight: 500;
-  color: #fff;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, rgb(56, 189, 248), rgb(37, 99, 235));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 20px -6px rgba(37, 99, 235, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: #fff !important;
+  border-radius: 980px !important;
+  background: #0071e3 !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none;
+  transition: background 0.2s ease, opacity 0.15s ease, transform 0.1s ease;
   cursor: pointer;
-  text-decoration: none;
+  text-decoration: none !important;
+  -webkit-font-smoothing: antialiased;
 }
+.btn-primary:hover:not(:disabled),
+.tahoe-btn-primary:hover:not(:disabled),
 .liquid-glass-app .btn-primary:hover:not(:disabled),
-.tahoe-page-root .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 10px 28px -4px rgba(37, 99, 235, 0.55);
+.tahoe-page-root .btn-primary:hover:not(:disabled),
+.machina-clean .btn-primary:hover:not(:disabled) {
+  background: #0077ed !important;
+  box-shadow: none !important;
+  filter: none;
 }
+.btn-primary:active:not(:disabled),
+.tahoe-btn-primary:active:not(:disabled),
 .liquid-glass-app .btn-primary:active:not(:disabled),
 .tahoe-page-root .btn-primary:active:not(:disabled) {
-  transform: scale(0.985);
+  background: #006edb !important;
+  transform: scale(0.98);
 }
+.btn-primary:disabled,
+.tahoe-btn-primary:disabled,
 .liquid-glass-app .btn-primary:disabled,
 .tahoe-page-root .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
+.btn-secondary,
+.tahoe-page-root .btn-secondary,
 .liquid-glass-app .btn-secondary,
-.tahoe-page-root .btn-secondary {
+.machina-clean .btn-secondary,
+.steel-theme .btn-secondary,
+.aurora-theme .btn-secondary,
+.rack-theme .btn-secondary,
+.apple-light .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.7rem 1.4rem;
+  min-height: 2.75rem;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-primary, #f5f5f7) !important;
+  border-radius: 980px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: none !important;
+  backdrop-filter: none;
+  box-shadow: none !important;
+  transition: background 0.2s ease, opacity 0.15s ease, transform 0.1s ease;
+  cursor: pointer;
+  text-decoration: none !important;
+}
+.apple-light .btn-secondary,
+.light-theme .btn-secondary {
+  background: transparent !important;
+  color: #1d1d1f !important;
+  border: 1px solid rgba(204, 66, 10, 0.35) !important;
+}
+.apple-light .btn-secondary:hover:not(:disabled),
+.light-theme .btn-secondary:hover:not(:disabled) {
+  background: #fff1e9 !important;
+}
+.liquid-glass-app .btn-secondary:hover:not(:disabled),
+.machina-clean:not(.apple-light):not(.light-theme) .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+.btn-secondary:active:not(:disabled) { transform: scale(0.98); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.1rem;
+  min-height: 2.2rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--link, #2997ff) !important;
+  border-radius: 980px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.apple-light .btn-ghost,
+.light-theme .btn-ghost {
+  color: #0066cc !important;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(0, 113, 227, 0.12) !important;
+  text-decoration: none !important;
+}
+
+.btn-destructive {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
   padding: 0.5rem 1.25rem;
+  min-height: 2.2rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  border-radius: var(--radius-liquid);
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #fff !important;
+  border-radius: 980px !important;
+  background: #ff453a !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 0.18s ease, transform 0.1s ease;
+}
+.btn-destructive:hover:not(:disabled) { background: #ff6961 !important; }
+.btn-destructive:active:not(:disabled) { transform: scale(0.98); }
+
+.btn-primary.text-xs, .btn-secondary.text-xs, .btn-ghost.text-xs, .btn-destructive.text-xs, .tahoe-btn-primary.text-xs {
+  padding: 0.3rem 0.85rem;
+  min-height: 1.75rem;
+  font-size: 0.75rem;
+}
+.btn-primary.text-sm, .btn-secondary.text-sm, .btn-ghost.text-sm, .btn-destructive.text-sm, .tahoe-btn-primary.text-sm {
+  padding: 0.45rem 1.15rem;
+  min-height: 2.05rem;
+  font-size: 0.8125rem;
+}
+
+/* Kill leftover rounded-/shadow utilities fighting Apple pills */
+.btn-primary.rounded-lg, .btn-primary.rounded-xl, .btn-primary.rounded-md,
+.btn-secondary.rounded-lg, .btn-secondary.rounded-xl,
+.btn-destructive.rounded-lg, .btn-ghost.rounded-lg,
+.tahoe-btn-primary.rounded-lg {
+  border-radius: 980px !important;
+}
+.btn-primary.shadow-lg, .btn-primary.shadow-md, .btn-primary.shadow-xl,
+.btn-secondary.shadow-lg {
+  box-shadow: none !important;
+}
+
+/* Apple.com text-link CTA (Learn more →) */
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  min-height: auto;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--link, #2997ff);
+  background: none;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
   text-decoration: none;
 }
-.liquid-glass-app .btn-secondary:hover:not(:disabled),
-.tahoe-page-root .btn-secondary:hover:not(:disabled) {
-  background: var(--glass-bg-elevated);
-  border-color: var(--glass-border-strong);
+.btn-link:hover {
+  text-decoration: underline;
+  color: var(--link-hover, #64b5ff);
+}
+.apple-light .btn-link,
+.light-theme .btn-link {
+  color: #0066cc;
+}
+.apple-light .btn-link:hover,
+.light-theme .btn-link:hover {
+  color: #0077ed;
+}
+
+/* Page rhythm — apple.com-like breathing room */
+.tahoe-page-root,
+.machina-clean .tahoe-page-root {
+  --page-section-gap: 1.75rem;
+}
+.tahoe-page-root > * + * {
+  margin-top: 0;
+}
+.tahoe-page-root .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(1.75rem * calc(1 - var(--tw-space-y-reverse)));
 }
 
 .tahoe-page-root table thead {
@@ -1199,22 +1505,23 @@ a.tahoe-context-app-title:hover {
 }
 
 .mac-menu-item {
-  color: rgba(248, 250, 252, 0.88);
+  color: hsl(var(--foreground) / 0.88);
   transition: background 0.15s ease;
 }
 
 .mac-menu-item:hover,
 .mac-menu-item-active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground));
 }
 
 .mac-menu-panel {
-  background: rgba(15, 23, 42, 0.96);
+  background: hsl(var(--card) / 0.96);
   backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid hsl(var(--foreground) / 0.1);
   border-radius: 0.625rem;
-  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.65);
+  box-shadow: var(--shadow-3, 0 16px 48px -12px rgba(0, 0, 0, 0.35));
+  color: hsl(var(--foreground));
 }
 
 .mac-menubar-icon-btn {
@@ -1224,13 +1531,13 @@ a.tahoe-context-app-title:hover {
   width: 2rem;
   height: 2rem;
   border-radius: 0.5rem;
-  color: rgba(248, 250, 252, 0.75);
+  color: hsl(var(--foreground) / 0.75);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .mac-menubar-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground));
 }
 
 .mac-desktop-tabs {
@@ -1238,13 +1545,15 @@ a.tahoe-context-app-title:hover {
 }
 
 .mac-desktop-tab-active {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 -2px 0 rgba(56, 189, 248, 0.55);
+  background: hsl(var(--primary) / 0.12);
+  box-shadow: inset 0 -2px 0 hsl(var(--primary) / 0.7);
+  color: hsl(var(--foreground));
 }
 
 .mac-finder-toolbar {
-  background: rgba(12, 18, 32, 0.55);
+  background: hsl(var(--card) / 0.72);
   backdrop-filter: blur(12px);
+  color: hsl(var(--foreground));
 }
 
 .mac-finder-nav-btn {
@@ -1254,12 +1563,12 @@ a.tahoe-context-app-title:hover {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 0.375rem;
-  color: rgba(248, 250, 252, 0.7);
+  color: hsl(var(--foreground) / 0.7);
 }
 
 .mac-finder-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground));
 }
 
 .mac-finder-nav-btn:disabled {
@@ -1268,23 +1577,24 @@ a.tahoe-context-app-title:hover {
 }
 
 .mac-finder-search {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(248, 250, 252, 0.9);
+  background: hsl(var(--foreground) / 0.06);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  color: hsl(var(--foreground) / 0.92);
 }
 
 .mac-finder-search:focus {
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: hsl(var(--primary) / 0.4);
 }
 .mac-finder-search:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline: 2px solid hsl(var(--primary) / 0.55);
   outline-offset: 2px;
 }
 
 .mac-finder-path {
   padding: 0.15rem 0.5rem;
   border-radius: 0.375rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: hsl(var(--foreground) / 0.06);
+  color: hsl(var(--foreground) / 0.7);
 }
 
 .tahoe-segment-item {
@@ -1666,31 +1976,21 @@ a.tahoe-context-app-title:hover {
   background-size: 32px 32px;
 }
 .login-glass {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(51, 65, 85, 0.6);
-  animation: login-pulse-glow 5s ease-in-out infinite;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  animation: none;
 }
+/* Owned by zyvor-premium-login.css — keep these as no-op fallbacks only */
 .login-input {
-  width: 100%;
-  padding: 0.75rem 2.75rem;
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  color: #f1f5f9;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(51, 65, 85, 0.7);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  /* intentional: see .login-page .login-input in zyvor-premium-login.css */
 }
 .login-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 .login-input:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.7);
+  outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 .login-field-icon {
   position: absolute;
@@ -1699,11 +1999,11 @@ a.tahoe-context-app-title:hover {
   transform: translateY(-50%);
   width: 1rem;
   height: 1rem;
-  color: #64748b;
+  color: var(--login-ink-muted, #86868b);
   transition: color 0.2s;
 }
 .group:focus-within .login-field-icon {
-  color: #60a5fa;
+  color: #0071e3;
 }
 .login-btn-primary {
   position: relative;
@@ -1714,43 +2014,42 @@ a.tahoe-context-app-title:hover {
   gap: 0.5rem;
   width: 100%;
   margin-top: 1.5rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 0.85rem 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 510;
+  letter-spacing: -0.01em;
   color: #fff;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
-  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 980px;
+  border: none;
+  background: #0071e3;
+  box-shadow: none;
+  transition: background 0.18s ease, opacity 0.15s ease;
 }
 .login-btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.45);
+  transform: none;
+  background: #0077ed;
+  box-shadow: none;
 }
 .login-btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 .login-btn-primary::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.12) 50%, transparent 60%);
-  animation: login-shimmer 3s ease-in-out infinite;
+  display: none;
 }
 .login-btn-secondary {
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #e2e8f0;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(51, 65, 85, 0.7);
-  background: rgba(15, 23, 42, 0.6);
-  transition: background 0.2s;
+  padding: 0.85rem 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 510;
+  letter-spacing: -0.01em;
+  color: #f5f5f7;
+  border-radius: 980px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.18s ease;
 }
 .login-btn-secondary:hover {
-  background: rgba(30, 41, 59, 0.9);
+  background: rgba(255, 255, 255, 0.18);
 }
 .login-page-aurora .login-hero {
   background: linear-gradient(145deg, #020408 0%, #0a0618 35%, #1a0a2e 65%, #050816 100%);
@@ -1901,87 +2200,305 @@ a.tahoe-context-app-title:hover {
 .table-row-hover { transition: background-color 0.15s ease; }
 .table-row-hover:hover { background-color: rgba(59, 130, 246, 0.05); }
 
-/* Centered content shell (HyperSDK pattern: max-width + margin auto + horizontal padding) */
+/* Centered content shell — open gutters like zyvor.dev */
 .app-shell {
   box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
-  max-width: min(var(--layout-max-width), calc(100vw - 1.5rem));
-  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
-  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  max-width: min(var(--layout-max-width), 100%);
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+  padding-top: clamp(0.85rem, 1.5vw, 1.25rem);
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
 }
+
 @media (min-width: 640px) {
   .app-shell {
-    padding-left: max(1rem, env(safe-area-inset-left, 0px));
-    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
   }
 }
 @media (min-width: 1024px) {
   .app-shell {
-    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
-    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+    padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
   }
 }
 
-/* Form input */
+/* Form input — Apple quiet fields */
 .input-field {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  background-color: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  color: #e2e8f0;
-  transition: border-color 0.15s ease;
+  padding: 0.65rem 0.9rem;
+  background-color: var(--apple-fill-tertiary, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #f5f5f7);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .input-field:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.6);
-  outline-offset: 2px;
-  border-color: #3b82f6;
+  outline: none;
+  border-color: var(--accent, #0071e3);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.2);
 }
 .input-field:focus:not(:focus-visible) {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent, #0071e3);
 }
 .input-field:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* ── Liquid Glass app shell (dark theme default) ── */
+/* ── Liquid Glass app shell (Apple black canvas) ── */
 .dashboard-liquid-glass {
   position: relative;
-  background:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 58, 95, 0.35), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(56, 189, 248, 0.06), transparent 55%),
-    radial-gradient(ellipse 60% 45% at 90% 20%, rgba(249, 115, 22, 0.05), transparent 50%),
-    linear-gradient(180deg, rgb(8, 12, 22) 0%, rgb(6, 10, 18) 100%);
+  background: #000000;
 }
 
 .liquid-glass-app .input-field {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: calc(var(--radius-liquid) * 0.6);
+  background: var(--apple-fill-tertiary);
+  border: 1px solid var(--apple-hairline);
+  border-radius: 12px;
   color: var(--text-primary);
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
 }
 .liquid-glass-app .input-field:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.18);
 }
 
+/* Remap common slate admin panels → Apple surfaces (every theme via .machina-clean) */
+.machina-clean .rounded-xl.border.bg-slate-800\/50,
+.machina-clean .rounded-xl.border.border-slate-700\/50,
+.machina-clean .rounded-xl.border.border-slate-700\/60,
+.machina-clean [class*="bg-slate-800/50"].rounded-xl,
+.machina-clean [class*="bg-slate-900/40"].rounded-xl,
+.machina-clean .bg-slate-800\/50,
+.machina-clean .bg-slate-800\/40,
+.machina-clean .bg-slate-900\/50,
+.machina-clean .bg-slate-900\/40,
 .liquid-glass-app .rounded-xl.border.bg-slate-800\/50,
 .liquid-glass-app .rounded-xl.border.border-slate-700\/50,
 .liquid-glass-app .rounded-xl.border.border-slate-700\/60,
 .liquid-glass-app [class*="bg-slate-800/50"].rounded-xl,
-.liquid-glass-app [class*="bg-slate-900/40"].rounded-xl {
-  border-radius: var(--radius-liquid) !important;
-  border-color: var(--glass-border) !important;
-  background: linear-gradient(155deg, var(--glass-highlight) 0%, var(--glass-bg) 100%) !important;
-  backdrop-filter: blur(var(--blur-liquid)) saturate(1.15);
-  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.15);
-  box-shadow: var(--glass-shadow);
+.liquid-glass-app [class*="bg-slate-900/40"].rounded-xl,
+.liquid-glass-app .bg-slate-800\/50,
+.liquid-glass-app .bg-slate-800\/40,
+.liquid-glass-app .bg-slate-900\/50,
+.liquid-glass-app .bg-slate-900\/40 {
+  border-radius: var(--radius-liquid-lg) !important;
+  border-color: var(--apple-hairline) !important;
+  background: var(--apple-surface) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none !important;
+}
+
+/* Solid slate shells (modals, sticky bars, cards) */
+.machina-clean .bg-slate-800,
+.machina-clean .bg-slate-800\/95,
+.machina-clean .bg-slate-800\/90,
+.machina-clean .bg-slate-800\/80,
+.machina-clean .bg-slate-800\/70,
+.machina-clean .bg-slate-800\/60,
+.machina-clean .bg-slate-950\/90,
+.machina-clean .bg-slate-950\/80,
+.liquid-glass-app .bg-slate-800,
+.liquid-glass-app .bg-slate-800\/95,
+.liquid-glass-app .bg-slate-800\/90,
+.liquid-glass-app .bg-slate-800\/80,
+.liquid-glass-app .bg-slate-800\/70,
+.liquid-glass-app .bg-slate-800\/60,
+.liquid-glass-app .bg-slate-950\/90,
+.liquid-glass-app .bg-slate-950\/80 {
+  background-color: var(--apple-surface) !important;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+}
+
+.machina-clean .hover\:bg-slate-700:hover,
+.machina-clean .hover\:bg-slate-700\/60:hover,
+.machina-clean .hover\:bg-slate-700\/40:hover,
+.machina-clean .hover\:bg-slate-800:hover,
+.machina-clean .hover\:bg-slate-800\/50:hover,
+.machina-clean .hover\:bg-slate-800\/40:hover,
+.liquid-glass-app .hover\:bg-slate-700:hover,
+.liquid-glass-app .hover\:bg-slate-700\/60:hover,
+.liquid-glass-app .hover\:bg-slate-700\/40:hover,
+.liquid-glass-app .hover\:bg-slate-800:hover,
+.liquid-glass-app .hover\:bg-slate-800\/50:hover,
+.liquid-glass-app .hover\:bg-slate-800\/40:hover {
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+
+.machina-clean .border-slate-600,
+.machina-clean .border-slate-600\/60,
+.machina-clean .border-slate-600\/50,
+.machina-clean .border-slate-700,
+.machina-clean .border-slate-700\/50,
+.machina-clean .border-slate-700\/60,
+.machina-clean .border-slate-700\/80,
+.machina-clean .border-slate-800,
+.machina-clean .border-slate-800\/50,
+.liquid-glass-app .border-slate-600,
+.liquid-glass-app .border-slate-600\/60,
+.liquid-glass-app .border-slate-600\/50,
+.liquid-glass-app .border-slate-700,
+.liquid-glass-app .border-slate-700\/50,
+.liquid-glass-app .border-slate-700\/60,
+.liquid-glass-app .border-slate-700\/80,
+.liquid-glass-app .border-slate-800,
+.liquid-glass-app .border-slate-800\/50,
+.machina-clean .divide-slate-700\/30 > :not([hidden]) ~ :not([hidden]),
+.machina-clean .divide-slate-700\/50 > :not([hidden]) ~ :not([hidden]),
+.machina-clean .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+.liquid-glass-app .divide-slate-700\/30 > :not([hidden]) ~ :not([hidden]),
+.liquid-glass-app .divide-slate-700\/50 > :not([hidden]) ~ :not([hidden]),
+.liquid-glass-app .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--apple-hairline) !important;
+}
+
+.machina-clean .text-slate-100,
+.machina-clean .text-slate-200,
+.liquid-glass-app .text-slate-100,
+.liquid-glass-app .text-slate-200 {
+  color: var(--text-primary);
+}
+.machina-clean .text-slate-300,
+.liquid-glass-app .text-slate-300 {
+  color: var(--text-secondary);
+}
+.machina-clean .text-slate-400,
+.machina-clean .text-slate-500,
+.machina-clean .text-slate-600,
+.liquid-glass-app .text-slate-400,
+.liquid-glass-app .text-slate-500,
+.liquid-glass-app .text-slate-600 {
+  color: var(--text-muted);
+}
+
+/* Quiet rainbow utility accents → semantic / Apple tokens */
+.machina-clean .text-cyan-400,
+.machina-clean .text-sky-400,
+.machina-clean .text-blue-400,
+.liquid-glass-app .text-cyan-400,
+.liquid-glass-app .text-sky-400,
+.liquid-glass-app .text-blue-400 {
+  color: var(--accent) !important;
+}
+.machina-clean .text-emerald-400,
+.machina-clean .text-green-400,
+.liquid-glass-app .text-emerald-400,
+.liquid-glass-app .text-green-400 {
+  color: var(--machina-status-ok) !important;
+}
+.machina-clean .text-amber-400,
+.machina-clean .text-yellow-400,
+.machina-clean .text-orange-400,
+.liquid-glass-app .text-amber-400,
+.liquid-glass-app .text-yellow-400,
+.liquid-glass-app .text-orange-400 {
+  color: var(--machina-status-warn) !important;
+}
+.machina-clean .text-red-400,
+.machina-clean .text-rose-400,
+.liquid-glass-app .text-red-400,
+.liquid-glass-app .text-rose-400 {
+  color: var(--machina-status-error) !important;
+}
+.machina-clean .text-violet-400,
+.machina-clean .text-purple-400,
+.machina-clean .text-indigo-400,
+.machina-clean .text-pink-400,
+.liquid-glass-app .text-violet-400,
+.liquid-glass-app .text-purple-400,
+.liquid-glass-app .text-indigo-400,
+.liquid-glass-app .text-pink-400 {
+  color: var(--text-secondary) !important;
+}
+
+.machina-clean .card,
+.liquid-glass-app .card {
+  border-radius: var(--radius-liquid-lg) !important;
+  border: 1px solid var(--apple-hairline) !important;
+  background: var(--apple-surface) !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.machina-clean .card.overflow-hidden,
+.liquid-glass-app .card.overflow-hidden {
+  padding: 0 !important;
+}
+
+/* Open page rhythm */
+.machina-clean .tahoe-page-root,
+.liquid-glass-app .tahoe-page-root {
+  letter-spacing: -0.016em;
+}
+
+/* Quieter micro-labels (was all-caps dense admin chrome) */
+.machina-clean .uppercase.tracking-wide,
+.machina-clean .uppercase.tracking-wider,
+.liquid-glass-app .uppercase.tracking-wide,
+.liquid-glass-app .uppercase.tracking-wider {
+  text-transform: none !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 400 !important;
+  color: var(--text-muted) !important;
+}
+
+/* Soften rainbow fill chips / progress bars */
+.machina-clean .bg-cyan-500,
+.machina-clean .bg-sky-500,
+.machina-clean .bg-blue-500,
+.liquid-glass-app .bg-cyan-500,
+.liquid-glass-app .bg-sky-500,
+.liquid-glass-app .bg-blue-500 {
+  background-color: var(--accent) !important;
+}
+.machina-clean .bg-emerald-500,
+.machina-clean .bg-green-500,
+.liquid-glass-app .bg-emerald-500,
+.liquid-glass-app .bg-green-500 {
+  background-color: var(--machina-status-ok) !important;
+}
+.machina-clean .bg-amber-500,
+.machina-clean .bg-yellow-500,
+.machina-clean .bg-orange-500,
+.liquid-glass-app .bg-amber-500,
+.liquid-glass-app .bg-yellow-500,
+.liquid-glass-app .bg-orange-500 {
+  background-color: var(--machina-status-warn) !important;
+}
+.machina-clean .bg-red-500,
+.machina-clean .bg-rose-500,
+.liquid-glass-app .bg-red-500,
+.liquid-glass-app .bg-rose-500 {
+  background-color: var(--machina-status-error) !important;
+}
+.machina-clean .bg-violet-500,
+.machina-clean .bg-purple-500,
+.machina-clean .bg-indigo-500,
+.liquid-glass-app .bg-violet-500,
+.liquid-glass-app .bg-purple-500,
+.liquid-glass-app .bg-indigo-500 {
+  background-color: color-mix(in srgb, var(--accent) 55%, white) !important;
+}
+
+.machina-clean table thead,
+.liquid-glass-app table thead {
+  color: var(--text-muted);
+}
+.machina-clean .bg-slate-900\/80,
+.machina-clean .bg-slate-900,
+.liquid-glass-app .bg-slate-900\/80,
+.liquid-glass-app .bg-slate-900 {
+  background-color: color-mix(in srgb, var(--apple-surface) 92%, black) !important;
 }
 
 .liquid-glass-app table {
@@ -1989,35 +2506,34 @@ a.tahoe-context-app-title:hover {
   border-spacing: 0;
 }
 .liquid-glass-app thead {
-  background: var(--glass-bg-elevated);
+  background: transparent;
 }
 .liquid-glass-app thead th {
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--text-secondary);
-  font-weight: 500;
+  border-bottom: 1px solid var(--apple-hairline);
+  color: var(--text-muted);
+  font-weight: 510;
 }
 .liquid-glass-app tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--apple-hairline);
   transition: background 0.15s ease;
 }
 .liquid-glass-app tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .liquid-glass-navbar {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur-liquid)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.4);
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  border-bottom: 1px solid var(--apple-hairline);
 }
 
 .liquid-glass-breadcrumb {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 9999px;
-  backdrop-filter: blur(12px);
-  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  backdrop-filter: none;
 }
 
 .liquid-glass-toast {
@@ -2073,10 +2589,8 @@ a.tahoe-context-app-title:hover {
 .dashboard-aurora {
   position: relative;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(34, 211, 238, 0.14), transparent 55%),
-    radial-gradient(ellipse 60% 45% at 90% 60%, rgba(168, 85, 247, 0.12), transparent 50%),
-    radial-gradient(ellipse 50% 40% at 8% 75%, rgba(236, 72, 153, 0.08), transparent 45%),
-    linear-gradient(180deg, #020408 0%, #050816 35%, #0a0618 65%, #030712 100%);
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 113, 227, 0.06), transparent 55%),
+    linear-gradient(180deg, #05060c 0%, #0a0b10 50%, #07080c 100%);
 }
 .dashboard-aurora::before {
   content: "";
@@ -2084,10 +2598,9 @@ a.tahoe-context-app-title:hover {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(ellipse 55% 40% at 20% 10%, rgba(34, 211, 238, 0.06), transparent 60%),
-    radial-gradient(ellipse 45% 35% at 75% 85%, rgba(168, 85, 247, 0.07), transparent 55%);
-  animation: aurora-drift 18s ease-in-out infinite;
+  background: radial-gradient(ellipse 50% 35% at 80% 90%, rgba(0, 113, 227, 0.04), transparent 60%);
+  animation: none;
+  opacity: 0.8;
 }
 
 .aurora-content {
@@ -2112,23 +2625,20 @@ a.tahoe-context-app-title:hover {
   width: 100%;
   height: 2px;
   border-radius: 1px;
-  background: linear-gradient(90deg, #22d3ee, #a855f7, #ec4899);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.45);
+  background: var(--accent, #0071e3);
+  box-shadow: none;
 }
 
 .nav-aurora-dropdown {
-  background: linear-gradient(155deg, rgba(12, 8, 28, 0.97) 0%, rgba(20, 12, 40, 0.96) 50%, rgba(8, 6, 20, 0.98) 100%);
-  border: 1px solid rgba(167, 139, 250, 0.22);
-  box-shadow:
-    0 0 0 1px rgba(34, 211, 238, 0.06),
-    0 16px 48px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--glass-bg-elevated, rgba(22, 22, 23, 0.96));
+  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
 .nav-aurora-select {
-  background: linear-gradient(180deg, rgba(18, 10, 36, 0.95) 0%, rgba(8, 6, 20, 0.98) 100%);
-  border-color: rgba(167, 139, 250, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 20px rgba(34, 211, 238, 0.06);
+  background: var(--glass-bg, rgba(22, 22, 23, 0.95));
+  border-color: var(--apple-hairline, rgba(255, 255, 255, 0.12));
+  box-shadow: none;
 }
 
 .aurora-theme .input-field {
@@ -2137,8 +2647,8 @@ a.tahoe-context-app-title:hover {
   color: #e8e4f8;
 }
 .aurora-theme .input-field:focus {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+  border-color: var(--accent, #0071e3);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.16);
 }
 
 .aurora-theme .skeleton {
@@ -2152,41 +2662,26 @@ a.tahoe-context-app-title:hover {
 }
 
 .aurora-theme ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #3b2d5c, #1e3a5f);
+  background: rgba(255, 255, 255, 0.18);
 }
 .aurora-theme ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #5b4a8a, #2563eb);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .aurora-theme .glass-card {
-  background: rgba(12, 8, 28, 0.65);
-  border-color: rgba(167, 139, 250, 0.2);
-  box-shadow: 0 0 32px rgba(34, 211, 238, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: rgba(22, 22, 23, 0.65);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
-.aurora-theme .stat-card-blue {
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18) 0%, rgba(15, 10, 32, 0.9) 100%);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-}
-.aurora-theme .stat-card-green {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.16) 0%, rgba(15, 10, 32, 0.9) 100%);
-  border: 1px solid rgba(52, 211, 153, 0.18);
-}
-.aurora-theme .stat-card-purple {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(15, 10, 32, 0.9) 100%);
-  border: 1px solid rgba(168, 85, 247, 0.22);
-}
-.aurora-theme .stat-card-orange {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.16) 0%, rgba(15, 10, 32, 0.9) 100%);
-  border: 1px solid rgba(251, 146, 60, 0.18);
-}
-.aurora-theme .stat-card-cyan {
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(236, 72, 153, 0.08) 50%, rgba(15, 10, 32, 0.9) 100%);
-  border: 1px solid rgba(34, 211, 238, 0.22);
-}
+.aurora-theme .stat-card-blue,
+.aurora-theme .stat-card-green,
+.aurora-theme .stat-card-purple,
+.aurora-theme .stat-card-orange,
+.aurora-theme .stat-card-cyan,
 .aurora-theme .stat-card-red {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.18) 0%, rgba(15, 10, 32, 0.9) 100%);
-  border: 1px solid rgba(236, 72, 153, 0.2);
+  background: var(--apple-surface, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.1));
 }
 
 /* Aurora-theme: comprehensive surface overrides for hardcoded Tailwind bg classes */
@@ -2266,12 +2761,23 @@ a.tahoe-context-app-title:hover {
 }
 
 .dashboard-steel {
+  /* Quieter steel — graphite canvas, soft rim light only */
   background:
-    radial-gradient(circle at top center, rgba(120, 140, 160, 0.15), transparent 30%),
-    linear-gradient(180deg, #06080d 0%, #0b1017 40%, #101722 70%, #0b1018 100%);
+    radial-gradient(ellipse 80% 35% at 50% -5%, rgba(148, 163, 184, 0.08), transparent 50%),
+    linear-gradient(180deg, #080a0e 0%, #0c1016 45%, #0a0e14 100%);
 }
 
 .steel-content {
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard-rack {
+  background:
+    radial-gradient(ellipse 70% 30% at 50% -5%, rgba(255, 106, 31, 0.06), transparent 50%),
+    linear-gradient(180deg, #0a0c10 0%, #0e1218 50%, #0b0e13 100%);
+}
+.rack-content {
   flex: 1;
   min-height: 0;
 }
@@ -2336,21 +2842,21 @@ a.tahoe-context-app-title:hover {
   background: linear-gradient(90deg, #60a5fa, #3b82f6);
 }
 .machina-nav-dropdown {
-  background: rgba(30, 41, 59, 0.97);
-  border: 1px solid rgba(71, 85, 105, 0.5);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  background: var(--apple-surface, #1d1d1f);
+  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 .machina-nav-dd-link {
-  color: #cbd5e1;
+  color: var(--text-secondary, #cbd5e1);
   text-decoration: none;
 }
 .machina-nav-dd-link:hover {
-  background: rgba(51, 65, 85, 0.6);
-  color: #fff;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text-primary, #fff);
 }
 .machina-nav-dd-active {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.18);
+  color: var(--accent, #0071e3);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 /* Steel theme */
@@ -2433,7 +2939,8 @@ a.tahoe-context-app-title:hover {
   color: #d7dde5;
 }
 .steel-theme .input-field:focus {
-  border-color: #5d90f7;
+  border-color: var(--accent, #0071e3);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.16);
 }
 
 .steel-theme .skeleton {
@@ -2517,11 +3024,11 @@ a.tahoe-context-app-title:hover {
 }
 
 .steel-theme .liquid-glass-navbar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: linear-gradient(180deg, #0f141a 0%, #1a222d 50%, #0c1117 100%);
-  border-bottom-color: rgba(140, 160, 190, 0.18);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  backdrop-filter: saturate(1.4) blur(16px);
+  -webkit-backdrop-filter: saturate(1.4) blur(16px);
+  background: rgba(12, 16, 22, 0.82);
+  border-bottom-color: rgba(140, 160, 190, 0.14);
+  box-shadow: none;
 }
 
 .steel-theme .liquid-glass-modal-panel {
@@ -2607,7 +3114,7 @@ a.tahoe-context-app-title:hover {
   border-bottom-color: rgba(120, 145, 175, 0.15);
 }
 
-/* Rack theme — "rack panel" equipment-strip look (void/amp orange) */
+/* Rack theme — dark equipment panel, Apple blue accent (no amp orange) */
 .rack-theme {
   color-scheme: dark;
   --page-bg: #0b0e13;
@@ -2619,27 +3126,26 @@ a.tahoe-context-app-title:hover {
   --glass-border: rgba(51, 64, 79, 0.35);
   --glass-border-strong: rgba(51, 64, 79, 0.5);
   --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.35);
-  --glass-highlight: rgba(255, 106, 31, 0.04);
-  --glass-tint: rgba(255, 106, 31, 0.01);
+  --glass-highlight: rgba(0, 113, 227, 0.04);
+  --glass-tint: rgba(0, 113, 227, 0.01);
 
-  /* Semantic status tokens — the mockup's live/warn/fault/amp palette */
-  --machina-status-ok: rgb(53, 208, 165);
-  --machina-status-warn: rgb(255, 176, 32);
-  --machina-status-error: rgb(255, 77, 94);
-  --machina-status-info: rgb(255, 106, 31);
-  --machina-status-neutral: rgb(141, 154, 172);
-  --machina-accent: rgb(255, 106, 31);
-  --machina-accent-ai: rgb(255, 106, 31);
-  --machina-accent-network: rgb(53, 208, 165);
+  --machina-status-ok: #34c759;
+  --machina-status-warn: #ff9f0a;
+  --machina-status-error: #ff3b30;
+  --machina-status-info: #0071e3;
+  --machina-status-neutral: #8e8e93;
+  --machina-accent: #0071e3;
+  --machina-accent-ai: #0071e3;
+  --machina-accent-network: var(--machina-accent);
   --machina-accent-security: var(--machina-status-error);
 
-  --machina-vm-running: #35d0a5;
+  --machina-vm-running: #34c759;
   --machina-vm-stopped: #3e4b5c;
-  --machina-vm-paused: #ffb020;
-  --machina-vm-creating: #ff6a1f;
-  --machina-vm-failed: #ff4d5e;
-  --machina-vm-migrating: #ff6a1f;
-  --machina-vm-suspended: #ffb020;
+  --machina-vm-paused: #ff9f0a;
+  --machina-vm-creating: #0071e3;
+  --machina-vm-failed: #ff3b30;
+  --machina-vm-migrating: #0071e3;
+  --machina-vm-suspended: #0071e3;
   --machina-vm-unknown: #8d9aac;
 }
 .rack-theme body {
@@ -2686,7 +3192,8 @@ a.tahoe-context-app-title:hover {
   color: #e7edf4;
 }
 .rack-theme .input-field:focus {
-  border-color: #ff6a1f;
+  border-color: var(--accent, #0071e3);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.16);
 }
 
 .rack-theme .skeleton {
@@ -2861,22 +3368,14 @@ a.tahoe-context-app-title:hover {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-liquid-lg);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(135deg, rgba(56, 189, 248, 0.06) 0%, transparent 45%),
-    linear-gradient(225deg, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
-    rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.08));
+  background: var(--apple-surface, #1d1d1f);
   padding: 1rem 1.25rem;
   margin-bottom: 0.25rem;
 }
 
 .vm-detail-hero-glow {
-  position: absolute;
-  inset: -40% -20% auto -20%;
-  height: 120%;
-  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(56, 189, 248, 0.14), transparent 70%);
-  pointer-events: none;
-  animation: glow-pulse 6s ease-in-out infinite;
+  display: none;
 }
 
 .vm-detail-hero-icon {
@@ -2887,7 +3386,7 @@ a.tahoe-context-app-title:hover {
   width: 3.25rem;
   height: 3.25rem;
   border-radius: 1rem;
-  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: none;
   flex-shrink: 0;
 }
 
@@ -2948,54 +3447,28 @@ button.vm-detail-hero-pill:hover {
 }
 
 .vm-cinema-cta {
-  position: relative;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.25),
-    0 8px 24px -6px rgba(56, 189, 248, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* Flat Apple primary — no shimmer / sky glow */
+  box-shadow: none !important;
+  transform: none !important;
 }
-
 .vm-cinema-cta:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.4),
-    0 12px 32px -8px rgba(56, 189, 248, 0.45);
+  transform: none !important;
+  box-shadow: none !important;
 }
-
 .vm-cinema-cta::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.12) 50%, transparent 60%);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
-  pointer-events: none;
+  display: none !important;
 }
 
 .vm-connect-hub {
   position: relative;
   border-radius: var(--radius-liquid-lg);
-  border: 1px solid rgba(56, 189, 248, 0.18);
-  background:
-    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(56, 189, 248, 0.08), transparent 55%),
-    radial-gradient(ellipse 60% 50% at 0% 100%, rgba(168, 85, 247, 0.06), transparent 50%),
-    rgba(15, 23, 42, 0.72);
-  box-shadow: 0 16px 40px -20px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.08));
+  background: var(--apple-surface, #1d1d1f);
+  box-shadow: none;
 }
 
 .vm-connect-hub::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(168, 85, 247, 0.15), rgba(56, 189, 248, 0.08));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  display: none;
 }
 
 .vm-laptop-progress {
@@ -3173,4 +3646,22 @@ button.vm-detail-hero-pill:hover {
     font-size: 0.8rem;
     padding: 0.375rem 0.5rem;
   }
+}
+
+/* ── Zeus OS 1:1 final reassert (must stay last in this file) ───────────── */
+:root {
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  --accent: hsl(200 85% 52%);
+  --accent-hover: hsl(200 85% 46%);
+  --accent-pressed: hsl(200 85% 40%);
+  --accent-soft: hsl(200 85% 52% / 0.14);
+  --plasma: hsl(200 85% 52%);
+}
+html[data-theme='tahoe-light'] {
+  --accent: hsl(200 78% 40%);
+  --accent-hover: hsl(200 78% 34%);
+  --accent-pressed: hsl(200 78% 28%);
+  --accent-soft: hsl(200 78% 40% / 0.12);
+  --plasma: hsl(200 78% 40%);
 }

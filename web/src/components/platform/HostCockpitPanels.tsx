@@ -30,18 +30,18 @@ function StorageSection({ data }: { data: HostCockpitStorage }) {
   ]
   return (
     <div className="space-y-3 text-sm" data-testid="host-cockpit-storage">
-      <p className="text-xs text-slate-500">{data.summary}</p>
+      <p className="text-xs text-[var(--text-muted)]">{data.summary}</p>
       {groups.map(([title, items]) => (
         <div key={title}>
-          <p className="text-xs font-medium text-slate-400 mb-1">{title}</p>
+          <p className="text-xs font-medium text-[var(--text-muted)] mb-1">{title}</p>
           {items.length === 0 ? (
-            <p className="text-xs text-slate-600">None detected</p>
+            <p className="text-xs text-[var(--text-faint)]">None detected</p>
           ) : (
             <ul className="space-y-1">
               {items.slice(0, 8).map((item) => (
-                <li key={`${title}-${item.name}`} className="rounded border border-slate-800/80 px-2 py-1">
-                  <span className="font-mono text-slate-200">{item.name}</span>
-                  <span className="text-slate-500 text-xs ml-2">{item.detail}</span>
+                <li key={`${title}-${item.name}`} className="rounded border border-[var(--apple-hairline)]/80 px-2 py-1">
+                  <span className="font-mono text-[var(--text-primary)]">{item.name}</span>
+                  <span className="text-[var(--text-muted)] text-xs ml-2">{item.detail}</span>
                 </li>
               ))}
             </ul>
@@ -94,16 +94,16 @@ function NetworkSection({
 
   return (
     <div className="space-y-4 text-sm" data-testid="host-cockpit-network">
-      <p className="text-xs text-slate-500">{data.summary}</p>
+      <p className="text-xs text-[var(--text-muted)]">{data.summary}</p>
       {connGroups.map(([title, items]) => (
         <div key={title}>
-          <p className="text-xs font-medium text-slate-400 mb-1">{title}</p>
+          <p className="text-xs font-medium text-[var(--text-muted)] mb-1">{title}</p>
           {items.length === 0 ? (
-            <p className="text-xs text-slate-600">None</p>
+            <p className="text-xs text-[var(--text-faint)]">None</p>
           ) : (
             <ul className="text-xs space-y-1">
               {items.map((c) => (
-                <li key={c.uuid} className="font-mono text-slate-300">
+                <li key={c.uuid} className="font-mono text-[var(--text-secondary)]">
                   {c.name} · {c.device || '—'} · {c.state}
                 </li>
               ))}
@@ -114,13 +114,13 @@ function NetworkSection({
       {data.ovs?.available ? (
         <MacGlassPanel title="Open vSwitch (OVS SDN)" subtitle={data.ovs.summary} data-testid="host-ovs-panel">
           {data.ovs.bridges.length === 0 ? (
-            <p className="text-xs text-slate-600">No OVS bridges</p>
+            <p className="text-xs text-[var(--text-faint)]">No OVS bridges</p>
           ) : (
             <ul className="text-xs space-y-2">
               {data.ovs.bridges.map((b) => (
-                <li key={b.name} className="rounded border border-slate-800/80 px-2 py-1">
-                  <span className="font-mono text-slate-200">{b.name}</span>
-                  <span className="text-slate-500 ml-2">{b.ports.length ? b.ports.join(', ') : 'no ports'}</span>
+                <li key={b.name} className="rounded border border-[var(--apple-hairline)]/80 px-2 py-1">
+                  <span className="font-mono text-[var(--text-primary)]">{b.name}</span>
+                  <span className="text-[var(--text-muted)] ml-2">{b.ports.length ? b.ports.join(', ') : 'no ports'}</span>
                 </li>
               ))}
             </ul>
@@ -131,8 +131,8 @@ function NetworkSection({
       {data.firewalld.available && (
         <MacGlassPanel title="firewalld" subtitle={data.firewalld.running ? `default zone: ${data.firewalld.default_zone}` : 'not running'}>
           {data.firewalld.zones.slice(0, 4).map((z) => (
-            <div key={z.name} className="text-xs text-slate-400 mb-2">
-              <span className="text-slate-200">{z.name}</span> — services: {z.services.join(', ') || 'none'}
+            <div key={z.name} className="text-xs text-[var(--text-muted)] mb-2">
+              <span className="text-[var(--text-primary)]">{z.name}</span> — services: {z.services.join(', ') || 'none'}
             </div>
           ))}
           <div className="flex flex-wrap gap-2 mt-2">
@@ -182,12 +182,12 @@ function SystemSection({
 
   return (
     <div className="space-y-4 text-sm" data-testid="host-cockpit-system">
-      <p className="text-xs text-slate-500">{data.summary}</p>
+      <p className="text-xs text-[var(--text-muted)]">{data.summary}</p>
       <div className="grid gap-2 sm:grid-cols-2 text-xs">
-        <div className="rounded border border-slate-800 p-2"><span className="text-slate-500">kdump</span><p>{data.kdump.summary || 'n/a'}</p></div>
-        <div className="rounded border border-slate-800 p-2"><span className="text-slate-500">SELinux</span><p>{data.selinux.mode || 'n/a'}</p></div>
-        <div className="rounded border border-slate-800 p-2"><span className="text-slate-500">realmd</span><p>{data.realmd.summary || 'n/a'}</p></div>
-        <div className="rounded border border-slate-800 p-2"><span className="text-slate-500">Failed units</span><p>{data.systemd_failed}</p></div>
+        <div className="rounded border border-[var(--apple-hairline)] p-2"><span className="text-[var(--text-muted)]">kdump</span><p>{data.kdump.summary || 'n/a'}</p></div>
+        <div className="rounded border border-[var(--apple-hairline)] p-2"><span className="text-[var(--text-muted)]">SELinux</span><p>{data.selinux.mode || 'n/a'}</p></div>
+        <div className="rounded border border-[var(--apple-hairline)] p-2"><span className="text-[var(--text-muted)]">realmd</span><p>{data.realmd.summary || 'n/a'}</p></div>
+        <div className="rounded border border-[var(--apple-hairline)] p-2"><span className="text-[var(--text-muted)]">Failed units</span><p>{data.systemd_failed}</p></div>
       </div>
       {data.selinux.enforce_supported && (
         <div className="flex gap-2">
@@ -211,7 +211,7 @@ function SystemSection({
         <MacGlassPanel title="Services (sample)" subtitle="First 40 units from systemctl">
           <ul className="max-h-40 overflow-y-auto text-xs font-mono space-y-1">
             {data.systemd_units.map((u) => (
-              <li key={u.unit} className={u.active === 'failed' ? 'text-red-300' : 'text-slate-400'}>
+              <li key={u.unit} className={u.active === 'failed' ? 'text-red-300' : 'text-[var(--text-muted)]'}>
                 {u.unit} · {u.active}/{u.sub}
               </li>
             ))}
@@ -220,7 +220,7 @@ function SystemSection({
       )}
       {data.journal_recent.length > 0 && (
         <MacGlassPanel title="Journal errors (1h)" subtitle={`${data.journal_errors_1h} total`}>
-          <ul className="max-h-32 overflow-y-auto text-xs text-slate-500 space-y-1 font-mono">
+          <ul className="max-h-32 overflow-y-auto text-xs text-[var(--text-muted)] space-y-1 font-mono">
             {data.journal_recent.map((line) => (
               <li key={line}>{line}</li>
             ))}
@@ -274,7 +274,7 @@ export default function HostCockpitPanels({ hostId, classic = false, section = '
 
   if (loading) {
     return (
-      <p className="text-sm text-slate-500 flex items-center gap-2">
+      <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin" /> Loading host Cockpit inventory…
       </p>
     )

@@ -53,15 +53,15 @@ export default function GuestFsFreezeBanner({ vmId, poll = false, className = ''
       {loading ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 mt-0.5" aria-hidden="true" />
       ) : (
-        <Snowflake className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${frozen ? statusToneClass('warn') : 'text-slate-500'}`} />
+        <Snowflake className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${frozen ? statusToneClass('warn') : 'text-[var(--text-muted)]'}`} />
       )}
       <div className="min-w-0">
-        <p className="font-medium text-slate-200">
+        <p className="font-medium text-[var(--text-primary)]">
           {frozen ? 'Guest filesystems frozen (quiesce)' : 'Guest filesystems not frozen'}
         </p>
-        {detail && <p className="text-slate-500 mt-0.5">{detail}</p>}
+        {detail && <p className="text-[var(--text-muted)] mt-0.5">{detail}</p>}
         {poll && (
-          <p className="text-slate-600 mt-1">Polling every 5s while quiesce snapshot is enabled.</p>
+          <p className="text-[var(--text-faint)] mt-1">Polling every 5s while quiesce snapshot is enabled.</p>
         )}
       </div>
     </div>

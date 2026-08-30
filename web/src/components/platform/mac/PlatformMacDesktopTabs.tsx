@@ -61,7 +61,7 @@ export default function PlatformMacDesktopTabs() {
             key={tab.path}
             to={desktopTo(tab.path)}
             className={`mac-desktop-tab group flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs whitespace-nowrap transition-colors ${
-              active ? 'mac-desktop-tab-active text-white' : 'text-white/50 hover:text-white/90 hover:bg-white/[0.06]'
+              active ? 'mac-desktop-tab-active text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
             <span className="truncate max-w-[8rem]">{tab.label}</span>
@@ -70,7 +70,7 @@ export default function PlatformMacDesktopTabs() {
                 <button
                   type="button"
                   onClick={(e) => popOutTab(tab.path, e)}
-                  className="opacity-0 group-hover:opacity-100 hover:text-sky-300 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 hover:text-[var(--link)] transition-opacity"
                   title="Open in new window"
                   aria-label={`Pop out ${tab.label}`}
                 >
@@ -92,7 +92,7 @@ export default function PlatformMacDesktopTabs() {
       <button
         type="button"
         onClick={() => dispatchOpenSpotlight()}
-        className="mac-desktop-tab-add flex items-center justify-center rounded-lg p-1 text-white/50 hover:text-white/90 hover:bg-white/[0.06]"
+        className="mac-desktop-tab-add flex items-center justify-center rounded-lg p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
         title="Open center (⌘K)"
         aria-label="Open center"
       >
