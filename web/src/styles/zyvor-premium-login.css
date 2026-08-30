@@ -1,10 +1,6 @@
-/* Machina marketing login — black + Zyvor orange.
-   Light paper or carbon night based on shell theme. No Apple blue. */
+/* Machina login — Apple ID style: flat paper canvas, zyvor.dev orange, always light. */
 
-@keyframes login-fade-in-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif:ital@0;1&display=swap');
 
 @keyframes login-shake {
   0%, 100% { transform: translateX(0); }
@@ -12,374 +8,452 @@
   40%, 80% { transform: translateX(4px); }
 }
 
-.login-page {
-  --login-orange: #ff5a15;
-  --login-orange-deep: #e04810;
-  --login-orange-soft: rgba(255, 90, 21, 0.16);
-  --login-orange-ring: rgba(255, 90, 21, 0.28);
-  --login-ink: #1d1d1f;
-  --login-ink-secondary: #6e6e73;
-  --login-ink-muted: #86868b;
-  --login-paper: #f5f5f7;
-  --login-card: #ffffff;
-  --login-line: rgba(0, 0, 0, 0.1);
-  --login-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 3px rgba(0, 0, 0, 0.08), 0 20px 44px -24px rgba(0, 0, 0, 0.24);
+@keyframes login-relay-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  isolation: isolate;
+.login-page {
   position: relative;
-  overflow: hidden;
+  isolation: isolate;
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.login-page-apple {
+  --login-bg: #f5f5f7;
+  --login-elevated: #ffffff;
+  --login-ink: #1d1d1f;
+  --login-muted: #6e6e73;
+  --login-tertiary: #86868b;
+  --login-line: rgba(0, 0, 0, 0.08);
+  --login-accent: #ff5a15;
+  --login-accent-hover: #e64e10;
+  --login-accent-tint: #fff1e9;
+  --login-focus: rgba(255, 90, 21, 0.14);
+  --login-font: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --login-display: 'Instrument Serif', Georgia, serif;
+  background: var(--login-bg);
   color: var(--login-ink);
-  background: var(--login-paper);
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--login-font);
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   letter-spacing: -0.01em;
 }
 
-/* Dark / carbon night — black stage, orange embers */
-html:not(.apple-light):not(.light-theme) .login-page,
-html[data-theme='tahoe'] .login-page,
-html[data-theme='dark-steel'] .login-page,
-html[data-theme='aurora'] .login-page,
-html[data-theme='rack'] .login-page,
-html[data-ui-shell='default'] .login-page,
-html[data-ui-shell='dark-steel'] .login-page,
-html[data-ui-shell='aurora'] .login-page,
-html[data-ui-shell='rack'] .login-page {
-  --login-ink: #f5f5f7;
-  --login-ink-secondary: #a1a1a6;
-  --login-ink-muted: #86868b;
-  --login-paper: #000000;
-  --login-card: rgba(22, 22, 24, 0.88);
-  --login-line: rgba(255, 255, 255, 0.12);
-  --login-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 28px 64px -24px rgba(0, 0, 0, 0.75);
-  background: #000000;
-  color: var(--login-ink);
+/* Soft orange wash */
+.login-page-apple::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 90, 21, 0.12), transparent 55%),
+    linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
 }
 
-/* Tahoe light stays paper */
-html.apple-light .login-page,
-html.light-theme .login-page,
-html[data-theme='tahoe-light'] .login-page,
-html[data-ui-shell='tahoe-light'] .login-page {
-  --login-ink: #1d1d1f;
-  --login-ink-secondary: #6e6e73;
-  --login-ink-muted: #86868b;
-  --login-paper: #f5f5f7;
-  --login-card: #ffffff;
-  --login-line: rgba(0, 0, 0, 0.1);
-  background: var(--login-paper);
-  color: var(--login-ink);
-}
-
-.login-panel {
+.login-apple-stage {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: clamp(4rem, 10vw, 6.5rem) 1.25rem 3rem;
   width: 100%;
-  padding: 2.5rem 1.25rem;
-  background: transparent;
-  min-width: 0;
 }
 
-.login-stage {
+.login-apple-stack {
   width: 100%;
-  max-width: 20rem;
+  max-width: 23.5rem;
   text-align: center;
 }
 
-.login-mark,
-.login-mark.zyvor-mark,
-.login-page .zyvor-mark {
-  display: block;
-  border-radius: 12px;
-  filter: none;
+.login-apple-mark,
+.login-apple-title,
+.login-apple-subtitle,
+.login-apple-card {
+  animation: login-relay-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.login-apple-mark { animation-delay: 0.04s; }
+.login-apple-title { animation-delay: 0.12s; }
+.login-apple-subtitle { animation-delay: 0.2s; }
+.login-apple-card { animation-delay: 0.28s; }
 
-.login-page .zyvor-mark-word {
-  font-weight: 600;
-  letter-spacing: -0.04em;
-}
+@media (prefers-reduced-motion: reduce) {
+  .login-apple-mark,
+  .login-apple-title,
+  .login-apple-subtitle,
+  .login-apple-card,
+  .login-apple-step {
+    animation: none;
+  }
 
-.login-card {
-  animation: login-fade-in-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: left;
-  padding: 1.5rem 1.4rem 1.35rem;
-  border-radius: 0.875rem;
-  background: var(--login-card);
-  border: 1px solid var(--login-line);
-  box-shadow: var(--login-card-shadow);
-  backdrop-filter: blur(28px) saturate(1.3);
-  -webkit-backdrop-filter: blur(28px) saturate(1.3);
-}
-
-.login-card-label {
-  display: block;
-  margin: 0 0 1.5rem;
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: var(--login-ink);
-  text-align: center;
-}
-
-.login-back-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--login-ink-secondary);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.login-back-row:hover {
-  color: var(--login-orange);
-}
-
-.login-back-row span {
-  color: var(--login-ink);
-  font-weight: 600;
-}
-
-@media (min-width: 640px) {
-  .login-card {
-    padding: 1.75rem 1.7rem 1.55rem;
+  .login-shake {
+    animation: none;
   }
 }
 
-.login-form-block {
-  width: 100%;
+/* Brand lockup */
+.login-apple-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.75rem;
 }
 
-.login-shake {
-  animation: login-shake 0.45s ease-out;
+.login-apple-mark .login-logo-ring {
+  animation: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
 }
 
-.login-page .login-input {
-  width: 100%;
-  padding: 0.78rem 2.5rem;
-  border-radius: 0.75rem;
-  font-size: 1.0625rem;
-  line-height: 1.35;
+.login-page-apple .zyvor-mark {
+  display: block;
+  border-radius: 10px;
+}
+
+.login-apple-title {
+  margin: 0;
+  font-size: clamp(2.25rem, 6vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
   color: var(--login-ink);
-  background: color-mix(in srgb, var(--login-card) 70%, transparent);
-  border: 1px solid var(--login-line);
+}
+
+.login-apple-title em {
+  font-style: normal;
+  font-family: var(--login-display);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.login-apple-subtitle {
+  margin: 0.75rem auto 0;
+  max-width: 32ch;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--login-muted);
+  letter-spacing: -0.01em;
+}
+
+.login-apple-subtitle .login-apple-host {
   font-family: inherit;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  font-variant-numeric: tabular-nums;
+  color: var(--login-ink);
+  font-weight: 600;
 }
 
-html.apple-light .login-page .login-input,
-html.light-theme .login-page .login-input,
-html[data-theme='tahoe-light'] .login-page .login-input {
-  background: #ffffff;
+.login-apple-card {
+  margin-top: 2rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
-.login-page .login-input::placeholder {
-  color: var(--login-ink-muted);
-  opacity: 0.9;
+.login-apple-step {
+  animation: login-relay-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.login-page .login-input:focus {
+.login-page-apple .login-apple-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-page-apple .login-apple-fields .login-field {
+  margin: 0;
+}
+
+.login-page-apple .login-field-label {
+  display: block;
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--login-tertiary);
+}
+
+.login-page-apple .login-input {
+  width: 100%;
+  background: var(--login-bg);
+  border: 1px solid var(--login-line);
+  border-radius: 12px;
+  color: var(--login-ink);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  min-height: 2.75rem;
+  box-shadow: none;
+  letter-spacing: -0.01em;
   outline: none;
-  border-color: var(--login-orange);
-  background: color-mix(in srgb, var(--login-card) 100%, transparent);
-  box-shadow: 0 0 0 4px var(--login-orange-ring);
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-html.apple-light .login-page .login-input:focus,
-html.light-theme .login-page .login-input:focus,
-html[data-theme='tahoe-light'] .login-page .login-input:focus {
-  background: #ffffff;
+.login-page-apple .login-input.login-input--password {
+  padding-right: 2.75rem;
 }
 
-.login-page .login-input:focus-visible {
-  outline: 2px solid var(--login-orange);
-  outline-offset: 2px;
+.login-page-apple .login-input::placeholder {
+  color: var(--login-tertiary);
+  font-size: 0.9375rem;
+  opacity: 1;
 }
 
-.login-page .login-input:disabled {
-  opacity: 0.55;
+.login-page-apple .login-input:focus {
+  border-color: rgba(255, 90, 21, 0.5);
+  box-shadow: 0 0 0 3px var(--login-focus);
+  background: var(--login-elevated);
+}
+
+.login-page-apple .login-input:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.login-page .login-input:-webkit-autofill,
-.login-page .login-input:-webkit-autofill:hover,
-.login-page .login-input:-webkit-autofill:focus,
-.login-page .login-input:-webkit-autofill:active {
-  -webkit-text-fill-color: var(--login-ink) !important;
-  caret-color: var(--login-ink);
-  box-shadow: 0 0 0 1000px var(--login-card) inset !important;
-  border-color: var(--login-line) !important;
-  transition: background-color 99999s ease-out;
+.login-page-apple button[aria-label='Hide password'],
+.login-page-apple button[aria-label='Show password'] {
+  color: var(--login-muted);
 }
 
-html.apple-light .login-page .login-input:-webkit-autofill,
-html.light-theme .login-page .login-input:-webkit-autofill,
-html[data-theme='tahoe-light'] .login-page .login-input:-webkit-autofill {
-  box-shadow: 0 0 0 1000px #ffffff inset !important;
+.login-page-apple button[aria-label='Hide password'] svg,
+.login-page-apple button[aria-label='Show password'] svg {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
-.login-page .login-field-icon {
-  position: absolute;
-  left: 0.85rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1rem;
-  height: 1rem;
-  color: var(--login-ink-muted);
-  pointer-events: none;
-  opacity: 0.85;
+.login-page-apple .login-remember {
+  margin-top: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
-.login-page label[for],
-.login-page .text-muted-foreground {
-  color: var(--login-ink-secondary) !important;
+.login-page-apple .login-remember span {
+  font-size: 0.875rem;
+  color: var(--login-muted);
 }
 
-.login-btn-primary {
+.login-page-apple .login-remember input {
+  accent-color: var(--login-accent);
+}
+
+/* Orange pill CTA */
+.login-page-apple .login-btn-primary {
+  margin-top: 1.35rem;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  width: 100%;
-  margin-top: 1.15rem;
-  padding: 0.85rem 1.25rem;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: #ffffff;
   border-radius: 980px;
   border: none;
-  background: var(--login-orange);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-  font-family: inherit;
+  background: var(--login-accent);
+  box-shadow: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.35rem;
+  color: #fff;
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.15s ease, opacity 0.15s ease;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
 }
 
-.login-btn-primary:hover:not(:disabled) {
-  background: var(--login-orange-deep);
-  filter: none;
+.login-page-apple .login-btn-primary:hover:not(:disabled) {
+  background: var(--login-accent-hover);
 }
 
-.login-btn-primary:active:not(:disabled) {
-  transform: scale(0.985);
+.login-page-apple .login-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
-.login-btn-primary:disabled {
-  opacity: 0.4;
+.login-page-apple .login-btn-primary:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
-  filter: none;
 }
 
-.login-btn-secondary {
+.login-page-apple .login-sso {
+  margin-top: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--login-ink);
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
   border-radius: 980px;
   border: 1px solid var(--login-line);
   background: transparent;
-  text-decoration: none;
+  color: var(--login-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
   font-family: inherit;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.login-btn-secondary:hover {
-  border-color: color-mix(in srgb, var(--login-orange) 45%, var(--login-line));
-  background: var(--login-orange-soft);
+.login-page-apple .login-sso:hover {
+  background: color-mix(in srgb, var(--login-ink) 4%, transparent);
+  border-color: color-mix(in srgb, var(--login-ink) 18%, transparent);
 }
 
-.login-method-toggle {
-  margin-bottom: 1.5rem;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 0.25rem;
-  border-radius: 980px;
-  border: 1px solid var(--login-line);
-  background: transparent;
-  padding: 0.25rem;
+.login-apple-hint {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--login-muted);
 }
 
-.login-method-toggle [role='tab'] {
-  border-radius: 980px;
-  padding: 0.55rem 0.875rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  transition: color 0.15s ease, background 0.15s ease;
-  border: none;
-  background: transparent;
+.login-page-apple > .absolute {
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.login-page-apple > .absolute:hover,
+.login-page-apple > .absolute:focus-within {
+  opacity: 1;
+}
+
+.login-page-apple .login-help {
+  margin-top: 1.75rem;
+  text-align: center;
+}
+
+.login-page-apple .login-help summary {
+  list-style: none;
   cursor: pointer;
-  font-family: inherit;
+  display: inline;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--login-accent);
+  user-select: none;
 }
 
-.login-method-toggle [role='tab'][aria-selected='true'] {
-  background: var(--login-orange);
-  color: #ffffff;
+.login-page-apple .login-help summary::-webkit-details-marker {
+  display: none;
 }
 
-.login-method-toggle [role='tab'][aria-selected='false'] {
-  color: var(--login-ink-secondary);
+.login-page-apple .login-help summary:hover {
+  text-decoration: underline;
 }
 
-.login-method-toggle [role='tab'][aria-selected='false']:hover {
+.login-page-apple .login-help[open] > div {
+  margin-top: 0.85rem;
+  text-align: left;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--login-muted);
+}
+
+.login-page-apple a {
+  color: var(--login-accent);
+}
+
+.login-page-apple a:hover {
+  color: var(--login-accent-hover);
+  text-decoration: underline;
+}
+
+.login-page-apple .login-apple-note {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--login-muted);
+  text-align: center;
+}
+
+.login-page-apple [role='alert'] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  border-left: 2px solid #b91c1c;
+  border-radius: 0;
+  padding: 0.35rem 0 0.35rem 0.7rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
   color: var(--login-ink);
 }
 
-.login-hint {
-  color: var(--login-ink-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
-  text-align: center;
-  margin-top: 1.25rem;
-  max-width: 38ch;
-  margin-left: auto;
-  margin-right: auto;
+.login-apple-footer {
+  border: none;
+  background: transparent;
+  color: var(--login-muted);
+  padding-bottom: 1.5rem;
 }
 
+.login-apple-footer a {
+  color: var(--login-accent);
+}
+
+/* Two-step identify → password */
+.login-page-apple .login-apple-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
+  border-radius: 980px;
+  border: 1px solid var(--login-line);
+  background: var(--login-elevated);
+  color: var(--login-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+
+.login-page-apple .login-apple-identity:hover {
+  background: var(--login-accent-tint);
+}
+
+.login-page-apple .login-apple-identity:active {
+  transform: scale(0.98);
+}
+
+.login-page-apple .login-apple-identity svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--login-muted);
+}
+
+/* Theme toggle chip (top-right) */
 .login-theme-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   padding: 0.2rem;
   border-radius: 9999px;
-  border: 1px solid var(--login-line);
-  background: color-mix(in srgb, var(--login-card) 80%, transparent);
+  border: 1px solid var(--login-line, rgba(0, 0, 0, 0.08));
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .login-theme-toggle button {
   border: none;
   background: transparent;
-  color: var(--login-ink-muted);
+  color: var(--login-muted, #6e6e73);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -391,95 +465,6 @@ html[data-theme='tahoe-light'] .login-page .login-input:-webkit-autofill {
 }
 
 .login-theme-toggle button[aria-pressed='true'] {
-  background: var(--login-ink);
-  color: var(--login-paper);
-}
-
-html:not(.apple-light):not(.light-theme) .login-theme-toggle button[aria-pressed='true'],
-html[data-theme='tahoe'] .login-theme-toggle button[aria-pressed='true'],
-html[data-ui-shell='default'] .login-theme-toggle button[aria-pressed='true'] {
-  background: var(--login-orange);
-  color: #ffffff;
-}
-
-.login-page .zyvor-footer {
-  position: relative;
-  z-index: 1;
-  background: transparent;
-  border-top: none;
-  padding: 0.5rem 1rem 2rem;
-}
-
-.login-page .zyvor-footer a,
-.login-page .zyvor-footer span {
-  color: var(--login-ink-muted) !important;
-  font-weight: 400 !important;
-}
-
-.login-page .zyvor-footer a:hover {
-  color: var(--login-orange) !important;
-}
-
-.login-page .login-btn-primary,
-.login-accent-zeus .login-btn-primary,
-.login-accent-orange .login-btn-primary,
-.login-accent-amber .login-btn-primary,
-.login-accent-violet .login-btn-primary,
-.login-accent-rose .login-btn-primary,
-.login-accent-cyan .login-btn-primary,
-.login-accent-copper .login-btn-primary,
-.login-accent-steel .login-btn-primary {
-  background: var(--login-orange);
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-.login-aurora,
-.login-hero-mesh,
-.login-spotlight,
-.login-panel-grid,
-.login-panel-glow,
-.login-zyvor-eyebrow,
-.login-page .nav-bar {
-  display: none !important;
-}
-
-.login-glass {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  animation: none;
-}
-
-.login-logo-ring {
-  animation: none;
-  box-shadow: none;
-}
-
-.login-text-gradient {
-  color: var(--login-ink);
-  background: none;
-}
-
-@media (max-width: 380px) {
-  .login-panel {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .login-card {
-    padding: 1.25rem 1.05rem 1.15rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-card,
-  .login-form-block {
-    animation: none !important;
-    opacity: 1 !important;
-  }
-
-  .login-shake {
-    animation: none !important;
-  }
+  background: var(--login-ink, #1d1d1f);
+  color: #fff;
 }
