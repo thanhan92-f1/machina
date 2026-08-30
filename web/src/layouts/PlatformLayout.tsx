@@ -7,6 +7,7 @@ import PlatformControlCenter from '../components/platform/PlatformControlCenter'
 import PlatformContextBar from '../components/platform/tahoe/PlatformContextBar'
 import PlatformMobileJumpNav from '../components/platform/tahoe/PlatformMobileJumpNav'
 import PlatformMacDock from '../components/platform/PlatformMacDock'
+import PlatformMacDesktopTabs from '../components/platform/mac/PlatformMacDesktopTabs'
 import { PlatformMacDesktopProvider, usePlatformMacDesktop } from '../components/platform/mac/PlatformMacDesktopContext'
 import PlatformMacAppMenus from '../components/platform/mac/PlatformMacAppMenus'
 import PopoutTitleBar from '../components/platform/mac/PopoutTitleBar'
@@ -181,6 +182,7 @@ function PlatformDesktopShell() {
 
       {contextBarVisible ? <PlatformContextBar /> : null}
       {!hideChrome ? <PlatformMobileJumpNav /> : null}
+      {!hideChrome ? <PlatformMacDesktopTabs /> : null}
 
       <div className="flex w-full flex-1 items-stretch min-h-0">
         {sidebarVisible && !hideChrome ? <PlatformSidebar /> : null}

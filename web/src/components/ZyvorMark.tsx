@@ -53,6 +53,49 @@ function wordColor(tone: ZyvorMarkProps['tone']): string {
   return 'text-[var(--text-primary,#f5f5f7)]'
 }
 
+/**
+ * Zeus Mac menubar tile — orange rounded square + white Z stroke (zyvor.dev favicon).
+ * Used as the Apple-logo slot in the platform menubar.
+ */
+export function ZyvorTileMark({
+  size = 20,
+  className = '',
+  idPrefix = 'zyvor-tile',
+}: {
+  size?: number
+  className?: string
+  idPrefix?: string
+}) {
+  const grad = `${idPrefix}-bg`
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 64 64"
+      width={size}
+      height={size}
+      className={className}
+      role="img"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id={grad} x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor={ACCENT} />
+          <stop offset="1" stopColor="#e64e10" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="15" fill={`url(#${grad})`} />
+      <path
+        d="M18.5,20.5 45.5,20.5 18.5,43.5 45.5,43.5"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="8.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /** Zyvor brand lockup — orange swoosh + lowercase `zyvor`, matching zyvor.dev. */
 export function ZyvorMark({
   to = '/',

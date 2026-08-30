@@ -5,7 +5,6 @@
 import { Link } from 'react-router'
 import { Cloud, Server, HardDrive, Plus, Globe, Camera } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
-import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 
 const DESTINATIONS = [
@@ -73,10 +72,6 @@ export default function FleetCloudOverviewPage() {
             </Link>
           </div>
         </header>
-
-        <div className="apple-section apple-section--tight">
-          <FleetCloudSubNav />
-        </div>
 
         <section className="apple-section">
           <p className="apple-eyebrow">Explore</p>

@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { LogOut, User } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAi } from '../../../contexts/AiContext'
 import { ASK_ZYRA_LABEL } from '../../../config/aiBrand'
 import ConnectionStatus from '../../ConnectionStatus'
+import { ZyvorTileMark } from '../../ZyvorMark'
 import PlatformMacMenuDropdown, { PlatformMacMenuItem } from './PlatformMacMenuDropdown'
 import { usePlatformMacDesktop } from './PlatformMacDesktopContext'
 import { openCenterPopout } from '../../../utils/platformCenterPopout'
@@ -119,6 +120,15 @@ export default function PlatformMacAppMenus() {
 
   return (
     <div className="flex items-center gap-1 shrink-0 min-w-0 overflow-visible">
+      <Link
+        to="/platform"
+        className="mac-menu-apple mr-1 flex-shrink-0 p-1 rounded-md hover:bg-[var(--surface-hover,rgba(255,255,255,0.08))] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40"
+        title="Machina"
+        aria-label="Machina home"
+      >
+        <ZyvorTileMark size={20} className="block" idPrefix="menubar" />
+      </Link>
+
       <PlatformMacMenuDropdown label="Machina" open={openMenu === 'machina'} onToggle={() => toggleMenu('machina')} onClose={closeMenu}>
         <PlatformMacMenuItem label="About Machina Platform" onClick={() => go('/platform/settings?section=about')} />
         <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => go('/platform/settings')} />

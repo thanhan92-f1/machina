@@ -6,11 +6,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { listVms, rebootVm, startVm, stopVm, vmDisplayStatus, type NativeVm } from '../api/nativeVms'
 import { useToastContext } from '../contexts/ToastContext'
-import { Play, Square, RotateCcw, Search, RefreshCw, Cloud, Plus, X } from 'lucide-react'
+import { Play, Square, RotateCcw, RefreshCw, Cloud, Plus } from 'lucide-react'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
@@ -121,41 +122,29 @@ function FleetCloudInstancesContent() {
         </div>
       }
     >
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-          <input
-            type="search"
-            aria-label="Search instances"
-            placeholder="Search name or ID…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`input-field pl-10 ${search ? 'pr-8' : ''}`}
-          />
-          {search && (
-            <button type="button" aria-label="Clear search" onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {STATUS_CHIPS.map((chip) => (
-            <button
-              key={chip || 'all'}
-              type="button"
-              onClick={() => setStatusFilter(chip)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                statusFilter === chip
-                  ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-                  : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
-              }`}
-            >
-              {chip || 'All'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search name or ID…"
+        trailing={
+          <div className="flex flex-wrap gap-1 pr-1">
+            {STATUS_CHIPS.map((chip) => (
+              <button
+                key={chip || 'all'}
+                type="button"
+                onClick={() => setStatusFilter(chip)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  statusFilter === chip
+                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                    : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
+                }`}
+              >
+                {chip || 'All'}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {!loading && vms.length === 0 ? (
         <EmptyState
@@ -169,7 +158,7 @@ function FleetCloudInstancesContent() {
           }
         />
       ) : (
-      <div className="overflow-x-auto apple-surface rounded-2xl">
+      <TahoeTableWrap>
         <table className="apple-table" aria-label="Fleet Cloud instances">
           <thead>
             <tr>
@@ -252,7 +241,7 @@ function FleetCloudInstancesContent() {
             })}
           </tbody>
         </table>
-      </div>
+      </TahoeTableWrap>
       )}
 
       <FleetCloudFooter />

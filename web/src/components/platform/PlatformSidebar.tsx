@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { ChevronDown, ChevronLeft, ChevronRight, Boxes, FolderOpen, Plug, Server } from 'lucide-react'
 import { ZyvorMark } from '../ZyvorMark'
-import { sidebarForTier } from '../../utils/platformNavFilter'
+import { sidebarForTier, sidebarLocationsOnly } from '../../utils/platformNavFilter'
 import { integrationNavItems } from '../../utils/platformIntegrationsNav'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
@@ -40,8 +40,14 @@ function loadSectionCollapsed(section: PlatformNavSection): boolean {
 export default function PlatformSidebar() {
   const [tier] = usePlatformDesktopTier()
   const { info } = usePlatformInfo()
-  const sections = sidebarForTier(tier, integrationNavItems(info))
-  const { sidebarCollapsed: collapsed, setSidebarCollapsed: setCollapsed } = usePlatformMacDesktop()
+  const allSections = sidebarForTier(tier, integrationNavItems(info))
+  // Dock owns Favorites / app pins. Prefer Host·Fleet·Platform locations; Favorites only as
+  // expanded fallback (Normal) — never a collapsed icon rail that mirrors the dock.
+  const locationSections = sidebarLocationsOnly(allSections)
+  const sections = locationSections.length > 0 ? locationSections : allSections
+  const favoritesOnlyRail = locationSections.length === 0
+  const { sidebarCollapsed: collapsedState, setSidebarCollapsed: setCollapsed } = usePlatformMacDesktop()
+  const collapsed = favoritesOnlyRail ? false : collapsedState
   const [sectionCollapsed, setSectionCollapsed] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(sections.map((s) => [s.label, loadSectionCollapsed(s)])),
   )
@@ -100,19 +106,25 @@ export default function PlatformSidebar() {
           railAttention={railAttention}
         />
         <div className="border-t border-[var(--apple-hairline)] p-3">
-          <button
-            type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-hover,rgba(16,20,28,0.035))] hover:text-[var(--text-primary)] transition"
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : (
-              <>
-                <ChevronLeft className="h-4 w-4" />
-                <span>Collapse</span>
-              </>
-            )}
-          </button>
+          {favoritesOnlyRail ? (
+            <p className="px-3 py-1 text-[10px] text-center text-[var(--text-muted)]">
+              Apps live in the Dock — View → Hide Sidebar
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCollapsed(!collapsed)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-hover,rgba(16,20,28,0.035))] hover:text-[var(--text-primary)] transition"
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : (
+                <>
+                  <ChevronLeft className="h-4 w-4" />
+                  <span>Collapse</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </aside>
     </>

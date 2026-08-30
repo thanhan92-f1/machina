@@ -21,7 +21,7 @@ export default function HostSSHPage() {
 
   if (!targetHost) {
     return (
-      <div className="space-y-4 animate-fade-in text-center text-slate-500 py-12">
+      <div className="space-y-4 animate-fade-in text-center text-[var(--text-muted)] py-12">
         <p>Could not determine a hostname from the page URL.</p>
         <Link to="/" className={statusActionLinkClasses('info')}>Dashboard</Link>
       </div>
@@ -31,7 +31,7 @@ export default function HostSSHPage() {
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center gap-4">
-        <Link to="/" className="p-2 hover:bg-slate-700 rounded-lg transition" aria-label="Back">
+        <Link to="/" className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Back">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
@@ -39,12 +39,12 @@ export default function HostSSHPage() {
           SSH — hypervisor
         </h1>
       </div>
-      <p className="text-sm text-slate-400 max-w-2xl">
-        Opens a shell on <span className="font-mono text-slate-200">{targetHost}</span> (the host from your browser address bar). The machina daemon runs{' '}
-        <code className="text-xs bg-slate-800 px-1 rounded">ssh</code> on the server to that address. Enter only the SSH user; IP is filled automatically.
+      <p className="text-sm text-[var(--text-muted)] max-w-2xl">
+        Opens a shell on <span className="font-mono text-[var(--text-primary)]">{targetHost}</span> (the host from your browser address bar). The machina daemon runs{' '}
+        <code className="text-xs bg-[var(--apple-fill-tertiary)] px-1 rounded">ssh</code> on the server to that address. Enter only the SSH user; IP is filled automatically.
       </p>
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">Quick user</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Quick user</h2>
         <ChoiceCardDenseGrid className="max-w-lg">
           {(['root', 'admin'] as const).map((u) => (
             <ChoiceCard
@@ -61,7 +61,7 @@ export default function HostSSHPage() {
         </ChoiceCardDenseGrid>
       </div>
       <div className="max-w-md space-y-1 pt-2">
-        <label htmlFor="host-ssh-user" className="block text-sm text-slate-400">SSH user</label>
+        <label htmlFor="host-ssh-user" className="block text-sm text-[var(--text-muted)]">SSH user</label>
         <input
           id="host-ssh-user"
           type="text"

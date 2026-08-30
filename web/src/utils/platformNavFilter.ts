@@ -9,6 +9,11 @@ function withIntegrations(sections: PlatformNavSection[], extra: PlatformNavItem
   return [...sections, { label: 'Connected platforms', items: extra, collapsible: true, defaultCollapsed: false }]
 }
 
+/** Favorites duplicate the dock — Finder sidebar keeps Host / Fleet / Platform only. */
+export function sidebarLocationsOnly(sections: PlatformNavSection[]): PlatformNavSection[] {
+  return sections.filter((s) => s.label !== 'Favorites')
+}
+
 export function sidebarForTier(tier: PlatformDesktopTier, integrationItems: PlatformNavItem[] = []): PlatformNavSection[] {
   if (tier === 'normal') {
     const favorites = PLATFORM_SIDEBAR.flatMap((s) => s.items).filter((item) =>

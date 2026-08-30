@@ -23,7 +23,7 @@ interface OpenApiSpec {
 
 const METHOD_COLORS: Record<string, string> = {
   get: 'bg-green-600/20 text-green-400 border-green-600/30',
-  post: 'bg-blue-600/20 text-[var(--accent)] border-blue-600/30',
+  post: 'bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] text-[var(--accent)] border-[color-mix(in_srgb,var(--accent)_30%,transparent)]',
   put: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30',
   delete: 'bg-red-600/20 text-red-400 border-red-600/30',
   patch: 'bg-purple-600/20 text-purple-400 border-purple-600/30',

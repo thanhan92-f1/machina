@@ -27,8 +27,7 @@ import { statusActionLinkClasses, statusBgClass, statusBorderClass, statusSurfac
 interface MetricsPoint { time: string; memory: number }
 
 /** Open metric rhythm — apple.com product spacing, not a dense dashboard grid. */
-const METRIC_GRID =
-  'grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10 lg:gap-x-12'
+const METRIC_GRID = 'apple-metric-band'
 
 export default function Dashboard() {
   const [vms, setVMs] = useState<VmInfo[]>([])
@@ -183,19 +182,18 @@ export default function Dashboard() {
   return (
     <PageLayout
       hideHeader
-      className="min-w-0 !space-y-14 md:!space-y-16"
+      className="min-w-0 !space-y-0"
       error={loadError}
       errorTitle="Could not load VMs"
       errorHints={loadError ? libvirtErrorHints(loadError) : undefined}
       onErrorRetry={loadData}
     >
-      <header className="apple-page-header pt-2">
-        <div className="min-w-0 flex-1 max-w-3xl">
-          <p className="apple-eyebrow">{node?.hostname ?? 'Hypervisor'}</p>
-          <h1 className="page-title">Machina</h1>
-          <p className="page-lede">{hostLine}</p>
-        </div>
-        <div className="apple-page-actions">
+      <div className="apple-story-stack w-full">
+      <header className="apple-section apple-section--hero">
+        <p className="apple-eyebrow">{node?.hostname ?? 'Hypervisor'}</p>
+        <h1 className="apple-display">Machina</h1>
+        <p className="apple-lede">{hostLine}</p>
+        <div className="apple-cta-row">
           <Link to="/create" className="btn-primary inline-flex items-center gap-2">
             New VM
           </Link>
@@ -212,7 +210,7 @@ export default function Dashboard() {
       </header>
 
       {healthProblems.length > 0 && (
-        <section className={`rounded-3xl px-6 py-7 sm:px-8 space-y-5 ${statusSurfaceClasses('error')}`}>
+        <section className={`apple-section rounded-3xl px-6 py-7 sm:px-8 space-y-5 ${statusSurfaceClasses('error')}`}>
           <div className={`flex items-center gap-2 text-[17px] font-medium ${statusToneClass('error')}`}>
             <AlertTriangle className="w-5 h-5 shrink-0" aria-hidden />
             Host checklist ({healthProblems.length})
@@ -273,7 +271,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      <section aria-label="Fleet summary" className="py-2">
+      <section aria-label="Fleet summary" className="apple-section apple-section--tight">
         <div className={METRIC_GRID}>
           <Metric
             figure={vms.length}
@@ -299,25 +297,22 @@ export default function Dashboard() {
       </section>
 
       {hostStats && (
-        <section className="rounded-3xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-6 py-10 sm:px-10 sm:py-12">
-          <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
-            <div>
-              <h2 className="text-[28px] sm:text-[32px] font-semibold tracking-tight text-[var(--text-primary)]">Host</h2>
-              <p className="mt-3 text-[17px] text-[var(--text-secondary)] leading-snug">
-                Uptime {formatUptime(hostStats.uptime_secs)} · {hostStats.processes} processes
-                {node?.lib_version ? ` · libvirt v${node.lib_version}` : ''}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button type="button" onClick={() => setShowRebootConfirm(true)} className="btn-secondary text-sm inline-flex items-center gap-2">
-                <RotateCcw className="w-4 h-4" /> Reboot
-              </button>
-              <button type="button" onClick={() => setShowShutdownConfirm(true)} className="btn-destructive text-sm inline-flex items-center gap-2">
-                <Power className="w-4 h-4" /> Shut Down
-              </button>
-            </div>
+        <section className="apple-section">
+          <p className="apple-eyebrow">Host</p>
+          <h2 className="apple-display apple-display--sm">This machine</h2>
+          <p className="apple-lede">
+            Uptime {formatUptime(hostStats.uptime_secs)} · {hostStats.processes} processes
+            {node?.lib_version ? ` · libvirt v${node.lib_version}` : ''}
+          </p>
+          <div className="apple-cta-row">
+            <button type="button" onClick={() => setShowRebootConfirm(true)} className="btn-secondary text-sm inline-flex items-center gap-2">
+              <RotateCcw className="w-4 h-4" /> Reboot
+            </button>
+            <button type="button" onClick={() => setShowShutdownConfirm(true)} className="btn-destructive text-sm inline-flex items-center gap-2">
+              <Power className="w-4 h-4" /> Shut Down
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mt-10">
             <ResourceBar label="CPU" value={hostStats.cpu_percent} extra={`Load ${hostStats.load_1.toFixed(1)}`} />
             <ResourceBar label="Memory" value={hostStats.memory_percent} extra={`${(hostStats.memory_used_mb / 1024).toFixed(1)} / ${(hostStats.memory_total_mb / 1024).toFixed(1)} GB`} />
             <ResourceBar label="Disk" value={hostStats.disk_percent} extra={`${hostStats.disk_used_gb.toFixed(0)} / ${hostStats.disk_total_gb.toFixed(0)} GB`} />
@@ -326,41 +321,84 @@ export default function Dashboard() {
       )}
 
       {exploreVisible && (
-        <nav aria-label="Explore" className="flex flex-wrap gap-x-10 gap-y-4 text-[17px] py-2">
-          {platformEnabled && (
-            <Link to="/platform" className="apple-link inline-flex items-center gap-1.5">
-              Platform <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-          <Link to="/vms" className="apple-link inline-flex items-center gap-1.5">
-            VM Center <ArrowRight className="w-4 h-4" />
-          </Link>
-          {(k8sOverview || k8sError) && (
-            <Link to="/k8s" className="apple-link inline-flex items-center gap-1.5">
-              Kubernetes{k8sOverview ? ` · ${k8sOverview.ready_nodes}/${k8sOverview.nodes} nodes` : ''} <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-          {vesselStatus?.connected && (
-            <Link to="/containers" className="apple-link inline-flex items-center gap-1.5">
-              Containers · {vesselContainerCount ?? 0} <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-          {Boolean(info?.guestkit?.enabled) && (
-            <Link to="/platform/migration?tab=jobs" className="apple-link inline-flex items-center gap-1.5">
-              GuestKit <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-          {hsPhase === 'unreachable' && (
-            <Link to="/platform/migration" className={`inline-flex items-center gap-1.5 ${statusToneClass('warn')}`}>
-              HyperSDK unreachable <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-        </nav>
+        <section className="apple-section" aria-label="Explore">
+          <p className="apple-eyebrow">Explore</p>
+          <h2 className="apple-display apple-display--sm">Go further</h2>
+          <ul className="apple-dest-list">
+            {platformEnabled && (
+              <li>
+                <Link to="/platform" className="apple-dest-row">
+                  <span className="min-w-0">
+                    <span className="apple-dest-title block">Platform</span>
+                    <span className="apple-dest-sub block">Mission Control and fleet</span>
+                  </span>
+                  <span className="apple-dest-chevron" aria-hidden>›</span>
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link to="/vms" className="apple-dest-row">
+                <span className="min-w-0">
+                  <span className="apple-dest-title block">VM Center</span>
+                  <span className="apple-dest-sub block">Local guests on this host</span>
+                </span>
+                <span className="apple-dest-chevron" aria-hidden>›</span>
+              </Link>
+            </li>
+            {(k8sOverview || k8sError) && (
+              <li>
+                <Link to="/k8s" className="apple-dest-row">
+                  <span className="min-w-0">
+                    <span className="apple-dest-title block">
+                      Kubernetes{k8sOverview ? ` · ${k8sOverview.ready_nodes}/${k8sOverview.nodes} nodes` : ''}
+                    </span>
+                    <span className="apple-dest-sub block">Cluster overview</span>
+                  </span>
+                  <span className="apple-dest-chevron" aria-hidden>›</span>
+                </Link>
+              </li>
+            )}
+            {vesselStatus?.connected && (
+              <li>
+                <Link to="/containers" className="apple-dest-row">
+                  <span className="min-w-0">
+                    <span className="apple-dest-title block">Containers · {vesselContainerCount ?? 0}</span>
+                    <span className="apple-dest-sub block">Vessel runtime</span>
+                  </span>
+                  <span className="apple-dest-chevron" aria-hidden>›</span>
+                </Link>
+              </li>
+            )}
+            {Boolean(info?.guestkit?.enabled) && (
+              <li>
+                <Link to="/platform/migration?tab=jobs" className="apple-dest-row">
+                  <span className="min-w-0">
+                    <span className="apple-dest-title block">GuestKit</span>
+                    <span className="apple-dest-sub block">Migration jobs</span>
+                  </span>
+                  <span className="apple-dest-chevron" aria-hidden>›</span>
+                </Link>
+              </li>
+            )}
+            {hsPhase === 'unreachable' && (
+              <li>
+                <Link to="/platform/migration" className="apple-dest-row">
+                  <span className="min-w-0">
+                    <span className={`apple-dest-title block ${statusToneClass('warn')}`}>HyperSDK unreachable</span>
+                    <span className="apple-dest-sub block">Check migration connectivity</span>
+                  </span>
+                  <span className="apple-dest-chevron" aria-hidden>›</span>
+                </Link>
+              </li>
+            )}
+          </ul>
+        </section>
       )}
 
-      <section className="min-w-0 relative z-0">
+      <section className="apple-section min-w-0 relative z-0">
+        <p className="apple-eyebrow">Telemetry</p>
         <div className="flex items-end justify-between gap-4 mb-8">
-          <h2 className="text-[28px] sm:text-[32px] font-semibold tracking-tight text-[var(--text-primary)]">Memory</h2>
+          <h2 className="apple-display apple-display--sm">Memory</h2>
           <span className="text-[17px] tabular-nums text-[var(--text-muted)]">
             {metricsHistory.length > 0 ? `${metricsHistory[metricsHistory.length - 1].memory}%` : '—'}
           </span>
@@ -394,25 +432,27 @@ export default function Dashboard() {
       </section>
 
       {/* Guests live in VM Center — home only surfaces counts + a deep link */}
-      <section className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 py-2 border-t border-[var(--apple-hairline)]">
-        <div>
-          <h2 className="text-[28px] sm:text-[32px] font-semibold tracking-tight text-[var(--text-primary)]">Guests</h2>
-          <p className="mt-2 text-[17px] text-[var(--text-secondary)] tracking-tight">
-            {vms.length === 0
-              ? 'No guests on this host yet.'
-              : `${running} running · ${stopped} stopped${paused ? ` · ${paused} paused` : ''} — manage them in VM Center.`}
-          </p>
+      <section className="apple-section">
+        <p className="apple-eyebrow">Inventory</p>
+        <h2 className="apple-display apple-display--sm">Guests</h2>
+        <p className="apple-lede">
+          {vms.length === 0
+            ? 'No guests on this host yet.'
+            : `${running} running · ${stopped} stopped${paused ? ` · ${paused} paused` : ''} — manage them in VM Center.`}
+        </p>
+        <div className="apple-cta-row">
+          <Link to="/vms" className="btn-primary inline-flex items-center gap-2 shrink-0">
+            Open VM Center
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
-        <Link to="/vms" className="btn-primary inline-flex items-center gap-2 shrink-0">
-          Open VM Center
-          <ArrowRight className="w-4 h-4" />
-        </Link>
       </section>
 
       {events.length > 0 && (
-        <section>
-          <h2 className="text-[28px] font-semibold tracking-tight text-[var(--text-primary)] mb-6">Activity</h2>
-          <ul className="rounded-3xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] divide-y divide-[var(--apple-hairline)] max-h-80 overflow-y-auto">
+        <section className="apple-section">
+          <p className="apple-eyebrow">Live</p>
+          <h2 className="apple-display apple-display--sm">Activity</h2>
+          <ul className="mt-6 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] divide-y divide-[var(--apple-hairline)] max-h-80 overflow-y-auto">
             {events.map((ev) => (
               <li key={`${ev.timestamp}-${ev.name}-${ev.event}`} className="px-6 sm:px-8 py-4 flex items-center justify-between gap-4 text-[15px]">
                 <div className="flex items-center gap-3 min-w-0">
@@ -432,6 +472,7 @@ export default function Dashboard() {
           </ul>
         </section>
       )}
+      </div>
 
       {showShutdownConfirm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in" onClick={() => setShowShutdownConfirm(false)}>
@@ -465,11 +506,9 @@ export default function Dashboard() {
 function Metric({ figure, label, hint }: { figure: string | number; label: string; hint?: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-[40px] sm:text-[48px] leading-none font-semibold tracking-tight tabular-nums text-[var(--text-primary)]">
-        {figure}
-      </div>
-      <div className="mt-3 text-[17px] text-[var(--text-primary)] tracking-tight">{label}</div>
-      {hint && <div className="mt-1.5 text-[14px] text-[var(--text-muted)] leading-snug">{hint}</div>}
+      <div className="apple-metric-value">{figure}</div>
+      <div className="apple-metric-label">{label}</div>
+      {hint && <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">{hint}</div>}
     </div>
   )
 }

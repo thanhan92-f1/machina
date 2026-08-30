@@ -1438,7 +1438,7 @@ export default function VMDetailsPage() {
 
       {tab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+          <div className="tahoe-glass-card p-6 space-y-3">
             <h3 className="text-lg font-semibold">Configuration</h3>
             <EditableRow label="vCPUs" value={vm.vcpus} onEdit={() => openDialog('vcpus')} />
             <EditableRow label="Memory" value={`${vm.memory_mb} MB`} onEdit={() => openDialog('memory')} />
@@ -1459,7 +1459,7 @@ export default function VMDetailsPage() {
           </div>
 
           {bootConfig && (
-            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+            <div className="tahoe-glass-card p-6 space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Boot Configuration</h3>
                 <div className="flex gap-2">
@@ -1487,7 +1487,7 @@ export default function VMDetailsPage() {
           )}
 
           {(guestApiHostname || vm?.state === 'running') && (
-            <div className="bg-[var(--apple-surface)] rounded-xl p-4 border border-[var(--apple-hairline)] flex flex-wrap items-center justify-between gap-3" data-testid="vm-api-hostname">
+            <div className="tahoe-glass-card p-4 flex flex-wrap items-center justify-between gap-3" data-testid="vm-api-hostname">
               <div>
                 <div className="text-xs text-[var(--text-muted)]">Guest hostname (GET /vms/…/hostname)</div>
                 <div className="text-sm font-mono text-[var(--text-primary)]">{guestApiHostname ?? '—'}</div>
@@ -1511,7 +1511,7 @@ export default function VMDetailsPage() {
           )}
 
           {guestIps.length > 0 && (
-            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+            <div className="tahoe-glass-card p-6 space-y-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="text-lg font-semibold">Guest IP addresses</h3>
                 {guestIfQueriedAt && (
@@ -1747,7 +1747,7 @@ export default function VMDetailsPage() {
           )}
 
           {guestObs && guestObs.filesystems.length > 0 && (
-            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+            <div className="tahoe-glass-card p-6 space-y-3">
               <h3 className="text-lg font-semibold">Guest filesystems (qemu-guest-agent)</h3>
               {guestObs.hostname && (
                 <InfoRow label="Guest hostname" value={guestObs.hostname} />
@@ -1781,7 +1781,7 @@ export default function VMDetailsPage() {
           )}
 
           {metrics && (
-            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+            <div className="tahoe-glass-card p-6 space-y-3">
               <h3 className="text-lg font-semibold">Live Metrics</h3>
               <InfoRow label="Memory Used" value={`${metrics.memory_used_mb} / ${metrics.memory_total_mb} MB (${metrics.memory_pct.toFixed(1)}%)`} />
               <InfoRow label="Disk Read" value={formatBytes(metrics.disk_rd_bytes)} />
@@ -1806,7 +1806,7 @@ export default function VMDetailsPage() {
           )}
 
           {(cpuTune || memTune) && (
-            <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
+            <div className="tahoe-glass-card p-6 space-y-3">
               <h3 className="text-lg font-semibold">Resource Limits</h3>
               {cpuTune && (
                 <>
@@ -1843,7 +1843,7 @@ export default function VMDetailsPage() {
       {/* Per-VM Metrics Charts (below overview, visible when running) */}
       {tab === 'overview' && metricsHistory.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)]">
+          <div className="tahoe-glass-card p-5">
             <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4"><MemoryStick className={`w-4 h-4 ${statusToneClass('info')}`} /> Memory Usage</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
@@ -1856,7 +1856,7 @@ export default function VMDetailsPage() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)]">
+          <div className="tahoe-glass-card p-5">
             <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4"><HardDrive className={`w-4 h-4 ${statusToneClass('ok')}`} /> Disk I/O</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
@@ -1873,7 +1873,7 @@ export default function VMDetailsPage() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] lg:col-span-2">
+          <div className="tahoe-glass-card p-5 lg:col-span-2">
             <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4"><Network className="w-4 h-4 text-[var(--accent)]" /> Network Throughput</h3>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
@@ -1910,7 +1910,7 @@ export default function VMDetailsPage() {
             </button>
             <button onClick={() => openDialog('attach-disk')} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Attach Disk</button>
           </div>
-          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="tahoe-glass-card overflow-hidden">
             <table className="w-full" aria-label="Disk devices">
               <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Target</th><th scope="col" className="px-6 py-3">Bus</th><th scope="col" className="px-6 py-3">Cache</th><th scope="col" className="px-6 py-3">Device</th><th scope="col" className="px-6 py-3">Driver</th><th scope="col" className="px-6 py-3">Source</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-[var(--apple-hairline)]/30">
@@ -1964,7 +1964,7 @@ export default function VMDetailsPage() {
 
       {tab === 'network' && (
         <div className="space-y-4">
-          <details className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4 group">
+          <details className="tahoe-glass-card p-4 group">
             <summary className="cursor-pointer text-sm font-medium text-[var(--text-primary)] list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
               <span className="text-[var(--text-muted)] group-open:rotate-90 transition">▸</span>
               Guest networking basics (NAT vs bridge, no DHCP)
@@ -2022,7 +2022,7 @@ export default function VMDetailsPage() {
             </div>
           </details>
           {platformVmId && classicGuestIp ? (
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
+            <div className="tahoe-glass-card p-4">
               <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Hypervisor NAT (port forwards)</h3>
               <VmPortForwardPanel
                 platformVmId={platformVmId}
@@ -2037,7 +2037,7 @@ export default function VMDetailsPage() {
           <div className="flex justify-end">
             <button onClick={() => { setNicNetwork(networks[0]?.name || 'default'); setDialog('attach-nic') }} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Add NIC</button>
           </div>
-          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="tahoe-glass-card overflow-hidden">
             <table className="w-full" aria-label="Network interfaces">
               <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">MAC Address</th><th scope="col" className="px-6 py-3">Source</th><th scope="col" className="px-6 py-3">Model</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-[var(--apple-hairline)]/30">
@@ -2083,7 +2083,7 @@ export default function VMDetailsPage() {
           <div className="flex justify-end">
             <button onClick={() => openDialog('snapshot')} className="btn-primary text-sm inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Create Snapshot</button>
           </div>
-          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+          <div className="tahoe-glass-card overflow-hidden">
             {snapshots.length === 0 ? (
               <div className="p-8 text-center text-[var(--text-muted)]">No snapshots. Create one to save the current VM state.</div>
             ) : (
@@ -2120,7 +2120,7 @@ export default function VMDetailsPage() {
               }}
             />
           ) : null}
-          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 space-y-3">
+          <div className="tahoe-glass-card p-5 space-y-3">
             <h3 className="text-lg font-semibold text-[var(--text-primary)]">Virtual hardware</h3>
             <p className="text-xs text-[var(--text-muted)]">TPM, watchdog, sound, extra serial, and video — shut off the guest when libvirt requires a static config change.</p>
             <div className="flex flex-wrap gap-2">
@@ -2157,7 +2157,7 @@ export default function VMDetailsPage() {
               <h3 className="text-lg font-semibold flex items-center gap-2"><FolderOpen className={`w-5 h-5 ${statusToneClass('ok')}`} /> Shared directories</h3>
               <span className="text-xs text-[var(--text-muted)]">virtiofs (Linux guests)</span>
             </div>
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 space-y-4">
+            <div className="tahoe-glass-card p-5 space-y-4">
               <p className="text-xs text-[var(--text-muted)]">
                 Cockpit-style host directory sharing via <code className="text-[var(--text-secondary)]">virtiofs</code>. VM must be <strong>shut off</strong> to add/remove.
               </p>
@@ -2260,7 +2260,7 @@ export default function VMDetailsPage() {
                 <Plus className="w-4 h-4" /> Attach USB
               </button>
             </div>
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+            <div className="tahoe-glass-card overflow-hidden">
               <table className="w-full" aria-label="USB devices">
                 <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-6 py-2">Bus</th><th scope="col" className="px-6 py-2">Device</th><th scope="col" className="px-6 py-2">ID</th><th scope="col" className="px-6 py-2">Description</th><th scope="col" className="px-6 py-2 text-right">Actions</th></tr></thead>
                 <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-sm">
@@ -2292,7 +2292,7 @@ export default function VMDetailsPage() {
           {/* PCI Devices */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2"><Monitor className="w-5 h-5 text-purple-400" /> PCI Devices</h3>
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+            <div className="tahoe-glass-card overflow-hidden">
               <table className="w-full" aria-label="PCI devices">
                 <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-6 py-2">Slot</th><th scope="col" className="px-6 py-2">Class</th><th scope="col" className="px-6 py-2">Vendor</th><th scope="col" className="px-6 py-2">Device</th><th scope="col" className="px-6 py-2">IOMMU Group</th></tr></thead>
                 <tbody className="divide-y divide-[var(--apple-hairline)]/30 text-sm">
@@ -2315,11 +2315,11 @@ export default function VMDetailsPage() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-orange-400" /> IOMMU Groups</h3>
             {iommuGroups.length === 0 ? (
-              <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-8 text-center text-[var(--text-muted)]">No IOMMU groups found. IOMMU may not be enabled or /sys/kernel/iommu_groups is empty.</div>
+              <div className="tahoe-glass-card p-8 text-center text-[var(--text-muted)]">No IOMMU groups found. IOMMU may not be enabled or /sys/kernel/iommu_groups is empty.</div>
             ) : (
               <div className="space-y-3">
                 {iommuGroups.map((g) => (
-                  <div key={g.group_id} className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+                  <div key={g.group_id} className="tahoe-glass-card overflow-hidden">
                     <div className="px-5 py-2.5 bg-[var(--apple-fill-tertiary)]/80 border-b border-[var(--apple-hairline)] text-sm font-medium text-orange-400">Group {g.group_id} ({g.devices.length} device{g.devices.length !== 1 ? 's' : ''})</div>
                     <table className="w-full" aria-label="IOMMU group devices">
                       <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-5 py-2">BDF</th><th scope="col" className="px-5 py-2">Vendor</th><th scope="col" className="px-5 py-2">Device</th></tr></thead>
@@ -2351,7 +2351,7 @@ export default function VMDetailsPage() {
             These actions map directly to libvirt (<code className="opacity-90">virsh blockcommit</code>, <code className="opacity-90">undefine --nvram</code>, etc.). Wrong options can destroy data or make a VM unbootable. Prefer shutoff VMs for delete and PCI attach unless you know the guest is safe.
           </div>
 
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+          <div className="tahoe-glass-card p-6 space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2"><Trash2 className={`w-5 h-5 ${statusToneClass('error')}`} /> Delete VM</h3>
             <p className="text-xs text-[var(--text-muted)]">Optional <code className="text-[var(--text-secondary)]">undefine</code> flags (query params on DELETE). Typically use with VM shut off.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -2402,7 +2402,7 @@ export default function VMDetailsPage() {
             )}
           </div>
 
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+          <div className="tahoe-glass-card p-6 space-y-4">
             <h3 className="text-lg font-semibold">CPU / memory tuning</h3>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => openDialog('scheduler-tune')} className="btn-secondary text-sm">Edit scheduler (shares / vCPU bandwidth)</button>
@@ -2413,7 +2413,7 @@ export default function VMDetailsPage() {
             </div>
           </div>
 
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+          <div className="tahoe-glass-card p-6 space-y-4">
             <h3 className="text-lg font-semibold">Block jobs (snapshots / backing chain)</h3>
             <div className="flex flex-wrap gap-3 items-end">
               <div>
@@ -2468,7 +2468,7 @@ export default function VMDetailsPage() {
             )}
           </div>
 
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+          <div className="tahoe-glass-card p-6 space-y-4">
             <h3 className="text-lg font-semibold">CPU compatibility</h3>
             <button
               type="button"
@@ -2501,7 +2501,7 @@ export default function VMDetailsPage() {
             )}
           </div>
 
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+          <div className="tahoe-glass-card p-6 space-y-4">
             <h3 className="text-lg font-semibold">PCI passthrough (VFIO)</h3>
             <p className="text-xs text-[var(--text-muted)]">BDF like <code className="text-[var(--text-secondary)]">0000:03:00.0</code>. Detach the node device from the host first when required.</p>
             <div className="flex flex-wrap gap-2 items-end">
@@ -2547,7 +2547,7 @@ export default function VMDetailsPage() {
             </div>
           </div>
 
-          <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-4">
+          <div className="tahoe-glass-card p-6 space-y-4">
             <h3 className="text-lg font-semibold">Host node device</h3>
             <p className="text-xs text-[var(--text-muted)]">Name from <strong className="text-[var(--text-secondary)]">Devices</strong> page or <code className="text-[var(--text-secondary)]">pci_0000_03_00_0</code> style libvirt id.</p>
             <div className="flex flex-wrap gap-2 items-end">
@@ -2594,7 +2594,7 @@ export default function VMDetailsPage() {
       {/* ── XML Tab ──────────────────────────────────────────────── */}
 
       {tab === 'xml' && (
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="tahoe-glass-card overflow-hidden">
           <div className="px-6 py-3 border-b border-[var(--apple-hairline)] flex items-center justify-between">
             <span className="text-sm text-[var(--text-muted)]">Domain XML Configuration</span>
             <div className="flex items-center gap-3">
@@ -2609,7 +2609,7 @@ export default function VMDetailsPage() {
       {/* ── Logs Tab ────────────────────────────────────────────── */}
 
       {tab === 'logs' && (
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="tahoe-glass-card overflow-hidden">
           <div className="px-6 py-3 border-b border-[var(--apple-hairline)] flex items-center justify-between">
             <span className="text-sm text-[var(--text-muted)]">QEMU Log ({`/var/log/libvirt/qemu/${vm.name}.log`})</span>
             <div className="flex items-center gap-3">

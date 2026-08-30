@@ -75,7 +75,7 @@ interface SimpleCreateVmWizardProps {
 function categoryAccent(category: OsFlavor['category']): string {
   switch (category) {
     case 'Windows':
-      return 'from-blue-600/20 to-[var(--apple-surface)] border-[var(--accent)]/40'
+      return 'from-[color-mix(in_srgb,var(--accent)_20%,transparent)] to-[var(--apple-surface)] border-[var(--accent)]/40'
     case 'Database':
       return 'from-emerald-600/20 to-[var(--apple-surface)] border-emerald-500/35'
     case 'Appliance':

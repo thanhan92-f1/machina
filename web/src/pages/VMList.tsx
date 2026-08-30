@@ -16,13 +16,14 @@ import { copyText } from '../utils/copyText'
 import { useWebSocketContext } from '../contexts/WebSocketContext'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { getAllTags, getVmTags } from '../api/extras'
-import { Play, Square, Power, Pause, RotateCcw, Trash2, Search, RefreshCw, Terminal, Tag, LayoutGrid, LayoutList, X, Download, Star, Server, Copy, Monitor } from 'lucide-react'
+import { Play, Square, Power, Pause, RotateCcw, Trash2, RefreshCw, Terminal, Tag, LayoutGrid, LayoutList, X, Download, Star, Server, Copy, Monitor } from 'lucide-react'
 import VmResolvedSshConnectDialog from '../components/vm/VmResolvedSshConnectDialog'
 import { ChoiceCard, ChoiceCardGrid } from '../components/ChoiceCards'
 import { downloadJSON, downloadCSV } from '../utils/export'
 import { isPinned, togglePin } from '../utils/pinnedVMs'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
+import { TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { formatUserError } from '../utils/apiError'
 import { libvirtErrorHints } from '../utils/libvirtHints'
 import { sessionBadgeClasses, statusActionLinkClasses, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
@@ -235,44 +236,34 @@ export default function VMList() {
         </>
       }
     >
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            aria-label="Search VMs"
-            placeholder="Search VMs..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`w-full pl-10 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] ${search ? 'pr-8' : 'pr-4'}`}
-          />
-          {search && (
-            <button type="button" aria-label="Clear search" onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        {allTagNames.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <Tag className="w-4 h-4 text-[var(--text-muted)]" />
-            <select
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              aria-label="Filter by tag"
-              className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm py-2 px-3 focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-secondary)]"
-            >
-              <option value="">All tags</option>
-              {allTagNames.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-        )}
-        {(search || tagFilter) && (
-          <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0">
-            {filtered.length} VM{filtered.length !== 1 ? 's' : ''}
-          </span>
-        )}
-      </div>
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search VMs…"
+        trailing={
+          <>
+            {allTagNames.length > 0 && (
+              <div className="flex items-center gap-1.5 pr-1">
+                <Tag className="w-4 h-4 text-[var(--text-muted)]" />
+                <select
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  aria-label="Filter by tag"
+                  className="bg-transparent border-0 text-sm py-1 px-2 focus:outline-none text-[var(--text-secondary)]"
+                >
+                  <option value="">All tags</option>
+                  {allTagNames.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            )}
+            {(search || tagFilter) && (
+              <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+                {filtered.length} VM{filtered.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </>
+        }
+      />
 
       {filtered.length === 0 ? (
         <EmptyState

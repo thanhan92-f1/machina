@@ -336,17 +336,17 @@ export default function PlatformSettingsHub() {
             <MacSettingsGroup title="Enterprise security">
               <p className="text-xs text-[var(--text-muted)] mb-2">{enterprise.summary}</p>
               <div className="grid gap-3 sm:grid-cols-3 text-sm mb-3">
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Vault</p>
                   <p className="text-lg font-semibold text-[var(--text-primary)]">{enterprise.vault_connected}/{enterprise.vault_providers}</p>
                   <p className="text-[10px] text-[var(--text-muted)]">connected</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">MFA roles</p>
                   <p className="text-lg font-semibold text-[var(--text-primary)]">{enterprise.mfa_required_roles}/{enterprise.mfa_policies}</p>
                   <p className="text-[10px] text-[var(--text-muted)]">required</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Air-gap</p>
                   <p className="text-lg font-semibold text-[var(--text-primary)]">{enterprise.air_gap_bundles}</p>
                   <p className="text-[10px] text-[var(--text-muted)]">bundles</p>
@@ -397,22 +397,22 @@ export default function PlatformSettingsHub() {
             {selectedBundle && (
               <JsonInspector data={selectedBundle.manifest_json} className="mt-2">
                 <dl className="grid gap-2 sm:grid-cols-2 text-sm">
-                  <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+                  <div className="tahoe-glass-card px-3 py-2">
                     <dt className="text-xs text-[var(--text-muted)]">Bundle</dt>
                     <dd className="text-[var(--text-primary)] mt-0.5">{selectedBundle.name}</dd>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2">
+                  <div className="tahoe-glass-card px-3 py-2">
                     <dt className="text-xs text-[var(--text-muted)]">Size</dt>
                     <dd className="text-[var(--text-primary)] mt-0.5">{Math.round(selectedBundle.size_bytes / 1024)} KB</dd>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 sm:col-span-2">
+                  <div className="tahoe-glass-card px-3 py-2 sm:col-span-2">
                     <dt className="text-xs text-[var(--text-muted)]">Checksum</dt>
                     <dd className="text-[var(--text-primary)] mt-0.5 font-mono text-xs break-all">{selectedBundle.checksum}</dd>
                   </div>
                   {asArray(asRecord(selectedBundle.manifest_json)?.artifacts).slice(0, 6).map((item, i) => {
                     const row = asRecord(item)
                     return (
-                      <div key={String(row?.path ?? row?.name ?? i)} className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] px-3 py-2 sm:col-span-2">
+                      <div key={String(row?.path ?? row?.name ?? i)} className="tahoe-glass-card px-3 py-2 sm:col-span-2">
                         <dt className="text-xs text-[var(--text-muted)]">Artifact</dt>
                         <dd className="text-[var(--text-primary)] mt-0.5 text-xs">{String(row?.path ?? row?.name ?? JSON.stringify(item))}</dd>
                       </div>
@@ -472,19 +472,19 @@ export default function PlatformSettingsHub() {
             <>
               <p className="text-sm text-[var(--text-muted)]">{fleetNetwork.summary}</p>
               <div className="grid gap-3 sm:grid-cols-4 text-sm">
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Networks</p>
                   <p className="text-lg font-semibold">{fleetNetwork.network_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Segments</p>
                   <p className="text-lg font-semibold">{fleetNetwork.segment_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">IPAM pools</p>
                   <p className="text-lg font-semibold">{fleetNetwork.ipam_pool_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Deny east-west</p>
                   <p className={`text-lg font-semibold ${statusToneClass('warn')}`}>{fleetNetwork.deny_east_west_count}</p>
                 </div>
@@ -526,15 +526,15 @@ export default function PlatformSettingsHub() {
           <MacSettingsGroup title="Firewall">
             {firewallOverview && (
               <div className="grid gap-3 sm:grid-cols-3 text-sm mb-3">
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Targets</p>
                   <p className="text-lg font-semibold text-[var(--text-primary)]">{firewallOverview.targets.length}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Critical</p>
                   <p className={`text-lg font-semibold ${statusToneClass('error')}`}>{firewallOverview.critical_count}</p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
+                <div className="tahoe-glass-card p-3">
                   <p className="text-[10px] uppercase text-[var(--text-muted)]">Warnings</p>
                   <p className={`text-lg font-semibold ${statusToneClass('warn')}`}>{firewallOverview.warning_count}</p>
                 </div>

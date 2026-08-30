@@ -625,7 +625,7 @@ export default function K8sOverviewPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-4 py-3 text-sm text-[var(--text-primary)]/90">
+      <div className="tahoe-glass-card px-4 py-3 text-sm text-[var(--text-primary)]/90">
         Tetragon + PacketWolf sensors enrich K8s node events with namespace/pod/container metadata.{' '}
         <Link to="/platform/zeus/security" className="text-[var(--link)] underline">Open Security Center</Link>
       </div>

@@ -153,9 +153,13 @@ export function tierAtLeast(current: PlatformDesktopTier, min: PlatformDesktopTi
   return TIER_RANK[current] >= TIER_RANK[min]
 }
 
-/** Zeus Mac desktop always shows Finder sidebar (1:1). Jarvis calm no longer hides it. */
-export function defaultSidebarVisibleForTier(_tier: PlatformDesktopTier): boolean {
-  return true
+/**
+ * Dock-first shell (Zeus MacDesktopContext starts sidebarVisible=false).
+ * Normal/Power: dock owns app launchers — sidebar hidden to avoid a redundant icon rail.
+ * Advanced: full Finder sidebar for deep Host/Fleet/Platform nav.
+ */
+export function defaultSidebarVisibleForTier(tier: PlatformDesktopTier): boolean {
+  return tier === 'advanced'
 }
 
 export function showPlatformMenuBarForTier(tier: PlatformDesktopTier): boolean {
