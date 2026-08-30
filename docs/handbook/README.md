@@ -101,6 +101,9 @@ The handbook cross-links rather than duplicates these existing guides:
 
 | Topic | Doc |
 |-------|-----|
+| Apple.com / Zeus UX contract | [../design/APPLE-UX-CONTRACT.md](../design/APPLE-UX-CONTRACT.md) |
+| Daylight / Tahoe Light tokens | [../design/DAYLIGHT-CONTRACT.md](../design/DAYLIGHT-CONTRACT.md) |
+| UX author guide | [../ux.md](../ux.md) |
 | Infrastructure vision | [../machina-infrastructure-vision.md](../machina-infrastructure-vision.md) |
 | KubeVirt migration | [../kubevirt-migration.md](../kubevirt-migration.md) |
 | Observability | [../guides/observability.md](../guides/observability.md) |

@@ -101,11 +101,11 @@ machina/   # git checkout directory name
 The Machina web UI uses a **Liquid Glass** design system inspired by macOS Tahoe: translucent panels, strong backdrop blur, heavy rounding (22–28px), specular highlights, and spring animations on modals and toasts.
 
 - **Dark theme = Liquid Glass** — the default `dark` theme applies glass tokens across daemon pages and the platform desktop shell
-- **Platform desktop tiers** — **Normal** (dock-first, minimal), **Power user** (ops toolkit), **Advanced** (full fleet surface); switch in **Settings → Appearance** or **View → Desktop density**
+- **Platform desktop tiers** — **Normal** / **Power** (dock-first, sidebar hidden) · **Advanced** (Finder sidebar locations); switch in **Settings → Appearance** or **View → Desktop density**. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 - **Reusable components** — `GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs` in `web/src/components/glass/`
 - **Steel / Aurora** themes remain available via the navbar theme picker
 
-- **Machina login page** — macOS Tahoe liquid-glass split layout ([`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) `variant="macos"`), libvirt hero copy; entry at `/` or `/login`; after sign-in the URL normalizes to `/` (dashboard)
+- **Machina login page** — Apple Account paper + apple.com **machina** wordmark ([`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css)); entry at `/` or `/login`; after sign-in the URL normalizes to `/` (dashboard)
 - **Command palette** — `Ctrl+K` / `Cmd+K` to search VMs, networks, storage pools, snapshots, navigate pages, and run quick actions with keyboard navigation
 - **Notification bell** — global notification center in navbar with badge count, showing real-time VM state changes, additions, and removals
 - **Breadcrumb navigation** — auto-generated from route path on every page

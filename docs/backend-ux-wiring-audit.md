@@ -21,13 +21,13 @@ This document is an honest inventory of how much controller/daemon surface area 
 
 - Dashboard, VMs, Hosts, Storage, Backups, Settings, Support, Notifications
 - **Apps & Integrations** hub → Fleet Cloud, K8s, HyperSDK, GuestKit, classic UI (when daemon flags enable them)
-- Dock-first layout; sidebar collapsed/hidden
+- Dock-first layout; sidebar **hidden** by default (View → Show Sidebar); Favorites not duplicated in the rail
 
 ### Platform desktop (Power / Advanced)
 
 - Everything in Normal plus networks, Zeus, tasks, migration, firewall modules, policy, observability, fleet settings strips, etc.
-- See [machina-infrastructure-vision.md](./machina-infrastructure-vision.md) API ↔ UI map
-
+- **Power:** dock-first (sidebar still off by default). **Advanced:** Finder sidebar locations on by default.
+- See [machina-infrastructure-vision.md](./machina-infrastructure-vision.md) API ↔ UI map and [design/APPLE-UX-CONTRACT.md](./design/APPLE-UX-CONTRACT.md)
 ### Separate shells (not missing — different entry point)
 
 | UI | Path | Backend |
@@ -152,7 +152,7 @@ cd web && npm run build && npm run test:e2e -- e2e/platform-full.spec.ts e2e/she
 
 - [x] [`App.tsx`](../web/src/App.tsx) — `AiProvider` inside `BrowserRouter` (fixes post-login white screen from `useLocation` outside router)
 - [x] [`AuthContext.tsx`](../web/src/contexts/AuthContext.tsx) + authenticated `/login` → `/` [`Navigate`](../web/src/App.tsx) (fixes 404 when signing in at `/login`)
-- [x] Machina macOS login — [`Login.tsx`](../web/src/pages/Login.tsx), [`zyvor-macos-login.css`](../web/src/styles/zyvor-macos-login.css), optional [`variant="secure"`](../web/src/styles/zyvor-secure-login.css)
+- [x] Machina Apple Account login — [`Login.tsx`](../web/src/pages/Login.tsx), [`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css) (apple.com **machina** wordmark)
 - [x] Playwright [`smoke.spec.ts`](../web/e2e/smoke.spec.ts) — `authenticated /login redirects to dashboard`
 
 ## How to measure progress
@@ -171,14 +171,17 @@ Target for “good enough”: **every controller domain** has at least one of: P
 
 ## Tier policy (user-facing)
 
-1. **Normal** — simple desktop, dock, Integrations hub (default for first visit)
-2. **Power** — operations sidebar subset
-3. **Advanced** — full sidebar + firewall + developer routes
+1. **Normal** — dock-first desktop (sidebar hidden); Mission Control + Integrations (default for first visit)
+2. **Power** — dock-first; ops toolkit routes unlocked; sidebar still off by default
+3. **Advanced** — full Finder sidebar (locations) + firewall + developer routes
 
-Users upgrade in **Settings → Appearance → Desktop density**.
+Users upgrade in **Settings → Appearance → Desktop density**. See [design/APPLE-UX-CONTRACT.md](./design/APPLE-UX-CONTRACT.md).
 
 ## Related docs
 
-- [next-big-sweep.md](./next-big-sweep.md) — planned cross-shell consistency sweep (batch 57)
+- [design/APPLE-UX-CONTRACT.md](./design/APPLE-UX-CONTRACT.md) — shell / Story / Browse / Work contract
+- [design/DAYLIGHT-CONTRACT.md](./design/DAYLIGHT-CONTRACT.md) — Tahoe Light / Classic Blue tokens
+- [ux.md](./ux.md) — author guide
+- [next-big-sweep.md](./next-big-sweep.md) — cross-shell consistency sweep (batch 57+)
 - [machina-infrastructure-vision.md](./machina-infrastructure-vision.md) — Mission Control, geography, parity phases 0–5
 - [machina-macos-os-manager-roadmap.md](./machina-macos-os-manager-roadmap.md) — shell UX roadmap

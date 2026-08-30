@@ -6,11 +6,15 @@ Shipped light shell is Magichromatic Tahoe Light
 
 Live SoT in Machina: `web/src/styles/zeus-parity.css` (re-port from Zeus; do not re-derive).
 Legacy aliases: `web/src/styles/machina-daylight.css` (superseded when they conflict).
+Story / Browse layout primitives: `web/src/styles/machina-apple-ux.css`.
 
 Dark product theme is **Classic Blue** (`html[data-ui-shell='default']`, `data-theme=tahoe`)
 — Mist Blue CTAs on graphite, not System Blue / Zyvor Carbon.
 
-Login follows Zeus Apple Account shell (`zyvor-premium-login.css` + theme paper).
+Login follows Zeus Apple Account shell ([`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css)):
+`#f5f5f7` paper, SF Pro / system display stack, hero wordmark **machina**, Zyvor tile icon-only.
+
+Shell / nav / tiers: [APPLE-UX-CONTRACT.md](APPLE-UX-CONTRACT.md).
 
 ## Palette (iPhone 17 / 17 Pro)
 
@@ -19,7 +23,7 @@ Login follows Zeus Apple Account shell (`zyvor-premium-login.css` + theme paper)
 | **Mist Blue** | Intent / primary / links (`--primary` / `--plasma`) |
 | **Sage** | Confirmed-good only |
 | **Lavender** | AI accent sparingly |
-| **White** | Cards / elevated work surfaces |
+| **White** | Cards / elevated work surfaces (`.tahoe-glass-card`) |
 | **Black** | Graphite text / Classic Blue canvas |
 | **Cosmic Orange** (Pro) | Warn / deviation |
 | **Deep Blue** (Pro) | Migrating / deep info |
@@ -42,6 +46,8 @@ Nominal values are graphite. Mist Blue = intent only.
 
 ## Invariants
 
-- Terminals / Console Hub cinema stay carbon islands.
+- Terminals / Console Hub / Host SSH cinema stay carbon islands.
 - Theme attribute: `html[data-theme=tahoe-light]` when Tahoe Light is selected.
 - Classic Blue: `html[data-ui-shell=default]`.
+- Story pages use `apple-story-stack` / `apple-metric-band` — not dense bordered tile grids.
+- Do not invent new blues (`blue-600`, System Blue `#0071e3`); use `--accent` / Mist.

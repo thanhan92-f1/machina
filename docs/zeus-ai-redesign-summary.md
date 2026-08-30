@@ -13,7 +13,7 @@ Phases AI-692 through AI-821: rebrand Machina AI → **Zeus**, multi-LLM provide
 - `ZeusAssistant`, `ZeusSpotlight`, `ZeusAmbientBar`, `ZeusInsightCard`, `ZeusApprovalQueue`
 - Settings → **Zeus**, **AI Providers** in [`PlatformSettingsHub.tsx`](../web/src/pages/platform/PlatformSettingsHub.tsx)
 - Extended [`AiContext.tsx`](../web/src/contexts/AiContext.tsx) with agent selection and route context — **`AiProvider` must be a child of `BrowserRouter`** in [`App.tsx`](../web/src/App.tsx) (uses `useLocation` / `useParams`)
-- Machina login: [`Login.tsx`](../web/src/pages/Login.tsx) + `PremiumLoginShell` `variant="macos"`; `/login` normalizes to `/` after auth ([`AuthContext.tsx`](../web/src/contexts/AuthContext.tsx))
+- Machina login: [`Login.tsx`](../web/src/pages/Login.tsx) + `PremiumLoginShell` + apple.com **machina** wordmark ([`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css)); `/login` normalizes to `/` after auth ([`AuthContext.tsx`](../web/src/contexts/AuthContext.tsx))
 
 ## Principles preserved
 

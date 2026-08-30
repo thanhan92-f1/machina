@@ -54,7 +54,7 @@ Gate destructive or cloud-side actions on `phase === 'live'`. Nav and command pa
 
 **Infrastructure DNA:** [`InfrastructureDnaStrip`](../web/src/components/platform/InfrastructureDnaStrip.tsx) — score ring + grade + pillar chips from `GET /api/v1/fleet/dna` on Platform dashboard (power tier+) and Mission Control header.
 
-**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`), Normal tier hides sidebar when Jarvis shell is on (Control Center toggle).
+**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`). Sidebar visibility is **dock-first** (Normal/Power off by default; Advanced on) — see [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 **Infrastructure Earth globe (Phase 58 v3):** [`InfrastructureEarthGlobe`](../web/src/components/platform/InfrastructureEarthGlobe.tsx) — **WebGL** globe (lazy `three.js`) with **canvas 2D fallback**, per-site health markers, and a site legend (links to Machine Finder) on Mission Control and Machine Finder topology lens.
 
@@ -143,26 +143,30 @@ cd web && npm run build && npm run test:e2e -- e2e/platform-full.spec.ts e2e/she
 | Platform Host detail, agent offline | Remediation links to Enroll + classic Node |
 | K8s Workloads explorer | Table/summary default; raw JSON toggle |
 
-## Platform macOS desktop (Wave 3)
+## Platform macOS desktop (Wave 3+)
 
-Navigation layers are tier-aware to avoid triple nav on tab-heavy routes:
+Navigation layers are tier-aware to avoid triple nav. Full contract: [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 | Layer | Role | When visible |
 |-------|------|--------------|
-| **Menubar** | App menus, Dynamic Island (fleet + Zeus pending), Control Center | Always on `/platform/*` |
-| **Context bar** | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only (`/platform/operations`, `/platform/resources`, `/platform/zeus/security`, `/platform/integrations`) · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) |
-| **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) title, stats, actions | Every platform page |
+| **Menubar** | Zyvor tile + app menus, Dynamic Island, Control Center | Always on authenticated routes |
+| **Desktop tabs** | Open window strip | When >1 platform tab ([`PlatformMacDesktopTabs`](web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) |
+| **Context bar** | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) |
+| **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](web/src/components/PageLayout.tsx) | Every platform page |
 | **DetailTabs** | In-app sections with `?tab=` | Tab-heavy pages only |
-| **Dock** | Primary app launcher | Always (Normal + Power) |
-| **Sidebar** | Full nav tree | Advanced default; Power collapsed icon rail; Normal hidden (Jarvis shell) |
+| **Dock** | Primary app launcher | Always |
+| **Sidebar** | Finder locations (Host / Fleet / Platform) — Favorites stripped | **Advanced** default on; **Normal/Power** off (View → Show Sidebar) |
+| **Fleet Cloud pills** | Section switch | Primary Overview/Instances/Images/Volumes/Create + **More** ([`FleetCloudSubNav`](web/src/components/FleetCloudSubNav.tsx)) |
 
-Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppressContextBar`](web/src/utils/platformNavRegistry.ts).
+Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppressContextBar`](web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](web/src/utils/platformDesktopTier.ts).
+
+**Browse lists:** [`TahoeListKit`](web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty`.
 
 **Zeus status:** pending approvals surface in [`PlatformDynamicIsland`](web/src/components/platform/mac/PlatformDynamicIsland.tsx); [`ZyraAmbientBar`](web/src/components/ai/ZyraAmbientBar.tsx) is hidden on `/platform/*`.
 
-**Dashboard tiers:** [`PlatformDashboard`](web/src/pages/platform/PlatformDashboard.tsx) — Normal: Zeus search + greeting + Launchpad; Power/Advanced: header stats + slim Zeus search + Launchpad + collapsed [`PlatformFleetInsights`](web/src/components/platform/PlatformFleetInsights.tsx) (DNA, remediate, enterprise on Advanced).
+**Dashboard / Story:** [`MissionControlPage`](web/src/pages/platform/MissionControl/MissionControlPage.tsx) (`/platform`); classic [`Dashboard.tsx`](web/src/pages/Dashboard.tsx) and [`FleetCloudOverview`](web/src/pages/FleetCloudOverview.tsx) use `apple-story-stack` / `apple-metric-band` / destination rows (not card grids).
 
-**Glass tokens:** `--glass-panel` in `main.css` unifies [`MacGlassPanel`](web/src/components/platform/mac/PlatformMacUi.tsx), `.tahoe-glass-card`, and `.platform-mac-panel`.
+**Glass tokens:** `--glass-panel` in `main.css` unifies [`MacGlassPanel`](web/src/components/platform/mac/PlatformMacUi.tsx), `.tahoe-glass-card`, and `.platform-mac-panel`. Work panels prefer `.tahoe-glass-card`.
 
 ## Platform lean desktop (Wave 4)
 
@@ -178,25 +182,25 @@ Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppr
 ## Dashboard & shell
 
 - **Help** (top bar) — dropdown: **Keyboard shortcuts** (`?`) and **About** ([`HelpDialog.tsx`](../web/src/components/HelpDialog.tsx), [`ZyvorAbout.tsx`](../web/src/components/ZyvorAbout.tsx)): [zyvor.dev](https://zyvor.dev), product links, copyright © 2026, documentation hub.
-- [`Dashboard.tsx`](../web/src/pages/Dashboard.tsx) — integration cards (libvirt, Fleet Cloud, K8s, HyperSDK)
+- [`Dashboard.tsx`](../web/src/pages/Dashboard.tsx) — apple.com Story home (metric band + explore destination rows); deep links to Platform / VM Center / K8s / Containers
 - [`Hero.tsx`](../web/src/components/Hero.tsx) — capability badges reflect phase, not config-only
 - Command palette — always list Fleet Cloud routes; sublabel when not live
 
 ## Theming
 
-New UI should work in **dark**, **steel**, and **aurora** themes (all dark; aurora uses prismatic accents via `.aurora-theme` in `main.css`). Avoid hard-coded colors that only read on one shell background.
+Product themes map to Zeus: **Tahoe Light** (`light`), **Classic Blue** (`dark`), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600`. See [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md).
 
 ## Login & accessibility
 
-- [`Login.tsx`](../web/src/pages/Login.tsx) — **Machina** branding via [`PremiumLoginShell`](../web/src/components/PremiumLoginShell.tsx) `variant="macos"`; SSO button first when OIDC is enabled; PAM form below; host label from `window.location.hostname`
-- Login CSS: [`zyvor-macos-login.css`](../web/src/styles/zyvor-macos-login.css) (default Machina), [`zyvor-secure-login.css`](../web/src/styles/zyvor-secure-login.css) (optional `variant="secure"`), legacy aurora/particles in `zyvor-premium-login.css`
+- [`Login.tsx`](../web/src/pages/Login.tsx) — apple.com **machina** wordmark via [`PremiumLoginShell`](../web/src/components/PremiumLoginShell.tsx); Zyvor mark icon-only; SSO when OIDC enabled; host label from `window.location.hostname`
+- Login CSS: [`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css) (Apple Account paper + SF Pro / system display stack)
+- Menubar (authenticated): [`ZyvorTileMark`](../web/src/components/ZyvorMark.tsx) in the Apple-logo slot before the Machina menu
 - **URL behavior:** the login page renders outside `BrowserRouter` when unauthenticated. `/` and `/login` both work. After auth, [`AuthContext`](../web/src/contexts/AuthContext.tsx) replaces `/login` with `/`, and authenticated routes register `<Navigate from="/login" to="/" />` so bookmarked `/login` never shows 404
 - **Zeus AI shell:** [`AiProvider`](../web/src/contexts/AiContext.tsx) must stay **inside** `BrowserRouter` (uses `useLocation` / `useParams` for ambient route context)
-- [`usePrefersReducedMotion`](../web/src/hooks/usePrefersReducedMotion.ts) — skips login orbs/particles; macOS variant omits scanlines/particles by default
+- [`usePrefersReducedMotion`](../web/src/hooks/usePrefersReducedMotion.ts) — respects reduced motion on login entrance animations
 - E2E: [`smoke.spec.ts`](../web/e2e/smoke.spec.ts) — `authenticated /login redirects to dashboard`
 - [`ConnectionStatus`](../web/src/components/ConnectionStatus.tsx) — `role="status"` + `aria-label` (not color-only)
 - [`NotFound.tsx`](../web/src/pages/NotFound.tsx) — dashboard styling + Ctrl+K hint
-
 ## Manual QA (Phase 7)
 
 | Scenario | Check |
@@ -206,7 +210,7 @@ New UI should work in **dark**, **steel**, and **aurora** themes (all dark; auro
 | OIDC enabled | Login: SSO primary, password secondary |
 | Sign in at `/login` | Lands on dashboard (`/`), not 404 |
 | `prefers-reduced-motion` | Login: no orb animation |
-| Light / dark / steel | Dashboard, Login, one Fleet Cloud page |
+| Light / dark / steel | Dashboard, Login (**machina** wordmark), one Fleet Cloud page (pill nav + More) |
 
 ## UX Wave 9 (2026-06)
 
@@ -241,6 +245,8 @@ Includes PAM login at `/login` → dashboard when credentials are set.
 
 ## Docs
 
+- **Apple.com / Zeus UX contract:** [`design/APPLE-UX-CONTRACT.md`](design/APPLE-UX-CONTRACT.md)
+- **Daylight / Tahoe Light tokens:** [`design/DAYLIGHT-CONTRACT.md`](design/DAYLIGHT-CONTRACT.md)
 - Platform VM detail UX: [`guides/platform-vm-detail-ux.md`](guides/platform-vm-detail-ux.md)
 - Connect hub & daily access: [`guides/vm-daily-access.md`](guides/vm-daily-access.md)
 - Feature QA matrix (F01–F13): [`guides/platform-feature-qa.md`](guides/platform-feature-qa.md)

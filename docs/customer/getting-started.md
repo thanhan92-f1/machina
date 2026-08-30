@@ -31,10 +31,13 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 
 ## 3. Orient yourself
 
-1. **Core** — Dashboard, VMs, Create, Import, Fleet on this host.
-2. **Platform** — Mission Control for multi-host fleet (`/platform`).
-3. **Infrastructure / Fleet Cloud / Monitoring** — storage, networks, Podman/Docker containers (Vessel), Fleet Cloud instances, host metrics.
-4. Spotlight / Finder for quick jump.
+After sign-in you get a **Mac-style desktop**: menubar (Zyvor mark + Machina menu), bottom **Dock**, and Spotlight (`⌘Space`).
+
+1. **Dock** — jump to Mission Control, Machines, Hosts, Storage, Network, Zyra, Settings.
+2. **Platform** (`/platform`) — Mission Control for the fleet.
+3. **Classic home** (`/`) — this hypervisor’s guests and host health.
+4. **Fleet Cloud** (`/fleet-cloud`) — native instances; use the pill nav (Overview / Instances / … / **More**).
+5. Settings → Appearance → **Desktop density** (Normal / Power / Advanced) controls how much of the fleet surface is unlocked.
 
 ## 4. First workflows
 

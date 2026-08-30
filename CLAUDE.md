@@ -169,7 +169,12 @@ Default port: **5092** (daemon), **5093** (controller), **50051** (agent gRPC).
 
 ## Design System
 
-The UI uses **Liquid Glass** — inspired by macOS Tahoe. Dark theme applies translucent glass tokens by default. Reusable primitives are in `web/src/components/glass/`. The login page uses `PremiumLoginShell` with `variant="macos"`. Framer Motion handles spring animations on modals/toasts.
+The UI follows **apple.com / Zeus OS** contracts — see [docs/design/APPLE-UX-CONTRACT.md](docs/design/APPLE-UX-CONTRACT.md) and [docs/design/DAYLIGHT-CONTRACT.md](docs/design/DAYLIGHT-CONTRACT.md).
+
+- **Shell:** Mac menubar (Zyvor tile + menus) + dock; sidebar dock-first (Advanced default on).
+- **Story / Browse / Work** tiers: `apple-story-stack`, `TahoeToolbar`, `.tahoe-glass-card`.
+- **Login:** [`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css) — hero wordmark **machina**.
+- Glass primitives remain in `web/src/components/glass/`. Framer Motion handles spring animations on modals/toasts.
 
 Platform desktop has three density tiers (Normal / Power User / Advanced), switchable via Settings → Appearance. The `usePlatformDesktopTier` hook reads the current tier.
 
