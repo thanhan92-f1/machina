@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 /**
- * Apple ID–style centered sign-in shell — flat paper canvas, single form panel.
+ * Apple Account–style centered sign-in shell — flat paper canvas, apple.com product wordmark.
  */
 import type { ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -26,7 +26,7 @@ export function PremiumLoginShell({
   pageThemeClass = '',
   themeSwitcher,
   logo,
-  panelTitle = 'Sign in',
+  panelTitle = 'machina',
   panelSubtitle,
   panelHint,
   footer,

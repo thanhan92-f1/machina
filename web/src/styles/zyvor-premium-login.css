@@ -1,6 +1,4 @@
-/* Machina login — Apple ID style: flat paper canvas, zyvor.dev orange, always light. */
-
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif:ital@0;1&display=swap');
+/* Machina login — apple.com product wordmark + Apple Account form on #f5f5f7. */
 
 @keyframes login-shake {
   0%, 100% { transform: translateX(0); }
@@ -34,8 +32,11 @@
   --login-accent-hover: #e64e10;
   --login-accent-tint: #fff1e9;
   --login-focus: rgba(255, 90, 21, 0.14);
-  --login-font: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --login-display: 'Instrument Serif', Georgia, serif;
+  /* apple.com stack — SF Pro on Apple, Helvetica Neue elsewhere */
+  --login-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --login-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'SF Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   background: var(--login-bg);
   color: var(--login-ink);
   font-family: var(--login-font);
@@ -100,11 +101,11 @@
   }
 }
 
-/* Brand lockup */
+/* Brand lockup — quiet mark above the product wordmark */
 .login-apple-mark {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .login-apple-mark .login-logo-ring {
@@ -120,30 +121,26 @@
   border-radius: 10px;
 }
 
+/* apple.com product hero: SF Pro Display, semibold, tight tracking */
 .login-apple-title {
   margin: 0;
-  font-size: clamp(2.25rem, 6vw, 3.25rem);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.98;
-  color: var(--login-ink);
-}
-
-.login-apple-title em {
-  font-style: normal;
   font-family: var(--login-display);
-  font-weight: 400;
-  letter-spacing: -0.03em;
+  font-size: clamp(2.75rem, 8vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: var(--login-ink);
+  text-transform: lowercase;
 }
 
 .login-apple-subtitle {
-  margin: 0.75rem auto 0;
-  max-width: 32ch;
-  font-size: clamp(1rem, 2vw, 1.125rem);
-  line-height: 1.4;
+  margin: 0.85rem auto 0;
+  max-width: 34ch;
+  font-size: clamp(1.05rem, 2.2vw, 1.3125rem);
+  line-height: 1.381;
   font-weight: 400;
   color: var(--login-muted);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.011em;
 }
 
 .login-apple-subtitle .login-apple-host {

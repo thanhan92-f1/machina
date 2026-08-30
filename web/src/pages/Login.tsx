@@ -128,10 +128,10 @@ export default function LoginPage() {
       </>
     ) : hostLabel ? (
       <>
-        Continue on <span className="login-apple-host">{hostLabel}</span>
+        Sign in to <span className="login-apple-host">{hostLabel}</span>
       </>
     ) : (
-      'Enter your account details to continue.'
+      'Sign in to continue.'
     )
 
   return (
@@ -157,12 +157,16 @@ export default function LoginPage() {
           <LanguageSwitcher />
         </div>
       }
-      logo={<ZyvorMark to={null} size="xl" tone="onLight" className="login-mark zyvor-mark" />}
-      panelTitle={
-        <>
-          Sign <em>in</em>
-        </>
+      logo={
+        <ZyvorMark
+          to={null}
+          size="lg"
+          tone="onLight"
+          showWordmark={false}
+          className="login-mark zyvor-mark"
+        />
       }
+      panelTitle="machina"
       panelSubtitle={panelSubtitle}
       footer={<ZyvorFooter className="login-apple-footer" />}
     >
