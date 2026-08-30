@@ -22,16 +22,21 @@
 }
 
 .login-page-apple {
-  --login-bg: #f5f5f7;
+  --login-bg: #ffffff;
+  --login-field-bg: #f5f5f7;
   --login-elevated: #ffffff;
   --login-ink: #1d1d1f;
   --login-muted: #6e6e73;
   --login-tertiary: #86868b;
-  --login-line: rgba(0, 0, 0, 0.08);
-  --login-accent: #ff5a15;
-  --login-accent-hover: #e64e10;
+  --login-line: #d2d2d7;
+  --login-accent: #ff6a00;
+  --login-accent-2: #e85d04;
+  --login-accent-hover: #e85d04;
   --login-accent-tint: #fff1e9;
-  --login-focus: rgba(255, 90, 21, 0.14);
+  --login-focus: rgba(255, 106, 0, 0.16);
+  --login-avatar-bg: #1d1d1f;
+  --login-avatar-fg: #f5f5f7;
+  --login-link: #0071e3;
   /* apple.com stack — SF Pro on Apple, Helvetica Neue elsewhere */
   --login-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro',
     'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -46,7 +51,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Soft orange wash */
+/* Warm multi-blob atmosphere on a white canvas */
 .login-page-apple::before {
   content: '';
   position: absolute;
@@ -54,8 +59,10 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 90, 21, 0.12), transparent 55%),
-    linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
+    radial-gradient(70% 50% at 12% 18%, rgba(255, 106, 0, 0.18), transparent 55%),
+    radial-gradient(55% 45% at 88% 12%, rgba(255, 138, 61, 0.14), transparent 50%),
+    radial-gradient(60% 40% at 70% 88%, rgba(232, 93, 4, 0.1), transparent 55%),
+    radial-gradient(50% 35% at 20% 92%, rgba(255, 106, 0, 0.08), transparent 50%);
 }
 
 .login-apple-stage {
@@ -125,10 +132,10 @@
 .login-apple-title {
   margin: 0;
   font-family: var(--login-display);
-  font-size: clamp(2.75rem, 8vw, 4rem);
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.05;
+  font-size: clamp(3rem, 9vw, 5.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
   color: var(--login-ink);
   text-transform: lowercase;
 }
@@ -186,9 +193,9 @@
 
 .login-page-apple .login-input {
   width: 100%;
-  background: var(--login-bg);
+  background: var(--login-field-bg);
   border: 1px solid var(--login-line);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--login-ink);
   padding: 0.7rem 0.85rem;
   font-size: 0.9375rem;
@@ -212,7 +219,7 @@
 }
 
 .login-page-apple .login-input:focus {
-  border-color: rgba(255, 90, 21, 0.5);
+  border-color: var(--login-accent);
   box-shadow: 0 0 0 3px var(--login-focus);
   background: var(--login-elevated);
 }
@@ -259,7 +266,7 @@
   gap: 0.4rem;
   border-radius: 980px;
   border: none;
-  background: var(--login-accent);
+  background: linear-gradient(135deg, var(--login-accent) 0%, var(--login-accent-2) 100%);
   box-shadow: none;
   font-size: 0.9375rem;
   font-weight: 600;
@@ -269,11 +276,11 @@
   color: #fff;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+  transition: filter 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
 }
 
 .login-page-apple .login-btn-primary:hover:not(:disabled) {
-  background: var(--login-accent-hover);
+  filter: brightness(1.06);
 }
 
 .login-page-apple .login-btn-primary:active:not(:disabled) {
@@ -401,37 +408,59 @@
   color: var(--login-accent);
 }
 
-/* Two-step identify → password */
+/* Two-step identify → password — Aurora-style avatar chip */
 .login-page-apple .login-apple-identity {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  margin: 0 0 1rem;
-  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0.3rem 0.8rem 0.3rem 0.3rem;
   border-radius: 980px;
   border: 1px solid var(--login-line);
   background: var(--login-elevated);
   color: var(--login-ink);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
+  font-family: inherit;
+}
+
+.login-page-apple .login-identity-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--login-avatar-bg);
+  color: var(--login-avatar-fg);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.login-page-apple .login-identity-name {
+  color: var(--login-ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.login-page-apple .login-identity-edit {
+  border: none;
+  background: transparent;
+  color: var(--login-link);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s ease;
 }
 
-.login-page-apple .login-apple-identity:hover {
-  background: var(--login-accent-tint);
-}
-
-.login-page-apple .login-apple-identity:active {
-  transform: scale(0.98);
-}
-
-.login-page-apple .login-apple-identity svg {
-  width: 1rem;
-  height: 1rem;
-  color: var(--login-muted);
+.login-page-apple .login-identity-edit:hover {
+  text-decoration: underline;
 }
 
 /* Theme toggle chip (top-right) */

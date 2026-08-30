@@ -9,7 +9,7 @@ import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/aut
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import { formatUserError } from '../utils/apiError'
-import { Loader2, Eye, EyeOff, ChevronLeft } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import {
   PremiumLoginShell,
   LoginError,
@@ -222,15 +222,20 @@ export default function LoginPage() {
         </form>
       ) : (
         <form onSubmit={handlePasswordSubmit} autoComplete="on" className="text-left login-apple-step" key="password">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="login-apple-identity"
-            aria-label={`Back, change username (currently ${username})`}
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            <span>{username}</span>
-          </button>
+          <div className="login-apple-identity">
+            <span className="login-identity-avatar" aria-hidden>
+              {username.trim().charAt(0) || '?'}
+            </span>
+            <span className="login-identity-name">{username}</span>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="login-identity-edit"
+              aria-label={`Change username (currently ${username})`}
+            >
+              Edit
+            </button>
+          </div>
           {/* Hidden username field helps browser password managers correlate the two forms. */}
           <input type="text" name="username" value={username} autoComplete="username" readOnly hidden />
 
