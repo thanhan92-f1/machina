@@ -65,7 +65,7 @@ export default function AutopilotSuggestionsStrip() {
         }}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-orange-200 flex items-center gap-2">
+        <p className="text-sm font-semibold text-orange-700 flex items-center gap-2">
           <Zap className="w-4 h-4" /> Autopilot suggestions
         </p>
         <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={openCopilot}>

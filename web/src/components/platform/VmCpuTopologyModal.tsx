@@ -87,7 +87,7 @@ export default function VmCpuTopologyModal({ open, vmId, vmName, onClose, onSave
           <p className="text-xs text-[var(--text-muted)]">
             Persistent vCPUs: <span className="text-[var(--text-primary)]">{computed}</span>
             {computed !== vcpus && state === 'running' && (
-              <span className="text-amber-300/90"> — needs shutdown to apply topology change</span>
+              <span className="text-amber-600/90"> — needs shutdown to apply topology change</span>
             )}
           </p>
           <button type="button" className="btn-primary w-full" disabled={saving} onClick={() => void save()}>

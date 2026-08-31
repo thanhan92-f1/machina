@@ -162,7 +162,7 @@ export default function PlatformHa() {
                   subtitle={ev.message ?? undefined}
                   trailing={<span className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleString()}</span>}
                   badge={
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${ev.success ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${ev.success ? 'bg-emerald-500/10 text-emerald-9000' : 'bg-red-500/10 text-red-9000'}`}>
                       {ev.success ? 'OK' : 'Failed'}
                     </span>
                   }

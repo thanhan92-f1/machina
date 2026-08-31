@@ -25,7 +25,7 @@ export default function PlatformHostTerminalPanel({ hostname, address, online = 
   if (!online) {
     return (
       <MacGlassPanel title="Terminal" subtitle="Host must be online for browser SSH">
-        <p className="text-sm text-amber-300/90" data-testid="platform-host-terminal">
+        <p className="text-sm text-amber-600/90" data-testid="platform-host-terminal">
           {hostname} is offline — terminal is unavailable until the agent reconnects.
         </p>
       </MacGlassPanel>

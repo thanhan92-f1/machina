@@ -135,7 +135,7 @@ export default function VmDetailActionBar({
       data-testid={opts?.testId}
       className={
         opts?.destructive
-          ? 'w-full text-left px-3 py-2 text-sm text-red-300 hover:bg-red-500/10'
+          ? 'w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-500/10'
           : 'w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-white/5'
       }
       onClick={() => {

@@ -126,9 +126,9 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
         </div>
 
         {testWebhooks.length > 0 && (
-          <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm text-amber-100">
+          <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm text-amber-800">
             <p className="font-medium">E2E test webhooks detected</p>
-            <p className="text-xs mt-1 text-amber-200/80">
+            <p className="text-xs mt-1 text-amber-700/80">
               These point at <span className="font-mono">127.0.0.1:19876</span> on the controller host — nothing listens there, so
               deliveries fail. Remove them unless you are actively running the E2E receiver.
             </p>

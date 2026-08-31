@@ -580,7 +580,7 @@ export default function K8sOverviewPage() {
         <>
           {fleetMode && (
             <>
-              <Link to="/platform" className="px-3 py-2 rounded-lg text-xs font-medium border border-orange-500/40 text-orange-200 hover:bg-orange-500/10 inline-flex items-center gap-1.5">
+              <Link to="/platform" className="px-3 py-2 rounded-lg text-xs font-medium border border-orange-500/40 text-orange-700 hover:bg-orange-500/10 inline-flex items-center gap-1.5">
                 <LayoutGrid className="w-3.5 h-3.5" /> Platform
               </Link>
               <Link to="/platform/settings?section=integrations" className="px-3 py-2 rounded-lg text-xs font-medium border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] inline-flex items-center gap-1.5">

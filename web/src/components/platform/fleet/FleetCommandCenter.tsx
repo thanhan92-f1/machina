@@ -79,13 +79,13 @@ export default function FleetCommandCenter({
     { label: 'vCPU', value: `${selectedVm.vcpus} cores` },
     { label: 'Memory', value: formatVmMemoryGiB(selectedVm.memory_mib) },
     { label: 'Source', value: <span className="capitalize">{selectedVm.inventory_source ?? 'libvirt'}</span>, span: true },
-    ...(selectedVm.guest_ip ? [{ label: 'Guest IP', value: <span className="font-mono text-emerald-300/90">{selectedVm.guest_ip}</span>, span: true }] : []),
+    ...(selectedVm.guest_ip ? [{ label: 'Guest IP', value: <span className="font-mono text-emerald-600/90">{selectedVm.guest_ip}</span>, span: true }] : []),
   ]
 
   const primaryPowerAction = running ? (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-amber-500/30 text-amber-200 hover:bg-amber-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-amber-500/30 text-amber-700 hover:bg-amber-500/10"
       onClick={() => void onPower(selectedVm, 'shutdown')}
     >
       <Power className="w-3.5 h-3.5" /> Shutdown
@@ -93,7 +93,7 @@ export default function FleetCommandCenter({
   ) : paused ? (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-200 hover:bg-emerald-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-700 hover:bg-emerald-500/10"
       onClick={() => void onPower(selectedVm, 'resume')}
     >
       <Play className="w-3.5 h-3.5" /> Resume
@@ -101,7 +101,7 @@ export default function FleetCommandCenter({
   ) : (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-200 hover:bg-emerald-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-700 hover:bg-emerald-500/10"
       onClick={() => void onPower(selectedVm, 'start')}
     >
       <Play className="w-3.5 h-3.5" /> Start
@@ -147,7 +147,7 @@ export default function FleetCommandCenter({
         <div className="pt-1 border-t border-white/[0.06]">
           <button
             type="button"
-            className="btn-secondary text-xs w-full inline-flex items-center justify-center gap-1 border-red-500/30 text-red-300 hover:bg-red-500/10"
+            className="btn-secondary text-xs w-full inline-flex items-center justify-center gap-1 border-red-500/30 text-red-600 hover:bg-red-500/10"
             onClick={() => void onDelete(selectedVm)}
           >
             <Trash2 className="w-3 h-3" /> Delete VM
@@ -210,8 +210,8 @@ export default function FleetCommandCenter({
         <ConsoleTheatrePreview vmId={selectedVm.id} vmName={selectedVm.name} />
       )}
 
-      <div className="rounded-lg border border-emerald-900/40 bg-[var(--apple-surface)] p-3 text-xs text-emerald-100/90">
-        <p className="font-medium text-emerald-200/90 mb-1">Zyra says</p>
+      <div className="rounded-lg border border-emerald-900/40 bg-[var(--apple-surface)] p-3 text-xs text-emerald-800">
+        <p className="font-medium text-emerald-900 mb-1">Zyra says</p>
         <p>
           {healthScore != null && healthScore < 70
             ? 'Health score is low — review backups and guest agent connectivity.'

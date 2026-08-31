@@ -71,7 +71,7 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
       {busy ? (
         <p className="text-xs text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing…</p>
       ) : null}
-      {error ? <p className="text-xs text-red-300">{error}</p> : null}
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
       {reply ? (
         <div className="rounded-lg bg-black/30 border border-white/5 p-3 text-xs text-slate-200 whitespace-pre-wrap">{reply}</div>
       ) : null}

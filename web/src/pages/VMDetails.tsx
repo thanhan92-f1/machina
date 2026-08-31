@@ -1737,7 +1737,7 @@ export default function VMDetailsPage() {
             <div className="rounded-xl p-4 border border-[var(--apple-hairline)] bg-[var(--apple-surface)]">
               <div className="text-sm font-medium text-[var(--text-primary)] mb-1">Zyra SRE</div>
               <p className="text-xs text-[var(--text-muted)]">
-                Platform score: <span className="text-orange-300 font-semibold">{platformDoctor.score_numeric}/100</span>
+                Platform score: <span className="text-orange-600 font-semibold">{platformDoctor.score_numeric}/100</span>
                 {' · '}{platformDoctor.score_label}
               </p>
               <Link to={`/platform/vms/${platformDoctor.vm_id}?tab=doctor`} className={`text-xs mt-1 inline-block ${statusActionLinkClasses('info')}`}>
@@ -2222,7 +2222,7 @@ export default function VMDetailsPage() {
                             <button
                               type="button"
                               onClick={() => setRemoveShareTag(fs.mount_tag)}
-                              className="px-2 py-0.5 bg-red-600/20 hover:bg-red-600/30 rounded text-xs text-red-300 transition"
+                              className="px-2 py-0.5 bg-red-600/20 hover:bg-red-600/30 rounded text-xs text-red-600 transition"
                             >
                               Remove
                             </button>

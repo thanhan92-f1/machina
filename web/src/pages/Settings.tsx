@@ -174,7 +174,7 @@ export default function SettingsPage() {
               </span>
             )}
             {info?.guestkit?.enabled && (
-              <span className="px-2 py-1 rounded border border-orange-500/40 text-orange-300">GuestKit · enabled</span>
+              <span className="px-2 py-1 rounded border border-orange-500/40 text-orange-600">GuestKit · enabled</span>
             )}
             {info?.control_plane?.proxy_url && (
               <Link to="/platform/settings?section=integrations" className="px-2 py-1 rounded border border-[var(--accent)]/40 text-[var(--link)] hover:bg-[var(--accent-soft)]">

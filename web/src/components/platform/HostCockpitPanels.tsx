@@ -211,7 +211,7 @@ function SystemSection({
         <MacGlassPanel title="Services (sample)" subtitle="First 40 units from systemctl">
           <ul className="max-h-40 overflow-y-auto text-xs font-mono space-y-1">
             {data.systemd_units.map((u) => (
-              <li key={u.unit} className={u.active === 'failed' ? 'text-red-300' : 'text-[var(--text-muted)]'}>
+              <li key={u.unit} className={u.active === 'failed' ? 'text-red-600' : 'text-[var(--text-muted)]'}>
                 {u.unit} · {u.active}/{u.sub}
               </li>
             ))}
@@ -280,7 +280,7 @@ export default function HostCockpitPanels({ hostId, classic = false, section = '
     )
   }
   if (error) {
-    return <p className="text-sm text-red-300">{error}</p>
+    return <p className="text-sm text-red-600">{error}</p>
   }
   if (!inv) return null
 

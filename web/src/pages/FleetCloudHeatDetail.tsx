@@ -136,7 +136,7 @@ function FleetCloudHeatDetailContent() {
         </pre>
       ) : null}
 
-      <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-300 text-sm inline-flex items-center gap-1"
+      <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-600 text-sm inline-flex items-center gap-1"
         onClick={async () => {
           if (!confirm(`Delete stack ${stack.name}?`)) return
           try {

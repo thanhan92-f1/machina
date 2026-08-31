@@ -103,7 +103,7 @@ function FleetCloudLoadBalancerDetailContent() {
         <div><dt className="text-xs text-[var(--text-muted)] uppercase">Listener</dt><dd className="font-mono mt-1">{lb.protocol}/{lb.listener_port}</dd></div>
         <div><dt className="text-xs text-[var(--text-muted)] uppercase">Status</dt><dd className="mt-1">{lb.status}</dd></div>
         {lb.status_message && (
-          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Status detail</dt><dd className="mt-1 text-amber-300">{lb.status_message}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Status detail</dt><dd className="mt-1 text-amber-600">{lb.status_message}</dd></div>
         )}
       </dl>
 
@@ -199,7 +199,7 @@ function FleetCloudLoadBalancerDetailContent() {
         )}
       </section>
 
-      <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-300 text-sm inline-flex items-center gap-1"
+      <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-600 text-sm inline-flex items-center gap-1"
         onClick={async () => {
           if (!confirm(`Delete ${lb.name}?`)) return
           try {

@@ -189,7 +189,7 @@ export default function PlatformBareMetal() {
                   title={s.hostname}
                   subtitle={`${s.bmc_type.toUpperCase()} · ${s.bmc_address} · ${s.cpu_cores} cores · ${Math.round(s.memory_mib / 1024)} GiB`}
                   badge={
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${s.state === 'on' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${s.state === 'on' ? 'bg-emerald-500/10 text-emerald-9000' : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'}`}>
                       {s.state}
                     </span>
                   }

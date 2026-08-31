@@ -79,7 +79,7 @@ export default function PlatformStorageTiers() {
                   }
                   badge={
                     tier.capacity_gib > 0 && tier.used_gib / tier.capacity_gib > 0.85 ? (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500">High</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-9000">High</span>
                     ) : undefined
                   }
                 />

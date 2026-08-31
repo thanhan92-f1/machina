@@ -101,14 +101,14 @@ export default function GuestkitOfflineAssurancePanel({ vmId, vmState, guestkitE
   }
 
   return (
-    <div className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm text-orange-50 space-y-3">
+    <div className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm text-orange-900 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-orange-100 flex items-center gap-2">
+          <p className="font-semibold text-orange-800 flex items-center gap-2">
             <HardDrive className="w-4 h-4" />
             Offline disk assurance (GuestKit)
           </p>
-          <p className="text-xs text-orange-200/75 mt-1">
+          <p className="text-xs text-orange-700/75 mt-1">
             Complements live QEMU guest-agent checks. Scans the VM disk image while{' '}
             {stopped ? 'the VM is stopped' : 'powered off or online'} — boot blockers, drivers, and migration score.
           </p>
@@ -121,7 +121,7 @@ export default function GuestkitOfflineAssurancePanel({ vmId, vmState, guestkitE
       </div>
 
       {stopped && (
-        <p className="text-xs text-orange-200/90">
+        <p className="text-xs text-orange-700/90">
           VM is stopped — use GuestKit here; start the VM for live QGA health in the panel above.
         </p>
       )}
@@ -190,7 +190,7 @@ export default function GuestkitOfflineAssurancePanel({ vmId, vmState, guestkitE
       )}
 
       {!doctor && !plan && !error && (
-        <p className="text-xs text-orange-200/60">
+        <p className="text-xs text-orange-700/60">
           Run offline doctor or migrate plan to inspect the VM disk without a running guest agent.
         </p>
       )}

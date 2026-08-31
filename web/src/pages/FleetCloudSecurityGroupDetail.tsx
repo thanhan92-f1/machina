@@ -107,7 +107,7 @@ function FleetCloudSecurityGroupDetailContent() {
               void load()
             } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Add SSH ingress</button>
-        <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-300 text-sm"
+        <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-600 text-sm"
           onClick={async () => {
             if (!confirm(`Delete security group ${group.name}?`)) return
             try {

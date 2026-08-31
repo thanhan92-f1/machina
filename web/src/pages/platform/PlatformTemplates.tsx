@@ -604,12 +604,12 @@ function MarketplaceCard({
               <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)] border border-white/[0.06]">Catalog</span>
             )}
             {t.auto_fetch && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 inline-flex items-center gap-0.5">
+              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 border border-emerald-500/25 inline-flex items-center gap-0.5">
                 <Download className="w-2.5 h-2.5" /> Auto-fetch
               </span>
             )}
             {needsImage && t.auto_fetch === false && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-200/90 border border-amber-500/20">Manual upload</span>
+              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700/90 border border-amber-500/20">Manual upload</span>
             )}
           </div>
           <p className="text-xs text-[var(--text-muted)]">{t.category ?? 'Linux'} · v{t.version}{t.workload ? ` · ${t.workload}` : ''}</p>

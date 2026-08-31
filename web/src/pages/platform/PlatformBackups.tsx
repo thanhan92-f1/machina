@@ -223,7 +223,7 @@ export default function PlatformBackups() {
             tabIndex={tab === id ? 0 : -1}
             onClick={() => setSearchParams(id === 'timeline' ? {} : { tab: id })}
             className={`px-4 py-2 text-sm rounded-t-lg flex items-center gap-2 transition ${
-              tab === id ? 'bg-[var(--apple-fill-tertiary)]/80 text-orange-300 border-b-2 border-orange-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              tab === id ? 'bg-[var(--apple-fill-tertiary)]/80 text-orange-600 border-b-2 border-orange-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             <Icon className="w-4 h-4" /> {label}

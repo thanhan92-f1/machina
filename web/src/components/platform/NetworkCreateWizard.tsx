@@ -71,7 +71,7 @@ export default function NetworkCreateWizard({ open, onClose, onCreated, suggestD
         <div className="space-y-4">
           {suggestDiscover && onDiscover && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-              <p className="text-amber-100/90">No networks in inventory yet.</p>
+              <p className="text-amber-800/90">No networks in inventory yet.</p>
               <button type="button" className="btn-secondary text-xs mt-2" onClick={() => void onDiscover()}>
                 Discover from libvirt first
               </button>

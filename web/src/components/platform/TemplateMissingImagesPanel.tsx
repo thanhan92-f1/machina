@@ -49,12 +49,12 @@ export default function TemplateMissingImagesPanel({
   return (
     <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 space-y-3">
       <div className="flex items-start gap-2">
-        <HardDrive className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+        <HardDrive className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-amber-100">Marketplace golden images</p>
-          <p className="text-xs text-amber-200/80 mt-0.5">{summary}</p>
+          <p className="text-sm font-medium text-amber-800">Marketplace golden images</p>
+          <p className="text-xs text-amber-700/80 mt-0.5">{summary}</p>
           {manualCount > 0 && (
-            <p className="text-xs text-amber-200/70 mt-1">
+            <p className="text-xs text-amber-700/70 mt-1">
               {manualCount} template{manualCount === 1 ? '' : 's'} need a manual upload (Windows, databases, appliances).
             </p>
           )}
@@ -68,11 +68,11 @@ export default function TemplateMissingImagesPanel({
               <span className="text-[var(--text-muted)]"> @{m.version}</span>
             </span>
             {m.auto_fetch ? (
-              <span className="shrink-0 inline-flex items-center gap-0.5 text-emerald-300/90">
+              <span className="shrink-0 inline-flex items-center gap-0.5 text-emerald-600/90">
                 <Download className="w-3 h-3" /> auto on create
               </span>
             ) : (
-              <span className="shrink-0 text-amber-300/70">upload required</span>
+              <span className="shrink-0 text-amber-600/70">upload required</span>
             )}
           </li>
         ))}

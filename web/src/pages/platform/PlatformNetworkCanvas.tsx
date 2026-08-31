@@ -191,7 +191,7 @@ export default function PlatformNetworkCanvas() {
 
         {localAnomalies.length > 0 && (
           <MacGlassPanel title="Anomalies" subtitle="Machina topology warnings + PacketWolf detections">
-            <ul className="text-xs text-amber-200/90 space-y-2">
+            <ul className="text-xs text-amber-700/90 space-y-2">
               {localAnomalies.map((a) => (
                 <li key={a} className="flex flex-wrap items-center justify-between gap-2">
                   <span>{a}</span>

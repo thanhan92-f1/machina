@@ -50,7 +50,7 @@ export default function ShellAccessBanner({
       )}
       {laptopCmd ? (
         <div className="flex flex-wrap items-center gap-2 pt-0.5">
-          <code className="font-mono text-emerald-200/90 break-all">{laptopCmd}</code>
+          <code className="font-mono text-emerald-700/90 break-all">{laptopCmd}</code>
           <button type="button" className="btn-secondary text-xs inline-flex items-center gap-1" onClick={() => void copyLaptop()}>
             <Copy className="w-3 h-3" /> Copy for laptop
           </button>

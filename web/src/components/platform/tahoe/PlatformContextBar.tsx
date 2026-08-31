@@ -170,7 +170,7 @@ export default function PlatformContextBar() {
             <Link to={operationsHubHref(tier)} className="tahoe-context-status-chip" title="Operations">
               {desktop.active_tasks} tasks
             </Link>
-            <Link to="/platform/zyra" className="tahoe-context-status-chip text-orange-200/80" title="Zyra">
+            <Link to="/platform/zyra" className="tahoe-context-status-chip text-orange-700/80" title="Zyra">
               <Sparkles className="w-3 h-3 text-orange-400" />
               {desktop.zyra_status}
             </Link>

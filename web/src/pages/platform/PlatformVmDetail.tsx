@@ -912,7 +912,7 @@ export default function PlatformVmDetail() {
           {guestIp && (
             <>
               <span className="text-[var(--text-muted)]">·</span>
-              <span className="font-mono text-emerald-300/90">{guestIp}</span>
+              <span className="font-mono text-emerald-600/90">{guestIp}</span>
             </>
           )}
           <GuestAgentHeaderPill report={guestHealth} onClick={() => setTab('guestHealth')} />
@@ -1034,7 +1034,7 @@ export default function PlatformVmDetail() {
                     </button>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-amber-500/15 text-amber-200 border border-amber-500/35 hover:bg-amber-500/25"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-amber-500/15 text-amber-700 border border-amber-500/35 hover:bg-amber-500/25"
                       onClick={() =>
                         void act('Restart requested', () =>
                           postK8sKubevirtVmLifecycle(vm.k8s_namespace ?? 'default', vm.name, 'restart'),
@@ -1296,7 +1296,7 @@ export default function PlatformVmDetail() {
                         <dd className="text-[var(--text-primary)]">{Math.round(computeTopology.max_memory_kib / 1024 / 1024)} GiB</dd>
                       </div>
                       {computeTopology.has_vfio_hostdev && (
-                        <div className="sm:col-span-2 text-xs text-amber-300/90">
+                        <div className="sm:col-span-2 text-xs text-amber-600/90">
                           VFIO passthrough device attached — live snapshots are blocked while running.
                         </div>
                       )}
@@ -1693,7 +1693,7 @@ export default function PlatformVmDetail() {
                           <Network className="w-4 h-4 text-[var(--text-muted)]" />
                           {iface.mac_address} · {iface.source} · {iface.model}
                           {iface.ip && (
-                            <span className="font-mono text-emerald-300/80"> · {iface.ip}</span>
+                            <span className="font-mono text-emerald-600/80"> · {iface.ip}</span>
                           )}
                           <VmPendingBadge pending={pendingConfig} category="network" />
                         </span>
@@ -2105,9 +2105,9 @@ export default function PlatformVmDetail() {
                   {snapPrecheckLoading ? (
                     <p className="text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Checking snapshot readiness…</p>
                   ) : snapPrecheck?.blocked ? (
-                    <p className="text-amber-300/90">{snapPrecheck.message}</p>
+                    <p className="text-amber-600/90">{snapPrecheck.message}</p>
                   ) : snapPrecheck?.has_vfio_hostdev && vm.observed_state === 'running' ? (
-                    <p className="text-amber-300/90">VFIO device present — stop the VM before creating a snapshot.</p>
+                    <p className="text-amber-600/90">VFIO device present — stop the VM before creating a snapshot.</p>
                   ) : snapPrecheck?.estimated_bytes ? (
                     <p className="text-[var(--text-muted)]">
                       External snapshot may need ~{Math.ceil(snapPrecheck.estimated_bytes / (1024 * 1024))} MiB

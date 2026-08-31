@@ -13,7 +13,7 @@ const doneLineClasses = 'bg-[color-mix(in_srgb,var(--machina-status-ok)_70%,tran
 
 const variantRing: Record<Variant, string> = {
   slate: 'ring-[var(--accent)]/40 text-[var(--accent)] border-[var(--accent)]/40',
-  amber: 'ring-amber-500/50 text-amber-200 border-amber-500/40',
+  amber: 'ring-amber-500/50 text-amber-700 border-amber-500/40',
   violet: 'ring-violet-500/50 text-[var(--link)] border-[var(--accent)]/40',
 }
 

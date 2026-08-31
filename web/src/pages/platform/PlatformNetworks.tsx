@@ -564,7 +564,7 @@ export default function PlatformNetworks() {
                         <td className="py-2.5 px-2">{s.vm_count}</td>
                         <td className="py-2.5 px-2 text-xs">
                           {s.firewall_profile ? (
-                            <Link to="/platform/zeus/security/firewall" className="text-orange-300 hover:underline">{s.firewall_profile}</Link>
+                            <Link to="/platform/zeus/security/firewall" className="text-orange-600 hover:underline">{s.firewall_profile}</Link>
                           ) : '—'}
                         </td>
                         <td className="py-2.5 px-2">{s.network_count}</td>

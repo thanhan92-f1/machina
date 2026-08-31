@@ -71,7 +71,7 @@ export default function InfrastructureDnaStrip({ compact = false, className = ''
           </span>
         ))}
       </div>
-      <Link to="/platform/maintenance?tab=mission" className="text-xs text-orange-300/90 hover:underline shrink-0">
+      <Link to="/platform/maintenance?tab=mission" className="text-xs text-orange-600/90 hover:underline shrink-0">
         Maintenance mission →
       </Link>
     </div>

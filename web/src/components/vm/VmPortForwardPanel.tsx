@@ -434,11 +434,11 @@ export default function VmPortForwardPanel({
               const href = serviceAccessHref(service, hypervisorAddress)
               return (
                 <li key={rule.id} className="flex flex-wrap items-center gap-2">
-                  <span className="text-emerald-200/90 font-medium">{service.name}</span>
+                  <span className="text-emerald-700/90 font-medium">{service.name}</span>
                   <span className="text-[var(--text-muted)] font-mono">
                     {rule.host_port}→{rule.vm_port}
                   </span>
-                  <code className="font-mono text-emerald-100/90 break-all">{access}</code>
+                  <code className="font-mono text-emerald-800/90 break-all">{access}</code>
                   <button
                     type="button"
                     className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"

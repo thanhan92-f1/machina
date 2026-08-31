@@ -164,7 +164,7 @@ function PluginRow({
       subtitle={`${plugin.category} · v${plugin.version} · ${plugin.author} — ${plugin.description}`}
       badge={
         plugin.installed ? (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500">Installed</span>
+          <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-9000">Installed</span>
         ) : undefined
       }
       trailing={

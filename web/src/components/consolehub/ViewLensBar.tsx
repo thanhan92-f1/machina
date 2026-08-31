@@ -111,7 +111,7 @@ export default function ViewLensBar({
         </div>
       ) : null}
       {cockpitHint ? (
-        <p className="text-xs text-amber-300/90 pl-1">{cockpitHint}</p>
+        <p className="text-xs text-amber-600/90 pl-1">{cockpitHint}</p>
       ) : null}
     </div>
   )

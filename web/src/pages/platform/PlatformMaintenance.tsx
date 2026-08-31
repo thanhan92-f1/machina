@@ -259,7 +259,7 @@ export default function PlatformMaintenance() {
                     ))}
                   </div>
                   {selectedMission.blockers.length > 0 && (
-                    <p className="text-sm text-amber-200/90">{selectedMission.blockers.join(' ')}</p>
+                    <p className="text-sm text-amber-700/90">{selectedMission.blockers.join(' ')}</p>
                   )}
                   {selectedMission.update_summary && (
                     <p className="text-xs text-[var(--text-muted)]">{selectedMission.update_summary}</p>
@@ -494,7 +494,7 @@ export default function PlatformMaintenance() {
               )}
               <p className="text-xs text-[var(--text-muted)] mt-4">
                 Apply upgrades on-host or use the{' '}
-                <button type="button" className="text-orange-300 hover:underline" onClick={() => setTab('mission')}>
+                <button type="button" className="text-orange-600 hover:underline" onClick={() => setTab('mission')}>
                   Maintenance mission
                 </button>{' '}
                 tab. Package probes may take up to 45s per hypervisor.

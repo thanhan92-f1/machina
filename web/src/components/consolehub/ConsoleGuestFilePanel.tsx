@@ -69,11 +69,11 @@ export default function ConsoleGuestFilePanel({
       className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-2"
       data-testid="ops-shelf-file-transfer"
     >
-      <p className="text-xs font-medium text-emerald-100 flex items-center gap-1.5">
+      <p className="text-xs font-medium text-emerald-800 flex items-center gap-1.5">
         <FileUp className="w-3.5 h-3.5" /> Send file to guest
       </p>
-      <p className="text-[11px] text-emerald-200/70">
-        Stage a file on your laptop, then run the generated <code className="text-emerald-100/90">scp</code> command into{' '}
+      <p className="text-[11px] text-emerald-700/70">
+        Stage a file on your laptop, then run the generated <code className="text-emerald-800/90">scp</code> command into{' '}
         {vmName}.
       </p>
       <input
@@ -96,7 +96,7 @@ export default function ConsoleGuestFilePanel({
         >
           Choose file
         </button>
-        {fileName ? <span className="text-[11px] text-emerald-200/80 truncate max-w-[12rem]">{fileName}</span> : null}
+        {fileName ? <span className="text-[11px] text-emerald-700/80 truncate max-w-[12rem]">{fileName}</span> : null}
       </div>
       {fileName ? (
         <input
@@ -111,15 +111,15 @@ export default function ConsoleGuestFilePanel({
       ) : null}
       {scp ? (
         <>
-          <p className="text-[10px] text-emerald-200/60">{scp.summary}</p>
-          <p className="text-[10px] font-mono text-emerald-100/90 break-all">{scp.command}</p>
+          <p className="text-[10px] text-emerald-700/60">{scp.summary}</p>
+          <p className="text-[10px] font-mono text-emerald-800/90 break-all">{scp.command}</p>
           <button type="button" className="btn-secondary text-xs w-full" onClick={() => void copyCommand()}>
             Copy SCP command
           </button>
         </>
       ) : fileName && guestAccess?.guest_ip_private && !natPort ? (
         <div className="space-y-1.5">
-          <p className="text-[10px] text-amber-200/80">Expose SSH on the hypervisor NAT first.</p>
+          <p className="text-[10px] text-amber-700/80">Expose SSH on the hypervisor NAT first.</p>
           {onExposeSsh ? (
             <button type="button" className="btn-secondary text-xs w-full" onClick={onExposeSsh}>
               Expose SSH for {vmId}

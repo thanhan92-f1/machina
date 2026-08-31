@@ -1326,7 +1326,7 @@ export default function NodeInfoPage() {
                   type="button"
                   onClick={() => void runPackageRemove()}
                   disabled={pkgMutBusy}
-                  className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-rose-600/20 text-rose-200 border border-rose-600/35 hover:bg-rose-600/30 disabled:opacity-50 transition sm:shrink-0"
+                  className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-rose-600/20 text-rose-700 border border-rose-600/35 hover:bg-rose-600/30 disabled:opacity-50 transition sm:shrink-0"
                 >
                   <MinusCircle className="w-4 h-4 shrink-0" />
                   Remove

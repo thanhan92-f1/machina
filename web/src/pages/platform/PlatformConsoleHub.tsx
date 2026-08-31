@@ -280,8 +280,8 @@ export default function PlatformConsoleHub() {
   if (!loading && !vmName) {
     return (
       <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 max-w-lg mx-auto text-center space-y-4" data-testid="consolehub-recovery">
-        <h2 className="text-lg font-semibold text-amber-100">Machine not found</h2>
-        <p className="text-sm text-amber-200/80">This VM does not exist or the session expired.</p>
+        <h2 className="text-lg font-semibold text-amber-800">Machine not found</h2>
+        <p className="text-sm text-amber-700/80">This VM does not exist or the session expired.</p>
         <div className="flex flex-wrap justify-center gap-2">
           <Link to="/platform" className="btn-primary text-sm">Mission Control</Link>
           <Link to="/platform/vms" className="btn-secondary text-sm">Machine Finder</Link>

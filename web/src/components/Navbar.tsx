@@ -442,10 +442,10 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                 onClick={toggleCopilot}
                 className={`hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg transition text-sm shrink-0 ${
                   steel
-                    ? 'text-orange-300/90 hover:text-orange-200 hover:bg-white/5'
+                    ? 'text-orange-600/90 hover:text-orange-700 hover:bg-white/5'
                     : aurora
-                      ? 'text-orange-300/90 hover:text-orange-200 hover:bg-white/5'
-                      : 'text-orange-400 hover:bg-[var(--surface-hover)] hover:text-orange-300'
+                      ? 'text-orange-600/90 hover:text-orange-700 hover:bg-white/5'
+                      : 'text-orange-400 hover:bg-[var(--surface-hover)] hover:text-orange-600'
                 }`}
                 title="Zyra"
                 aria-label="Open Zyra"
@@ -571,7 +571,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setHelpMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-orange-400 hover:text-orange-300"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-orange-400 hover:text-orange-600"
                     >
                       <ExternalLink className="w-4 h-4 shrink-0" aria-hidden />
                       zyvor.dev · © 2026

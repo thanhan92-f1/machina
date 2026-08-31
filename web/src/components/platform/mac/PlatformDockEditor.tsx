@@ -90,7 +90,7 @@ export default function PlatformDockEditor({ open, onClose }: PlatformDockEditor
                 <button type="button" className="mac-menubar-icon-btn" onClick={() => move(idx, 1)} disabled={idx === paths.length - 1} title="Move down" aria-label="Move down">
                   <ChevronDown className="h-4 w-4" />
                 </button>
-                <button type="button" className="mac-menubar-icon-btn text-rose-300" onClick={() => remove(item.path)} title="Remove" aria-label="Remove">
+                <button type="button" className="mac-menubar-icon-btn text-rose-600" onClick={() => remove(item.path)} title="Remove" aria-label="Remove">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </li>

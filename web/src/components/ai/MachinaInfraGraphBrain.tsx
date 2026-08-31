@@ -98,7 +98,7 @@ export default function MachinaInfraGraphBrain() {
         <ul className="text-xs max-h-28 overflow-y-auto space-y-0.5">
           {(graph?.nodes ?? []).filter((n) => n.kind === 'vm' || n.kind === 'host').slice(0, 20).map((n) => (
             <li key={`${n.kind}-${n.id}`}>
-              <button type="button" className="text-[var(--text-muted)] hover:text-orange-300" onClick={() => explainNode(n.kind, n.id, n.name)}>
+              <button type="button" className="text-[var(--text-muted)] hover:text-orange-600" onClick={() => explainNode(n.kind, n.id, n.name)}>
                 <span className="text-[var(--text-faint)]">{n.kind}</span> {n.name}
                 {n.health_score != null ? ` · ${n.health_score}` : ''}
               </button>
@@ -117,10 +117,10 @@ export default function MachinaInfraGraphBrain() {
         </div>
         {path && (
           <div className="rounded-lg border border-white/10 bg-[var(--apple-surface)] p-3 text-sm space-y-2">
-            <p className={path.can_reach ? 'text-emerald-300' : 'text-amber-300'}>{path.explanation}</p>
+            <p className={path.can_reach ? 'text-emerald-600' : 'text-amber-600'}>{path.explanation}</p>
             <p className="text-xs text-[var(--text-muted)]">Hops: {path.hops.join(' → ')}</p>
             {path.blockers.map((b) => (
-              <p key={b.kind} className="text-xs text-amber-200/90">{b.message} — {b.remediation}</p>
+              <p key={b.kind} className="text-xs text-amber-700/90">{b.message} — {b.remediation}</p>
             ))}
             {(path.evidence ?? []).map((ev) => (
               <p key={ev.detail} className="text-xs text-[var(--text-muted)]">[{ev.source}] {ev.detail}</p>
@@ -138,7 +138,7 @@ export default function MachinaInfraGraphBrain() {
         <ul className="text-xs text-[var(--text-muted)] space-y-1 max-h-32 overflow-y-auto">
           {searchHits.map((h) => (
             <li key={`${h.kind}-${h.id}`}>
-              <button type="button" className="hover:text-orange-300" onClick={() => explainNode(h.kind, h.id, h.name)}>
+              <button type="button" className="hover:text-orange-600" onClick={() => explainNode(h.kind, h.id, h.name)}>
                 <span className="text-[var(--text-muted)]">{h.kind}</span> {h.name} — {h.detail}
               </button>
             </li>

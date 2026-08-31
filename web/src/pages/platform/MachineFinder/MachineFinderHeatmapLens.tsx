@@ -15,7 +15,7 @@ export default function MachineFinderHeatmapLens() {
       .catch((e: unknown) => setError(formatUserError(e)))
   }, [])
 
-  if (error) return <p className="text-sm text-red-300 p-4">{error}</p>
+  if (error) return <p className="text-sm text-red-600 p-4">{error}</p>
   if (!data) return <p className="text-sm text-[var(--text-muted)] p-4">Loading heatmap…</p>
 
   const cells = data.hosts ?? []
@@ -27,7 +27,7 @@ export default function MachineFinderHeatmapLens() {
         <Link to="/platform/zyra" className="btn-secondary text-xs">Open Zyra OS</Link>
       </div>
       {data.hotspots?.length > 0 && (
-        <p className="text-sm text-amber-200/90">Hotspots: {data.hotspots.join(', ')}</p>
+        <p className="text-sm text-amber-700/90">Hotspots: {data.hotspots.join(', ')}</p>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {cells.slice(0, 24).map((cell) => {

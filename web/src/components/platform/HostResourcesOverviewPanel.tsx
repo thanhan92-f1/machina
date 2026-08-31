@@ -37,7 +37,7 @@ export default function HostResourcesOverviewPanel({ hostId, hostname }: Props) 
       {loading ? (
         <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading host metrics…</p>
       ) : error ? (
-        <p className="text-sm text-amber-300/90">{error}</p>
+        <p className="text-sm text-amber-600/90">{error}</p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <div>

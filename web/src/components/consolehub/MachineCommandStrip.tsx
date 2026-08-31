@@ -47,7 +47,7 @@ export default function MachineCommandStrip({
         <span className="font-semibold text-slate-100 truncate">{vmName}</span>
         {vmState ? <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeClasses(tone)}`}>{vmState}</span> : null}
       </div>
-      {guestIp ? <span className="font-mono text-emerald-300/90 text-xs">{guestIp}</span> : null}
+      {guestIp ? <span className="font-mono text-emerald-600/90 text-xs">{guestIp}</span> : null}
       {osHint && osHint !== 'unknown' ? <span className="text-xs text-slate-400">{osHint}</span> : null}
       {nodeName ? <span className="text-xs text-slate-500">Node {nodeName}</span> : null}
       {uptime ? <span className="text-xs text-slate-500">{uptime}</span> : null}

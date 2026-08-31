@@ -78,7 +78,7 @@ export default function VmHardwareNetworkSection({
                   <Network className="w-4 h-4 text-[var(--text-muted)]" />
                   <span className="font-mono text-xs">{iface.mac_address}</span>
                   · {iface.source} · {iface.model}
-                  {iface.ip ? <span className="font-mono text-emerald-300/80"> · {iface.ip}</span> : null}
+                  {iface.ip ? <span className="font-mono text-emerald-600/80"> · {iface.ip}</span> : null}
                   <VmPendingBadge pending={pending} category="network" />
                 </span>
                 <div className="flex gap-2">

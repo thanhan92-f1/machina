@@ -81,7 +81,7 @@ export default function ConsoleTheatrePreview({
     return (
       <div className="flex flex-col h-full min-h-[10rem]" data-testid="console-theatre-preview">
         {loadError ? (
-          <p className="px-3 py-2 text-xs text-amber-300/90">{loadError}</p>
+          <p className="px-3 py-2 text-xs text-amber-600/90">{loadError}</p>
         ) : showVnc ? (
           <div className="relative flex-1 min-h-0 overflow-hidden bg-black" data-testid="console-theatre-vnc">
             <VNCViewer
@@ -116,7 +116,7 @@ export default function ConsoleTheatrePreview({
       </div>
 
       {loadError ? (
-        <p className="px-3 py-2 text-xs text-amber-300/90">{loadError}</p>
+        <p className="px-3 py-2 text-xs text-amber-600/90">{loadError}</p>
       ) : showVnc ? (
         <div className="relative mx-2 mb-2 rounded-md border border-white/[0.06] overflow-hidden bg-black aspect-video w-[calc(100%-1rem)] max-h-[11rem] flex flex-col" data-testid="console-theatre-vnc">
           <VNCViewer

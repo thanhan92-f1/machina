@@ -156,7 +156,7 @@ export default function OsDiagnosePanel({
       )}
       {troubleshoot && (
         <div className="mt-4 rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-xs space-y-2">
-          <p className="font-medium text-orange-200">Full troubleshoot — {troubleshoot.severity}</p>
+          <p className="font-medium text-orange-700">Full troubleshoot — {troubleshoot.severity}</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {troubleshoot.checks.map((c) => (
               <div key={c.domain} className="text-[var(--text-muted)]">

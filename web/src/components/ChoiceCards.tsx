@@ -21,18 +21,18 @@ const selectedClass: Record<ChoiceTone, string> = {
 
 const iconSelectedClass: Record<ChoiceTone, string> = {
   blue: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
-  amber: 'bg-amber-600/25 text-amber-100',
+  amber: 'bg-amber-600/25 text-amber-800',
   sky: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
   cyan: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
   purple: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
-  emerald: 'bg-emerald-600/25 text-emerald-200',
+  emerald: 'bg-emerald-600/25 text-emerald-700',
   slate: 'bg-white/10 text-[var(--text-primary)]',
   violet: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
 }
 
 const iconIdleClass: Record<ChoiceTone, string> = {
   blue: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
-  amber: 'bg-[var(--apple-fill-secondary)] text-amber-100',
+  amber: 'bg-[var(--apple-fill-secondary)] text-amber-800',
   sky: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
   cyan: 'bg-[var(--apple-fill-secondary)] text-[var(--text-primary)]',
   purple: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',

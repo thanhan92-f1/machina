@@ -171,13 +171,13 @@ export default function AccessNotePill({
       style={pos ? { transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)` } : undefined}
       data-testid="access-note-pill"
     >
-      <div className="w-full flex items-center rounded-full border border-amber-500/35 bg-black/70 backdrop-blur-md text-xs text-amber-100/95 shadow-lg">
+      <div className="w-full flex items-center rounded-full border border-amber-500/35 bg-black/70 backdrop-blur-md text-xs text-amber-800/95 shadow-lg">
         <span
           role="button"
           tabIndex={0}
           aria-label="Move access note"
           title="Drag to move · double-click to reset"
-          className="pl-2 pr-1 py-1.5 shrink-0 cursor-grab active:cursor-grabbing text-amber-300/60 hover:text-amber-200 touch-none select-none"
+          className="pl-2 pr-1 py-1.5 shrink-0 cursor-grab active:cursor-grabbing text-amber-600/60 hover:text-amber-700 touch-none select-none"
           onPointerDown={onDragStart}
           onPointerMove={onDragMove}
           onPointerUp={onDragEnd}
@@ -198,18 +198,18 @@ export default function AccessNotePill({
         </button>
       </div>
       {open ? (
-        <div className="mt-2 rounded-xl border border-amber-500/25 bg-slate-950/95 backdrop-blur-md p-3 text-xs text-amber-100/90 space-y-2 shadow-xl">
+        <div className="mt-2 rounded-xl border border-amber-500/25 bg-slate-950/95 backdrop-blur-md p-3 text-xs text-amber-800/90 space-y-2 shadow-xl">
           {messages.map((msg) => (
             <p key={msg}>{msg}</p>
           ))}
           {connectCmd ? (
             <div className="space-y-1">
               {windows ? (
-                <p className="text-[11px] uppercase tracking-wide text-amber-200/70">
+                <p className="text-[11px] uppercase tracking-wide text-amber-700/70">
                   Connect with Microsoft Remote Desktop (macOS) or mstsc (Windows)
                 </p>
               ) : null}
-              <pre className="rounded-lg bg-black/50 border border-white/10 p-2 font-mono text-sm text-emerald-200/90 overflow-x-auto select-all">
+              <pre className="rounded-lg bg-black/50 border border-white/10 p-2 font-mono text-sm text-emerald-700/90 overflow-x-auto select-all">
                 {connectCmd}
               </pre>
             </div>

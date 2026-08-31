@@ -216,8 +216,8 @@ export default function ClassicConsoleHub() {
         </div>
       ) : !loading ? (
         <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 max-w-lg mx-auto text-center space-y-4">
-          <h2 className="text-lg font-semibold text-amber-100">Console unavailable</h2>
-          <p className="text-sm text-amber-200/80">{error ?? 'Could not load console plan for this VM.'}</p>
+          <h2 className="text-lg font-semibold text-amber-800">Console unavailable</h2>
+          <p className="text-sm text-amber-700/80">{error ?? 'Could not load console plan for this VM.'}</p>
         </section>
       ) : null}
     </PageLayout>

@@ -46,7 +46,7 @@ export default function EnterpriseSecurityStrip({ className = '' }: Props) {
           Tenants {overview.tenant_policies}
         </span>
       </div>
-      <Link to="/platform/enterprise?tab=keychain" className="text-xs text-orange-300/90 hover:underline shrink-0">
+      <Link to="/platform/enterprise?tab=keychain" className="text-xs text-orange-600/90 hover:underline shrink-0">
         Open Keychain →
       </Link>
     </div>

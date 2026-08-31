@@ -31,12 +31,12 @@ function VmGalleryTile({ vm }: { vm: PlatformVm }) {
         <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${vmLaunchpadGradient(vm.name)}`} />
         <div className="absolute bottom-2 left-2 right-2 flex items-end justify-between gap-2">
           <VmStatusBadge state={vm.observed_state ?? vm.desired_state ?? 'unknown'} />
-          {running ? <span className="text-[10px] text-emerald-300">VNC ready</span> : null}
+          {running ? <span className="text-[10px] text-emerald-600">VNC ready</span> : null}
         </div>
       </div>
       <div className="p-3 space-y-2">
         <h3 className="font-semibold text-sm text-[var(--text-primary)] truncate">{vm.name}</h3>
-        {vm.guest_ip ? <p className="text-[11px] font-mono text-emerald-300/80 truncate">{vm.guest_ip}</p> : null}
+        {vm.guest_ip ? <p className="text-[11px] font-mono text-emerald-600/80 truncate">{vm.guest_ip}</p> : null}
         <div className="flex flex-wrap gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
           <Link to={cinemaHubPath(vm.id)} className="btn-primary text-xs py-1 px-2 inline-flex items-center gap-1 flex-1 justify-center">
             <Monitor className="w-3.5 h-3.5" /> Open Cinema

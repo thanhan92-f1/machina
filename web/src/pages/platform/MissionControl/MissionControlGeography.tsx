@@ -50,7 +50,7 @@ export default function MissionControlGeography({ expanded: expandedProp, onTogg
       </button>
       {expanded && (
         <div className="px-4 pb-4 border-t border-white/[0.06]">
-          {error && <p className="text-sm text-red-300 py-2">{error}</p>}
+          {error && <p className="text-sm text-red-600 py-2">{error}</p>}
           {mission && <InfrastructureEarthView mission={mission} />}
           {!mission && !error && <p className="text-sm text-[var(--text-muted)] py-4">Loading geography…</p>}
         </div>

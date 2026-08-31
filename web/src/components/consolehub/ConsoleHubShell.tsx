@@ -50,7 +50,7 @@ export default function ConsoleHubShell({
             <span>Zyra ConsoleHub</span>
             {vmState ? <span className="inline-flex items-center gap-1"><Power className="w-3 h-3" />{vmState}</span> : null}
             {nodeName ? <span>Node: {nodeName}</span> : null}
-            {guestIp ? <span className="font-mono text-emerald-300/90">{guestIp}</span> : null}
+            {guestIp ? <span className="font-mono text-emerald-600/90">{guestIp}</span> : null}
           </span>
         )
       }

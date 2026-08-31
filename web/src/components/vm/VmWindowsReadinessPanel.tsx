@@ -43,8 +43,8 @@ export default function VmWindowsReadinessPanel({ report, rdpExposed, rdpHostPor
         <span
           className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${
             ready
-              ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/10'
-              : 'border-amber-500/40 text-amber-300 bg-amber-500/10'
+              ? 'border-emerald-500/40 text-emerald-600 bg-emerald-500/10'
+              : 'border-amber-500/40 text-amber-600 bg-amber-500/10'
           }`}
           data-testid="vm-windows-readiness-status"
         >

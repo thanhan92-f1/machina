@@ -92,7 +92,7 @@ export default function MachineFinderTableLens({ state }: Props) {
                     ? (v.k8s_namespace ? `${v.k8s_namespace}/` : 'k8s/')
                     : v.host_id ? hostMap.get(v.host_id) : '—'}
                 </td>
-                <td className="p-3 font-mono text-xs text-emerald-300/80">{displayGuestIp(v) || '—'}</td>
+                <td className="p-3 font-mono text-xs text-emerald-600/80">{displayGuestIp(v) || '—'}</td>
                 <td className="p-3">
                   {libvirt ? (
                     <span className={statusPillClasses(v.guest_tools_status === 'healthy' || v.guest_tools_status === 'installed' ? 'ok' : 'warn')}>

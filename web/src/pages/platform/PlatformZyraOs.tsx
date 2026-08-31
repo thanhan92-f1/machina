@@ -273,14 +273,14 @@ export default function PlatformZyraOs() {
       }
       contentClassName="space-y-4"
     >
-      {zeusSummary && <p className="text-sm text-orange-200/90">{zeusSummary}</p>}
+      {zeusSummary && <p className="text-sm text-orange-700/90">{zeusSummary}</p>}
       {hubSummary && (
         <MacGlassPanel title="Remediation hub" subtitle="SRE · compliance · fleet power — unified review queue">
           <p className="text-sm text-[var(--text-secondary)]">{hubSummary}</p>
           {hubItems.length > 0 && (
             <ul className="mt-2 text-xs space-y-1 text-[var(--text-muted)]">
               {hubItems.map((i) => (
-                <li key={i.id}><span className="text-orange-300/80">{i.source}</span> · {i.label} — {i.review}</li>
+                <li key={i.id}><span className="text-orange-600/80">{i.source}</span> · {i.label} — {i.review}</li>
               ))}
             </ul>
           )}

@@ -112,7 +112,7 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
           {loading && !summary ? (
             <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading cluster hardware…</p>
           ) : error ? (
-            <p className="text-sm text-rose-300">{error}</p>
+            <p className="text-sm text-rose-600">{error}</p>
           ) : summary ? (
             <>
               <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] p-3 text-xs text-[var(--text-primary)]" data-testid="vm-kubevirt-hardware-note">
@@ -123,7 +123,7 @@ export default function VmKubevirtHardwareDrawer({ open, onClose, vmId, vmName, 
 
               {canEdit ? (
                 <div className="rounded-lg border border-emerald-500/20 bg-[var(--apple-surface)] p-3 space-y-3" data-testid="vm-kubevirt-hardware-edit">
-                  <p className="text-xs font-medium text-emerald-100">Edit template</p>
+                  <p className="text-xs font-medium text-emerald-800">Edit template</p>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="text-xs text-[var(--text-muted)]">
                       vCPUs

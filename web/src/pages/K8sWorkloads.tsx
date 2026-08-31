@@ -469,7 +469,7 @@ spec:
                           Restart
                         </button>
                         <button
-                          className="px-2 py-1 rounded-md text-xs bg-purple-500/20 text-purple-300 border border-[var(--apple-hairline)] hover:bg-purple-500/30 disabled:opacity-50"
+                          className="px-2 py-1 rounded-md text-xs bg-purple-500/20 text-purple-600 border border-[var(--apple-hairline)] hover:bg-purple-500/30 disabled:opacity-50"
                           disabled={acting !== null}
                           onClick={() => void runAction({
                             action: 'scale_deployment',
@@ -552,7 +552,7 @@ spec:
                     <td className="px-3 py-2 text-[var(--text-primary)] font-mono text-xs">{n}</td>
                     <td className="px-3 py-2 text-[var(--text-muted)]">{ns}</td>
                     <td className="px-3 py-2 text-right">
-                      <button type="button" className="text-xs px-2 py-1 rounded bg-rose-500/20 text-rose-200 border border-rose-500/30 disabled:opacity-50" disabled={acting !== null} onClick={() => setConfirmDeleteResource({ payload: { action: 'delete_job', name: n, namespace: ns }, label: `Job ${ns}/${n}` })}>Delete</button>
+                      <button type="button" className="text-xs px-2 py-1 rounded bg-rose-500/20 text-rose-700 border border-rose-500/30 disabled:opacity-50" disabled={acting !== null} onClick={() => setConfirmDeleteResource({ payload: { action: 'delete_job', name: n, namespace: ns }, label: `Job ${ns}/${n}` })}>Delete</button>
                     </td>
                   </tr>
                 )
@@ -718,7 +718,7 @@ spec:
               type="button"
               data-testid="kubevirt-create-yaml"
               disabled={kubevirtVmBusy === 'create'}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/40 px-3 py-1.5 text-xs text-teal-200 hover:bg-teal-500/10 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/40 px-3 py-1.5 text-xs text-teal-700 hover:bg-teal-500/10 disabled:opacity-50"
               onClick={() => setShowKubevirtCreate((v) => !v)}
             >
               {showKubevirtCreate ? 'Hide create YAML' : 'Create VM (YAML)'}
@@ -848,7 +848,7 @@ spec:
                         <button
                           type="button"
                           title="Plan Service / NodePort SSH and copy virtctl expose"
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-teal-500/20 text-teal-100 border border-teal-500/35 hover:bg-teal-500/30"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-teal-500/20 text-teal-800 border border-teal-500/35 hover:bg-teal-500/30"
                           onClick={() =>
                             setExposeVm({
                               name: v.name,
@@ -866,7 +866,7 @@ spec:
                           type="button"
                           title="Start VM"
                           disabled={kubevirtVmBusy != null}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-emerald-500/15 text-emerald-200 border border-emerald-500/35 hover:bg-emerald-500/25 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-emerald-500/15 text-emerald-700 border border-emerald-500/35 hover:bg-emerald-500/25 disabled:opacity-50"
                           onClick={() => void runKubevirtLifecycle(v.namespace, v.name, 'start')}
                         >
                           <Play className="w-3.5 h-3.5" /> Start
@@ -884,7 +884,7 @@ spec:
                           type="button"
                           title="Restart VM"
                           disabled={kubevirtVmBusy != null}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-amber-500/15 text-amber-200 border border-amber-500/35 hover:bg-amber-500/25 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-amber-500/15 text-amber-700 border border-amber-500/35 hover:bg-amber-500/25 disabled:opacity-50"
                           onClick={() => void runKubevirtLifecycle(v.namespace, v.name, 'restart')}
                         >
                           <RotateCw className="w-3.5 h-3.5" /> Restart
@@ -893,7 +893,7 @@ spec:
                           type="button"
                           title="Delete VirtualMachine CR"
                           disabled={kubevirtVmBusy != null}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-red-500/15 text-red-200 border border-red-500/35 hover:bg-red-500/25 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-red-500/15 text-red-700 border border-red-500/35 hover:bg-red-500/25 disabled:opacity-50"
                           onClick={() => void deleteKubevirtVm(v.namespace, v.name)}
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete

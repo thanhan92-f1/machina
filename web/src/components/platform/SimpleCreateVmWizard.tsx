@@ -313,7 +313,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
             ))}
           </div>
           {templates.length === 0 && (
-            <p className="text-xs text-amber-200/80">
+            <p className="text-xs text-amber-700/80">
               Template catalog loading failed — showing built-in flavors.{' '}
               <Link to="/platform/templates" className="underline">
                 Seed templates
@@ -355,7 +355,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
             />
           )}
           {isCustomIso && (
-            <p className="text-xs text-amber-200/80 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <p className="text-xs text-amber-700/80 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
               Custom ISO opens the dedicated install wizard when you finish this flow.
             </p>
           )}
@@ -514,7 +514,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
             />
           )}
           {!info?.guestkit?.enabled && (
-            <p className="text-xs text-orange-200/80 rounded-lg border border-orange-500/25 bg-orange-500/10 px-3 py-2">
+            <p className="text-xs text-orange-700/80 rounded-lg border border-orange-500/25 bg-orange-500/10 px-3 py-2">
               Heads up: offline disk assurance (GuestKit) isn't enabled on this controller, so this VM's
               disk won't be scored for migration readiness until an administrator turns it on. Creation
               is unaffected.

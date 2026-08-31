@@ -320,7 +320,7 @@ export default function PlatformRuntimeEnforcement() {
                   <button
                     type="button"
                     aria-label="Delete"
-                    className="btn-secondary text-xs text-red-300"
+                    className="btn-secondary text-xs text-red-600"
                     onClick={() => p.id && removePolicy(p.id)}
                   >
                     <Trash2 className="w-3 h-3" />

@@ -87,7 +87,7 @@ function FleetCloudVolumeSnapshotDetailContent() {
           <Link to={`/fleet-cloud/volumes/${snapshot.volume_id}`} className="text-[var(--accent)] hover:underline">{snapshot.volume_name}</Link>
         </dd></div>
       </dl>
-      <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-300 text-sm"
+      <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-600 text-sm"
         onClick={async () => {
           if (!confirm(`Delete snapshot ${snapshot.name || snapshot.id}?`)) return
           try {

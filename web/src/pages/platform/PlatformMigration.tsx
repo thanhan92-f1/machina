@@ -215,7 +215,7 @@ export default function PlatformMigration() {
             />
           )}
           {planSummary && <p className="text-xs text-[var(--text-muted)] mt-2">{planSummary}</p>}
-          {gkCaps && <p className="text-xs text-orange-200/80 mt-3">Capabilities: {gkCaps}</p>}
+          {gkCaps && <p className="text-xs text-orange-700/80 mt-3">Capabilities: {gkCaps}</p>}
           {gkJobs.length > 0 && (
             <ul className="mt-4 divide-y divide-white/[0.04]">
               {gkJobs.map((j) => (
@@ -239,23 +239,23 @@ export default function PlatformMigration() {
         {guestkit && (
           <>
             <Link to="/platform/migration?tab=jobs" className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm hover:border-orange-400/50 transition">
-              <p className="font-semibold text-orange-100">GuestKit jobs</p>
-              <p className="text-xs text-orange-200/70 mt-1">Offline disk inspect and migrate planning.</p>
+              <p className="font-semibold text-orange-800">GuestKit jobs</p>
+              <p className="text-xs text-orange-700/70 mt-1">Offline disk inspect and migrate planning.</p>
             </Link>
             <Link to="/platform/vms/v1?tab=guestHealth&guestAction=migrate-plan" className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm hover:border-orange-400/50 transition">
-              <p className="font-semibold text-orange-100">Platform VM migrate plan</p>
-              <p className="text-xs text-orange-200/70 mt-1">Run GuestKit offline KVM migration scoring on an enrolled VM disk.</p>
+              <p className="font-semibold text-orange-800">Platform VM migrate plan</p>
+              <p className="text-xs text-orange-700/70 mt-1">Run GuestKit offline KVM migration scoring on an enrolled VM disk.</p>
             </Link>
           </>
         )}
       </div>
 
       {guestkit && gkStatus && (
-        <div className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm text-orange-100 space-y-2">
+        <div className="rounded-xl border border-[var(--apple-hairline)] bg-orange-500/10 p-4 text-sm text-orange-800 space-y-2">
           <p>GuestKit {gkStatus.library_version ?? 'linked'} — {gkStatus.summary}</p>
           <div className="flex flex-wrap gap-2 items-end">
             <label className="block flex-1 min-w-[14rem]">
-              <span className="text-xs text-orange-200/70">Offline disk path (qcow2/vmdk)</span>
+              <span className="text-xs text-orange-700/70">Offline disk path (qcow2/vmdk)</span>
               <input className="input text-sm mt-1 w-full" placeholder="/var/lib/libvirt/images/vm.qcow2" value={diskPath} onChange={(e) => setDiskPath(e.target.value)} />
             </label>
             <button
@@ -274,7 +274,7 @@ export default function PlatformMigration() {
               GuestKit doctor
             </button>
           </div>
-          {gkSummary && <p className="text-xs text-orange-200/80">{gkSummary}</p>}
+          {gkSummary && <p className="text-xs text-orange-700/80">{gkSummary}</p>}
         </div>
       )}
 
@@ -382,7 +382,7 @@ export default function PlatformMigration() {
                     <div className="mt-2 text-xs space-y-1">
                       <p className="text-[var(--text-muted)]">Readiness: <span className={statusToneClass('ok')}>{vm.advisor.readiness_percent}%</span></p>
                       {vm.advisor.guestkit_summary && (
-                        <p className="text-orange-200/90">GuestKit: {vm.advisor.guestkit_summary}</p>
+                        <p className="text-orange-700/90">GuestKit: {vm.advisor.guestkit_summary}</p>
                       )}
                       {vm.advisor.firewall_migration_summary && (
                         <p className="text-[var(--accent)]">Firewall: {vm.advisor.firewall_migration_summary}</p>

@@ -44,7 +44,7 @@ export default function HostFleetCard({ host, linux, selected, onSelect }: Props
         <div><dt className="text-[var(--text-faint)]">VMs</dt><dd className="text-[var(--text-primary)]">{host.vm_count}</dd></div>
         <div><dt className="text-[var(--text-faint)]">CPU</dt><dd className="text-[var(--text-primary)]">{Math.round(host.cpu_percent ?? 0)}%</dd></div>
         <div><dt className="text-[var(--text-faint)]">Memory</dt><dd className="text-[var(--text-primary)]">{memPct != null ? `${memPct}%` : '—'}</dd></div>
-        <div><dt className="text-[var(--text-faint)]">Network</dt><dd className="text-emerald-300/80">OK</dd></div>
+        <div><dt className="text-[var(--text-faint)]">Network</dt><dd className="text-emerald-600/80">OK</dd></div>
       </dl>
       <footer className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
         <Link to={`/platform/hosts/${host.id}`} className="btn-secondary text-xs">Open host</Link>
@@ -79,7 +79,7 @@ export function HostCommandCenter({
     : null
 
   const metrics: MetricItem[] = [
-    { label: 'State', value: <span className={online ? 'text-emerald-300' : 'text-amber-300'}>{host.maintenance_mode ? 'maintenance' : host.state}</span> },
+    { label: 'State', value: <span className={online ? 'text-emerald-600' : 'text-amber-600'}>{host.maintenance_mode ? 'maintenance' : host.state}</span> },
     { label: 'VMs', value: String(host.vm_count) },
     { label: 'CPU', value: `${Math.round(host.cpu_percent ?? 0)}%` },
     { label: 'Memory', value: memPct != null ? `${memPct}%` : '—' },

@@ -15,7 +15,7 @@ export default function MachineFinderTimelineLens() {
       .catch((e: unknown) => setError(formatUserError(e)))
   }, [])
 
-  if (error) return <p className="text-sm text-red-300 p-4">{error}</p>
+  if (error) return <p className="text-sm text-red-600 p-4">{error}</p>
   if (!data) return <p className="text-sm text-[var(--text-muted)] p-4">Loading fleet activity…</p>
 
   return (

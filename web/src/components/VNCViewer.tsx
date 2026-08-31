@@ -672,7 +672,7 @@ export default function VNCViewer({
       {!cockpitMode && !previewMode && !hideInstallerHint ? (
       <p className="text-xs text-slate-500 px-4 py-2 bg-slate-900/40 border-b border-slate-700/50 leading-relaxed shrink-0">
         {status === 'disconnected' && (
-          <span className="block text-amber-300/90 mb-1">
+          <span className="block text-amber-600/90 mb-1">
             Console disconnected — ensure the VM is running, wait for cloud-init on first boot, then Reconnect.
           </span>
         )}

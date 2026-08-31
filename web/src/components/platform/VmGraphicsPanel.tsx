@@ -49,7 +49,7 @@ function GraphicsRow({
         <div className="flex items-center gap-2 text-sm font-medium">
           <Monitor className="w-4 h-4 text-[var(--text-muted)]" />
           {label}
-          <span className={`text-xs px-2 py-0.5 rounded-full ${present ? 'bg-emerald-500/15 text-emerald-300' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${present ? 'bg-emerald-500/15 text-emerald-600' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'}`}>
             {present ? 'Configured' : 'Not configured'}
           </span>
         </div>

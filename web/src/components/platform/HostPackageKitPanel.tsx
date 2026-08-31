@@ -122,7 +122,7 @@ export default function HostPackageKitPanel({ hostId, updates, maintenanceMode, 
         </div>
 
         {!maintenanceMode ? (
-          <p className="text-xs text-amber-300/90">Enter maintenance mode before install/remove/apply operations.</p>
+          <p className="text-xs text-amber-600/90">Enter maintenance mode before install/remove/apply operations.</p>
         ) : null}
       </div>
       <ConfirmDialog

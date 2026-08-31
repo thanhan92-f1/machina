@@ -146,7 +146,7 @@ export default function PlatformIncidentCommander() {
         {rcaLoading && !fleetRca && <p className="text-sm text-[var(--text-muted)]">Analyzing fleet signals…</p>}
         {fleetRca && (
           <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-sm -mt-1">
-            <p className="font-medium text-orange-200 flex items-center gap-2">
+            <p className="font-medium text-orange-700 flex items-center gap-2">
               <Sparkles className="w-4 h-4" /> Root cause ({Math.round(fleetRca.confidence * 100)}% confidence)
             </p>
             <p className="text-[var(--text-secondary)] mt-1">{fleetRca.root_cause}</p>

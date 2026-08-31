@@ -345,7 +345,7 @@ export default function DiskImagesPage() {
               tools).
             </p>
           ) : vbCatalog.catalog_error ? (
-            <p className="text-sm text-rose-300/90">Catalog: {vbCatalog.catalog_error}</p>
+            <p className="text-sm text-rose-600/90">Catalog: {vbCatalog.catalog_error}</p>
           ) : templateOptions.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">No virt-builder templates returned from the host.</p>
           ) : (

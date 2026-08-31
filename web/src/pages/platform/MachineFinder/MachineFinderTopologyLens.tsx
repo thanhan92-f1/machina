@@ -127,7 +127,7 @@ export default function MachineFinderTopologyLens({ state }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
+      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-800">
         {error}
         <button type="button" className="btn-secondary text-xs ml-2" onClick={() => void load()}>Retry</button>
       </div>

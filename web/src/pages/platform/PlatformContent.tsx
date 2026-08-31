@@ -449,8 +449,8 @@ export default function PlatformContent() {
                         <div className="flex items-center justify-between gap-2 text-xs">
                           <span className="truncate text-[var(--text-secondary)]">{j.title.replace('Download ISO: ', '')}</span>
                           <span className={
-                            j.status === 'failed' ? 'text-red-300'
-                              : j.status === 'completed' ? 'text-emerald-300'
+                            j.status === 'failed' ? 'text-red-600'
+                              : j.status === 'completed' ? 'text-emerald-600'
                                 : 'text-[var(--text-muted)]'
                           }>
                             {j.status === 'running'
@@ -464,7 +464,7 @@ export default function PlatformContent() {
                             style={{ width: j.status === 'completed' ? '100%' : `${pct ?? 100}%` }}
                           />
                         </div>
-                        {j.error ? <p className="text-[11px] text-red-300/90">{j.error}</p> : null}
+                        {j.error ? <p className="text-[11px] text-red-600/90">{j.error}</p> : null}
                       </div>
                     )
                   })}

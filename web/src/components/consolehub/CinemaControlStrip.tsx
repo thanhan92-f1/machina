@@ -275,7 +275,7 @@ export default function CinemaControlStrip({
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-72 rounded-lg border border-white/10 bg-slate-950/95 p-3 shadow-xl space-y-2" data-testid="cinema-clipboard-panel">
               <p className="text-[11px] font-medium text-slate-200">Clipboard sync</p>
               {!clip?.canSync ? (
-                <p className="text-[10px] text-amber-200/80">Connect the display console to enable paste into the VM.</p>
+                <p className="text-[10px] text-amber-700/80">Connect the display console to enable paste into the VM.</p>
               ) : null}
               <textarea
                 aria-label="Clipboard text to send to VM"
@@ -309,7 +309,7 @@ export default function CinemaControlStrip({
                 <button
                   key={p}
                   type="button"
-                  className={`block w-full text-left px-2 py-1.5 text-xs hover:bg-white/10 rounded ${p === activeProtocol ? 'text-emerald-200' : 'text-slate-200'}`}
+                  className={`block w-full text-left px-2 py-1.5 text-xs hover:bg-white/10 rounded ${p === activeProtocol ? 'text-emerald-700' : 'text-slate-200'}`}
                   onClick={() => {
                     onProtocolChange?.(p)
                     setDisplayOpen(false)
@@ -348,7 +348,7 @@ export default function CinemaControlStrip({
 
         {/* Hardware (libvirt + KubeVirt) */}
         {onOpenHardware ? (
-          <button type="button" className={`${btn} border-[var(--apple-hairline)] text-emerald-100`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
+          <button type="button" className={`${btn} border-[var(--apple-hairline)] text-emerald-800`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
             <Cpu className="w-3.5 h-3.5" /> Hardware
           </button>
         ) : null}

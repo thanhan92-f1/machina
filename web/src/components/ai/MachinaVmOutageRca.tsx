@@ -26,7 +26,7 @@ export default function MachinaVmOutageRca({ vmId, vmName }: { vmId: string; vmN
   return (
     <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium text-orange-200 flex items-center gap-2 text-sm">
+        <p className="font-medium text-orange-700 flex items-center gap-2 text-sm">
           <Sparkles className="w-4 h-4" /> Explain outage
         </p>
         <button type="button" className="btn-secondary text-xs" disabled={loading} onClick={() => void run()}>

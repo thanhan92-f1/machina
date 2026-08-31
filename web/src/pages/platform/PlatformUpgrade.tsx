@@ -162,7 +162,7 @@ export default function PlatformUpgrade() {
                   badge={
                     <span className={`text-xs px-1.5 py-0.5 rounded ${
                       h.state === 'online'
-                        ? 'bg-emerald-500/10 text-emerald-500'
+                        ? 'bg-emerald-500/10 text-emerald-9000'
                         : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'
                     }`}>
                       {h.state}

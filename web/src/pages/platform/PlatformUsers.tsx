@@ -205,7 +205,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
                 </button>
               </form>
               {formError && (
-                <p className="text-sm text-red-300 mt-3" role="alert">{formError}</p>
+                <p className="text-sm text-red-600 mt-3" role="alert">{formError}</p>
               )}
             </MacGlassPanel>
 

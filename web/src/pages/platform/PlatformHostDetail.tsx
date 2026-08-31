@@ -510,7 +510,7 @@ export default function PlatformHostDetailPage() {
                       Remove host
                     </button>
                     {(host.vm_count ?? 0) > 0 && (
-                      <p className="text-xs text-amber-300/90">Evacuate or migrate VMs before removing this host.</p>
+                      <p className="text-xs text-amber-600/90">Evacuate or migrate VMs before removing this host.</p>
                     )}
                   </div>
                 </MacSettingsGroup>
@@ -612,7 +612,7 @@ export default function PlatformHostDetailPage() {
                 <MacGlassPanel title="GPU inventory" subtitle="PCI passthrough · MIG · CUDA readiness from host agent">
                   {gpuLoading && <p className="text-sm text-[var(--text-muted)]">Scanning GPUs…</p>}
                   {!gpuLoading && gpuError && (
-                    <p className="text-sm text-amber-300/90">{gpuError}</p>
+                    <p className="text-sm text-amber-600/90">{gpuError}</p>
                   )}
                   {!gpuLoading && !gpuError && gpus.length === 0 && (
                     <p className="text-sm text-[var(--text-muted)]">No discrete GPUs reported on this host.</p>

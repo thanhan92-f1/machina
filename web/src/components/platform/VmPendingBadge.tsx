@@ -12,7 +12,7 @@ export default function VmPendingBadge({ pending, category }: VmPendingBadgeProp
   const hit = pending.pending_changes.some((c) => c.category === category)
   if (!hit) return null
   return (
-    <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-300 bg-amber-500/10">
+    <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-600 bg-amber-500/10">
       Pending
     </span>
   )

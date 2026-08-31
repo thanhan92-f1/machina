@@ -74,7 +74,7 @@ export default function MachinaMissionStack() {
           <p>{plan.review}</p>
           {plan.phases.map((ph) => (
             <div key={ph.name}>
-              <p className="text-orange-300/90 font-medium">{ph.name} {ph.automated ? '(automated)' : '(review)'}</p>
+              <p className="text-orange-600/90 font-medium">{ph.name} {ph.automated ? '(automated)' : '(review)'}</p>
               <ul className="ml-3">{ph.steps.map((s) => <li key={s}>• {s}</li>)}</ul>
             </div>
           ))}

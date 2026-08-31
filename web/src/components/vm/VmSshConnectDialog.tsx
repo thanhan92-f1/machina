@@ -142,7 +142,7 @@ export default function VmSshConnectDialog({
                 </button>
               ) : null}
               {natPort && hypervisorAddress ? (
-                <p className="font-mono text-emerald-200/90 break-all">
+                <p className="font-mono text-emerald-700/90 break-all">
                   {laptopSshCommand(user, defaultIp, hypervisorAddress, portForwardRules)}
                 </p>
               ) : null}
@@ -166,7 +166,7 @@ export default function VmSshConnectDialog({
             </>
           ) : (
             <p className="text-sm text-[var(--text-secondary)]">
-              Target: <span className="font-mono text-emerald-300">{connectHost}{connectPort ? `:${connectPort}` : ''}</span>
+              Target: <span className="font-mono text-emerald-600">{connectHost}{connectPort ? `:${connectPort}` : ''}</span>
             </p>
           )}
           <label htmlFor="vm-ssh-user" className="block text-sm text-[var(--text-muted)] mb-1 mt-3">

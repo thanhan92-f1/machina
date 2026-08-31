@@ -48,7 +48,7 @@ export default function MissionControlLiveWall() {
         ) : error ? (
           <div className="text-sm text-red-400">
             Couldn&rsquo;t load fleet previews: {error}{' '}
-            <button type="button" className="underline hover:text-red-300" onClick={() => void load()}>Retry</button>
+            <button type="button" className="underline hover:text-red-600" onClick={() => void load()}>Retry</button>
           </div>
         ) : vms.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No running VMs to preview.</p>

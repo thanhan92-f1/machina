@@ -124,7 +124,7 @@ function VmInspector({ vm }: { vm: PlatformVm }) {
         <div><dt className="platform-finder-inspector-label">Memory</dt><dd className="text-[var(--text-primary)]">{Math.round(vm.memory_mib / 1024)} Gi</dd></div>
         <div><dt className="platform-finder-inspector-label">Managed</dt><dd className="text-[var(--text-primary)]">{vm.managed === false ? 'discovered' : 'yes'}</dd></div>
         {ip && (
-          <div className="col-span-2"><dt className="platform-finder-inspector-label">Guest IP</dt><dd className="font-mono text-emerald-300/90">{ip}</dd></div>
+          <div className="col-span-2"><dt className="platform-finder-inspector-label">Guest IP</dt><dd className="font-mono text-emerald-600/90">{ip}</dd></div>
         )}
       </dl>
       {running && libvirt && (

@@ -25,7 +25,7 @@ export default function VmHardwareSection({ label, value, badges, badge, testId 
           <HardwareApplyBadge key={b.id} badge={b} />
         ))}
         {legacyRestart && !resolved.some((b) => b.id === 'restart_required') ? (
-          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-300 bg-amber-500/10 shrink-0">
+          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-600 bg-amber-500/10 shrink-0">
             Restart needed
           </span>
         ) : null}

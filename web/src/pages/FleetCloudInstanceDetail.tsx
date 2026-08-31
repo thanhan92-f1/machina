@@ -136,7 +136,7 @@ function FleetCloudInstanceDetailContent() {
         <div><dt className="text-xs text-[var(--text-muted)] uppercase">Project</dt><dd className="mt-1">{vm.project || '—'}</dd></div>
         <div><dt className="text-xs text-[var(--text-muted)] uppercase">Guest IP</dt><dd className="mt-1 font-mono">{vm.guest_ip || '—'}</dd></div>
         {vm.last_error && (
-          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Last error</dt><dd className="mt-1 text-red-300">{vm.last_error}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Last error</dt><dd className="mt-1 text-red-600">{vm.last_error}</dd></div>
         )}
       </dl>
 

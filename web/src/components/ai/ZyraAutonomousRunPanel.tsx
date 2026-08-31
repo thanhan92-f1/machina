@@ -111,7 +111,7 @@ export default function ZyraAutonomousRunPanel() {
         {error && <p className="text-sm text-red-400">{error}</p>}
         {steps.length > 0 && (
           <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-sm space-y-2">
-            <p className="font-medium text-orange-200 flex items-center gap-2">
+            <p className="font-medium text-orange-700 flex items-center gap-2">
               <Sparkles className="w-4 h-4" /> Plan ({steps.length} steps{plannedAgent ? ` · ${plannedAgent}` : ''})
             </p>
             <ol className="list-decimal list-inside text-xs text-[var(--text-muted)] space-y-1">

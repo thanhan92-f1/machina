@@ -187,7 +187,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
         <div className="space-y-2">
           {providers.map((p) => (
             <div key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-white/[0.06] p-3 text-sm">
-              <button type="button" className="font-medium text-left hover:text-orange-300" onClick={() => setSelected(p.id)}>
+              <button type="button" className="font-medium text-left hover:text-orange-600" onClick={() => setSelected(p.id)}>
                 {p.name} {p.is_default ? '· default' : ''}
               </button>
               <span className="text-xs text-[var(--text-muted)]">{p.kind}</span>

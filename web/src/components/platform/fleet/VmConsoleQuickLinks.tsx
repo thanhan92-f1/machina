@@ -68,8 +68,8 @@ export default function VmConsoleQuickLinks({ vmId, running = true, compact = fa
             to={consoleHubPath(vmId, p)}
             className={
               compact
-                ? `btn-secondary text-[10px] py-1 px-2 inline-flex items-center gap-1 ${active ? 'border-emerald-500/40 text-emerald-100' : ''}`
-                : `btn-secondary text-xs py-1.5 px-2.5 inline-flex items-center gap-1 flex-1 justify-center min-w-[4.5rem] ${active ? 'border-emerald-500/40 text-emerald-100' : ''}`
+                ? `btn-secondary text-[10px] py-1 px-2 inline-flex items-center gap-1 ${active ? 'border-emerald-500/40 text-emerald-800' : ''}`
+                : `btn-secondary text-xs py-1.5 px-2.5 inline-flex items-center gap-1 flex-1 justify-center min-w-[4.5rem] ${active ? 'border-emerald-500/40 text-emerald-800' : ''}`
             }
             title={active ? `${label} (recommended)` : label}
           >

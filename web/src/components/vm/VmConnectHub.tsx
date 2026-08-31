@@ -183,13 +183,13 @@ export default function VmConnectHub({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {ip && (
-              <span className="text-xs font-mono text-emerald-300/90 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-xs font-mono text-emerald-600/90 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                 {privateIp ? `${sshUser}@${ip} (NAT)` : `${sshUser}@${ip}`}
                 {sshExposed && hypervisorAddress ? ` · SSH :${sshNatHostPort(portForwardRules)}` : ''}
               </span>
             )}
             {running && !ip && guestIpWaiting && (
-              <span className="text-xs text-amber-300/90 inline-flex items-center gap-1">
+              <span className="text-xs text-amber-600/90 inline-flex items-center gap-1">
                 <Loader2 className="w-3 h-3 animate-spin" /> Waiting for guest IP…
               </span>
             )}
@@ -272,7 +272,7 @@ export default function VmConnectHub({
         </div>
 
         {running && !ip && guestIpHint && (
-          <p className="text-xs text-amber-200/90">{guestIpHint}</p>
+          <p className="text-xs text-amber-700/90">{guestIpHint}</p>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">

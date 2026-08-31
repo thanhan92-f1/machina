@@ -88,7 +88,7 @@ export default function MachinaInfrastructureTimeline({ hours = 4 }: { hours?: n
         </label>
       </div>
       <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-sm">
-        <p className="font-medium text-orange-200 flex items-center gap-2">
+        <p className="font-medium text-orange-700 flex items-center gap-2">
           <Sparkles className="w-4 h-4" /> AI Root Cause ({Math.round(analysis.confidence * 100)}% confidence)
         </p>
         <p className="text-[var(--text-secondary)] mt-1">{analysis.root_cause}</p>

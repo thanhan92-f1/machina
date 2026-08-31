@@ -214,7 +214,7 @@ export default function JobsPage() {
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-2">{detail.title}</p>
               {detail.error ? (
-                <p className="text-sm text-rose-300 mb-2">{detail.error}</p>
+                <p className="text-sm text-rose-600 mb-2">{detail.error}</p>
               ) : null}
               {jobTimeline ? (
                 <BuildStepTimeline

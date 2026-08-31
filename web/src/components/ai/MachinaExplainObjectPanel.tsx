@@ -46,7 +46,7 @@ export default function MachinaExplainObjectPanel({
   return (
     <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 space-y-2 text-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium text-orange-200 flex items-center gap-2">
+        <p className="font-medium text-orange-700 flex items-center gap-2">
           <Sparkles className="w-4 h-4" />
           {name ?? data?.name ?? id}
           <span className="text-xs text-[var(--text-muted)] font-normal">{kind}</span>
@@ -64,7 +64,7 @@ export default function MachinaExplainObjectPanel({
             <p className="text-xs text-[var(--text-muted)]">Health {data.health_score}/100</p>
           )}
           {data.risks.length > 0 && (
-            <ul className="text-xs text-amber-200/90 space-y-0.5">
+            <ul className="text-xs text-amber-700/90 space-y-0.5">
               {data.risks.map((r) => <li key={r}>⚠ {r}</li>)}
             </ul>
           )}

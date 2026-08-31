@@ -59,7 +59,7 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
           Refresh
         </button>
       </div>
-      {error && <p className="text-xs text-amber-300/90">{error}</p>}
+      {error && <p className="text-xs text-amber-600/90">{error}</p>}
       {!obs && !error && loading && (
         <p className="text-xs text-[var(--text-muted)] flex items-center gap-2">
           <Loader2 className="w-3 h-3 animate-spin" /> Pulling guest agent snapshot…
@@ -145,7 +145,7 @@ export default function GuestObservabilityStrip({ vmId, className = '', initial 
           {obs.fs_freeze?.frozen && (
             <div className="sm:col-span-2">
               <dt className="text-[var(--text-muted)]">Filesystem freeze</dt>
-              <dd className="text-amber-200/90">{obs.fs_freeze.detail}</dd>
+              <dd className="text-amber-700/90">{obs.fs_freeze.detail}</dd>
             </div>
           )}
         </dl>

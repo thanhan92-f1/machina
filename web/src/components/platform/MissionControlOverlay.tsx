@@ -190,7 +190,7 @@ export default function MissionControlOverlay() {
 
         {zyraStatus && (
           <div className="px-6 pb-2">
-            <Link to="/platform/zyra" className="text-xs text-orange-300/90 hover:underline" onClick={closeMissionControl}>{zyraStatus}</Link>
+            <Link to="/platform/zyra" className="text-xs text-orange-600/90 hover:underline" onClick={closeMissionControl}>{zyraStatus}</Link>
           </div>
         )}
 
@@ -283,7 +283,7 @@ export default function MissionControlOverlay() {
             <p className="text-xs text-[var(--text-muted)]">
               {migrations.length} migration tasks ·{' '}
               {failedTasks.length > 0 ? (
-                <Link to={tasksHubHref(tier)} className="text-amber-300 hover:underline" onClick={closeMissionControl}>
+                <Link to={tasksHubHref(tier)} className="text-amber-600 hover:underline" onClick={closeMissionControl}>
                   {failedTasks.length} failed
                 </Link>
               ) : '0 failed'}

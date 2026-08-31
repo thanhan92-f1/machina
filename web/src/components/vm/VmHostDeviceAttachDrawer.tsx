@@ -179,7 +179,7 @@ export default function VmHostDeviceAttachDrawer({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <section data-testid="vm-hostdev-attached-section">
             <p className="text-xs font-medium text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
-              <Unplug className="w-3.5 h-3.5 text-amber-300" /> Attached to this VM
+              <Unplug className="w-3.5 h-3.5 text-amber-600" /> Attached to this VM
             </p>
             {attached.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)]">No host devices attached.</p>

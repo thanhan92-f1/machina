@@ -46,7 +46,7 @@ function LogLine({ entry }: { entry: FleetConsoleEntry }) {
       <span className={`shrink-0 px-1.5 py-0.5 rounded border uppercase text-[10px] tracking-wide ${severityClass(entry.severity)}`}>
         {entry.severity}
       </span>
-      <span className="shrink-0 w-14 text-orange-300/90 capitalize">{entry.source}</span>
+      <span className="shrink-0 w-14 text-orange-600/90 capitalize">{entry.source}</span>
       <span className="text-[var(--text-primary)] min-w-0 break-all">
         {entry.actor ? <span className="text-[var(--link)]">{entry.actor} </span> : null}
         <span className="text-[var(--text-muted)]">{entry.action}</span>
