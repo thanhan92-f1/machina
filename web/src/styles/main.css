@@ -190,10 +190,6 @@ code, .font-mono, pre {
   background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
-code {
-  font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, monospace;
-}
-
 /* Animations */
 @keyframes slide-in {
   from { transform: translateX(100%); opacity: 0; }
@@ -296,7 +292,7 @@ code {
 }
 
 .platform-sidebar {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+  font-family: var(--font-display);
 }
 
 .platform-mac-shell {
@@ -337,7 +333,7 @@ code {
 }
 
 .platform-spotlight-hint kbd {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
 }
 
 .platform-vm-card,
@@ -629,7 +625,10 @@ a.tahoe-context-app-title:hover {
 
 .tahoe-canvas {
   position: relative;
-  background: rgba(2, 6, 23, 0.25);
+  /* Was a hardcoded dark navy wash regardless of theme; let the actual page
+     background (already theme-correct) show through instead of tinting the
+     whole content area. */
+  background: transparent;
 }
 
 .tahoe-mesh {
@@ -1380,7 +1379,7 @@ a.tahoe-context-app-title:hover {
 .tahoe-page-root textarea {
   border-radius: var(--radius-liquid-sm, 0.75rem);
   border-color: var(--glass-border, rgba(255, 255, 255, 0.08));
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--apple-fill-tertiary);
 }
 
 .platform-route-main {
@@ -1770,7 +1769,7 @@ a.tahoe-context-app-title:hover {
 
 /* Skeleton loading */
 .skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background: linear-gradient(90deg, var(--apple-fill-tertiary) 25%, var(--apple-fill-secondary, var(--apple-fill-tertiary)) 50%, var(--apple-fill-tertiary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.5rem;
@@ -1853,10 +1852,10 @@ a.tahoe-context-app-title:hover {
   cursor: not-allowed;
 }
 
-/* ── Liquid Glass app shell (Apple black canvas) ── */
+/* ── Liquid Glass app shell ── */
 .dashboard-liquid-glass {
   position: relative;
-  background: #000000;
+  background: var(--page-bg, #000000);
 }
 
 .liquid-glass-app .input-field {

@@ -312,8 +312,8 @@
   opacity: 0.5;
   pointer-events: none;
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(2, 6, 23, 0.4);
+  border: 1px solid var(--apple-hairline);
+  background: var(--apple-fill-tertiary);
 }
 
 .tahoe-health-badge {

@@ -468,7 +468,7 @@ export default function DiskImagesPage() {
                 failed={vibTimeline.failed}
                 variant="slate"
               />
-              <pre className="max-h-64 overflow-y-auto rounded border border-[var(--apple-hairline)] bg-black/50 p-2 font-mono text-[11px] text-[var(--text-primary)] whitespace-pre-wrap break-all">
+              <pre className="max-h-64 overflow-y-auto rounded border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] p-2 font-mono text-[11px] text-[var(--text-primary)] whitespace-pre-wrap break-all">
                 {vbLog.join('\n')}
               </pre>
             </div>

@@ -37,11 +37,11 @@
   --login-avatar-bg: #1d1d1f;
   --login-avatar-fg: #f5f5f7;
   --login-link: #0071e3;
-  /* apple.com stack — SF Pro on Apple, Helvetica Neue elsewhere */
-  --login-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro',
-    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* apple.com stack — shares the app-wide --font-display token; --login-display adds
+     SF Pro Display as the top preference for the large hero title only. */
+  --login-font: var(--font-display);
   --login-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-    'SF Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   background: var(--login-bg);
   color: var(--login-ink);
   font-family: var(--login-font);

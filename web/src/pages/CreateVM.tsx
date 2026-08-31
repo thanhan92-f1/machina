@@ -1739,7 +1739,7 @@ export default function CreateVMPage() {
             failed={vmCreateTimeline.failed}
             variant="amber"
           />
-          <pre className="max-h-56 overflow-y-auto rounded bg-black/50 border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
+          <pre className="max-h-56 overflow-y-auto rounded bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
             {createLog.length ? createLog.join('\n') : <span className="text-[var(--text-muted)]">Starting…</span>}
           </pre>
           <div ref={logEndRef} />
@@ -1811,7 +1811,7 @@ export default function CreateVMPage() {
               failed={goldenForgeTimeline.failed}
               variant="violet"
             />
-            <pre className="max-h-72 overflow-y-auto rounded bg-black/60 border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
+            <pre className="max-h-72 overflow-y-auto rounded bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
               {packerLog.length ? packerLog.join('\n') : <span className="text-[var(--text-muted)]">Starting…</span>}
             </pre>
             <div ref={packerLogEndRef} />

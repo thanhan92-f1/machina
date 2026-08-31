@@ -229,7 +229,7 @@ export default function ImportVMPage() {
           {(submitting || createLog.length > 0) && (
             <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 space-y-2">
               <h3 className="text-xs font-semibold text-[var(--text-secondary)]">virt-install progress</h3>
-              <pre className="max-h-56 overflow-y-auto rounded bg-black/50 border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
+              <pre className="max-h-56 overflow-y-auto rounded bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-all">
                 {createLog.length ? createLog.join('\n') : <span className="text-[var(--text-muted)]">Starting…</span>}
               </pre>
               <div ref={logEndRef} />

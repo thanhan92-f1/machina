@@ -57,17 +57,17 @@ export default function MissionControlLiveWall() {
             {vms.map((vm) => (
               <article
                 key={vm.id}
-                className="rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col"
+                className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] overflow-hidden flex flex-col"
                 data-testid={`live-wall-tile-${vm.name}`}
               >
-                <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] text-xs">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--apple-hairline)] text-xs">
                   <span className="font-medium text-[var(--text-primary)] truncate">{vm.name}</span>
                   <VmStatusBadge state={vm.observed_state ?? 'unknown'} />
                 </div>
                 <div className="min-h-[12rem]">
                   <ConsoleTheatrePreview vmId={vm.id} vmName={vm.name} connected variant="tile" />
                 </div>
-                <div className="flex gap-2 p-2 border-t border-white/[0.06]">
+                <div className="flex gap-2 p-2 border-t border-[var(--apple-hairline)]">
                   <Link to={cinemaHubPath(vm.id)} data-testid="live-wall-open-cinema" className="btn-primary text-xs flex-1 text-center inline-flex items-center justify-center gap-1">
                     <Monitor className="w-3.5 h-3.5" /> Open Cinema
                   </Link>

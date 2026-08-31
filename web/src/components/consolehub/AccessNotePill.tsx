@@ -209,7 +209,7 @@ export default function AccessNotePill({
                   Connect with Microsoft Remote Desktop (macOS) or mstsc (Windows)
                 </p>
               ) : null}
-              <pre className="rounded-lg bg-black/50 border border-white/10 p-2 font-mono text-sm text-emerald-700/90 overflow-x-auto select-all">
+              <pre className="rounded-lg bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] p-2 font-mono text-sm text-emerald-700 overflow-x-auto select-all">
                 {connectCmd}
               </pre>
             </div>
