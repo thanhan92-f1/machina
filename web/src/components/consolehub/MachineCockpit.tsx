@@ -509,7 +509,7 @@ function CockpitInner({
       return (
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <p className="text-sm text-slate-300">
-            Guest IP: <span className="font-mono text-emerald-600">{plan?.guest_ip ?? '—'}</span>
+            Guest IP: <span className="font-mono text-emerald-300">{plan?.guest_ip ?? '—'}</span>
           </p>
           {plan?.guest_access?.guest_ip_private && vmId && vmName && plan?.guest_ip ? (
             <VmPortForwardPanel

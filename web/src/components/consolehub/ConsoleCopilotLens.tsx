@@ -82,7 +82,7 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
             <button
               key={r.id}
               type="button"
-              className="text-[10px] px-2 py-1 rounded bg-slate-800/80 text-slate-400 hover:text-slate-200"
+              className="text-[10px] px-2 py-1 rounded bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               onClick={() => setRecipe(r)}
             >
               {r.title}

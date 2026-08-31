@@ -96,7 +96,7 @@ export default function RdpConsolePage() {
 
   return (
     <div className="space-y-4 max-w-3xl">
-      <Link to={back} className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
+      <Link to={back} className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]">
         <ArrowLeft className="w-4 h-4" />
         {t('rdp.back')}
       </Link>
@@ -110,16 +110,16 @@ export default function RdpConsolePage() {
       ) : null}
 
       {info ? (
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 space-y-2 text-sm">
+        <div className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] p-4 space-y-2 text-sm">
           <p>
-            <span className="text-slate-500">{t('rdp.endpoint')}:</span>{' '}
+            <span className="text-[var(--text-muted)]">{t('rdp.endpoint')}:</span>{' '}
             <code className="text-[var(--link)]">
               {info.host}:{info.port}
             </code>
           </p>
-          <p className="text-slate-400">{t('rdp.tunnelNote')}</p>
+          <p className="text-[var(--text-muted)]">{t('rdp.tunnelNote')}</p>
           <p>
-            <span className="text-slate-500">{t('rdp.wsStatus')}:</span>{' '}
+            <span className="text-[var(--text-muted)]">{t('rdp.wsStatus')}:</span>{' '}
             <span className={statusToneClass(connectionStatusTone(status))}>
               {status}
             </span>

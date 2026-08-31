@@ -131,7 +131,7 @@ export default function CinemaShell({
         <span className={`w-2 h-2 rounded-full ${tone === 'ok' ? 'bg-emerald-400' : tone === 'warn' ? 'bg-amber-400' : 'bg-slate-500'}`} />
         <span className="font-semibold text-slate-100 truncate">{vmName}</span>
         {vmState ? <span className={`px-2 py-0.5 rounded-full capitalize ${statusBadgeClasses(tone)}`}>{vmState}</span> : null}
-        {guestIp ? <span className="font-mono text-emerald-600/90 hidden sm:inline">{guestIp}</span> : null}
+        {guestIp ? <span className="font-mono text-emerald-300/90 hidden sm:inline">{guestIp}</span> : null}
         {nodeName ? <span className="text-slate-500 hidden md:inline">Node {nodeName}</span> : null}
         {recordingActive ? (
           <span className="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-[10px] uppercase tracking-wide" data-testid="cinema-recording-badge">
