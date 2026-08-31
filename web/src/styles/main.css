@@ -5,6 +5,7 @@
 /* Zeus OS 1:1 SoT — must load last so Mist/Tahoe Light win over System Blue forks */
 @import "./zeus-parity.css";
 @import "./zyvor-premium-login.css";
+@import "./zyvor-macos-login.css";
 
 @theme inline {
   --radius-liquid: 22px;

@@ -1,496 +1,405 @@
-/* Machina login — apple.com product wordmark + Apple Account form on #f5f5f7. */
+/* Zyvor premium login — shared Machina-style shell (aurora, particles, split hero) */
 
+@keyframes login-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes login-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-18px) scale(1.02); }
+}
+@keyframes login-fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes login-pulse-glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+  50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+@keyframes login-shimmer {
+  0% { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(200%) skewX(-12deg); }
+}
+@keyframes login-aurora-drift {
+  0%, 100% { opacity: 0.55; transform: translate(0, 0) scale(1); }
+  33% { opacity: 0.85; transform: translate(4%, -3%) scale(1.05); }
+  66% { opacity: 0.65; transform: translate(-3%, 2%) scale(0.98); }
+}
+@keyframes login-spotlight-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.65; }
+}
+@keyframes login-particle-float {
+  0%, 100% { opacity: 0.15; transform: translateY(0); }
+  50% { opacity: 0.75; transform: translateY(-12px); }
+}
+@keyframes login-beam-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+@keyframes login-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes login-logo-glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(59, 130, 246, 0.35), 0 0 48px rgba(99, 102, 241, 0.15); }
+  50% { box-shadow: 0 0 36px rgba(59, 130, 246, 0.55), 0 0 64px rgba(139, 92, 246, 0.25); }
+}
 @keyframes login-shake {
   0%, 100% { transform: translateX(0); }
   20%, 60% { transform: translateX(-4px); }
   40%, 80% { transform: translateX(4px); }
 }
 
-@keyframes login-relay-rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 .login-page {
-  position: relative;
   isolation: isolate;
-  min-height: 100vh;
-  min-height: 100dvh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
 }
-
-.login-page-apple {
-  --login-bg: #ffffff;
-  --login-field-bg: #f5f5f7;
-  --login-elevated: #ffffff;
-  --login-ink: #1d1d1f;
-  --login-muted: #6e6e73;
-  --login-tertiary: #86868b;
-  --login-line: #d2d2d7;
-  --login-accent: #0071e3;
-  --login-accent-2: #0071e3;
-  --login-accent-hover: #0077ed;
-  --login-accent-tint: #f0f7ff;
-  --login-focus: rgba(0, 113, 227, 0.16);
-  --login-avatar-bg: #1d1d1f;
-  --login-avatar-fg: #f5f5f7;
-  --login-link: #0071e3;
-  /* apple.com stack — shares the app-wide --font-display token; --login-display adds
-     SF Pro Display as the top preference for the large hero title only. */
-  --login-font: var(--font-display);
-  --login-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-    'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  background: var(--login-bg);
-  color: var(--login-ink);
-  font-family: var(--login-font);
-  font-synthesis: none;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  letter-spacing: -0.01em;
+.login-aurora {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 20%, rgba(59, 130, 246, 0.22), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(237, 25, 68, 0.12), transparent 50%),
+    radial-gradient(ellipse 45% 50% at 70% 15%, rgba(139, 92, 246, 0.14), transparent 55%);
+  animation: login-aurora-drift 14s ease-in-out infinite;
 }
-
-/* Warm multi-blob atmosphere on a white canvas */
-.login-page-apple::before {
-  content: '';
+.login-scanline {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.15) 50%, transparent);
+  animation: login-scan 8s linear infinite;
+}
+.login-hero-mesh {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 90% 80% at 40% 30%, black 10%, transparent 70%);
+}
+.login-spotlight {
+  position: absolute;
+  top: -20%;
+  left: 10%;
+  width: 70%;
+  height: 60%;
+  background: radial-gradient(ellipse at center, rgba(96, 165, 250, 0.2) 0%, transparent 65%);
+  animation: login-spotlight-pulse 6s ease-in-out infinite;
   pointer-events: none;
-  background:
-    radial-gradient(70% 50% at 12% 18%, rgba(255, 106, 0, 0.18), transparent 55%),
-    radial-gradient(55% 45% at 88% 12%, rgba(255, 138, 61, 0.14), transparent 50%),
-    radial-gradient(60% 40% at 70% 88%, rgba(232, 93, 4, 0.1), transparent 55%),
-    radial-gradient(50% 35% at 20% 92%, rgba(255, 106, 0, 0.08), transparent 50%);
 }
-
-.login-apple-stage {
+.login-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.login-particle {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(147, 197, 253, 0.8);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+  animation: login-particle-float 4s ease-in-out infinite;
+}
+.login-orb-blue {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%);
+}
+.login-orb-violet {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+}
+.login-orb-cyan {
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.16) 0%, transparent 70%);
+}
+.login-orb-red {
+  background: radial-gradient(circle, rgba(237, 25, 68, 0.14) 0%, transparent 70%);
+}
+.login-logo-ring {
+  border-radius: 1rem;
+  animation: login-logo-glow 3.5s ease-in-out infinite;
+}
+.login-stat-pill-glow {
+  border-color: rgba(237, 25, 68, 0.35);
+  box-shadow: 0 0 16px rgba(237, 25, 68, 0.12);
+}
+.login-feature-card {
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+.login-feature-card:hover {
+  transform: translateX(4px);
+}
+.login-feature-card-highlight {
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.35) 0%, rgba(15, 23, 42, 0.5) 100%);
+  border: 1px solid rgba(237, 25, 68, 0.35);
+  box-shadow: 0 0 32px rgba(237, 25, 68, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.login-feature-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+.login-beam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 5;
+  background: linear-gradient(180deg, transparent, rgba(96, 165, 250, 0.9) 30%, rgba(167, 139, 250, 0.9) 70%, transparent);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.6), 0 0 48px rgba(139, 92, 246, 0.3);
+  animation: login-beam-pulse 3s ease-in-out infinite;
+}
+.login-beam-w55 { left: 55%; }
+.login-beam-w58 { left: 58%; }
+.login-panel-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(90vw, 480px);
+  height: 320px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, rgba(37, 99, 235, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.login-glass-border {
   position: relative;
-  z-index: 2;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(4rem, 10vw, 6.5rem) 1.25rem 3rem;
-  width: 100%;
 }
-
-.login-apple-stack {
-  width: 100%;
-  max-width: 23.5rem;
-  text-align: center;
+.login-glass-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(139, 92, 246, 0.25), rgba(51, 65, 85, 0.4));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
-
-.login-apple-mark,
-.login-apple-title,
-.login-apple-subtitle,
-.login-apple-card {
-  animation: login-relay-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+.login-shake {
+  animation: login-shake 0.45s ease-out;
 }
-.login-apple-mark { animation-delay: 0.04s; }
-.login-apple-title { animation-delay: 0.12s; }
-.login-apple-subtitle { animation-delay: 0.2s; }
-.login-apple-card { animation-delay: 0.28s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-apple-mark,
-  .login-apple-title,
-  .login-apple-subtitle,
-  .login-apple-card,
-  .login-apple-step {
-    animation: none;
+  .login-hero {
+    animation: none !important;
+    background-size: auto !important;
   }
-
+  .login-aurora,
+  .login-scanline,
+  .login-orb,
+  .login-particle,
+  .login-beam,
+  .login-logo-ring,
+  .login-glass,
+  .login-btn-primary::after {
+    animation: none !important;
+  }
+  .login-fade-in,
+  .login-fade-in-d1,
+  .login-fade-in-d2,
+  .login-fade-in-d3,
+  .login-fade-in-d4 {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .login-feature-card:hover {
+    transform: none !important;
+  }
   .login-shake {
-    animation: none;
+    animation: none !important;
   }
 }
 
-/* Brand lockup — quiet mark above the product wordmark */
-.login-apple-mark {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.25rem;
+.login-hero {
+  position: relative;
+  background: linear-gradient(145deg, #020617 0%, #0f172a 35%, #1e3a5f 65%, #0f172a 100%);
+  background-size: 400% 400%;
+  animation: login-gradient-shift 18s ease infinite;
 }
-
-.login-apple-mark .login-logo-ring {
-  animation: none;
-  box-shadow: none;
-  border: none;
-  background: transparent;
-  padding: 0;
+.login-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 75%);
 }
-
-.login-page-apple .zyvor-mark {
-  display: block;
-  border-radius: 10px;
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.18) 0%, transparent 70%);
+  animation: login-float var(--login-duration, 10s) ease-in-out infinite;
+  animation-delay: var(--login-delay, 0s);
 }
-
-/* apple.com product hero: SF Pro Display, semibold, tight tracking */
-.login-apple-title {
-  margin: 0;
-  font-family: var(--login-display);
-  font-size: clamp(3rem, 9vw, 5.25rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.02;
-  color: var(--login-ink);
-  text-transform: lowercase;
+.login-fade-in {
+  animation: login-fade-in-up 0.65s ease-out forwards;
 }
-
-.login-apple-subtitle {
-  margin: 0.85rem auto 0;
-  max-width: 34ch;
-  font-size: clamp(1.05rem, 2.2vw, 1.3125rem);
-  line-height: 1.381;
-  font-weight: 400;
-  color: var(--login-muted);
-  letter-spacing: -0.011em;
+.login-fade-in-d1 { animation-delay: 0.1s; opacity: 0; }
+.login-fade-in-d2 { animation-delay: 0.2s; opacity: 0; }
+.login-fade-in-d3 { animation-delay: 0.3s; opacity: 0; }
+.login-fade-in-d4 { animation-delay: 0.4s; opacity: 0; }
+.login-text-gradient {
+  background: linear-gradient(135deg, #93c5fd 0%, #e2e8f0 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-
-.login-apple-subtitle .login-apple-host {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-  color: var(--login-ink);
-  font-weight: 600;
+.login-page-light .login-text-gradient {
+  background: none;
+  color: #0f172a;
+  -webkit-background-clip: unset;
+  background-clip: unset;
 }
-
-.login-apple-card {
-  margin-top: 2rem;
-  text-align: left;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+.login-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  color: rgba(226, 232, 240, 0.85);
 }
-
-.login-apple-step {
-  animation: login-relay-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+.login-panel {
+  background-color: #020617;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent),
+    linear-gradient(180deg, #020617 0%, #0f172a 100%);
 }
-
-.login-page-apple .login-apple-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.login-panel-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.9) 1px, transparent 0);
+  background-size: 32px 32px;
 }
-
-.login-page-apple .login-apple-fields .login-field {
-  margin: 0;
+.login-glass {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  animation: login-pulse-glow 5s ease-in-out infinite;
 }
-
-.login-page-apple .login-field-label {
-  display: block;
-  margin: 0 0 6px;
-  padding: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--login-tertiary);
-}
-
-.login-page-apple .login-input {
+.login-input {
   width: 100%;
-  background: var(--login-field-bg);
-  border: 1px solid var(--login-line);
-  border-radius: 10px;
-  color: var(--login-ink);
-  padding: 0.7rem 0.85rem;
-  font-size: 0.9375rem;
-  line-height: 1.35;
-  min-height: 2.75rem;
-  box-shadow: none;
-  letter-spacing: -0.01em;
+  padding: 0.75rem 2.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-input:focus {
   outline: none;
-  font-family: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
-
-.login-page-apple .login-input.login-input--password {
-  padding-right: 2.75rem;
+.login-field-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: #64748b;
+  transition: color 0.2s;
 }
-
-.login-page-apple .login-input::placeholder {
-  color: var(--login-tertiary);
-  font-size: 0.9375rem;
-  opacity: 1;
+.group:focus-within .login-field-icon {
+  color: #60a5fa;
 }
-
-.login-page-apple .login-input:focus {
-  border-color: var(--login-accent);
-  box-shadow: 0 0 0 3px var(--login-focus);
-  background: var(--login-elevated);
-}
-
-.login-page-apple .login-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.login-page-apple button[aria-label='Hide password'],
-.login-page-apple button[aria-label='Show password'] {
-  color: var(--login-muted);
-}
-
-.login-page-apple button[aria-label='Hide password'] svg,
-.login-page-apple button[aria-label='Show password'] svg {
-  width: 1.05rem;
-  height: 1.05rem;
-}
-
-.login-page-apple .login-remember {
-  margin-top: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.login-page-apple .login-remember span {
-  font-size: 0.875rem;
-  color: var(--login-muted);
-}
-
-.login-page-apple .login-remember input {
-  accent-color: var(--login-accent);
-}
-
-/* apple.com blue pill CTA */
-.login-page-apple .login-btn-primary {
-  margin-top: 1.35rem;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  border-radius: 980px;
-  border: none;
-  background: linear-gradient(135deg, var(--login-accent) 0%, var(--login-accent-2) 100%);
-  box-shadow: none;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  min-height: 2.75rem;
-  padding: 0.75rem 1.35rem;
-  color: #fff;
-  cursor: pointer;
-  font-family: inherit;
-  transition: filter 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
-}
-
-.login-page-apple .login-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.06);
-}
-
-.login-page-apple .login-btn-primary:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.login-page-apple .login-btn-primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.login-page-apple .login-sso {
-  margin-top: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.65rem 1rem;
-  border-radius: 980px;
-  border: 1px solid var(--login-accent);
-  background: transparent;
-  color: var(--login-accent);
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.login-page-apple .login-sso:hover {
-  background: color-mix(in srgb, var(--login-accent) 6%, transparent);
-  border-color: var(--login-accent-hover);
-}
-
-.login-apple-hint {
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--login-muted);
-}
-
-.login-page-apple > .absolute {
-  opacity: 0.45;
-  transition: opacity 0.2s ease;
-}
-
-.login-page-apple > .absolute:hover,
-.login-page-apple > .absolute:focus-within {
-  opacity: 1;
-}
-
-.login-page-apple .login-help {
-  margin-top: 1.75rem;
-  text-align: center;
-}
-
-.login-page-apple .login-help summary {
-  list-style: none;
-  cursor: pointer;
-  display: inline;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--login-accent);
-  user-select: none;
-}
-
-.login-page-apple .login-help summary::-webkit-details-marker {
-  display: none;
-}
-
-.login-page-apple .login-help summary:hover {
-  text-decoration: underline;
-}
-
-.login-page-apple .login-help[open] > div {
-  margin-top: 0.85rem;
-  text-align: left;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--login-muted);
-}
-
-.login-page-apple a {
-  color: var(--login-accent);
-}
-
-.login-page-apple a:hover {
-  color: var(--login-accent-hover);
-  text-decoration: underline;
-}
-
-.login-page-apple .login-apple-note {
-  margin: 0 0 1rem;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--login-muted);
-  text-align: center;
-}
-
-.login-page-apple [role='alert'] {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: transparent;
-  border: none;
-  border-left: 2px solid #b91c1c;
-  border-radius: 0;
-  padding: 0.35rem 0 0.35rem 0.7rem;
-  margin-bottom: 1rem;
-  font-size: 0.8125rem;
-  color: var(--login-ink);
-}
-
-.login-apple-footer {
-  border: none;
-  background: transparent;
-  color: var(--login-muted);
-  padding-bottom: 1.5rem;
-}
-
-.login-apple-footer a {
-  color: var(--login-accent);
-}
-
-/* Two-step identify → password — Aurora-style avatar chip */
-.login-page-apple .login-apple-identity {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1.25rem;
-  padding: 0.3rem 0.8rem 0.3rem 0.3rem;
-  border-radius: 980px;
-  border: 1px solid var(--login-line);
-  background: var(--login-elevated);
-  color: var(--login-ink);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  font-family: inherit;
-}
-
-.login-page-apple .login-identity-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--login-avatar-bg);
-  color: var(--login-avatar-fg);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.login-page-apple .login-identity-name {
-  color: var(--login-ink);
-  font-weight: 600;
+.login-btn-primary {
+  position: relative;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.login-page-apple .login-identity-edit {
-  border: none;
-  background: transparent;
-  color: var(--login-link);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.login-page-apple .login-identity-edit:hover {
-  text-decoration: underline;
-}
-
-/* Theme toggle chip (top-right) */
-.login-theme-toggle {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  border-radius: 9999px;
-  border: 1px solid var(--login-line, rgba(0, 0, 0, 0.08));
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.login-theme-toggle button {
-  border: none;
-  background: transparent;
-  color: var(--login-muted, #6e6e73);
-  font-size: 0.75rem;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  padding: 0.4rem 0.7rem;
-  border-radius: 9999px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease, color 0.15s ease;
+  color: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.login-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.45);
+}
+.login-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.login-btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.12) 50%, transparent 60%);
+  animation: login-shimmer 3s ease-in-out infinite;
+}
+.login-btn-secondary {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  background: rgba(15, 23, 42, 0.6);
+  transition: background 0.2s;
+}
+.login-btn-secondary:hover {
+  background: rgba(30, 41, 59, 0.9);
+}
+.login-page-light .login-panel {
+  background-color: #f8fafc;
+  background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.08), transparent);
+}
+.login-page-light .login-glass {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #e2e8f0;
+}
+.login-page-light .login-input {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.login-page-light .login-hero {
+  background: linear-gradient(145deg, #f1f5f9 0%, #e0f2fe 40%, #f8fafc 100%);
+}
+.login-page-light .login-fade-in h2,
+.login-page-light .login-fade-in .text-white,
+.login-page-light .text-white {
+  color: #0f172a;
+}
+.login-page-light .login-stat-pill {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: #cbd5e1;
+  color: #475569;
 }
 
-.login-theme-toggle button[aria-pressed='true'] {
-  background: var(--login-ink, #1d1d1f);
-  color: #fff;
+/* Accent themes */
+.login-accent-amber .login-btn-primary {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  box-shadow: 0 4px 24px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
+.login-accent-amber .login-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.45);
+}
+.login-accent-amber .login-input:focus { border-color: rgba(245, 158, 11, 0.6); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
+.login-accent-amber .group:focus-within .login-field-icon { color: #fbbf24; }

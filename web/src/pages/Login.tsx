@@ -4,33 +4,80 @@
 
 import { useEffect, useRef, useState, FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
 import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/auth'
-import { useTranslation } from 'react-i18next'
-import LanguageSwitcher from '../components/LanguageSwitcher'
 import { formatUserError } from '../utils/apiError'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  User,
+  Lock,
+  Monitor,
+  ShieldCheck,
+  Camera,
+  Boxes,
+} from 'lucide-react'
 import {
   PremiumLoginShell,
   LoginError,
   LoginField,
   LoginRemember,
   LoginSubmit,
+  type PremiumLoginFeature,
 } from '../components/PremiumLoginShell'
-import { ZyvorMark } from '../components/ZyvorMark'
-import { ZyvorFooter } from '../components/ZyvorBrand'
+import { ZyvorInline } from '../components/ZyvorBrand'
+
+const FEATURES: PremiumLoginFeature[] = [
+  {
+    icon: <Monitor className="w-5 h-5 text-blue-100" />,
+    gradient: 'from-blue-500/95 to-indigo-700/95',
+    glow: 'shadow-blue-500/25',
+    title: 'Live VM consoles',
+    description: 'VNC, SPICE, native RDP and SSH — right from the browser',
+  },
+  {
+    icon: <Camera className="w-5 h-5 text-sky-100" />,
+    gradient: 'from-sky-500/95 to-indigo-800/95',
+    glow: 'shadow-sky-500/25',
+    title: 'Snapshots & backups',
+    description: 'Scheduled snapshots, disk export, and point-in-time recovery',
+  },
+  {
+    icon: <ShieldCheck className="w-5 h-5 text-violet-100" />,
+    gradient: 'from-violet-500/95 to-purple-800/95',
+    glow: 'shadow-violet-500/25',
+    title: 'Zero-trust security',
+    description: 'Namespace isolation, PacketWolf enforcement, audit trails',
+  },
+  {
+    icon: <Boxes className="w-5 h-5 text-cyan-100" />,
+    gradient: 'from-cyan-500/95 to-blue-800/95',
+    glow: 'shadow-cyan-500/25',
+    title: 'KubeVirt + libvirt',
+    description: 'One control plane for bare-metal and Kubernetes-native VMs',
+  },
+]
+
+function MachinaLogo({ className = 'w-7 h-7' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 export default function LoginPage() {
   const saved = (() => {
     try {
       const raw = localStorage.getItem('machina-saved-login')
-      return raw ? (JSON.parse(raw) as { username?: string; password?: string }) : null
+      return raw ? (JSON.parse(raw) as { username?: string }) : null
     } catch {
       return null
     }
   })()
 
-  const [step, setStep] = useState<'identify' | 'password'>('identify')
   const [username, setUsername] = useState(saved?.username ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -43,18 +90,10 @@ export default function LoginPage() {
     oidc: { enabled: false, button_label: 'Sign in with SSO' },
     saml: { enabled: false, button_label: 'Sign in with SAML', login_available: false },
   })
-  const { t } = useTranslation()
   const { login } = useAuth()
-  const { theme, setTheme } = useTheme()
-  const isLight = theme === 'light'
-  const hostLabel = typeof window !== 'undefined' ? window.location.hostname : ''
-  const oidcEnabled = providers.oidc.enabled
-  const pamEnabled = providers.pam.enabled
-  const ldapEnabled = providers.ldap.enabled
-  const passwordLogin = pamEnabled || ldapEnabled
-
   const usernameRef = useRef<HTMLInputElement>(null)
-  const passwordRef = useRef<HTMLInputElement>(null)
+  const oidcEnabled = providers.oidc.enabled
+  const ldapEnabled = providers.ldap.enabled
 
   useEffect(() => {
     void getAuthProviders().then(setProviders).catch(() => {})
@@ -72,45 +111,18 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    if (step === 'identify') {
-      usernameRef.current?.focus()
-    } else {
-      passwordRef.current?.focus()
-    }
-  }, [step])
+    usernameRef.current?.focus()
+  }, [])
 
-  const handleIdentify = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!username.trim()) {
-      setError('Enter your username')
-      return
-    }
-    setError('')
-    setStep('password')
-  }
-
-  const handleBack = () => {
-    setStep('identify')
-    setPassword('')
-    setError('')
-    setShowPassword(false)
-  }
-
-  const handlePasswordSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!password) {
-      setError('Password is required')
-      return
-    }
+    if (!username.trim() || !password) return
     setSubmitting(true)
     setError('')
     try {
       await login(username.trim(), password)
       if (rememberMe) {
-        localStorage.setItem(
-          'machina-saved-login',
-          JSON.stringify({ username: username.trim() }),
-        )
+        localStorage.setItem('machina-saved-login', JSON.stringify({ username: username.trim() }))
       } else {
         localStorage.removeItem('machina-saved-login')
       }
@@ -121,178 +133,135 @@ export default function LoginPage() {
     }
   }
 
-  const panelSubtitle =
-    step === 'password' ? (
-      <>
-        Enter the password for <span className="login-apple-host">{username}</span>
-      </>
-    ) : hostLabel ? (
-      <>
-        Sign in to <span className="login-apple-host">{hostLabel}</span>
-      </>
-    ) : (
-      'Sign in to continue.'
-    )
+  const hostLabel = typeof window !== 'undefined' ? window.location.hostname : ''
 
   return (
     <PremiumLoginShell
-      themeSwitcher={
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 flex items-center gap-2">
-          <div className="login-theme-toggle" role="group" aria-label="Appearance">
-            <button
-              type="button"
-              aria-pressed={isLight}
-              onClick={() => setTheme('light')}
-            >
-              Light
-            </button>
-            <button
-              type="button"
-              aria-pressed={!isLight}
-              onClick={() => setTheme('dark')}
-            >
-              Dark
-            </button>
-          </div>
-          <LanguageSwitcher />
+      variant="macos"
+      accent="blue"
+      heroWidth="55"
+      logo={
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-600/30 border border-white/20">
+          <MachinaLogo className="w-7 h-7 text-white" />
         </div>
       }
-      logo={
-        <ZyvorMark
-          to={null}
-          size="lg"
-          tone="onLight"
-          showWordmark={false}
-          className="login-mark zyvor-mark"
-        />
+      productName="machina"
+      productSubtitle="Hypervisor Control Plane"
+      heroHeadline={
+        <>
+          Every VM.
+          <br />
+          <span className="login-text-gradient">One control plane.</span>
+        </>
       }
-      panelTitle="machina"
-      panelSubtitle={panelSubtitle}
-      footer={<ZyvorFooter className="login-apple-footer" />}
+      heroSubheadline="KubeVirt and libvirt hypervisors, consoles, snapshots, and security — from a single dashboard."
+      pills={[
+        { label: 'PAM / LDAP / OIDC' },
+        { label: 'Native RDP + SSH' },
+        { label: 'Zero-trust ready' },
+      ]}
+      features={FEATURES}
+      heroFooter={
+        <div className="flex items-center gap-2 text-blue-100/40 text-sm">
+          <span>PAM authentication</span>
+          <span className="text-blue-200/30">·</span>
+          <span>{hostLabel || 'machina'}</span>
+        </div>
+      }
+      mobileSubtitle="Hypervisor Control Plane"
+      panelTitle="Welcome back"
+      panelSubtitle="Sign in with your system account"
+      footer={<ZyvorInline className="block text-center py-3 text-white/40" />}
     >
-      {step === 'identify' ? (
-        <form onSubmit={handleIdentify} autoComplete="on" className="text-left login-apple-step" key="identify">
-          {error ? <LoginError message={error} /> : null}
+      <form onSubmit={handleSubmit}>
+        {error ? <LoginError message={error} /> : null}
 
-          {providers.saml?.enabled && !providers.saml.login_available ? (
-            <p className="login-apple-note">
-              SAML metadata is configured for IdP federation — use SSO or your local account to sign in.
-            </p>
-          ) : null}
+        {ldapEnabled ? (
+          <p className="text-xs text-slate-400 mb-4">Sign in with your directory (LDAP/AD) username and password.</p>
+        ) : null}
+        {providers.saml?.enabled && !providers.saml.login_available ? (
+          <p className="text-xs text-slate-400 mb-4">
+            SAML metadata is configured for IdP federation — use SSO or your local account below.
+          </p>
+        ) : null}
 
-          {ldapEnabled ? <p className="login-apple-note">{t('login.ldapHint')}</p> : null}
+        <div className="space-y-5">
+          <LoginField label="Username" id="login-username">
+            <User className="login-field-icon" />
+            <input
+              ref={usernameRef}
+              id="login-username"
+              name="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="System username"
+              autoComplete="username"
+              required
+              className="login-input"
+            />
+          </LoginField>
 
-          {passwordLogin ? (
-            <>
-              <div className="login-apple-fields">
-                <LoginField label={t('login.username')} id="login-username">
-                  <input
-                    ref={usernameRef}
-                    id="login-username"
-                    name="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    autoComplete="username"
-                    placeholder={t('login.username')}
-                    className="login-input"
-                  />
-                </LoginField>
-              </div>
-
-              <LoginSubmit disabled={!username.trim()}>
-                <span>Continue</span>
-              </LoginSubmit>
-            </>
-          ) : null}
-
-          {oidcEnabled ? (
-            <button type="button" onClick={() => beginOidcLogin()} className="login-sso">
-              {providers.oidc.button_label}
-            </button>
-          ) : null}
-
-          <details className="login-help">
-            <summary>Need help?</summary>
-            <div>
-              <p>Forgotten your password, or can&rsquo;t sign in? Contact your administrator.</p>
-            </div>
-          </details>
-        </form>
-      ) : (
-        <form onSubmit={handlePasswordSubmit} autoComplete="on" className="text-left login-apple-step" key="password">
-          <div className="login-apple-identity">
-            <span className="login-identity-avatar" aria-hidden>
-              {username.trim().charAt(0) || '?'}
-            </span>
-            <span className="login-identity-name">{username}</span>
+          <LoginField label="Password" id="login-password">
+            <Lock className="login-field-icon" />
+            <input
+              id="login-password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              autoComplete="current-password"
+              disabled={submitting}
+              required
+              className="login-input pr-11"
+            />
             <button
               type="button"
-              onClick={handleBack}
-              className="login-identity-edit"
-              aria-label={`Change username (currently ${username})`}
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/75 transition-colors"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              Edit
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
-          </div>
-          {/* Hidden username field helps browser password managers correlate the two forms. */}
-          <input type="text" name="username" value={username} autoComplete="username" readOnly hidden />
+          </LoginField>
+        </div>
 
-          {error ? <LoginError message={error} /> : null}
+        <LoginRemember
+          checked={rememberMe}
+          onChange={setRememberMe}
+          label="Keep me signed in"
+          hint="Only your username is stored locally — never your password."
+        />
 
-          <div className="login-apple-fields">
-            <LoginField label={t('login.password')} id="login-password">
-              <input
-                ref={passwordRef}
-                id="login-password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={submitting}
-                autoComplete="current-password"
-                placeholder={t('login.password')}
-                className="login-input login-input--password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </LoginField>
-          </div>
+        <LoginSubmit loading={submitting} disabled={!username.trim() || !password}>
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin relative z-10" />
+              <span className="relative z-10">Signing in…</span>
+            </>
+          ) : (
+            <>
+              <span className="relative z-10">Sign in</span>
+              <ArrowRight className="h-4 w-4 relative z-10" />
+            </>
+          )}
+        </LoginSubmit>
 
-          <LoginRemember
-            checked={rememberMe}
-            onChange={setRememberMe}
-            label="Keep me signed in"
-            hint="Only your username is stored locally — never your password."
-          />
+        {oidcEnabled ? (
+          <button
+            type="button"
+            onClick={() => beginOidcLogin()}
+            className="mt-4 flex items-center justify-center gap-2 w-full rounded-lg border border-white/[0.12] py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+          >
+            {providers.oidc.button_label}
+          </button>
+        ) : null}
 
-          <LoginSubmit loading={submitting} disabled={!password}>
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                <span>Signing in…</span>
-              </>
-            ) : (
-              <span>Sign In</span>
-            )}
-          </LoginSubmit>
-
-          <details className="login-help">
-            <summary>Need help?</summary>
-            <div>
-              <p>Forgotten your password? Contact your administrator.</p>
-            </div>
-          </details>
-        </form>
-      )}
+        <div className="mt-6 pt-5 border-t border-white/[0.08] text-center text-xs text-white/45">
+          Forgotten your password? Contact your administrator.
+        </div>
+      </form>
     </PremiumLoginShell>
   )
 }
