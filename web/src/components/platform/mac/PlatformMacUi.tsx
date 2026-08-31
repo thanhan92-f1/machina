@@ -135,6 +135,11 @@ export function LaunchpadAppIcon({
   onClick?: () => void
 }) {
   const g = gradient ?? gradientForName(name)
+  // Only the hardcoded-dark GRADIENTS set is theme-independent — a caller-supplied
+  // `gradient` can be a light theme-token background (e.g. quick-create presets), where
+  // the light-theme text-white override correctly darkens the icon instead. Force a
+  // pure-white icon (bypassing that override) only when `g` is actually one of the dark set.
+  const isDarkGradient = (GRADIENTS as readonly string[]).includes(g)
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
@@ -143,7 +148,7 @@ export function LaunchpadAppIcon({
       className={`platform-launchpad-icon group flex flex-col items-center gap-2.5 text-center w-full ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div
-        className={`relative w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] rounded-[22%] bg-gradient-to-br ${g} shadow-lg shadow-black/30 flex items-center justify-center text-white transition-transform group-hover:scale-105 group-active:scale-95 ${
+        className={`relative w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] rounded-[22%] bg-gradient-to-br ${g} shadow-lg shadow-black/30 flex items-center justify-center ${isDarkGradient ? 'text-[#ffffff]' : 'text-white'} transition-transform group-hover:scale-105 group-active:scale-95 ${
           selected ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-slate-950' : ''
         }`}
       >
