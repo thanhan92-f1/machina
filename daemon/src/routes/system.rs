@@ -359,7 +359,8 @@ async fn put_ldap_settings(
     info!("LDAP settings saved to {}", view.config_path);
     Ok(Json(serde_json::json!({
         "status": "saved",
-        "restart_recommended": false,
+        "restart_recommended": true,
+        "restart_message": "Saved to the config file, but the running daemon keeps its settings from startup. Restart machina-daemon to apply: sudo systemctl restart machina-daemon",
         "settings": view,
     })))
 }
@@ -433,7 +434,8 @@ async fn put_oidc_settings(
     info!("OIDC settings saved to {}", view.config_path);
     Ok(Json(serde_json::json!({
         "status": "saved",
-        "restart_recommended": false,
+        "restart_recommended": true,
+        "restart_message": "Saved to the config file, but the running daemon keeps its settings from startup — the SSO button won't appear on the login page until you restart it: sudo systemctl restart machina-daemon",
         "settings": view,
     })))
 }
@@ -465,7 +467,8 @@ async fn put_saml_settings(
     info!("SAML settings saved to {}", view.config_path);
     Ok(Json(serde_json::json!({
         "status": "saved",
-        "restart_recommended": false,
+        "restart_recommended": true,
+        "restart_message": "Saved to the config file, but the running daemon keeps its settings from startup. Restart machina-daemon to apply: sudo systemctl restart machina-daemon",
         "note": "SAML login flow is config-only — metadata is stored for IdP federation setup.",
         "settings": view,
     })))

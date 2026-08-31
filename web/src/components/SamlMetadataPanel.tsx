@@ -68,7 +68,11 @@ export default function SamlMetadataPanel({ compact }: Props) {
       const res = await putSamlSettings(patch)
       setSettings(res.settings)
       setMetadataXml('')
-      toast.success('SAML metadata settings saved')
+      if (res.restart_recommended) {
+        toast.warning(res.restart_message ?? 'SAML settings saved — restart machina-daemon to apply them.')
+      } else {
+        toast.success('SAML metadata settings saved')
+      }
     } catch (e: unknown) {
       toast.error(formatUserError(e) || 'Save failed')
     } finally {

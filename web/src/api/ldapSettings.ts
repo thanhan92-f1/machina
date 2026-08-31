@@ -41,7 +41,10 @@ export interface LdapTestResponse {
 export const getLdapSettings = () => readJsonObject<LdapSettingsView>(`${API}/system/auth/ldap-settings`)
 
 export const putLdapSettings = (body: LdapSettingsPatch) =>
-  apiPut<{ status?: string; settings: LdapSettingsView }>(`${API}/system/auth/ldap-settings`, body)
+  apiPut<{ status?: string; restart_recommended?: boolean; restart_message?: string; settings: LdapSettingsView }>(
+    `${API}/system/auth/ldap-settings`,
+    body,
+  )
 
 export async function testLdapBind(username: string, password: string): Promise<LdapTestResponse> {
   const res = await fetch(`${API}/system/auth/ldap-test`, {

@@ -82,7 +82,9 @@ export async function getOidcSettings(): Promise<OidcSettingsView> {
   return res.json() as Promise<OidcSettingsView>
 }
 
-export async function putOidcSettings(patch: OidcSettingsPatch): Promise<{ settings: OidcSettingsView }> {
+export async function putOidcSettings(
+  patch: OidcSettingsPatch,
+): Promise<{ settings: OidcSettingsView; restart_recommended?: boolean; restart_message?: string }> {
   const res = await fetch(`${API}/system/auth/oidc-settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -90,7 +92,7 @@ export async function putOidcSettings(patch: OidcSettingsPatch): Promise<{ setti
     body: JSON.stringify(patch),
   })
   if (!res.ok) throw await parseResponseError(res)
-  return res.json() as Promise<{ settings: OidcSettingsView }>
+  return res.json() as Promise<{ settings: OidcSettingsView; restart_recommended?: boolean; restart_message?: string }>
 }
 
 export async function getSamlSettings(): Promise<SamlSettingsView> {
@@ -99,7 +101,9 @@ export async function getSamlSettings(): Promise<SamlSettingsView> {
   return res.json() as Promise<SamlSettingsView>
 }
 
-export async function putSamlSettings(patch: SamlSettingsPatch): Promise<{ settings: SamlSettingsView }> {
+export async function putSamlSettings(
+  patch: SamlSettingsPatch,
+): Promise<{ settings: SamlSettingsView; restart_recommended?: boolean; restart_message?: string }> {
   const res = await fetch(`${API}/system/auth/saml-settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -107,7 +111,7 @@ export async function putSamlSettings(patch: SamlSettingsPatch): Promise<{ setti
     body: JSON.stringify(patch),
   })
   if (!res.ok) throw await parseResponseError(res)
-  return res.json() as Promise<{ settings: SamlSettingsView }>
+  return res.json() as Promise<{ settings: SamlSettingsView; restart_recommended?: boolean; restart_message?: string }>
 }
 
 export function suggestedOidcRedirectUrl(): string {

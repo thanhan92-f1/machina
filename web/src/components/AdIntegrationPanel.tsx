@@ -79,7 +79,11 @@ export default function AdIntegrationPanel({ compact }: Props) {
       const res = await putLdapSettings(patch)
       setSettings(res.settings)
       setBindPassword('')
-      toast.success('Active Directory settings saved')
+      if (res.restart_recommended) {
+        toast.warning(res.restart_message ?? 'Active Directory settings saved — restart machina-daemon to apply them.')
+      } else {
+        toast.success('Active Directory settings saved')
+      }
     } catch (e: unknown) {
       toast.error(formatUserError(e))
     } finally {

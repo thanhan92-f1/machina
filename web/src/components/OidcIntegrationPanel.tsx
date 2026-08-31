@@ -59,7 +59,11 @@ export default function OidcIntegrationPanel({ compact }: Props) {
       const res = await putOidcSettings(patch)
       setSettings(res.settings)
       setClientSecret('')
-      toast.success('OIDC settings saved')
+      if (res.restart_recommended) {
+        toast.warning(res.restart_message ?? 'OIDC settings saved — restart machina-daemon to apply them.')
+      } else {
+        toast.success('OIDC settings saved')
+      }
     } catch (e: unknown) {
       toast.error(formatUserError(e) || 'Save failed')
     } finally {
