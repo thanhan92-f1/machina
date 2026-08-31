@@ -188,7 +188,9 @@ Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppr
 
 ## Theming
 
-Product themes map to Zeus: **Tahoe Light** (`light`), **Classic Blue** (`dark`), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600`. See [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md).
+Product themes map to Zeus: **Tahoe Light** (`light`), **Classic Blue** (`dark`), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600` / slate hex (`#64748b`, `#94a3b8`, …).
+
+**Box type (Apple shop):** cards inherit Apple TV buy-flow fonts — light `#1d1d1f` / `#6e6e73` / `#86868b`; dark `#f5f5f7` / `#a1a1a6` / `#86868b`. SoT: [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md) + `zeus-parity.css`. Immersive Console Hub / VNC keep carbon chrome but the same `--text-*` tokens.
 
 ## Login & accessibility
 

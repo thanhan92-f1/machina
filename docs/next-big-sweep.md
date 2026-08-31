@@ -74,7 +74,7 @@ Cross-shell Tracks A–E remain **shipped** (Batch 62). Next in-repo themes:
 | **D — E2E matrix** | Shipped — 71 tests in verification bundle |
 | **E — Backend ops hooks** | N/A — UI CTAs already wired; defer Vault/MFA per [`enterprise-backlog.md`](enterprise-backlog.md) |
 
-**Intentional exclusions (no change):** `ChoiceCards` wizard palette, ApiDocs HTTP method badges (tone via `--accent`), GuestKit/Platform discovery orange panels. Login is Apple Account paper ([`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css)) — not legacy aurora. Primary CTAs use Mist via `.btn-primary` / `zeus-parity.css` (not raw `bg-blue-600`).
+**Intentional exclusions (no change):** ApiDocs HTTP method badges (tone via `--accent`), GuestKit/Platform discovery orange panels. `ChoiceCards` body type uses Apple `--text-*`; amber/emerald **icons** use `--amber` / `--verdant` (not fixed Tailwind greens). Login is Apple Account paper ([`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css)) — not legacy aurora. Primary CTAs use apple.com `#0071e3` via `.btn-primary` / `zeus-parity.css` (not raw `bg-blue-600`).
 
 **Out of repo next:** macOS Tahoe in `ui/`, PacketWolf tokens in `web-ui/` — see [Out of repo](#out-of-repo).
 

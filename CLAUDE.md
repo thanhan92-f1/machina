@@ -173,6 +173,7 @@ The UI follows **apple.com / Zeus OS** contracts — see [docs/design/APPLE-UX-C
 
 - **Shell:** Mac menubar (Zyvor tile + menus) + dock; sidebar dock-first (Advanced default on).
 - **Story / Browse / Work** tiers: `apple-story-stack`, `TahoeToolbar`, `.tahoe-glass-card`.
+- **Box fonts:** Apple shop `.form-selector` 1:1 — `--text-primary/secondary/muted` (`#1d1d1f` / `#6e6e73` / `#86868b` light; `#f5f5f7` / `#a1a1a6` / `#86868b` dark) in `zeus-parity.css`.
 - **Login:** [`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css) — hero wordmark **machina**.
 - Glass primitives remain in `web/src/components/glass/`. Framer Motion handles spring animations on modals/toasts.
 

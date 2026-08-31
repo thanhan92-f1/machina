@@ -32,7 +32,7 @@ Author guide: [ux.md](../ux.md).
 | Hero | **Canonical:** `PlatformPageChrome` → `PageLayout` + `machina-apple-ux.css` (`.apple-page-header`). Optional Zeus flat: `PlatformTahoeHero` / `TahoeHero` for icon+stats ledger |
 | Browse chrome | Thin Zeus port [`TahoeListKit`](../../web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty` |
 | Fleet Cloud nav | Pill row + **More** overflow ([`FleetCloudSubNav`](../../web/src/components/FleetCloudSubNav.tsx)) — not a 15-tab strip |
-| Tokens | Zeus Mist / Magichromatic via `zeus-parity.css` |
+| Tokens | Zeus Mist / Magichromatic via `zeus-parity.css`; **box type** = Apple shop `.form-selector` (`#1d1d1f` / `#6e6e73` / `#86868b` light — see [DAYLIGHT-CONTRACT.md](DAYLIGHT-CONTRACT.md)) |
 | Login | Apple Account [`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css); hero wordmark **machina** (SF Pro / system display); Zyvor mark icon-only |
 
 ---
@@ -56,12 +56,13 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 
 1. Prefer `PlatformPageChrome` / `PageLayout` → apple flat header (`PlatformTahoeHero` only when icon+stats ledger is required)
 2. Story first viewport: one composition — eyebrow, `apple-display`, lede, one CTA row (`apple-section` / `apple-story-stack`)
-3. Primary CTA = `.btn-primary` / `.tahoe-btn-primary` (Mist, not System Blue)
-4. Content cards = `.tahoe-glass-card` (flat hairline) — no content blur on Browse/Work panels
+3. Primary CTA = `.btn-primary` / `.tahoe-btn-primary` (apple.com `#0071e3`, not Mist / System-Blue leftovers)
+4. Content cards = `.tahoe-glass-card` (flat hairline) — inherit `color: var(--text-primary)`; no content blur on Browse/Work panels
 5. Browse lists: wrap search with `TahoeToolbar`; tables in `TahoeTableWrap`
 6. Inputs: `input-field`
-7. Console / TTY / Host SSH stay immersive (carbon) — no Story marketing treatment
-8. No hard-coded `slate-*` / `sky-*` / `blue-600` — use semantic tokens (`--text-*`, `--accent`, `--apple-*`)
+7. Console / TTY / Host SSH stay immersive (carbon chrome) — type still uses Apple `--text-*` (no slate hex)
+8. No hard-coded `slate-*` / `sky-*` / `blue-600` / `#64748b` — use semantic tokens (`--text-*`, `--accent`, `--apple-*`, `--amber`, `--verdant`)
+9. Box fonts 1:1 with Apple shop: light `#1d1d1f` / `#6e6e73` / `#86868b`; dark `#f5f5f7` / `#a1a1a6` / `#86868b`
 
 ---
 
@@ -90,5 +91,7 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 - [x] Thin TahoeListKit + Fleet Cloud pill nav
 - [x] Work panels on high-traffic pages → `.tahoe-glass-card`
 - [x] High-traffic slate/blue leftover cleanup (HostSSH, ApiDocs, SimpleCreateVmWizard, skip-link)
+- [x] Apple shop box font tokens 1:1 (`--text-primary/secondary/muted` in `zeus-parity.css`)
+- [x] Console Hub / VNC type remapped off slate hex onto `--text-*`; ChoiceCard amber/emerald icons → `--amber` / `--verdant`
 - [ ] Full TahoeSheet port (drawer/sheet primitive — deferred)
 - [ ] Exhaustive sky/cyan remaps removal from `main.css` bandage blocks

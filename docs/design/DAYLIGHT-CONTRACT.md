@@ -31,13 +31,17 @@ Shell / nav / tiers: [APPLE-UX-CONTRACT.md](APPLE-UX-CONTRACT.md).
 
 ### Box type (Apple shop `.form-selector`)
 
-Card / panel font colors match [Apple TV buy flow](https://www.apple.com/in/shop/buy-tv/apple-tv-4k/64gb) 1:1:
+Card / panel font colors match [Apple TV buy flow](https://www.apple.com/in/shop/buy-tv/apple-tv-4k/64gb) 1:1.
+Cascade winners: `zeus-parity.css` `:root` + `html[data-theme='tahoe-light']` (mirrored in `machina-daylight.css` / `.light-glass`).
+`.tahoe-glass-card` / `.glass-card` set `color: var(--text-primary)`.
 
 | Token | Light | Dark |
 |---|---|---|
 | `--text-primary` | `#1d1d1f` | `#f5f5f7` |
 | `--text-secondary` | `#6e6e73` | `#a1a1a6` |
 | `--text-muted` | `#86868b` | `#86868b` |
+
+Status / deviation icons may use `--amber` / `--verdant` / `--accent` — never slate hex for body type.
 
 ## Law 0 — Elevation runs up, not down
 
@@ -56,8 +60,8 @@ Nominal values are graphite. Mist Blue = intent only.
 
 ## Invariants
 
-- Terminals / Console Hub / Host SSH cinema stay carbon islands.
+- Terminals / Console Hub / Host SSH cinema stay carbon islands (chrome / backdrop) — **type** still uses Apple `--text-*` (no `#64748b` / slate hex).
 - Theme attribute: `html[data-theme=tahoe-light]` when Tahoe Light is selected.
 - Classic Blue: `html[data-ui-shell=default]`.
 - Story pages use `apple-story-stack` / `apple-metric-band` — not dense bordered tile grids.
-- Do not invent new blues (`blue-600`, System Blue `#0071e3`); use `--accent` / Mist.
+- Primary CTAs use apple.com blue `#0071e3` (`.btn-primary` / `.tahoe-btn-primary`). Do not invent other blues (`blue-600`, Mist as CTA fill).
