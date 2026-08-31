@@ -705,7 +705,7 @@ function CockpitInner({
   }
 
   return (
-    <div className={`flex flex-col flex-1 min-h-0 w-full ${isPopout ? 'fixed inset-0 z-[55] bg-[#050508] p-2 md:p-4' : ''}`}>
+    <div className={`flex flex-col flex-1 min-h-0 w-full ${isPopout ? 'fixed inset-0 z-[55] bg-[var(--page-bg)] p-2 md:p-4' : ''}`}>
       {prepend}
       {!error || wsUrl ? null : (
         <ZeroPanicRecoveryBar
