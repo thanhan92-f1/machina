@@ -101,8 +101,8 @@ export default function ViewLensBar({
               onClick={() => onProtocolChange(p)}
               className={
                 p === activeProtocol
-                  ? 'px-2 py-0.5 rounded text-[11px] bg-slate-700 text-slate-100'
-                  : 'px-2 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-300'
+                  ? 'px-2 py-0.5 rounded text-[11px] bg-slate-700 text-[#f1f5f9]'
+                  : 'px-2 py-0.5 rounded text-[11px] text-[#64748b] hover:text-[#cbd5e1]'
               }
             >
               {p.replace(/_/g, ' ')}

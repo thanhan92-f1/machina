@@ -38,7 +38,7 @@ export default function ZeroPanicRecoveryBar({
         <div className="min-w-0 flex-1">
           <p className="font-medium">Console issue</p>
           <p className="text-xs text-amber-200/80 mt-1 break-words">{error}</p>
-          {vmState ? <p className="text-xs text-slate-400 mt-1">VM state: {vmState}</p> : null}
+          {vmState ? <p className="text-xs text-[#94a3b8] mt-1">VM state: {vmState}</p> : null}
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -57,14 +57,14 @@ export default function ZeroPanicRecoveryBar({
       </div>
       {recipe && onRunRecipe ? (
         <div className="pt-2 border-t border-amber-500/20">
-          <p className="text-xs text-slate-400 mb-1">Suggested recipe: {recipe.title}</p>
+          <p className="text-xs text-[#94a3b8] mb-1">Suggested recipe: {recipe.title}</p>
           <button type="button" className={btn} onClick={() => onRunRecipe(recipe)}>Run Recipe</button>
         </div>
       ) : null}
       {!recipe && onRunRecipe ? (
         <div className="flex flex-wrap gap-1 pt-1">
           {CONSOLE_RECIPES.slice(0, 4).map((r) => (
-            <button key={r.id} type="button" className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-slate-400 hover:text-slate-200" onClick={() => onRunRecipe(r)}>
+            <button key={r.id} type="button" className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-[#94a3b8] hover:text-[#e2e8f0]" onClick={() => onRunRecipe(r)}>
               {r.title}
             </button>
           ))}
