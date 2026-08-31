@@ -54,7 +54,7 @@ export default function ConsoleHubSessionHistory({ sessions, loading, onOpenRepl
             <span>{s.protocol}</span>
             <span className="text-slate-500">{s.backend}</span>
             <span className="text-slate-500">{fmtTime(s.started_at)}</span>
-            {s.recording_enabled ? <span className="text-red-300/90">rec</span> : null}
+            {s.recording_enabled ? <span className="text-red-600/90">rec</span> : null}
             {s.replay_available && onOpenReplay ? (
               <button
                 type="button"

@@ -147,7 +147,7 @@ export default function CommandCenterPanel({
                 </div>
                 <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800 col-span-2">
                   <p className="text-slate-500">Network</p>
-                  <p className="font-mono text-emerald-300/90">{guestIp ?? 'No IP'}</p>
+                  <p className="font-mono text-emerald-600/90">{guestIp ?? 'No IP'}</p>
                 </div>
               </div>
               {guestAccess?.guest_ip_private && ip ? (

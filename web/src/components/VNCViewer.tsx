@@ -620,11 +620,11 @@ export default function VNCViewer({
       }
     >
       {!cockpitMode && !previewMode ? (
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 rounded-t-lg shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-[var(--apple-fill-tertiary)] border-b border-[var(--apple-hairline)] rounded-t-lg shrink-0">
         <div className="flex items-center gap-3">
           <div className={`w-2.5 h-2.5 rounded-full ${statusColor}`} />
-          <span className="text-sm text-slate-300">VNC — {kubeVirtNamespace ? `${kubeVirtNamespace}/${vmName}` : vmName}</span>
-          <span className="text-xs text-slate-500">{statusText}</span>
+          <span className="text-sm text-[var(--text-primary)]">VNC — {kubeVirtNamespace ? `${kubeVirtNamespace}/${vmName}` : vmName}</span>
+          <span className="text-xs text-[var(--text-muted)]">{statusText}</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <button
@@ -636,19 +636,19 @@ export default function VNCViewer({
           >
             <Keyboard className="w-3 h-3" /> Ctrl+Alt+Del
           </button>
-          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] cursor-pointer select-none">
             <input
               type="checkbox"
-              className="rounded border-slate-600"
+              className="rounded border-[var(--apple-hairline)]"
               checked={showDotCursor}
               onChange={(e) => setShowDotCursor(e.target.checked)}
             />
             Local cursor
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] cursor-pointer select-none">
             <input
               type="checkbox"
-              className="rounded border-slate-600"
+              className="rounded border-[var(--apple-hairline)]"
               checked={scaledFit}
               onChange={(e) => setScaledFit(e.target.checked)}
             />
@@ -663,16 +663,16 @@ export default function VNCViewer({
               <RefreshCw className="w-3 h-3" /> Reconnect
             </button>
           )}
-          <button type="button" onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-slate-700 rounded transition" title="Fullscreen" aria-label="Fullscreen">
-            {fullscreen ? <Minimize className="w-4 h-4 text-slate-400" /> : <Maximize className="w-4 h-4 text-slate-400" />}
+          <button type="button" onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+            {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
           </button>
         </div>
       </div>
       ) : null}
       {!cockpitMode && !previewMode && !hideInstallerHint ? (
-      <p className="text-xs text-slate-500 px-4 py-2 bg-slate-900/40 border-b border-slate-700/50 leading-relaxed shrink-0">
+      <p className="text-xs text-[var(--text-muted)] px-4 py-2 bg-[var(--apple-fill-tertiary)] border-b border-[var(--apple-hairline)] leading-relaxed shrink-0">
         {status === 'disconnected' && (
-          <span className="block text-amber-300/90 mb-1">
+          <span className="block text-amber-600/90 mb-1">
             Console disconnected — ensure the VM is running, wait for cloud-init on first boot, then Reconnect.
           </span>
         )}
