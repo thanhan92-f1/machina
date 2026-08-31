@@ -67,11 +67,11 @@ export default function ConsoleCommandPalette({ open, onClose, actions }: Props)
         data-testid="console-command-palette"
       >
         <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
-          <Search className="w-4 h-4 text-slate-500" />
+          <Search className="w-4 h-4 text-[#64748b]" />
           <input
             ref={inputRef}
             aria-label="Search commands"
-            className="flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
+            className="flex-1 bg-transparent text-sm text-[#f1f5f9] outline-none placeholder:text-[#64748b]"
             placeholder="What do you want to do?"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -91,13 +91,13 @@ export default function ConsoleCommandPalette({ open, onClose, actions }: Props)
         </div>
         <ul className="max-h-64 overflow-y-auto py-1">
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-xs text-slate-500">No matching actions</li>
+            <li className="px-3 py-2 text-xs text-[#64748b]">No matching actions</li>
           ) : (
             filtered.map((a, i) => (
               <li key={a.id}>
                 <button
                   type="button"
-                  className={`w-full text-left px-3 py-2 text-sm ${i === index ? 'bg-emerald-900/30 text-emerald-100' : 'text-slate-200 hover:bg-white/5'}`}
+                  className={`w-full text-left px-3 py-2 text-sm ${i === index ? 'bg-emerald-900/30 text-emerald-100' : 'text-[#e2e8f0] hover:bg-white/5'}`}
                   onMouseEnter={() => setIndex(i)}
                   onClick={() => run(a)}
                 >

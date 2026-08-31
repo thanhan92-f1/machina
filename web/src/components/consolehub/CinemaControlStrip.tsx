@@ -140,7 +140,7 @@ export default function CinemaControlStrip({
   const spiceDisplay = activeProtocol === 'spice' || activeProtocol === 'webrtc_spice'
 
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs bg-white/10 border border-white/15 text-slate-100 hover:bg-white/20 hover:border-white/25 transition inline-flex items-center gap-1'
+    'px-2.5 py-1.5 rounded-lg text-xs bg-white/10 border border-white/15 text-[#f1f5f9] hover:bg-white/20 hover:border-white/25 transition inline-flex items-center gap-1'
 
   const setMode = (mode: ViewportMode) => {
     vp.setMode(mode)
@@ -201,7 +201,7 @@ export default function CinemaControlStrip({
                 <button
                   key={a}
                   type="button"
-                  className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded capitalize"
+                  className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded capitalize"
                   onClick={() => {
                     onPower?.(a)
                     setPowerOpen(false)
@@ -241,16 +241,16 @@ export default function CinemaControlStrip({
           {keyboardOpen ? (
             <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl">
               {onCtrlAltDel ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onCtrlAltDel(); setKeyboardOpen(false) }}>
+                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onCtrlAltDel(); setKeyboardOpen(false) }}>
                   Ctrl+Alt+Del
                 </button>
               ) : null}
               {onSendKey ? (
                 <>
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSendKey('esc'); setKeyboardOpen(false) }}>
+                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onSendKey('esc'); setKeyboardOpen(false) }}>
                     Send Esc
                   </button>
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSendKey('alt_tab'); setKeyboardOpen(false) }}>
+                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onSendKey('alt_tab'); setKeyboardOpen(false) }}>
                     Alt+Tab
                   </button>
                 </>
@@ -273,7 +273,7 @@ export default function CinemaControlStrip({
           </button>
           {clipOpen && !readOnly ? (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-72 rounded-lg border border-white/10 bg-slate-950/95 p-3 shadow-xl space-y-2" data-testid="cinema-clipboard-panel">
-              <p className="text-[11px] font-medium text-slate-200">Clipboard sync</p>
+              <p className="text-[11px] font-medium text-[#e2e8f0]">Clipboard sync</p>
               {!clip?.canSync ? (
                 <p className="text-[10px] text-amber-200/80">Connect the display console to enable paste into the VM.</p>
               ) : null}
@@ -309,7 +309,7 @@ export default function CinemaControlStrip({
                 <button
                   key={p}
                   type="button"
-                  className={`block w-full text-left px-2 py-1.5 text-xs hover:bg-white/10 rounded ${p === activeProtocol ? 'text-emerald-200' : 'text-slate-200'}`}
+                  className={`block w-full text-left px-2 py-1.5 text-xs hover:bg-white/10 rounded ${p === activeProtocol ? 'text-emerald-200' : 'text-[#e2e8f0]'}`}
                   onClick={() => {
                     onProtocolChange?.(p)
                     setDisplayOpen(false)
@@ -320,23 +320,23 @@ export default function CinemaControlStrip({
               ))}
               <div className="my-1 border-t border-white/10" />
               {(['fit', 'fill', 'native', 'scroll', 'stretch'] as ViewportMode[]).map((mode) => (
-                <button key={mode} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded capitalize" onClick={() => setMode(mode)}>
+                <button key={mode} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded capitalize" onClick={() => setMode(mode)}>
                   {mode}
                 </button>
               ))}
               {ZOOM_LEVELS.map((z) => (
-                <button key={z} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { vp.setZoom(z); setDisplayOpen(false) }}>
+                <button key={z} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { vp.setZoom(z); setDisplayOpen(false) }}>
                   Zoom {z}%
                 </button>
               ))}
               {vp.monitors.length > 1 ? (
                 <>
                   <div className="my-1 border-t border-white/10" />
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { vp.setActiveMonitor('all'); setDisplayOpen(false) }}>
+                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { vp.setActiveMonitor('all'); setDisplayOpen(false) }}>
                     All monitors
                   </button>
                   {vp.monitors.map((mon) => (
-                    <button key={mon.id} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { vp.setActiveMonitor(mon.id); setDisplayOpen(false) }}>
+                    <button key={mon.id} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { vp.setActiveMonitor(mon.id); setDisplayOpen(false) }}>
                       {mon.label}
                     </button>
                   ))}
@@ -387,7 +387,7 @@ export default function CinemaControlStrip({
           {moreOpen ? (
             <div className="absolute bottom-full right-0 mb-1 min-w-[11rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl">
               {onScreenshot ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onScreenshot(); setMoreOpen(false) }}>
+                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onScreenshot(); setMoreOpen(false) }}>
                   Screenshot
                 </button>
               ) : null}
@@ -399,12 +399,12 @@ export default function CinemaControlStrip({
               {onSwitchLens ? (
                 <>
                   {!displayProtocols?.length || displayProtocols.includes('serial') ? (
-                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSwitchLens('serial'); setMoreOpen(false) }}>
+                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onSwitchLens('serial'); setMoreOpen(false) }}>
                       Serial
                     </button>
                   ) : null}
                   {!displayProtocols?.length || displayProtocols.includes('native_ssh') || displayProtocols.includes('ssh') ? (
-                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onSwitchLens('shell'); setMoreOpen(false) }}>
+                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onSwitchLens('shell'); setMoreOpen(false) }}>
                       Shell
                     </button>
                   ) : null}
@@ -416,16 +416,16 @@ export default function CinemaControlStrip({
                 </button>
               ) : null}
               {onOpenStudio ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onOpenStudio(); setMoreOpen(false) }}>
+                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onOpenStudio(); setMoreOpen(false) }}>
                   Studio
                 </button>
               ) : null}
               {onOpenOpsShelf ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { onOpenOpsShelf(); setMoreOpen(false) }}>
+                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { onOpenOpsShelf(); setMoreOpen(false) }}>
                   Ops Shelf
                 </button>
               ) : null}
-              <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded" onClick={() => { document.documentElement.requestFullscreen?.(); setMoreOpen(false) }}>
+              <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[#e2e8f0] hover:bg-white/10 rounded" onClick={() => { document.documentElement.requestFullscreen?.(); setMoreOpen(false) }}>
                 Fullscreen
               </button>
             </div>

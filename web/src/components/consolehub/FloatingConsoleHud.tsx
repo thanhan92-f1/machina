@@ -38,18 +38,18 @@ export default function FloatingConsoleHud({ visible = true }: Props) {
     <div
       className={`absolute top-3 right-3 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-black/60 backdrop-blur-md text-xs text-slate-200 shadow-lg">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-black/60 backdrop-blur-md text-xs text-[#e2e8f0] shadow-lg">
         <span className={`w-2 h-2 rounded-full ${tone}`} />
         <span>{label}</span>
-        <span className="text-slate-500">·</span>
-        <span className="uppercase text-slate-400">{vp.protocol}</span>
-        <span className="text-slate-500">·</span>
-        <span className="font-mono text-slate-300">{vp.resolution}</span>
-        <span className="text-slate-500">·</span>
-        <span className="text-slate-400 capitalize">{vp.mode}</span>
+        <span className="text-[#64748b]">·</span>
+        <span className="uppercase text-[#94a3b8]">{vp.protocol}</span>
+        <span className="text-[#64748b]">·</span>
+        <span className="font-mono text-[#cbd5e1]">{vp.resolution}</span>
+        <span className="text-[#64748b]">·</span>
+        <span className="text-[#94a3b8] capitalize">{vp.mode}</span>
         {vp.mode === 'zoom' ? (
           <>
-            <span className="text-slate-500">·</span>
+            <span className="text-[#64748b]">·</span>
             <span>{vp.zoom}%</span>
           </>
         ) : null}
