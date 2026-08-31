@@ -350,7 +350,7 @@ function BundleView({
         </div>
       )}
       {execLast && (
-        <pre className="text-[10px] font-mono text-[var(--text-primary)] bg-black/40 border border-[var(--apple-hairline)] rounded-lg p-2 max-h-28 overflow-y-auto whitespace-pre-wrap">
+        <pre className="text-[10px] font-mono text-[var(--text-primary)] bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg p-2 max-h-28 overflow-y-auto whitespace-pre-wrap">
           exit {execLast.exit_code}
           {'\n'}
           {execLast.stderr}
@@ -372,7 +372,7 @@ function BundleView({
           }}
         />
       </div>
-      <pre className="text-[11px] font-mono text-[var(--text-primary)] bg-black/40 border border-[var(--apple-hairline)] rounded-lg p-3 max-h-[35vh] overflow-y-auto whitespace-pre-wrap">
+      <pre className="text-[11px] font-mono text-[var(--text-primary)] bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg p-3 max-h-[35vh] overflow-y-auto whitespace-pre-wrap">
         {bundle.yaml}
       </pre>
     </>

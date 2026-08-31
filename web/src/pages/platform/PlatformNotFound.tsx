@@ -20,7 +20,7 @@ export default function PlatformNotFound() {
       contentClassName="mission-control-page"
     >
       <section className="max-w-lg mx-auto rounded-2xl border border-white/[0.08] bg-[var(--apple-surface)] p-8 text-center space-y-4" data-testid="platform-not-found">
-        <dl className="text-left text-xs bg-black/30 rounded-lg p-3 space-y-1 font-mono text-[var(--text-muted)]">
+        <dl className="text-left text-xs bg-[var(--apple-fill-tertiary)] rounded-lg p-3 space-y-1 font-mono text-[var(--text-muted)]">
           <div><dt className="inline text-[var(--text-faint)]">Path: </dt><dd className="inline text-[var(--text-secondary)]">{location.pathname}</dd></div>
         </dl>
         <div className="flex flex-wrap justify-center gap-2 pt-2">

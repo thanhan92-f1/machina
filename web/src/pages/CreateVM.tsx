@@ -1802,7 +1802,7 @@ export default function CreateVMPage() {
           </Link>
         </div>
         {(packerRunning || packerLog.length > 0) && (
-          <div className="rounded-lg border border-[var(--apple-hairline)] bg-black/40 p-3 space-y-2">
+          <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] p-3 space-y-2">
             <h4 className="text-xs font-semibold text-[var(--link)]">Packer / QEMU build output</h4>
             <BuildStepTimeline
               steps={GOLDEN_FORGE_TIMELINE_LABELS}

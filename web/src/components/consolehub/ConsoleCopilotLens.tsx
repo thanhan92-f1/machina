@@ -73,7 +73,7 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
       ) : null}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
       {reply ? (
-        <div className="rounded-lg bg-black/30 border border-white/5 p-3 text-xs text-slate-200 whitespace-pre-wrap">{reply}</div>
+        <div className="rounded-lg bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] p-3 text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{reply}</div>
       ) : null}
       <div className="border-t border-white/5 pt-3">
         <p className="text-xs text-slate-500 mb-2">Console recipes</p>

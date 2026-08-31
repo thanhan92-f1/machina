@@ -36,7 +36,7 @@ export default function CollapsibleCodeBlock({
         <CopyButton text={content} label="Copy" className="py-0.5" />
       </div>
       {open && (
-        <pre className={`text-[11px] leading-snug font-mono text-[var(--text-primary)] bg-black/40 border border-[var(--apple-hairline)] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all ${maxHeight} overflow-y-auto`}>
+        <pre className={`text-[11px] leading-snug font-mono text-[var(--text-primary)] bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all ${maxHeight} overflow-y-auto`}>
           {content || '(no output)'}
         </pre>
       )}

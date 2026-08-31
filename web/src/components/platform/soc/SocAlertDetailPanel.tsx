@@ -128,7 +128,7 @@ export default function SocAlertDetailPanel({
         {Object.keys(detail.detail_json ?? {}).length > 0 && (
           <div>
             <p className="text-xs text-[var(--text-muted)] mb-1">Detection context</p>
-            <pre className="text-xs bg-black/30 rounded p-2 overflow-auto max-h-28 text-[var(--text-secondary)]">
+            <pre className="text-xs bg-[var(--apple-fill-tertiary)] rounded p-2 overflow-auto max-h-28 text-[var(--text-secondary)]">
               {JSON.stringify(detail.detail_json, null, 2)}
             </pre>
           </div>

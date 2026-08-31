@@ -45,7 +45,7 @@ export default function VmQemuLogsPanel({ vmId, vmName }: VmQemuLogsPanelProps) 
         </button>
       </div>
       {error && <p className="text-sm text-amber-600 mb-2">{error}</p>}
-      <pre className="text-xs text-[var(--text-secondary)] bg-black/40 rounded-lg p-3 max-h-[28rem] overflow-auto whitespace-pre-wrap font-mono">
+      <pre className="text-xs text-[var(--text-secondary)] bg-[var(--apple-fill-tertiary)] rounded-lg p-3 max-h-[28rem] overflow-auto whitespace-pre-wrap font-mono">
         {loading && !content ? 'Loading…' : content || '(empty log)'}
       </pre>
     </MacGlassPanel>

@@ -236,7 +236,7 @@ export default function PlatformApiConsole() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
             <input
               aria-label="Filter operations"
-              className="w-full pl-8 pr-3 py-2 rounded-lg bg-black/25 border border-white/10 text-sm text-[var(--text-primary)]"
+              className="w-full pl-8 pr-3 py-2 rounded-lg bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] text-sm text-[var(--text-primary)]"
               placeholder="Filter operations…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

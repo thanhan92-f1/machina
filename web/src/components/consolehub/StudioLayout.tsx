@@ -71,8 +71,8 @@ export default function StudioLayout({
         </div>
       </div>
       {timeline ? (
-        <details className="shrink-0 mt-2 rounded-lg border border-white/[0.06] bg-black/40">
-          <summary className="px-3 py-2 text-xs text-slate-400 cursor-pointer">Timeline</summary>
+        <details className="shrink-0 mt-2 rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)]">
+          <summary className="px-3 py-2 text-xs text-[var(--text-muted)] cursor-pointer">Timeline</summary>
           <div className="max-h-40 overflow-y-auto px-2 pb-2">{timeline}</div>
         </details>
       ) : null}

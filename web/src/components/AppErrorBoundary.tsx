@@ -69,7 +69,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
               : `This ${this.props.surface ?? 'page'} hit an unexpected error. You can reload, or go back and try again.`}
           </p>
           {!chunk && (
-            <pre className="mt-3 max-h-32 overflow-auto rounded-lg bg-black/30 p-3 text-left text-[11px] text-[var(--text-muted)]">
+            <pre className="mt-3 max-h-32 overflow-auto rounded-lg bg-[var(--apple-fill-tertiary)] p-3 text-left text-[11px] text-[var(--text-muted)]">
               {error.message}
             </pre>
           )}

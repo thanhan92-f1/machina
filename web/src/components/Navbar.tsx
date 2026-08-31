@@ -518,7 +518,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
                       Keyboard shortcuts
                       <kbd
                         className={`ml-auto text-[10px] px-1 py-0.5 rounded font-mono ${
-                          themed ? 'bg-black/30 text-[#9aa8b8]' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
+                          themed ? 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
                         }`}
                       >
                         ?
