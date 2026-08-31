@@ -508,7 +508,7 @@ function CockpitInner({
     if (lens === 'network') {
       return (
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
-          <p className="text-sm text-[#cbd5e1]">
+          <p className="text-sm text-[var(--text-secondary)]">
             Guest IP: <span className="font-mono text-emerald-300">{plan?.guest_ip ?? '—'}</span>
           </p>
           {plan?.guest_access?.guest_ip_private && vmId && vmName && plan?.guest_ip ? (
@@ -522,7 +522,7 @@ function CockpitInner({
               onNotify={(m) => toast.success(m)}
             />
           ) : (
-            <p className="text-xs text-[#64748b]">NAT port forwarding is available when the guest has a private libvirt IP.</p>
+            <p className="text-xs text-[var(--text-muted)]">NAT port forwarding is available when the guest has a private libvirt IP.</p>
           )}
         </div>
       )
@@ -691,7 +691,7 @@ function CockpitInner({
           primary={
             <MachineCanvas vmState={vmState} healthScore={healthScore} theatre className="flex-1 min-h-[50vh]">
               {loading ? (
-                <div className="flex items-center justify-center flex-1 text-[#64748b] text-sm">Loading…</div>
+                <div className="flex items-center justify-center flex-1 text-[var(--text-muted)] text-sm">Loading…</div>
               ) : (
                 canvasContent
               )}
@@ -742,7 +742,7 @@ function CockpitInner({
       />
       <MachineCanvas vmState={vmState} healthScore={healthScore} className="flex-1">
         {loading ? (
-          <div className="flex items-center justify-center flex-1 text-[#64748b] text-sm">Loading machine canvas…</div>
+          <div className="flex items-center justify-center flex-1 text-[var(--text-muted)] text-sm">Loading machine canvas…</div>
         ) : (
           <>
             <div className="flex-1 min-h-0 w-full flex flex-col relative z-0">{canvasContent}</div>

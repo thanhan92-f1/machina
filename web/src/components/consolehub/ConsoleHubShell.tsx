@@ -46,7 +46,7 @@ export default function ConsoleHubShell({
       title={title}
       subtitle={
         subtitle ?? (
-          <span className="text-slate-500 flex flex-wrap gap-3 text-xs">
+          <span className="text-[var(--text-muted)] flex flex-wrap gap-3 text-xs">
             <span>Zyra ConsoleHub</span>
             {vmState ? <span className="inline-flex items-center gap-1"><Power className="w-3 h-3" />{vmState}</span> : null}
             {nodeName ? <span>Node: {nodeName}</span> : null}
@@ -77,7 +77,7 @@ export default function ConsoleHubShell({
       {protocolPicker}
       <div className="flex flex-col flex-1 min-h-0">{children}</div>
       {sessionInfo ? (
-        <div className="mt-3 pt-3 border-t border-slate-800/80 text-xs text-slate-500">{sessionInfo}</div>
+        <div className="mt-3 pt-3 border-t border-slate-800/80 text-xs text-[var(--text-muted)]">{sessionInfo}</div>
       ) : null}
     </PageLayout>
   )

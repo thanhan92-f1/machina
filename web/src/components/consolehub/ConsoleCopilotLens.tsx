@@ -45,8 +45,8 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
       <div className="flex items-center gap-2 text-[var(--text-primary)] font-medium">
         <Bot className="w-4 h-4" /> Zyra Console Copilot
       </div>
-      <p className="text-xs text-slate-400">
-        Console-aware AI for <span className="text-slate-200">{vmName}</span> — understands lens, state, and network context.
+      <p className="text-xs text-[var(--text-muted)]">
+        Console-aware AI for <span className="text-[var(--text-primary)]">{vmName}</span> — understands lens, state, and network context.
       </p>
       <div className="flex flex-wrap gap-2">
         {[
@@ -69,14 +69,14 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
         </button>
       </div>
       {busy ? (
-        <p className="text-xs text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing…</p>
+        <p className="text-xs text-[var(--text-muted)] inline-flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing…</p>
       ) : null}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
       {reply ? (
         <div className="rounded-lg bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] p-3 text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{reply}</div>
       ) : null}
       <div className="border-t border-white/5 pt-3">
-        <p className="text-xs text-slate-500 mb-2">Console recipes</p>
+        <p className="text-xs text-[var(--text-muted)] mb-2">Console recipes</p>
         <div className="flex flex-wrap gap-1">
           {CONSOLE_RECIPES.map((r) => (
             <button
@@ -90,8 +90,8 @@ export default function ConsoleCopilotLens({ vmId, vmName, activeLens, guestIp, 
           ))}
         </div>
         {recipe ? (
-          <div className="mt-2 text-xs text-slate-400">
-            <p className="text-slate-300 font-medium">{recipe.title}</p>
+          <div className="mt-2 text-xs text-[var(--text-muted)]">
+            <p className="text-[var(--text-secondary)] font-medium">{recipe.title}</p>
             <ol className="list-decimal list-inside mt-1 space-y-0.5">
               {recipe.steps.map((s) => (
                 <li key={s}>{s}</li>

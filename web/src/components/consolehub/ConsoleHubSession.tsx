@@ -179,7 +179,7 @@ export default function ConsoleHubSession({
   }
 
   return (
-    <div className="text-sm text-slate-400 p-4 border border-slate-800 rounded-lg">
+    <div className="text-sm text-[var(--text-muted)] p-4 border border-slate-800 rounded-lg">
       Console unavailable — start the VM and retry.
     </div>
   )

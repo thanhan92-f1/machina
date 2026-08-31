@@ -29,7 +29,7 @@ export default function ZeroPanicRecoveryBar({
 }: Props) {
   if (!error) return null
 
-  const btn = 'px-2.5 py-1 rounded-lg text-xs bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700'
+  const btn = 'px-2.5 py-1 rounded-lg text-xs bg-slate-800 border border-slate-600 text-[var(--text-primary)] hover:bg-slate-700'
 
   return (
     <div className="rounded-lg border border-amber-500/30 bg-amber-950/25 p-3 mb-3 space-y-2">
@@ -38,7 +38,7 @@ export default function ZeroPanicRecoveryBar({
         <div className="min-w-0 flex-1">
           <p className="font-medium">Console issue</p>
           <p className="text-xs text-amber-200/80 mt-1 break-words">{error}</p>
-          {vmState ? <p className="text-xs text-[#94a3b8] mt-1">VM state: {vmState}</p> : null}
+          {vmState ? <p className="text-xs text-[var(--text-muted)] mt-1">VM state: {vmState}</p> : null}
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -57,14 +57,14 @@ export default function ZeroPanicRecoveryBar({
       </div>
       {recipe && onRunRecipe ? (
         <div className="pt-2 border-t border-amber-500/20">
-          <p className="text-xs text-[#94a3b8] mb-1">Suggested recipe: {recipe.title}</p>
+          <p className="text-xs text-[var(--text-muted)] mb-1">Suggested recipe: {recipe.title}</p>
           <button type="button" className={btn} onClick={() => onRunRecipe(recipe)}>Run Recipe</button>
         </div>
       ) : null}
       {!recipe && onRunRecipe ? (
         <div className="flex flex-wrap gap-1 pt-1">
           {CONSOLE_RECIPES.slice(0, 4).map((r) => (
-            <button key={r.id} type="button" className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-[#94a3b8] hover:text-[#e2e8f0]" onClick={() => onRunRecipe(r)}>
+            <button key={r.id} type="button" className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-[var(--text-muted)] hover:text-[var(--text-primary)]" onClick={() => onRunRecipe(r)}>
               {r.title}
             </button>
           ))}

@@ -47,7 +47,7 @@ export default function CommandDock({
   if (!visible || !vp) return null
 
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs bg-white/50 border border-white/70 text-[#1c1c1e] hover:bg-white/80 hover:border-white/90 transition'
+    'px-2.5 py-1.5 rounded-lg text-xs bg-white/50 border border-white/70 text-[var(--text-primary)] hover:bg-white/80 hover:border-white/90 transition'
 
   return (
     <div

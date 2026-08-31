@@ -49,7 +49,7 @@ export default function ConsoleMinimap() {
       className="absolute bottom-16 right-4 z-30 rounded-lg border border-white/10 bg-black/70 backdrop-blur-md p-1.5 shadow-xl select-none"
       title="VM display map — drag viewport"
     >
-      <p className="text-[9px] text-[#64748b] px-0.5 mb-1 uppercase tracking-wide">Display map</p>
+      <p className="text-[9px] text-[var(--text-muted)] px-0.5 mb-1 uppercase tracking-wide">Display map</p>
       <div
         ref={ref}
         className="relative bg-slate-900/80 rounded cursor-crosshair"

@@ -124,15 +124,15 @@ export default function CinemaShell({
   return (
     <div className="fixed inset-0 z-[60] bg-[#030305] flex flex-col min-h-0" data-testid="cinema-shell">
       <header className="shrink-0 flex items-center gap-3 px-3 py-2 border-b border-white/[0.06] bg-black/40 backdrop-blur-md text-xs">
-        <button type="button" className="inline-flex items-center gap-1 text-[#cbd5e1] hover:text-white" onClick={onBack}>
+        <button type="button" className="inline-flex items-center gap-1 text-[var(--text-secondary)] hover:text-white" onClick={onBack}>
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <span className="text-[#64748b]">Machina Cinema</span>
+        <span className="text-[var(--text-muted)]">Machina Cinema</span>
         <span className={`w-2 h-2 rounded-full ${tone === 'ok' ? 'bg-emerald-400' : tone === 'warn' ? 'bg-amber-400' : 'bg-slate-500'}`} />
-        <span className="font-semibold text-[#f1f5f9] truncate">{vmName}</span>
+        <span className="font-semibold text-[var(--text-primary)] truncate">{vmName}</span>
         {vmState ? <span className={`px-2 py-0.5 rounded-full capitalize ${statusBadgeClasses(tone)}`}>{vmState}</span> : null}
         {guestIp ? <span className="font-mono text-emerald-300/90 hidden sm:inline">{guestIp}</span> : null}
-        {nodeName ? <span className="text-[#64748b] hidden md:inline">Node {nodeName}</span> : null}
+        {nodeName ? <span className="text-[var(--text-muted)] hidden md:inline">Node {nodeName}</span> : null}
         {recordingActive ? (
           <span className="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-[10px] uppercase tracking-wide" data-testid="cinema-recording-badge">
             Rec
@@ -148,7 +148,7 @@ export default function CinemaShell({
             SPICE audio
           </span>
         ) : null}
-        <span className="ml-auto text-[#64748b] hidden sm:inline">{readOnly ? 'Spectator session' : 'Secure session'}</span>
+        <span className="ml-auto text-[var(--text-muted)] hidden sm:inline">{readOnly ? 'Spectator session' : 'Secure session'}</span>
       </header>
 
       <div className="relative flex-1 min-h-0 flex flex-col" data-cinema-viewport>
@@ -177,7 +177,7 @@ export default function CinemaShell({
                 className={
                   p === activeProtocol
                     ? 'px-2 py-0.5 rounded-full text-[10px] bg-emerald-900/50 text-emerald-100 border border-[var(--apple-hairline)]'
-                    : 'px-2 py-0.5 rounded-full text-[10px] text-[#94a3b8] bg-black/50 border border-white/10'
+                    : 'px-2 py-0.5 rounded-full text-[10px] text-[var(--text-muted)] bg-black/50 border border-white/10'
                 }
               >
                 {p.replace(/_/g, ' ')}
@@ -188,7 +188,7 @@ export default function CinemaShell({
 
         <div className="flex-1 min-h-0 w-full relative flex flex-col bg-black">
           {loading ? (
-            <div className="flex items-center justify-center flex-1 text-[#64748b] text-sm">Connecting…</div>
+            <div className="flex items-center justify-center flex-1 text-[var(--text-muted)] text-sm">Connecting…</div>
           ) : (
             children
           )}
@@ -198,8 +198,8 @@ export default function CinemaShell({
               className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center pointer-events-none"
               data-testid="cinema-offline-overlay"
             >
-              <p className="text-[#e2e8f0] text-sm font-medium">VM is powered off</p>
-              <p className="text-[#94a3b8] text-xs max-w-md">
+              <p className="text-[var(--text-primary)] text-sm font-medium">VM is powered off</p>
+              <p className="text-[var(--text-muted)] text-xs max-w-md">
                 Graphical console needs a running guest. Use the Start control in the bar below, or open Studio for serial recovery.
               </p>
             </div>
@@ -236,7 +236,7 @@ export default function CinemaShell({
 
         <button
           type="button"
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-30 px-1 py-3 rounded-l-lg bg-black/60 border border-white/10 border-r-0 text-[#cbd5e1] hover:bg-black/80 text-sm"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-30 px-1 py-3 rounded-l-lg bg-black/60 border border-white/10 border-r-0 text-[var(--text-secondary)] hover:bg-black/80 text-sm"
           onClick={onOpenOpsShelf}
           aria-label="Open Ops Shelf"
           data-testid="ops-shelf-handle"

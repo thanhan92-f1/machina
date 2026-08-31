@@ -34,12 +34,12 @@ export default function MachineTimeline({ sessions = [], timeline = [], loading 
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 20)
 
   if (loading) {
-    return <p className="text-xs text-slate-500">Loading timeline…</p>
+    return <p className="text-xs text-[var(--text-muted)]">Loading timeline…</p>
   }
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-800/80 p-3 text-xs text-slate-500">
+      <div className="rounded-lg border border-slate-800/80 p-3 text-xs text-[var(--text-muted)]">
         No machine events yet — console sessions and lifecycle events appear here.
       </div>
     )
@@ -47,12 +47,12 @@ export default function MachineTimeline({ sessions = [], timeline = [], loading 
 
   return (
     <div>
-      <p className="text-xs font-medium text-slate-400 mb-2">Machine timeline</p>
+      <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Machine timeline</p>
       <ul className="space-y-2 text-xs">
         {rows.map((r, i) => (
-          <li key={`${r.at}-${i}`} className="flex gap-3 text-slate-400">
-            <span className="text-slate-500 font-mono shrink-0 w-14">{fmt(r.at)}</span>
-            <span className="text-slate-300">{r.label}</span>
+          <li key={`${r.at}-${i}`} className="flex gap-3 text-[var(--text-muted)]">
+            <span className="text-[var(--text-muted)] font-mono shrink-0 w-14">{fmt(r.at)}</span>
+            <span className="text-[var(--text-secondary)]">{r.label}</span>
           </li>
         ))}
       </ul>

@@ -39,7 +39,7 @@ export default function ConsoleHubProtocolPicker({ protocols, recommended, activ
             className={
               isActive
                 ? 'px-3 py-1.5 rounded-lg text-sm bg-emerald-900/50 border border-emerald-500/40 text-emerald-100'
-                : 'px-3 py-1.5 rounded-lg text-sm bg-slate-800/60 border border-slate-700/50 text-slate-300 hover:bg-slate-700/60'
+                : 'px-3 py-1.5 rounded-lg text-sm bg-slate-800/60 border border-slate-700/50 text-[var(--text-secondary)] hover:bg-slate-700/60'
             }
           >
             <span className="inline-flex items-center gap-1.5">

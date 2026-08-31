@@ -127,7 +127,7 @@ export default function ConsoleGuestFilePanel({
           ) : null}
         </div>
       ) : fileName ? (
-        <p className="text-[10px] text-slate-500">Guest needs a reachable IP or NAT SSH port for file copy.</p>
+        <p className="text-[10px] text-[var(--text-muted)]">Guest needs a reachable IP or NAT SSH port for file copy.</p>
       ) : null}
     </div>
   )

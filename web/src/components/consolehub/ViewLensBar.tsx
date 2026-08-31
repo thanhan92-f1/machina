@@ -83,7 +83,7 @@ export default function ViewLensBar({
               className={
                 isActive
                   ? 'px-3 py-1.5 rounded-lg text-xs bg-emerald-900/40 border border-emerald-500/40 text-emerald-100 inline-flex items-center gap-1.5'
-                  : 'px-3 py-1.5 rounded-lg text-xs bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:bg-slate-700/50 inline-flex items-center gap-1.5'
+                  : 'px-3 py-1.5 rounded-lg text-xs bg-slate-800/50 border border-slate-700/50 text-[var(--text-secondary)] hover:bg-slate-700/50 inline-flex items-center gap-1.5'
               }
             >
               <Icon className="w-3.5 h-3.5" />
@@ -101,8 +101,8 @@ export default function ViewLensBar({
               onClick={() => onProtocolChange(p)}
               className={
                 p === activeProtocol
-                  ? 'px-2 py-0.5 rounded text-[11px] bg-slate-700 text-[#f1f5f9]'
-                  : 'px-2 py-0.5 rounded text-[11px] text-[#64748b] hover:text-[#cbd5e1]'
+                  ? 'px-2 py-0.5 rounded text-[11px] bg-slate-700 text-[var(--text-primary)]'
+                  : 'px-2 py-0.5 rounded text-[11px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }
             >
               {p.replace(/_/g, ' ')}

@@ -44,15 +44,15 @@ export default function MachineCommandStrip({
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 py-2 border-b border-white/[0.06] text-sm shrink-0">
       <div className="flex items-center gap-2 min-w-0">
         <span className={`w-2 h-2 rounded-full shrink-0 ${tone === 'ok' ? 'bg-emerald-400' : tone === 'warn' ? 'bg-amber-400' : tone === 'error' ? 'bg-red-400' : 'bg-slate-500'}`} />
-        <span className="font-semibold text-slate-100 truncate">{vmName}</span>
+        <span className="font-semibold text-[var(--text-primary)] truncate">{vmName}</span>
         {vmState ? <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeClasses(tone)}`}>{vmState}</span> : null}
       </div>
       {guestIp ? <span className="font-mono text-emerald-600/90 text-xs">{guestIp}</span> : null}
-      {osHint && osHint !== 'unknown' ? <span className="text-xs text-slate-400">{osHint}</span> : null}
-      {nodeName ? <span className="text-xs text-slate-500">Node {nodeName}</span> : null}
-      {uptime ? <span className="text-xs text-slate-500">{uptime}</span> : null}
+      {osHint && osHint !== 'unknown' ? <span className="text-xs text-[var(--text-muted)]">{osHint}</span> : null}
+      {nodeName ? <span className="text-xs text-[var(--text-muted)]">Node {nodeName}</span> : null}
+      {uptime ? <span className="text-xs text-[var(--text-muted)]">{uptime}</span> : null}
       {healthScore != null ? (
-        <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+        <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
           <Activity className="w-3.5 h-3.5" /> Health {healthScore}
         </span>
       ) : null}

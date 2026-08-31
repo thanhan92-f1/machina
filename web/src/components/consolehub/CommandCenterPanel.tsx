@@ -112,10 +112,10 @@ export default function CommandCenterPanel({
       <aside ref={panelRef} className="fixed top-0 right-0 z-[80] h-full w-full max-w-md bg-slate-950/95 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200" role="dialog" aria-modal="true" aria-label="Ops Shelf" data-testid="ops-shelf">
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
           <div>
-            <h2 className="font-semibold text-[#f1f5f9]">Ops Shelf</h2>
-            <p className="text-xs text-[#64748b]">VM Intelligence · {vmName}</p>
+            <h2 className="font-semibold text-[var(--text-primary)]">Ops Shelf</h2>
+            <p className="text-xs text-[var(--text-muted)]">VM Intelligence · {vmName}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-[#94a3b8]"><X className="w-5 h-5" aria-hidden="true" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-white/10 text-[var(--text-muted)]"><X className="w-5 h-5" aria-hidden="true" /></button>
         </header>
         <div className="flex gap-1 px-3 py-2 border-b border-white/5 shrink-0 overflow-x-auto">
           {TABS.map((t) => (
@@ -126,7 +126,7 @@ export default function CommandCenterPanel({
               className={
                 t === activeTab
                   ? 'px-2 py-1 rounded text-xs whitespace-nowrap bg-emerald-900/40 text-emerald-100'
-                  : 'px-2 py-1 rounded text-xs whitespace-nowrap text-[#64748b] hover:text-[#cbd5e1]'
+                  : 'px-2 py-1 rounded text-xs whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }
             >
               {t}
@@ -138,21 +138,21 @@ export default function CommandCenterPanel({
             <>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800">
-                  <p className="text-slate-500">Health</p>
-                  <p className="text-lg font-semibold text-slate-100">{healthScore ?? '—'}</p>
+                  <p className="text-[var(--text-muted)]">Health</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{healthScore ?? '—'}</p>
                 </div>
                 <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800">
-                  <p className="text-slate-500">State</p>
-                  <p className="text-slate-100 capitalize">{vmState ?? 'unknown'}</p>
+                  <p className="text-[var(--text-muted)]">State</p>
+                  <p className="text-[var(--text-primary)] capitalize">{vmState ?? 'unknown'}</p>
                 </div>
                 <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800 col-span-2">
-                  <p className="text-slate-500">Network</p>
+                  <p className="text-[var(--text-muted)]">Network</p>
                   <p className="font-mono text-emerald-600/90">{guestIp ?? 'No IP'}</p>
                 </div>
               </div>
               {guestAccess?.guest_ip_private && ip ? (
                 <div>
-                  <p className="text-xs font-medium text-[#94a3b8] mb-2">Hypervisor NAT</p>
+                  <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Hypervisor NAT</p>
                   <VmPortForwardPanel
                     platformVmId={vmId}
                     vmName={vmName}
@@ -226,7 +226,7 @@ export default function CommandCenterPanel({
                 </div>
               ) : null}
               <div>
-                <p className="text-xs font-medium text-[#94a3b8] mb-2">Quick actions</p>
+                <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
                   {['Snapshot', 'Restart', 'Inspect Disk', 'PacketWolf Trace', 'Migrate'].map((a) => (
                     <button
