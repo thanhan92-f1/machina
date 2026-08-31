@@ -28,11 +28,11 @@ html[data-ui-shell='tahoe-light'] {
 
   /* Zeus Magichromatic HSL roles (as usable hex/hsl for Machina aliases) */
   --background: 210 36% 95%;
-  --foreground: 0 0% 11%;
+  --foreground: 240 2% 11%;         /* Apple shop #1d1d1f */
   --card: 0 0% 100%;
   --primary: 200 78% 40%;
   --primary-foreground: 0 0% 100%;
-  --muted-foreground: 220 12% 38%;
+  --muted-foreground: 240 2% 44%;   /* Apple shop #6e6e73 */
   --border-hsl: 205 22% 84%;
   --accent-alt: 270 42% 48%;
   --accent-live: 145 32% 36%;
@@ -57,10 +57,10 @@ html[data-ui-shell='tahoe-light'] {
   --shadow-2: 0 2px 8px hsl(210 24% 40% / 0.06), 0 1px 2px hsl(210 24% 40% / 0.04);
   --shadow-3: 0 12px 32px hsl(210 24% 40% / 0.1), 0 2px 6px hsl(210 24% 40% / 0.05);
 
-  /* --- Text (graphite on mist paper) ------------------------------------ */
-  --text-primary: hsl(0 0% 11%);
-  --text-secondary: hsl(220 12% 38%);
-  --text-muted: hsl(220 10% 44%);
+  /* --- Text (Apple shop .form-selector) --------------------------------- */
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #86868b;
   --text-faint: hsl(220 8% 58%);
   --text-on-accent: #ffffff;
   --text-inverse: #f2f4f7;
@@ -396,9 +396,9 @@ html.light-theme .mac-desktop-root[data-wallpaper] {
 /* Platform inherits light tokens (no carbon shell under Light) */
 html.apple-light .mac-desktop-root,
 html.light-theme .mac-desktop-root {
-  --text-primary: hsl(0 0% 11%);
-  --text-secondary: hsl(220 12% 38%);
-  --text-muted: hsl(220 10% 44%);
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #86868b;
   --apple-surface: #ffffff;
   --apple-surface-elevated: #ffffff;
   --apple-hairline: hsl(205 22% 84%);

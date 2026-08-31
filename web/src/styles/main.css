@@ -87,9 +87,10 @@
   --glass-border-strong: rgba(255, 255, 255, 0.18);
   --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
   --glass-highlight: rgba(255, 255, 255, 0.25);
-  --text-primary: #0f172a;
-  --text-secondary: #374151;
-  --text-muted: #64748b;
+  /* Apple shop .form-selector box type */
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #86868b;
 }
 
 html {

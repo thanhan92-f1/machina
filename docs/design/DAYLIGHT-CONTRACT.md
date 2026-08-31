@@ -29,6 +29,16 @@ Shell / nav / tiers: [APPLE-UX-CONTRACT.md](APPLE-UX-CONTRACT.md).
 | **Deep Blue** (Pro) | Migrating / deep info |
 | **Silver** (Pro) | Neutral tracks / hairlines |
 
+### Box type (Apple shop `.form-selector`)
+
+Card / panel font colors match [Apple TV buy flow](https://www.apple.com/in/shop/buy-tv/apple-tv-4k/64gb) 1:1:
+
+| Token | Light | Dark |
+|---|---|---|
+| `--text-primary` | `#1d1d1f` | `#f5f5f7` |
+| `--text-secondary` | `#6e6e73` | `#a1a1a6` |
+| `--text-muted` | `#86868b` | `#86868b` |
+
 ## Law 0 — Elevation runs up, not down
 
 | Level | Classic Blue | Tahoe Light |

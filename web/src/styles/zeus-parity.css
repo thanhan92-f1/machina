@@ -12,20 +12,21 @@
     --hairline-2: hsl(var(--foreground) / 0.1);
     /* Apple dark graphite (~#000 / #1d1d1f) — not navy. */
     --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
+    /* Apple shop dark primary #f5f5f7 */
+    --foreground: 240 2% 96.5%;
     --card: 0 0% 11%;
-    --card-foreground: 0 0% 98%;
+    --card-foreground: 240 2% 96.5%;
     --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
+    --popover-foreground: 240 2% 96.5%;
     /* Mist Blue (iPhone Magichromatic) — brighter than tahoe-light for dark
        graphite. --primary-foreground stays pure white for CTA contrast. */
     --primary: 200 85% 52%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary-foreground: 240 2% 96.5%;
     --muted: 0 0% 14%;
-    /* Apple dark secondary gray (~#86868b). */
-    --muted-foreground: 240 3% 54%;
+    /* Apple shop dark muted #86868b (secondary text uses --text-secondary #a1a1a6). */
+    --muted-foreground: 240 2% 53%;
     --accent: 0 0% 16%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 63% 31%;
@@ -674,6 +675,7 @@ a.tahoe-btn-secondary:focus-visible {
   border-radius: 0.9rem;
   border: 1px solid var(--hairline-1);
   background: var(--surface-1);
+  color: var(--text-primary);
   transition: border-color 0.2s ease;
 }
 
@@ -870,14 +872,14 @@ html[data-zeus-reduced-motion='1'] .zeus-space-transition {
 #root[data-ui-shell='default'],
 html[data-ui-shell='default'] {
   --background: 0 0% 0%;
-  --foreground: 0 0% 98%;
+  --foreground: 240 2% 96.5%;     /* Apple shop #f5f5f7 */
   --card: 0 0% 11%;               /* #1d1d1f */
-  --card-foreground: 0 0% 98%;
+  --card-foreground: 240 2% 96.5%;
   --muted: 0 0% 14%;
-  --muted-foreground: 240 3% 54%; /* Apple dark secondary ~#86868b */
+  --muted-foreground: 240 2% 53%; /* Apple shop #86868b */
   --border: 0 0% 18%;
   --secondary: 0 0% 16%;
-  --secondary-foreground: 0 0% 98%;
+  --secondary-foreground: 240 2% 96.5%;
   --primary: 200 85% 52%;         /* Mist Blue — brighter for dark */
   --primary-foreground: 0 0% 100%;
   --ring: 200 85% 52%;
@@ -976,17 +978,17 @@ html[data-ui-shell='default'],
 html[data-ui-shell='tahoe-light'] {
   color-scheme: light;
   --background: 210 42% 95%;        /* Mist-tinted paper (visible cool tint) */
-  --foreground: 0 0% 11%;
+  --foreground: 240 2% 11%;         /* Apple shop .form-selector #1d1d1f */
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 11%;
+  --card-foreground: 240 2% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 11%;
+  --popover-foreground: 240 2% 11%;
   --primary: 200 78% 40%;           /* Vivid Mist Blue */
   --primary-foreground: 0 0% 100%;
   --secondary: 270 35% 95%;         /* Lavender-tinted panel */
-  --secondary-foreground: 0 0% 11%;
+  --secondary-foreground: 240 2% 11%;
   --muted: 145 22% 93%;             /* Sage-tinted fill */
-  --muted-foreground: 220 12% 38%;
+  --muted-foreground: 240 2% 44%;   /* Apple shop #6e6e73 */
   --accent: 270 40% 92%;            /* Lavender wells */
   --accent-foreground: 270 40% 28%;
   --destructive: 4 76% 40%;
@@ -1250,7 +1252,9 @@ html[data-ui-shell='default'] .mac-menubar-inner {
   border-bottom: 1px solid hsl(0 0% 100% / 0.08);
 }
 
-/* Bridge Machina apple/plasma aliases to Zeus Mist */
+/* Bridge Machina apple/plasma aliases to Zeus Mist.
+   Box type = Apple shop .form-selector (buy-tv): #1d1d1f / #6e6e73 / #86868b light;
+   dark graphite #f5f5f7 / #a1a1a6 / #86868b. */
 :root {
   --accent: hsl(var(--primary));
   --accent-hover: hsl(200 85% 46%);
@@ -1263,10 +1267,10 @@ html[data-ui-shell='default'] .mac-menubar-inner {
   --apple-surface: hsl(var(--card));
   --apple-surface-elevated: hsl(var(--card));
   --apple-hairline: hsl(var(--border) / 0.85);
-  --apple-muted: hsl(var(--muted-foreground));
-  --text-primary: hsl(var(--foreground));
-  --text-secondary: hsl(var(--muted-foreground));
-  --text-muted: hsl(var(--muted-foreground));
+  --apple-muted: #86868b;
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a6;
+  --text-muted: #86868b;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
   --radius: 0.75rem;
@@ -1287,9 +1291,13 @@ html[data-theme='tahoe-light'] {
   --apple-hairline: hsl(205 28% 84%);
   --apple-fill-secondary: hsl(200 48% 96% / 0.9);
   --apple-fill-tertiary: hsl(205 22% 90%);
-  --text-primary: hsl(var(--foreground));
-  --text-secondary: hsl(var(--muted-foreground));
-  --text-muted: hsl(220 10% 44%);
+  --apple-muted: #86868b;
+  --foreground: 240 2% 11%;
+  --card-foreground: 240 2% 11%;
+  --muted-foreground: 240 2% 44%;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #86868b;
 }
 
 /* True apple.com CTA blue (#0071e3) — matches main.css's native .btn-primary exactly,
@@ -1322,11 +1330,12 @@ html[data-ui-shell='default'] .btn-primary:active:not(:disabled) {
   background: #006edb !important;
 }
 
-/* Flat premium cards (Zeus) */
+/* Flat premium cards (Zeus) — Apple shop box type inherits primary */
 .tahoe-glass-card,
 .glass-card {
   border: 1px solid hsl(var(--border) / 0.85) !important;
   background: hsl(var(--card)) !important;
+  color: var(--text-primary);
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
