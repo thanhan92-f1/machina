@@ -140,7 +140,7 @@ export default function CinemaControlStrip({
   const spiceDisplay = activeProtocol === 'spice' || activeProtocol === 'webrtc_spice'
 
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 transition inline-flex items-center gap-1'
+    'px-2.5 py-1.5 rounded-lg text-xs bg-white/10 border border-white/15 text-slate-100 hover:bg-white/20 hover:border-white/25 transition inline-flex items-center gap-1'
 
   const setMode = (mode: ViewportMode) => {
     vp.setMode(mode)
@@ -185,15 +185,15 @@ export default function CinemaControlStrip({
 
   return (
     <div
-      className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-30 hover:opacity-100'}`}
+      className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
       data-testid="cinema-control-strip"
       data-idle={idle ? 'true' : 'false'}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/10 bg-black/70 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/20 bg-black/85 shadow-lg shadow-black/40 backdrop-blur-md">
         {/* Power */}
         <div className="relative" ref={powerRef}>
           <button type="button" className={`${btn} ${readOnly ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={readOnly} onClick={() => !readOnly && setPowerOpen((v) => !v)} title={readOnly ? 'Read-only session' : 'Power'}>
-            <Power className="w-3.5 h-3.5" />
+            <Power className="w-3.5 h-3.5 text-red-400" />
           </button>
           {powerOpen ? (
             <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl">
@@ -223,7 +223,7 @@ export default function CinemaControlStrip({
           title={readOnly ? 'Read-only session' : powerQuickLabel}
           data-testid={offline ? 'cinema-power-start' : 'cinema-power-reboot'}
         >
-          <PowerQuickIcon className="w-3.5 h-3.5" />
+          <PowerQuickIcon className="w-3.5 h-3.5 text-emerald-400" />
         </button>
 
         {/* Ctrl+Alt+Del */}
@@ -236,7 +236,7 @@ export default function CinemaControlStrip({
         {/* Keyboard dropdown */}
         <div className="relative" ref={keyboardRef}>
           <button type="button" className={btn} onClick={() => setKeyboardOpen((v) => !v)} title="Keyboard" aria-label="Keyboard">
-            <Keyboard className="w-3.5 h-3.5" />
+            <Keyboard className="w-3.5 h-3.5 text-sky-400" />
           </button>
           {keyboardOpen ? (
             <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl">
@@ -269,7 +269,7 @@ export default function CinemaControlStrip({
             data-testid="cinema-clipboard"
             onClick={() => void openClipboard()}
           >
-            <Clipboard className="w-3.5 h-3.5" />
+            <Clipboard className="w-3.5 h-3.5 text-sky-400" />
           </button>
           {clipOpen && !readOnly ? (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-72 rounded-lg border border-white/10 bg-slate-950/95 p-3 shadow-xl space-y-2" data-testid="cinema-clipboard-panel">
@@ -301,7 +301,7 @@ export default function CinemaControlStrip({
         {/* Display dropdown */}
         <div className="relative" ref={displayRef}>
           <button type="button" className={btn} onClick={() => setDisplayOpen((v) => !v)} title="Display" aria-label="Display" data-testid="cinema-display">
-            <Monitor className="w-3.5 h-3.5" />
+            <Monitor className="w-3.5 h-3.5 text-sky-400" />
           </button>
           {displayOpen ? (
             <div className="absolute bottom-full left-0 mb-1 min-w-[11rem] rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-xl max-h-64 overflow-y-auto">
@@ -356,20 +356,20 @@ export default function CinemaControlStrip({
         {/* Network */}
         {onOpenNetwork ? (
           <button type="button" className={btn} onClick={onOpenNetwork} title="Network" aria-label="Network" data-testid="cinema-network">
-            <Network className="w-3.5 h-3.5" />
+            <Network className="w-3.5 h-3.5 text-sky-400" />
           </button>
         ) : null}
 
         {/* Snapshot */}
         {onSnapshot && !readOnly ? (
           <button type="button" className={btn} onClick={onSnapshot} title="Snapshot" aria-label="Snapshot" data-testid="cinema-snapshot">
-            <Camera className="w-3.5 h-3.5" />
+            <Camera className="w-3.5 h-3.5 text-sky-400" />
           </button>
         ) : null}
 
         {/* Record */}
         <button type="button" className={btn} onClick={() => onRecord?.()} title="Record" aria-label="Record">
-          <Square className="w-3 h-3" />
+          <Square className="w-3 h-3 text-red-400 fill-red-400" />
         </button>
 
         {/* AI */}
