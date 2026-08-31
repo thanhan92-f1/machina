@@ -29,11 +29,11 @@
   --login-muted: #6e6e73;
   --login-tertiary: #86868b;
   --login-line: #d2d2d7;
-  --login-accent: #ff6a00;
-  --login-accent-2: #e85d04;
-  --login-accent-hover: #e85d04;
-  --login-accent-tint: #fff1e9;
-  --login-focus: rgba(255, 106, 0, 0.16);
+  --login-accent: #0071e3;
+  --login-accent-2: #0071e3;
+  --login-accent-hover: #0077ed;
+  --login-accent-tint: #f0f7ff;
+  --login-focus: rgba(0, 113, 227, 0.16);
   --login-avatar-bg: #1d1d1f;
   --login-avatar-fg: #f5f5f7;
   --login-link: #0071e3;
@@ -256,7 +256,7 @@
   accent-color: var(--login-accent);
 }
 
-/* Orange pill CTA */
+/* apple.com blue pill CTA */
 .login-page-apple .login-btn-primary {
   margin-top: 1.35rem;
   width: 100%;
@@ -301,9 +301,9 @@
   min-height: 2.75rem;
   padding: 0.65rem 1rem;
   border-radius: 980px;
-  border: 1px solid var(--login-line);
+  border: 1px solid var(--login-accent);
   background: transparent;
-  color: var(--login-ink);
+  color: var(--login-accent);
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -313,8 +313,8 @@
 }
 
 .login-page-apple .login-sso:hover {
-  background: color-mix(in srgb, var(--login-ink) 4%, transparent);
-  border-color: color-mix(in srgb, var(--login-ink) 18%, transparent);
+  background: color-mix(in srgb, var(--login-accent) 6%, transparent);
+  border-color: var(--login-accent-hover);
 }
 
 .login-apple-hint {
