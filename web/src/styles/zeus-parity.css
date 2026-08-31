@@ -1292,7 +1292,8 @@ html[data-theme='tahoe-light'] {
   --text-muted: hsl(220 10% 44%);
 }
 
-/* Force Mist CTAs — override Machina System Blue !important */
+/* True apple.com CTA blue (#0071e3) — matches main.css's native .btn-primary exactly,
+   overriding the former "Mist Blue" (#1681b6) rebrand per explicit request. */
 .btn-primary,
 .tahoe-btn-primary,
 .tahoe-page-root .btn-primary,
@@ -1301,8 +1302,8 @@ html[data-theme='tahoe-light'] {
 .apple-light .btn-primary,
 html[data-theme='tahoe-light'] .btn-primary,
 html[data-ui-shell='default'] .btn-primary {
-  background: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
+  background: #0071e3 !important;
+  color: #ffffff !important;
   border-radius: 9999px !important;
   border: none !important;
   box-shadow: none !important;
@@ -1311,12 +1312,14 @@ html[data-ui-shell='default'] .btn-primary {
 .tahoe-btn-primary:hover:not(:disabled),
 html[data-theme='tahoe-light'] .btn-primary:hover:not(:disabled),
 html[data-ui-shell='default'] .btn-primary:hover:not(:disabled) {
-  background: hsl(200 85% 46%) !important;
+  background: #0077ed !important;
   filter: none;
 }
-html[data-theme='tahoe-light'] .btn-primary:hover:not(:disabled),
-html[data-theme='tahoe-light'] .tahoe-btn-primary:hover:not(:disabled) {
-  background: hsl(200 78% 34%) !important;
+.btn-primary:active:not(:disabled),
+.tahoe-btn-primary:active:not(:disabled),
+html[data-theme='tahoe-light'] .btn-primary:active:not(:disabled),
+html[data-ui-shell='default'] .btn-primary:active:not(:disabled) {
+  background: #006edb !important;
 }
 
 /* Flat premium cards (Zeus) */
