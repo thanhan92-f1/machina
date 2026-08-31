@@ -89,7 +89,7 @@ export default function RdpConsolePage() {
   }, [name, connection, info])
 
   if (!name) {
-    return <p className="text-slate-400">{t('rdp.missingVm')}</p>
+    return <p className="text-[var(--text-muted)]">{t('rdp.missingVm')}</p>
   }
 
   const back = appendVmConnection(`/vms/${encodeURIComponent(name)}`, connection)

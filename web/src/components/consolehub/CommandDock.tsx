@@ -47,13 +47,13 @@ export default function CommandDock({
   if (!visible || !vp) return null
 
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 transition'
+    'px-2.5 py-1.5 rounded-lg text-xs bg-white/50 border border-white/70 text-[#1c1c1e] hover:bg-white/80 hover:border-white/90 transition'
 
   return (
     <div
-      className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-30 hover:opacity-100'}`}
+      className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/10 bg-black/65 backdrop-blur-md shadow-xl">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-black/20 backdrop-blur-2xl">
         <button type="button" className={btn} onClick={() => vp.setMode('fit')}>Fit</button>
         <button type="button" className={btn} onClick={() => vp.setMode('fill')}>Fill</button>
         <button type="button" className={btn} onClick={() => vp.setMode('native')}>Native</button>
@@ -65,7 +65,7 @@ export default function CommandDock({
             <button
               key={z}
               type="button"
-              className={`${btn} ${vp.zoom === z && vp.mode === 'zoom' ? 'border-emerald-500/50 bg-emerald-900/30' : ''}`}
+              className={`${btn} ${vp.zoom === z && vp.mode === 'zoom' ? 'border-emerald-500/50 bg-emerald-100' : ''}`}
               onClick={() => vp.setZoom(z)}
             >
               {z}%

@@ -585,9 +585,9 @@ export default function VNCViewer({
   if (!wsUrlOverride && !kubeVirtNamespace && (port == null || port <= 0)) {
     return (
       <div className="flex flex-col items-center justify-center bg-black rounded-lg p-12 text-center" style={{ minHeight: '500px' }}>
-        <Monitor className="w-16 h-16 text-slate-600 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-400 mb-2">VNC Not Available</h3>
-        <p className="text-sm text-slate-500 max-w-md">
+        <Monitor className="w-16 h-16 text-[#475569] mb-4" />
+        <h3 className="text-lg font-semibold text-[#94a3b8] mb-2">VNC Not Available</h3>
+        <p className="text-sm text-[#64748b] max-w-md">
           VM '{vmName}' doesn't have a VNC port assigned. Make sure the VM is running and has VNC graphics configured.
         </p>
       </div>
@@ -631,7 +631,7 @@ export default function VNCViewer({
             type="button"
             onClick={sendCtrlAltDel}
             disabled={status !== 'connected'}
-            className="px-2 py-1 rounded text-xs transition flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-2 py-1 rounded text-xs transition flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-[#f1f5f9] disabled:opacity-40 disabled:cursor-not-allowed"
             title="Send Ctrl+Alt+Del (Windows login, Task Manager)"
           >
             <Keyboard className="w-3 h-3" /> Ctrl+Alt+Del
@@ -743,8 +743,8 @@ export default function VNCViewer({
           />
         </div>
         {cockpitMode && status === 'connected' ? (
-          <p className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 max-w-md text-center text-xs text-slate-400 bg-black/70 border border-white/10 rounded-lg px-3 py-2 pointer-events-none">
-            Blank display? Cloud images often have no graphical login — use <strong className="text-slate-200">Shell</strong> (SSH) in the dock when available, or click the canvas and try <strong className="text-slate-200">Ctrl+Alt+Del</strong>. Serial appears only when the VM has a serial console.
+          <p className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 max-w-md text-center text-xs text-[#94a3b8] bg-black/70 border border-white/10 rounded-lg px-3 py-2 pointer-events-none">
+            Blank display? Cloud images often have no graphical login — use <strong className="text-[#e2e8f0]">Shell</strong> (SSH) in the dock when available, or click the canvas and try <strong className="text-[#e2e8f0]">Ctrl+Alt+Del</strong>. Serial appears only when the VM has a serial console.
           </p>
         ) : null}
       </div>
