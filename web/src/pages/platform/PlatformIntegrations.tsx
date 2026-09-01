@@ -8,7 +8,7 @@ import { AppleDestinationList } from '../../components/platform/apple/AppleStory
 import HostEnrollWizard from '../../components/platform/HostEnrollWizard'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { listPlatformHosts } from '../../api/platform'
-import { LaunchpadAppIcon, MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import PlatformPageChrome, { PlatformBackLink, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { integrationCards } from '../../utils/platformIntegrationsNav'
@@ -88,12 +88,17 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
           }))}
         />
 
-        <MacGlassPanel title="Fleet apps" subtitle="Launchpad and connected platforms">
-          <div className="platform-launchpad-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-4 gap-y-8 -mt-1">
-            <Link to="/platform/applications" className="block">
-              <LaunchpadAppIcon name="Applications" icon={<Boxes className="w-8 h-8" strokeWidth={1.75} />} />
-            </Link>
-          </div>
+        <MacGlassPanel title="Fleet apps" subtitle="Installed apps and connected platforms">
+          <AppleDestinationList
+            items={[
+              {
+                to: '/platform/applications',
+                title: 'Applications',
+                subtitle: 'Helm releases and fleet app inventory',
+                icon: <Boxes className="w-5 h-5" strokeWidth={1.75} />,
+              },
+            ]}
+          />
         </MacGlassPanel>
 
         <MacGlassPanel title="Desktop density">

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import { Link } from 'react-router'
-import { Plus, Radar, Shield, ShieldAlert } from 'lucide-react'
+import { Plus, Shield } from 'lucide-react'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import SocAlertDetailPanel from '../../components/platform/soc/SocAlertDetailPanel'
 import SocPlaybookEditor from '../../components/platform/soc/SocPlaybookEditor'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import {
   getAsmSummary,
   getSocAlerts,
@@ -329,11 +329,18 @@ export default function PlatformSoc() {
 
       {tab === 'overview' && (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MacStatWidget label="Open alerts" value={String(overview?.open_alerts ?? '—')} icon={<ShieldAlert className="w-4 h-4" />} />
-            <MacStatWidget label="Critical / high" value={String(overview?.critical_alerts ?? '—')} icon={<ShieldAlert className="w-4 h-4" />} />
-            <MacStatWidget label="Events (24h)" value={String(overview?.events_24h ?? '—')} icon={<Radar className="w-4 h-4" />} />
-            <MacStatWidget label="Fleet threat" value={threatScore != null ? `${threatScore.toFixed(0)}` : '—'} icon={<Shield className="w-4 h-4" />} />
+          <div className="apple-metric-band">
+            {[
+              { label: 'Open alerts', value: String(overview?.open_alerts ?? '—') },
+              { label: 'Critical / high', value: String(overview?.critical_alerts ?? '—') },
+              { label: 'Events (24h)', value: String(overview?.events_24h ?? '—') },
+              { label: 'Fleet threat', value: threatScore != null ? `${threatScore.toFixed(0)}` : '—' },
+            ].map((s) => (
+              <div key={s.label} className="min-w-0">
+                <div className="apple-metric-value">{s.value}</div>
+                <div className="apple-metric-label">{s.label}</div>
+              </div>
+            ))}
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-secondary text-sm" onClick={() => void runIngest()}>
@@ -443,10 +450,17 @@ export default function PlatformSoc() {
 
       {tab === 'asm' && (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <MacStatWidget label="Exposure score" value={asm ? asm.exposure_score.toFixed(0) : '—'} icon={<Radar className="w-4 h-4" />} />
-            <MacStatWidget label="Firewall targets" value={String(asm?.firewall_targets ?? '—')} icon={<Shield className="w-4 h-4" />} />
-            <MacStatWidget label="High-risk nodes" value={String(asm?.high_risk_nodes ?? '—')} icon={<ShieldAlert className="w-4 h-4" />} />
+          <div className="apple-metric-band">
+            {[
+              { label: 'Exposure score', value: asm ? asm.exposure_score.toFixed(0) : '—' },
+              { label: 'Firewall targets', value: String(asm?.firewall_targets ?? '—') },
+              { label: 'High-risk nodes', value: String(asm?.high_risk_nodes ?? '—') },
+            ].map((s) => (
+              <div key={s.label} className="min-w-0">
+                <div className="apple-metric-value">{s.value}</div>
+                <div className="apple-metric-label">{s.label}</div>
+              </div>
+            ))}
           </div>
           <MacGlassPanel title="Findings">
             {(asm?.open_port_findings ?? []).length === 0 ? (

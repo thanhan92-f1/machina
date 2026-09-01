@@ -7,7 +7,6 @@ import PageLayout from '../../components/PageLayout'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import HostEnrollWizard from '../../components/platform/HostEnrollWizard'
 import FinderView, { type FinderViewMode } from '../../components/platform/mac/FinderView'
-import { gradientForName } from '../../components/platform/mac/PlatformMacUi'
 import {
   enqueueValidateHost,
   hostMaintenance,
@@ -20,15 +19,9 @@ import {
 } from '../../api/platform'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
-import { hostStateTone, statusPillClasses, statusToneClass, hubLinkClasses } from '../../utils/semanticColors'
+import { statusPillClasses, hubLinkClasses } from '../../utils/semanticColors'
 import HostFleetCard, { HostCommandCenter } from '../../components/platform/fleet/HostFleetCard'
-
-function hostTone(h: PlatformHost): 'ok' | 'warn' | 'default' {
-  const tone = hostStateTone(h.state, h.fenced, h.maintenance_mode)
-  if (tone === 'ok') return 'ok'
-  if (tone === 'warn' || tone === 'error') return 'warn'
-  return 'default'
-}
+import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
 
 const VIEW_KEY = 'platform-hosts-finder-view'
 
@@ -110,29 +103,29 @@ export default function PlatformHosts() {
   )
 
   const listContent = viewMode === 'list' ? (
-    <div className="card overflow-x-auto">
-      <table className="w-full text-sm" aria-label="Managed hosts">
+    <TahoeTableWrap>
+      <table className="apple-table w-full text-sm" aria-label="Managed hosts">
         <thead>
-          <tr className="text-[var(--text-muted)] border-b border-white/[0.06]">
-            <th scope="col" className="p-3 text-left">Host</th>
-            <th scope="col" className="p-3">State</th>
-            <th scope="col" className="p-3">VMs</th>
-            <th scope="col" className="p-3">CPU</th>
-            <th scope="col" className="p-3">Linux</th>
+          <tr>
+            <th scope="col">Host</th>
+            <th scope="col" className="text-center">State</th>
+            <th scope="col" className="text-center">VMs</th>
+            <th scope="col" className="text-center">CPU</th>
+            <th scope="col" className="text-center">Linux</th>
           </tr>
         </thead>
         <tbody>
           {visibleHosts.map((h) => (
             <tr
               key={h.id}
-              className={`border-b border-[var(--apple-hairline)] cursor-pointer ${selectedId === h.id ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'}`}
+              className={`cursor-pointer ${selectedId === h.id ? 'bg-[var(--accent)]/10' : ''}`}
               onClick={() => setSelectedId(h.id)}
             >
-              <td className="p-3"><Link to={`/platform/hosts/${h.id}`} className={`hover:underline ${hubLinkClasses()}`} onClick={(e) => e.stopPropagation()}>{h.hostname}</Link></td>
-              <td className="p-3 capitalize text-center">{h.state}</td>
-              <td className="p-3 text-center">{h.vm_count}</td>
-              <td className="p-3 text-center">{h.cpu_percent != null ? `${h.cpu_percent.toFixed(0)}%` : '—'}</td>
-              <td className="p-3 text-center">
+              <td><Link to={`/platform/hosts/${h.id}`} className={`hover:underline ${hubLinkClasses()}`} onClick={(e) => e.stopPropagation()}>{h.hostname}</Link></td>
+              <td className="capitalize text-center">{h.state}</td>
+              <td className="text-center">{h.vm_count}</td>
+              <td className="text-center">{h.cpu_percent != null ? `${h.cpu_percent.toFixed(0)}%` : '—'}</td>
+              <td className="text-center">
                 {linuxByHost[h.id] ? (
                   linuxByHost[h.id].status === 'ok' ? (
                     <span className={`text-[10px] uppercase px-2 py-0.5 rounded border ${statusPillClasses('ok')}`}>
@@ -153,42 +146,21 @@ export default function PlatformHosts() {
           ))}
         </tbody>
       </table>
-    </div>
+    </TahoeTableWrap>
   ) : (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="flex flex-wrap gap-2">
       {visibleHosts.map((h) => (
         <button
           key={h.id}
           type="button"
           onClick={() => setSelectedId(h.id)}
-          className={`platform-mac-stat rounded-2xl border p-5 space-y-3 text-left transition ${
-            selectedId === h.id ? 'border-[var(--accent)]/40 ring-1 ring-[var(--accent)]/20' : 'border-white/[0.06]'
+          className={`px-3.5 py-2 rounded-full text-sm transition ${
+            selectedId === h.id
+              ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+              : 'text-[var(--text-secondary)] bg-[var(--apple-fill-tertiary)]/50 hover:bg-[var(--apple-fill-tertiary)]'
           }`}
         >
-          <div className="flex items-start gap-3">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientForName(h.hostname)} flex items-center justify-center text-white`}>
-              <Server className="w-6 h-6" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="font-semibold text-[var(--text-primary)] truncate block">{h.hostname}</span>
-              <p className={`text-xs capitalize mt-0.5 ${
-                hostTone(h) === 'default' ? 'text-[var(--text-muted)]' : statusToneClass(hostTone(h) === 'ok' ? 'ok' : 'warn')
-              }`}>
-                {h.maintenance_mode ? 'maintenance' : h.state}
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-[var(--text-muted)]">
-            {h.vm_count} VM(s) · {h.cpu_percent != null ? `${h.cpu_percent.toFixed(0)}% CPU` : 'CPU —'}
-            {linuxByHost[h.id] && linuxByHost[h.id].status !== 'ok' ? (
-              <>
-                {' · '}
-                <Link to={`/platform/hosts/${h.id}?tab=linux`} className={hubLinkClasses('hover:underline')} onClick={(e) => e.stopPropagation()}>
-                  Linux {linuxByHost[h.id].status}
-                </Link>
-              </>
-            ) : linuxByHost[h.id] ? ` · Linux ${linuxByHost[h.id].status}` : ''}
-          </p>
+          {h.hostname}
         </button>
       ))}
     </div>

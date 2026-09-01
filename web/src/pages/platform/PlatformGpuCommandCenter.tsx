@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router'
 import { Cpu, Monitor, RefreshCw, Server } from 'lucide-react'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
+import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
 import { getFleetGpu, listPlatformHosts, type FleetGpuOverview, type GpuProfileKind } from '../../api/platform'
 import { getHostGpus, type HostGpuDevice } from '../../api/platformHostGpu'
 import { getGpuPlacement } from '../../api/ai'
@@ -142,7 +143,8 @@ export default function PlatformGpuCommandCenter() {
           {overview
             ? platformStatSubtitle([
                 { label: 'GPU hosts', value: String(overview.gpu_host_count) },
-                { label: 'GPU VMs', value: String(overview.gpu_vm_count) },
+                { label: 'MIG hosts', value: String(overview.mig_hosts) },
+                { label: 'vGPU hosts', value: String(overview.vgpu_hosts) },
                 { label: 'CUDA ready', value: String(overview.cuda_ready_hosts) },
               ])
             : null}
@@ -178,14 +180,8 @@ export default function PlatformGpuCommandCenter() {
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MacStatWidget label="MIG hosts" value={String(overview.mig_hosts)} icon={<Cpu className="w-4 h-4" />} />
-              <MacStatWidget label="vGPU hosts" value={String(overview.vgpu_hosts)} icon={<Cpu className="w-4 h-4" />} tone="warn" />
-              <MacStatWidget label="CUDA ready" value={String(overview.cuda_ready_hosts)} icon={<Cpu className="w-4 h-4" />} tone="ok" />
-            </div>
-
             <MacGlassPanel title="GPU hosts" subtitle="Site, rack, profile, and VM occupancy">
-              <div className="overflow-x-auto -mt-2">
+              <TahoeTableWrap>
                 <table className="w-full text-sm" aria-label="GPU hosts">
                   <thead>
                     <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
@@ -214,7 +210,7 @@ export default function PlatformGpuCommandCenter() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TahoeTableWrap>
             </MacGlassPanel>
 
             {(overview.vms?.length ?? 0) > 0 && (

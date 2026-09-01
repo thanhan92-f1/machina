@@ -111,5 +111,6 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 - [x] Story hubs + destination lists (`AppleStoryKit`); kill page-level list|inspector splits
 - [x] Browse lists → `TahoeToolbar` + `TahoeTableWrap` (platform / classic / Fleet Cloud packs)
 - [x] Apple Account login (single composition — no split hero / feature cards)
+- [x] Remaining platform `MacStatWidget` first-viewport strips → `platformStatSubtitle` / `apple-metric-band`
 - [ ] Full TahoeSheet port (drawer/sheet primitive — deferred)
-- [ ] Exhaustive sky/cyan remaps removal from `main.css` bandage blocks
+- [ ] Exhaustive sky/cyan remaps removal from `main.css` bandage blocks (low priority; tokens already win)

@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { Key, Lock, Shield, Users } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import ErrorBanner from '../../components/ErrorBanner'
 import DetailTabs from '../../components/platform/DetailTabs'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import {
@@ -155,18 +155,32 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
         <p className="text-sm text-[var(--text-muted)]">{keychain.summary}</p>
       )}
       {activeTab === 'keychain' && keychain && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MacStatWidget label="Vault connected" value={`${keychain.vault_connected}/${keychain.vault_providers}`} icon={<Lock className="w-4 h-4" />} tone={keychain.disconnected_vaults > 0 ? 'warn' : 'ok'} />
-          <MacStatWidget label="MFA enrolled" value={String(keychain.mfa_enrolled_users)} icon={<Shield className="w-4 h-4" />} />
-          <MacStatWidget label="API keys" value={String(keychain.api_keys)} icon={<Key className="w-4 h-4" />} />
-          <MacStatWidget label="Air-gap bundles" value={String(keychain.air_gap_bundles)} icon={<Users className="w-4 h-4" />} />
+        <div className="apple-metric-band">
+          {[
+            { label: 'Vault connected', value: `${keychain.vault_connected}/${keychain.vault_providers}` },
+            { label: 'MFA enrolled', value: String(keychain.mfa_enrolled_users) },
+            { label: 'API keys', value: String(keychain.api_keys) },
+            { label: 'Air-gap bundles', value: String(keychain.air_gap_bundles) },
+          ].map((s) => (
+            <div key={s.label} className="min-w-0">
+              <div className="apple-metric-value">{s.value}</div>
+              <div className="apple-metric-label">{s.label}</div>
+            </div>
+          ))}
         </div>
       )}
-      {activeTab !== 'keychain' && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <MacStatWidget label="Vault connected" value={overview ? `${overview.vault_connected}/${overview.vault_providers}` : '—'} icon={<Lock className="w-4 h-4" />} />
-          <MacStatWidget label="MFA enrolled" value={overview ? String(overview.mfa_enrolled_users) : '—'} icon={<Shield className="w-4 h-4" />} />
-          <MacStatWidget label="Tenant policies" value={overview ? String(overview.tenant_policies) : '—'} icon={<Users className="w-4 h-4" />} />
+      {activeTab !== 'keychain' && overview && (
+        <div className="apple-metric-band">
+          {[
+            { label: 'Vault connected', value: `${overview.vault_connected}/${overview.vault_providers}` },
+            { label: 'MFA enrolled', value: String(overview.mfa_enrolled_users) },
+            { label: 'Tenant policies', value: String(overview.tenant_policies) },
+          ].map((s) => (
+            <div key={s.label} className="min-w-0">
+              <div className="apple-metric-value">{s.value}</div>
+              <div className="apple-metric-label">{s.label}</div>
+            </div>
+          ))}
         </div>
       )}
       {!embedded && <DetailTabs primary={ENTERPRISE_TABS} active={tab} onChange={setTab} />}

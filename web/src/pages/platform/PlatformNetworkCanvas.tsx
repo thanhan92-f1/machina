@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { Activity, Network, Server, ShieldAlert } from 'lucide-react'
+import { Activity, Server, ShieldAlert } from 'lucide-react'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import { formatUserError } from '../../utils/apiError'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import {
   getNetworkCanvas,
   type NetworkCanvasPayload,
@@ -161,29 +161,45 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {(mapStats || liveConnections != null) && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="apple-metric-band">
             {mapStats && (
               <>
-                <MacStatWidget label="K8s services" value={String(mapStats.services ?? svcNodes.length)} icon={<Network className="w-4 h-4" />} />
-                <MacStatWidget label="Connections" value={String(mapStats.connections ?? svcEdges.length)} icon={<Activity className="w-4 h-4" />} />
-                <MacStatWidget
-                  label="Blocked edges"
-                  value={String(mapStats.blocked ?? 0)}
-                  icon={<ShieldAlert className="w-4 h-4" />}
-                  tone={(mapStats.blocked ?? 0) > 0 ? 'warn' : 'ok'}
-                />
+                <div className="min-w-0">
+                  <div className="apple-metric-value">{String(mapStats.services ?? svcNodes.length)}</div>
+                  <div className="apple-metric-label">K8s services</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="apple-metric-value">{String(mapStats.connections ?? svcEdges.length)}</div>
+                  <div className="apple-metric-label">Connections</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="apple-metric-value">{String(mapStats.blocked ?? 0)}</div>
+                  <div className="apple-metric-label">Blocked edges</div>
+                </div>
               </>
             )}
             {liveConnections != null && (
-              <MacStatWidget label="Live flows" value={String(liveConnections)} icon={<Activity className="w-4 h-4" />} tone="ok" />
+              <div className="min-w-0">
+                <div className="apple-metric-value">{String(liveConnections)}</div>
+                <div className="apple-metric-label">Live flows</div>
+              </div>
             )}
             {dropRate != null && (
-              <MacStatWidget label="Drop rate" value={`${(dropRate * 100).toFixed(1)}%`} icon={<ShieldAlert className="w-4 h-4" />} tone={dropRate > 0.05 ? 'warn' : 'ok'} />
+              <div className="min-w-0">
+                <div className="apple-metric-value">{(dropRate * 100).toFixed(1)}%</div>
+                <div className="apple-metric-label">Drop rate</div>
+              </div>
             )}
             {(dropped > 0 || forwarded > 0) && (
               <>
-                <MacStatWidget label="Forwarded" value={String(forwarded)} icon={<Activity className="w-4 h-4" />} tone="ok" />
-                <MacStatWidget label="Dropped" value={String(dropped)} icon={<ShieldAlert className="w-4 h-4" />} tone={dropped > 0 ? 'warn' : 'ok'} />
+                <div className="min-w-0">
+                  <div className="apple-metric-value">{String(forwarded)}</div>
+                  <div className="apple-metric-label">Forwarded</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="apple-metric-value">{String(dropped)}</div>
+                  <div className="apple-metric-label">Dropped</div>
+                </div>
               </>
             )}
           </div>

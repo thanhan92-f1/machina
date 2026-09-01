@@ -1,9 +1,9 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useCallback, useEffect, useState } from 'react'
-import { HardDrive, Layers } from 'lucide-react'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { Layers } from 'lucide-react'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { formatUserError } from '../../utils/apiError'
 import { getStorageTiersOverview, type StorageTierOverview, type StorageTiersOverview } from '../../api/platform'
@@ -37,27 +37,22 @@ export default function PlatformStorageTiers() {
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/storage" label="Disk Utility" />}
+      title="Storage Tiers"
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">{data?.summary ?? 'Storage tier classification and capacity overview.'}</span>
+          {platformStatSubtitle([
+            { label: 'Tiers', value: tiers.length },
+            { label: 'Capacity', value: `${totalCapacity} GiB` },
+            { label: 'Used', value: `${totalUsed} GiB` },
+          ])}
+        </span>
+      }
+      icon={<Layers className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
+      contentClassName="space-y-6"
     >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Storage Tiers</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {data?.summary ?? 'Storage tier classification and capacity overview.'}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <MacStatWidget label="Total Tiers" value={String(tiers.length)} icon={<Layers className="w-4 h-4" />} />
-          <MacStatWidget label="Total Capacity" value={`${totalCapacity} GiB`} icon={<HardDrive className="w-4 h-4" />} />
-          <MacStatWidget
-            label="Total Used"
-            value={`${totalUsed} GiB`}
-            icon={<HardDrive className="w-4 h-4" />}
-            tone={totalUsed / (totalCapacity || 1) > 0.85 ? 'warn' : 'default'}
-          />
-        </div>
-
         <MacGlassPanel title="Storage Tiers" >
           {tiers.length === 0 ? (
             <PlatformEmptyState

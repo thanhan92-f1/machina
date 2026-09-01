@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { BookOpen, DollarSign, FolderKanban, PieChart } from 'lucide-react'
+import { PieChart } from 'lucide-react'
 import ErrorBanner from '../../components/ErrorBanner'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import DetailTabs from '../../components/platform/DetailTabs'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import RunbookExecutionSheet, { parseRunbookStepsJson, type RunbookExecutionResult } from '../../components/platform/RunbookExecutionSheet'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
@@ -194,10 +194,17 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
             />
           )}
           {opsOverview && (
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MacStatWidget label="Runbooks" value={String(opsOverview.runbook_count)} icon={<BookOpen className="w-4 h-4" />} />
-              <MacStatWidget label="24h executions" value={String(opsOverview.executions_24h)} icon={<BookOpen className="w-4 h-4" />} />
-              <MacStatWidget label="Fleet grade" value={opsOverview.compliance_grade} icon={<BookOpen className="w-4 h-4" />} tone="ok" />
+            <div className="apple-metric-band">
+              {[
+                { label: 'Runbooks', value: String(opsOverview.runbook_count) },
+                { label: '24h executions', value: String(opsOverview.executions_24h) },
+                { label: 'Fleet grade', value: opsOverview.compliance_grade },
+              ].map((s) => (
+                <div key={s.label} className="min-w-0">
+                  <div className="apple-metric-value">{s.value}</div>
+                  <div className="apple-metric-label">{s.label}</div>
+                </div>
+              ))}
             </div>
           )}
           <MacGlassPanel title="Runbook catalog" subtitle="Execute incident playbooks — records steps in execution history.">
@@ -461,11 +468,18 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
               </p>
             )}
           </MacGlassPanel>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MacStatWidget label="Online hosts" value={String(cap.hosts_online)} icon={<FolderKanban className="w-4 h-4" />} />
-            <MacStatWidget label="Running VMs" value={String(cap.running_vms)} icon={<FolderKanban className="w-4 h-4" />} tone="ok" />
-            <MacStatWidget label="Memory headroom" value={`${cap.memory_headroom_mib} MiB`} icon={<FolderKanban className="w-4 h-4" />} />
-            <MacStatWidget label="Avg CPU" value={`${cap.avg_cpu_percent.toFixed(0)}%`} icon={<FolderKanban className="w-4 h-4" />} />
+          <div className="apple-metric-band">
+            {[
+              { label: 'Online hosts', value: String(cap.hosts_online) },
+              { label: 'Running VMs', value: String(cap.running_vms) },
+              { label: 'Memory headroom', value: `${cap.memory_headroom_mib} MiB` },
+              { label: 'Avg CPU', value: `${cap.avg_cpu_percent.toFixed(0)}%` },
+            ].map((s) => (
+              <div key={s.label} className="min-w-0">
+                <div className="apple-metric-value">{s.value}</div>
+                <div className="apple-metric-label">{s.label}</div>
+              </div>
+            ))}
           </div>
           {(cap.storage_capacity_gib != null && cap.storage_capacity_gib > 0) ||
           (cap.estimated_small_vms_addable != null && cap.estimated_small_vms_addable > 0) ||
@@ -575,11 +589,18 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       )}
       {!loading && tab === 'reports' && exposureFinops && (
         <MacGlassPanel title="FinOps × Zeus Firewall" subtitle={exposureFinops.summary}>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 -mt-2">
-            <MacStatWidget label="Fleet exposure" value={`$${exposureFinops.fleet_exposure_monthly_usd.toFixed(0)}/mo`} icon={<DollarSign className="w-4 h-4" />} tone="warn" />
-            <MacStatWidget label="Idle port waste" value={`$${exposureFinops.idle_port_waste_usd.toFixed(0)}/mo`} icon={<DollarSign className="w-4 h-4" />} />
-            <MacStatWidget label="Cloud SG" value={`$${exposureFinops.cloud_sg_monthly_usd.toFixed(0)}/mo`} icon={<DollarSign className="w-4 h-4" />} />
-            <MacStatWidget label="GPU / storage" value={`$${(exposureFinops.gpu_exposure_usd + exposureFinops.storage_exposure_usd).toFixed(0)}/mo`} icon={<DollarSign className="w-4 h-4" />} tone="ok" />
+          <div className="apple-metric-band -mt-2">
+            {[
+              { label: 'Fleet exposure', value: `$${exposureFinops.fleet_exposure_monthly_usd.toFixed(0)}/mo` },
+              { label: 'Idle port waste', value: `$${exposureFinops.idle_port_waste_usd.toFixed(0)}/mo` },
+              { label: 'Cloud SG', value: `$${exposureFinops.cloud_sg_monthly_usd.toFixed(0)}/mo` },
+              { label: 'GPU / storage', value: `$${(exposureFinops.gpu_exposure_usd + exposureFinops.storage_exposure_usd).toFixed(0)}/mo` },
+            ].map((s) => (
+              <div key={s.label} className="min-w-0">
+                <div className="apple-metric-value">{s.value}</div>
+                <div className="apple-metric-label">{s.label}</div>
+              </div>
+            ))}
           </div>
           {exposureFinops.vm_idle_ranking.length > 0 && (
             <ul className="mt-4 text-xs space-y-1">

@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { Webhook, Plus, Send } from 'lucide-react'
+import { Webhook, Plus } from 'lucide-react'
 import OperatingSurfaceLayout from '../../components/platform/OperatingSurfaceLayout'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
-import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import {
   createWebhook,
   deleteWebhook,
@@ -67,7 +67,16 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
       error={error}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Webhooks'}
-      subtitle={embedded ? undefined : 'Event notifications for VM lifecycle and HA events'}
+      subtitle={embedded ? undefined : (
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">Event notifications for VM lifecycle and HA events</span>
+          {platformStatSubtitle([
+            { label: 'Endpoints', value: rows.length },
+            { label: 'Enabled', value: enabledCount },
+            { label: 'Failed deliveries', value: failedCount },
+          ])}
+        </span>
+      )}
       icon={embedded ? undefined : <Webhook className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : (
         <>
@@ -119,12 +128,6 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-webhooks-page">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <MacStatWidget label="Endpoints" value={String(rows.length)} icon={<Webhook className="w-4 h-4" />} />
-          <MacStatWidget label="Enabled" value={String(enabledCount)} icon={<Send className="w-4 h-4" />} tone={enabledCount > 0 ? 'ok' : 'default'} />
-          <MacStatWidget label="Failed deliveries" value={String(failedCount)} icon={<Send className="w-4 h-4" />} tone={failedCount > 0 ? 'warn' : 'default'} />
-        </div>
-
         {testWebhooks.length > 0 && (
           <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 p-3 text-sm text-amber-800">
             <p className="font-medium">E2E test webhooks detected</p>

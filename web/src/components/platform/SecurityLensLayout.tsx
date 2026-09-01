@@ -3,10 +3,10 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft } from 'lucide-react'
-import PlatformPageChrome, { PlatformRefreshButton } from './PlatformPageChrome'
+import PlatformPageChrome, { PlatformRefreshButton, platformStatSubtitle } from './PlatformPageChrome'
 import OperatingSurfaceLayout from './OperatingSurfaceLayout'
 import PlatformEmptyState from './PlatformEmptyState'
-import { MacGlassPanel, MacStatWidget } from './mac/PlatformMacUi'
+import { MacGlassPanel } from './mac/PlatformMacUi'
 import PlatformFilterPills from './PlatformFilterPills'
 import { hubLinkClasses } from '../../utils/semanticColors'
 
@@ -71,19 +71,21 @@ export default function SecurityLensLayout({
         </Link>
       }
       title={title}
-      subtitle={subtitle}
+      subtitle={
+        stats && stats.length > 0
+          ? (
+              <span className="flex flex-col gap-1">
+                {subtitle ? <span className="text-[var(--text-muted)]">{subtitle}</span> : null}
+                {platformStatSubtitle(stats.map((s) => ({ label: s.label, value: s.value })))}
+              </span>
+            )
+          : subtitle
+      }
       icon={icon}
       actions={<PlatformRefreshButton onClick={onRefresh} />}
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId={testId}>
-        {stats && stats.length > 0 && (
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-            {stats.map((s) => (
-              <MacStatWidget key={s.label} label={s.label} value={s.value} tone={s.tone} icon={s.icon ?? <span className="w-4 h-4" />} />
-            ))}
-          </div>
-        )}
         {insight}
         {filters && filterValue !== undefined && onFilterChange && (
           <PlatformFilterPills options={filters} value={filterValue} onChange={onFilterChange} />

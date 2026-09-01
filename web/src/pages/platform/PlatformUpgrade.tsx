@@ -1,9 +1,9 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowUpCircle, CheckCircle2, RefreshCw, Server } from 'lucide-react'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { ArrowUpCircle, RefreshCw, Server } from 'lucide-react'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
@@ -89,6 +89,18 @@ export default function PlatformUpgrade() {
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/settings" label="Settings" />}
+      title="Upgrade Matrix"
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">Controller version compatibility and host agent rollout.</span>
+          {matrix && platformStatSubtitle([
+            { label: 'Controller', value: `v${matrix.controller_version}` },
+            { label: 'Recommended agent', value: `v${matrix.recommended_agent}` },
+            { label: 'Min agent', value: `v${matrix.min_agent}` },
+          ])}
+        </span>
+      }
+      icon={<ArrowUpCircle className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
           {onlineHosts.length > 1 && (
@@ -103,36 +115,9 @@ export default function PlatformUpgrade() {
           <PlatformRefreshButton onClick={() => void load()} />
         </div>
       }
+      contentClassName="space-y-6"
     >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Upgrade Matrix</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Controller version compatibility and host agent rollout.
-          </p>
-        </div>
-
-        {matrix && (
-          <div className="grid grid-cols-3 gap-4">
-            <MacStatWidget
-              label="Controller"
-              value={`v${matrix.controller_version}`}
-              icon={<CheckCircle2 className="w-4 h-4" />}
-              tone="ok"
-            />
-            <MacStatWidget
-              label="Recommended Agent"
-              value={`v${matrix.recommended_agent}`}
-              icon={<ArrowUpCircle className="w-4 h-4" />}
-            />
-            <MacStatWidget
-              label="Min Compatible Agent"
-              value={`v${matrix.min_agent}`}
-              icon={<Server className="w-4 h-4" />}
-            />
-          </div>
-        )}
-
         {matrix?.notes && (
           <MacGlassPanel title="Upgrade Guide">
             <p className="text-sm text-muted-foreground">{matrix.notes}</p>

@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Activity } from 'lucide-react'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import OperatingSurfaceLayout from '../../components/platform/OperatingSurfaceLayout'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
 import MigratePrecheckModal from '../../components/platform/MigratePrecheckModal'
 import {
   getClusterSettings,
@@ -118,7 +118,16 @@ export default function PlatformPlacement() {
       loading={loading && !settings && !ha}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Placement & HA"
-      subtitle="DRS-style recommendations and high-availability status"
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">DRS-style recommendations and high-availability status</span>
+          {ha && platformStatSubtitle([
+            { label: 'HA-enabled VMs', value: ha.status.enabled_vms },
+            { label: 'Offline hosts', value: ha.status.offline_hosts },
+            { label: 'HA events (24h)', value: ha.status.recent_events },
+          ])}
+        </span>
+      }
       icon={<Activity className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
@@ -152,13 +161,6 @@ export default function PlatformPlacement() {
           </label>
         </section>
         </MacGlassPanel>
-      )}
-      {ha && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <MacStatWidget label="HA-enabled VMs" value={String(ha.status.enabled_vms)} icon={<Activity className="w-4 h-4" />} />
-          <MacStatWidget label="Offline hosts" value={String(ha.status.offline_hosts)} icon={<Activity className="w-4 h-4" />} tone="warn" />
-          <MacStatWidget label="HA events (24h)" value={String(ha.status.recent_events)} icon={<Activity className="w-4 h-4" />} />
-        </div>
       )}
       <MacGlassPanel title="Placement recommendations">
         {rows.length === 0 ? (

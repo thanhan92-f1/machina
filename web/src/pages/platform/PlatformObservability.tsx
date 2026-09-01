@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useCallback, useEffect, useState } from 'react'
-import { Activity, Gauge, Timer } from 'lucide-react'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import { Activity, Gauge } from 'lucide-react'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import DetailTabs from '../../components/platform/DetailTabs'
 import OperatingSurfaceLayout from '../../components/platform/OperatingSurfaceLayout'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import {
   getObservabilityOverview,
@@ -96,7 +97,20 @@ export default function PlatformObservability() {
       loading={loading && !overview && !error}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Observability"
-      subtitle="SLO dashboards and API trace inventory."
+      subtitle={
+        overview
+          ? (
+            <span className="flex flex-col gap-1">
+              <span className="text-[var(--text-muted)]">SLO dashboards and API trace inventory.</span>
+              {platformStatSubtitle([
+                { label: 'SLO policies', value: (overview.slos ?? []).length },
+                { label: 'Traces (1h)', value: overview.trace_count_1h },
+                { label: 'p95 latency', value: `${overview.p95_latency_ms} ms` },
+              ])}
+            </span>
+          )
+          : 'SLO dashboards and API trace inventory.'
+      }
       icon={<Gauge className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
@@ -104,11 +118,6 @@ export default function PlatformObservability() {
       {overview && (
         <OperatingSurfaceLayout testId="platform-observability-page">
           <p className="text-sm text-[var(--text-muted)]">{overview.summary}</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <MacStatWidget label="SLO policies" value={String((overview.slos ?? []).length)} icon={<Gauge className="w-4 h-4" />} />
-            <MacStatWidget label="Traces (1h)" value={String(overview.trace_count_1h)} icon={<Activity className="w-4 h-4" />} />
-            <MacStatWidget label="p95 latency" value={`${overview.p95_latency_ms} ms`} icon={<Timer className="w-4 h-4" />} />
-          </div>
           <DetailTabs primary={OBS_TABS} active={lens} onChange={setLens} />
 
           {lens === 'slos' && (
@@ -140,32 +149,32 @@ export default function PlatformObservability() {
               />
             ) : (
               <MacGlassPanel title="Recent API traces">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left" aria-label="Recent API traces">
-                    <thead className="text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
+                <TahoeTableWrap className="border-0 shadow-none bg-transparent">
+                  <table className="apple-table w-full text-sm" aria-label="Recent API traces">
+                    <thead>
                       <tr>
-                        <th scope="col" className="py-2 pr-4">Time</th>
-                        <th scope="col" className="py-2 pr-4">Method</th>
-                        <th scope="col" className="py-2 pr-4">Path</th>
-                        <th scope="col" className="py-2 pr-4">Status</th>
-                        <th scope="col" className="py-2">Duration</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Method</th>
+                        <th scope="col">Path</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Duration</th>
                       </tr>
                     </thead>
                     <tbody>
                       {traces.map((t) => (
-                        <tr key={t.id} className="border-b border-[var(--apple-hairline)]/60">
-                          <td className="py-2 pr-4 text-[var(--text-muted)] text-xs whitespace-nowrap">{t.recorded_at}</td>
-                          <td className="py-2 pr-4 text-[var(--text-secondary)] font-mono text-xs">{t.method}</td>
-                          <td className="py-2 pr-4 text-[var(--text-muted)] font-mono text-xs max-w-md truncate">{t.path}</td>
-                          <td className={`py-2 pr-4 text-xs ${statusToneClass(httpStatusTone(t.status_code))}`}>
+                        <tr key={t.id}>
+                          <td className="text-[var(--text-muted)] text-xs whitespace-nowrap">{t.recorded_at}</td>
+                          <td className="text-[var(--text-secondary)] font-mono text-xs">{t.method}</td>
+                          <td className="text-[var(--text-muted)] font-mono text-xs max-w-md truncate">{t.path}</td>
+                          <td className={`text-xs ${statusToneClass(httpStatusTone(t.status_code))}`}>
                             {t.status_code}
                           </td>
-                          <td className="py-2 text-[var(--text-muted)] text-xs">{t.duration_ms} ms</td>
+                          <td className="text-[var(--text-muted)] text-xs">{t.duration_ms} ms</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TahoeTableWrap>
               </MacGlassPanel>
             )
           )}

@@ -5,8 +5,8 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import { Copy, Key, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import GlassDataTable from '../../components/platform/GlassDataTable'
 import OperatingSurfaceLayout from '../../components/platform/OperatingSurfaceLayout'
-import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import { createApiKey, deleteApiKey, listApiKeys, type ApiKeyRow } from '../../api/platform'
 import { rotateApiKey } from '../../api/day2'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -45,17 +45,20 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
       error={error}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'API keys'}
-      subtitle={embedded ? undefined : 'Bearer tokens for automation (machina_*)'}
+      subtitle={embedded ? undefined : (
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">Bearer tokens for automation (machina_*)</span>
+          {platformStatSubtitle([
+            { label: 'Active keys', value: activeCount },
+            { label: 'Total keys', value: rows.length },
+          ])}
+        </span>
+      )}
       icon={embedded ? undefined : <Key className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-api-keys-page">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <MacStatWidget label="Active keys" value={String(activeCount)} icon={<Key className="w-4 h-4" />} tone={activeCount > 0 ? 'ok' : 'default'} />
-          <MacStatWidget label="Total keys" value={String(rows.length)} icon={<Key className="w-4 h-4" />} />
-        </div>
-
         {newToken && (
           <div className={`rounded-xl p-4 text-sm ${statusSurfaceClasses('warn')}`}>
             <p className={`mb-2 ${statusToneClass('warn')}`}>Copy this token now — it will not be shown again:</p>

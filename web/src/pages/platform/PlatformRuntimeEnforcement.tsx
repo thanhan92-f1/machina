@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useSearchParams } from 'react-router'
-import { Eye, Shield, ShieldBan, Server, Ban, Trash2 } from 'lucide-react'
+import { Eye, Shield, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import {
   MacGlassPanel,
   MacListRow,
   MacSheet,
-  MacStatWidget,
 } from '../../components/platform/mac/PlatformMacUi'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import {
@@ -217,16 +216,18 @@ export default function PlatformRuntimeEnforcement() {
       contentClassName="space-y-4"
     >
       {status && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <MacStatWidget label="Mode" value={status.mode ?? 'observe'} icon={<ShieldBan className="w-4 h-4" />} />
-          <MacStatWidget label="Active policies" value={String(status.policies_enabled ?? 0)} icon={<Shield className="w-4 h-4" />} />
-          <MacStatWidget label="Applied hosts" value={String(status.applied_hosts?.length ?? 0)} icon={<Server className="w-4 h-4" />} />
-          <MacStatWidget
-            label="Blocked events"
-            value={String(status.blocked_events ?? 0)}
-            icon={<Ban className="w-4 h-4" />}
-            tone={(status.blocked_events ?? 0) > 0 ? 'warn' : 'ok'}
-          />
+        <div className="apple-metric-band">
+          {[
+            { label: 'Mode', value: status.mode ?? 'observe' },
+            { label: 'Active policies', value: String(status.policies_enabled ?? 0) },
+            { label: 'Applied hosts', value: String(status.applied_hosts?.length ?? 0) },
+            { label: 'Blocked events', value: String(status.blocked_events ?? 0) },
+          ].map((s) => (
+            <div key={s.label} className="min-w-0">
+              <div className="apple-metric-value">{s.value}</div>
+              <div className="apple-metric-label">{s.label}</div>
+            </div>
+          ))}
         </div>
       )}
 

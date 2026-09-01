@@ -518,7 +518,7 @@ export default function EventsPage() {
           </div>
 
           {/* Snapshot bar + detail table */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6">
             <div className="tahoe-glass-card p-5 min-w-0">
               <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Memory snapshot</h2>
               <div

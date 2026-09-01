@@ -4,19 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link, useSearchParams } from 'react-router'
 import {
-  AlertTriangle,
   CalendarClock,
   Download,
   ListChecks,
   Loader2,
   Plus,
-  RefreshCw,
   Trash2,
 } from 'lucide-react'
 import {
   MacGlassPanel,
   MacListRow,
-  MacStatWidget,
 } from '../../components/platform/mac/PlatformMacUi'
 import DetailTabs from '../../components/platform/DetailTabs'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
@@ -206,10 +203,17 @@ export default function PlatformMaintenance() {
       {!pageLoading && tab === 'mission' && mission && (
         <div className="space-y-4">
           <p className="text-sm text-[var(--text-muted)]">{mission.summary}</p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <MacStatWidget label="Hosts with updates" value={String(mission.hosts_with_updates)} icon={<Download className="w-4 h-4" />} tone={mission.hosts_with_updates > 0 ? 'warn' : 'ok'} />
-            <MacStatWidget label="In maintenance" value={String(mission.hosts_in_maintenance)} icon={<AlertTriangle className="w-4 h-4" />} tone={mission.hosts_in_maintenance > 0 ? 'warn' : 'ok'} />
-            <MacStatWidget label="Pending schedules" value={String(mission.pending_schedules)} icon={<CalendarClock className="w-4 h-4" />} />
+          <div className="apple-metric-band">
+            {[
+              { label: 'Hosts with updates', value: String(mission.hosts_with_updates) },
+              { label: 'In maintenance', value: String(mission.hosts_in_maintenance) },
+              { label: 'Pending schedules', value: String(mission.pending_schedules) },
+            ].map((s) => (
+              <div key={s.label} className="min-w-0">
+                <div className="apple-metric-value">{s.value}</div>
+                <div className="apple-metric-label">{s.label}</div>
+              </div>
+            ))}
           </div>
 
           {mission.hosts.length === 0 ? (
@@ -388,26 +392,18 @@ export default function PlatformMaintenance() {
           {fleet && (
             <>
               <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <MacStatWidget label="Hosts scanned" value={String(fleet.hosts_scanned)} icon={<Download className="w-4 h-4" />} />
-                <MacStatWidget
-                  label="OS updates"
-                  value={String(fleet.hosts_with_updates)}
-                  icon={<AlertTriangle className="w-4 h-4" />}
-                  tone={fleet.hosts_with_updates > 0 ? 'warn' : 'ok'}
-                />
-                <MacStatWidget
-                  label="Reboot required"
-                  value={String(fleet.hosts_reboot_required)}
-                  icon={<RefreshCw className="w-4 h-4" />}
-                  tone={fleet.hosts_reboot_required > 0 ? 'warn' : 'ok'}
-                />
-                <MacStatWidget
-                  label="Agent drift"
-                  value={String(fleet.agent_drift_count)}
-                  icon={<Download className="w-4 h-4" />}
-                  tone={fleet.agent_drift_count > 0 ? 'warn' : 'ok'}
-                />
+              <div className="apple-metric-band">
+                {[
+                  { label: 'Hosts scanned', value: String(fleet.hosts_scanned) },
+                  { label: 'OS updates', value: String(fleet.hosts_with_updates) },
+                  { label: 'Reboot required', value: String(fleet.hosts_reboot_required) },
+                  { label: 'Agent drift', value: String(fleet.agent_drift_count) },
+                ].map((s) => (
+                  <div key={s.label} className="min-w-0">
+                    <div className="apple-metric-value">{s.value}</div>
+                    <div className="apple-metric-label">{s.label}</div>
+                  </div>
+                ))}
               </div>
               <p className="text-xs text-[var(--text-muted)]">
                 Recommended agent: <span className="text-[var(--text-secondary)] font-mono">{fleet.recommended_agent}</span>

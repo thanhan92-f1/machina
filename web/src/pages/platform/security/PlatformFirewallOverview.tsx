@@ -6,7 +6,6 @@ import { ArrowLeft, Cloud, GitBranch, HardDrive, Network, RefreshCw, Server, Shi
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import {
   MacGlassPanel,
-  MacStatWidget,
 } from '../../../components/platform/mac/PlatformMacUi'
 import { AppleDestinationList } from '../../../components/platform/apple/AppleStoryKit'
 import JsonInspector, { asRecord, recordEntries } from '../../../components/platform/JsonInspector'
@@ -355,9 +354,12 @@ export default function PlatformFirewallOverview() {
           )}
           {thresholds && (
             <MacGlassPanel title="Operator thresholds" subtitle={String(thresholds.summary ?? 'Auto-secure eligibility rules')}>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 -mt-1">
+              <div className="apple-metric-band -mt-1">
                 {recordEntries(asRecord(thresholds) ?? {}, 8).map(([k, v]) => (
-                  <MacStatWidget key={k} label={k.replace(/_/g, ' ')} value={String(v)} icon={<Shield className="w-4 h-4" />} />
+                  <div key={k} className="min-w-0">
+                    <div className="apple-metric-value">{String(v)}</div>
+                    <div className="apple-metric-label">{k.replace(/_/g, ' ')}</div>
+                  </div>
                 ))}
               </div>
               <JsonInspector data={thresholds} className="mt-3" />

@@ -2,15 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Activity,
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
   ShieldCheck,
-  Zap,
 } from 'lucide-react'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -75,35 +73,22 @@ export default function PlatformHa() {
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
+      title="High Availability"
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">HA cluster status, policy, and host fencing controls.</span>
+          {status && platformStatSubtitle([
+            { label: 'HA-protected VMs', value: status.status.enabled_vms },
+            { label: 'Offline hosts', value: status.status.offline_hosts },
+            { label: 'Recent events', value: status.status.recent_events },
+          ])}
+        </span>
+      }
+      icon={<ShieldCheck className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
+      contentClassName="space-y-6"
     >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">High Availability</h1>
-          <p className="text-sm text-muted-foreground mt-1">HA cluster status, policy, and host fencing controls.</p>
-        </div>
-
-        {status && (
-          <div className="grid grid-cols-3 gap-4">
-            <MacStatWidget
-              label="HA-Protected VMs"
-              value={String(status.status.enabled_vms)}
-              icon={<ShieldCheck className="w-4 h-4" />}
-            />
-            <MacStatWidget
-              label="Offline Hosts"
-              value={String(status.status.offline_hosts)}
-              icon={<AlertTriangle className="w-4 h-4" />}
-              tone={status.status.offline_hosts > 0 ? 'warn' : 'default'}
-            />
-            <MacStatWidget
-              label="Recent Events"
-              value={String(status.status.recent_events)}
-              icon={<Activity className="w-4 h-4" />}
-            />
-          </div>
-        )}
-
         <MacGlassPanel title="HA Events" >
           {!status || status.events.length === 0 ? (
             <PlatformEmptyState icon={CheckCircle2} title="No HA events" subtitle="All hosts are healthy." />

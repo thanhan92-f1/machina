@@ -4,19 +4,15 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Boxes,
-  Camera,
   Database,
-  HardDrive,
-  Layers,
   Loader2,
   Plus,
   RefreshCw,
-  Server,
   Trash2,
 } from 'lucide-react'
-import PlatformPageChrome from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
+import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import {
@@ -136,7 +132,17 @@ export default function PlatformAtlasStorage() {
     <PlatformPageChrome
       eyebrow="Platform"
       title="Storage (Atlas)"
-      subtitle={status?.summary ?? 'Zyvor storage control plane'}
+      subtitle={
+        status?.enabled && status.reachable
+          ? platformStatSubtitle([
+              { label: 'Backends', value: String(backends.length) },
+              { label: 'Volumes', value: String(volumes.length) },
+              { label: 'Snapshots', value: String(snapshots.length) },
+              { label: 'Backups', value: String(backups.length) },
+              { label: 'Auth', value: status?.authenticated ? 'JWT' : 'open' },
+            ])
+          : (status?.summary ?? 'Zyvor storage control plane')
+      }
       icon={<Database className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
@@ -174,19 +180,6 @@ export default function PlatformAtlasStorage() {
         </MacGlassPanel>
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <MacStatWidget label="Backends" value={String(backends.length)} icon={<Server className="w-4 h-4" />} />
-            <MacStatWidget label="Volumes" value={String(volumes.length)} icon={<HardDrive className="w-4 h-4" />} />
-            <MacStatWidget label="Snapshots" value={String(snapshots.length)} icon={<Camera className="w-4 h-4" />} />
-            <MacStatWidget label="Backups" value={String(backups.length)} icon={<Boxes className="w-4 h-4" />} />
-            <MacStatWidget
-              label="Auth"
-              value={status?.authenticated ? 'JWT' : 'open'}
-              icon={<Layers className="w-4 h-4" />}
-              tone={status?.authenticated ? 'ok' : 'default'}
-            />
-          </div>
-
           <div className="flex items-center gap-1 border-b border-white/[0.06]">
             {TABS.map((t) => (
               <button
@@ -225,95 +218,126 @@ export default function PlatformAtlasStorage() {
 
           {tab === 'Volumes' && (
             <MacGlassPanel title="Volumes" subtitle="Backend volumes provisioned through Atlas.">
-              <div className="divide-y divide-white/[0.04]">
-                {volumes.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No volumes.</p>}
-                {volumes.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between py-3 gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm text-[var(--text-primary)] truncate">{v.name}</p>
-                      <p className="text-xs text-[var(--text-muted)] truncate">
-                        {fmtBytes(v.size_bytes)} · {v.backend_native_id ?? v.id}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatePill value={v.state} />
-                      <button
-                        type="button"
-                        className="btn-secondary btn-xs"
-                        disabled={busy === v.id}
-                        onClick={() =>
-                          void run(v.id, () => snapshotAtlasVolume(v.id), `Snapshot of ${v.name} queued`)
-                        }
-                      >
-                        Snapshot
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary btn-xs"
-                        disabled={busy === v.id}
-                        onClick={() =>
-                          void run(v.id, () => backupAtlasVolume({ volume_id: v.id }), `Backup of ${v.name} queued`)
-                        }
-                      >
-                        Backup
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary btn-xs text-rose-400"
-                        disabled={busy === v.id}
-                        aria-label="Delete volume"
-                        onClick={() => {
-                          if (window.confirm(`Delete volume ${v.name}?`))
-                            void run(v.id, () => deleteAtlasVolume(v.id), `Volume ${v.name} deleting`)
-                        }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {volumes.length === 0 ? (
+                <p className="text-sm text-[var(--text-muted)] py-4">No volumes.</p>
+              ) : (
+                <TahoeTableWrap>
+                  <table className="w-full text-sm" aria-label="Atlas volumes">
+                    <thead>
+                      <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
+                        <th scope="col" className="py-2 pr-2">Name</th>
+                        <th scope="col" className="py-2 pr-2">Size</th>
+                        <th scope="col" className="py-2 pr-2">State</th>
+                        <th scope="col" className="py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {volumes.map((v) => (
+                        <tr key={v.id} className="border-b border-white/[0.04]">
+                          <td className="py-3 pr-2">
+                            <p className="text-[var(--text-primary)] truncate">{v.name}</p>
+                            <p className="text-xs text-[var(--text-muted)] truncate">{v.backend_native_id ?? v.id}</p>
+                          </td>
+                          <td className="py-3 pr-2 text-[var(--text-muted)]">{fmtBytes(v.size_bytes)}</td>
+                          <td className="py-3 pr-2"><StatePill value={v.state} /></td>
+                          <td className="py-3 text-right">
+                            <div className="flex items-center justify-end gap-2 shrink-0">
+                              <button
+                                type="button"
+                                className="btn-secondary btn-xs"
+                                disabled={busy === v.id}
+                                onClick={() =>
+                                  void run(v.id, () => snapshotAtlasVolume(v.id), `Snapshot of ${v.name} queued`)
+                                }
+                              >
+                                Snapshot
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-secondary btn-xs"
+                                disabled={busy === v.id}
+                                onClick={() =>
+                                  void run(v.id, () => backupAtlasVolume({ volume_id: v.id }), `Backup of ${v.name} queued`)
+                                }
+                              >
+                                Backup
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-secondary btn-xs text-rose-400"
+                                disabled={busy === v.id}
+                                aria-label="Delete volume"
+                                onClick={() => {
+                                  if (window.confirm(`Delete volume ${v.name}?`))
+                                    void run(v.id, () => deleteAtlasVolume(v.id), `Volume ${v.name} deleting`)
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TahoeTableWrap>
+              )}
             </MacGlassPanel>
           )}
 
           {tab === 'Snapshots' && (
             <MacGlassPanel title="Snapshots" subtitle="Point-in-time snapshots of Atlas volumes.">
-              <div className="divide-y divide-white/[0.04]">
-                {snapshots.length === 0 && <p className="text-sm text-[var(--text-muted)] py-4">No snapshots.</p>}
-                {snapshots.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between py-3 gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm text-[var(--text-primary)] truncate">{s.name}</p>
-                      <p className="text-xs text-[var(--text-muted)] truncate">vol {s.volume_id}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatePill value={s.state} />
-                      <button
-                        type="button"
-                        className="btn-secondary btn-xs"
-                        disabled={busy === s.id}
-                        onClick={() =>
-                          void run(s.id, () => restoreAtlasSnapshot(s.id), `Restore from ${s.name} queued`)
-                        }
-                      >
-                        Restore
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary btn-xs text-rose-400"
-                        disabled={busy === s.id}
-                        aria-label="Delete snapshot"
-                        onClick={() => {
-                          if (window.confirm(`Delete snapshot ${s.name}?`))
-                            void run(s.id, () => deleteAtlasSnapshot(s.id), `Snapshot ${s.name} deleting`)
-                        }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {snapshots.length === 0 ? (
+                <p className="text-sm text-[var(--text-muted)] py-4">No snapshots.</p>
+              ) : (
+                <TahoeTableWrap>
+                  <table className="w-full text-sm" aria-label="Atlas snapshots">
+                    <thead>
+                      <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
+                        <th scope="col" className="py-2 pr-2">Name</th>
+                        <th scope="col" className="py-2 pr-2">Volume</th>
+                        <th scope="col" className="py-2 pr-2">State</th>
+                        <th scope="col" className="py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {snapshots.map((s) => (
+                        <tr key={s.id} className="border-b border-white/[0.04]">
+                          <td className="py-3 pr-2 text-[var(--text-primary)] truncate">{s.name}</td>
+                          <td className="py-3 pr-2 text-xs text-[var(--text-muted)] truncate">{s.volume_id}</td>
+                          <td className="py-3 pr-2"><StatePill value={s.state} /></td>
+                          <td className="py-3 text-right">
+                            <div className="flex items-center justify-end gap-2 shrink-0">
+                              <button
+                                type="button"
+                                className="btn-secondary btn-xs"
+                                disabled={busy === s.id}
+                                onClick={() =>
+                                  void run(s.id, () => restoreAtlasSnapshot(s.id), `Restore from ${s.name} queued`)
+                                }
+                              >
+                                Restore
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-secondary btn-xs text-rose-400"
+                                disabled={busy === s.id}
+                                aria-label="Delete snapshot"
+                                onClick={() => {
+                                  if (window.confirm(`Delete snapshot ${s.name}?`))
+                                    void run(s.id, () => deleteAtlasSnapshot(s.id), `Snapshot ${s.name} deleting`)
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TahoeTableWrap>
+              )}
             </MacGlassPanel>
           )}
 

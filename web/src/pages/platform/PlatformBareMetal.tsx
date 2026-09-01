@@ -3,15 +3,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   CheckCircle2,
-  Cpu,
-  HardDrive,
   Plus,
-  Power,
   RefreshCw,
   Server,
 } from 'lucide-react'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToastContext } from '../../contexts/ToastContext'
@@ -97,6 +94,18 @@ export default function PlatformBareMetal() {
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/hosts" label="Hosts" />}
+      title="Bare Metal"
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">Physical servers managed via BMC (IPMI/Redfish).</span>
+          {platformStatSubtitle([
+            { label: 'Servers', value: servers.length },
+            { label: 'Online', value: onlineCount },
+            { label: 'Capacity', value: `${totalCores} cores · ${totalMemGib} GiB` },
+          ])}
+        </span>
+      }
+      icon={<Server className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
           <button
@@ -108,19 +117,9 @@ export default function PlatformBareMetal() {
           <PlatformRefreshButton onClick={() => void load()} />
         </div>
       }
+      contentClassName="space-y-6"
     >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Bare Metal</h1>
-          <p className="text-sm text-muted-foreground mt-1">Physical servers managed via BMC (IPMI/Redfish).</p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <MacStatWidget label="Servers" value={String(servers.length)} icon={<Server className="w-4 h-4" />} />
-          <MacStatWidget label="Online" value={String(onlineCount)} icon={<Power className="w-4 h-4" />} tone={onlineCount === servers.length && servers.length > 0 ? 'ok' : 'default'} />
-          <MacStatWidget label="Total Capacity" value={`${totalCores} cores · ${totalMemGib} GiB`} icon={<Cpu className="w-4 h-4" />} />
-        </div>
-
         {showRegister && (
           <MacGlassPanel title="Register Server" >
             <div className="grid grid-cols-3 gap-3">

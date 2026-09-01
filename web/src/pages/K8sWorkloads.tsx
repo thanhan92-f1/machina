@@ -490,8 +490,8 @@ spec:
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+      <div className="flex flex-col gap-4">
+        <div className="tahoe-glass-card overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--apple-hairline)] text-lg font-semibold">StatefulSets</div>
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="StatefulSets">
@@ -513,7 +513,7 @@ spec:
             </table>
           </div>
         </div>
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="tahoe-glass-card overflow-hidden">
           <div className="px-4 py-3 border-b border-[var(--apple-hairline)] text-lg font-semibold">DaemonSets</div>
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="DaemonSets">

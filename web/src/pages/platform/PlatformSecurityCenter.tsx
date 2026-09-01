@@ -31,7 +31,7 @@ import {
 } from '../../api/zeusSecurity'
 import EbpfActionMenu from '../../components/platform/EbpfActionMenu'
 import { formatUserError } from '../../utils/apiError'
-import { riskTone, statusBadgeClasses, statusPillClasses, statusSurfaceClasses, statusToneClass, hubLinkClasses } from '../../utils/semanticColors'
+import { riskTone, statusBadgeClasses, statusPillClasses, statusToneClass, hubLinkClasses } from '../../utils/semanticColors'
 import { useToastContext } from '../../contexts/ToastContext'
 
 function threatPillTone(score: number): 'ok' | 'warn' | 'neutral' {
@@ -54,21 +54,21 @@ function SecurityGraphViz({ graph }: { graph: SecurityGraph | null }) {
     return <p className="text-sm text-[var(--text-muted)]">Security graph will populate when hosts and users are enrolled.</p>
   }
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="divide-y divide-[var(--apple-hairline)]">
       {graph.nodes.slice(0, 12).map((n) => (
-        <div
+        <li
           key={n.id}
-          className={`rounded-lg border px-3 py-2 text-sm ${
-            n.risk === 'high'
-              ? statusSurfaceClasses('error')
-              : 'border-white/[0.08] bg-[var(--apple-surface)] text-[var(--text-primary)]'
+          className={`flex items-center justify-between gap-3 py-2.5 text-sm ${
+            n.risk === 'high' ? statusToneClass('error') : 'text-[var(--text-primary)]'
           }`}
         >
-          <p className="font-medium truncate">{n.label}</p>
-          <p className="text-xs text-[var(--text-muted)]">{n.kind}{n.risk ? ` · ${n.risk} risk` : ''}</p>
-        </div>
+          <div className="min-w-0">
+            <p className="font-medium truncate">{n.label}</p>
+            <p className="text-xs text-[var(--text-muted)]">{n.kind}{n.risk ? ` · ${n.risk} risk` : ''}</p>
+          </div>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }
 

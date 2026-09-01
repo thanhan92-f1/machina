@@ -1437,7 +1437,7 @@ export default function VMDetailsPage() {
       {/* ── Overview Tab ─────────────────────────────────────────── */}
 
       {tab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-6">
           <div className="tahoe-glass-card p-6 space-y-3">
             <h3 className="text-lg font-semibold">Configuration</h3>
             <EditableRow label="vCPUs" value={vm.vcpus} onEdit={() => openDialog('vcpus')} />
@@ -1734,7 +1734,7 @@ export default function VMDetailsPage() {
           )}
 
           {platformDoctor && (
-            <div className="rounded-xl p-4 border border-[var(--apple-hairline)] bg-[var(--apple-surface)]">
+            <div className="tahoe-glass-card p-4">
               <div className="text-sm font-medium text-[var(--text-primary)] mb-1">Zyra SRE</div>
               <p className="text-xs text-[var(--text-muted)]">
                 Platform score: <span className="text-orange-600 font-semibold">{platformDoctor.score_numeric}/100</span>

@@ -5,11 +5,11 @@ import {
   CheckCircle2,
   Download,
   Package,
-  Star,
   Trash2,
 } from 'lucide-react'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel, MacListRow, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
+import { TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
@@ -74,6 +74,7 @@ export default function PlatformMarketplace() {
   )
   const featured = allPlugins.filter((p) => p.featured)
   const others = allPlugins.filter((p) => !p.featured)
+  const totalPlugins = data?.plugins?.length ?? 0
 
   return (
     <PlatformPageChrome
@@ -81,31 +82,22 @@ export default function PlatformMarketplace() {
       error={error}
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/settings?section=integrations" label="Settings" />}
+      title="Marketplace"
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">{data?.summary ?? 'Browse and install platform plugins and extensions.'}</span>
+          {platformStatSubtitle([
+            { label: 'Available', value: totalPlugins },
+            { label: 'Installed', value: data?.installed_count ?? 0 },
+          ])}
+        </span>
+      }
+      icon={<Package className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
+      contentClassName="space-y-6"
     >
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Marketplace</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {data?.summary ?? 'Browse and install platform plugins and extensions.'}
-            </p>
-          </div>
-          <MacStatWidget
-            label="Installed"
-            value={String(data?.installed_count ?? 0)}
-            icon={<CheckCircle2 className="w-4 h-4" />}
-          />
-        </div>
-
-        <input
-          type="search"
-          aria-label="Filter plugins"
-          placeholder="Filter plugins…"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="w-full rounded-lg border border-border/50 bg-background/60 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
+        <TahoeToolbar search={filter} onSearchChange={setFilter} placeholder="Filter plugins…" />
 
         {featured.length > 0 && (
           <MacGlassPanel title="Featured" >

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import { Link } from 'react-router'
-import { Code2, Package, Shield, Terminal, Wrench } from 'lucide-react'
+import { Code2 } from 'lucide-react'
 import PlatformApiConsole from '../../components/platform/PlatformApiConsole'
 import DetailTabs from '../../components/platform/DetailTabs'
-import { MacGlassPanel, MacStatWidget } from '../../components/platform/mac/PlatformMacUi'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
 import {
   getDeveloperOverview,
   getTerraformSchema,
@@ -58,29 +58,33 @@ export default function PlatformDeveloper() {
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Developer"
-      subtitle="TypeScript SDK, OpenAPI console, and Terraform schemas."
+      subtitle={
+        overview
+          ? platformStatSubtitle([
+              { label: 'SDK', value: overview.sdk_typescript.version },
+              { label: 'Terraform resources', value: String(overview.terraform.resources?.length ?? 0) },
+              { label: 'OpenAPI', value: 'v1' },
+            ])
+          : 'TypeScript SDK, OpenAPI console, and Terraform schemas.'
+      }
       icon={<Code2 className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       {(guestkitDaemon || zyraDaemon) && (
         <MacGlassPanel title="Daemon health" subtitle="Co-located machina-daemon services (GET /api/v1/guestkit/status, /zeus-firewall/status)">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="apple-metric-band">
             {guestkitDaemon && (
-              <MacStatWidget
-                label="GuestKit"
-                value={guestkitDaemon.reachable ? 'Reachable' : 'Unreachable'}
-                icon={<Wrench className="w-4 h-4" />}
-                tone={guestkitDaemon.reachable ? 'ok' : 'warn'}
-              />
+              <div className="min-w-0">
+                <div className="apple-metric-value">{guestkitDaemon.reachable ? 'Reachable' : 'Unreachable'}</div>
+                <div className="apple-metric-label">GuestKit</div>
+              </div>
             )}
             {zyraDaemon && (
-              <MacStatWidget
-                label="Zeus Firewall"
-                value={zyraDaemon.enabled === false ? 'Disabled' : 'Active'}
-                icon={<Shield className="w-4 h-4" />}
-                tone={zyraDaemon.enabled === false ? 'warn' : 'ok'}
-              />
+              <div className="min-w-0">
+                <div className="apple-metric-value">{zyraDaemon.enabled === false ? 'Disabled' : 'Active'}</div>
+                <div className="apple-metric-label">Zeus Firewall</div>
+              </div>
             )}
           </div>
         </MacGlassPanel>
@@ -98,11 +102,6 @@ export default function PlatformDeveloper() {
       ) : overview ? (
         <>
           <p className="text-sm text-[var(--text-muted)]">{overview.summary}</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <MacStatWidget label="SDK version" value={overview.sdk_typescript.version} icon={<Package className="w-4 h-4" />} />
-            <MacStatWidget label="Terraform resources" value={String(overview.terraform.resources?.length ?? 0)} icon={<Code2 className="w-4 h-4" />} />
-            <MacStatWidget label="OpenAPI" value="v1" icon={<Terminal className="w-4 h-4" />} />
-          </div>
           <MacGlassPanel title="TypeScript SDK">
             <p className="text-sm text-[var(--text-secondary)] mb-2">Path: <code className="text-[var(--accent)]">{overview.sdk_typescript.path}</code></p>
             <div className="flex items-start gap-2">
