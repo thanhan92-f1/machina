@@ -18,9 +18,8 @@
     --card-foreground: 240 2% 96.5%;
     --popover: 0 0% 11%;
     --popover-foreground: 240 2% 96.5%;
-    /* Mist Blue (iPhone Magichromatic) — brighter than tahoe-light for dark
-       graphite. --primary-foreground stays pure white for CTA contrast. */
-    --primary: 200 85% 52%;
+    /* apple.com blue (#0071e3) — AirPods / shop system blue, not Mist. */
+    --primary: 211 100% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 16%;
     --secondary-foreground: 240 2% 96.5%;
@@ -39,20 +38,20 @@
     --warning: 43 96% 56%;
     /* Same fix as --success-foreground above (was 43 96% 90%, ~1.5:1 contrast). */
     --warning-foreground: 43 96% 12%;
-    --info: 220 70% 58%;              /* Deep Blue (Magichromatic family) */
+    --info: 211 100% 58%;              /* apple.com dark link ~#2997ff family */
     --info-foreground: 199 89% 92%;
     --danger: 0 72% 51%;
     --danger-foreground: 0 72% 90%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    /* Focus accent — matches --primary. */
-    --ring: 200 85% 52%;
+    /* Focus accent — matches apple.com blue. */
+    --ring: 211 100% 45%;
     --radius: 0.75rem;
     /* Semantic accent tri-token — the deliberate accent language, matched to the
        existing literals so wiring them causes no visual shift:
-       live/running/success = emerald, interactive/info = sky, AI/secondary = violet. */
+       live/running/success = emerald, interactive/info = apple blue, AI/secondary = violet. */
     --accent-live: 158 73% 54%;
-    --accent-info: 200 85% 52%;       /* Mist Blue — matches Classic Blue primary */
+    --accent-info: 211 100% 45%;       /* apple.com #0071e3 */
     --accent-alt: 270 48% 68%;        /* Lavender (Magichromatic family, dark) */
     /* Canonical content radius + section gap (was split 0.9/1/0.75rem and
        1.25/1.5/1.75rem). */
@@ -880,12 +879,12 @@ html[data-ui-shell='default'] {
   --border: 0 0% 18%;
   --secondary: 0 0% 16%;
   --secondary-foreground: 240 2% 96.5%;
-  --primary: 200 85% 52%;         /* Mist Blue — brighter for dark */
+  --primary: 211 100% 45%;         /* apple.com #0071e3 */
   --primary-foreground: 0 0% 100%;
-  --ring: 200 85% 52%;
-  --info: 220 70% 58%;            /* Deep Blue */
+  --ring: 211 100% 45%;
+  --info: 211 100% 58%;            /* #2997ff-ish on dark */
   --info-foreground: 199 89% 92%;
-  --accent-info: 200 85% 52%;
+  --accent-info: 211 100% 45%;
   --accent-alt: 270 48% 68%;      /* Lavender */
   --accent-live: 145 48% 52%;     /* Sage */
 }
@@ -983,7 +982,7 @@ html[data-ui-shell='tahoe-light'] {
   --card-foreground: 240 2% 11%;
   --popover: 0 0% 100%;
   --popover-foreground: 240 2% 11%;
-  --primary: 200 78% 40%;           /* Vivid Mist Blue */
+  --primary: 211 100% 45%;          /* apple.com #0071e3 */
   --primary-foreground: 0 0% 100%;
   --secondary: 270 35% 95%;         /* Lavender-tinted panel */
   --secondary-foreground: 240 2% 11%;
@@ -1001,10 +1000,10 @@ html[data-ui-shell='tahoe-light'] {
   --danger-foreground: 0 0% 100%;
   --border: 205 28% 84%;
   --input: 205 28% 84%;
-  --ring: 200 78% 40%;
-  --info: 220 70% 38%;              /* Deep Blue */
+  --ring: 211 100% 45%;
+  --info: 211 100% 40%;
   --info-foreground: 0 0% 100%;
-  --accent-info: 200 78% 40%;
+  --accent-info: 211 100% 45%;
   --accent-live: 145 48% 40%;
   --accent-alt: 270 48% 52%;        /* Lavender */
 }
@@ -1252,18 +1251,17 @@ html[data-ui-shell='default'] .mac-menubar-inner {
   border-bottom: 1px solid hsl(0 0% 100% / 0.08);
 }
 
-/* Bridge Machina apple/plasma aliases to Zeus Mist.
-   Box type = Apple shop .form-selector (buy-tv): #1d1d1f / #6e6e73 / #86868b light;
-   dark graphite #f5f5f7 / #a1a1a6 / #86868b. */
+/* Bridge Machina aliases to apple.com blue + shop box type.
+   Interactive blue = #0071e3 (AirPods / shop). Box type = .form-selector. */
 :root {
-  --accent: hsl(var(--primary));
-  --accent-hover: hsl(200 85% 46%);
-  --accent-pressed: hsl(200 85% 40%);
-  --accent-soft: hsl(var(--primary) / 0.14);
-  --plasma: hsl(var(--primary));
-  --plasma-strong: hsl(200 85% 40%);
-  --link: hsl(200 85% 62%);
-  --link-hover: hsl(200 85% 72%);
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-pressed: #006edb;
+  --accent-soft: color-mix(in srgb, #0071e3 14%, transparent);
+  --plasma: #0071e3;
+  --plasma-strong: #006edb;
+  --link: #2997ff;
+  --link-hover: #55aeff;
   --apple-surface: hsl(var(--card));
   --apple-surface-elevated: hsl(var(--card));
   --apple-hairline: hsl(var(--border) / 0.85);
@@ -1271,26 +1269,26 @@ html[data-ui-shell='default'] .mac-menubar-inner {
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1a6;
   --text-muted: #86868b;
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
   --radius: 0.75rem;
   --radius-card: 0.9rem;
 }
 
 html[data-theme='tahoe-light'] {
-  --accent: hsl(var(--primary));
-  --accent-hover: hsl(200 78% 34%);
-  --accent-pressed: hsl(200 78% 28%);
-  --accent-soft: hsl(200 78% 40% / 0.12);
-  --plasma: hsl(var(--primary));
-  --link: hsl(200 78% 36%);
-  --link-hover: hsl(200 78% 30%);
-  --link-on-light: hsl(200 78% 32%);
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-pressed: #006edb;
+  --accent-soft: color-mix(in srgb, #0071e3 12%, transparent);
+  --plasma: #0071e3;
+  --link: #0066cc;
+  --link-hover: #0071e3;
+  --link-on-light: #0066cc;
   --apple-surface: #ffffff;
   --apple-surface-elevated: #ffffff;
   --apple-hairline: hsl(205 28% 84%);
-  --apple-fill-secondary: hsl(200 48% 96% / 0.9);
-  --apple-fill-tertiary: hsl(205 22% 90%);
+  --apple-fill-secondary: hsl(210 40% 96% / 0.9);
+  --apple-fill-tertiary: hsl(210 20% 90%);
   --apple-muted: #86868b;
   --foreground: 240 2% 11%;
   --card-foreground: 240 2% 11%;

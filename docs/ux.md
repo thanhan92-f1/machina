@@ -190,7 +190,13 @@ Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppr
 
 Product themes map to Zeus: **Tahoe Light** (`light`), **Classic Blue** (`dark`), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600` / slate hex (`#64748b`, `#94a3b8`, …).
 
+**Interactive blue:** apple.com `#0071e3` (CTAs, `--accent`, focus, dock active). Light links `#0066cc`; dark links `#2997ff`. Hover/pressed `#0077ed` / `#006edb`.
+
 **Box type (Apple shop):** cards inherit Apple TV buy-flow fonts — light `#1d1d1f` / `#6e6e73` / `#86868b`; dark `#f5f5f7` / `#a1a1a6` / `#86868b`. SoT: [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md) + `zeus-parity.css`. Immersive Console Hub / VNC keep carbon chrome but the same `--text-*` tokens.
+
+**Story type ([AirPods](https://www.apple.com/airpods/)):** `.apple-display` / `.apple-lede` SF Pro Display metrics.
+
+**Dock:** Tahoe Liquid Glass tray + neighbor magnification in [`PlatformMacDock`](../web/src/components/platform/PlatformMacDock.tsx).
 
 ## Login & accessibility
 

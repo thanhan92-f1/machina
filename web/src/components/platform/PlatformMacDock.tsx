@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { Search, Sparkles } from 'lucide-react'
@@ -17,6 +17,13 @@ function isPlatformShell(pathname: string): boolean {
   return pathname.startsWith('/platform')
 }
 
+/** macOS-style neighbor magnification from cursor distance (px). */
+function dockScale(distance: number, maxDist = 96): number {
+  if (distance >= maxDist) return 1
+  const t = 1 - distance / maxDist
+  return 1 + 0.55 * t * t
+}
+
 export default function PlatformMacDock() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -28,8 +35,12 @@ export default function PlatformMacDock() {
   const [mounted, setMounted] = useState(false)
   const [dockVisible, setDockVisible] = useState(true)
   const [attentionByPath, setAttentionByPath] = useState<Record<string, number>>({})
+  const [mouseX, setMouseX] = useState<number | null>(null)
   const hideTimerRef = useRef<number | null>(null)
+  const itemRefs = useRef<(HTMLElement | null)[]>([])
   const autoHide = isPlatformShell(location.pathname)
+  const reduceMotion =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
     setMounted(true)
@@ -59,7 +70,7 @@ export default function PlatformMacDock() {
     }
 
     const onMove = (e: MouseEvent) => {
-      const nearBottom = window.innerHeight - e.clientY < 56
+      const nearBottom = window.innerHeight - e.clientY < 72
       if (nearBottom) {
         setDockVisible(true)
         scheduleHide()
@@ -80,6 +91,27 @@ export default function PlatformMacDock() {
     navigate(hub)
   }
 
+  const onDockMove = useCallback(
+    (e: ReactMouseEvent) => {
+      if (reduceMotion) return
+      setMouseX(e.clientX)
+    },
+    [reduceMotion],
+  )
+
+  const onDockLeave = useCallback(() => setMouseX(null), [])
+
+  const scaleFor = (index: number): CSSProperties => {
+    if (mouseX == null || reduceMotion) return { transform: 'scale(1) translateY(0)' }
+    const el = itemRefs.current[index]
+    if (!el) return { transform: 'scale(1) translateY(0)' }
+    const rect = el.getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const scale = dockScale(Math.abs(mouseX - cx))
+    const lift = (scale - 1) * 18
+    return { transform: `scale(${scale}) translateY(-${lift}px)` }
+  }
+
   const cpuPct = desktop?.pressure_hosts != null ? Math.min(99, desktop.pressure_hosts * 12 + 8) : null
   const memPct = desktop?.hosts_total ? Math.round((desktop.hosts_online / Math.max(1, desktop.hosts_total)) * 67) : null
 
@@ -96,20 +128,29 @@ export default function PlatformMacDock() {
           <span>MEM {memPct ?? '—'}%</span>
         </div>
       )}
-      <div className="mac-dock-inner mac-dock-inner-scroll">
-        {dockItems.map((item) => {
+      <div
+        className="mac-dock-inner mac-dock-inner-scroll"
+        onMouseMove={onDockMove}
+        onMouseLeave={onDockLeave}
+      >
+        {dockItems.map((item, index) => {
           const Icon = item.icon
           const active = !item.preview && platformDesktopTabActive(location.pathname, item.path)
           const attention = attentionByPath[item.path] ?? 0
           const cls = `mac-dock-item ${active ? 'mac-dock-item-active' : ''} ${item.preview ? 'mac-dock-item-preview' : ''}`
+          const style = scaleFor(index)
           if (item.preview) {
             return (
               <button
                 key={`preview-${item.path}`}
                 type="button"
+                ref={(el) => {
+                  itemRefs.current[index] = el
+                }}
                 title={`${item.label} — Power user`}
                 aria-label={`${item.label} preview`}
                 className={cls}
+                style={style}
                 onClick={() => {
                   if (unlockDockPreviewPath(item.path)) {
                     toast.success('Switched to Power user — hub unlocked')
@@ -126,10 +167,14 @@ export default function PlatformMacDock() {
           return (
             <Link
               key={item.path}
+              ref={(el) => {
+                itemRefs.current[index] = el
+              }}
               to={hub}
               title={item.label}
               aria-label={item.label}
               className={cls}
+              style={style}
               aria-current={active ? 'page' : undefined}
               onClick={(e) => {
                 if (location.pathname === hub) return

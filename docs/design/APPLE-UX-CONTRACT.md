@@ -32,7 +32,8 @@ Author guide: [ux.md](../ux.md).
 | Hero | **Canonical:** `PlatformPageChrome` → `PageLayout` + `machina-apple-ux.css` (`.apple-page-header`). Optional Zeus flat: `PlatformTahoeHero` / `TahoeHero` for icon+stats ledger |
 | Browse chrome | Thin Zeus port [`TahoeListKit`](../../web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty` |
 | Fleet Cloud nav | Pill row + **More** overflow ([`FleetCloudSubNav`](../../web/src/components/FleetCloudSubNav.tsx)) — not a 15-tab strip |
-| Tokens | Zeus Mist / Magichromatic via `zeus-parity.css`; **box type** = Apple shop `.form-selector` (`#1d1d1f` / `#6e6e73` / `#86868b` light — see [DAYLIGHT-CONTRACT.md](DAYLIGHT-CONTRACT.md)) |
+| Tokens | apple.com blue `#0071e3` + shop box type via `zeus-parity.css` (see [DAYLIGHT-CONTRACT.md](DAYLIGHT-CONTRACT.md)) |
+| Dock | Tahoe Liquid Glass tray + neighbor magnification ([`PlatformMacDock`](../../web/src/components/platform/PlatformMacDock.tsx)) |
 | Login | Apple Account [`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css); hero wordmark **machina** (SF Pro / system display); Zyvor mark icon-only |
 
 ---
@@ -93,5 +94,8 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 - [x] High-traffic slate/blue leftover cleanup (HostSSH, ApiDocs, SimpleCreateVmWizard, skip-link)
 - [x] Apple shop box font tokens 1:1 (`--text-primary/secondary/muted` in `zeus-parity.css`)
 - [x] Console Hub / VNC type remapped off slate hex onto `--text-*`; ChoiceCard amber/emerald icons → `--amber` / `--verdant`
+- [x] System-wide apple.com blue (`#0071e3`) for primary / link / accent / dock active
+- [x] Tahoe Liquid Glass dock + neighbor magnification
+- [x] AirPods Story type (`.apple-display` / `.apple-lede`)
 - [ ] Full TahoeSheet port (drawer/sheet primitive — deferred)
 - [ ] Exhaustive sky/cyan remaps removal from `main.css` bandage blocks

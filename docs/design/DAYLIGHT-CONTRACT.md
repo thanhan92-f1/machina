@@ -20,14 +20,15 @@ Shell / nav / tiers: [APPLE-UX-CONTRACT.md](APPLE-UX-CONTRACT.md).
 
 | Finish | Role |
 |---|---|
-| **Mist Blue** | Intent / primary / links (`--primary` / `--plasma`) |
+| **apple.com Blue** (`#0071e3`) | Intent / primary CTAs / links / focus / dock active (`--primary` / `--accent` / `--link`) |
 | **Sage** | Confirmed-good only |
 | **Lavender** | AI accent sparingly |
 | **White** | Cards / elevated work surfaces (`.tahoe-glass-card`) |
 | **Black** | Graphite text / Classic Blue canvas |
 | **Cosmic Orange** (Pro) | Warn / deviation |
-| **Deep Blue** (Pro) | Migrating / deep info |
 | **Silver** (Pro) | Neutral tracks / hairlines |
+
+Hover / pressed CTA blues (AirPods CSS): `#0077ed` / `#006edb`. Dark-mode links: `#2997ff`.
 
 ### Box type (Apple shop `.form-selector`)
 
@@ -42,6 +43,10 @@ Cascade winners: `zeus-parity.css` `:root` + `html[data-theme='tahoe-light']` (m
 | `--text-muted` | `#86868b` | `#86868b` |
 
 Status / deviation icons may use `--amber` / `--verdant` / `--accent` — never slate hex for body type.
+
+### Story type ([AirPods](https://www.apple.com/airpods/))
+
+`.apple-display` / `.apple-lede` use SF Pro Display metrics (clamp ~40–64px hero, ~17–21px lede) with the box-type ink colors above.
 
 ## Law 0 — Elevation runs up, not down
 
