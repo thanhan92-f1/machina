@@ -6,7 +6,6 @@ import PlatformSidebar from '../components/platform/PlatformSidebar'
 import PlatformControlCenter from '../components/platform/PlatformControlCenter'
 import PlatformContextBar from '../components/platform/tahoe/PlatformContextBar'
 import PlatformMobileJumpNav from '../components/platform/tahoe/PlatformMobileJumpNav'
-import PlatformMacDock from '../components/platform/PlatformMacDock'
 import PlatformMacDesktopTabs from '../components/platform/mac/PlatformMacDesktopTabs'
 import { PlatformMacDesktopProvider, usePlatformMacDesktop } from '../components/platform/mac/PlatformMacDesktopContext'
 import PlatformMacAppMenus from '../components/platform/mac/PlatformMacAppMenus'
@@ -25,9 +24,7 @@ import {
 } from '../utils/platformWallpaper'
 import { isCenterPopoutMode } from '../utils/platformCenterPopout'
 import { platformPageLabel, upsertPlatformDesktopTab } from '../utils/platformDesktopTabs'
-import { OPEN_PLATFORM_DOCK_EDITOR_EVENT } from '../utils/platformDockPins'
 import { usePlatformDesktopTier } from '../hooks/usePlatformDesktopTier'
-import PlatformDockEditor from '../components/platform/mac/PlatformDockEditor'
 import { useKeyboardShortcut, isInputFocused } from '../hooks/useKeyboardShortcut'
 import { suppressContextBar } from '../utils/platformNavRegistry'
 import { contextNavForPath, shouldShowContextBar } from '../utils/platformContextNav'
@@ -39,7 +36,6 @@ function PlatformDesktopShell() {
   const [searchParams, setSearchParams] = useSearchParams()
   const isPopout = isCenterPopoutMode(location.search)
   const [wallpaper, setWallpaper] = useState<PlatformWallpaper>(() => loadPlatformWallpaper())
-  const [dockEditorOpen, setDockEditorOpen] = useState(false)
   const { sidebarVisible, cinemaChromeHidden } = usePlatformMacDesktop()
   const [tier] = usePlatformDesktopTier()
   const { openMissionControl, closeMissionControl } = useMissionControl()
@@ -59,12 +55,6 @@ function PlatformDesktopShell() {
     const onWallpaper = () => setWallpaper(loadPlatformWallpaper())
     window.addEventListener(PLATFORM_WALLPAPER_EVENT, onWallpaper)
     return () => window.removeEventListener(PLATFORM_WALLPAPER_EVENT, onWallpaper)
-  }, [])
-
-  useEffect(() => {
-    const open = () => setDockEditorOpen(true)
-    window.addEventListener(OPEN_PLATFORM_DOCK_EDITOR_EVENT, open)
-    return () => window.removeEventListener(OPEN_PLATFORM_DOCK_EDITOR_EVENT, open)
   }, [])
 
   useEffect(() => {
@@ -137,7 +127,6 @@ function PlatformDesktopShell() {
       return
     }
     closeMissionControl()
-    setDockEditorOpen(false)
     dismissPlatformShellOverlays()
   }, [location.pathname, location.search, closeMissionControl])
 
@@ -212,8 +201,6 @@ function PlatformDesktopShell() {
         </div>
       </div>
 
-      {!hideChrome ? <PlatformMacDock /> : null}
-      <PlatformDockEditor open={dockEditorOpen} onClose={() => setDockEditorOpen(false)} />
       <MissionControlOverlay />
     </div>
   )

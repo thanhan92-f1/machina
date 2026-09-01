@@ -11,7 +11,6 @@ import { ZyvorTileMark } from '../../ZyvorMark'
 import PlatformMacMenuDropdown, { PlatformMacMenuItem } from './PlatformMacMenuDropdown'
 import { usePlatformMacDesktop } from './PlatformMacDesktopContext'
 import { openCenterPopout } from '../../../utils/platformCenterPopout'
-import { openPlatformDockEditor } from '../../../utils/platformDockPins'
 import { usePlatformDesktopTier } from '../../../hooks/usePlatformDesktopTier'
 import {
   PLATFORM_DESKTOP_TIER_LABELS,
@@ -132,7 +131,6 @@ export default function PlatformMacAppMenus() {
       <PlatformMacMenuDropdown label="Machina" open={openMenu === 'machina'} onToggle={() => toggleMenu('machina')} onClose={closeMenu}>
         <PlatformMacMenuItem label="About Machina…" onClick={() => { dispatchOpenHelp('about'); closeMenu() }} />
         <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => go('/platform/settings')} />
-        <PlatformMacMenuItem label="Customize Dock…" onClick={() => { openPlatformDockEditor(); closeMenu() }} />
         <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="Add Host…" onClick={() => go('/platform/enroll')} />
         <div className="my-1 border-t border-[var(--apple-hairline)]" />

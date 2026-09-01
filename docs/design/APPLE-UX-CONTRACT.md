@@ -38,22 +38,20 @@ Author guide: [ux.md](../ux.md).
 
 ---
 
-## Navigation (dock-first)
+## Navigation (sidebar-first)
 
 | Layer | Role | Default visibility |
 |---|---|---|
-| **Menubar** | App menus (Go = Favorites + Hubs + tier-filtered locations), Zyvor tile, Dynamic Island, Control Center | Always (authenticated) |
+| **Menubar** | App menus (Go = Favorites + Hubs + locations), Zyvor tile, Dynamic Island, Control Center | Always (authenticated) |
 | **Desktop tabs** | Open window strip ([`PlatformMacDesktopTabs`](../../web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) | When >1 platform tab |
-| **Dock** | Primary app launcher | Always |
-| **Sidebar** | Finder **locations** only (Host / Fleet / Platform — Favorites stripped; dock owns app pins) | **Advanced** on by default; **Normal/Power** off (`defaultSidebarVisibleForTier`) — View → Show Sidebar still works |
+| **Sidebar** | Finder **locations** rail (Host / Fleet / Platform) — primary nav menus live here | **Always on** by default (all tiers); View → Hide Sidebar still works |
+| **Dock** | Removed — do not reintroduce Mac dock tray | — |
 | **Context bar** | Hub cross-links | Tier-gated (see [ux.md](../ux.md)) |
 | **Fleet Cloud pills** | Section switch within `/fleet-cloud/*` | Primary five + More |
 
 **Submenus:** [`PlatformFloatingMenu`](../../web/src/components/platform/mac/PlatformFloatingMenu.tsx) + [`PlatformMenuItem`](../../web/src/components/platform/mac/PlatformMenuItem.tsx) — portaled `role="menu"` panels for menubar, context-bar More, and Fleet Cloud More.
 
 Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](../../web/src/utils/platformDesktopTier.ts), [`sidebarLocationsOnly`](../../web/src/utils/platformNavFilter.ts).
-
----
 
 ## Author checklist
 

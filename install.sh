@@ -1240,6 +1240,27 @@ install_files() {
         install -Dm600 contrib/machina-daemon.default /etc/default/machina-daemon
         ok "Defaults -> /etc/default/machina-daemon"
     fi
+    # Keep daemon→controller proxy credentials in sync even on non--platform redeploys.
+    # Otherwise MACHINA_PLATFORM_AUTH can stay stuck at admin:admin while the controller
+    # has a real MACHINA_ADMIN_PASSWORD → UI "Control plane offline" (HTTP 401).
+    if [ -f /etc/default/machina-platform ] && [ -f scripts/install-platform.sh ]; then
+        # shellcheck disable=SC1091
+        if bash -c 'source scripts/install-platform.sh 2>/dev/null; type ensure_daemon_platform_proxy_env >/dev/null 2>&1'; then
+            :
+        fi
+        admin_pw="$(grep '^MACHINA_ADMIN_PASSWORD=' /etc/default/machina-platform 2>/dev/null | head -1 | cut -d= -f2- || true)"
+        if [ -n "$admin_pw" ]; then
+            if grep -q '^MACHINA_PLATFORM_AUTH=' /etc/default/machina-daemon 2>/dev/null; then
+                sed -i "s|^MACHINA_PLATFORM_AUTH=.*|MACHINA_PLATFORM_AUTH=admin:${admin_pw}|" /etc/default/machina-daemon
+            else
+                echo "MACHINA_PLATFORM_AUTH=admin:${admin_pw}" >>/etc/default/machina-daemon
+            fi
+            grep -q '^MACHINA_PLATFORM_CONTROLLER_URL=' /etc/default/machina-daemon 2>/dev/null \
+                || echo 'MACHINA_PLATFORM_CONTROLLER_URL=http://127.0.0.1:5093' >>/etc/default/machina-daemon
+            chmod 600 /etc/default/machina-daemon
+            ok "Synced MACHINA_PLATFORM_AUTH from MACHINA_ADMIN_PASSWORD"
+        fi
+    fi
 
     # Systemd units
     install -Dm644 contrib/machina-daemon.service /usr/lib/systemd/system/machina-daemon.service

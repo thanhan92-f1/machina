@@ -26,7 +26,7 @@ const PlatformMacDesktopContext = createContext<PlatformMacDesktopContextValue |
 
 const SIDEBAR_COLLAPSED_KEY = 'machina-platform-sidebar-collapsed'
 
-function defaultSidebarCollapsedForTier(tier: PlatformDesktopTier): boolean {
+function defaultSidebarCollapsedForTier(_tier: PlatformDesktopTier): boolean {
   try {
     const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
     if (raw === '0') return false
@@ -34,7 +34,7 @@ function defaultSidebarCollapsedForTier(tier: PlatformDesktopTier): boolean {
   } catch {
     /* ignore */
   }
-  return tier === 'normal' || tier === 'power'
+  return false
 }
 
 export function PlatformMacDesktopProvider({ children }: { children: ReactNode }) {
@@ -48,9 +48,7 @@ export function PlatformMacDesktopProvider({ children }: { children: ReactNode }
       const tier = loadPlatformDesktopTier()
       setSidebarVisible(defaultSidebarVisibleForTier(tier))
       try {
-        if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) == null && tier === 'power') {
-          setSidebarCollapsed(true)
-        }
+        /* collapsed preference is localStorage-owned; do not force-collapse on tier change */
       } catch {
         /* ignore */
       }

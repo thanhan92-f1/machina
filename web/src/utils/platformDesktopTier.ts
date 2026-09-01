@@ -154,12 +154,11 @@ export function tierAtLeast(current: PlatformDesktopTier, min: PlatformDesktopTi
 }
 
 /**
- * Dock-first shell (Zeus MacDesktopContext starts sidebarVisible=false).
- * Normal/Power: dock owns app launchers — sidebar hidden to avoid a redundant icon rail.
- * Advanced: full Finder sidebar for deep Host/Fleet/Platform nav.
+ * Sidebar-first shell — Finder locations rail stays visible for every desktop tier.
+ * (Mac dock is retired; menus live in the sidebar.)
  */
-export function defaultSidebarVisibleForTier(tier: PlatformDesktopTier): boolean {
-  return tier === 'advanced'
+export function defaultSidebarVisibleForTier(_tier: PlatformDesktopTier): boolean {
+  return true
 }
 
 export function showPlatformMenuBarForTier(tier: PlatformDesktopTier): boolean {

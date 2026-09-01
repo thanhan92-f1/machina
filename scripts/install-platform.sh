@@ -290,19 +290,33 @@ write_platform_env() {
 
 ensure_daemon_platform_proxy_env() {
   local daemon_env="/etc/default/machina-daemon"
+  local platform_env="/etc/default/machina-platform"
+  local admin_pw=""
   # Create with a restrictive mode up front (in case this runs before install.sh has ever
   # touched the file), and re-assert it below regardless of prior state: this function
-  # appends MACHINA_PLATFORM_AUTH, a real basic-auth credential the daemon uses to
+  # writes MACHINA_PLATFORM_AUTH, a real basic-auth credential the daemon uses to
   # authenticate to the controller — it must never be left world-readable.
   [[ -f "$daemon_env" ]] || install -m600 /dev/null "$daemon_env"
   grep -q '^MACHINA_PLATFORM_CONTROLLER_URL=' "$daemon_env" 2>/dev/null \
     || echo 'MACHINA_PLATFORM_CONTROLLER_URL=http://127.0.0.1:5093' >>"$daemon_env"
-  if ! grep -q '^MACHINA_PLATFORM_AUTH=' "$daemon_env" 2>/dev/null; then
+
+  # The controller bootstrap password lives in machina-platform. Quick/non-platform
+  # redeploys historically left MACHINA_PLATFORM_AUTH=admin:admin forever, which
+  # 401s the daemon→controller proxy once a real MACHINA_ADMIN_PASSWORD exists.
+  if [[ -f "$platform_env" ]]; then
+    admin_pw="$(grep '^MACHINA_ADMIN_PASSWORD=' "$platform_env" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+  fi
+  if [[ -n "$admin_pw" ]]; then
+    if grep -q '^MACHINA_PLATFORM_AUTH=' "$daemon_env" 2>/dev/null; then
+      sed -i "s|^MACHINA_PLATFORM_AUTH=.*|MACHINA_PLATFORM_AUTH=admin:${admin_pw}|" "$daemon_env"
+    else
+      echo "MACHINA_PLATFORM_AUTH=admin:${admin_pw}" >>"$daemon_env"
+    fi
+    ok "Synced MACHINA_PLATFORM_AUTH → admin:<MACHINA_ADMIN_PASSWORD> in $daemon_env"
+  elif ! grep -q '^MACHINA_PLATFORM_AUTH=' "$daemon_env" 2>/dev/null; then
     echo 'MACHINA_PLATFORM_AUTH=admin:admin' >>"$daemon_env"
-    warn "MACHINA_PLATFORM_AUTH defaulted to admin:admin in $daemon_env — the controller" \
-         "refuses to boot with this password in production (set MACHINA_ADMIN_PASSWORD)," \
-         "but you should still set this to match a real controller account before relying" \
-         "on the daemon-to-controller proxy."
+    warn "MACHINA_PLATFORM_AUTH defaulted to admin:admin in $daemon_env — set MACHINA_ADMIN_PASSWORD" \
+         "in $platform_env (and re-run install-platform / --platform) so the proxy matches."
   fi
   chmod 600 "$daemon_env"
 }

@@ -753,7 +753,8 @@ tip "Trust the browser once for the self-signed TLS cert, or terminate TLS upstr
 if $INSTALL_PLATFORM; then
     tip "Fast redeploy (no rebuild): ./scripts/deploy remote ${USER}@${HOST} --install-only --platform"
 else
-    tip "Add --platform to also install/update machina-controller + PostgreSQL."
+    tip "Add --platform to also install/update machina-controller + agent."
+    tip "Quick redeploys now sync MACHINA_PLATFORM_AUTH from MACHINA_ADMIN_PASSWORD when platform env exists (fixes proxy 401)."
 fi
 tip "After first --quick, prune sources: add --prune-sources (keeps target/ + web/dist/ on server)"
 tip "HOST USER also works: ./scripts/deploy-remote.sh ${HOST} ${USER} --install-only"
