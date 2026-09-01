@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
-import { Settings, Shield, Users, HardDrive, Network, RefreshCw, Key, LifeBuoy, Info, LayoutGrid, Lock, FileBarChart, Terminal, Plug, Workflow, Sparkles } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Settings, Shield, Users, HardDrive, Network, RefreshCw, Key, LayoutGrid, Lock, FileBarChart, Terminal, Plug, Workflow, Sparkles } from 'lucide-react'
 import PlatformPageChrome from '../../components/platform/PlatformPageChrome'
 import PlatformSettings from './PlatformSettings'
 import PlatformAiProviders from './PlatformAiProviders'
@@ -16,7 +16,6 @@ import PlatformReports from './PlatformReports'
 import PlatformEvents from './PlatformEvents'
 import PlatformProjects from './PlatformProjects'
 import PlatformIntegrations from './PlatformIntegrations'
-import PlatformSupport from './PlatformSupport'
 import PlatformEnterprise from './PlatformEnterprise'
 import {
   MacSettingsPane,
@@ -35,6 +34,7 @@ import IdentitySsoPanel from '../../components/IdentitySsoPanel'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
+import { dispatchOpenHelp } from '../../utils/openHelp'
 
 function BrowserSessionInfo() {
   const [session, setSession] = useState<AuthSession | null>(null)
@@ -126,12 +126,12 @@ const SECTIONS: Array<{ id: SettingsSection; label: string; icon: React.ReactNod
   { id: 'resources', label: 'Infrastructure', icon: <HardDrive className="w-4 h-4" />, fullPath: '/platform/infrastructure' },
   { id: 'updates', label: 'Updates', icon: <RefreshCw className="w-4 h-4" /> },
   { id: 'integrations', label: 'Apps & Integrations', icon: <Plug className="w-4 h-4" />, fullPath: '/platform/settings?section=integrations' },
-  { id: 'support', label: 'Support', icon: <LifeBuoy className="w-4 h-4" />, fullPath: '/platform/support' },
-  { id: 'about', label: 'About', icon: <Info className="w-4 h-4" /> },
+  // Support / About are top menubar Help items — not Settings side-rail entries.
 ]
 
 export default function PlatformSettingsHub() {
   const toast = useToastContext()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const initialSection = searchParams.get('section')
   const [section, setSection] = useState<SettingsSection>(parseSettingsSection(initialSection))
@@ -191,9 +191,20 @@ export default function PlatformSettingsHub() {
   useEffect(() => { void load() }, [load])
 
   useEffect(() => {
-    const next = parseSettingsSection(searchParams.get('section'))
-    setSection(next)
-  }, [searchParams])
+    const raw = searchParams.get('section')
+    // About / Support moved to the top menubar Help menu — bounce legacy deep links.
+    if (raw === 'about') {
+      dispatchOpenHelp('about')
+      setSearchParams({}, { replace: true })
+      setSection('general')
+      return
+    }
+    if (raw === 'support') {
+      navigate('/platform/support', { replace: true })
+      return
+    }
+    setSection(parseSettingsSection(raw))
+  }, [searchParams, setSearchParams, navigate])
 
   useEffect(() => {
     if (section !== 'network') return
@@ -569,14 +580,6 @@ export default function PlatformSettingsHub() {
         </MacSettingsGroup>
       )}
 
-      {section === 'about' && (
-        <MacSettingsGroup title="About Zyvor Platform">
-          <p className="text-sm text-[var(--text-muted)]">Virtual datacenter control plane — KVM engine, macOS-inspired UX.</p>
-          <p className="text-xs text-[var(--text-muted)] mt-2">UX batches 49–56 · Zeus Firewall macOS Security pane (AI-372–391)</p>
-          <Link to="/platform/support" className={`text-sm inline-block mt-3 ${hubLinkClasses()}`}>Support & diagnostics →</Link>
-        </MacSettingsGroup>
-      )}
-
       {section === 'users' && (
         <div>
           <SettingsWorkspaceLink to="/platform/users" label="Open full Users workspace" />
@@ -642,13 +645,6 @@ export default function PlatformSettingsHub() {
       {section === 'integrations' && (
         <div>
           <PlatformIntegrations embedded />
-        </div>
-      )}
-
-      {section === 'support' && (
-        <div>
-          <SettingsWorkspaceLink to="/platform/support" label="Open full Support workspace" />
-          <PlatformSupport embedded />
         </div>
       )}
     </MacSettingsPane>

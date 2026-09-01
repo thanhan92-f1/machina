@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   createVmPortForward,
@@ -13,6 +13,7 @@ import {
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -41,6 +42,7 @@ function FleetCloudFloatingIpsContent() {
   const [vmPort, setVmPort] = useState('')
   const [description, setDescription] = useState('')
   const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
 
   const loadVms = useCallback(async () => {
     try {
@@ -72,6 +74,18 @@ function FleetCloudFloatingIpsContent() {
   useEffect(() => { void loadForwards() }, [loadForwards])
 
   const selectedVm = vms.find((v) => v.id === vmId)
+
+  const filteredForwards = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return forwards
+    return forwards.filter(
+      (f) =>
+        f.protocol.toLowerCase().includes(q) ||
+        String(f.host_port).includes(q) ||
+        String(f.vm_port).includes(q) ||
+        (f.description?.toLowerCase().includes(q) ?? false),
+    )
+  }, [forwards, search])
 
   return (
     <PageLayout
@@ -148,41 +162,54 @@ function FleetCloudFloatingIpsContent() {
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : (
-        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
-          <table className="apple-table" aria-label="Port forwards">
-            <thead>
-              <tr>
-                <th scope="col" className="px-3 py-2">Protocol</th>
-                <th scope="col" className="px-3 py-2">Host port</th>
-                <th scope="col" className="px-3 py-2">VM port</th>
-                <th scope="col" className="px-3 py-2">Description</th>
-                <th scope="col" className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]">
-              {forwards.map((f) => (
-                <tr key={f.id}>
-                  <td className="px-3 py-2 font-mono text-[var(--text-primary)]">{f.protocol}</td>
-                  <td className="px-3 py-2">{f.host_port}</td>
-                  <td className="px-3 py-2">{f.vm_port}</td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{f.description || '—'}</td>
-                  <td className="px-3 py-2">
-                    <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                      onClick={async () => {
-                        if (!confirm(`Remove forward ${f.protocol}/${f.host_port} → ${f.vm_port}?`)) return
-                        try {
-                          await deleteVmPortForward(vmId, { protocol: f.protocol, host_port: f.host_port, vm_port: f.vm_port })
-                          toast.success('Removed')
-                          void loadForwards()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>Remove</button>
-                  </td>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search protocol, ports, or description…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Port forwards">
+              <thead>
+                <tr>
+                  <th scope="col">Protocol</th>
+                  <th scope="col">Host port</th>
+                  <th scope="col">VM port</th>
+                  <th scope="col">Description</th>
+                  <th scope="col" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {forwards.length === 0 && <p className="p-6 text-center text-[var(--text-muted)]">No port forwards for this instance.</p>}
-        </div>
+              </thead>
+              <tbody>
+                {filteredForwards.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center text-[var(--text-muted)]">
+                      {search.trim() ? 'No forwards match your search.' : 'No port forwards for this instance.'}
+                    </td>
+                  </tr>
+                )}
+                {filteredForwards.map((f) => (
+                  <tr key={f.id}>
+                    <td className="font-mono text-[var(--text-primary)]">{f.protocol}</td>
+                    <td>{f.host_port}</td>
+                    <td>{f.vm_port}</td>
+                    <td className="text-[var(--text-muted)]">{f.description || '—'}</td>
+                    <td>
+                      <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
+                        onClick={async () => {
+                          if (!confirm(`Remove forward ${f.protocol}/${f.host_port} → ${f.vm_port}?`)) return
+                          try {
+                            await deleteVmPortForward(vmId, { protocol: f.protocol, host_port: f.host_port, vm_port: f.vm_port })
+                            toast.success('Removed')
+                            void loadForwards()
+                          } catch (e: unknown) { toast.error(formatUserError(e)) }
+                        }}>Remove</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       {selectedVm && (
         <Link to={`/fleet-cloud/instances/${selectedVm.id}`} className="text-sm text-[var(--accent)] hover:underline">

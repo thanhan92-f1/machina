@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { createNetwork, deleteNetwork, listNetworks, type NativeNetwork } from '../api/nativeNetworks'
 import { createPort, deletePort, listPorts, type NativePort } from '../api/nativePorts'
@@ -9,6 +9,7 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -35,6 +36,8 @@ function FleetCloudNetworkingContent() {
   const [portNetId, setPortNetId] = useState('')
   const [portVmId, setPortVmId] = useState('')
   const [creatingPort, setCreatingPort] = useState(false)
+  const [netSearch, setNetSearch] = useState('')
+  const [portSearch, setPortSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -56,6 +59,29 @@ function FleetCloudNetworkingContent() {
 
   const vmName = (id: string | null) => (id ? vms.find((v) => v.id === id)?.name || id.slice(0, 8) : '—')
   const netName = (id: string) => networks.find((n) => n.id === id)?.name || id.slice(0, 8)
+
+  const filteredNetworks = useMemo(() => {
+    const q = netSearch.trim().toLowerCase()
+    if (!q) return networks
+    return networks.filter(
+      (n) => n.name.toLowerCase().includes(q) || n.id.toLowerCase().includes(q) || n.backend.toLowerCase().includes(q),
+    )
+  }, [networks, netSearch])
+
+  const filteredPorts = useMemo(() => {
+    const q = portSearch.trim().toLowerCase()
+    if (!q) return ports
+    return ports.filter((p) => {
+      const nName = netName(p.network_id).toLowerCase()
+      const vName = p.vm_id ? vmName(p.vm_id).toLowerCase() : ''
+      return (
+        nName.includes(q) ||
+        vName.includes(q) ||
+        p.id.toLowerCase().includes(q) ||
+        (p.mac_address?.toLowerCase().includes(q) ?? false)
+      )
+    })
+  }, [ports, portSearch, networks, vms])
 
   if (loading) return <PageSkeleton />
 
@@ -94,25 +120,35 @@ function FleetCloudNetworkingContent() {
               } catch (e: unknown) { toast.error(formatUserError(e)) } finally { setCreatingNet(false) }
             }}>{creatingNet ? 'Creating…' : 'Create'}</button>
         </div>
-        <div className="overflow-x-auto apple-surface rounded-2xl">
+        <TahoeToolbar
+          search={netSearch}
+          onSearchChange={setNetSearch}
+          placeholder="Search networks…"
+        />
+        <TahoeTableWrap>
           <table className="apple-table" aria-label="Networks">
-            <thead className="bg-[var(--apple-surface)] text-[var(--text-muted)] text-left">
+            <thead>
               <tr>
-                <th scope="col" className="px-3 py-2">Name</th>
-                <th scope="col" className="px-3 py-2">Backend</th>
-                <th scope="col" className="px-3 py-2">VLAN</th>
-                <th scope="col" className="px-3 py-2" />
+                <th scope="col">Name</th>
+                <th scope="col">Backend</th>
+                <th scope="col">VLAN</th>
+                <th scope="col" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]">
-              {networks.map((n) => (
+            <tbody>
+              {filteredNetworks.length === 0 && (
+                <tr><td colSpan={4} className="text-center text-[var(--text-muted)]">
+                  {netSearch.trim() ? 'No networks match your search.' : 'No networks.'}
+                </td></tr>
+              )}
+              {filteredNetworks.map((n) => (
                 <tr key={n.id}>
-                  <td className="px-3 py-2 text-[var(--text-primary)]">
-                    <Link to={`/fleet-cloud/networks/${n.id}`} className="hover:opacity-90 hover:underline">{n.name}</Link>
+                  <td className="text-[var(--text-primary)]">
+                    <Link to={`/fleet-cloud/networks/${n.id}`} className="apple-link">{n.name}</Link>
                   </td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{n.backend}</td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{n.vlan_id ?? '—'}</td>
-                  <td className="px-3 py-2">
+                  <td className="text-[var(--text-muted)]">{n.backend}</td>
+                  <td className="text-[var(--text-muted)]">{n.vlan_id ?? '—'}</td>
+                  <td>
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
                       onClick={async () => {
                         if (!confirm(`Delete network ${n.name}?`)) return
@@ -125,12 +161,9 @@ function FleetCloudNetworkingContent() {
                   </td>
                 </tr>
               ))}
-              {networks.length === 0 && (
-                <tr><td colSpan={4} className="px-3 py-4 text-center text-[var(--text-muted)]">No networks.</td></tr>
-              )}
             </tbody>
           </table>
-        </div>
+        </TahoeTableWrap>
       </section>
 
       <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
@@ -156,27 +189,37 @@ function FleetCloudNetworkingContent() {
               } catch (e: unknown) { toast.error(formatUserError(e)) } finally { setCreatingPort(false) }
             }}>{creatingPort ? 'Creating…' : 'Create'}</button>
         </div>
-        <div className="overflow-x-auto apple-surface rounded-2xl">
+        <TahoeToolbar
+          search={portSearch}
+          onSearchChange={setPortSearch}
+          placeholder="Search ports…"
+        />
+        <TahoeTableWrap>
           <table className="apple-table" aria-label="Ports">
-            <thead className="bg-[var(--apple-surface)] text-[var(--text-muted)] text-left">
+            <thead>
               <tr>
-                <th scope="col" className="px-3 py-2">Network</th>
-                <th scope="col" className="px-3 py-2">VM</th>
-                <th scope="col" className="px-3 py-2">MAC</th>
-                <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2" />
+                <th scope="col">Network</th>
+                <th scope="col">VM</th>
+                <th scope="col">MAC</th>
+                <th scope="col">Status</th>
+                <th scope="col" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)] font-mono text-xs">
-              {ports.map((p) => (
+            <tbody className="font-mono text-xs">
+              {filteredPorts.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">
+                  {portSearch.trim() ? 'No ports match your search.' : 'No ports.'}
+                </td></tr>
+              )}
+              {filteredPorts.map((p) => (
                 <tr key={p.id}>
-                  <td className="px-3 py-2">{netName(p.network_id)}</td>
-                  <td className="px-3 py-2">
+                  <td>{netName(p.network_id)}</td>
+                  <td>
                     {p.vm_id ? <Link to={`/fleet-cloud/instances/${p.vm_id}`} className="text-[var(--accent)] hover:underline">{vmName(p.vm_id)}</Link> : '—'}
                   </td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{p.mac_address || '—'}</td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{p.status}</td>
-                  <td className="px-3 py-2">
+                  <td className="text-[var(--text-muted)]">{p.mac_address || '—'}</td>
+                  <td className="text-[var(--text-muted)]">{p.status}</td>
+                  <td>
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
                       onClick={async () => {
                         if (!confirm('Delete this port?')) return
@@ -189,12 +232,9 @@ function FleetCloudNetworkingContent() {
                   </td>
                 </tr>
               ))}
-              {ports.length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-4 text-center text-[var(--text-muted)]">No ports.</td></tr>
-              )}
             </tbody>
           </table>
-        </div>
+        </TahoeTableWrap>
       </section>
 
       <FleetCloudFooter />

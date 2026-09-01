@@ -1,11 +1,12 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { createFlavor, deleteFlavor, listFlavors, type NativeFlavor } from '../api/flavors'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -29,6 +30,7 @@ function FleetCloudFlavorsContent() {
   const [ram, setRam] = useState('2048')
   const [disk, setDisk] = useState('20')
   const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -45,6 +47,14 @@ function FleetCloudFlavorsContent() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return flavors
+    return flavors.filter(
+      (f) => f.name.toLowerCase().includes(q) || f.id.toLowerCase().includes(q),
+    )
+  }, [flavors, search])
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -115,49 +125,60 @@ function FleetCloudFlavorsContent() {
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
       ) : (
-        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
-          <table className="apple-table" aria-label="Flavors">
-            <thead>
-              <tr>
-                <th scope="col" className="px-3 py-2">Name</th>
-                <th scope="col" className="px-3 py-2">vCPU</th>
-                <th scope="col" className="px-3 py-2">RAM</th>
-                <th scope="col" className="px-3 py-2">Disk</th>
-                <th scope="col" className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]">
-              {flavors.map((f) => (
-                <tr key={f.id}>
-                  <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/flavors/${f.id}`} className="font-mono text-[var(--text-primary)] hover:opacity-90 hover:underline">{f.name}</Link>
-                    <span className="block text-xs text-[var(--text-muted)] font-mono">{f.id}</span>
-                  </td>
-                  <td className="px-3 py-2">{f.vcpus}</td>
-                  <td className="px-3 py-2">{f.memory_mib} MiB</td>
-                  <td className="px-3 py-2">{f.disk_gib} GiB</td>
-                  <td className="px-3 py-2 flex gap-2">
-                    <Link to={`/fleet-cloud/flavors/${f.id}`} className="text-xs text-[var(--accent)] hover:underline">Open</Link>
-                    <button type="button" className={statusActionLinkClasses('error', 'text-xs inline-flex items-center gap-0.5')}
-                      onClick={async () => {
-                        if (!confirm(`Delete flavor ${f.name}?`)) return
-                        try {
-                          await deleteFlavor(f.id)
-                          toast.success('Deleted')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>
-                      <Trash2 className="w-3 h-3" /> Del
-                    </button>
-                  </td>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name or ID…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Flavors">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">vCPU</th>
+                  <th scope="col">RAM</th>
+                  <th scope="col">Disk</th>
+                  <th scope="col" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {flavors.length === 0 && (
-            <p className="p-6 text-center text-[var(--text-muted)] text-sm">No flavors returned from Compute.</p>
-          )}
-        </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center text-[var(--text-muted)]">
+                      {search.trim() ? 'No flavors match your search.' : 'No flavors returned from Compute.'}
+                    </td>
+                  </tr>
+                )}
+                {filtered.map((f) => (
+                  <tr key={f.id}>
+                    <td>
+                      <Link to={`/fleet-cloud/flavors/${f.id}`} className="apple-link font-mono">{f.name}</Link>
+                      <span className="block text-xs text-[var(--text-muted)] font-mono">{f.id}</span>
+                    </td>
+                    <td>{f.vcpus}</td>
+                    <td>{f.memory_mib} MiB</td>
+                    <td>{f.disk_gib} GiB</td>
+                    <td className="flex gap-2">
+                      <Link to={`/fleet-cloud/flavors/${f.id}`} className="text-xs text-[var(--accent)] hover:underline">Open</Link>
+                      <button type="button" className={statusActionLinkClasses('error', 'text-xs inline-flex items-center gap-0.5')}
+                        onClick={async () => {
+                          if (!confirm(`Delete flavor ${f.name}?`)) return
+                          try {
+                            await deleteFlavor(f.id)
+                            toast.success('Deleted')
+                            void load()
+                          } catch (e: unknown) { toast.error(formatUserError(e)) }
+                        }}>
+                        <Trash2 className="w-3 h-3" /> Del
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       <FleetCloudFooter />
     </PageLayout>

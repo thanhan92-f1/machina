@@ -49,7 +49,7 @@ function vmHasGpu(vm: PlatformVm): boolean {
 
 function parseLens(raw: string | null): MachineFinderLens {
   if (raw && VALID_LENSES.has(raw as MachineFinderLens)) return raw as MachineFinderLens
-  return 'grid'
+  return 'table'
 }
 
 function parseOverlay(raw: string | null): MachineFinderOverlay {

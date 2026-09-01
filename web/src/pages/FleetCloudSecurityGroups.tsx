@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   createSecurityGroup,
@@ -20,6 +20,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Loader2, RefreshCw, Shield } from 'lucide-react'
@@ -45,6 +46,7 @@ function FleetCloudSecurityGroupsContent() {
   const [deletingGroup, setDeletingGroup] = useState(false)
   const [newSgName, setNewSgName] = useState('')
   const [creatingSg, setCreatingSg] = useState(false)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -97,6 +99,17 @@ function FleetCloudSecurityGroupsContent() {
   }, [selectedId, loadDetail, toast])
 
   const active = detail ?? groups.find((g) => g.id === selectedId) ?? null
+
+  const filteredGroups = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return groups
+    return groups.filter(
+      (g) =>
+        g.name.toLowerCase().includes(q) ||
+        g.id.toLowerCase().includes(q) ||
+        (g.description?.toLowerCase().includes(q) ?? false),
+    )
+  }, [groups, search])
 
   return (
     <PageLayout
@@ -163,25 +176,52 @@ function FleetCloudSecurityGroupsContent() {
       ) : groups.length === 0 ? (
         <p className="text-[var(--text-muted)] text-sm">No security groups in this project.</p>
       ) : (
-        <div className="grid lg:grid-cols-[minmax(12rem,16rem)_1fr] gap-6">
-          <ul className="space-y-1 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-2 max-h-[28rem] overflow-y-auto">
-            {groups.map((g) => (
-              <li key={g.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(g.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                    selectedId === g.id
-                      ? 'bg-[var(--accent-soft)] text-[var(--accent)] border border-[color-mix(in_srgb,var(--accent)_35%,transparent)]'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)]/60'
-                  }`}
-                >
-                  <span className="font-medium">{g.name}</span>
-                  <span className="block text-xs text-[var(--text-muted)] truncate">{g.id}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="flex flex-col gap-4 w-full">
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name or ID…"
+          />
+
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Security groups">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGroups.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="text-center text-[var(--text-muted)]">
+                      {search.trim() ? 'No security groups match your search.' : 'No security groups.'}
+                    </td>
+                  </tr>
+                )}
+                {filteredGroups.map((g) => (
+                  <tr
+                    key={g.id}
+                    onClick={() => setSelectedId(g.id)}
+                    className={`cursor-pointer ${selectedId === g.id ? 'bg-[var(--accent-soft)]' : ''}`}
+                  >
+                    <td>
+                      <Link
+                        to={`/fleet-cloud/security-groups/${g.id}`}
+                        className="apple-link font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {g.name}
+                      </Link>
+                    </td>
+                    <td className="text-[var(--text-muted)] text-sm">{g.description || '—'}</td>
+                    <td className="text-xs font-mono text-[var(--text-faint)] truncate max-w-[220px]">{g.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
 
           <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 min-h-[12rem]">
             {detailLoading && (
@@ -231,33 +271,33 @@ function FleetCloudSecurityGroupsContent() {
                 {rules.length === 0 ? (
                   <p className="text-sm text-[var(--text-muted)]">No rules defined.</p>
                 ) : (
-                  <div className="overflow-x-auto apple-surface rounded-2xl">
+                  <TahoeTableWrap>
                     <table className="apple-table" aria-label="Security group rules">
-                      <thead className="bg-[var(--apple-surface)] text-[var(--text-muted)] text-left">
+                      <thead>
                         <tr>
-                          <th scope="col" className="px-3 py-2">Direction</th>
-                          <th scope="col" className="px-3 py-2">Protocol</th>
-                          <th scope="col" className="px-3 py-2">Ports</th>
-                          <th scope="col" className="px-3 py-2">Remote CIDR</th>
-                          <th scope="col" className="px-3 py-2" />
+                          <th scope="col">Direction</th>
+                          <th scope="col">Protocol</th>
+                          <th scope="col">Ports</th>
+                          <th scope="col">Remote CIDR</th>
+                          <th scope="col" />
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[var(--apple-hairline)] font-mono text-xs">
+                      <tbody className="font-mono text-xs">
                         {rules.map((r) => (
                           <tr key={r.id}>
-                            <td className="px-3 py-2 text-[var(--text-secondary)]">{r.direction}</td>
-                            <td className="px-3 py-2">{r.protocol || '—'}</td>
-                            <td className="px-3 py-2">
+                            <td className="text-[var(--text-secondary)]">{r.direction}</td>
+                            <td>{r.protocol || '—'}</td>
+                            <td>
                               {r.port_min != null
                                 ? r.port_min === r.port_max
                                   ? String(r.port_min)
                                   : `${r.port_min}–${r.port_max}`
                                 : '—'}
                             </td>
-                            <td className="px-3 py-2 text-[var(--text-muted)]">
+                            <td className="text-[var(--text-muted)]">
                               {r.remote_cidr || '—'}
                             </td>
-                            <td className="px-3 py-2">
+                            <td>
                               <button type="button" className={statusActionLinkClasses('error')}
                                 onClick={async () => {
                                   try {
@@ -273,7 +313,7 @@ function FleetCloudSecurityGroupsContent() {
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                  </TahoeTableWrap>
                 )}
               </>
             ) : (

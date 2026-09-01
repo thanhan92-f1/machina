@@ -22,6 +22,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { statusBadgeClasses } from '../utils/semanticColors'
 
 function podTone(status: string): 'ok' | 'warn' | 'error' | 'neutral' | 'info' {
@@ -44,6 +45,7 @@ export default function ContainerPodsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
   const createRef = useRef<HTMLDivElement>(null)
   useFocusTrap(createRef, showCreate, () => setShowCreate(false))
 
@@ -110,6 +112,16 @@ export default function ContainerPodsPage() {
     }
   }
 
+  const filteredItems = items.filter((p) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      p.name.toLowerCase().includes(q)
+      || p.status.toLowerCase().includes(q)
+      || shortId(p.id).toLowerCase().includes(q)
+    )
+  })
+
   return (
     <PageLayout
       eyebrow="Vessel"
@@ -151,6 +163,19 @@ export default function ContainerPodsPage() {
         </div>
       }
     >
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search pods…"
+        trailing={
+          search ? (
+            <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+              {filteredItems.length} pod{filteredItems.length !== 1 ? 's' : ''}
+            </span>
+          ) : null
+        }
+      />
+
       {!loading && !error && items.length === 0 && (
         <EmptyState
           icon={<Layers className="w-8 h-8" />}
@@ -169,30 +194,33 @@ export default function ContainerPodsPage() {
       )}
 
       {items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--apple-surface)] text-left text-[var(--text-muted)]">
+        <TahoeTableWrap>
+          <table className="apple-table text-sm" aria-label="Container pods">
+            <thead>
               <tr>
-                <th className="px-3 py-2 font-medium">Name</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2 font-medium">Containers</th>
-                <th className="px-3 py-2 font-medium">ID</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
+                <th scope="col">Name</th>
+                <th scope="col">Status</th>
+                <th scope="col">Containers</th>
+                <th scope="col">ID</th>
+                <th scope="col" className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((p) => {
+              {filteredItems.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">No pods match your search.</td></tr>
+              )}
+              {filteredItems.map((p) => {
                 const tone = podTone(p.status)
                 const disabled = busy === p.id
                 return (
-                  <tr key={p.id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="px-3 py-2 text-[var(--text-primary)] font-medium">{p.name}</td>
-                    <td className="px-3 py-2">
+                  <tr key={p.id}>
+                    <td className="text-[var(--text-primary)] font-medium">{p.name}</td>
+                    <td>
                       <span className={statusBadgeClasses(tone)}>{p.status}</span>
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-muted)]">{p.containers.length}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-muted)]">{shortId(p.id)}</td>
-                    <td className="px-3 py-2">
+                    <td className="text-[var(--text-muted)]">{p.containers.length}</td>
+                    <td className="font-mono text-xs text-[var(--text-muted)]">{shortId(p.id)}</td>
+                    <td>
                       <div className="flex justify-end gap-1">
                         <button
                           type="button"
@@ -228,7 +256,7 @@ export default function ContainerPodsPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </TahoeTableWrap>
       )}
 
       {showCreate && (

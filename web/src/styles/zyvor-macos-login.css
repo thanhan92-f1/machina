@@ -162,11 +162,44 @@
   color: transparent;
 }
 
+/* Account layout — quiet centered composition */
+.login-page-macos.login-page-account {
+  background: var(--macos-login-bg);
+  background-image:
+    radial-gradient(ellipse 85% 60% at 50% 0%, rgba(59, 130, 246, 0.1), transparent 55%),
+    linear-gradient(180deg, #0b0f18 0%, #111827 50%, #0b0f18 100%);
+}
+.login-page-macos.login-page-account .login-panel-account {
+  background: transparent;
+  background-image: none;
+}
+.login-page-macos .login-account-gradient {
+  opacity: 0.85;
+  background:
+    radial-gradient(ellipse 60% 50% at 25% 20%, rgba(59, 130, 246, 0.14), transparent 58%),
+    radial-gradient(ellipse 48% 44% at 75% 75%, rgba(139, 92, 246, 0.1), transparent 52%);
+}
+.login-page-macos .login-account-wordmark {
+  color: #f5f5f7;
+  font-weight: 600;
+}
+.login-page-macos .login-account-lede {
+  color: #a1a1a6;
+}
+.login-page-macos .login-account-orb {
+  opacity: 0.4;
+  filter: blur(3px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .login-page-macos .login-hero {
     animation: none !important;
   }
-  .login-page-macos .login-orb {
+  .login-page-macos .login-orb,
+  .login-page-macos .login-account-gradient {
+    animation: none !important;
+  }
+  .login-page-macos .login-account-orb {
     display: none;
   }
 }

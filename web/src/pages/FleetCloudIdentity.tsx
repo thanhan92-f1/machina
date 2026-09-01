@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { KeyRound, Loader2, Plus } from 'lucide-react'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { createProject, listProjectRegistry, type NativeProject } from '../api/nativeProjects'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
@@ -29,6 +30,7 @@ function FleetCloudIdentityContent() {
   const [projects, setProjects] = useState<NativeProject[]>([])
   const [loading, setLoading] = useState(true)
   const [projectName, setProjectName] = useState('')
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -44,6 +46,14 @@ function FleetCloudIdentityContent() {
   }, [toast])
 
   useEffect(() => { void load() }, [load])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return projects
+    return projects.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q),
+    )
+  }, [projects, search])
 
   return (
     <PageLayout
@@ -80,24 +90,36 @@ function FleetCloudIdentityContent() {
       ) : projects.length === 0 ? (
         <EmptyState title="No projects" description="No projects in the registry yet." />
       ) : (
-        <div className="overflow-x-auto apple-surface rounded-2xl">
-          <table className="apple-table" aria-label="Projects">
-            <thead>
-              <tr><th scope="col" className="px-3 py-2">Name</th><th scope="col" className="px-3 py-2">ID</th><th scope="col" className="px-3 py-2">Enabled</th></tr>
-            </thead>
-            <tbody>
-              {projects.map((p) => (
-                <tr key={p.id} className="border-t border-[var(--apple-hairline)]">
-                  <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/identity/projects/${p.id}`} className="text-[var(--accent)] hover:underline">{p.name}</Link>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">{p.id}</td>
-                  <td className="px-3 py-2">{p.enabled ? 'yes' : 'no'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name or ID…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Projects">
+              <thead>
+                <tr><th scope="col">Name</th><th scope="col">ID</th><th scope="col">Enabled</th></tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="text-center text-[var(--text-muted)]">No projects match your search.</td>
+                  </tr>
+                )}
+                {filtered.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <Link to={`/fleet-cloud/identity/projects/${p.id}`} className="apple-link">{p.name}</Link>
+                    </td>
+                    <td className="font-mono text-xs">{p.id}</td>
+                    <td>{p.enabled ? 'yes' : 'no'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       <FleetCloudFooter />
     </PageLayout>

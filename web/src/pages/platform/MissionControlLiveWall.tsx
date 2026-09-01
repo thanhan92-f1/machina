@@ -35,10 +35,9 @@ export default function MissionControlLiveWall() {
   }, [load])
 
   return (
-    <PageLayout title="Live Preview Wall" subtitle="Machina Mission Control · fleet console grid" compact>
+    <PageLayout title="Live Preview Wall" subtitle={`Running VMs with live VNC thumbnails (max ${MAX_LIVE} concurrent).`} compact>
       <div className="space-y-4" data-testid="mission-control-live-wall">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm text-[var(--text-muted)]">Running VMs with live VNC thumbnails (max {MAX_LIVE} concurrent).</p>
+        <div className="flex items-center justify-end gap-2">
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" onClick={() => void load()}>
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
@@ -53,21 +52,17 @@ export default function MissionControlLiveWall() {
         ) : vms.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No running VMs to preview.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="divide-y divide-[var(--apple-hairline)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
             {vms.map((vm) => (
-              <article
-                key={vm.id}
-                className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] overflow-hidden flex flex-col"
-                data-testid={`live-wall-tile-${vm.name}`}
-              >
-                <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--apple-hairline)] text-xs">
-                  <span className="font-medium text-[var(--text-primary)] truncate">{vm.name}</span>
+              <li key={vm.id} className="flex flex-col" data-testid={`live-wall-tile-${vm.name}`}>
+                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--apple-hairline)]">
+                  <span className="font-medium text-sm text-[var(--text-primary)] truncate">{vm.name}</span>
                   <VmStatusBadge state={vm.observed_state ?? 'unknown'} />
                 </div>
-                <div className="min-h-[12rem]">
+                <div className="min-h-[12rem] bg-[var(--apple-fill-tertiary)]">
                   <ConsoleTheatrePreview vmId={vm.id} vmName={vm.name} connected variant="tile" />
                 </div>
-                <div className="flex gap-2 p-2 border-t border-[var(--apple-hairline)]">
+                <div className="flex gap-2 p-3 border-t border-[var(--apple-hairline)]">
                   <Link to={cinemaHubPath(vm.id)} data-testid="live-wall-open-cinema" className="btn-primary text-xs flex-1 text-center inline-flex items-center justify-center gap-1">
                     <Monitor className="w-3.5 h-3.5" /> Open Cinema
                   </Link>
@@ -75,9 +70,9 @@ export default function MissionControlLiveWall() {
                     VM detail
                   </Link>
                 </div>
-              </article>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </PageLayout>

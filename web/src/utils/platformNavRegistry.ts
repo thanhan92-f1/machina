@@ -79,8 +79,7 @@ const SETTINGS_ENTRIES: SettingsNavEntry[] = [
   { to: '/platform/settings?section=resources', label: 'Infrastructure', minTier: 'power' },
   { to: '/platform/settings?section=updates', label: 'Updates' },
   { to: '/platform/settings?section=integrations', label: 'Integrations' },
-  { to: '/platform/settings?section=support', label: 'Support' },
-  { to: '/platform/settings?section=about', label: 'About' },
+  // Support / About live in the top menubar Help menu — not the Settings side rail.
 ]
 
 const SECURITY_ITEMS: ContextNavItem[] = [

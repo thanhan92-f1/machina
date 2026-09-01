@@ -148,8 +148,8 @@ export default function JobsPage() {
       errorHints={['Confirm machina-daemon is running.', 'Jobs require a valid session with operator or admin role.']}
       onErrorRetry={() => void refreshList()}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-4">
+      <div className="flex flex-col gap-6 w-full">
+        <div className="tahoe-glass-card p-4">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Recent jobs</h2>
           {jobs.length === 0 ? (
             <EmptyState
@@ -196,7 +196,7 @@ export default function JobsPage() {
           )}
         </div>
 
-        <div className="card p-4 flex flex-col min-h-[20rem]">
+        <div className="tahoe-glass-card p-4 flex flex-col min-h-[20rem]">
           {!selectedId ? (
             <p className="text-[var(--text-muted)] text-sm">Select a job from the list to view logs.</p>
           ) : !detail ? (

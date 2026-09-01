@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowLeft, Cloud, GitBranch, HardDrive, Network, RefreshCw, Server, Shield, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Cloud, GitBranch, HardDrive, Network, RefreshCw, Server, Shield, CheckCircle2 } from 'lucide-react'
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import {
-  LaunchpadAppIcon,
   MacGlassPanel,
   MacStatWidget,
-  gradientForName,
 } from '../../../components/platform/mac/PlatformMacUi'
+import { AppleDestinationList } from '../../../components/platform/apple/AppleStoryKit'
 import JsonInspector, { asRecord, recordEntries } from '../../../components/platform/JsonInspector'
 import PlatformFilterPills from '../../../components/platform/PlatformFilterPills'
 import PageLayout from '../../../components/PageLayout'
@@ -36,9 +35,19 @@ import {
 } from '../../../api/zeusFirewall'
 import { useToastContext } from '../../../contexts/ToastContext'
 import { formatUserError } from '../../../utils/apiError'
-import { hubLinkClasses, riskTone, statusBgClass, statusPillClasses, statusToneClass } from '../../../utils/semanticColors'
-
+import { hubLinkClasses, statusPillClasses, statusToneClass } from '../../../utils/semanticColors'
 type KindFilter = 'all' | 'host' | 'bare_metal'
+
+const FIREWALL_DESTINATIONS = [
+  { to: '/platform/zeus/security/policies', title: 'Policy Studio', subtitle: 'Profile templates and rule authoring', icon: <Shield className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/ports', title: 'Open Ports', subtitle: 'Exposure scanner with process metadata', icon: <Network className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/services', title: 'Allowed Apps', subtitle: 'Permitted services and applications', icon: <Server className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/compliance', title: 'Compliance', subtitle: 'Grades, drift, and approval workflows', icon: <CheckCircle2 className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/activity', title: 'Activity', subtitle: 'Blocked and allowed connections', icon: <Shield className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/connectivity', title: 'Connectivity', subtitle: 'Cross-site and inter-host reachability', icon: <Network className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/cloud', title: 'Cloud SGs', subtitle: 'Security group alignment', icon: <Cloud className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/k8s', title: 'Kubernetes', subtitle: 'Cluster network policies', icon: <GitBranch className="w-5 h-5" /> },
+]
 
 export default function PlatformFirewallOverview() {
   const toast = useToastContext()
@@ -192,7 +201,9 @@ export default function PlatformFirewallOverview() {
               <span className={statusPillClasses(overview.critical_count > 0 ? 'error' : 'ok')}>
                 {overview.critical_count} critical
               </span>
-              <span className="text-[var(--text-muted)]">{targets.length} machines</span>
+              <span className="text-[var(--text-muted)]">
+                {targets.length} machines · {targets.filter((t) => t.risk === 'low').length} compliant
+              </span>
             </>
           )}
           {statusLine && <span className="text-[var(--text-muted)]">{statusLine}</span>}
@@ -217,16 +228,7 @@ export default function PlatformFirewallOverview() {
               { id: 'bare_metal', label: 'Bare metal', count: metalCount },
             ]}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <MacStatWidget label="Machines" value={String(filtered.length)} icon={<Server className="w-5 h-5" />} />
-            <MacStatWidget label="Critical" value={String(overview.critical_count)} icon={<AlertTriangle className="w-5 h-5" />} tone="warn" />
-            <MacStatWidget
-              label="Compliant"
-              value={String(targets.filter((t) => t.risk === 'low').length)}
-              icon={<CheckCircle2 className="w-5 h-5" />}
-              tone="ok"
-            />
-          </div>
+          <AppleDestinationList items={FIREWALL_DESTINATIONS} />
           {scoreTarget && (
             <MacGlassPanel title="Risk scoring & approvals" subtitle={`Sample target: ${scoreTarget.name} · POST /targets/{id}/score and /approvals`}>
               <div className="flex flex-wrap gap-2 mb-3">
@@ -247,23 +249,22 @@ export default function PlatformFirewallOverview() {
               )}
             </MacGlassPanel>
           )}
-          <MacGlassPanel title="Machines" subtitle={overview.summary}>
-            <div className="platform-launchpad-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
-              {filtered.map((t: FirewallTargetSummary) => (
-                <Link key={t.id} to={`/platform/zeus/security/firewall/${t.id}`} className="relative">
-                  <span className={`absolute top-0 right-6 w-2.5 h-2.5 rounded-full ${statusBgClass(riskTone(t.risk))} ring-2 ring-slate-950`} />
-                  <LaunchpadAppIcon
-                    name={t.name}
-                    icon={t.kind === 'bare_metal' ? <HardDrive className="w-8 h-8" /> : <Shield className="w-8 h-8" />}
-                    gradient={gradientForName(t.name)}
-                    vmCount={t.open_ports}
-                  />
-                  {t.kind === 'bare_metal' && (
-                    <p className="text-[10px] text-[var(--text-muted)] text-center -mt-1">Bare metal</p>
-                  )}
-                </Link>
-              ))}
-            </div>
+          <MacGlassPanel title="Machines" subtitle={`${overview.summary} · ${filtered.length} shown`}>
+            <AppleDestinationList
+              items={filtered.map((t: FirewallTargetSummary) => ({
+                to: `/platform/zeus/security/firewall/${t.id}`,
+                title: t.name,
+                subtitle: [
+                  t.kind === 'bare_metal' ? 'Bare metal' : 'Host',
+                  `${t.risk} risk`,
+                  `${t.open_ports} open port${t.open_ports === 1 ? '' : 's'}`,
+                  t.profile || null,
+                ]
+                  .filter(Boolean)
+                  .join(' · '),
+                icon: t.kind === 'bare_metal' ? <HardDrive className="w-5 h-5" /> : <Shield className="w-5 h-5" />,
+              }))}
+            />
           </MacGlassPanel>
           {operatorPlan && (operatorPlan.previews?.length ?? 0) > 0 && (
             <MacGlassPanel title="AI operator" subtitle={operatorPlan.summary}>
@@ -367,32 +368,6 @@ export default function PlatformFirewallOverview() {
               <JsonInspector data={baremetalFw} />
             </MacGlassPanel>
           )}
-          <MacGlassPanel title="Machine Security" subtitle="Open like macOS System Settings panes">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {[
-                { to: '/platform/zeus?tab=baremetal', label: 'Bare Metal', icon: <HardDrive className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/ports', label: 'Open Ports', icon: <Network className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/services', label: 'Allowed Apps', icon: <Server className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/activity', label: 'Activity', icon: <Shield className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/compliance', label: 'Compliance', icon: <CheckCircle2 className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/policies', label: 'Policy Studio', icon: <Shield className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/k8s', label: 'Kubernetes', icon: <GitBranch className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/cloud', label: 'Cloud SGs', icon: <Cloud className="w-5 h-5" /> },
-                { to: '/platform/zeus/security/connectivity', label: 'Connectivity', icon: <Network className="w-5 h-5" /> },
-              ].map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] hover:border-[var(--accent)]/30 transition text-center"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-[var(--apple-fill-tertiary)] flex items-center justify-center text-[var(--accent)]">
-                    {item.icon}
-                  </div>
-                  <span className="text-xs text-[var(--text-secondary)]">{item.label}</span>
-                </Link>
-              ))}
-            </div>
-          </MacGlassPanel>
         </>
       )}
       <ConfirmDialog

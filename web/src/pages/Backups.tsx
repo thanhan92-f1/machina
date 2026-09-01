@@ -14,6 +14,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import ConfirmDialog from '../components/ConfirmDialog'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { formatUserError } from '../utils/apiError'
 import { statusBgClass, statusToneClass } from '../utils/semanticColors'
 import {
@@ -59,6 +60,7 @@ export default function BackupsPage() {
   const [showForm, setShowForm] = useState(false)
   const [statusDetail, setStatusDetail] = useState<Record<string, BackupStatus>>({})
   const [statusBusy, setStatusBusy] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -196,6 +198,17 @@ export default function BackupsPage() {
     }
   }
 
+  const filteredBackups = backups.filter((b) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      b.id.toLowerCase().includes(q)
+      || b.status.toLowerCase().includes(q)
+      || (b.vm_filter || '').toLowerCase().includes(q)
+      || (b.nfs_target || '').toLowerCase().includes(q)
+    )
+  })
+
   return (
     <PageLayout
       eyebrow="Hypervisor"
@@ -318,29 +331,45 @@ export default function BackupsPage() {
         </div>
       )}
 
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search backups…"
+        trailing={
+          search ? (
+            <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+              {filteredBackups.length} backup{filteredBackups.length !== 1 ? 's' : ''}
+            </span>
+          ) : null
+        }
+      />
+
       {/* Backup list */}
-      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
-        {backups.length === 0 ? (
-          <EmptyState title="No backups" description="Create a backup to protect your VMs. Backups are stored at the configured target path." />
-        ) : (
-          <table className="w-full" aria-label="Backup jobs">
+      {backups.length === 0 ? (
+        <EmptyState title="No backups" description="Create a backup to protect your VMs. Backups are stored at the configured target path." />
+      ) : (
+        <TahoeTableWrap>
+          <table className="apple-table" aria-label="Backup jobs">
             <thead>
-              <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">
-                <th scope="col" className="px-4 py-3">Backup ID</th>
-                <th scope="col" className="px-4 py-3">Status</th>
-                <th scope="col" className="px-4 py-3">Scope</th>
-                <th scope="col" className="px-4 py-3 hidden md:table-cell">VMs</th>
-                <th scope="col" className="px-4 py-3 hidden lg:table-cell">Target</th>
-                <th scope="col" className="px-4 py-3">Disks</th>
-                <th scope="col" className="px-4 py-3">Size</th>
-                <th scope="col" className="px-4 py-3 text-right">Actions</th>
+              <tr>
+                <th scope="col">Backup ID</th>
+                <th scope="col">Status</th>
+                <th scope="col">Scope</th>
+                <th scope="col" className="hidden md:table-cell">VMs</th>
+                <th scope="col" className="hidden lg:table-cell">Target</th>
+                <th scope="col">Disks</th>
+                <th scope="col">Size</th>
+                <th scope="col" className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/50">
-              {backups.map((b) => (
-                <tr key={b.id} className="hover:bg-[var(--surface-hover)]/50">
-                  <td className="px-4 py-3 font-medium font-mono text-sm">{b.id}</td>
-                  <td className="px-4 py-3">
+            <tbody>
+              {filteredBackups.length === 0 && (
+                <tr><td colSpan={8} className="text-center text-[var(--text-muted)]">No backups match your search.</td></tr>
+              )}
+              {filteredBackups.map((b) => (
+                <tr key={b.id}>
+                  <td className="font-medium font-mono text-sm">{b.id}</td>
+                  <td>
                     <StatusBadge status={b.status} />
                     {b.status === 'running' && b.progress !== '' && (
                       <div className="mt-1 w-20 bg-[var(--surface-hover)] rounded-full h-1.5">
@@ -353,26 +382,26 @@ export default function BackupsPage() {
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="text-sm">
                     {b.vm_filter === 'all' ? (
                       <span className={`flex items-center gap-1 ${statusToneClass('info')}`}><Server className="w-3 h-3" /> All</span>
                     ) : (
                       <span className={`flex items-center gap-1 ${statusToneClass('ok')}`}><Server className="w-3 h-3" /> {b.vm_filter}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[var(--text-muted)] hidden md:table-cell">{b.vm_count}</td>
-                  <td className="px-4 py-3 text-sm text-[var(--text-muted)] hidden lg:table-cell">
+                  <td className="text-sm text-[var(--text-muted)] hidden md:table-cell">{b.vm_count}</td>
+                  <td className="text-sm text-[var(--text-muted)] hidden lg:table-cell">
                     {b.nfs_target === 'local' ? 'Local' : b.nfs_target}
                   </td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="text-sm">
                     {b.with_disks ? (
                       <span className={`flex items-center gap-1 ${statusToneClass('warn')}`}><HardDrive className="w-3 h-3" /> Yes</span>
                     ) : (
                       <span className="text-[var(--text-muted)]">No</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[var(--text-muted)]">{b.size}</td>
-                  <td className="px-4 py-3">
+                  <td className="text-sm text-[var(--text-muted)]">{b.size}</td>
+                  <td>
                     <div className="flex items-center justify-end gap-1">
                       {b.status === 'running' && (
                         <button
@@ -426,8 +455,8 @@ export default function BackupsPage() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </TahoeTableWrap>
+      )}
 
       {/* Verify result dialog */}
       {verifyResult && (

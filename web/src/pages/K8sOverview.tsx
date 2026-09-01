@@ -8,7 +8,7 @@ import { Link } from 'react-router'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import CollapsibleCodeBlock from '../components/CollapsibleCodeBlock'
 import JsonInspector, { asArray, asRecord } from '../components/platform/JsonInspector'
-import { AlertTriangle, CheckCircle2, Download, LayoutGrid, Loader2, Puzzle, RefreshCw, ShieldAlert, Server, Package,
+import { AlertTriangle, CheckCircle2, Download, LayoutGrid, Loader2, Puzzle, RefreshCw, ShieldAlert, Package,
 } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
@@ -42,6 +42,7 @@ import { useK8sContext } from '../hooks/useK8sContext'
 import { formatBytes } from '../utils/vm'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
+import { AppleStoryHeader } from '../components/platform/apple/AppleStoryKit'
 
 type NodeAction = 'node_cordon' | 'node_uncordon' | 'node_drain'
 
@@ -566,55 +567,34 @@ export default function K8sOverviewPage() {
     return [...base, ...tail]
   }, [overview, liveNodesCount])
 
+  const primaryCounts = useMemo(
+    () => counts.slice(0, 7),
+    [counts],
+  )
+  const extendedCounts = useMemo(
+    () => counts.slice(7),
+    [counts],
+  )
+
+  const clusterLede = [
+    environment?.cluster_distribution && environment.cluster_distribution !== 'unknown'
+      ? environment.cluster_distribution
+      : null,
+    environment?.current_context ? `context ${environment.current_context}` : null,
+    overview?.ready_nodes != null && overview?.nodes != null
+      ? `${overview.ready_nodes}/${overview.nodes} nodes ready`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') ||
+    'Auto-detects distro, host agents, and expands resource counts. Safe kubectl node actions below.'
+
   if (loading) {
     return <PageSkeleton />
   }
 
   return (
-    <PageLayout
-      eyebrow="Kubernetes"
-      title="Kubernetes Cluster"
-      subtitle="Auto-detects distro (k3s, RKE2, cloud, kind, …), host agents, and expands resource counts. Safe kubectl node actions below."
-      icon={<Server className={`w-6 h-6 ${statusToneClass('info')}`} />}
-      actions={
-        <>
-          {fleetMode && (
-            <>
-              <Link to="/platform" className="px-3 py-2 rounded-lg text-xs font-medium border border-orange-500/40 text-orange-700 hover:bg-orange-500/10 inline-flex items-center gap-1.5">
-                <LayoutGrid className="w-3.5 h-3.5" /> Platform
-              </Link>
-              <Link to="/platform/settings?section=integrations" className="px-3 py-2 rounded-lg text-xs font-medium border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] inline-flex items-center gap-1.5">
-                <Puzzle className="w-3.5 h-3.5" /> Integrations
-              </Link>
-            </>
-          )}
-          <select
-            aria-label="kubectl context"
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] max-w-[18rem]"
-            title="kubectl --context"
-          >
-            <option value="">Default kubeconfig context</option>
-            {contextChoices.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => void exportAuditJson()}
-            className="px-3 py-2 rounded-lg text-xs font-medium bg-[var(--surface-hover)]/80 border border-[var(--apple-hairline)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]/80"
-          >
-            Audit JSON
-          </button>
-          <button onClick={() => void load(true)} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Refresh">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </>
-      }
-    >
+    <PageLayout hideHeader className="min-w-0 !space-y-0">
       {loadError && (
         <div className="sticky top-2 z-30">
           <K8sConnectionErrorBanner
@@ -625,22 +605,90 @@ export default function K8sOverviewPage() {
         </div>
       )}
 
+      <div className="apple-story-stack w-full space-y-8">
+        <AppleStoryHeader
+          eyebrow="Kubernetes"
+          title="Kubernetes Cluster"
+          lede={clusterLede}
+          cta={
+            <>
+              {fleetMode && (
+                <>
+                  <Link to="/platform" className="btn-secondary text-sm inline-flex items-center gap-1.5">
+                    <LayoutGrid className="w-3.5 h-3.5" /> Platform
+                  </Link>
+                  <Link
+                    to="/platform/settings?section=integrations"
+                    className="btn-secondary text-sm inline-flex items-center gap-1.5"
+                  >
+                    <Puzzle className="w-3.5 h-3.5" /> Integrations
+                  </Link>
+                </>
+              )}
+              <select
+                aria-label="kubectl context"
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                className="input-field text-sm max-w-[18rem]"
+                title="kubectl --context"
+              >
+                <option value="">Default kubeconfig context</option>
+                {contextChoices.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => void exportAuditJson()}
+                className="btn-secondary text-sm"
+              >
+                Audit JSON
+              </button>
+              <button
+                type="button"
+                onClick={() => void load(true)}
+                className="btn-secondary inline-flex items-center gap-2"
+                aria-label="Refresh"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </>
+          }
+        />
+
+        <section aria-label="Cluster summary" className="apple-section apple-section--tight">
+          <div className="apple-metric-band">
+            {primaryCounts.map((c) => (
+              <div key={c.label} className="min-w-0" data-testid={c.label === 'Live API nodes' ? 'k8s-live-nodes-stat' : undefined}>
+                <div className="apple-metric-value">{c.value}</div>
+                <div className="apple-metric-label">{c.label}</div>
+              </div>
+            ))}
+          </div>
+          {extendedCounts.length > 0 ? (
+            <details className="mt-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
+              <summary className="cursor-pointer px-4 py-3 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                More resource counts ({extendedCounts.length})
+              </summary>
+              <ul className="divide-y divide-[var(--apple-hairline)] px-4 pb-2">
+                {extendedCounts.map((c) => (
+                  <li key={c.label} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span className="text-[var(--text-secondary)]">{c.label}</span>
+                    <span className="font-semibold tabular-nums text-[var(--text-primary)]">{c.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+        </section>
+
       <div className="tahoe-glass-card px-4 py-3 text-sm text-[var(--text-primary)]/90">
         Tetragon + PacketWolf sensors enrich K8s node events with namespace/pod/container metadata.{' '}
         <Link to="/platform/zeus/security" className="text-[var(--link)] underline">Open Security Center</Link>
       </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {counts.map((c) => (
-          <div
-            key={c.label}
-            className="bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-xl px-4 py-3"
-            data-testid={c.label === 'Live API nodes' ? 'k8s-live-nodes-stat' : undefined}
-          >
-            <div className="text-xs text-[var(--text-muted)]">{c.label}</div>
-            <div className="text-2xl font-semibold text-[var(--text-primary)]">{c.value}</div>
-          </div>
-        ))}
       </div>
 
       {k8sMetrics && (
@@ -657,7 +705,7 @@ export default function K8sOverviewPage() {
             </p>
           )}
           {k8sMetrics.metrics_available && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+            <div className="flex flex-col gap-6 text-sm">
               <div>
                 <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase mb-2">Nodes</h3>
                 <ul className="space-y-1 text-[var(--text-primary)]">
@@ -695,7 +743,7 @@ export default function K8sOverviewPage() {
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">Cluster hardware inventory</h2>
             <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">{clusterInventory.disclaimer}</p>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="flex flex-col gap-4">
             <RollupStrip title="All nodes (each counted once)" r={clusterInventory.totals_all_nodes} />
             <RollupStrip
               title="Control plane capacity (control-plane + mixed nodes)"

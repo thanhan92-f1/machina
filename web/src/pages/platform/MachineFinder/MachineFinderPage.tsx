@@ -102,26 +102,22 @@ export default function MachineFinderPage() {
           </div>
         )}
 
-        <div className="flex flex-col xl:flex-row xl:items-start gap-4 flex-1 min-h-0">
+        <div className="flex flex-col gap-4 flex-1 min-h-0 w-full">
           {showSidebar && <MachineFinderSmartFolders state={state} />}
-
-          <main className="flex-1 min-w-0 flex flex-col gap-3">
-            {showSidebar && <MachineFinderBriefing state={state} />}
-            <MachineFinderResourceStrip />
-            <MachineFinderLensBar state={state} />
-            {lens === 'gallery' ? (
-              <div className="space-y-6" data-testid="machine-finder-gallery">
-                <VmGalleryLauncher vms={filteredVms.slice(0, 8)} title="Continue working" />
-                <VmGalleryLauncher vms={galleryRows.running} title="Running machines" />
-                <VmGalleryLauncher vms={galleryRows.linux} title="Linux machines" />
-                <VmGalleryLauncher vms={galleryRows.windows} title="Windows machines" />
-                <VmGalleryLauncher vms={galleryRows.needsAttention} title="Needs attention" />
-              </div>
-            ) : (
-              <MachineFinderCanvas state={state} />
-            )}
-          </main>
-
+          {showSidebar && <MachineFinderBriefing state={state} />}
+          <MachineFinderResourceStrip />
+          <MachineFinderLensBar state={state} />
+          {lens === 'gallery' ? (
+            <div className="space-y-6" data-testid="machine-finder-gallery">
+              <VmGalleryLauncher vms={filteredVms.slice(0, 8)} title="Continue working" />
+              <VmGalleryLauncher vms={galleryRows.running} title="Running machines" />
+              <VmGalleryLauncher vms={galleryRows.linux} title="Linux machines" />
+              <VmGalleryLauncher vms={galleryRows.windows} title="Windows machines" />
+              <VmGalleryLauncher vms={galleryRows.needsAttention} title="Needs attention" />
+            </div>
+          ) : (
+            <MachineFinderCanvas state={state} />
+          )}
           {showSidebar && <MachineFinderCommandCenter state={state} />}
         </div>
       </section>

@@ -1,4 +1,5 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// apple.com single-column geography: chip rows + full-width detail (no Finder columns).
 
 import { useMemo } from 'react'
 import { Link } from 'react-router'
@@ -11,48 +12,50 @@ import { copyText } from '../../utils/copyText'
 import { UNASSIGNED_RACK, UNASSIGNED_SITE } from '../../utils/machineFinderSelection'
 import { cinemaHubPath } from '../../utils/consoleExperienceMode'
 
-type ColumnProps<T> = {
-  items: T[]
-  selectedKey: string | null
-  onSelect: (key: string) => void
-  renderLabel: (item: T) => string
-  renderMeta?: (item: T) => string | null
-  itemKey: (item: T) => string
-  emptyLabel: string
-}
-
-function FinderColumn<T>({
+function ChipRow<T>({
+  label,
   items,
   selectedKey,
   onSelect,
-  renderLabel,
-  renderMeta,
   itemKey,
+  renderLabel,
   emptyLabel,
-}: ColumnProps<T>) {
+}: {
+  label: string
+  items: T[]
+  selectedKey: string | null
+  onSelect: (key: string) => void
+  itemKey: (item: T) => string
+  renderLabel: (item: T) => string
+  emptyLabel: string
+}) {
   return (
-    <div className="w-48 sm:w-52 shrink-0 border-r border-white/[0.06]">
+    <div className="space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
       {items.length === 0 ? (
-        <p className="px-3 py-4 text-xs text-[var(--text-muted)]">{emptyLabel}</p>
-      ) : items.map((item) => {
-        const key = itemKey(item)
-        const active = selectedKey === key
-        return (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onSelect(key)}
-            className={`w-full text-left px-3 py-2 text-sm border-b border-white/[0.04] ${
-              active ? 'bg-[var(--accent)]/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--apple-surface)]'
-            }`}
-          >
-            <span className="block truncate">{renderLabel(item)}</span>
-            {renderMeta?.(item) ? (
-              <span className="block text-[10px] text-[var(--text-muted)] truncate mt-0.5">{renderMeta(item)}</span>
-            ) : null}
-          </button>
-        )
-      })}
+        <p className="text-xs text-[var(--text-muted)]">{emptyLabel}</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => {
+            const key = itemKey(item)
+            const active = selectedKey === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onSelect(key)}
+                className={`px-3.5 py-1.5 rounded-full text-sm transition ${
+                  active
+                    ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                    : 'text-[var(--text-secondary)] bg-[var(--apple-fill-tertiary)]/50 hover:bg-[var(--apple-fill-tertiary)]'
+                }`}
+              >
+                {renderLabel(item)}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -60,35 +63,30 @@ function FinderColumn<T>({
 function HostInspector({ host, vms, onSelectVm }: { host: MissionHost; vms: PlatformVm[]; onSelectVm?: (vmId: string) => void }) {
   const tone = hostStateTone(host.state, false, host.maintenance_mode)
   return (
-    <div className="platform-finder-inspector p-4 space-y-4">
+    <div className="tahoe-glass-card p-5 space-y-4">
       <div>
         <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
           <Server className="w-4 h-4 shrink-0" />
           {host.hostname}
         </h3>
-        <p className="platform-finder-inspector-subtitle mt-1">{host.address || '—'}</p>
+        <p className="text-sm text-[var(--text-muted)] mt-1">{host.address || '—'}</p>
       </div>
-      <dl className="grid grid-cols-2 gap-2 text-xs">
-        <div><dt className="platform-finder-inspector-label">Site</dt><dd className="text-[var(--text-primary)]">{host.site || '—'}</dd></div>
-        <div><dt className="platform-finder-inspector-label">Rack</dt><dd className="text-[var(--text-primary)]">{host.rack || '—'}</dd></div>
-        <div><dt className="platform-finder-inspector-label">Rack U</dt><dd className="text-[var(--text-primary)]">{host.rack_u ?? '—'}</dd></div>
-        <div><dt className="platform-finder-inspector-label">State</dt><dd className={`capitalize ${tone === 'ok' ? statusToneClass('ok') : tone === 'error' ? statusToneClass('error') : statusToneClass('warn')}`}>{host.maintenance_mode ? 'maintenance' : host.state}</dd></div>
-        <div><dt className="platform-finder-inspector-label">CPU</dt><dd>{host.cpu_percent.toFixed(0)}%</dd></div>
-        <div><dt className="platform-finder-inspector-label">VMs</dt><dd>{host.vm_count}</dd></div>
+      <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+        <div><dt className="text-[var(--text-muted)]">Site</dt><dd className="text-[var(--text-primary)]">{host.site || '—'}</dd></div>
+        <div><dt className="text-[var(--text-muted)]">Rack</dt><dd className="text-[var(--text-primary)]">{host.rack || '—'}</dd></div>
+        <div><dt className="text-[var(--text-muted)]">State</dt><dd className={`capitalize ${tone === 'ok' ? statusToneClass('ok') : tone === 'error' ? statusToneClass('error') : statusToneClass('warn')}`}>{host.maintenance_mode ? 'maintenance' : host.state}</dd></div>
+        <div><dt className="text-[var(--text-muted)]">CPU</dt><dd>{host.cpu_percent.toFixed(0)}%</dd></div>
+        <div><dt className="text-[var(--text-muted)]">VMs</dt><dd>{host.vm_count}</dd></div>
       </dl>
-      <Link to={`/platform/hosts/${host.id}`} className="platform-finder-inspector-cta btn-primary text-sm block text-center">Open host</Link>
+      <Link to={`/platform/hosts/${host.id}`} className="btn-primary text-sm inline-flex">Open host</Link>
       {vms.length > 0 && (
         <div>
-          <p className="platform-finder-inspector-section mb-2">Virtual machines</p>
-          <ul className="space-y-1 text-sm">
+          <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Virtual machines</p>
+          <ul className="flex flex-wrap gap-2 text-sm">
             {vms.map((vm) => (
               <li key={vm.id}>
                 {onSelectVm ? (
-                  <button
-                    type="button"
-                    onClick={() => onSelectVm(vm.id)}
-                    className={`inline-flex items-center gap-1.5 hover:underline text-left ${hubLinkClasses()}`}
-                  >
+                  <button type="button" onClick={() => onSelectVm(vm.id)} className={`inline-flex items-center gap-1.5 hover:underline ${hubLinkClasses()}`}>
                     <Monitor className="w-3.5 h-3.5 shrink-0" />
                     {vm.name}
                   </button>
@@ -113,28 +111,28 @@ function VmInspector({ vm }: { vm: PlatformVm }) {
   const libvirt = vm.inventory_source !== 'kubevirt'
   const ip = vm.guest_ip?.trim() ?? ''
   return (
-    <div className="platform-finder-inspector p-4 space-y-3">
+    <div className="tahoe-glass-card p-5 space-y-3">
       <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
         <Monitor className="w-4 h-4" />
         {vm.name}
       </h3>
-      <dl className="grid grid-cols-2 gap-2 text-xs">
-        <div><dt className="platform-finder-inspector-label">State</dt><dd className="capitalize text-[var(--text-primary)]">{vm.observed_state}</dd></div>
-        <div><dt className="platform-finder-inspector-label">vCPU</dt><dd className="text-[var(--text-primary)]">{vm.vcpus}</dd></div>
-        <div><dt className="platform-finder-inspector-label">Memory</dt><dd className="text-[var(--text-primary)]">{Math.round(vm.memory_mib / 1024)} Gi</dd></div>
-        <div><dt className="platform-finder-inspector-label">Managed</dt><dd className="text-[var(--text-primary)]">{vm.managed === false ? 'discovered' : 'yes'}</dd></div>
+      <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+        <div><dt className="text-[var(--text-muted)]">State</dt><dd className="capitalize text-[var(--text-primary)]">{vm.observed_state}</dd></div>
+        <div><dt className="text-[var(--text-muted)]">vCPU</dt><dd className="text-[var(--text-primary)]">{vm.vcpus}</dd></div>
+        <div><dt className="text-[var(--text-muted)]">Memory</dt><dd className="text-[var(--text-primary)]">{Math.round(vm.memory_mib / 1024)} Gi</dd></div>
+        <div><dt className="text-[var(--text-muted)]">Managed</dt><dd className="text-[var(--text-primary)]">{vm.managed === false ? 'discovered' : 'yes'}</dd></div>
         {ip && (
-          <div className="col-span-2"><dt className="platform-finder-inspector-label">Guest IP</dt><dd className="font-mono text-emerald-600/90">{ip}</dd></div>
+          <div className="col-span-2"><dt className="text-[var(--text-muted)]">Guest IP</dt><dd className="font-mono text-emerald-600/90">{ip}</dd></div>
         )}
       </dl>
       {running && libvirt && (
         <div className="flex flex-wrap gap-2">
-          <Link to={cinemaHubPath(vm.id)} className="btn-secondary text-sm flex-1 text-center inline-flex items-center justify-center gap-1">
+          <Link to={cinemaHubPath(vm.id)} className="btn-secondary text-sm inline-flex items-center justify-center gap-1">
             <Monitor className="w-3.5 h-3.5" /> Open Cinema
           </Link>
           <button
             type="button"
-            className="btn-secondary text-sm flex-1 inline-flex items-center justify-center gap-1"
+            className="btn-secondary text-sm inline-flex items-center justify-center gap-1"
             onClick={() => {
               if (ip) navigateVmSshSession(vm.name, ip, 'ubuntu')
               else window.location.href = `/platform/vms/${vm.id}`
@@ -154,7 +152,7 @@ function VmInspector({ vm }: { vm: PlatformVm }) {
           )}
         </div>
       )}
-      <Link to={`/platform/vms/${vm.id}`} className="platform-finder-inspector-cta btn-primary text-sm block text-center">Open VM</Link>
+      <Link to={`/platform/vms/${vm.id}`} className="btn-primary text-sm inline-flex">Open VM</Link>
     </div>
   )
 }
@@ -218,53 +216,50 @@ export default function MachineFinderGeography({
   const selectedVm = hostVms.find((v) => v.id === selection.vmId) ?? null
 
   return (
-    <div className="flex border border-white/[0.06] rounded-xl bg-[var(--apple-surface)]">
-      <FinderColumn
+    <div className="flex flex-col gap-5 w-full">
+      <ChipRow
+        label="Site"
         items={siteOptions}
         selectedKey={selectedSite?.key ?? null}
         onSelect={onSelectSite}
         itemKey={(s) => s.key}
         renderLabel={(s) => s.label}
-        renderMeta={(s) => {
-          const count = s.racks.reduce((n, r) => n + r.hosts.length, 0)
-          return `${count} host${count === 1 ? '' : 's'}`
-        }}
         emptyLabel="No sites — set site on host detail"
       />
-      <FinderColumn
+      <ChipRow
+        label="Rack"
         items={racks}
         selectedKey={selectedRack?.name ?? null}
         onSelect={onSelectRack}
         itemKey={(r) => r.name}
         renderLabel={(r) => r.name}
-        renderMeta={(r) => `${r.hosts.length} host${r.hosts.length === 1 ? '' : 's'}`}
         emptyLabel="Select a site"
       />
-      <FinderColumn
+      <ChipRow
+        label="Host"
         items={hosts}
         selectedKey={selectedHost?.id ?? null}
         onSelect={onSelectHost}
         itemKey={(h) => h.id}
         renderLabel={(h) => h.hostname}
-        renderMeta={(h) => `${h.vm_count} VM${h.vm_count === 1 ? '' : 's'} · ${h.state}`}
         emptyLabel="Select a rack"
       />
-      <FinderColumn
+      <ChipRow
+        label="VM"
         items={hostVms}
         selectedKey={selectedVm?.id ?? null}
         onSelect={onSelectVm}
         itemKey={(v) => v.id}
         renderLabel={(v) => v.name}
-        renderMeta={(v) => v.guest_ip ? `${v.observed_state} · ${v.guest_ip}` : v.observed_state}
         emptyLabel={selectedHost ? 'No VMs on this host' : 'Select a host'}
       />
-      <div className="flex-1 min-w-0 border-l border-white/[0.06]">
+      <div className="w-full min-w-0">
         {selectedVm ? (
           <VmInspector vm={selectedVm} />
         ) : selectedHost ? (
           <HostInspector host={selectedHost} vms={hostVms} onSelectVm={onSelectVm} />
         ) : (
-          <p className="platform-finder-inspector platform-finder-inspector-empty p-4">Select site → rack → host → VM</p>
+          <p className="text-sm text-[var(--text-muted)] py-2">Select site → rack → host → VM</p>
         )}
       </div>
     </div>

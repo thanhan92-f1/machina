@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Loader2, Plus, Scale, Trash2 } from 'lucide-react'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { listPlatformHosts, type PlatformHost } from '../api/platform'
 import {
   createLoadBalancer,
@@ -35,6 +36,7 @@ function FleetCloudLoadBalancersContent() {
   const [name, setName] = useState('')
   const [hostId, setHostId] = useState('')
   const [listenerPort, setListenerPort] = useState('8080')
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -54,6 +56,20 @@ function FleetCloudLoadBalancersContent() {
   }, [toast])
 
   useEffect(() => { void load() }, [load])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return lbs
+    return lbs.filter((lb) => {
+      const hostName = hosts.find((h) => h.id === lb.host_id)?.hostname?.toLowerCase() ?? ''
+      return (
+        lb.name.toLowerCase().includes(q) ||
+        lb.id.toLowerCase().includes(q) ||
+        lb.status.toLowerCase().includes(q) ||
+        hostName.includes(q)
+      )
+    })
+  }, [lbs, search, hosts])
 
   return (
     <PageLayout hideHeader prepend={<><FleetCloudSubNav /></>}>
@@ -106,44 +122,56 @@ function FleetCloudLoadBalancersContent() {
       ) : lbs.length === 0 ? (
         <EmptyState title="No load balancers" description="Create one above — pick a host and listener port, then add members." />
       ) : (
-        <div className="overflow-x-auto apple-surface rounded-2xl">
-          <table className="apple-table" aria-label="Load balancers">
-            <thead>
-              <tr>
-                <th scope="col" className="px-3 py-2">Name</th>
-                <th scope="col" className="px-3 py-2">Listener</th>
-                <th scope="col" className="px-3 py-2">Host</th>
-                <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {lbs.map((lb) => (
-                <tr key={lb.id} className="border-t border-[var(--apple-hairline)]">
-                  <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/load-balancers/${lb.id}`} className="text-[var(--accent)] hover:underline">{lb.name}</Link>
-                  </td>
-                  <td className="px-3 py-2 font-mono">{lb.protocol}/{lb.listener_port}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{hosts.find((h) => h.id === lb.host_id)?.hostname ?? lb.host_id}</td>
-                  <td className="px-3 py-2">{lb.status}</td>
-                  <td className="px-3 py-2 text-right">
-                    <button type="button" aria-label="Delete" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
-                      onClick={async () => {
-                        if (!confirm(`Delete ${lb.name}?`)) return
-                        try {
-                          await deleteLoadBalancer(lb.id)
-                          toast.success('Deleted')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name, host, or status…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Load balancers">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Listener</th>
+                  <th scope="col">Host</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center text-[var(--text-muted)]">No load balancers match your search.</td>
+                  </tr>
+                )}
+                {filtered.map((lb) => (
+                  <tr key={lb.id}>
+                    <td>
+                      <Link to={`/fleet-cloud/load-balancers/${lb.id}`} className="apple-link">{lb.name}</Link>
+                    </td>
+                    <td className="font-mono">{lb.protocol}/{lb.listener_port}</td>
+                    <td className="font-mono text-xs">{hosts.find((h) => h.id === lb.host_id)?.hostname ?? lb.host_id}</td>
+                    <td>{lb.status}</td>
+                    <td className="text-right">
+                      <button type="button" aria-label="Delete" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
+                        onClick={async () => {
+                          if (!confirm(`Delete ${lb.name}?`)) return
+                          try {
+                            await deleteLoadBalancer(lb.id)
+                            toast.success('Deleted')
+                            void load()
+                          } catch (e: unknown) { toast.error(formatUserError(e)) }
+                        }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       <FleetCloudFooter />
     </PageLayout>

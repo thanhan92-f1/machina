@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createKeypair, deleteKeypair, listKeypairs, type NativeKeypair } from '../api/nativeKeypairs'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Key, RefreshCw } from 'lucide-react'
 
@@ -25,6 +26,7 @@ function FleetCloudKeypairsContent() {
   const [name, setName] = useState('')
   const [publicKey, setPublicKey] = useState('')
   const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -42,15 +44,34 @@ function FleetCloudKeypairsContent() {
     void load()
   }, [load])
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return keys
+    return keys.filter(
+      (k) =>
+        k.name.toLowerCase().includes(q) ||
+        k.fingerprint.toLowerCase().includes(q) ||
+        k.id.toLowerCase().includes(q),
+    )
+  }, [keys, search])
+
   return (
     <PageLayout
       className="w-full max-w-none"
       prepend={<FleetCloudSubNav />}
+      eyebrow="Fleet Cloud"
       title="SSH keypairs"
+      subtitle={`${keys.length} keypair${keys.length === 1 ? '' : 's'}`}
       icon={<Key className="w-7 h-7 text-[var(--accent)]" />}
       contentLoading={loading && keys.length === 0}
+      actions={
+        <button type="button" onClick={() => void load()}
+          className="btn-secondary text-sm inline-flex items-center gap-1">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
+      }
     >
-      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3 mb-4">
         <div className="flex flex-wrap gap-2">
           <input aria-label="Keypair name" value={name} onChange={(e) => setName(e.target.value)} placeholder="name"
             className="input-field text-sm" />
@@ -78,31 +99,58 @@ function FleetCloudKeypairsContent() {
           placeholder="Paste public key (ssh-rsa AAAA... or ssh-ed25519 AAAA...)"
           className="w-full input-field text-xs font-mono" />
       </div>
-      <button type="button" onClick={() => void load()}
-        className="btn-secondary text-sm inline-flex items-center gap-1">
-        <RefreshCw className="w-4 h-4" /> Refresh
-      </button>
-      {!loading && (
-        <ul className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] divide-y divide-[var(--apple-hairline)]">
-          {keys.map((k) => (
-            <li key={k.id} className="px-4 py-3 flex justify-between items-center text-sm">
-              <span className="font-mono text-[var(--text-primary)]">{k.name}</span>
-              <span className="text-[var(--text-muted)] text-xs">{k.fingerprint}</span>
-              <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                onClick={async () => {
-                  if (!confirm(`Delete keypair ${k.name}?`)) return
-                  try {
-                    await deleteKeypair(k.id)
-                    toast.success('Deleted')
-                    void load()
-                  } catch (e: unknown) {
-                    toast.error(formatUserError(e))
-                  }
-                }}>Delete</button>
-            </li>
-          ))}
-        </ul>
-      )}
+
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search name or fingerprint…"
+      />
+
+      <TahoeTableWrap>
+        <table className="apple-table" aria-label="SSH keypairs">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Fingerprint</th>
+              <th scope="col" className="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-center text-[var(--text-muted)]">Loading…</td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-center text-[var(--text-muted)]">
+                  {search.trim() ? 'No keypairs match your search.' : 'No keypairs imported yet.'}
+                </td>
+              </tr>
+            )}
+            {filtered.map((k) => (
+              <tr key={k.id}>
+                <td className="font-mono text-[var(--text-primary)]">{k.name}</td>
+                <td className="text-[var(--text-muted)] text-xs">{k.fingerprint}</td>
+                <td className="text-right">
+                  <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
+                    onClick={async () => {
+                      if (!confirm(`Delete keypair ${k.name}?`)) return
+                      try {
+                        await deleteKeypair(k.id)
+                        toast.success('Deleted')
+                        void load()
+                      } catch (e: unknown) {
+                        toast.error(formatUserError(e))
+                      }
+                    }}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TahoeTableWrap>
+
       <FleetCloudFooter />
     </PageLayout>
   )

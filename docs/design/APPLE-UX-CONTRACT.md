@@ -67,6 +67,15 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 8. No hard-coded `slate-*` / `sky-*` / `blue-600` / `#64748b` — use semantic tokens (`--text-*`, `--accent`, `--apple-*`, `--amber`, `--verdant`)
 9. Box fonts 1:1 with Apple shop: light `#1d1d1f` / `#6e6e73` / `#86868b`; dark `#f5f5f7` / `#a1a1a6` / `#86868b`
 
+### Conversion recipes
+
+| Anti-pattern | Replace with |
+|---|---|
+| Hub `NavCard` 3-up grids | [`AppleDestinationList`](../../web/src/components/platform/apple/AppleStoryKit.tsx) linear rows |
+| List \| inspector `xl:flex-row` / Finder columns | Chips + full-width stack (detail below or route push) |
+| Browse card walls / `MacStatWidget` first viewport | `TahoeToolbar` + `TahoeTableWrap`; counts in subtitle |
+| Login split hero + feature cards | Account-style single composition (`PremiumLoginShell`) |
+
 ---
 
 ## Theme map
@@ -99,5 +108,8 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 - [x] System-wide apple.com blue (`#0071e3`) for primary / link / accent / dock active
 - [x] Tahoe Liquid Glass dock + neighbor magnification
 - [x] AirPods Story type (`.apple-display` / `.apple-lede`)
+- [x] Story hubs + destination lists (`AppleStoryKit`); kill page-level list|inspector splits
+- [x] Browse lists → `TahoeToolbar` + `TahoeTableWrap` (platform / classic / Fleet Cloud packs)
+- [x] Apple Account login (single composition — no split hero / feature cards)
 - [ ] Full TahoeSheet port (drawer/sheet primitive — deferred)
 - [ ] Exhaustive sky/cyan remaps removal from `main.css` bandage blocks

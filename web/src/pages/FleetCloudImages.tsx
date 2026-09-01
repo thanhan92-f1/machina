@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { createTemplate, deleteTemplate, listTemplates, type NativeTemplate } from '../api/nativeTemplates'
 import { useToastContext } from '../contexts/ToastContext'
@@ -11,6 +11,7 @@ import FleetCloudFooter from '../components/FleetCloudFooter'
 import { Cloud, RefreshCw, Plus, Trash2 } from 'lucide-react'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
 
@@ -33,6 +34,7 @@ function FleetCloudImagesContent() {
   const [version, setVersion] = useState('1.0')
   const [sourceDisk, setSourceDisk] = useState('')
   const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
   const toast = useToastContext()
 
   const load = useCallback(async () => {
@@ -50,6 +52,17 @@ function FleetCloudImagesContent() {
   }, [toast])
 
   useEffect(() => { void load() }, [load])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return images
+    return images.filter(
+      (img) =>
+        img.name.toLowerCase().includes(q) ||
+        img.id.toLowerCase().includes(q) ||
+        img.source_disk.toLowerCase().includes(q),
+    )
+  }, [images, search])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -71,7 +84,7 @@ function FleetCloudImagesContent() {
       eyebrow="Fleet Cloud"
       prepend={<><FleetCloudSubNav /></>}
       title="Images"
-      subtitle="Golden-image catalog for instance creation."
+      subtitle={`${images.length} image${images.length === 1 ? '' : 's'}`}
       icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       error={loadError}
       errorTitle="Failed to load images"
@@ -128,36 +141,44 @@ function FleetCloudImagesContent() {
           }}>{creating ? 'Registering…' : 'Register'}</button>
       </div>
 
-      <div className="overflow-x-auto apple-surface rounded-2xl">
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search name, ID, or source…"
+      />
+
+      <TahoeTableWrap>
         <table className="apple-table" aria-label="Images">
           <thead>
             <tr>
-              <th scope="col" className="px-4 py-3">Name</th>
-              <th scope="col" className="px-4 py-3">Version</th>
-              <th scope="col" className="px-4 py-3">Status</th>
-              <th scope="col" className="px-4 py-3">Source</th>
-              <th scope="col" className="px-4 py-3 w-16" />
+              <th scope="col">Name</th>
+              <th scope="col">Version</th>
+              <th scope="col">Status</th>
+              <th scope="col">Source</th>
+              <th scope="col" className="w-16" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--apple-hairline)]">
-            {loading && images.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-muted)]">Loading…</td></tr>
+          <tbody>
+            {loading && filtered.length === 0 && (
+              <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">Loading…</td></tr>
             )}
-            {!loading && images.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-muted)]">No images found.</td></tr>
+            {!loading && filtered.length === 0 && (
+              <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">
+                {search.trim() ? 'No images match your search.' : 'No images found.'}
+              </td></tr>
             )}
-            {images.map((img) => (
-              <tr key={img.id} className="hover:bg-[var(--apple-surface)]">
-                <td className="px-4 py-3">
-                  <Link to={`/fleet-cloud/images/${img.id}`} className="text-[var(--text-primary)] hover:opacity-90 hover:underline">
+            {filtered.map((img) => (
+              <tr key={img.id}>
+                <td>
+                  <Link to={`/fleet-cloud/images/${img.id}`} className="apple-link font-medium">
                     {img.name}
                   </Link>
                   <div className="text-xs text-[var(--text-muted)] font-mono truncate max-w-xs">{img.id}</div>
                 </td>
-                <td className="px-4 py-3 text-[var(--text-secondary)]">{img.version}</td>
-                <td className="px-4 py-3 text-[var(--text-secondary)]">{img.approval_status}</td>
-                <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs truncate max-w-xs">{img.source_disk}</td>
-                <td className="px-4 py-3">
+                <td className="text-[var(--text-secondary)]">{img.version}</td>
+                <td className="text-[var(--text-secondary)]">{img.approval_status}</td>
+                <td className="text-[var(--text-muted)] font-mono text-xs truncate max-w-xs">{img.source_disk}</td>
+                <td>
                   <button
                     type="button"
                     title="Delete image"
@@ -171,7 +192,7 @@ function FleetCloudImagesContent() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TahoeTableWrap>
 
       <FleetCloudFooter />
 

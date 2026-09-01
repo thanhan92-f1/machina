@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   deleteVolumeSnapshot,
@@ -10,6 +10,7 @@ import {
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -29,6 +30,7 @@ function FleetCloudVolumeSnapshotsContent() {
   const toast = useToastContext()
   const [snapshots, setSnapshots] = useState<NativeVolumeSnapshotWithVolume[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,6 +45,18 @@ function FleetCloudVolumeSnapshotsContent() {
   }, [toast])
 
   useEffect(() => { void load() }, [load])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return snapshots
+    return snapshots.filter(
+      (s) =>
+        (s.name?.toLowerCase().includes(q) ?? false) ||
+        s.id.toLowerCase().includes(q) ||
+        s.volume_name.toLowerCase().includes(q) ||
+        s.volume_id.toLowerCase().includes(q),
+    )
+  }, [snapshots, search])
 
   return (
     <PageLayout
@@ -63,43 +77,56 @@ function FleetCloudVolumeSnapshotsContent() {
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
       ) : (
-        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
-          <table className="apple-table" aria-label="Volume snapshots">
-            <thead>
-              <tr>
-                <th scope="col" className="px-3 py-2">Name</th>
-                <th scope="col" className="px-3 py-2">Volume</th>
-                <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)] font-mono text-xs">
-              {snapshots.map((s) => (
-                <tr key={s.id}>
-                  <td className="px-3 py-2 text-[var(--text-primary)]">
-                    <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-[var(--link)] hover:underline">{s.name || s.id.slice(0, 8)}</Link>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/volumes/${s.volume_id}`} className="text-[var(--accent)] hover:underline">{s.volume_name}</Link>
-                  </td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{s.status}</td>
-                  <td className="px-3 py-2 flex flex-wrap gap-2">
-                    <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-[var(--accent)] hover:underline">Detail</Link>
-                    <button type="button" className={statusActionLinkClasses('error')} onClick={async () => {
-                      if (!confirm(`Delete snapshot ${s.name || s.id}?`)) return
-                      try {
-                        await deleteVolumeSnapshot(s.id)
-                        toast.success('Deleted')
-                        void load()
-                      } catch (e: unknown) { toast.error(formatUserError(e)) }
-                    }}>Delete</button>
-                  </td>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name, volume, or ID…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Volume snapshots">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Volume</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {snapshots.length === 0 && <p className="p-6 text-center text-[var(--text-muted)]">No snapshots.</p>}
-        </div>
+              </thead>
+              <tbody className="font-mono text-xs">
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-center text-[var(--text-muted)]">
+                      {search.trim() ? 'No snapshots match your search.' : 'No snapshots.'}
+                    </td>
+                  </tr>
+                )}
+                {filtered.map((s) => (
+                  <tr key={s.id}>
+                    <td className="text-[var(--text-primary)]">
+                      <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="apple-link">{s.name || s.id.slice(0, 8)}</Link>
+                    </td>
+                    <td>
+                      <Link to={`/fleet-cloud/volumes/${s.volume_id}`} className="text-[var(--accent)] hover:underline">{s.volume_name}</Link>
+                    </td>
+                    <td className="text-[var(--text-muted)]">{s.status}</td>
+                    <td className="flex flex-wrap gap-2">
+                      <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-[var(--accent)] hover:underline">Detail</Link>
+                      <button type="button" className={statusActionLinkClasses('error')} onClick={async () => {
+                        if (!confirm(`Delete snapshot ${s.name || s.id}?`)) return
+                        try {
+                          await deleteVolumeSnapshot(s.id)
+                          toast.success('Deleted')
+                          void load()
+                        } catch (e: unknown) { toast.error(formatUserError(e)) }
+                      }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       <FleetCloudFooter />
     </PageLayout>

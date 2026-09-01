@@ -13,10 +13,12 @@ import { formatUserError } from '../utils/apiError'
 import { poolStateBadgeClasses, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { libvirtErrorHints } from '../utils/libvirtHints'
 
 export default function StoragePage() {
   const [pools, setPools] = useState<StoragePoolInfo[]>([])
+  const [search, setSearch] = useState('')
   const [volumes, setVolumes] = useState<StorageVolumeInfo[]>([])
   const [selectedPool, setSelectedPool] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -134,6 +136,15 @@ export default function StoragePage() {
     finally { setCreatingVol(false) }
   }
 
+  const filterBySearch = (name: string, extra = '') => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return name.toLowerCase().includes(q) || extra.toLowerCase().includes(q)
+  }
+
+  const filteredVolumes = volumes.filter((v) => filterBySearch(v.name, v.path))
+  const filteredPools = pools.filter((p) => filterBySearch(p.name, p.state))
+
   if (selectedPool) {
     return (
       <PageLayout
@@ -148,6 +159,19 @@ export default function StoragePage() {
         }
         contentLoading={volumesLoading}
       >
+        <TahoeToolbar
+          search={search}
+          onSearchChange={setSearch}
+          placeholder="Search volumes…"
+          trailing={
+            search ? (
+              <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+                {filteredVolumes.length} volume{filteredVolumes.length !== 1 ? 's' : ''}
+              </span>
+            ) : null
+          }
+        />
+
         {volumes.length === 0 ? (
           <EmptyState
             icon={<HardDrive className="w-6 h-6" />}
@@ -164,18 +188,21 @@ export default function StoragePage() {
             }
           />
         ) : (
-          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
-            <table className="w-full" aria-label="Storage volumes">
-              <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Type</th><th scope="col" className="px-6 py-3">Capacity</th><th scope="col" className="px-6 py-3">Used</th><th scope="col" className="px-6 py-3 hidden lg:table-cell">Path</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-              <tbody className="divide-y divide-[var(--apple-hairline)]/50">
-                {volumes.map((v) => (
-                  <tr key={v.name} className="hover:bg-[var(--surface-hover)]/50">
-                    <td className="px-6 py-3 font-medium">{v.name}</td>
-                    <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{v.vol_type}</td>
-                    <td className="px-6 py-3 text-sm">{v.capacity_gb.toFixed(2)} GB</td>
-                    <td className="px-6 py-3 text-sm">{v.allocation_gb.toFixed(2)} GB</td>
-                    <td className="px-6 py-3 text-sm text-[var(--text-muted)] truncate max-w-xs hidden lg:table-cell">{v.path}</td>
-                    <td className="px-6 py-3 text-right">
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Storage volumes">
+              <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Capacity</th><th scope="col">Used</th><th scope="col" className="hidden lg:table-cell">Path</th><th scope="col" className="text-right">Actions</th></tr></thead>
+              <tbody>
+                {filteredVolumes.length === 0 && (
+                  <tr><td colSpan={6} className="text-center text-[var(--text-muted)]">No volumes match your search.</td></tr>
+                )}
+                {filteredVolumes.map((v) => (
+                  <tr key={v.name}>
+                    <td className="font-medium">{v.name}</td>
+                    <td className="text-sm text-[var(--text-muted)]">{v.vol_type}</td>
+                    <td className="text-sm">{v.capacity_gb.toFixed(2)} GB</td>
+                    <td className="text-sm">{v.allocation_gb.toFixed(2)} GB</td>
+                    <td className="text-sm text-[var(--text-muted)] truncate max-w-xs hidden lg:table-cell">{v.path}</td>
+                    <td className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setResizeTarget({ pool: selectedPool, vol: v.name }); setResizeGb(v.capacity_gb.toFixed(2)) }} className={`p-1.5 rounded transition ${statusBadgeClasses('info')} hover:opacity-80`} title="Resize" aria-label="Resize"><Maximize className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
                         <button onClick={() => { setCloneTarget({ pool: selectedPool, vol: v.name }); setCloneName(`${v.name}-clone`) }} className="p-1.5 hover:bg-green-600/20 rounded transition" title="Clone" aria-label="Clone"><Copy className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>
@@ -186,7 +213,7 @@ export default function StoragePage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TahoeTableWrap>
         )}
         <ConfirmDialog open={!!deleteTarget} title="Delete Volume" message={`Delete volume '${deleteTarget?.vol}'?`} confirmLabel="Delete" onConfirm={handleDeleteVol} onCancel={() => setDeleteTarget(null)} />
 
@@ -263,6 +290,7 @@ export default function StoragePage() {
 
   return (
     <PageLayout
+      eyebrow="Hypervisor"
       title="Storage Pools"
       icon={<HardDrive className="w-6 h-6" />}
       actions={
@@ -277,6 +305,19 @@ export default function StoragePage() {
       errorHints={loadError ? libvirtErrorHints(loadError) : undefined}
       onErrorRetry={loadPools}
     >
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search pools…"
+        trailing={
+          search ? (
+            <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+              {filteredPools.length} pool{filteredPools.length !== 1 ? 's' : ''}
+            </span>
+          ) : null
+        }
+      />
+
       {pools.length === 0 && !loadError ? (
         <EmptyState
           icon={<HardDrive className="w-6 h-6" />}
@@ -285,44 +326,73 @@ export default function StoragePage() {
           primaryAction={<button type="button" className="btn-primary" onClick={() => setShowCreatePool(true)}>Create pool</button>}
         />
       ) : pools.length > 0 ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pools.map((pool) => (
-          <div key={pool.name} className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <HardDrive className="w-5 h-5 text-[var(--accent)]" />
-                <span className="font-semibold">{pool.name}</span>
-              </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${poolStateBadgeClasses(pool.state)}`}>{pool.state}</span>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-[var(--text-muted)]">Capacity</span><span>{pool.capacity_gb.toFixed(1)} GB</span></div>
-              <div className="flex justify-between"><span className="text-[var(--text-muted)]">Used</span><span>{pool.allocation_gb.toFixed(1)} GB</span></div>
-              <div className="flex justify-between"><span className="text-[var(--text-muted)]">Available</span><span>{pool.available_gb.toFixed(1)} GB</span></div>
-              {pool.capacity_gb > 0 && (
-                <div className="w-full bg-[var(--surface-hover)] rounded-full h-2 mt-2">
-                  <div className="bg-[var(--accent)] h-2 rounded-full" style={{ width: `${Math.min(100, pool.allocation_gb / pool.capacity_gb * 100).toFixed(0)}%` }} />
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--apple-hairline)]">
-              <Link to={`/storage/${encodeURIComponent(pool.name)}`} className="flex-1 btn-secondary text-sm transition text-center">Browse</Link>
-              {pool.state !== 'running' && <button aria-label="Start pool" onClick={() => poolAction(pool.name, startPool, 'Start pool')} className="p-1.5 hover:bg-green-600/20 rounded transition"><Play className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>}
-              {pool.state === 'running' && (
-                <>
-                  <button aria-label="Refresh pool" onClick={() => poolAction(pool.name, refreshPool, 'Refresh pool')} className={`p-1.5 rounded transition ${statusBadgeClasses('info')} hover:opacity-80`}><RefreshCw className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
-                  <button aria-label="Stop pool" onClick={() => poolAction(pool.name, stopPool, 'Stop pool')} className="p-1.5 hover:bg-red-600/20 rounded transition"><Square className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
-                </>
-              )}
-              <button onClick={() => togglePoolAutostart(pool)} className="p-1.5 hover:bg-white/10 rounded transition" title={pool.autostart ? 'Disable Autostart' : 'Enable Autostart'} aria-label={pool.autostart ? 'Disable Autostart' : 'Enable Autostart'}>
-                {pool.autostart ? <ToggleRight className={`w-4 h-4 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-4 h-4 text-[var(--text-muted)]" />}
-              </button>
-              <button onClick={() => showPoolXml(pool.name)} className={`p-1.5 rounded transition ${statusBadgeClasses('info')} hover:opacity-80`} title="View XML" aria-label="View XML"><Code className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
-              <button onClick={() => setDeletePoolTarget(pool.name)} className="p-1.5 hover:bg-red-600/20 rounded transition" title="Delete Pool" aria-label="Delete Pool"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <TahoeTableWrap>
+        <table className="apple-table" aria-label="Storage pools">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">State</th>
+              <th scope="col">Capacity</th>
+              <th scope="col">Used</th>
+              <th scope="col" className="hidden md:table-cell">Available</th>
+              <th scope="col" className="hidden lg:table-cell">Usage</th>
+              <th scope="col">Autostart</th>
+              <th scope="col" className="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredPools.length === 0 && (
+              <tr><td colSpan={8} className="text-center text-[var(--text-muted)]">No pools match your search.</td></tr>
+            )}
+            {filteredPools.map((pool) => {
+              const usagePct = pool.capacity_gb > 0 ? Math.min(100, pool.allocation_gb / pool.capacity_gb * 100) : 0
+              return (
+                <tr key={pool.name}>
+                  <td>
+                    <div className="flex items-center gap-2 font-medium">
+                      <HardDrive className="w-4 h-4 text-[var(--accent)] shrink-0" />
+                      {pool.name}
+                    </div>
+                  </td>
+                  <td><span className={`px-2 py-0.5 rounded text-xs font-medium ${poolStateBadgeClasses(pool.state)}`}>{pool.state}</span></td>
+                  <td>{pool.capacity_gb.toFixed(1)} GB</td>
+                  <td>{pool.allocation_gb.toFixed(1)} GB</td>
+                  <td className="hidden md:table-cell">{pool.available_gb.toFixed(1)} GB</td>
+                  <td className="hidden lg:table-cell">
+                    {pool.capacity_gb > 0 ? (
+                      <div className="flex items-center gap-2 min-w-[6rem]">
+                        <div className="flex-1 bg-[var(--surface-hover)] rounded-full h-2">
+                          <div className="bg-[var(--accent)] h-2 rounded-full" style={{ width: `${usagePct.toFixed(0)}%` }} />
+                        </div>
+                        <span className="text-xs text-[var(--text-muted)] tabular-nums">{usagePct.toFixed(0)}%</span>
+                      </div>
+                    ) : '—'}
+                  </td>
+                  <td>
+                    <button onClick={() => togglePoolAutostart(pool)} className="p-1 hover:bg-white/10 rounded transition" title={pool.autostart ? 'Disable Autostart' : 'Enable Autostart'} aria-label={pool.autostart ? 'Disable Autostart' : 'Enable Autostart'}>
+                      {pool.autostart ? <ToggleRight className={`w-4 h-4 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-4 h-4 text-[var(--text-muted)]" />}
+                    </button>
+                  </td>
+                  <td>
+                    <div className="flex items-center justify-end gap-1">
+                      <Link to={`/storage/${encodeURIComponent(pool.name)}`} className="btn-secondary text-xs px-2 py-1 transition">Browse</Link>
+                      {pool.state !== 'running' && <button aria-label="Start pool" onClick={() => poolAction(pool.name, startPool, 'Start pool')} className="p-1.5 hover:bg-green-600/20 rounded transition"><Play className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>}
+                      {pool.state === 'running' && (
+                        <>
+                          <button aria-label="Refresh pool" onClick={() => poolAction(pool.name, refreshPool, 'Refresh pool')} className={`p-1.5 rounded transition ${statusBadgeClasses('info')} hover:opacity-80`}><RefreshCw className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
+                          <button aria-label="Stop pool" onClick={() => poolAction(pool.name, stopPool, 'Stop pool')} className="p-1.5 hover:bg-red-600/20 rounded transition"><Square className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
+                        </>
+                      )}
+                      <button onClick={() => showPoolXml(pool.name)} className={`p-1.5 rounded transition ${statusBadgeClasses('info')} hover:opacity-80`} title="View XML" aria-label="View XML"><Code className={`w-4 h-4 ${statusToneClass('info')}`} /></button>
+                      <button onClick={() => setDeletePoolTarget(pool.name)} className="p-1.5 hover:bg-red-600/20 rounded transition" title="Delete Pool" aria-label="Delete Pool"><Trash2 className={`w-4 h-4 ${statusToneClass('error')}`} /></button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </TahoeTableWrap>
       ) : null}
 
       <ConfirmDialog open={!!deletePoolTarget} title="Delete Pool" message={`Delete storage pool '${deletePoolTarget}'? This cannot be undone.`} confirmLabel="Delete" onConfirm={handleDeletePool} onCancel={() => setDeletePoolTarget(null)} />

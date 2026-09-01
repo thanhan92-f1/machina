@@ -130,12 +130,11 @@ export default function PlatformMacAppMenus() {
       </Link>
 
       <PlatformMacMenuDropdown label="Machina" open={openMenu === 'machina'} onToggle={() => toggleMenu('machina')} onClose={closeMenu}>
-        <PlatformMacMenuItem label="About Machina Platform" onClick={() => go('/platform/settings?section=about')} />
+        <PlatformMacMenuItem label="About Machina…" onClick={() => { dispatchOpenHelp('about'); closeMenu() }} />
         <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => go('/platform/settings')} />
         <PlatformMacMenuItem label="Customize Dock…" onClick={() => { openPlatformDockEditor(); closeMenu() }} />
         <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="Add Host…" onClick={() => go('/platform/enroll')} />
-        <PlatformMacMenuItem label="Platform Support" onClick={() => go('/platform/support')} />
         <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label="Sign Out" onClick={() => { void logout(); closeMenu() }} />
       </PlatformMacMenuDropdown>
@@ -199,6 +198,7 @@ export default function PlatformMacAppMenus() {
       <PlatformMacMenuDropdown label="Help" open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={closeMenu}>
         <PlatformMacMenuItem label="Platform guide…" onClick={() => { dispatchOpenHelp('platform'); closeMenu() }} />
         <PlatformMacMenuItem label="Keyboard shortcuts" onClick={() => { dispatchOpenHelp('shortcuts'); closeMenu() }} />
+        <PlatformMacMenuItem label="About Machina…" onClick={() => { dispatchOpenHelp('about'); closeMenu() }} />
         <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label={`${ASK_ZYRA_LABEL}…`} shortcut="⌘⇧A" onClick={() => { openCopilot(); closeMenu() }} />
         <PlatformMacMenuItem label="Spotlight Search" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />

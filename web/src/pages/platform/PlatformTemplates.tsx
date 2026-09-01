@@ -1,16 +1,17 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { AlertTriangle, CheckCircle2, Download, GitBranch, Layers, Loader2, Package, Plus, RefreshCw, Sparkles, Star, Puzzle, Upload } from 'lucide-react'
+import { GitBranch, Loader2, Package, Plus, RefreshCw, Star, Upload } from 'lucide-react'
 import { readSshPubkeyFile } from '../../utils/sshPubkeyImport'
 import DetailTabs from '../../components/platform/DetailTabs'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
-import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
-import VmWizardReadinessBanner from '../../components/platform/VmWizardReadinessBanner'
 import type { TemplateReadiness } from '../../api/platform'
-import { MacGlassPanel, MacSheet } from '../../components/platform/mac/PlatformMacUi'
+import { MacSheet } from '../../components/platform/mac/PlatformMacUi'
 import {
   createFromTemplate,
   createTemplate,
@@ -27,14 +28,15 @@ import {
   type MarketplacePlugin,
   type PlatformTemplate,
 } from '../../api/platform'
-import { approvePlatformTemplate, syncGitTemplates, syncGitTemplatesWebhook } from '../../api/platformTemplatesExtra'
 import TemplateMissingImagesPanel from '../../components/platform/TemplateMissingImagesPanel'
+import VmWizardReadinessBanner from '../../components/platform/VmWizardReadinessBanner'
+import { approvePlatformTemplate, syncGitTemplates, syncGitTemplatesWebhook } from '../../api/platformTemplatesExtra'
 import { cloudInitUserForOs } from '../../components/platform/vmWizardCatalog'
 import { useToastContext } from '../../contexts/ToastContext'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
 import { formatUserError } from '../../utils/apiError'
 import { toastQueuedOperation } from '../../utils/platformTaskToast'
-import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusSurfaceClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
+import { statusBadgeClasses, statusToneClass, hubLinkClasses } from '../../utils/semanticColors'
 
 const CATEGORIES = ['All', 'Linux', 'Windows', 'Database', 'Appliance'] as const
 const PLUGIN_CATEGORIES = ['All', 'automation', 'observability', 'migration', 'security', 'kubernetes', 'networking'] as const
@@ -92,6 +94,8 @@ export default function PlatformTemplates() {
   const [readiness, setReadiness] = useState<TemplateReadiness | null>(null)
   const [readinessLoading, setReadinessLoading] = useState(false)
   const [missingImages, setMissingImages] = useState<Awaited<ReturnType<typeof listMissingTemplateImages>> | null>(null)
+  const [search, setSearch] = useState('')
+  const [pluginSearch, setPluginSearch] = useState('')
 
   const loadReadiness = useCallback(async (t: PlatformTemplate) => {
     setReadinessLoading(true)
@@ -169,9 +173,12 @@ export default function PlatformTemplates() {
   }, [tab, loadPlugins])
 
   const filteredPlugins = useMemo(() => {
-    if (pluginCategory === 'All') return plugins
-    return plugins.filter((p) => p.category === pluginCategory)
-  }, [plugins, pluginCategory])
+    let list = plugins
+    if (pluginCategory !== 'All') list = list.filter((p) => p.category === pluginCategory)
+    const q = pluginSearch.trim().toLowerCase()
+    if (q) list = list.filter((p) => p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q))
+    return list
+  }, [plugins, pluginCategory, pluginSearch])
 
   const togglePlugin = async (p: MarketplacePlugin) => {
     setPluginAction(p.slug)
@@ -188,11 +195,19 @@ export default function PlatformTemplates() {
     }
   }
 
-  const featuredRows = useMemo(() => rows.filter((t) => t.featured), [rows])
   const filtered = useMemo(() => {
-    if (category === 'All') return rows
-    return rows.filter((t) => (t.category ?? 'Linux') === category)
-  }, [rows, category])
+    let list = rows
+    if (category !== 'All') list = list.filter((t) => (t.category ?? 'Linux') === category)
+    const q = search.trim().toLowerCase()
+    if (q) {
+      list = list.filter((t) =>
+        t.name.toLowerCase().includes(q)
+        || t.version.toLowerCase().includes(q)
+        || (t.description?.toLowerCase().includes(q) ?? false),
+      )
+    }
+    return list
+  }, [rows, category, search])
 
   const deploy = async (t: PlatformTemplate, vmName: string) => {
     setDeploying(true)
@@ -264,7 +279,16 @@ export default function PlatformTemplates() {
       loading={loading && rows.length === 0}
       prepend={<PlatformBackLink to="/platform/infrastructure" label="Infrastructure" />}
       title="Marketplace"
-      subtitle="Golden image templates and platform integration plugins."
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">Golden image templates and platform integration plugins.</span>
+          {rows.length > 0 && platformStatSubtitle([
+            { label: 'Templates', value: rows.length },
+            { label: 'Featured', value: rows.filter((t) => t.featured).length },
+            { label: 'Plugins', value: plugins.length },
+          ])}
+        </span>
+      }
       icon={<Package className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
@@ -331,8 +355,9 @@ export default function PlatformTemplates() {
         />
       )}
       {fleetCatalog.length > 0 && (
-        <MacGlassPanel title="Fleet template catalog" subtitle="Controller-registered golden images (GET /api/v1/templates) — includes marketplace and private fleet images.">
-          <p className="text-sm text-[var(--text-muted)] mb-2">{fleetCatalog.length} template(s) in fleet catalog</p>
+        <section className="text-sm">
+          <h2 className="font-semibold text-[var(--text-secondary)] mb-1">Fleet template catalog</h2>
+          <p className="text-xs text-[var(--text-muted)] mb-2">{fleetCatalog.length} template(s) — controller-registered golden images.</p>
           <ul className="flex flex-wrap gap-2 text-xs">
             {fleetCatalog.map((t) => (
               <li key={`${t.name}-${t.version}`} className="px-2 py-1 rounded-lg bg-[var(--apple-fill-tertiary)]/80 text-[var(--text-secondary)] font-mono">
@@ -340,72 +365,102 @@ export default function PlatformTemplates() {
               </li>
             ))}
           </ul>
-        </MacGlassPanel>
+        </section>
       )}
 
       {!loading && rows.length === 0 && (
-        <PlatformEmptyState
+        <TahoeListEmpty
           icon={Package}
           title="Marketplace is empty"
-          subtitle="Load the bundled Zyvor template catalog — Ubuntu, Debian, Windows, PostgreSQL, and more."
-          action={<button type="button" className="btn-primary" onClick={() => void load(true)}>Load default templates</button>}
+          description="Load the bundled Zyvor template catalog — Ubuntu, Debian, Windows, PostgreSQL, and more."
+          primaryAction={{ label: 'Load default templates', onClick: () => void load(true) }}
         />
-      )}
-
-      {featuredRows.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
-            <Sparkles className={`w-4 h-4 ${statusToneClass('warn')}`} /> Featured
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {featuredRows.map((t) => (
-              <MarketplaceCard
-                key={t.id}
-                template={t}
-                onDeploy={() => { setDeployName(`${t.name.split('-')[0]}-01`); setDeploySheet(t) }}
-                onApprove={(status) => void approvePlatformTemplate(t.name, t.version, status).then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}
-              />
-            ))}
-          </div>
-        </section>
       )}
 
       {rows.length > 0 && (
         <>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                  category === c
-                    ? 'bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30'
-                    : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-white/[0.06] hover:border-white/10'
-                }`}
-              >
-                {c}
-                {c !== 'All' && (
-                  <span className="ml-1 opacity-60">
-                    {rows.filter((t) => (t.category ?? 'Linux') === c).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search templates…"
+            trailing={
+              <div className="flex flex-wrap gap-1 pr-1">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      category === c
+                        ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                        : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    {c}
+                    {c !== 'All' && (
+                      <span className="ml-1 opacity-60">
+                        {rows.filter((t) => (t.category ?? 'Linux') === c).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            }
+          />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((t) => (
-              <MarketplaceCard
-                key={t.id}
-                template={t}
-                onDeploy={() => { setDeployName(`${t.name.split('-')[0]}-01`); setDeploySheet(t) }}
-                onApprove={(status) => void approvePlatformTemplate(t.name, t.version, status).then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}
-              />
-            ))}
-          </div>
-          {filtered.length === 0 && (
-            <p className="text-center text-[var(--text-muted)] py-8">No templates in {category} — try another category.</p>
+          {filtered.length === 0 ? (
+            <p className="text-center text-[var(--text-muted)] py-8">No templates match — try another category or search.</p>
+          ) : (
+            <TahoeTableWrap>
+              <table className="apple-table w-full text-sm" aria-label="Marketplace templates">
+                <thead>
+                  <tr>
+                    <th scope="col">Template</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((t) => {
+                    const approval = t.approval_status ?? 'approved'
+                    return (
+                      <tr key={t.id}>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <span aria-hidden>{templateIcon(t)}</span>
+                            <div>
+                              <p className="font-medium">{t.name}{t.featured && <Star className={`w-3 h-3 inline ml-1 ${statusToneClass('warn')} fill-[var(--machina-status-warn)]`} />}</p>
+                              <p className="text-xs text-[var(--text-muted)] line-clamp-2 max-w-md">{t.description || 'Golden image template'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="text-xs text-[var(--text-muted)]">{t.category ?? 'Linux'}</td>
+                        <td className="font-mono text-xs">{t.version}</td>
+                        <td>
+                          {approval !== 'approved' && (
+                            <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${statusBadgeClasses(approval === 'rejected' ? 'error' : 'warn')}`}>{approval}</span>
+                          )}
+                          {t.auto_fetch && <span className="text-[10px] text-emerald-600 ml-1">Auto-fetch</span>}
+                        </td>
+                        <td className="text-right">
+                          <div className="flex flex-wrap justify-end gap-1">
+                            {approval === 'pending' && (
+                              <>
+                                <button type="button" className="btn-secondary text-[10px]" onClick={() => void approvePlatformTemplate(t.name, t.version, 'approved').then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}>Approve</button>
+                                <button type="button" className="btn-secondary text-[10px]" onClick={() => void approvePlatformTemplate(t.name, t.version, 'rejected').then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}>Reject</button>
+                              </>
+                            )}
+                            <button type="button" className="btn-primary text-xs" onClick={() => { setDeployName(`${t.name.split('-')[0]}-01`); setDeploySheet(t) }}>Deploy</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </TahoeTableWrap>
           )}
         </>
       )}
@@ -510,57 +565,77 @@ export default function PlatformTemplates() {
       )}
 
       {tab === 'plugins' && (
-        <MacGlassPanel title="Platform plugins" subtitle="Integration modules — install or publish to the marketplace.">
-          <div className="flex justify-end mb-3">
-            <button type="button" className="tahoe-btn-ghost text-xs" onClick={() => setPluginPublishOpen(true)}>Publish plugin</button>
-          </div>
-          {pluginLoading && plugins.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading plugins…</p>
-          ) : (
-            <>
-              <div className="flex flex-wrap gap-2 mb-4">
+        <>
+          <TahoeToolbar
+            search={pluginSearch}
+            onSearchChange={setPluginSearch}
+            placeholder="Search plugins…"
+            trailing={
+              <div className="flex flex-wrap gap-1 pr-1">
                 {PLUGIN_CATEGORIES.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setPluginCategory(c)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition ${
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize border transition-colors ${
                       pluginCategory === c
-                        ? 'bg-violet-500/20 text-[var(--link)] border border-[var(--apple-hairline)]'
-                        : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-white/[0.06]'
+                        ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                        : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                     }`}
                   >
                     {c}
                   </button>
                 ))}
+                <button type="button" className="btn-secondary text-xs ml-1" onClick={() => setPluginPublishOpen(true)}>Publish plugin</button>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredPlugins.map((p) => (
-                  <article key={p.id} className="rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            }
+          />
+          {pluginLoading && plugins.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading plugins…</p>
+          ) : filteredPlugins.length === 0 ? (
+            <TahoeListEmpty icon={Package} title="No plugins" description="Publish or install integration modules from the marketplace." />
+          ) : (
+            <TahoeTableWrap>
+              <table className="apple-table w-full text-sm" aria-label="Platform plugins">
+                <thead>
+                  <tr>
+                    <th scope="col">Plugin</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Author</th>
+                    <th scope="col" className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPlugins.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <p className="font-medium flex items-center gap-2">
                           <Package className="w-4 h-4 text-[var(--accent)]" /> {p.name}
+                          {p.featured && <Star className={`w-3 h-3 ${statusToneClass('warn')}`} />}
                         </p>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{p.author} · v{p.version} · {p.category}</p>
-                      </div>
-                      {p.featured && <Star className={`w-4 h-4 shrink-0 ${statusToneClass('warn')}`} />}
-                    </div>
-                    <p className="text-sm text-[var(--text-muted)] flex-1">{p.description}</p>
-                    <button
-                      type="button"
-                      className={p.installed ? 'btn-secondary text-xs' : 'btn-primary text-xs'}
-                      disabled={pluginAction === p.slug}
-                      onClick={() => void togglePlugin(p)}
-                    >
-                      {pluginAction === p.slug ? <Loader2 className="w-3 h-3 animate-spin inline" /> : p.installed ? 'Uninstall' : 'Install'}
-                    </button>
-                  </article>
-                ))}
-              </div>
-            </>
+                        <p className="text-xs text-[var(--text-muted)]">{p.description}</p>
+                      </td>
+                      <td className="capitalize text-xs">{p.category}</td>
+                      <td className="font-mono text-xs">{p.version}</td>
+                      <td className="text-xs text-[var(--text-muted)]">{p.author}</td>
+                      <td className="text-right">
+                        <button
+                          type="button"
+                          className={p.installed ? 'btn-secondary text-xs' : 'btn-primary text-xs'}
+                          disabled={pluginAction === p.slug}
+                          onClick={() => void togglePlugin(p)}
+                        >
+                          {pluginAction === p.slug ? <Loader2 className="w-3 h-3 animate-spin inline" /> : p.installed ? 'Uninstall' : 'Install'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TahoeTableWrap>
           )}
-        </MacGlassPanel>
+        </>
       )}
       <MacSheet open={pluginPublishOpen} onClose={() => setPluginPublishOpen(false)} title="Publish plugin" subtitle="Register a marketplace integration module.">
         <div className="grid gap-3 md:grid-cols-2">
@@ -573,63 +648,5 @@ export default function PlatformTemplates() {
         </div>
       </MacSheet>
     </PlatformPageChrome>
-  )
-}
-
-function MarketplaceCard({
-  template: t,
-  onDeploy,
-  onApprove,
-}: {
-  template: PlatformTemplate
-  onDeploy: () => void
-  onApprove: (status: string) => void
-}) {
-  const needsImage = t.source_disk?.includes('.qcow2')
-  const approval = t.approval_status ?? 'approved'
-  return (
-    <article className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] backdrop-blur-md p-5 flex flex-col hover:border-white/10 transition group">
-      <div className="flex items-start gap-3">
-        <span className="text-3xl group-hover:scale-110 transition-transform" aria-hidden>{templateIcon(t)}</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-semibold text-[var(--text-primary)] truncate">{t.name}</h3>
-            {t.featured && <Star className={`w-3 h-3 shrink-0 ${statusToneClass('warn')} fill-[var(--machina-status-warn)]`} />}
-            {approval !== 'approved' && (
-              <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${statusBadgeClasses(approval === 'rejected' ? 'error' : 'warn')}`}>
-                {approval}
-              </span>
-            )}
-            {needsImage && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)] border border-white/[0.06]">Catalog</span>
-            )}
-            {t.auto_fetch && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 border border-emerald-500/25 inline-flex items-center gap-0.5">
-                <Download className="w-2.5 h-2.5" /> Auto-fetch
-              </span>
-            )}
-            {needsImage && t.auto_fetch === false && (
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700/90 border border-amber-500/20">Manual upload</span>
-            )}
-          </div>
-          <p className="text-xs text-[var(--text-muted)]">{t.category ?? 'Linux'} · v{t.version}{t.workload ? ` · ${t.workload}` : ''}</p>
-        </div>
-      </div>
-      <p className="text-xs text-[var(--text-muted)] mt-3 flex-1 leading-relaxed line-clamp-3">
-        {t.description || (t.auto_fetch ? 'Downloads on first deploy when missing on the host.' : 'Upload the golden image to the host path before deploy.')}
-      </p>
-      {t.firewall_profile && (
-        <p className="text-[10px] text-[var(--accent)] mt-2">Zeus Firewall: {t.firewall_profile}</p>
-      )}
-      {approval === 'pending' && (
-        <div className="flex gap-1 mt-2">
-          <button type="button" className="btn-secondary text-[10px] flex-1" onClick={() => onApprove('approved')}>Approve</button>
-          <button type="button" className="btn-secondary text-[10px] flex-1" onClick={() => onApprove('rejected')}>Reject</button>
-        </div>
-      )}
-      <button type="button" className="btn-primary text-xs mt-4 w-full" onClick={onDeploy}>
-        Get · Deploy VM
-      </button>
-    </article>
   )
 }

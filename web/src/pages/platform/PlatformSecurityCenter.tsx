@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link } from 'react-router'
-import { AlertTriangle, Radar, Shield, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, Radar, Shield, Activity, Search, Lock } from 'lucide-react'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import { AppleDestinationList } from '../../components/platform/apple/AppleStoryKit'
 import {
   MacGlassPanel,
-  MacStatWidget,
 } from '../../components/platform/mac/PlatformMacUi'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import SecurityTimelinePanel from '../../components/platform/SecurityTimelinePanel'
@@ -40,11 +40,14 @@ function threatPillTone(score: number): 'ok' | 'warn' | 'neutral' {
   return 'neutral'
 }
 
-function threatStatTone(score: number): 'ok' | 'warn' | 'default' {
-  if (score >= 80) return 'ok'
-  if (score >= 50) return 'warn'
-  return 'default'
-}
+const SECURITY_DESTINATIONS = [
+  { to: '/platform/zeus/security/firewall', title: 'Zeus Firewall', subtitle: 'Host firewall profiles, ports, lockdown', icon: <Shield className="w-5 h-5" /> },
+  { to: '/platform/soc', title: 'SOC', subtitle: 'Security operations center and alert triage', icon: <Radar className="w-5 h-5" /> },
+  { to: '/platform/zyra/security/hunt', title: 'Threat hunting', subtitle: 'Interactive hunt workspace', icon: <Search className="w-5 h-5" /> },
+  { to: '/platform/zyra/security/enforcement', title: 'Runtime enforcement', subtitle: 'eBPF TracingPolicy and deny rules', icon: <Lock className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/activity', title: 'Firewall activity', subtitle: 'Blocked and allowed connections', icon: <Activity className="w-5 h-5" /> },
+  { to: '/platform/zeus/security/ports', title: 'Open ports', subtitle: 'Exposure scanner with process metadata', icon: <AlertTriangle className="w-5 h-5" /> },
+]
 
 function SecurityGraphViz({ graph }: { graph: SecurityGraph | null }) {
   if (!graph?.nodes?.length) {
@@ -157,6 +160,11 @@ export default function PlatformSecurityCenter() {
       subtitle={
         <span className="flex flex-wrap items-center gap-2 text-sm">
           <span className={statusPillClasses(threatPillTone(score))}>Threat {Math.round(score)}</span>
+          {threat && (
+            <span className="text-[var(--text-muted)]">
+              {critical.length} critical · {sensorCount} sensors · {threat.firewall_targets} firewall targets
+            </span>
+          )}
           {status && (
             <span className={statusPillClasses(status.fabric_reachable ? 'ok' : 'warn')}>
               {status.fabric_reachable ? 'Fabric online' : 'Fabric unreachable'}
@@ -218,30 +226,7 @@ export default function PlatformSecurityCenter() {
 
       {threat && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MacStatWidget
-              label="Fleet threat score"
-              value={String(Math.round(score))}
-              icon={<Shield className="w-4 h-4" />}
-              tone={threatStatTone(score)}
-            />
-            <MacStatWidget
-              label="Critical events"
-              value={String(critical.length)}
-              icon={<ShieldAlert className="w-4 h-4" />}
-              tone={critical.length > 0 ? 'warn' : 'ok'}
-            />
-            <MacStatWidget
-              label="Tetragon sensors"
-              value={String(sensorCount)}
-              icon={<Radar className="w-4 h-4" />}
-            />
-            <MacStatWidget
-              label="Firewall targets"
-              value={String(threat.firewall_targets)}
-              icon={<AlertTriangle className="w-4 h-4" />}
-            />
-          </div>
+          <AppleDestinationList items={SECURITY_DESTINATIONS} />
 
           <MacGlassPanel
             title="Tetragon sensor matrix"
@@ -348,8 +333,6 @@ export default function PlatformSecurityCenter() {
           <SecurityTimelinePanel events={timeline} />
 
           <div className="flex flex-wrap gap-2">
-            <Link to="/platform/zeus/security/hunt" className="btn-secondary text-sm">Threat hunting workspace</Link>
-            <Link to="/platform/zeus/security/enforcement" className="btn-secondary text-sm">Runtime enforcement</Link>
             <button
               type="button"
               className="btn-secondary text-sm"
@@ -357,21 +340,6 @@ export default function PlatformSecurityCenter() {
             >
               Sync alerts to Notifications
             </button>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Link to="/platform/zeus/security/firewall" className="rounded-xl border border-white/[0.08] p-4 hover:border-[var(--accent)]/40 transition">
-              <p className="font-semibold text-[var(--text-primary)]">Machine Security (Firewall)</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Host firewall profiles, ports, lockdown</p>
-            </Link>
-            <Link to="/platform/zeus/security/activity" className="rounded-xl border border-white/[0.08] p-4 hover:border-[var(--accent)]/40 transition">
-              <p className="font-semibold text-[var(--text-primary)]">Firewall Activity</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Blocked and allowed connections</p>
-            </Link>
-            <Link to="/platform/zeus/security/ports" className="rounded-xl border border-white/[0.08] p-4 hover:border-[var(--accent)]/40 transition">
-              <p className="font-semibold text-[var(--text-primary)]">Open Ports</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Exposure scanner with process metadata</p>
-            </Link>
           </div>
 
         </>

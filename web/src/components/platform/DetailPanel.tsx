@@ -53,18 +53,18 @@ export function DetailPanel({
 }: DetailPanelProps) {
   if (empty) {
     return (
-      <aside
-        className={`machine-finder-command-center xl:w-[30rem] shrink-0 rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] flex items-center justify-center p-4 ${className}`}
+      <section
+        className={`machine-finder-command-center w-full rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] flex items-center justify-center p-4 ${className}`}
         data-testid={testId}
       >
         <p className="text-sm text-[var(--text-muted)]">{emptyMessage ?? 'Nothing selected'}</p>
-      </aside>
+      </section>
     )
   }
 
   return (
-    <aside
-      className={`machine-finder-command-center w-full xl:w-[30rem] shrink-0 flex flex-col rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] ${className}`}
+    <section
+      className={`machine-finder-command-center w-full flex flex-col rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] ${className}`}
       data-testid={testId}
     >
       <header className="px-4 py-3 border-b border-white/[0.06] shrink-0 flex items-start justify-between gap-2">
@@ -84,6 +84,6 @@ export function DetailPanel({
           {footer}
         </footer>
       )}
-    </aside>
+    </section>
   )
 }

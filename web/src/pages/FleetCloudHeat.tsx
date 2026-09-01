@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Layers, Loader2, Plus, Trash2 } from 'lucide-react'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { createStack, deleteStack, listStacks, type NativeStack, type StackTemplate } from '../api/stacks'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
@@ -34,6 +35,7 @@ function FleetCloudHeatContent() {
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [templateJson, setTemplateJson] = useState(JSON.stringify(MINIMAL_TEMPLATE, null, 2))
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -49,6 +51,14 @@ function FleetCloudHeatContent() {
   }, [toast])
 
   useEffect(() => { void load() }, [load])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return stacks
+    return stacks.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.status.toLowerCase().includes(q),
+    )
+  }, [stacks, search])
 
   return (
     <PageLayout
@@ -97,43 +107,55 @@ function FleetCloudHeatContent() {
       ) : stacks.length === 0 ? (
         <EmptyState title="No stacks" description="No stacks in this project yet." />
       ) : (
-        <div className="overflow-x-auto apple-surface rounded-2xl">
-          <table className="apple-table" aria-label="Stacks">
-            <thead>
-              <tr>
-                <th scope="col" className="px-3 py-2">Name</th>
-                <th scope="col" className="px-3 py-2">Status</th>
-                <th scope="col" className="px-3 py-2">Resources</th>
-                <th scope="col" className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {stacks.map((s) => (
-                <tr key={s.id} className="border-t border-[var(--apple-hairline)]">
-                  <td className="px-3 py-2">
-                    <Link to={`/fleet-cloud/heat/${encodeURIComponent(s.name)}/${encodeURIComponent(s.id)}`}
-                      className="text-[var(--accent)] hover:underline">{s.name}</Link>
-                  </td>
-                  <td className="px-3 py-2">{s.status}</td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{s.resources_json.length}</td>
-                  <td className="px-3 py-2 text-right">
-                    <button type="button" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
-                      onClick={async () => {
-                        if (!confirm(`Delete stack ${s.name}?`)) return
-                        try {
-                          await deleteStack(s.id)
-                          toast.success('Deleted')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>
-                      <Trash2 className="w-3.5 h-3.5" /> Delete
-                    </button>
-                  </td>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name or status…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Stacks">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Resources</th>
+                  <th scope="col" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-center text-[var(--text-muted)]">No stacks match your search.</td>
+                  </tr>
+                )}
+                {filtered.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <Link to={`/fleet-cloud/heat/${encodeURIComponent(s.name)}/${encodeURIComponent(s.id)}`}
+                        className="apple-link">{s.name}</Link>
+                    </td>
+                    <td>{s.status}</td>
+                    <td className="text-[var(--text-muted)]">{s.resources_json.length}</td>
+                    <td className="text-right">
+                      <button type="button" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
+                        onClick={async () => {
+                          if (!confirm(`Delete stack ${s.name}?`)) return
+                          try {
+                            await deleteStack(s.id)
+                            toast.success('Deleted')
+                            void load()
+                          } catch (e: unknown) { toast.error(formatUserError(e)) }
+                        }}>
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       <FleetCloudFooter />
     </PageLayout>

@@ -6,8 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useSearchParams } from 'react-router'
 import { Boxes, ClipboardList, FolderOpen, HardDrive, RefreshCw, Trash2 } from 'lucide-react'
-import Hero from '../components/Hero'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import KubeVirtQcow2Modal from '../components/KubeVirtQcow2Modal'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import EmptyState from '../components/EmptyState'
@@ -73,6 +73,7 @@ export default function DiskImagesPage() {
   const [mkosiWorkspaces, setMkosiWorkspaces] = useState<MkosiWorkspace[]>([])
   const [directBuildBusy, setDirectBuildBusy] = useState(false)
   const [kvPath, setKvPath] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const toast = useToastContext()
@@ -259,9 +260,38 @@ export default function DiskImagesPage() {
 
   const totalBytes = images.reduce((s, i) => s + i.size_bytes, 0)
 
+  const filteredImages = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return images
+    return images.filter(
+      (img) =>
+        img.name.toLowerCase().includes(q)
+        || img.path.toLowerCase().includes(q)
+        || img.format.toLowerCase().includes(q),
+    )
+  }, [images, search])
+
   return (
     <PageLayout
-      hideHeader
+      eyebrow="Hypervisor"
+      title="Disk Images"
+      subtitle={
+        loading
+          ? 'Scanning hypervisor pools and defaults…'
+          : `${images.length} image${images.length !== 1 ? 's' : ''} · ${formatBytes(totalBytes)} total — ISOs, qcow2, and templates visible on this hypervisor host.`
+      }
+      icon={<HardDrive className="w-6 h-6" />}
+      loading={loading && images.length === 0 && !loadError}
+      actions={
+        <button
+          onClick={() => void load()}
+          className="p-2 hover:bg-[var(--surface-hover)] rounded transition"
+          title="Refresh"
+          aria-label="Refresh"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      }
       error={loadError}
       errorTitle="Failed to load disk images"
       errorHints={loadError ? libvirtErrorHints(loadError) : undefined}
@@ -269,28 +299,8 @@ export default function DiskImagesPage() {
       errorTone="red"
       onErrorRetry={() => void load()}
       onErrorDismiss={() => setLoadError(null)}
+      contentClassName="space-y-6"
     >
-      <Hero
-        eyebrow="Hypervisor"
-        title="Disk Images"
-        subtitle={
-          loading
-            ? 'Scanning hypervisor pools and defaults…'
-            : `${images.length} image${images.length !== 1 ? 's' : ''} · ${formatBytes(totalBytes)} total — ISOs, qcow2, and templates visible on this hypervisor host.`
-        }
-        icon={<HardDrive className="w-6 h-6" />}
-        actions={
-          <button
-            onClick={() => void load()}
-            className="p-2 hover:bg-[var(--surface-hover)] rounded transition"
-            title="Refresh"
-            aria-label="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        }
-      />
-
       {!loading && scanDirectories.length > 0 && (
         <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-fill-tertiary)] px-4 py-3 text-xs text-[var(--text-muted)] space-y-2">
           <p>
@@ -524,68 +534,85 @@ export default function DiskImagesPage() {
           }
         />
       ) : (
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
-          <table className="w-full" aria-label="Disk images">
-            <thead>
-              <tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                <th scope="col" className="px-5 py-3">Name</th>
-                <th scope="col" className="px-5 py-3">Format</th>
-                <th scope="col" className="px-5 py-3">Size</th>
-                <th scope="col" className="px-5 py-3 hidden md:table-cell">Path</th>
-                <th scope="col" className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-              {images.map((img) => (
-                <tr key={img.path} className="hover:bg-[var(--surface-hover)]/30 transition-colors group">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <HardDrive className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
-                      <span className="text-sm font-medium text-[var(--text-primary)]">{img.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className="px-2 py-0.5 rounded text-xs font-mono bg-[var(--surface-hover)]/60 text-[var(--text-secondary)]">
-                      {img.format}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-[var(--text-secondary)]">{formatBytes(img.size_bytes)}</td>
-                  <td className="px-5 py-3 hidden md:table-cell text-xs text-[var(--text-muted)] font-mono max-w-xs truncate">
-                    {img.path}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <span className="inline-flex items-center justify-end gap-1">
-                    {(img.format === 'qcow2' || img.path.toLowerCase().endsWith('.qcow2')) && (
-                      <button
-                        type="button"
-                        onClick={() => setKvPath(img.path)}
-                        className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent)]/20 hover:bg-[var(--accent)]/40 text-[var(--link)] hover:text-[var(--link-hover)] text-xs font-medium transition mr-1"
-                        title="Upload to Kubernetes (KubeVirt + CDI)"
-                      >
-                        <Boxes className="w-3.5 h-3.5" />
-                        KubeVirt
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setConfirmPath(img.path)}
-                      disabled={deleting === img.path}
-                      className={`opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-40 ${statusDestructiveButtonClasses('hover:opacity-90')}`}
-                      title="Delete image file"
-                    >
-                      {deleting === img.path ? (
-                        <span className="animate-spin inline-block w-3 h-3 border border-red-400 border-t-transparent rounded-full" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                      Delete
-                    </button>
-                    </span>
-                  </td>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search images…"
+            trailing={
+              search ? (
+                <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+                  {filteredImages.length} image{filteredImages.length !== 1 ? 's' : ''}
+                </span>
+              ) : null
+            }
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Disk images">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Format</th>
+                  <th scope="col">Size</th>
+                  <th scope="col" className="hidden md:table-cell">Path</th>
+                  <th scope="col" className="text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredImages.length === 0 && (
+                  <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">No images match your search.</td></tr>
+                )}
+                {filteredImages.map((img) => (
+                  <tr key={img.path} className="group">
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{img.name}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="px-2 py-0.5 rounded text-xs font-mono bg-[var(--surface-hover)]/60 text-[var(--text-secondary)]">
+                        {img.format}
+                      </span>
+                    </td>
+                    <td className="text-sm text-[var(--text-secondary)]">{formatBytes(img.size_bytes)}</td>
+                    <td className="hidden md:table-cell text-xs text-[var(--text-muted)] font-mono max-w-xs truncate">
+                      {img.path}
+                    </td>
+                    <td className="text-right">
+                      <span className="inline-flex items-center justify-end gap-1">
+                      {(img.format === 'qcow2' || img.path.toLowerCase().endsWith('.qcow2')) && (
+                        <button
+                          type="button"
+                          onClick={() => setKvPath(img.path)}
+                          className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent)]/20 hover:bg-[var(--accent)]/40 text-[var(--link)] hover:text-[var(--link-hover)] text-xs font-medium transition mr-1"
+                          title="Upload to Kubernetes (KubeVirt + CDI)"
+                        >
+                          <Boxes className="w-3.5 h-3.5" />
+                          KubeVirt
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setConfirmPath(img.path)}
+                        disabled={deleting === img.path}
+                        className={`opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-40 ${statusDestructiveButtonClasses('hover:opacity-90')}`}
+                        title="Delete image file"
+                      >
+                        {deleting === img.path ? (
+                          <span className="animate-spin inline-block w-3 h-3 border border-red-400 border-t-transparent rounded-full" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        Delete
+                      </button>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
 
       <BrowseHostPathModal

@@ -62,7 +62,7 @@ export default function FleetCommandCenter({
       <DetailPanel
         empty
         emptyMessage="Select a machine to open Command Center"
-        className={`hidden xl:flex ${className}`}
+        className={className}
         testId={testId}
       />
     )

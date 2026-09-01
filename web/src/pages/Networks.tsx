@@ -14,10 +14,12 @@ import { formatUserError } from '../utils/apiError'
 import { statusBadgeClasses, statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { libvirtErrorHints } from '../utils/libvirtHints'
 
 export default function NetworksPage() {
   const [networks, setNetworks] = useState<NetworkInfo[]>([])
+  const [search, setSearch] = useState('')
   const [leases, setLeases] = useState<DhcpLease[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -116,6 +118,27 @@ export default function NetworksPage() {
     }
   }
 
+  const filteredNetworks = networks.filter((net) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      net.name.toLowerCase().includes(q)
+      || (net.bridge || '').toLowerCase().includes(q)
+      || (net.active ? 'active' : 'inactive').includes(q)
+    )
+  })
+
+  const filteredLeases = leases.filter((l) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      l.network.toLowerCase().includes(q)
+      || l.ip.toLowerCase().includes(q)
+      || l.mac.toLowerCase().includes(q)
+      || (l.hostname || '').toLowerCase().includes(q)
+    )
+  })
+
   const enableLibvirtBootUnit = async () => {
     if (!libvirtBoot?.needs_attention || !libvirtBoot.systemd_unit) return
     setLibvirtBootBusy(true)
@@ -176,6 +199,19 @@ export default function NetworksPage() {
         </div>
       )}
 
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search networks…"
+        trailing={
+          search ? (
+            <span aria-live="polite" className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+              {filteredNetworks.length} network{filteredNetworks.length !== 1 ? 's' : ''}
+            </span>
+          ) : null
+        }
+      />
+
       {networks.length === 0 ? (
         <EmptyState
           icon={<Network className="w-6 h-6" />}
@@ -188,21 +224,24 @@ export default function NetworksPage() {
           }
         />
       ) : (
-      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
-        <table className="w-full" aria-label="Virtual networks">
-          <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Name</th><th scope="col" className="px-6 py-3">Active</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Bridge</th><th scope="col" className="px-6 py-3 hidden md:table-cell">Autostart</th><th scope="col" className="px-6 py-3 text-right">Actions</th></tr></thead>
-          <tbody className="divide-y divide-[var(--apple-hairline)]/50">
-            {networks.map((net) => (
-              <tr key={net.name} className="hover:bg-[var(--surface-hover)]/50">
-                <td className="px-6 py-3 font-medium"><Wifi className={`w-4 h-4 inline -mt-0.5 mr-1 ${statusToneClass('ok')}`} />{net.name}</td>
-                <td className="px-6 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses(net.active ? 'ok' : 'error')}`}>{net.active ? 'Active' : 'Inactive'}</span></td>
-                <td className="px-6 py-3 hidden md:table-cell text-sm text-[var(--text-muted)] font-mono">{net.bridge || '-'}</td>
-                <td className="px-6 py-3 hidden md:table-cell">
+      <TahoeTableWrap>
+        <table className="apple-table" aria-label="Virtual networks">
+          <thead><tr><th scope="col">Name</th><th scope="col">Active</th><th scope="col" className="hidden md:table-cell">Bridge</th><th scope="col" className="hidden md:table-cell">Autostart</th><th scope="col" className="text-right">Actions</th></tr></thead>
+          <tbody>
+            {filteredNetworks.length === 0 && (
+              <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">No networks match your search.</td></tr>
+            )}
+            {filteredNetworks.map((net) => (
+              <tr key={net.name}>
+                <td className="font-medium"><Wifi className={`w-4 h-4 inline -mt-0.5 mr-1 ${statusToneClass('ok')}`} />{net.name}</td>
+                <td><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses(net.active ? 'ok' : 'error')}`}>{net.active ? 'Active' : 'Inactive'}</span></td>
+                <td className="hidden md:table-cell text-sm text-[var(--text-muted)] font-mono">{net.bridge || '-'}</td>
+                <td className="hidden md:table-cell">
                   <button onClick={() => toggleAutostart(net)} aria-label={net.autostart ? 'Disable autostart' : 'Enable autostart'} className="flex items-center gap-1">
                     {net.autostart ? <ToggleRight className={`w-5 h-5 ${statusToneClass('ok')}`} /> : <ToggleLeft className="w-5 h-5 text-[var(--text-muted)]" />}
                   </button>
                 </td>
-                <td className="px-6 py-3">
+                <td>
                   <div className="flex items-center justify-end gap-1">
                     <button type="button" onClick={() => void openEditXml(net)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Edit XML" aria-label="Edit XML"><Pencil className="w-4 h-4 text-[var(--text-secondary)]" /></button>
                     {!net.active && <button onClick={() => action(net.name, startNetwork, 'Start network')} className="p-1.5 hover:bg-green-600/20 rounded transition" title="Start" aria-label="Start"><Play className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>}
@@ -214,27 +253,32 @@ export default function NetworksPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TahoeTableWrap>
       )}
 
       {/* DHCP Leases */}
       {leases.length > 0 && (
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
-          <div className="px-6 py-3 border-b border-[var(--apple-hairline)]"><h2 className="text-sm font-semibold text-[var(--text-secondary)]">DHCP Leases</h2></div>
-          <table className="w-full" aria-label="DHCP leases">
-            <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-xs text-[var(--text-muted)]"><th scope="col" className="px-6 py-2">Network</th><th scope="col" className="px-6 py-2">IP Address</th><th scope="col" className="px-6 py-2">MAC</th><th scope="col" className="px-6 py-2">Hostname</th><th scope="col" className="px-6 py-2">Expires</th></tr></thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/50 text-sm">
-              {leases.map((l) => (
-                <tr key={`${l.mac}-${l.ip}`} className="table-row-hover">
-                  <td className="px-6 py-2 text-[var(--text-muted)]">{l.network}</td>
-                  <td className={`px-6 py-2 font-mono ${statusToneClass('info')}`}>{l.ip}</td>
-                  <td className="px-6 py-2 font-mono text-xs text-[var(--text-muted)]">{l.mac}</td>
-                  <td className="px-6 py-2">{l.hostname || '-'}</td>
-                  <td className="px-6 py-2 text-[var(--text-muted)]">{l.expiry}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">DHCP Leases</h2>
+          <TahoeTableWrap>
+            <table className="apple-table text-sm" aria-label="DHCP leases">
+              <thead><tr><th scope="col">Network</th><th scope="col">IP Address</th><th scope="col">MAC</th><th scope="col">Hostname</th><th scope="col">Expires</th></tr></thead>
+              <tbody>
+                {filteredLeases.length === 0 && search && (
+                  <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">No leases match your search.</td></tr>
+                )}
+                {filteredLeases.map((l) => (
+                  <tr key={`${l.mac}-${l.ip}`}>
+                    <td className="text-[var(--text-muted)]">{l.network}</td>
+                    <td className={`font-mono ${statusToneClass('info')}`}>{l.ip}</td>
+                    <td className="font-mono text-xs text-[var(--text-muted)]">{l.mac}</td>
+                    <td>{l.hostname || '-'}</td>
+                    <td className="text-[var(--text-muted)]">{l.expiry}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
         </div>
       )}
 

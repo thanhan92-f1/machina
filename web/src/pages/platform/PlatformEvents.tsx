@@ -1,16 +1,14 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, RefreshCw, ScrollText, Terminal, X } from 'lucide-react'
-import {
-  MacGlassPanel,
-  MacStatWidget,
-} from '../../components/platform/mac/PlatformMacUi'
+import { ScrollText, Terminal } from 'lucide-react'
 import DetailTabs from '../../components/platform/DetailTabs'
 import OperatingSurfaceLayout from '../../components/platform/OperatingSurfaceLayout'
-import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
-import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { getFleetConsole, listAuditLogs, listPlatformEvents, type AuditLog, type FleetConsoleEntry, type FleetConsoleOverview, type PlatformEvent } from '../../api/platform'
+import PlatformPageChrome, { PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
+import { getFleetConsole, listAuditLogs, listPlatformEvents, type AuditLog, type FleetConsoleOverview, type PlatformEvent } from '../../api/platform'
 import { formatUserError } from '../../utils/apiError'
 import { statusBadgeClasses, statusBorderClass } from '../../utils/semanticColors'
 
@@ -37,24 +35,6 @@ function formatTime(iso: string) {
     minute: '2-digit',
     second: '2-digit',
   })
-}
-
-function LogLine({ entry }: { entry: FleetConsoleEntry }) {
-  return (
-    <div className="flex gap-3 px-3 py-2 font-mono text-xs border-b border-white/[0.04] last:border-0 hover:bg-[var(--surface-hover)]">
-      <time className="text-[var(--text-muted)] shrink-0 w-36">{formatTime(entry.created_at)}</time>
-      <span className={`shrink-0 px-1.5 py-0.5 rounded border uppercase text-[10px] tracking-wide ${severityClass(entry.severity)}`}>
-        {entry.severity}
-      </span>
-      <span className="shrink-0 w-14 text-orange-600/90 capitalize">{entry.source}</span>
-      <span className="text-[var(--text-primary)] min-w-0 break-all">
-        {entry.actor ? <span className="text-[var(--link)]">{entry.actor} </span> : null}
-        <span className="text-[var(--text-muted)]">{entry.action}</span>
-        {' — '}
-        {entry.message}
-      </span>
-    </div>
-  )
 }
 
 export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}) {
@@ -119,27 +99,28 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
       error={error}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Logs & Audit'}
-      subtitle={embedded ? undefined : 'Unified fleet log tail — audit trail, platform events, and task failures in one stream.'}
+      subtitle={embedded ? undefined : (
+        fleet
+          ? (
+            <span className="flex flex-col gap-1">
+              <span className="text-[var(--text-muted)]">Unified fleet log tail — audit trail, platform events, and task failures in one stream.</span>
+              {platformStatSubtitle([
+                { label: '24h total', value: fleet.total_24h },
+                { label: 'Audit', value: fleet.audit_24h },
+                { label: 'Events', value: fleet.events_24h },
+                { label: 'Failed tasks', value: fleet.tasks_failed_24h },
+              ])}
+            </span>
+          )
+          : 'Unified fleet log tail — audit trail, platform events, and task failures in one stream.'
+      )}
       icon={embedded ? undefined : <Terminal className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
       <OperatingSurfaceLayout testId="platform-events-page">
       {fleet && (
-        <>
-          <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MacStatWidget label="24h total" value={String(fleet.total_24h)} icon={<ScrollText className="w-4 h-4" />} />
-            <MacStatWidget label="Audit (24h)" value={String(fleet.audit_24h)} icon={<Terminal className="w-4 h-4" />} />
-            <MacStatWidget label="Events (24h)" value={String(fleet.events_24h)} icon={<ScrollText className="w-4 h-4" />} />
-            <MacStatWidget
-              label="Failed tasks (24h)"
-              value={String(fleet.tasks_failed_24h)}
-              icon={<AlertTriangle className="w-4 h-4" />}
-              tone={fleet.tasks_failed_24h > 0 ? 'warn' : 'ok'}
-            />
-          </div>
-        </>
+        <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>
       )}
 
       <DetailTabs
@@ -148,95 +129,130 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
         onChange={setSource}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative max-w-xs flex-1">
-          <input
-            id="platform-log-filter"
-            name="log_filter"
-            className={`input text-sm w-full font-mono ${query ? 'pr-8' : ''}`}
-            aria-label="Filter log messages"
-            placeholder="Filter messages…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button type="button" aria-label="Clear filter" onClick={() => setQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <MacGlassPanel title="Platform events" subtitle="GET /api/v1/events — controller event bus">
-        <div className="flex flex-wrap gap-2 mb-3">
-          <div className="relative max-w-xs flex-1">
+      <TahoeToolbar
+        search={query}
+        onSearchChange={setQuery}
+        placeholder="Filter messages…"
+        trailing={
+          <div className="flex flex-wrap items-center gap-2">
             <input
               id="platform-event-kind-filter"
               name="event_kind"
-              className={`input text-sm w-full font-mono ${eventKind ? 'pr-8' : ''}`}
+              className="input text-sm max-w-xs font-mono"
               aria-label="Filter by event kind"
-              placeholder="Filter by kind (e.g. host.sync)"
+              placeholder="Event kind (e.g. host.sync)"
               value={eventKind}
               onChange={(e) => setEventKind(e.target.value)}
             />
-            {eventKind && (
-              <button type="button" aria-label="Clear kind filter" onClick={() => setEventKind('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
+              Apply kind
+            </button>
           </div>
-          <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
-            Apply
-          </button>
-        </div>
-        {platformEvents.length === 0 ? (
-          <PlatformEmptyState title="No platform events" subtitle="Events appear when controller operations occur — try clearing the kind filter." />
-        ) : (
-          <ul className="text-sm text-[var(--text-secondary)] space-y-2">
-            {platformEvents.slice(0, 20).map((e) => (
-              <li key={e.id} className="flex flex-wrap gap-x-2 gap-y-1 border-b border-white/[0.04] pb-2 last:border-0">
-                <time className="text-xs text-[var(--text-muted)] shrink-0">{formatTime(e.created_at)}</time>
-                <span className="text-[10px] uppercase px-1.5 py-0.5 rounded border border-white/[0.08] text-[var(--link)]">{e.kind}</span>
-                <span>{e.message}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </MacGlassPanel>
+        }
+      />
 
-      <MacGlassPanel title="Log stream" subtitle="Newest first — merged audit, events, and tasks.">
+      <section>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Platform events</h2>
+        <p className="text-xs text-[var(--text-muted)] mb-3">GET /api/v1/events — controller event bus</p>
+        {platformEvents.length === 0 ? (
+          <TahoeListEmpty
+            icon={ScrollText}
+            title="No platform events"
+            description="Events appear when controller operations occur — try clearing the kind filter."
+          />
+        ) : (
+          <TahoeTableWrap>
+            <table className="apple-table w-full text-sm" aria-label="Platform events">
+              <thead>
+                <tr>
+                  <th scope="col">Time</th>
+                  <th scope="col">Kind</th>
+                  <th scope="col">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {platformEvents.slice(0, 50).map((e) => (
+                  <tr key={e.id}>
+                    <td className="text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{formatTime(e.created_at)}</td>
+                    <td><span className="text-[10px] uppercase px-1.5 py-0.5 rounded border border-white/[0.08] text-[var(--link)]">{e.kind}</span></td>
+                    <td className="text-[var(--text-secondary)]">{e.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Log stream</h2>
+        <p className="text-xs text-[var(--text-muted)] mb-3">Newest first — merged audit, events, and tasks.</p>
         {!fleet ? (
           <p className="text-sm text-[var(--text-muted)] py-8 text-center">Loading fleet console…</p>
         ) : entries.length === 0 ? (
-          <PlatformEmptyState
+          <TahoeListEmpty
             icon={ScrollText}
             title="No log entries match"
-            subtitle="Adjust the source tab or message filter to broaden the stream."
+            description="Adjust the source tab or message filter to broaden the stream."
           />
         ) : (
-          <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] overflow-hidden -mx-1">
-            {entries.map((e) => (
-              <LogLine key={`${e.source}-${e.id}`} entry={e} />
-            ))}
-          </div>
+          <TahoeTableWrap>
+            <table className="apple-table w-full font-mono text-xs" aria-label="Fleet log stream">
+              <thead>
+                <tr>
+                  <th scope="col">Time</th>
+                  <th scope="col">Severity</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={`${e.source}-${e.id}`}>
+                    <td className="text-[var(--text-muted)] whitespace-nowrap">{formatTime(e.created_at)}</td>
+                    <td><span className={`px-1.5 py-0.5 rounded border uppercase text-[10px] tracking-wide ${severityClass(e.severity)}`}>{e.severity}</span></td>
+                    <td className="text-orange-600/90 capitalize">{e.source}</td>
+                    <td className="text-[var(--text-primary)] break-all">
+                      {e.actor ? <span className="text-[var(--link)]">{e.actor} </span> : null}
+                      <span className="text-[var(--text-muted)]">{e.action}</span>
+                      {' — '}
+                      {e.message}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
         )}
-      </MacGlassPanel>
+      </section>
 
       {controllerAudit.length > 0 && (
-        <MacGlassPanel title="Controller audit log" subtitle={`GET /api/v1/audit — ${controllerAudit.length} entries`}>
-          <div className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] overflow-hidden -mx-1">
-            {controllerAudit.map((a) => (
-              <div key={a.id} className="flex gap-3 px-3 py-2 font-mono text-xs border-b border-white/[0.04] last:border-0">
-                <time className="text-[var(--text-muted)] shrink-0">{formatTime(a.created_at)}</time>
-                <span className="text-[var(--link)] shrink-0">{a.actor}</span>
-                <span className="text-[var(--text-muted)]">{a.action}</span>
-                {a.resource_type && <span className="text-[var(--text-muted)]">({a.resource_type})</span>}
-              </div>
-            ))}
-          </div>
-        </MacGlassPanel>
+        <section>
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Controller audit log</h2>
+          <p className="text-xs text-[var(--text-muted)] mb-3">GET /api/v1/audit — {controllerAudit.length} entries</p>
+          <TahoeTableWrap>
+            <table className="apple-table w-full font-mono text-xs" aria-label="Controller audit log">
+              <thead>
+                <tr>
+                  <th scope="col">Time</th>
+                  <th scope="col">Actor</th>
+                  <th scope="col">Action</th>
+                  <th scope="col">Resource</th>
+                </tr>
+              </thead>
+              <tbody>
+                {controllerAudit.map((a) => (
+                  <tr key={a.id}>
+                    <td className="text-[var(--text-muted)] whitespace-nowrap">{formatTime(a.created_at)}</td>
+                    <td className="text-[var(--link)]">{a.actor}</td>
+                    <td className="text-[var(--text-muted)]">{a.action}</td>
+                    <td className="text-[var(--text-muted)]">{a.resource_type ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </section>
       )}
       </OperatingSurfaceLayout>
     </PlatformPageChrome>

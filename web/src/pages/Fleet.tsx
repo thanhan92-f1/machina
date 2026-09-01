@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { Server, RefreshCw, Play, Square, Power, BarChart3 } from 'lucide-react'
+import { RefreshCw, Play, Square, Power, BarChart3 } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
 import CopyButton from '../components/CopyButton'
@@ -29,6 +29,7 @@ import { formatUserError } from '../utils/apiError'
 import VmStatusBadge from '../components/VmStatusBadge'
 import { hubLinkClasses, statusToneClass } from '../utils/semanticColors'
 import { useTranslation } from 'react-i18next'
+import { AppleStoryHeader } from '../components/platform/apple/AppleStoryKit'
 
 export default function FleetPage() {
   const { t } = useTranslation()
@@ -100,28 +101,81 @@ export default function FleetPage() {
     }
   }
 
+  const reachablePeers = peers.filter((p) => p.reachable).length
+  const fleetLede = enabled
+    ? [
+        primaryPeer ? t('fleet.primaryPeer', { name: primaryPeer }) : null,
+        standbyPeer ? t('fleet.standbyPeer', { name: standbyPeer }) : null,
+        peers.length > 0 ? `${peers.length} peer${peers.length === 1 ? '' : 's'} · ${reachablePeers} reachable` : null,
+        vms.length > 0 ? `${vms.length} VM${vms.length === 1 ? '' : 's'} across fleet` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : t('fleet.subtitle')
+
   return (
     <PageLayout
-      eyebrow="Fleet"
-      title={t('fleet.title')}
-      subtitle={t('fleet.subtitle')}
-      icon={<Server className="w-8 h-8" />}
+      hideHeader
+      className="min-w-0 !space-y-0"
       loading={loading}
       error={loadError}
       errorTitle={t('fleet.title')}
       onErrorRetry={() => void load()}
-      actions={
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="btn-secondary flex items-center gap-2"
-          aria-label={t('common.refresh')}
-        >
-          <RefreshCw className="w-4 h-4" />
-          {t('common.refresh')}
-        </button>
-      }
     >
+      <div className="apple-story-stack w-full space-y-8">
+        <AppleStoryHeader
+          eyebrow="Fleet"
+          title={t('fleet.title')}
+          lede={fleetLede}
+          cta={
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="btn-secondary inline-flex items-center gap-2"
+              aria-label={t('common.refresh')}
+            >
+              <RefreshCw className="w-4 h-4" />
+              {t('common.refresh')}
+            </button>
+          }
+        />
+
+        {enabled && metrics ? (
+          <section aria-label="Fleet summary" className="apple-section apple-section--tight">
+            <div className="apple-metric-band">
+              <div className="min-w-0">
+                <div className="apple-metric-value">{peers.length}</div>
+                <div className="apple-metric-label">{t('fleet.peers')}</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">
+                  {reachablePeers} reachable
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{vms.length}</div>
+                <div className="apple-metric-label">{t('fleet.allVms')}</div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{(metrics.local.host_cpu_percent ?? 0).toFixed(0)}%</div>
+                <div className="apple-metric-label">Local CPU</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">
+                  Load {(metrics.local.load_1 ?? 0).toFixed(2)}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{(metrics.local.host_memory_percent ?? 0).toFixed(0)}%</div>
+                <div className="apple-metric-label">Local memory</div>
+              </div>
+              {fleetAlertsTotal > 0 ? (
+                <div className="min-w-0">
+                  <div className="apple-metric-value">{fleetAlertsTotal}</div>
+                  <div className="apple-metric-label">Alerts</div>
+                  <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">Unacknowledged</div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
       {!enabled ? (
         <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] px-4 py-3 space-y-2">
           <p className="text-[var(--text-muted)] text-sm">{t('fleet.disabledHint')}</p>
@@ -132,55 +186,53 @@ export default function FleetPage() {
             <Link to="/platform/settings?section=integrations" className={hubLinkClasses()}>Settings · Integrations</Link>
           </p>
         </div>
-      ) : (
-        <p className="text-[var(--text-muted)] text-sm">
-          {primaryPeer ? t('fleet.primaryPeer', { name: primaryPeer }) : null}
-          {standbyPeer ? ` · ${t('fleet.standbyPeer', { name: standbyPeer })}` : null}
-        </p>
-      )}
+      ) : null}
 
-      <section aria-labelledby="fleet-peers-heading">
+      <section aria-labelledby="fleet-peers-heading" className="apple-section">
         <h2 id="fleet-peers-heading" className="text-lg font-semibold mb-3">
           {t('fleet.peers')}
         </h2>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {peers.map((p) => (
-            <div
-              key={p.name}
-              className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4"
-            >
-              <div className="font-medium text-[var(--text-primary)]">{p.name}</div>
-              <div className="text-xs text-[var(--text-muted)] truncate" title={p.url}>
-                {p.url}
-              </div>
-              <div className="mt-2 text-sm">
-                <span className={statusToneClass(p.reachable ? 'ok' : 'warn')}>
-                  {p.reachable ? t('fleet.reachable') : t('fleet.unreachable')}
-                </span>
-                {p.version ? (
-                  <span className="text-[var(--text-muted)] ml-2">v{p.version}</span>
-                ) : null}
-                {p.vm_count != null ? (
-                  <span className="text-[var(--text-muted)] ml-2">
-                    {t('fleet.vmCount', { count: p.vm_count })}
-                  </span>
-                ) : null}
-              </div>
-              {p.host_cpu_percent != null ? (
-                <div className="mt-2 text-xs text-[var(--text-muted)]">
-                  CPU {p.host_cpu_percent.toFixed(0)}%
-                  {p.host_memory_percent != null
-                    ? ` · mem ${p.host_memory_percent.toFixed(0)}%`
-                    : ''}
-                  {p.vms_running != null ? ` · ${p.vms_running} running` : ''}
-                </div>
-              ) : null}
-              {p.error ? (
-                <p className={`text-xs mt-1 ${statusToneClass('warn')}`}>{p.error}</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        {peers.length > 0 ? (
+          <div className="overflow-x-auto rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]">
+            <table className="w-full text-sm" aria-label={t('fleet.peers')}>
+              <thead className="bg-[var(--apple-fill-tertiary)]/60 text-[var(--text-muted)]">
+                <tr>
+                  <th scope="col" className="px-4 py-2 text-left">Peer</th>
+                  <th scope="col" className="px-4 py-2 text-left">URL</th>
+                  <th scope="col" className="px-4 py-2 text-left">Status</th>
+                  <th scope="col" className="px-4 py-2 text-left">Capacity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {peers.map((p) => (
+                  <tr key={p.name} className="border-t border-[var(--apple-hairline)]/40">
+                    <td className="px-4 py-2 font-medium text-[var(--text-primary)]">{p.name}</td>
+                    <td className="px-4 py-2 text-xs text-[var(--text-muted)] truncate max-w-[14rem]" title={p.url}>
+                      {p.url}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={statusToneClass(p.reachable ? 'ok' : 'warn')}>
+                        {p.reachable ? t('fleet.reachable') : t('fleet.unreachable')}
+                      </span>
+                      {p.version ? (
+                        <span className="text-[var(--text-muted)] ml-2">v{p.version}</span>
+                      ) : null}
+                      {p.error ? (
+                        <p className={`text-xs mt-0.5 ${statusToneClass('warn')}`}>{p.error}</p>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-[var(--text-muted)]">
+                      {p.vm_count != null ? t('fleet.vmCount', { count: p.vm_count }) : '—'}
+                      {p.host_cpu_percent != null ? ` · CPU ${p.host_cpu_percent.toFixed(0)}%` : ''}
+                      {p.host_memory_percent != null ? ` · mem ${p.host_memory_percent.toFixed(0)}%` : ''}
+                      {p.vms_running != null ? ` · ${p.vms_running} running` : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
         {enabled && peers.length === 0 && !loadError && (
           <EmptyState
             title={t('fleet.noPeersTitle', { defaultValue: 'No fleet peers configured' })}
@@ -196,7 +248,7 @@ export default function FleetPage() {
 
       {enabled ? (
         <section
-          className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4 space-y-3"
+          className="tahoe-glass-card p-4 space-y-3"
           aria-labelledby="fleet-prometheus-heading"
         >
           <h2
@@ -251,7 +303,7 @@ export default function FleetPage() {
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4 space-y-3">
+      <section className="tahoe-glass-card p-4 space-y-3">
         <h2 className="text-lg font-semibold">VM placement</h2>
         <p className="text-xs text-[var(--text-muted)]">
           Rank hypervisors by capacity headroom (CPU, memory, disk) minus requested VM size.
@@ -361,39 +413,36 @@ export default function FleetPage() {
       </section>
 
       {metrics ? (
-        <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4">
+        <section className="apple-section">
           <h2 className="text-lg font-semibold mb-3">Fleet capacity</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
-            <div>
-              <div className="text-[var(--text-muted)] text-xs">Local CPU</div>
-              <div className="text-[var(--text-primary)]">{(metrics.local.host_cpu_percent ?? 0).toFixed(1)}%</div>
+          <div className="apple-metric-band">
+            <div className="min-w-0">
+              <div className="apple-metric-value">{(metrics.local.host_cpu_percent ?? 0).toFixed(1)}%</div>
+              <div className="apple-metric-label">Local CPU</div>
             </div>
-            <div>
-              <div className="text-[var(--text-muted)] text-xs">Local memory</div>
-              <div className="text-[var(--text-primary)]">{(metrics.local.host_memory_percent ?? 0).toFixed(1)}%</div>
+            <div className="min-w-0">
+              <div className="apple-metric-value">{(metrics.local.host_memory_percent ?? 0).toFixed(1)}%</div>
+              <div className="apple-metric-label">Local memory</div>
             </div>
             {metrics.local.host_disk_percent != null ? (
-              <div>
-                <div className="text-[var(--text-muted)] text-xs">Local disk</div>
-                <div className="text-[var(--text-primary)]">{metrics.local.host_disk_percent.toFixed(1)}%</div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{metrics.local.host_disk_percent.toFixed(1)}%</div>
+                <div className="apple-metric-label">Local disk</div>
               </div>
             ) : null}
-            <div>
-              <div className="text-[var(--text-muted)] text-xs">Local VMs</div>
-              <div className="text-[var(--text-primary)]">
-                {metrics.local.vms_running} / {metrics.local.vm_count} running
-              </div>
+            <div className="min-w-0">
+              <div className="apple-metric-value">{metrics.local.vms_running}/{metrics.local.vm_count}</div>
+              <div className="apple-metric-label">Local VMs running</div>
             </div>
-            <div>
-              <div className="text-[var(--text-muted)] text-xs">Load (1m)</div>
-              <div className="text-[var(--text-primary)]">{(metrics.local.load_1 ?? 0).toFixed(2)}</div>
+            <div className="min-w-0">
+              <div className="apple-metric-value">{(metrics.local.load_1 ?? 0).toFixed(2)}</div>
+              <div className="apple-metric-label">Load (1m)</div>
             </div>
             {metrics.local.capacity ? (
-              <div>
-                <div className="text-[var(--text-muted)] text-xs">Capacity score</div>
-                <div className="text-[var(--text-primary)]">
-                  {metrics.local.capacity.score} ({metrics.local.capacity.label})
-                </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{metrics.local.capacity.score}</div>
+                <div className="apple-metric-label">Capacity score</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">{metrics.local.capacity.label}</div>
               </div>
             ) : null}
           </div>
@@ -415,7 +464,7 @@ export default function FleetPage() {
       ) : null}
 
       {fleetAlerts.length > 0 ? (
-        <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-surface)] p-4">
+        <section className="tahoe-glass-card p-4">
           <h2 className="text-lg font-semibold mb-2">
             Fleet alerts
             {fleetAlertsTotal > 0 ? (
@@ -530,6 +579,7 @@ export default function FleetPage() {
           ) : null}
         </div>
       </section>
+      </div>
     </PageLayout>
   )
 }

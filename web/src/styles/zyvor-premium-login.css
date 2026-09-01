@@ -1,4 +1,81 @@
-/* Zyvor premium login — shared Machina-style shell (aurora, particles, split hero) */
+/* Zyvor premium login — Account (centered) + optional split hero shell */
+
+/* ── Account layout (Apple Account-style) ── */
+.login-page-account {
+  background-color: #020617;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% -10%, rgba(59, 130, 246, 0.14), transparent 55%),
+    linear-gradient(180deg, #020617 0%, #0f172a 55%, #020617 100%);
+}
+.login-page-account .login-hero,
+.login-page-account .login-beam {
+  display: none !important;
+}
+.login-panel-account {
+  width: 100%;
+  min-height: 100vh;
+  background: transparent;
+  background-image: none;
+}
+.login-account-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.login-account-gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 25%, rgba(59, 130, 246, 0.16), transparent 58%),
+    radial-gradient(ellipse 50% 42% at 78% 72%, rgba(139, 92, 246, 0.12), transparent 52%),
+    radial-gradient(ellipse 40% 38% at 55% 88%, rgba(34, 211, 238, 0.08), transparent 48%);
+  animation: login-aurora-drift 18s ease-in-out infinite;
+}
+.login-account-orb {
+  opacity: 0.45;
+  filter: blur(2px);
+}
+.login-account-stack {
+  max-width: 400px;
+  margin-inline: auto;
+}
+.login-account-brand {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+.login-account-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.125rem;
+}
+.login-account-wordmark {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(1.75rem, 5vw, 2.125rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #f5f5f7;
+}
+.login-account-lede {
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: rgba(161, 161, 166, 0.95);
+}
+.login-page-account .login-panel-grid {
+  opacity: 0.025;
+}
+.login-page-account .login-panel-glow {
+  width: min(92vw, 420px);
+  height: 340px;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+}
+.login-page-account .login-glass {
+  margin-top: 0;
+}
 
 @keyframes login-gradient-shift {
   0%, 100% { background-position: 0% 50%; }
@@ -195,8 +272,12 @@
   .login-beam,
   .login-logo-ring,
   .login-glass,
-  .login-btn-primary::after {
+  .login-btn-primary::after,
+  .login-account-gradient {
     animation: none !important;
+  }
+  .login-page-account .login-account-orb {
+    display: none;
   }
   .login-fade-in,
   .login-fade-in-d1,

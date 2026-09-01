@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   attachVolume,
@@ -20,6 +20,7 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -45,6 +46,7 @@ function FleetCloudVolumesContent() {
   const [attachVolId, setAttachVolId] = useState('')
   const [attachInstId, setAttachInstId] = useState('')
   const [instances, setInstances] = useState<NativeVm[]>([])
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -72,6 +74,17 @@ function FleetCloudVolumesContent() {
   }, [load])
 
   const allSnapshots = Object.values(snapshotsByVol).flat()
+
+  const filteredVolumes = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return volumes
+    return volumes.filter(
+      (v) =>
+        v.name.toLowerCase().includes(q) ||
+        v.id.toLowerCase().includes(q) ||
+        (v.attached_vm_id?.toLowerCase().includes(q) ?? false),
+    )
+  }, [volumes, search])
 
   const handleCreate = async () => {
     if (creating) return
@@ -183,33 +196,44 @@ function FleetCloudVolumesContent() {
         <PageSkeleton />
       ) : (
         <>
-          <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
-            <div className="px-3 py-2 bg-[var(--apple-surface)] text-xs text-[var(--text-muted)] uppercase">Volumes</div>
-            <div className="overflow-x-auto">
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search name, ID, or attachment…"
+          />
+
+          <TahoeTableWrap>
             <table className="apple-table" aria-label="Volumes">
               <thead>
                 <tr>
-                  <th scope="col" className="px-3 py-2">Name</th>
-                  <th scope="col" className="px-3 py-2">Size</th>
-                  <th scope="col" className="px-3 py-2">Status</th>
-                  <th scope="col" className="px-3 py-2">Attached</th>
-                  <th scope="col" className="px-3 py-2">Actions</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Size</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Attached</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--apple-hairline)]">
-                {volumes.map((v) => (
+              <tbody>
+                {filteredVolumes.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center text-[var(--text-muted)]">
+                      {search.trim() ? 'No volumes match your search.' : 'No volumes in this project.'}
+                    </td>
+                  </tr>
+                )}
+                {filteredVolumes.map((v) => (
                   <tr key={v.id}>
-                    <td className="px-3 py-2 font-mono text-[var(--text-primary)]">
-                      <Link to={`/fleet-cloud/volumes/${v.id}`} className="hover:opacity-90 hover:underline">
+                    <td className="font-mono text-[var(--text-primary)]">
+                      <Link to={`/fleet-cloud/volumes/${v.id}`} className="apple-link hover:opacity-90">
                         {v.name}
                       </Link>
                     </td>
-                    <td className="px-3 py-2">{v.size_gib} GiB</td>
-                    <td className="px-3 py-2 text-[var(--text-muted)]">{v.status}</td>
-                    <td className="px-3 py-2 text-[var(--text-muted)] font-mono text-xs">
+                    <td>{v.size_gib} GiB</td>
+                    <td className="text-[var(--text-muted)]">{v.status}</td>
+                    <td className="text-[var(--text-muted)] font-mono text-xs">
                       {v.attached_vm_id ? v.attached_vm_id.slice(0, 8) : '—'}
                     </td>
-                    <td className="px-3 py-2 flex flex-wrap gap-2">
+                    <td className="flex flex-wrap gap-2">
                       {v.attached_vm_id && (
                         <button
                           type="button"
@@ -272,57 +296,53 @@ function FleetCloudVolumesContent() {
                 ))}
               </tbody>
             </table>
-            </div>
-            {volumes.length === 0 && (
-              <p className="p-6 text-center text-[var(--text-muted)] text-sm">No volumes in this project.</p>
-            )}
-          </div>
+          </TahoeTableWrap>
 
           {allSnapshots.length > 0 && (
-            <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
-              <div className="px-3 py-2 bg-[var(--apple-surface)] text-xs text-[var(--text-muted)] uppercase flex justify-between">
-                <span>Snapshots</span>
-                <Link to="/fleet-cloud/volume-snapshots" className="text-[var(--accent)] hover:underline normal-case">View all</Link>
+            <>
+              <div className="flex items-center justify-between mb-2 mt-6">
+                <h2 className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Snapshots</h2>
+                <Link to="/fleet-cloud/volume-snapshots" className="text-sm text-[var(--accent)] hover:underline">View all</Link>
               </div>
-              <div className="overflow-x-auto">
-              <table className="apple-table" aria-label="Volume snapshots">
-                <thead>
-                  <tr>
-                    <th scope="col" className="px-3 py-2">Name</th>
-                    <th scope="col" className="px-3 py-2">Volume</th>
-                    <th scope="col" className="px-3 py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--apple-hairline)] font-mono text-xs">
-                  {allSnapshots.map((s) => (
-                    <tr key={s.id}>
-                      <td className="px-3 py-2 text-[var(--text-primary)]">{s.name}</td>
-                      <td className="px-3 py-2 text-[var(--text-muted)]">{s.volume_id.slice(0, 8)}</td>
-                      <td className="px-3 py-2">
-                        <span className="text-[var(--text-muted)]">{s.status}</span>
-                        <button
-                          type="button"
-                          className={statusActionLinkClasses('error', 'ml-2')}
-                          onClick={async () => {
-                            if (!confirm(`Delete snapshot ${s.name}?`)) return
-                            try {
-                              await deleteVolumeSnapshot(s.id)
-                              toast.success('Snapshot deleted')
-                              void load()
-                            } catch (e: unknown) {
-                              toast.error(formatUserError(e))
-                            }
-                          }}
-                        >
-                          Del
-                        </button>
-                      </td>
+              <TahoeTableWrap>
+                <table className="apple-table" aria-label="Volume snapshots">
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Volume</th>
+                      <th scope="col">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            </div>
+                  </thead>
+                  <tbody className="font-mono text-xs">
+                    {allSnapshots.map((s) => (
+                      <tr key={s.id}>
+                        <td className="text-[var(--text-primary)]">{s.name}</td>
+                        <td className="text-[var(--text-muted)]">{s.volume_id.slice(0, 8)}</td>
+                        <td>
+                          <span className="text-[var(--text-muted)]">{s.status}</span>
+                          <button
+                            type="button"
+                            className={statusActionLinkClasses('error', 'ml-2')}
+                            onClick={async () => {
+                              if (!confirm(`Delete snapshot ${s.name}?`)) return
+                              try {
+                                await deleteVolumeSnapshot(s.id)
+                                toast.success('Snapshot deleted')
+                                void load()
+                              } catch (e: unknown) {
+                                toast.error(formatUserError(e))
+                              }
+                            }}
+                          >
+                            Del
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TahoeTableWrap>
+            </>
           )}
         </>
       )}

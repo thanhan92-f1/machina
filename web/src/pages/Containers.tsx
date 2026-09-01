@@ -35,6 +35,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 
 function statusTone(status: string): 'ok' | 'warn' | 'error' | 'neutral' | 'info' {
@@ -70,6 +71,7 @@ export default function ContainersPage() {
   const [newImage, setNewImage] = useState('docker.io/library/nginx:alpine')
   const [newCommand, setNewCommand] = useState('')
   const [startAfterCreate, setStartAfterCreate] = useState(true)
+  const [search, setSearch] = useState('')
   const createRef = useRef<HTMLDivElement>(null)
   useFocusTrap(createRef, showCreate, () => setShowCreate(false))
 
@@ -165,8 +167,18 @@ export default function ContainersPage() {
   }
 
   const podsCapable = Boolean(status?.capabilities?.pods)
-  const engineLabel = status?.engine ? String(status.engine) : '—'
   const runningCount = items.filter((c) => String(c.status).toLowerCase() === 'running').length
+  const filteredItems = items.filter((c) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      (c.name || '').toLowerCase().includes(q)
+      || c.image.toLowerCase().includes(q)
+      || c.status.toLowerCase().includes(q)
+      || c.state.toLowerCase().includes(q)
+      || shortId(c.id).toLowerCase().includes(q)
+    )
+  })
 
   return (
     <PageLayout
@@ -278,23 +290,20 @@ export default function ContainersPage() {
         </div>
       }
     >
-      {status?.connected && (
-        <div className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--text-secondary)] flex flex-wrap gap-x-6 gap-y-1">
-          <span>
-            Engine <strong className="text-[var(--text-primary)]">{engineLabel}</strong>
-          </span>
-          <span>
-            Version <strong className="text-[var(--text-primary)]">{status.version || '—'}</strong>
-          </span>
-          <span>
-            Containers <strong className="text-[var(--text-primary)]">{items.length}</strong>
-            {items.length > 0 ? ` (${runningCount} running)` : ''}
-          </span>
-          <span className="font-mono text-xs text-[var(--text-muted)] truncate max-w-md">
-            {status.socket || '—'}
-          </span>
-        </div>
-      )}
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search containers…"
+        trailing={
+          status?.connected ? (
+            <span className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+              {filteredItems.length} container{filteredItems.length !== 1 ? 's' : ''}
+              {items.length > 0 ? ` · ${runningCount} running` : ''}
+              {status.engine ? ` · ${status.engine}` : ''}
+            </span>
+          ) : null
+        }
+      />
 
       {!loading && status?.connected && items.length === 0 && (
         <EmptyState
@@ -315,25 +324,28 @@ export default function ContainersPage() {
       )}
 
       {items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--apple-surface)] text-left text-[var(--text-muted)]">
+        <TahoeTableWrap>
+          <table className="apple-table text-sm" aria-label="Containers">
+            <thead>
               <tr>
-                <th className="px-3 py-2 font-medium">Name</th>
-                <th className="px-3 py-2 font-medium">Image</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2 font-medium">ID</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
+                <th scope="col">Name</th>
+                <th scope="col">Image</th>
+                <th scope="col">Status</th>
+                <th scope="col">ID</th>
+                <th scope="col" className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((c) => {
+              {filteredItems.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-[var(--text-muted)]">No containers match your search.</td></tr>
+              )}
+              {filteredItems.map((c) => {
                 const tone = statusTone(c.status)
                 const id = c.id
                 const disabled = busy === id
                 return (
-                  <tr key={id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="px-3 py-2 text-[var(--text-primary)] font-medium">
+                  <tr key={id}>
+                    <td className="text-[var(--text-primary)] font-medium">
                       {c.name || '—'}
                       {(c.labels?.['machina.io/windows-dockur'] || /dockurr\/windows/i.test(c.image)) && (
                         <span className={`ml-2 text-[10px] uppercase tracking-wide ${statusToneClass('info')}`}>
@@ -341,15 +353,15 @@ export default function ContainersPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)] font-mono text-xs max-w-[14rem] truncate">
+                    <td className="text-[var(--text-secondary)] font-mono text-xs max-w-[14rem] truncate">
                       {c.image}
                     </td>
-                    <td className="px-3 py-2">
+                    <td>
                       <span className={statusBadgeClasses(tone)}>{c.status}</span>
                       <span className={`ml-2 text-xs ${statusToneClass(tone)}`}>{c.state}</span>
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-muted)]">{shortId(id)}</td>
-                    <td className="px-3 py-2">
+                    <td className="font-mono text-xs text-[var(--text-muted)]">{shortId(id)}</td>
+                    <td>
                       <div className="flex justify-end gap-1">
                         <button
                           type="button"
@@ -396,7 +408,7 @@ export default function ContainersPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </TahoeTableWrap>
       )}
 
       {showCreate && (

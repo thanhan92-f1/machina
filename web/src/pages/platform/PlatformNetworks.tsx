@@ -1,14 +1,17 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link } from 'react-router'
-import { Cable, Layers, Loader2, Network, Plus, RefreshCw, Router, Shield, Wifi } from 'lucide-react'
+import { Cable, Layers, Loader2, Network, Plus, RefreshCw, Shield } from 'lucide-react'
 import DetailTabs from '../../components/platform/DetailTabs'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import PageSkeleton from '../../components/PageSkeleton'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
+import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
 import NetworkCreateWizard from '../../components/platform/NetworkCreateWizard'
 import FleetSettingsPane from '../../components/platform/FleetSettingsPane'
 import MachinaNetworkLens from '../../components/ai/MachinaNetworkLens'
@@ -16,8 +19,6 @@ import {
   MacGlassPanel,
   MacListRow,
   MacSheet,
-  MacStatWidget,
-  gradientForName,
 } from '../../components/platform/mac/PlatformMacUi'
 import {
   allocateIpam,
@@ -93,6 +94,17 @@ export default function PlatformNetworks() {
   const [savingId, setSavingId] = useState<string | null>(null)
   const [liveNetworks, setLiveNetworks] = useState<Record<string, LiveNetworkInfo>>({})
   const [networkActionId, setNetworkActionId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((n) =>
+      n.name.toLowerCase().includes(q)
+      || n.backend.toLowerCase().includes(q)
+      || (n.bridge?.toLowerCase().includes(q) ?? false),
+    )
+  }, [rows, search])
 
   const segmentName = (id?: string | null) =>
     segments.find((s) => s.id === id)?.name ?? null
@@ -269,7 +281,16 @@ export default function PlatformNetworks() {
       onErrorRetry={() => void load(false)}
       prepend={<PlatformBackLink to="/platform/infrastructure" label="Infrastructure" />}
       title="Networks"
-      subtitle="Overlays, libvirt bridges, IPAM — NSX-class segments and micro-segmentation."
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">Overlays, libvirt bridges, IPAM — NSX-class segments and micro-segmentation.</span>
+          {platformStatSubtitle([
+            { label: 'Networks', value: rows.length },
+            { label: 'Online hosts', value: hostCount },
+            { label: 'Segments', value: segments.length },
+          ])}
+        </span>
+      }
       icon={<Network className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
@@ -300,27 +321,15 @@ export default function PlatformNetworks() {
 
       {tab === 'networks' && (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <MacStatWidget label="Networks" value={String(rows.length)} icon={<Network className="w-4 h-4" />} />
-            <MacStatWidget label="Online hosts" value={String(hostCount)} icon={<Router className="w-4 h-4" />} href="/platform/hosts" tone={hostCount > 0 ? 'ok' : 'warn'} />
-            <MacStatWidget label="Segments" value={String(segments.length)} icon={<Layers className="w-4 h-4" />} />
-          </div>
+          <TahoeToolbar search={search} onSearchChange={setSearch} placeholder="Search networks…" />
 
           {rows.length === 0 && !discovering && !error && !loading && (
-            <PlatformEmptyState
+            <TahoeListEmpty
               icon={Network}
               title="No networks yet"
-              subtitle="Import libvirt networks from online hosts or create a bridge-backed network for VMs."
-              action={(
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" className="btn-primary" onClick={() => void runDiscover()}>Import from hosts</button>
-                  <button type="button" className="btn-secondary" onClick={() => void syncHosts()}>Sync all hosts</button>
-                  <button type="button" className="btn-secondary" onClick={() => setNetworkWizardOpen(true)}>Create network</button>
-                  {hostCount === 0 && (
-                    <Link to="/platform/enroll" className="btn-secondary">Enroll a host</Link>
-                  )}
-                </div>
-              )}
+              description="Import libvirt networks from online hosts or create a bridge-backed network for VMs."
+              primaryAction={{ label: 'Import from hosts', onClick: () => void runDiscover() }}
+              secondaryAction={{ label: 'Create network', onClick: () => setNetworkWizardOpen(true) }}
             />
           )}
 
@@ -331,165 +340,96 @@ export default function PlatformNetworks() {
           )}
 
           {rows.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {rows.map((n) => {
-                const live = liveNetworks[n.name]
-                const active = live?.active ?? false
-                return (
-                <article
-                  key={n.id}
-                  className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] backdrop-blur-md p-5 flex flex-col gap-4 hover:border-white/10 transition"
-                  data-testid={`platform-network-${n.name}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientForName(n.name)} flex items-center justify-center text-white shadow-md shrink-0`}>
-                      <Wifi className="w-6 h-6" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-[var(--text-primary)] truncate">{n.name}</h3>
-                      <p className="text-xs text-[var(--text-muted)] mt-0.5 capitalize">{n.backend.replace('-', ' ')}</p>
-                      {live && (
-                        <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${statusBadgeClasses(active ? 'ok' : 'warn')}`}>
-                          {active ? 'active' : 'inactive'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <dl className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <dt className="text-[var(--text-muted)]">Bridge</dt>
-                      <dd className="text-[var(--text-primary)] font-mono mt-0.5">{n.bridge || '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[var(--text-muted)]">VLAN</dt>
-                      <dd className="text-[var(--text-primary)] mt-0.5">{n.vlan_id ?? '—'}</dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-[var(--text-muted)]">Segment</dt>
-                      <dd className="text-[var(--text-primary)] mt-0.5">
-                        {segmentName(n.segment_id) ?? 'Unbound'}
-                      </dd>
-                    </div>
-                  </dl>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="block text-xs">
-                      <span className="text-[var(--text-muted)]">Bridge</span>
-                      <input
-                        className="input w-full mt-1 font-mono text-xs"
-                        value={networkDraft(n).bridge}
-                        onChange={(e) => setEditDraft((d) => ({ ...d, [n.id]: { ...networkDraft(n), bridge: e.target.value } }))}
-                        placeholder="virbr0"
-                      />
-                    </label>
-                    <label className="block text-xs">
-                      <span className="text-[var(--text-muted)]">VLAN</span>
-                      <input
-                        className="input w-full mt-1 text-xs"
-                        inputMode="numeric"
-                        value={networkDraft(n).vlan}
-                        onChange={(e) => setEditDraft((d) => ({ ...d, [n.id]: { ...networkDraft(n), vlan: e.target.value } }))}
-                        placeholder="—"
-                      />
-                    </label>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-secondary text-xs w-fit"
-                    disabled={savingId === n.id}
-                    data-testid={`network-save-${n.id}`}
-                    onClick={() => void saveNetwork(n)}
-                  >
-                    {savingId === n.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Save bridge/VLAN'}
-                  </button>
-                  <div className="flex flex-wrap gap-2">
-                    {!active ? (
-                      <button
-                        type="button"
-                        className="btn-primary text-xs"
-                        disabled={networkActionId === n.id || hostCount === 0}
-                        data-testid={`network-activate-${n.name}`}
-                        onClick={async () => {
-                          setNetworkActionId(n.id)
-                          try {
-                            await activatePlatformNetwork(n.id)
-                            toast.success(`Activated ${n.name}`)
-                            await load(false)
-                          } catch (e: unknown) {
-                            toast.error(formatUserError(e))
-                          } finally {
-                            setNetworkActionId(null)
-                          }
-                        }}
-                      >
-                        Activate
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn-secondary text-xs"
-                        disabled={networkActionId === n.id}
-                        data-testid={`network-deactivate-${n.name}`}
-                        onClick={async () => {
-                          setNetworkActionId(n.id)
-                          try {
-                            await deactivatePlatformNetwork(n.id)
-                            toast.success(`Deactivated ${n.name}`)
-                            await load(false)
-                          } catch (e: unknown) {
-                            toast.error(formatUserError(e))
-                          } finally {
-                            setNetworkActionId(null)
-                          }
-                        }}
-                      >
-                        Deactivate
-                      </button>
-                    )}
-                  </div>
-                  {segments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <select
-                        aria-label="Segment"
-                        className="input text-xs flex-1 min-w-[8rem]"
-                        value={bindDraft[n.id] ?? n.segment_id ?? ''}
-                        onChange={(e) => setBindDraft((d) => ({ ...d, [n.id]: e.target.value }))}
-                      >
-                        <option value="">Select segment…</option>
-                        {segments.map((s) => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="btn-secondary text-xs"
-                        disabled={binding === n.id || !(bindDraft[n.id] ?? n.segment_id)}
-                        onClick={() => {
-                          const seg = bindDraft[n.id] ?? n.segment_id
-                          if (seg) void bindNetwork(n.id, seg)
-                        }}
-                      >
-                        {binding === n.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Bind'}
-                      </button>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className="btn-danger text-xs w-fit mt-auto"
-                    onClick={() => setConfirmDeleteNetwork({ id: n.id, name: n.name })}
-                  >
-                    Remove from host & inventory
-                  </button>
-                </article>
-              )})}
-              <button
-                type="button"
-                onClick={() => setNetworkWizardOpen(true)}
-                className="rounded-2xl border-2 border-dashed border-[var(--apple-hairline)]/60 bg-[var(--apple-surface)]/20 p-5 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition min-h-[10rem]"
-              >
-                <Plus className="w-8 h-8" />
-                <span className="text-sm font-medium">New network</span>
-              </button>
-            </div>
+            <TahoeTableWrap>
+              <table className="apple-table w-full text-sm min-w-[720px]" aria-label="Platform networks">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Backend</th>
+                    <th scope="col">Bridge</th>
+                    <th scope="col">VLAN</th>
+                    <th scope="col">Segment</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.map((n) => {
+                    const live = liveNetworks[n.name]
+                    const active = live?.active ?? false
+                    return (
+                      <tr key={n.id} data-testid={`platform-network-${n.name}`}>
+                        <td className="font-medium">{n.name}</td>
+                        <td className="capitalize text-[var(--text-muted)]">{n.backend.replace('-', ' ')}</td>
+                        <td>
+                          <input
+                            className="input w-full font-mono text-xs max-w-[8rem]"
+                            value={networkDraft(n).bridge}
+                            onChange={(e) => setEditDraft((d) => ({ ...d, [n.id]: { ...networkDraft(n), bridge: e.target.value } }))}
+                            placeholder="virbr0"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="input w-full text-xs max-w-[4rem]"
+                            inputMode="numeric"
+                            value={networkDraft(n).vlan}
+                            onChange={(e) => setEditDraft((d) => ({ ...d, [n.id]: { ...networkDraft(n), vlan: e.target.value } }))}
+                            placeholder="—"
+                          />
+                        </td>
+                        <td className="text-xs">{segmentName(n.segment_id) ?? 'Unbound'}</td>
+                        <td>
+                          {live && (
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${statusBadgeClasses(active ? 'ok' : 'warn')}`}>
+                              {active ? 'active' : 'inactive'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-right">
+                          <div className="flex flex-wrap justify-end gap-1">
+                            <button type="button" className="btn-secondary text-[10px]" disabled={savingId === n.id} onClick={() => void saveNetwork(n)}>
+                              {savingId === n.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Save'}
+                            </button>
+                            {!active ? (
+                              <button type="button" className="btn-primary text-[10px]" disabled={networkActionId === n.id || hostCount === 0} onClick={async () => {
+                                setNetworkActionId(n.id)
+                                try { await activatePlatformNetwork(n.id); toast.success(`Activated ${n.name}`); await load(false) }
+                                catch (e: unknown) { toast.error(formatUserError(e)) }
+                                finally { setNetworkActionId(null) }
+                              }}>Activate</button>
+                            ) : (
+                              <button type="button" className="btn-secondary text-[10px]" disabled={networkActionId === n.id} onClick={async () => {
+                                setNetworkActionId(n.id)
+                                try { await deactivatePlatformNetwork(n.id); toast.success(`Deactivated ${n.name}`); await load(false) }
+                                catch (e: unknown) { toast.error(formatUserError(e)) }
+                                finally { setNetworkActionId(null) }
+                              }}>Deactivate</button>
+                            )}
+                            {segments.length > 0 && (
+                              <>
+                                <select aria-label="Segment" className="input text-[10px] max-w-[6rem]" value={bindDraft[n.id] ?? n.segment_id ?? ''} onChange={(e) => setBindDraft((d) => ({ ...d, [n.id]: e.target.value }))}>
+                                  <option value="">Segment…</option>
+                                  {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                                <button type="button" className="btn-secondary text-[10px]" disabled={binding === n.id || !(bindDraft[n.id] ?? n.segment_id)} onClick={() => {
+                                  const seg = bindDraft[n.id] ?? n.segment_id
+                                  if (seg) void bindNetwork(n.id, seg)
+                                }}>Bind</button>
+                              </>
+                            )}
+                            <button type="button" className="btn-danger text-[10px]" onClick={() => setConfirmDeleteNetwork({ id: n.id, name: n.name })}>Remove</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </TahoeTableWrap>
+          )}
+          {rows.length > 0 && filteredRows.length === 0 && (
+            <p className="text-sm text-center text-[var(--text-muted)] py-6">No networks match your search.</p>
           )}
         </>
       )}
@@ -530,8 +470,8 @@ export default function PlatformNetworks() {
                 )}
               />
             ) : (
-              <div className="overflow-x-auto -mx-2">
-                <table className="w-full text-sm" aria-label="Network segments">
+              <TahoeTableWrap>
+              <table className="apple-table w-full text-sm" aria-label="Network segments">
                   <thead>
                     <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                       <th scope="col" className="py-2 px-2">Name</th>
@@ -589,8 +529,8 @@ export default function PlatformNetworks() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
-              </div>
+              </table>
+              </TahoeTableWrap>
             )}
           </MacGlassPanel>
         </>
@@ -614,8 +554,8 @@ export default function PlatformNetworks() {
               action={<button type="button" className="btn-secondary text-sm" onClick={() => setTab('segments')}>Open segments</button>}
             />
           ) : (
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-sm" aria-label="IPAM pools">
+            <TahoeTableWrap>
+            <table className="apple-table w-full text-sm" aria-label="IPAM pools">
                 <thead>
                   <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 px-2">Segment</th>
@@ -647,8 +587,8 @@ export default function PlatformNetworks() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+            </table>
+            </TahoeTableWrap>
           )}
         </MacGlassPanel>
       )}

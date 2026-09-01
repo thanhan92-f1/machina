@@ -1,9 +1,11 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link } from 'react-router'
-import { AlertTriangle, Clock, HardDrive, Layers, Loader2, Plus, RefreshCw, Shield } from 'lucide-react'
+import { HardDrive, Loader2, Plus, RefreshCw } from 'lucide-react'
 import ErrorBanner from '../../components/ErrorBanner'
 import DetailTabs from '../../components/platform/DetailTabs'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
@@ -11,14 +13,12 @@ import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import { useFleetSettings } from '../../hooks/useFleetSettings'
 import { StructuredErrorBanner } from '../../components/StructuredErrorBanner'
 import { storageErrorPresentation } from '../../utils/storageErrorPresentation'
-import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
+import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
 import StoragePoolWizard from '../../components/platform/StoragePoolWizard'
 import {
   MacGlassPanel,
   MacListRow,
   MacSheet,
-  MacStatWidget,
-  gradientForName,
 } from '../../components/platform/mac/PlatformMacUi'
 import {
   bindStoragePoolTier,
@@ -101,6 +101,13 @@ export default function PlatformStorage() {
   const [confirmPoolId, setConfirmPoolId] = useState<string | null>(null)
   const [resizePool, setResizePool] = useState<{ id: string; name: string; currentGib: number } | null>(null)
   const [resizePoolInput, setResizePoolInput] = useState('')
+  const [search, setSearch] = useState('')
+
+  const filteredPools = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((p) => p.name.toLowerCase().includes(q) || p.backend.toLowerCase().includes(q))
+  }, [rows, search])
 
   const tierName = (id?: string | null) => tiers.find((t) => t.id === id)?.name ?? null
 
@@ -336,68 +343,45 @@ export default function PlatformStorage() {
           {fleetStorage && (
             <>
               <p className="text-sm text-[var(--text-muted)]">{fleetStorage.summary}</p>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <MacStatWidget label="Pools" value={String(fleetStorage.pool_count)} icon={<HardDrive className="w-4 h-4" />} />
-                <MacStatWidget
-                  label="Used / capacity"
-                  value={fleetStorage.total_capacity_gib > 0 ? `${fleetStorage.total_used_gib}/${fleetStorage.total_capacity_gib} GiB` : '—'}
-                  icon={<Layers className="w-4 h-4" />}
-                />
-                <MacStatWidget
-                  label="Pools >85%"
-                  value={String(fleetStorage.pools_over_85_pct)}
-                  icon={<AlertTriangle className="w-4 h-4" />}
-                  tone={fleetStorage.pools_over_85_pct > 0 ? 'warn' : 'ok'}
-                />
-                <MacStatWidget
-                  label="SMART failures"
-                  value={String(fleetStorage.smart_failure_count)}
-                  icon={<Shield className="w-4 h-4" />}
-                  tone={fleetStorage.smart_failure_count > 0 ? 'warn' : 'ok'}
-                />
-              </div>
+              {(fleetStorage.pools?.length ?? 0) > 0 && (
+                <>
+                  <h2 className="text-sm font-semibold text-[var(--text-secondary)]">Pool health</h2>
+                  <TahoeTableWrap>
+                  <table className="apple-table w-full text-sm" aria-label="Pool health">
+                    <thead>
+                      <tr>
+                        <th scope="col">Pool</th>
+                        <th scope="col">Class</th>
+                        <th scope="col">Used</th>
+                        <th scope="col">Capacity</th>
+                        <th scope="col">Used %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fleetStorage.pools.map((p) => (
+                        <tr key={p.id}>
+                          <td className="font-medium">{p.name}</td>
+                          <td className="capitalize text-[var(--text-muted)]">{p.storage_class}{p.tier_name ? ` · ${p.tier_name}` : ''}</td>
+                          <td>{p.used_gib} GiB</td>
+                          <td>{p.capacity_gib || '—'} GiB</td>
+                          <td>
+                            <span className={p.status === 'critical' ? statusToneClass('error') : p.status === 'warn' ? statusToneClass('warn') : statusToneClass('info')}>
+                              {Math.round(p.used_pct)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  </TahoeTableWrap>
+                </>
+              )}
             </>
           )}
           {!fleetStorage && (
             <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] py-8">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading fleet storage…
             </div>
-          )}
-          {fleetStorage && (fleetStorage.pools?.length ?? 0) > 0 && (
-            <MacGlassPanel title="Pool health" subtitle="Capacity rings across all registered storage pools.">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 -mt-1">
-                {fleetStorage.pools.map((p) => {
-                  const pct = capacityRing(p.used_gib, p.capacity_gib)
-                  const ringClass = p.status === 'critical' ? statusToneClass('error') : p.status === 'warn' ? statusToneClass('warn') : statusToneClass('info')
-                  return (
-                    <article key={p.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-4 space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradientForName(p.name)} flex items-center justify-center text-white shrink-0`}>
-                          <HardDrive className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold truncate">{p.name}</p>
-                          <p className="text-xs text-[var(--text-muted)] capitalize">{p.storage_class}{p.tier_name ? ` · ${p.tier_name}` : ''}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-14 h-14 shrink-0">
-                          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-[var(--mark-track)]" />
-                            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${pct} 100`} className={ringClass} />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">{Math.round(p.used_pct)}%</span>
-                        </div>
-                        <dl className="text-xs space-y-1 flex-1">
-                          <div><dt className="text-[var(--text-muted)] inline">Used </dt><dd className="inline text-[var(--text-primary)]">{p.used_gib} GiB</dd></div>
-                          <div><dt className="text-[var(--text-muted)] inline">Capacity </dt><dd className="inline text-[var(--text-primary)]">{p.capacity_gib || '—'} GiB</dd></div>
-                        </dl>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
-            </MacGlassPanel>
           )}
           {fleetStorage && (
             <MacGlassPanel title="SMART status" subtitle="Failed disks reported by online hypervisors (linux-obs).">
@@ -422,253 +406,103 @@ export default function PlatformStorage() {
         </div>
       )}
 
-      {tab !== 'disks' && (
-      <div className="grid gap-3 sm:grid-cols-3">
-        <MacStatWidget label="Pools" value={String(rows.length)} icon={<HardDrive className="w-4 h-4" />} />
-        <MacStatWidget label="Tiers" value={String(tiers.length)} icon={<Layers className="w-4 h-4" />} />
-        <MacStatWidget label="Used / capacity" value={totalCap > 0 ? `${totalUsed}/${totalCap} GiB` : '—'} icon={<Clock className="w-4 h-4" />} />
-      </div>
-      )}
-
       {tab === 'pools' && (
         <>
+          <TahoeToolbar search={search} onSearchChange={setSearch} placeholder="Search pools…" />
+
           {rows.length === 0 && !error ? (
-            <PlatformEmptyState title="No storage pools" subtitle="Import libvirt pools from your KVM hosts, or add one manually.">
-              <div className="flex flex-wrap gap-2 mt-3">
-                <button type="button" className="btn-primary" disabled={discovering} onClick={() => void runDiscover()}>
-                  {discovering ? 'Importing…' : 'Import from hosts'}
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => setPoolWizardOpen(true)}>Add pool wizard</button>
-              </div>
-            </PlatformEmptyState>
+            <TahoeListEmpty
+              icon={HardDrive}
+              title="No storage pools"
+              description="Import libvirt pools from your KVM hosts, or add one manually."
+              primaryAction={{ label: 'Import from hosts', onClick: () => void runDiscover() }}
+              secondaryAction={{ label: 'Add pool', onClick: () => setPoolWizardOpen(true) }}
+            />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {rows.map((p) => {
-                const pct = capacityRing(p.used_gib, p.capacity_gib)
-                const live = livePools[p.name]
-                const active = live?.state === 'running'
-                return (
-                  <article key={p.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-5 space-y-4" data-testid={`storage-pool-${p.name}`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientForName(p.name)} flex items-center justify-center text-white`}>
-                        <HardDrive className="w-6 h-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold truncate">{p.name}</p>
-                        <p className="text-xs text-[var(--text-muted)] capitalize">{p.storage_class} · {p.backend}</p>
-                        <p className="text-xs text-[var(--link)]/80 mt-0.5">{tierName(p.tier_id) ?? 'No tier'}</p>
-                        {live && (
-                          <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${statusBadgeClasses(active ? 'ok' : 'warn')}`}>
-                            {live.state}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="relative w-14 h-14 shrink-0">
-                        <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-[var(--mark-track)]" />
-                            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${pct} 100`} className={pct > 85 ? statusToneClass('warn') : statusToneClass('info')} />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">{pct}%</span>
-                      </div>
-                      <dl className="text-xs space-y-1 flex-1">
-                        <div><dt className="text-[var(--text-muted)] inline">Used </dt><dd className="inline text-[var(--text-primary)]">{p.used_gib} GiB</dd></div>
-                        <div><dt className="text-[var(--text-muted)] inline">Capacity </dt><dd className="inline text-[var(--text-primary)]">{p.capacity_gib || '—'} GiB</dd></div>
-                        {p.path && <div className="text-[var(--text-muted)] truncate" title={p.path}>{p.path}</div>}
-                      </dl>
-                    </div>
-                    {tiers.length > 0 && (
-                      <div className="flex gap-2">
-                        <select
-                          aria-label="Storage tier"
-                          className="input text-xs flex-1"
-                          value={bindDraft[p.id] ?? p.tier_id ?? ''}
-                          onChange={(e) => setBindDraft((d) => ({ ...d, [p.id]: e.target.value }))}
-                        >
-                          <option value="">Select tier…</option>
-                          {tiers.map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs"
-                          disabled={binding === p.id || !(bindDraft[p.id] ?? p.tier_id)}
-                          onClick={() => {
-                            const tid = bindDraft[p.id] ?? p.tier_id
-                            if (tid) void bindTier(p.id, tid)
-                          }}
-                        >
-                          Bind
-                        </button>
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {!active ? (
-                        <button
-                          type="button"
-                          className="btn-primary text-xs"
-                          disabled={poolActionId === p.id || hostCount === 0}
-                          data-testid={`pool-activate-${p.name}`}
-                          onClick={async () => {
-                            setPoolActionId(p.id)
-                            try {
-                              await activateStoragePool(p.id)
-                              toast.success(`Activated ${p.name}`)
-                              await load(false)
-                            } catch (e: unknown) {
-                              toast.error(formatUserError(e))
-                            } finally {
-                              setPoolActionId(null)
-                            }
-                          }}
-                        >
-                          {poolActionId === p.id ? 'Activating…' : 'Activate'}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs"
-                          disabled={poolActionId === p.id}
-                          data-testid={`pool-deactivate-${p.name}`}
-                          onClick={async () => {
-                            setPoolActionId(p.id)
-                            try {
-                              await deactivateStoragePool(p.id)
-                              toast.success(`Deactivated ${p.name}`)
-                              await load(false)
-                            } catch (e: unknown) {
-                              toast.error(formatUserError(e))
-                            } finally {
-                              setPoolActionId(null)
-                            }
-                          }}
-                        >
-                          Deactivate
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-secondary text-xs"
-                        disabled={poolActionId === p.id || !active}
-                        onClick={async () => {
-                          setPoolActionId(p.id)
-                          try {
-                            await refreshStoragePool(p.id)
-                            toast.success(`Refreshed ${p.name}`)
-                            await load(false)
-                          } catch (e: unknown) {
-                            toast.error(formatUserError(e))
-                          } finally {
-                            setPoolActionId(null)
-                          }
-                        }}
-                      >
-                        Refresh
-                      </button>
-                    </div>
-                    <div className="space-y-2 border-t border-white/[0.04] pt-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs"
-                          data-testid={`pool-volumes-toggle-${p.name}`}
-                          onClick={() => togglePoolVolumes(p.id)}
-                        >
-                          {expandedPoolId === p.id ? 'Hide volumes' : 'Volumes'}
-                          {poolVolumes[p.id]?.length ? ` (${poolVolumes[p.id].length})` : ''}
-                        </button>
-                        {expandedPoolId === p.id && active && (
-                          <button
-                            type="button"
-                            className="btn-primary text-xs"
-                            data-testid={`pool-volume-create-${p.name}`}
-                            onClick={() => {
-                              setVolumeCreatePool(p)
-                              setVolumeName('')
-                              setVolumeCapacityGb(10)
-                              setVolumeFormat('qcow2')
-                            }}
-                          >
-                            <Plus className="w-3 h-3 inline mr-1" />
-                            New volume
-                          </button>
-                        )}
-                      </div>
-                      {expandedPoolId === p.id && (
-                        <div className="rounded-lg border border-white/[0.06] bg-[var(--apple-surface)] p-2">
-                          {volumesLoading === p.id && !poolVolumes[p.id] ? (
-                            <p className="text-xs text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Loading volumes…</p>
-                          ) : (poolVolumes[p.id]?.length ?? 0) === 0 ? (
-                            <p className="text-xs text-[var(--text-muted)]">{active ? 'No volumes in this pool.' : 'Activate the pool to manage volumes.'}</p>
-                          ) : (
-                            <ul className="text-xs space-y-2">
-                              {poolVolumes[p.id]?.map((v) => (
-                                <li key={v.name} className="flex flex-wrap items-center justify-between gap-2 text-[var(--text-secondary)]">
-                                  <span>
-                                    <span className="font-medium text-[var(--text-primary)]">{v.name}</span>
-                                    {' · '}
-                                    {v.capacity_gb} GiB
-                                    {v.allocation_gb > 0 && ` (${v.allocation_gb} GiB allocated)`}
-                                    {v.vol_type && ` · ${v.vol_type}`}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="btn-danger text-[10px]"
-                                    disabled={volumesLoading === p.id}
-                                    data-testid={`pool-volume-delete-${p.name}-${v.name}`}
-                                    onClick={() => setConfirmVolume({ poolId: p.id, volName: v.name, poolName: p.name })}
-                                  >
-                                    Delete
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
+            <TahoeTableWrap>
+              <table className="apple-table w-full text-sm min-w-[800px]" aria-label="Storage pools">
+                <thead>
+                  <tr>
+                    <th scope="col">Pool</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Used</th>
+                    <th scope="col">Capacity</th>
+                    <th scope="col">Tier</th>
+                    <th scope="col">State</th>
+                    <th scope="col" className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPools.map((p) => {
+                    const live = livePools[p.name]
+                    const active = live?.state === 'running'
+                    const pct = capacityRing(p.used_gib, p.capacity_gib)
+                    return (
+                      <tr key={p.id} data-testid={`storage-pool-${p.name}`}>
+                        <td className="font-medium">{p.name}</td>
+                        <td className="capitalize text-[var(--text-muted)]">{p.storage_class} · {p.backend}</td>
+                        <td>{p.used_gib} GiB</td>
+                        <td>{p.capacity_gib || '—'} GiB ({pct}%)</td>
+                        <td>
+                          {tiers.length > 0 ? (
+                            <div className="flex gap-1">
+                              <select aria-label="Storage tier" className="input text-[10px] max-w-[6rem]" value={bindDraft[p.id] ?? p.tier_id ?? ''} onChange={(e) => setBindDraft((d) => ({ ...d, [p.id]: e.target.value }))}>
+                                <option value="">Tier…</option>
+                                {tiers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                              </select>
+                              <button type="button" className="btn-secondary text-[10px]" disabled={binding === p.id || !(bindDraft[p.id] ?? p.tier_id)} onClick={() => {
+                                const tid = bindDraft[p.id] ?? p.tier_id
+                                if (tid) void bindTier(p.id, tid)
+                              }}>Bind</button>
+                            </div>
+                          ) : (tierName(p.tier_id) ?? '—')}
+                        </td>
+                        <td>
+                          {live && (
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${statusBadgeClasses(active ? 'ok' : 'warn')}`}>{live.state}</span>
                           )}
-                          {expandedPoolId === p.id && (
-                            <button
-                              type="button"
-                              className="btn-secondary text-[10px] mt-2"
-                              disabled={volumesLoading === p.id || !active}
-                              onClick={() => void loadPoolVolumes(p.id)}
-                            >
-                              Refresh volumes
+                        </td>
+                        <td className="text-right">
+                          <div className="flex flex-wrap justify-end gap-1">
+                            {!active ? (
+                              <button type="button" className="btn-primary text-[10px]" disabled={poolActionId === p.id || hostCount === 0} onClick={async () => {
+                                setPoolActionId(p.id)
+                                try { await activateStoragePool(p.id); toast.success(`Activated ${p.name}`); await load(false) }
+                                catch (e: unknown) { toast.error(formatUserError(e)) }
+                                finally { setPoolActionId(null) }
+                              }}>Activate</button>
+                            ) : (
+                              <button type="button" className="btn-secondary text-[10px]" disabled={poolActionId === p.id} onClick={async () => {
+                                setPoolActionId(p.id)
+                                try { await deactivateStoragePool(p.id); toast.success(`Deactivated ${p.name}`); await load(false) }
+                                catch (e: unknown) { toast.error(formatUserError(e)) }
+                                finally { setPoolActionId(null) }
+                              }}>Deactivate</button>
+                            )}
+                            <button type="button" className="btn-secondary text-[10px]" onClick={() => togglePoolVolumes(p.id)}>
+                              {expandedPoolId === p.id ? 'Hide vols' : 'Volumes'}
                             </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs w-full"
-                      disabled={snapshotPolicyLoading === p.id}
-                      onClick={() => void loadSnapshotPolicy(p.id)}
-                    >
-                      {snapshotPolicyLoading === p.id ? 'Loading policy…' : 'Snapshot policy'}
-                    </button>
-                    {snapshotPolicies[p.id] && (
-                      <p className="text-xs text-[var(--text-muted)]">
-                        {snapshotPolicies[p.id].summary}
-                        {' · '}
-                        <span className="text-[var(--link)]/90">{snapshotPolicies[p.id].snapshot_retention_days}d retention</span>
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs w-full"
-                      onClick={() => {
-                        setResizePoolInput(String(p.capacity_gib || 100))
-                        setResizePool({ id: p.id, name: p.name, currentGib: p.capacity_gib || 100 })
-                      }}
-                    >
-                      Edit capacity
-                    </button>
-                    <button type="button" className="btn-danger text-xs w-full" onClick={() => setConfirmPoolId(p.id)}>Remove from host & inventory</button>
-                  </article>
-                )
-              })}
-            </div>
+                            <button type="button" className="btn-danger text-[10px]" onClick={() => setConfirmPoolId(p.id)}>Remove</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </TahoeTableWrap>
+          )}
+          {expandedPoolId && poolVolumes[expandedPoolId] && (
+            <MacGlassPanel title="Pool volumes" subtitle={`${poolVolumes[expandedPoolId].length} volume(s)`}>
+              <ul className="text-xs space-y-2">
+                {poolVolumes[expandedPoolId].map((v) => (
+                  <li key={v.name} className="flex justify-between gap-2">
+                    <span>{v.name} · {v.capacity_gb} GiB</span>
+                    <button type="button" className="btn-danger text-[10px]" onClick={() => setConfirmVolume({ poolId: expandedPoolId, volName: v.name, poolName: rows.find((r) => r.id === expandedPoolId)?.name ?? '' })}>Delete</button>
+                  </li>
+                ))}
+              </ul>
+            </MacGlassPanel>
           )}
         </>
       )}
@@ -678,8 +512,8 @@ export default function PlatformStorage() {
           {tiers.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">No tiers — run migration 028 to seed defaults.</p>
           ) : (
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-sm" aria-label="Storage tiers">
+            <TahoeTableWrap>
+            <table className="apple-table w-full text-sm" aria-label="Storage tiers">
                 <thead>
                   <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 px-2">Name</th>
@@ -704,8 +538,8 @@ export default function PlatformStorage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+            </table>
+            </TahoeTableWrap>
           )}
         </MacGlassPanel>
       )}
@@ -715,8 +549,8 @@ export default function PlatformStorage() {
           {slaPolicies.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">No SLA policies — import pools first.</p>
           ) : (
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-sm" aria-label="Backup SLA policies">
+            <TahoeTableWrap>
+            <table className="apple-table w-full text-sm" aria-label="Backup SLA policies">
                 <thead>
                   <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
                     <th scope="col" className="py-2 px-2">Pool</th>
@@ -749,8 +583,8 @@ export default function PlatformStorage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+            </table>
+            </TahoeTableWrap>
           )}
         </MacGlassPanel>
       )}

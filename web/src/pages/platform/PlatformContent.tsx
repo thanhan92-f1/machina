@@ -1,13 +1,15 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { Check, Disc, Download, Plus, RefreshCw, ShieldAlert, ShieldCheck, Upload, X } from 'lucide-react'
+import { Check, Disc, Download, Plus, ShieldAlert, ShieldCheck, Upload, X } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import PlatformFilterPills from '../../components/platform/PlatformFilterPills'
-import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
-import { MacSheet, MacStatWidget, gradientForName } from '../../components/platform/mac/PlatformMacUi'
+import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
+import { MacSheet } from '../../components/platform/mac/PlatformMacUi'
 import {
   approveContentImage,
   createContentImage,
@@ -62,6 +64,7 @@ export default function PlatformContent() {
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadPct, setUploadPct] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [search, setSearch] = useState('')
   const uploadAbortRef = useRef<AbortController | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -82,9 +85,19 @@ export default function PlatformContent() {
     let list = rows
     if (filter === 'pending') list = list.filter((r) => r.status === 'pending')
     if (filter === 'available') list = list.filter((r) => r.status === 'available')
-    if (category === 'Operating Systems') return list
-    return list.filter((r) => (r.category ?? guessCategory(r.name)) === category)
-  }, [rows, category, filter])
+    if (category !== 'Operating Systems') {
+      list = list.filter((r) => (r.category ?? guessCategory(r.name)) === category)
+    }
+    const q = search.trim().toLowerCase()
+    if (q) {
+      list = list.filter((r) =>
+        r.name.toLowerCase().includes(q)
+        || r.path.toLowerCase().includes(q)
+        || (r.description?.toLowerCase().includes(q) ?? false),
+      )
+    }
+    return list
+  }, [rows, category, filter, search])
 
   const add = async () => {
     try {
@@ -238,7 +251,16 @@ export default function PlatformContent() {
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/infrastructure" label="Infrastructure" />}
       title="Content Library"
-      subtitle="ISO grid with approval inbox — upload golden images for templates."
+      subtitle={
+        <span className="flex flex-col gap-1">
+          <span className="text-[var(--text-muted)]">ISO library with approval inbox — upload golden images for templates.</span>
+          {rows.length > 0 && platformStatSubtitle([
+            { label: 'Images', value: rows.length },
+            { label: 'Pending', value: pending.length },
+            { label: 'Approved', value: rows.filter((r) => r.status === 'available').length },
+          ])}
+        </span>
+      }
       icon={<Disc className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <>
@@ -280,84 +302,103 @@ export default function PlatformContent() {
         </section>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <MacStatWidget label="Images" value={String(rows.length)} icon={<Disc className="w-4 h-4" />} />
-        <MacStatWidget label="Pending" value={String(pending.length)} tone={pending.length ? 'warn' : 'ok'} icon={<ShieldAlert className="w-4 h-4" />} />
-        <MacStatWidget label="Approved" value={String(rows.filter((r) => r.status === 'available').length)} tone="ok" icon={<ShieldCheck className="w-4 h-4" />} />
-      </div>
-
-      <PlatformFilterPills
-        value={filter}
-        onChange={(id) => setFilter(id as typeof filter)}
-        options={[
-          { id: 'all', label: 'All' },
-          { id: 'pending', label: 'Pending', count: pending.length },
-          { id: 'available', label: 'Approved' },
-        ]}
+      <TahoeToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search images…"
+        trailing={
+          <div className="flex flex-wrap items-center gap-2">
+            <PlatformFilterPills
+              value={filter}
+              onChange={(id) => setFilter(id as typeof filter)}
+              options={[
+                { id: 'all', label: 'All' },
+                { id: 'pending', label: 'Pending', count: pending.length },
+                { id: 'available', label: 'Approved' },
+              ]}
+            />
+            <div className="flex flex-wrap gap-1">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                    category === c
+                      ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                      : 'border-[var(--apple-hairline)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        }
       />
 
-      <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCategory(c)}
-            className={`px-3 py-1.5 rounded-full text-xs ${category === c ? 'bg-[var(--surface-hover)] text-[var(--text-primary)]' : 'bg-[var(--apple-surface)] text-[var(--text-muted)] border border-[var(--apple-hairline)]'}`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((r) => {
-          const badge = lifecycleBadge(r.status)
-          const BadgeIcon = badge.icon
-          return (
-            <article key={r.id} className="platform-mac-stat rounded-2xl border border-white/[0.06] bg-[var(--apple-surface)] p-5">
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradientForName(r.name)} flex items-center justify-center`}>
-                  <Disc className="w-5 h-5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold truncate">{r.name}</h3>
-                  <span className={`text-[10px] flex items-center gap-1 ${badge.tone}`}>
-                    <BadgeIcon className="w-3 h-3" /> {badge.label}
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--text-muted)] mt-1">
-                {r.kind.toUpperCase()} · {r.category ?? guessCategory(r.name)}
-              </p>
-              {r.description && <p className="text-xs text-[var(--text-muted)] mt-2">{r.description}</p>}
-              <p className="text-xs font-mono text-[var(--text-faint)] mt-2 truncate">{r.path}</p>
-              <p className="text-[10px] text-[var(--text-faint)] mt-3">
-                {r.status === 'available'
-                  ? 'Approved — safe for production VM creation.'
-                  : r.status === 'pending'
-                    ? 'Awaiting administrator approval.'
-                    : r.rejected_reason ?? 'Not approved for production use.'}
-              </p>
-              {r.status === 'pending' && (
-                <div className="flex gap-2 mt-3">
-                  <button type="button" className="btn-primary text-xs" onClick={() => void approve(r.id)}>Approve</button>
-                  <button type="button" className="btn-danger text-xs" onClick={() => setRejectTargetId(r.id)}>Reject</button>
-                </div>
-              )}
-              {r.status === 'available' && r.kind === 'iso' && (
-                <Link
-                  to={`/platform/create-iso?iso_path=${encodeURIComponent(r.path)}`}
-                  className={`btn-secondary text-xs mt-3 inline-block text-center w-full ${hubLinkClasses()}`}
-                >
-                  Create VM from ISO
-                </Link>
-              )}
-            </article>
-          )
-        })}
-      </div>
-      {filtered.length === 0 && (
-        <PlatformEmptyState title="No images" subtitle="Upload an ISO or qcow2 path for administrator approval." />
+      {filtered.length === 0 ? (
+        <TahoeListEmpty
+          icon={Disc}
+          title={search || filter !== 'all' || category !== 'Operating Systems' ? 'No images match' : 'No images'}
+          description="Upload an ISO or register a host path for administrator approval."
+          primaryAction={{ label: 'Upload', onClick: () => setSheetOpen(true) }}
+        />
+      ) : (
+        <TahoeTableWrap>
+          <table className="apple-table w-full text-sm" aria-label="Content library">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Status</th>
+                <th scope="col">Kind</th>
+                <th scope="col">Category</th>
+                <th scope="col">Path</th>
+                <th scope="col" className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => {
+                const badge = lifecycleBadge(r.status)
+                const BadgeIcon = badge.icon
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <p className="font-semibold">{r.name}</p>
+                      {r.description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{r.description}</p>}
+                    </td>
+                    <td>
+                      <span className={`text-[10px] flex items-center gap-1 ${badge.tone}`}>
+                        <BadgeIcon className="w-3 h-3" /> {badge.label}
+                      </span>
+                    </td>
+                    <td className="text-xs uppercase text-[var(--text-muted)]">{r.kind}</td>
+                    <td className="text-xs text-[var(--text-muted)]">{r.category ?? guessCategory(r.name)}</td>
+                    <td className="text-xs font-mono text-[var(--text-faint)] max-w-[200px] truncate" title={r.path}>{r.path}</td>
+                    <td className="text-right">
+                      <div className="flex flex-wrap justify-end gap-1">
+                        {r.status === 'pending' && (
+                          <>
+                            <button type="button" className="btn-primary text-xs" onClick={() => void approve(r.id)}>Approve</button>
+                            <button type="button" className="btn-danger text-xs" onClick={() => setRejectTargetId(r.id)}>Reject</button>
+                          </>
+                        )}
+                        {r.status === 'available' && r.kind === 'iso' && (
+                          <Link
+                            to={`/platform/create-iso?iso_path=${encodeURIComponent(r.path)}`}
+                            className={`btn-secondary text-xs ${hubLinkClasses()}`}
+                          >
+                            Create VM
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </TahoeTableWrap>
       )}
 
       <MacSheet

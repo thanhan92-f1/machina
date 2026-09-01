@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
-import { ExternalLink, Puzzle, Sparkles, Boxes, Server } from 'lucide-react'
+import { hubLinkClasses } from '../../utils/semanticColors'
+import { Puzzle, Sparkles, Boxes, Server } from 'lucide-react'
+import { AppleDestinationList } from '../../components/platform/apple/AppleStoryKit'
 import HostEnrollWizard from '../../components/platform/HostEnrollWizard'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { listPlatformHosts } from '../../api/platform'
@@ -73,6 +74,20 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
           </PlatformEmptyState>
         )}
 
+        <AppleDestinationList
+          items={cards.map((c) => ({
+            to: c.href,
+            title: c.title,
+            subtitle: [
+              c.description,
+              !c.enabled ? 'off' : null,
+              c.enabled && c.configured === false ? 'needs setup' : null,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          }))}
+        />
+
         <MacGlassPanel title="Fleet apps" subtitle="Launchpad and connected platforms">
           <div className="platform-launchpad-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-4 gap-y-8 -mt-1">
             <Link to="/platform/applications" className="block">
@@ -87,29 +102,6 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
           </p>
           <PlatformDesktopTierPicker tier={tier} onChange={setTier} />
         </MacGlassPanel>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {cards.map((c) => (
-            <Link
-              key={c.id}
-              to={c.href}
-              className={`tahoe-integration-card ${c.enabled ? 'tahoe-glass-card' : 'tahoe-integration-card-disabled'}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-[var(--text-primary)]">{c.title}</h3>
-                {c.enabled ? (
-                  <ExternalLink className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
-                ) : (
-                  <span className="text-[10px] uppercase text-[var(--text-muted)]">off</span>
-                )}
-              </div>
-              <p className="text-sm text-[var(--text-muted)] mt-2 leading-relaxed">{c.description}</p>
-              {c.enabled && c.configured === false && (
-                <p className={`text-xs mt-2 ${statusToneClass('warn')}`}>Configured but needs clouds.yaml or auth — open to finish setup.</p>
-              )}
-            </Link>
-          ))}
-        </div>
 
         <PlatformIntegrationEmbeds />
 

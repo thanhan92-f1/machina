@@ -45,7 +45,7 @@ import {
   HostSecuritySummary,
 } from '../api/extras'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Cpu, HardDrive, Server, CheckCircle, XCircle, Clock, Gauge, RefreshCw, MemoryStick, Database, Monitor, Pencil, Check, X, FolderTree, ListOrdered, Package, Shield, Network, Users, UserSquare, Activity, ScrollText, ArrowUpCircle, PlusCircle, MinusCircle, Ban } from 'lucide-react'
+import { Cpu, HardDrive, Server, CheckCircle, XCircle, RefreshCw, MemoryStick, Database, Monitor, Pencil, Check, X, FolderTree, ListOrdered, Package, Shield, Network, Users, UserSquare, Activity, ScrollText, ArrowUpCircle, PlusCircle, MinusCircle, Ban } from 'lucide-react'
 import { formatBytes } from '../utils/vm'
 import { ChoiceCardGrid, ChoiceLinkCard } from '../components/ChoiceCards'
 import HostCockpitPanels from '../components/platform/HostCockpitPanels'
@@ -54,11 +54,12 @@ import { getSession, type SessionRole } from '../api/auth'
 import { getHostLibvirtBoot, type LibvirtBootStatus } from '../api/host'
 import { serviceAction } from '../api/extras'
 import { formatUserError } from '../utils/apiError'
-import { statusBadgeClasses, statusBgClass, statusBorderClass, statusSurfaceClasses, statusToneClass, utilizationTone } from '../utils/semanticColors'
+import { statusBadgeClasses, statusBorderClass, statusSurfaceClasses, statusToneClass, utilizationTone } from '../utils/semanticColors'
 import { libvirtErrorHints } from '../utils/libvirtHints'
 import PageLayout from '../components/PageLayout'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyState from '../components/EmptyState'
+import { AppleStoryHeader } from '../components/platform/apple/AppleStoryKit'
 
 interface StatsPoint { time: string; cpu: number; mem: number; disk: number; load: number }
 
@@ -523,14 +524,10 @@ export default function NodeInfoPage() {
 
   return (
     <PageLayout
-      eyebrow="Hypervisor"
+      hideHeader
+      className="min-w-0 !space-y-0"
       loading={loading}
-      title="Host overview"
-      subtitle={node ? `${node.hostname} — hypervisor worker: usage, mounts, top processes, and libvirt health (read-only)` : undefined}
-      icon={<Server className={`w-6 h-6 ${statusToneClass('info')}`} />}
-      actions={
-        <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
-      }
+      error={undefined}
     >
       {node && (
       <>
@@ -566,7 +563,68 @@ export default function NodeInfoPage() {
         </div>
       )}
 
-      {/* System Info */}
+      <div className="apple-story-stack w-full space-y-8">
+        <AppleStoryHeader
+          eyebrow="Hypervisor"
+          title={node.hostname}
+          lede={`${node.hypervisor} ${node.hypervisor_version} · libvirt ${node.lib_version} · ${node.active_vms} active / ${node.defined_vms} defined VMs`}
+          cta={
+            <button
+              type="button"
+              onClick={load}
+              className="btn-secondary inline-flex items-center gap-2"
+              aria-label="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          }
+        />
+
+        {stats && (
+          <section aria-label="Host utilization" className="apple-section apple-section--tight">
+            <div className="apple-metric-band">
+              <div className="min-w-0">
+                <div className="apple-metric-value">{stats.cpu_percent.toFixed(0)}%</div>
+                <div className="apple-metric-label">CPU</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">
+                  Load {stats.load_1.toFixed(2)} / {stats.load_5.toFixed(2)} / {stats.load_15.toFixed(2)}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{stats.memory_percent.toFixed(0)}%</div>
+                <div className="apple-metric-label">Memory</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">
+                  {(stats.memory_used_mb / 1024).toFixed(1)} / {(stats.memory_total_mb / 1024).toFixed(1)} GB
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{stats.disk_percent.toFixed(0)}%</div>
+                <div className="apple-metric-label">Disk</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">
+                  {stats.disk_used_gb.toFixed(0)} / {stats.disk_total_gb.toFixed(0)} GB
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">
+                  {stats.swap_total_mb > 0 ? ((stats.swap_used_mb / stats.swap_total_mb) * 100).toFixed(0) : 0}%
+                </div>
+                <div className="apple-metric-label">Swap</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">
+                  {(stats.swap_used_mb / 1024).toFixed(1)} / {(stats.swap_total_mb / 1024).toFixed(1)} GB
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="apple-metric-value">{formatUptime(stats.uptime_secs)}</div>
+                <div className="apple-metric-label">Uptime</div>
+                <div className="mt-1 text-[13px] text-[var(--text-muted)] leading-snug">{stats.processes} processes</div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* System Info — was below gauges; health banner stays above story */}
       {sysInfo && (
         <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Monitor className="w-5 h-5 text-[var(--accent)]" /> System Configuration</h2>
@@ -874,24 +932,9 @@ export default function NodeInfoPage() {
         </div>
       )}
 
-      {/* Resource Gauges */}
-      {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <ResourceGauge icon={<Gauge className={`w-5 h-5 ${statusToneClass('info')}`} />} label="CPU" value={stats.cpu_percent} subtitle={`Load: ${stats.load_1.toFixed(2)} / ${stats.load_5.toFixed(2)} / ${stats.load_15.toFixed(2)}`} />
-          <ResourceGauge icon={<MemoryStick className={`w-5 h-5 ${statusToneClass('ok')}`} />} label="Memory" value={stats.memory_percent} subtitle={`${(stats.memory_used_mb / 1024).toFixed(1)} / ${(stats.memory_total_mb / 1024).toFixed(1)} GB`} />
-          <ResourceGauge icon={<Database className="w-5 h-5 text-orange-400" />} label="Disk" value={stats.disk_percent} subtitle={`${stats.disk_used_gb.toFixed(0)} / ${stats.disk_total_gb.toFixed(0)} GB`} />
-          <ResourceGauge icon={<HardDrive className="w-5 h-5 text-purple-400" />} label="Swap" value={stats.swap_total_mb > 0 ? (stats.swap_used_mb / stats.swap_total_mb * 100) : 0} subtitle={`${(stats.swap_used_mb / 1024).toFixed(1)} / ${(stats.swap_total_mb / 1024).toFixed(1)} GB`} />
-          <div className="bg-[var(--apple-surface)] rounded-xl p-4 border border-[var(--apple-hairline)] flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-1"><Clock className="w-4 h-4 text-[var(--accent)]" /><span className="text-xs text-[var(--text-muted)]">Uptime</span></div>
-            <div className="text-lg font-bold">{formatUptime(stats.uptime_secs)}</div>
-            <div className="text-xs text-[var(--text-muted)]">{stats.processes} processes</div>
-          </div>
-        </div>
-      )}
-
       {/* Metrics History Charts */}
       {history.length > 2 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-6">
           <ChartCard title="CPU Usage History" color="#3b82f6" dataKey="cpu" data={history} unit="%" />
           <ChartCard title="Memory Usage History" color="#10b981" dataKey="mem" data={history} unit="%" />
           <ChartCard title="Disk Usage History" color="#f59e0b" dataKey="disk" data={history} unit="%" />
@@ -900,7 +943,7 @@ export default function NodeInfoPage() {
       )}
 
       {/* Hardware Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="space-y-6">
         <div className="bg-[var(--apple-surface)] rounded-xl p-6 border border-[var(--apple-hairline)] space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Server className={`w-5 h-5 ${statusToneClass('info')}`} /> System</h2>
           <InfoRow label="Hostname" value={node.hostname} />
@@ -962,7 +1005,7 @@ export default function NodeInfoPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-[var(--text-secondary)]">Firmware / chassis (DMI)</h3>
               <InfoRow label="Hardware UUID" value={hardwareInventory.dmi.product_uuid ?? '—'} />
@@ -1734,25 +1777,6 @@ export default function NodeInfoPage() {
         }}
       />
     </PageLayout>
-  )
-}
-
-function ResourceGauge({ icon, label, value, subtitle }: { icon: React.ReactNode; label: string; value: number; subtitle: string }) {
-  const tone = utilizationTone(value)
-  const color = statusToneClass(tone)
-  const barColor = statusBgClass(tone)
-  return (
-    <div className="bg-[var(--apple-surface)] rounded-xl p-4 border border-[var(--apple-hairline)]">
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-sm font-medium flex-1">{label}</span>
-        <span className={`text-lg font-bold ${color}`}>{value.toFixed(1)}%</span>
-      </div>
-      <div className="w-full bg-[var(--surface-hover)] rounded-full h-2 mb-1.5">
-        <div className={`${barColor} h-2 rounded-full transition-all`} style={{ width: `${Math.min(value, 100)}%` }} />
-      </div>
-      <div className="text-xs text-[var(--text-muted)]">{subtitle}</div>
-    </div>
   )
 }
 

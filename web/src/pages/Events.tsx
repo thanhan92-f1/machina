@@ -12,12 +12,12 @@ import {
   Cpu,
   HardDrive,
   Network,
-  Gauge,
   ChevronRight,
 } from 'lucide-react'
 import { downloadJSON, downloadCSV } from '../utils/export'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses, statusBgClass, statusToneClass, utilizationTone } from '../utils/semanticColors'
 import { libvirtErrorHints } from '../utils/libvirtHints'
@@ -77,6 +77,7 @@ export default function EventsPage() {
   const [vmExtras, setVmExtras] = useState<Record<string, VmExtras>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const prevRef = useRef<{ byName: Map<string, VmMetrics>; at: number } | null>(null)
   const historySeeded = useRef(false)
 
@@ -114,6 +115,12 @@ export default function EventsPage() {
     () => [...metrics].sort((a, b) => a.name.localeCompare(b.name)),
     [metrics],
   )
+
+  const filteredMetrics = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return sortedMetrics
+    return sortedMetrics.filter((m) => m.name.toLowerCase().includes(q))
+  }, [sortedMetrics, search])
 
   const load = useCallback(async () => {
     try {
@@ -200,21 +207,20 @@ export default function EventsPage() {
     return () => clearInterval(i)
   }, [load])
 
-  const latest = timeline[timeline.length - 1]
   const barData = useMemo(
     () =>
-      [...metrics]
+      [...filteredMetrics]
         .sort((a, b) => b.memory_pct - a.memory_pct)
         .map((m) => ({
           label: m.name.length > 32 ? `${m.name.slice(0, 30)}…` : m.name,
           mem: Number(m.memory_pct.toFixed(1)),
           fullName: m.name,
         })),
-    [metrics],
+    [filteredMetrics],
   )
 
-  const chartVmSubset = sortedMetrics.slice(0, MAX_VM_LINES)
-  const vmLineOverflow = sortedMetrics.length - chartVmSubset.length
+  const chartVmSubset = filteredMetrics.slice(0, MAX_VM_LINES)
+  const vmLineOverflow = filteredMetrics.length - chartVmSubset.length
 
   const tooltipStyle = {
     backgroundColor: '#0f172a',
@@ -280,57 +286,16 @@ export default function EventsPage() {
         />
       ) : (
         <>
-          {/* Summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
-              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
-                <Gauge className="w-3.5 h-3.5" /> Guests
-              </div>
-              <div className="text-2xl font-semibold text-[var(--text-primary)] mt-1">{metrics.length}</div>
-              <div className="text-xs text-[var(--text-muted)] mt-0.5">running domains</div>
-            </div>
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
-              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
-                <Activity className="w-3.5 h-3.5" /> Avg memory
-              </div>
-              <div className={`text-2xl font-semibold mt-1 ${latest ? statusToneClass(utilizationTone(Number(latest.avgMem))) : 'text-[var(--text-primary)]'}`}>
-                {latest ? `${Number(latest.avgMem).toFixed(1)}%` : '—'}
-              </div>
-              <div className="text-xs text-[var(--text-muted)] mt-0.5">balloon / RSS derived</div>
-            </div>
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4">
-              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
-                <Cpu className="w-3.5 h-3.5" /> Avg guest CPU
-              </div>
-              <div className={`text-2xl font-semibold mt-1 ${latest ? statusToneClass(utilizationTone(Number(latest.avgCpu))) : 'text-[var(--text-primary)]'}`}>
-                {latest ? `${Number(latest.avgCpu).toFixed(1)}%` : '—'}
-              </div>
-              <div className="text-xs text-[var(--text-muted)] mt-0.5">from cpu_time deltas</div>
-            </div>
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-4 col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-2 text-[var(--text-muted)] text-xs uppercase tracking-wide">
-                <HardDrive className="w-3.5 h-3.5" /> Host I/O (sum)
-              </div>
-              <div className="text-sm font-medium text-[var(--text-primary)] mt-2 space-y-0.5">
-                <div className="flex justify-between gap-2">
-                  <span className="text-[var(--text-muted)]">Disk R+W</span>
-                  <span>
-                    {latest
-                      ? `${formatThroughput(Number(latest.diskRdBps) + Number(latest.diskWrBps))}`
-                      : '—'}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-[var(--text-muted)]">Net RX+TX</span>
-                  <span>
-                    {latest
-                      ? `${formatThroughput(Number(latest.netRxBps) + Number(latest.netTxBps))}`
-                      : '—'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search VMs…"
+            trailing={
+              <span className="text-sm text-[var(--text-muted)] shrink-0 pr-2">
+                {filteredMetrics.length} guest{filteredMetrics.length !== 1 ? 's' : ''}
+              </span>
+            }
+          />
 
           {/* Charts */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-w-0 relative z-0">
@@ -554,7 +519,7 @@ export default function EventsPage() {
 
           {/* Snapshot bar + detail table */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-5 min-w-0">
+            <div className="tahoe-glass-card p-5 min-w-0">
               <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Memory snapshot</h2>
               <div
                 style={{ height: Math.min(420, 48 + barData.length * 36) }}
@@ -578,28 +543,27 @@ export default function EventsPage() {
               </div>
             </div>
 
-            <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden min-w-0">
-              <div className="px-5 py-3 border-b border-[var(--apple-hairline)]">
-                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Detail</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" aria-label="VM events">
-                  <thead>
-                    <tr className="border-b border-[var(--apple-hairline)] text-left text-[var(--text-muted)]">
-                      <th scope="col" className="px-4 py-2.5">VM</th>
-                      <th scope="col" className="px-4 py-2.5">Mem</th>
-                      <th scope="col" className="px-4 py-2.5 hidden sm:table-cell">CPU</th>
-                      <th scope="col" className="px-4 py-2.5 hidden md:table-cell">Disk R/W</th>
-                      <th scope="col" className="px-4 py-2.5 hidden lg:table-cell">Net RX/TX</th>
-                      <th scope="col" className="px-4 py-2.5 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--apple-hairline)]/50">
-                    {sortedMetrics.map((m) => {
+            <TahoeTableWrap className="min-w-0">
+              <table className="apple-table text-sm" aria-label="VM metrics">
+                <thead>
+                  <tr>
+                    <th scope="col">VM</th>
+                    <th scope="col">Mem</th>
+                    <th scope="col" className="hidden sm:table-cell">CPU</th>
+                    <th scope="col" className="hidden md:table-cell">Disk R/W</th>
+                    <th scope="col" className="hidden lg:table-cell">Net RX/TX</th>
+                    <th scope="col" className="w-10" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMetrics.length === 0 && (
+                    <tr><td colSpan={6} className="text-center text-[var(--text-muted)]">No VMs match your search.</td></tr>
+                  )}
+                  {filteredMetrics.map((m) => {
                       const ex = vmExtras[m.name]
                       return (
-                        <tr key={m.name} className="hover:bg-[var(--surface-hover)]/40">
-                          <td className="px-4 py-2.5">
+                        <tr key={m.name}>
+                          <td>
                             <Link
                               to={vmDetailRoute(m.name, m.libvirt_connection)}
                               className={`font-medium truncate block max-w-[220px] md:max-w-xs ${statusActionLinkClasses('info')}`}
@@ -611,7 +575,7 @@ export default function EventsPage() {
                               {m.vcpus} vCPU · {m.memory_used_mb} / {m.memory_total_mb} MB
                             </div>
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td>
                             <div className="flex items-center gap-2">
                               <div className="w-20 bg-[var(--surface-hover)] rounded-full h-2 shrink-0">
                                 <div
@@ -627,10 +591,10 @@ export default function EventsPage() {
                               <span className="text-[var(--text-muted)] tabular-nums">{m.memory_pct.toFixed(0)}%</span>
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 text-[var(--text-secondary)] tabular-nums hidden sm:table-cell">
+                          <td className="text-[var(--text-secondary)] tabular-nums hidden sm:table-cell">
                             {ex ? `${ex.cpuPct.toFixed(0)}%` : '—'}
                           </td>
-                          <td className="px-4 py-2.5 text-[var(--text-secondary)] text-xs hidden md:table-cell">
+                          <td className="text-[var(--text-secondary)] text-xs hidden md:table-cell">
                             {ex ? (
                               <span>
                                 {formatThroughput(ex.rdBps)}{' '}
@@ -640,7 +604,7 @@ export default function EventsPage() {
                               '—'
                             )}
                           </td>
-                          <td className="px-4 py-2.5 text-[var(--text-secondary)] text-xs hidden lg:table-cell">
+                          <td className="text-[var(--text-secondary)] text-xs hidden lg:table-cell">
                             {ex ? (
                               <span>
                                 {formatThroughput(ex.rxBps)}{' '}
@@ -650,7 +614,7 @@ export default function EventsPage() {
                               '—'
                             )}
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td>
                             <Link
                               to={vmDetailRoute(m.name, m.libvirt_connection)}
                               className="inline-flex p-1 rounded hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -662,10 +626,9 @@ export default function EventsPage() {
                         </tr>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                </tbody>
+              </table>
+            </TahoeTableWrap>
           </div>
         </>
       )}

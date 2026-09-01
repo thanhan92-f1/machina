@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { Link } from 'react-router'
-import { Copy, Monitor, Terminal } from 'lucide-react'
-import PlatformEmptyState from '../../../components/platform/PlatformEmptyState'
+import { Copy, Monitor, Server, Terminal } from 'lucide-react'
+import { TahoeListEmpty, TahoeTableWrap } from '../../../components/platform/tahoe/TahoeListKit'
 import VmStatusBadge from '../../../components/VmStatusBadge'
 import { guestToolsStatusLabel } from '../../../utils/guestAgentUx'
 import { hubLinkClasses, statusPillClasses } from '../../../utils/semanticColors'
@@ -37,15 +37,18 @@ export default function MachineFinderTableLens({ state }: Props) {
 
   if (filteredVms.length === 0) {
     return (
-      <PlatformEmptyState title="No machines" subtitle="Try another smart folder or create a VM.">
-        <button type="button" className="btn-primary mt-3" onClick={() => state.setWizardOpen(true)}>New VM</button>
-      </PlatformEmptyState>
+      <TahoeListEmpty
+        icon={Server}
+        title="No machines"
+        description="Try another smart folder or create a VM."
+        primaryAction={{ label: 'New VM', onClick: () => state.setWizardOpen(true) }}
+      />
     )
   }
 
   return (
-    <div className="card overflow-x-auto" data-testid="machine-finder-table">
-      <table className="w-full text-sm" aria-label="Virtual machines">
+    <TahoeTableWrap data-testid="machine-finder-table">
+      <table className="apple-table w-full text-sm" aria-label="Virtual machines">
         <thead>
           <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.04]">
             <th scope="col" className="p-3 w-10">
@@ -131,6 +134,6 @@ export default function MachineFinderTableLens({ state }: Props) {
           })}
         </tbody>
       </table>
-    </div>
+    </TahoeTableWrap>
   )
 }

@@ -1,12 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { listVms, type NativeVm } from '../api/nativeVms'
 import { addVmToServerGroup, deleteServerGroup, listServerGroups, type DerivedServerGroup } from '../api/nativeServerGroups'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
+import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -28,6 +29,7 @@ function FleetCloudServerGroupsContent() {
   const [loading, setLoading] = useState(true)
   const [groupName, setGroupName] = useState('')
   const [vmId, setVmId] = useState('')
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -48,6 +50,12 @@ function FleetCloudServerGroupsContent() {
     void load()
   }, [load])
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return groups
+    return groups.filter((g) => g.name.toLowerCase().includes(q))
+  }, [groups, search])
+
   return (
     <PageLayout
       hideHeader
@@ -60,7 +68,7 @@ function FleetCloudServerGroupsContent() {
         Anti-affinity groups
       </h1>
       <p className="text-sm text-[var(--text-muted)]">
-        Machina's placement engine avoids co-locating VMs that share a group on the same host.
+        {groups.length} group{groups.length === 1 ? '' : 's'} — Machina's placement engine avoids co-locating VMs that share a group on the same host.
       </p>
       <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-3 items-end">
         <div>
@@ -93,41 +101,70 @@ function FleetCloudServerGroupsContent() {
           }}>
           Add to group
         </button>
+        <button type="button" onClick={() => void load()}
+          className="ml-auto btn-secondary text-sm inline-flex items-center gap-1">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
       </div>
-      <button type="button" onClick={() => void load()}
-        className="btn-secondary text-sm inline-flex items-center gap-1">
-        <RefreshCw className="w-4 h-4" /> Refresh
-      </button>
+
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
       ) : (
-        <ul className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] divide-y divide-[var(--apple-hairline)]">
-          {groups.map((g) => (
-            <li key={g.name} className="px-4 py-3 flex flex-wrap justify-between gap-2 text-sm">
-              <div>
-                <Link to={`/fleet-cloud/server-groups/${encodeURIComponent(g.name)}`} className="font-mono text-[var(--text-primary)] hover:opacity-90 hover:underline">{g.name}</Link>
-                <span className="ml-2 text-xs text-[var(--text-muted)]">anti-affinity</span>
-                {g.members.length > 0 && (
-                  <span className="block text-xs text-[var(--text-muted)] mt-1">{g.members.length} member(s)</span>
+        <>
+          <TahoeToolbar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search group name…"
+          />
+          <TahoeTableWrap>
+            <table className="apple-table" aria-label="Anti-affinity groups">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Policy</th>
+                  <th scope="col">Members</th>
+                  <th scope="col" className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-center text-[var(--text-muted)]">
+                      {search.trim() ? 'No groups match your search.' : 'No anti-affinity groups yet.'}
+                    </td>
+                  </tr>
                 )}
-              </div>
-              <button type="button" className={statusActionLinkClasses('error', 'text-xs self-start')}
-                onClick={async () => {
-                  if (!confirm(`Delete group ${g.name}? This removes the tag from all ${g.members.length} member VM(s).`)) return
-                  try {
-                    await deleteServerGroup(g)
-                    toast.success('Deleted')
-                    void load()
-                  } catch (e: unknown) {
-                    toast.error(formatUserError(e))
-                  }
-                }}>Delete</button>
-            </li>
-          ))}
-          {groups.length === 0 && (
-            <li className="px-4 py-6 text-center text-[var(--text-muted)]">No anti-affinity groups yet.</li>
-          )}
-        </ul>
+                {filtered.map((g) => (
+                  <tr key={g.name}>
+                    <td>
+                      <Link
+                        to={`/fleet-cloud/server-groups/${encodeURIComponent(g.name)}`}
+                        className="apple-link font-mono"
+                      >
+                        {g.name}
+                      </Link>
+                    </td>
+                    <td className="text-xs text-[var(--text-muted)]">anti-affinity</td>
+                    <td className="text-xs text-[var(--text-muted)]">{g.members.length}</td>
+                    <td className="text-right">
+                      <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
+                        onClick={async () => {
+                          if (!confirm(`Delete group ${g.name}? This removes the tag from all ${g.members.length} member VM(s).`)) return
+                          try {
+                            await deleteServerGroup(g)
+                            toast.success('Deleted')
+                            void load()
+                          } catch (e: unknown) {
+                            toast.error(formatUserError(e))
+                          }
+                        }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TahoeTableWrap>
+        </>
       )}
       <FleetCloudFooter />
     </PageLayout>

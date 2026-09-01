@@ -66,7 +66,6 @@ export function HostCommandCenter({
       <DetailPanel
         empty
         emptyMessage="Select a host for Command Center"
-        className="hidden xl:flex"
         testId="host-command-center-empty"
       />
     )

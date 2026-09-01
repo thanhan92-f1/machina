@@ -224,21 +224,25 @@ export default function PlatformHosts() {
   ) : null
 
   const columnsContent = (
-    <div className="flex border border-white/[0.06] rounded-xl">
-      <div className="w-56 shrink-0 border-r border-white/[0.06]">
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex flex-wrap gap-2">
         {visibleHosts.map((h) => (
           <button
             key={h.id}
             type="button"
             onClick={() => setSelectedId(h.id)}
-            className={`w-full text-left px-3 py-2 text-sm border-b border-white/[0.04] ${selectedId === h.id ? 'bg-[var(--accent)]/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--apple-surface)]'}`}
+            className={`px-3.5 py-2 rounded-full text-sm transition ${
+              selectedId === h.id
+                ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                : 'text-[var(--text-secondary)] bg-[var(--apple-fill-tertiary)]/50 hover:bg-[var(--apple-fill-tertiary)]'
+            }`}
           >
             {h.hostname}
           </button>
         ))}
       </div>
-      <div className="flex-1 min-w-0">
-        {selected ? inspector : <p className="platform-finder-inspector platform-finder-inspector-empty p-4">Select a host</p>}
+      <div className="w-full min-w-0">
+        {selected ? inspector : <p className="platform-finder-inspector platform-finder-inspector-empty p-4 text-[var(--text-muted)]">Select a host</p>}
       </div>
     </div>
   )
@@ -276,8 +280,8 @@ export default function PlatformHosts() {
       contentClassName="space-y-4"
     >
       {viewMode === 'icons' && visibleHosts.length > 0 && (
-        <div className="flex flex-col xl:flex-row xl:items-start gap-4" data-testid="host-fleet-panels">
-          <div className="grid gap-3 sm:grid-cols-2 flex-1 min-w-0">
+        <div className="flex flex-col gap-4 w-full" data-testid="host-fleet-panels">
+          <div className="grid gap-3 sm:grid-cols-2 w-full">
             {visibleHosts.map((h) => (
               <HostFleetCard
                 key={h.id}

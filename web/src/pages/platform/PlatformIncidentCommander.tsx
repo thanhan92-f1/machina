@@ -170,7 +170,7 @@ export default function PlatformIncidentCommander() {
         )}
       </MacGlassPanel>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="flex flex-col gap-4 w-full">
         <MacGlassPanel title="Active incidents">
           <ul className="space-y-2 text-sm">
             {incidents.map((inc) => (

@@ -338,7 +338,7 @@ export function MacListRow({
   return <div className={cls}>{inner}</div>
 }
 
-/** System Settings sidebar + detail layout */
+/** apple.com-style single column: section chips on top, content full-bleed below (no split pane). */
 export function MacSettingsPane({
   sections,
   active,
@@ -353,19 +353,22 @@ export function MacSettingsPane({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col xl:flex-row xl:items-start gap-0 w-full rounded-2xl border border-white/[0.06] overflow-clip bg-[var(--apple-surface)]">
-      <aside className="xl:w-56 shrink-0 border-b xl:border-b-0 xl:border-r border-white/[0.06] p-3 xl:sticky xl:top-[calc(var(--platform-chrome-top,6.5rem)+0.5rem)] xl:self-start">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] px-2 mb-3 hidden xl:block">{title}</h2>
-        <nav className="flex xl:flex-col gap-1 overflow-x-auto xl:overflow-visible">
+    <div className="w-full max-w-none space-y-6">
+      <div className="space-y-3">
+        <h2 className="apple-display text-2xl sm:text-3xl text-[var(--text-primary)] tracking-tight">{title}</h2>
+        <nav
+          className="flex flex-wrap gap-2"
+          aria-label={`${title} sections`}
+        >
           {sections.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => onSelect(s.id)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm transition ${
                 active === s.id
                   ? navActiveChipClasses()
-                  : 'text-[var(--text-muted)] hover:bg-[var(--apple-fill-tertiary)]/60 hover:text-[var(--text-primary)]'
+                  : 'text-[var(--text-muted)] bg-[var(--apple-fill-tertiary)]/50 hover:bg-[var(--apple-fill-tertiary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {s.icon}
@@ -373,8 +376,10 @@ export function MacSettingsPane({
             </button>
           ))}
         </nav>
-      </aside>
-      <div className="mac-settings-detail flex-1 min-w-0 p-5 xl:p-8 platform-readable text-[var(--text-primary)]">{children}</div>
+      </div>
+      <div className="mac-settings-detail w-full min-w-0 platform-readable text-[var(--text-primary)]">
+        {children}
+      </div>
     </div>
   )
 }

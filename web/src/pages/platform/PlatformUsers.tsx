@@ -1,19 +1,18 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link, useNavigate } from 'react-router'
 import { Boxes, Plus, Users } from 'lucide-react'
 import {
   MacGlassPanel,
-  MacListRow,
-  MacStatWidget,
 } from '../../components/platform/mac/PlatformMacUi'
 import DetailTabs from '../../components/platform/DetailTabs'
-import GlassDataTable from '../../components/platform/GlassDataTable'
 import OperatingSurfaceLayout from '../../components/platform/OperatingSurfaceLayout'
-import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
-import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import PlatformPageChrome, { PlatformRefreshButton, platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
+import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/platform/tahoe/TahoeListKit'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import {
   createUser,
@@ -55,6 +54,13 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
   const [newPassword, setNewPassword] = useState('')
   const [role, setRole] = useState('operator')
   const [addBusy, setAddBusy] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((u) => u.username.toLowerCase().includes(q) || u.role.toLowerCase().includes(q))
+  }, [rows, search])
 
   const load = useCallback(async () => {
     setError(null)
@@ -124,7 +130,21 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
       error={error}
       onErrorRetry={() => void load()}
       title={embedded ? undefined : 'Access & Workspaces'}
-      subtitle={embedded ? undefined : 'Platform RBAC accounts and tenant workspaces — switch active workspace from the menu bar.'}
+      subtitle={embedded ? undefined : (
+        fleet
+          ? (
+            <span className="flex flex-col gap-1">
+              <span className="text-[var(--text-muted)]">Platform RBAC accounts and tenant workspaces — switch active workspace from the menu bar.</span>
+              {platformStatSubtitle([
+                { label: 'Users', value: fleet.user_count },
+                { label: 'Admins', value: fleet.admin_count },
+                { label: 'Workspaces', value: fleet.workspace_count },
+                { label: 'Quotas enforced', value: fleet.workspaces_enforced },
+              ])}
+            </span>
+          )
+          : 'Platform RBAC accounts and tenant workspaces — switch active workspace from the menu bar.'
+      )}
       icon={embedded ? undefined : <Users className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : (
         <>
@@ -143,20 +163,6 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
       <OperatingSurfaceLayout testId="platform-users-page">
         {me && <p className="text-sm text-[var(--text-muted)]">Signed in as <strong className="text-[var(--text-primary)]">{me.username}</strong> ({me.role})</p>}
         {fleet && <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>}
-
-        {fleet && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MacStatWidget label="Users" value={String(fleet.user_count)} icon={<Users className="w-4 h-4" />} />
-            <MacStatWidget label="Admins" value={String(fleet.admin_count)} icon={<Users className="w-4 h-4" />} />
-            <MacStatWidget label="Workspaces" value={String(fleet.workspace_count)} icon={<Boxes className="w-4 h-4" />} />
-            <MacStatWidget
-              label="Quotas enforced"
-              value={String(fleet.workspaces_enforced)}
-              icon={<Boxes className="w-4 h-4" />}
-              tone={fleet.workspaces_enforced > 0 ? 'ok' : 'default'}
-            />
-          </div>
-        )}
 
         <DetailTabs primary={USER_TABS} active={tab} onChange={setTab} />
 
@@ -209,113 +215,138 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
               )}
             </MacGlassPanel>
 
-            <GlassDataTable
-              title="Platform users"
-              columns={
-                <>
-                  <th scope="col" className="p-3 text-left w-[40%]">User</th>
-                  <th scope="col" className="p-3 text-left w-[35%]">Role</th>
-                  <th scope="col" className="p-3 text-right w-[25%]">Actions</th>
-                </>
-              }
-              isEmpty={rows.length === 0}
-              empty={{
-                icon: Users,
-                title: 'No platform users yet',
-                subtitle: 'Create the first RBAC account to grant fleet access.',
-                action: (
-                  <button type="button" className="btn-primary flex items-center gap-2" onClick={scrollToAddUser}>
-                    <Plus className="w-4 h-4" /> Add user
-                  </button>
-                ),
-              }}
-            >
-              {rows.map((u) => (
-                <tr key={u.id} className="border-b border-white/[0.04]">
-                  <td className="p-3 font-medium text-[var(--text-primary)]">{u.username}</td>
-                  <td className="p-3">
-                    <select
-                      aria-label="User role"
-                      className="input text-xs capitalize w-full max-w-[160px]"
-                      value={u.role}
-                      onChange={async (e) => {
-                        try {
-                          await patchUser(u.id, { role: e.target.value })
-                          toast.success('Role updated')
-                          await load()
-                        } catch (err: unknown) { toast.error(formatUserError(err)) }
-                      }}
-                    >
-                      <option value="admin">admin</option>
-                      <option value="operator">operator</option>
-                      <option value="viewer">viewer</option>
-                    </select>
-                  </td>
-                  <td className="p-3 text-right">
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs"
-                      disabled={me?.username === u.username}
-                      title={me?.username === u.username ? 'Cannot delete your own account' : undefined}
-                      onClick={() => setDeleteUserId(u.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </GlassDataTable>
+            <TahoeToolbar search={search} onSearchChange={setSearch} placeholder="Search users…" />
+
+            {filteredRows.length === 0 ? (
+              <TahoeListEmpty
+                icon={Users}
+                title={search ? 'No users match' : 'No platform users yet'}
+                description={search ? 'Try a different search term.' : 'Create the first RBAC account to grant fleet access.'}
+                primaryAction={search ? undefined : { label: 'Add user', onClick: scrollToAddUser }}
+              />
+            ) : (
+              <TahoeTableWrap>
+                <table className="apple-table w-full text-sm" aria-label="Platform users">
+                  <thead>
+                    <tr>
+                      <th scope="col">User</th>
+                      <th scope="col">Role</th>
+                      <th scope="col" className="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.map((u) => (
+                      <tr key={u.id}>
+                        <td className="font-medium text-[var(--text-primary)]">{u.username}</td>
+                        <td>
+                          <select
+                            aria-label="User role"
+                            className="input text-xs capitalize w-full max-w-[160px]"
+                            value={u.role}
+                            onChange={async (e) => {
+                              try {
+                                await patchUser(u.id, { role: e.target.value })
+                                toast.success('Role updated')
+                                await load()
+                              } catch (err: unknown) { toast.error(formatUserError(err)) }
+                            }}
+                          >
+                            <option value="admin">admin</option>
+                            <option value="operator">operator</option>
+                            <option value="viewer">viewer</option>
+                          </select>
+                        </td>
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            className="btn-secondary text-xs"
+                            disabled={me?.username === u.username}
+                            title={me?.username === u.username ? 'Cannot delete your own account' : undefined}
+                            onClick={() => setDeleteUserId(u.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TahoeTableWrap>
+            )}
           </>
         )}
 
         {tab === 'workspaces' && (
-          <MacGlassPanel title="Workspace groups" subtitle="Tenant isolation by project label — active workspace syncs with menu bar switcher.">
+          <>
+            <TahoeToolbar search={search} onSearchChange={setSearch} placeholder="Search workspaces…" />
             {!fleet ? (
               <p className="text-sm text-[var(--text-muted)] py-6 text-center">Loading workspaces…</p>
             ) : fleet.workspaces.length === 0 ? (
-              <PlatformEmptyState
+              <TahoeListEmpty
                 icon={Boxes}
                 title="No workspaces yet"
-                subtitle="Assign VMs to a project label in Machine Finder to create tenant groups."
-                action={
-                  <Link to="/platform/vms" className="btn-primary text-sm">
-                    Open Machine Finder
-                  </Link>
-                }
+                description="Assign VMs to a project label in Machine Finder to create tenant groups."
+                primaryAction={{ label: 'Open Machine Finder', onClick: () => navigate('/platform/vms') }}
               />
             ) : (
-              <div className="divide-y divide-white/[0.04] -mx-1">
-                {fleet.workspaces.map((w) => (
-                  <MacListRow
-                    key={w.name}
-                    title={w.name}
-                    subtitle={`${w.vm_count} VM(s) · ${w.network_isolation} · ${w.quota_status}`}
-                    onClick={() => switchWorkspace(w.name)}
-                    badge={
-                      workspace === w.name ? (
-                        <span className="text-[10px] text-[var(--link)] border border-[var(--apple-hairline)] px-2 py-0.5 rounded">active</span>
-                      ) : w.enforce_quotas ? (
-                        <span className={`text-[10px] ${statusToneClass('ok')}`}>enforced</span>
-                      ) : null
-                    }
-                    trailing={
-                      <Link
-                        to={`/platform/vms?project=${encodeURIComponent(w.name)}`}
-                        className={`text-xs ${hubLinkClasses()}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        VMs →
-                      </Link>
-                    }
-                  />
-                ))}
-              </div>
+              <TahoeTableWrap>
+                <table className="apple-table w-full text-sm" aria-label="Workspace groups">
+                  <thead>
+                    <tr>
+                      <th scope="col">Workspace</th>
+                      <th scope="col">VMs</th>
+                      <th scope="col">Isolation</th>
+                      <th scope="col">Quota</th>
+                      <th scope="col" className="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fleet.workspaces
+                      .filter((w) => {
+                        const q = search.trim().toLowerCase()
+                        return !q || w.name.toLowerCase().includes(q)
+                      })
+                      .map((w) => (
+                        <tr
+                          key={w.name}
+                          className="cursor-pointer hover:bg-[var(--surface-hover)]"
+                          onClick={() => switchWorkspace(w.name)}
+                        >
+                          <td className="font-medium text-[var(--text-primary)]">
+                            {w.name}
+                            {workspace === w.name && (
+                              <span className="ml-2 text-[10px] text-[var(--link)] border border-[var(--apple-hairline)] px-2 py-0.5 rounded">active</span>
+                            )}
+                          </td>
+                          <td>{w.vm_count}</td>
+                          <td className="text-xs uppercase text-[var(--text-muted)]">{w.network_isolation}</td>
+                          <td className="text-xs">
+                            {w.enforce_quotas ? (
+                              <span className={statusToneClass('ok')}>{w.quota_status}</span>
+                            ) : (
+                              <span className="text-[var(--text-muted)]">{w.quota_status}</span>
+                            )}
+                          </td>
+                          <td className="text-right">
+                            <Link
+                              to={`/platform/vms?project=${encodeURIComponent(w.name)}`}
+                              className={`text-xs ${hubLinkClasses()}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              VMs →
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </TahoeTableWrap>
             )}
-            <div className="flex flex-wrap gap-3 mt-4 pt-2 border-t border-white/[0.04]">
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-white/[0.04]">
               <Link to="/platform/projects" className={`text-sm ${hubLinkClasses()}`}>Projects list</Link>
               <Link to="/platform/enterprise?tab=tenants" className={`text-sm ${hubLinkClasses()}`}>Tenant isolation</Link>
             </div>
-          </MacGlassPanel>
+          </>
         )}
       </OperatingSurfaceLayout>
       <ConfirmDialog

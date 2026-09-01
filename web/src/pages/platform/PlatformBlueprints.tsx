@@ -3,13 +3,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link } from 'react-router'
-import { LayoutGrid, Play, Plus, Trash2, Workflow, Wrench } from 'lucide-react'
-import {
-  LaunchpadAppIcon,
-  MacGlassPanel,
-  MacStatWidget,
-  NewLaunchpadCard,
-} from '../../components/platform/mac/PlatformMacUi'
+import { Play, Plus, Trash2, Workflow } from 'lucide-react'
+import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
+import { AppleStoryHeader } from '../../components/platform/apple/AppleStoryKit'
 import DetailTabs from '../../components/platform/DetailTabs'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
@@ -100,7 +96,11 @@ export default function PlatformBlueprints() {
       onErrorRetry={() => void load()}
       prepend={<PlatformBackLink to="/platform/operations" label="Operations" />}
       title="Blueprint Studio"
-      subtitle="macOS Shortcuts-style Launchpad — tap a blueprint to run automation across VM sets."
+      subtitle={
+        fleet
+          ? `${fleet.summary} · ${fleet.blueprint_count} shortcuts · ${fleet.total_vms_covered} VMs covered · ${fleet.executions_24h} runbooks (24h)`
+          : 'macOS Shortcuts-style automation — run blueprints across VM sets.'
+      }
       icon={<Workflow className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
@@ -112,25 +112,24 @@ export default function PlatformBlueprints() {
       }
       contentClassName="space-y-4"
     >
-      {fleet && <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p>}
-
-      {fleet && tab === 'launchpad' && (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <MacStatWidget label="Shortcuts" value={String(fleet.blueprint_count)} icon={<Workflow className="w-4 h-4" />} />
-          <MacStatWidget label="VMs covered" value={String(fleet.total_vms_covered)} icon={<LayoutGrid className="w-4 h-4" />} />
-          <MacStatWidget label="Runbooks (24h)" value={String(fleet.executions_24h)} icon={<Wrench className="w-4 h-4" />} />
-        </div>
-      )}
-
       <DetailTabs primary={BLUEPRINT_TABS} active={tab} onChange={setTab} />
 
       {tab === 'launchpad' && (
-        <MacGlassPanel title="Shortcut Launchpad" subtitle="Click an icon to run — actions execute as queued tasks per VM.">
+        <>
+          <AppleStoryHeader
+            eyebrow="Launchpad"
+            title="Shortcuts"
+            lede="Run automation across VM sets — each shortcut queues tasks per machine."
+            cta={
+              <button type="button" className="btn-primary text-sm flex items-center gap-1.5" onClick={() => setTab('studio')}>
+                <Plus className="w-4 h-4" /> New shortcut
+              </button>
+            }
+          />
           {!fleet ? (
-            <p className="text-sm text-[var(--text-muted)] py-8 text-center">Loading shortcuts…</p>
+            <p className="text-sm text-[var(--text-muted)] py-4">Loading shortcuts…</p>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 py-2">
-              <NewLaunchpadCard label="New shortcut" subtitle="Open Studio" onClick={() => setTab('studio')} />
+            <ul className="divide-y divide-[var(--apple-hairline)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] overflow-hidden">
               {(fleet.shortcuts.length ? fleet.shortcuts : rows.map((bp) => ({
                 id: bp.id,
                 name: bp.name,
@@ -139,20 +138,33 @@ export default function PlatformBlueprints() {
                 vm_count: bp.vm_ids?.length ?? 0,
                 action_count: (bp.actions ?? []).length,
               }))).map((bp) => (
-                <LaunchpadAppIcon
-                  key={bp.id}
-                  name={bp.name}
-                  icon={running === bp.id ? <Play className="w-7 h-7 animate-pulse" /> : <Workflow className="w-7 h-7" />}
-                  vmCount={bp.vm_count}
-                  onClick={() => void runShortcut(bp.id)}
-                />
+                <li key={bp.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--apple-fill-tertiary)]/60 transition">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--apple-fill-tertiary)] text-[var(--text-secondary)]">
+                    <Workflow className="w-5 h-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-[var(--text-primary)]">{bp.name}</span>
+                    <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                      {(bp.actions ?? []).join(', ') || bp.description || 'No description'} · {bp.vm_count} VM{bp.vm_count === 1 ? '' : 's'}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-primary text-xs flex items-center gap-1 shrink-0"
+                    disabled={running === bp.id}
+                    onClick={() => void runShortcut(bp.id)}
+                  >
+                    <Play className={`w-3.5 h-3.5 ${running === bp.id ? 'animate-pulse' : ''}`} />
+                    {running === bp.id ? 'Running…' : 'Run'}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-          <div className="flex flex-wrap gap-3 mt-4 pt-2 border-t border-white/[0.04]">
+          <div className="flex flex-wrap gap-3 mt-4">
             <Link to="/platform/reports?tab=runbooks" className={`text-sm ${hubLinkClasses()}`}>Operations runbooks →</Link>
           </div>
-        </MacGlassPanel>
+        </>
       )}
 
       {tab === 'studio' && (
@@ -183,7 +195,7 @@ export default function PlatformBlueprints() {
             <label className="text-sm">Actions (comma-separated)<input className="input block mt-1" value={actions} onChange={(e) => setActions(e.target.value)} placeholder="start,stop,backup" /></label>
             <button type="button" className="btn-primary flex items-center gap-2" onClick={() => void createFromVms()}><Plus className="w-4 h-4" /> Create from VMs</button>
           </MacGlassPanel>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
             {rows.map((bp) => (
               <MacGlassPanel key={bp.id} title={bp.name}>
                 <p className="text-xs text-[var(--text-muted)]">{bp.description || 'No description'}</p>

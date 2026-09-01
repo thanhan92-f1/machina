@@ -360,7 +360,7 @@ export default function PlatformSoc() {
       )}
 
       {tab === 'alerts' && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4 w-full">
           <MacGlassPanel title="Alert queue">
             {alerts.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] p-3">No open alerts.</p>
@@ -489,7 +489,7 @@ export default function PlatformSoc() {
               <Plus className="w-4 h-4" /> New playbook
             </button>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4 w-full">
             <div className="space-y-4">
               <MacGlassPanel title="SOAR playbooks">
                 {playbooks.length === 0 ? (
