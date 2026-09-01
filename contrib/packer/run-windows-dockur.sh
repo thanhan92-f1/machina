@@ -54,10 +54,40 @@ if [ ! -e /dev/kvm ]; then
 fi
 
 mkdir -p "$STORAGE_DIR"
-if [ -f "$GOLDEN" ]; then
+# Optional full dockur /storage seed (data.qcow2 + windows.* sidecars from a prior install).
+SEED_DIR="${MACHINA_DOCKUR_SEED_DIR:-}"
+if [ -z "$SEED_DIR" ] && [ -d "/var/lib/machina/dockur-seeds/${GUEST}" ]; then
+  SEED_DIR="/var/lib/machina/dockur-seeds/${GUEST}"
+fi
+
+seed_file() {
+  local src="$1" dst="$2"
+  if [ -f "$src" ]; then
+    if ! ln -f "$src" "$dst" 2>/dev/null; then
+      cp --reflink=auto -f "$src" "$dst" 2>/dev/null || cp -a "$src" "$dst"
+    fi
+  fi
+}
+
+if [ -n "$SEED_DIR" ] && [ -f "${SEED_DIR}/data.qcow2" ]; then
+  log "Seeding storage from ${SEED_DIR}"
+  seed_file "${SEED_DIR}/data.qcow2" "${STORAGE_DIR}/data.qcow2"
+  for f in windows.boot windows.base windows.ver windows.rom windows.vars windows.mac; do
+    seed_file "${SEED_DIR}/${f}" "${STORAGE_DIR}/${f}"
+  done
+  [ -f "${STORAGE_DIR}/windows.boot" ] || : >"${STORAGE_DIR}/windows.boot"
+  log "Seeded ${STORAGE_DIR}/data.qcow2 ($(stat -c%s "${STORAGE_DIR}/data.qcow2") bytes)"
+elif [ -f "$GOLDEN" ]; then
   log "Using golden disk ${GOLDEN}"
-  ln -f "$GOLDEN" "${STORAGE_DIR}/data.qcow2" 2>/dev/null \
-    || cp -a "$GOLDEN" "${STORAGE_DIR}/data.qcow2"
+  # protected_hardlinks can block ln when the daemon user does not own the golden.
+  if ! ln -f "$GOLDEN" "${STORAGE_DIR}/data.qcow2"; then
+    log "hardlink failed — copying (reflink if available)"
+    cp --reflink=auto -f "$GOLDEN" "${STORAGE_DIR}/data.qcow2" \
+      || cp -a "$GOLDEN" "${STORAGE_DIR}/data.qcow2"
+  fi
+  # dockur re-downloads Windows unless it sees an installed disk marker.
+  : >"${STORAGE_DIR}/windows.boot"
+  log "Seeded ${STORAGE_DIR}/data.qcow2 ($(stat -c%s "${STORAGE_DIR}/data.qcow2") bytes) — tip: set MACHINA_DOCKUR_SEED_DIR for full windows.* sidecars"
 else
   log "No golden at ${GOLDEN} — dockur will install ${GUEST} into ${STORAGE_DIR}"
 fi

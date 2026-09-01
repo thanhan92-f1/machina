@@ -31,7 +31,7 @@ RAM_SIZE="${MACHINA_DOCKUR_RAM_SIZE:-4G}"
 CPU_CORES="${MACHINA_DOCKUR_CPU_CORES:-2}"
 WIN_USERNAME="${MACHINA_DOCKUR_USERNAME:-Docker}"
 WIN_PASSWORD="${MACHINA_DOCKUR_PASSWORD:-admin}"
-MAX_WAIT_SECS="${MACHINA_DOCKUR_MAX_WAIT_SECS:-7200}"
+MAX_WAIT_SECS="${MACHINA_DOCKUR_MAX_WAIT_SECS:-10800}"
 POLL_SECS="${MACHINA_DOCKUR_POLL_SECS:-15}"
 
 CONTAINER_NAME="machina-dockur-${GUEST}-$$"
@@ -47,11 +47,37 @@ podman_bin() {
   return 1
 }
 
+# dockur prints "Windows started successfully" even while booting the *installer* ISO.
+# Prefer the windows.boot marker + large disk; fall back to hard-disk Boot Manager
+# with a large qcow2 (installer DVD lines may still linger in the log window).
 install_complete_in_logs() {
   local blob="$1"
-  grep -qiE 'Windows (is running|started succesfully|started successfully)' <<<"$blob" \
-    || grep -qiE 'visit http://[^ ]+:8006' <<<"$blob" \
-    || grep -qiE 'Booting Windows securely' <<<"$blob" && grep -qiE 'visit http://' <<<"$blob"
+  grep -qiE 'Windows Boot Manager' <<<"$blob" \
+    && grep -qiE 'Windows started successfully|Windows is running' <<<"$blob" \
+    && ! grep -qiE 'UEFI QEMU DVD-ROM' <<<"$blob"
+}
+
+disk_looks_installed() {
+  [ -f "$DISK_QCOW2" ] || return 1
+  local size
+  size="$(stat -c%s "$DISK_QCOW2" 2>/dev/null || echo 0)"
+  # Fresh installs land well above 5 GiB once the WIM is applied
+  [ "$size" -gt 5000000000 ] || return 1
+  # Strong signal: dockur creates windows.boot when setup finished
+  if [ -f "${STORAGE_DIR}/windows.boot" ]; then
+    return 0
+  fi
+  return 1
+}
+
+# HD boot + large disk for several consecutive polls (OOBE / first boot).
+hd_boot_stable() {
+  local blob="$1"
+  [ -f "$DISK_QCOW2" ] || return 1
+  local size
+  size="$(stat -c%s "$DISK_QCOW2" 2>/dev/null || echo 0)"
+  [ "$size" -gt 8000000000 ] || return 1
+  grep -qiE 'Windows Boot Manager' <<<"$blob"
 }
 
 log "Golden Forge (dockur): guest=${GUEST} VERSION=${DOCKUR_VERSION}"
@@ -98,6 +124,7 @@ trap cleanup_container EXIT
 log "Streaming container logs (install may take 30–90 minutes)"
 elapsed=0
 last_log_line=0
+hd_boot_hits=0
 while (( elapsed < MAX_WAIT_SECS )); do
   if ! "$PODMAN" inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q true; then
     log "Container exited — checking disk artifact"
@@ -112,15 +139,34 @@ while (( elapsed < MAX_WAIT_SECS )); do
 
   logs="$(printf '%s\n' "${all_logs[@]: -200}")"
 
+  if disk_looks_installed; then
+    size="$(stat -c%s "$DISK_QCOW2" 2>/dev/null || echo 0)"
+    log "Install complete (windows.boot + disk ${size} bytes)"
+    sleep 60
+    break
+  fi
+
   if install_complete_in_logs "$logs"; then
-    if [ -f "$DISK_QCOW2" ]; then
+    size="$(stat -c%s "$DISK_QCOW2" 2>/dev/null || echo 0)"
+    log "Install complete marker detected; disk size ${size} bytes"
+    sleep 60
+    break
+  fi
+
+  if hd_boot_stable "$logs"; then
+    hd_boot_hits=$((hd_boot_hits + 1))
+    log "HD boot seen (${hd_boot_hits}/8 consecutive polls)"
+    # ~2 minutes of stable HD boot after a large disk → harvest
+    if (( hd_boot_hits >= 8 )); then
       size="$(stat -c%s "$DISK_QCOW2" 2>/dev/null || echo 0)"
-      if [ "$size" -gt 500000000 ]; then
-        log "Install complete marker detected; disk size ${size} bytes"
-        sleep 30
-        break
-      fi
+      log "Treating install as complete after stable HD boot; disk ${size} bytes"
+      # Ensure windows.boot exists so vessel golden seeding skips re-download
+      : >"${STORAGE_DIR}/windows.boot"
+      sleep 30
+      break
     fi
+  else
+    hd_boot_hits=0
   fi
 
   sleep "$POLL_SECS"
