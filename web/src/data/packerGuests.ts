@@ -143,6 +143,24 @@ export const MACHINA_PACKER_SCRIPT_GUESTS: readonly MachinaPackerScriptGuest[] =
     defaultLoginUser: 'root',
     notes: 'dockur/windows via Podman; default login Docker/admin — rotate before production.',
   },
+  {
+    id: 'windows-server-2022',
+    label: 'Windows Server 2022',
+    family: 'windows',
+    osVariantHint: 'win2k22',
+    virtInstallDownloadOs: 'win2k22',
+    defaultLoginUser: 'root',
+    notes: 'dockur/windows VERSION=2022; default login Docker/admin — rotate before production.',
+  },
+  {
+    id: 'windows-server-2025',
+    label: 'Windows Server 2025',
+    family: 'windows',
+    osVariantHint: 'win2k25',
+    virtInstallDownloadOs: 'win2k25',
+    defaultLoginUser: 'root',
+    notes: 'dockur/windows VERSION=2025; default login Docker/admin — rotate before production.',
+  },
 ] as const
 
 export const PACKER_SCRIPT_SYSTEM = '/usr/local/share/machina/packer/build-linux-image.sh'

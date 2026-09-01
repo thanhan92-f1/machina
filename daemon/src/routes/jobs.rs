@@ -157,7 +157,10 @@ const PACKER_WINDOWS_DOCKUR_SCRIPT: &str =
 const PACKER_GOLDEN_ROOT: &str = "/var/lib/machina/packer-builds";
 
 fn packer_guest_is_windows_dockur(g: &str) -> bool {
-    matches!(g, "win10" | "win11")
+    matches!(
+        g,
+        "win10" | "win11" | "windows-server-2022" | "windows-server-2025"
+    )
 }
 
 fn packer_guest_allowed(g: &str) -> bool {

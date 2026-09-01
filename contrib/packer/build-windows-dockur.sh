@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build Windows golden qcow2 via dockur/windows (Podman + KVM).
-# Usage: ./build-windows-dockur.sh {win10|win11} [workdir]
+# Usage: ./build-windows-dockur.sh {win10|win11|windows-server-2022|windows-server-2025} [workdir]
 # Output: workdir/output-{guest}/{guest}.qcow2 (same layout as build-linux-image.sh)
 set -euo pipefail
 
@@ -10,8 +10,10 @@ WORKDIR="${2:-work}"
 case "$GUEST" in
   win11) DOCKUR_VERSION="${DOCKUR_VERSION:-11}" ;;
   win10) DOCKUR_VERSION="${DOCKUR_VERSION:-10}" ;;
+  windows-server-2022) DOCKUR_VERSION="${DOCKUR_VERSION:-2022}" ;;
+  windows-server-2025) DOCKUR_VERSION="${DOCKUR_VERSION:-2025}" ;;
   *)
-    echo "[machina] unknown dockur guest: $GUEST (expected win10 or win11)" >&2
+    echo "[machina] unknown dockur guest: $GUEST (expected win10, win11, windows-server-2022, or windows-server-2025)" >&2
     exit 1
     ;;
 esac

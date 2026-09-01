@@ -63,7 +63,9 @@ export default function ContainersPage() {
   const [deleteTarget, setDeleteTarget] = useState<ContainerSummary | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [windowsBusy, setWindowsBusy] = useState<'win10' | 'win11' | null>(null)
+  const [windowsBusy, setWindowsBusy] = useState<
+    'win10' | 'win11' | 'windows-server-2022' | 'windows-server-2025' | null
+  >(null)
   const [newName, setNewName] = useState('')
   const [newImage, setNewImage] = useState('docker.io/library/nginx:alpine')
   const [newCommand, setNewCommand] = useState('')
@@ -145,7 +147,9 @@ export default function ContainersPage() {
     }
   }
 
-  const onRunWindows = async (guest: 'win10' | 'win11') => {
+  const onRunWindows = async (
+    guest: 'win10' | 'win11' | 'windows-server-2022' | 'windows-server-2025',
+  ) => {
     setWindowsBusy(guest)
     try {
       const r = await runVesselWindowsDockur({ guest, use_golden: true })
@@ -201,7 +205,7 @@ export default function ContainersPage() {
             ) : (
               <Play className="w-3.5 h-3.5" />
             )}
-            Windows 11
+            Win 11
           </button>
           <button
             type="button"
@@ -215,7 +219,35 @@ export default function ContainersPage() {
             ) : (
               <Play className="w-3.5 h-3.5" />
             )}
-            Windows 10
+            Win 10
+          </button>
+          <button
+            type="button"
+            disabled={!status?.connected || windowsBusy !== null}
+            onClick={() => void onRunWindows('windows-server-2022')}
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm disabled:opacity-40"
+            title="Windows Server 2022 via dockur"
+          >
+            {windowsBusy === 'windows-server-2022' ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Server 2022
+          </button>
+          <button
+            type="button"
+            disabled={!status?.connected || windowsBusy !== null}
+            onClick={() => void onRunWindows('windows-server-2025')}
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm disabled:opacity-40"
+            title="Windows Server 2025 via dockur"
+          >
+            {windowsBusy === 'windows-server-2025' ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Server 2025
           </button>
           <button
             type="button"

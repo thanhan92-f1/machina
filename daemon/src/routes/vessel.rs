@@ -228,9 +228,12 @@ async fn run_windows_dockur(
 ) -> Result<Json<Value>, AppError> {
     require_write(&actor, "vessel")?;
     let guest = body.guest.trim().to_string();
-    if !matches!(guest.as_str(), "win10" | "win11") {
+    if !matches!(
+        guest.as_str(),
+        "win10" | "win11" | "windows-server-2022" | "windows-server-2025"
+    ) {
         return Err(AppError::from(LibvirtError::Invalid(
-            "guest must be win10 or win11".into(),
+            "guest must be win10, win11, windows-server-2022, or windows-server-2025".into(),
         )));
     }
     let cfg = machina_core::MachinaConfig::load();

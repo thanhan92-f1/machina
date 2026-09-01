@@ -99,7 +99,7 @@ export function createVesselContainer(body: {
 }
 
 export function runVesselWindowsDockur(body: {
-  guest: 'win10' | 'win11'
+  guest: 'win10' | 'win11' | 'windows-server-2022' | 'windows-server-2025'
   name?: string
   use_golden?: boolean
 }): Promise<{

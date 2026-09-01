@@ -1216,9 +1216,12 @@ pub fn register_dockur_windows_golden(
     guest: &str,
     artifact_qcow2: &std::path::Path,
 ) -> Result<std::path::PathBuf, LibvirtError> {
-    if !matches!(guest, "win10" | "win11") {
+    if !matches!(
+        guest,
+        "win10" | "win11" | "windows-server-2022" | "windows-server-2025"
+    ) {
         return Err(LibvirtError::Invalid(format!(
-            "dockur golden guest must be win10 or win11, got {guest}"
+            "dockur golden guest must be win10, win11, windows-server-2022, or windows-server-2025, got {guest}"
         )));
     }
     if !artifact_qcow2.is_file() {
@@ -1239,6 +1242,8 @@ pub fn register_dockur_windows_golden(
 
     let (label, os_variant, disk_gb) = match guest {
         "win10" => ("Windows 10 (dockur Golden Forge)", "win10", 64u64),
+        "windows-server-2022" => ("Windows Server 2022 (dockur Golden Forge)", "win2k22", 80u64),
+        "windows-server-2025" => ("Windows Server 2025 (dockur Golden Forge)", "win2k25", 80u64),
         _ => ("Windows 11 (dockur Golden Forge)", "win11", 64u64),
     };
     let tmpl = crate::VmTemplate {

@@ -732,6 +732,28 @@ impl VmTemplate {
                 template_disk_mode: "copy".to_string(),
             },
             VmTemplate {
+                name: "windows-server-2022".to_string(),
+                description: "Windows Server 2022 dockur golden (UEFI + VirtIO, KubeVirt-ready)"
+                    .to_string(),
+                vcpus: 4,
+                memory_mb: 8192,
+                disk_gb: 80,
+                os_variant: "win2k22".to_string(),
+                base_image: Some("/var/lib/libvirt/images/windows-server-2022.qcow2".to_string()),
+                template_disk_mode: "copy".to_string(),
+            },
+            VmTemplate {
+                name: "windows-server-2025".to_string(),
+                description: "Windows Server 2025 dockur golden (UEFI + VirtIO, KubeVirt-ready)"
+                    .to_string(),
+                vcpus: 4,
+                memory_mb: 8192,
+                disk_gb: 80,
+                os_variant: "win2k25".to_string(),
+                base_image: Some("/var/lib/libvirt/images/windows-server-2025.qcow2".to_string()),
+                template_disk_mode: "copy".to_string(),
+            },
+            VmTemplate {
                 name: "minimal".to_string(),
                 description: "Minimal: 1 vCPU, 512 MB RAM, 5 GB disk".to_string(),
                 vcpus: 1,

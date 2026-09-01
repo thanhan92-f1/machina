@@ -195,6 +195,32 @@ const CATALOG: &[CatalogTemplate] = &[
         icon: "🪟",
     },
     CatalogTemplate {
+        name: "windows-server-2022",
+        version: "1.0.0",
+        source_disk: "/var/lib/libvirt/images/windows-server-2022.qcow2",
+        download_url: None,
+        cloud_init: false,
+        os_family: "windows",
+        category: "Windows",
+        workload: "general",
+        description: "Windows Server 2022 — dockur Golden Forge (UEFI + VirtIO). Build via Create VM → Golden Forge (guest id windows-server-2022).",
+        featured: true,
+        icon: "🪟",
+    },
+    CatalogTemplate {
+        name: "windows-server-2025",
+        version: "1.0.0",
+        source_disk: "/var/lib/libvirt/images/windows-server-2025.qcow2",
+        download_url: None,
+        cloud_init: false,
+        os_family: "windows",
+        category: "Windows",
+        workload: "general",
+        description: "Windows Server 2025 — dockur Golden Forge (UEFI + VirtIO). Build via Create VM → Golden Forge (guest id windows-server-2025).",
+        featured: true,
+        icon: "🪟",
+    },
+    CatalogTemplate {
         name: "postgresql-16",
         version: "1.0.0",
         source_disk: UBUNTU_2404_DISK,
@@ -351,6 +377,12 @@ const CATALOG: &[CatalogTemplate] = &[
 pub fn default_template_for_natural_language(query: &str) -> &'static str {
     let ql = query.to_lowercase();
     if ql.contains("windows") || ql.contains("win10") || ql.contains("win11") {
+        if ql.contains("2022") || ql.contains("server 2022") {
+            return "windows-server-2022";
+        }
+        if ql.contains("2025") || ql.contains("server 2025") {
+            return "windows-server-2025";
+        }
         if ql.contains("win10") || ql.contains("windows 10") || ql.contains("windows-10") {
             return "win10";
         }
@@ -388,9 +420,6 @@ const RETIRED_TEMPLATE_NAMES: &[&str] = &[
     "fedora-42",
     "fedora-43",
     "rhel-9",
-    "windows-server-2022",
-    "windows-server-2025",
-    "windows-11",
 ];
 
 /// Remove marketplace rows that are no longer in the bundled catalog (e.g. fedora-40).
@@ -491,14 +520,22 @@ mod tests {
     use super::default_template_for_natural_language;
 
     #[test]
-    fn nl_os_windows_defaults_to_win11_dockur() {
+    fn nl_os_windows_server_and_desktop() {
         assert_eq!(
             default_template_for_natural_language("create windows server 2025 vm"),
-            "win11"
+            "windows-server-2025"
+        );
+        assert_eq!(
+            default_template_for_natural_language("create windows server 2022"),
+            "windows-server-2022"
         );
         assert_eq!(
             default_template_for_natural_language("create windows 10 desktop"),
             "win10"
+        );
+        assert_eq!(
+            default_template_for_natural_language("create windows 11 vm"),
+            "win11"
         );
     }
 

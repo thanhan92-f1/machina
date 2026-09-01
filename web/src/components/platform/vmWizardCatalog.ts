@@ -33,6 +33,8 @@ export const OS_FLAVORS: OsFlavor[] = [
   { id: 'ai-inference-node', label: 'AI inference', subtitle: 'Model serving stack', category: 'Special', icon: '🤖', featured: true },
   { id: 'win11', label: 'Windows 11', subtitle: 'dockur Golden Forge · UEFI + VirtIO · KubeVirt-ready', category: 'Windows', icon: '🪟', featured: true, windows: true },
   { id: 'win10', label: 'Windows 10', subtitle: 'dockur Golden Forge · UEFI + VirtIO · KubeVirt-ready', category: 'Windows', icon: '🪟', featured: true, windows: true },
+  { id: 'windows-server-2022', label: 'Windows Server 2022', subtitle: 'dockur Golden Forge · UEFI + VirtIO · KubeVirt-ready', category: 'Windows', icon: '🪟', featured: true, windows: true },
+  { id: 'windows-server-2025', label: 'Windows Server 2025', subtitle: 'dockur Golden Forge · UEFI + VirtIO · KubeVirt-ready', category: 'Windows', icon: '🪟', featured: true, windows: true },
   { id: 'custom-iso', label: 'Custom ISO', subtitle: 'Install from your image', category: 'Special', icon: '💿' },
   { id: 'custom-virt-install', label: 'PXE / URL install', subtitle: 'Network boot, kickstart, or libosinfo download', category: 'Special', icon: '🌐' },
 ]

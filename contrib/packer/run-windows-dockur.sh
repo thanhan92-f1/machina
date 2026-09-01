@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run a Windows guest via dockur/windows in Podman (preferred) or Docker.
-# Usage: ./run-windows-dockur.sh {win10|win11} [container-name]
+# Usage: ./run-windows-dockur.sh {win10|win11|windows-server-2022|windows-server-2025} [container-name]
 # Optional: MACHINA_DOCKUR_GOLDEN=/var/lib/libvirt/images/win11.qcow2
 #           MACHINA_DOCKUR_PUBLISH=1 (default) maps 127.0.0.1:8006 and :3389
 set -euo pipefail
@@ -11,8 +11,10 @@ NAME="${2:-machina-${GUEST}}"
 case "$GUEST" in
   win11) DOCKUR_VERSION="${DOCKUR_VERSION:-11}" ;;
   win10) DOCKUR_VERSION="${DOCKUR_VERSION:-10}" ;;
+  windows-server-2022) DOCKUR_VERSION="${DOCKUR_VERSION:-2022}" ;;
+  windows-server-2025) DOCKUR_VERSION="${DOCKUR_VERSION:-2025}" ;;
   *)
-    echo "[machina] unknown dockur guest: $GUEST (expected win10 or win11)" >&2
+    echo "[machina] unknown dockur guest: $GUEST (expected win10, win11, windows-server-2022, or windows-server-2025)" >&2
     exit 1
     ;;
 esac

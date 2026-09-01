@@ -11,9 +11,9 @@ Machina builds Windows 10/11 golden `qcow2` disks via [dockur/windows](https://g
 
 ## API / UI
 
-- `POST /api/v1/jobs/packer-golden-build` with `{"guest":"win11"}` or `{"guest":"win10"}`
+- `POST /api/v1/jobs/packer-golden-build` with `{"guest":"win11"}`, `{"guest":"win10"}`, `{"guest":"windows-server-2022"}`, or `{"guest":"windows-server-2025"}`
 - Create VM → **Golden Forge** → pick Windows profile → **Build golden qcow2**
-- Artifact: `/var/lib/machina/packer-builds/{job-id}/work/output-win11/win11.qcow2`
+- Artifact: `/var/lib/machina/packer-builds/{job-id}/work/output-win11/win11.qcow2` (same pattern for each guest id)
 
 ## Script (manual)
 
