@@ -22,6 +22,7 @@ import {
   reconnectVessel,
   removeVesselContainer,
   restartVesselContainer,
+  runVesselWindowsDockur,
   shortId,
   startVesselContainer,
   stopVesselContainer,
@@ -62,6 +63,7 @@ export default function ContainersPage() {
   const [deleteTarget, setDeleteTarget] = useState<ContainerSummary | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [windowsBusy, setWindowsBusy] = useState<'win10' | 'win11' | null>(null)
   const [newName, setNewName] = useState('')
   const [newImage, setNewImage] = useState('docker.io/library/nginx:alpine')
   const [newCommand, setNewCommand] = useState('')
@@ -143,6 +145,21 @@ export default function ContainersPage() {
     }
   }
 
+  const onRunWindows = async (guest: 'win10' | 'win11') => {
+    setWindowsBusy(guest)
+    try {
+      const r = await runVesselWindowsDockur({ guest, use_golden: true })
+      toast.success(
+        `${r.guest} running via ${r.engine}${r.golden ? ' (golden disk)' : ''} — viewer ${r.web}, RDP ${r.rdp}`,
+      )
+      await load()
+    } catch (e) {
+      toast.error(formatUserError(e))
+    } finally {
+      setWindowsBusy(null)
+    }
+  }
+
   const podsCapable = Boolean(status?.capabilities?.pods)
   const engineLabel = status?.engine ? String(status.engine) : '—'
   const runningCount = items.filter((c) => String(c.status).toLowerCase() === 'running').length
@@ -151,7 +168,7 @@ export default function ContainersPage() {
     <PageLayout
       eyebrow="Vessel"
       title="Containers"
-      subtitle="Local Podman / Docker containers on this host (Vessel)."
+      subtitle="Local Podman / Docker containers on this host (Vessel). Windows 10/11 run via dockur with KVM."
       icon={<Box className="w-5 h-5" />}
       loading={loading && items.length === 0 && !error}
       error={error}
@@ -172,6 +189,34 @@ export default function ContainersPage() {
               <Layers className="w-3.5 h-3.5" /> Pods
             </Link>
           )}
+          <button
+            type="button"
+            disabled={!status?.connected || windowsBusy !== null}
+            onClick={() => void onRunWindows('win11')}
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm disabled:opacity-40"
+            title="Start dockurr/windows in Podman or Docker (uses golden qcow2 when present)"
+          >
+            {windowsBusy === 'win11' ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Windows 11
+          </button>
+          <button
+            type="button"
+            disabled={!status?.connected || windowsBusy !== null}
+            onClick={() => void onRunWindows('win10')}
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm disabled:opacity-40"
+            title="Start dockurr/windows in Podman or Docker (uses golden qcow2 when present)"
+          >
+            {windowsBusy === 'win10' ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Windows 10
+          </button>
           <button
             type="button"
             disabled={!status?.connected}
@@ -223,15 +268,16 @@ export default function ContainersPage() {
         <EmptyState
           icon={<Box className="w-8 h-8" />}
           title="No containers"
-          description="Pull an image and run your first container from this page."
+          description="Run a Linux image, or start Windows 10/11 via dockur (Podman preferred, Docker fallback). Golden disks from Golden Forge are reused when present."
           primaryAction={
-            <button
-              type="button"
-              onClick={() => setShowCreate(true)}
-              className="btn-primary text-sm"
-            >
-              Create container
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => void onRunWindows('win11')} className="btn-primary text-sm">
+                Run Windows 11
+              </button>
+              <button type="button" onClick={() => setShowCreate(true)} className="btn-secondary text-sm">
+                Create container
+              </button>
+            </div>
           }
         />
       )}
@@ -255,7 +301,14 @@ export default function ContainersPage() {
                 const disabled = busy === id
                 return (
                   <tr key={id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="px-3 py-2 text-[var(--text-primary)] font-medium">{c.name || '—'}</td>
+                    <td className="px-3 py-2 text-[var(--text-primary)] font-medium">
+                      {c.name || '—'}
+                      {(c.labels?.['machina.io/windows-dockur'] || /dockurr\/windows/i.test(c.image)) && (
+                        <span className={`ml-2 text-[10px] uppercase tracking-wide ${statusToneClass('info')}`}>
+                          dockur
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-[var(--text-secondary)] font-mono text-xs max-w-[14rem] truncate">
                       {c.image}
                     </td>

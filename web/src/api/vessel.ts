@@ -98,6 +98,24 @@ export function createVesselContainer(body: {
   })
 }
 
+export function runVesselWindowsDockur(body: {
+  guest: 'win10' | 'win11'
+  name?: string
+  use_golden?: boolean
+}): Promise<{
+  id: string
+  name: string
+  guest: string
+  engine: string
+  golden: boolean
+  web: string
+  rdp: string
+  login: string
+  message: string
+}> {
+  return apiPost('/api/v1/vessel/windows-dockur', body)
+}
+
 export function startVesselContainer(id: string): Promise<{ status: string; name: string }> {
   return apiPost(`/api/v1/vessel/containers/${encodeURIComponent(id)}/start`)
 }

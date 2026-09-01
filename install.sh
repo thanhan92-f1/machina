@@ -1265,9 +1265,9 @@ install_files() {
         install -Dm755 contrib/packer/build-linux-image.sh /usr/local/share/machina/packer/build-linux-image.sh
         ok "Packer Linux image script -> /usr/local/share/machina/packer/build-linux-image.sh"
     fi
-    if [ -f contrib/packer/build-windows-dockur.sh ]; then
-        install -Dm755 contrib/packer/build-windows-dockur.sh /usr/local/share/machina/packer/build-windows-dockur.sh
-        ok "Packer Windows dockur script -> /usr/local/share/machina/packer/build-windows-dockur.sh"
+    if [ -f contrib/packer/run-windows-dockur.sh ]; then
+        install -Dm755 contrib/packer/run-windows-dockur.sh /usr/local/share/machina/packer/run-windows-dockur.sh
+        ok "Run Windows dockur script -> /usr/local/share/machina/packer/run-windows-dockur.sh"
     fi
     if [ -d contrib/packer/windows-qemu ]; then
         rm -rf /usr/local/share/machina/packer/windows-qemu
@@ -1724,7 +1724,8 @@ print_summary() {
     echo "  Source:      ${INSTALL_DIR}"
     echo "  Log:         ${LOG_FILE}"
     echo "  Packer:      /usr/local/share/machina/packer/build-linux-image.sh"
-    echo "  Win dockur:  /usr/local/share/machina/packer/build-windows-dockur.sh (Podman + KVM)"
+    echo "  Win dockur:  /usr/local/share/machina/packer/build-windows-dockur.sh (build)"
+    echo "  Win vessel:  /usr/local/share/machina/packer/run-windows-dockur.sh (Podman/Docker run)"
     echo "  Win+VirtIO:  /usr/local/share/machina/packer/windows-qemu/ (see HOWTO.txt)"
     echo ""
 }

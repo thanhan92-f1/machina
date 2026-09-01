@@ -38,6 +38,22 @@ sudo /usr/local/share/machina/packer/build-windows-dockur.sh win11 work
 
 Default credentials are **known** (`Docker` / `admin`). Rotate before exposing VMs to untrusted networks. For manual unattended Packer + VirtIO, see `../windows-qemu/HOWTO.txt`.
 
+## Vessel (Podman / Docker)
+
+Windows templates can also run **directly as containers** (no libvirt clone):
+
+```bash
+sudo /usr/local/share/machina/packer/run-windows-dockur.sh win11
+# or API: POST /api/v1/vessel/windows-dockur  {"guest":"win11","use_golden":true}
+```
+
+- Runtime: **Podman preferred**, **Docker** if Podman is absent
+- Uses golden `/var/lib/libvirt/images/{guest}.qcow2` when present; otherwise installs into `/var/lib/machina/vessel-windows/{guest}`
+- Web viewer: `http://127.0.0.1:8006` · RDP: `127.0.0.1:3389`
+- UI: **Containers** → **Windows 11** / **Windows 10**
+
+Requires `[libvirt] dockur_windows_allowed = true` and `/dev/kvm`.
+
 ## libvirt clone + KubeVirt
 
 - Firmware: **UEFI** (required for dockur goldens)

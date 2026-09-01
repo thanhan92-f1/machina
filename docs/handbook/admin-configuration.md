@@ -158,6 +158,8 @@ Golden Forge Windows (`win10`, `win11`) uses [dockur/windows](https://github.com
 3. Writes a saved daemon template `/var/lib/machina/templates/{guest}.json` (`base_image` set)
 4. Platform catalog templates `win10` / `win11` resolve that same `source_disk`
 
+**Vessel (Containers):** `POST /api/v1/vessel/windows-dockur` with `{"guest":"win11"}` starts `dockurr/windows` via Podman (preferred) or Docker, reusing the golden qcow2 when present. UI: Containers → Windows 11 / Windows 10. Viewer `http://127.0.0.1:8006`, RDP `127.0.0.1:3389`.
+
 **KubeVirt:** `GET /api/v1/kubevirt/qcow2-bundle?qcow2_path=/var/lib/libvirt/images/win11.qcow2&guest_os=windows` emits EFI + TPM + virtio + RDP so dockur goldens can boot on KubeVirt. See `contrib/packer/windows-dockur/README.md`.
 
 ### `[auth]`

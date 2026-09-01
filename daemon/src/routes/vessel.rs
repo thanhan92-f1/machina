@@ -205,6 +205,125 @@ async fn create_container(
     Ok(Json(json!(created)))
 }
 
+#[derive(Debug, Deserialize)]
+struct RunWindowsDockurBody {
+    guest: String,
+    #[serde(default)]
+    name: Option<String>,
+    /// Bind/copy `/var/lib/libvirt/images/{guest}.qcow2` when present (default true).
+    #[serde(default = "default_true_use_golden")]
+    use_golden: bool,
+}
+
+fn default_true_use_golden() -> bool {
+    true
+}
+
+const RUN_WINDOWS_DOCKUR_SCRIPT: &str = "/usr/local/share/machina/packer/run-windows-dockur.sh";
+
+async fn run_windows_dockur(
+    Extension(actor): Extension<RequestActor>,
+    Extension(bus): Extension<Arc<EventBus>>,
+    Json(body): Json<RunWindowsDockurBody>,
+) -> Result<Json<Value>, AppError> {
+    require_write(&actor, "vessel")?;
+    let guest = body.guest.trim().to_string();
+    if !matches!(guest.as_str(), "win10" | "win11") {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "guest must be win10 or win11".into(),
+        )));
+    }
+    let cfg = machina_core::MachinaConfig::load();
+    if !cfg.libvirt.dockur_windows_allowed {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "dockur Windows is disabled ([libvirt] dockur_windows_allowed = false)".into(),
+        )));
+    }
+    if !std::path::Path::new(RUN_WINDOWS_DOCKUR_SCRIPT).is_file() {
+        return Err(AppError::from(LibvirtError::Invalid(format!(
+            "script not found: {RUN_WINDOWS_DOCKUR_SCRIPT}"
+        ))));
+    }
+    let name = body
+        .name
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("machina-{guest}")
+        .replace("{guest}", &guest);
+    let golden = format!("/var/lib/libvirt/images/{guest}.qcow2");
+    let use_golden = body.use_golden && std::path::Path::new(&golden).is_file();
+    let disk_size = cfg.libvirt.dockur_disk_size.clone();
+    let ram_size = cfg.libvirt.dockur_ram_size.clone();
+    let cpu_cores = cfg.libvirt.dockur_cpu_cores.clone();
+
+    let guest_bg = guest.clone();
+    let name_bg = name.clone();
+    let golden_bg = golden.clone();
+    let output = tokio::task::spawn_blocking(move || {
+        let mut cmd = std::process::Command::new("bash");
+        cmd.arg(RUN_WINDOWS_DOCKUR_SCRIPT)
+            .arg(&guest_bg)
+            .arg(&name_bg);
+        if use_golden {
+            cmd.env("MACHINA_DOCKUR_GOLDEN", &golden_bg);
+        } else {
+            cmd.env("MACHINA_DOCKUR_GOLDEN", "");
+        }
+        if !disk_size.trim().is_empty() {
+            cmd.env("MACHINA_DOCKUR_DISK_SIZE", disk_size.trim());
+        }
+        if !ram_size.trim().is_empty() {
+            cmd.env("MACHINA_DOCKUR_RAM_SIZE", ram_size.trim());
+        }
+        if !cpu_cores.trim().is_empty() {
+            cmd.env("MACHINA_DOCKUR_CPU_CORES", cpu_cores.trim());
+        }
+        cmd.output()
+    })
+    .await
+    .map_err(|e| AppError::from(LibvirtError::Internal(format!("join: {e}"))))?
+    .map_err(|e| AppError::from(LibvirtError::Operation(format!("spawn dockur run: {e}"))))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    if !output.status.success() {
+        let detail = if stderr.trim().is_empty() {
+            stdout
+        } else {
+            stderr
+        };
+        return Err(AppError::from(LibvirtError::Operation(format!(
+            "dockur run failed: {}",
+            detail.trim()
+        ))));
+    }
+
+    let engine = stdout
+        .lines()
+        .find_map(|l| l.strip_prefix("[machina] engine="))
+        .unwrap_or("podman")
+        .to_string();
+    let cid = stdout
+        .lines()
+        .find_map(|l| l.strip_prefix("[machina] id="))
+        .unwrap_or("")
+        .to_string();
+
+    emit(&bus, "vessel.windows-dockur.started", &name, "ok");
+    Ok(Json(json!({
+        "id": cid,
+        "name": name,
+        "guest": guest,
+        "engine": engine,
+        "golden": use_golden,
+        "web": "http://127.0.0.1:8006",
+        "rdp": "127.0.0.1:3389",
+        "login": "Docker / admin",
+        "message": "Open the web viewer on the hypervisor (port 8006) or RDP 3389. Rotate default credentials before production.",
+    })))
+}
+
 async fn list_pods(Extension(handle): Extension<VesselHandle>) -> Result<Json<Value>, AppError> {
     let client = require_client(&handle).await?;
     let items = client.list_pods().await.map_err(map_vessel)?;
@@ -268,6 +387,7 @@ pub fn vessel_routes() -> Router<LibvirtManager> {
     Router::new()
         .route("/vessel/status", get(vessel_status))
         .route("/vessel/reconnect", post(vessel_reconnect))
+        .route("/vessel/windows-dockur", post(run_windows_dockur))
         .route("/vessel/containers", get(list_containers).post(create_container))
         .route("/vessel/containers/{id}/start", post(start_container))
         .route("/vessel/containers/{id}/stop", post(stop_container))
