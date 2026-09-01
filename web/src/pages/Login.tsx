@@ -2,20 +2,29 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useEffect, useRef, useState, FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { beginOidcLogin, getAuthProviders, type AuthProviders } from '../api/auth'
 import { formatUserError } from '../utils/apiError'
-import { Loader2, Eye, EyeOff, ArrowRight, User, Lock } from 'lucide-react'
+import {
+  Lock,
+  User,
+  Loader2,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ChevronLeft,
+  CheckCircle,
+} from 'lucide-react'
 import {
   PremiumLoginShell,
-  LoginError,
   LoginField,
-  LoginRemember,
   LoginSubmit,
+  LoginRemember,
+  LoginError,
 } from '../components/PremiumLoginShell'
-import { ZyvorTileMark } from '../components/ZyvorMark'
-import { ZYVOR_URL } from '../components/ZyvorBrand'
+
+type LoginStep = 'identify' | 'password'
 
 export default function LoginPage() {
   const saved = (() => {
@@ -27,6 +36,7 @@ export default function LoginPage() {
     }
   })()
 
+  const [step, setStep] = useState<LoginStep>(saved?.username ? 'password' : 'identify')
   const [username, setUsername] = useState(saved?.username ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -40,7 +50,6 @@ export default function LoginPage() {
     saml: { enabled: false, button_label: 'Sign in with SAML', login_available: false },
   })
   const { login } = useAuth()
-  const usernameRef = useRef<HTMLInputElement>(null)
   const oidcEnabled = providers.oidc.enabled
   const ldapEnabled = providers.ldap.enabled
 
@@ -59,9 +68,22 @@ export default function LoginPage() {
     }
   }, [])
 
-  useEffect(() => {
-    usernameRef.current?.focus()
-  }, [])
+  const scrollToForm = () => {
+    document.getElementById('login-sign-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleContinue = (e: FormEvent) => {
+    e.preventDefault()
+    if (!username.trim()) return
+    setError('')
+    setStep('password')
+  }
+
+  const handleBack = () => {
+    setStep('identify')
+    setPassword('')
+    setShowPassword(false)
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -82,115 +104,196 @@ export default function LoginPage() {
     }
   }
 
+  const storeCta = (
+    <>
+      <a
+        href="#login-sign-in"
+        className="login-cta-primary"
+        onClick={(e) => {
+          e.preventDefault()
+          scrollToForm()
+        }}
+      >
+        Sign in
+      </a>
+      <a
+        href="#login-sign-in"
+        className="login-cta-secondary"
+        onClick={(e) => {
+          e.preventDefault()
+          scrollToForm()
+        }}
+      >
+        Continue
+      </a>
+    </>
+  )
+
+  const panelSubtitle =
+    step === 'password' ? (
+      <>
+        Enter the password for <span className="login-apple-host">{username.trim()}</span>
+      </>
+    ) : (
+      'Sign in'
+    )
+
   return (
     <PremiumLoginShell
-      variant="macos"
-      layout="account"
-      accent="blue"
-      logo={<ZyvorTileMark size={56} className="block" idPrefix="login-tile" />}
       productName="machina"
-      mobileSubtitle="Sign in with your system account"
-      footer={
-        <a
-          href={ZYVOR_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center opacity-50 hover:opacity-80 transition-opacity"
-          aria-label="Zyvor"
-        >
-          <ZyvorTileMark size={22} idPrefix="login-footer-tile" />
-        </a>
-      }
-    >
-      <form onSubmit={handleSubmit}>
-        {error ? <LoginError message={error} /> : null}
-
-        {ldapEnabled ? (
-          <p className="text-xs text-slate-400 mb-4">Sign in with your directory (LDAP/AD) username and password.</p>
-        ) : null}
-        {providers.saml?.enabled && !providers.saml.login_available ? (
-          <p className="text-xs text-slate-400 mb-4">
-            SAML metadata is configured for IdP federation — use SSO or your local account below.
-          </p>
-        ) : null}
-
-        <div className="space-y-5">
-          <LoginField label="Username" id="login-username">
-            <User className="login-field-icon" />
-            <input
-              ref={usernameRef}
-              id="login-username"
-              name="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="System username"
-              autoComplete="username"
-              required
-              className="login-input"
-            />
-          </LoginField>
-
-          <LoginField label="Password" id="login-password">
-            <Lock className="login-field-icon" />
-            <input
-              id="login-password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              autoComplete="current-password"
-              disabled={submitting}
-              required
-              className="login-input pr-11"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/75 transition-colors"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </LoginField>
-        </div>
-
-        <LoginRemember
-          checked={rememberMe}
-          onChange={setRememberMe}
-          label="Keep me signed in"
-          hint="Only your username is stored locally — never your password."
-        />
-
-        <LoginSubmit loading={submitting} disabled={!username.trim() || !password}>
-          {submitting ? (
+      productWordmark="machina"
+      heroTitle="Private cloud. One plane."
+      heroSubheadline="KubeVirt and libvirt hypervisors, consoles, snapshots, and security — from a single dashboard."
+      heroCta={storeCta}
+      chapterNote="PAM system account · sign in to continue"
+      panelSubtitle={panelSubtitle}
+      panelHint={
+        step === 'identify' ? (
+          ldapEnabled ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin relative z-10" />
-              <span className="relative z-10">Signing in…</span>
+              Sign in with your <span className="font-mono">directory (LDAP/AD)</span> username, or a
+              PAM system account on this host.
             </>
           ) : (
             <>
-              <span className="relative z-10">Sign in</span>
-              <ArrowRight className="h-4 w-4 relative z-10" />
+              Use a <span className="font-mono">system account on this host</span> (PAM).
             </>
-          )}
-        </LoginSubmit>
+          )
+        ) : null
+      }
+      showSignInChapter
+    >
+      {step === 'identify' ? (
+        <form
+          key="identify"
+          onSubmit={handleContinue}
+          autoComplete="on"
+          aria-label="Account"
+          className="login-apple-step text-left"
+        >
+          {error ? <LoginError message={error} /> : null}
 
-        {oidcEnabled ? (
-          <button
-            type="button"
-            onClick={() => beginOidcLogin()}
-            className="mt-4 flex items-center justify-center gap-2 w-full rounded-lg border border-white/[0.12] py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
-          >
-            {providers.oidc.button_label}
+          {providers.saml?.enabled && !providers.saml.login_available ? (
+            <p className="text-xs text-zinc-400 mb-4">
+              SAML metadata is configured for IdP federation — use SSO or your local account below.
+            </p>
+          ) : null}
+
+          <div className="login-apple-fields">
+            <LoginField label="Username" id="username">
+              <User className="login-field-icon" />
+              <input
+                id="username"
+                name="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="login-input"
+                placeholder="System username"
+                autoComplete="username"
+                autoFocus
+                required
+              />
+            </LoginField>
+          </div>
+
+          <LoginSubmit loading={false} disabled={!username.trim()}>
+            <span>Continue</span>
+            <ArrowRight className="h-4 w-4" />
+          </LoginSubmit>
+
+          {oidcEnabled ? (
+            <button
+              type="button"
+              onClick={() => beginOidcLogin()}
+              className="mt-4 flex items-center justify-center w-full text-sm text-[#0071e3] hover:underline"
+            >
+              {providers.oidc.button_label}
+            </button>
+          ) : null}
+        </form>
+      ) : (
+        <form
+          key="password"
+          onSubmit={handleSubmit}
+          autoComplete="on"
+          aria-label="Password"
+          className="login-apple-step text-left"
+        >
+          <button type="button" onClick={handleBack} className="login-apple-identity" aria-label="Change account">
+            <ChevronLeft aria-hidden className="h-4 w-4 shrink-0" />
+            <span className="truncate">{username.trim()}</span>
           </button>
-        ) : null}
+          <input type="text" name="username" value={username} autoComplete="username" readOnly hidden />
 
-        <div className="mt-6 pt-5 border-t border-white/[0.08] text-center text-xs text-white/45">
-          Forgotten your password? Contact your administrator.
-        </div>
-      </form>
+          {error ? <LoginError message={error} /> : null}
+
+          <div className="login-apple-fields">
+            <LoginField label="Password" id="password">
+              <Lock className="login-field-icon" />
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="login-input pr-11"
+                placeholder="Password"
+                autoComplete="current-password"
+                autoFocus
+                required
+                disabled={submitting}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </LoginField>
+          </div>
+
+          <LoginRemember
+            checked={rememberMe}
+            onChange={(checked) => {
+              setRememberMe(checked)
+              if (!checked) localStorage.removeItem('machina-saved-login')
+            }}
+            label="Remember me on this device"
+          />
+
+          <LoginSubmit loading={submitting} disabled={!password}>
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Signing in…</span>
+              </>
+            ) : (
+              <>
+                <span>Sign In</span>
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </LoginSubmit>
+
+          {oidcEnabled ? (
+            <button
+              type="button"
+              onClick={() => beginOidcLogin()}
+              className="mt-4 flex items-center justify-center w-full text-sm text-[#0071e3] hover:underline"
+            >
+              {providers.oidc.button_label}
+            </button>
+          ) : null}
+
+          <div className="flex items-center justify-center gap-1.5 mt-4 text-xs text-zinc-400">
+            <CheckCircle className="h-3.5 w-3.5" />
+            <span>Secured with system PAM authentication</span>
+          </div>
+        </form>
+      )}
     </PremiumLoginShell>
   )
 }

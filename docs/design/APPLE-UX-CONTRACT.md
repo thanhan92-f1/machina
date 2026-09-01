@@ -34,7 +34,7 @@ Author guide: [ux.md](../ux.md).
 | Fleet Cloud nav | Pill row + **More** overflow ([`FleetCloudSubNav`](../../web/src/components/FleetCloudSubNav.tsx)) — not a 15-tab strip |
 | Tokens | apple.com blue `#0071e3` + shop box type via `zeus-parity.css` (see [DAYLIGHT-CONTRACT.md](DAYLIGHT-CONTRACT.md)) |
 | Dock | Tahoe Liquid Glass tray + neighbor magnification ([`PlatformMacDock`](../../web/src/components/platform/PlatformMacDock.tsx)) |
-| Login | Apple Account [`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css); hero wordmark **machina** (SF Pro / system display); Zyvor mark icon-only |
+| Login | Apple Store chapter ([`PremiumLoginShell`](../../web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css)) — white hero wordmark **machina**, scroll to two-step PAM sign-in (h2kvm parity) |
 
 ---
 
