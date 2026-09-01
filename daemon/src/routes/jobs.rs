@@ -331,7 +331,37 @@ async fn post_packer_golden_build_job(
             .join(format!("output-{}", guest_bg))
             .join(format!("{}.qcow2", guest_bg));
         if artifact.is_file() {
-            jobs_bg.complete_packer_golden(id, &artifact.to_string_lossy());
+            let mut target = artifact.to_string_lossy().to_string();
+            if packer_guest_is_windows_dockur(&guest_bg) {
+                match machina_core::libvirt::extras::register_dockur_windows_golden(
+                    &guest_bg,
+                    &artifact,
+                ) {
+                    Ok(stable) => {
+                        jobs_bg.append_log(
+                            id,
+                            &format!(
+                                "[machina] Registered template '{guest_bg}' → {}",
+                                stable.display()
+                            ),
+                        );
+                        jobs_bg.append_log(
+                            id,
+                            "[machina] Marketplace path ready for Platform Templates + KubeVirt qcow2-bundle",
+                        );
+                        target = stable.to_string_lossy().to_string();
+                    }
+                    Err(e) => {
+                        jobs_bg.append_log(
+                            id,
+                            &format!(
+                                "[machina] WARN: could not register dockur template (artifact kept): {e}"
+                            ),
+                        );
+                    }
+                }
+            }
+            jobs_bg.complete_packer_golden(id, &target);
         } else {
             jobs_bg.fail(
                 id,

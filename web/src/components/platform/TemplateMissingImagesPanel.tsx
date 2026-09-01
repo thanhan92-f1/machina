@@ -55,7 +55,7 @@ export default function TemplateMissingImagesPanel({
           <p className="text-xs text-amber-700/80 mt-0.5">{summary}</p>
           {manualCount > 0 && (
             <p className="text-xs text-amber-700/70 mt-1">
-              {manualCount} template{manualCount === 1 ? '' : 's'} need a manual upload (Windows, databases, appliances).
+              {manualCount} template{manualCount === 1 ? '' : 's'} need a manual image (Windows: build via Golden Forge / dockur; databases & appliances: upload).
             </p>
           )}
         </div>

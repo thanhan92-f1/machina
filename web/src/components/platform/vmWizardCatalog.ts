@@ -31,9 +31,8 @@ export const OS_FLAVORS: OsFlavor[] = [
   { id: 'gpu-worker', label: 'GPU worker', subtitle: 'CUDA / passthrough', category: 'Special', icon: '🎮', featured: true },
   { id: 'k8s-node', label: 'Kubernetes node', subtitle: 'containerd + kubeadm', category: 'Special', icon: '☸', featured: true },
   { id: 'ai-inference-node', label: 'AI inference', subtitle: 'Model serving stack', category: 'Special', icon: '🤖', featured: true },
-  { id: 'windows-server-2022', label: 'Windows Server 2022', subtitle: 'UEFI + VirtIO', category: 'Windows', icon: '🪟', featured: true, windows: true },
-  { id: 'windows-server-2025', label: 'Windows Server 2025', subtitle: 'Latest server release', category: 'Windows', icon: '🪟', featured: true, windows: true },
-  { id: 'windows-11', label: 'Windows 11', subtitle: 'Desktop / TPM', category: 'Windows', icon: '🪟', featured: true, windows: true },
+  { id: 'win11', label: 'Windows 11', subtitle: 'dockur Golden Forge · UEFI + VirtIO · KubeVirt-ready', category: 'Windows', icon: '🪟', featured: true, windows: true },
+  { id: 'win10', label: 'Windows 10', subtitle: 'dockur Golden Forge · UEFI + VirtIO · KubeVirt-ready', category: 'Windows', icon: '🪟', featured: true, windows: true },
   { id: 'custom-iso', label: 'Custom ISO', subtitle: 'Install from your image', category: 'Special', icon: '💿' },
   { id: 'custom-virt-install', label: 'PXE / URL install', subtitle: 'Network boot, kickstart, or libosinfo download', category: 'Special', icon: '🌐' },
 ]
@@ -84,7 +83,7 @@ function categoryFromTemplate(t: ApiTemplateLike): OsFlavor['category'] {
   if (c.includes('appliance')) return 'Appliance'
   const fam = (t.os_family ?? '').toLowerCase()
   if (fam === 'windows') return 'Windows'
-  if (t.name.startsWith('windows')) return 'Windows'
+  if (t.name.startsWith('windows') || t.name === 'win10' || t.name === 'win11') return 'Windows'
   if (['postgresql', 'mysql', 'mariadb', 'redis'].some((d) => t.name.includes(d))) return 'Database'
   if (['nginx', 'wireguard', 'photon'].some((a) => t.name.includes(a))) return 'Appliance'
   if (['gpu', 'k8s', 'ai-'].some((s) => t.name.includes(s))) return 'Special'

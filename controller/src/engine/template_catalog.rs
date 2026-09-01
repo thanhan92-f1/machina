@@ -169,41 +169,28 @@ const CATALOG: &[CatalogTemplate] = &[
         icon: "🐧",
     },
     CatalogTemplate {
-        name: "windows-server-2022",
+        name: "win11",
         version: "1.0.0",
-        source_disk: "/var/lib/libvirt/images/windows-server-2022.qcow2",
+        source_disk: "/var/lib/libvirt/images/win11.qcow2",
         download_url: None,
         cloud_init: false,
         os_family: "windows",
         category: "Windows",
         workload: "general",
-        description: "Windows Server 2022 — UEFI + VirtIO drivers (upload ISO to Images first).",
+        description: "Windows 11 — dockur/Podman Golden Forge (UEFI + VirtIO). Build via Create VM → Golden Forge, then clone or export to KubeVirt.",
         featured: true,
         icon: "🪟",
     },
     CatalogTemplate {
-        name: "windows-server-2025",
+        name: "win10",
         version: "1.0.0",
-        source_disk: "/var/lib/libvirt/images/windows-server-2025.qcow2",
+        source_disk: "/var/lib/libvirt/images/win10.qcow2",
         download_url: None,
         cloud_init: false,
         os_family: "windows",
         category: "Windows",
         workload: "general",
-        description: "Windows Server 2025 — latest server release, UEFI + VirtIO (upload ISO first).",
-        featured: true,
-        icon: "🪟",
-    },
-    CatalogTemplate {
-        name: "windows-11",
-        version: "1.0.0",
-        source_disk: "/var/lib/libvirt/images/windows-11.qcow2",
-        download_url: None,
-        cloud_init: false,
-        os_family: "windows",
-        category: "Windows",
-        workload: "general",
-        description: "Windows 11 desktop — TPM/UEFI wizard available from VM create.",
+        description: "Windows 10 — dockur/Podman Golden Forge (UEFI + VirtIO). Build via Create VM → Golden Forge, then clone or export to KubeVirt.",
         featured: true,
         icon: "🪟",
     },
@@ -363,17 +350,11 @@ const CATALOG: &[CatalogTemplate] = &[
 /// Best-effort template name from natural-language VM create prompts (Spotlight / Zeus).
 pub fn default_template_for_natural_language(query: &str) -> &'static str {
     let ql = query.to_lowercase();
-    if ql.contains("windows") {
-        if ql.contains("2022") {
-            return "windows-server-2022";
+    if ql.contains("windows") || ql.contains("win10") || ql.contains("win11") {
+        if ql.contains("win10") || ql.contains("windows 10") || ql.contains("windows-10") {
+            return "win10";
         }
-        if ql.contains("2025") {
-            return "windows-server-2025";
-        }
-        if ql.contains("windows 11") || ql.contains("windows-11") || ql.contains("win 11") {
-            return "windows-11";
-        }
-        return "windows-server-2025";
+        return "win11";
     }
     if ql.contains("26.04") || ql.contains("26-04") {
         return "ubuntu-26.04";
@@ -407,6 +388,9 @@ const RETIRED_TEMPLATE_NAMES: &[&str] = &[
     "fedora-42",
     "fedora-43",
     "rhel-9",
+    "windows-server-2022",
+    "windows-server-2025",
+    "windows-11",
 ];
 
 /// Remove marketplace rows that are no longer in the bundled catalog (e.g. fedora-40).
@@ -507,10 +491,14 @@ mod tests {
     use super::default_template_for_natural_language;
 
     #[test]
-    fn nl_os_windows_server_2025() {
+    fn nl_os_windows_defaults_to_win11_dockur() {
         assert_eq!(
             default_template_for_natural_language("create windows server 2025 vm"),
-            "windows-server-2025"
+            "win11"
+        );
+        assert_eq!(
+            default_template_for_natural_language("create windows 10 desktop"),
+            "win10"
         );
     }
 

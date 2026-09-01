@@ -151,7 +151,14 @@ default below. The shipped template is `contrib/machina.toml`.
 | `dockur_ram_size` | string | `""` (script default `4G`) |
 | `dockur_cpu_cores` | string | `""` (script default `2`) |
 
-Golden Forge Windows (`win10`, `win11`) uses [dockur/windows](https://github.com/dockur/windows) in Podman. Enable `dockur_windows_allowed`, ensure Podman and `/dev/kvm` are available, then `POST /api/v1/jobs/packer-golden-build` with `{"guest":"win11"}`. Artifacts land under `/var/lib/machina/packer-builds/{job-id}/work/output-{guest}/{guest}.qcow2`. See `contrib/packer/windows-dockur/README.md`.
+Golden Forge Windows (`win10`, `win11`) uses [dockur/windows](https://github.com/dockur/windows) in Podman. Enable `dockur_windows_allowed`, ensure Podman and `/dev/kvm` are available, then `POST /api/v1/jobs/packer-golden-build` with `{"guest":"win11"}`. On success Machina:
+
+1. Keeps the job artifact under `/var/lib/machina/packer-builds/{job-id}/work/output-{guest}/{guest}.qcow2`
+2. Copies to the marketplace path `/var/lib/libvirt/images/{guest}.qcow2`
+3. Writes a saved daemon template `/var/lib/machina/templates/{guest}.json` (`base_image` set)
+4. Platform catalog templates `win10` / `win11` resolve that same `source_disk`
+
+**KubeVirt:** `GET /api/v1/kubevirt/qcow2-bundle?qcow2_path=/var/lib/libvirt/images/win11.qcow2&guest_os=windows` emits EFI + TPM + virtio + RDP so dockur goldens can boot on KubeVirt. See `contrib/packer/windows-dockur/README.md`.
 
 ### `[auth]`
 | Field | Type | Default |

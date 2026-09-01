@@ -254,6 +254,10 @@ fn build_bundle(input: BundleBuildInput<'_>) -> Result<KubeVirtBundle, LibvirtEr
     vm.push_str(guest_label);
     vm.push_str("\"\n    spec:\n      domain:\n        machine:\n");
     vm.push_str(&format!("          type: {machine_line}\n"));
+    if matches!(input.guest, GuestOsFamily::Windows) {
+        // dockur / Win10–11 goldens boot UEFI; SeaBIOS would not start the qcow2.
+        vm.push_str("        firmware:\n          bootloader:\n            efi:\n              secureBoot: false\n");
+    }
     vm.push_str("        cpu:\n");
     vm.push_str(&format!("          cores: {}\n", input.cores.max(1)));
     vm.push_str("        devices:\n          disks:\n            - name: rootdisk\n              disk:\n                bus: virtio\n");
@@ -261,6 +265,10 @@ fn build_bundle(input: BundleBuildInput<'_>) -> Result<KubeVirtBundle, LibvirtEr
         vm.push_str(
             "            - name: virtiocd\n              cdrom:\n                bus: sata\n",
         );
+    }
+    if matches!(input.guest, GuestOsFamily::Windows) {
+        // Win11 (and dockur win10/win11) expect a TPM; harmless on Win10.
+        vm.push_str("          tpm:\n            model: tpm-tis\n            interface: tpm-crb\n");
     }
     vm.push_str("          interfaces:\n            - name: default\n              masquerade: {}\n              model: virtio\n");
     if matches!(input.guest, GuestOsFamily::Windows) {
@@ -270,7 +278,7 @@ fn build_bundle(input: BundleBuildInput<'_>) -> Result<KubeVirtBundle, LibvirtEr
         vm.push_str("          rng: {}\n");
     }
     if matches!(input.guest, GuestOsFamily::Windows) {
-        vm.push_str("        features:\n          acpi: {}\n          apic: {}\n          hyperv:\n            relaxed: {}\n            vapic: {}\n            spinlocks:\n              spinlocks: 8191\n");
+        vm.push_str("        features:\n          acpi: {}\n          apic: {}\n          smm: {}\n          hyperv:\n            relaxed: {}\n            vapic: {}\n            spinlocks:\n              spinlocks: 8191\n");
         vm.push_str("        clock:\n          utc: {}\n          timer:\n            hpet:\n              present: false\n            pit:\n              tickPolicy: delay\n            rtc:\n              tickPolicy: catchup\n            hyperv: {}\n");
     } else {
         vm.push_str("        features:\n          acpi: {}\n          apic: {}\n");
@@ -384,10 +392,18 @@ pub fn kubevirt_bundle_from_qcow2(
             .unwrap_or(&format!("{vm_k8s}-root")),
     );
 
-    let memory_mb = memory_mb_override.unwrap_or(4096);
+    let memory_mb = memory_mb_override.unwrap_or(match guest {
+        GuestOsFamily::Windows => 8192,
+        GuestOsFamily::Linux => 4096,
+    });
     let storage_gi = storage_gi_override
         .unwrap_or_else(|| storage_gi_for_disk(path, memory_mb, cfg.datavolume_padding_gi));
-    let cores = vcpus_override.unwrap_or(2).max(1);
+    let cores = vcpus_override
+        .unwrap_or(match guest {
+            GuestOsFamily::Windows => 4,
+            GuestOsFamily::Linux => 2,
+        })
+        .max(1);
     let mem_gi = ((memory_mb + 1023) / 1024).max(1);
     let sc_line = storage_class_line(cfg, storage_class_override);
 
@@ -493,6 +509,35 @@ mod tests {
             resolve_guest_os(Some("linux"), "win2k22", "/x/disk.qcow2", None),
             GuestOsFamily::Linux
         );
+    }
+
+    #[test]
+    fn windows_bundle_includes_uefi_and_tpm() {
+        let cfg = KubeVirtConfig::default();
+        // Create a tiny temp file so path checks pass.
+        let dir = std::env::temp_dir().join("machina-kubevirt-win-test");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("win11.qcow2");
+        std::fs::write(&path, b"fake").unwrap();
+        let bundle = kubevirt_bundle_from_qcow2(
+            path.to_str().unwrap(),
+            &cfg,
+            Some("windows"),
+            None,
+            None,
+            None,
+            Some(64),
+            None,
+            Some(4),
+            Some(8192),
+            Some(false),
+        )
+        .unwrap();
+        assert!(bundle.yaml.contains("efi:"));
+        assert!(bundle.yaml.contains("secureBoot: false"));
+        assert!(bundle.yaml.contains("tpm:"));
+        assert!(bundle.yaml.contains("port: 3389"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

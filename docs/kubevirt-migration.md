@@ -39,3 +39,12 @@ See `examples/config.toml`. Important keys:
 4. `virtctl start` (or POST start) when you want the guest running on Kubernetes.
 
 The generated VM uses `runStrategy: Halted` until you start it.
+
+## Windows (dockur Golden Forge) → KubeVirt
+
+1. Enable `[libvirt] dockur_windows_allowed = true`, then build `win10` / `win11` via Golden Forge (`POST /api/v1/jobs/packer-golden-build`).
+2. On success the daemon copies the disk to `/var/lib/libvirt/images/{guest}.qcow2` and registers a saved template.
+3. From **Disk Images** (or `GET /api/v1/kubevirt/qcow2-bundle?qcow2_path=/var/lib/libvirt/images/win11.qcow2&guest_os=windows`) generate CDI + VM YAML.
+4. Windows manifests include **EFI** (`secureBoot: false`), **TPM**, Hyper-V enlightenments, virtio root, and RDP port 3389 — required for dockur UEFI goldens to boot on KubeVirt.
+
+Marketplace template ids are `win10` / `win11` (replacing the older `windows-11` / `windows-server-*` catalog rows).

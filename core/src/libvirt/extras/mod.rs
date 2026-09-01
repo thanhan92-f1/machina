@@ -1197,6 +1197,66 @@ pub fn save_vm_as_template(
     Ok(())
 }
 
+/// Save a golden-image JSON template under `/var/lib/machina/templates/{name}.json`.
+pub fn write_saved_template(template: &crate::VmTemplate) -> Result<(), LibvirtError> {
+    crate::validate::validate_name(&template.name)?;
+    let templates_dir = "/var/lib/machina/templates";
+    let _ = std::fs::create_dir_all(templates_dir);
+    let path = format!("{}/{}.json", templates_dir, template.name);
+    let body = serde_json::to_string_pretty(template)
+        .map_err(|e| LibvirtError::Operation(format!("serialize template: {e}")))?;
+    std::fs::write(&path, body)
+        .map_err(|e| LibvirtError::Operation(format!("Failed to save template: {e}")))?;
+    Ok(())
+}
+
+/// After a dockur Golden Forge build: copy qcow2 to the marketplace path and register a saved template.
+/// Stable disk: `/var/lib/libvirt/images/{win10|win11}.qcow2` (matches controller catalog `source_disk`).
+pub fn register_dockur_windows_golden(
+    guest: &str,
+    artifact_qcow2: &std::path::Path,
+) -> Result<std::path::PathBuf, LibvirtError> {
+    if !matches!(guest, "win10" | "win11") {
+        return Err(LibvirtError::Invalid(format!(
+            "dockur golden guest must be win10 or win11, got {guest}"
+        )));
+    }
+    if !artifact_qcow2.is_file() {
+        return Err(LibvirtError::Invalid(format!(
+            "golden artifact missing: {}",
+            artifact_qcow2.display()
+        )));
+    }
+    let images_dir = std::path::Path::new("/var/lib/libvirt/images");
+    let _ = std::fs::create_dir_all(images_dir);
+    let stable = images_dir.join(format!("{guest}.qcow2"));
+    std::fs::copy(artifact_qcow2, &stable).map_err(|e| {
+        LibvirtError::Operation(format!(
+            "copy golden to {}: {e}",
+            stable.display()
+        ))
+    })?;
+
+    let (label, os_variant, disk_gb) = match guest {
+        "win10" => ("Windows 10 (dockur Golden Forge)", "win10", 64u64),
+        _ => ("Windows 11 (dockur Golden Forge)", "win11", 64u64),
+    };
+    let tmpl = crate::VmTemplate {
+        name: guest.to_string(),
+        description: format!(
+            "{label} — UEFI + VirtIO; clone via Create VM or export KubeVirt YAML from Disk Images"
+        ),
+        vcpus: 4,
+        memory_mb: 8192,
+        disk_gb,
+        os_variant: os_variant.to_string(),
+        base_image: Some(stable.to_string_lossy().to_string()),
+        template_disk_mode: "copy".to_string(),
+    };
+    write_saved_template(&tmpl)?;
+    Ok(stable)
+}
+
 /// List all saved templates from /var/lib/machina/templates/.
 pub fn list_saved_templates() -> Vec<crate::VmTemplate> {
     let templates_dir = "/var/lib/machina/templates";

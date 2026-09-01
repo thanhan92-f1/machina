@@ -38,8 +38,10 @@ sudo /usr/local/share/machina/packer/build-windows-dockur.sh win11 work
 
 Default credentials are **known** (`Docker` / `admin`). Rotate before exposing VMs to untrusted networks. For manual unattended Packer + VirtIO, see `../windows-qemu/HOWTO.txt`.
 
-## libvirt clone hints
+## libvirt clone + KubeVirt
 
-- Firmware: **UEFI**
+- Firmware: **UEFI** (required for dockur goldens)
 - Disk bus: **virtio** (dockur installs VirtIO drivers on clean install)
 - Graphics: SPICE or VNC per your console policy
+- After a successful Golden Forge job, Machina copies the disk to `/var/lib/libvirt/images/{win10|win11}.qcow2`, writes `/var/lib/machina/templates/{guest}.json`, and seeds Platform marketplace templates `win10` / `win11`.
+- **KubeVirt:** Disk Images → KubeVirt YAML (or `GET /api/v1/kubevirt/qcow2-bundle?qcow2_path=/var/lib/libvirt/images/win11.qcow2&guest_os=windows`). Generated manifests include **EFI** + **TPM** + RDP 3389 so the dockur qcow2 can boot on KubeVirt.

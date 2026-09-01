@@ -79,7 +79,11 @@ pub fn collect_image_scan_directories(
         .into_iter()
         .map(std::path::PathBuf::from)
         .collect();
-    for extra in ["/var/lib/machina/images", "/var/lib/libvirt/images"] {
+    for extra in [
+        "/var/lib/machina/images",
+        "/var/lib/libvirt/images",
+        "/var/lib/machina/packer-builds",
+    ] {
         let pb = std::path::PathBuf::from(extra);
         if !out.iter().any(|p| p == &pb) {
             out.push(pb);

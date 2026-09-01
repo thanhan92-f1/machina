@@ -390,7 +390,11 @@ export default function CreateVMPage() {
             /* ignore */
           }
           setPackerProgressOk(true)
-          toast.success('Golden image build finished — see Jobs for the qcow2 path')
+          toast.success(
+            WINDOWS_PACKER_GUESTS.some((g) => g.id === gid)
+              ? 'Windows golden ready — template registered; clone from golden or export to KubeVirt'
+              : 'Golden image build finished — see Jobs for the qcow2 path',
+          )
           setPackerRunning(false)
         },
         onError: (msg) => {

@@ -15,7 +15,7 @@ export default function WindowsCreateWizard({ open, onClose, onCreate }: Windows
       open={open}
       onClose={onClose}
       onCreate={onCreate}
-      initial={{ name: 'win-server-01', os: 'windows-server-2025', size: 'large', network: 'default' }}
+      initial={{ name: 'win11-01', os: 'win11', size: 'large', network: 'default' }}
     />
   )
 }
