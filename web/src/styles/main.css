@@ -556,21 +556,10 @@ a.tahoe-context-app-title:hover {
   border-color: hsl(var(--foreground) / 0.08);
 }
 
+/* Legacy aliases — overflow menus now use .mac-menu-panel + .mac-menu-row */
 .tahoe-context-overflow-menu {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 0.35rem);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
   min-width: 11rem;
   padding: 0.35rem;
-  border-radius: 0.875rem;
-  border: 1px solid hsl(var(--foreground) / 0.12);
-  background: hsl(var(--card) / 0.98);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-2, 0 16px 40px -16px rgba(0, 0, 0, 0.35));
-  color: hsl(var(--foreground) / 0.9);
 }
 
 .tahoe-context-overflow-item {
@@ -578,18 +567,6 @@ a.tahoe-context-app-title:hover {
   padding: 0.45rem 0.65rem;
   border-radius: 0.5rem;
   font-size: 0.75rem;
-  color: hsl(var(--foreground) / 0.72);
-  transition: background 0.12s ease, color 0.12s ease;
-}
-
-.tahoe-context-overflow-item:hover {
-  background: hsl(var(--foreground) / 0.06);
-  color: hsl(var(--foreground));
-}
-
-.tahoe-context-overflow-item-active {
-  background: hsl(var(--primary) / 0.12);
-  color: hsl(var(--primary));
 }
 
 .tahoe-context-status-chip {
@@ -1519,14 +1496,14 @@ a.tahoe-context-app-title:hover {
 }
 
 .mac-menu-item {
-  color: hsl(var(--foreground) / 0.88);
+  color: var(--text-primary, hsl(var(--foreground) / 0.88));
   transition: background 0.15s ease;
 }
 
 .mac-menu-item:hover,
 .mac-menu-item-active {
-  background: hsl(var(--foreground) / 0.08);
-  color: hsl(var(--foreground));
+  background: var(--surface-hover, hsl(var(--foreground) / 0.08));
+  color: var(--text-primary, hsl(var(--foreground)));
 }
 
 .mac-menu-panel {
@@ -1535,7 +1512,22 @@ a.tahoe-context-app-title:hover {
   border: 1px solid hsl(var(--foreground) / 0.1);
   border-radius: 0.625rem;
   box-shadow: var(--shadow-3, 0 16px 48px -12px rgba(0, 0, 0, 0.35));
-  color: hsl(var(--foreground));
+  color: var(--text-primary, hsl(var(--foreground)));
+}
+
+.mac-menu-row {
+  color: var(--text-secondary, hsl(var(--foreground) / 0.78));
+}
+
+.mac-menu-row:hover {
+  background: var(--surface-hover, hsl(var(--foreground) / 0.08));
+  color: var(--text-primary, hsl(var(--foreground)));
+}
+
+.mac-menu-row-active {
+  background: var(--accent-soft, rgba(0, 113, 227, 0.1));
+  color: var(--text-primary, hsl(var(--foreground)));
+  font-weight: 500;
 }
 
 .mac-menubar-icon-btn {

@@ -146,6 +146,12 @@ default below. The shipped template is `contrib/machina.toml`.
 | `virt_image_build_timeout_secs` | u64 | `0` (unlimited) |
 | `virt_image_build_min_free_parent_bytes` | u64 | `536870912` (512 MiB) |
 | `virt_image_build_min_free_tmp_bytes` | u64 | `268435456` (256 MiB) |
+| `dockur_windows_allowed` | bool | `false` |
+| `dockur_disk_size` | string | `""` (script default `64G`) |
+| `dockur_ram_size` | string | `""` (script default `4G`) |
+| `dockur_cpu_cores` | string | `""` (script default `2`) |
+
+Golden Forge Windows (`win10`, `win11`) uses [dockur/windows](https://github.com/dockur/windows) in Podman. Enable `dockur_windows_allowed`, ensure Podman and `/dev/kvm` are available, then `POST /api/v1/jobs/packer-golden-build` with `{"guest":"win11"}`. Artifacts land under `/var/lib/machina/packer-builds/{job-id}/work/output-{guest}/{guest}.qcow2`. See `contrib/packer/windows-dockur/README.md`.
 
 ### `[auth]`
 | Field | Type | Default |

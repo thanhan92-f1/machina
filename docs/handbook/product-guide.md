@@ -60,6 +60,7 @@ Machina is a **two-layer platform**:
 | `translate` | — | libvirt domain XML → internal type translation |
 | `rvb` | — | Reverse-bridge helpers |
 | `virt-image-build` | — | virt-builder / mkosi golden-image job runner |
+| Packer / dockur scripts | `contrib/packer/` | Golden Forge: Linux Packer (`build-linux-image.sh`); Windows 10/11 via dockur/Podman (`build-windows-dockur.sh`, gated by `dockur_windows_allowed`) |
 | `run-as-user-helper` | — | setuid helper for run-as-user impersonation |
 
 ### Web UI

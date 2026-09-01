@@ -20,3 +20,6 @@ Administrator/Password123! as a publicly-known credential baked into every
 VM created from this golden image, and rotate it (e.g. via your first-boot
 customization/specialize tooling) before any such VM is exposed to an
 untrusted network.
+
+For unattended Windows 10/11 golden qcow2 without supplying your own ISO,
+see ../windows-dockur/README.md (dockur/windows via Podman; Golden Forge win10/win11).

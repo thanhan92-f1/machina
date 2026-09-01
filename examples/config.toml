@@ -75,6 +75,11 @@ uri = "qemu:///system"
 # mkosi_allowed = true
 # Legacy libguestfs virt-builder (only if you set virt_builder_allowed = true; install guestfs-tools).
 # virt_builder_allowed = false
+# Golden Forge Windows via dockur/windows (Podman + KVM). Requires podman on the host.
+# dockur_windows_allowed = false
+# dockur_disk_size = "64G"
+# dockur_ram_size = "4G"
+# dockur_cpu_cores = "2"
 # virt_builder_default_ssh_pubkey_path = ""
 # virt_builder_update = true
 # virt_builder_default_packages = ["qemu-guest-agent"]

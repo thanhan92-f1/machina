@@ -12,8 +12,11 @@ test('advanced tier shows sidebar policy and Go menu opens', { retries: 1 }, asy
   const goMenu = page.getByRole('button', { name: /^Go$/i })
   if (await goMenu.count()) {
     await goMenu.click()
-    await expect(page.getByRole('button', { name: 'All destinations…' })).toBeVisible({ timeout: 5000 })
-    await expect(page.getByRole('button', { name: 'Operations' })).toBeVisible()
+    const panel = page.getByRole('menu', { name: 'Go' })
+    await expect(panel.getByRole('menuitem', { name: 'All destinations…' })).toBeVisible({ timeout: 5000 })
+    await expect(panel.getByRole('menuitem', { name: 'Operations' })).toBeVisible()
+    await expect(panel.getByText('Host', { exact: true })).toBeVisible()
+    await expect(panel.getByRole('menuitem', { name: 'Networks' })).toBeVisible()
   }
 })
 
@@ -75,7 +78,7 @@ test('security context bar collapses overflow into More menu', async ({ page }) 
   await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy Studio' })).toBeVisible()
   await expect(page.locator('.tahoe-context-more')).toBeVisible()
   await page.locator('.tahoe-context-more').click()
-  await expect(page.locator('.tahoe-context-overflow-item', { hasText: 'Threat Hunting' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Threat Hunting' })).toBeVisible()
 })
 
 test('mobile jump nav stays visible when sidebar is hidden', async ({ page }) => {
@@ -120,7 +123,7 @@ test('settings context bar collapses overflow into More menu', { retries: 1 }, a
   await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy' })).toBeVisible()
   await expect(page.locator('.tahoe-context-more')).toBeVisible()
   await page.locator('.tahoe-context-more').click()
-  await expect(page.locator('.tahoe-context-overflow-item', { hasText: 'About' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'About' })).toBeVisible()
 })
 
 test('power tier hides context bar on policy workspace', async ({ page }) => {
@@ -148,7 +151,7 @@ test('zeus context bar collapses overflow into More menu', async ({ page }) => {
   await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy Studio' })).toBeVisible()
   await expect(page.locator('.tahoe-context-more')).toBeVisible()
   await page.locator('.tahoe-context-more').click()
-  await expect(page.locator('.tahoe-context-overflow-item', { hasText: 'Threat Hunting' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Threat Hunting' })).toBeVisible()
 })
 
 test('operations context bar collapses overflow into More menu', async ({ page }) => {
@@ -215,7 +218,7 @@ test('context overflow closes after navigation', async ({ page }) => {
   const more = page.locator('.tahoe-context-more')
   await more.click()
   await expect(more).toHaveAttribute('aria-expanded', 'true')
-  await page.locator('.tahoe-context-overflow-item', { hasText: 'Observability' }).click()
+  await page.getByRole('menuitem', { name: 'Observability' }).click()
   await expect(page).toHaveURL(/\/platform\/observability/)
   await expect(more).toHaveAttribute('aria-expanded', 'false')
 })
@@ -312,8 +315,17 @@ test('Go menu operations navigates without tier bounce on power tier', async ({ 
   await page.goto('/platform')
   const menubar = page.locator('.mac-menubar-inner')
   await menubar.getByRole('button', { name: 'Go', exact: true }).click()
-  await page.locator('.mac-menu-panel').getByRole('button', { name: 'Operations' }).click()
+  await page.getByRole('menu', { name: 'Go' }).getByRole('menuitem', { name: 'Operations' }).click()
   await expect(page).toHaveURL(/\/platform\/operations/)
+})
+
+test('fleet cloud More menu navigates overflow route', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'normal' })
+  await page.goto('/fleet-cloud/instances')
+  await page.getByRole('navigation', { name: 'Fleet Cloud' }).getByRole('button', { name: 'More' }).click()
+  await expect(page.getByRole('menu', { name: 'Fleet Cloud more destinations' })).toBeVisible()
+  await page.getByRole('menuitem', { name: 'Flavors' }).click()
+  await expect(page).toHaveURL(/\/fleet-cloud\/flavors/)
 })
 
 test('spotlight platform command shows review before execute', async ({ page }) => {

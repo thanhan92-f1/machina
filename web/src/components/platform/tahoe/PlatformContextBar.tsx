@@ -1,7 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { Link, NavLink, useLocation } from 'react-router'
 import { Bell, ChevronDown, Server, Sparkles } from 'lucide-react'
 import { useFleetDesktop } from '../../../hooks/useFleetDesktop'
@@ -16,6 +15,8 @@ import {
 import { showPlatformMenuBarForTier } from '../../../utils/platformDesktopTier'
 import { operationsHubHref } from '../../../utils/platformHubLinks'
 import { statusToneClass } from '../../../utils/semanticColors'
+import PlatformFloatingMenu from '../mac/PlatformFloatingMenu'
+import { PlatformMenuLinkItem } from '../mac/PlatformMenuItem'
 
 function ContextPill({ item, pathname, search }: { item: ContextNavItem; pathname: string; search: string }) {
   const hasQuery = item.to.includes('?')
@@ -59,27 +60,12 @@ export default function PlatformContextBar() {
   const ctx = contextNavForPath(location.pathname, tier)
   const AppIcon = ctx?.appIcon
   const [moreOpen, setMoreOpen] = useState(false)
-  const [moreMenuPos, setMoreMenuPos] = useState<{ top: number; left: number } | null>(null)
   const moreButtonRef = useRef<HTMLButtonElement>(null)
 
   const { visible, overflow } = useMemo(() => {
     if (!ctx || ctx.items.length <= 1) return { visible: [] as ContextNavItem[], overflow: [] as ContextNavItem[] }
     return splitContextNavItems(ctx.items, location.pathname, location.search)
   }, [ctx, location.pathname, location.search])
-
-  useEffect(() => {
-    if (!moreOpen) return
-    const close = () => setMoreOpen(false)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    window.addEventListener('click', close)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('click', close)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [moreOpen])
 
   useEffect(() => {
     setMoreOpen(false)
@@ -119,41 +105,34 @@ export default function PlatformContextBar() {
                   type="button"
                   className={`tahoe-context-pill tahoe-context-more ${overflowActive ? 'tahoe-context-pill-active' : ''}`}
                   aria-expanded={moreOpen}
-                  onClick={() => {
-                    if (!moreOpen && moreButtonRef.current) {
-                      const rect = moreButtonRef.current.getBoundingClientRect()
-                      setMoreMenuPos({ top: rect.bottom + 6, left: rect.left })
-                    }
-                    setMoreOpen((open) => !open)
-                  }}
+                  aria-haspopup="menu"
+                  onClick={() => setMoreOpen((open) => !open)}
                 >
                   More
                   <ChevronDown className={`h-3 w-3 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {moreOpen && moreMenuPos
-                  ? createPortal(
-                      <div
-                        className="tahoe-context-overflow-menu"
-                        style={{ position: 'fixed', top: moreMenuPos.top, left: moreMenuPos.left }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {overflow.map((item) => {
-                          const active = isContextNavActive(location.pathname, location.search, item)
-                          return (
-                            <Link
-                              key={item.to}
-                              to={item.to}
-                              className={`tahoe-context-overflow-item ${active ? 'tahoe-context-overflow-item-active' : ''}`}
-                              onClick={() => setMoreOpen(false)}
-                            >
-                              {item.label}
-                            </Link>
-                          )
-                        })}
-                      </div>,
-                      document.body,
+                <PlatformFloatingMenu
+                  open={moreOpen}
+                  onClose={() => setMoreOpen(false)}
+                  triggerRef={moreButtonRef}
+                  align="start"
+                  sideOffset={6}
+                  ariaLabel={`${ctx.appLabel} more sections`}
+                  className="min-w-[11rem] py-1"
+                >
+                  {overflow.map((item) => {
+                    const active = isContextNavActive(location.pathname, location.search, item)
+                    return (
+                      <PlatformMenuLinkItem
+                        key={item.to}
+                        to={item.to}
+                        label={item.label}
+                        active={active}
+                        onNavigate={() => setMoreOpen(false)}
+                      />
                     )
-                  : null}
+                  })}
+                </PlatformFloatingMenu>
               </div>
             ) : null}
           </nav>

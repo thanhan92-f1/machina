@@ -115,8 +115,8 @@ The Machina web UI uses a **Liquid Glass** design system inspired by macOS Tahoe
 - **VM Management** — start, stop, shutdown, reboot, pause, resume, delete with confirmation dialogs
 - **VM Details** — tabbed view (Overview, Disks, Network, Snapshots, Devices, XML, Logs) with live metrics, disk-only snapshots, confirmation dialogs, XML download, save-as-template dialog
 - **VM list views** — toggle between table and card grid layouts with localStorage persistence
-- **Create VM** — Cockpit-style install sources (ISO, URL, PXE, curated **virt-install --install os=…** presets); **Golden Forge** runs a local Packer golden qcow2 as a **Jobs** task with live logs and a step timeline; clone-from-golden flows
-- **Jobs** — background work (virt-image-build, Golden Forge / Packer, VM create with SSE logs) with timelines and `/jobs/{id}` detail
+- **Create VM** — Cockpit-style install sources (ISO, URL, PXE, curated **virt-install --install os=…** presets); **Golden Forge** builds a reusable golden qcow2 as a **Jobs** task (Linux via Packer/QEMU; Windows 10/11 via dockur/Podman when enabled) with live logs and a step timeline; clone-from-golden flows
+- **Jobs** — background work (virt-image-build, Golden Forge Packer/dockur, VM create with SSE logs) with timelines and `/jobs/{id}` detail
 - **Disk images** — scanned pool images; start **virt-image-build** (virt-builder) on the host with the same job + timeline pattern as Create VM
 - **Import VM** — convert and import VMDK/VDI/VHD disk images to qcow2
 - **VNC Console** — in-browser VM display via noVNC RFB client (dynamically loaded from server)
@@ -414,10 +414,10 @@ cd web && npm run build             # typecheck + production bundle
 | Dashboard | `/` | Stats cards, memory gauge, VM list with quick actions, metric charts, activity feed |
 | VM List | `/vms` | Table/grid view with search, tag filtering, batch operations, state badges, lifecycle actions |
 | VM Details | `/vms/{name}` | 7 tabs (Overview, Disks, Network, Snapshots, Devices, XML, Logs), confirmation dialogs, XML download, save-as-template dialog |
-| Create VM | `/create` | Install from media (ISO / URL / PXE / curated virt-install OS), golden-image clone, **Golden Forge** (Packer qcow2 job + logs), templates, UEFI, cloud-init |
+| Create VM | `/create` | Install from media (ISO / URL / PXE / curated virt-install OS), golden-image clone, **Golden Forge** (Linux Packer or Windows dockur/Podman qcow2 job + logs), templates, UEFI, cloud-init |
 | Import VM | `/import` | Convert and import VMDK/VDI/VHD disk images |
 | Disk images | `/disk-images` | Scanned images; **virt-image-build** job from UI + folder picker |
-| Jobs | `/jobs` | virt-image-build, Golden Forge, VM-create jobs with logs and timelines |
+| Jobs | `/jobs` | virt-image-build, Golden Forge (Packer Linux / dockur Windows), VM-create jobs with logs and timelines |
 | Console | `/vms/{name}/console` | Auto-detect VNC/Serial, in-browser display via noVNC or xterm.js |
 | SSH Console | `/ssh`, `/ssh/:host` | Opens session API then PTY-backed `ssh` over `/ws/v1/terminal/{session_id}`; query form `/ssh?host=…&user=…` |
 | Host Networking | `/host-networking` | SVG network topology, port forwarding, bridges, firewall |
@@ -676,7 +676,7 @@ All endpoints are prefixed with `/api/v1`. Responses are JSON unless noted. XML 
 |--------|------|-------------|
 | `GET` | `/jobs` | List recent jobs (newest first; in-memory until daemon restart) |
 | `POST` | `/jobs/virt-image-build` | Start **virt-image-build** / virt-builder (`BuildDiskRequest` body) |
-| `POST` | `/jobs/packer-golden-build` | Start **Golden Forge** Packer golden image (`{"guest":"ubuntu2404"}` — ids match `contrib/packer/build-linux-image.sh`) |
+| `POST` | `/jobs/packer-golden-build` | Start **Golden Forge** golden image (`{"guest":"ubuntu2404"}` Linux Packer ids; `win10` / `win11` via dockur/Podman when `[libvirt] dockur_windows_allowed = true`) |
 | `GET` | `/jobs/{id}` | Job summary, error, target path, and captured log lines |
 | `GET` | `/jobs/{id}/stream` | **SSE** log stream; terminal `complete` / `error` events |
 

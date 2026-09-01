@@ -2,6 +2,7 @@
 # Build qcow2 Linux guest images with HashiCorp Packer (QEMU builder).
 # QEMU builder options follow: https://developer.hashicorp.com/packer/integrations/hashicorp/qemu/latest/components/builder/qemu
 # Windows + VirtIO (manual ISO): contrib/packer/windows-qemu/
+# Windows 10/11 golden (dockur/Podman): contrib/packer/build-windows-dockur.sh
 # Usage: ./build-linux-image.sh {fedora43|ubuntu2204|ubuntu2404|ubuntu2504|ubuntu2510|ubuntu2604|debian12|debian13|almalinux9|rocky9|centos9stream|oraclelinux9} [workdir]
 set -euo pipefail
 

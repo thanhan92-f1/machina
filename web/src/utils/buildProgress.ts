@@ -72,7 +72,13 @@ export function computeVmCreateTimeline(
 
 function goldenFailedPhase(text: string): number {
   if (text.includes('[machina] Artifact:') || /\.qcow2\b/i.test(text)) return 2
-  if (/==>|qemu-system|packer build|Provisioning with|\bPacker\b|Downloading|Building '/i.test(text)) return 1
+  if (
+    /==>|qemu-system|packer build|Provisioning with|\bPacker\b|Downloading|Building '|\[dockur\]|podman|dockurr\/windows/i.test(
+      text,
+    )
+  ) {
+    return 1
+  }
   if (text.includes('[machina]')) return 0
   return 0
 }
@@ -95,7 +101,7 @@ export function computeGoldenForgeTimeline(
     return { activeIndex: 2, allComplete: false, failed: false }
   }
   if (
-    /==>|qemu-system|packer build|Provisioning with|\bPacker\b|Downloading|Building '|Starting build|autoinstall/i.test(
+    /==>|qemu-system|packer build|Provisioning with|\bPacker\b|Downloading|Building '|Starting build|autoinstall|\[dockur\]|podman|dockurr\/windows/i.test(
       text,
     )
   ) {

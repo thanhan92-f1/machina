@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { ChevronDown } from 'lucide-react'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
+import PlatformFloatingMenu from './platform/mac/PlatformFloatingMenu'
+import { PlatformMenuLinkItem } from './platform/mac/PlatformMenuItem'
 
 type Tab = { to: string; label: string; end?: boolean }
 
@@ -50,17 +52,8 @@ export default function FleetCloudSubNav() {
   const { pathname } = useLocation()
   const { info } = usePlatformInfo()
   const [moreOpen, setMoreOpen] = useState(false)
-  const moreRef = useRef<HTMLDivElement>(null)
+  const moreButtonRef = useRef<HTMLButtonElement>(null)
   const moreActive = MORE.some((t) => tabActive(pathname, t))
-
-  useEffect(() => {
-    if (!moreOpen) return
-    const onDoc = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [moreOpen])
 
   useEffect(() => {
     setMoreOpen(false)
@@ -84,8 +77,9 @@ export default function FleetCloudSubNav() {
             {tab.label}
           </Link>
         ))}
-        <div className="relative" ref={moreRef}>
+        <div className="relative">
           <button
+            ref={moreButtonRef}
             type="button"
             className={`${pillClass(moreActive)} gap-1`}
             aria-expanded={moreOpen}
@@ -95,30 +89,25 @@ export default function FleetCloudSubNav() {
             More
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
           </button>
-          {moreOpen ? (
-            <div
-              role="menu"
-              className="absolute left-0 top-full z-40 mt-1.5 min-w-[12rem] rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] py-1 shadow-lg"
-            >
-              {MORE.map((tab) => {
-                const active = tabActive(pathname, tab)
-                return (
-                  <Link
-                    key={tab.to}
-                    role="menuitem"
-                    to={tab.to}
-                    className={`block px-3.5 py-2 text-[13px] transition-colors ${
-                      active
-                        ? 'bg-[var(--accent-soft,rgba(0,113,227,0.1))] text-[var(--text-primary)] font-medium'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    {tab.label}
-                  </Link>
-                )
-              })}
-            </div>
-          ) : null}
+          <PlatformFloatingMenu
+            open={moreOpen}
+            onClose={() => setMoreOpen(false)}
+            triggerRef={moreButtonRef}
+            align="start"
+            sideOffset={6}
+            ariaLabel="Fleet Cloud more destinations"
+            className="min-w-[12rem] py-1"
+          >
+            {MORE.map((tab) => (
+              <PlatformMenuLinkItem
+                key={tab.to}
+                to={tab.to}
+                label={tab.label}
+                active={tabActive(pathname, tab)}
+                onNavigate={() => setMoreOpen(false)}
+              />
+            ))}
+          </PlatformFloatingMenu>
         </div>
       </nav>
     </div>

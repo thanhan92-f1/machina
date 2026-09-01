@@ -1126,6 +1126,18 @@ pub struct LibvirtConfig {
     /// Largest accepted ISO upload, in GiB. `0` disables uploads entirely.
     #[serde(default = "default_iso_upload_max_gib")]
     pub iso_upload_max_gib: u64,
+    /// Allow Golden Forge Windows builds via dockur/windows (Podman + KVM). Default: disabled.
+    #[serde(default = "default_false")]
+    pub dockur_windows_allowed: bool,
+    /// Override dockur `DISK_SIZE` (e.g. `64G`). Empty = script default.
+    #[serde(default)]
+    pub dockur_disk_size: String,
+    /// Override dockur `RAM_SIZE` (e.g. `4G`). Empty = script default.
+    #[serde(default)]
+    pub dockur_ram_size: String,
+    /// Override dockur `CPU_CORES`. Empty = script default.
+    #[serde(default)]
+    pub dockur_cpu_cores: String,
 }
 
 fn default_iso_upload_dir() -> String {
@@ -1246,6 +1258,10 @@ impl Default for LibvirtConfig {
             extra_uris: Vec::new(),
             iso_upload_dir: default_iso_upload_dir(),
             iso_upload_max_gib: default_iso_upload_max_gib(),
+            dockur_windows_allowed: false,
+            dockur_disk_size: String::new(),
+            dockur_ram_size: String::new(),
+            dockur_cpu_cores: String::new(),
         }
     }
 }

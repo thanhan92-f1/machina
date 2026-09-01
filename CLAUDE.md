@@ -163,6 +163,8 @@ Config resolution order: `--config` CLI flag → `/etc/machina/config.toml` → 
 
 Key sections: `[daemon]` (host/port), `[libvirt]` (URI), `[auth]` (PAM service, OIDC, SAML, LDAP, run-as-user), `[tls]`, `[backup]`, `[fleet]` (peer list), `[vessel]` (Podman/Docker socket), `[metrics_history]`, `[observability.otlp]`.
 
+**Golden Forge** (`POST /api/v1/jobs/packer-golden-build`): Linux guest ids run `contrib/packer/build-linux-image.sh`. Windows `win10` / `win11` run `contrib/packer/build-windows-dockur.sh` (Podman + KVM) only when `[libvirt] dockur_windows_allowed = true`. See `contrib/packer/windows-dockur/README.md` and `docs/handbook/admin-configuration.md`.
+
 Default port: **5092** (daemon), **5093** (controller), **50051** (agent gRPC).
 
 ---

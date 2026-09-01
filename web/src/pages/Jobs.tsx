@@ -121,7 +121,7 @@ export default function JobsPage() {
       subtitle={
         <>
           Monitor <strong className="text-[var(--text-secondary)]">virt-image-build</strong>,{' '}
-          <strong className="text-[var(--text-secondary)]">Golden Forge</strong> (Packer qcow2), and{' '}
+          <strong className="text-[var(--text-secondary)]">Golden Forge</strong> (Packer / dockur qcow2), and{' '}
           <strong className="text-[var(--text-secondary)]">Create VM</strong> progress after you navigate away. Logs update automatically while a job is running.
         </>
       }

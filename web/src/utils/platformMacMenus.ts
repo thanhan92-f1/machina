@@ -5,39 +5,62 @@ import type { PlatformDesktopTier } from './platformDesktopTier'
 import { isPathAllowedForTier } from './platformDesktopTier'
 import { DESKTOP_HUB_TILES } from './platformHubZones'
 import { hubHrefForTier } from './platformHubLinks'
-import { NORMAL_FAVORITE_PATHS, PLATFORM_SIDEBAR, type PlatformNavItem, type PlatformNavSection } from './platformNav'
+import { sidebarForTier, sidebarLocationsOnly } from './platformNavFilter'
+import type { PlatformNavItem, PlatformNavSection } from './platformNav'
 
 export type MacMenuNavItem = { to: string; label: string }
 
-/** Hub-first Go menu — favorites + launchpads, not full flat nav. */
-export function macMenuSectionsForTier(tier: PlatformDesktopTier, _integrationItems: PlatformNavItem[] = []): PlatformNavSection[] {
-  const favorites = PLATFORM_SIDEBAR.flatMap((s) => s.items).filter((item) =>
-    (NORMAL_FAVORITE_PATHS as readonly string[]).includes(item.to),
+function dedupeItems(items: PlatformNavItem[], seen: Set<string>): PlatformNavItem[] {
+  const next: PlatformNavItem[] = []
+  for (const item of items) {
+    if (seen.has(item.to)) continue
+    seen.add(item.to)
+    next.push(item)
+  }
+  return next
+}
+
+/** Hub-first Go menu — favorites, hubs, then tier-filtered Host / Fleet / Platform locations. */
+export function macMenuSectionsForTier(tier: PlatformDesktopTier, integrationItems: PlatformNavItem[] = []): PlatformNavSection[] {
+  const seenPaths = new Set<string>()
+
+  const favorites = dedupeItems(
+    sidebarForTier('normal', [])
+      .flatMap((section) => section.items)
+      .filter((item) => isPathAllowedForTier(item.to, tier)),
+    seenPaths,
   )
 
-  const hubItems = DESKTOP_HUB_TILES
-    .filter((hub) => isPathAllowedForTier(hub.href, tier))
-    .map((hub) => ({
-      to: hubHrefForTier(hub.id, tier),
-      label: hub.label,
-      icon: null as ReactNode,
-    }))
+  const hubItems = dedupeItems(
+    DESKTOP_HUB_TILES
+      .filter((hub) => isPathAllowedForTier(hub.href, tier))
+      .map((hub) => ({
+        to: hubHrefForTier(hub.id, tier),
+        label: hub.label,
+        icon: null as ReactNode,
+      })),
+    seenPaths,
+  )
 
-  const sections: PlatformNavSection[] = [
-    { label: 'Favorites', items: favorites },
-  ]
-
+  const sections: PlatformNavSection[] = []
+  if (favorites.length > 0) {
+    sections.push({ label: 'Favorites', items: favorites })
+  }
   if (hubItems.length > 0) {
-    const favoritePaths = new Set(favorites.map((item) => item.to))
-    const dedupedHubs = hubItems.filter((hub) => !favoritePaths.has(hub.to))
-    if (dedupedHubs.length > 0) {
-      sections.push({
-        label: 'Hubs',
-        items: dedupedHubs.map((h) => ({ ...h, icon: null })),
-      })
-    }
+    sections.push({ label: 'Hubs', items: hubItems })
   }
 
+  const locationSections = sidebarLocationsOnly(sidebarForTier(tier, integrationItems))
+    .map((section) => ({
+      ...section,
+      items: dedupeItems(
+        section.items.filter((item) => isPathAllowedForTier(item.to, tier)),
+        seenPaths,
+      ),
+    }))
+    .filter((section) => section.items.length > 0)
+
+  sections.push(...locationSections)
   return sections
 }
 

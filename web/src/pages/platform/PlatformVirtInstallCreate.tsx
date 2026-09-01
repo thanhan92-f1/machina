@@ -110,11 +110,12 @@ export default function PlatformVirtInstallCreate() {
   }, [searchParams])
 
   const guestOptions = useMemo(
-    () => MACHINA_PACKER_SCRIPT_GUESTS.map((g) => ({
-      id: g.virtInstallDownloadOs,
-      label: g.label,
-      osVariant: g.osVariantHint,
-    })),
+    () =>
+      MACHINA_PACKER_SCRIPT_GUESTS.filter((g) => g.family !== 'windows').map((g) => ({
+        id: g.virtInstallDownloadOs,
+        label: g.label,
+        osVariant: g.osVariantHint,
+      })),
     [],
   )
 

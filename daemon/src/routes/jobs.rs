@@ -151,25 +151,40 @@ async fn post_virt_image_build_job(
     })))
 }
 
-const PACKER_GOLDEN_SCRIPT: &str = "/usr/local/share/machina/packer/build-linux-image.sh";
+const PACKER_LINUX_SCRIPT: &str = "/usr/local/share/machina/packer/build-linux-image.sh";
+const PACKER_WINDOWS_DOCKUR_SCRIPT: &str =
+    "/usr/local/share/machina/packer/build-windows-dockur.sh";
 const PACKER_GOLDEN_ROOT: &str = "/var/lib/machina/packer-builds";
 
+fn packer_guest_is_windows_dockur(g: &str) -> bool {
+    matches!(g, "win10" | "win11")
+}
+
 fn packer_guest_allowed(g: &str) -> bool {
-    matches!(
-        g,
-        "fedora43"
-            | "ubuntu2204"
-            | "ubuntu2404"
-            | "ubuntu2504"
-            | "ubuntu2510"
-            | "ubuntu2604"
-            | "debian12"
-            | "debian13"
-            | "almalinux9"
-            | "rocky9"
-            | "centos9stream"
-            | "oraclelinux9"
-    )
+    packer_guest_is_windows_dockur(g)
+        || matches!(
+            g,
+            "fedora43"
+                | "ubuntu2204"
+                | "ubuntu2404"
+                | "ubuntu2504"
+                | "ubuntu2510"
+                | "ubuntu2604"
+                | "debian12"
+                | "debian13"
+                | "almalinux9"
+                | "rocky9"
+                | "centos9stream"
+                | "oraclelinux9"
+        )
+}
+
+fn packer_script_for_guest(g: &str) -> &'static str {
+    if packer_guest_is_windows_dockur(g) {
+        PACKER_WINDOWS_DOCKUR_SCRIPT
+    } else {
+        PACKER_LINUX_SCRIPT
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -197,11 +212,25 @@ async fn post_packer_golden_build_job(
             "unknown packer guest id: {guest}"
         ))));
     }
-    if !FsPath::new(PACKER_GOLDEN_SCRIPT).is_file() {
+
+    let cfg = MachinaConfig::load();
+    if packer_guest_is_windows_dockur(&guest) && !cfg.libvirt.dockur_windows_allowed {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "dockur Windows golden builds are disabled ([libvirt] dockur_windows_allowed = false)"
+                .into(),
+        )));
+    }
+
+    let script = packer_script_for_guest(&guest);
+    if !FsPath::new(script).is_file() {
         return Err(AppError::from(LibvirtError::Invalid(format!(
-            "packer script not found: {PACKER_GOLDEN_SCRIPT}"
+            "packer script not found: {script}"
         ))));
     }
+
+    let dockur_disk_size = cfg.libvirt.dockur_disk_size.clone();
+    let dockur_ram_size = cfg.libvirt.dockur_ram_size.clone();
+    let dockur_cpu_cores = cfg.libvirt.dockur_cpu_cores.clone();
 
     let id = jobs.start_packer_golden_build(&guest);
     let jobs_bg = jobs.clone();
@@ -213,16 +242,34 @@ async fn post_packer_golden_build_job(
             jobs_bg.fail(id, &format!("create work dir: {e}"));
             return;
         }
+        let work_dir = root.join("work");
+        if let Err(e) = fs::create_dir_all(&work_dir) {
+            jobs_bg.fail(id, &format!("create work subdir: {e}"));
+            return;
+        }
 
-        let mut child = match Command::new("bash")
-            .arg(PACKER_GOLDEN_SCRIPT)
+        let mut cmd = Command::new("bash");
+        cmd.arg(script)
             .arg(&guest_bg)
             .arg("work")
             .current_dir(&root)
-            .env("MACHINA_SKIP_PACKER_INSTALL_DEPS", "1")
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
+            .stderr(Stdio::piped());
+        if packer_guest_is_windows_dockur(&guest_bg) {
+            if !dockur_disk_size.trim().is_empty() {
+                cmd.env("MACHINA_DOCKUR_DISK_SIZE", dockur_disk_size.trim());
+            }
+            if !dockur_ram_size.trim().is_empty() {
+                cmd.env("MACHINA_DOCKUR_RAM_SIZE", dockur_ram_size.trim());
+            }
+            if !dockur_cpu_cores.trim().is_empty() {
+                cmd.env("MACHINA_DOCKUR_CPU_CORES", dockur_cpu_cores.trim());
+            }
+        } else {
+            cmd.env("MACHINA_SKIP_PACKER_INSTALL_DEPS", "1");
+        }
+
+        let mut child = match cmd.spawn()
         {
             Ok(c) => c,
             Err(e) => {

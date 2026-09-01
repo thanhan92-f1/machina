@@ -364,7 +364,8 @@ html[data-theme='tahoe-light'] .tahoe-context-overflow-item:hover,
 html.apple-light .tahoe-context-overflow-item-active,
 html.light-theme .tahoe-context-overflow-item-active,
 html[data-theme='tahoe-light'] .tahoe-context-overflow-item-active {
-  color: hsl(200 78% 32%) !important;
+  color: var(--text-primary, hsl(0 0% 11%)) !important;
+  background: var(--accent-soft, rgba(0, 113, 227, 0.1)) !important;
 }
 
 html.apple-light .platform-detail-tabs-sticky,
@@ -663,9 +664,25 @@ html[data-theme='tahoe-light'] .mac-menu-panel {
 html.apple-light .mac-menu-item:hover,
 html.light-theme .mac-menu-item:hover,
 html.apple-light .mac-menu-item-active,
-html.light-theme .mac-menu-item-active {
-  background: hsl(200 78% 40% / 0.1) !important;
-  color: hsl(0 0% 11%) !important;
+html.light-theme .mac-menu-item-active,
+html[data-theme='tahoe-light'] .mac-menu-item:hover,
+html[data-theme='tahoe-light'] .mac-menu-item-active {
+  background: var(--accent-soft, rgba(0, 113, 227, 0.1)) !important;
+  color: var(--text-primary, hsl(0 0% 11%)) !important;
+}
+
+html.apple-light .mac-menu-row:hover,
+html.light-theme .mac-menu-row:hover,
+html[data-theme='tahoe-light'] .mac-menu-row:hover {
+  background: var(--surface-hover, rgba(0, 113, 227, 0.06)) !important;
+  color: var(--text-primary, hsl(0 0% 11%)) !important;
+}
+
+html.apple-light .mac-menu-row-active,
+html.light-theme .mac-menu-row-active,
+html[data-theme='tahoe-light'] .mac-menu-row-active {
+  background: var(--accent-soft, rgba(0, 113, 227, 0.1)) !important;
+  color: var(--text-primary, hsl(0 0% 11%)) !important;
 }
 
 /* ============================================================================

@@ -29,6 +29,8 @@ import {
   MACHINA_PACKER_SCRIPT_GUESTS,
   PACKER_SCRIPT_REPO,
   PACKER_SCRIPT_SYSTEM,
+  PACKER_WINDOWS_DOCKUR_REPO,
+  PACKER_WINDOWS_DOCKUR_SYSTEM,
 } from '../data/packerGuests'
 import {
   computeGoldenForgeTimeline,
@@ -64,6 +66,9 @@ type GoldenKind = 'template' | 'backing'
 type GuestProfile = 'auto' | 'linux' | 'windows'
 
 const INSTALL_WIZARD_STEPS = ['Source & OS', 'Disk', 'Network & display', 'Cloud-init', 'Review'] as const
+
+const LINUX_PACKER_GUESTS = MACHINA_PACKER_SCRIPT_GUESTS.filter((g) => g.family !== 'windows')
+const WINDOWS_PACKER_GUESTS = MACHINA_PACKER_SCRIPT_GUESTS.filter((g) => g.family === 'windows')
 
 export default function CreateVMPage() {
   const navigate = useNavigate()
@@ -933,7 +938,7 @@ export default function CreateVMPage() {
               }}
               className="input-field max-w-xl"
             >
-              {MACHINA_PACKER_SCRIPT_GUESTS.map((g) => (
+              {LINUX_PACKER_GUESTS.map((g) => (
                 <option key={g.id} value={g.virtInstallDownloadOs}>
                   {g.label} — {g.virtInstallDownloadOs}
                 </option>
@@ -1759,12 +1764,15 @@ export default function CreateVMPage() {
               <Link to="/jobs" className="text-[var(--link)] hover:underline">
                 Jobs
               </Link>
-              . Default login is usually <code className="text-[var(--text-secondary)]">packer</code> or <code className="text-[var(--text-secondary)]">root</code> with password <code className="text-[var(--text-secondary)]">password</code> until you change it.
+              . Default Linux login is usually <code className="text-[var(--text-secondary)]">packer</code> or <code className="text-[var(--text-secondary)]">root</code> with password <code className="text-[var(--text-secondary)]">password</code>. Windows profiles use dockur (<code className="text-[var(--text-secondary)]">Docker</code> / <code className="text-[var(--text-secondary)]">admin</code>) — rotate before production.
             </p>
           </div>
         </div>
         <p className="text-xs text-[var(--text-muted)]">
-          Installed: <code className="text-[var(--text-muted)]">{PACKER_SCRIPT_SYSTEM}</code> · from repo: <code className="text-[var(--text-muted)]">{PACKER_SCRIPT_REPO}</code>
+          Linux: <code className="text-[var(--text-muted)]">{PACKER_SCRIPT_SYSTEM}</code> · Windows:{' '}
+          <code className="text-[var(--text-muted)]">{PACKER_WINDOWS_DOCKUR_SYSTEM}</code> · repo:{' '}
+          <code className="text-[var(--text-muted)]">{PACKER_SCRIPT_REPO}</code>,{' '}
+          <code className="text-[var(--text-muted)]">{PACKER_WINDOWS_DOCKUR_REPO}</code>
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[12rem]">
@@ -1778,11 +1786,20 @@ export default function CreateVMPage() {
               className="input-field w-full max-w-md"
               disabled={packerRunning}
             >
-              {MACHINA_PACKER_SCRIPT_GUESTS.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.label} ({g.id})
-                </option>
-              ))}
+              <optgroup label="Linux (Packer / QEMU)">
+                {LINUX_PACKER_GUESTS.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.label} ({g.id})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Windows (dockur / Podman)">
+                {WINDOWS_PACKER_GUESTS.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.label} ({g.id})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
           <button
@@ -1803,7 +1820,7 @@ export default function CreateVMPage() {
         </div>
         {(packerRunning || packerLog.length > 0) && (
           <div className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] p-3 space-y-2">
-            <h4 className="text-xs font-semibold text-[var(--link)]">Packer / QEMU build output</h4>
+            <h4 className="text-xs font-semibold text-[var(--link)]">Golden Forge build output</h4>
             <BuildStepTimeline
               steps={GOLDEN_FORGE_TIMELINE_LABELS}
               activeIndex={goldenForgeTimeline.activeIndex}

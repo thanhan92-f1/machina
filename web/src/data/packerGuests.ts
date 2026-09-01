@@ -7,7 +7,7 @@
  * matching `virt-install --install os=…` short-ids (libosinfo).
  */
 
-export type PackerGuestFamily = 'rpm' | 'debian' | 'ubuntu'
+export type PackerGuestFamily = 'rpm' | 'debian' | 'ubuntu' | 'windows'
 
 export interface MachinaPackerScriptGuest {
   /** First argument to `build-linux-image.sh` */
@@ -125,7 +125,28 @@ export const MACHINA_PACKER_SCRIPT_GUESTS: readonly MachinaPackerScriptGuest[] =
     virtInstallDownloadOs: 'oraclelinux9',
     defaultLoginUser: 'root',
   },
+  {
+    id: 'win11',
+    label: 'Windows 11',
+    family: 'windows',
+    osVariantHint: 'win11',
+    virtInstallDownloadOs: 'win11',
+    defaultLoginUser: 'root',
+    notes: 'dockur/windows via Podman; default login Docker/admin — rotate before production.',
+  },
+  {
+    id: 'win10',
+    label: 'Windows 10',
+    family: 'windows',
+    osVariantHint: 'win10',
+    virtInstallDownloadOs: 'win10',
+    defaultLoginUser: 'root',
+    notes: 'dockur/windows via Podman; default login Docker/admin — rotate before production.',
+  },
 ] as const
 
 export const PACKER_SCRIPT_SYSTEM = '/usr/local/share/machina/packer/build-linux-image.sh'
 export const PACKER_SCRIPT_REPO = 'contrib/packer/build-linux-image.sh'
+export const PACKER_WINDOWS_DOCKUR_SYSTEM =
+  '/usr/local/share/machina/packer/build-windows-dockur.sh'
+export const PACKER_WINDOWS_DOCKUR_REPO = 'contrib/packer/build-windows-dockur.sh'

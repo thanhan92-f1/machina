@@ -149,7 +149,7 @@ Navigation layers are tier-aware to avoid triple nav. Full contract: [design/APP
 
 | Layer | Role | When visible |
 |-------|------|--------------|
-| **Menubar** | Zyvor tile + app menus, Dynamic Island, Control Center | Always on authenticated routes |
+| **Menubar** | Zyvor tile + app menus (Go = Favorites + Hubs + tier-filtered Host/Fleet/Platform), Dynamic Island, Control Center | Always on authenticated routes |
 | **Desktop tabs** | Open window strip | When >1 platform tab ([`PlatformMacDesktopTabs`](web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) |
 | **Context bar** | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) |
 | **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](web/src/components/PageLayout.tsx) | Every platform page |
@@ -157,6 +157,8 @@ Navigation layers are tier-aware to avoid triple nav. Full contract: [design/APP
 | **Dock** | Primary app launcher | Always |
 | **Sidebar** | Finder locations (Host / Fleet / Platform) — Favorites stripped | **Advanced** default on; **Normal/Power** off (View → Show Sidebar) |
 | **Fleet Cloud pills** | Section switch | Primary Overview/Instances/Images/Volumes/Create + **More** ([`FleetCloudSubNav`](web/src/components/FleetCloudSubNav.tsx)) |
+
+**Submenus:** menubar dropdowns, context-bar **More**, and Fleet Cloud **More** share [`PlatformFloatingMenu`](web/src/components/platform/mac/PlatformFloatingMenu.tsx) (portaled, `role="menu"`) and [`PlatformMenuItem`](web/src/components/platform/mac/PlatformMenuItem.tsx) row tokens (`--surface-hover`, `--accent-soft`).
 
 Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppressContextBar`](web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](web/src/utils/platformDesktopTier.ts).
 

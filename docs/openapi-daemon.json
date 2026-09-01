@@ -2614,7 +2614,7 @@
     },
     "/api/v1/jobs/packer-golden-build": {
       "post": {
-        "summary": "POST /api/v1/jobs/packer-golden-build",
+        "summary": "POST /api/v1/jobs/packer-golden-build — Golden Forge (Linux Packer or Windows dockur win10/win11)",
         "tags": [
           "jobs"
         ],

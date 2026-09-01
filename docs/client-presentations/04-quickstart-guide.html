@@ -323,7 +323,7 @@ kbd { display: inline-block; background: rgba(255,255,255,0.1); border: 1px soli
     <span class="step-number">3</span>
     <div class="step-content">
       <h4>Create Your First VM</h4>
-      <p>Open <strong>Create VM</strong>: install from ISO, URL, PXE, or curated <strong>virt-install</strong> OS presets; clone from a golden qcow2; or run <strong>Golden Forge</strong> to build a Packer image on the host (logs + timeline, same pattern as <strong>Jobs</strong>). Use <strong>Disk images</strong> to list pools and start <strong>virt-image-build</strong> jobs. machina validates inputs in real time.</p>
+      <p>Open <strong>Create VM</strong>: install from ISO, URL, PXE, or curated <strong>virt-install</strong> OS presets; clone from a golden qcow2; or run <strong>Golden Forge</strong> to build a reusable image on the host — Linux via Packer/QEMU, Windows 10/11 via dockur/Podman when enabled (logs + timeline, same pattern as <strong>Jobs</strong>). Use <strong>Disk images</strong> to list pools and start <strong>virt-image-build</strong> jobs. machina validates inputs in real time.</p>
       <div class="code" style="margin-top:8px;">
         <span class="comment"># Or via API</span><br>
         <span class="prompt">$</span> curl -X POST http://localhost:5092/api/v1/vms \<br>
@@ -401,7 +401,7 @@ kbd { display: inline-block; background: rgba(255,255,255,0.1); border: 1px soli
     <div class="card">
       <div class="icon">&#128203;</div>
       <h3>Jobs</h3>
-      <p>Background work: virt-image-build, Golden Forge (Packer golden qcow2), streamed VM create. Live logs, step timelines, and <code>/jobs/{id}</code> detail.</p>
+      <p>Background work: virt-image-build, Golden Forge (Packer Linux or dockur Windows golden qcow2), streamed VM create. Live logs, step timelines, and <code>/jobs/{id}</code> detail.</p>
     </div>
     <div class="card">
       <div class="icon">&#9889;</div>
