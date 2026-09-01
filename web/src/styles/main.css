@@ -3070,10 +3070,13 @@ button.vm-detail-hero-pill:hover {
 
 .vm-connect-hub {
   position: relative;
-  border-radius: var(--radius-liquid-lg);
-  border: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.08));
-  background: var(--apple-surface, #1d1d1f);
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--apple-hairline, rgba(255, 255, 255, 0.08));
+  background: transparent;
   box-shadow: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .vm-connect-hub::before {

@@ -9,6 +9,7 @@ import { ASK_ZYRA_LABEL } from '../../../config/aiBrand'
 import ConnectionStatus from '../../ConnectionStatus'
 import { ZyvorTileMark } from '../../ZyvorMark'
 import PlatformMacMenuDropdown, { PlatformMacMenuItem } from './PlatformMacMenuDropdown'
+import PlatformProductNavMenus from './PlatformProductNavMenus'
 import { usePlatformMacDesktop } from './PlatformMacDesktopContext'
 import { openCenterPopout } from '../../../utils/platformCenterPopout'
 import { usePlatformDesktopTier } from '../../../hooks/usePlatformDesktopTier'
@@ -23,10 +24,6 @@ import {
   dispatchOpenSpotlight,
   OPEN_SPOTLIGHT_EVENT,
 } from '../../../utils/platformJarvisShell'
-import { ZYRA_SEARCH_PLACEHOLDER } from '../../../config/aiBrand'
-import { macMenuSectionsForTier } from '../../../utils/platformMacMenus'
-import { integrationNavItems } from '../../../utils/platformIntegrationsNav'
-import { usePlatformInfo } from '../../../contexts/PlatformInfoContext'
 import { dispatchOpenHelp } from '../../../utils/openHelp'
 import {
   loadPlatformDesktopTabs,
@@ -47,10 +44,6 @@ export default function PlatformMacAppMenus() {
   const [tier, setTier] = usePlatformDesktopTier()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [openWindows, setOpenWindows] = useState(() => loadPlatformDesktopTabs())
-  const [zyraQuery, setZyraQuery] = useState('')
-
-  const { info } = usePlatformInfo()
-  const navSections = useMemo(() => macMenuSectionsForTier(tier, integrationNavItems(info)), [tier, info])
 
   const closeMenu = useCallback(() => setOpenMenu(null), [])
   const toggleMenu = (id: string) => setOpenMenu((prev) => (prev === id ? null : id))
@@ -137,33 +130,19 @@ export default function PlatformMacAppMenus() {
         <PlatformMacMenuItem label="Sign Out" onClick={() => { void logout(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
-      <PlatformMacMenuDropdown label="Go" open={openMenu === 'go'} onToggle={() => toggleMenu('go')} onClose={closeMenu}>
-        {navSections.map((section, idx) => (
-          <div key={section.label}>
-            {idx > 0 && <div className="my-1 border-t border-[var(--apple-hairline)]" />}
-            <PlatformMacMenuItem label={section.label} header />
-            {section.items.map((item, itemIdx) => {
-              const prev = section.items[itemIdx - 1]
-              const showSubheader = item.subsection && item.subsection !== prev?.subsection
-              return (
-                <div key={item.to}>
-                  {showSubheader && <PlatformMacMenuItem label={item.subsection!} header />}
-                  <PlatformMacMenuItem
-                    label={item.label}
-                    checked={location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)}
-                    onClick={() => go(item.to)}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        ))}
-        <div className="my-1 border-t border-[var(--apple-hairline)]" />
-        <PlatformMacMenuItem label="All destinations…" shortcut="⌘K" onClick={() => { openSpotlight(); closeMenu() }} />
-      </PlatformMacMenuDropdown>
+      <PlatformProductNavMenus
+        openMenu={openMenu}
+        onToggleMenu={toggleMenu}
+        onCloseMenu={closeMenu}
+      />
 
       <PlatformMacMenuDropdown label="View" open={openMenu === 'view'} onToggle={() => toggleMenu('view')} onClose={closeMenu}>
-        <PlatformMacMenuItem label="Show Sidebar" shortcut="⌘⌥S" checked={sidebarVisible} onClick={() => { toggleSidebar(); closeMenu() }} />
+        <PlatformMacMenuItem
+          label={sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'}
+          shortcut="⌘⌥S"
+          checked={sidebarVisible}
+          onClick={() => { toggleSidebar(); closeMenu() }}
+        />
         <PlatformMacMenuItem label="Show Inspector" shortcut="⌘⌥I" checked={inspectorVisible} onClick={() => { toggleInspector(); closeMenu() }} />
         <div className="my-1 border-t border-[var(--apple-hairline)]" />
         <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.normal} checked={tier === 'normal'} onClick={() => pickTier('normal')} />
@@ -206,27 +185,6 @@ export default function PlatformMacAppMenus() {
         ))}
         <PlatformMacMenuItem label="OpenAPI Reference" onClick={() => { window.open('/api/v1/openapi.json', '_blank'); closeMenu() }} />
       </PlatformMacMenuDropdown>
-
-      <form
-        className="hidden md:flex items-center ml-2 min-w-[12rem] max-w-md flex-1"
-        onSubmit={(e) => {
-          e.preventDefault()
-          openSpotlight(zyraQuery.trim() || undefined)
-          setZyraQuery('')
-        }}
-      >
-        <input
-          id="menubar-zyra-search"
-          name="zyra_query"
-          type="search"
-          aria-label="Zyra search"
-          value={zyraQuery}
-          onChange={(e) => setZyraQuery(e.target.value)}
-          placeholder={ZYRA_SEARCH_PLACEHOLDER}
-          className="w-full rounded-lg bg-white/[0.06] border border-[var(--apple-hairline)] px-3 py-1 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)]/40"
-          data-testid="menubar-zyra-search"
-        />
-      </form>
 
       <div className="hidden xl:flex items-center gap-2 ml-2 pl-2 border-l border-[var(--apple-hairline)] text-xs text-[var(--text-muted)]">
         <ConnectionStatus />

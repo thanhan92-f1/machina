@@ -5,7 +5,7 @@ import { Link } from 'react-router'
 export function macMenuRowClass(active = false): string {
   return [
     'mac-menu-row',
-    'flex w-full items-center justify-between gap-4 px-3.5 py-2 text-[13px] text-left transition-colors',
+    'flex w-full items-center justify-between gap-4 px-3.5 py-2 text-[0.9375rem] text-left transition-colors',
     active ? 'mac-menu-row-active' : '',
   ].filter(Boolean).join(' ')
 }
@@ -27,7 +27,7 @@ export function PlatformMacMenuItem({
 }) {
   if (header) {
     return (
-      <div className="px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] pointer-events-none">
+      <div className="px-3.5 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] pointer-events-none">
         {label}
       </div>
     )
@@ -42,8 +42,8 @@ export function PlatformMacMenuItem({
       className={`${macMenuRowClass(checked)} disabled:opacity-40 disabled:pointer-events-none`}
     >
       <span className="flex items-center gap-2 min-w-0">
-        <span className="w-3.5 shrink-0 text-sm text-[var(--link)]">{checked ? '✓' : ''}</span>
-        <span className="truncate text-[var(--text-primary)]">{label}</span>
+        <span className="w-3.5 shrink-0 text-sm text-[var(--accent)]">{checked ? '✓' : ''}</span>
+        <span className="truncate text-[var(--text-muted)]">{label}</span>
       </span>
       {shortcut ? <span className="mac-menu-shortcut text-xs text-[var(--text-muted)] shrink-0">{shortcut}</span> : null}
     </button>

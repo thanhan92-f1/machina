@@ -1,8 +1,9 @@
 # Daylight Contract — Machina light theme (Zeus OS 1:1)
 
-Shipped light shell is Magichromatic Tahoe Light
-(`html[data-theme='tahoe-light']`) — **exact port** from
+Shipped **default** light shell is apple.com white / Magichromatic Tahoe Light
+(`html.apple-light`, `html[data-theme='tahoe-light']`) — port from
 [`../zeus-os/ui/src/index.css`](../../zeus-os/ui/src/index.css).
+Classic Blue and other dark shells are opt-in via Appearance.
 
 Live SoT in Machina: `web/src/styles/zeus-parity.css` (re-port from Zeus; do not re-derive).
 Legacy aliases: `web/src/styles/machina-daylight.css` (superseded when they conflict).

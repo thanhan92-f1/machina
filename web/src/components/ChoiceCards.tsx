@@ -8,43 +8,45 @@ import { Link } from 'react-router'
 /** Accent used for selected state (ring + border + tint). */
 export type ChoiceTone = 'blue' | 'amber' | 'sky' | 'cyan' | 'purple' | 'emerald' | 'slate' | 'violet'
 
+/** Selected shell: hairline surface + accent border — never accent-on-accent wash. */
 const selectedClass: Record<ChoiceTone, string> = {
-  blue: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]',
-  amber: 'border-amber-500/70 bg-amber-950/20 ring-1 ring-amber-500/40',
-  sky: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]',
-  cyan: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]',
-  purple: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]',
-  emerald: 'border-emerald-500/60 bg-[var(--apple-surface)] ring-1 ring-emerald-500/40',
-  slate: 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] ring-1 ring-white/10',
-  violet: 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--accent)_40%,transparent)]',
+  blue: 'border-[var(--accent)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]',
+  amber: 'border-[var(--amber)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--amber)_35%,transparent)]',
+  sky: 'border-[var(--accent)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]',
+  cyan: 'border-[var(--accent)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]',
+  purple: 'border-[var(--accent)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]',
+  emerald: 'border-[var(--verdant)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--verdant)_35%,transparent)]',
+  slate: 'border-[var(--text-primary)] bg-[var(--apple-surface)] ring-1 ring-[var(--apple-hairline)]',
+  violet: 'border-[var(--accent)] bg-[var(--apple-surface)] ring-1 ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]',
 }
 
+/** Selected icon tile: solid accent + on-accent text (readable; no blue-on-blue). */
 const iconSelectedClass: Record<ChoiceTone, string> = {
-  blue: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
-  amber: 'bg-[color-mix(in_srgb,var(--amber)_22%,transparent)] text-[var(--amber)]',
-  sky: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
-  cyan: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
-  purple: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
-  emerald: 'bg-[color-mix(in_srgb,var(--verdant)_22%,transparent)] text-[var(--verdant)]',
-  slate: 'bg-white/10 text-[var(--text-primary)]',
-  violet: 'bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] text-[var(--accent)]',
+  blue: 'bg-[var(--accent)] text-[var(--text-on-accent)]',
+  amber: 'bg-[var(--amber)] text-[var(--text-on-accent)]',
+  sky: 'bg-[var(--accent)] text-[var(--text-on-accent)]',
+  cyan: 'bg-[var(--accent)] text-[var(--text-on-accent)]',
+  purple: 'bg-[var(--accent)] text-[var(--text-on-accent)]',
+  emerald: 'bg-[var(--verdant)] text-[var(--text-on-accent)]',
+  slate: 'bg-[var(--text-primary)] text-[var(--apple-surface)]',
+  violet: 'bg-[var(--accent)] text-[var(--text-on-accent)]',
 }
 
 const iconIdleClass: Record<ChoiceTone, string> = {
-  blue: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  blue: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
   amber: 'bg-[var(--apple-fill-secondary)] text-[var(--amber)]',
-  sky: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
-  cyan: 'bg-[var(--apple-fill-secondary)] text-[var(--text-primary)]',
-  purple: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
-  emerald: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
-  slate: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
-  violet: 'bg-[var(--surface-hover)]/80 text-[var(--text-secondary)]',
+  sky: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
+  cyan: 'bg-[var(--apple-fill-secondary)] text-[var(--text-secondary)]',
+  purple: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
+  emerald: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
+  slate: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
+  violet: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
 }
 
-const baseUnselected = 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] hover:border-[var(--apple-hairline)] hover:bg-[var(--apple-surface)]'
+const baseUnselected = 'border-[var(--apple-hairline)] bg-[var(--apple-surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]'
 
 const baseButton =
-  'rounded-xl border text-left transition flex flex-col gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:opacity-45 disabled:pointer-events-none'
+  'rounded-xl border text-left transition flex flex-col gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-0)] disabled:opacity-45 disabled:pointer-events-none'
 
 export function ChoiceCardGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${className}`.trim()}>{children}</div>
@@ -77,7 +79,7 @@ export function ChoiceLinkCard({
       className={`${baseButton} p-3 gap-2 ${baseUnselected} hover:border-[var(--accent)]/45 hover:bg-[var(--apple-fill-tertiary)]/55 ${className}`.trim()}
     >
       <span className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-hover)]/80 text-[var(--accent)]">{icon}</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-hover)] text-[var(--text-secondary)]">{icon}</span>
         {title}
       </span>
       {description ? <span className="text-xs text-[var(--text-muted)] leading-snug">{description}</span> : null}

@@ -42,7 +42,7 @@ export default function RdpConsoleLink({ vmName, connection, className }: Props)
     <div className={className ?? 'flex flex-wrap gap-2'}>
       <Link
         to={rdpPath}
-        className="px-3 py-1.5 bg-[var(--accent-soft)] hover:bg-[var(--accent-soft)] border border-[var(--accent)]/40 rounded-lg text-sm transition flex items-center gap-1 text-[var(--text-primary)]"
+        className="btn-secondary text-sm inline-flex items-center gap-1"
         title={t('rdp.builtinTitle')}
       >
         <Monitor className="w-4 h-4" />
@@ -52,7 +52,7 @@ export default function RdpConsoleLink({ vmName, connection, className }: Props)
         type="button"
         onClick={() => void download()}
         disabled={busy}
-        className="px-3 py-1.5 bg-[var(--apple-surface)] hover:bg-[var(--surface-hover)] border border-[var(--apple-hairline)]/40 rounded-lg text-sm transition flex items-center gap-1"
+        className="btn-secondary text-sm inline-flex items-center gap-1"
         title={t('rdp.downloadTitle')}
         aria-label={t('rdp.download')}
       >

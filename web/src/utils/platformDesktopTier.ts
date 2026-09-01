@@ -154,8 +154,8 @@ export function tierAtLeast(current: PlatformDesktopTier, min: PlatformDesktopTi
 }
 
 /**
- * Sidebar-first shell — Finder locations rail stays visible for every desktop tier.
- * (Mac dock is retired; menus live in the sidebar.)
+ * Default Finder locations rail visibility. Users can hide via View → Hide Sidebar
+ * (preference persisted in PlatformMacDesktopContext). Dock remains retired.
  */
 export function defaultSidebarVisibleForTier(_tier: PlatformDesktopTier): boolean {
   return true

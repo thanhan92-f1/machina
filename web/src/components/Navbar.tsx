@@ -282,7 +282,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
         <option value="steel">Steel</option>
         <option value="aurora">Aurora</option>
         <option value="rack">Rack</option>
-        <option value="light">Tahoe Light</option>
+        <option value="light">Apple</option>
       </select>
     </label>
   )

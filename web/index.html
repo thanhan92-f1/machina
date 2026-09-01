@@ -10,6 +10,47 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <meta name="description" content="Linux hypervisor host manager for bare-metal workers: libvirt and QEMU/KVM, web and terminal UIs, REST API, optional KubeVirt workflows." />
     <title>Machina — Linux hypervisor host manager</title>
+    <!-- Boot apple.com white before CSS/JS to avoid Classic Blue FOUC -->
+    <script>
+      (function () {
+        try {
+          var key = 'machina-theme'
+          var mig = 'machina-theme-migrated-apple-light-v1'
+          var t = localStorage.getItem(key)
+          if (!localStorage.getItem(mig)) {
+            localStorage.setItem(mig, '1')
+            if (!t || t === 'dark') {
+              t = 'light'
+              localStorage.setItem(key, t)
+            }
+          }
+          if (!t) t = 'light'
+          var root = document.documentElement
+          root.classList.add('machina-clean')
+          if (t === 'light') {
+            root.classList.add('apple-light', 'light-theme')
+            root.dataset.theme = 'tahoe-light'
+            root.setAttribute('data-ui-shell', 'tahoe-light')
+            root.style.colorScheme = 'light'
+            root.style.backgroundColor = '#f5f5f7'
+          } else {
+            root.dataset.theme = t === 'dark' ? 'tahoe' : t === 'steel' ? 'dark-steel' : t === 'aurora' ? 'aurora' : 'rack'
+            root.setAttribute('data-ui-shell', t === 'dark' ? 'default' : t === 'steel' ? 'dark-steel' : t === 'aurora' ? 'aurora' : 'rack')
+            if (t === 'dark') root.classList.add('liquid-glass-app')
+            else if (t === 'steel') root.classList.add('steel-theme')
+            else if (t === 'aurora') root.classList.add('aurora-theme')
+            else root.classList.add('rack-theme')
+          }
+        } catch (e) {
+          var r = document.documentElement
+          r.classList.add('machina-clean', 'apple-light', 'light-theme')
+          r.dataset.theme = 'tahoe-light'
+          r.setAttribute('data-ui-shell', 'tahoe-light')
+          r.style.colorScheme = 'light'
+          r.style.backgroundColor = '#f5f5f7'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

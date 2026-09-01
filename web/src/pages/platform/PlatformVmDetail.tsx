@@ -116,6 +116,7 @@ import { vmErrorPresentation } from '../../utils/vmErrorPresentation'
 import { formatVmMemoryGiB } from '../../utils/vmVisual'
 import { loadVmSshPrefs } from '../../utils/vmSshPrefs'
 import VmConnectHub from '../../components/vm/VmConnectHub'
+import VmConsoleHeroPreview from '../../components/vm/VmConsoleHeroPreview'
 import VmDetailActionBar from '../../components/platform/VmDetailActionBar'
 import VmAttentionStack from '../../components/platform/VmAttentionStack'
 import VmDetailHero from '../../components/platform/VmDetailHero'
@@ -1142,6 +1143,15 @@ export default function PlatformVmDetail() {
               </button>
               <Link to="/platform/hosts" className="btn-secondary text-sm inline-flex items-center">Sync hosts →</Link>
             </div>
+          )}
+
+          {tab === 'overview' && id && vm && (
+            <VmConsoleHeroPreview
+              vmName={vm.name}
+              vmState={vm.observed_state}
+              consoleHref={cinemaHubPath(id)}
+              platformVmId={id}
+            />
           )}
 
           {tab === 'overview' && connectHubProps && (

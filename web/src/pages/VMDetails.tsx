@@ -34,6 +34,7 @@ import { getStateBadgeClasses, formatBytes } from '../utils/vm'
 import { sessionBadgeClasses, statusActionLinkClasses, statusBadgeClasses, statusBgClass, statusSurfaceClasses, statusToneClass, utilizationTone } from '../utils/semanticColors'
 import { loadVmSshPrefs } from '../utils/vmSshPrefs'
 import VmDailyAccessStrip from '../components/vm/VmDailyAccessStrip'
+import VmConsoleHeroPreview from '../components/vm/VmConsoleHeroPreview'
 import ClassicVmPlatformHardware from './classic/ClassicVmPlatformHardware'
 import ClassicVmSpiceToVncButton from './classic/ClassicVmSpiceToVncButton'
 import VmPortForwardPanel from '../components/vm/VmPortForwardPanel'
@@ -50,7 +51,7 @@ import PageSkeleton from '../components/PageSkeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
-import { ChoiceCard, ChoiceCardDenseGrid } from '../components/ChoiceCards'
+import DetailTabs from '../components/platform/DetailTabs'
 import { BrowseHostPathModal, isHostDiskImageFileName, isIsoFileName } from '../components/BrowseHostPathModal'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
@@ -1290,15 +1291,15 @@ export default function VMDetailsPage() {
     )
   }
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <Cpu className="w-4 h-4" /> },
-    { key: 'disks', label: `Disks (${vm.disks.length})`, icon: <HardDrive className="w-4 h-4" /> },
-    { key: 'network', label: `Network (${vm.interfaces.length})`, icon: <Network className="w-4 h-4" /> },
-    { key: 'snapshots', label: `Snapshots (${snapshots.length})`, icon: <Camera className="w-4 h-4" /> },
-    { key: 'devices', label: 'Devices', icon: <Monitor className="w-4 h-4" /> },
-    { key: 'xml', label: 'XML', icon: <Code className="w-4 h-4" /> },
-    { key: 'logs', label: 'Logs', icon: <Terminal className="w-4 h-4" /> },
-    { key: 'advanced', label: 'Advanced', icon: <Sliders className="w-4 h-4" /> },
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'disks', label: `Disks (${vm.disks.length})` },
+    { key: 'network', label: `Network (${vm.interfaces.length})` },
+    { key: 'snapshots', label: `Snapshots (${snapshots.length})` },
+    { key: 'devices', label: 'Devices' },
+    { key: 'xml', label: 'XML' },
+    { key: 'logs', label: 'Logs' },
+    { key: 'advanced', label: 'Advanced' },
   ]
 
   return (
@@ -1386,6 +1387,14 @@ export default function VMDetailsPage() {
         <button onClick={load} className="btn-ghost text-xs" aria-label="Refresh"><RefreshCw className="w-3 h-3" /></button>
       </div>
 
+      <VmConsoleHeroPreview
+        vmName={vm.name}
+        vmState={vm.state}
+        consoleHref={vmConsoleRoute(vm.name, conn)}
+        libvirtConnection={conn}
+        platformVmId={platformVmId}
+      />
+
       <VmDailyAccessStrip
         vmName={vm.name}
         vmState={vm.state}
@@ -1416,30 +1425,22 @@ export default function VMDetailsPage() {
         onNotify={(m) => toast.success(m)}
       />
 
-      {/* Tabs — card picker */}
-      <div>
-        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">VM details</h2>
-        <ChoiceCardDenseGrid>
-          {tabs.map((t) => (
-            <ChoiceCard
-              key={t.key}
-              compact
-              tone="blue"
-              selected={tab === t.key}
-              onClick={() => setTab(t.key)}
-              icon={t.icon}
-              title={t.label}
-            />
-          ))}
-        </ChoiceCardDenseGrid>
+      {/* Chapter sections — text tabs, not ChoiceCard boxes */}
+      <div className="apple-section apple-section--tight px-0 border-t border-[var(--apple-hairline)]">
+        <p className="apple-eyebrow mb-2">Details</p>
+        <DetailTabs
+          primary={tabs.map((t) => ({ id: t.key, label: t.label }))}
+          active={tab}
+          onChange={setTab}
+        />
       </div>
 
       {/* ── Overview Tab ─────────────────────────────────────────── */}
 
       {tab === 'overview' && (
-        <div className="flex flex-col gap-6">
-          <div className="tahoe-glass-card p-6 space-y-3">
-            <h3 className="text-lg font-semibold">Configuration</h3>
+        <div className="apple-story-stack flex flex-col gap-0">
+          <div className="apple-section apple-section--tight px-0 space-y-3">
+            <h3 className="apple-display--sm text-[1.35rem]">Configuration</h3>
             <EditableRow label="vCPUs" value={vm.vcpus} onEdit={() => openDialog('vcpus')} />
             <EditableRow label="Memory" value={`${vm.memory_mb} MB`} onEdit={() => openDialog('memory')} />
             <InfoRow label="OS Type" value={vm.os_type} />

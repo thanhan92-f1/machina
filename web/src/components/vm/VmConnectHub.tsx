@@ -178,8 +178,8 @@ export default function VmConnectHub({
       <div className="vm-connect-hub p-4 space-y-4 animate-fade-in" data-testid="vm-daily-access">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] tracking-tight">Connect</h3>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Cinema, SSH, NAT, and laptop commands in one place</p>
+            <p className="apple-eyebrow">Connect</p>
+            <p className="apple-lede mt-1 text-base">Cinema, SSH, NAT, and laptop commands.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {ip && (
@@ -206,10 +206,10 @@ export default function VmConnectHub({
         </div>
 
         {guestAccess?.guest_ip_private && (
-          <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-3 py-3 space-y-2" data-testid="vm-laptop-access-checklist">
+          <div className="space-y-2 py-2 border-y border-[var(--apple-hairline)]" data-testid="vm-laptop-access-checklist">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-[var(--link)]/80">Laptop path</p>
-              <span className="text-[10px] font-medium text-[var(--link)]/70">{laptopProgress}%</span>
+              <p className="apple-eyebrow mb-0">Laptop path</p>
+              <span className="text-[10px] font-medium text-[var(--text-muted)]">{laptopProgress}%</span>
             </div>
             <div className="vm-laptop-progress" aria-hidden>
               <div className="vm-laptop-progress-bar" style={{ width: `${laptopProgress}%` }} />

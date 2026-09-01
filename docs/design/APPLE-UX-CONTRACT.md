@@ -27,13 +27,13 @@ Author guide: [ux.md](../ux.md).
 
 | Layer | Mechanism |
 |---|---|
-| Shell | `PlatformLayout` Mac desktop for **all** authenticated routes (menubar + dock + optional desktop tabs) |
+| Shell | `PlatformLayout` Mac desktop for **all** authenticated routes (menubar + sidebar + optional desktop tabs; no dock) |
 | Menubar brand | `ZyvorTileMark` in Apple-logo slot ([`PlatformMacAppMenus`](../../web/src/components/platform/mac/PlatformMacAppMenus.tsx)) → `/platform` |
 | Hero | **Canonical:** `PlatformPageChrome` → `PageLayout` + `machina-apple-ux.css` (`.apple-page-header`). Optional Zeus flat: `PlatformTahoeHero` / `TahoeHero` for icon+stats ledger |
 | Browse chrome | Thin Zeus port [`TahoeListKit`](../../web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty` |
 | Fleet Cloud nav | Pill row + **More** overflow ([`FleetCloudSubNav`](../../web/src/components/FleetCloudSubNav.tsx)) — not a 15-tab strip |
 | Tokens | apple.com blue `#0071e3` + shop box type via `zeus-parity.css` (see [DAYLIGHT-CONTRACT.md](DAYLIGHT-CONTRACT.md)) |
-| Dock | Tahoe Liquid Glass tray + neighbor magnification ([`PlatformMacDock`](../../web/src/components/platform/PlatformMacDock.tsx)) |
+| Dock | **Removed** — do not reintroduce |
 | Login | Apple Store chapter ([`PremiumLoginShell`](../../web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css)) — white hero wordmark **machina**, scroll to two-step PAM sign-in (h2kvm parity) |
 
 ---
@@ -42,14 +42,14 @@ Author guide: [ux.md](../ux.md).
 
 | Layer | Role | Default visibility |
 |---|---|---|
-| **Menubar** | App menus (Go = Favorites + Hubs + locations), Zyvor tile, Dynamic Island, Control Center | Always (authenticated) |
+| **Menubar** | Zyvor tile → **Machina** app menu → **product menus** (Workloads / Infra / Ops / Secure / Admin / More via [`PlatformProductNavMenus`](../../web/src/components/platform/mac/PlatformProductNavMenus.tsx)) → View / Window / Help. Go mega-menu retired. Spotlight via ⌘K / Window. | Always (authenticated); product menus `hidden` below `md` |
 | **Desktop tabs** | Open window strip ([`PlatformMacDesktopTabs`](../../web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) | When >1 platform tab |
-| **Sidebar** | Finder **locations** rail (Host / Fleet / Platform) — primary nav menus live here | **Always on** by default (all tiers); View → Hide Sidebar still works |
+| **Sidebar** | Finder **locations** rail (Host / Fleet / Platform) | **Always on** by default (all tiers); View → Hide Sidebar still works |
 | **Dock** | Removed — do not reintroduce Mac dock tray | — |
 | **Context bar** | Hub cross-links | Tier-gated (see [ux.md](../ux.md)) |
 | **Fleet Cloud pills** | Section switch within `/fleet-cloud/*` | Primary five + More |
 
-**Submenus:** [`PlatformFloatingMenu`](../../web/src/components/platform/mac/PlatformFloatingMenu.tsx) + [`PlatformMenuItem`](../../web/src/components/platform/mac/PlatformMenuItem.tsx) — portaled `role="menu"` panels for menubar, context-bar More, and Fleet Cloud More.
+**Submenus:** [`PlatformFloatingMenu`](../../web/src/components/platform/mac/PlatformFloatingMenu.tsx) + [`PlatformMenuItem`](../../web/src/components/platform/mac/PlatformMenuItem.tsx) — portaled `role="menu"` panels for menubar, context-bar More, and Fleet Cloud More. Product-group data: [`menubarProductGroupsForTier`](../../web/src/utils/platformMacMenus.ts).
 
 Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](../../web/src/utils/platformDesktopTier.ts), [`sidebarLocationsOnly`](../../web/src/utils/platformNavFilter.ts).
 
@@ -78,9 +78,11 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 
 ## Theme map
 
+**Default:** `light` — apple.com white (`html.apple-light` / `data-theme=tahoe-light`). Classic Blue and other shells are opt-in via Appearance.
+
 | Machina | Zeus |
 |---|---|
-| `light` | `tahoe-light` |
+| `light` (default) | `tahoe-light` (apple.com white paper) |
 | `dark` | Classic Blue (`default` / `data-theme=tahoe`) |
 | `steel` | `dark-steel` |
 | `aurora` | `aurora` |
@@ -94,7 +96,7 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 - [x] Unified Mac desktop shell (Navbar retired as primary chrome)
 - [x] Zeus Apple Account login + apple.com **machina** wordmark
 - [x] Menubar Zyvor tile (Apple-logo slot)
-- [x] Dock-first sidebar (Normal/Power hidden; Favorites not duplicated in rail)
+- [x] Sidebar-first locations rail (always on by default; Favorites only Normal fallback; dock retired)
 - [x] Mac desktop tabs mounted
 - [x] Flat page heroes via `PlatformPageChrome` / `PageLayout`
 - [x] Story rhythm on Dashboard + Fleet Cloud overview

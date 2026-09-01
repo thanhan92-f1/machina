@@ -19,6 +19,12 @@ import { useTheme, type AppTheme } from '../../contexts/ThemeContext'
 
 const THEME_OPTIONS: { value: AppTheme; label: string; description: string; preview: string }[] = [
   {
+    value: 'light',
+    label: 'Apple',
+    description: 'Default — apple.com white paper (#f5f5f7) with #0071e3 accents',
+    preview: 'bg-[#f5f5f7]',
+  },
+  {
     value: 'dark',
     label: 'Classic Blue',
     description: 'Zeus Classic Blue — graphite canvas with Mist Blue CTAs',
@@ -41,12 +47,6 @@ const THEME_OPTIONS: { value: AppTheme; label: string; description: string; prev
     label: 'Rack',
     description: 'Equipment-panel dark with muted orange signal accents',
     preview: 'bg-gradient-to-br from-[#0b0e13] via-[#12171f] to-[#1a212b]',
-  },
-  {
-    value: 'light',
-    label: 'Tahoe Light',
-    description: 'Zeus Magichromatic — Mist Blue / Sage / Lavender on mist paper',
-    preview: 'bg-gradient-to-br from-[#d6eaf8] via-[#ebe4f5] to-[#ddeee4]',
   },
 ]
 

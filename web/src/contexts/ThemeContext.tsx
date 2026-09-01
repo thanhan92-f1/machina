@@ -6,14 +6,20 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 
 /**
  * Product themes mapped 1:1 onto Zeus OS identities.
- * `light` → tahoe-light; `dark` → Classic Blue (`data-ui-shell=default`).
+ * Default: `light` → apple.com white / tahoe-light.
+ * `dark` → Classic Blue (`data-ui-shell=default`).
  */
 export type AppTheme = 'dark' | 'steel' | 'aurora' | 'rack' | 'light'
 
-const THEME_CYCLE: AppTheme[] = ['dark', 'steel', 'aurora', 'rack', 'light']
+/** Product default — apple.com white paper (Zeus tahoe-light). */
+export const DEFAULT_THEME: AppTheme = 'light'
+
+const THEME_CYCLE: AppTheme[] = ['light', 'dark', 'steel', 'aurora', 'rack']
+
+const THEME_MIGRATION_APPLE = 'machina-theme-migrated-apple-light-v1'
 
 export const THEME_LABELS: Record<AppTheme, string> = {
-  light: 'Tahoe Light',
+  light: 'Apple',
   dark: 'Classic Blue',
   steel: 'Dark Steel',
   aurora: 'Aurora',
@@ -29,7 +35,7 @@ const HTML_THEME: Record<AppTheme, string> = {
   rack: 'rack',
 }
 
-/** html[data-ui-shell] — Zeus palette selectors (Classic Blue = default). */
+/** html[data-ui-shell] — Zeus palette selectors. */
 const HTML_UI_SHELL: Record<AppTheme, string> = {
   light: 'tahoe-light',
   dark: 'default',
@@ -45,15 +51,29 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
+  theme: DEFAULT_THEME,
   setTheme: () => {},
   cycleTheme: () => {},
 })
 
 function parseStoredTheme(raw: string | null): AppTheme {
-  if (raw === 'light' || raw === 'aurora' || raw === 'steel' || raw === 'rack' || raw === 'dark') return raw
-  // Zeus default
-  return 'light'
+  try {
+    // One-time: previous product default was Classic Blue (`dark`). Move unset +
+    // leftover dark defaults to apple.com white; other explicit themes stay.
+    if (!localStorage.getItem(THEME_MIGRATION_APPLE)) {
+      localStorage.setItem(THEME_MIGRATION_APPLE, '1')
+      if (!raw || raw === 'dark') {
+        localStorage.setItem('machina-theme', DEFAULT_THEME)
+        return DEFAULT_THEME
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  if (raw === 'light' || raw === 'aurora' || raw === 'steel' || raw === 'rack' || raw === 'dark') {
+    return raw
+  }
+  return DEFAULT_THEME
 }
 
 function applyHtmlThemeAttrs(theme: AppTheme) {
@@ -74,6 +94,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('machina-theme', theme)
     const root = document.documentElement
+    root.style.removeProperty('background-color')
+    root.style.removeProperty('color-scheme')
     root.classList.remove(
       'steel-theme',
       'aurora-theme',
@@ -92,9 +114,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.add('rack-theme')
     } else if (theme === 'light') {
       root.classList.add('apple-light', 'light-theme')
+      root.style.colorScheme = 'light'
     } else {
       // Classic Blue — Zeus graphite + Mist (not System Blue liquid-glass)
       root.classList.add('liquid-glass-app')
+      root.style.colorScheme = 'dark'
     }
   }, [theme])
 

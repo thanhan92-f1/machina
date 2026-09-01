@@ -41,8 +41,8 @@ export default function PlatformSidebar() {
   const [tier] = usePlatformDesktopTier()
   const { info } = usePlatformInfo()
   const allSections = sidebarForTier(tier, integrationNavItems(info))
-  // Dock owns Favorites / app pins. Prefer Host·Fleet·Platform locations; Favorites only as
-  // expanded fallback (Normal) — never a collapsed icon rail that mirrors the dock.
+  // Menubar owns product menus; sidebar is the Finder locations rail (Host / Fleet / Platform).
+  // Favorites only as expanded fallback on Normal — dock is retired.
   const locationSections = sidebarLocationsOnly(allSections)
   const sections = locationSections.length > 0 ? locationSections : allSections
   const favoritesOnlyRail = locationSections.length === 0

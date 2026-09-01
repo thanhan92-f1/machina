@@ -33,7 +33,7 @@ export default function PlatformMacMenuDropdown({
         }}
         aria-expanded={open}
         aria-haspopup="menu"
-        className={`mac-menu-item px-2.5 py-1 rounded-md text-sm ${open ? 'mac-menu-item-active' : ''}`}
+        className={`mac-menu-item px-3 py-1.5 rounded-md text-[0.9375rem] font-medium ${open ? 'mac-menu-item-active' : ''}`}
       >
         {label}
       </button>
@@ -44,7 +44,7 @@ export default function PlatformMacMenuDropdown({
         align="start"
         sideOffset={4}
         ariaLabel={label}
-        className="min-w-[240px] max-h-[min(70vh,32rem)] overflow-y-auto py-1 shadow-2xl"
+        className="mac-menu-panel min-w-[240px] max-h-[min(70vh,32rem)] overflow-y-auto py-1.5 shadow-2xl"
       >
         {children}
       </PlatformFloatingMenu>

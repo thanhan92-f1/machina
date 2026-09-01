@@ -1,13 +1,10 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import {
   defaultSidebarVisibleForTier,
   loadPlatformDesktopTier,
-  PLATFORM_DESKTOP_TIER_EVENT,
-  type PlatformDesktopTier,
 } from '../../../utils/platformDesktopTier'
-import { JARVIS_SHELL_EVENT } from '../../../utils/platformJarvisShell'
 
 type PlatformMacDesktopContextValue = {
   sidebarVisible: boolean
@@ -25,8 +22,28 @@ type PlatformMacDesktopContextValue = {
 const PlatformMacDesktopContext = createContext<PlatformMacDesktopContextValue | null>(null)
 
 const SIDEBAR_COLLAPSED_KEY = 'machina-platform-sidebar-collapsed'
+const SIDEBAR_VISIBLE_KEY = 'machina-platform-sidebar-visible'
 
-function defaultSidebarCollapsedForTier(_tier: PlatformDesktopTier): boolean {
+function loadSidebarVisible(): boolean {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_VISIBLE_KEY)
+    if (raw === '0') return false
+    if (raw === '1') return true
+  } catch {
+    /* ignore */
+  }
+  return defaultSidebarVisibleForTier(loadPlatformDesktopTier())
+}
+
+function persistSidebarVisible(visible: boolean) {
+  try {
+    localStorage.setItem(SIDEBAR_VISIBLE_KEY, visible ? '1' : '0')
+  } catch {
+    /* ignore */
+  }
+}
+
+function defaultSidebarCollapsedForTier(): boolean {
   try {
     const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
     if (raw === '0') return false
@@ -38,31 +55,24 @@ function defaultSidebarCollapsedForTier(_tier: PlatformDesktopTier): boolean {
 }
 
 export function PlatformMacDesktopProvider({ children }: { children: ReactNode }) {
-  const [sidebarVisible, setSidebarVisibleState] = useState(() => defaultSidebarVisibleForTier(loadPlatformDesktopTier()))
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => defaultSidebarCollapsedForTier(loadPlatformDesktopTier()))
+  const [sidebarVisible, setSidebarVisibleState] = useState(() => loadSidebarVisible())
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => defaultSidebarCollapsedForTier())
   const [inspectorVisible, setInspectorVisible] = useState(true)
   const [cinemaChromeHidden, setCinemaChromeHidden] = useState(false)
 
-  useEffect(() => {
-    const applyTier = () => {
-      const tier = loadPlatformDesktopTier()
-      setSidebarVisible(defaultSidebarVisibleForTier(tier))
-      try {
-        /* collapsed preference is localStorage-owned; do not force-collapse on tier change */
-      } catch {
-        /* ignore */
-      }
-    }
-    window.addEventListener(PLATFORM_DESKTOP_TIER_EVENT, applyTier)
-    window.addEventListener(JARVIS_SHELL_EVENT, applyTier)
-    return () => {
-      window.removeEventListener(PLATFORM_DESKTOP_TIER_EVENT, applyTier)
-      window.removeEventListener(JARVIS_SHELL_EVENT, applyTier)
-    }
+  const setSidebarVisible = useCallback((v: boolean) => {
+    persistSidebarVisible(v)
+    setSidebarVisibleState(v)
   }, [])
 
-  const toggleSidebar = useCallback(() => setSidebarVisibleState((v) => !v), [])
-  const setSidebarVisible = useCallback((v: boolean) => setSidebarVisibleState(v), [])
+  const toggleSidebar = useCallback(() => {
+    setSidebarVisibleState((v) => {
+      const next = !v
+      persistSidebarVisible(next)
+      return next
+    })
+  }, [])
+
   const toggleInspector = useCallback(() => setInspectorVisible((v) => !v), [])
 
   const setCollapsed = useCallback((v: boolean) => {
