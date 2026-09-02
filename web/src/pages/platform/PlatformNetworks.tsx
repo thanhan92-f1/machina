@@ -647,8 +647,8 @@ export default function PlatformNetworks() {
             <input className="input w-full mt-1.5" value={segProfile} onChange={(e) => setSegProfile(e.target.value)} placeholder="ProductionServer" />
           </label>
           <div className="flex gap-2 pt-2">
-            <button type="button" className="btn-secondary flex-1" onClick={() => setSegmentSheetOpen(false)}>Cancel</button>
-            <button type="button" className="btn-primary flex-1" disabled={creating} onClick={() => void createSegment()}>
+            <button type="button" className="btn-secondary text-sm flex-1" onClick={() => setSegmentSheetOpen(false)}>Cancel</button>
+            <button type="button" className="btn-primary text-sm flex-1" disabled={creating} onClick={() => void createSegment()}>
               Create segment
             </button>
           </div>

@@ -1073,7 +1073,7 @@ export default function PlatformVmDetail() {
                     ? 'Discovered KubeVirt VM — adopt to track it in platform inventory.'
                     : 'Discovered on a host — adopt to manage lifecycle from the platform.'}
                 </p>
-                <button type="button" className="btn-primary" onClick={() => void act('VM adopted', () => adoptPlatformVm(id))}>Adopt VM</button>
+                <button type="button" className="btn-primary text-sm" onClick={() => void act('VM adopted', () => adoptPlatformVm(id))}>Adopt VM</button>
               </div>
             </MacGlassPanel>
           )}
@@ -1404,10 +1404,10 @@ export default function PlatformVmDetail() {
                   Machina Cinema — immersive full-screen VNC/SPICE with floating controls.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Link to={cinemaHubPath(id!)} className="btn-primary inline-flex items-center gap-2">
+                  <Link to={cinemaHubPath(id!)} className="btn-primary text-sm inline-flex items-center gap-2">
                     <Monitor className="w-4 h-4" /> Open Cinema
                   </Link>
-                  <Link to={studioHubPath(id!)} className="btn-secondary inline-flex items-center gap-2">
+                  <Link to={studioHubPath(id!)} className="btn-secondary text-sm inline-flex items-center gap-2">
                     Studio
                   </Link>
                 </div>
@@ -1591,7 +1591,7 @@ export default function PlatformVmDetail() {
                     </div>
                   </label>
                   <label className="text-xs text-[var(--text-muted)]">Target dev<input className="input mt-1 block w-24" value={attachDev} onChange={(e) => setAttachDev(e.target.value)} /></label>
-                  <button type="button" className="btn-secondary" disabled={vm.managed === false} onClick={() => void act('Attach disk queued', () => attachVmDisk(id, { disk_path: attachPath, target_dev: attachDev }))}>Attach</button>
+                  <button type="button" className="btn-secondary text-sm" disabled={vm.managed === false} onClick={() => void act('Attach disk queued', () => attachVmDisk(id, { disk_path: attachPath, target_dev: attachDev }))}>Attach</button>
                 </div>
               </MacGlassPanel>
               <MacGlassPanel title="Resize block device">
@@ -1608,7 +1608,7 @@ export default function PlatformVmDetail() {
                   <label className="text-xs text-[var(--text-muted)]">Size (GiB)<input type="number" min={1} className="input mt-1 block w-24" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} /></label>
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-secondary text-sm"
                     disabled={vm.managed === false || !resizeTarget || !resizeGb || Number.isNaN(Number(resizeGb))}
                     onClick={() => void act('Resize disk queued', () => resizeVmDisk(id, resizeTarget, Number(resizeGb)))}
                   >
@@ -1677,7 +1677,7 @@ export default function PlatformVmDetail() {
                   </label>
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-secondary text-sm"
                     data-testid="vm-insert-iso-submit"
                     disabled={vm.managed === false || !isoPath.trim()}
                     onClick={() => void act('ISO inserted', () => invokeVmLibvirt(id, 'cdrom.insert', { iso_path: isoPath.trim(), target: isoTarget }))}
@@ -1792,7 +1792,7 @@ export default function PlatformVmDetail() {
                   </label>
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-secondary text-sm"
                     disabled={vm.managed === false || !nicNetwork.trim()}
                     onClick={() => void act('Attach NIC queued', () => attachVmNic(id, { network: nicNetwork.trim(), model: nicModel }))}
                   >
@@ -2246,7 +2246,7 @@ export default function PlatformVmDetail() {
                     <label htmlFor="vm-settings-tags" className="text-xs text-[var(--text-muted)] block mb-1">Tags</label>
                     <input id="vm-settings-tags" className="input w-full" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="prod, web" />
                   </div>
-                  <button type="button" className="btn-secondary" onClick={() => void act('Project updated', () => patchVm(id, { project, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) }))}>Save</button>
+                  <button type="button" className="btn-secondary text-sm" onClick={() => void act('Project updated', () => patchVm(id, { project, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) }))}>Save</button>
                 </div>
               </MacGlassPanel>
               <MacGlassPanel title="Description">
@@ -2462,7 +2462,7 @@ export default function PlatformVmDetail() {
               <MacGlassPanel title="High availability">
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={ha.enabled} onChange={(e) => setHa({ ...ha, enabled: e.target.checked })} /> Restart on host failure</label>
                 <label className="flex items-center gap-2 text-sm mt-2"><input type="checkbox" checked={ha.fence_on_failure} onChange={(e) => setHa({ ...ha, fence_on_failure: e.target.checked })} /> Fence host on failure</label>
-                <button type="button" className="btn-secondary mt-2" onClick={() => void act('HA policy updated', () => setVmHa(id, ha))}>Save HA policy</button>
+                <button type="button" className="btn-secondary text-sm mt-2" onClick={() => void act('HA policy updated', () => setVmHa(id, ha))}>Save HA policy</button>
               </MacGlassPanel>
               <MacGlassPanel title="Live migrate & clone" data-testid="vm-migrate-panel">
                 <div className="grid gap-4 md:grid-cols-2">

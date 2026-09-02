@@ -90,7 +90,7 @@ export default function VmCpuTopologyModal({ open, vmId, vmName, onClose, onSave
               <span className="text-amber-600/90"> — needs shutdown to apply topology change</span>
             )}
           </p>
-          <button type="button" className="btn-primary w-full" disabled={saving} onClick={() => void save()}>
+          <button type="button" className="btn-primary text-sm w-full" disabled={saving} onClick={() => void save()}>
             {saving ? 'Saving…' : 'Save topology'}
           </button>
         </div>

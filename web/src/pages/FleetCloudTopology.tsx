@@ -15,7 +15,7 @@ interface Node { id: string; label: string; kind: NodeKind; status?: string }
 interface Edge { from: string; to: string }
 
 const KIND_COL: Record<NodeKind, number> = { network: 40, port: 400, instance: 760 }
-const KIND_COLOR: Record<NodeKind, string> = { network: '#38bdf8', port: '#94a3b8', instance: '#e879f9' }
+const KIND_COLOR: Record<NodeKind, string> = { network: 'var(--accent)', port: 'var(--text-muted)', instance: 'var(--verdant)' }
 
 function layoutNodes(nodes: Node[]): (Node & { x: number; y: number })[] {
   const counters: Record<number, number> = {}
@@ -109,14 +109,14 @@ function FleetCloudTopologyContent() {
               if (!a || !b) return null
               return (
                 <line key={`${e.from}-${e.to}-${i}`} x1={a.x + 90} y1={a.y + 24} x2={b.x + 90} y2={b.y + 24}
-                  stroke="#475569" strokeWidth={1.5} />
+                  stroke="var(--apple-hairline)" strokeWidth={1.5} />
               )
             })}
             {laid.map((n) => (
               <g key={n.id} transform={`translate(${n.x}, ${n.y})`}>
-                <rect width={180} height={48} rx={8} fill="#0f172a" stroke={KIND_COLOR[n.kind]} strokeWidth={1.5} />
-                <text x={10} y={20} fill="#e2e8f0" fontSize={11} fontWeight={600}>{n.label.slice(0, 22)}</text>
-                <text x={10} y={36} fill="#64748b" fontSize={9}>{n.kind}{n.status ? ` · ${n.status}` : ''}</text>
+                <rect width={180} height={48} rx={8} fill="var(--apple-surface-elevated)" stroke={KIND_COLOR[n.kind]} strokeWidth={1.5} />
+                <text x={10} y={20} fill="var(--text-primary)" fontSize={11} fontWeight={600}>{n.label.slice(0, 22)}</text>
+                <text x={10} y={36} fill="var(--text-muted)" fontSize={9}>{n.kind}{n.status ? ` · ${n.status}` : ''}</text>
               </g>
             ))}
           </svg>

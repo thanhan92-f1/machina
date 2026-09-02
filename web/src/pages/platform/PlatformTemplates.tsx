@@ -535,7 +535,7 @@ export default function PlatformTemplates() {
                 </div>
               </>
             )}
-            <button type="button" className="btn-primary w-full flex items-center justify-center gap-2" disabled={deploying || readinessLoading || (readiness != null && !readiness.ready)} onClick={() => void deploy(deploySheet, deployName)}>
+            <button type="button" className="btn-primary text-sm w-full flex items-center justify-center gap-2" disabled={deploying || readinessLoading || (readiness != null && !readiness.ready)} onClick={() => void deploy(deploySheet, deployName)}>
               {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Deploy VM
             </button>

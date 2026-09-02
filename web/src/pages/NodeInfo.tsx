@@ -1792,10 +1792,10 @@ function ChartCard({ title, color, dataKey, data, unit, domain }: { title: strin
               <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--apple-hairline)" />
           <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
           <YAxis stroke="#475569" fontSize={10} tickLine={false} domain={domain || [0, 100]} />
-          <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => `${Number(v).toFixed(1)}${unit}`} />
+          <Tooltip contentStyle={{ backgroundColor: 'var(--apple-surface)', border: '1px solid var(--apple-hairline)', borderRadius: '0.5rem' }} labelStyle={{ color: 'var(--text-secondary)' }} formatter={(v) => `${Number(v).toFixed(1)}${unit}`} />
           <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fillOpacity={1} fill={`url(#grad-${dataKey})`} />
         </AreaChart>
       </ResponsiveContainer>

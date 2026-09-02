@@ -155,7 +155,7 @@ export default function PlatformNotifications() {
           <div ref={runbookRef} className="max-w-lg w-full rounded-2xl bg-[var(--apple-surface)] border border-white/10 p-5" role="dialog" aria-modal="true" aria-label={runbook.title} onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold mb-2">{runbook.title}</h3>
             <ol className="text-sm text-[var(--text-secondary)] space-y-2 list-decimal pl-5">{runbook.steps.map((s) => <li key={s}>{s}</li>)}</ol>
-            <button type="button" className="btn-secondary mt-4 w-full" onClick={() => setRunbook(null)}>Close</button>
+            <button type="button" className="btn-secondary text-sm mt-4 w-full" onClick={() => setRunbook(null)}>Close</button>
           </div>
         </div>
       )}

@@ -73,7 +73,7 @@ export default function VmMemorySizingModal({ open, vmId, vmName, running, onClo
             <input type="number" min={1} className="input mt-1 w-full" value={maxGiB} onChange={(e) => setMaxGiB(e.target.value)} />
             <span className="text-xs text-[var(--text-muted)] mt-1 block">Persistent domain limit — may require reboot if lowered below current.</span>
           </label>
-          <button type="button" className="btn-primary w-full" disabled={saving} onClick={() => void save()}>
+          <button type="button" className="btn-primary text-sm w-full" disabled={saving} onClick={() => void save()}>
             {saving ? 'Saving…' : 'Apply memory'}
           </button>
         </div>

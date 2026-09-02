@@ -1849,10 +1849,10 @@ export default function VMDetailsPage() {
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={metricsHistory}>
                 <defs><linearGradient id="memG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--apple-hairline)" />
                 <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
                 <YAxis stroke="#475569" fontSize={10} domain={[0, 100]} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--apple-surface)', border: '1px solid var(--apple-hairline)', borderRadius: '0.5rem' }} labelStyle={{ color: 'var(--text-secondary)' }} />
                 <Area type="monotone" dataKey="memory" name="Memory %" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#memG)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -1865,10 +1865,10 @@ export default function VMDetailsPage() {
                   <linearGradient id="rdG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="95%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
                   <linearGradient id="wrG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} /><stop offset="95%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--apple-hairline)" />
                 <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
                 <YAxis stroke="#475569" fontSize={10} tickLine={false} tickFormatter={(v: number) => `${formatBytes(v)}/s`} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--apple-surface)', border: '1px solid var(--apple-hairline)', borderRadius: '0.5rem' }} labelStyle={{ color: 'var(--text-secondary)' }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
                 <Area type="monotone" dataKey="diskRd" name="Read" stroke="#10b981" strokeWidth={1.5} fillOpacity={1} fill="url(#rdG)" />
                 <Area type="monotone" dataKey="diskWr" name="Write" stroke="#f59e0b" strokeWidth={1.5} fillOpacity={1} fill="url(#wrG)" />
               </AreaChart>
@@ -1882,10 +1882,10 @@ export default function VMDetailsPage() {
                   <linearGradient id="rxG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} /><stop offset="95%" stopColor="#06b6d4" stopOpacity={0} /></linearGradient>
                   <linearGradient id="txG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} /><stop offset="95%" stopColor="#a855f7" stopOpacity={0} /></linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--apple-hairline)" />
                 <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
                 <YAxis stroke="#475569" fontSize={10} tickLine={false} tickFormatter={(v: number) => `${formatBytes(v)}/s`} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '0.5rem' }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--apple-surface)', border: '1px solid var(--apple-hairline)', borderRadius: '0.5rem' }} labelStyle={{ color: 'var(--text-secondary)' }} formatter={(v) => `${formatBytes(Number(v))}/s`} />
                 <Area type="monotone" dataKey="netRx" name="RX" stroke="#06b6d4" strokeWidth={1.5} fillOpacity={1} fill="url(#rxG)" />
                 <Area type="monotone" dataKey="netTx" name="TX" stroke="#a855f7" strokeWidth={1.5} fillOpacity={1} fill="url(#txG)" />
               </AreaChart>

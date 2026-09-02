@@ -244,7 +244,7 @@ export default function PlatformAtlasStorage() {
                             <div className="flex items-center justify-end gap-2 shrink-0">
                               <button
                                 type="button"
-                                className="btn-secondary btn-xs"
+                                className="btn-secondary text-xs"
                                 disabled={busy === v.id}
                                 onClick={() =>
                                   void run(v.id, () => snapshotAtlasVolume(v.id), `Snapshot of ${v.name} queued`)
@@ -254,7 +254,7 @@ export default function PlatformAtlasStorage() {
                               </button>
                               <button
                                 type="button"
-                                className="btn-secondary btn-xs"
+                                className="btn-secondary text-xs"
                                 disabled={busy === v.id}
                                 onClick={() =>
                                   void run(v.id, () => backupAtlasVolume({ volume_id: v.id }), `Backup of ${v.name} queued`)
@@ -264,7 +264,7 @@ export default function PlatformAtlasStorage() {
                               </button>
                               <button
                                 type="button"
-                                className="btn-secondary btn-xs text-rose-400"
+                                className="btn-secondary text-xs text-red-600"
                                 disabled={busy === v.id}
                                 aria-label="Delete volume"
                                 onClick={() => {
@@ -310,7 +310,7 @@ export default function PlatformAtlasStorage() {
                             <div className="flex items-center justify-end gap-2 shrink-0">
                               <button
                                 type="button"
-                                className="btn-secondary btn-xs"
+                                className="btn-secondary text-xs"
                                 disabled={busy === s.id}
                                 onClick={() =>
                                   void run(s.id, () => restoreAtlasSnapshot(s.id), `Restore from ${s.name} queued`)
@@ -320,7 +320,7 @@ export default function PlatformAtlasStorage() {
                               </button>
                               <button
                                 type="button"
-                                className="btn-secondary btn-xs text-rose-400"
+                                className="btn-secondary text-xs text-red-600"
                                 disabled={busy === s.id}
                                 aria-label="Delete snapshot"
                                 onClick={() => {
@@ -357,7 +357,7 @@ export default function PlatformAtlasStorage() {
                       <StatePill value={b.state} />
                       <button
                         type="button"
-                        className="btn-secondary btn-xs text-rose-400"
+                        className="btn-secondary text-xs text-red-600"
                         disabled={busy === b.id}
                         aria-label="Delete backup"
                         onClick={() => {

@@ -446,33 +446,33 @@ export default function HostNetworkingPage() {
             </div>
             <svg width="900" height={maxY} className="w-full" viewBox={`0 0 900 ${maxY}`}>
               {/* Column labels */}
-              <text x="80" y="20" textAnchor="middle" className="fill-slate-500 text-[11px]">Virtual Machines</text>
-              <text x="350" y="20" textAnchor="middle" className="fill-slate-500 text-[11px]">Networks</text>
-              <text x="550" y="20" textAnchor="middle" className="fill-slate-500 text-[11px]">Bridges</text>
-              <text x="750" y="20" textAnchor="middle" className="fill-slate-500 text-[11px]">Host NICs</text>
+              <text x="80" y="20" textAnchor="middle" fill="var(--text-muted)" className="text-[11px]">Virtual Machines</text>
+              <text x="350" y="20" textAnchor="middle" fill="var(--text-muted)" className="text-[11px]">Networks</text>
+              <text x="550" y="20" textAnchor="middle" fill="var(--text-muted)" className="text-[11px]">Bridges</text>
+              <text x="750" y="20" textAnchor="middle" fill="var(--text-muted)" className="text-[11px]">Host NICs</text>
 
               {/* Edges */}
               {edges.map((e, i) => {
                 const from = nodes.find(n => n.id === e.from)
                 const to = nodes.find(n => n.id === e.to)
                 if (!from || !to) return null
-                return <line key={`${e.from}-${e.to}`} x1={from.x + 60} y1={from.y + 20} x2={to.x - 60} y2={to.y + 20} stroke="#334155" strokeWidth="2" strokeDasharray="6 3" />
+                return <line key={`${e.from}-${e.to}`} x1={from.x + 60} y1={from.y + 20} x2={to.x - 60} y2={to.y + 20} stroke="var(--apple-hairline)" strokeWidth="2" strokeDasharray="6 3" />
               })}
 
               {/* Nodes */}
               {nodes.map(n => {
                 const colors = {
-                  vm: { bg: '#1e3a5f', border: '#3b82f6', icon: '#60a5fa' },
-                  network: { bg: '#1a3c34', border: '#10b981', icon: '#34d399' },
-                  bridge: { bg: '#3d2b1a', border: '#f59e0b', icon: '#fbbf24' },
-                  'host-nic': { bg: '#2d1b4e', border: '#a855f7', icon: '#c084fc' },
+                  vm: { border: 'var(--accent)' },
+                  network: { border: 'var(--verdant)' },
+                  bridge: { border: 'var(--amber)' },
+                  'host-nic': { border: '#a855f7' },
                 }[n.type]
                 return (
                   <g key={n.id}>
-                    <rect x={n.x - 55} y={n.y} width="120" height="44" rx="8" fill={colors.bg} stroke={colors.border} strokeWidth="1.5" />
-                    <circle cx={n.x - 40} cy={n.y + 14} r="4" fill={n.state === 'running' || n.state === 'up' || n.state === 'active' ? '#22c55e' : '#64748b'} />
-                    <text x={n.x - 30} y={n.y + 18} className="fill-slate-200 text-[11px] font-medium">{n.label.length > 14 ? n.label.slice(0, 12) + '..' : n.label}</text>
-                    {n.extra && <text x={n.x - 50} y={n.y + 36} className="fill-slate-500 text-[9px]">{n.extra.length > 18 ? n.extra.slice(0, 16) + '..' : n.extra}</text>}
+                    <rect x={n.x - 55} y={n.y} width="120" height="44" rx="8" fill="var(--apple-surface-elevated)" stroke={colors.border} strokeWidth="1.5" />
+                    <circle cx={n.x - 40} cy={n.y + 14} r="4" fill={n.state === 'running' || n.state === 'up' || n.state === 'active' ? 'var(--verdant)' : 'var(--text-muted)'} />
+                    <text x={n.x - 30} y={n.y + 18} fill="var(--text-primary)" className="text-[11px] font-medium">{n.label.length > 14 ? n.label.slice(0, 12) + '..' : n.label}</text>
+                    {n.extra && <text x={n.x - 50} y={n.y + 36} fill="var(--text-muted)" className="text-[9px]">{n.extra.length > 18 ? n.extra.slice(0, 16) + '..' : n.extra}</text>}
                   </g>
                 )
               })}

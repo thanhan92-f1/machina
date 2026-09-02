@@ -817,7 +817,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
                 {reviewNlOps.approval_required && (
                   <button
                     type="button"
-                    className="btn-primary w-full"
+                    className="btn-primary text-sm w-full"
                     disabled={executing}
                     onClick={() => void confirmNlOps()}
                   >
@@ -832,7 +832,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
                 <p className="text-sm text-[var(--text-muted)]">{reviewCommand.review}</p>
                 <button
                   type="button"
-                  className="btn-primary w-full"
+                  className="btn-primary text-sm w-full"
                   disabled={executing}
                   onClick={() => void confirmPlatformCommand(reviewCommand)}
                 >
@@ -847,7 +847,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
                 {platformConnected && query.trim() && (
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-secondary text-sm"
                     onClick={() => { openCopilotWithQuery(query.trim()); close() }}
                   >
                     Ask Zyra "{query.trim()}"

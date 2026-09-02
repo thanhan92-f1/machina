@@ -265,8 +265,8 @@ export default function ApplicationLaunchpad() {
             )}
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" className="btn-secondary flex-1" onClick={() => setSheetOpen(false)}>Cancel</button>
-            <button type="button" className="btn-primary flex-1 flex items-center justify-center gap-2" disabled={creating} onClick={() => void createGroup()}>
+            <button type="button" className="btn-secondary text-sm flex-1" onClick={() => setSheetOpen(false)}>Cancel</button>
+            <button type="button" className="btn-primary text-sm flex-1 flex items-center justify-center gap-2" disabled={creating} onClick={() => void createGroup()}>
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Create Application
             </button>

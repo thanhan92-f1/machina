@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { Loader2 } from 'lucide-react'
+import { ChevronRight, Loader2 } from 'lucide-react'
 import {
   getClassicHostCockpitInventory,
   getHostCockpitInventory,
@@ -228,11 +228,11 @@ function SystemSection({
         </MacGlassPanel>
       )}
       {classicHostPath && (
-        <div className="flex flex-wrap gap-2 text-xs">
-          <Link to="/services" className="btn-secondary">Classic Services</Link>
-          <Link to="/logs" className="btn-secondary">Classic Logs</Link>
-          <Link to={`${classicHostPath}?tab=terminal`} className="btn-secondary">Terminal</Link>
-          <Link to={classicHostPath} className="btn-secondary">Host detail</Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link to="/services" className="btn-link text-xs">Classic Services <ChevronRight className="w-3 h-3" /></Link>
+          <Link to="/logs" className="btn-link text-xs">Classic Logs <ChevronRight className="w-3 h-3" /></Link>
+          <Link to={`${classicHostPath}?tab=terminal`} className="btn-link text-xs">Terminal <ChevronRight className="w-3 h-3" /></Link>
+          <Link to={classicHostPath} className="btn-link text-xs">Host detail <ChevronRight className="w-3 h-3" /></Link>
         </div>
       )}
     </div>

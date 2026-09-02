@@ -148,7 +148,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
         <button
           type="button"
           data-testid="controller-config-save"
-          className="btn-secondary mt-2"
+          className="btn-secondary text-sm mt-2"
           onClick={() => {
             if (!controllerUrl.trim()) {
               toast.error('Controller URL is required')
@@ -180,7 +180,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
       )}
       <SettingsBlock embedded={embedded} title="Cluster">
         <input className="input" aria-label="Cluster name" value={clusterName} onChange={(e) => setClusterName(e.target.value)} />
-        <button type="button" className="btn-secondary" onClick={async () => {
+        <button type="button" className="btn-secondary text-sm" onClick={async () => {
           try { await patchCluster({ name: clusterName }); toast.success('Cluster updated'); await load() } catch (e: unknown) { toast.error(formatUserError(e)) }
         }}>Save cluster name</button>
       </SettingsBlock>
@@ -190,7 +190,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
           <input type="number" min={0} max={86400} className="input mt-1 block w-40" value={syncInterval}
             onChange={(e) => setSyncInterval(Number(e.target.value))} />
         </label>
-        <button type="button" className="btn-secondary" onClick={async () => {
+        <button type="button" className="btn-secondary text-sm" onClick={async () => {
           try {
             await patchClusterSettings({ inventory_sync_interval_secs: syncInterval })
             toast.success('Sync interval saved')
@@ -205,11 +205,11 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
         <input className="input" type="password" autoComplete="off" aria-label="Client secret" placeholder="client secret" value={oidc.client_secret} onChange={(e) => setOidc({ ...oidc, client_secret: e.target.value })} />
         <input className="input" aria-label="Redirect URI" placeholder="redirect URI (optional)" value={oidc.redirect_uri} onChange={(e) => setOidc({ ...oidc, redirect_uri: e.target.value })} />
         <div className="flex gap-2 flex-wrap">
-          <button type="button" className="btn-secondary" onClick={async () => {
+          <button type="button" className="btn-secondary text-sm" onClick={async () => {
             try { await patchOidcSettings(oidc); toast.success('OIDC settings saved') } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Save OIDC</button>
           {oidc.enabled && (
-            <a href={getOidcLoginUrl()} className="btn-primary inline-flex items-center">Login with OIDC</a>
+            <a href={getOidcLoginUrl()} className="btn-primary text-sm inline-flex items-center">Login with OIDC</a>
           )}
         </div>
       </SettingsBlock>
@@ -231,7 +231,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
           <input className="input" type="number" aria-label="Max memory MiB" placeholder="max memory MiB" value={quotaMem || ''} onChange={(e) => setQuotaMem(Number(e.target.value))} />
           <input className="input" type="number" aria-label="Max storage GiB" placeholder="max storage GiB" value={quotaStorage || ''} onChange={(e) => setQuotaStorage(Number(e.target.value))} />
         </div>
-        <button type="button" className="btn-secondary" onClick={async () => {
+        <button type="button" className="btn-secondary text-sm" onClick={async () => {
           try {
             await upsertProjectQuota({ project: quotaProject, max_vms: quotaVms, max_vcpu: quotaVcpu, max_memory_mib: quotaMem, max_storage_gib: quotaStorage })
             toast.success('Quota saved')
@@ -297,7 +297,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
         </select>
         <input className="input" aria-label="AI model" placeholder="Model (e.g. gpt-4o-mini)" value={ai.model} onChange={(e) => setAi({ ...ai, model: e.target.value })} />
         <input className="input" type="password" autoComplete="off" aria-label="API key" placeholder={ai.api_key_configured ? 'API key configured — enter to replace' : 'API key'} value={aiKey} onChange={(e) => setAiKey(e.target.value)} />
-        <button type="button" className="btn-secondary" onClick={async () => {
+        <button type="button" className="btn-secondary text-sm" onClick={async () => {
           try {
             const body: Partial<AiSettings & { api_key?: string }> = {
               enabled: ai.enabled,
@@ -319,7 +319,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
       </SettingsBlock>
       <SettingsBlock embedded={embedded} title="CPU compatibility matrix">
         <textarea className="input font-mono text-xs min-h-32" aria-label="CPU compatibility matrix" value={cpuJson} onChange={(e) => setCpuJson(e.target.value)} />
-        <button type="button" className="btn-secondary" onClick={async () => {
+        <button type="button" className="btn-secondary text-sm" onClick={async () => {
           try {
             const rules = JSON.parse(cpuJson) as CpuCompatRule[]
             await patchCpuCompatMatrix(rules)

@@ -193,10 +193,10 @@ export default function PlatformWelcome({
           ))}
         </ul>
         <div className="flex flex-wrap gap-2 p-6 pt-0 border-t border-white/[0.04]">
-          <button type="button" className="btn-primary flex-1" disabled={running !== null} onClick={() => void runAll()}>
+          <button type="button" className="btn-primary text-sm flex-1" disabled={running !== null} onClick={() => void runAll()}>
             Run setup ({completed}/{STEPS.length})
           </button>
-          <button type="button" className="btn-secondary" onClick={close}>Skip for now</button>
+          <button type="button" className="btn-secondary text-sm" onClick={close}>Skip for now</button>
         </div>
       </div>
     </div>

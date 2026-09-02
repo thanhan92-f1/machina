@@ -448,14 +448,14 @@ export default function PlatformContent() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="btn-primary text-sm flex-1 flex items-center justify-center gap-2"
                   disabled={!uploadFile || uploading}
                   onClick={() => void uploadAndRegister()}
                 >
                   <Upload className="w-4 h-4" /> {uploading ? 'Uploading…' : 'Upload'}
                 </button>
                 {uploading && (
-                  <button type="button" className="btn-secondary" onClick={() => uploadAbortRef.current?.abort()}>
+                  <button type="button" className="btn-secondary text-sm" onClick={() => uploadAbortRef.current?.abort()}>
                     Cancel
                   </button>
                 )}
@@ -474,7 +474,7 @@ export default function PlatformContent() {
                 The hypervisor fetches this directly — far faster than uploading from your laptop, and it keeps
                 running if you close this tab. Several downloads can run at once.
               </p>
-              <button type="button" className="btn-primary w-full flex items-center justify-center gap-2" disabled={!downloadUrl.trim()} onClick={() => void startDownload()}>
+              <button type="button" className="btn-primary text-sm w-full flex items-center justify-center gap-2" disabled={!downloadUrl.trim()} onClick={() => void startDownload()}>
                 <Download className="w-4 h-4" /> Start download
               </button>
 
@@ -517,7 +517,7 @@ export default function PlatformContent() {
               <input className="input w-full" aria-label="Image name" placeholder="name" value={name} onChange={(e) => setName(e.target.value)} />
               <input className="input w-full" aria-label="Host path" placeholder="host path" value={path} onChange={(e) => setPath(e.target.value)} />
               <input className="input w-full" aria-label="Description" placeholder="description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
-              <button type="button" className="btn-primary w-full" onClick={async () => { await add(); setSheetOpen(false) }}>Submit for approval</button>
+              <button type="button" className="btn-primary text-sm w-full" onClick={async () => { await add(); setSheetOpen(false) }}>Submit for approval</button>
             </>
           )}
         </div>

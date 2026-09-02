@@ -615,7 +615,7 @@ export default function PlatformStorage() {
               <option value="raw">raw</option>
             </select>
           </label>
-          <button type="button" className="btn-primary w-full" disabled={volumeSaving || !volumeName.trim()} onClick={() => void saveVolume()}>
+          <button type="button" className="btn-primary text-sm w-full" disabled={volumeSaving || !volumeName.trim()} onClick={() => void saveVolume()}>
             {volumeSaving ? 'Creating…' : 'Create volume'}
           </button>
         </div>
@@ -635,7 +635,7 @@ export default function PlatformStorage() {
             <span className="text-[var(--text-muted)]">Retention (days)</span>
             <input type="number" min={1} max={365} className="input mt-1 w-full" value={slaRetention} onChange={(e) => setSlaRetention(Number(e.target.value))} />
           </label>
-          <button type="button" className="btn-primary w-full" disabled={slaSaving} onClick={() => void saveSla()}>
+          <button type="button" className="btn-primary text-sm w-full" disabled={slaSaving} onClick={() => void saveSla()}>
             {slaSaving ? 'Saving…' : 'Save SLA'}
           </button>
         </div>
