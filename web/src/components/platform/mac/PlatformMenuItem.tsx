@@ -43,7 +43,7 @@ export function PlatformMacMenuItem({
     >
       <span className="flex items-center gap-2 min-w-0">
         <span className="w-3.5 shrink-0 text-sm text-[var(--accent)]">{checked ? '✓' : ''}</span>
-        <span className="truncate text-[var(--text-muted)]">{label}</span>
+        <span className="truncate text-[var(--text-primary)]">{label}</span>
       </span>
       {shortcut ? <span className="mac-menu-shortcut text-xs text-[var(--text-muted)] shrink-0">{shortcut}</span> : null}
     </button>

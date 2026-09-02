@@ -53,10 +53,21 @@ Status / deviation icons may use `--amber` / `--verdant` / `--accent` — never 
 
 | Level | Classic Blue | Tahoe Light |
 |---|---|---|
-| page | `#000` graphite | mist paper `210 42% 95%` + Magichromatic washes |
+| page | `#000` graphite | flat white `#ffffff` (apple.com Support paper — see below) |
 | panel | `#1d1d1f` | soft mist panels |
 | card | lighter still | `#FFFFFF` + hairline |
 | popover | lightest | white + soft shadow |
+
+**Reference: support.apple.com guide pages** (e.g. the iPod touch User Guide) —
+captured live: body `#ffffff` flat, top nav translucent near-white
+`rgba(250,250,252,0.8)`, hero directly under the nav a single subtle
+`linear-gradient(#ffffff 0%, #f2f2f2 100%)`, everything else flat white. The
+earlier "Magichromatic washes" (multiple full-opacity saturated radial-
+gradient color blooms layered on `.tahoe-mesh` / `.mac-desktop-root` on every
+page) were an intentional earlier direction but read as visibly diverging
+from apple.com's own product pages — superseded by this flatter, single-
+gradient treatment. `--page-bg` / `--surface-0` are `#ffffff`; `.tahoe-mesh`
+is disabled (`opacity: 0`) in Tahoe Light.
 
 **A grey panel on a white page is always a bug.**
 

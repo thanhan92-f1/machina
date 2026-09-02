@@ -27,7 +27,7 @@ html[data-ui-shell='tahoe-light'] {
   --iphone-silver: hsl(210 12% 78%);
 
   /* Zeus Magichromatic HSL roles (as usable hex/hsl for Machina aliases) */
-  --background: 210 36% 95%;
+  --background: 0 0% 100%;
   --foreground: 240 2% 11%;         /* Apple shop #1d1d1f */
   --card: 0 0% 100%;
   --primary: 211 100% 45%;          /* apple.com #0071e3 */
@@ -40,7 +40,7 @@ html[data-ui-shell='tahoe-light'] {
   --info-hsl: 211 100% 40%;
 
   /* --- Ground (Law 0) — mist-tinted paper, white working plane ----------- */
-  --surface-0: hsl(210 36% 95%);
+  --surface-0: #ffffff;
   --surface-1: hsl(205 32% 97%);
   --surface-2: #ffffff;
   --surface-3: #ffffff;
@@ -203,30 +203,14 @@ html.light-theme .apple-surface-elevated {
   box-shadow: var(--shadow-3) !important;
 }
 
-/* Mist Blue primary CTA — Zeus tahoe-btn-primary gradient */
-html.apple-light .btn-primary,
-html.light-theme .btn-primary,
-html.apple-light .machina-clean .btn-primary,
-html.light-theme .machina-clean .btn-primary {
-  background: linear-gradient(135deg, hsl(200 78% 42%) 0%, hsl(210 72% 38%) 55%, hsl(220 70% 36%) 100%) !important;
-  color: #fff !important;
-  border: 1px solid hsl(200 60% 32% / 0.35) !important;
-  box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.28) inset,
-    0 2px 8px -2px hsl(200 78% 40% / 0.45) !important;
-}
-html.apple-light .btn-primary:hover:not(:disabled),
-html.light-theme .btn-primary:hover:not(:disabled) {
-  filter: brightness(1.05) saturate(1.05);
-  background: linear-gradient(135deg, hsl(200 78% 42%) 0%, hsl(210 72% 38%) 55%, hsl(220 70% 36%) 100%) !important;
-}
-
-html.apple-light .btn-secondary,
-html.light-theme .btn-secondary {
-  background: hsl(200 55% 96% / 0.9) !important;
-  color: hsl(200 78% 32%) !important;
-  border: 1px solid hsl(200 78% 40% / 0.35) !important;
-}
+/* btn-primary / btn-secondary intentionally NOT overridden here — this file
+   is documented legacy (DAYLIGHT-CONTRACT.md: "superseded when they
+   conflict"); the canonical apple.com blue #0071e3 lives in zeus-parity.css
+   / main.css. A former "Mist Blue" gradient override used to live here and,
+   despite being legacy, structurally beat those files' #0071e3 rules via
+   higher selector specificity (html.apple-light .btn-primary > .apple-light
+   .btn-primary) even though both are !important — removed rather than
+   re-fought with more specificity. */
 
 html.apple-light .apple-link,
 html.light-theme .apple-link {
@@ -375,23 +359,20 @@ html[data-theme='tahoe-light'] .platform-detail-tabs-sticky {
   border-bottom-color: hsl(200 40% 78% / 0.65) !important;
 }
 
+/* apple.com Support "paper" — flat white, no Magichromatic color mesh.
+   Was 3-4 saturated full-opacity radial-gradient color blooms (blue/
+   lavender/sage/orange) layered on every page; replaced with a single
+   subtle white->#f2f2f2 gradient matching support.apple.com's own hero
+   treatment, per direct visual reference. */
 html.apple-light .tahoe-mesh,
 html.light-theme .tahoe-mesh {
-  opacity: 1;
-  background:
-    radial-gradient(ellipse 55% 45% at 85% 30%, hsl(200 85% 55% / 0.22), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 15% 75%, hsl(270 55% 60% / 0.18), transparent 50%),
-    radial-gradient(ellipse 45% 35% at 50% 95%, hsl(24 95% 55% / 0.14), transparent 50%) !important;
+  opacity: 0 !important;
 }
 
 html.apple-light .mac-desktop-root[data-wallpaper],
 html.light-theme .mac-desktop-root[data-wallpaper] {
-  background-color: hsl(210 36% 95%) !important;
-  background-image:
-    radial-gradient(ellipse 78% 52% at 6% -8%, hsl(200 70% 62% / 0.34), transparent 58%),
-    radial-gradient(ellipse 58% 44% at 96% 4%, hsl(270 38% 68% / 0.26), transparent 55%),
-    radial-gradient(ellipse 52% 38% at 78% 108%, hsl(110 28% 55% / 0.2), transparent 55%),
-    radial-gradient(ellipse 38% 28% at 42% 62%, hsl(18 90% 55% / 0.08), transparent 50%) !important;
+  background-color: #ffffff !important;
+  background-image: linear-gradient(180deg, #ffffff 0%, #f2f2f2 100%) !important;
 }
 
 /* Platform inherits light tokens (no carbon shell under Light) */

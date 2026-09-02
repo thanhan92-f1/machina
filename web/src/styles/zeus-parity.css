@@ -1054,18 +1054,14 @@ html[data-theme='tahoe-light'] .mac-menubar {
   backdrop-filter: blur(14px);
 }
 
+/* apple.com Support "paper" — single subtle white->#f2f2f2 gradient (matches
+   support.apple.com's own hero treatment), not saturated color blooms. */
 html[data-theme='tahoe-light'] .tahoe-hero {
-  background:
-    radial-gradient(ellipse 90% 80% at 0% 0%, hsl(200 85% 55% / 0.28), transparent 55%),
-    radial-gradient(ellipse 70% 60% at 100% 10%, hsl(270 55% 62% / 0.24), transparent 50%),
-    linear-gradient(180deg, hsl(210 50% 97%) 0%, hsl(210 35% 94%) 100%) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f2f2 100%) !important;
 }
 
 html[data-theme='tahoe-light'] .tahoe-mesh {
-  background:
-    radial-gradient(ellipse 55% 45% at 85% 30%, hsl(200 85% 55% / 0.22), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 15% 75%, hsl(270 55% 60% / 0.18), transparent 50%),
-    radial-gradient(ellipse 45% 35% at 50% 95%, hsl(24 95% 55% / 0.14), transparent 50%) !important;
+  opacity: 0 !important;
 }
 
 html[data-theme='tahoe-light'] .tahoe-content {
