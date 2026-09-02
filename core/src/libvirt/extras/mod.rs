@@ -18,7 +18,8 @@ use std::process::Command;
 use virt::connect::Connect;
 
 use super::automation::with_json_lock;
-use super::domain::lookup_domain;
+use super::domain::{lookup_domain, poll_until};
+use super::resize::{memory_near_target, MemoryApplyOutcome, BALLOON_WAIT};
 use super::storage;
 use crate::LibvirtError;
 
@@ -606,16 +607,24 @@ pub fn live_set_vcpus(conn: &Connect, name: &str, vcpus: u32) -> Result<(), Libv
 }
 
 /// Hot-set memory on a running VM (requires balloon driver).
-pub fn live_set_memory(conn: &Connect, name: &str, memory_mb: u64) -> Result<(), LibvirtError> {
+pub fn live_set_memory(
+    conn: &Connect,
+    name: &str,
+    memory_mb: u64,
+) -> Result<MemoryApplyOutcome, LibvirtError> {
     crate::validate::validate_memory_mb(memory_mb)?;
     let domain = lookup_domain(conn, name)?;
+    let kb = memory_mb * 1024;
 
     domain
-        .set_memory_flags(memory_mb * 1024, virt::sys::VIR_DOMAIN_AFFECT_LIVE)
+        .set_memory_flags(kb, virt::sys::VIR_DOMAIN_AFFECT_LIVE)
         .map_err(|e| {
             LibvirtError::Operation(format!("Failed to live-set memory for '{name}': {e}"))
         })?;
-    Ok(())
+    // Accepting the target isn't the same as the guest's balloon driver reaching it — see
+    // resize::set_memory's doc comment for the full explanation.
+    let live_applied = poll_until(BALLOON_WAIT, || memory_near_target(&domain, kb));
+    Ok(MemoryApplyOutcome { live_applied })
 }
 
 // ── VM Tags ───────────────────────────────────────────────────────

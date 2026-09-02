@@ -184,6 +184,18 @@ else
   bad "resize memory" "HTTP $r: $(head -c 200 "$TMP/body")"
 fi
 
+r=$(code -X POST "$API/vms/${VM}/memory/256")
+if [ "$r" = 200 ]; then
+  ok "balloon memory -> 256MB (live, within max)"
+  if [ "$(jget live_applied)" = True ]; then
+    note "guest balloon driver confirmed the new target"
+  else
+    note "live_applied=false — reported honestly: request accepted by libvirt/QEMU but no virtio-balloon driver in this blank-disk guest ever confirmed it (expected, not a bug)"
+  fi
+else
+  bad "balloon memory (in-bounds live)" "HTTP $r: $(head -c 200 "$TMP/body")"
+fi
+
 section "snapshot: create / list / revert"
 r=$(code -X POST "$API/vms/${VM}/snapshots" -H 'Content-Type: application/json' -d '{"name":"snap1"}')
 [ "$r" = 200 ] && ok "create snapshot 'snap1'" || bad "create snapshot" "HTTP $r: $(head -c 200 "$TMP/body")"

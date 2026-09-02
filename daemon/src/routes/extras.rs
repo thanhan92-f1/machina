@@ -1704,13 +1704,16 @@ async fn live_memory_handler(
     // write role, this live hot-plug variant did not.
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(m, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(m, Some(&actor), conn_q, move |conn| {
         extras::live_set_memory(conn, &name2, mb)
     })
     .await?;
-    Ok(Json(
-        serde_json::json!({ "status": "ok", "name": name, "memory_mb": mb, "live": true }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "name": name,
+        "memory_mb": mb,
+        "live": outcome.live_applied,
+    })))
 }
 
 // ── DHCP Leases ────────────────────────────────────────────────────

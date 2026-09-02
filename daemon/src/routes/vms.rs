@@ -1003,13 +1003,16 @@ async fn set_memory(
     require_write(&actor, "vms:write")?;
     machina_core::validate::validate_memory_mb(mb)?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         resize::set_memory(conn, &name2, mb)
     })
     .await?;
-    Ok(Json(
-        serde_json::json!({ "status": "ok", "name": name, "memory_mb": mb }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "name": name,
+        "memory_mb": mb,
+        "live_applied": outcome.live_applied,
+    })))
 }
 
 async fn attach_disk_handler(

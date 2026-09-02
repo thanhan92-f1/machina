@@ -1029,12 +1029,12 @@ async fn set_memory_balloon_handler(
     require_write(&actor, "vms:write")?;
     machina_core::validate::validate_memory_mb(mb)?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         machina_core::libvirt::resize::set_memory_balloon(conn, &name2, mb)
     })
     .await?;
     Ok(Json(
-        serde_json::json!({ "status": "ok", "name": name, "memory_mb": mb }),
+        serde_json::json!({ "status": "ok", "name": name, "memory_mb": mb, "live_applied": outcome.live_applied }),
     ))
 }
 

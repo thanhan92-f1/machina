@@ -557,7 +557,8 @@ impl LibvirtCtx {
     }
 
     pub fn set_memory(&self, name: &str, memory_mb: u64) -> Result<(), LibvirtError> {
-        machina_core::libvirt::resize::set_memory(&self.conn, name, memory_mb)
+        // live_applied not surfaced over gRPC yet — see detach_disk's comment.
+        machina_core::libvirt::resize::set_memory(&self.conn, name, memory_mb).map(|_| ())
     }
 
     pub fn resolve_vnc_from_xml(&self, name: &str, xml: &str) -> Result<(String, u16), LibvirtError> {

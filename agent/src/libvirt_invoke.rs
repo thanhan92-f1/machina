@@ -193,8 +193,8 @@ pub fn vm_invoke(
         }
         "live.memory" => {
             let memory_mb = payload_u64(payload, "memory_mb");
-            extras::live_set_memory(conn, vm_name, memory_mb)?;
-            Ok(serde_json::json!({ "status": "ok", "memory_mb": memory_mb }))
+            let outcome = extras::live_set_memory(conn, vm_name, memory_mb)?;
+            Ok(serde_json::json!({ "status": "ok", "memory_mb": memory_mb, "live_applied": outcome.live_applied }))
         }
         "usb.attach" => {
             let vendor_id = payload_str(payload, "vendor_id")?;

@@ -101,6 +101,25 @@ where
     }
 }
 
+/// Generic bounded poll: retry `check` every 250ms until it returns true or `timeout`
+/// elapses. Domain-agnostic — the caller's closure captures whatever it needs to
+/// re-check (a fresh `get_info()`, `get_xml_desc()`, etc.).
+pub fn poll_until<F>(timeout: std::time::Duration, mut check: F) -> bool
+where
+    F: FnMut() -> bool,
+{
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        if check() {
+            return true;
+        }
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+}
+
 fn first_guest_ipv4(_conn: &Connect, name: &str) -> Option<String> {
     // Avoid libvirt FFI interface_addresses — qemu driver can SIGSEGV on legacy guests.
     guest_ipv4_from_virsh(name)

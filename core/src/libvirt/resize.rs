@@ -7,8 +7,35 @@ use virt::domain::{Domain, MemoryParameters, SchedulerInfo};
 use virt::sys::virDomainModificationImpact;
 
 use super::device::get_domain_flags_pub;
-use super::domain::lookup_domain;
+use super::domain::{lookup_domain, poll_until};
 use crate::{xml, LibvirtError};
+
+/// How long to wait for a memory balloon target to actually take effect before reporting
+/// it as still-pending.
+pub(crate) const BALLOON_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
+/// Ballooning rarely lands on the exact byte — QEMU/guest rounding means "close enough"
+/// (5%) is a more honest convergence check than an exact match.
+const BALLOON_TOLERANCE_PCT: u64 = 5;
+
+/// Outcome of a live memory change that depends on the guest's virtio-balloon driver.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct MemoryApplyOutcome {
+    /// True if the domain's actually-reported memory (`get_info().memory`) converged to
+    /// within `BALLOON_TOLERANCE_PCT` of the requested target within the wait window.
+    /// False means libvirt/QEMU accepted the balloon target but the guest never acted on
+    /// it — normally because there's no virtio-balloon driver running (including a domain
+    /// with no guest OS at all). The persistent config is unaffected either way; this is
+    /// purely about whether the LIVE change actually happened.
+    pub live_applied: bool,
+}
+
+pub(crate) fn memory_near_target(domain: &Domain, target_kb: u64) -> bool {
+    let Ok(info) = domain.get_info() else {
+        return false;
+    };
+    let diff = info.memory.abs_diff(target_kb);
+    diff * 100 <= target_kb.max(1) * BALLOON_TOLERANCE_PCT
+}
 
 #[derive(serde::Serialize, serde::Deserialize, Default)]
 pub struct CpuTuneInfo {
@@ -141,7 +168,7 @@ fn ensure_persistent_vcpu_max(
     Ok(())
 }
 
-pub fn set_memory(conn: &Connect, name: &str, memory_mb: u64) -> Result<(), LibvirtError> {
+pub fn set_memory(conn: &Connect, name: &str, memory_mb: u64) -> Result<MemoryApplyOutcome, LibvirtError> {
     crate::validate::validate_memory_mb(memory_mb)?;
 
     let domain = lookup_domain(conn, name)?;
@@ -153,12 +180,25 @@ pub fn set_memory(conn: &Connect, name: &str, memory_mb: u64) -> Result<(), Libv
         // Persist to config so the new size survives reboot; ignore if the hypervisor
         // rejects CONFIG for memory params (some do — see memtune_affect_flag).
         let _ = domain.set_memory_flags(kb, virt::sys::VIR_DOMAIN_AFFECT_CONFIG);
-        return Ok(());
+
+        // `set_memory` above only means libvirt/QEMU accepted the new balloon target —
+        // actually reaching it needs a virtio-balloon driver running in the guest to
+        // respond. A domain with no guest OS (or no balloon driver) never does, and the
+        // reported "actual" memory silently stays exactly where it was, forever, even
+        // though this call reported success. Confirm within a bounded window instead of
+        // reporting a target we never checked was hit.
+        let live_applied = poll_until(BALLOON_WAIT, || memory_near_target(&domain, kb));
+        return Ok(MemoryApplyOutcome { live_applied });
     }
     domain
         .set_max_memory(kb)
         .map_err(|e| LibvirtError::Operation(format!("Failed to set memory for '{name}': {e}")))?;
-    Ok(())
+    // Config-only path: either the domain isn't running (nothing "live" to converge — a
+    // future boot will simply come up with this memory) or the live balloon call itself
+    // errored (so we already know it didn't apply live).
+    Ok(MemoryApplyOutcome {
+        live_applied: !domain_is_live(&domain),
+    })
 }
 
 pub fn pin_vcpu(conn: &Connect, name: &str, vcpu: u32, cpus: &[bool]) -> Result<(), LibvirtError> {
@@ -248,11 +288,15 @@ pub fn set_cpu_scheduler_partial(
     Ok(())
 }
 
-pub fn set_memory_balloon(conn: &Connect, name: &str, memory_mb: u64) -> Result<(), LibvirtError> {
+pub fn set_memory_balloon(conn: &Connect, name: &str, memory_mb: u64) -> Result<MemoryApplyOutcome, LibvirtError> {
     crate::validate::validate_memory_mb(memory_mb)?;
     let domain = lookup_domain(conn, name)?;
-    domain.set_memory(memory_mb * 1024).map_err(|e| {
+    let kb = memory_mb * 1024;
+    domain.set_memory(kb).map_err(|e| {
         LibvirtError::Operation(format!("Failed to balloon memory for '{name}': {e}"))
     })?;
-    Ok(())
+    // See set_memory's comment — the call succeeding only means the target was accepted,
+    // not that the guest's balloon driver actually reached it.
+    let live_applied = poll_until(BALLOON_WAIT, || memory_near_target(&domain, kb));
+    Ok(MemoryApplyOutcome { live_applied })
 }
