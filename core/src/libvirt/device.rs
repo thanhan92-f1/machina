@@ -5,9 +5,26 @@
 use virt::connect::Connect;
 use virt::domain::Domain;
 
-use super::domain::lookup_domain;
+use super::domain::{lookup_domain, wait_until_absent_from_live};
 use crate::state::AttachDiskRequest;
 use crate::LibvirtError;
+
+/// How long to wait for a hot-unplug to actually take effect on the live domain before
+/// reporting it as still-pending. Real guests with a working driver typically release a
+/// device within a few hundred ms of the request; this is generous without making a
+/// synchronous HTTP call open-ended.
+pub(crate) const DETACH_LIVE_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// Outcome of a device detach that can require guest cooperation to complete live.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct DetachOutcome {
+    /// True if the device was confirmed gone from the running domain's live XML within
+    /// the wait window. False means the persistent config was updated (the device will be
+    /// gone on next boot) but it's still present live — normally because the guest OS
+    /// hasn't released it yet, or has no hot-unplug support at all (including a domain
+    /// with no guest OS, e.g. a fresh/blank-disk VM).
+    pub live_removed: bool,
+}
 
 pub fn get_domain_flags_pub(domain: &Domain) -> u32 {
     get_domain_flags(domain)
@@ -108,7 +125,7 @@ pub fn attach_disk(
     Ok(())
 }
 
-pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<(), LibvirtError> {
+pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<DetachOutcome, LibvirtError> {
     let domain = lookup_domain(conn, vm_name)?;
 
     // `detach_device_flags` matches the supplied XML against the domain's actual
@@ -141,7 +158,25 @@ pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<(), Li
     domain
         .detach_device_flags(&xml, flags)
         .map_err(|e| LibvirtError::Operation(format!("Failed to detach disk '{target}': {e}")))?;
-    Ok(())
+
+    // libvirt's synchronous return here only means the unplug request was queued — for a
+    // running domain, actual removal is asynchronous and needs the guest to release the
+    // device (see wait_until_absent_from_live's doc comment). Confirm within a bounded
+    // window instead of blindly reporting success.
+    let is_running = domain.is_active().unwrap_or(false);
+    let live_removed = if is_running {
+        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| {
+            !target_dev_present(live_xml, target)
+        })
+    } else {
+        true
+    };
+    Ok(DetachOutcome { live_removed })
+}
+
+/// Does `<target dev='{target}' .../>` (either quote style) appear anywhere in `xml`?
+fn target_dev_present(xml: &str, target: &str) -> bool {
+    xml.contains(&format!("target dev='{target}'")) || xml.contains(&format!("target dev=\"{target}\""))
 }
 
 /// Resize a block device attached to a VM (in GB).
@@ -200,7 +235,7 @@ pub fn attach_interface(
 }
 
 /// Detach a network interface from a VM by MAC address.
-pub fn detach_interface(conn: &Connect, vm_name: &str, mac: &str) -> Result<(), LibvirtError> {
+pub fn detach_interface(conn: &Connect, vm_name: &str, mac: &str) -> Result<DetachOutcome, LibvirtError> {
     // Validate MAC address format (xx:xx:xx:xx:xx:xx)
     let parts: Vec<&str> = mac.split(':').collect();
     if parts.len() != 6
@@ -255,7 +290,18 @@ pub fn detach_interface(conn: &Connect, vm_name: &str, mac: &str) -> Result<(), 
     domain
         .detach_device_flags(&xml, flags)
         .map_err(|e| LibvirtError::Operation(format!("Failed to detach interface '{mac}': {e}")))?;
-    Ok(())
+
+    // Same async-completion caveat as detach_disk: a successful call only means the unplug
+    // request was queued, not that the guest has released the interface yet.
+    let is_running = domain.is_active().unwrap_or(false);
+    let live_removed = if is_running {
+        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| {
+            extract_interface_xml_by_mac(live_xml, mac).is_none()
+        })
+    } else {
+        true
+    };
+    Ok(DetachOutcome { live_removed })
 }
 
 /// Extract the `<interface>…</interface>` block containing the given MAC address.

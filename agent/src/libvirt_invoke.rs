@@ -215,8 +215,8 @@ pub fn vm_invoke(
         }
         "pci.detach" => {
             let pci = payload_str(payload, "pci")?;
-            hostdev_pci::detach_pci_hostdev(conn, vm_name, &pci)?;
-            Ok(serde_json::json!({ "status": "detached" }))
+            let outcome = hostdev_pci::detach_pci_hostdev(conn, vm_name, &pci)?;
+            Ok(serde_json::json!({ "status": "detached", "live_removed": outcome.live_removed }))
         }
         "firmware.set" => {
             let uefi = payload
@@ -231,8 +231,8 @@ pub fn vm_invoke(
             Ok(serde_json::json!({ "status": "ok", "tpm": "attached" }))
         }
         "tpm.detach" => {
-            machina_core::libvirt::extra_devices::detach_tpm(conn, vm_name)?;
-            Ok(serde_json::json!({ "status": "ok", "tpm": "detached" }))
+            let outcome = machina_core::libvirt::extra_devices::detach_tpm(conn, vm_name)?;
+            Ok(serde_json::json!({ "status": "ok", "tpm": "detached", "live_removed": outcome.live_removed }))
         }
         "vsock.attach" => {
             let cid = payload.get("cid").and_then(|v| v.as_u64()).map(|n| n as u32);
@@ -240,8 +240,8 @@ pub fn vm_invoke(
             Ok(serde_json::json!({ "status": "ok", "vsock": "attached" }))
         }
         "vsock.detach" => {
-            machina_core::libvirt::extra_devices::detach_vsock(conn, vm_name)?;
-            Ok(serde_json::json!({ "status": "ok", "vsock": "detached" }))
+            let outcome = machina_core::libvirt::extra_devices::detach_vsock(conn, vm_name)?;
+            Ok(serde_json::json!({ "status": "ok", "vsock": "detached", "live_removed": outcome.live_removed }))
         }
         "virtiofs.add" => {
             let source_dir = payload_str(payload, "source_dir")?;

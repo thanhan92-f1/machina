@@ -851,13 +851,16 @@ async fn detach_pci_hostdev_handler(
     let pci = req.pci.clone();
     let pci_for_task = pci.clone();
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         hostdev_pci::detach_pci_hostdev(conn, &name2, &pci_for_task)
     })
     .await?;
-    Ok(Json(
-        serde_json::json!({ "status": "pci_detached", "name": name, "pci": pci }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "pci_detached",
+        "name": name,
+        "pci": pci,
+        "live_removed": outcome.live_removed,
+    })))
 }
 
 async fn detach_nodedev_handler(

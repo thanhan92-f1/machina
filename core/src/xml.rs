@@ -99,6 +99,28 @@ pub fn split_blocks(xml: &str, tag: &str) -> Vec<String> {
     blocks
 }
 
+/// Strip runtime-only `<alias .../>` and `<address .../>` self-closing elements from a
+/// device XML block extracted from a LIVE domain description.
+///
+/// libvirt assigns both to every device on a running domain but never writes them to the
+/// domain's persistent (offline) definition. When a domain is active,
+/// `detach_device_flags()` is typically called with combined LIVE+CONFIG affect flags —
+/// matching an XML that still carries `<alias>`/`<address>` against the CONFIG side (which
+/// has neither) fails with a spurious "device not found ... matching ... alias 'xxx'" even
+/// though the device plainly exists. Passing a block through this function first keeps the
+/// identifying fields (mac/model/backend/etc.) while dropping the two that only make sense
+/// for the live side.
+pub fn strip_runtime_only_attrs(block: &str) -> String {
+    block
+        .lines()
+        .filter(|line| {
+            let t = line.trim_start();
+            !(t.starts_with("<alias") || t.starts_with("<address"))
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// Extract the text content of a simple `<tag>content</tag>` (no attributes).
 pub fn extract_simple_text(xml: &str, tag: &str) -> Option<String> {
     let open = format!("<{}>", tag);

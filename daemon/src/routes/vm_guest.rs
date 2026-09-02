@@ -135,12 +135,12 @@ async fn detach_tpm_handler(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         extra_devices::detach_tpm(conn, &name2)
     })
     .await?;
     Ok(Json(
-        serde_json::json!({ "status": "ok", "name": name, "tpm": "detached" }),
+        serde_json::json!({ "status": "ok", "name": name, "tpm": "detached", "live_removed": outcome.live_removed }),
     ))
 }
 

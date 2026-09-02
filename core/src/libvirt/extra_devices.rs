@@ -6,9 +6,9 @@
 
 use virt::connect::Connect;
 
-use super::device::get_domain_flags;
-use super::domain::lookup_domain;
-use crate::xml::{self, split_blocks};
+use super::device::{get_domain_flags, DetachOutcome, DETACH_LIVE_WAIT};
+use super::domain::{lookup_domain, wait_until_absent_from_live};
+use crate::xml::{self, split_blocks, strip_runtime_only_attrs};
 use crate::LibvirtError;
 
 fn tpm_present(xml: &str) -> bool {
@@ -35,7 +35,7 @@ pub fn attach_tpm_emulator(conn: &Connect, vm_name: &str) -> Result<(), LibvirtE
 }
 
 /// Remove the first TPM device from the domain XML.
-pub fn detach_tpm(conn: &Connect, vm_name: &str) -> Result<(), LibvirtError> {
+pub fn detach_tpm(conn: &Connect, vm_name: &str) -> Result<DetachOutcome, LibvirtError> {
     let domain = lookup_domain(conn, vm_name)?;
     let desc = domain
         .get_xml_desc(0)
@@ -44,11 +44,25 @@ pub fn detach_tpm(conn: &Connect, vm_name: &str) -> Result<(), LibvirtError> {
     let Some(first) = blocks.first() else {
         return Err(LibvirtError::NotFound(format!("No TPM on VM '{vm_name}'")));
     };
+    // Strip <alias>/<address> — runtime-only, never in the persistent config; matching
+    // them on the CONFIG side of a combined live+config detach fails with a false
+    // "device not found" (see strip_runtime_only_attrs doc comment / the same bug fixed
+    // for NIC detach in device.rs).
+    let xml = strip_runtime_only_attrs(first);
     let flags = get_domain_flags(&domain);
     domain
-        .detach_device_flags(first, flags)
+        .detach_device_flags(&xml, flags)
         .map_err(|e| LibvirtError::Operation(format!("detach TPM: {e}")))?;
-    Ok(())
+
+    let is_running = domain.is_active().unwrap_or(false);
+    let live_removed = if is_running {
+        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| {
+            !tpm_present(live_xml)
+        })
+    } else {
+        true
+    };
+    Ok(DetachOutcome { live_removed })
 }
 
 const WATCHDOG_MODELS: &[&str] = &["i6300esb", "ib700", "diag288"];
@@ -137,7 +151,7 @@ pub fn attach_vsock(conn: &Connect, vm_name: &str, cid: Option<u32>) -> Result<(
 }
 
 /// Remove the first vsock device from the domain XML.
-pub fn detach_vsock(conn: &Connect, vm_name: &str) -> Result<(), LibvirtError> {
+pub fn detach_vsock(conn: &Connect, vm_name: &str) -> Result<DetachOutcome, LibvirtError> {
     let domain = lookup_domain(conn, vm_name)?;
     let desc = domain
         .get_xml_desc(0)
@@ -148,11 +162,22 @@ pub fn detach_vsock(conn: &Connect, vm_name: &str) -> Result<(), LibvirtError> {
             "No vsock on VM '{vm_name}'"
         )));
     };
+    // See detach_tpm: strip runtime-only <alias>/<address> before detaching.
+    let xml = strip_runtime_only_attrs(first);
     let flags = get_domain_flags(&domain);
     domain
-        .detach_device_flags(first, flags)
+        .detach_device_flags(&xml, flags)
         .map_err(|e| LibvirtError::Operation(format!("detach vsock: {e}")))?;
-    Ok(())
+
+    let is_running = domain.is_active().unwrap_or(false);
+    let live_removed = if is_running {
+        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| {
+            !vsock_present(live_xml)
+        })
+    } else {
+        true
+    };
+    Ok(DetachOutcome { live_removed })
 }
 
 /// Add another serial+console pair on a PTY (`port` is the guest index, e.g. 1 for ttyS1).

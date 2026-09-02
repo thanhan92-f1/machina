@@ -519,7 +519,10 @@ impl LibvirtCtx {
     }
 
     pub fn detach_disk(&self, vm_name: &str, target_dev: &str) -> Result<(), LibvirtError> {
-        machina_core::libvirt::device::detach_disk(&self.conn, vm_name, target_dev)
+        // DetachOutcome::live_removed isn't surfaced over gRPC yet (would need a
+        // DetachDiskResponse proto field) — the underlying fix (correct minimal detach XML
+        // + bounded live-removal poll) still applies, this just doesn't expose the signal here.
+        machina_core::libvirt::device::detach_disk(&self.conn, vm_name, target_dev).map(|_| ())
     }
 
     pub fn resize_disk(
@@ -541,7 +544,8 @@ impl LibvirtCtx {
     }
 
     pub fn detach_nic(&self, vm_name: &str, mac: &str) -> Result<(), LibvirtError> {
-        machina_core::libvirt::device::detach_interface(&self.conn, vm_name, mac)
+        // See detach_disk's comment — live_removed not surfaced over gRPC yet.
+        machina_core::libvirt::device::detach_interface(&self.conn, vm_name, mac).map(|_| ())
     }
 
     pub fn set_autostart(&self, name: &str, enabled: bool) -> Result<(), LibvirtError> {

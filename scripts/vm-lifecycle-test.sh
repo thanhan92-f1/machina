@@ -131,7 +131,12 @@ if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 "${ACCO
   [ "$r" = 200 ] && ok "resize vdb -> 2G" || bad "resize disk" "HTTP $r: $(head -c 200 "$TMP/body")"
 
   r=$(code -X POST "$API/vms/${VM}/disk/detach/vdb")
-  [ "$r" = 200 ] && ok "detach vdb" || bad "detach disk" "HTTP $r: $(head -c 200 "$TMP/body")"
+  if [ "$r" = 200 ]; then
+    ok "detach vdb"
+    [ "$(jget live_removed)" = True ] && note "confirmed gone from the live domain" || note "config updated; live removal pending (expected — no guest OS to release it)"
+  else
+    bad "detach disk" "HTTP $r: $(head -c 200 "$TMP/body")"
+  fi
 else
   note "skipped (no extra disk staged)"
 fi
@@ -147,7 +152,12 @@ if [ "$r" = 200 ]; then
   if [ -n "$mac" ]; then
     sleep 2  # let the hotplug settle before detaching — libvirt can 500 "device not found" if detached immediately
     r=$(code -X POST "$API/vms/${VM}/nic/detach/${mac}")
-    [ "$r" = 200 ] && ok "detach NIC $mac" || bad "detach NIC" "HTTP $r: $(head -c 200 "$TMP/body")"
+    if [ "$r" = 200 ]; then
+      ok "detach NIC $mac"
+      [ "$(jget live_removed)" = True ] && note "confirmed gone from the live domain" || note "config updated; live removal pending (expected — no guest OS to release it)"
+    else
+      bad "detach NIC" "HTTP $r: $(head -c 200 "$TMP/body")"
+    fi
   else
     bad "detach NIC" "could not determine MAC from attach response or domain XML"
   fi

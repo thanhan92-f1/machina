@@ -1041,13 +1041,16 @@ async fn detach_disk_handler(
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
     let target2 = target.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         device::detach_disk(conn, &name2, &target2)
     })
     .await?;
-    Ok(Json(
-        serde_json::json!({ "status": "detached", "name": name, "target": target }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "detached",
+        "name": name,
+        "target": target,
+        "live_removed": outcome.live_removed,
+    })))
 }
 
 async fn rename_vm_handler(
@@ -1134,12 +1137,12 @@ async fn detach_interface_handler(
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
     let mac2 = mac.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         device::detach_interface(conn, &name2, &mac2)
     })
     .await?;
     Ok(Json(
-        serde_json::json!({ "status": "detached", "name": name, "mac": mac }),
+        serde_json::json!({ "status": "detached", "name": name, "mac": mac, "live_removed": outcome.live_removed }),
     ))
 }
 

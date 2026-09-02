@@ -63,6 +63,44 @@ pub fn domain_xml_live_and_config(domain: &Domain) -> String {
     }
 }
 
+/// Poll the domain's LIVE xml (re-fetched each iteration) until `is_gone` reports the
+/// device has actually left it, or `timeout` elapses.
+///
+/// `detach_device_flags()` returning `Ok` only means libvirt accepted and queued the
+/// unplug request — for hot-pluggable devices (disk, NIC, PCI hostdev, TPM, vsock, ...)
+/// the request is asynchronous and needs the GUEST OS to release the device before it
+/// actually disappears from the live domain. A domain with no guest OS (or one whose
+/// driver doesn't support hot-unplug) never acknowledges it, so the device stays
+/// live-resident indefinitely even though the call "succeeded". Blindly returning success
+/// in that case is actively misleading — the caller (and anything built on top, like a
+/// snapshot taken afterward) reasonably believes the device is gone when it is not.
+///
+/// This does NOT change the outcome of the detach call itself (the persistent config is
+/// already updated by the time this runs) — it only gives callers an honest signal about
+/// whether the LIVE domain converged within a short, bounded wait, so they can report
+/// "removed" vs. "removal pending — guest hasn't released the device" instead of a flat,
+/// sometimes-false "done".
+pub fn wait_until_absent_from_live<F>(
+    domain: &Domain,
+    timeout: std::time::Duration,
+    mut is_gone: F,
+) -> bool
+where
+    F: FnMut(&str) -> bool,
+{
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        let live_xml = domain.get_xml_desc(0).unwrap_or_default();
+        if is_gone(&live_xml) {
+            return true;
+        }
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+}
+
 fn first_guest_ipv4(_conn: &Connect, name: &str) -> Option<String> {
     // Avoid libvirt FFI interface_addresses — qemu driver can SIGSEGV on legacy guests.
     guest_ipv4_from_virsh(name)

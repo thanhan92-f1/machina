@@ -6,8 +6,8 @@
 
 use virt::connect::Connect;
 
-use super::device::get_domain_flags_pub;
-use super::domain::lookup_domain;
+use super::device::{get_domain_flags_pub, DetachOutcome, DETACH_LIVE_WAIT};
+use super::domain::{lookup_domain, wait_until_absent_from_live};
 use crate::LibvirtError;
 
 fn hex_u32_max4(s: &str) -> Result<u32, LibvirtError> {
@@ -84,7 +84,7 @@ pub fn detach_pci_hostdev(
     conn: &Connect,
     vm_name: &str,
     pci_bdf: &str,
-) -> Result<(), LibvirtError> {
+) -> Result<DetachOutcome, LibvirtError> {
     let (pci_domain, bus, slot, function) = parse_pci_bdf(pci_bdf)?;
     let xml = pci_hostdev_xml(&pci_domain, &bus, &slot, &function);
     let dom = lookup_domain(conn, vm_name)?;
@@ -94,7 +94,21 @@ pub fn detach_pci_hostdev(
             "Failed to detach PCI hostdev from '{vm_name}': {e}"
         ))
     })?;
-    Ok(())
+
+    // Same async-completion caveat as disk/NIC detach: VFIO hot-unplug also needs the
+    // guest to release the device before it actually leaves the live domain.
+    let source_addr = format!(
+        "domain='0x{pci_domain}' bus='0x{bus}' slot='0x{slot}' function='0x{function}'"
+    );
+    let is_running = dom.is_active().unwrap_or(false);
+    let live_removed = if is_running {
+        wait_until_absent_from_live(&dom, DETACH_LIVE_WAIT, |live_xml| {
+            !live_xml.contains(&source_addr)
+        })
+    } else {
+        true
+    };
+    Ok(DetachOutcome { live_removed })
 }
 
 #[cfg(test)]
