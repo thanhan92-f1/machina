@@ -16,6 +16,7 @@ export type PremiumLoginPill = {
 }
 
 export type PremiumLoginShellProps = {
+  themeSwitcher?: ReactNode
   logo?: ReactNode
   productName: string
   productWordmark?: string
@@ -33,10 +34,12 @@ export type PremiumLoginShellProps = {
   footer?: ReactNode
   formClassName?: string
   showSignInChapter?: boolean
+  middleChapters?: ReactNode
   children?: ReactNode
 }
 
 export function PremiumLoginShell({
+  themeSwitcher,
   logo,
   productName,
   productWordmark,
@@ -52,6 +55,7 @@ export function PremiumLoginShell({
   footer,
   formClassName = '',
   showSignInChapter = true,
+  middleChapters,
   children,
 }: PremiumLoginShellProps) {
   const tagline =
@@ -64,6 +68,7 @@ export function PremiumLoginShell({
 
   return (
     <div className="login-page login-store-page min-h-screen flex flex-col">
+      {themeSwitcher}
       <main className="login-store-scroll" aria-label="Sign in">
         <section className="login-chapter login-chapter-hero" aria-label={productName}>
           <div className="login-chapter-inner">
@@ -82,6 +87,8 @@ export function PremiumLoginShell({
             {chapterNote ? <p className="login-chapter-note">{chapterNote}</p> : null}
           </div>
         </section>
+
+        {middleChapters}
 
         {showSignInChapter && children ? (
           <section
