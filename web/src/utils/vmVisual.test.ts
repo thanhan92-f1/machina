@@ -30,8 +30,8 @@ describe('vmVisual', () => {
 
   it('picks launchpad gradients per state', () => {
     expect(vmLaunchpadGradient('running')).toContain('emerald')
-    expect(vmLaunchpadGradient('paused')).toContain('purple')
-    expect(vmLaunchpadGradient('stopped')).toContain('gray')
+    expect(vmLaunchpadGradient('paused')).toContain('amber')
+    expect(vmLaunchpadGradient('stopped')).toContain('stone')
   })
 
   it('formats memory safely when mib is missing', () => {
