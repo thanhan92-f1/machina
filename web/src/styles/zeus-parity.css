@@ -792,11 +792,7 @@ a.tahoe-btn-secondary:focus-visible {
 /* Magichromatic empty stage — Mist/Lavender/Sage atmosphere; white card; graphite copy */
 html[data-theme='tahoe-light'] .zeus-empty {
   border-color: hsl(200 35% 84%);
-  background:
-    radial-gradient(ellipse 70% 55% at 15% 0%, hsl(200 85% 55% / 0.18), transparent 55%),
-    radial-gradient(ellipse 55% 45% at 90% 15%, hsl(270 55% 62% / 0.14), transparent 50%),
-    radial-gradient(ellipse 45% 35% at 50% 100%, hsl(145 40% 48% / 0.10), transparent 50%),
-    linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+  background: #ffffff;
   box-shadow: 0 1px 2px hsl(0 0% 0% / 0.04), 0 12px 40px -24px hsl(200 78% 40% / 0.25);
 }
 
@@ -1015,13 +1011,8 @@ html[data-theme='tahoe-light'] body,
 html[data-theme='tahoe-light'] .mac-desktop-root,
 html[data-theme='tahoe-light'] .mac-desktop-main,
 html[data-theme='tahoe-light'] .tahoe-page-root {
-  background-color: hsl(210 42% 95%) !important;
-  background-image:
-    radial-gradient(ellipse 75% 50% at 8% -5%, hsl(200 85% 55% / 0.32), transparent 58%),
-    radial-gradient(ellipse 60% 45% at 95% 5%, hsl(270 55% 62% / 0.28), transparent 55%),
-    radial-gradient(ellipse 55% 40% at 75% 105%, hsl(145 45% 48% / 0.22), transparent 55%),
-    radial-gradient(ellipse 40% 30% at 40% 60%, hsl(24 95% 55% / 0.10), transparent 50%) !important;
-  background-attachment: fixed !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
 }
 
 html[data-theme='tahoe-light'] {
@@ -1045,11 +1036,7 @@ html[data-theme='tahoe-light'] .zeus-sidebar-link-active {
 }
 
 html[data-theme='tahoe-light'] .mac-menubar {
-  background:
-    linear-gradient(90deg,
-      hsl(200 70% 94% / 0.88) 0%,
-      hsl(270 45% 95% / 0.85) 50%,
-      hsl(145 30% 95% / 0.88) 100%) !important;
+  background: rgba(250, 250, 252, 0.8) !important;
   border-bottom: 1px solid hsl(200 35% 82%);
   backdrop-filter: blur(14px);
 }
@@ -1057,7 +1044,7 @@ html[data-theme='tahoe-light'] .mac-menubar {
 /* apple.com Support "paper" — single subtle white->#f2f2f2 gradient (matches
    support.apple.com's own hero treatment), not saturated color blooms. */
 html[data-theme='tahoe-light'] .tahoe-hero {
-  background: linear-gradient(180deg, #ffffff 0%, #f2f2f2 100%) !important;
+  background: #ffffff !important;
 }
 
 html[data-theme='tahoe-light'] .tahoe-mesh {
@@ -1080,10 +1067,7 @@ html[data-theme='tahoe-light'] .zeus-command-deck {
 
 html[data-theme='tahoe-light'] .tahoe-hero-flat {
   border-color: hsl(200 40% 82% / 0.7) !important;
-  background:
-    radial-gradient(ellipse 80% 70% at 0% 0%, hsl(200 85% 55% / 0.20), transparent 55%),
-    radial-gradient(ellipse 60% 50% at 100% 20%, hsl(270 55% 62% / 0.14), transparent 50%),
-    linear-gradient(180deg, hsl(210 50% 98%) 0%, hsl(200 35% 96%) 100%) !important;
+  background: #ffffff !important;
 }
 
 html[data-theme='tahoe-light'] .command-deck-status-strip,
@@ -1091,8 +1075,7 @@ html[data-theme='tahoe-light'] .zeus-mission-ribbon,
 html[data-theme='tahoe-light'] .hsdk-mission-ribbon .zeus-mission-ribbon,
 html[data-theme='tahoe-light'] .hsdk-mission-ribbon > .command-deck-status-strip {
   border-color: hsl(200 40% 78% / 0.7);
-  background:
-    linear-gradient(90deg, hsl(200 70% 96% / 0.85), hsl(270 40% 97% / 0.8), hsl(145 28% 96% / 0.85));
+  background: #ffffff;
   box-shadow: inset 3px 0 0 hsl(200 78% 40% / 0.55);
 }
 
@@ -1135,7 +1118,7 @@ html[data-theme='tahoe-light'] .command-deck-capsule-live {
 }
 
 html[data-theme='tahoe-light'] .tahoe-sidebar-link-active {
-  background: linear-gradient(90deg, hsl(200 78% 40% / 0.16), hsl(270 48% 52% / 0.08));
+  background: color-mix(in srgb, #0071e3 10%, transparent);
   color: hsl(200 78% 30%);
   box-shadow: inset 3px 0 0 0 hsl(200 78% 40%), 0 4px 16px -10px hsl(200 78% 40% / 0.4);
 }
@@ -1147,24 +1130,15 @@ html[data-theme='tahoe-light'] .tahoe-mobile-nav-active {
 }
 
 html[data-theme='tahoe-light'] .mac-desktop-tab-active {
-  background: linear-gradient(180deg, hsl(200 70% 94% / 0.9), hsl(270 40% 95% / 0.75));
+  background: color-mix(in srgb, #0071e3 8%, transparent);
   box-shadow: inset 0 -2px 0 0 hsl(200 78% 40%);
 }
 
-html[data-theme='tahoe-light'] .tahoe-btn-primary,
 html[data-theme='tahoe-light'] .tahoe-page-root button.bg-primary,
 html[data-theme='tahoe-light'] .tahoe-page-root a.bg-primary,
-html[data-theme='tahoe-light'] .tahoe-page-root .bg-primary.text-primary-foreground,
-html[data-theme='tahoe-light'] .zeus-home-cta.tahoe-btn-primary {
-  background: linear-gradient(135deg, hsl(200 78% 42%) 0%, hsl(210 72% 38%) 55%, hsl(220 70% 36%) 100%) !important;
+html[data-theme='tahoe-light'] .tahoe-page-root .bg-primary.text-primary-foreground {
+  background: #0071e3 !important;
   border-color: hsl(200 60% 32% / 0.35);
-  box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.28) inset,
-    0 2px 8px -2px hsl(200 78% 40% / 0.45);
-}
-
-html[data-theme='tahoe-light'] .tahoe-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.05) saturate(1.05);
 }
 
 /* Command Deck stage — display type + quiet empties */
@@ -1230,10 +1204,7 @@ html[data-ui-shell='default'] .mac-menubar-inner {
   /* mirror .mac-menubar */
 }
 html[data-theme='tahoe-light'] .mac-menubar-inner {
-  background:
-    radial-gradient(ellipse 90% 140% at 12% -40%, hsl(200 85% 55% / 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 120% at 88% -20%, hsl(270 55% 62% / 0.16), transparent 50%),
-    linear-gradient(180deg, hsl(210 36% 98% / 0.82) 0%, hsl(210 32% 96% / 0.72) 100%);
+  background: rgba(250, 250, 252, 0.8);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border-bottom: 1px solid hsl(205 22% 84% / 0.65);

@@ -367,7 +367,7 @@ html.light-theme .tahoe-mesh {
 html.apple-light .mac-desktop-root[data-wallpaper],
 html.light-theme .mac-desktop-root[data-wallpaper] {
   background-color: #ffffff !important;
-  background-image: linear-gradient(180deg, #ffffff 0%, #f2f2f2 100%) !important;
+  background-image: none !important;
 }
 
 /* Platform inherits light tokens (no carbon shell under Light) */
@@ -456,16 +456,6 @@ html.light-theme .mc-briefing,
 html.apple-light .mission-control-root > section,
 html.light-theme .mission-control-root > section {
   border-color: hsl(200 35% 84%);
-}
-
-html.apple-light .mc-hero-ribbon,
-html.light-theme .mc-hero-ribbon {
-  background:
-    radial-gradient(ellipse 90% 80% at 0% 0%, hsl(200 85% 55% / 0.2), transparent 55%),
-    radial-gradient(ellipse 70% 60% at 100% 10%, hsl(270 55% 62% / 0.16), transparent 50%),
-    linear-gradient(180deg, hsl(210 50% 98%) 0%, hsl(210 35% 96%) 100%) !important;
-  border-color: hsl(200 40% 82% / 0.7) !important;
-  box-shadow: inset 3px 0 0 hsl(200 78% 40% / 0.55);
 }
 
 html.apple-light .mc-briefing,
@@ -775,20 +765,14 @@ html.light-theme .machine-finder-migrate-zone {
 
 html.apple-light .mc-hero-ribbon,
 html.light-theme .mc-hero-ribbon {
-  background:
-    radial-gradient(ellipse 90% 80% at 0% 0%, hsl(200 70% 62% / 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 60% at 100% 8%, hsl(270 38% 68% / 0.14), transparent 50%),
-    radial-gradient(ellipse 50% 40% at 80% 100%, hsl(110 28% 55% / 0.1), transparent 50%),
-    linear-gradient(180deg, hsl(210 40% 98%) 0%, hsl(205 30% 96%) 100%) !important;
+  background: #ffffff !important;
   box-shadow: inset 3px 0 0 hsl(200 78% 40% / 0.55);
 }
 
 /* Tahoe tiles / hero — no carbon under light */
 html.apple-light .tahoe-hero,
 html.light-theme .tahoe-hero {
-  background:
-    radial-gradient(ellipse 80% 70% at 0% 0%, hsl(200 70% 62% / 0.18), transparent 55%),
-    linear-gradient(160deg, hsl(210 40% 98%) 0%, #ffffff 100%) !important;
+  background: #ffffff !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: 0 1px 0 hsl(200 40% 92% / 0.6) inset, var(--shadow-1) !important;

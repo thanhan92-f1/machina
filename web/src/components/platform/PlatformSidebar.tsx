@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { ZyvorMark } from '../ZyvorMark'
 import { integrationNavItems } from '../../utils/platformIntegrationsNav'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
@@ -149,10 +148,6 @@ export default function PlatformSidebar() {
       aria-label="Navigation"
       data-collapsed={collapsed ? '1' : '0'}
     >
-      <div className={`flex shrink-0 border-b border-[var(--apple-hairline)] ${collapsed ? 'justify-center py-3' : 'px-4 py-3'}`}>
-        <ZyvorMark to="/platform" size="sm" showWordmark={!collapsed} />
-      </div>
-
       <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-2 px-1.5 space-y-1" id="platform-primary-nav">
         <ul className="space-y-0.5">
           {pinned.map((item) => (
