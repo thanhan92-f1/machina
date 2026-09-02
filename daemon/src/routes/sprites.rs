@@ -22,17 +22,28 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use virt::connect::Connect;
 
-use machina_core::cloud_hypervisor::sprite::{boot_sprite_chv, ChvBootRequest};
-use machina_core::firecracker::sprite::{boot_sprite_fc, FcBootRequest};
+use machina_core::cloud_hypervisor::sprite::{
+    boot_sprite_chv, pause_sprite_chv, resize_sprite_chv, restore_sprite_chv, resume_sprite_chv,
+    snapshot_sprite_chv, stop_sprite_chv_for_suspend, ChvBootRequest, ChvRestoreRequest,
+};
+use machina_core::firecracker::sprite::{
+    boot_sprite_fc, pause_sprite_fc, restore_sprite_fc, resume_sprite_fc, snapshot_sprite_fc,
+    stop_sprite_fc_for_suspend, FcBootRequest, FcRestoreRequest,
+};
 use machina_core::libvirt::sprite::{
     boot_sprite, list_golden_images, resolve_golden_image, SpriteBootRequest,
 };
 use machina_core::{audit, AuditEvent, LibvirtError, LibvirtManager};
-use machina_spec::{sprite_domain_name, SpriteBackend, SpriteCreateRequest, SpriteHandle};
+use machina_spec::{
+    sprite_domain_name, SpriteBackend, SpriteCreateRequest, SpriteHandle, SpriteResizeRequest,
+    SpriteRestoreRequest,
+};
 
 use crate::auth::{require_write, RequestActor};
 use crate::error::{ok_json, AppError};
-use crate::sprite_registry::{teardown_sprite, SpriteBackendHandle, SpriteRegistry};
+use crate::sprite_registry::{
+    teardown_sprite, BackendState, SpriteBackendHandle, SpriteRegistry, SpriteSnapshotArtifacts,
+};
 
 fn log_audit(action: &str, target: &str, result: &str) {
     let event = AuditEvent {
@@ -236,6 +247,8 @@ async fn create_sprite(
             req.ttl_seconds,
             vsock_cid,
             req.network_egress,
+            req.vcpus,
+            req.memory_mb,
         )
         .map_err(|e| AppError::from(LibvirtError::Internal(e.into())))?;
 
@@ -291,9 +304,295 @@ async fn delete_sprite(
     }
 }
 
+fn not_running(id: &str) -> AppError {
+    AppError::from(LibvirtError::Invalid(format!(
+        "sprite '{id}' is not running (it may be paused or suspended)"
+    )))
+}
+
+fn not_found(id: &str) -> AppError {
+    AppError::from(LibvirtError::NotFound(format!(
+        "sprite '{id}' not found"
+    )))
+}
+
+fn libvirt_not_supported() -> AppError {
+    AppError::from(LibvirtError::Invalid(
+        "this operation is not yet supported for libvirt sprites".into(),
+    ))
+}
+
+async fn pause_sprite(
+    Extension(actor): Extension<RequestActor>,
+    Extension(registry): Extension<Arc<SpriteRegistry>>,
+    Path(id): Path<String>,
+) -> Result<Json<SpriteHandle>, AppError> {
+    require_write(&actor, "sprites:write")?;
+    let backend = registry.peek_backend(&id).ok_or_else(|| not_found(&id))?;
+    let BackendState::Live(live) = backend else {
+        return Err(not_running(&id));
+    };
+    let result = match &live {
+        SpriteBackendHandle::CloudHypervisor { api_socket, .. } => {
+            pause_sprite_chv(api_socket).await
+        }
+        SpriteBackendHandle::Firecracker { api_socket, .. } => pause_sprite_fc(api_socket).await,
+        SpriteBackendHandle::Libvirt { .. } => return Err(libvirt_not_supported()),
+    };
+    if let Err(e) = result {
+        log_audit("sprite_pause", &id, &format!("fail: {e}"));
+        return Err(AppError::from(e));
+    }
+    let handle = registry
+        .mark_paused(&id)
+        .map_err(|e| AppError::from(LibvirtError::Internal(e.into())))?;
+    log_audit("sprite_pause", &id, "ok");
+    Ok(Json(handle))
+}
+
+async fn resume_sprite(
+    Extension(actor): Extension<RequestActor>,
+    Extension(registry): Extension<Arc<SpriteRegistry>>,
+    Path(id): Path<String>,
+) -> Result<Json<SpriteHandle>, AppError> {
+    require_write(&actor, "sprites:write")?;
+    let backend = registry.peek_backend(&id).ok_or_else(|| not_found(&id))?;
+    let BackendState::Live(live) = backend else {
+        return Err(not_running(&id));
+    };
+    let result = match &live {
+        SpriteBackendHandle::CloudHypervisor { api_socket, .. } => {
+            resume_sprite_chv(api_socket).await
+        }
+        SpriteBackendHandle::Firecracker { api_socket, .. } => resume_sprite_fc(api_socket).await,
+        SpriteBackendHandle::Libvirt { .. } => return Err(libvirt_not_supported()),
+    };
+    if let Err(e) = result {
+        log_audit("sprite_resume", &id, &format!("fail: {e}"));
+        return Err(AppError::from(e));
+    }
+    let handle = registry
+        .mark_running(&id)
+        .map_err(|e| AppError::from(LibvirtError::Internal(e.into())))?;
+    log_audit("sprite_resume", &id, "ok");
+    Ok(Json(handle))
+}
+
+/// Cloud-Hypervisor-only — Firecracker has no live-resize API.
+async fn resize_sprite(
+    Extension(actor): Extension<RequestActor>,
+    Extension(registry): Extension<Arc<SpriteRegistry>>,
+    Path(id): Path<String>,
+    Json(req): Json<SpriteResizeRequest>,
+) -> Result<Json<SpriteHandle>, AppError> {
+    require_write(&actor, "sprites:write")?;
+    req.validate()
+        .map_err(|e| AppError::from(LibvirtError::Invalid(e.to_string())))?;
+    let backend = registry.peek_backend(&id).ok_or_else(|| not_found(&id))?;
+    let BackendState::Live(SpriteBackendHandle::CloudHypervisor { api_socket, .. }) = backend
+    else {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "resize is only supported for running cloud-hypervisor sprites".into(),
+        )));
+    };
+    if let Err(e) = resize_sprite_chv(&api_socket, req.vcpus, req.memory_mb).await {
+        log_audit("sprite_resize", &id, &format!("fail: {e}"));
+        return Err(AppError::from(e));
+    }
+    let handle = registry
+        .update_sizing(&id, req.vcpus, req.memory_mb)
+        .map_err(|e| AppError::from(LibvirtError::Internal(e.into())))?;
+    log_audit("sprite_resize", &id, "ok");
+    Ok(Json(handle))
+}
+
+/// Suspend a running/paused sprite: pause (if not already), snapshot full
+/// VM state to disk, then kill the process — leaving only the snapshot
+/// artifacts `restore_sprite` needs to bring it back.
+async fn snapshot_sprite(
+    Extension(actor): Extension<RequestActor>,
+    Extension(registry): Extension<Arc<SpriteRegistry>>,
+    Path(id): Path<String>,
+) -> Result<Json<SpriteHandle>, AppError> {
+    require_write(&actor, "sprites:write")?;
+    let backend = registry.peek_backend(&id).ok_or_else(|| not_found(&id))?;
+    let BackendState::Live(live) = backend else {
+        return Err(not_running(&id));
+    };
+    // The registry's own state is the source of truth for whether a pause
+    // is still needed — not the VMM's idempotency (or lack of it) around
+    // pausing an already-paused instance.
+    let already_paused = registry
+        .get(&id)
+        .map(|h| h.state == machina_spec::SpriteState::Paused)
+        .unwrap_or(false);
+
+    let artifacts = match &live {
+        SpriteBackendHandle::CloudHypervisor {
+            pid,
+            api_socket,
+            disk_path,
+            vsock_socket,
+            tap_name,
+        } => {
+            if !already_paused {
+                if let Err(e) = pause_sprite_chv(api_socket).await {
+                    log_audit("sprite_snapshot", &id, &format!("fail: {e}"));
+                    return Err(AppError::from(e));
+                }
+            }
+            let snap = match snapshot_sprite_chv(&id, api_socket).await {
+                Ok(s) => s,
+                Err(e) => {
+                    log_audit("sprite_snapshot", &id, &format!("fail: {e}"));
+                    return Err(AppError::from(e));
+                }
+            };
+            if let Err(e) =
+                stop_sprite_chv_for_suspend(*pid, api_socket, vsock_socket, tap_name.as_deref())
+                    .await
+            {
+                log_audit("sprite_snapshot", &id, &format!("fail: {e}"));
+                return Err(AppError::from(LibvirtError::Operation(e)));
+            }
+            SpriteSnapshotArtifacts::CloudHypervisor {
+                snapshot_dir: snap.snapshot_dir,
+                disk_path: disk_path.clone(),
+                tap_name: tap_name.clone(),
+            }
+        }
+        SpriteBackendHandle::Firecracker {
+            pid,
+            api_socket,
+            disk_path,
+            vsock_socket,
+            tap_name,
+        } => {
+            if !already_paused {
+                if let Err(e) = pause_sprite_fc(api_socket).await {
+                    log_audit("sprite_snapshot", &id, &format!("fail: {e}"));
+                    return Err(AppError::from(e));
+                }
+            }
+            let snap = match snapshot_sprite_fc(&id, api_socket).await {
+                Ok(s) => s,
+                Err(e) => {
+                    log_audit("sprite_snapshot", &id, &format!("fail: {e}"));
+                    return Err(AppError::from(e));
+                }
+            };
+            if let Err(e) =
+                stop_sprite_fc_for_suspend(*pid, api_socket, vsock_socket, tap_name.as_deref())
+                    .await
+            {
+                log_audit("sprite_snapshot", &id, &format!("fail: {e}"));
+                return Err(AppError::from(LibvirtError::Operation(e)));
+            }
+            SpriteSnapshotArtifacts::Firecracker {
+                snapshot_path: snap.snapshot_path,
+                mem_file_path: snap.mem_file_path,
+                disk_path: disk_path.clone(),
+                tap_name: tap_name.clone(),
+            }
+        }
+        SpriteBackendHandle::Libvirt { .. } => return Err(libvirt_not_supported()),
+    };
+
+    let handle = registry
+        .mark_suspended(&id, artifacts)
+        .map_err(|e| AppError::from(LibvirtError::Internal(e.into())))?;
+    log_audit("sprite_snapshot", &id, "ok");
+    Ok(Json(handle))
+}
+
+async fn restore_sprite(
+    Extension(actor): Extension<RequestActor>,
+    Extension(registry): Extension<Arc<SpriteRegistry>>,
+    Path(id): Path<String>,
+    Json(req): Json<SpriteRestoreRequest>,
+) -> Result<Json<SpriteHandle>, AppError> {
+    require_write(&actor, "sprites:write")?;
+    req.validate()
+        .map_err(|e| AppError::from(LibvirtError::Invalid(e.to_string())))?;
+    let backend = registry.peek_backend(&id).ok_or_else(|| not_found(&id))?;
+    let BackendState::Suspended(artifacts) = backend else {
+        return Err(AppError::from(LibvirtError::Invalid(format!(
+            "sprite '{id}' is not suspended"
+        ))));
+    };
+    let network_egress = registry
+        .get(&id)
+        .map(|h| h.network_egress)
+        .unwrap_or(false);
+
+    let new_backend = match artifacts {
+        SpriteSnapshotArtifacts::CloudHypervisor {
+            snapshot_dir,
+            disk_path,
+            ..
+        } => {
+            match restore_sprite_chv(&ChvRestoreRequest {
+                sprite_id: &id,
+                snapshot_dir: &snapshot_dir,
+                network_egress,
+            })
+            .await
+            {
+                Ok(r) => SpriteBackendHandle::CloudHypervisor {
+                    pid: r.pid,
+                    api_socket: r.api_socket,
+                    disk_path,
+                    vsock_socket: r.vsock_socket,
+                    tap_name: r.tap_name,
+                },
+                Err(e) => {
+                    log_audit("sprite_restore", &id, &format!("fail: {e}"));
+                    return Err(AppError::from(e));
+                }
+            }
+        }
+        SpriteSnapshotArtifacts::Firecracker {
+            snapshot_path,
+            mem_file_path,
+            disk_path,
+            ..
+        } => match restore_sprite_fc(&FcRestoreRequest {
+            sprite_id: &id,
+            snapshot_path: &snapshot_path,
+            mem_file_path: &mem_file_path,
+            network_egress,
+        })
+        .await
+        {
+            Ok(r) => SpriteBackendHandle::Firecracker {
+                pid: r.pid,
+                api_socket: r.api_socket,
+                disk_path,
+                vsock_socket: r.vsock_socket,
+                tap_name: r.tap_name,
+            },
+            Err(e) => {
+                log_audit("sprite_restore", &id, &format!("fail: {e}"));
+                return Err(AppError::from(e));
+            }
+        },
+    };
+
+    let handle = registry
+        .mark_restored(&id, new_backend, req.ttl_seconds)
+        .map_err(|e| AppError::from(LibvirtError::Internal(e.into())))?;
+    log_audit("sprite_restore", &id, "ok");
+    Ok(Json(handle))
+}
+
 pub fn sprite_routes() -> Router<LibvirtManager> {
     Router::new()
         .route("/sprites", post(create_sprite).get(list_sprites))
         .route("/sprites/golden-images", get(list_golden_images_handler))
         .route("/sprites/{id}", get(get_sprite).delete(delete_sprite))
+        .route("/sprites/{id}/pause", post(pause_sprite))
+        .route("/sprites/{id}/resume", post(resume_sprite))
+        .route("/sprites/{id}/resize", post(resize_sprite))
+        .route("/sprites/{id}/snapshot", post(snapshot_sprite))
+        .route("/sprites/{id}/restore", post(restore_sprite))
 }

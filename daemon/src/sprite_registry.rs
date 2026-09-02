@@ -49,6 +49,16 @@ const REAP_INTERVAL: Duration = Duration::from_secs(5);
 /// (hypervisor/reserved/host), so assignable guest CIDs start at 3.
 const FIRST_VSOCK_CID: u32 = 3;
 
+/// How long a *suspended* sprite's snapshot artifacts are kept on disk
+/// before the reaper deletes them. Deliberately not the original
+/// `ttl_seconds` — a suspended sprite holds no RAM/vCPU, so its constraint
+/// is disk-retention policy, a different (much coarser) concern than "how
+/// long can this occupy host resources." 24h as a first cut; revisit if
+/// suspend turns out to be used for anything longer-lived. Expressed in
+/// seconds (not `chrono::Duration::hours`) to match `register()`'s existing
+/// `chrono::Duration::seconds(..)` construction below.
+const SUSPENDED_GRACE_SECONDS: i64 = 24 * 3600;
+
 /// Identifies which hypervisor booted a sprite and what's needed to tear it
 /// down. Libvirt sprites are supervised by libvirtd (`domain_name` is
 /// enough to find and destroy the domain); Cloud Hypervisor and Firecracker
@@ -104,10 +114,63 @@ impl SpriteBackendHandle {
     }
 }
 
+/// On-disk artifacts left behind once a sprite is suspended (snapshotted,
+/// process killed) — enough for `restore_sprite_chv`/`_fc` to bring it back,
+/// and for the reaper to clean up if it expires unrestored instead. No
+/// libvirt variant: sprite suspend/snapshot is Cloud-Hypervisor/Firecracker
+/// only for now (libvirt already has `virDomainSuspend`/snapshot support at
+/// the libvirt layer — wiring sprite suspend through to it is a separate,
+/// later change).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SpriteSnapshotArtifacts {
+    CloudHypervisor {
+        snapshot_dir: PathBuf,
+        disk_path: PathBuf,
+        tap_name: Option<String>,
+    },
+    Firecracker {
+        snapshot_path: PathBuf,
+        mem_file_path: PathBuf,
+        disk_path: PathBuf,
+        tap_name: Option<String>,
+    },
+}
+
+/// A sprite's current backend state: either a live, directly-supervised (or
+/// libvirt-supervised) process (`Live`), or suspended to a snapshot with no
+/// running process at all (`Suspended`). Replaces the old bare
+/// `SpriteBackendHandle` as `SpriteEntry`'s backend field so a suspended
+/// sprite — which has no pid/sockets — can be represented without adding an
+/// `Option` to every `SpriteBackendHandle` variant.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BackendState {
+    Live(SpriteBackendHandle),
+    Suspended(SpriteSnapshotArtifacts),
+}
+
+impl BackendState {
+    /// Short label for reaper/audit log lines — mirrors
+    /// `SpriteBackendHandle::describe()` for the `Live` case.
+    pub(crate) fn describe(&self) -> String {
+        match self {
+            BackendState::Live(h) => h.describe(),
+            BackendState::Suspended(SpriteSnapshotArtifacts::CloudHypervisor { .. }) => {
+                "cloud-hypervisor (suspended)".into()
+            }
+            BackendState::Suspended(SpriteSnapshotArtifacts::Firecracker { .. }) => {
+                "firecracker (suspended)".into()
+            }
+        }
+    }
+}
+
 struct SpriteEntry {
     handle: SpriteHandle,
-    backend: SpriteBackendHandle,
+    backend: BackendState,
     expires_at: DateTime<Utc>,
+    /// Captured at `register()` — used as `restore()`'s default
+    /// `ttl_seconds` when the restore request doesn't override it.
+    ttl_seconds: u64,
 }
 
 #[derive(Clone)]
@@ -174,6 +237,7 @@ impl SpriteRegistry {
     /// instead would desync the id handed back to API clients from the
     /// actual running sprite, making `virsh`/manual ops on a returned id
     /// impossible.
+    #[allow(clippy::too_many_arguments)]
     pub fn register(
         &self,
         sprite_id: String,
@@ -181,6 +245,8 @@ impl SpriteRegistry {
         ttl_seconds: u64,
         vsock_cid: Option<u32>,
         network_egress: bool,
+        vcpus: u32,
+        memory_mb: u64,
     ) -> Result<SpriteHandle, &'static str> {
         let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         if g.len() >= MAX_SPRITES {
@@ -205,13 +271,17 @@ impl SpriteRegistry {
             vsock_cid,
             backend: backend.kind(),
             network_egress,
+            vcpus,
+            memory_mb,
+            suspended_at: None,
         };
         g.insert(
             sprite_id,
             SpriteEntry {
                 handle: handle.clone(),
-                backend,
+                backend: BackendState::Live(backend),
                 expires_at,
+                ttl_seconds,
             },
         );
         Ok(handle)
@@ -227,14 +297,25 @@ impl SpriteRegistry {
         g.values().map(|e| e.handle.clone()).collect()
     }
 
-    /// Remove the bookkeeping entry and return its backend handle for the
+    /// Non-removing clone of a sprite's current backend state — used by the
+    /// pause/resume/resize/snapshot/restore route handlers to find the pid/
+    /// sockets (or snapshot artifacts) they need without tearing the
+    /// registry entry down the way `remove()` does.
+    pub fn peek_backend(&self, id: &str) -> Option<BackendState> {
+        let g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        g.get(id).map(|e| e.backend.clone())
+    }
+
+    /// Remove the bookkeeping entry and return its backend state for the
     /// caller to actually tear down. Bookkeeping-only: does not touch
     /// libvirt or spawn any process itself, so it's safe to call from
     /// either the reaper or an explicit `DELETE /v1/sprites/{id}` handler
     /// without a teardown call in the registry's lock scope. Releases the
     /// removed sprite's vsock CID (if any) back to `claimed_vsock_cids` so
-    /// `next_vsock_cid()` can hand it out again.
-    pub fn remove(&self, id: &str) -> Option<SpriteBackendHandle> {
+    /// `next_vsock_cid()` can hand it out again — including for a
+    /// `Suspended` entry, which keeps its CID claimed for the whole
+    /// suspended interval (see `mark_suspended`'s doc comment).
+    pub fn remove(&self, id: &str) -> Option<BackendState> {
         let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         let entry = g.remove(id)?;
         if let Some(cid) = entry.handle.vsock_cid {
@@ -244,6 +325,94 @@ impl SpriteRegistry {
                 .remove(&cid);
         }
         Some(entry.backend)
+    }
+
+    /// `Running` -> `Paused`. `expires_at`/TTL is untouched — a paused
+    /// sprite still holds its full allocation, so it keeps counting down
+    /// normally (see `SUSPENDED_GRACE_SECONDS`'s doc comment for why
+    /// `Suspended` is different).
+    pub fn mark_paused(&self, id: &str) -> Result<SpriteHandle, &'static str> {
+        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = g.get_mut(id).ok_or("sprite not found")?;
+        entry.handle.state = SpriteState::Paused;
+        Ok(entry.handle.clone())
+    }
+
+    /// `Paused` -> `Running`.
+    pub fn mark_running(&self, id: &str) -> Result<SpriteHandle, &'static str> {
+        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = g.get_mut(id).ok_or("sprite not found")?;
+        entry.handle.state = SpriteState::Running;
+        Ok(entry.handle.clone())
+    }
+
+    /// `Live(..)` -> `Suspended(artifacts)`. Replaces `expires_at` with a
+    /// fresh `SUSPENDED_GRACE_SECONDS` deadline (a disk-retention window,
+    /// not a resumption of the original TTL countdown — see that const's
+    /// doc comment) and sets `suspended_at`. Deliberately does **not**
+    /// release `vsock_cid` — kept claimed for the whole suspended interval
+    /// so `restore()` can hand back the exact same CID a caller may already
+    /// have baked into a guest-side vsock connector.
+    pub fn mark_suspended(
+        &self,
+        id: &str,
+        artifacts: SpriteSnapshotArtifacts,
+    ) -> Result<SpriteHandle, &'static str> {
+        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = g.get_mut(id).ok_or("sprite not found")?;
+        let now = Utc::now();
+        let expires_at = now + chrono::Duration::seconds(SUSPENDED_GRACE_SECONDS);
+        entry.backend = BackendState::Suspended(artifacts);
+        entry.expires_at = expires_at;
+        entry.handle.state = SpriteState::Suspended;
+        entry.handle.expires_at = expires_at.to_rfc3339();
+        entry.handle.suspended_at = Some(now.to_rfc3339());
+        Ok(entry.handle.clone())
+    }
+
+    /// `Suspended(..)` -> `Live(new_backend)`. Gets a **fresh** full TTL
+    /// window (`now + ttl_seconds`, defaulting to the sprite's original
+    /// create-time `ttl_seconds` when the restore request didn't override
+    /// it) — restore is "boot again, from a snapshot," so it behaves like
+    /// `create` TTL-wise, not like a paused countdown resuming mid-flight.
+    pub fn mark_restored(
+        &self,
+        id: &str,
+        new_backend: SpriteBackendHandle,
+        ttl_seconds: Option<u64>,
+    ) -> Result<SpriteHandle, &'static str> {
+        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = g.get_mut(id).ok_or("sprite not found")?;
+        let ttl = ttl_seconds.unwrap_or(entry.ttl_seconds);
+        let now = Utc::now();
+        let expires_at = now + chrono::Duration::seconds(ttl as i64);
+        entry.backend = BackendState::Live(new_backend);
+        entry.expires_at = expires_at;
+        entry.ttl_seconds = ttl;
+        entry.handle.state = SpriteState::Running;
+        entry.handle.expires_at = expires_at.to_rfc3339();
+        entry.handle.suspended_at = None;
+        Ok(entry.handle.clone())
+    }
+
+    /// Cloud-Hypervisor-resize bookkeeping only — updates the API-visible
+    /// `vcpus`/`memory_mb` after `resize_sprite_chv` has already applied the
+    /// change live. Does not touch `state`/`expires_at`.
+    pub fn update_sizing(
+        &self,
+        id: &str,
+        vcpus: Option<u32>,
+        memory_mb: Option<u64>,
+    ) -> Result<SpriteHandle, &'static str> {
+        let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = g.get_mut(id).ok_or("sprite not found")?;
+        if let Some(v) = vcpus {
+            entry.handle.vcpus = v;
+        }
+        if let Some(m) = memory_mb {
+            entry.handle.memory_mb = m;
+        }
+        Ok(entry.handle.clone())
     }
 
     /// Sprite ids whose TTL has passed.
@@ -273,8 +442,37 @@ impl SpriteRegistry {
 /// apply the same "already gone is success" rule for the same reason.
 pub async fn teardown_sprite(
     manager: &LibvirtManager,
-    backend: SpriteBackendHandle,
+    backend: BackendState,
 ) -> Result<(), String> {
+    let backend = match backend {
+        BackendState::Live(live) => live,
+        BackendState::Suspended(SpriteSnapshotArtifacts::CloudHypervisor {
+            snapshot_dir,
+            disk_path,
+            ..
+        }) => {
+            let _ = std::fs::remove_dir_all(&snapshot_dir);
+            let _ = std::fs::remove_file(&disk_path);
+            if let Some(run_dir) = disk_path.parent() {
+                let _ = std::fs::remove_dir_all(run_dir);
+            }
+            return Ok(());
+        }
+        BackendState::Suspended(SpriteSnapshotArtifacts::Firecracker {
+            snapshot_path,
+            mem_file_path,
+            disk_path,
+            ..
+        }) => {
+            let _ = std::fs::remove_file(&snapshot_path);
+            let _ = std::fs::remove_file(&mem_file_path);
+            let _ = std::fs::remove_file(&disk_path);
+            if let Some(run_dir) = disk_path.parent() {
+                let _ = std::fs::remove_dir_all(run_dir);
+            }
+            return Ok(());
+        }
+    };
     match backend {
         SpriteBackendHandle::Libvirt { domain_name } => {
             let mgr = manager.clone();
@@ -386,6 +584,14 @@ mod tests {
         }
     }
 
+    fn chv_snapshot_artifacts(pid: u32) -> SpriteSnapshotArtifacts {
+        SpriteSnapshotArtifacts::CloudHypervisor {
+            snapshot_dir: PathBuf::from(format!("/var/lib/machina/sprite-run/{pid}/snapshot")),
+            disk_path: PathBuf::from(format!("/var/lib/machina/sprite-run/{pid}/disk.qcow2")),
+            tap_name: None,
+        }
+    }
+
     #[test]
     fn register_then_get_round_trips() {
         let reg = SpriteRegistry::new();
@@ -396,6 +602,8 @@ mod tests {
                 300,
                 Some(3),
                 false,
+                1,
+                512,
             )
             .unwrap();
         assert_eq!(handle.sprite_id, "abc");
@@ -406,6 +614,8 @@ mod tests {
         assert_eq!(fetched.vsock_cid, Some(3));
         assert_eq!(fetched.state, SpriteState::Running);
         assert_eq!(fetched.backend, SpriteBackend::Libvirt);
+        assert_eq!(fetched.vcpus, 1);
+        assert_eq!(fetched.memory_mb, 512);
     }
 
     #[test]
@@ -418,6 +628,8 @@ mod tests {
                 300,
                 Some(3),
                 true,
+                1,
+                512,
             )
             .unwrap();
         assert!(handle.network_egress);
@@ -428,7 +640,15 @@ mod tests {
     fn register_reports_cloud_hypervisor_backend_kind() {
         let reg = SpriteRegistry::new();
         let handle = reg
-            .register("chv-kind".into(), chv_backend(1), 300, Some(3), false)
+            .register(
+                "chv-kind".into(),
+                chv_backend(1),
+                300,
+                Some(3),
+                false,
+                1,
+                512,
+            )
             .unwrap();
         assert_eq!(handle.backend, SpriteBackend::CloudHypervisor);
     }
@@ -437,7 +657,15 @@ mod tests {
     fn register_reports_firecracker_backend_kind() {
         let reg = SpriteRegistry::new();
         let handle = reg
-            .register("fc-kind".into(), fc_backend(1), 300, Some(3), false)
+            .register(
+                "fc-kind".into(),
+                fc_backend(1),
+                300,
+                Some(3),
+                false,
+                1,
+                512,
+            )
             .unwrap();
         assert_eq!(handle.backend, SpriteBackend::Firecracker);
     }
@@ -458,11 +686,13 @@ mod tests {
                 300,
                 None,
                 false,
+                1,
+                512,
             )
             .unwrap();
         assert_eq!(
             reg.remove(&handle.sprite_id),
-            Some(libvirt_backend("sprite-xyz"))
+            Some(BackendState::Live(libvirt_backend("sprite-xyz")))
         );
         // Second remove is a no-op, not an error — the reaper and an explicit
         // DELETE could race on the same id.
@@ -475,10 +705,21 @@ mod tests {
         let reg = SpriteRegistry::new();
         let backend = chv_backend(4242);
         let handle = reg
-            .register("chv1".into(), backend.clone(), 300, Some(7), false)
+            .register(
+                "chv1".into(),
+                backend.clone(),
+                300,
+                Some(7),
+                false,
+                1,
+                512,
+            )
             .unwrap();
         assert_eq!(reg.get(&handle.sprite_id).unwrap().vsock_cid, Some(7));
-        assert_eq!(reg.remove(&handle.sprite_id), Some(backend));
+        assert_eq!(
+            reg.remove(&handle.sprite_id),
+            Some(BackendState::Live(backend))
+        );
     }
 
     #[test]
@@ -486,10 +727,13 @@ mod tests {
         let reg = SpriteRegistry::new();
         let backend = fc_backend(5252);
         let handle = reg
-            .register("fc1".into(), backend.clone(), 300, Some(8), false)
+            .register("fc1".into(), backend.clone(), 300, Some(8), false, 1, 512)
             .unwrap();
         assert_eq!(reg.get(&handle.sprite_id).unwrap().vsock_cid, Some(8));
-        assert_eq!(reg.remove(&handle.sprite_id), Some(backend));
+        assert_eq!(
+            reg.remove(&handle.sprite_id),
+            Some(BackendState::Live(backend))
+        );
     }
 
     #[test]
@@ -502,6 +746,8 @@ mod tests {
                 3600,
                 None,
                 false,
+                1,
+                512,
             )
             .unwrap();
         let already_expired = reg
@@ -511,6 +757,8 @@ mod tests {
                 0,
                 None,
                 false,
+                1,
+                512,
             )
             .unwrap();
         // ttl_seconds=0 means expires_at == created_at, which is <= now by
@@ -523,11 +771,19 @@ mod tests {
     #[test]
     fn list_returns_all_registered_handles() {
         let reg = SpriteRegistry::new();
-        reg.register("a".into(), libvirt_backend("sprite-a"), 300, None, false)
+        reg.register(
+            "a".into(),
+            libvirt_backend("sprite-a"),
+            300,
+            None,
+            false,
+            1,
+            512,
+        )
+        .unwrap();
+        reg.register("b".into(), chv_backend(99), 300, None, false, 1, 512)
             .unwrap();
-        reg.register("b".into(), chv_backend(99), 300, None, false)
-            .unwrap();
-        reg.register("c".into(), fc_backend(100), 300, None, false)
+        reg.register("c".into(), fc_backend(100), 300, None, false, 1, 512)
             .unwrap();
         assert_eq!(reg.list().len(), 3);
     }
@@ -558,6 +814,8 @@ mod tests {
             300,
             Some(FIRST_VSOCK_CID),
             false,
+            1,
+            512,
         )
         .unwrap();
 
@@ -570,12 +828,132 @@ mod tests {
         let reg = SpriteRegistry::new();
         let cid = reg.next_vsock_cid();
         let handle = reg
-            .register("chv1".into(), chv_backend(1), 300, Some(cid), false)
+            .register("chv1".into(), chv_backend(1), 300, Some(cid), false, 1, 512)
             .unwrap();
         reg.remove(&handle.sprite_id);
 
         // The registry has no other claims left, so the freed CID is the
         // lowest one available again.
         assert_eq!(reg.next_vsock_cid(), cid);
+    }
+
+    #[test]
+    fn pause_then_resume_round_trips_state() {
+        let reg = SpriteRegistry::new();
+        let handle = reg
+            .register("p1".into(), chv_backend(1), 300, Some(3), false, 1, 512)
+            .unwrap();
+        let expires_before = handle.expires_at.clone();
+
+        let paused = reg.mark_paused(&handle.sprite_id).unwrap();
+        assert_eq!(paused.state, SpriteState::Paused);
+        // Pausing must not touch the TTL — see mark_paused's doc comment.
+        assert_eq!(paused.expires_at, expires_before);
+
+        let resumed = reg.mark_running(&handle.sprite_id).unwrap();
+        assert_eq!(resumed.state, SpriteState::Running);
+    }
+
+    #[test]
+    fn mark_paused_unknown_id_errors() {
+        let reg = SpriteRegistry::new();
+        assert!(reg.mark_paused("does-not-exist").is_err());
+    }
+
+    #[test]
+    fn suspend_replaces_ttl_and_keeps_vsock_cid_claimed() {
+        let reg = SpriteRegistry::new();
+        let handle = reg
+            .register("s1".into(), chv_backend(1), 60, Some(3), false, 1, 512)
+            .unwrap();
+        let expires_before = handle.expires_at.clone();
+
+        let suspended = reg
+            .mark_suspended(&handle.sprite_id, chv_snapshot_artifacts(1))
+            .unwrap();
+        assert_eq!(suspended.state, SpriteState::Suspended);
+        assert!(suspended.suspended_at.is_some());
+        // Suspend replaces the TTL deadline with SUSPENDED_GRACE_SECONDS —
+        // a 24h grace window is always later than a 60s original TTL.
+        assert_ne!(suspended.expires_at, expires_before);
+
+        // The CID stays claimed through suspension — next_vsock_cid() must
+        // not hand it out to a concurrent create.
+        assert_ne!(reg.next_vsock_cid(), 3);
+
+        assert_eq!(
+            reg.peek_backend(&handle.sprite_id),
+            Some(BackendState::Suspended(chv_snapshot_artifacts(1)))
+        );
+    }
+
+    #[test]
+    fn restore_gets_a_fresh_ttl_defaulting_to_original() {
+        let reg = SpriteRegistry::new();
+        let handle = reg
+            .register("r1".into(), chv_backend(1), 60, Some(3), false, 1, 512)
+            .unwrap();
+        reg.mark_suspended(&handle.sprite_id, chv_snapshot_artifacts(1))
+            .unwrap();
+
+        let restored = reg
+            .mark_restored(&handle.sprite_id, chv_backend(2), None)
+            .unwrap();
+        assert_eq!(restored.state, SpriteState::Running);
+        assert!(restored.suspended_at.is_none());
+        assert_eq!(
+            reg.peek_backend(&handle.sprite_id),
+            Some(BackendState::Live(chv_backend(2)))
+        );
+    }
+
+    #[test]
+    fn restore_honors_an_explicit_ttl_override() {
+        let reg = SpriteRegistry::new();
+        let handle = reg
+            .register("r2".into(), chv_backend(1), 60, Some(3), false, 1, 512)
+            .unwrap();
+        reg.mark_suspended(&handle.sprite_id, chv_snapshot_artifacts(1))
+            .unwrap();
+
+        let short = reg
+            .mark_restored(&handle.sprite_id, chv_backend(2), Some(1))
+            .unwrap();
+        // A 1-second TTL expires almost immediately — the default (60s)
+        // would not.
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+        assert!(reg.expired_ids().contains(&short.sprite_id));
+    }
+
+    #[test]
+    fn update_sizing_only_touches_requested_fields() {
+        let reg = SpriteRegistry::new();
+        let handle = reg
+            .register("z1".into(), chv_backend(1), 300, Some(3), false, 1, 512)
+            .unwrap();
+
+        let resized = reg
+            .update_sizing(&handle.sprite_id, Some(4), None)
+            .unwrap();
+        assert_eq!(resized.vcpus, 4);
+        assert_eq!(resized.memory_mb, 512);
+
+        let resized_again = reg
+            .update_sizing(&handle.sprite_id, None, Some(2048))
+            .unwrap();
+        assert_eq!(resized_again.vcpus, 4);
+        assert_eq!(resized_again.memory_mb, 2048);
+    }
+
+    #[test]
+    fn peek_backend_does_not_remove_the_entry() {
+        let reg = SpriteRegistry::new();
+        let handle = reg
+            .register("pk1".into(), chv_backend(1), 300, Some(3), false, 1, 512)
+            .unwrap();
+        assert!(reg.peek_backend(&handle.sprite_id).is_some());
+        // Still there — peek_backend must not consume the entry the way
+        // remove() does.
+        assert!(reg.get(&handle.sprite_id).is_some());
     }
 }

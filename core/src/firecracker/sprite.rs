@@ -505,6 +505,225 @@ pub async fn teardown_sprite_fc(
     Ok(())
 }
 
+/// One `PATCH <path>` call against the Firecracker API socket — identical
+/// shape to `api_put` above, but Firecracker's pause/resume endpoint
+/// (`/vm`) is specifically a `PATCH`, not a `PUT`.
+async fn api_patch(api_socket: &Path, path: &str, body: &str) -> Result<(), LibvirtError> {
+    let url = format!("http://localhost{path}");
+    let out = TokioCommand::new("curl")
+        .arg("--unix-socket")
+        .arg(api_socket)
+        .arg("-sS")
+        .arg("-X")
+        .arg("PATCH")
+        .arg(&url)
+        .arg("-H")
+        .arg("Content-Type: application/json")
+        .arg("-d")
+        .arg(body)
+        .arg("-w")
+        .arg("\n%{http_code}")
+        .output()
+        .await
+        .map_err(|e| LibvirtError::Operation(format!("curl {path}: {e}")))?;
+
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let (resp_body, status) = stdout
+        .trim_end()
+        .rsplit_once('\n')
+        .unwrap_or((stdout.as_ref(), ""));
+    let status_ok = status
+        .trim()
+        .parse::<u16>()
+        .map(|c| (200..300).contains(&c))
+        .unwrap_or(false);
+    if !out.status.success() || !status_ok {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        return Err(LibvirtError::Operation(format!(
+            "firecracker API {path} failed (http {}): {} {}",
+            if status.is_empty() {
+                "?"
+            } else {
+                status.trim()
+            },
+            resp_body.trim(),
+            stderr.trim()
+        )));
+    }
+    Ok(())
+}
+
+/// Pause a running Firecracker sprite in place.
+pub async fn pause_sprite_fc(api_socket: &Path) -> Result<(), LibvirtError> {
+    api_patch(api_socket, "/vm", r#"{"state":"Paused"}"#).await
+}
+
+/// Resume a paused Firecracker sprite.
+pub async fn resume_sprite_fc(api_socket: &Path) -> Result<(), LibvirtError> {
+    api_patch(api_socket, "/vm", r#"{"state":"Resumed"}"#).await
+}
+
+pub struct FcSnapshotResult {
+    pub snapshot_path: PathBuf,
+    pub mem_file_path: PathBuf,
+}
+
+/// Snapshot a Firecracker sprite's full VM state. Caller must ensure the VM
+/// is already `Paused` — Firecracker's `/snapshot/create` requires it — via
+/// `daemon::sprite_registry`'s state machine, not a blind pause here (same
+/// reasoning as the Cloud Hypervisor sibling).
+pub async fn snapshot_sprite_fc(
+    sprite_id: &str,
+    api_socket: &Path,
+) -> Result<FcSnapshotResult, LibvirtError> {
+    let run_dir = PathBuf::from(SPRITE_RUN_DIR).join(sprite_id);
+    let snapshot_path = run_dir.join("snapshot.bin");
+    let mem_file_path = run_dir.join("mem.bin");
+    api_put(
+        api_socket,
+        "/snapshot/create",
+        &format!(
+            r#"{{"snapshot_type":"Full","snapshot_path":{},"mem_file_path":{}}}"#,
+            serde_json::to_string(&snapshot_path.display().to_string()).unwrap_or_default(),
+            serde_json::to_string(&mem_file_path.display().to_string()).unwrap_or_default(),
+        ),
+    )
+    .await?;
+    Ok(FcSnapshotResult {
+        snapshot_path,
+        mem_file_path,
+    })
+}
+
+/// Stop a Firecracker sprite's process as part of suspending it to a
+/// snapshot — unlike `teardown_sprite_fc`, deliberately does **not** delete
+/// `disk_path` or the run directory (the snapshot/mem files and the disk
+/// they reference must survive for `restore_sprite_fc`); only cleans up the
+/// now-stale api/vsock sockets and TAP.
+pub async fn stop_sprite_fc_for_suspend(
+    pid: u32,
+    api_socket: &Path,
+    vsock_socket: &Path,
+    tap_name: Option<&str>,
+) -> Result<(), String> {
+    let _ = crate::libvirt::extras::kill_host_process(pid, "TERM");
+    tokio::time::sleep(SHUTDOWN_GRACE).await;
+    let _ = crate::libvirt::extras::kill_host_process(pid, "KILL");
+    if let Some(tap) = tap_name {
+        delete_egress_tap(tap);
+    }
+    let _ = fs::remove_file(api_socket);
+    let _ = fs::remove_file(vsock_socket);
+    Ok(())
+}
+
+pub struct FcRestoreRequest<'a> {
+    pub sprite_id: &'a str,
+    pub snapshot_path: &'a Path,
+    pub mem_file_path: &'a Path,
+    pub network_egress: bool,
+}
+
+pub struct FcRestoreResult {
+    pub pid: u32,
+    pub api_socket: PathBuf,
+    pub vsock_socket: PathBuf,
+    pub tap_name: Option<String>,
+}
+
+/// Restore a suspended Firecracker sprite from its snapshot: spawn a bare
+/// `firecracker --api-sock <path>` (same spawn/poll pattern as
+/// `boot_sprite_fc`'s first half), then `PUT /snapshot/load`. No `/vsock`
+/// (or any other device) re-PUT beforehand — a Firecracker snapshot captures
+/// full configured-device state including the vsock CID, so `/snapshot/load`
+/// restores it directly; this is the one design assumption from the plan
+/// that should get an empirical double-check against a real restore cycle.
+pub async fn restore_sprite_fc(
+    req: &FcRestoreRequest<'_>,
+) -> Result<FcRestoreResult, LibvirtError> {
+    let fc_binary = find_firecracker_binary()?;
+    let run_dir = PathBuf::from(SPRITE_RUN_DIR).join(req.sprite_id);
+    let api_socket = run_dir.join("api.sock");
+    let vsock_socket = run_dir.join("vsock.sock");
+    let _ = fs::remove_file(&api_socket);
+
+    let tap_name = if req.network_egress {
+        let tap = tap_name_for("fc-", req.sprite_id);
+        create_egress_tap(&tap)?;
+        Some(tap)
+    } else {
+        None
+    };
+
+    let mut child = TokioCommand::new(fc_binary)
+        .arg("--api-sock")
+        .arg(&api_socket)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| {
+            if let Some(tap) = &tap_name {
+                delete_egress_tap(tap);
+            }
+            LibvirtError::Operation(format!("failed to spawn firecracker for restore: {e}"))
+        })?;
+    let pid = child
+        .id()
+        .ok_or_else(|| LibvirtError::Internal("firecracker spawned without a pid".into()))?;
+
+    let deadline = Instant::now() + BOOT_READY_TIMEOUT;
+    loop {
+        if api_socket.exists() {
+            break;
+        }
+        if let Ok(Some(status)) = child.try_wait() {
+            if let Some(tap) = &tap_name {
+                delete_egress_tap(tap);
+            }
+            return Err(LibvirtError::Operation(format!(
+                "firecracker exited before its API socket appeared during restore (status: {status})"
+            )));
+        }
+        if Instant::now() >= deadline {
+            let _ = child.start_kill();
+            if let Some(tap) = &tap_name {
+                delete_egress_tap(tap);
+            }
+            return Err(LibvirtError::Operation(
+                "firecracker did not become ready within timeout during restore".into(),
+            ));
+        }
+        tokio::time::sleep(BOOT_READY_POLL_INTERVAL).await;
+    }
+
+    if let Err(e) = api_put(
+        &api_socket,
+        "/snapshot/load",
+        &format!(
+            r#"{{"snapshot_path":{},"mem_backend":{{"backend_type":"File","backend_path":{}}},"resume_vm":true}}"#,
+            serde_json::to_string(&req.snapshot_path.display().to_string()).unwrap_or_default(),
+            serde_json::to_string(&req.mem_file_path.display().to_string()).unwrap_or_default(),
+        ),
+    )
+    .await
+    {
+        let _ = child.start_kill();
+        if let Some(tap) = &tap_name {
+            delete_egress_tap(tap);
+        }
+        return Err(e);
+    }
+
+    drop(child);
+    Ok(FcRestoreResult {
+        pid,
+        api_socket,
+        vsock_socket,
+        tap_name,
+    })
+}
+
 impl FcBootRequest<'_> {
     /// The vsock socket path this sprite will use, computed the same way
     /// `boot_sprite_fc` derives it (`SPRITE_RUN_DIR/<sprite_id>/vsock.sock`)

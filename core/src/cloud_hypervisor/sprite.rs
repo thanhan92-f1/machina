@@ -45,6 +45,21 @@ const BOOT_READY_POLL_INTERVAL: Duration = Duration::from_millis(50);
 /// back to `SIGKILL`.
 const SHUTDOWN_GRACE: Duration = Duration::from_millis(500);
 
+/// Headroom reserved at boot so `resize_sprite_chv` has somewhere to grow
+/// into. Cloud Hypervisor rejects any live resize beyond what `--cpus
+/// boot=N` / `--memory size=X` declared up front (confirmed live: a resize
+/// past the boot-time vcpu count fails with "Requested vCPUs exceed
+/// maximum" unless `max=` was set at spawn) — there's no way to raise the
+/// ceiling after boot, so it has to be requested every time regardless of
+/// whether a given sprite ever actually gets resized. Mirrors
+/// `spec::sprite::MAX_SPRITE_VCPUS`/`MAX_SPRITE_MEMORY_MB` (the same ceiling
+/// already enforced at the request-validation layer) rather than an
+/// arbitrary buffer — `core` has no dependency on `spec` (see
+/// `resolve_golden_image`'s doc comment), so this can't reference that
+/// constant directly and must be kept in sync by hand.
+const MAX_RESIZE_VCPUS: u32 = 8;
+const MAX_RESIZE_MEMORY_MB: u64 = 8192;
+
 pub struct ChvBootRequest<'a> {
     /// Namespaces this sprite's run directory — not embedded in any
     /// `cloud-hypervisor` argument.
@@ -154,9 +169,17 @@ pub async fn boot_sprite_chv(req: &ChvBootRequest<'_>) -> Result<ChvBootResult, 
     let mut command = TokioCommand::new(chv_binary);
     command
         .arg("--cpus")
-        .arg(format!("boot={}", req.vcpus))
+        .arg(format!(
+            "boot={},max={}",
+            req.vcpus,
+            MAX_RESIZE_VCPUS.max(req.vcpus)
+        ))
         .arg("--memory")
-        .arg(format!("size={}M", req.memory_mb))
+        .arg(format!(
+            "size={}M,hotplug_method=virtio-mem,hotplug_size={}M",
+            req.memory_mb,
+            MAX_RESIZE_MEMORY_MB.max(req.memory_mb)
+        ))
         .arg("--disk")
         // image_type=qcow2 explicit: without it cloud-hypervisor auto-detects
         // (deprecated — it warns "specify image type explicitly" every boot).
@@ -327,6 +350,223 @@ pub async fn teardown_sprite_chv(
     }
 
     Ok(())
+}
+
+/// One `ch-remote --api-socket <api_socket> <args...>` invocation. Factored
+/// out of `teardown_sprite_chv`'s inline call (which stays as-is — it
+/// deliberately swallows errors, unlike every caller here) so
+/// pause/resume/resize/snapshot/restore share one error-shaping path: `curl`
+/// (`api_put` in the Firecracker sibling module) isn't available for Cloud
+/// Hypervisor's own control protocol, so this is the direct equivalent.
+async fn ch_remote(api_socket: &Path, args: &[&str]) -> Result<String, LibvirtError> {
+    let ch_remote = find_ch_remote_binary()?;
+    let out = TokioCommand::new(ch_remote)
+        .arg("--api-socket")
+        .arg(api_socket)
+        .args(args)
+        .output()
+        .await
+        .map_err(|e| LibvirtError::Operation(format!("ch-remote {args:?}: {e}")))?;
+    if !out.status.success() {
+        return Err(LibvirtError::Operation(format!(
+            "ch-remote {args:?} failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+/// Pause a running Cloud Hypervisor sprite in place — process stays alive,
+/// holding its full vcpu/memory allocation.
+pub async fn pause_sprite_chv(api_socket: &Path) -> Result<(), LibvirtError> {
+    ch_remote(api_socket, &["pause"]).await.map(|_| ())
+}
+
+/// Resume a paused Cloud Hypervisor sprite.
+pub async fn resume_sprite_chv(api_socket: &Path) -> Result<(), LibvirtError> {
+    ch_remote(api_socket, &["resume"]).await.map(|_| ())
+}
+
+/// Live-resize vcpus and/or memory. At least one of `vcpus`/`memory_mb` must
+/// be `Some` — enforced by `spec::SpriteResizeRequest::validate` before this
+/// is ever called. Flag names/units (`--memory` takes a size string with a
+/// unit suffix, not raw bytes) confirmed against the installed
+/// `ch-remote --version` (v53.0) `resize --help` output.
+pub async fn resize_sprite_chv(
+    api_socket: &Path,
+    vcpus: Option<u32>,
+    memory_mb: Option<u64>,
+) -> Result<(), LibvirtError> {
+    let mut args: Vec<String> = vec!["resize".into()];
+    if let Some(v) = vcpus {
+        args.push("--cpus".into());
+        args.push(v.to_string());
+    }
+    if let Some(m) = memory_mb {
+        args.push("--memory".into());
+        args.push(format!("{m}M"));
+    }
+    let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+    ch_remote(api_socket, &arg_refs).await.map(|_| ())
+}
+
+pub struct ChvSnapshotResult {
+    pub snapshot_dir: PathBuf,
+}
+
+/// Snapshot a Cloud Hypervisor sprite's full VM state to
+/// `SPRITE_RUN_DIR/<sprite_id>/snapshot`. Caller must ensure the VM is
+/// already `Paused` — `ch-remote`'s `snapshot` command requires it, and
+/// `daemon::sprite_registry`'s state machine is the source of truth for
+/// whether a pause is still needed (see the suspend route handler), not a
+/// blind pause-then-snapshot here.
+pub async fn snapshot_sprite_chv(
+    sprite_id: &str,
+    api_socket: &Path,
+) -> Result<ChvSnapshotResult, LibvirtError> {
+    let snapshot_dir = PathBuf::from(SPRITE_RUN_DIR)
+        .join(sprite_id)
+        .join("snapshot");
+    // ch-remote writes into this directory itself; it must exist first
+    // (confirmed: `snapshot` doesn't create the destination's parent).
+    fs::create_dir_all(&snapshot_dir).map_err(|e| {
+        LibvirtError::Operation(format!("failed to create snapshot dir: {e}"))
+    })?;
+    let url = format!("file://{}", snapshot_dir.display());
+    ch_remote(api_socket, &["snapshot", &url]).await?;
+    Ok(ChvSnapshotResult { snapshot_dir })
+}
+
+/// Stop a Cloud Hypervisor sprite's process as part of suspending it to a
+/// snapshot — unlike `teardown_sprite_chv`, this deliberately does **not**
+/// delete `disk_path` or the run directory (the snapshot references the
+/// disk by path, and `restore_sprite_chv` needs the snapshot files still in
+/// place there); only the now-stale api/vsock sockets and TAP are cleaned
+/// up, matching what a fresh `restore_sprite_chv` call will recreate.
+pub async fn stop_sprite_chv_for_suspend(
+    pid: u32,
+    api_socket: &Path,
+    vsock_socket: &Path,
+    tap_name: Option<&str>,
+) -> Result<(), String> {
+    if let Ok(ch_remote_bin) = find_ch_remote_binary() {
+        let _ = TokioCommand::new(ch_remote_bin)
+            .arg("--api-socket")
+            .arg(api_socket)
+            .arg("shutdown-vmm")
+            .output()
+            .await;
+    }
+    tokio::time::sleep(SHUTDOWN_GRACE).await;
+    let _ = crate::libvirt::extras::kill_host_process(pid, "KILL");
+    if let Some(tap) = tap_name {
+        delete_egress_tap(tap);
+    }
+    let _ = fs::remove_file(api_socket);
+    let _ = fs::remove_file(vsock_socket);
+    Ok(())
+}
+
+pub struct ChvRestoreRequest<'a> {
+    pub sprite_id: &'a str,
+    pub snapshot_dir: &'a Path,
+    pub network_egress: bool,
+}
+
+pub struct ChvRestoreResult {
+    pub pid: u32,
+    pub api_socket: PathBuf,
+    pub vsock_socket: PathBuf,
+    pub tap_name: Option<String>,
+}
+
+/// Restore a suspended Cloud Hypervisor sprite from its snapshot directory:
+/// spawn a bare `cloud-hypervisor --api-socket <path>` (no `--cpus`/
+/// `--memory`/`--disk`/`--vsock` — all of that comes back from the snapshot
+/// itself), wait for its API socket, then `ch-remote restore
+/// source_url=file://<dir>,resume=true` (confirmed positional
+/// `key=value,...` syntax, not a `--source-url` flag, against the installed
+/// `ch-remote restore --help`).
+pub async fn restore_sprite_chv(
+    req: &ChvRestoreRequest<'_>,
+) -> Result<ChvRestoreResult, LibvirtError> {
+    let chv_binary = find_cloud_hypervisor_binary()?;
+    let run_dir = PathBuf::from(SPRITE_RUN_DIR).join(req.sprite_id);
+    let api_socket = run_dir.join("api.sock");
+    let vsock_socket = run_dir.join("vsock.sock");
+    let _ = fs::remove_file(&api_socket);
+
+    let tap_name = if req.network_egress {
+        let tap = tap_name_for("chv-", req.sprite_id);
+        create_egress_tap(&tap)?;
+        Some(tap)
+    } else {
+        None
+    };
+
+    let mut child = TokioCommand::new(chv_binary)
+        .arg("--api-socket")
+        .arg(format!("path={}", api_socket.display()))
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| {
+            if let Some(tap) = &tap_name {
+                delete_egress_tap(tap);
+            }
+            LibvirtError::Operation(format!("failed to spawn cloud-hypervisor for restore: {e}"))
+        })?;
+    let pid = child.id().ok_or_else(|| {
+        LibvirtError::Internal("cloud-hypervisor spawned without a pid".into())
+    })?;
+
+    let deadline = Instant::now() + BOOT_READY_TIMEOUT;
+    loop {
+        if api_socket.exists() {
+            break;
+        }
+        if let Ok(Some(status)) = child.try_wait() {
+            if let Some(tap) = &tap_name {
+                delete_egress_tap(tap);
+            }
+            return Err(LibvirtError::Operation(format!(
+                "cloud-hypervisor exited before its API socket appeared during restore (status: {status})"
+            )));
+        }
+        if Instant::now() >= deadline {
+            let _ = child.start_kill();
+            if let Some(tap) = &tap_name {
+                delete_egress_tap(tap);
+            }
+            return Err(LibvirtError::Operation(
+                "cloud-hypervisor did not become ready within timeout during restore".into(),
+            ));
+        }
+        tokio::time::sleep(BOOT_READY_POLL_INTERVAL).await;
+    }
+
+    let source_url = format!("file://{}", req.snapshot_dir.display());
+    if let Err(e) = ch_remote(
+        &api_socket,
+        &["restore", &format!("source_url={source_url},resume=true")],
+    )
+    .await
+    {
+        let _ = child.start_kill();
+        if let Some(tap) = &tap_name {
+            delete_egress_tap(tap);
+        }
+        return Err(e);
+    }
+
+    drop(child);
+    Ok(ChvRestoreResult {
+        pid,
+        api_socket,
+        vsock_socket,
+        tap_name,
+    })
 }
 
 #[cfg(test)]

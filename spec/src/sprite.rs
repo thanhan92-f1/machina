@@ -104,11 +104,83 @@ impl SpriteCreateRequest {
     }
 }
 
+/// Request body for `POST /v1/sprites/{id}/resize`. Cloud-Hypervisor-only —
+/// Firecracker has no live-resize API. At least one field must be set.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct SpriteResizeRequest {
+    #[serde(default)]
+    pub vcpus: Option<u32>,
+    #[serde(default)]
+    pub memory_mb: Option<u64>,
+}
+
+impl SpriteResizeRequest {
+    pub fn validate(&self) -> Result<(), SpecError> {
+        if self.vcpus.is_none() && self.memory_mb.is_none() {
+            return Err(SpecError::Validation(
+                "resize request must set vcpus and/or memory_mb".into(),
+            ));
+        }
+        if let Some(vcpus) = self.vcpus {
+            if vcpus == 0 {
+                return Err(SpecError::Validation("vcpus must be >= 1".into()));
+            }
+            if vcpus > MAX_SPRITE_VCPUS {
+                return Err(SpecError::Validation(format!(
+                    "vcpus must be <= {MAX_SPRITE_VCPUS} for a sprite"
+                )));
+            }
+        }
+        if let Some(memory_mb) = self.memory_mb {
+            if memory_mb == 0 {
+                return Err(SpecError::Validation("memory_mb must be >= 1".into()));
+            }
+            if memory_mb > MAX_SPRITE_MEMORY_MB {
+                return Err(SpecError::Validation(format!(
+                    "memory_mb must be <= {MAX_SPRITE_MEMORY_MB} for a sprite"
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Request body for `POST /v1/sprites/{id}/restore`. Empty body is valid —
+/// `ttl_seconds` defaults to the sprite's original create-time value.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct SpriteRestoreRequest {
+    #[serde(default)]
+    pub ttl_seconds: Option<u64>,
+}
+
+impl SpriteRestoreRequest {
+    pub fn validate(&self) -> Result<(), SpecError> {
+        if let Some(ttl_seconds) = self.ttl_seconds {
+            if ttl_seconds == 0 {
+                return Err(SpecError::Validation("ttl_seconds must be >= 1".into()));
+            }
+            if ttl_seconds > MAX_TTL_SECONDS {
+                return Err(SpecError::Validation(format!(
+                    "ttl_seconds must be <= {MAX_TTL_SECONDS} (1 hour) for a sprite"
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SpriteState {
     Booting,
     Running,
+    /// Process alive, not executing — still holds its full vcpu/memory
+    /// allocation, still counts against its original `ttl_seconds`.
+    Paused,
+    /// Snapshotted to disk, VMM process killed. `expires_at` at this point
+    /// is a disk-retention deadline (`SUSPENDED_GRACE`), not the original
+    /// TTL — see `daemon/src/sprite_registry.rs`.
+    Suspended,
     Reaping,
     Gone,
 }
@@ -121,6 +193,7 @@ pub struct SpriteHandle {
     /// RFC3339.
     pub created_at: String,
     /// RFC3339. `daemon`'s reaper tears the sprite down once this passes.
+    /// Meaning depends on `state` — see `SpriteState::Suspended`.
     pub expires_at: String,
     /// `None` until the domain is defined and a CID has been assigned.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -135,6 +208,16 @@ pub struct SpriteHandle {
     /// attached to the host's "default" NAT network.
     #[serde(default)]
     pub network_egress: bool,
+    /// Current vcpu count — echoes the create/resize request. Only
+    /// meaningful while `state` is `Booting`/`Running`/`Paused`.
+    #[serde(default = "default_vcpus")]
+    pub vcpus: u32,
+    /// Current memory size in MiB — echoes the create/resize request.
+    #[serde(default = "default_memory_mb")]
+    pub memory_mb: u64,
+    /// RFC3339. `Some` only while `state == Suspended`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub suspended_at: Option<String>,
 }
 
 /// Domain name a sprite's libvirt domain is created/looked-up under.
@@ -295,10 +378,83 @@ mod tests {
             vsock_cid: None,
             backend: SpriteBackend::Libvirt,
             network_egress: false,
+            vcpus: default_vcpus(),
+            memory_mb: default_memory_mb(),
+            suspended_at: None,
         };
         let json = serde_json::to_string(&handle).unwrap();
         assert!(!json.contains("vsock_cid"));
+        assert!(!json.contains("suspended_at"));
         let round_tripped: SpriteHandle = serde_json::from_str(&json).unwrap();
         assert_eq!(round_tripped, handle);
+    }
+
+    #[test]
+    fn resize_validate_rejects_empty_request() {
+        assert!(SpriteResizeRequest::default().validate().is_err());
+    }
+
+    #[test]
+    fn resize_validate_accepts_vcpus_only() {
+        let req = SpriteResizeRequest {
+            vcpus: Some(2),
+            memory_mb: None,
+        };
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn resize_validate_rejects_oversized_vcpus() {
+        let req = SpriteResizeRequest {
+            vcpus: Some(MAX_SPRITE_VCPUS + 1),
+            memory_mb: None,
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn resize_validate_rejects_oversized_memory() {
+        let req = SpriteResizeRequest {
+            vcpus: None,
+            memory_mb: Some(MAX_SPRITE_MEMORY_MB + 1),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn resize_validate_rejects_zero_values() {
+        assert!(SpriteResizeRequest {
+            vcpus: Some(0),
+            memory_mb: None
+        }
+        .validate()
+        .is_err());
+        assert!(SpriteResizeRequest {
+            vcpus: None,
+            memory_mb: Some(0)
+        }
+        .validate()
+        .is_err());
+    }
+
+    #[test]
+    fn restore_validate_accepts_empty_request() {
+        assert!(SpriteRestoreRequest::default().validate().is_ok());
+    }
+
+    #[test]
+    fn restore_validate_rejects_oversized_ttl() {
+        let req = SpriteRestoreRequest {
+            ttl_seconds: Some(MAX_TTL_SECONDS + 1),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn restore_validate_rejects_zero_ttl() {
+        let req = SpriteRestoreRequest {
+            ttl_seconds: Some(0),
+        };
+        assert!(req.validate().is_err());
     }
 }

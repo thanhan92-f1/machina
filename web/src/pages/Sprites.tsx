@@ -8,6 +8,10 @@ import {
   deleteSprite,
   listSpriteGoldenImages,
   listSprites,
+  pauseSprite,
+  resumeSprite,
+  snapshotSprite,
+  restoreSprite,
   type SpriteBackend,
   type SpriteHandle,
 } from '../api/sprites'
@@ -15,7 +19,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
-import { Globe, Plus, RefreshCw, Trash2, X, Zap } from 'lucide-react'
+import { Globe, Pause, Play, Camera, RotateCcw, Plus, RefreshCw, Trash2, X, Zap } from 'lucide-react'
 import { formatUserError } from '../utils/apiError'
 import { statusBadgeClasses } from '../utils/semanticColors'
 
@@ -39,6 +43,8 @@ function stateTone(state: string): Tone {
   switch (state) {
     case 'running': return 'ok'
     case 'booting': return 'info'
+    case 'paused': return 'warn'
+    case 'suspended': return 'neutral'
     case 'reaping': return 'warn'
     default: return 'neutral'
   }
@@ -118,6 +124,46 @@ export default function SpritesPage() {
     }
   }
 
+  const handlePause = async (s: SpriteHandle) => {
+    try {
+      await pauseSprite(s.sprite_id)
+      toast.success(`Paused '${s.sprite_id}'`)
+      load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
+  const handleResume = async (s: SpriteHandle) => {
+    try {
+      await resumeSprite(s.sprite_id)
+      toast.success(`Resumed '${s.sprite_id}'`)
+      load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
+  const handleSnapshot = async (s: SpriteHandle) => {
+    try {
+      await snapshotSprite(s.sprite_id)
+      toast.success(`Suspended '${s.sprite_id}' to a snapshot`)
+      load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
+  const handleRestore = async (s: SpriteHandle) => {
+    try {
+      await restoreSprite(s.sprite_id)
+      toast.success(`Restored '${s.sprite_id}'`)
+      load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
   return (
     <PageLayout
       eyebrow="Hypervisor"
@@ -188,6 +234,56 @@ export default function SpritesPage() {
                   <td className="px-6 py-3 text-sm text-[var(--text-muted)]">{timeUntil(s.expires_at)}</td>
                   <td className="px-6 py-3">
                     <div className="flex items-center justify-end gap-1">
+                      {s.backend !== 'libvirt' && s.state === 'running' && (
+                        <button
+                          onClick={() => handlePause(s)}
+                          className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
+                          title="Pause"
+                          aria-label="Pause"
+                        >
+                          <Pause className="w-4 h-4 text-[var(--text-secondary)]" />
+                        </button>
+                      )}
+                      {s.backend !== 'libvirt' && s.state === 'paused' && (
+                        <>
+                          <button
+                            onClick={() => handleResume(s)}
+                            className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
+                            title="Resume"
+                            aria-label="Resume"
+                          >
+                            <Play className="w-4 h-4 text-[var(--text-secondary)]" />
+                          </button>
+                          <button
+                            onClick={() => handleSnapshot(s)}
+                            className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
+                            title="Suspend to snapshot"
+                            aria-label="Suspend to snapshot"
+                          >
+                            <Camera className="w-4 h-4 text-[var(--text-secondary)]" />
+                          </button>
+                        </>
+                      )}
+                      {s.backend !== 'libvirt' && s.state === 'running' && (
+                        <button
+                          onClick={() => handleSnapshot(s)}
+                          className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
+                          title="Suspend to snapshot"
+                          aria-label="Suspend to snapshot"
+                        >
+                          <Camera className="w-4 h-4 text-[var(--text-secondary)]" />
+                        </button>
+                      )}
+                      {s.backend !== 'libvirt' && s.state === 'suspended' && (
+                        <button
+                          onClick={() => handleRestore(s)}
+                          className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition"
+                          title="Restore from snapshot"
+                          aria-label="Restore from snapshot"
+                        >
+                          <RotateCcw className="w-4 h-4 text-[var(--text-secondary)]" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setDeleteTarget(s)}
                         className="p-1.5 hover:bg-red-600/20 rounded transition"
