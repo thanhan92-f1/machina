@@ -966,13 +966,13 @@ html[data-ui-shell='default'],
 }
 
 
-/* ── Tahoe Light — iPhone 17 Magichromatic (Daylight Law 0: white cards)
-   Mist Blue primary, Sage live, Lavender alt, Cosmic Orange warm, Deep Blue info.
-   Washes are intentionally strong so the shell reads colorful, not flat grey. */
+/* ── Tahoe Light — apple.com Support "paper" (Daylight Law 0: white cards)
+   Flat white ground, #0071e3 CTA blue. No saturated color washes — matches
+   support.apple.com's own product pages. */
 #root[data-ui-shell='tahoe-light'],
 html[data-ui-shell='tahoe-light'] {
   color-scheme: light;
-  --background: 210 42% 95%;        /* Mist-tinted paper (visible cool tint) */
+  --background: 0 0% 100%;          /* Flat white paper */
   --foreground: 240 2% 11%;         /* Apple shop .form-selector #1d1d1f */
   --card: 0 0% 100%;
   --card-foreground: 240 2% 11%;
@@ -980,12 +980,12 @@ html[data-ui-shell='tahoe-light'] {
   --popover-foreground: 240 2% 11%;
   --primary: 211 100% 45%;          /* apple.com #0071e3 */
   --primary-foreground: 0 0% 100%;
-  --secondary: 270 35% 95%;         /* Lavender-tinted panel */
+  --secondary: 210 20% 97%;         /* Neutral near-white panel */
   --secondary-foreground: 240 2% 11%;
-  --muted: 145 22% 93%;             /* Sage-tinted fill */
+  --muted: 210 10% 95%;             /* Neutral light gray fill */
   --muted-foreground: 240 2% 44%;   /* Apple shop #6e6e73 */
-  --accent: 270 40% 92%;            /* Lavender wells */
-  --accent-foreground: 270 40% 28%;
+  --accent: 211 100% 45%;           /* apple.com #0071e3 */
+  --accent-foreground: 0 0% 100%;
   --destructive: 4 76% 40%;
   --destructive-foreground: 0 0% 100%;
   --success: 145 42% 36%;           /* Sage */
@@ -1118,8 +1118,8 @@ html[data-theme='tahoe-light'] .command-deck-capsule-live {
 }
 
 html[data-theme='tahoe-light'] .tahoe-sidebar-link-active {
-  background: color-mix(in srgb, #0071e3 10%, transparent);
-  color: hsl(200 78% 30%);
+  background: color-mix(in srgb, #0071e3 10%, transparent) !important;
+  color: hsl(200 78% 30%) !important;
   box-shadow: inset 3px 0 0 0 hsl(200 78% 40%), 0 4px 16px -10px hsl(200 78% 40% / 0.4);
 }
 
@@ -1204,7 +1204,7 @@ html[data-ui-shell='default'] .mac-menubar-inner {
   /* mirror .mac-menubar */
 }
 html[data-theme='tahoe-light'] .mac-menubar-inner {
-  background: rgba(250, 250, 252, 0.8);
+  background: rgba(250, 250, 252, 0.8) !important;
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border-bottom: 1px solid hsl(205 22% 84% / 0.65);

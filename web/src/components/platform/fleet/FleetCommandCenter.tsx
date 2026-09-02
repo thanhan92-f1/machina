@@ -77,7 +77,6 @@ export default function FleetCommandCenter({
 
   const metrics: MetricItem[] = [
     { label: 'Health', value: healthLoading ? '…' : (healthScore != null ? `${healthScore}/100` : '—') },
-    { label: 'State', value: <VmStatusBadge state={vmState} /> },
     { label: 'vCPU', value: `${selectedVm.vcpus} cores` },
     { label: 'Memory', value: formatVmMemoryGiB(selectedVm.memory_mib) },
     { label: 'Source', value: <span className="capitalize">{selectedVm.inventory_source ?? 'libvirt'}</span>, span: true },

@@ -245,11 +245,7 @@ html.apple-light .platform-sidebar,
 html.light-theme .platform-sidebar,
 html.apple-light .tahoe-sidebar-expanded,
 html.light-theme .tahoe-sidebar-expanded {
-  background:
-    linear-gradient(165deg,
-      hsl(200 70% 92% / 0.92) 0%,
-      hsl(270 45% 94% / 0.9) 45%,
-      hsl(145 30% 94% / 0.92) 100%) !important;
+  background: #ffffff !important;
   border-right: 1px solid hsl(200 40% 78%) !important;
   border-color: hsl(200 40% 78%) !important;
   color: var(--text-primary);
@@ -262,7 +258,7 @@ html.apple-light .tahoe-sidebar-link-active,
 html.light-theme .tahoe-sidebar-link-active,
 html.apple-light .platform-rail-active,
 html.light-theme .platform-rail-active {
-  background: linear-gradient(90deg, hsl(200 78% 40% / 0.18), hsl(270 48% 52% / 0.1)) !important;
+  background: color-mix(in srgb, #0071e3 10%, transparent) !important;
   color: hsl(200 78% 32%) !important;
   box-shadow: inset 3px 0 0 hsl(200 78% 40%);
 }
@@ -282,8 +278,7 @@ html.light-theme .tahoe-sidebar-link:hover {
 html.apple-light .tahoe-context-bar,
 html.light-theme .tahoe-context-bar,
 html[data-theme='tahoe-light'] .tahoe-context-bar {
-  background:
-    linear-gradient(90deg, hsl(200 70% 96% / 0.85), hsl(270 40% 97% / 0.8), hsl(145 28% 96% / 0.85)) !important;
+  background: rgba(250, 250, 252, 0.85) !important;
   border-bottom-color: hsl(200 40% 78% / 0.7) !important;
   color: var(--text-primary);
 }
@@ -484,8 +479,7 @@ html.light-theme .table-row-hover:hover {
 /* Shell bridge / secondary chrome bars */
 html.apple-light .shell-bridge-bar,
 html.light-theme .shell-bridge-bar {
-  background:
-    linear-gradient(90deg, hsl(200 70% 96% / 0.85), hsl(270 40% 97% / 0.8), hsl(145 28% 96% / 0.85)) !important;
+  background: rgba(250, 250, 252, 0.85) !important;
   border-color: hsl(200 40% 78% / 0.7) !important;
   color: var(--text-primary);
 }

@@ -1101,10 +1101,8 @@ export default function PlatformVmDetail() {
 
           {vm.inventory_source !== 'kubevirt' && (
             <VmDetailHero
-              vmName={vm.name}
               observedState={vm.observed_state}
               guestIp={guestIp}
-              hostLabel={hostLabel}
               healthScore={health?.score != null ? Number.parseInt(String(health.score), 10) : null}
               doctorScore={doctor?.score_numeric ?? null}
               sshExposed={Boolean(sshNatHostPort(portForwardRules))}
