@@ -175,7 +175,7 @@ pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<Detach
 }
 
 /// Does `<target dev='{target}' .../>` (either quote style) appear anywhere in `xml`?
-fn target_dev_present(xml: &str, target: &str) -> bool {
+pub(crate) fn target_dev_present(xml: &str, target: &str) -> bool {
     xml.contains(&format!("target dev='{target}'")) || xml.contains(&format!("target dev=\"{target}\""))
 }
 

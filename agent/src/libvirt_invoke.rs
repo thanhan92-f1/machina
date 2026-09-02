@@ -295,8 +295,8 @@ pub fn vm_invoke(
                 .get("target")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| LibvirtError::Invalid("cdrom.detach requires target".into()))?;
-            machina_core::libvirt::cdrom::detach_cdrom(conn, vm_name, target)?;
-            Ok(serde_json::json!({ "status": "ok" }))
+            let outcome = machina_core::libvirt::cdrom::detach_cdrom(conn, vm_name, target)?;
+            Ok(serde_json::json!({ "status": "ok", "live_removed": outcome.live_removed }))
         }
         "boot.set" => {
             let devices: Vec<String> = payload

@@ -29,6 +29,7 @@ API="${BASE}/api/v1"
 JAR="$(mktemp)"; TMP="$(mktemp -d)"
 VM="vm-lifecycle-test-$$"
 EXTRA_DISK="/var/lib/libvirt/images/${VM}-extra.qcow2"
+EXTRA_ISO="/var/lib/libvirt/images/${VM}-media.iso"
 PASSN=0; FAILN=0
 vdb_live_removed=1  # assume clean unless the disk-detach step says otherwise
 
@@ -45,7 +46,7 @@ state_of() { c "$API/vms/${VM}" | python3 -c 'import json,sys;print(json.load(sy
 cleanup() {
   code -X DELETE "$API/vms/${VM}?delete_disks=true" >/dev/null 2>&1 || true
   ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 \
-    "${ACCOUNT}@${HOST}" "sudo rm -f '${EXTRA_DISK}'" >/dev/null 2>&1 || true
+    "${ACCOUNT}@${HOST}" "sudo rm -f '${EXTRA_DISK}' '${EXTRA_ISO}'" >/dev/null 2>&1 || true
   rm -rf "$TMP" "$JAR"
 }
 trap cleanup EXIT
@@ -64,6 +65,12 @@ if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 "${ACCO
   ok "created ${EXTRA_DISK} (1G)"
 else
   bad "stage extra disk" "qemu-img create failed over SSH — attach/resize/detach steps will be skipped"
+fi
+if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 "${ACCOUNT}@${HOST}" \
+  "sudo dd if=/dev/zero of='${EXTRA_ISO}' bs=1M count=4 status=none" >/dev/null 2>&1; then
+  ok "staged ${EXTRA_ISO} (4M, for cdrom insert/detach)"
+else
+  bad "stage extra ISO" "dd failed over SSH — cdrom steps will be skipped"
 fi
 
 section "create VM ($VM)"
@@ -170,6 +177,27 @@ if [ "$r" = 200 ]; then
   fi
 else
   bad "attach NIC" "HTTP $r: $(head -c 200 "$TMP/body")"
+fi
+
+section "hardware: CD-ROM insert / detach"
+r=$(code -X POST "$API/vms/${VM}/cdrom/insert" -H 'Content-Type: application/json' \
+  -d "{\"iso_path\":\"${EXTRA_ISO}\",\"target\":\"\"}")
+if [ "$r" = 200 ]; then
+  ok "insert cdrom -> target=$(jget target)"
+  cd_target=$(jget target)
+  r=$(code -X POST "$API/vms/${VM}/cdrom/detach/${cd_target}")
+  if [ "$r" = 200 ]; then
+    ok "detach cdrom $cd_target"
+    if [ "$(jget live_removed)" = True ]; then
+      note "confirmed gone from the live domain (SATA CD-ROM detach converges immediately, unlike virtio disk/NIC)"
+    else
+      note "live_removed=false — either the live detach was never attempted (config-only fallback) or it hasn't converged yet"
+    fi
+  else
+    bad "detach cdrom" "HTTP $r: $(head -c 200 "$TMP/body")"
+  fi
+else
+  bad "insert cdrom" "HTTP $r: $(head -c 200 "$TMP/body")"
 fi
 
 section "hardware: vCPU / memory resize (live)"

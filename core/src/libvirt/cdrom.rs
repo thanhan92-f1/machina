@@ -4,7 +4,8 @@
 
 use virt::connect::Connect;
 
-use super::domain::lookup_domain;
+use super::device::{target_dev_present, DetachOutcome, DETACH_LIVE_WAIT};
+use super::domain::{lookup_domain, wait_until_absent_from_live};
 use crate::LibvirtError;
 
 #[allow(clippy::too_many_lines)]
@@ -207,7 +208,7 @@ pub fn eject_cdrom(conn: &Connect, name: &str, target: &str) -> Result<(), Libvi
 /// `eject_cdrom` only blanks the media and leaves the device behind, so a
 /// mistakenly-added drive could previously only be removed with `virsh
 /// detach-disk` on the hypervisor.
-pub fn detach_cdrom(conn: &Connect, name: &str, target: &str) -> Result<(), LibvirtError> {
+pub fn detach_cdrom(conn: &Connect, name: &str, target: &str) -> Result<DetachOutcome, LibvirtError> {
     let domain = lookup_domain(conn, name)?;
     let vm_xml = super::domain::domain_xml_live_and_config(&domain);
     let (has_cdrom, existing_bus) = find_cdrom_device(&vm_xml, target);
@@ -228,14 +229,30 @@ pub fn detach_cdrom(conn: &Connect, name: &str, target: &str) -> Result<(), Libv
     // Live+config where possible; SATA cannot hot-detach, so fall back to config
     // so the drive is gone on next boot rather than failing outright.
     let both = virt::sys::VIR_DOMAIN_AFFECT_LIVE | virt::sys::VIR_DOMAIN_AFFECT_CONFIG;
-    if domain.detach_device_flags(&xml, both).is_err() {
+    let live_attempted = domain.detach_device_flags(&xml, both).is_ok();
+    if !live_attempted {
         domain
             .detach_device_flags(&xml, virt::sys::VIR_DOMAIN_AFFECT_CONFIG)
             .map_err(|e| {
                 LibvirtError::Operation(format!("Failed to detach CD-ROM at {target}: {e}"))
             })?;
     }
-    Ok(())
+
+    // As with detach_disk: libvirt's synchronous return only means the unplug
+    // request was queued. A drive that fell back to CONFIG-only never had a
+    // live change attempted; one that took the combined LIVE|CONFIG path still
+    // needs the guest to actually release it before it's really gone. Confirm
+    // within a bounded window instead of blindly reporting success.
+    let live_removed = if !live_attempted {
+        false
+    } else if domain.is_active().unwrap_or(false) {
+        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| {
+            !target_dev_present(live_xml, target)
+        })
+    } else {
+        true
+    };
+    Ok(DetachOutcome { live_removed })
 }
 
 /// Names of VMs that currently have `iso_path` mounted as CD-ROM media,

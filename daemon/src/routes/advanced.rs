@@ -199,13 +199,16 @@ async fn detach_cdrom_handler(
     let _vm_guard = manager.lock_vm(&name).await;
     let name2 = name.clone();
     let target2 = target.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+    let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         cdrom::detach_cdrom(conn, &name2, &target2)
     })
     .await?;
-    Ok(Json(
-        serde_json::json!({ "status": "detached", "name": name, "target": target }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "detached",
+        "name": name,
+        "target": target,
+        "live_removed": outcome.live_removed,
+    })))
 }
 
 async fn eject_cdrom_handler(
