@@ -743,7 +743,7 @@ export default function Navbar({ onOpenHelp }: { onOpenHelp?: (tab?: HelpTab) =>
             <Link
               to="/create"
               onClick={() => setMobileOpen(false)}
-              className="inline-flex items-center justify-center gap-2 btn-primary sm:hidden"
+              className="inline-flex items-center justify-center gap-2 btn-primary text-sm sm:hidden"
             >
               <Plus className="w-4 h-4" />
               Create VM

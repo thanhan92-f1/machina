@@ -274,7 +274,7 @@ export default function PlatformGpuCommandCenter() {
                 <button type="button" className="btn-secondary text-sm" disabled={placementBusy} onClick={() => void loadPlacement()}>
                   {placementBusy ? 'Ranking…' : 'Refresh ranking'}
                 </button>
-                <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh inventory">
+                <button type="button" className="btn-secondary text-xs" onClick={() => void load()} aria-label="Refresh inventory">
                   <RefreshCw className="w-4 h-4" />
                 </button>
               </div>

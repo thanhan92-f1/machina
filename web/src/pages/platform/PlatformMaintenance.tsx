@@ -509,7 +509,7 @@ export default function PlatformMaintenance() {
             <input id="maintenance-schedule-time" name="scheduled_at" className="input md:col-span-2" type="datetime-local" aria-label="Scheduled date/time" value={runAt} onChange={(e) => setRunAt(e.target.value)} />
             <button
               type="button"
-              className="btn-primary w-fit flex items-center gap-2"
+              className="btn-primary text-sm w-fit flex items-center gap-2"
               disabled={!hostId || !runAt}
               data-testid="schedule-maintenance-btn"
               onClick={async () => {

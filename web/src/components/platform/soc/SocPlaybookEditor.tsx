@@ -217,7 +217,7 @@ export default function SocPlaybookEditor({
                     </select>
                     <button
                       type="button"
-                      className="btn-secondary p-1"
+                      className="btn-secondary text-xs p-1"
                       aria-label="Remove step"
                       onClick={() => setSteps((prev) => prev.filter((_, j) => j !== i))}
                     >

@@ -52,7 +52,7 @@ export default function PlatformEnroll() {
     >
       <OperatingSurfaceLayout testId="platform-enroll-page">
         <MacGlassPanel title="Join token" subtitle="Generate a one-time token and install command for new hypervisors.">
-          <button type="button" className="btn-primary" disabled={busy} onClick={() => void generate()}>
+          <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void generate()}>
             {busy ? 'Generating…' : 'Generate join token'}
           </button>
         </MacGlassPanel>

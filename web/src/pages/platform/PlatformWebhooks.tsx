@@ -117,7 +117,7 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
             <button
               type="submit"
               disabled={adding || !url.trim()}
-              className="btn-primary flex items-center gap-2 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-primary text-sm flex items-center gap-2 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" /> {adding ? 'Adding…' : 'Add endpoint'}
             </button>

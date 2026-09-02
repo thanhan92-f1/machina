@@ -337,7 +337,7 @@ export default function ZyraAssistant() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') void send() }}
           />
-          <button type="button" className="btn-primary px-3" disabled={busy} onClick={() => void send()}>
+          <button type="button" className="btn-primary text-sm px-3" disabled={busy} onClick={() => void send()}>
             <Send className="w-4 h-4" />
           </button>
         </footer>

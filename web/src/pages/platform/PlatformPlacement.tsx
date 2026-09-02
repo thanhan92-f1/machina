@@ -143,7 +143,7 @@ export default function PlatformPlacement() {
       {settings && (
         <MacGlassPanel title="DRS auto-migrate" subtitle={`When enabled, the controller queues live migrations for overloaded hosts (CPU/memory > ${settings.drs_cpu_threshold}%).`}>
         <section className="flex flex-wrap items-center justify-between gap-4">
-          <button type="button" className={settings.drs_auto_migrate ? 'btn-primary' : 'btn-secondary'} onClick={() => void toggleAutoMigrate()}>
+          <button type="button" className={`text-sm ${settings.drs_auto_migrate ? 'btn-primary' : 'btn-secondary'}`} onClick={() => void toggleAutoMigrate()}>
             {settings.drs_auto_migrate ? 'Enabled' : 'Disabled'}
           </button>
           <label className="text-sm w-full mt-3 block">

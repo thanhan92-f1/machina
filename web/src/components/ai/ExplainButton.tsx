@@ -52,7 +52,7 @@ export default function ExplainButton({
           <div ref={panelRef} className="max-w-lg w-full rounded-2xl bg-[var(--apple-surface)] border border-white/10 p-5" role="dialog" aria-modal="true" aria-label="Zyra Explain" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4 text-orange-400" /> Zyra Explain</h3>
             <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{busy ? 'Analyzing…' : text}</p>
-            <button type="button" className="btn-secondary mt-4 w-full" onClick={() => setOpen(false)}>Close</button>
+            <button type="button" className="btn-secondary text-sm mt-4 w-full" onClick={() => setOpen(false)}>Close</button>
           </div>
         </div>
       )}

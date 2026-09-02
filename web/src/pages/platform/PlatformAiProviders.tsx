@@ -159,7 +159,7 @@ export default function PlatformAiProviders({ embedded }: { embedded?: boolean }
         </div>
         <button
           type="button"
-          className="btn-primary mt-3"
+          className="btn-primary text-sm mt-3"
           disabled={!name.trim() || !modelId.trim()}
           onClick={async () => {
             try {

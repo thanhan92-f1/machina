@@ -62,10 +62,10 @@ export default function PlatformTaskDrawer({ open, onClose }: PlatformTaskDrawer
             <ListTodo className="w-5 h-5" /> Active tasks
           </h2>
           <div className="flex gap-2">
-            <button type="button" className="btn-secondary p-2" onClick={() => void load()} disabled={loading}>
+            <button type="button" className="btn-secondary text-xs p-2" onClick={() => void load()} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button type="button" className="btn-secondary p-2" onClick={onClose} aria-label="Close">
+            <button type="button" className="btn-secondary text-xs p-2" onClick={onClose} aria-label="Close">
               <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>

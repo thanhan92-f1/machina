@@ -126,7 +126,7 @@ export default function MissionControlOverlay() {
               Infrastructure Earth · {fleetTitle} · {hosts.length} hosts · {vms.length} VMs
             </p>
           </div>
-          <button type="button" className="btn-secondary flex items-center gap-2" onClick={closeMissionControl}>
+          <button type="button" className="btn-secondary text-sm flex items-center gap-2" onClick={closeMissionControl}>
             <X className="w-4 h-4" /> Close
           </button>
         </header>

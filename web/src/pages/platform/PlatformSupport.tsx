@@ -60,7 +60,7 @@ export default function PlatformSupport({ embedded }: { embedded?: boolean } = {
           <p className="font-medium">Export support bundle</p>
           <p className="text-xs text-[var(--text-muted)] mt-1">Cluster summary, versions, and recent events for Zyvor support.</p>
         </div>
-        <button type="button" className="btn-primary flex items-center gap-2" disabled={loading} onClick={() => void downloadBundle()}>
+        <button type="button" className="btn-primary text-sm flex items-center gap-2" disabled={loading} onClick={() => void downloadBundle()}>
           {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           Download bundle
         </button>

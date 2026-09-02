@@ -59,7 +59,7 @@ export default function MachineFinderCommandBar({ state }: Props) {
         </button>
         <Link to="/platform/vm-builder" className="btn-secondary text-sm hidden lg:inline-flex">AI Builder</Link>
         <button type="button" className="btn-secondary text-sm hidden sm:inline-flex" onClick={() => setWindowsOpen(true)}>Windows</button>
-        <button type="button" className="btn-secondary p-2.5" onClick={() => void load()} aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
+        <button type="button" className="btn-secondary text-xs p-2.5" onClick={() => void load()} aria-label="Refresh"><RefreshCw className="w-4 h-4" /></button>
         <button
           type="button"
           className="btn-primary text-sm inline-flex items-center gap-1"

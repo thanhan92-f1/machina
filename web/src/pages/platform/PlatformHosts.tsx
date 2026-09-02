@@ -98,7 +98,7 @@ export default function PlatformHosts() {
       <button type="button" className="btn-secondary text-sm" onClick={async () => {
         try { await syncAllHosts(); toast.success('Sync all queued') } catch (e: unknown) { toast.error(formatUserError(e)) }
       }}>Sync all</button>
-      <button type="button" aria-label="Refresh" onClick={() => void load()} className="btn-secondary"><RefreshCw className="w-4 h-4" /></button>
+      <button type="button" aria-label="Refresh" onClick={() => void load()} className="btn-secondary text-xs"><RefreshCw className="w-4 h-4" /></button>
     </>
   )
 
@@ -241,7 +241,7 @@ export default function PlatformHosts() {
           <button type="button" className="btn-secondary text-sm" onClick={async () => {
             try { await syncAllHosts(); toast.success('Sync all queued') } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Sync all</button>
-          <button type="button" aria-label="Refresh" onClick={() => void load()} className="btn-secondary"><RefreshCw className="w-4 h-4" /></button>
+          <button type="button" aria-label="Refresh" onClick={() => void load()} className="btn-secondary text-xs"><RefreshCw className="w-4 h-4" /></button>
           {!filterOffline && (
             <button type="button" className="btn-primary text-sm inline-flex items-center gap-1" onClick={() => setEnrollWizardOpen(true)}>
               <Plus className="w-4 h-4" /> Add host

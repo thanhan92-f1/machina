@@ -98,7 +98,7 @@ export default function PlatformFirewallCompliance() {
       subtitle="Production exposure, approvals, Packetwolf anomalies, and GitOps policy sync"
       icon={<CheckCircle2 className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
-        <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh">
+        <button type="button" className="btn-secondary text-xs" onClick={() => void load()} aria-label="Refresh">
           <RefreshCw className="w-4 h-4" />
         </button>
       }

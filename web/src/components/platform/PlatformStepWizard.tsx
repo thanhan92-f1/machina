@@ -86,14 +86,14 @@ export default function PlatformStepWizard({
         <div className="flex-1 min-h-0 overflow-y-auto p-6">{children}</div>
 
         <div className="shrink-0 px-6 py-4 border-t border-[var(--apple-hairline)] flex items-center justify-between gap-2 bg-[var(--apple-surface-elevated)]">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={busy}>
+          <button type="button" className="btn-secondary text-sm" onClick={onClose} disabled={busy}>
             Cancel
           </button>
           <div className="flex gap-2">
             {step > 0 && (
               <button
                 type="button"
-                className="btn-secondary inline-flex items-center gap-1"
+                className="btn-secondary text-sm inline-flex items-center gap-1"
                 onClick={() => onStepChange(step - 1)}
                 disabled={busy}
               >
@@ -102,7 +102,7 @@ export default function PlatformStepWizard({
             )}
             <button
               type="button"
-              className="btn-primary inline-flex items-center gap-1 min-w-[7rem] justify-center"
+              className="btn-primary text-sm inline-flex items-center gap-1 min-w-[7rem] justify-center"
               disabled={busy || !canNext}
               onClick={() => void (isLast ? onFinish() : onNext ? onNext() : onStepChange(step + 1))}
             >

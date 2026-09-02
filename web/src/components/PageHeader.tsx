@@ -41,7 +41,7 @@ export default function PageHeader({
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="btn-secondary p-2.5 rounded-full disabled:opacity-50"
+            className="btn-secondary text-xs p-2.5 rounded-full disabled:opacity-50"
             aria-label="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />

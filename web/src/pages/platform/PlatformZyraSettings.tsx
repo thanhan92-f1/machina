@@ -184,7 +184,7 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
         <div className="grid gap-2 mb-3">
           <input className="input" aria-label="Prompt title" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
           <textarea className="input min-h-24" aria-label="Prompt body" placeholder="Prompt body" value={body} onChange={(e) => setBody(e.target.value)} />
-          <button type="button" className="btn-primary w-fit" onClick={async () => {
+          <button type="button" className="btn-primary text-sm w-fit" onClick={async () => {
             try {
               await createAiPrompt({ scope: 'personal', title, body, tags: ['infrastructure'] })
               setTitle('')

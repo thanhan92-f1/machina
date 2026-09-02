@@ -156,10 +156,10 @@ export default function ApplicationLaunchpad() {
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex gap-2 text-xs ml-auto">
-          <Link to="/platform/blueprints" className="btn-secondary flex items-center gap-1.5">
+          <Link to="/platform/blueprints" className="btn-secondary text-xs flex items-center gap-1.5">
             <Workflow className="w-3.5 h-3.5" /> Blueprints
           </Link>
-          <Link to="/platform/topology" className="btn-secondary flex items-center gap-1.5">
+          <Link to="/platform/topology" className="btn-secondary text-xs flex items-center gap-1.5">
             <Boxes className="w-3.5 h-3.5" /> Topology
           </Link>
         </div>

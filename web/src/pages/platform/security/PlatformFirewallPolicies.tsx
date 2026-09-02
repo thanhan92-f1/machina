@@ -117,7 +117,7 @@ export default function PlatformFirewallPolicies() {
       actions={
         <div className="flex gap-2">
           <button type="button" className="btn-primary text-sm" onClick={() => void create()}>Create</button>
-          <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh">
+          <button type="button" className="btn-secondary text-xs" onClick={() => void load()} aria-label="Refresh">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>

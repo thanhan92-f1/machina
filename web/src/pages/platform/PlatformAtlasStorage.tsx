@@ -146,12 +146,12 @@ export default function PlatformAtlasStorage() {
       icon={<Database className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
-          <button type="button" className="btn-secondary" onClick={() => void load()} aria-label="Refresh">
+          <button type="button" className="btn-secondary text-xs" onClick={() => void load()} aria-label="Refresh">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             type="button"
-            className="btn-primary inline-flex items-center gap-1.5"
+            className="btn-primary text-sm inline-flex items-center gap-1.5"
             onClick={onCreateVolume}
             disabled={!!disabled || !!unreachable || busy === 'create'}
           >

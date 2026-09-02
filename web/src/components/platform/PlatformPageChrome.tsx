@@ -31,7 +31,7 @@ export function PlatformBackLink({ to, label }: { to: string; label: string }) {
 
 export function PlatformRefreshButton({ onClick, label = 'Refresh' }: { onClick: () => void; label?: string }) {
   return (
-    <button type="button" className="btn-secondary" onClick={onClick} aria-label={label}>
+    <button type="button" className="btn-secondary text-xs" onClick={onClick} aria-label={label}>
       <RefreshCw className="w-4 h-4" />
     </button>
   )

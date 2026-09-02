@@ -61,7 +61,7 @@ export default function MachineFinderCanvas({ state }: Props) {
 
       {!error && filteredVms.length === 0 && (
         <PlatformEmptyState title="No machines" subtitle="Try another smart folder or create a VM.">
-          <button type="button" className="btn-primary mt-3" onClick={() => state.setWizardOpen(true)}>New VM</button>
+          <button type="button" className="btn-primary text-sm mt-3" onClick={() => state.setWizardOpen(true)}>New VM</button>
         </PlatformEmptyState>
       )}
 

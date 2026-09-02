@@ -105,7 +105,7 @@ export default function PlatformDockEditor({ open, onClose }: PlatformDockEditor
               <option key={item.path} value={item.path}>{item.label}</option>
             ))}
           </select>
-          <button type="button" className="btn-secondary" onClick={add} disabled={!addPath}>
+          <button type="button" className="btn-secondary text-sm" onClick={add} disabled={!addPath}>
             <Plus className="h-4 w-4" />
           </button>
         </div>

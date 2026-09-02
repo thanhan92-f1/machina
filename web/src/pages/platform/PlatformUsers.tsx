@@ -150,7 +150,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
         <>
           <button
             type="button"
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary text-sm flex items-center gap-2"
             onClick={scrollToAddUser}
           >
             <Plus className="w-4 h-4" /> Add user
@@ -204,7 +204,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
                 </label>
                 <button
                   type="submit"
-                  className="btn-primary w-fit flex items-center gap-2"
+                  className="btn-primary text-sm w-fit flex items-center gap-2"
                   disabled={addBusy}
                 >
                   <Plus className="w-4 h-4" /> {addBusy ? 'Adding…' : 'Add user'}

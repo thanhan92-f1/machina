@@ -70,8 +70,8 @@ export default function MigratePrecheckModal({ vm, destHostId, destHostName, onC
           )}
         </div>
         <div className="p-5 border-t border-[var(--apple-hairline)] flex justify-end gap-2">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn-primary" disabled={busy || !precheck} onClick={() => void migrate()}>
+          <button type="button" className="btn-secondary text-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-primary text-sm" disabled={busy || !precheck} onClick={() => void migrate()}>
             {busy ? 'Starting…' : 'Start migration'}
           </button>
         </div>

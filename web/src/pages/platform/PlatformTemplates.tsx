@@ -558,7 +558,7 @@ export default function PlatformTemplates() {
             <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
             Featured
           </label>
-          <button type="button" className="btn-primary md:col-span-2" onClick={() => void add()}>Publish to marketplace</button>
+          <button type="button" className="btn-primary text-sm md:col-span-2" onClick={() => void add()}>Publish to marketplace</button>
         </div>
       </MacSheet>
         </>
@@ -644,7 +644,7 @@ export default function PlatformTemplates() {
           <input aria-label="Plugin description" className="input text-sm md:col-span-2" placeholder="Description" value={pluginDesc} onChange={(e) => setPluginDesc(e.target.value)} />
           <input aria-label="Plugin version" className="input text-sm" placeholder="Version" value={pluginVersion} onChange={(e) => setPluginVersion(e.target.value)} />
           <input aria-label="Plugin author" className="input text-sm" placeholder="Author" value={pluginAuthor} onChange={(e) => setPluginAuthor(e.target.value)} />
-          <button type="button" className="btn-primary md:col-span-2" onClick={() => void publishPlugin()}>Publish</button>
+          <button type="button" className="btn-primary text-sm md:col-span-2" onClick={() => void publishPlugin()}>Publish</button>
         </div>
       </MacSheet>
     </PlatformPageChrome>

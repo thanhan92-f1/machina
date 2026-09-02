@@ -193,7 +193,7 @@ export default function PlatformBlueprints() {
           <MacGlassPanel title="Manual shortcut">
             <label className="text-sm">Name<input className="input block mt-1" value={name} onChange={(e) => setName(e.target.value)} /></label>
             <label className="text-sm">Actions (comma-separated)<input className="input block mt-1" value={actions} onChange={(e) => setActions(e.target.value)} placeholder="start,stop,backup" /></label>
-            <button type="button" className="btn-primary flex items-center gap-2" onClick={() => void createFromVms()}><Plus className="w-4 h-4" /> Create from VMs</button>
+            <button type="button" className="btn-primary text-sm flex items-center gap-2" onClick={() => void createFromVms()}><Plus className="w-4 h-4" /> Create from VMs</button>
           </MacGlassPanel>
           <div className="space-y-4">
             {rows.map((bp) => (

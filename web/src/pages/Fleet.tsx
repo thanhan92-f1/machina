@@ -332,7 +332,7 @@ export default function FleetPage() {
           <button
             type="button"
             disabled={placementBusy}
-            className="btn-secondary"
+            className="btn-secondary text-sm"
             onClick={async () => {
               setPlacementBusy(true)
               try {
@@ -359,7 +359,7 @@ export default function FleetPage() {
           <button
             type="button"
             disabled={createBusy || !createVmName.trim()}
-            className="btn-secondary"
+            className="btn-secondary text-sm"
             onClick={async () => {
               setCreateBusy(true)
               try {

@@ -105,7 +105,7 @@ export default function PlatformApiKeys({ embedded }: { embedded?: boolean } = {
                 <option value="viewer">viewer</option>
               </select>
             </label>
-            <button type="submit" disabled={creating || !name.trim()} className="btn-primary w-fit flex items-center gap-2 md:col-span-2 disabled:opacity-40 disabled:cursor-not-allowed"><Plus className="w-4 h-4" /> {creating ? 'Creating…' : 'Create key'}</button>
+            <button type="submit" disabled={creating || !name.trim()} className="btn-primary text-sm w-fit flex items-center gap-2 md:col-span-2 disabled:opacity-40 disabled:cursor-not-allowed"><Plus className="w-4 h-4" /> {creating ? 'Creating…' : 'Create key'}</button>
           </form>
         </MacGlassPanel>
 

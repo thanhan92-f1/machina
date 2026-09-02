@@ -69,7 +69,7 @@ export default function PlatformVmBuilder() {
           <span className="text-[var(--text-muted)]">VM name (optional)</span>
           <input className="input w-full mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="auto from environment type" />
         </label>
-        <button type="button" className="btn-primary mt-3 flex items-center gap-2" disabled={busy || !prompt.trim()} onClick={() => void run()}>
+        <button type="button" className="btn-primary text-sm mt-3 flex items-center gap-2" disabled={busy || !prompt.trim()} onClick={() => void run()}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           Generate plan
         </button>
@@ -87,7 +87,7 @@ export default function PlatformVmBuilder() {
             <li>OS hint: {plan.os_hint}</li>
           </ul>
           <div className="flex gap-2 mt-4">
-            <button type="button" className="btn-primary" disabled={creating} onClick={() => void create()}>
+            <button type="button" className="btn-primary text-sm" disabled={creating} onClick={() => void create()}>
               {creating ? 'Queuing…' : 'Create VM'}
             </button>
           </div>

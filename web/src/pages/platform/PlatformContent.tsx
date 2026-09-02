@@ -271,7 +271,7 @@ export default function PlatformContent() {
           <Link to="/platform/create-iso" className="btn-secondary flex items-center gap-2 text-sm">
             <Disc className="w-4 h-4" /> Create from ISO
           </Link>
-          <button type="button" className="btn-primary flex items-center gap-2" onClick={() => setSheetOpen(true)}><Plus className="w-4 h-4" /> Upload</button>
+          <button type="button" className="btn-primary text-sm flex items-center gap-2" onClick={() => setSheetOpen(true)}><Plus className="w-4 h-4" /> Upload</button>
         </>
       }
       contentClassName="space-y-4"
