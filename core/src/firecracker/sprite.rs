@@ -655,22 +655,42 @@ pub async fn restore_sprite_fc(
         None
     };
 
-    let mut child = TokioCommand::new(fc_binary)
+    let mut command = TokioCommand::new(fc_binary);
+    command
         .arg("--api-sock")
         .arg(&api_socket)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|e| {
-            if let Some(tap) = &tap_name {
-                delete_egress_tap(tap);
-            }
-            LibvirtError::Operation(format!("failed to spawn firecracker for restore: {e}"))
-        })?;
+        .stderr(Stdio::piped());
+
+    let mut child = command.spawn().map_err(|e| {
+        if let Some(tap) = &tap_name {
+            delete_egress_tap(tap);
+        }
+        LibvirtError::Operation(format!("failed to spawn firecracker for restore: {e}"))
+    })?;
     let pid = child
         .id()
         .ok_or_else(|| LibvirtError::Internal("firecracker spawned without a pid".into()))?;
+
+    // Same tee-into-tracing-and-last-line pattern as boot_sprite_fc — a
+    // restore that crashes the guest (e.g. resuming into a kernel panic
+    // loop) previously left zero diagnostic trail, since this used to run
+    // with stderr silenced entirely.
+    let last_stderr_line = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+    if let Some(stderr) = child.stderr.take() {
+        let last_stderr_line = last_stderr_line.clone();
+        let sprite_id = req.sprite_id.to_string();
+        tokio::spawn(async move {
+            let mut lines = tokio::io::BufReader::new(stderr).lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                tracing::warn!("firecracker[{sprite_id}] (restore): {line}");
+                if let Ok(mut last) = last_stderr_line.lock() {
+                    *last = line;
+                }
+            }
+        });
+    }
 
     let deadline = Instant::now() + BOOT_READY_TIMEOUT;
     loop {
@@ -681,8 +701,12 @@ pub async fn restore_sprite_fc(
             if let Some(tap) = &tap_name {
                 delete_egress_tap(tap);
             }
+            let last_line = last_stderr_line
+                .lock()
+                .map(|l| l.clone())
+                .unwrap_or_default();
             return Err(LibvirtError::Operation(format!(
-                "firecracker exited before its API socket appeared during restore (status: {status})"
+                "firecracker exited before its API socket appeared during restore (status: {status}): {last_line}"
             )));
         }
         if Instant::now() >= deadline {
@@ -713,6 +737,26 @@ pub async fn restore_sprite_fc(
             delete_egress_tap(tap);
         }
         return Err(e);
+    }
+
+    // `/snapshot/load` returning success only means the load itself was
+    // accepted — resuming into a guest that was mid-crash when snapshotted
+    // can still bring the process down moments later (observed live: HTTP
+    // 200 from /snapshot/load, then the process was gone within ~1s with no
+    // error surfaced). A short liveness check catches that instead of
+    // reporting a restore as successful when it silently isn't.
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    if let Ok(Some(status)) = child.try_wait() {
+        if let Some(tap) = &tap_name {
+            delete_egress_tap(tap);
+        }
+        let last_line = last_stderr_line
+            .lock()
+            .map(|l| l.clone())
+            .unwrap_or_default();
+        return Err(LibvirtError::Operation(format!(
+            "firecracker exited shortly after /snapshot/load during restore (status: {status}): {last_line}"
+        )));
     }
 
     drop(child);
