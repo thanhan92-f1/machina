@@ -14,7 +14,7 @@ Public UI copy uses **Machina Cinema**, **Machina Studio**, and **Ops Shelf** �
 
 - **Hero layout:** VM canvas fills the viewport; platform sidebar and checklist are hidden.
 - **Access Note pill:** Guest/NAT/SSH warnings collapse into one expandable pill (`AccessNotePill`).
-- **Control strip:** Bottom HUD with power, scale (Fit/Fill/Native/Scroll/Stretch), screenshot, Studio toggle, Ops Shelf handle. Auto-hides after ~3.5s idle; move mouse to reveal.
+- **Control strip:** Bottom HUD with power, scale (Fit/Fill/Native/Scroll/Stretch), screenshot, Studio toggle, Ops Shelf handle. **Labels use dark ink on light glass** (`text-slate-900`) — the strip must not inherit light-theme `--text-primary` on its frosted buttons. Auto-hides after ~3.5s idle; move mouse to reveal.
 - **Command palette:** ⌘K scoped console actions (`ConsoleCommandPalette`).
 - **Entry points:** VM detail “Open Cinema”, Machine Finder gallery tiles, Fleet Command Center, Spotlight, Live Preview Wall.
 

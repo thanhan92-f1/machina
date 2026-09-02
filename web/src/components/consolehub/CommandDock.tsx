@@ -47,13 +47,13 @@ export default function CommandDock({
   if (!visible || !vp) return null
 
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs bg-white/50 border border-white/70 text-[var(--text-primary)] hover:bg-white/80 hover:border-white/90 transition'
+    'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/90 border border-white/95 text-slate-900 hover:bg-white hover:text-black transition shadow-sm'
 
   return (
     <div
       className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-black/20 backdrop-blur-2xl">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/80 bg-white/90 shadow-lg shadow-black/30 backdrop-blur-2xl text-slate-900">
         <button type="button" className={btn} onClick={() => vp.setMode('fit')}>Fit</button>
         <button type="button" className={btn} onClick={() => vp.setMode('fill')}>Fill</button>
         <button type="button" className={btn} onClick={() => vp.setMode('native')}>Native</button>
@@ -88,7 +88,7 @@ export default function CommandDock({
           </>
         ) : null}
         {onExplain ? (
-          <button type="button" className={`${btn} border-[var(--accent)]/40 text-[var(--link)]`} onClick={onExplain}>
+          <button type="button" className={`${btn} text-indigo-700`} onClick={onExplain}>
             <span className="inline-flex items-center gap-1"><ZoomIn className="w-3 h-3" /> Explain</span>
           </button>
         ) : null}

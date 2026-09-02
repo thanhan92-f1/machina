@@ -54,7 +54,7 @@ Gate destructive or cloud-side actions on `phase === 'live'`. Nav and command pa
 
 **Infrastructure DNA:** [`InfrastructureDnaStrip`](../web/src/components/platform/InfrastructureDnaStrip.tsx) — score ring + grade + pillar chips from `GET /api/v1/fleet/dna` on Platform dashboard (power tier+) and Mission Control header.
 
-**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`). Sidebar visibility is **dock-first** (Normal/Power off by default; Advanced on) — see [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
+**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`). Primary navigation lives in the **sidebar icon rail** (always visible by default; View → Hide Sidebar) — see [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 **Infrastructure Earth globe (Phase 58 v3):** [`InfrastructureEarthGlobe`](../web/src/components/platform/InfrastructureEarthGlobe.tsx) — **WebGL** globe (lazy `three.js`) with **canvas 2D fallback**, per-site health markers, and a site legend (links to Machine Finder) on Mission Control and Machine Finder topology lens.
 
@@ -149,13 +149,12 @@ Navigation layers are tier-aware to avoid triple nav. Full contract: [design/APP
 
 | Layer | Role | When visible |
 |-------|------|--------------|
-| **Menubar** | Zyvor tile + app menus (Go = Favorites + Hubs + tier-filtered Host/Fleet/Platform), Dynamic Island, Control Center | Always on authenticated routes |
+| **Menubar** | Zyvor tile + **Machina** app menu + View / Window / Help; Spotlight via ⌘K | Always on authenticated routes (`lg+`; product dropdowns fall back in menubar below `lg`) |
 | **Desktop tabs** | Open window strip | When >1 platform tab ([`PlatformMacDesktopTabs`](web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) |
 | **Context bar** | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) |
 | **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](web/src/components/PageLayout.tsx) | Every platform page |
 | **DetailTabs** | In-app sections with `?tab=` | Tab-heavy pages only |
-| **Dock** | Primary app launcher | Always |
-| **Sidebar** | Finder locations (Host / Fleet / Platform) — Favorites stripped | **Advanced** default on; **Normal/Power** off (View → Show Sidebar) |
+| **Sidebar** | Zeus **68px icon rail** (default): pinned destinations + Workloads/Infra/Ops/Secure/Admin/More section icons with hover flyouts ([`platformSidebarNav.ts`](../web/src/utils/platformSidebarNav.ts)). Optional expand for labels. **No shortcut badges.** | **On by default** all tiers; View → Hide Sidebar |
 | **Fleet Cloud pills** | Section switch | Primary Overview/Instances/Images/Volumes/Create + **More** ([`FleetCloudSubNav`](web/src/components/FleetCloudSubNav.tsx)) |
 
 **Submenus:** menubar dropdowns, context-bar **More**, and Fleet Cloud **More** share [`PlatformFloatingMenu`](web/src/components/platform/mac/PlatformFloatingMenu.tsx) (portaled, `role="menu"`) and [`PlatformMenuItem`](web/src/components/platform/mac/PlatformMenuItem.tsx) row tokens (`--surface-hover`, `--accent-soft`).
@@ -176,7 +175,7 @@ Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppr
 
 | Surface | Rule |
 |---------|------|
-| **Jarvis strip** | Slim search bar + up to 5 intent chips; Normal tier adds greeting; no duplicate action buttons (dock/menubar own Mission Control & Spotlight) |
+| **Jarvis strip** | Slim search bar + up to 5 intent chips; Normal tier adds greeting; no duplicate action buttons (menubar owns Mission Control & Spotlight) |
 | **Fleet insights** | Collapsed by default; badge only on header; no approval queue or posture panel on dashboard (Dynamic Island + Security Center) |
 | **Classic shell** | Navbar **Zeus** button only — [`ZyraAmbientBar`](web/src/components/ai/ZyraAmbientBar.tsx) hidden when Navbar Zeus is shown |
 | **About / tasks** | Marketing copy on Support only; no Recent tasks panel on dashboard |
@@ -190,15 +189,15 @@ Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppr
 
 ## Theming
 
-Product themes map to Zeus: **Tahoe Light** (`light`), **Classic Blue** (`dark`), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600` / slate hex (`#64748b`, `#94a3b8`, …).
+Product themes map to Zeus: **Tahoe Light** (`light`, **default**), **Classic Blue** (`dark`, opt-in), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600` / slate hex (`#64748b`, `#94a3b8`, …).
 
-**Interactive blue:** apple.com `#0071e3` (CTAs, `--accent`, focus, dock active). Light links `#0066cc`; dark links `#2997ff`. Hover/pressed `#0077ed` / `#006edb`.
+**Interactive blue:** apple.com `#0071e3` (CTAs, `--accent`, focus, sidebar active). Light links `#0066cc`; dark links `#2997ff`. Hover/pressed `#0077ed` / `#006edb`.
 
 **Box type (Apple shop):** cards inherit Apple TV buy-flow fonts — light `#1d1d1f` / `#6e6e73` / `#86868b`; dark `#f5f5f7` / `#a1a1a6` / `#86868b`. SoT: [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md) + `zeus-parity.css`. Immersive Console Hub / VNC keep carbon chrome but the same `--text-*` tokens.
 
 **Story type ([AirPods](https://www.apple.com/airpods/)):** `.apple-display` / `.apple-lede` SF Pro Display metrics.
 
-**Dock:** Tahoe Liquid Glass tray + neighbor magnification in [`PlatformMacDock`](../web/src/components/platform/PlatformMacDock.tsx).
+**Dock:** retired — do not reintroduce. Primary app navigation is the sidebar icon rail.
 
 ## Login & accessibility
 

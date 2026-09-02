@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import {
   Camera,
+  ChevronRight,
   Copy,
   Monitor,
   Pause,
   Play,
   Power,
+  Sparkles,
   Square,
   Terminal,
   Trash2,
@@ -85,7 +87,7 @@ export default function FleetCommandCenter({
   const primaryPowerAction = running ? (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-amber-500/30 text-amber-700 hover:bg-amber-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 inline-flex items-center justify-center gap-1.5 border-amber-500/30 text-amber-700 hover:bg-amber-500/10"
       onClick={() => void onPower(selectedVm, 'shutdown')}
     >
       <Power className="w-3.5 h-3.5" /> Shutdown
@@ -93,7 +95,7 @@ export default function FleetCommandCenter({
   ) : paused ? (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-700 hover:bg-emerald-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-700 hover:bg-emerald-500/10"
       onClick={() => void onPower(selectedVm, 'resume')}
     >
       <Play className="w-3.5 h-3.5" /> Resume
@@ -101,7 +103,7 @@ export default function FleetCommandCenter({
   ) : (
     <button
       type="button"
-      className="btn-secondary text-xs py-1.5 px-3 w-full inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-700 hover:bg-emerald-500/10"
+      className="btn-secondary text-xs py-1.5 px-3 inline-flex items-center justify-center gap-1.5 border-[var(--apple-hairline)] text-emerald-700 hover:bg-emerald-500/10"
       onClick={() => void onPower(selectedVm, 'start')}
     >
       <Play className="w-3.5 h-3.5" /> Start
@@ -128,63 +130,69 @@ export default function FleetCommandCenter({
 
       <div className="space-y-2">
         <p className="text-xs font-medium text-[var(--text-muted)]">Power</p>
-        {primaryPowerAction}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {primaryPowerAction}
           {(running || paused) && (
-            <ActionBtn icon={Square} label="Stop" onClick={() => void onPower(selectedVm, 'stop')} />
+            <IconBtn icon={Square} label="Stop" onClick={() => void onPower(selectedVm, 'stop')} />
           )}
           {running && (
-            <ActionBtn icon={Pause} label="Pause" onClick={() => void onPower(selectedVm, 'pause')} />
+            <IconBtn icon={Pause} label="Pause" onClick={() => void onPower(selectedVm, 'pause')} />
           )}
           {!running && !paused && !shutoff && (
-            <ActionBtn icon={Power} label="Shutdown" onClick={() => void onPower(selectedVm, 'shutdown')} />
+            <IconBtn icon={Power} label="Shutdown" onClick={() => void onPower(selectedVm, 'shutdown')} />
           )}
-          <ActionBtn icon={Camera} label="Snapshot" onClick={() => void onSnapshot(selectedVm)} />
+          <IconBtn icon={Camera} label="Snapshot" onClick={() => void onSnapshot(selectedVm)} />
           {selectedVm.inventory_source !== 'kubevirt' && (
-            <ActionBtn icon={Terminal} label="SSH" onClick={() => onSsh(selectedVm)} />
+            <IconBtn icon={Terminal} label="SSH" onClick={() => onSsh(selectedVm)} />
           )}
-        </div>
-        <div className="pt-1 border-t border-white/[0.06]">
-          <button
-            type="button"
-            className="btn-secondary text-xs w-full inline-flex items-center justify-center gap-1 border-red-500/30 text-red-600 hover:bg-red-500/10"
+          <IconBtn
+            icon={Trash2}
+            label="Delete VM"
+            tone="danger"
+            className="ml-auto"
             onClick={() => void onDelete(selectedVm)}
-          >
-            <Trash2 className="w-3 h-3" /> Delete VM
-          </button>
+          />
         </div>
       </div>
 
       <div className="space-y-2">
         <p className="text-xs font-medium text-[var(--text-muted)]">Console</p>
         <VmConsoleQuickLinks vmId={selectedVm.id} running={running} />
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to={studioHubPath(selectedVm.id)}
-            className="btn-secondary text-xs flex-1 text-center inline-flex items-center justify-center gap-1"
-          >
-            Studio
+        <div className="flex items-center gap-4">
+          <Link to={studioHubPath(selectedVm.id)} className="btn-link text-xs">
+            Studio <ChevronRight className="w-3 h-3" />
           </Link>
-          <Link
-            to={`/platform/vms/${selectedVm.id}`}
-            className="btn-secondary text-xs flex-1 text-center inline-flex items-center justify-center gap-1"
-          >
-            Open VM detail
+          <Link to={`/platform/vms/${selectedVm.id}`} className="btn-link text-xs">
+            Open VM detail <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
 
-      {selectedVm.guest_ip && (
-        <button
-          type="button"
-          className="btn-secondary text-xs w-full inline-flex items-center justify-center gap-1"
-          onClick={() => {
-            void navigator.clipboard.writeText(selectedVm.guest_ip!)
-            toast.success('Guest IP copied')
-          }}
-        >
-          <Copy className="w-3.5 h-3.5" /> Copy IP
-        </button>
+      {(selectedVm.guest_ip || (selectedVm.host_id && hosts.length > 1) || selectedVm.managed === false) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedVm.guest_ip && (
+            <button
+              type="button"
+              className="btn-secondary text-xs py-1.5 px-3 inline-flex items-center gap-1"
+              onClick={() => {
+                void navigator.clipboard.writeText(selectedVm.guest_ip!)
+                toast.success('Guest IP copied')
+              }}
+            >
+              <Copy className="w-3.5 h-3.5" /> Copy IP
+            </button>
+          )}
+
+          {selectedVm.managed === false && (
+            <button
+              type="button"
+              className="btn-secondary text-xs py-1.5 px-3"
+              onClick={() => void onAdopt(selectedVm)}
+            >
+              Adopt discovered VM
+            </button>
+          )}
+        </div>
       )}
 
       {selectedVm.host_id && hosts.length > 1 && (
@@ -196,50 +204,49 @@ export default function FleetCommandCenter({
         />
       )}
 
-      {selectedVm.managed === false && (
-        <button
-          type="button"
-          className="btn-secondary text-xs w-full"
-          onClick={() => void onAdopt(selectedVm)}
-        >
-          Adopt discovered VM
-        </button>
-      )}
-
       {showTheatrePreview && running && (
         <ConsoleTheatrePreview vmId={selectedVm.id} vmName={selectedVm.name} />
       )}
 
-      <div className="rounded-lg border border-emerald-900/40 bg-[var(--apple-surface)] p-3 text-xs text-emerald-800">
-        <p className="font-medium text-emerald-900 mb-1">Zyra says</p>
-        <p>
+      <div className="flex gap-2.5 rounded-lg bg-[var(--apple-surface)] p-3 text-xs">
+        <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#0071e3]" />
+        <p className="text-[var(--text-secondary)]">
+          <span className="font-medium text-[var(--text-primary)]">Zyra — </span>
           {healthScore != null && healthScore < 70
-            ? 'Health score is low — review backups and guest agent connectivity.'
+            ? 'Health score is low. Review backups and guest agent connectivity.'
             : selectedVm.guest_ip
-              ? 'Machine is reachable — console and SSH are ready.'
-              : 'No guest IP yet — check network and guest tools.'}
+              ? 'Machine is reachable. Console and SSH are ready.'
+              : 'No guest IP yet. Check network and guest tools.'}
         </p>
       </div>
     </DetailPanel>
   )
 }
 
-function ActionBtn({
+function IconBtn({
   icon: Icon,
   label,
   onClick,
+  tone = 'default',
+  className = '',
 }: {
   icon: typeof Play
   label: string
   onClick: () => void
+  tone?: 'default' | 'danger'
+  className?: string
 }) {
   return (
     <button
       type="button"
-      className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
+      title={label}
+      aria-label={label}
       onClick={onClick}
+      className={`btn-secondary !min-h-0 w-7 h-7 !p-0 inline-flex items-center justify-center rounded-full ${
+        tone === 'danger' ? 'text-red-600 hover:bg-red-500/10' : ''
+      } ${className}`}
     >
-      <Icon className="w-3 h-3" /> {label}
+      <Icon className="w-3.5 h-3.5" />
     </button>
   )
 }

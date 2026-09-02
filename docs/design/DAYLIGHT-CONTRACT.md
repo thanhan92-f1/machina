@@ -21,7 +21,7 @@ Shell / nav / tiers: [APPLE-UX-CONTRACT.md](APPLE-UX-CONTRACT.md).
 
 | Finish | Role |
 |---|---|
-| **apple.com Blue** (`#0071e3`) | Intent / primary CTAs / links / focus / dock active (`--primary` / `--accent` / `--link`) |
+| **apple.com Blue** (`#0071e3`) | Intent / primary CTAs / links / focus / sidebar active (`--primary` / `--accent` / `--link`) |
 | **Sage** | Confirmed-good only |
 | **Lavender** | AI accent sparingly |
 | **White** | Cards / elevated work surfaces (`.tahoe-glass-card`) |

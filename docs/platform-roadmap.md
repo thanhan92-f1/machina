@@ -265,7 +265,7 @@ Presentation-only sweep documented in [`next-big-sweep.md`](next-big-sweep.md):
 ## Batch 66 deliverables (Full Jarvis shell — shipped)
 
 - **Backend:** `GET /api/v1/ai/jarvis/landing` — curated navigate intents via [`intent_router.rs`](../controller/src/engine/ai/intent_router.rs) `jarvis_landing_intents`
-- **UI:** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) intent-first landing (all tiers); dock-first sidebar via [`defaultSidebarVisibleForTier`](../web/src/utils/platformDesktopTier.ts) (Normal/Power off); Spotlight open event from Jarvis search
+- **UI:** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) intent-first landing (all tiers); Spotlight open event from Jarvis search *(sidebar visibility policy updated 2026-09 — rail always on by default; see Sidebar-first shell below)*
 - **E2e:** [`platform-jarvis-shell.spec.ts`](../web/e2e/platform-jarvis-shell.spec.ts); **84/84** local bundle green
 
 ## Apple.com UX finish (2026-08)
@@ -274,8 +274,16 @@ Presentation-only sweep documented in [`next-big-sweep.md`](next-big-sweep.md):
 - **Login:** apple.com **machina** wordmark; menubar [`ZyvorTileMark`](../web/src/components/ZyvorMark.tsx)
 - **Story:** Dashboard + Fleet Cloud overview → `apple-story-stack`
 - **Browse:** thin [`TahoeListKit`](../web/src/components/platform/tahoe/TahoeListKit.tsx); Fleet Cloud pills + More
-- **Work:** high-traffic panels → `.tahoe-glass-card`
-- **Shell:** Mac desktop tabs mounted; Favorites stripped from sidebar rail (dock owns app pins)
+- **Work:** high-traffic panels → `.tahoe-glass-card` where panels remain; VM detail → unboxed VNC hero + DetailTabs
+- **Shell:** Mac desktop tabs; **sidebar icon rail** (68px default) owns product nav; dock retired
+
+## Sidebar-first shell (2026-09)
+
+- **Navigation:** [`platformSidebarNav.ts`](../web/src/utils/platformSidebarNav.ts) — pinned rail + Workloads/Infra/Ops/Secure/Admin/More flyouts ([`PlatformSidebarSection`](../web/src/components/platform/PlatformSidebarSection.tsx))
+- **Menubar:** Machina + View / Window / Help only on `lg+`; [`PlatformProductNavMenus`](../web/src/components/platform/mac/PlatformProductNavMenus.tsx) fallback below `lg`
+- **Theme:** Apple light default (`tahoe-light`); boot script in [`web/index.html`](../web/index.html)
+- **Cinema:** control strip uses explicit dark text on light glass ([`CinemaControlStrip`](../web/src/components/consolehub/CinemaControlStrip.tsx))
+- **VM detail:** [`VmConsoleHeroPreview`](../web/src/components/vm/VmConsoleHeroPreview.tsx) above Connect hub on classic + platform detail
 ## Batch 69 deliverables (Linux Base OS sweep — Phase 59)
 
 - **Agent:** `ApplyLinuxPackageUpgrade`, `HostLinuxReboot`, `GetLinuxFilesystems`, `GetLinuxTopProcesses`

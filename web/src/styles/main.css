@@ -297,6 +297,36 @@ code, .font-mono, pre {
   font-family: var(--font-display);
 }
 
+.platform-sidebar--rail {
+  --platform-sidebar-width: 68px;
+}
+
+.platform-sidebar--expanded {
+  --platform-sidebar-width: 15rem;
+}
+
+.platform-sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-sidebar-divider {
+  height: 1px;
+  background: var(--apple-hairline);
+  opacity: 0.85;
+}
+
+.platform-sidebar-section-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.platform-sidebar-flyout-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
 .platform-mac-shell {
   background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent),

@@ -101,7 +101,7 @@ machina/   # git checkout directory name
 The Machina web UI uses a **Liquid Glass** design system inspired by macOS Tahoe: translucent panels, strong backdrop blur, heavy rounding (22–28px), specular highlights, and spring animations on modals and toasts.
 
 - **Dark theme = Liquid Glass** — the default `dark` theme applies glass tokens across daemon pages and the platform desktop shell
-- **Platform desktop tiers** — **Normal** / **Power** (dock-first, sidebar hidden) · **Advanced** (Finder sidebar locations); switch in **Settings → Appearance** or **View → Desktop density**. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
+- **Platform desktop tiers** — **Normal** / **Power** / **Advanced** (route catalogs + context bar); switch in **Settings → Appearance** or **View → Desktop density**. Sidebar icon rail on by default. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 - **Reusable components** — `GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs` in `web/src/components/glass/`
 - **Steel / Aurora** themes remain available via the navbar theme picker
 

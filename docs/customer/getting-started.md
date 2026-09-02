@@ -31,13 +31,13 @@ RBAC roles: Admin / Operator / ReadOnly via `roles.json`, OIDC groups, or API to
 
 ## 3. Orient yourself
 
-After sign-in you get a **Mac-style desktop**: menubar (Zyvor mark + Machina menu), bottom **Dock**, and Spotlight (`⌘Space`).
+After sign-in you get a **Mac-style desktop**: menubar (Zyvor mark + Machina / View / Window / Help), left **icon rail** sidebar, and Spotlight (`⌘K` or Window menu).
 
-1. **Dock** — jump to Mission Control, Machines, Hosts, Storage, Network, Zyra, Settings.
+1. **Sidebar** — pinned icons (Mission Control, VMs, Machine Finder, Hosts, Settings) plus Workloads / Infra / Ops / Secure / Admin section flyouts. Hover a section icon for its routes; chevron at the bottom expands labels.
 2. **Platform** (`/platform`) — Mission Control for the fleet.
 3. **Classic home** (`/`) — this hypervisor’s guests and host health.
 4. **Fleet Cloud** (`/fleet-cloud`) — native instances; use the pill nav (Overview / Instances / … / **More**).
-5. Settings → Appearance → **Desktop density** (Normal / Power / Advanced) controls how much of the fleet surface is unlocked.
+5. Settings → Appearance → **Desktop density** (Normal / Power / Advanced) controls how much of the fleet surface is unlocked; **Apple** light theme is the default.
 
 ## 4. First workflows
 

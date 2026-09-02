@@ -1,55 +1,105 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { ChevronDown, ChevronLeft, ChevronRight, Boxes, FolderOpen, Plug, Server } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ZyvorMark } from '../ZyvorMark'
-import { sidebarForTier, sidebarLocationsOnly } from '../../utils/platformNavFilter'
 import { integrationNavItems } from '../../utils/platformIntegrationsNav'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
 import { usePlatformMacDesktop } from './mac/PlatformMacDesktopContext'
 import { getFleetFinder } from '../../api/platform'
-import type { PlatformNavSection } from '../../utils/platformNav'
+import {
+  sidebarProductSectionsForTier,
+  sidebarRailPinnedForTier,
+  type SidebarProductSection,
+  type SidebarRailItem,
+} from '../../utils/platformSidebarNav'
+import { navItemActive } from '../../utils/routes'
+import PlatformSidebarSection from './PlatformSidebarSection'
 
-const SECTION_COLLAPSE_PREFIX = 'machina-sidebar-section-'
+const SECTION_COLLAPSE_PREFIX = 'machina-sidebar-product-'
 
-const SECTION_ICONS: Record<string, typeof Plug> = {
-  Host: Server,
-  Fleet: Plug,
-  Platform: FolderOpen,
-  'Connected platforms': Boxes,
-}
-
-function sectionCollapseKey(label: string) {
-  return `${SECTION_COLLAPSE_PREFIX}${label}`
-}
-
-function loadSectionCollapsed(section: PlatformNavSection): boolean {
-  if (!section.collapsible) return false
+function loadSectionExpanded(sectionId: string): boolean {
   try {
-    const raw = localStorage.getItem(sectionCollapseKey(section.label))
+    const raw = localStorage.getItem(`${SECTION_COLLAPSE_PREFIX}${sectionId}`)
     if (raw === '0') return false
     if (raw === '1') return true
   } catch {
     /* ignore */
   }
-  return section.defaultCollapsed ?? false
+  return true
+}
+
+function SidebarLink({
+  item,
+  collapsed,
+  isActive,
+  attentionClass,
+}: {
+  item: SidebarRailItem
+  collapsed: boolean
+  isActive: boolean
+  attentionClass: string
+}) {
+  const Icon = item.icon
+  return (
+    <NavLink
+      to={item.to}
+      end={item.to === '/platform' || item.to === '/' || item.to === '/vms' || item.to === '/fleet-cloud'}
+      title={item.label}
+      aria-label={item.label}
+      className={`platform-sidebar-link tahoe-sidebar-link platform-rail-link flex items-center gap-2.5 text-sm transition-all duration-200 ${
+        collapsed ? 'justify-center rounded-xl px-1.5 py-2' : 'rounded-full px-2.5 py-2'
+      } ${
+        isActive
+          ? 'tahoe-sidebar-link-active text-[var(--text-primary)]'
+          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover,rgba(255,255,255,0.04))]'
+      } ${attentionClass}`}
+    >
+      <span className="platform-sidebar-icon shrink-0" aria-hidden>
+        <Icon className="h-[1.15rem] w-[1.15rem]" strokeWidth={1.5} />
+      </span>
+      {collapsed ? <span className="sr-only">{item.label}</span> : <span className="truncate">{item.label}</span>}
+    </NavLink>
+  )
+}
+
+function FlyoutLink({ item, onNavigate }: { item: SidebarRailItem; onNavigate?: () => void }) {
+  const location = useLocation()
+  const Icon = item.icon
+  const active = navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search)
+  return (
+    <NavLink
+      to={item.to}
+      title={item.label}
+      onClick={onNavigate}
+      className={`platform-sidebar-flyout-link flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
+        active
+          ? 'bg-[var(--surface-hover,rgba(255,255,255,0.08))] text-[var(--text-primary)] font-medium'
+          : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover,rgba(255,255,255,0.06))] hover:text-[var(--text-primary)]'
+      }`}
+      role="menuitem"
+    >
+      <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.5} />
+      <span className="truncate">{item.label}</span>
+    </NavLink>
+  )
 }
 
 export default function PlatformSidebar() {
   const [tier] = usePlatformDesktopTier()
   const { info } = usePlatformInfo()
-  const allSections = sidebarForTier(tier, integrationNavItems(info))
-  // Menubar owns product menus; sidebar is the Finder locations rail (Host / Fleet / Platform).
-  // Favorites only as expanded fallback on Normal — dock is retired.
-  const locationSections = sidebarLocationsOnly(allSections)
-  const sections = locationSections.length > 0 ? locationSections : allSections
-  const favoritesOnlyRail = locationSections.length === 0
-  const { sidebarCollapsed: collapsedState, setSidebarCollapsed: setCollapsed } = usePlatformMacDesktop()
-  const collapsed = favoritesOnlyRail ? false : collapsedState
-  const [sectionCollapsed, setSectionCollapsed] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(sections.map((s) => [s.label, loadSectionCollapsed(s)])),
+  const integrations = integrationNavItems(info)
+  const pinned = useMemo(() => sidebarRailPinnedForTier(tier), [tier])
+  const productSections = useMemo(
+    () => sidebarProductSectionsForTier(tier, integrations),
+    [tier, integrations],
+  )
+  const { sidebarCollapsed: collapsed, setSidebarCollapsed: setCollapsed } = usePlatformMacDesktop()
+  const location = useLocation()
+  const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(productSections.map((s) => [s.id, loadSectionExpanded(s.id)])),
   )
   const [railAttention, setRailAttention] = useState<Record<string, 'attention' | 'critical'>>({})
 
@@ -66,85 +116,17 @@ export default function PlatformSidebar() {
       .catch(() => setRailAttention({}))
   }, [])
 
-  const toggleSection = useCallback((label: string) => {
-    setSectionCollapsed((prev) => {
-      const next = !prev[label]
+  const toggleSection = useCallback((id: string) => {
+    setSectionExpanded((prev) => {
+      const next = !prev[id]
       try {
-        localStorage.setItem(sectionCollapseKey(label), next ? '1' : '0')
+        localStorage.setItem(`${SECTION_COLLAPSE_PREFIX}${id}`, next ? '1' : '0')
       } catch {
         /* ignore */
       }
-      return { ...prev, [label]: next }
+      return { ...prev, [id]: next }
     })
   }, [])
-
-  return (
-    <>
-      <aside
-        className={`mac-finder-sidebar tahoe-sidebar tahoe-sidebar-expanded platform-sidebar glass glass-elevated hidden lg:flex flex-col shrink-0 border-r border-[var(--apple-hairline)] ${
-          collapsed ? 'w-[60px]' : 'w-[280px]'
-        }`}
-        aria-label="Finder"
-      >
-        {!collapsed && (
-          <div className="px-5 py-4 border-b border-[var(--apple-hairline)] space-y-2">
-            <ZyvorMark to="/" size="sm" />
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Desktop</p>
-            <p className="text-sm text-[var(--text-secondary)]">Machina</p>
-          </div>
-        )}
-        {collapsed && (
-          <div className="flex justify-center py-3 border-b border-[var(--apple-hairline)]">
-            <ZyvorMark to="/" size="sm" showWordmark={false} />
-          </div>
-        )}
-        <SidebarNav
-          collapsed={collapsed}
-          sections={sections}
-          sectionCollapsed={sectionCollapsed}
-          onToggleSection={toggleSection}
-          railAttention={railAttention}
-        />
-        <div className="border-t border-[var(--apple-hairline)] p-3">
-          {favoritesOnlyRail ? (
-            <p className="px-3 py-1 text-[10px] text-center text-[var(--text-muted)]">
-              Apps live in the Dock — View → Hide Sidebar
-            </p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setCollapsed(!collapsed)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-hover,rgba(16,20,28,0.035))] hover:text-[var(--text-primary)] transition"
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : (
-                <>
-                  <ChevronLeft className="h-4 w-4" />
-                  <span>Collapse</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      </aside>
-    </>
-  )
-}
-
-function SidebarNav({
-  collapsed,
-  sections,
-  sectionCollapsed,
-  onToggleSection,
-  railAttention,
-}: {
-  collapsed: boolean
-  sections: ReturnType<typeof sidebarForTier>
-  sectionCollapsed: Record<string, boolean>
-  onToggleSection: (label: string) => void
-  railAttention: Record<string, 'attention' | 'critical'>
-}) {
-  const location = useLocation()
 
   const railClassFor = (to: string, isActive: boolean) => {
     if (isActive) return 'platform-rail-active'
@@ -153,66 +135,88 @@ function SidebarNav({
     if (to === '/platform' && location.pathname === '/platform') return 'platform-rail-live'
     return ''
   }
-  return (
-    <nav className="flex-1 py-3 px-3 space-y-2">
-      {sections.map((section, sectionIdx) => {
-        const isFavoritesZone = sectionIdx === 0 && section.label === 'Favorites'
-        const isSectionClosed = section.collapsible && sectionCollapsed[section.label]
-        const SectionIcon = SECTION_ICONS[section.label]
 
-        return (
-          <div key={section.label} className="tahoe-sidebar-section">
-            {!collapsed && !isFavoritesZone && (
-              section.collapsible ? (
-                <button
-                  type="button"
-                  onClick={() => onToggleSection(section.label)}
-                  className="tahoe-sidebar-section-header flex w-full items-center gap-1.5 px-3 py-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
-                >
-                  <ChevronDown
-                    className={`h-3 w-3 shrink-0 transition-transform ${isSectionClosed ? '-rotate-90' : ''}`}
+  const sectionHasActive = (section: SidebarProductSection) =>
+    section.items.some((item) =>
+      navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search),
+    )
+
+  return (
+    <aside
+      className={`mac-finder-sidebar tahoe-sidebar platform-sidebar platform-sidebar--zeus glass glass-elevated hidden lg:flex flex-col shrink-0 border-r border-[var(--apple-hairline)] ${
+        collapsed ? 'platform-sidebar--rail w-[68px]' : 'platform-sidebar--expanded w-[15rem]'
+      }`}
+      aria-label="Navigation"
+      data-collapsed={collapsed ? '1' : '0'}
+    >
+      <div className={`flex shrink-0 border-b border-[var(--apple-hairline)] ${collapsed ? 'justify-center py-3' : 'px-4 py-3'}`}>
+        <ZyvorMark to="/platform" size="sm" showWordmark={!collapsed} />
+      </div>
+
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-2 px-1.5 space-y-1" id="platform-primary-nav">
+        <ul className="space-y-0.5">
+          {pinned.map((item) => (
+            <li key={item.to}>
+              <SidebarLink
+                item={item}
+                collapsed={collapsed}
+                isActive={navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search)}
+                attentionClass={railClassFor(
+                  item.to,
+                  navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search),
+                )}
+              />
+            </li>
+          ))}
+        </ul>
+
+        {productSections.length > 0 ? (
+          <div className="platform-sidebar-divider mx-1 my-2" aria-hidden />
+        ) : null}
+
+        {productSections.map((section) => (
+          <PlatformSidebarSection
+            key={section.id}
+            label={section.label}
+            icon={section.icon}
+            collapsed={collapsed}
+            expanded={sectionExpanded[section.id] ?? true}
+            onToggleExpanded={() => toggleSection(section.id)}
+            hasActiveItem={sectionHasActive(section)}
+            flyoutItems={section.items.map((item) => (
+              <FlyoutLink key={item.to} item={item} />
+            ))}
+          >
+            <ul className="space-y-0.5 mb-1">
+              {section.items.map((item) => (
+                <li key={item.to}>
+                  <SidebarLink
+                    item={item}
+                    collapsed={false}
+                    isActive={navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search)}
+                    attentionClass={railClassFor(
+                      item.to,
+                      navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search),
+                    )}
                   />
-                  {SectionIcon ? <SectionIcon className="h-3 w-3 shrink-0 opacity-60" /> : null}
-                  <span className="truncate">{section.label}</span>
-                </button>
-              ) : (
-                <p className="tahoe-sidebar-section-header flex items-center gap-1.5 px-3 py-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  {SectionIcon ? <SectionIcon className="h-3 w-3 shrink-0 opacity-60" /> : null}
-                  <span>{section.label}</span>
-                </p>
-              )
-            )}
-            {!isSectionClosed && (
-              <ul className="space-y-1">
-                {section.items.map((item) => (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.to === '/platform' || item.to === '/' || item.to === '/vms' || item.to === '/fleet-cloud'}
-                      title={collapsed ? item.label : undefined}
-                      className={({ isActive }) =>
-                        `tahoe-sidebar-link platform-rail-link flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 ${
-                          collapsed ? 'justify-center rounded-xl' : 'rounded-full'
-                        } ${
-                          isActive
-                            ? 'tahoe-sidebar-link-active text-[var(--text-primary)]'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover,rgba(255,255,255,0.04))]'
-                        } ${railClassFor(item.to, isActive)}`
-                      }
-                    >
-                      <span className="shrink-0 opacity-80">{item.icon}</span>
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!collapsed && sectionIdx < sections.length - 1 && (
-              <div className="tahoe-sidebar-divider mx-3 my-3" aria-hidden />
-            )}
-          </div>
-        )
-      })}
-    </nav>
+                </li>
+              ))}
+            </ul>
+          </PlatformSidebarSection>
+        ))}
+      </nav>
+
+      <div className="border-t border-[var(--apple-hairline)] p-2">
+        <button
+          type="button"
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex w-full items-center justify-center rounded-xl p-2 text-[var(--text-muted)] hover:bg-[var(--surface-hover,rgba(255,255,255,0.04))] hover:text-[var(--text-primary)] transition"
+          title={collapsed ? 'Expand sidebar' : 'Icon rail only'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Icon rail only'}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      </div>
+    </aside>
   )
 }

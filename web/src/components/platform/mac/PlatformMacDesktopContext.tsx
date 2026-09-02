@@ -51,7 +51,8 @@ function defaultSidebarCollapsedForTier(): boolean {
   } catch {
     /* ignore */
   }
-  return false
+  // Zeus-style icon rail by default
+  return true
 }
 
 export function PlatformMacDesktopProvider({ children }: { children: ReactNode }) {

@@ -47,15 +47,15 @@ The Platform shell at `/platform/*` is the **Machina Desktop**:
 
 | macOS surface | Machina equivalent | Status |
 |---------------|-------------------|--------|
-| Desktop / wallpaper | Fleet dashboard + dock | Shipped |
+| Desktop / wallpaper | Fleet dashboard + sidebar rail | Shipped |
 | Jarvis / Siri strip | `PlatformJarvisBriefing` — morning briefing | Shipped (v1) |
 | Dynamic Island | `PlatformDynamicIsland` — health pill in menubar | Shipped (v1) |
 | Mission Control (F3) | `MissionControlOverlay` — Infrastructure Earth | Shipped (v1) |
-| Dock | Machines · VMs · Storage · Network · GPU · Terminal | Shipped (v1) — GPU at `/platform/gpu` (Batch 64) |
+| Dock | **Retired** — navigation moved to sidebar icon rail + Spotlight | — |
 | Finder | VM-centric Finder (`PlatformFinderShell`) | **Partial** — VM smart folders + **Machine Finder geography** at `/platform/hosts/finder` (Batch 63) |
 | System Settings | Host + fleet settings hub | Shipped |
 
-**Normal tier:** briefing + dock only. **Power/Advanced:** stat widgets, activity, full dock.
+**Normal tier:** briefing + sidebar rail (smaller route catalog). **Power/Advanced:** stat widgets, activity, full product flyouts.
 
 ---
 

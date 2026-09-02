@@ -1,17 +1,18 @@
 # Platform VM Detail UX
 
-Machina platform VM detail is organized **machine-first, task-second**: one hero strip, a compact action row, a prioritized attention stack, a single Connect hub, and deep work on dedicated tabs.
+Machina platform VM detail is organized **machine-first, task-second**: VNC hero, compact action row, attention stack, Connect hub, and deep work on dedicated tabs — **apple.com chapter** first viewport (no card boxes in the hero band).
 
 ## Page zones
 
 | Zone | Component | Purpose |
 |------|-----------|---------|
-| Hero | `VmDetailHero` | Gradient icon, live state, health/doctor pills, blocker CTA |
+| VNC hero | `VmConsoleHeroPreview` | Live display preview + Open Cinema CTA above the fold (Overview tab) |
+| Hero | `VmDetailHero` | State, health/doctor pills, blocker CTA |
 | Actions | `VmDetailActionBar` | Open Cinema, SSH, contextual power, Power & more overflow |
 | Attention | `VmAttentionStack` | One expanded banner; lower issues as chips |
 | Connect | `VmConnectHub` | Cinema, SSH, laptop path, NAT, export (Access tab) |
 | Overview | Info cards, usage, compute, doctor one-liner | Live metrics only — no host FS or XML bloat |
-| Tabs | Access, Console, Doctor, … | Deep panels moved out of Overview |
+| Tabs | `DetailTabs` — Access, Console, Doctor, … | Deep panels moved out of Overview |
 
 ## Action bar
 

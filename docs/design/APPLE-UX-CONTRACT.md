@@ -18,7 +18,7 @@ Author guide: [ux.md](../ux.md).
 |---|---|---|---|
 | **Story** | `/platform` Mission Control, `/` Dashboard, `/fleet-cloud` overview | Very low | `apple-story-stack` — display type, lede, one CTA; metric bands not card grids |
 | **Browse** | Finder, VM list, Fleet Cloud lists, hosts/storage/networks | Medium | Flat `PageLayout` header + `TahoeToolbar` / hairline tables |
-| **Work** | VM detail, settings, wizards | High | Same tokens; `.tahoe-glass-card` panels; keep density |
+| **Work** | VM detail, settings, wizards | High | VM detail: **apple-story-stack** VNC hero ([`VmConsoleHeroPreview`](../../web/src/components/vm/VmConsoleHeroPreview.tsx)) + [`DetailTabs`](../../web/src/components/platform/DetailTabs.tsx); other Work pages use `.tahoe-glass-card` where needed |
 | **Immersive** | Console Hub, VNC/SPICE, TTY, host SSH | Full | Cinema chrome hide — carbon island |
 
 ---
@@ -42,16 +42,18 @@ Author guide: [ux.md](../ux.md).
 
 | Layer | Role | Default visibility |
 |---|---|---|
-| **Menubar** | Zyvor tile → **Machina** app menu → **product menus** (Workloads / Infra / Ops / Secure / Admin / More via [`PlatformProductNavMenus`](../../web/src/components/platform/mac/PlatformProductNavMenus.tsx)) → View / Window / Help. Go mega-menu retired. Spotlight via ⌘K / Window. | Always (authenticated); product menus `hidden` below `md` |
+| **Menubar** | Zyvor tile → **Machina** app menu → View / Window / Help. Product routes (Workloads / Infra / Ops / …) live in the **sidebar icon rail** with hover flyouts — not duplicated in the menubar. Spotlight via ⌘K / Window. | Always (authenticated) |
 | **Desktop tabs** | Open window strip ([`PlatformMacDesktopTabs`](../../web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) | When >1 platform tab |
-| **Sidebar** | Finder **locations** rail (Host / Fleet / Platform) | **Always on** by default (all tiers); View → Hide Sidebar still works |
+| **Sidebar** | Zeus-style **68px icon rail** (default): pinned destinations + product-section icons with flyout menus ([`PlatformSidebar`](../../web/src/components/platform/PlatformSidebar.tsx), [`platformSidebarNav.ts`](../../web/src/utils/platformSidebarNav.ts)). Optional expand for labels. No shortcut badges. | **Always on** by default; View → Hide Sidebar |
 | **Dock** | Removed — do not reintroduce Mac dock tray | — |
 | **Context bar** | Hub cross-links | Tier-gated (see [ux.md](../ux.md)) |
 | **Fleet Cloud pills** | Section switch within `/fleet-cloud/*` | Primary five + More |
 
-**Submenus:** [`PlatformFloatingMenu`](../../web/src/components/platform/mac/PlatformFloatingMenu.tsx) + [`PlatformMenuItem`](../../web/src/components/platform/mac/PlatformMenuItem.tsx) — portaled `role="menu"` panels for menubar, context-bar More, and Fleet Cloud More. Product-group data: [`menubarProductGroupsForTier`](../../web/src/utils/platformMacMenus.ts).
+**Submenus:** [`PlatformFloatingMenu`](../../web/src/components/platform/mac/PlatformFloatingMenu.tsx) + [`PlatformMenuItem`](../../web/src/components/platform/mac/PlatformMenuItem.tsx) — portaled `role="menu"` panels for menubar View/Window/Help, sidebar section flyouts, context-bar More, and Fleet Cloud More. Product-group data: [`menubarProductGroupsForTier`](../../web/src/utils/platformMacMenus.ts) + [`sidebarProductSectionsForTier`](../../web/src/utils/platformSidebarNav.ts).
 
-Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](../../web/src/utils/platformDesktopTier.ts), [`sidebarLocationsOnly`](../../web/src/utils/platformNavFilter.ts).
+Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](../../web/src/utils/platformDesktopTier.ts), [`sidebarRailPinnedForTier`](../../web/src/utils/platformSidebarNav.ts).
+
+**Tablet (`md–lg`):** product menus remain in the menubar ([`PlatformProductNavMenus`](../../web/src/components/platform/mac/PlatformProductNavMenus.tsx)) when the sidebar is hidden below `lg`.
 
 ## Author checklist
 
@@ -96,17 +98,18 @@ Helpers: [`shouldShowContextBar`](../../web/src/utils/platformNavRegistry.ts), [
 - [x] Unified Mac desktop shell (Navbar retired as primary chrome)
 - [x] Zeus Apple Account login + apple.com **machina** wordmark
 - [x] Menubar Zyvor tile (Apple-logo slot)
-- [x] Sidebar-first locations rail (always on by default; Favorites only Normal fallback; dock retired)
+- [x] Sidebar-first Zeus icon rail (68px default; product flyouts; dock retired)
 - [x] Mac desktop tabs mounted
 - [x] Flat page heroes via `PlatformPageChrome` / `PageLayout`
 - [x] Story rhythm on Dashboard + Fleet Cloud overview
 - [x] Thin TahoeListKit + Fleet Cloud pill nav
-- [x] Work panels on high-traffic pages → `.tahoe-glass-card`
+- [x] VM detail VNC hero + DetailTabs (unboxed first viewport)
+- [x] Work panels on high-traffic pages → `.tahoe-glass-card` where panels remain
 - [x] High-traffic slate/blue leftover cleanup (HostSSH, ApiDocs, SimpleCreateVmWizard, skip-link)
 - [x] Apple shop box font tokens 1:1 (`--text-primary/secondary/muted` in `zeus-parity.css`)
 - [x] Console Hub / VNC type remapped off slate hex onto `--text-*`; ChoiceCard amber/emerald icons → `--amber` / `--verdant`
-- [x] System-wide apple.com blue (`#0071e3`) for primary / link / accent / dock active
-- [x] Tahoe Liquid Glass dock + neighbor magnification
+- [x] Cinema control strip — dark ink on light glass (`text-slate-900`); never inherit light-theme `--text-primary` on the HUD
+- [x] System-wide apple.com blue (`#0071e3`) for primary / link / accent / sidebar active state
 - [x] AirPods Story type (`.apple-display` / `.apple-lede`)
 - [x] Story hubs + destination lists (`AppleStoryKit`); kill page-level list|inspector splits
 - [x] Browse lists → `TahoeToolbar` + `TahoeTableWrap` (platform / classic / Fleet Cloud packs)

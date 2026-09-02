@@ -11,7 +11,7 @@ Enterprise Linux hypervisor management platform
 | **Handbook (product · admin · FAQ · troubleshooting)** | [handbook/README.md](handbook/README.md) |
 | **Apple.com / Zeus UX contract** | [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md) |
 | **Daylight / Tahoe Light tokens** (incl. Apple shop box fonts) | [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md) |
-| **UX author guide (shell · login · tiers · box type)** | [ux.md](ux.md) |
+| **UX author guide (shell · login · tiers · sidebar rail · box type)** | [ux.md](ux.md) |
 | Infrastructure vision | [machina-infrastructure-vision.md](machina-infrastructure-vision.md) |
 | KubeVirt migration | [kubevirt-migration.md](kubevirt-migration.md) |
 | Observability | [observability.md](guides/observability.md) |

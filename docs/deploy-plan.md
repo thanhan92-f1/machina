@@ -37,7 +37,7 @@ Branch: `main` (synced with `origin/main`)
 | 47 | 672–681 | Stage Manager | `GET /api/v1/fleet/spaces` |
 | **48** | **682–691** | **General** | **`GET /api/v1/fleet/general`** |
 
-Also in this batch: v9s Tahoe UX shell (dock editor, Help menu, columns view, host popout), E2E graceful stubs for guest-ports/LLDP/network-diag/storage tiers.
+Also in this batch: v9s Tahoe UX shell (Help menu, columns view, host popout). *(Mac dock retired 2026-09 — navigation is sidebar icon rail + Spotlight.)*
 
 ## Deploy command
 
@@ -55,7 +55,7 @@ curl -s http://<ephemeral-ip>:5093/api/v1/health
 ./scripts/platformctl fleet spaces     # Phase 47
 ```
 
-Spotlight smoke: `general settings`, `customize dock`, `stage manager`.
+Spotlight smoke: `general settings`, `stage manager`, `mission control`.
 
 ## Deploy notes (2026-05-30)
 

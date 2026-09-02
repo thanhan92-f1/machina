@@ -139,8 +139,10 @@ export default function CinemaControlStrip({
   const PowerQuickIcon = offline ? Play : RotateCcw
   const spiceDisplay = activeProtocol === 'spice' || activeProtocol === 'webrtc_spice'
 
+  // Cinema is always dark chrome; dock is light glass — never inherit --text-primary (light on dark themes).
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs bg-white/50 border border-white/70 text-[var(--text-primary)] hover:bg-white/80 hover:border-white/90 transition inline-flex items-center gap-1'
+    'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/90 border border-white/95 text-slate-900 hover:bg-white hover:text-black transition inline-flex items-center gap-1 shadow-sm'
+  const menuItem = 'block w-full text-left px-2 py-1.5 text-xs text-slate-900 hover:bg-black/5 rounded'
 
   const setMode = (mode: ViewportMode) => {
     vp.setMode(mode)
@@ -189,19 +191,19 @@ export default function CinemaControlStrip({
       data-testid="cinema-control-strip"
       data-idle={idle ? 'true' : 'false'}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-black/20 backdrop-blur-2xl">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/80 bg-white/90 shadow-lg shadow-black/30 backdrop-blur-2xl text-slate-900">
         {/* Power */}
         <div className="relative" ref={powerRef}>
           <button type="button" className={`${btn} ${readOnly ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={readOnly} onClick={() => !readOnly && setPowerOpen((v) => !v)} title={readOnly ? 'Read-only session' : 'Power'}>
             <Power className="w-3.5 h-3.5 text-red-500" />
           </button>
           {powerOpen ? (
-            <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-black/10 bg-white/90 backdrop-blur-xl p-1 shadow-xl">
+            <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-black/10 bg-white/95 backdrop-blur-xl p-1 shadow-xl text-slate-900">
               {(offline ? (['start', 'stop'] as const) : (['shutdown', 'reboot', 'stop'] as const)).map((a) => (
                 <button
                   key={a}
                   type="button"
-                  className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded capitalize"
+                  className={`${menuItem} capitalize`}
                   onClick={() => {
                     onPower?.(a)
                     setPowerOpen(false)
@@ -239,18 +241,18 @@ export default function CinemaControlStrip({
             <Keyboard className="w-3.5 h-3.5 text-sky-600" />
           </button>
           {keyboardOpen ? (
-            <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-black/10 bg-white/90 backdrop-blur-xl p-1 shadow-xl">
+            <div className="absolute bottom-full left-0 mb-1 min-w-[10rem] rounded-lg border border-black/10 bg-white/95 backdrop-blur-xl p-1 shadow-xl text-slate-900">
               {onCtrlAltDel ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onCtrlAltDel(); setKeyboardOpen(false) }}>
+                <button type="button" className={menuItem} onClick={() => { onCtrlAltDel(); setKeyboardOpen(false) }}>
                   Ctrl+Alt+Del
                 </button>
               ) : null}
               {onSendKey ? (
                 <>
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onSendKey('esc'); setKeyboardOpen(false) }}>
+                  <button type="button" className={menuItem} onClick={() => { onSendKey('esc'); setKeyboardOpen(false) }}>
                     Send Esc
                   </button>
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onSendKey('alt_tab'); setKeyboardOpen(false) }}>
+                  <button type="button" className={menuItem} onClick={() => { onSendKey('alt_tab'); setKeyboardOpen(false) }}>
                     Alt+Tab
                   </button>
                 </>
@@ -272,14 +274,14 @@ export default function CinemaControlStrip({
             <Clipboard className="w-3.5 h-3.5 text-sky-600" />
           </button>
           {clipOpen && !readOnly ? (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-72 rounded-lg border border-black/10 bg-white/90 backdrop-blur-xl p-3 shadow-xl space-y-2" data-testid="cinema-clipboard-panel">
-              <p className="text-[11px] font-medium text-[var(--text-primary)]">Clipboard sync</p>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-72 rounded-lg border border-black/10 bg-white/95 backdrop-blur-xl p-3 shadow-xl space-y-2 text-slate-900" data-testid="cinema-clipboard-panel">
+              <p className="text-[11px] font-medium text-slate-900">Clipboard sync</p>
               {!clip?.canSync ? (
                 <p className="text-[10px] text-amber-700/90">Connect the display console to enable paste into the VM.</p>
               ) : null}
               <textarea
                 aria-label="Clipboard text to send to VM"
-                className="w-full min-h-[4.5rem] rounded border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)] px-2 py-1.5 text-xs text-[var(--text-primary)] font-mono resize-y"
+                className="w-full min-h-[4.5rem] rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-900 font-mono resize-y"
                 value={localDraft}
                 onChange={(e) => setLocalDraft(e.target.value)}
                 placeholder="Paste text to send to the VM…"
@@ -304,12 +306,12 @@ export default function CinemaControlStrip({
             <Monitor className="w-3.5 h-3.5 text-sky-600" />
           </button>
           {displayOpen ? (
-            <div className="absolute bottom-full left-0 mb-1 min-w-[11rem] rounded-lg border border-black/10 bg-white/90 backdrop-blur-xl p-1 shadow-xl max-h-64 overflow-y-auto">
+            <div className="absolute bottom-full left-0 mb-1 min-w-[11rem] rounded-lg border border-black/10 bg-white/95 backdrop-blur-xl p-1 shadow-xl max-h-64 overflow-y-auto text-slate-900">
               {displayProtocols.filter((p) => p !== 'native_ssh' && p !== 'serial').map((p) => (
                 <button
                   key={p}
                   type="button"
-                  className={`block w-full text-left px-2 py-1.5 text-xs hover:bg-black/5 rounded ${p === activeProtocol ? 'text-emerald-700 font-medium' : 'text-[var(--text-primary)]'}`}
+                  className={`${menuItem} ${p === activeProtocol ? 'text-emerald-800 font-semibold' : ''}`}
                   onClick={() => {
                     onProtocolChange?.(p)
                     setDisplayOpen(false)
@@ -320,23 +322,23 @@ export default function CinemaControlStrip({
               ))}
               <div className="my-1 border-t border-black/10" />
               {(['fit', 'fill', 'native', 'scroll', 'stretch'] as ViewportMode[]).map((mode) => (
-                <button key={mode} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded capitalize" onClick={() => setMode(mode)}>
+                <button key={mode} type="button" className={`${menuItem} capitalize`} onClick={() => setMode(mode)}>
                   {mode}
                 </button>
               ))}
               {ZOOM_LEVELS.map((z) => (
-                <button key={z} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { vp.setZoom(z); setDisplayOpen(false) }}>
+                <button key={z} type="button" className={menuItem} onClick={() => { vp.setZoom(z); setDisplayOpen(false) }}>
                   Zoom {z}%
                 </button>
               ))}
               {vp.monitors.length > 1 ? (
                 <>
                   <div className="my-1 border-t border-black/10" />
-                  <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { vp.setActiveMonitor('all'); setDisplayOpen(false) }}>
+                  <button type="button" className={menuItem} onClick={() => { vp.setActiveMonitor('all'); setDisplayOpen(false) }}>
                     All monitors
                   </button>
                   {vp.monitors.map((mon) => (
-                    <button key={mon.id} type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { vp.setActiveMonitor(mon.id); setDisplayOpen(false) }}>
+                    <button key={mon.id} type="button" className={menuItem} onClick={() => { vp.setActiveMonitor(mon.id); setDisplayOpen(false) }}>
                       {mon.label}
                     </button>
                   ))}
@@ -348,7 +350,7 @@ export default function CinemaControlStrip({
 
         {/* Hardware (libvirt + KubeVirt) */}
         {onOpenHardware ? (
-          <button type="button" className={`${btn} border-[var(--apple-hairline)] text-emerald-700`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
+          <button type="button" className={`${btn} text-emerald-800`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
             <Cpu className="w-3.5 h-3.5" /> Hardware
           </button>
         ) : null}
@@ -374,7 +376,7 @@ export default function CinemaControlStrip({
 
         {/* AI */}
         {onOpenAi ? (
-          <button type="button" className={`${btn} border-[var(--accent)]/40 text-[var(--link)]`} onClick={onOpenAi}>
+          <button type="button" className={`${btn} text-indigo-700`} onClick={onOpenAi}>
             <Sparkles className="w-3.5 h-3.5" />
           </button>
         ) : null}
@@ -385,47 +387,47 @@ export default function CinemaControlStrip({
             <MoreHorizontal className="w-3.5 h-3.5" />
           </button>
           {moreOpen ? (
-            <div className="absolute bottom-full right-0 mb-1 min-w-[11rem] rounded-lg border border-black/10 bg-white/90 backdrop-blur-xl p-1 shadow-xl">
+            <div className="absolute bottom-full right-0 mb-1 min-w-[11rem] rounded-lg border border-black/10 bg-white/95 backdrop-blur-xl p-1 shadow-xl text-slate-900">
               {onScreenshot ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onScreenshot(); setMoreOpen(false) }}>
+                <button type="button" className={menuItem} onClick={() => { onScreenshot(); setMoreOpen(false) }}>
                   Screenshot
                 </button>
               ) : null}
               {onShareView && !readOnly ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--link)] hover:bg-black/5 rounded" disabled={shareBusy} data-testid="cinema-share-view" onClick={() => { onShareView(); setMoreOpen(false) }}>
+                <button type="button" className={`${menuItem} text-sky-700`} disabled={shareBusy} data-testid="cinema-share-view" onClick={() => { onShareView(); setMoreOpen(false) }}>
                   Share view
                 </button>
               ) : null}
               {onSwitchLens ? (
                 <>
                   {!displayProtocols?.length || displayProtocols.includes('serial') ? (
-                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onSwitchLens('serial'); setMoreOpen(false) }}>
+                    <button type="button" className={menuItem} onClick={() => { onSwitchLens('serial'); setMoreOpen(false) }}>
                       Serial
                     </button>
                   ) : null}
                   {!displayProtocols?.length || displayProtocols.includes('native_ssh') || displayProtocols.includes('ssh') ? (
-                    <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onSwitchLens('shell'); setMoreOpen(false) }}>
+                    <button type="button" className={menuItem} onClick={() => { onSwitchLens('shell'); setMoreOpen(false) }}>
                       Shell
                     </button>
                   ) : null}
                 </>
               ) : null}
               {spiceDisplay && onToggleSpiceAudio ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--link)] hover:bg-black/5 rounded" data-testid="cinema-spice-audio-toggle" onClick={() => { onToggleSpiceAudio(); setMoreOpen(false) }}>
+                <button type="button" className={`${menuItem} text-sky-700`} data-testid="cinema-spice-audio-toggle" onClick={() => { onToggleSpiceAudio(); setMoreOpen(false) }}>
                   {spiceAudioEnabled ? 'Disable SPICE audio' : 'Enable SPICE audio'}
                 </button>
               ) : null}
               {onOpenStudio ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onOpenStudio(); setMoreOpen(false) }}>
+                <button type="button" className={menuItem} onClick={() => { onOpenStudio(); setMoreOpen(false) }}>
                   Studio
                 </button>
               ) : null}
               {onOpenOpsShelf ? (
-                <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { onOpenOpsShelf(); setMoreOpen(false) }}>
+                <button type="button" className={menuItem} onClick={() => { onOpenOpsShelf(); setMoreOpen(false) }}>
                   Ops Shelf
                 </button>
               ) : null}
-              <button type="button" className="block w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-black/5 rounded" onClick={() => { document.documentElement.requestFullscreen?.(); setMoreOpen(false) }}>
+              <button type="button" className={menuItem} onClick={() => { document.documentElement.requestFullscreen?.(); setMoreOpen(false) }}>
                 Fullscreen
               </button>
             </div>

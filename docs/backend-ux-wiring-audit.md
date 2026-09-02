@@ -1,6 +1,6 @@
 # Backend ↔ UX wiring audit
 
-Last updated: 2026-05-30
+Last updated: 2026-09-01
 
 This document is an honest inventory of how much controller/daemon surface area is reachable from the **Platform desktop** (`/platform/*`) versus legacy or separate UIs.
 
@@ -21,12 +21,12 @@ This document is an honest inventory of how much controller/daemon surface area 
 
 - Dashboard, VMs, Hosts, Storage, Backups, Settings, Support, Notifications
 - **Apps & Integrations** hub → Fleet Cloud, K8s, HyperSDK, GuestKit, classic UI (when daemon flags enable them)
-- Dock-first layout; sidebar **hidden** by default (View → Show Sidebar); Favorites not duplicated in the rail
+- Sidebar-first **icon rail** (68px default, always on); product routes in sidebar flyouts — not a bottom dock
 
 ### Platform desktop (Power / Advanced)
 
 - Everything in Normal plus networks, Zeus, tasks, migration, firewall modules, policy, observability, fleet settings strips, etc.
-- **Power:** dock-first (sidebar still off by default). **Advanced:** Finder sidebar locations on by default.
+- **Power / Advanced:** same sidebar rail; tier unlocks routes inside product sections and context bar — not sidebar visibility
 - See [machina-infrastructure-vision.md](./machina-infrastructure-vision.md) API ↔ UI map and [design/APPLE-UX-CONTRACT.md](./design/APPLE-UX-CONTRACT.md)
 ### Separate shells (not missing — different entry point)
 
@@ -43,7 +43,7 @@ This document is an honest inventory of how much controller/daemon surface area 
 ### P6 — Integrations bridge (shipped)
 
 - [x] `/platform/integrations` hub
-- [x] Sidebar / Go menu / Control Center links when capabilities enabled
+- [x] Sidebar icon rail + Control Center links when capabilities enabled
 - [x] Live external-cloud + K8s preview panels on Integrations (inventory stats + recent instances)
 - [x] Single sign-on context banner when leaving Platform shell — Integrations “Leaving the desktop” panel
 
@@ -171,9 +171,9 @@ Target for “good enough”: **every controller domain** has at least one of: P
 
 ## Tier policy (user-facing)
 
-1. **Normal** — dock-first desktop (sidebar hidden); Mission Control + Integrations (default for first visit)
-2. **Power** — dock-first; ops toolkit routes unlocked; sidebar still off by default
-3. **Advanced** — full Finder sidebar (locations) + firewall + developer routes
+1. **Normal** — sidebar icon rail + Mission Control + Integrations (default for first visit); fewer routes in product flyouts
+2. **Power** — ops toolkit routes unlocked in sidebar/menubar catalogs; context bar on hub roots
+3. **Advanced** — full product catalogs + firewall + developer routes; optional expanded sidebar labels
 
 Users upgrade in **Settings → Appearance → Desktop density**. See [design/APPLE-UX-CONTRACT.md](./design/APPLE-UX-CONTRACT.md).
 

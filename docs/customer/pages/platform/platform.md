@@ -18,7 +18,7 @@ Mission Control — multi-host platform overview.
 ## Operate from the console (UX)
 
 1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
-2. Filters / tabs: **?mission=1 geography; host/VM dock**.
+2. Filters / tabs: **?mission=1** geography; host/VM sidebar rail.
 3. Create VM (wizard).
 4. Use Launchpad tiles.
 5. Power VM.

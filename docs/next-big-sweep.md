@@ -224,7 +224,7 @@ Estimated touch: **~25–35 files**, **~500–800 LOC** net (mostly token swaps 
 ## Explicit decisions (no change)
 
 - **`/platform/reports`** stays under **Operations** context in nav registry.
-- **Normal tier** Go menu hides Operations hub until Power unlock (filter by hub visibility, not `hubHrefForTier` alone).
+- **Normal tier** sidebar product sections hide Advanced-only routes (e.g. Policy Studio) until Advanced tier — filter by [`isPathAllowedForTier`](../web/src/utils/platformDesktopTier.ts), not hub href alone.
 - **Desktop tabs row** remains removed; Window menu + Mission Control only.
 - **No new routes** in this sweep — presentation and cross-shell consistency only.
 

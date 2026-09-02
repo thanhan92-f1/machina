@@ -130,11 +130,14 @@ export default function PlatformMacAppMenus() {
         <PlatformMacMenuItem label="Sign Out" onClick={() => { void logout(); closeMenu() }} />
       </PlatformMacMenuDropdown>
 
-      <PlatformProductNavMenus
-        openMenu={openMenu}
-        onToggleMenu={toggleMenu}
-        onCloseMenu={closeMenu}
-      />
+      {/* Product routes live in the sidebar on lg+; menubar fallback below lg */}
+      <div className="lg:hidden">
+        <PlatformProductNavMenus
+          openMenu={openMenu}
+          onToggleMenu={toggleMenu}
+          onCloseMenu={closeMenu}
+        />
+      </div>
 
       <PlatformMacMenuDropdown label="View" open={openMenu === 'view'} onToggle={() => toggleMenu('view')} onClose={closeMenu}>
         <PlatformMacMenuItem
