@@ -1340,6 +1340,15 @@ ensure_tls_for_https() {
     else
         local hn
         hn=$(hostname -f 2>/dev/null || hostname)
+        # Include the box's actual routable IP in the SAN, not just its hostname/loopback —
+        # this daemon is commonly reached by IP (e.g. a bare test/lab host with no DNS entry),
+        # and a SAN that doesn't cover the address in the URL bar is a hostname-mismatch error
+        # (stricter than "just untrusted self-signed"), which browsers can treat harshly enough
+        # to silently refuse to persist the Secure session cookie set at login.
+        local primary_ip
+        primary_ip=$(install_primary_ipv4)
+        local san="DNS:$hn,DNS:localhost,IP:127.0.0.1"
+        [[ -n "$primary_ip" && "$primary_ip" != "127.0.0.1" ]] && san="$san,IP:$primary_ip"
         info "Generating self-signed certificate (browsers show a warning until you replace with your CA)"
         # umask 077 so key.pem is created non-world-readable from the first byte openssl
         # writes — no window where the private key sits world-readable before the chmod below.
@@ -1348,7 +1357,7 @@ ensure_tls_for_https() {
                 -keyout "$key" -out "$cert" \
                 -sha256 -days 3650 -nodes \
                 -subj "/CN=$hn/O=machina" \
-                -addext "subjectAltName=DNS:$hn,DNS:localhost,IP:127.0.0.1")
+                -addext "subjectAltName=$san")
         else
             (umask 077 && log_cmd openssl req -x509 -newkey rsa:4096 \
                 -keyout "$key" -out "$cert" \
