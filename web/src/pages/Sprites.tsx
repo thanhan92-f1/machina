@@ -50,6 +50,18 @@ function backendLabel(backend: string): string {
   return 'Libvirt'
 }
 
+/** Use-case guidance shown under the backend picker — helps pick between the three
+ * VMM backends without needing to know their internals up front. */
+function backendHint(backend: string): string {
+  if (backend === 'firecracker') {
+    return 'Fastest boot, smallest footprint, minimal attack surface. Best for short-lived, high-density, or security-sensitive workloads — no GPU or complex device support.'
+  }
+  if (backend === 'cloudhypervisor') {
+    return 'Still lightweight and fast-booting, with broader virtio device support than Firecracker. A good middle ground when a sprite needs more device flexibility but should stay minimal.'
+  }
+  return 'Full QEMU/KVM feature set — GPU/USB/PCI passthrough, snapshots, live migration. Best for longer-lived or more complex workloads; slower boot and heavier footprint than the other two.'
+}
+
 /** "expires in 4m 12s" / "expired" — recomputed on every poll tick, not a live per-second ticker. */
 function timeUntil(iso: string): string {
   const ms = new Date(iso).getTime() - Date.now()
@@ -365,6 +377,7 @@ function NewSpriteModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                 </button>
               ))}
             </div>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">{backendHint(backend)}</p>
           </div>
 
           <label className="flex items-start gap-2.5 cursor-pointer">
