@@ -142,6 +142,7 @@ export default function LoginPage() {
     <PremiumLoginShell
       productName="machina"
       productWordmark="machina"
+      hostBadge={typeof window !== 'undefined' ? window.location.host : undefined}
       heroTitle="Private cloud. One plane."
       heroSubheadline="KubeVirt and libvirt hypervisors, consoles, snapshots, and security — from a single dashboard."
       heroCta={storeCta}

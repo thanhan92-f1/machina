@@ -20,6 +20,8 @@ export type PremiumLoginShellProps = {
   productName: string
   productWordmark?: string
   productSubtitle?: string
+  /** Which host/environment this is — shown as a small badge so it's clear which system you're signing into. */
+  hostBadge?: ReactNode
   heroTitle?: ReactNode
   heroSubheadline?: ReactNode
   heroCta?: ReactNode
@@ -39,6 +41,7 @@ export function PremiumLoginShell({
   productName,
   productWordmark,
   productSubtitle,
+  hostBadge,
   heroTitle = 'Private cloud. One plane.',
   heroSubheadline,
   heroCta,
@@ -68,6 +71,11 @@ export function PremiumLoginShell({
             <p className="login-wordmark" aria-label={productName}>
               {wordmark}
             </p>
+            {hostBadge ? (
+              <p className="inline-flex items-center gap-1.5 mt-1 mb-1 px-2.5 py-1 rounded-full text-[11px] font-mono text-zinc-500 bg-zinc-100/80 border border-zinc-200">
+                {hostBadge}
+              </p>
+            ) : null}
             <h1 className="login-hero-title">{heroTitle}</h1>
             {tagline ? <p className="login-tagline">{tagline}</p> : null}
             {heroCta ? <div className="login-cta">{heroCta}</div> : null}
