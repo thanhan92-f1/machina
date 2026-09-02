@@ -165,13 +165,8 @@ html.light-theme .tahoe-page-root,
 html[data-theme='tahoe-light'] .tahoe-page-root,
 html.apple-light .app-shell,
 html.light-theme .app-shell {
-  background-color: hsl(210 36% 95%) !important;
-  background-image:
-    radial-gradient(ellipse 78% 52% at 6% -8%, hsl(200 70% 62% / 0.34), transparent 58%),
-    radial-gradient(ellipse 58% 44% at 96% 4%, hsl(270 38% 68% / 0.26), transparent 55%),
-    radial-gradient(ellipse 52% 38% at 78% 108%, hsl(110 28% 55% / 0.2), transparent 55%),
-    radial-gradient(ellipse 38% 28% at 42% 62%, hsl(18 90% 55% / 0.08), transparent 50%) !important;
-  background-attachment: fixed !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
   color: var(--text-primary);
 }
 
