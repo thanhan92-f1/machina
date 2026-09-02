@@ -215,17 +215,41 @@ pub fn detach_interface(conn: &Connect, vm_name: &str, mac: &str) -> Result<(), 
 
     let domain = lookup_domain(conn, vm_name)?;
 
-    // Extract the full <interface> XML from the running domain — libvirt requires the
-    // <source> element to be present for type='network' interfaces, so passing just
-    // <mac address='...'/> results in "XML error: interface type='network' requires a
-    // 'source' element". Using the exact XML from the domain ensures all required fields
-    // are present.
+    // Locate the interface's <source network='...'/> (and, if present, its model) from the
+    // running domain — libvirt's schema requires <source> for type='network' interfaces, so
+    // passing just <mac address='...'/> fails XML validation. We deliberately do NOT reuse the
+    // full live <interface> block wholesale: it also carries <alias name='netN'/> and
+    // <address type='pci' .../>, which are runtime-only — never written to the domain's
+    // persistent (offline) definition. detach_device_flags() runs against BOTH live and config
+    // when the domain is active (see get_domain_flags), and matching an XML that includes
+    // <alias>/<address> against the config side (which has neither) fails with "device not
+    // found ... matching MAC address '...' and alias 'netN'" even though the interface is
+    // right there. A minimal, source/model-only XML matches on both sides.
     let domain_xml = domain
         .get_xml_desc(0)
         .map_err(LibvirtError::map_op("Failed to get domain XML for NIC detach"))?;
-    let xml = extract_interface_xml_by_mac(&domain_xml, mac).ok_or_else(|| {
+    let iface_block = extract_interface_xml_by_mac(&domain_xml, mac).ok_or_else(|| {
         LibvirtError::NotFound(format!("Interface with MAC '{mac}' not found in domain XML"))
     })?;
+    let network = extract_attr(&iface_block, "source", "network").ok_or_else(|| {
+        LibvirtError::Operation(format!(
+            "Interface with MAC '{mac}' has no <source network='...'/> — cannot build detach XML"
+        ))
+    })?;
+    let model = extract_attr(&iface_block, "model", "type");
+
+    let mut xml = format!(
+        "<interface type='network'>\n  <mac address='{}'/>\n  <source network='{}'/>",
+        crate::xml::escape(mac),
+        crate::xml::escape(&network),
+    );
+    if let Some(model) = &model {
+        xml.push_str(&format!(
+            "\n  <model type='{}'/>",
+            crate::xml::escape(model)
+        ));
+    }
+    xml.push_str("\n</interface>");
 
     let flags = get_domain_flags(&domain);
     domain
@@ -251,6 +275,22 @@ fn extract_interface_xml_by_mac(domain_xml: &str, mac: &str) -> Option<String> {
                     return Some(domain_xml[iface_off..end].to_string());
                 }
             }
+        }
+    }
+    None
+}
+
+/// Find `<tag ... attr='value' .../>` within `xml` and return `value` (single or double quotes).
+fn extract_attr(xml: &str, tag: &str, attr: &str) -> Option<String> {
+    let tag_start = xml.find(&format!("<{tag} "))?;
+    let tag_end = xml[tag_start..].find('>').map(|i| tag_start + i)?;
+    let tag_block = &xml[tag_start..tag_end];
+    for q in ['\'', '"'] {
+        let needle = format!("{attr}={q}");
+        if let Some(pos) = tag_block.find(&needle) {
+            let value_start = pos + needle.len();
+            let value_end = tag_block[value_start..].find(q)? + value_start;
+            return Some(tag_block[value_start..value_end].to_string());
         }
     }
     None
