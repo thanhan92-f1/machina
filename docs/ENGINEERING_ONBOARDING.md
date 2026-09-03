@@ -118,7 +118,7 @@ commit → push → deploy → verify-in-browser loop once, for real.
   building Rust there anyway, so don't invest in keeping them tidy.
 - `cargo clippy --workspace -D warnings` currently fails on roughly 75 pre-existing lints inside
   the `core` crate that predate anything you'll be doing. They never reach the agent, daemon,
-  controller, or TUI crates — don't go chasing them.
+  controller, or related crates — don't go chasing them.
 - Only commit when you're asked to, only push when you're asked to, and confirm before deploying
   to a shared or customer host. None of that is a suggestion.
 - "Launchpad" is an overloaded name in the web app — it can mean the generic macOS-style

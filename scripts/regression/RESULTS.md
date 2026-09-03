@@ -8,7 +8,7 @@ Static + unit gates after the live waves, run on the lab host (`cargo` needs Lin
 
 | Gate | Result |
 |------|--------|
-| `cargo test` whole workspace | **354 PASS / 0 FAIL** — core 217, controller 63+8, agent 20, spec 16, translate 15, daemon 15; tui/rvb/virt-image-build/run-as-user-helper have no tests |
+| `cargo test` whole workspace | **354 PASS / 0 FAIL** — core 217, controller 63+8, agent 20, spec 16, translate 15, daemon 15; rvb/virt-image-build/run-as-user-helper have no tests |
 | `web && npm test` (vitest) | **152/152 PASS** (30 files) |
 | `web && npm run build` (tsc + vite) | **PASS** |
 | `rustfmt --check` on changed files | **clean** (`device_tune.rs`, `cpu_memory.rs`) |

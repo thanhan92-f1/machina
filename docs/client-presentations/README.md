@@ -33,7 +33,7 @@ All presentations available as **interactive HTML** (viewable in any browser) an
 
 | # | Title | Focus | Audience | Pages |
 |---|-------|-------|----------|-------|
-| **03** | **Technical Architecture** | Full platform: Rust daemon, libvirt bindings, web/TUI clients, API design | Architects, DevOps, Platform Engineers | 8 |
+| **03** | **Technical Architecture** | Full platform: Rust daemon, libvirt bindings, web client, API design | Architects, DevOps, Platform Engineers | 8 |
 
 ### Security (1 deck)
 

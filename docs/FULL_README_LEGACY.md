@@ -6,7 +6,7 @@
 
 Built on **libvirt** with QEMU/KVM. Optional **Kubernetes** integration via YAML workflows and `kubectl`/`virtctl` helpers allows libvirt guests to participate in **KubeVirt** clusters and migrations. See [docs/kubevirt-migration.md](docs/kubevirt-migration.md). **Fleet Cloud** provides native instance/flavor/network/load-balancer management through the controller's own APIs.
 
-A **Rust daemon** exposes REST and WebSocket APIs; a **web UI** delivers VNC, SPICE, serial, and SSH consoles; a **terminal UI** covers keyboard-first workflows. PAM authentication with RBAC, live metrics, Prometheus, alerts, webhooks, scheduled actions, and more run through that single daemon.
+A **Rust daemon** exposes REST and WebSocket APIs; a **web UI** delivers VNC, SPICE, serial, and SSH consoles. PAM authentication with RBAC, live metrics, Prometheus, alerts, webhooks, scheduled actions, and more run through that single daemon.
 
 **Perfect for:** Infrastructure teams managing bare-metal hypervisors, edge computing, private data centers, and organizations wanting unified VM management without vendor lock-in.
 
@@ -18,7 +18,7 @@ A **Rust daemon** exposes REST and WebSocket APIs; a **web UI** delivers VNC, SP
 |---|---|
 | 🎯 **Unified Management** | VMs, networks, storage, snapshots, host info — all from one dashboard and REST API |
 | 🔐 **Enterprise Security** | PAM authentication, RBAC roles, API tokens, session management, optional TLS |
-| 🖥️ **Multiple Interfaces** | Web UI with console access, Terminal UI (vim-style), REST API + webhooks, or raw libvirt commands |
+| 🖥️ **Multiple Interfaces** | Web UI with console access, REST API + webhooks, or raw libvirt commands |
 | ⚡ **Live Operations** | Real-time metrics, console proxies (VNC/SPICE/Serial/SSH), batch operations, job timelines |
 | 📊 **Observability** | Prometheus, OTLP export, alerts/webhooks, PSI/cgroups/auditd, fleet metrics — see [docs/guides/observability.md](docs/guides/observability.md) |
 | 🚀 **Automation Ready** | Scheduled actions, cron-based operations, API-first design, `machinactl` CLI for remote ops |
@@ -29,13 +29,13 @@ A **Rust daemon** exposes REST and WebSocket APIs; a **web UI** delivers VNC, SP
 ## Architecture
 
 ```
-  ┌─────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-  │   machina Web UI  │   │   machina TUI      │   │  API / Automation    │
-  │  (React + noVNC +   │   │  (ratatui terminal)  │   │  (curl / scripts /   │
-  │   SPICE + xterm.js) │   │                      │   │   Bearer tokens)     │
-  └─────────┬───────────┘   └──────────┬───────────┘   └──────────┬───────────┘
-            │                          │                          │
-            └────────┬─────────────────┼──────────────────────────┘
+  ┌─────────────────────┐   ┌──────────────────────┐
+  │   machina Web UI  │   │  API / Automation    │
+  │  (React + noVNC +   │   │  (curl / scripts /   │
+  │   SPICE + xterm.js) │   │   Bearer tokens)     │
+  └─────────┬───────────┘   └──────────┬───────────┘
+            │                          │
+            └────────┬─────────────────┘
                      │  HTTP / WebSocket (optional TLS)
             ┌────────┴─────────────────┐
             │    machina-daemon      │
@@ -62,7 +62,6 @@ Machina provides **built-in** noVNC/SPICE (and serial/SSH) consoles over the dae
 machina/   # git checkout directory name
 ├── core/               Shared library — types, config, libvirt bindings, validation, XML helpers
 ├── daemon/             REST + WebSocket server (axum), VNC proxy, noVNC serving, Prometheus metrics
-├── tui/                Terminal UI client (ratatui) with sidebar + content panel layout
 ├── web/                Web frontend (React 19 + TypeScript + Tailwind + Recharts + xterm.js)
 ├── contrib/            Systemd units, default config
 ├── demo-screenshots/   Screenshots, presentation PDFs, and PDF generators
@@ -213,15 +212,6 @@ The Machina web UI uses a **Liquid Glass** design system inspired by macOS Tahoe
 - **USB device listing** — list connected USB devices for passthrough
 - **DMI hardware info** — vendor, product, BIOS version, CPU model details
 
-### TUI Experience
-- **vSphere-style sidebar + content layout** — left inventory tree with collapsible categories
-- **Sub-tabs per object** — Summary, Monitor, Configure tabs for VMs
-- **Fuzzy search** — scored character-by-character matching
-- **Multi-select** — batch operations on multiple VMs
-- **Sorting** — by name, state, CPU, or memory
-- **Command mode** — vim-style `:command` interface
-- **Mouse support** — click, scroll, select
-- **Audit trail** — persistent log at `~/.machina/audit.log`
 
 ### Backup & Restore
 - **Full or per-VM backup** — XML configs and optionally disk images
@@ -279,7 +269,7 @@ No `sudo` needed — the script auto-escalates when required. After deployment, 
 ✓ All verification checks passed
 ```
 
-Open **https://localhost:5092** or run `machina` for the TUI.
+Open **https://localhost:5092**.
 
 ### Step-by-Step
 
@@ -367,13 +357,12 @@ See **[docs/PACKAGE_BINARY_REMOTE.md](docs/PACKAGE_BINARY_REMOTE.md)**.
 ### What `make deploy` does
 
 1. Installs `machina-daemon` → `/usr/local/bin/machina-daemon`
-2. Installs `machina` (TUI) → `/usr/local/bin/machina`
-3. Installs web UI → `/usr/local/share/machina/web/`
-4. Installs config → `/etc/machina/config.toml`
-5. Installs systemd units → `machina-daemon.service`, `machina-backup.service`, `machina-backup.timer`
-6. Installs backup script → `/usr/local/share/machina/scripts/backup.sh`
-7. Installs backup config → `/etc/machina/backup.conf`
-8. Reloads systemd and starts the daemon
+2. Installs web UI → `/usr/local/share/machina/web/`
+3. Installs config → `/etc/machina/config.toml`
+4. Installs systemd units → `machina-daemon.service`, `machina-backup.service`, `machina-backup.timer`
+5. Installs backup script → `/usr/local/share/machina/scripts/backup.sh`
+6. Installs backup config → `/etc/machina/backup.conf`
+7. Reloads systemd and starts the daemon
 
 ### Service Management
 
@@ -394,7 +383,6 @@ On a Linux dev host with libvirt dev packages installed:
 ```bash
 make build                          # debug build
 ./target/debug/machina-daemon     # run daemon
-./target/debug/machina-tui        # run TUI
 cd web && npm run dev               # web UI dev server with hot reload (port 3000)
 ```
 
@@ -494,7 +482,7 @@ The installer and systemd unit install **`/etc/machina/config.toml`** and start 
 
 ```toml
 [general]
-refresh_interval_secs = 5    # TUI polling interval
+refresh_interval_secs = 5    # UI polling interval
 
 [daemon]
 host = "0.0.0.0"             # Bind address (all interfaces)
@@ -537,80 +525,9 @@ machina-daemon --config /path/to/config.toml      # custom config
 RUST_LOG=tower_http=debug machina-daemon          # enable request tracing
 ```
 
-**TUI:**
-
-```bash
-machina                                           # defaults
-machina --url https://192.168.1.10:5092            # remote daemon
-machina --refresh 10                              # 10s refresh interval
-machina --config /path/to/config.toml             # custom config
-```
 
 ---
 
-## TUI Keyboard Reference
-
-### Panel Navigation
-
-| Key | Action |
-|-----|--------|
-| `h` / `←` | Focus sidebar panel |
-| `l` / `→` | Focus content panel (`l` on a VM opens logs instead) |
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
-| `g` / `G` | Jump to top / bottom |
-| `PageUp` / `PageDown` | Jump 10 items |
-| `Tab` / `BackTab` | Cycle sub-tabs (Summary, Monitor, Configure) |
-| `1` / `2` / `3` | Jump to sub-tab directly |
-
-### VM Actions
-
-| Key | Action |
-|-----|--------|
-| `s` | Start |
-| `x` | Stop (force) |
-| `H` | Shutdown (graceful) |
-| `b` | Reboot |
-| `p` | Pause |
-| `u` | Resume |
-| `d` | Delete (modal confirmation) |
-| `t` | Toggle autostart |
-| `n` | New VM (interactive dialog) |
-| `o` | Clone (shows command hint) |
-| `y` | View raw XML |
-| `l` | View VM logs |
-| `v` | Launch virt-viewer |
-| `V` | Open noVNC in browser |
-| `c` | Open virsh console |
-| `e` | SSH to VM |
-| `Space` | Multi-select toggle |
-| `A` | Select all VMs |
-| `Ctrl+Space` | Context menu |
-| `/` | Fuzzy search |
-| `:` | Command mode |
-| `?` | Help overlay |
-
-### Commands
-
-| Command | Action |
-|---------|--------|
-| `:create` | Open VM creation dialog |
-| `:create <name>` | Create VM with defaults |
-| `:template <tmpl> <name>` | Create from template |
-| `:clone <source> <new>` | Clone a VM |
-| `:snap <vm> <name>` | Create a snapshot |
-| `:rename <old> <new>` | Rename a VM |
-| `:resize <name> vcpus <n>` | Set vCPU count |
-| `:resize <name> memory <mb>` | Set memory |
-| `:netcreate <name>` | Create a NAT network |
-| `:backups` | Browse backups |
-| `:backup run` | Backup all VMs |
-| `:backup run <vm>` | Backup single VM |
-| `:backup restore <id>` | Restore from backup |
-| `:backup delete <id>` | Delete a backup |
-| `:vms` `:net` `:storage` `:snap` `:events` `:node` | Switch view |
-
----
 
 ## REST API
 
@@ -1029,7 +946,6 @@ make help       # Show all targets
 | `make lint` | Run clippy |
 | `make fmt` | Format code |
 | `make run-daemon` | Run daemon in debug mode |
-| `make run-tui` | Run TUI in debug mode |
 | `make clean` | Remove all build artifacts |
 
 ### Typical Workflows
@@ -1141,7 +1057,6 @@ sudo usermod -aG libvirt $USER && newgrp libvirt
 | Language | [Rust](https://www.rust-lang.org/) |
 | Daemon | [Axum](https://github.com/tokio-rs/axum) + [Tokio](https://tokio.rs) |
 | PTY (browser SSH) | [portable-pty](https://docs.rs/portable-pty) + system OpenSSH client |
-| Terminal UI | [Ratatui](https://ratatui.rs) |
 | Web UI | [React 19](https://react.dev) + [TypeScript](https://www.typescriptlang.org/) + [Tailwind CSS 4](https://tailwindcss.com) |
 | Charts | [Recharts](https://recharts.org) |
 | VNC Console | [noVNC](https://novnc.com) (served from system install) |
@@ -1220,7 +1135,7 @@ PDF documentation is available in `demo-screenshots/`:
 | Document | Description |
 |----------|-------------|
 | [machina-demo.pdf](demo-screenshots/machina-demo.pdf) | Client presentation — features, architecture, 10 live screenshots, security |
-| [machina-quickstart.pdf](demo-screenshots/machina-quickstart.pdf) | Quick Start Guide — prerequisites, build, install, access, TUI shortcuts, config, troubleshooting |
+| [machina-quickstart.pdf](demo-screenshots/machina-quickstart.pdf) | Quick Start Guide — prerequisites, build, install, access, config, troubleshooting |
 | [machina-api-reference.pdf](demo-screenshots/machina-api-reference.pdf) | Complete API reference — REST endpoints, curl examples, response formats, automation scripts |
 | [machina-security-architecture.pdf](demo-screenshots/machina-security-architecture.pdf) | Security & Architecture — system diagram, input validation, SSRF prevention, comparison table |
 | [machina-demo-scripts-guide.pdf](demo-screenshots/machina-demo-scripts-guide.pdf) | Demo & Scripts Guide — 30-step demo walkthrough, status/backup/bulk scripts reference |

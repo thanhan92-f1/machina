@@ -3,7 +3,7 @@
 # package-binary-remote.sh — Build Machina on a remote Linux host and tarball it
 # ============================================================================
 # Minimal rsync, `make release web` on the server (glibc + libvirt — must match
-# target distro), tarball daemon + TUI + web/dist for client handoff.
+# target distro), tarball daemon + web/dist for client handoff.
 #
 # Usage:
 #   ./scripts/package-binary-remote.sh <host> [user] [--fetch] [--reuse-build]
@@ -171,8 +171,7 @@ STAGE="\${OUT_DIR}/\${ARTIFACT}"
 rm -rf "\${STAGE}"
 mkdir -p "\${STAGE}/web/dist"
 cp "\${BUILD_DIR}/target/release/machina-daemon" "\${STAGE}/"
-cp "\${BUILD_DIR}/target/release/machina" "\${STAGE}/" 2>/dev/null || true
-chmod +x "\${STAGE}/machina-daemon" "\${STAGE}/machina" 2>/dev/null || true
+chmod +x "\${STAGE}/machina-daemon" 2>/dev/null || true
 cp -a "\${BUILD_DIR}/web/dist/." "\${STAGE}/web/dist/"
 cp "\${BUILD_DIR}/contrib/machina.toml" "\${STAGE}/machina.toml.example"
 cp "\${BUILD_DIR}/contrib/machina-daemon.service" "\${STAGE}/" 2>/dev/null || true
@@ -203,9 +202,9 @@ ACCESS_SCHEME=https
 ACCESS_PORT=5092
 ACCESS_PATH=
 AUTO_FULL_INSTALL=1
-FINISH_EXTRA_1='TUI: machina'
-FINISH_EXTRA_2='Service: sudo systemctl status machina-daemon'
-FINISH_EXTRA_3='Logs: sudo journalctl -u machina-daemon -f'
+FINISH_EXTRA_1='Service: sudo systemctl status machina-daemon'
+FINISH_EXTRA_2='Logs: sudo journalctl -u machina-daemon -f'
+FINISH_EXTRA_3='Help: cat HELP.txt'
 META
 cp "\${BUILD_DIR}/install.sh" "\${STAGE}/install-full.sh" 2>/dev/null || true
 chmod +x "\${STAGE}/install-full.sh" 2>/dev/null || true
@@ -241,7 +240,7 @@ START: cat START_HERE.txt  |  full help: cat HELP.txt
 NOT KUBERNETES — runs on a libvirt/KVM hypervisor host.
 
 WHAT IS IN THIS ARCHIVE
-  machina-daemon, machina (TUI), web/dist/
+  machina-daemon, web/dist/
   install.sh, test-host.sh, test-package.sh, uninstall.sh
   HOST_SETUP.txt, PREREQUISITES.txt
   install-full.sh       Full host install (deps + systemd + /usr/local; uses bundled binaries)

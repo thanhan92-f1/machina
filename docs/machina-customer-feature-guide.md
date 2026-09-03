@@ -2,9 +2,9 @@
 
 > **Enterprise Linux hypervisor management platform.**
 
-Machina is a unified control plane for virtual machines running on libvirt / QEMU / KVM. It folds scattered virsh scripting, separate console gateways, and missing fleet observability into a single Rust daemon with a web dashboard, terminal UI, REST API, and the machinactl CLI. It is built for infrastructure teams and NOC operators who run VMs on their own metal and want cloud-grade lifecycle, consoles, security, and automation without vendor hypervisor lock-in.
+Machina is a unified control plane for virtual machines running on libvirt / QEMU / KVM. It folds scattered virsh scripting, separate console gateways, and missing fleet observability into a single Rust daemon with a web dashboard, REST API, and the machinactl CLI. It is built for infrastructure teams and NOC operators who run VMs on their own metal and want cloud-grade lifecycle, consoles, security, and automation without vendor hypervisor lock-in.
 
-**70+** web console screens · **4** ways to drive it: Web, TUI, REST, CLI · **12** workspace components, one shared core
+**70+** web console screens · **3** ways to drive it: Web, REST, CLI · **11** workspace components, one shared core
 
 This is the customer-facing onboarding guide — how to access the product, your first workflows, and how to use every feature. A print-ready PDF of the same content sits alongside this file.
 
@@ -29,9 +29,9 @@ This is the customer-facing onboarding guide — how to access the product, your
 **How to access it**
 
 - **Web:** React dashboard at `https://:5092` (self-signed TLS by default) — a classic single-host shell plus a multi-host platform shell under `/platform/*`.
-- **CLI:** `machinactl` operates and deploys a host (`machinactl deploy`, `backup`, `health`, `doctor`, `audit verify`); the `machina` binary launches the terminal UI; `machina-daemon` is the server process.
+- **CLI:** `machinactl` operates and deploys a host (`machinactl deploy`, `backup`, `health`, `doctor`, `audit verify`); `machina-daemon` is the server process.
 - **API:** REST at base `/api/v1` with WebSocket streams under `/ws/v1`; the live OpenAPI contract is served at `/api-docs` (e.g. `curl -sk https://:5092/api/v1/health`).
-- **Login:** Sign in on the web/TUI with a Linux host account via PAM — there is no separate Machina password; optional LDAP or OIDC SSO can front it.
+- **Login:** Sign in on the web UI with a Linux host account via PAM — there is no separate Machina password; optional LDAP or OIDC SSO can front it.
 - **Needs:** A Linux host with libvirt / QEMU / KVM and `/dev/kvm` (Machina builds and runs on Linux only).
 
 **Your first workflows**
@@ -300,12 +300,10 @@ _Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
 
 ## 12. Interfaces & Administration
 
-_Four ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-tenancy, and one-command deploys._
+_Three ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-tenancy, and one-command deploys._
 
 - **Web dashboard** — React 19 Liquid Glass UI with classic single-host and platform multi-host shells covering 70+ screens. — _A polished, complete console for the whole platform._
   - **How:** Browse `https://:5092` (classic shell; multi-host under `/platform/*`).
-- **Terminal UI** — A ratatui-based terminal client to list VMs, drive lifecycle, and watch metrics. — _Full control from an SSH session, no browser needed._
-  - **How:** Run `machina` from an SSH session on the host.
 - **REST + WebSocket API** — Complete /api/v1 REST surface and /ws/v1 streams with a published OpenAPI contract at /api-docs. — _Automate anything and generate typed clients._
   - **How:** Call base `/api/v1`; stream `/ws/v1`; browse the contract at `/api-docs`.
 - **machinactl CLI** — One CLI for deps, build, install, deploy, upgrade, backup, verify, health, doctor, audit, and integrations status. — _Stand up and operate a host with single commands._
@@ -327,7 +325,7 @@ _Four ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-te
 
 1. **Prepare a Linux KVM host** — Run ./machinactl doctor to confirm /dev/kvm, systemd, libvirtd, and required tools are present. Build only on Linux.
 2. **Deploy in one command** — Run ./machinactl deploy to install dependencies, build a release, install, start the daemon, and smoke-test the API.
-3. **Open the console** — Browse to https://<host>:5092 (self-signed TLS by default) and sign in with a Linux host account via PAM, or launch the TUI with machina.
+3. **Open the console** — Browse to https://<host>:5092 (self-signed TLS by default) and sign in with a Linux host account via PAM.
 4. **Lock down access** — Populate /var/lib/machina/roles.json (an empty file makes everyone admin), set a strong MACHINA_JWT_SECRET, and choose PAM, LDAP, or OIDC.
 5. **Turn on protection & telemetry** — Enable scheduled backups with ./machinactl backup enable, point them off-box, and wire Prometheus scrape or OTLP export.
 6. **Scale to a fleet (optional)** — Install the controller and agents with INSTALL_PLATFORM=1 or deploy-remote --platform to unlock HA, DRS, and the platform UI.

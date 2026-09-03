@@ -7,7 +7,7 @@ UNITDIR ?= /usr/lib/systemd/system
 CARGO ?= cargo
 CARGO_FLAGS ?=
 
-.PHONY: all build release debug clean install uninstall fmt fmt-check lint test web-test web-e2e regression-api regression-ops regression-lifecycle regression-platform regression-infra regression-fleet regression-mission regression-catalog regression-hardware regression-host regression-storage regression-zeus regression-audit regression-volume regression-disk regression-power regression-net regression-guest regression-parity regression-admin regression-ai regression-operations regression-resize regression-planner regression-alerts regression-enterprise regression-apps regression-policy regression-diag regression-obs regression-security regression-provision regression-providers regression-hub regression-hunt regression-atlas regression-guestkit regression-batch regression-aiops regression-watchdog regression-linuxhost regression-firewallx regression-authz regression-fleetx regression-ui regression-ui-settings regression-ui-wizards regression-ui-security regression-ui-k8s-os regression-ui-mission regression-ui-catalog regression-ui-hardware regression-ui-host regression-ui-storage regression-ui-zeus regression-ui-audit regression-ui-volume regression-ui-power regression-ui-net regression-ui-guest regression-ui-parity regression-ui-admin regression-ui-ai regression-ui-operations regression-ui-resize regression-ui-planner regression-ui-alerts regression-ui-enterprise regression-ui-apps regression-ui-policy regression-ui-diag regression-ui-obs regression-ui-fabric regression-ui-provision regression-ui-providers regression-ui-hub regression-ui-hunt regression-ui-atlas regression-ui-guestkit regression-ui-batch regression-ui-aiops regression-ui-watchdog regression-ui-linuxhost regression-ui-firewallx regression-ui-authz regression-ui-fleetx regression-pages regression-setup check web web-clean start stop restart status deploy run-daemon run-tui help
+.PHONY: all build release debug clean install uninstall fmt fmt-check lint test web-test web-e2e regression-api regression-ops regression-lifecycle regression-platform regression-infra regression-fleet regression-mission regression-catalog regression-hardware regression-host regression-storage regression-zeus regression-audit regression-volume regression-disk regression-power regression-net regression-guest regression-parity regression-admin regression-ai regression-operations regression-resize regression-planner regression-alerts regression-enterprise regression-apps regression-policy regression-diag regression-obs regression-security regression-provision regression-providers regression-hub regression-hunt regression-atlas regression-guestkit regression-batch regression-aiops regression-watchdog regression-linuxhost regression-firewallx regression-authz regression-fleetx regression-ui regression-ui-settings regression-ui-wizards regression-ui-security regression-ui-k8s-os regression-ui-mission regression-ui-catalog regression-ui-hardware regression-ui-host regression-ui-storage regression-ui-zeus regression-ui-audit regression-ui-volume regression-ui-power regression-ui-net regression-ui-guest regression-ui-parity regression-ui-admin regression-ui-ai regression-ui-operations regression-ui-resize regression-ui-planner regression-ui-alerts regression-ui-enterprise regression-ui-apps regression-ui-policy regression-ui-diag regression-ui-obs regression-ui-fabric regression-ui-provision regression-ui-providers regression-ui-hub regression-ui-hunt regression-ui-atlas regression-ui-guestkit regression-ui-batch regression-ui-aiops regression-ui-watchdog regression-ui-linuxhost regression-ui-firewallx regression-ui-authz regression-ui-fleetx regression-pages regression-setup check web web-clean start stop restart status deploy run-daemon help
 
 all: release web ## Build everything (Rust + web)
 
@@ -361,7 +361,6 @@ web-clean: ## Remove web build artifacts
 install: ## Install binaries, web UI, config, systemd unit, and mkosi workspace defs
 	@test -f target/release/machina-daemon || { echo "Run 'make' or 'make release' first"; exit 1; }
 	install -Dm755 target/release/machina-daemon $(DESTDIR)$(BINDIR)/machina-daemon
-	install -Dm755 target/release/machina-tui $(DESTDIR)$(BINDIR)/machina
 	@if [ "$(INSTALL_PLATFORM)" = "1" ]; then \
 		install -Dm755 target/release/machina-controller $(DESTDIR)$(BINDIR)/machina-controller; \
 		install -Dm755 target/release/machina-agent $(DESTDIR)$(BINDIR)/machina-agent; \
@@ -418,14 +417,10 @@ deploy: install start ## Install and start (run 'make' first to build)
 	@echo ""
 	@echo "✅ Machina deployed and running"
 	@echo "   🌐 Web UI:  https://localhost:5092"
-	@echo "   🖥️  TUI:     machina"
 	@echo "   🔗 API:     https://localhost:5092/api/v1/health"
 
 run-daemon: build ## Run the daemon (debug)
 	$(CARGO) run -p machina-daemon
-
-run-tui: build ## Run the TUI (debug)
-	$(CARGO) run -p machina-tui
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \

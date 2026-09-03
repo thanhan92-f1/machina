@@ -239,7 +239,6 @@ if declare -F pkg_access_url >/dev/null 2>&1; then
 else
   echo "  Web UI:  https://localhost:5092"
 fi
-echo "  🖥️  TUI:     machina"
 echo "  🔗 API:     ${API}/health"
 echo ""
 [ "$DEMO_FAIL" -eq 0 ]

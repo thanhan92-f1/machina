@@ -11,7 +11,7 @@
 **Q1. What is Machina?**
 An enterprise Linux hypervisor management platform — a unified control plane for
 VMs, networks, storage, snapshots and day-two operations on bare-metal hosts,
-built on libvirt/QEMU/KVM. It exposes a web UI, a terminal UI, a REST API and
+built on libvirt/QEMU/KVM. It exposes a web UI, a REST API and
 the `machinactl` CLI.
 
 **Q2. Where does Machina fit in the Zyvor stack?**
@@ -33,7 +33,7 @@ gRPC. Many deployments run only the daemon.
 
 **Q5. What languages/frameworks is it built with?**
 Rust (Axum 0.8 / Tokio) for the daemon, controller and agent; React 19 + Vite +
-TailwindCSS for the web UI; ratatui for the TUI.
+TailwindCSS for the web UI.
 
 ---
 

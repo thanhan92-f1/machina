@@ -55,7 +55,6 @@ Machina is a **two-layer platform**:
 | `daemon` | `machina-daemon` | Single-host REST+WS API server, auth, console proxies |
 | `controller` | `machina-controller` | Multi-host control plane: fleet, HA, DRS, AI engine, tasks |
 | `agent` | `machina-agent` | Per-host gRPC agent executing libvirt ops |
-| `tui` | `machina-tui` / `machina` | Terminal UI (ratatui) |
 | `spec` | — | Declarative VM/cluster spec types |
 | `translate` | — | libvirt domain XML → internal type translation |
 | `rvb` | — | Reverse-bridge helpers |
@@ -75,7 +74,7 @@ consoles, `recharts` charts, and `three` for 3D topology views. Design system is
 
 ## 3. Surfaces
 
-Machina exposes four ways to drive it.
+Machina exposes three ways to drive it.
 
 ### 3.1 `machinactl` CLI
 
@@ -208,18 +207,13 @@ Two shells share one daemon:
 The login page uses PAM (Linux host accounts) by default; LDAP and OIDC SSO can
 be enabled. See [Admin & Configuration → Authentication](admin-configuration.md#authentication--rbac).
 
-### 3.5 Terminal UI (TUI)
-
-`machina` (the `machina-tui` binary, built with ratatui) is an interactive
-terminal client for the same daemon — list VMs, drive lifecycle, watch metrics.
-
 ---
 
 ## 4. Feature deep-dives
 
 ### VM lifecycle
 
-Full create → run → migrate → delete lifecycle via API, UI, TUI, or `machinactl`.
+Full create → run → migrate → delete lifecycle via API, UI, or `machinactl`.
 Creation supports two backends, selected by `[libvirt].create_backend`
 (default `virt_install`) or per-request `create_backend`: `virt_install`
 (wraps `virt-install`) or `libvirt_xml` (native domain XML). Golden images can be

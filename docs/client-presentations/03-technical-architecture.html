@@ -161,7 +161,7 @@ tr:last-child td:last-child { border-radius: 0 0 8px 0; }
   <div class="card-grid card-grid-4" style="margin-top:24px;">
     <div class="card card-dark">
       <h3>Core Library</h3>
-      <p>Types, validation, XML generation, libvirt bindings. Shared by daemon and TUI.</p>
+      <p>Types, validation, XML generation, libvirt bindings. Shared across the workspace.</p>
     </div>
     <div class="card card-dark">
       <h3>Daemon</h3>
@@ -172,8 +172,8 @@ tr:last-child td:last-child { border-radius: 0 0 8px 0; }
       <p>React 19 SPA with Tailwind CSS 4, Recharts dashboards, noVNC and xterm.js consoles.</p>
     </div>
     <div class="card card-dark">
-      <h3>TUI</h3>
-      <p>Full-featured terminal UI with Ratatui. Sidebar navigation, VM actions, command mode.</p>
+      <h3>CLI</h3>
+      <p>machinactl for deploy, verify, health, backup, and host operations.</p>
     </div>
   </div>
 
@@ -195,7 +195,6 @@ tr:last-child td:last-child { border-radius: 0 0 8px 0; }
     <tbody>
       <tr><td><strong>Language</strong></td><td>Rust (2021 edition)</td><td>Memory safety, zero-cost abstractions, async runtime</td></tr>
       <tr><td><strong>HTTP Server</strong></td><td>Axum + Tokio</td><td>Async HTTP/WebSocket, tower middleware, graceful shutdown</td></tr>
-      <tr><td><strong>TUI Framework</strong></td><td>Ratatui + Crossterm</td><td>Terminal rendering, cross-platform input handling</td></tr>
       <tr><td><strong>Web Frontend</strong></td><td>React 19 + TypeScript</td><td>Component-based UI with strict type safety</td></tr>
       <tr><td><strong>CSS</strong></td><td>Tailwind CSS 4</td><td>Utility-first styling, dark mode, responsive design</td></tr>
       <tr><td><strong>Charts</strong></td><td>Recharts</td><td>CPU, memory, disk, network time-series visualizations</td></tr>
@@ -433,7 +432,7 @@ tr:last-child td:last-child { border-radius: 0 0 8px 0; }
         <span class="comment"># Install + start service</span><br>
         <span class="keyword">sudo make</span> deploy
       </div>
-      <p style="margin-top:12px;">Builds release binaries (machina-daemon, machina-tui) and web frontend, installs to /usr/local, starts systemd service.</p>
+      <p style="margin-top:12px;">Builds release binaries (machina-daemon) and web frontend, installs to /usr/local, starts systemd service.</p>
     </div>
   </div>
 
@@ -461,7 +460,6 @@ tr:last-child td:last-child { border-radius: 0 0 8px 0; }
       <table style="margin-top:8px;">
         <tbody>
           <tr><td style="color:#94a3b8;">Binary</td><td style="color:#e2e8f0;">/usr/local/bin/machina-daemon</td></tr>
-          <tr><td style="color:#94a3b8;">TUI Binary</td><td style="color:#e2e8f0;">/usr/local/bin/machina</td></tr>
           <tr><td style="color:#94a3b8;">Config</td><td style="color:#e2e8f0;">/etc/machina/config.toml</td></tr>
           <tr><td style="color:#94a3b8;">Backup Config</td><td style="color:#e2e8f0;">/etc/machina/backup.conf</td></tr>
           <tr><td style="color:#94a3b8;">Web Assets</td><td style="color:#e2e8f0;">/usr/local/share/machina/web/</td></tr>

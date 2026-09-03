@@ -44,7 +44,6 @@ pkg_step_done
 
 pkg_step "Verify bundle"
 [[ -x ./machina-daemon ]] && pkg_ok "machina-daemon" || { pkg_fail "machina-daemon missing"; exit 1; }
-[[ -x ./machina ]] && pkg_ok "machina TUI" || pkg_skip "machina TUI not in bundle"
 [[ -d ./web/dist ]] && pkg_ok "web dashboard assets" || pkg_warn "web/dist missing"
 pkg_step_done
 
@@ -57,7 +56,6 @@ pkg_step "Smoke test"
 pkg_step_done
 
 pkg_install_finish "Machina" https 5092 "" \
-  "TUI: machina" \
   "Help: cat HELP.txt · ./install.sh --help" \
   "Service: sudo systemctl status machina-daemon" \
   "Logs: sudo journalctl -u machina-daemon -f"

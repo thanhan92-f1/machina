@@ -14,13 +14,13 @@ hypervisor management platform in the [Zyvor](https://zyvor.dev) stack.
 
 Machina replaces scattered `virsh` scripts and bolt-on console gateways with a
 single control plane: a Rust daemon that speaks libvirt, plus a web UI, a
-terminal UI, a REST API, and the `machinactl` CLI. It ships built-in noVNC,
+REST API, and the `machinactl` CLI. It ships built-in noVNC,
 SPICE, serial and SSH console proxies, PAM/LDAP/OIDC auth with RBAC, Prometheus
 metrics, VM backup, and a documented KubeVirt migration path.
 
 ```text
         ┌──────────── Interfaces ────────────┐
-        │  Web UI · TUI · REST API · machinactl │
+        │  Web UI · REST API · machinactl    │
         └──────────────────┬──────────────────┘
                            │ HTTPS :5092  (REST /api/v1 + WS /ws/v1)
                   ┌────────▼─────────┐
@@ -68,8 +68,6 @@ git clone https://github.com/ssahani/machina.git && cd machina
 
 # Then open the web UI (sign in with a Linux/PAM account on the host):
 #   https://<host>:5092
-# …or run the terminal UI:
-machina
 ```
 
 Remote deploy from your workstation (builds on the remote Linux host):
@@ -88,7 +86,7 @@ See the full matrix in [admin-configuration.md](admin-configuration.md#deploymen
 | Guide | What's inside |
 |-------|---------------|
 | **[Customer page-by-page manual](../customer/README.md)** | Learn every dashboard screen, with printable PDFs |
-| [Product Guide](product-guide.md) | Concepts, every surface (CLI/API/UI/TUI), and feature deep-dives: VM lifecycle, storage, networks, snapshots, consoles, fleet, integrations. |
+| [Product Guide](product-guide.md) | Concepts, every surface (CLI/API/UI), and feature deep-dives: VM lifecycle, storage, networks, snapshots, consoles, fleet, integrations. |
 | [Administration & Configuration](admin-configuration.md) | Deploy/run models, ports, full `config.toml` + env-var reference, auth/RBAC, TLS, building from source, production checklist. |
 | [FAQ](faq.md) | 30+ real questions on auth, ports, deploy, VMs, consoles, backups, integrations. |
 | [Troubleshooting](troubleshooting.md) | Symptom-indexed fixes with real diagnostic commands (`machinactl health`, `journalctl`, `virsh`). |

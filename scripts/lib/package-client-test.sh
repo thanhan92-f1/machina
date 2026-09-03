@@ -13,7 +13,7 @@ export PKG_INSTALL_ROOT="${ROOT}"
 
 _PKG_SESSION_START=${SECONDS}
 pkg_counters_reset
-pkg_banner "Machina package test" "Daemon · TUI · dashboard assets"
+pkg_banner "Machina package test" "Daemon · dashboard assets"
 
 [[ -x ./machina-daemon ]] && pkg_ok "machina-daemon" || pkg_fail "machina-daemon"
 ./machina-daemon --help 2>&1 | head -3 | while read -r l; do pkg_detail "${l}"; done || true

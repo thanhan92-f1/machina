@@ -195,7 +195,6 @@
     <tr><td>Backup / Restore</td><td class="check">&#x2713;</td><td>Scripted</td><td class="cross">&#x2717;</td><td class="check">&#x2713;</td></tr>
     <tr><td>Network Topology Management</td><td class="check">&#x2713;</td><td>virsh net-*</td><td>Basic</td><td class="check">&#x2713;</td></tr>
     <tr><td>Storage Pool Management</td><td class="check">&#x2713;</td><td>virsh pool-*</td><td>Basic</td><td class="check">&#x2713;</td></tr>
-    <tr><td>Terminal UI (Ratatui TUI)</td><td class="check">&#x2713;</td><td class="cross">&#x2717;</td><td class="cross">&#x2717;</td><td class="cross">&#x2717;</td></tr>
     <tr><td>REST API (30+ endpoints)</td><td class="check">&#x2713;</td><td class="cross">&#x2717;</td><td>D-Bus</td><td class="check">&#x2713;</td></tr>
     <tr><td>Lightweight / No Cluster Required</td><td class="check">&#x2713;</td><td class="check">&#x2713;</td><td class="check">&#x2713;</td><td class="cross">&#x2717;</td></tr>
     <tr><td>Written in Rust (memory safe)</td><td class="check">&#x2713;</td><td>N/A</td><td>C/JS</td><td>Perl/JS</td></tr>
@@ -215,7 +214,7 @@
     <div class="flow-step">machina daemon (Axum)</div>
   </div>
   <div class="flow" style="margin-top: 1em;">
-    <div class="flow-step">TUI (Ratatui)</div>
+    <div class="flow-step">machinactl CLI</div>
     <div class="flow-arrow">&#x2192;</div>
     <div class="flow-step">machina daemon</div>
     <div class="flow-arrow">&#x2192;</div>
@@ -264,14 +263,12 @@
       </ul>
     </div>
     <div class="card">
-      <h4>TUI (Ratatui terminal UI)</h4>
+      <h4>machinactl CLI</h4>
       <ul>
-        <li>Full hypervisor host management from terminal</li>
-        <li>Interactive navigation and actions</li>
-        <li>Network and storage views</li>
-        <li>Works over SSH without browser</li>
-        <li>Installed as 'machina' binary</li>
-        <li>Same daemon backend as web UI</li>
+        <li>Deploy, verify, health, backup, and doctor</li>
+        <li>One-command host install and upgrade</li>
+        <li>Same daemon backend as the web UI</li>
+        <li>Works over SSH without a browser</li>
       </ul>
     </div>
   </div>

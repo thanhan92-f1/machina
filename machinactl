@@ -229,7 +229,7 @@ cmd_build() {
     cd "$SCRIPT_DIR"
     export_libclang_path
     cargo build --workspace --release 2>&1
-    ok "Backend built: machina-daemon, machina (TUI)"
+    ok "Backend built: machina-daemon"
 
     if [[ $build_web -eq 1 ]] && [[ -d "$SCRIPT_DIR/web" ]]; then
         if command -v node &>/dev/null; then
@@ -347,7 +347,6 @@ cmd_deploy() {
     fi
     echo ""
     echo "  🔗 API:     $API_URL"
-    echo "  🖥️  TUI:     machina"
     echo "  📊 Status:  ./machinactl status"
     echo "  📜 Logs:    sudo journalctl -u machina-daemon -f"
     echo ""
@@ -618,7 +617,6 @@ cmd_start() {
     if systemctl is-active --quiet machina-daemon; then
         ok "machina-daemon is running"
         info "API: $API_URL"
-        info "TUI: machina"
     else
         err "Failed to start. Check: sudo journalctl -u machina-daemon -e"
         exit 1
@@ -842,7 +840,6 @@ cmd_demo() {
     echo ""
     echo "📋 Quick reference:"
     echo "  🔗 API:   $API_URL/api/$API_VERSION"
-    echo "  🖥️  TUI:   machina"
     echo "  🌐 Web:   $API_URL"
     echo ""
 }

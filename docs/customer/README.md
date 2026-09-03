@@ -32,7 +32,7 @@ Output lands in [`pdf/`](pdf/):
 ```text
   Daemon UI/API  →  https://<host>:5092
   Controller     →  :5093 (optional multi-host)
-  Surfaces       →  Web · TUI (machina) · machinactl CLI
+  Surfaces       →  Web · machinactl CLI
   Workloads      →  libvirt VMs · Fleet Cloud · fleet platform
 ```
 

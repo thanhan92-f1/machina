@@ -55,7 +55,6 @@ make && sudo make deploy     # manual equivalent
 ### Dev mode (no install, Linux only)
 ```bash
 ./target/debug/machina-daemon    # daemon on :5092
-./target/debug/machina-tui       # TUI client
 cd web && npm run dev             # UI dev server on :3000, proxied to :5092
 ```
 
@@ -98,7 +97,6 @@ The **web UI** proxies all `/api/...` and `/ws/...` requests to `machina-daemon`
 | `daemon` | `machina-daemon` | Single-host REST+WS API server (Axum/Tokio), auth, console proxies |
 | `controller` | `machina-controller` | Multi-host control plane: fleet, HA, DRS, AI engine, SQLite embedded, NATS tasks |
 | `agent` | `machina-agent` | Per-host gRPC agent (tonic) executing libvirt ops for the controller |
-| `tui` | `machina-tui` / `machina` | Terminal UI (ratatui) |
 | `spec` | — | Declarative VM/cluster spec types (Serde structs mirroring the gRPC proto) |
 | `translate` | — | libvirt domain XML → internal type translation, QEMU command helpers |
 | `rvb` | — | RVB (reverse bridge) helpers |
@@ -149,7 +147,7 @@ PACKETWOLF_ENABLED    false
 - `/` and `/vms/*` — Classic daemon-backed hypervisor UI
 - `/containers` and `/containers/pods` — Local Podman/Docker containers and Podman pods (Vessel)
 - `/platform/*` — Enterprise platform shell (controller-backed); uses `PlatformLayout` with its own sidebar/nav
-- `/fleet-cloud/*` — "Fleet Cloud" UI (renamed from its old route; no redirect — old links 404). Backed entirely by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). The legacy external-cloud client integration (compute/image/network/identity management, disk push/pull) has been fully removed from core, daemon, and the TUI.
+- `/fleet-cloud/*` — "Fleet Cloud" UI (renamed from its old route; no redirect — old links 404). Backed entirely by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). The legacy external-cloud client integration (compute/image/network/identity management, disk push/pull) has been fully removed from core and daemon.
 - `/fleet` — Multi-host fleet overview
 
 ### Dev proxy

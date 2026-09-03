@@ -2,7 +2,6 @@
 members = [
     "core",
     "daemon",
-    "tui",
     "rvb",
     "virt-image-build",
     "run-as-user-helper",
@@ -28,8 +27,6 @@ tracing-subscriber = "0.3"
 anyhow = "1"
 thiserror = "2.0"
 tower-http = { version = "0.6", features = ["cors", "trace", "fs", "set-header"] }
-ratatui = "0.29"
-crossterm = "0.28"
 reqwest = { version = "0.12", features = ["json", "blocking", "stream"] }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }

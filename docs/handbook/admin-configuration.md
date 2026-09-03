@@ -78,7 +78,6 @@ daemon + TUI + `web/dist` into `./dist/` for client handoff.
 | Artifact | Path |
 |----------|------|
 | Daemon binary | `/usr/local/bin/machina-daemon` |
-| TUI binary (renamed) | `/usr/local/bin/machina` |
 | Controller / agent (if `INSTALL_PLATFORM=1`) | `/usr/local/bin/machina-controller`, `/usr/local/bin/machina-agent` |
 | Config | `/etc/machina/config.toml` |
 | Daemon env file | `/etc/default/machina-daemon` |

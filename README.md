@@ -17,11 +17,11 @@
 
 **[Feature Guide](docs/machina-customer-feature-guide.md)** — capability map across **12** domains ([PDF](docs/machina-customer-feature-guide.pdf)).
 
-Unified control plane for **VMs, networks, storage, snapshots, and day-two operations** on bare-metal worker nodes — web UI with VNC/SPICE consoles, terminal UI, REST API, and `machinactl` for fleet automation. Built on **libvirt/QEMU/KVM**, with an optional multi-host **enterprise control plane** (fleet HA/DRS, KubeVirt, Fleet Cloud, and **Zeus AI** — autonomous diagnostics, approvals, and natural-language ops).
+Unified control plane for **VMs, networks, storage, snapshots, and day-two operations** on bare-metal worker nodes — web UI with VNC/SPICE consoles, REST API, and `machinactl` for fleet automation. Built on **libvirt/QEMU/KVM**, with an optional multi-host **enterprise control plane** (fleet HA/DRS, KubeVirt, Fleet Cloud, and **Zeus AI** — autonomous diagnostics, approvals, and natural-language ops).
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│  Interfaces   Web UI · TUI · REST API · machinactl CLI       │
+│  Interfaces   Web UI · REST API · machinactl CLI             │
 ├──────────────────────────────────────────────────────────────┤
 │  Controller   machina-controller — fleet, HA/DRS, Zeus AI    │
 │               (multi-host, optional)                         │
@@ -58,7 +58,6 @@ Unified control plane for **VMs, networks, storage, snapshots, and day-two opera
 | **Controller** | Multi-host fleet control plane — HA, DRS, Zeus AI engine, SQLite — `controller/` |
 | **Agent** | Per-host gRPC agent for the controller — `agent/` |
 | **Web** | React 19 + xterm.js + noVNC — `web/` |
-| **TUI** | ratatui terminal client — `tui/` |
 | **Core** | libvirt bindings, types — `core/` |
 | **CLI** | `machinactl` deploy/verify/health — root |
 | **Integrations** | PacketWolf, Atlas storage — `docs/` |
@@ -71,8 +70,7 @@ Unified control plane for **VMs, networks, storage, snapshots, and day-two opera
 git clone https://github.com/ssahani/machina.git && cd machina
 ./machinactl deploy    # deps · build · install · start · verify
 
-# Open https://localhost:5092 or run TUI:
-machina
+# Open https://localhost:5092
 ```
 
 **Remote deploy:**
@@ -94,7 +92,7 @@ machina
 
 ```mermaid
 flowchart TB
-  UI[Web + TUI] --> Daemon[machina-daemon]
+  UI[Web UI] --> Daemon[machina-daemon]
   UI --> Controller[machina-controller]
   API[REST clients] --> Daemon
   Daemon --> Libvirt[libvirt/QEMU/KVM]

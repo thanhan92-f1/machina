@@ -1061,7 +1061,6 @@ build_rust() {
     fi
 
     ok "Built: target/release/machina-daemon ($(du -h target/release/machina-daemon | cut -f1))"
-    ok "Built: target/release/machina-tui ($(du -h target/release/machina-tui | cut -f1))"
 }
 
 build_web() {
@@ -1138,10 +1137,6 @@ install_files_bundle() {
 
     install -Dm755 "$root/machina-daemon" /usr/local/bin/machina-daemon
     ok "machina-daemon -> /usr/local/bin/"
-    if [ -x "$root/machina" ]; then
-        install -Dm755 "$root/machina" /usr/local/bin/machina
-        ok "machina TUI -> /usr/local/bin/"
-    fi
 
     if [ ! -f /etc/machina/config.toml ]; then
         if [ -f "$root/machina.toml.example" ]; then
@@ -1206,7 +1201,6 @@ install_files() {
 
     # Binaries
     install -Dm755 target/release/machina-daemon /usr/local/bin/machina-daemon
-    install -Dm755 target/release/machina-tui /usr/local/bin/machina
     ok "Binaries -> /usr/local/bin/"
 
     # Config
@@ -1597,14 +1591,6 @@ run_tests() {
         failed=$((failed + 1))
     fi
 
-    if /usr/local/bin/machina --help > /dev/null 2>&1; then
-        ok "  machina TUI binary"
-        passed=$((passed + 1))
-    else
-        echo "  ❌ FAIL machina TUI binary"
-        failed=$((failed + 1))
-    fi
-
     # Security validation (skipped when auth is enabled)
     if $auth_enabled; then
         info "  Security tests skipped (auth enabled)"
@@ -1742,7 +1728,6 @@ print_summary() {
         echo "  API:         https://localhost:${MACHINA_PORT}/api/v1/health"
     fi
     echo "  Local only:  https://127.0.0.1:${MACHINA_PORT}"
-    echo "  TUI:         machina"
     echo "  VMs found:   ${vm_count}"
     echo ""
     echo "  Manage:"
@@ -1805,7 +1790,7 @@ MACHINA_BANNER
 Usage: install.sh [OPTIONS]
 
   Automated installer for machina — Linux hypervisor host management
-  with Web UI, REST API, TUI, backups, monitoring, and optional KubeVirt
+  with Web UI, REST API, backups, monitoring, and optional KubeVirt
   helpers when you configure them.
 
   Detects the Linux distribution, installs all dependencies (libvirt,
@@ -1851,7 +1836,6 @@ Supported distributions:
 
 What gets installed:
   /usr/local/bin/machina-daemon    Daemon binary (REST API + WebSocket)
-  /usr/local/bin/machina           TUI binary (terminal interface)
   /usr/local/bin/machinactl        Management helper script
   /usr/local/share/machina/web/    Web UI (React frontend)
   /usr/local/share/machina/scripts/  Backup, demo, status scripts
@@ -1888,7 +1872,6 @@ Examples:
 
 After install:
   Web UI:    https://localhost:5092   (self-signed by default — browser warning until you install a real cert)
-  TUI:       machina
   API test:  curl -sk https://localhost:5092/api/v1/health
   Logs:      sudo journalctl -u machina-daemon -f
   Config:    sudo vim /etc/machina/config.toml
