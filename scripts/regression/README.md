@@ -45,6 +45,12 @@ npm run infra
 # Devices/services/catalog/batch power/Fleet Cloud+K8s status
 npm run fleet
 
+# Native Fleet Cloud CRUD (flavors/keypairs/SGs/LBs/port-forwards)
+# Prefer live platform IDs:
+#   MACHINA_PLATFORM_VM_ID=… MACHINA_PLATFORM_HOST_ID=… MACHINA_VM_NAME=…
+npm run fleetcloud
+# or: make regression-fleetcloud
+
 # Browse disks / fleet activity / reports / observability / Atlas
 npm run mission
 

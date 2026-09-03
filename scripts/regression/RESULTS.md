@@ -2,6 +2,25 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-09-03 — Fleet Cloud wave (`212.8.248.187`)
+
+Platform auth via daemon proxy + live IDs:
+`MACHINA_PLATFORM_VM_ID=ea6f58ef-…` (`iw-e2e-1`), host `32e030bd-…`.
+
+| Gate | Result |
+|------|--------|
+| `npm run storage` | **23/23 PASS** |
+| `npm run fleet` | **13/14** — `zeus/summary` **404** (route gap) |
+| `npm run fleetx` | **20/21** — `launchpad-unavailable` **404** |
+| `npm run platform` | **12/15** — `host-sync` FK **500**; KubeVirt detail/console **404** (no KV) |
+| `npm run catalog` | **31/32** — stale `platform-host` UUID **404** (use live host id) |
+| `npm run mission` | **19/20** — same stale host UUID on `/gpus` |
+| **`npm run fleetcloud`** (new) | **25/25 PASS** — flavor/keypair/SG+rule/LB CRUD + port-forward; LB member row persists even when host iptables push soft-fails |
+
+New entrypoint: `scripts/regression/ops-fleetcloud.js` → `npm run fleetcloud` / `make regression-fleetcloud`.
+
+**Bug found + fixed (agent):** `delete_port_forward` used comment-less `iptables -D`, which never matched rules created with `-m comment --comment machina:…`, so API returned `ok:true` while DNAT stayed live. Now deletes by line number and errors if the rule remains.
+
 ## 2026-09-03 — Hotplug + feature-test (daemon-only, `212.8.248.187`)
 
 After TUI removal deploy. Target VM `iw-e2e-1` (Linux virtio root). Daemon rebuilt

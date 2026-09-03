@@ -1051,65 +1051,93 @@ pub fn delete_port_forward(
         return Err(LibvirtError::Invalid(format!("Invalid VM IP: {vm_ip}")));
     }
 
-    // These deletes are intentionally best-effort (the rule may already be gone), but a
-    // failure was previously discarded with no trace at all — an iptables error unrelated
-    // to "rule not found" (e.g. a locked xtables lock) left the NAT/FORWARD rule in place
-    // while the caller was told the port forward was removed. Log so that case is visible.
-    match Command::new(find_bin("iptables"))
-        .args([
-            "-t",
-            "nat",
-            "-D",
-            "PREROUTING",
-            "-p",
-            proto,
-            "--dport",
-            &host_port.to_string(),
-            "-j",
-            "DNAT",
-            "--to-destination",
-            &format!("{vm_ip}:{vm_port}"),
-        ])
-        .output()
-    {
-        Ok(out) if !out.status.success() => {
-            tracing::warn!(
-                "delete_port_forward: iptables PREROUTING delete for {proto}/{host_port}->{vm_ip}:{vm_port} \
-                 failed: {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Err(e) => tracing::warn!("delete_port_forward: failed to run iptables (PREROUTING): {e}"),
-        Ok(_) => {}
-    }
+    // Create installs `-m comment --comment machina:…`. A comment-less `iptables -D` never
+    // matches that rule (exit 1 / "Bad rule"), so we delete by line number after listing.
+    let proto_needle = format!(" {proto} ");
+    let dnat_target = format!("{vm_ip}:{vm_port}");
+    delete_iptables_matching_lines(Some("nat"), "PREROUTING", |line| {
+        line.contains("machina:")
+            && line.contains(&proto_needle)
+            && extract_dpt(line) == Some(host_port)
+            && extract_dnat_target(line).is_some_and(|(ip, port)| ip == vm_ip && port == vm_port)
+    })?;
 
-    // Delete FORWARD rule
-    match Command::new(find_bin("iptables"))
-        .args([
-            "-D",
-            "FORWARD",
-            "-p",
-            proto,
-            "-d",
-            vm_ip,
-            "--dport",
-            &vm_port.to_string(),
-            "-j",
-            "ACCEPT",
-        ])
-        .output()
-    {
-        Ok(out) if !out.status.success() => {
-            tracing::warn!(
-                "delete_port_forward: iptables FORWARD delete for {proto}/{vm_ip}:{vm_port} failed: {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Err(e) => tracing::warn!("delete_port_forward: failed to run iptables (FORWARD): {e}"),
-        Ok(_) => {}
+    delete_iptables_matching_lines(None, "FORWARD", |line| {
+        line.contains("machina:")
+            && line.contains(&proto_needle)
+            && line.contains(vm_ip)
+            && extract_dpt(line) == Some(vm_port)
+            && !line.contains(&dnat_target) // FORWARD ACCEPT, not DNAT
+    })?;
+
+    // Surface a real failure if the listed DNAT rule is still present (caller previously
+    // got ok:true while the forward stayed live).
+    let still = list_port_forwards()?.into_iter().any(|r| {
+        r.protocol == proto && r.host_port == host_port && r.vm_ip == vm_ip && r.vm_port == vm_port
+    });
+    if still {
+        return Err(LibvirtError::Operation(format!(
+            "port forward {proto}/{host_port}->{vm_ip}:{vm_port} still present after delete"
+        )));
     }
 
     Ok(())
+}
+
+/// Delete every matching rule in `chain` by repeating list→delete-by-line-number until none
+/// remain. Line numbers shift after each `-D N`, so we always re-list.
+fn delete_iptables_matching_lines(
+    table: Option<&str>,
+    chain: &str,
+    matches: impl Fn(&str) -> bool,
+) -> Result<(), LibvirtError> {
+    let iptables = find_bin("iptables");
+    for _ in 0..64 {
+        let mut list_args: Vec<&str> = Vec::new();
+        if let Some(t) = table {
+            list_args.extend_from_slice(&["-t", t]);
+        }
+        list_args.extend_from_slice(&["-L", chain, "-n", "--line-numbers", "-v"]);
+        let output = Command::new(&iptables)
+            .args(&list_args)
+            .output()
+            .map_err(LibvirtError::map_op("Failed to list iptables rules for delete"))?;
+        if !output.status.success() {
+            return Err(LibvirtError::Operation(format!(
+                "iptables -L {chain} failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let line_num = stdout.lines().find_map(|line| {
+            if !matches(line) {
+                return None;
+            }
+            line.split_whitespace().next()?.parse::<u32>().ok()
+        });
+        let Some(n) = line_num else {
+            return Ok(());
+        };
+        let n_s = n.to_string();
+        let mut del_args: Vec<&str> = Vec::new();
+        if let Some(t) = table {
+            del_args.extend_from_slice(&["-t", t]);
+        }
+        del_args.extend_from_slice(&["-D", chain, &n_s]);
+        let del = Command::new(&iptables)
+            .args(&del_args)
+            .output()
+            .map_err(LibvirtError::map_op("Failed to delete iptables rule"))?;
+        if !del.status.success() {
+            return Err(LibvirtError::Operation(format!(
+                "iptables -D {chain} {n} failed: {}",
+                String::from_utf8_lossy(&del.stderr).trim()
+            )));
+        }
+    }
+    Err(LibvirtError::Operation(format!(
+        "too many matching iptables rules in {chain} (gave up after 64 deletes)"
+    )))
 }
 
 // ── Native load balancing (weighted round-robin via iptables) ──────

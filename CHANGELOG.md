@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-03 — Fleet Cloud regression + port-forward delete
+
+- **`npm run fleetcloud` / `make regression-fleetcloud`** — Native Fleet Cloud
+  CRUD sweep (flavors, keypairs, security groups + rules, load balancers,
+  port-forwards) via the daemon → controller proxy. Documented in
+  `scripts/regression/RESULTS.md` (**25/25** on `212.8.248.187`).
+- **Port-forward delete** — `core`/`machina-agent`: create used
+  `-m comment --comment machina:…`, but delete issued a comment-less
+  `iptables -D`, so the API returned `ok:true` while DNAT stayed. Deletes
+  now use line numbers and fail if the rule remains. Agent rebuilt on lab.
+
 ## 2026-09-03 — Hotplug: PCI slots, honest disk detach, CD-ROM test
 
 Live regression on `212.8.248.187` exposed three gaps after the TUI drop; all

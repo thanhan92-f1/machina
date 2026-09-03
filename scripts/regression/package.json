@@ -13,6 +13,7 @@
     "platform": "node ops-platform.js",
     "infra": "node ops-infra.js",
     "fleet": "node ops-fleet.js",
+    "fleetcloud": "node ops-fleetcloud.js",
     "mission": "node ops-mission.js",
     "catalog": "node ops-catalog.js",
     "hardware": "node ops-hardware.js",
