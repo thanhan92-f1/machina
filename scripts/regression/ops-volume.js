@@ -17,7 +17,7 @@ const VM = cfg.vmName;
 let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
 const P = '/api/v1/platform/controller';
-const POOL_ID = process.env.MACHINA_STORAGE_POOL_ID || '70d0281e-e0f7-41a2-b0a7-07c0df13c91e';
+let POOL_ID = process.env.MACHINA_STORAGE_POOL_ID || '';
 const VOL = `reg-vol-${Date.now().toString(36).slice(-6)}`;
 
 function ok(status) {
@@ -65,6 +65,7 @@ async function ensureRunning() {
   const _ids = await resolveIds(api, cfg);
   if (_ids.hostId) HID = _ids.hostId;
   if (_ids.platformVmId) PID = _ids.platformVmId;
+  if (_ids.storagePoolId) POOL_ID = _ids.storagePoolId;
   let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {
@@ -171,12 +172,14 @@ async function ensureRunning() {
   });
 
   await mark('platform-pool-refresh', async () => {
+    if (!POOL_ID) throw new Error('no storage pool id');
     const r = await api('POST', `${P}/api/v1/storage/pools/${POOL_ID}/refresh`);
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
     return r.body.slice(0, 80);
   });
 
   await mark('platform-pool-volumes', async () => {
+    if (!POOL_ID) throw new Error('no storage pool id');
     const j = await getJson(`${P}/api/v1/storage/pools/${POOL_ID}/volumes`);
     const vols = j.volumes || j;
     if (!Array.isArray(vols)) throw new Error('no volumes');

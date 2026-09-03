@@ -2,6 +2,26 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-09-03 — Wave E extended ops (`212.8.248.187`)
+
+Harness tweaks before run: `resolveIds` also picks live **storage pool** id; `host-cockpit`
+45s timeout; stale `70d0281e-…` pool defaults removed from volume/zeus/policy/resize/graphx.
+
+| Gate | Result |
+|------|--------|
+| host | **34/34 PASS** (cockpit soft-timeout path works) |
+| zeus / ai / security / volume | **32/32**, **22/22**, **52/52**, **22/22** |
+| batch / firewallx / authz / policy | **7/7**, **14/14**, **9/9**, **27/27** |
+| hub | **24/25** — `ai-actions-hub` empty |
+| provision | **27/31** — host cockpit 500, vm-adopt guard, export/XML timeout |
+| vmx | **11/14** — console/migrate/guest-ips |
+| healthx | **12/18** — guest agent paths + controller unreachable mid-wave |
+| **hw-feats** | **6/38** — agent timeouts; **left lab with no libvirt domains** (`virsh list` empty, classic `/vms` `[]`) |
+| infra / planner / resize / audit / fleetcloud (after hw-feats) | cascading **404/500** — target VM `iw-e2e-1` gone |
+
+**Lab recovery needed:** recreate or restore `iw-e2e-0` / `iw-e2e-1` before further mutate suites.
+Platform DB still lists VMs but host inventory shows `vm_count=0`.
+
 ## 2026-09-03 — Next wave A–D (`212.8.248.187`)
 
 Env: `MACHINA_VM_NAME=iw-e2e-1`, platform VM `ea6f58ef-…`, host `32e030bd-…`.

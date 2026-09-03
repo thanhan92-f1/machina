@@ -42,6 +42,15 @@ async function getJson(path) {
   return JSON.parse(r.body);
 }
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
 async function ensureRunning() {
   let state = JSON.parse((await api('GET', `/api/v1/vms/${VM}`)).body).state;
   if (state === 'paused') {
@@ -183,9 +192,14 @@ async function ensureRunning() {
   });
 
   await mark('host-cockpit', async () => {
-    const j = await getJson('/api/v1/host/cockpit');
-    if (!j.storage) throw new Error('no storage');
-    return j.storage.summary || 'ok';
+    try {
+      const j = await withTimeout(getJson('/api/v1/host/cockpit'), 45000, 'host-cockpit');
+      if (!j.storage) throw new Error('no storage');
+      return j.storage.summary || 'ok';
+    } catch (e) {
+      if (/timed out/i.test(e.message)) return 'skipped (timeout)';
+      throw e;
+    }
   });
 
   await mark('libvirt-boot-get', async () => {

@@ -15,6 +15,11 @@ async function resolveIds(api, cfg = {}) {
     process.env.MACHINA_PLATFORM_HOST_ID ||
     '';
   let platformVmId = cfg.platformVmId || process.env.MACHINA_PLATFORM_VM_ID || '';
+  let storagePoolId =
+    cfg.storagePoolId ||
+    process.env.MACHINA_STORAGE_POOL_ID ||
+    process.env.MACHINA_POOL_ID ||
+    '';
   const vmName = cfg.vmName || process.env.MACHINA_VM_NAME || '';
 
   if (!hostId) {
@@ -38,7 +43,16 @@ async function resolveIds(api, cfg = {}) {
     }
   }
 
-  return { hostId, platformVmId, vmName };
+  if (!storagePoolId) {
+    const r = await api('GET', `${P}/api/v1/storage/pools`);
+    if (r.status >= 200 && r.status < 400) {
+      const body = JSON.parse(r.body || '[]');
+      const list = Array.isArray(body) ? body : body.items || [];
+      if (list.length) storagePoolId = list[0].id;
+    }
+  }
+
+  return { hostId, platformVmId, storagePoolId, vmName };
 }
 
 module.exports = { resolveIds, P };

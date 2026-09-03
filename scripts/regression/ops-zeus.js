@@ -16,6 +16,7 @@ const log = createLogger(cfg.resultsDir, 'ops-zeus');
 const VM = cfg.vmName;
 let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
+let POOL_ID = process.env.MACHINA_STORAGE_POOL_ID || '';
 const P = '/api/v1/platform/controller';
 const NF = `reg-nf-${Date.now().toString(36).slice(-6)}`;
 
@@ -64,7 +65,7 @@ async function ensureRunning() {
   const _ids = await resolveIds(api, cfg);
   if (_ids.hostId) HID = _ids.hostId;
   if (_ids.platformVmId) PID = _ids.platformVmId;
-  let pass = 0;
+  if (_ids.storagePoolId) POOL_ID = _ids.storagePoolId;  let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {
     if (await step(name, fn)) pass++;
@@ -269,7 +270,8 @@ async function ensureRunning() {
   });
 
   await mark('cloud-init-volumes', async () => {
-    const j = await getJson(`${P}/api/v1/storage/pools/70d0281e-e0f7-41a2-b0a7-07c0df13c91e/volumes`);
+    if (!POOL_ID) throw new Error('no storage pool id');
+    const j = await getJson(`${P}/api/v1/storage/pools/${POOL_ID}/volumes`);
     const vols = j.volumes || j;
     if (!Array.isArray(vols)) throw new Error('no volumes');
     return `count=${vols.length}`;

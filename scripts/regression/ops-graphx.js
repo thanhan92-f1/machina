@@ -16,7 +16,7 @@ const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ops-graphx');
 let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
-const POOL = process.env.MACHINA_POOL_ID || '70d0281e-e0f7-41a2-b0a7-07c0df13c91e';
+let POOL = process.env.MACHINA_POOL_ID || process.env.MACHINA_STORAGE_POOL_ID || '';
 const P = '/api/v1/platform/controller';
 const FAKE = '00000000-0000-0000-0000-000000000001';
 
@@ -43,7 +43,7 @@ async function step(name, fn) {
   const _ids = await resolveIds(api, cfg);
   if (_ids.hostId) HID = _ids.hostId;
   if (_ids.platformVmId) PID = _ids.platformVmId;
-  let pass = 0;
+  if (_ids.storagePoolId) POOL = _ids.storagePoolId;  let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {
     if (await step(name, fn)) pass++;
