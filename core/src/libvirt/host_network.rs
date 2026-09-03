@@ -1244,10 +1244,16 @@ pub fn set_load_balancer_rules(
     for (i, m) in members.iter().enumerate() {
         let w = m.weight.max(1) as f64;
         let dest = format!("{}:{}", m.vm_ip, m.port);
+        // nftables-backed iptables requires an explicit `-p` whenever the target
+        // carries a port (`--to-destination ip:port`); omitting it yields
+        // "Need TCP, UDP, SCTP or DCCP with port specification".
         if i == members.len() - 1 {
             run_cmd(
                 "iptables",
-                &["-t", "nat", "-A", &nat_chain, "-j", "DNAT", "--to-destination", &dest],
+                &[
+                    "-t", "nat", "-A", &nat_chain, "-p", protocol, "-j", "DNAT",
+                    "--to-destination", &dest,
+                ],
                 "Failed to add load balancer backend rule",
             )?;
         } else {
@@ -1255,8 +1261,9 @@ pub fn set_load_balancer_rules(
             run_cmd(
                 "iptables",
                 &[
-                    "-t", "nat", "-A", &nat_chain, "-m", "statistic", "--mode", "random",
-                    "--probability", &probability, "-j", "DNAT", "--to-destination", &dest,
+                    "-t", "nat", "-A", &nat_chain, "-p", protocol, "-m", "statistic",
+                    "--mode", "random", "--probability", &probability, "-j", "DNAT",
+                    "--to-destination", &dest,
                 ],
                 "Failed to add load balancer backend rule",
             )?;

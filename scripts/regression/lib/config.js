@@ -48,6 +48,10 @@ function loadConfig() {
     password: process.env.MACHINA_PASS || 'max',
     cdpUrl: process.env.MACHINA_CDP_URL || 'http://127.0.0.1:9222',
     vmName: process.env.MACHINA_VM_NAME || 'chrome-e2e-vm',
+    // Prefer env; leave empty so lib/ids.resolveIds can discover live UUIDs.
+    // Never hardcode a lab host — stale IDs caused host-sync FK 500s.
+    hostId: process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '',
+    platformVmId: process.env.MACHINA_PLATFORM_VM_ID || '',
     pages,
     pagesPath,
     resultsDir: RESULTS,

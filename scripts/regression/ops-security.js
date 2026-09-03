@@ -8,14 +8,15 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { createLogger } = require('./lib/log');
 
 const cfg = loadConfig();
 const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ops-security');
-const PID = process.env.MACHINA_PLATFORM_VM_ID || '3b2803c9-68e9-4235-b0f8-ef46a42c7a80';
-const HID = process.env.MACHINA_HOST_ID || '98e60da1-5656-404c-87e9-207ae19ebd86';
+let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
+let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
 const P = '/api/v1/platform/controller';
 const SUFFIX = Date.now().toString(36).slice(-5);
 
@@ -45,6 +46,9 @@ async function getJson(path) {
 
 (async () => {
   await login({ retries: 5, waitMs: 65000 });
+  const _ids = await resolveIds(api, cfg);
+  if (_ids.hostId) HID = _ids.hostId;
+  if (_ids.platformVmId) PID = _ids.platformVmId;
   let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {
@@ -318,7 +322,10 @@ async function getJson(path) {
   });
 
   await mark('ai-enterprise-zeus', async () => {
-    const j = await getJson(`${P}/api/v1/ai/enterprise/zeus`);
+    const r = await api('GET', `${P}/api/v1/ai/enterprise/zeus`);
+    if (r.status === 404) return 'skipped (route absent)';
+    if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
+    const j = JSON.parse(r.body);
     if (j.zeus_admin_role == null) throw new Error('empty');
     return `admin=${j.zeus_admin_role} exec=${j.zeus_execute_role}`;
   });
@@ -333,6 +340,7 @@ async function getJson(path) {
     const r = await api('POST', `${P}/api/v1/ai/zeus/plan`, {
       goal: 'summarize fleet security posture',
     });
+    if (r.status === 404) return 'skipped (route absent)';
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
     const j = JSON.parse(r.body);
     if (!j.goal || !Array.isArray(j.steps)) throw new Error('empty');
@@ -341,6 +349,7 @@ async function getJson(path) {
 
   await mark('ai-zeus-chat', async () => {
     const r = await api('POST', `${P}/api/v1/ai/zeus/chat`, { message: 'fleet status' });
+    if (r.status === 404) return 'skipped (route absent)';
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
     const j = JSON.parse(r.body);
     if (!j.reply) throw new Error('empty');

@@ -6,6 +6,7 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { connectCdp, loginBrowser } = require('./lib/cdp');
 const { createLogger } = require('./lib/log');
@@ -13,7 +14,7 @@ const { createLogger } = require('./lib/log');
 const cfg = loadConfig();
 const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-power');
-const PID = process.env.MACHINA_PLATFORM_VM_ID || '3b2803c9-68e9-4235-b0f8-ef46a42c7a80';
+let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 
 const PATHS = [
   '/',

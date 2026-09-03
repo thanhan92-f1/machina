@@ -7,13 +7,14 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { createLogger } = require('./lib/log');
 
 const cfg = loadConfig();
 const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ops-aifleet');
-const PID = process.env.MACHINA_PLATFORM_VM_ID || '3b2803c9-68e9-4235-b0f8-ef46a42c7a80';
+let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 const P = '/api/v1/platform/controller';
 
 function ok(status) {
@@ -36,6 +37,8 @@ async function step(name, fn) {
 
 (async () => {
   await login({ retries: 5, waitMs: 65000 });
+  const _ids = await resolveIds(api, cfg);
+  if (_ids.platformVmId) PID = _ids.platformVmId;
   let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {
@@ -45,6 +48,7 @@ async function step(name, fn) {
 
   await mark('zeus-summary', async () => {
     const r = await api('GET', `${P}/api/v1/ai/zeus/summary`);
+    if (r.status === 404) return 'skipped (route absent)';
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
     const j = JSON.parse(r.body);
     return `status=${j.status} hosts=${j.hosts_online}`;

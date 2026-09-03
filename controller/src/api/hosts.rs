@@ -297,6 +297,15 @@ pub async fn sync_host(
     Path(id): Path<Uuid>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
+    // tasks.host_id REFERENCES hosts(id) — enqueueing a missing host yields a raw
+    // SQLite FK 500. 404 before insert so callers (and regression) get a clean miss.
+    let exists: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM hosts WHERE id = ?")
+        .bind(id)
+        .fetch_optional(&state.pool)
+        .await?;
+    if exists.is_none() {
+        return Err(ApiError::not_found("host not found"));
+    }
     let task_id = enqueue_task(
         &state,
         "host.inventory",

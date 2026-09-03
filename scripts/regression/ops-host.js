@@ -6,6 +6,7 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { createLogger } = require('./lib/log');
 
@@ -13,7 +14,7 @@ const cfg = loadConfig();
 const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ops-host');
 const VM = cfg.vmName;
-const PID = process.env.MACHINA_PLATFORM_VM_ID || '3b2803c9-68e9-4235-b0f8-ef46a42c7a80';
+let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 const P = '/api/v1/platform/controller';
 const SECRET_UUID = 'a1b2c3d4-e5f6-4789-a012-3456789abcde';
 
@@ -59,6 +60,8 @@ async function ensureRunning() {
 
 (async () => {
   await login();
+  const _ids = await resolveIds(api, cfg);
+  if (_ids.platformVmId) PID = _ids.platformVmId;
   let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {

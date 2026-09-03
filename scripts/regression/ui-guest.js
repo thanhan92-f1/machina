@@ -7,6 +7,7 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { connectCdp, loginBrowser } = require('./lib/cdp');
 const { createLogger } = require('./lib/log');
@@ -14,8 +15,8 @@ const { createLogger } = require('./lib/log');
 const cfg = loadConfig();
 const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-guest');
-const PID = process.env.MACHINA_PLATFORM_VM_ID || '3b2803c9-68e9-4235-b0f8-ef46a42c7a80';
-const HID = process.env.MACHINA_HOST_ID || '98e60da1-5656-404c-87e9-207ae19ebd86';
+let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
+let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
 
 const PATHS = [
   `/vms/${cfg.vmName}`,

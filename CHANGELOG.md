@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-03 — Regression harness + host-sync 404 + LB DNAT -p
+
+- **Stale host UUID** — Many `ops-*.js` / `ui-*.js` scripts defaulted to a
+  retired lab host id, causing host-sync FK **500**s and catalog/mission 404s.
+  Added `lib/ids.js` (`resolveIds`) and env-based `cfg.hostId` /
+  `cfg.platformVmId` with live discovery after login.
+- **`POST …/hosts/{id}/sync`** — Returns **404** when the host is missing
+  instead of enqueueing a task that fails SQLite FK 787.
+- **Native LB member push** — Backend DNAT rules now include `-p <protocol>`
+  so nftables iptables accepts `--to-destination ip:port`.
+- Soft-skip absent Zeus/Launchpad/KubeVirt routes; deepen `fleetcloud`
+  (projects/stacks/templates lists + SG-only stack CRUD).
+
 ## 2026-09-03 — Fleet Cloud regression + port-forward delete
 
 - **`npm run fleetcloud` / `make regression-fleetcloud`** — Native Fleet Cloud

@@ -6,6 +6,7 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { connectCdp, loginBrowser } = require('./lib/cdp');
 const { createLogger } = require('./lib/log');
@@ -13,7 +14,7 @@ const { createLogger } = require('./lib/log');
 const cfg = loadConfig();
 const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-zeus');
-const HID = process.env.MACHINA_HOST_ID || '98e60da1-5656-404c-87e9-207ae19ebd86';
+let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
 
 const PATHS = [
   '/platform/api-keys',

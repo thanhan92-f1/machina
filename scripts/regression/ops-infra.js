@@ -7,6 +7,7 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { createLogger } = require('./lib/log');
 
@@ -15,7 +16,7 @@ const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ops-infra');
 const VM = cfg.vmName;
 const P = '/api/v1/platform/controller';
-const HID = process.env.MACHINA_HOST_ID || '98e60da1-5656-404c-87e9-207ae19ebd86';
+let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
 
 function ok(status) {
   return status >= 200 && status < 400;
@@ -48,6 +49,8 @@ async function getJson(path) {
 
 (async () => {
   await login();
+  const _ids = await resolveIds(api, cfg);
+  if (_ids.hostId) HID = _ids.hostId;
   let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {

@@ -2,6 +2,30 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-09-03 — Next wave A–D (`212.8.248.187`)
+
+Env: `MACHINA_VM_NAME=iw-e2e-1`, platform VM `ea6f58ef-…`, host `32e030bd-…`.
+
+### Harness + product fixes
+- `lib/ids.js` + env host/VM resolution (drop stale `98e60da1-…` defaults across ~65 scripts)
+- Soft-skip absent Zeus AI / Launchpad / KubeVirt routes
+- `sync_host` → **404** if host missing (was FK **500**)
+- LB DNAT backend rules add `-p <protocol>` (nftables port requirement)
+- Agent restart recovered gRPC 30s timeouts mid-wave
+
+### Results
+
+| Gate | Result |
+|------|--------|
+| fleet / fleetx / platform / catalog / mission | **all green** (14/14, 21/21, 15/15, 32/32, 20/20) |
+| api / ops / lifecycle / power / net / guest | **green** (13, 14, 11, 11, 19, 20) |
+| disk / hardware (post agent heal) | **11/11**, **24/24** |
+| admin | **17/17** |
+| **fleetcloud** (deepened) | **32/32** — +projects/stacks/templates lists, SG-only stack CRUD; LB member **200** after `-p` fix |
+| volume | **20/22** — pool `70d0281e-…` refresh/volumes **400** (pre-existing storage quirk) |
+| ai / security / zeus | remaining soft gaps: missing `/ai/zeus/*` routes; cloud-init pool volumes 400 |
+| host | hung on post-`host-groups` (cockpit?) — partial **19+ PASS** then stall; retest separately |
+
 ## 2026-09-03 — Fleet Cloud wave (`212.8.248.187`)
 
 Platform auth via daemon proxy + live IDs:

@@ -81,6 +81,7 @@ async function del(path) {
   let sgRuleId = null;
   let lbId = null;
   let lbMemberId = null;
+  let stackId = null;
   let pf = null; // { protocol, host_port, vm_port }
 
   try {
@@ -136,6 +137,29 @@ async function del(path) {
       const pools = await getJson(`${P}/api/v1/storage/pools`);
       const items = Array.isArray(pools) ? pools : pools.items || [];
       return `pools=${items.length} (volumes ${r.status})`;
+    });
+    await mark('list-projects', async () => {
+      const j = await getJson(`${P}/api/v1/projects`);
+      if (!Array.isArray(j)) throw new Error('not array');
+      return `count=${j.length}`;
+    });
+    await mark('list-project-registry', async () => {
+      const j = await getJson(`${P}/api/v1/project-registry`);
+      if (!Array.isArray(j)) throw new Error('not array');
+      return `count=${j.length}`;
+    });
+    await mark('list-stacks', async () => {
+      const j = await getJson(`${P}/api/v1/stacks`);
+      if (!Array.isArray(j)) throw new Error('not array');
+      return `count=${j.length}`;
+    });
+    await mark('list-templates', async () => {
+      const r = await api('GET', `${P}/api/v1/templates`);
+      if (r.status === 404) return 'skipped (no templates route)';
+      if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
+      const j = JSON.parse(r.body);
+      const items = Array.isArray(j) ? j : j.items || [];
+      return `count=${items.length}`;
     });
 
     // ── Flavor CRUD ────────────────────────────────────────────────────
@@ -195,6 +219,39 @@ async function del(path) {
       const j = await getJson(`${P}/api/v1/security-groups/${sgId}/rules`);
       if (!Array.isArray(j) || j.length < 1) throw new Error('empty rules');
       return `count=${j.length}`;
+    });
+
+    // ── Stack (SG-only template — no VM to avoid long create) ──────────
+    await mark('stack-create', async () => {
+      const j = await postJson(`${P}/api/v1/stacks`, {
+        name: `${TAG}-stack`,
+        template: {
+          security_groups: [
+            {
+              name: `${TAG}-stack-sg`,
+              rules: [
+                {
+                  direction: 'ingress',
+                  protocol: 'tcp',
+                  port_min: 22,
+                  port_max: 22,
+                  remote_cidr: '127.0.0.1/32',
+                },
+              ],
+            },
+          ],
+          volumes: [],
+          vms: [],
+        },
+      });
+      stackId = j.id;
+      if (!stackId) throw new Error('no stack id');
+      return `${stackId} status=${j.status}`;
+    });
+    await mark('stack-get', async () => {
+      const j = await getJson(`${P}/api/v1/stacks/${stackId}`);
+      if (j.name !== `${TAG}-stack`) throw new Error(`name=${j.name}`);
+      return j.status;
     });
 
     // ── Load balancer ──────────────────────────────────────────────────
@@ -308,6 +365,12 @@ async function del(path) {
     if (lbId) {
       await mark('lb-delete', async () => {
         await del(`${P}/api/v1/load-balancers/${lbId}`);
+        return 'deleted';
+      });
+    }
+    if (stackId) {
+      await mark('stack-delete', async () => {
+        await del(`${P}/api/v1/stacks/${stackId}`);
         return 'deleted';
       });
     }

@@ -16,7 +16,7 @@ const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-interactive');
 const VM = cfg.vmName;
 const PLATFORM_VM =
-  process.env.MACHINA_PLATFORM_VM_ID || '3b2803c9-68e9-4235-b0f8-ef46a42c7a80';
+  process.env.MACHINA_PLATFORM_VM_ID || '';
 
 async function bodyText(cdp) {
   return cdp.evalAsync(
