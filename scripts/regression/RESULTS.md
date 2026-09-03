@@ -2,6 +2,17 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-09-03 — Hotplug + feature-test (daemon-only, `212.8.248.187`)
+
+After TUI removal deploy. Target VM `iw-e2e-1` (Linux virtio root). Daemon rebuilt
+on host with PCI root-port / detach / error-class fixes.
+
+| Gate | Result |
+|------|--------|
+| `feature-test.sh` `VM=iw-e2e-1` | **26/26 PASS** — CD-ROM auto-target `sda` (free; root is `vda`), not treated as collision |
+| `npm run lifecycle` (`MACHINA_VM_NAME=iw-e2e-1`) | **11/11 PASS** — disk attach/detach, volume-delete, NIC attach/detach (PCI root-port retry), rename, linked-clone |
+| Prior fail modes closed | live disk detach → poll + restart if `live_removed=false`; NIC attach → spare `pcie-root-port` + retry; feature-test no longer hardcodes `!= sda` |
+
 ## 2026-08-08 unit/lint gates (Rust workspace on lab + web)
 
 Static + unit gates after the live waves, run on the lab host (`cargo` needs Linux libvirt headers).

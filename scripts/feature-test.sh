@@ -120,12 +120,26 @@ fi
 
 section "CD-ROM lifecycle"
 ISO=/var/lib/libvirt/images/isos/featuretest.iso
+# Snapshot occupied <target dev=…> names before insert. Virtio-root Linux guests use
+# vda (not sda); SATA CD-ROMs correctly claim free sda. Hardcoding != sda only fits
+# Windows SATA-root VMs (default win10-msedge) and fails on Linux e2e guests.
+code "$API/vms/$VM/xml" >/dev/null
+python3 - "$TMP/body" "$TMP/used_targets" <<'PY'
+import re, sys
+xml = open(sys.argv[1]).read()
+used = set(re.findall(r'target\s+dev=["\']([^"\']+)["\']', xml))
+open(sys.argv[2], "w").write("\n".join(sorted(used)))
+PY
 r=$(code -X POST "$API/vms/$VM/cdrom/insert" -H 'Content-Type: application/json' -d "{\"iso_path\":\"$ISO\"}")
 if [ "$r" = 200 ]; then
-  tgt=$(python3 -c 'import json;d=json.load(open("'"$TMP/body"'"));print(d.get("target"))')
+  tgt=$(python3 -c 'import json;d=json.load(open("'"$TMP/body"'"));print(d.get("target") or "")')
   rr=$(python3 -c 'import json;d=json.load(open("'"$TMP/body"'"));print(d.get("requires_restart"))')
   ok "insert auto-target -> $tgt (requires_restart=$rr)"
-  [ -n "$tgt" ] && [ "$tgt" != sda ] && ok "auto target avoided root disk sda" || bad "auto target" "picked $tgt"
+  if [ -n "$tgt" ] && ! grep -qxF "$tgt" "$TMP/used_targets" 2>/dev/null; then
+    ok "auto target not already occupied ($tgt)"
+  else
+    bad "auto target" "picked occupied or empty target='$tgt'"
+  fi
   r2=$(code -X POST "$API/vms/$VM/cdrom/detach/$tgt")
   [ "$r2" = 200 ] && ok "detach drive $tgt" || bad "detach" "HTTP $r2"
 else

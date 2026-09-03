@@ -72,6 +72,12 @@ fn classify_operation_error(msg: &str) -> Option<(StatusCode, &'static str)> {
         return Some((StatusCode::BAD_REQUEST, "invalid_argument"));
     }
 
+    // q35 PCI topology full — client can retry after we hot-add a root port, but if
+    // that still fails this is a capacity problem, not an internal crash.
+    if m.contains("no more available pci slots") || m.contains("no more available pci slot") {
+        return Some((StatusCode::CONFLICT, "pci_slots_exhausted"));
+    }
+
     None
 }
 
@@ -132,6 +138,15 @@ mod tests {
         let (s, c) = classify_operation_error(msg).expect("classified");
         assert_eq!(s, StatusCode::BAD_REQUEST);
         assert_eq!(c, "invalid_argument");
+    }
+
+    #[test]
+    fn pci_slots_exhausted_maps_to_409() {
+        let msg = "Failed to attach network interface: error: internal error: \
+                   No more available PCI slots [code=internalerror (1), domain=qemu (10)]";
+        let (s, c) = classify_operation_error(msg).expect("classified");
+        assert_eq!(s, StatusCode::CONFLICT);
+        assert_eq!(c, "pci_slots_exhausted");
     }
 
     #[test]

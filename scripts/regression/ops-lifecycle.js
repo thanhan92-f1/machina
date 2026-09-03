@@ -164,12 +164,34 @@ async function cleanupOrphans() {
     if (winGuest) await ensureState('shutoff');
     const r = await api('POST', `/api/v1/vms/${VM}/disk/detach/${diskTarget}`);
     if (!ok(r.status)) throw new Error(`${r.status} ${r.body.slice(0, 140)}`);
+    let body = {};
+    try {
+      body = JSON.parse(r.body || '{}');
+    } catch {
+      /* ignore */
+    }
     if (winGuest) await ensureState('running');
-    const xml = await getXml();
+
+    // Live unplug is async — guest must release the device. Poll live XML; if the
+    // daemon reported live_removed=false the persistent config is already clean, so
+    // a stop/start applies it (same path as blank-disk / no-hotunplug guests).
+    let xml = '';
+    for (let i = 0; i < 20; i++) {
+      xml = await getXml();
+      if (!xml.includes(`dev='${diskTarget}'`) && !xml.includes(volPath)) break;
+      await new Promise((x) => setTimeout(x, 500));
+    }
+    if (xml.includes(`dev='${diskTarget}'`) || xml.includes(volPath)) {
+      if (body.live_removed === false || !winGuest) {
+        await ensureState('shutoff');
+        await ensureState('running');
+        xml = await getXml();
+      }
+    }
     if (xml.includes(`dev='${diskTarget}'`) || xml.includes(volPath)) {
       throw new Error(`${diskTarget} still in XML after detach`);
     }
-    return 'detached';
+    return body.live_removed === false ? 'detached (via restart)' : 'detached';
   });
 
   await mark('volume-delete', async () => {

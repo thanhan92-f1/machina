@@ -1053,6 +1053,7 @@ async fn detach_disk_handler(
         "name": name,
         "target": target,
         "live_removed": outcome.live_removed,
+        "requires_restart": !outcome.live_removed,
     })))
 }
 
@@ -1145,7 +1146,13 @@ async fn detach_interface_handler(
     })
     .await?;
     Ok(Json(
-        serde_json::json!({ "status": "detached", "name": name, "mac": mac, "live_removed": outcome.live_removed }),
+        serde_json::json!({
+            "status": "detached",
+            "name": name,
+            "mac": mac,
+            "live_removed": outcome.live_removed,
+            "requires_restart": !outcome.live_removed,
+        }),
     ))
 }
 

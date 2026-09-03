@@ -13,7 +13,7 @@ use crate::LibvirtError;
 /// reporting it as still-pending. Real guests with a working driver typically release a
 /// device within a few hundred ms of the request; this is generous without making a
 /// synchronous HTTP call open-ended.
-pub(crate) const DETACH_LIVE_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
+pub(crate) const DETACH_LIVE_WAIT: std::time::Duration = std::time::Duration::from_secs(8);
 
 /// Outcome of a device detach that can require guest cooperation to complete live.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -201,6 +201,22 @@ pub fn resize_block_device(
 
 const ALLOWED_NIC_MODELS: &[&str] = &["virtio", "e1000", "e1000e", "rtl8139", "vmxnet3"];
 
+fn pci_slots_exhausted(err: &str) -> bool {
+    let m = err.to_ascii_lowercase();
+    m.contains("no more available pci slots") || m.contains("no more available pci slot")
+}
+
+/// Hot-add one spare `pcie-root-port` so q35 domains gain a free slot for the next
+/// PCI device. Used when NIC (or other) attach fails with "No more available PCI slots"
+/// on VMs that were defined without spare ports.
+fn attach_spare_pcie_root_port(domain: &Domain, flags: u32) -> Result<(), LibvirtError> {
+    let xml = "<controller type='pci' model='pcie-root-port'/>";
+    domain
+        .attach_device_flags(xml, flags)
+        .map_err(LibvirtError::map_op("Failed to add PCIe root port for hotplug"))?;
+    Ok(())
+}
+
 /// Attach a network interface to a VM.
 pub fn attach_interface(
     conn: &Connect,
@@ -228,10 +244,22 @@ pub fn attach_interface(
     );
 
     let flags = get_domain_flags(&domain);
-    domain
-        .attach_device_flags(&xml, flags)
-        .map_err(LibvirtError::map_op("Failed to attach network interface"))?;
-    Ok(())
+    match domain.attach_device_flags(&xml, flags) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            let msg = e.to_string();
+            if pci_slots_exhausted(&msg) {
+                // Existing q35 VMs often lack spare root ports; add one and retry.
+                attach_spare_pcie_root_port(&domain, flags)?;
+                domain
+                    .attach_device_flags(&xml, flags)
+                    .map_err(LibvirtError::map_op("Failed to attach network interface"))?;
+                Ok(())
+            } else {
+                Err(LibvirtError::map_op("Failed to attach network interface")(e))
+            }
+        }
+    }
 }
 
 /// Detach a network interface from a VM by MAC address.

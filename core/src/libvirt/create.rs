@@ -755,6 +755,17 @@ fn generate_domain_xml(
       <model type='{video_model}' heads='1'/>
     </video>
     <controller type='usb' index='0' model='qemu-xhci'/>
+    <!-- Spare PCIe root ports so NIC/disk hotplug has free slots on q35.
+         Without these, libvirt only creates ports for devices present at define
+         time and later attach fails with "No more available PCI slots". -->
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
     <input type='tablet' bus='usb'/>
     <memballoon model='virtio'/>
     <rng model='virtio'>

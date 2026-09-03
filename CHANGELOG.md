@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-03 — Hotplug: PCI slots, honest disk detach, CD-ROM test
+
+Live regression on `212.8.248.187` exposed three gaps after the TUI drop; all
+retested green (`feature-test` **26/26**, `npm run lifecycle` **11/11**).
+
+- **q35 NIC hotplug** — New domains get eight spare `<controller type='pci'
+  model='pcie-root-port'/>` entries at create time. Existing VMs that hit
+  “No more available PCI slots” on `POST …/nic/attach` now hot-add one root
+  port and retry. Exhaustion maps to HTTP **409** `pci_slots_exhausted`
+  instead of a bare 500.
+- **Disk / NIC detach** — Live unplug wait extended to 8s; responses include
+  `requires_restart` when `live_removed` is false (config already updated,
+  guest hasn’t released the device). Regression lifecycle polls, then
+  stop/start to apply config-only detach before asserting live XML.
+- **feature-test CD-ROM** — Asserts the auto-picked target was not already
+  occupied. Virtio-root Linux guests correctly receive free SATA `sda`; the
+  old hardcoded `!= sda` check only fit Windows SATA-root VMs.
+
 ## 2026-08-15 — Firecracker: a third sprite backend
 
 Sprites (`POST /v1/sprites`) can now boot on **Firecracker** as well as
