@@ -14,6 +14,8 @@
 #   ./scripts/feature-test.sh 192.0.2.10 admin secret
 #
 # Override the VM it exercises with VM=<name> (default: win10-msedge).
+# Linux virtio-root guests (e.g. chrome-e2e-vm, iw-e2e-1) are supported: CD-ROM
+# auto-target may be sda when the root disk is vda — that is correct, not a bug.
 set -uo pipefail
 
 HOST="${1:?host}"; USER="${2:?user}"; PASS="${3:-${VSPASS:-}}"
