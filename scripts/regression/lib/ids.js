@@ -38,8 +38,15 @@ async function resolveIds(api, cfg = {}) {
     if (r.status >= 200 && r.status < 400) {
       const body = JSON.parse(r.body || '[]');
       const list = Array.isArray(body) ? body : body.items || [];
-      const hit = list.find((v) => v.name === vmName);
-      if (hit) platformVmId = hit.id;
+      const matches = list.filter((v) => v.name === vmName);
+      if (matches.length) {
+        matches.sort((a, b) => {
+          const ta = a.last_seen_at ? Date.parse(a.last_seen_at) : 0;
+          const tb = b.last_seen_at ? Date.parse(b.last_seen_at) : 0;
+          return tb - ta;
+        });
+        platformVmId = matches[0].id;
+      }
     }
   }
 
