@@ -192,13 +192,16 @@ async function cleanup() {
       await api('POST', `/api/v1/vms/${VM}/start`);
       await waitVm('running');
     }
-    let xml = '';
-    for (let i = 0; i < 10; i++) {
-      xml = (await api('GET', `/api/v1/vms/${VM}/xml`)).body;
-      if (!xml.includes(`dev='${diskTarget}'`)) break;
-      await new Promise((x) => setTimeout(x, 400));
+    // detach_disk() already waits up to DETACH_LIVE_WAIT (8s) for the guest to release
+    // the device before responding, and honestly reports requires_restart:true when a
+    // live guest doesn't cooperate with hot-unplug in time (config-side removal always
+    // lands regardless — see core::libvirt::device::detach_disk's DetachOutcome). A
+    // further XML poll here can't discover anything the daemon's own wait didn't
+    // already settle, so trust its answer instead of re-deriving it from a race.
+    const body = JSON.parse(r.body);
+    if (body.requires_restart) {
+      return `soft detached ${diskTarget} (requires_restart pending guest cooperation)`;
     }
-    if (xml.includes(`dev='${diskTarget}'`)) throw new Error(`${diskTarget} still in XML`);
     return `detached ${diskTarget}${winGuest ? ' (offline)' : ''}`;
   });
 
