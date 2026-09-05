@@ -222,8 +222,10 @@ async function getJson(path) {
 
   await mark('ai-actions-hub', async () => {
     const j = await getJson(`${P}/api/v1/ai/actions/hub`);
-    if (!Array.isArray(j.zeus_actions) && !j.summary) throw new Error('empty');
-    return `actions=${(j.zeus_actions || []).length}`;
+    if (!Array.isArray(j.zyra_actions) && !Array.isArray(j.autopilot_proposals)) {
+      throw new Error('empty');
+    }
+    return `actions=${(j.zyra_actions || []).length} proposals=${(j.autopilot_proposals || []).length}`;
   });
 
   await mark('scheduled-jobs', async () => {
