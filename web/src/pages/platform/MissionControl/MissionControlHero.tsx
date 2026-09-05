@@ -47,9 +47,9 @@ export default function MissionControlHero({ state, warnings, onCreateVm }: Prop
 
   return (
     <>
-      <header className="apple-section apple-section--hero mc-hero mc-hero-ribbon" data-testid="mission-control-hero">
+      <header className="apple-section apple-hero-band mc-hero mc-hero-ribbon" data-testid="mission-control-hero">
         <p className="apple-eyebrow">Machina · {fleetTitle}</p>
-        <p className="text-[17px] text-[var(--text-secondary)] tracking-tight mb-2">{hello}</p>
+        <p className="text-[17px] text-[var(--text-secondary)] tracking-tight mb-2 text-center">{hello}</p>
         <h1 className="apple-display">{word}</h1>
         <p className="apple-lede">
           {controlPlaneDown

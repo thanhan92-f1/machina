@@ -56,7 +56,7 @@ export default function FleetCloudOverviewPage() {
   return (
     <PageLayout hideHeader className="!space-y-0 w-full max-w-none" contentClassName="px-0">
       <div className="apple-story-stack w-full">
-        <header className="apple-section apple-section--hero">
+        <header className="apple-section apple-hero-band">
           <p className="apple-eyebrow">Fleet Cloud</p>
           <h1 className="apple-display">Native compute</h1>
           <p className="apple-lede">

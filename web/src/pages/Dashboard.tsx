@@ -189,7 +189,7 @@ export default function Dashboard() {
       onErrorRetry={loadData}
     >
       <div className="apple-story-stack w-full">
-      <header className="apple-section apple-section--hero">
+      <header className="apple-section apple-hero-band">
         <p className="apple-eyebrow">{node?.hostname ?? 'Hypervisor'}</p>
         <h1 className="apple-display">Machina</h1>
         <p className="apple-lede">{hostLine}</p>

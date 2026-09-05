@@ -13,6 +13,7 @@ import {
 import { getClassicConsoleHubPlan } from '../../api/vm'
 import VNCViewer from '../VNCViewer'
 import { embeddedVncPreviewProps } from '../../utils/embeddedVnc'
+import { statusBadgeClasses, vmStateTone } from '../../utils/semanticColors'
 
 type Props = {
   vmName: string
@@ -114,11 +115,19 @@ export default function VmConsoleHeroPreview({
           ? 'Live view of the guest display.'
           : 'Connecting to the guest display…'
 
+  const stateLabel = vmState.charAt(0).toUpperCase() + vmState.slice(1).replace(/_/g, ' ')
+
   return (
     <section className="apple-story-stack" data-testid="vm-console-hero-preview">
-      <div className="apple-section apple-section--tight px-0">
-        <p className="apple-eyebrow">Display</p>
-        <p className="apple-lede mt-1 max-w-2xl">{lede}</p>
+      <div className="apple-hero-band apple-hero-band--dark">
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClasses(vmStateTone(vmState))}`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden />
+          {stateLabel}
+        </span>
+        <h1 className="apple-display mt-4">{vmName}</h1>
+        <p className="apple-lede mt-2 max-w-2xl">{lede}</p>
         <div className="apple-cta-row">
           <Link
             to={consoleHref}

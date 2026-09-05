@@ -99,7 +99,7 @@ export default function PlatformSidebarSection({
           className="min-w-[12rem] py-1"
           style={{ marginLeft: '0.25rem' }}
         >
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">{label}</p>
           <div
             role="menu"
             onMouseEnter={cancelFlyoutClose}
@@ -117,7 +117,7 @@ export default function PlatformSidebarSection({
       <button
         type="button"
         onClick={onToggleExpanded}
-        className="platform-sidebar-section-header flex w-full items-center gap-1.5 px-2 py-1.5 mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
+        className="platform-sidebar-section-header flex w-full items-center gap-1.5 px-2 py-1.5 mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
       >
         <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
         <Icon className="h-3 w-3 shrink-0 opacity-70" strokeWidth={1.5} />

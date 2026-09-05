@@ -33,6 +33,67 @@
   margin: 0 0 0.4rem;
 }
 
+/* AirPods-style centered hero band — full-bleed glow, theatrical scale */
+.apple-hero-band {
+  position: relative;
+  text-align: center;
+  overflow: hidden;
+  padding-top: clamp(3rem, 7vw, 5.5rem);
+  padding-bottom: clamp(2rem, 4vw, 3.5rem);
+}
+
+.apple-hero-band::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 28rem;
+  background: radial-gradient(60% 60% at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+.apple-hero-band > * {
+  position: relative;
+}
+
+.apple-hero-band .apple-display {
+  font-size: clamp(3rem, 7.5vw, 5.5rem);
+  line-height: 0.98;
+}
+
+.apple-hero-band .apple-eyebrow {
+  text-align: center;
+}
+
+.apple-hero-band .apple-lede {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.apple-hero-band .apple-cta-row {
+  justify-content: center;
+}
+
+/* Dark theatrical variant — VM/product-shot stages */
+.apple-hero-band--dark {
+  background: radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 65%), #050506;
+  padding-left: clamp(1rem, 3vw, 2rem);
+  padding-right: clamp(1rem, 3vw, 2rem);
+}
+
+.apple-hero-band--dark::before {
+  content: none;
+}
+
+.apple-hero-band--dark .apple-display,
+.apple-hero-band--dark .apple-lede {
+  color: #f5f5f7;
+}
+
+.apple-hero-band--dark .apple-lede {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* AirPods / apple.com Story display — SF Pro Display metrics */
 .apple-display {
   font-family: var(--font-display);
