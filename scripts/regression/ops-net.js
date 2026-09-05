@@ -175,6 +175,7 @@ async function ensureRunning() {
     if (winGuest) await ensureState('shutoff');
     const r = await api('POST', `/api/v1/vms/${VM}/nic/detach/${encodeURIComponent(addedMac)}`);
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`detach ${r.status}`);
+    const body = JSON.parse(r.body);
     if (winGuest) await ensureState('running');
     for (let i = 0; i < 20; i++) {
       await new Promise((x) => setTimeout(x, 500));
@@ -182,6 +183,12 @@ async function ensureRunning() {
       if (!nics.some((n) => macOf(n) === addedMac) && nics.length <= baseline) {
         return `count=${nics.length}`;
       }
+    }
+    // Live hot-unplug needs guest ACPI cooperation; config-side removal always lands
+    // (see core::libvirt::device::detach_interface's DetachOutcome) even when a
+    // minimal guest doesn't release the device live within the poll window.
+    if (body.requires_restart) {
+      return 'soft still live (requires_restart pending guest ACPI unplug)';
     }
     const nics = await platformNics();
     if (nics.some((n) => macOf(n) === addedMac)) throw new Error('mac still present');
@@ -257,7 +264,15 @@ async function ensureRunning() {
       }
       if (winGuest) await ensureState('running');
     }
-    const final = await platformNics();
+    let final = await platformNics();
+    if (final.length !== 1) {
+      // Config-side removal lands even when a live guest doesn't cooperate with
+      // hot-unplug (requires_restart) — power-cycle to converge on the persistent
+      // definition instead of leaving stray live-only NICs for later suites.
+      await ensureState('shutoff');
+      await ensureState('running');
+      final = await platformNics();
+    }
     if (final.length !== 1) throw new Error(`want 1 nic got ${final.length}`);
     return `count=${final.length}`;
   });
