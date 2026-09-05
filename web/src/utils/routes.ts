@@ -420,6 +420,7 @@ export const routeLabels: Record<string, string> = {
   '/platform/vm-builder': 'VM Builder',
   '/platform/migration': 'Migration Assistant',
   '/platform/blueprints': 'Blueprints',
+  '/platform/launchpad': 'Launchpad',
   '/platform/backups': 'Backup & Restore',
   '/platform/activity': 'Activity Monitor',
   '/platform/recommendations': 'Recommendations',

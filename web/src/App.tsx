@@ -172,6 +172,7 @@ const PlatformFirewallConnectivity = lazyWithRetry(() => import('./pages/platfor
 const PlatformFirewallPolicies = lazyWithRetry(() => import('./pages/platform/security/PlatformFirewallPolicies'))
 const PlatformPolicy = lazyWithRetry(() => import('./pages/platform/PlatformPolicy'))
 const PlatformBlueprints = lazyWithRetry(() => import('./pages/platform/PlatformBlueprints'))
+const PlatformLaunchpad = lazyWithRetry(() => import('./pages/platform/PlatformLaunchpad'))
 const PlatformSupport = lazyWithRetry(() => import('./pages/platform/PlatformSupport'))
 const PlatformDeveloper = lazyWithRetry(() => import('./pages/platform/PlatformDeveloper'))
 const PlatformObservability = lazyWithRetry(() => import('./pages/platform/PlatformObservability'))
@@ -455,6 +456,7 @@ function AuthenticatedShellRoutes() {
                   <Route path="resources" element={<PlatformResourcesHub />} />
                   <Route path="operations" element={<PlatformOperationsHub />} />
                   <Route path="blueprints" element={<PlatformBlueprints />} />
+                  <Route path="launchpad" element={<PlatformLaunchpad />} />
                   <Route path="support" element={<PlatformSupport />} />
                   <Route path="storage" element={<PlatformStorage />} />
                   <Route path="storage-atlas" element={<PlatformAtlasStorage />} />

@@ -291,7 +291,7 @@ write_platform_env() {
 ensure_daemon_platform_proxy_env() {
   local daemon_env="/etc/default/machina-daemon"
   local platform_env="/etc/default/machina-platform"
-  local admin_pw=""
+  local admin_pw="" prev_auth=""
   # Create with a restrictive mode up front (in case this runs before install.sh has ever
   # touched the file), and re-assert it below regardless of prior state: this function
   # writes MACHINA_PLATFORM_AUTH, a real basic-auth credential the daemon uses to
@@ -299,6 +299,12 @@ ensure_daemon_platform_proxy_env() {
   [[ -f "$daemon_env" ]] || install -m600 /dev/null "$daemon_env"
   grep -q '^MACHINA_PLATFORM_CONTROLLER_URL=' "$daemon_env" 2>/dev/null \
     || echo 'MACHINA_PLATFORM_CONTROLLER_URL=http://127.0.0.1:5093' >>"$daemon_env"
+
+  # machina-daemon only reads this file at process start (systemd EnvironmentFile), so if it's
+  # already running by the time we change this value below, it keeps serving with the old/no
+  # credential until something restarts it — the daemon→controller proxy then 401s until an
+  # operator notices and restarts by hand. Capture the prior value so we can restart for them.
+  prev_auth="$(grep '^MACHINA_PLATFORM_AUTH=' "$daemon_env" 2>/dev/null | head -1 || true)"
 
   # The controller bootstrap password lives in machina-platform. Quick/non-platform
   # redeploys historically left MACHINA_PLATFORM_AUTH=admin:admin forever, which
@@ -319,6 +325,16 @@ ensure_daemon_platform_proxy_env() {
          "in $platform_env (and re-run install-platform / --platform) so the proxy matches."
   fi
   chmod 600 "$daemon_env"
+
+  local new_auth
+  new_auth="$(grep '^MACHINA_PLATFORM_AUTH=' "$daemon_env" 2>/dev/null | head -1 || true)"
+  if [[ "$new_auth" != "$prev_auth" ]] && systemctl is-active --quiet machina-daemon 2>/dev/null; then
+    # try-restart: only acts if the unit is already running, never starts it fresh here.
+    systemctl try-restart machina-daemon >>"$LOG_FILE" 2>&1 \
+      && ok "Restarted machina-daemon to pick up the new MACHINA_PLATFORM_AUTH" \
+      || warn "machina-daemon restart failed after updating MACHINA_PLATFORM_AUTH — the proxy may 401" \
+           "until you: sudo systemctl restart machina-daemon"
+  fi
 }
 
 install_systemd_units() {

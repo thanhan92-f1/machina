@@ -201,6 +201,26 @@ pub fn resize_block_device(
 
 const ALLOWED_NIC_MODELS: &[&str] = &["virtio", "e1000", "e1000e", "rtl8139", "vmxnet3"];
 
+/// Locally-administered, QEMU-prefixed MAC address for a newly attached NIC.
+///
+/// Attaching with `VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG` applies the same
+/// device XML to the live domain and the persistent config as two separate operations;
+/// when the XML omits `<mac>`, libvirt auto-generates one independently for each,
+/// so the live and offline definitions end up with *different* MACs. A later
+/// `update_device_flags` (nic.tune) built from the live MAC then fails against the
+/// config copy with "operation failed: no device matching mac address" even though the
+/// live update succeeds. Generating the MAC ourselves keeps both copies identical.
+fn random_nic_mac() -> String {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    format!(
+        "52:54:00:{:02x}:{:02x}:{:02x}",
+        rng.gen::<u8>(),
+        rng.gen::<u8>(),
+        rng.gen::<u8>()
+    )
+}
+
 fn pci_slots_exhausted(err: &str) -> bool {
     let m = err.to_ascii_lowercase();
     m.contains("no more available pci slots") || m.contains("no more available pci slot")
@@ -234,10 +254,12 @@ pub fn attach_interface(
     }
     let domain = lookup_domain(conn, vm_name)?;
 
+    let mac = random_nic_mac();
     let xml = format!(
         r#"<interface type='network'>
   <source network='{network}'/>
   <model type='{model}'/>
+  <mac address='{mac}'/>
 </interface>"#,
         network = crate::xml::escape(network),
         model = crate::xml::escape(model),

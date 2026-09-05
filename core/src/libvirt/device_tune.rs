@@ -322,37 +322,47 @@ pub fn update_nic_tune(
             .unwrap_or_default()
             .to_ascii_lowercase();
         if m == mac {
-            let mut nb = block.clone();
-            if let Some(ref model) = tune.model {
-                if let Some(start) = nb.find("<model") {
-                    if let Some(rest) = nb[start..].find("/>") {
-                        let end = start + rest + 2;
-                        nb.replace_range(
-                            start..end,
-                            &format!("<model type='{}'/>", xml::escape(model)),
-                        );
-                    }
-                }
-            }
-            if let Some(ref net) = tune.network {
-                if nb.contains("type='network'") || nb.contains("type=\"network\"") {
-                    if let Some(start) = nb.find("<source") {
-                        if let Some(rest) = nb[start..].find("/>") {
-                            let end = start + rest + 2;
-                            nb.replace_range(
-                                start..end,
-                                &format!("<source network='{}'/>", xml::escape(net)),
-                            );
-                        }
-                    }
-                }
-            }
-            found = Some(nb);
+            found = Some(block);
             break;
         }
     }
-    let frag = found
+    let block = found
         .ok_or_else(|| LibvirtError::NotFound(format!("No NIC with MAC '{}'", tune.mac_address)))?;
+
+    // Build a minimal <interface> fragment (type, mac, source, model only) rather than
+    // reusing the live block wholesale. update_device_flags() runs against BOTH live and
+    // config when the domain is active (see get_domain_flags), and the live block carries
+    // <alias>/<address> that are runtime-only — a NIC attached moments earlier (see the
+    // identical fix in detach_interface() above) has these on the live side but not the
+    // persistent (offline) definition, so matching the full block against config fails
+    // with "device not found ... matching MAC address" even though live update succeeds.
+    let iface_type =
+        xml::extract_attr(&block, "interface", "type").unwrap_or_else(|| "network".to_string());
+    let model = tune
+        .model
+        .clone()
+        .or_else(|| xml::extract_attr(&block, "model", "type"));
+    let network = tune
+        .network
+        .clone()
+        .or_else(|| xml::extract_attr(&block, "source", "network"));
+
+    let mut frag = format!(
+        "<interface type='{}'>\n  <mac address='{}'/>",
+        xml::escape(&iface_type),
+        xml::escape(&mac)
+    );
+    if iface_type == "network" {
+        let net = network.ok_or_else(|| {
+            LibvirtError::Operation("interface has no <source network='...'/>".into())
+        })?;
+        frag.push_str(&format!("\n  <source network='{}'/>", xml::escape(&net)));
+    }
+    if let Some(model) = model {
+        frag.push_str(&format!("\n  <model type='{}'/>", xml::escape(&model)));
+    }
+    frag.push_str("\n</interface>");
+
     let flags = get_domain_flags(&domain);
     domain
         .update_device_flags(&frag, flags)

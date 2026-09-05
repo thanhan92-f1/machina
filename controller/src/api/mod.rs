@@ -26,6 +26,7 @@ mod fence;
 mod flavors;
 mod fleet;
 mod keypairs;
+mod launchpad;
 mod load_balancers;
 mod guestkit;
 mod zeus_firewall;
@@ -350,6 +351,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/guestkit/vms/{id}/migrate-plan", get(guestkit::guestkit_vm_migrate_plan))
         .route("/api/v1/guestkit/jobs", post(guestkit::guestkit_submit_job))
         .route("/api/v1/guestkit/jobs/{id}", get(guestkit::guestkit_job_status))
+        .route("/api/v1/launchpad/catalog", get(launchpad::launchpad_catalog))
         // Atlas storage control plane
         .route("/api/v1/atlas/status", get(atlas::atlas_status))
         .route("/api/v1/atlas/backends", get(atlas::atlas_backends))
