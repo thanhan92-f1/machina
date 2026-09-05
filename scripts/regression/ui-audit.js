@@ -29,7 +29,7 @@ const PATHS = [
   '/platform/notifications',
   '/platform/zeus/security/compliance',
   '/platform/zeus/security/connectivity',
-  '/platform/zeus/security/hunt',
+  '/platform/zyra/security/hunt',
   '/host-ssh',
   '/ssh',
 ];

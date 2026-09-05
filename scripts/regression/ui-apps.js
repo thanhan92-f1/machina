@@ -21,8 +21,8 @@ const PATHS = [
   '/platform/fleet-snapshots',
   '/platform/network-canvas',
   '/platform/soc',
-  '/platform/zeus',
-  '/platform/zeus/approvals',
+  '/platform/zyra',
+  '/platform/zyra/approvals',
   '/platform/enterprise',
   '/platform/hosts',
 ];

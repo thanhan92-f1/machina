@@ -13,12 +13,12 @@ const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-graphx');
 
 const PATHS = [
-  '/platform/zeus',
-  '/platform/zeus/approvals',
-  '/platform/zeus/incidents',
+  '/platform/zyra',
+  '/platform/zyra/approvals',
+  '/platform/zyra/incidents',
   '/platform/zeus/security',
-  '/platform/zeus/security/hunt',
-  '/platform/zeus/security/enforcement',
+  '/platform/zyra/security/hunt',
+  '/platform/zyra/security/enforcement',
   '/platform/zeus/security/firewall',
   '/platform/topology',
   '/platform/hosts/finder',

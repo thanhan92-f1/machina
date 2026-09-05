@@ -21,9 +21,9 @@ const PATHS = [
   '/platform/api-keys',
   '/platform/gpu',
   '/platform/baremetal',
-  '/platform/zeus/incidents',
+  '/platform/zyra/incidents',
   '/platform/zeus/security/compliance',
-  '/platform/zeus/approvals',
+  '/platform/zyra/approvals',
   '/platform/enterprise',
 ];
 

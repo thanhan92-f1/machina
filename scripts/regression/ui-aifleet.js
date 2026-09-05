@@ -13,12 +13,12 @@ const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-aifleet');
 
 const PATHS = [
-  '/platform/zeus',
-  '/platform/zeus/configure',
+  '/platform/zyra',
+  '/platform/zyra/configure',
   '/platform/zeus/security',
-  '/platform/zeus/rightsizing',
-  '/platform/zeus/approvals',
-  '/platform/zeus/incidents',
+  '/platform/zyra/rightsizing',
+  '/platform/zyra/approvals',
+  '/platform/zyra/incidents',
   '/platform/ai-providers',
   '/platform/recommendations',
   '/platform/reports',

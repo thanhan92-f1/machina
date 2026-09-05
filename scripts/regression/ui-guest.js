@@ -24,7 +24,7 @@ const PATHS = [
   `/platform/hosts/${HID}`,
   '/platform/observability',
   '/platform/reports',
-  '/platform/zeus/rightsizing',
+  '/platform/zyra/rightsizing',
   '/platform/recommendations',
   '/platform/maintenance',
   '/platform/support',

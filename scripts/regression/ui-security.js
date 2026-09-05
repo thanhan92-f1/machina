@@ -16,8 +16,8 @@ const log = createLogger(cfg.resultsDir, 'ui-security');
 
 const PATHS = [
   '/platform/zeus/security',
-  '/platform/zeus/security/hunt',
-  '/platform/zeus/security/enforcement',
+  '/platform/zyra/security/hunt',
+  '/platform/zyra/security/enforcement',
   '/platform/zeus/security/firewall',
   '/platform/zeus/security/ports',
   '/platform/zeus/security/services',

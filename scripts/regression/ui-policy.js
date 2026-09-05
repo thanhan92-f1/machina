@@ -22,7 +22,7 @@ const PATHS = [
   '/platform/storage',
   '/platform/content',
   '/platform/enterprise',
-  '/platform/zeus/rightsizing',
+  '/platform/zyra/rightsizing',
   '/platform/network-canvas',
   '/platform/maintenance',
 ];

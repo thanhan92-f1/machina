@@ -19,15 +19,15 @@ let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID ||
 
 const PATHS = [
   '/platform/zeus/security',
-  '/platform/zeus/security/hunt',
-  '/platform/zeus/security/enforcement',
-  `/platform/zeus/machines/${HID}`,
+  '/platform/zyra/security/hunt',
+  '/platform/zyra/security/enforcement',
+  `/platform/zyra/machines/${HID}`,
   '/platform/zeus/security/k8s',
   '/platform/zeus/security/cloud',
   '/platform/zeus/security/connectivity',
   '/platform/zeus/security/firewall',
-  '/platform/zeus/configure',
-  '/platform/zeus/approvals',
+  '/platform/zyra/configure',
+  '/platform/zyra/approvals',
 ];
 
 async function loadPath(cdp, path) {

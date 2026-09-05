@@ -13,13 +13,13 @@ const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-aiops');
 
 const PATHS = [
-  '/platform/zeus',
+  '/platform/zyra',
   '/platform/recommendations',
-  '/platform/zeus/rightsizing',
+  '/platform/zyra/rightsizing',
   '/platform/gpu',
   '/platform/topology',
-  '/platform/zeus/approvals',
-  '/platform/zeus/incidents',
+  '/platform/zyra/approvals',
+  '/platform/zyra/incidents',
   '/platform/observability',
   '/platform/placement',
   '/platform/ai-providers',

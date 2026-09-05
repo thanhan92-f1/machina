@@ -15,12 +15,12 @@ const { tryLogin } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ui-ai');
 
 const PATHS = [
-  '/platform/zeus',
-  '/platform/zeus/approvals',
-  '/platform/zeus/incidents',
-  '/platform/zeus/configure',
+  '/platform/zyra',
+  '/platform/zyra/approvals',
+  '/platform/zyra/incidents',
+  '/platform/zyra/configure',
   '/platform/ai-providers',
-  '/platform/zeus/rightsizing',
+  '/platform/zyra/rightsizing',
   '/platform/recommendations',
   '/platform/observability',
   '/platform/reports',

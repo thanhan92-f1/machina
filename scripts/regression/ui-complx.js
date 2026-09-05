@@ -15,7 +15,7 @@ const log = createLogger(cfg.resultsDir, 'ui-complx');
 const PATHS = [
   '/platform/zeus/security/compliance',
   '/platform/zeus/security/policies',
-  '/platform/zeus/security/enforcement',
+  '/platform/zyra/security/enforcement',
   '/platform/zeus/security',
   '/platform/ha',
   '/platform/placement',

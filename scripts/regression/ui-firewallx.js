@@ -23,8 +23,8 @@ const PATHS = [
   '/platform/zeus/security/policies',
   '/platform/zeus/security',
   '/platform/soc',
-  '/platform/zeus/approvals',
-  '/platform/zeus/configure',
+  '/platform/zyra/approvals',
+  '/platform/zyra/configure',
 ];
 
 async function loadPath(cdp, path) {

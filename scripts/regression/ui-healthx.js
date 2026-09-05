@@ -21,7 +21,7 @@ const PATHS = [
   '/platform/support',
   '/platform/recommendations',
   '/platform/observability',
-  '/platform/zeus/incidents',
+  '/platform/zyra/incidents',
   '/platform/activity',
   '/platform/events',
   '/platform/upgrade',

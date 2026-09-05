@@ -18,7 +18,7 @@ let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
 let HID = process.env.MACHINA_HOST_ID || process.env.MACHINA_PLATFORM_HOST_ID || '';
 
 const PATHS = [
-  '/platform/zeus/security/hunt',
+  '/platform/zyra/security/hunt',
   '/platform/zeus/security/activity',
   '/platform/zeus/security/firewall',
   `/platform/zeus/security/firewall/${HID}`,
