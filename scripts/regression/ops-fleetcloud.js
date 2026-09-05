@@ -13,6 +13,7 @@
  */
 
 const { loadConfig } = require('./lib/config');
+const { resolveIds } = require('./lib/ids');
 const { createApi } = require('./lib/api');
 const { createLogger } = require('./lib/log');
 
@@ -21,8 +22,8 @@ const { api, login } = createApi(cfg);
 const log = createLogger(cfg.resultsDir, 'ops-fleetcloud');
 const P = '/api/v1/platform/controller';
 const TAG = `fc-reg-${process.pid}`;
-const PID = process.env.MACHINA_PLATFORM_VM_ID || '';
-const HOST_ID = process.env.MACHINA_PLATFORM_HOST_ID || '32e030bd-68a2-49c4-b7cb-85113f0153c4';
+let PID = process.env.MACHINA_PLATFORM_VM_ID || '';
+let HOST_ID = process.env.MACHINA_PLATFORM_HOST_ID || '';
 
 // Fixed test pubkey (ed25519) — never used for real access.
 const TEST_PUBKEY =
@@ -68,6 +69,9 @@ async function del(path) {
 
 (async () => {
   await login({ retries: 5, waitMs: 65000 });
+  const _ids = await resolveIds(api, cfg);
+  if (_ids.hostId) HOST_ID = _ids.hostId;
+  if (_ids.platformVmId) PID = _ids.platformVmId;
   let pass = 0;
   let fail = 0;
   const mark = async (name, fn) => {
@@ -312,6 +316,7 @@ async function del(path) {
         return `host:${hostPort}->guest:22`;
       });
       await mark('port-forward-list', async () => {
+        if (!pf) return 'soft skipped (port-forward-create did not succeed)';
         const j = await getJson(`${P}/api/v1/vms/${PID}/port-forwards`);
         const items = Array.isArray(j) ? j : j.items || [];
         if (!Array.isArray(items)) throw new Error('not array');
