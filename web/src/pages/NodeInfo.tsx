@@ -565,6 +565,7 @@ export default function NodeInfoPage() {
 
       <div className="apple-story-stack w-full space-y-8">
         <AppleStoryHeader
+          centered
           eyebrow="Hypervisor"
           title={node.hostname}
           lede={`${node.hypervisor} ${node.hypervisor_version} · libvirt ${node.lib_version} · ${node.active_vms} active / ${node.defined_vms} defined VMs`}

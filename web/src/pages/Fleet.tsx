@@ -124,6 +124,7 @@ export default function FleetPage() {
     >
       <div className="apple-story-stack w-full space-y-8">
         <AppleStoryHeader
+          centered
           eyebrow="Fleet"
           title={t('fleet.title')}
           lede={fleetLede}

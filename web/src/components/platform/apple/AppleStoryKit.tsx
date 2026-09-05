@@ -10,20 +10,31 @@ export function AppleStoryHeader({
   title,
   lede,
   cta,
+  centered = false,
 }: {
   eyebrow?: string
   title: string
   lede?: string
   cta?: ReactNode
+  /** Page-level hero (not a sub-section): use the centered AirPods-style hero band. */
+  centered?: boolean
 }) {
   return (
-    <header className="apple-story-stack mb-8 max-w-3xl">
+    <header className={`apple-story-stack mb-8 ${centered ? 'apple-hero-band' : 'max-w-3xl'}`}>
       {eyebrow ? (
-        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">{eyebrow}</p>
+        <p
+          className={
+            centered
+              ? 'apple-eyebrow'
+              : 'text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2'
+          }
+        >
+          {eyebrow}
+        </p>
       ) : null}
       <h1 className="apple-display text-[var(--text-primary)] tracking-tight">{title}</h1>
       {lede ? <p className="apple-lede text-[var(--text-secondary)] mt-3">{lede}</p> : null}
-      {cta ? <div className="mt-5 flex flex-wrap gap-3">{cta}</div> : null}
+      {cta ? <div className={centered ? 'apple-cta-row' : 'mt-5 flex flex-wrap gap-3'}>{cta}</div> : null}
     </header>
   )
 }

@@ -607,6 +607,7 @@ export default function K8sOverviewPage() {
 
       <div className="apple-story-stack w-full space-y-8">
         <AppleStoryHeader
+          centered
           eyebrow="Kubernetes"
           title="Kubernetes Cluster"
           lede={clusterLede}
