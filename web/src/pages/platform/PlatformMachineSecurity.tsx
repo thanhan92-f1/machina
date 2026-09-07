@@ -302,7 +302,7 @@ export default function PlatformMachineSecurity() {
                     </button>
                   </div>
                 ))}
-                <Link to="/platform/zeus/security/enforcement" className={`text-xs inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+                <Link to="/platform/zyra/security/enforcement" className={`text-xs inline-flex items-center gap-1 ${hubLinkClasses()}`}>
                   <Shield className="w-3 h-3" /> Runtime enforcement workspace
                 </Link>
               </div>

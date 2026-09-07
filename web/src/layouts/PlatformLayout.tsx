@@ -2,15 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
-import PlatformSidebar from '../components/platform/PlatformSidebar'
-import PlatformControlCenter from '../components/platform/PlatformControlCenter'
-import PlatformContextBar from '../components/platform/tahoe/PlatformContextBar'
-import PlatformMobileJumpNav from '../components/platform/tahoe/PlatformMobileJumpNav'
-import PlatformMacDesktopTabs from '../components/platform/mac/PlatformMacDesktopTabs'
+import GlobalBar from '../components/nav/GlobalBar'
+import ChapterBar from '../components/nav/ChapterBar'
+import SideNav from '../components/nav/SideNav'
 import { PlatformMacDesktopProvider, usePlatformMacDesktop } from '../components/platform/mac/PlatformMacDesktopContext'
-import PlatformMacAppMenus from '../components/platform/mac/PlatformMacAppMenus'
 import PopoutTitleBar from '../components/platform/mac/PopoutTitleBar'
-import PlatformDynamicIsland from '../components/platform/mac/PlatformDynamicIsland'
 import MissionControlOverlay from '../components/platform/MissionControlOverlay'
 import {
   MissionControlProvider,
@@ -39,6 +35,7 @@ function PlatformDesktopShell() {
   const { sidebarVisible, cinemaChromeHidden } = usePlatformMacDesktop()
   const [tier] = usePlatformDesktopTier()
   const { openMissionControl, closeMissionControl } = useMissionControl()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const navEpoch = useRef(0)
   const cinemaRoute = location.pathname.includes('/consolehub') && cinemaChromeHidden
@@ -48,6 +45,7 @@ function PlatformDesktopShell() {
   const meshSubtle = location.pathname !== '/platform' && suppressContextBar(location.pathname)
   const contextBarVisible =
     !hideChrome
+    && !platformHome
     && contextNavForPath(location.pathname, tier) != null
     && shouldShowContextBar(location.pathname, tier)
 
@@ -155,26 +153,13 @@ function PlatformDesktopShell() {
       data-context-bar={contextBarVisible ? 'visible' : 'hidden'}
       data-cinema-chrome={hideChrome ? 'hidden' : undefined}
     >
-      {!hideChrome ? (
-        <header className="mac-menubar-inner glass shrink-0 sticky top-0 z-40 flex items-center gap-2 px-2 lg:px-3 h-11 overflow-visible">
-          <div className="flex items-center min-w-0 shrink-0 overflow-visible z-[400]">
-            <PlatformMacAppMenus />
-          </div>
-          <div className="flex-1 flex justify-center min-w-0 pointer-events-none">
-            <PlatformDynamicIsland />
-          </div>
-          <div className="ml-auto shrink-0 flex items-center gap-2 z-[400]">
-            <PlatformControlCenter />
-          </div>
-        </header>
-      ) : null}
-
-      {contextBarVisible ? <PlatformContextBar /> : null}
-      {!hideChrome ? <PlatformMobileJumpNav /> : null}
-      {!hideChrome ? <PlatformMacDesktopTabs /> : null}
+      {!hideChrome ? <GlobalBar onBurger={() => setMobileNavOpen((v) => !v)} /> : null}
+      {contextBarVisible ? <ChapterBar /> : null}
 
       <div className="flex w-full flex-1 items-stretch min-h-0">
-        {sidebarVisible && !hideChrome ? <PlatformSidebar /> : null}
+        {sidebarVisible && !hideChrome ? (
+          <SideNav mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
+        ) : null}
         <div className="tahoe-canvas mac-desktop-main flex-1 min-w-0 relative min-h-0">
           {!hideChrome ? <div className={`tahoe-mesh pointer-events-none${meshSubtle ? ' tahoe-mesh-subtle' : ''}`} aria-hidden /> : null}
           <div

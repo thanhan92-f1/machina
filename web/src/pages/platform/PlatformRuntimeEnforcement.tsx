@@ -11,6 +11,8 @@ import {
   MacSheet,
 } from '../../components/platform/mac/PlatformMacUi'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import TerminalFrame from '../../components/TerminalFrame'
+import { renderHighlightedJson } from '../../utils/terminalHighlight'
 import {
   applyEnforcementPolicy,
   attachEnforcement,
@@ -370,9 +372,9 @@ export default function PlatformRuntimeEnforcement() {
         subtitle={previewTitle}
         wide
       >
-        <pre className="text-xs font-mono text-[var(--text-secondary)] overflow-x-auto p-2 bg-[var(--apple-surface)] rounded-lg max-h-[60vh] overflow-y-auto">
-          {previewYaml}
-        </pre>
+        <TerminalFrame label={`${previewTitle || 'policy'}.json`} maxHeight="max-h-[60vh]">
+          {renderHighlightedJson(previewYaml)}
+        </TerminalFrame>
       </MacSheet>
       <ConfirmDialog
         open={confirmDeletePolicyId !== null}

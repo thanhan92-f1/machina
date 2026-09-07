@@ -41,7 +41,7 @@ export default function SerialConsole({ vmName, libvirtConnection, wsUrl: wsUrlO
       fontSize: 14,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       theme: {
-        background: '#0d1117',
+        background: '#000000',
         foreground: '#c9d1d9',
         cursor: '#58a6ff',
         selectionBackground: '#264f78',
@@ -138,7 +138,7 @@ export default function SerialConsole({ vmName, libvirtConnection, wsUrl: wsUrlO
           </button>
         </div>
       </div>
-      <div ref={terminalRef} className={`bg-[#0d1117] rounded-b-lg ${fullscreen ? 'flex-1' : ''}`} style={fullscreen ? {} : { minHeight: '500px' }} />
+      <div ref={terminalRef} className={`bg-black rounded-b-lg ${fullscreen ? 'flex-1' : ''}`} style={fullscreen ? {} : { minHeight: '500px' }} />
     </div>
   )
 }

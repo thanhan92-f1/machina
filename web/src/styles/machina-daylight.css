@@ -382,11 +382,16 @@ html.light-theme .mac-desktop-root {
   color: var(--text-primary);
 }
 
-html.apple-light .mac-desktop-root .text-white,
-html.light-theme .mac-desktop-root .text-white,
+/* Scoped to the dock chrome only — it was originally authored assuming a dark
+   background, so its .text-white needs to flip to ink in Light theme. This used
+   to also match `.mac-desktop-root .text-white` and a bare `[data-theme='tahoe-light']
+   .text-white`, but .mac-desktop-root wraps the entire app shell (PlatformLayout.tsx),
+   so those forced EVERY intentionally-white button/badge text app-wide (e.g. the
+   Create VM wizard's active-step pill: blue background, text-white) down to
+   near-black ink, making solid-accent buttons unreadable everywhere. */
 html.apple-light .mac-dock .text-white,
 html.light-theme .mac-dock .text-white,
-html[data-theme='tahoe-light'] .text-white {
+html[data-theme='tahoe-light'] .mac-dock .text-white {
   color: var(--text-primary) !important;
 }
 html.apple-light .mac-desktop-root .text-white\/90,
@@ -886,14 +891,14 @@ html.apple-light .liquid-glass-app input:not([type='checkbox']):not([type='radio
 html.light-theme .liquid-glass-app input:not([type='checkbox']):not([type='radio']),
 html.apple-light .liquid-glass-app select,
 html.light-theme .liquid-glass-app select,
-html.apple-light .liquid-glass-app textarea,
-html.light-theme .liquid-glass-app textarea,
+html.apple-light .liquid-glass-app textarea:not(.term-body),
+html.light-theme .liquid-glass-app textarea:not(.term-body),
 html.apple-light .mac-desktop-root input:not([type='checkbox']):not([type='radio']),
 html.light-theme .mac-desktop-root input:not([type='checkbox']):not([type='radio']),
 html.apple-light .mac-desktop-root select,
 html.light-theme .mac-desktop-root select,
-html.apple-light .mac-desktop-root textarea,
-html.light-theme .mac-desktop-root textarea {
+html.apple-light .mac-desktop-root textarea:not(.term-body),
+html.light-theme .mac-desktop-root textarea:not(.term-body) {
   background: #ffffff !important;
   border-color: hsl(205 22% 84%) !important;
   color: var(--text-primary) !important;

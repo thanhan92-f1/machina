@@ -20,7 +20,7 @@ function enforcementHref(props: EbpfActionMenuProps): string {
   if (props.suggestedMatch) params.set('match', props.suggestedMatch)
   if (props.policyName) params.set('name', props.policyName)
   const q = params.toString()
-  return `/platform/zeus/security/enforcement${q ? `?${q}` : ''}`
+  return `/platform/zyra/security/enforcement${q ? `?${q}` : ''}`
 }
 
 export default function EbpfActionMenu({
@@ -48,7 +48,7 @@ export default function EbpfActionMenu({
       )}
       {huntQueryId && (
         <Link
-          to={`/platform/zeus/security/hunt?query=${encodeURIComponent(huntQueryId)}${hostId ? `&host=${encodeURIComponent(hostId)}` : ''}`}
+          to={`/platform/zyra/security/hunt?query=${encodeURIComponent(huntQueryId)}${hostId ? `&host=${encodeURIComponent(hostId)}` : ''}`}
           className={`${btn} inline-flex items-center gap-1 ${hubLinkClasses()}`}
         >
           <Search className="w-3 h-3" aria-hidden />
@@ -65,7 +65,7 @@ export default function EbpfActionMenu({
         </Link>
       )}
       {!suggestedKind && !huntQueryId && !hostId && (
-        <Link to="/platform/zeus/security/enforcement" className={`${btn} inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+        <Link to="/platform/zyra/security/enforcement" className={`${btn} inline-flex items-center gap-1 ${hubLinkClasses()}`}>
           <Shield className="w-3 h-3" aria-hidden />
           Enforcement
         </Link>

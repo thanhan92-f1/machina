@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from 'react'
 import { hubLinkClasses } from '../../utils/semanticColors'
+import TerminalFrame from '../TerminalFrame'
+import { renderHighlightedJson } from '../../utils/terminalHighlight'
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>
@@ -54,9 +56,9 @@ export default function JsonInspector({
         </dl>
       ))}
       {raw && (
-        <pre className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap overflow-x-auto max-h-96 bg-[var(--apple-surface)] rounded-lg p-3 border border-white/[0.06]">
-          {JSON.stringify(data, null, 2)}
-        </pre>
+        <TerminalFrame label="response.json" maxHeight="max-h-96">
+          {renderHighlightedJson(JSON.stringify(data, null, 2))}
+        </TerminalFrame>
       )}
       <button
         type="button"

@@ -6,6 +6,8 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Link, useParams } from 'react-router'
 import { Activity, ChevronLeft, RefreshCw } from 'lucide-react'
 import { BuildStepTimeline } from '../components/BuildStepTimeline'
+import TerminalFrame from '../components/TerminalFrame'
+import { renderHighlightedLog } from '../utils/terminalHighlight'
 import { getJob, listJobs, JobDetail, JobSummary } from '../api/jobs'
 import {
   computePackerJobTimeline,
@@ -228,9 +230,9 @@ export default function JobsPage() {
               ) : null}
               <div className="flex-1 min-h-0 flex flex-col">
                 <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-1">Log</h3>
-                <pre className="flex-1 text-[11px] leading-relaxed font-mono text-[var(--text-secondary)] bg-[var(--apple-surface)]/80 border border-[var(--apple-hairline)] rounded-lg p-3 overflow-auto max-h-[50vh] whitespace-pre-wrap break-words">
-                  {detail.logs.length ? detail.logs.join('\n') : '(no log lines yet)'}
-                </pre>
+                <TerminalFrame label="Job log" className="flex-1 min-h-0 flex flex-col" maxHeight="flex-1 min-h-0 max-h-[50vh]">
+                  {detail.logs.length ? renderHighlightedLog(detail.logs.join('\n')) : '(no log lines yet)'}
+                </TerminalFrame>
               </div>
             </>
           )}

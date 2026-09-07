@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import CopyButton from './CopyButton'
+import TerminalFrame from './TerminalFrame'
+import { renderHighlightedJson, renderHighlightedLog } from '../utils/terminalHighlight'
+
+function looksLikeJson(text: string): boolean {
+  const t = text.trim()
+  return (t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))
+}
 
 type Props = {
   title: string
@@ -36,9 +43,9 @@ export default function CollapsibleCodeBlock({
         <CopyButton text={content} label="Copy" className="py-0.5" />
       </div>
       {open && (
-        <pre className={`text-[11px] leading-snug font-mono text-[var(--text-primary)] bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all ${maxHeight} overflow-y-auto`}>
-          {content || '(no output)'}
-        </pre>
+        <TerminalFrame label={title} maxHeight={maxHeight} className="text-[11px]">
+          {content ? (looksLikeJson(content) ? renderHighlightedJson(content) : renderHighlightedLog(content)) : '(no output)'}
+        </TerminalFrame>
       )}
     </div>
   )

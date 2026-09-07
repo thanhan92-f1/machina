@@ -104,13 +104,18 @@ export function MacSheet({
   )
 }
 
+// Apple app-icon-style palette — bold, distinct hues (blue/green/purple/orange/
+// pink/teal/yellow/indigo) instead of the near-black grayscale rotation this used
+// to be, so app tiles read as distinct at a glance the way real Apple icons do.
 const GRADIENTS = [
-  'from-[#2a2a2c] to-[#1d1d1f]',
-  'from-[#3a3a3c] to-[#2a2a2c]',
-  'from-[#1d1d1f] to-[#000000]',
-  'from-[#2c2c2e] to-[#1c1c1e]',
-  'from-[#323234] to-[#1d1d1f]',
-  'from-[#3a3a3c] to-[#000000]',
+  'from-[#0A84FF] to-[#0060DF]',
+  'from-[#30D158] to-[#248A3D]',
+  'from-[#BF5AF2] to-[#8944AB]',
+  'from-[#FF9F0A] to-[#D97706]',
+  'from-[#FF375F] to-[#D70015]',
+  'from-[#64D2FF] to-[#0091FF]',
+  'from-[#FFD60A] to-[#D4A100]',
+  'from-[#5E5CE6] to-[#3634A3]',
 ] as const
 
 export function gradientForName(name: string): string {

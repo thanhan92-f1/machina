@@ -1,14 +1,16 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useState } from 'react'
+import { useRef, useState, type UIEvent } from 'react'
 import { Link } from 'react-router'
 import PageLayout from '../../components/PageLayout'
 import PlatformPageChrome from '../../components/platform/PlatformPageChrome'
+import { TerminalTitlebar } from '../../components/TerminalFrame'
 import { validateCloudInit } from '../../api/platformCloudInit'
 import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses, statusToneClass } from '../../utils/semanticColors'
 import { useToastContext } from '../../contexts/ToastContext'
 import { copyText } from '../../utils/copyText'
+import { renderHighlightedYaml } from '../../utils/terminalHighlight'
 
 const DEFAULT_YAML = `#cloud-config
 hostname: my-vm
@@ -26,6 +28,13 @@ export default function CloudInitStudio() {
   const [yaml, setYaml] = useState(DEFAULT_YAML)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ valid: boolean; issues: string[]; preview_hostname?: string | null } | null>(null)
+  const highlightRef = useRef<HTMLPreElement>(null)
+
+  const syncHighlightScroll = (e: UIEvent<HTMLTextAreaElement>) => {
+    if (!highlightRef.current) return
+    highlightRef.current.scrollTop = e.currentTarget.scrollTop
+    highlightRef.current.scrollLeft = e.currentTarget.scrollLeft
+  }
 
   const validate = async () => {
     setBusy(true)
@@ -46,13 +55,23 @@ export default function CloudInitStudio() {
           Maps to Machina <code className="text-xs">CloudInitSpec</code> on VM create. Use{' '}
           <Link to="/platform/templates" className={hubLinkClasses()}>Templates</Link> to deploy with this payload.
         </p>
-        <textarea
-          aria-label="cloud-init YAML"
-          className="input w-full font-mono text-xs min-h-[320px]"
-          value={yaml}
-          onChange={(e) => setYaml(e.target.value)}
-          spellCheck={false}
-        />
+        <div className="term-window rounded-xl overflow-hidden border border-black/30 shadow-lg">
+          <TerminalTitlebar label="cloud-config.yaml — Terminal" />
+          <div className="term-editor min-h-[320px] font-mono text-xs">
+            <pre ref={highlightRef} aria-hidden="true" className="term-body term-editor-highlight">
+              {renderHighlightedYaml(yaml)}
+              {'\n'}
+            </pre>
+            <textarea
+              aria-label="cloud-init YAML"
+              className="term-body term-editor-input block"
+              value={yaml}
+              onChange={(e) => setYaml(e.target.value)}
+              onScroll={syncHighlightScroll}
+              spellCheck={false}
+            />
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 mt-3">
           <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void validate()}>
             {busy ? 'Validating…' : 'Validate'}

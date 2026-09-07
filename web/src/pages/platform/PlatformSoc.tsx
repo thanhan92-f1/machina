@@ -319,7 +319,7 @@ export default function PlatformSoc() {
             {t.label}
           </button>
         ))}
-        <Link to="/platform/zeus/security/hunt" className={`btn-secondary text-sm ml-auto ${hubLinkClasses()}`}>
+        <Link to="/platform/zyra/security/hunt" className={`btn-secondary text-sm ml-auto ${hubLinkClasses()}`}>
           Threat hunting →
         </Link>
         <Link to="/platform/zeus/security" className={`btn-secondary text-sm ${hubLinkClasses()}`}>

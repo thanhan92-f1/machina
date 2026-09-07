@@ -8,6 +8,8 @@ import ConfirmDialog from '../../../components/ConfirmDialog'
 import { MacGlassPanel, MacSheet } from '../../../components/platform/mac/PlatformMacUi'
 import PageLayout from '../../../components/PageLayout'
 import CopyButton from '../../../components/CopyButton'
+import TerminalFrame from '../../../components/TerminalFrame'
+import { renderHighlightedYaml } from '../../../utils/terminalHighlight'
 import { getK8sFirewallStatus, planK8sFirewall, applyK8sFirewall } from '../../../api/zeusFirewall'
 import { formatUserError } from '../../../utils/apiError'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusSurfaceClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../../utils/semanticColors'
@@ -151,7 +153,7 @@ export default function PlatformFirewallK8s() {
             <div className="flex justify-end">
               <CopyButton text={manifestYaml} label="Copy YAML" />
             </div>
-            <pre className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap font-mono max-h-[60vh] overflow-auto">{manifestYaml}</pre>
+            <TerminalFrame label="manifest.yaml" maxHeight="max-h-[60vh]">{renderHighlightedYaml(manifestYaml)}</TerminalFrame>
           </div>
         ) : (
           <p className="text-sm text-[var(--text-muted)]">No manifests generated — choose a namespace and profile, then Preview manifests.</p>

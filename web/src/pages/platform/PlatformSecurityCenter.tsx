@@ -213,7 +213,7 @@ export default function PlatformSecurityCenter() {
                       {issue.host_id}
                     </Link>
                     {' · '}
-                    <Link to="/platform/zeus/security/enforcement" className={`text-xs ${hubLinkClasses()}`}>
+                    <Link to="/platform/zyra/security/enforcement" className={`text-xs ${hubLinkClasses()}`}>
                       enforcement
                     </Link>
                   </>

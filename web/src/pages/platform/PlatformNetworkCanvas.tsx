@@ -270,7 +270,7 @@ export default function PlatformNetworkCanvas() {
                           <span className="text-[var(--text-muted)]"> ({e.dropped_count} dropped)</span>
                           {' '}
                           <Link
-                            to={`/platform/zeus/security/enforcement?kind=deny_port&match=${encodeURIComponent('4444/tcp')}`}
+                            to={`/platform/zyra/security/enforcement?kind=deny_port&match=${encodeURIComponent('4444/tcp')}`}
                             className={hubLinkClasses()}
                           >
                             enforce

@@ -4,6 +4,7 @@
 @import "./machina-apple-ux.css";
 /* Zeus OS 1:1 SoT — must load last so Mist/Tahoe Light win over System Blue forks */
 @import "./zeus-parity.css";
+@import "./nav-global-bar.css";
 @import "./zyvor-premium-login.css";
 @import "./zyvor-macos-login.css";
 
@@ -1400,7 +1401,7 @@ a.tahoe-context-app-title:hover {
 
 .tahoe-page-root .input,
 .tahoe-page-root select,
-.tahoe-page-root textarea {
+.tahoe-page-root textarea:not(.term-body) {
   border-radius: var(--radius-liquid-sm, 0.75rem);
   border-color: var(--glass-border, rgba(255, 255, 255, 0.08));
   background: var(--apple-fill-tertiary);
@@ -3312,3 +3313,69 @@ html[data-theme='tahoe-light'] {
   --link-hover: #0071e3;
   --link-on-light: #0066cc;
 }
+
+/* Shared macOS Terminal.app look (pure black, colorful monospace) for any
+   config editor / log / JSON / YAML surface — independent of the light/dark
+   app theme. Originated in Cloud-Init Studio, generalized for reuse via
+   components/TerminalFrame.tsx + utils/terminalHighlight.tsx. */
+.term-titlebar {
+  background: linear-gradient(180deg, #3a3a3c, #2c2c2e);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.term-body {
+  background: #000;
+  color: #e8fce8;
+  caret-color: #30d158;
+  border: none;
+  outline: none;
+  padding: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  margin: 0;
+}
+.term-body::selection {
+  background: rgba(48, 209, 88, 0.35);
+}
+/* Editable terminal (Cloud-Init Studio): a native <textarea> can only ever
+   render one flat text color, so "colorful text" in an editable surface
+   needs the classic highlighted-overlay trick — a syntax-highlighted <pre>
+   sits behind a transparent-text <textarea> that only supplies the caret
+   and input handling. Both layers share .term-body's box model; only this
+   compound selector's background/color/resize differ per layer. */
+.term-editor {
+  position: relative;
+}
+.term-editor-highlight {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+}
+.term-body.term-editor-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: transparent;
+  resize: none;
+}
+.term-body.term-editor-input::selection {
+  background: rgba(48, 209, 88, 0.35);
+  color: transparent;
+}
+/* Token colors for the regex-based highlighter — deliberately simple, no
+   syntax-highlighting library. */
+.term-tok-key { color: #6edcff; }
+.term-tok-string { color: #7ee787; }
+.term-tok-text { color: #c9d1d9; }
+.term-tok-number { color: #ffb454; }
+.term-tok-literal { color: #d2a8ff; }
+.term-tok-punct { color: #8b949e; }
+.term-tok-comment { color: #8b949e; font-style: italic; }
+.term-tok-list-marker { color: #d2a8ff; }
+.term-tok-error { color: #ff7b72; }
+.term-tok-warn { color: #ffb454; }
+.term-tok-default { color: #7ee787; }

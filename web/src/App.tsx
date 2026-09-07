@@ -450,6 +450,7 @@ function AuthenticatedShellRoutes() {
                   <Route path="zeus/security/policies" element={<PlatformFirewallPolicies />} />
                   <Route path="policy" element={<PlatformPolicy />} />
                   <Route path="integrations" element={<Navigate to="/platform/settings?section=integrations" replace />} />
+                  <Route path="alerts" element={<Navigate to="/platform/notifications" replace />} />
                   <Route path="infrastructure" element={<PlatformInfrastructureHub />} />
                   <Route path="workloads" element={<PlatformWorkloadsHub />} />
                   <Route path="administration" element={<PlatformAdministrationHub />} />

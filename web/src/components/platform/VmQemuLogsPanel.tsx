@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { getVmQemuLogs } from '../../api/platform'
 import { MacGlassPanel } from './mac/PlatformMacUi'
+import TerminalFrame from '../TerminalFrame'
+import { renderHighlightedLog } from '../../utils/terminalHighlight'
 
 interface VmQemuLogsPanelProps {
   vmId: string
@@ -45,9 +47,9 @@ export default function VmQemuLogsPanel({ vmId, vmName }: VmQemuLogsPanelProps) 
         </button>
       </div>
       {error && <p className="text-sm text-amber-600 mb-2">{error}</p>}
-      <pre className="text-xs text-[var(--text-secondary)] bg-[var(--apple-fill-tertiary)] rounded-lg p-3 max-h-[28rem] overflow-auto whitespace-pre-wrap font-mono">
-        {loading && !content ? 'Loading…' : content || '(empty log)'}
-      </pre>
+      <TerminalFrame label={logPath || 'qemu.log'}>
+        {loading && !content ? 'Loading…' : content ? renderHighlightedLog(content) : '(empty log)'}
+      </TerminalFrame>
     </MacGlassPanel>
   )
 }

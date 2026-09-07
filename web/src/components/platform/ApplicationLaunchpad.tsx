@@ -37,9 +37,9 @@ import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses } from '../../utils/semanticColors'
 
 const PRESETS = [
-  { name: 'Finance Application', description: 'ERP, databases & reporting', icon: <Landmark className="w-5 h-5" />, gradient: 'from-[var(--apple-surface-elevated)] to-[var(--apple-surface)]' },
-  { name: 'Web Stack', description: 'Load balancer, app & cache VMs', icon: <Globe className="w-5 h-5" />, gradient: 'from-[var(--apple-surface-elevated)] to-[var(--apple-surface)]' },
-  { name: 'Database Cluster', description: 'Primary, replica & backup', icon: <Database className="w-5 h-5" />, gradient: 'from-[var(--apple-surface-elevated)] to-[var(--apple-surface)]' },
+  { name: 'Finance Application', description: 'ERP, databases & reporting', icon: <Landmark className="w-5 h-5" /> },
+  { name: 'Web Stack', description: 'Load balancer, app & cache VMs', icon: <Globe className="w-5 h-5" /> },
+  { name: 'Database Cluster', description: 'Primary, replica & backup', icon: <Database className="w-5 h-5" /> },
 ] as const
 
 function uniqueAppName(base: string, existing: string[]): string {
@@ -176,7 +176,7 @@ export default function ApplicationLaunchpad() {
               key={p.name}
               name={p.name}
               icon={p.icon}
-              gradient={p.gradient}
+              gradient={gradientForName(p.name)}
               onClick={() => openCreate(p.name)}
             />
           ))}
@@ -222,7 +222,7 @@ export default function ApplicationLaunchpad() {
                   name={p.name}
                   description={p.description}
                   icon={p.icon}
-                  gradient={p.gradient}
+                  gradient={gradientForName(p.name)}
                   onClick={() => setNewName(p.name)}
                 />
               ))}
