@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { createFlavor, deleteFlavor, listFlavors, type NativeFlavor } from '../api/flavors'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -31,6 +32,7 @@ function FleetCloudFlavorsContent() {
   const [disk, setDisk] = useState('20')
   const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<NativeFlavor | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -162,14 +164,7 @@ function FleetCloudFlavorsContent() {
                     <td className="flex gap-2">
                       <Link to={`/fleet-cloud/flavors/${f.id}`} className="text-xs text-[var(--accent)] hover:underline">Open</Link>
                       <button type="button" className={statusActionLinkClasses('error', 'text-xs inline-flex items-center gap-0.5')}
-                        onClick={async () => {
-                          if (!confirm(`Delete flavor ${f.name}?`)) return
-                          try {
-                            await deleteFlavor(f.id)
-                            toast.success('Deleted')
-                            void load()
-                          } catch (e: unknown) { toast.error(formatUserError(e)) }
-                        }}>
+                        onClick={() => setPendingDelete(f)}>
                         <Trash2 className="w-3 h-3" /> Del
                       </button>
                     </td>
@@ -180,6 +175,24 @@ function FleetCloudFlavorsContent() {
           </TahoeTableWrap>
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete flavor"
+        message={pendingDelete ? `Delete flavor ${pendingDelete.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          const target = pendingDelete
+          setPendingDelete(null)
+          try {
+            await deleteFlavor(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

@@ -354,7 +354,7 @@ export default function StoragePage() {
                       {pool.name}
                     </div>
                   </td>
-                  <td><span className={`px-2 py-0.5 rounded text-xs font-medium ${poolStateBadgeClasses(pool.state)}`}>{pool.state}</span></td>
+                  <td><span className={poolStateBadgeClasses(pool.state)}>{pool.state}</span></td>
                   <td>{pool.capacity_gb.toFixed(1)} GB</td>
                   <td>{pool.allocation_gb.toFixed(1)} GB</td>
                   <td className="hidden md:table-cell">{pool.available_gb.toFixed(1)} GB</td>

@@ -7,6 +7,7 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { listVms, type NativeVm } from '../api/nativeVms'
 import {
   addLbMember,
@@ -43,6 +44,7 @@ function FleetCloudLoadBalancerDetailContent() {
   const [memberVmId, setMemberVmId] = useState('')
   const [memberPort, setMemberPort] = useState('80')
   const [memberWeight, setMemberWeight] = useState('1')
+  const [confirmDelete, setConfirmDelete] = useState(false)
   useBreadcrumbName(lb?.name)
 
   const loadSeq = useRef(0)
@@ -200,16 +202,25 @@ function FleetCloudLoadBalancerDetailContent() {
       </section>
 
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-600 text-sm inline-flex items-center gap-1"
-        onClick={async () => {
-          if (!confirm(`Delete ${lb.name}?`)) return
+        onClick={() => setConfirmDelete(true)}>
+        <Trash2 className="w-4 h-4" /> Delete load balancer
+      </button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete load balancer"
+        message={`Delete ${lb.name}?`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setConfirmDelete(false)
           try {
             await deleteLoadBalancer(lb.id)
             toast.success('Deleted')
             navigate('/fleet-cloud/load-balancers')
           } catch (e: unknown) { toast.error(formatUserError(e)) }
-        }}>
-        <Trash2 className="w-4 h-4" /> Delete load balancer
-      </button>
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

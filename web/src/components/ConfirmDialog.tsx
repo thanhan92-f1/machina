@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { useEffect, useId, useState } from 'react'
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 
 interface Props {
   open: boolean
@@ -61,20 +61,15 @@ export default function ConfirmDialog({
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className="bg-[rgba(29,29,31,0.96)] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fade-in"
+        className="bg-[rgba(29,29,31,0.96)] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => { e.preventDefault(); if (matchOk) onConfirm() }}
       >
-        <div className="flex items-center justify-between p-5 border-b border-white/[0.08]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[color-mix(in_srgb,var(--machina-status-warn)_18%,transparent)] flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-[var(--machina-status-warn)]" />
-            </div>
-            <span id={titleId} className="text-lg font-semibold tracking-tight">{title}</span>
+        <div className="flex items-center gap-2.5 p-5 border-b border-white/[0.08]">
+          <div className="w-8 h-8 rounded-full bg-[color-mix(in_srgb,var(--machina-status-warn)_18%,transparent)] flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4 text-[var(--machina-status-warn)]" />
           </div>
-          <button type="button" onClick={onCancel} aria-label="Cancel" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 hover:bg-white/10 rounded-full transition">
-            <X className="w-4 h-4" aria-hidden="true" />
-          </button>
+          <span id={titleId} className="text-lg font-semibold tracking-tight">{title}</span>
         </div>
         <div className="p-5 text-[var(--text-secondary)] text-sm leading-relaxed space-y-3">
           <div>{message}</div>

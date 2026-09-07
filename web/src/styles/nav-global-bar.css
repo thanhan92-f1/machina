@@ -61,7 +61,7 @@
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-secondary);
-  transition: color 0.15s, background-color 0.15s;
+  transition: color 0.15s var(--ease-standard), background-color 0.15s var(--ease-standard);
   white-space: nowrap;
 }
 .gnb-nav-item:hover,
@@ -83,7 +83,7 @@
   display: grid;
   place-items: center;
   color: var(--text-secondary);
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.15s var(--ease-standard), color 0.15s var(--ease-standard);
   flex-shrink: 0;
 }
 .gnb-icon-btn:hover {
@@ -227,7 +227,7 @@ html.dark .gnb-tasks {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-primary);
-  transition: color 0.15s;
+  transition: color 0.15s var(--ease-standard);
 }
 .gnb-flyout-link:hover {
   color: var(--accent, #0071e3);
@@ -304,7 +304,7 @@ html.dark .gnb-tasks {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.15s var(--ease-standard), color 0.15s var(--ease-standard);
 }
 .gnb-chapter-link:hover {
   color: var(--text-primary);

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Layers, Trash2 } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -32,6 +33,7 @@ function FleetCloudHeatDetailContent() {
   const [stack, setStack] = useState<NativeStack | null>(null)
   const [tab, setTab] = usePlatformTabState(HEAT_TABS, { defaultTab: 'overview' })
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   useBreadcrumbName(stack?.name)
   const loadStackSeq = useRef(0)
 
@@ -137,16 +139,25 @@ function FleetCloudHeatDetailContent() {
       ) : null}
 
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-600 text-sm inline-flex items-center gap-1"
-        onClick={async () => {
-          if (!confirm(`Delete stack ${stack.name}?`)) return
+        onClick={() => setConfirmDelete(true)}>
+        <Trash2 className="w-4 h-4" /> Delete stack
+      </button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete stack"
+        message={`Delete stack ${stack.name}?`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setConfirmDelete(false)
           try {
             await deleteStack(stack.id)
             toast.success('Deleted')
             navigate('/fleet-cloud/heat')
           } catch (e: unknown) { toast.error(formatUserError(e)) }
-        }}>
-        <Trash2 className="w-4 h-4" /> Delete stack
-      </button>
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

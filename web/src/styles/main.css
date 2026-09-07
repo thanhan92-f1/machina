@@ -26,6 +26,13 @@
   --radius-liquid: 12px;
   --radius-liquid-lg: 20px;
   --blur-liquid: 20px;
+  /* Shared easing for everyday hover/press transitions (buttons, nav items,
+     sidebar links) — same curve already used for card/panel motion
+     (main.css glass-card rules), just applied consistently everywhere
+     instead of falling back to the browser's default `ease`. The bouncier
+     overshoot curve used for a few entrance animations stays separate and
+     is not this token. */
+  --ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
   /* apple.com blue — before zeus-parity overrides */
   --accent: #0071e3;
   --accent-hover: #0077ed;
@@ -209,6 +216,14 @@ code, .font-mono, pre {
   50% { opacity: 0.4; }
 }
 
+/* Native macOS alert sheets pop the panel with a subtle scale, distinct from
+   the backdrop's plain fade — see ConfirmDialog.tsx. */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scale-in 0.16s var(--ease-standard); }
+
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -318,16 +333,6 @@ code, .font-mono, pre {
   opacity: 0.85;
 }
 
-.platform-sidebar-section-trigger:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  outline-offset: 2px;
-}
-
-.platform-sidebar-flyout-link:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  outline-offset: 1px;
-}
-
 .platform-mac-shell {
   background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent),
@@ -344,12 +349,6 @@ code, .font-mono, pre {
   padding: 0.5rem 0 1.5rem;
 }
 
-.platform-launchpad-icon:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
-  outline-offset: 4px;
-  border-radius: 1rem;
-}
-
 .platform-mac-panel,
 .platform-mac-stat {
   backdrop-filter: blur(16px);
@@ -358,11 +357,6 @@ code, .font-mono, pre {
 
 .platform-mac-sheet {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-.platform-mac-toggle:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
-  outline-offset: 2px;
 }
 
 .platform-spotlight-hint kbd {
@@ -549,10 +543,6 @@ a.tahoe-context-app-title:hover {
 .tahoe-mobile-jump-select:focus {
   border-color: hsl(var(--primary) / 0.4);
   background: hsl(var(--primary) / 0.08);
-}
-.tahoe-mobile-jump-select:focus-visible {
-  outline: 2px solid hsl(var(--primary) / 0.55);
-  outline-offset: 2px;
 }
 
 .tahoe-context-pill {
@@ -1201,7 +1191,7 @@ a.tahoe-context-app-title:hover {
   border: none !important;
   box-shadow: none !important;
   outline: none;
-  transition: background 0.2s ease, opacity 0.15s ease, transform 0.1s ease;
+  transition: background 0.2s var(--ease-standard), opacity 0.15s var(--ease-standard), transform 0.1s var(--ease-standard);
   cursor: pointer;
   text-decoration: none !important;
   -webkit-font-smoothing: antialiased;
@@ -1254,7 +1244,7 @@ a.tahoe-context-app-title:hover {
   border: none !important;
   backdrop-filter: none;
   box-shadow: none !important;
-  transition: background 0.2s ease, opacity 0.15s ease, transform 0.1s ease;
+  transition: background 0.2s var(--ease-standard), opacity 0.15s var(--ease-standard), transform 0.1s var(--ease-standard);
   cursor: pointer;
   text-decoration: none !important;
 }
@@ -1292,7 +1282,7 @@ a.tahoe-context-app-title:hover {
   box-shadow: none !important;
   cursor: pointer;
   text-decoration: none !important;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s var(--ease-standard), color 0.15s var(--ease-standard);
 }
 .apple-light .btn-ghost,
 .light-theme .btn-ghost {
@@ -1302,6 +1292,7 @@ a.tahoe-context-app-title:hover {
   background: rgba(0, 113, 227, 0.12) !important;
   text-decoration: none !important;
 }
+.btn-ghost:active:not(:disabled) { transform: scale(0.98); }
 
 .btn-destructive {
   display: inline-flex;
@@ -1320,7 +1311,7 @@ a.tahoe-context-app-title:hover {
   box-shadow: none !important;
   cursor: pointer;
   text-decoration: none !important;
-  transition: background 0.18s ease, transform 0.1s ease;
+  transition: background 0.18s var(--ease-standard), transform 0.1s var(--ease-standard);
 }
 .btn-destructive:hover:not(:disabled) { background: #ff6961 !important; }
 .btn-destructive:active:not(:disabled) { transform: scale(0.98); }
@@ -1622,10 +1613,6 @@ a.tahoe-context-app-title:hover {
 .mac-finder-search:focus {
   border-color: hsl(var(--primary) / 0.4);
 }
-.mac-finder-search:focus-visible {
-  outline: 2px solid hsl(var(--primary) / 0.55);
-  outline-offset: 2px;
-}
 
 .mac-finder-path {
   padding: 0.15rem 0.5rem;
@@ -1736,10 +1723,6 @@ a.tahoe-context-app-title:hover {
 .login-input:focus {
   outline: none;
 }
-.login-input:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
-}
 .login-field-icon {
   position: absolute;
   left: 0.875rem;
@@ -1823,18 +1806,24 @@ a.tahoe-context-app-title:hover {
 .stat-card-cyan { background: linear-gradient(135deg, #1a3344 0%, #1e293b 100%); }
 .stat-card-red { background: linear-gradient(135deg, #3d1a1a 0%, #1e293b 100%); }
 
-/* Scrollbar */
+/* Scrollbar — thin, overlay-ish, macOS-style. Per-theme thumb colors are
+   intentional (each tuned to its palette, like --focus-ring); every theme
+   override below should pair its ::-webkit-scrollbar-thumb color with the
+   matching `scrollbar-color` so Firefox gets the same thin/tinted look. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 /* Focus ring */
-*:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.5);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+/* Focus ring: single system now lives in zeus-parity.css's universal
+   `:focus-visible { box-shadow: var(--focus-ring) }` rule (themed per theme
+   root), loaded after this file so it always wins — don't add a competing
+   rule here. */
 
 /* Table hover */
 .table-row-hover { transition: background-color 0.15s ease; }
@@ -2307,6 +2296,9 @@ a.tahoe-context-app-title:hover {
 .aurora-theme ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.28);
 }
+.aurora-theme {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
 
 .aurora-theme .glass-card {
   background: rgba(22, 22, 23, 0.65);
@@ -2597,6 +2589,9 @@ a.tahoe-context-app-title:hover {
 .steel-theme ::-webkit-scrollbar-thumb:hover {
   background: #556274;
 }
+.steel-theme {
+  scrollbar-color: #3d4a5c transparent;
+}
 
 /* Steel-theme: comprehensive surface overrides for hardcoded Tailwind bg classes */
 .steel-theme .bg-slate-950,
@@ -2849,6 +2844,9 @@ a.tahoe-context-app-title:hover {
 }
 .rack-theme ::-webkit-scrollbar-thumb:hover {
   background: #33404f;
+}
+.rack-theme {
+  scrollbar-color: #252e3a transparent;
 }
 
 /* Rack theme: comprehensive surface overrides for hardcoded Tailwind bg classes */
@@ -3379,3 +3377,33 @@ html[data-theme='tahoe-light'] {
 .term-tok-error { color: #ff7b72; }
 .term-tok-warn { color: #ffb454; }
 .term-tok-default { color: #7ee787; }
+
+/* macOS-style hover tooltip (components/Tooltip.tsx) — small dark rounded
+   bubble, no arrow (matches native NSToolTip), fades/nudges in. */
+.mac-tooltip-anchor {
+  position: relative;
+  display: inline-flex;
+}
+.mac-tooltip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(29, 29, 31, 0.96);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.375rem 0.5625rem;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  z-index: 200;
+  animation: mac-tooltip-in 0.12s var(--ease-standard);
+}
+.mac-tooltip-top { bottom: calc(100% + 6px); }
+.mac-tooltip-bottom { top: calc(100% + 6px); }
+@keyframes mac-tooltip-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(2px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

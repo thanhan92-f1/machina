@@ -9,6 +9,7 @@ import '@xterm/xterm/css/xterm.css'
 import { Maximize, Minimize, RefreshCw, Trash2 } from 'lucide-react'
 import { getWsToken } from '../api/client'
 import { statusBgClass } from '../utils/semanticColors'
+import Tooltip from './Tooltip'
 
 interface Props {
   namespace: string
@@ -121,11 +122,13 @@ export default function KubeVirtSerialConsole({ namespace, vmName }: Props) {
           <span className="text-sm text-[var(--text-secondary)]">KubeVirt console — {namespace}/{vmName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => xtermRef.current?.clear()} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" /></button>
-          <button type="button" onClick={() => void connect()} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" /></button>
-          <button type="button" onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
-            {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
-          </button>
+          <Tooltip label="Clear"><button type="button" onClick={() => xtermRef.current?.clear()} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" /></button></Tooltip>
+          <Tooltip label="Reconnect"><button type="button" onClick={() => void connect()} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" /></button></Tooltip>
+          <Tooltip label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+            <button type="button" onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+              {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
+            </button>
+          </Tooltip>
         </div>
       </div>
       <div ref={terminalRef} className={`bg-black rounded-b-lg flex-1 min-h-0 ${fullscreen ? '' : ''}`} style={{ minHeight: fullscreen ? undefined : '480px' }} />

@@ -8,6 +8,7 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -27,6 +28,7 @@ function FleetCloudServerGroupDetailContent() {
   const toast = useToastContext()
   const [group, setGroup] = useState<DerivedServerGroup | null>(null)
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   useBreadcrumbName(group?.name)
   const loadSeq = useRef(0)
 
@@ -99,14 +101,23 @@ function FleetCloudServerGroupDetailContent() {
         </div>
       </dl>
       <button type="button" className={`px-3 py-1.5 rounded-lg border text-sm ${statusActionLinkClasses('error')}`}
-        onClick={async () => {
-          if (!confirm(`Delete group ${group.name}?`)) return
+        onClick={() => setConfirmDelete(true)}>Delete group</button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete group"
+        message={`Delete group ${group.name}?`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setConfirmDelete(false)
           try {
             await deleteServerGroup(group)
             toast.success('Deleted')
             navigate('/fleet-cloud/server-groups')
           } catch (e: unknown) { toast.error(formatUserError(e)) }
-        }}>Delete group</button>
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

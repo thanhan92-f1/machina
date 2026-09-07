@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Camera } from 'lucide-react'
 import { Archive, CalendarClock, Clock, Database, Plus, RotateCcw, Trash2 } from 'lucide-react'
-import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel, MacListRow, MacSegmentedControl } from '../../components/platform/mac/PlatformMacUi'
 import PlatformStandardView from '../../components/platform/tahoe/PlatformStandardView'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -209,27 +209,15 @@ export default function PlatformBackups() {
           <Camera className="w-3.5 h-3.5" /> Fleet snapshot schedules
         </Link>
       </p>
-      <div role="tablist" className="flex flex-wrap gap-2 border-b border-white/[0.06] pb-1">
-        {([
-          ['timeline', 'Timeline', Archive],
-          ['destinations', 'Destinations', Database],
-          ['schedules', 'Schedules', CalendarClock],
-        ] as const).map(([id, label, Icon]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            tabIndex={tab === id ? 0 : -1}
-            onClick={() => setSearchParams(id === 'timeline' ? {} : { tab: id })}
-            className={`px-4 py-2 text-sm rounded-t-lg flex items-center gap-2 transition ${
-              tab === id ? 'bg-[var(--apple-fill-tertiary)]/80 text-orange-600 border-b-2 border-orange-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Icon className="w-4 h-4" /> {label}
-          </button>
-        ))}
-      </div>
+      <MacSegmentedControl
+        options={[
+          { value: 'timeline' as TabId, label: 'Timeline', icon: <Archive className="w-3.5 h-3.5" /> },
+          { value: 'destinations' as TabId, label: 'Destinations', icon: <Database className="w-3.5 h-3.5" /> },
+          { value: 'schedules' as TabId, label: 'Schedules', icon: <CalendarClock className="w-3.5 h-3.5" /> },
+        ]}
+        value={tab}
+        onChange={(id) => setSearchParams(id === 'timeline' ? {} : { tab: id })}
+      />
 
       {tab === 'destinations' && (
         <div className="space-y-4">

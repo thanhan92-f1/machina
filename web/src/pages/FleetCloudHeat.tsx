@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Layers, Loader2, Plus, Trash2 } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -36,6 +37,7 @@ function FleetCloudHeatContent() {
   const [name, setName] = useState('')
   const [templateJson, setTemplateJson] = useState(JSON.stringify(MINIMAL_TEMPLATE, null, 2))
   const [search, setSearch] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<NativeStack | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -139,14 +141,7 @@ function FleetCloudHeatContent() {
                     <td className="text-[var(--text-muted)]">{s.resources_json.length}</td>
                     <td className="text-right">
                       <button type="button" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
-                        onClick={async () => {
-                          if (!confirm(`Delete stack ${s.name}?`)) return
-                          try {
-                            await deleteStack(s.id)
-                            toast.success('Deleted')
-                            void load()
-                          } catch (e: unknown) { toast.error(formatUserError(e)) }
-                        }}>
+                        onClick={() => setPendingDelete(s)}>
                         <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>
                     </td>
@@ -157,6 +152,24 @@ function FleetCloudHeatContent() {
           </TahoeTableWrap>
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete stack"
+        message={pendingDelete ? `Delete stack ${pendingDelete.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          const target = pendingDelete
+          setPendingDelete(null)
+          try {
+            await deleteStack(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

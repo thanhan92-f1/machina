@@ -168,7 +168,7 @@ export default function StoragePoolDetail() {
         pool ? (
           <>
             <Link to="/storage" className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Back to Storage"><ArrowLeft className="w-5 h-5" /></Link>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${poolStateBadgeClasses(pool.state)}`}>{pool.state}</span>
+            <span className={poolStateBadgeClasses(pool.state)}>{pool.state}</span>
             {pool.state !== 'running' && (
               <button onClick={() => poolAction(startPool, 'Start pool')} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm transition flex items-center gap-1"><Play className="w-4 h-4" /> Start</button>
             )}

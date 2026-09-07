@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createKeypair, deleteKeypair, listKeypairs, type NativeKeypair } from '../api/nativeKeypairs'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import PageLayout from '../components/PageLayout'
@@ -27,6 +28,7 @@ function FleetCloudKeypairsContent() {
   const [publicKey, setPublicKey] = useState('')
   const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<NativeKeypair | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -134,22 +136,34 @@ function FleetCloudKeypairsContent() {
                 <td className="text-[var(--text-muted)] text-xs">{k.fingerprint}</td>
                 <td className="text-right">
                   <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                    onClick={async () => {
-                      if (!confirm(`Delete keypair ${k.name}?`)) return
-                      try {
-                        await deleteKeypair(k.id)
-                        toast.success('Deleted')
-                        void load()
-                      } catch (e: unknown) {
-                        toast.error(formatUserError(e))
-                      }
-                    }}>Delete</button>
+                    onClick={() => setPendingDelete(k)}>Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </TahoeTableWrap>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete keypair"
+        message={pendingDelete ? `Delete keypair ${pendingDelete.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          const target = pendingDelete
+          setPendingDelete(null)
+          try {
+            await deleteKeypair(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) {
+            toast.error(formatUserError(e))
+          }
+        }}
+      />
 
       <FleetCloudFooter />
     </PageLayout>

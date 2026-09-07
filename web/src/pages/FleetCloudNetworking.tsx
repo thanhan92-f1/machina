@@ -9,6 +9,7 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
@@ -38,6 +39,8 @@ function FleetCloudNetworkingContent() {
   const [creatingPort, setCreatingPort] = useState(false)
   const [netSearch, setNetSearch] = useState('')
   const [portSearch, setPortSearch] = useState('')
+  const [pendingDeleteNetwork, setPendingDeleteNetwork] = useState<NativeNetwork | null>(null)
+  const [pendingDeletePort, setPendingDeletePort] = useState<NativePort | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -150,14 +153,7 @@ function FleetCloudNetworkingContent() {
                   <td className="text-[var(--text-muted)]">{n.vlan_id ?? '—'}</td>
                   <td>
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                      onClick={async () => {
-                        if (!confirm(`Delete network ${n.name}?`)) return
-                        try {
-                          await deleteNetwork(n.id)
-                          toast.success('Deleted')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>Delete</button>
+                      onClick={() => setPendingDeleteNetwork(n)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -221,14 +217,7 @@ function FleetCloudNetworkingContent() {
                   <td className="text-[var(--text-muted)]">{p.status}</td>
                   <td>
                     <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                      onClick={async () => {
-                        if (!confirm('Delete this port?')) return
-                        try {
-                          await deletePort(p.id)
-                          toast.success('Deleted')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>Delete</button>
+                      onClick={() => setPendingDeletePort(p)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -236,6 +225,43 @@ function FleetCloudNetworkingContent() {
           </table>
         </TahoeTableWrap>
       </section>
+
+      <ConfirmDialog
+        open={!!pendingDeleteNetwork}
+        title="Delete network"
+        message={pendingDeleteNetwork ? `Delete network ${pendingDeleteNetwork.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteNetwork(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteNetwork) return
+          const target = pendingDeleteNetwork
+          setPendingDeleteNetwork(null)
+          try {
+            await deleteNetwork(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingDeletePort}
+        title="Delete port"
+        message="Delete this port?"
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeletePort(null)}
+        onConfirm={async () => {
+          if (!pendingDeletePort) return
+          const target = pendingDeletePort
+          setPendingDeletePort(null)
+          try {
+            await deletePort(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
 
       <FleetCloudFooter />
     </PageLayout>

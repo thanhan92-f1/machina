@@ -7,6 +7,7 @@ import {
   listAllVolumeSnapshots,
   type NativeVolumeSnapshotWithVolume,
 } from '../api/nativeVolumes'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -31,6 +32,7 @@ function FleetCloudVolumeSnapshotsContent() {
   const [snapshots, setSnapshots] = useState<NativeVolumeSnapshotWithVolume[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [pendingDeleteSnapshot, setPendingDeleteSnapshot] = useState<NativeVolumeSnapshotWithVolume | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -112,14 +114,7 @@ function FleetCloudVolumeSnapshotsContent() {
                     <td className="text-[var(--text-muted)]">{s.status}</td>
                     <td className="flex flex-wrap gap-2">
                       <Link to={`/fleet-cloud/volume-snapshots/${s.id}`} className="text-[var(--accent)] hover:underline">Detail</Link>
-                      <button type="button" className={statusActionLinkClasses('error')} onClick={async () => {
-                        if (!confirm(`Delete snapshot ${s.name || s.id}?`)) return
-                        try {
-                          await deleteVolumeSnapshot(s.id)
-                          toast.success('Deleted')
-                          void load()
-                        } catch (e: unknown) { toast.error(formatUserError(e)) }
-                      }}>Delete</button>
+                      <button type="button" className={statusActionLinkClasses('error')} onClick={() => setPendingDeleteSnapshot(s)}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -128,6 +123,24 @@ function FleetCloudVolumeSnapshotsContent() {
           </TahoeTableWrap>
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingDeleteSnapshot}
+        title="Delete snapshot"
+        message={pendingDeleteSnapshot ? `Delete snapshot ${pendingDeleteSnapshot.name || pendingDeleteSnapshot.id}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteSnapshot(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteSnapshot) return
+          const target = pendingDeleteSnapshot
+          setPendingDeleteSnapshot(null)
+          try {
+            await deleteVolumeSnapshot(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

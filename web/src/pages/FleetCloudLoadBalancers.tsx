@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Loader2, Plus, Scale, Trash2 } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -37,6 +38,7 @@ function FleetCloudLoadBalancersContent() {
   const [hostId, setHostId] = useState('')
   const [listenerPort, setListenerPort] = useState('8080')
   const [search, setSearch] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<NativeLoadBalancer | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -155,14 +157,7 @@ function FleetCloudLoadBalancersContent() {
                     <td>{lb.status}</td>
                     <td className="text-right">
                       <button type="button" aria-label="Delete" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
-                        onClick={async () => {
-                          if (!confirm(`Delete ${lb.name}?`)) return
-                          try {
-                            await deleteLoadBalancer(lb.id)
-                            toast.success('Deleted')
-                            void load()
-                          } catch (e: unknown) { toast.error(formatUserError(e)) }
-                        }}>
+                        onClick={() => setPendingDelete(lb)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -173,6 +168,24 @@ function FleetCloudLoadBalancersContent() {
           </TahoeTableWrap>
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete load balancer"
+        message={pendingDelete ? `Delete ${pendingDelete.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          const target = pendingDelete
+          setPendingDelete(null)
+          try {
+            await deleteLoadBalancer(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

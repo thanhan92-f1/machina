@@ -9,6 +9,7 @@ import '@xterm/xterm/css/xterm.css'
 import { RefreshCw, Trash2, Maximize, Minimize } from 'lucide-react'
 import { getWsToken } from '../api/client'
 import { statusBgClass } from '../utils/semanticColors'
+import Tooltip from './Tooltip'
 
 function wsConnQs(libvirtConnection?: string | null): string {
   if (!libvirtConnection || libvirtConnection === 'system') return ''
@@ -131,11 +132,13 @@ export default function SerialConsole({ vmName, libvirtConnection, wsUrl: wsUrlO
           <span className="text-sm text-[var(--text-secondary)]">Serial Console — {vmName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={clear} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" /></button>
-          <button onClick={reconnect} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" /></button>
-          <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
-            {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
-          </button>
+          <Tooltip label="Clear"><button onClick={clear} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Clear" aria-label="Clear"><Trash2 className="w-4 h-4 text-[var(--text-muted)]" /></button></Tooltip>
+          <Tooltip label="Reconnect"><button onClick={reconnect} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Reconnect" aria-label="Reconnect"><RefreshCw className="w-4 h-4 text-[var(--text-muted)]" /></button></Tooltip>
+          <Tooltip label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+            <button onClick={() => setFullscreen(!fullscreen)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Fullscreen" aria-label="Fullscreen">
+              {fullscreen ? <Minimize className="w-4 h-4 text-[var(--text-muted)]" /> : <Maximize className="w-4 h-4 text-[var(--text-muted)]" />}
+            </button>
+          </Tooltip>
         </div>
       </div>
       <div ref={terminalRef} className={`bg-black rounded-b-lg ${fullscreen ? 'flex-1' : ''}`} style={fullscreen ? {} : { minHeight: '500px' }} />

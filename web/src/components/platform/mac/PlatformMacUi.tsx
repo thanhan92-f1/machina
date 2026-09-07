@@ -1,5 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Plus } from 'lucide-react'
 import { GlassCard } from '../../glass/GlassCard'
@@ -268,7 +269,7 @@ export function MacSegmentedControl<T extends string>({
   onChange,
   label,
 }: {
-  options: Array<{ value: T; label: string }>
+  options: Array<{ value: T; label: string; icon?: ReactNode }>
   value: T
   onChange: (v: T) => void
   label?: string
@@ -284,12 +285,13 @@ export function MacSegmentedControl<T extends string>({
             role="tab"
             aria-selected={value === opt.value}
             onClick={() => onChange(opt.value)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-full transition flex items-center gap-1.5 ${
               value === opt.value
                 ? 'tahoe-segment-active text-[var(--text-primary)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
+            {opt.icon}
             {opt.label}
           </button>
         ))}

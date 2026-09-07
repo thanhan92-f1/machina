@@ -7,6 +7,7 @@ import { addVmToServerGroup, deleteServerGroup, listServerGroups, type DerivedSe
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
@@ -30,6 +31,7 @@ function FleetCloudServerGroupsContent() {
   const [groupName, setGroupName] = useState('')
   const [vmId, setVmId] = useState('')
   const [search, setSearch] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<DerivedServerGroup | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -148,16 +150,7 @@ function FleetCloudServerGroupsContent() {
                     <td className="text-xs text-[var(--text-muted)]">{g.members.length}</td>
                     <td className="text-right">
                       <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                        onClick={async () => {
-                          if (!confirm(`Delete group ${g.name}? This removes the tag from all ${g.members.length} member VM(s).`)) return
-                          try {
-                            await deleteServerGroup(g)
-                            toast.success('Deleted')
-                            void load()
-                          } catch (e: unknown) {
-                            toast.error(formatUserError(e))
-                          }
-                        }}>Delete</button>
+                        onClick={() => setPendingDelete(g)}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -166,6 +159,26 @@ function FleetCloudServerGroupsContent() {
           </TahoeTableWrap>
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete group"
+        message={pendingDelete ? `Delete group ${pendingDelete.name}? This removes the tag from all ${pendingDelete.members.length} member VM(s).` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          const target = pendingDelete
+          setPendingDelete(null)
+          try {
+            await deleteServerGroup(target)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) {
+            toast.error(formatUserError(e))
+          }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

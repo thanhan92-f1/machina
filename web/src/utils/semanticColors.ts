@@ -152,6 +152,10 @@ export function webhookDeliveryTone(status: string): 'ok' | 'warn' | 'error' {
   return 'warn'
 }
 
+/** The one "status pill" shape to use for a standalone badge — bordered
+ * full pill, matching utils/vmVisual.ts's .machina-vm-status treatment.
+ * statusBadgeClasses() stays a bare bg+text tint (no border/radius/padding)
+ * since other helpers below compose their own chrome on top of it. */
 export function statusPillClasses(tone: 'ok' | 'warn' | 'error' | 'info' | 'neutral'): string {
   const varName = {
     ok: '--machina-status-ok',
@@ -160,7 +164,7 @@ export function statusPillClasses(tone: 'ok' | 'warn' | 'error' | 'info' | 'neut
     info: '--machina-status-info',
     neutral: '--machina-status-neutral',
   }[tone]
-  return `px-2 py-1 rounded-md border ${statusBadgeClasses(tone)} border-[color-mix(in_srgb,var(${varName})_40%,transparent)]`
+  return `px-2 py-1 rounded-full border ${statusBadgeClasses(tone)} border-[color-mix(in_srgb,var(${varName})_40%,transparent)]`
 }
 
 export function utilizationTone(percent: number): 'ok' | 'warn' | 'error' {
@@ -179,7 +183,7 @@ export function utilizationBarClass(
 }
 
 export function poolStateBadgeClasses(state: string): string {
-  return statusBadgeClasses(state === 'running' ? 'ok' : 'neutral')
+  return `text-xs font-medium ${statusPillClasses(state === 'running' ? 'ok' : 'neutral')}`
 }
 
 export function userRoleTone(role: string): 'error' | 'info' | 'neutral' {

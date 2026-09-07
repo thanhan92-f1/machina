@@ -16,6 +16,7 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
@@ -34,6 +35,7 @@ function FleetCloudSecurityGroupDetailContent() {
   const [group, setGroup] = useState<NativeSecurityGroup | null>(null)
   const [rules, setRules] = useState<NativeSecurityGroupRule[]>([])
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   useBreadcrumbName(group?.name)
   const loadSeq = useRef(0)
 
@@ -108,15 +110,24 @@ function FleetCloudSecurityGroupDetailContent() {
             } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Add SSH ingress</button>
         <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-600 text-sm"
-          onClick={async () => {
-            if (!confirm(`Delete security group ${group.name}?`)) return
-            try {
-              await deleteSecurityGroup(group.id)
-              toast.success('Deleted')
-              window.location.href = '/fleet-cloud/security-groups'
-            } catch (e: unknown) { toast.error(formatUserError(e)) }
-          }}>Delete group</button>
+          onClick={() => setConfirmDelete(true)}>Delete group</button>
       </div>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete security group"
+        message={`Delete security group ${group.name}?`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setConfirmDelete(false)
+          try {
+            await deleteSecurityGroup(group.id)
+            toast.success('Deleted')
+            window.location.href = '/fleet-cloud/security-groups'
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
         <h2 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Rules</h2>
         {rules.length === 0 ? (

@@ -10,8 +10,9 @@ import {
   RefreshCw,
   Trash2,
 } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import PlatformPageChrome, { platformStatSubtitle } from '../../components/platform/PlatformPageChrome'
-import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
+import { MacGlassPanel, MacSegmentedControl } from '../../components/platform/mac/PlatformMacUi'
 import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
@@ -70,6 +71,9 @@ export default function PlatformAtlasStorage() {
   const [jobs, setJobs] = useState<AtlasJob[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
+  const [pendingDeleteVolume, setPendingDeleteVolume] = useState<AtlasVolume | null>(null)
+  const [pendingDeleteSnapshot, setPendingDeleteSnapshot] = useState<AtlasSnapshot | null>(null)
+  const [pendingDeleteBackup, setPendingDeleteBackup] = useState<AtlasBackup | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -180,22 +184,11 @@ export default function PlatformAtlasStorage() {
         </MacGlassPanel>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center gap-1 border-b border-white/[0.06]">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`px-3 py-2 text-sm transition ${
-                  tab === t
-                    ? 'text-[var(--text-primary)] border-b-2 border-[var(--accent)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          <MacSegmentedControl
+            options={TABS.map((t) => ({ value: t, label: t }))}
+            value={tab}
+            onChange={setTab}
+          />
 
           {tab === 'Backends' && (
             <MacGlassPanel title="Storage backends" subtitle="Registered Atlas drivers (Ceph / NFS / ZFS).">
@@ -267,10 +260,7 @@ export default function PlatformAtlasStorage() {
                                 className="btn-secondary text-xs text-red-600"
                                 disabled={busy === v.id}
                                 aria-label="Delete volume"
-                                onClick={() => {
-                                  if (window.confirm(`Delete volume ${v.name}?`))
-                                    void run(v.id, () => deleteAtlasVolume(v.id), `Volume ${v.name} deleting`)
-                                }}
+                                onClick={() => setPendingDeleteVolume(v)}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -323,10 +313,7 @@ export default function PlatformAtlasStorage() {
                                 className="btn-secondary text-xs text-red-600"
                                 disabled={busy === s.id}
                                 aria-label="Delete snapshot"
-                                onClick={() => {
-                                  if (window.confirm(`Delete snapshot ${s.name}?`))
-                                    void run(s.id, () => deleteAtlasSnapshot(s.id), `Snapshot ${s.name} deleting`)
-                                }}
+                                onClick={() => setPendingDeleteSnapshot(s)}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -360,10 +347,7 @@ export default function PlatformAtlasStorage() {
                         className="btn-secondary text-xs text-red-600"
                         disabled={busy === b.id}
                         aria-label="Delete backup"
-                        onClick={() => {
-                          if (window.confirm('Delete this backup?'))
-                            void run(b.id, () => deleteAtlasBackup(b.id), 'Backup deleting')
-                        }}
+                        onClick={() => setPendingDeleteBackup(b)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -398,6 +382,48 @@ export default function PlatformAtlasStorage() {
           )}
         </div>
       )}
+      <ConfirmDialog
+        open={!!pendingDeleteVolume}
+        title="Delete volume"
+        message={pendingDeleteVolume ? `Delete volume ${pendingDeleteVolume.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteVolume(null)}
+        onConfirm={() => {
+          if (!pendingDeleteVolume) return
+          const target = pendingDeleteVolume
+          setPendingDeleteVolume(null)
+          void run(target.id, () => deleteAtlasVolume(target.id), `Volume ${target.name} deleting`)
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingDeleteSnapshot}
+        title="Delete snapshot"
+        message={pendingDeleteSnapshot ? `Delete snapshot ${pendingDeleteSnapshot.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteSnapshot(null)}
+        onConfirm={() => {
+          if (!pendingDeleteSnapshot) return
+          const target = pendingDeleteSnapshot
+          setPendingDeleteSnapshot(null)
+          void run(target.id, () => deleteAtlasSnapshot(target.id), `Snapshot ${target.name} deleting`)
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingDeleteBackup}
+        title="Delete backup"
+        message="Delete this backup?"
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteBackup(null)}
+        onConfirm={() => {
+          if (!pendingDeleteBackup) return
+          const target = pendingDeleteBackup
+          setPendingDeleteBackup(null)
+          void run(target.id, () => deleteAtlasBackup(target.id), 'Backup deleting')
+        }}
+      />
     </PlatformPageChrome>
   )
 }

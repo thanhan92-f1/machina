@@ -12,6 +12,7 @@ import {
   MacToggle,
 } from '../../../components/platform/mac/PlatformMacUi'
 import DetailTabs from '../../../components/platform/DetailTabs'
+import ConfirmDialog from '../../../components/ConfirmDialog'
 import PageLayout from '../../../components/PageLayout'
 import JsonInspector from '../../../components/platform/JsonInspector'
 import { formatAllowedFrom } from '../../../utils/firewallDisplay'
@@ -72,6 +73,8 @@ export default function PlatformFirewallTargetDetail() {
   const [previewSheet, setPreviewSheet] = useState<{ open: boolean; body: string }>({ open: false, body: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingApply, setPendingApply] = useState<{ body: Record<string, unknown>; message: string } | null>(null)
+  const [confirmLockdown, setConfirmLockdown] = useState(false)
   const loadSeq = useRef(0)
 
   const load = useCallback(async () => {
@@ -125,7 +128,17 @@ export default function PlatformFirewallTargetDetail() {
           warnings: preview.diff?.warnings,
         }, null, 2),
       })
-      if (!confirm(confirmMsg)) return
+      setPendingApply({ body, message: confirmMsg })
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
+  const runPendingApply = async () => {
+    if (!id || !pendingApply) return
+    const { body } = pendingApply
+    setPendingApply(null)
+    try {
       setBusy(true)
       await applyFirewall(id, { ...body, dry_run: false })
       toast.success('Firewall updated')
@@ -371,16 +384,7 @@ export default function PlatformFirewallTargetDetail() {
                     title="Lock Down Machine"
                     subtitle="Emergency Isolation — blocks all traffic except management"
                     trailing={<Lock className={`w-4 h-4 ${statusToneClass('error')}`} />}
-                    onClick={async () => {
-                      if (!confirm('Enable Emergency Isolation lockdown?')) return
-                      try {
-                        await lockdownMachine(id, true)
-                        toast.success('Lockdown initiated')
-                        void load()
-                      } catch (e: unknown) {
-                        toast.error(formatUserError(e))
-                      }
-                    }}
+                    onClick={() => setConfirmLockdown(true)}
                   />
                   <MacListRow
                     title="Secure This Machine (AI plan)"
@@ -489,6 +493,34 @@ export default function PlatformFirewallTargetDetail() {
           }
         })()}
       </MacSheet>
+      <ConfirmDialog
+        open={!!pendingApply}
+        title="Apply firewall change"
+        message={pendingApply?.message ?? ''}
+        confirmLabel="Apply"
+        variant="warning"
+        onCancel={() => setPendingApply(null)}
+        onConfirm={() => void runPendingApply()}
+      />
+      <ConfirmDialog
+        open={confirmLockdown}
+        title="Emergency Isolation"
+        message="Enable Emergency Isolation lockdown?"
+        confirmLabel="Enable"
+        variant="warning"
+        onCancel={() => setConfirmLockdown(false)}
+        onConfirm={async () => {
+          setConfirmLockdown(false)
+          if (!id) return
+          try {
+            await lockdownMachine(id, true)
+            toast.success('Lockdown initiated')
+            void load()
+          } catch (e: unknown) {
+            toast.error(formatUserError(e))
+          }
+        }}
+      />
     </PageLayout>
   )
 }

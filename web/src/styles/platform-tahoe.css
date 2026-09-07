@@ -352,7 +352,7 @@
   color: var(--text-secondary);
   background: hsl(var(--foreground) / 0.05);
   border: 1px solid hsl(var(--foreground) / 0.1);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s var(--ease-standard), color 0.15s var(--ease-standard), border-color 0.15s var(--ease-standard);
 }
 
 .tahoe-quick-nav-link:hover {
@@ -362,7 +362,7 @@
 }
 
 .tahoe-sidebar-link {
-  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  transition: background 0.15s var(--ease-standard), color 0.15s var(--ease-standard), transform 0.12s var(--ease-standard), box-shadow 0.15s var(--ease-standard);
 }
 
 .tahoe-sidebar-link:hover:not(.tahoe-sidebar-link-active) {

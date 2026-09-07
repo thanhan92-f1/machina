@@ -11,6 +11,7 @@ import {
 } from '../../../utils/platformDockPins'
 import { isPathAllowedForTier, loadPlatformDesktopTier } from '../../../utils/platformDesktopTier'
 import { useFocusTrap } from '../../../hooks/useFocusTrap'
+import Tooltip from '../../Tooltip'
 
 interface PlatformDockEditorProps {
   open: boolean
@@ -72,9 +73,9 @@ export default function PlatformDockEditor({ open, onClose }: PlatformDockEditor
             <h2 id="dock-editor-title" className="text-lg font-semibold text-[var(--text-primary)]">Customize Dock</h2>
             <p className="text-sm text-[var(--text-secondary)]">Reorder pinned apps — synced with Finder favorites.</p>
           </div>
-          <button type="button" onClick={onClose} className="mac-menubar-icon-btn" title="Close" aria-label="Close">
+          <Tooltip label="Close"><button type="button" onClick={onClose} className="mac-menubar-icon-btn" title="Close" aria-label="Close">
             <X className="h-4 w-4" />
-          </button>
+          </button></Tooltip>
         </div>
 
         <ul className="space-y-1 max-h-64 overflow-y-auto">
@@ -84,15 +85,15 @@ export default function PlatformDockEditor({ open, onClose }: PlatformDockEditor
               <li key={item.path} className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-2 py-1.5">
                 <GripVertical className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
                 <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{item.label}</span>
-                <button type="button" className="mac-menubar-icon-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up" aria-label="Move up">
+                <Tooltip label="Move up"><button type="button" className="mac-menubar-icon-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up" aria-label="Move up">
                   <ChevronUp className="h-4 w-4" />
-                </button>
-                <button type="button" className="mac-menubar-icon-btn" onClick={() => move(idx, 1)} disabled={idx === paths.length - 1} title="Move down" aria-label="Move down">
+                </button></Tooltip>
+                <Tooltip label="Move down"><button type="button" className="mac-menubar-icon-btn" onClick={() => move(idx, 1)} disabled={idx === paths.length - 1} title="Move down" aria-label="Move down">
                   <ChevronDown className="h-4 w-4" />
-                </button>
-                <button type="button" className="mac-menubar-icon-btn text-rose-600" onClick={() => remove(item.path)} title="Remove" aria-label="Remove">
+                </button></Tooltip>
+                <Tooltip label="Remove"><button type="button" className="mac-menubar-icon-btn text-rose-600" onClick={() => remove(item.path)} title="Remove" aria-label="Remove">
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </button></Tooltip>
               </li>
             )
           })}

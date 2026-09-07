@@ -325,7 +325,7 @@ export default function VMList() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
+                    <span className={getStateBadgeClasses(vm.state)}>{vm.state}</span>
                   </td>
                   <td className="px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.vcpus}</td>
                   <td className="px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.memory_mb} MB</td>
@@ -400,7 +400,7 @@ export default function VMList() {
                     <span className={sessionBadgeClasses('shrink-0')}>session</span>
                   )}
                 </div>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
+                <span className={`shrink-0 ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
               </div>
               <div className="space-y-1 text-sm text-[var(--text-secondary)] mb-3">
                 <div className="flex justify-between"><span className="text-[var(--text-muted)]">vCPUs</span><span>{vm.vcpus}</span></div>

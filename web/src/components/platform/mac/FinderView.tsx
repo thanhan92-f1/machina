@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { ChevronLeft, ChevronRight, Columns3, ExternalLink, LayoutGrid, List, Search } from 'lucide-react'
 import FinderPathBar, { type FinderPathSegment } from './FinderPathBar'
+import Tooltip from '../../Tooltip'
 import { usePlatformMacDesktop } from './PlatformMacDesktopContext'
 import { openCenterPopout, useCenterPopout } from '../../../utils/platformCenterPopout'
 import {
@@ -95,12 +96,12 @@ export default function FinderView({
     <div className="mac-finder flex flex-col -mx-1">
       <div className="mac-finder-toolbar tahoe-toolbar flex flex-wrap items-center gap-2 px-1 sm:px-2 py-2 mx-1 sm:mx-2 mt-2">
         <div className="flex items-center gap-1">
-          <button type="button" className="mac-finder-nav-btn" onClick={handleBack} title="Back" aria-label="Back">
+          <Tooltip label="Back"><button type="button" className="mac-finder-nav-btn" onClick={handleBack} title="Back" aria-label="Back">
             <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button type="button" className="mac-finder-nav-btn" onClick={handleForward} title="Forward" aria-label="Forward">
+          </button></Tooltip>
+          <Tooltip label="Forward"><button type="button" className="mac-finder-nav-btn" onClick={handleForward} title="Forward" aria-label="Forward">
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </button></Tooltip>
         </div>
 
         {title ? <span className="text-sm font-medium text-[var(--text-primary)] hidden sm:inline">{title}</span> : null}

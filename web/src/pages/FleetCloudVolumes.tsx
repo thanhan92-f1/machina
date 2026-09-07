@@ -16,6 +16,7 @@ import {
   type NativeVolumeSnapshot,
 } from '../api/nativeVolumes'
 import { listVms, type NativeVm } from '../api/nativeVms'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -47,6 +48,8 @@ function FleetCloudVolumesContent() {
   const [attachInstId, setAttachInstId] = useState('')
   const [instances, setInstances] = useState<NativeVm[]>([])
   const [search, setSearch] = useState('')
+  const [pendingDeleteVolume, setPendingDeleteVolume] = useState<NativeVolume | null>(null)
+  const [pendingDeleteSnapshot, setPendingDeleteSnapshot] = useState<NativeVolumeSnapshot | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -281,16 +284,7 @@ function FleetCloudVolumesContent() {
                           }
                         }}>Extend</button>
                       <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                        onClick={async () => {
-                          if (!confirm(`Delete volume ${v.name}?`)) return
-                          try {
-                            await deleteVolume(v.id)
-                            toast.success('Deleted')
-                            void load()
-                          } catch (e: unknown) {
-                            toast.error(formatUserError(e))
-                          }
-                        }}>Delete</button>
+                        onClick={() => setPendingDeleteVolume(v)}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -323,16 +317,7 @@ function FleetCloudVolumesContent() {
                           <button
                             type="button"
                             className={statusActionLinkClasses('error', 'ml-2')}
-                            onClick={async () => {
-                              if (!confirm(`Delete snapshot ${s.name}?`)) return
-                              try {
-                                await deleteVolumeSnapshot(s.id)
-                                toast.success('Snapshot deleted')
-                                void load()
-                              } catch (e: unknown) {
-                                toast.error(formatUserError(e))
-                              }
-                            }}
+                            onClick={() => setPendingDeleteSnapshot(s)}
                           >
                             Del
                           </button>
@@ -346,6 +331,46 @@ function FleetCloudVolumesContent() {
           )}
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingDeleteVolume}
+        title="Delete volume"
+        message={pendingDeleteVolume ? `Delete volume ${pendingDeleteVolume.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteVolume(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteVolume) return
+          const target = pendingDeleteVolume
+          setPendingDeleteVolume(null)
+          try {
+            await deleteVolume(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) {
+            toast.error(formatUserError(e))
+          }
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingDeleteSnapshot}
+        title="Delete snapshot"
+        message={pendingDeleteSnapshot ? `Delete snapshot ${pendingDeleteSnapshot.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteSnapshot(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteSnapshot) return
+          const target = pendingDeleteSnapshot
+          setPendingDeleteSnapshot(null)
+          try {
+            await deleteVolumeSnapshot(target.id)
+            toast.success('Snapshot deleted')
+            void load()
+          } catch (e: unknown) {
+            toast.error(formatUserError(e))
+          }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

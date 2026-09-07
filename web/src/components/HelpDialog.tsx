@@ -8,7 +8,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { helpShortcuts } from './helpShortcuts'
 import ZyvorAbout from './ZyvorAbout'
 import PlatformAboutHelp from './platform/PlatformAboutHelp'
-import { tabActiveClasses } from '../utils/semanticColors'
+import { MacSegmentedControl } from './platform/mac/PlatformMacUi'
 
 export type HelpTab = 'shortcuts' | 'about' | 'platform'
 
@@ -67,24 +67,12 @@ export default function HelpDialog({ open, tab, onClose, onTabChange }: HelpDial
           </button>
         </div>
 
-        <div className="flex border-b border-white/[0.06] px-2 pt-1" role="tablist" aria-label="Help sections">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => onTabChange(t.id)}
-              className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tab === t.id
-                  ? tabActiveClasses()
-                  : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              {t.icon}
-              {t.label}
-            </button>
-          ))}
+        <div className="px-2 pt-1 pb-2" aria-label="Help sections">
+          <MacSegmentedControl
+            options={TABS.map((t) => ({ value: t.id, label: t.label, icon: t.icon }))}
+            value={tab}
+            onChange={onTabChange}
+          />
         </div>
 
         <div className="max-h-[min(70vh,32rem)] overflow-y-auto p-5">

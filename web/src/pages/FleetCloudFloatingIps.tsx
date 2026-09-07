@@ -13,6 +13,7 @@ import {
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
@@ -43,6 +44,7 @@ function FleetCloudFloatingIpsContent() {
   const [description, setDescription] = useState('')
   const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
+  const [pendingRemove, setPendingRemove] = useState<NativePortForward | null>(null)
 
   const loadVms = useCallback(async () => {
     try {
@@ -195,14 +197,7 @@ function FleetCloudFloatingIpsContent() {
                     <td className="text-[var(--text-muted)]">{f.description || '—'}</td>
                     <td>
                       <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
-                        onClick={async () => {
-                          if (!confirm(`Remove forward ${f.protocol}/${f.host_port} → ${f.vm_port}?`)) return
-                          try {
-                            await deleteVmPortForward(vmId, { protocol: f.protocol, host_port: f.host_port, vm_port: f.vm_port })
-                            toast.success('Removed')
-                            void loadForwards()
-                          } catch (e: unknown) { toast.error(formatUserError(e)) }
-                        }}>Remove</button>
+                        onClick={() => setPendingRemove(f)}>Remove</button>
                     </td>
                   </tr>
                 ))}
@@ -211,6 +206,24 @@ function FleetCloudFloatingIpsContent() {
           </TahoeTableWrap>
         </>
       )}
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title="Remove port forward"
+        message={pendingRemove ? `Remove forward ${pendingRemove.protocol}/${pendingRemove.host_port} → ${pendingRemove.vm_port}?` : ''}
+        confirmLabel="Remove"
+        variant="danger"
+        onCancel={() => setPendingRemove(null)}
+        onConfirm={async () => {
+          if (!pendingRemove) return
+          const target = pendingRemove
+          setPendingRemove(null)
+          try {
+            await deleteVmPortForward(vmId, { protocol: target.protocol, host_port: target.host_port, vm_port: target.vm_port })
+            toast.success('Removed')
+            void loadForwards()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       {selectedVm && (
         <Link to={`/fleet-cloud/instances/${selectedVm.id}`} className="text-sm text-[var(--accent)] hover:underline">
           View instance

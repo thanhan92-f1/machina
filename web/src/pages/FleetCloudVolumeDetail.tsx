@@ -14,6 +14,7 @@ import {
   type NativeVolume,
   type NativeVolumeSnapshot,
 } from '../api/nativeVolumes'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -38,6 +39,8 @@ function FleetCloudVolumeDetailContent() {
   const [vol, setVol] = useState<NativeVolume | null>(null)
   const [snapshots, setSnapshots] = useState<NativeVolumeSnapshot[]>([])
   const [loading, setLoading] = useState(true)
+  const [confirmDeleteVolume, setConfirmDeleteVolume] = useState(false)
+  const [pendingDeleteSnapshot, setPendingDeleteSnapshot] = useState<NativeVolumeSnapshot | null>(null)
   useBreadcrumbName(vol?.name)
   const loadSeq = useRef(0)
 
@@ -130,15 +133,24 @@ function FleetCloudVolumeDetailContent() {
             } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Extend</button>
         <button type="button" className={`px-3 py-1.5 rounded-lg border text-sm ${statusActionLinkClasses('error')}`}
-          onClick={async () => {
-            if (!confirm(`Delete volume ${vol.name}?`)) return
-            try {
-              await deleteVolume(vol.id)
-              toast.success('Deleted')
-              navigate('/fleet-cloud/volumes')
-            } catch (e: unknown) { toast.error(formatUserError(e)) }
-          }}>Delete</button>
+          onClick={() => setConfirmDeleteVolume(true)}>Delete</button>
       </div>
+      <ConfirmDialog
+        open={confirmDeleteVolume}
+        title="Delete volume"
+        message={`Delete volume ${vol.name}?`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDeleteVolume(false)}
+        onConfirm={async () => {
+          setConfirmDeleteVolume(false)
+          try {
+            await deleteVolume(vol.id)
+            toast.success('Deleted')
+            navigate('/fleet-cloud/volumes')
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
 
       <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -163,19 +175,30 @@ function FleetCloudVolumeDetailContent() {
                 <span>{s.name}</span>
                 <span className="text-[var(--text-muted)] text-xs">{s.status}</span>
                 <button type="button" className={statusActionLinkClasses('error', 'text-xs ml-auto')}
-                  onClick={async () => {
-                    if (!confirm(`Delete snapshot ${s.name}?`)) return
-                    try {
-                      await deleteVolumeSnapshot(s.id)
-                      toast.success('Deleted')
-                      void load()
-                    } catch (e: unknown) { toast.error(formatUserError(e)) }
-                  }}>Delete</button>
+                  onClick={() => setPendingDeleteSnapshot(s)}>Delete</button>
               </li>
             ))}
           </ul>
         )}
       </section>
+      <ConfirmDialog
+        open={!!pendingDeleteSnapshot}
+        title="Delete snapshot"
+        message={pendingDeleteSnapshot ? `Delete snapshot ${pendingDeleteSnapshot.name}?` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setPendingDeleteSnapshot(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteSnapshot) return
+          const target = pendingDeleteSnapshot
+          setPendingDeleteSnapshot(null)
+          try {
+            await deleteVolumeSnapshot(target.id)
+            toast.success('Deleted')
+            void load()
+          } catch (e: unknown) { toast.error(formatUserError(e)) }
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

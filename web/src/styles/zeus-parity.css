@@ -601,21 +601,12 @@ button {
   transition-timing-function: ease;
 }
 
-/* Global keyboard focus — single system: --focus-ring (background + ring double ring) */
-button:focus-visible,
-[role="tab"]:focus-visible,
-[role="option"]:focus-visible,
-[role="button"]:focus-visible,
-a.tahoe-btn-primary:focus-visible,
-a.tahoe-btn-ghost:focus-visible,
-a.tahoe-btn-secondary:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.tahoe-btn-primary:focus-visible,
-.tahoe-btn-ghost:focus-visible,
-.tahoe-btn-secondary:focus-visible {
+/* Global keyboard focus — single system: --focus-ring (background + ring double ring).
+   Universal :focus-visible so every element type (inputs, links, custom
+   interactive divs) gets the same themed ring, not just buttons/tabs — see
+   machina-daylight.css's light-theme override, which already does this
+   broadly; this makes every theme consistent with that. */
+:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -1185,6 +1176,10 @@ html[data-theme='tahoe-light'] ::-webkit-scrollbar-thumb {
 
 html[data-theme='tahoe-light'] ::-webkit-scrollbar-thumb:hover {
   background: hsl(200 70% 45%);
+}
+
+html[data-theme='tahoe-light'] {
+  scrollbar-color: hsl(200 55% 62%) transparent;
 }
 
 

@@ -8,6 +8,7 @@ import {
   listAllVolumeSnapshots,
   type NativeVolumeSnapshotWithVolume,
 } from '../api/nativeVolumes'
+import ConfirmDialog from '../components/ConfirmDialog'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -31,6 +32,7 @@ function FleetCloudVolumeSnapshotDetailContent() {
   const toast = useToastContext()
   const [snapshot, setSnapshot] = useState<NativeVolumeSnapshotWithVolume | null>(null)
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   useBreadcrumbName(snapshot?.name)
   const loadSeq = useRef(0)
 
@@ -88,14 +90,23 @@ function FleetCloudVolumeSnapshotDetailContent() {
         </dd></div>
       </dl>
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-600 text-sm"
-        onClick={async () => {
-          if (!confirm(`Delete snapshot ${snapshot.name || snapshot.id}?`)) return
+        onClick={() => setConfirmDelete(true)}>Delete snapshot</button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete snapshot"
+        message={`Delete snapshot ${snapshot.name || snapshot.id}?`}
+        confirmLabel="Delete"
+        variant="danger"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setConfirmDelete(false)
           try {
             await deleteVolumeSnapshot(snapshot.id)
             toast.success('Deleted')
             window.location.href = '/fleet-cloud/volume-snapshots'
           } catch (e: unknown) { toast.error(formatUserError(e)) }
-        }}>Delete snapshot</button>
+        }}
+      />
       <FleetCloudFooter />
     </PageLayout>
   )

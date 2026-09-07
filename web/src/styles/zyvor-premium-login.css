@@ -265,10 +265,6 @@ a.login-cta-secondary:active {
   box-shadow: 0 0 0 3px hsl(211 100% 45% / 0.18);
 }
 
-.login-input:focus-visible {
-  outline: 2px solid hsl(211 100% 45%);
-  outline-offset: 2px;
-}
 
 .login-input:disabled {
   opacity: 0.55;
