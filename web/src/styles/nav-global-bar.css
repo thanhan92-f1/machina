@@ -14,7 +14,15 @@
 .gnb-bar {
   position: sticky;
   top: 0;
-  z-index: 40;
+  /* Must outrank .gnb-scrim (z-index 48, a *sibling* of this element in
+     GlobalBar.tsx, not a descendant): position:sticky + z-index makes this
+     header its own stacking context, so the flyout's own z-index:49 is only
+     compared against other elements *inside* that context — against the
+     scrim outside it, what counts is this header's z-index vs the scrim's.
+     At the old z-index:40 the scrim (48) painted on top of the whole header
+     including the flyout, so a click meant for a flyout link actually hit
+     the scrim underneath it and closed the menu instead of navigating. */
+  z-index: 50;
   border-bottom: 1px solid var(--apple-hairline);
   background: hsl(var(--card) / 0.72);
   backdrop-filter: blur(calc(var(--blur-liquid, 12px) + 4px)) saturate(1.35);

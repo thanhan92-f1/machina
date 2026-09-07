@@ -904,6 +904,8 @@ html.light-theme .mac-desktop-root textarea:not(.term-body) {
   color: var(--text-primary) !important;
 }
 html.apple-light .input-field::placeholder,
-html.light-theme .input-field::placeholder {
+html.light-theme .input-field::placeholder,
+html.apple-light .input::placeholder,
+html.light-theme .input::placeholder {
   color: var(--text-faint) !important;
 }
