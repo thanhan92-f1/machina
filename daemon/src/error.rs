@@ -78,6 +78,12 @@ fn classify_operation_error(msg: &str) -> Option<(StatusCode, &'static str)> {
         return Some((StatusCode::CONFLICT, "pci_slots_exhausted"));
     }
 
+    // Volume delete refused because a domain (live or offline) still references it —
+    // see storage::delete_volume — a client/state conflict, not a server error.
+    if m.contains("is still attached to:") {
+        return Some((StatusCode::CONFLICT, "volume_in_use"));
+    }
+
     None
 }
 

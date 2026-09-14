@@ -313,12 +313,54 @@ pub fn list_volumes(
     Ok(result)
 }
 
+/// Names of VMs that currently have `disk_path` as a `device='disk'` source,
+/// paired with whether each is running. Checks both the live and the
+/// persistent (offline) definition — see `domain_xml_live_and_config` — so a
+/// disk that only *config*-detached (`requires_restart: true`, guest never
+/// acknowledged the live hot-unplug) still counts as in use.
+fn vms_with_disk_source(conn: &Connect, disk_path: &str) -> Vec<(String, bool)> {
+    let Ok(domains) = conn.list_all_domains(0) else {
+        return Vec::new();
+    };
+    let mut hits = Vec::new();
+    for domain in domains {
+        let Ok(name) = domain.get_name() else {
+            continue;
+        };
+        let xml = super::domain::domain_xml_live_and_config(&domain);
+        let attached = crate::xml::split_blocks(&xml, "disk").iter().any(|block| {
+            crate::xml::extract_attr(block, "disk", "device").as_deref() == Some("disk")
+                && crate::xml::extract_attr(block, "source", "file").as_deref() == Some(disk_path)
+        });
+        if attached {
+            let running = domain.get_info().map(|i| i.state == 1).unwrap_or(false);
+            hits.push((name, running));
+        }
+    }
+    hits
+}
+
 pub fn delete_volume(conn: &Connect, pool_name: &str, vol_name: &str) -> Result<(), LibvirtError> {
     // Match create_volume's validation — reject names outside [alnum._-].
     crate::validate::validate_name(vol_name)?;
     let pool = lookup_pool(conn, pool_name)?;
     let vol = StorageVol::lookup_by_name(&pool, vol_name)
         .map_err(|e| LibvirtError::NotFound(format!("Volume '{vol_name}' not found: {e}")))?;
+    // Deleting the backing file out from under a domain that still references it (even
+    // only in the persistent/offline definition) leaves that domain unable to boot —
+    // unlike overwriting an ISO in place (see vms_with_iso_mounted), there is no stale
+    // file descriptor to fall back on once the file is gone. Refuse instead of silently
+    // corrupting a VM's disk reference.
+    if let Ok(path) = vol.get_path() {
+        let hits = vms_with_disk_source(conn, &path);
+        if !hits.is_empty() {
+            let names: Vec<&str> = hits.iter().map(|(n, _)| n.as_str()).collect();
+            return Err(LibvirtError::Operation(format!(
+                "Volume '{vol_name}' is still attached to: {} — fully detach it (and restart the VM if required) before deleting",
+                names.join(", ")
+            )));
+        }
+    }
     vol.delete(0)
         .map_err(LibvirtError::map_op("Failed to delete volume"))?;
     Ok(())
