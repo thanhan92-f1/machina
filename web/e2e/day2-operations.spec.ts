@@ -122,6 +122,46 @@ test('Live Preview Wall is reachable from the Mission Control launchpad', async 
   await expect(page.getByTestId('mission-control-live-wall')).toBeVisible({ timeout: 15_000 })
 })
 
+test('Bare metal power action shows a real success toast, and state badges/button-disabling use the real state vocabulary', async ({ page }) => {
+  // BmcPowerResult was typed as {success, message} — the backend never sends either field (its
+  // real shape is {dry_run, summary, new_state, ...}), so `result.success` was always falsy and
+  // every power action showed a spurious error toast regardless of the real outcome. Separately,
+  // the state badge/button-disabled checks compared against 'on'/'off', but the backend writes
+  // 'registered'/'powered_on'/'powered_off'/'rebooting' — so Online count was always 0 and the
+  // already-in-that-state button never disabled.
+  await mockPlatformApi(page, { tier: 'power' })
+  let state = 'registered'
+  await page.route('**/api/v1/baremetal/servers', async (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({
+        json: [{
+          id: 'bm1', hostname: 'metal-01', bmc_address: '192.168.10.5', bmc_type: 'redfish',
+          state, cpu_cores: 32, memory_mib: 262144, firewall_profile: 'BareMetalBmc',
+          firewall_enabled: true, bmc_vlan: '', pxe_vlan: '', created_at: new Date().toISOString(),
+        }],
+      })
+    }
+    return route.continue()
+  })
+  await page.route('**/api/v1/baremetal/servers/bm1/power', async (route) => {
+    state = 'powered_on'
+    return route.fulfill({
+      json: {
+        server_id: 'bm1', hostname: 'metal-01', action: 'on', previous_state: 'registered',
+        new_state: 'powered_on', dry_run: false,
+        summary: 'BMC power command applied (preview — no live IPMI/Redfish call).',
+      },
+    })
+  })
+  await page.goto('/platform/baremetal')
+  await expect(page.getByRole('heading', { name: 'Bare Metal', exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('registered')).toBeVisible()
+  await page.getByRole('button', { name: 'On', exact: true }).click()
+  await expect(page.getByText(/BMC power command applied/i)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('powered_on')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: 'On', exact: true })).toBeDisabled()
+})
+
 test('Firewall connectivity simulation uses host/profile pickers, shows loading state, and distinguishes never-run from zero-results', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   let resolveSim: (v: unknown) => void = () => {}

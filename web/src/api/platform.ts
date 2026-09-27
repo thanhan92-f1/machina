@@ -3077,15 +3077,25 @@ export interface RegisterBaremetalBody {
   pxe_vlan?: string
 }
 
+// The controller only accepts these four action strings (engine/baremetal.rs's set_power bails
+// with "action must be on, off, cycle, or reset" on anything else) — 'soft' used to be listed here
+// and would have 400'd every time it was sent (unreachable from the current UI, but a footgun).
 export interface BmcPowerBody {
-  action: 'on' | 'off' | 'reset' | 'soft'
+  action: 'on' | 'off' | 'cycle' | 'reset'
 }
 
+// Matches engine::baremetal::BmcPowerResult exactly — this used to declare {success, message},
+// neither of which the backend ever sends, so PlatformBareMetal.tsx's success/failure branch on
+// `result.success` was always falsy and showed a spurious error toast on every power action that
+// actually succeeded.
 export interface BmcPowerResult {
   server_id: string
+  hostname: string
   action: string
-  success: boolean
-  message: string
+  previous_state: string
+  new_state: string
+  dry_run: boolean
+  summary: string
 }
 
 export const listBaremetalServers = () =>
