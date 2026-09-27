@@ -189,6 +189,7 @@ export default function ClassicConsoleHub() {
       title={name}
       subtitle="Classic ConsoleHub · Machine Canvas"
     >
+      <h1 className="sr-only">{name} console</h1>
       {plan ? (
         <div className="flex flex-col flex-1 min-h-0 h-full">
           <MachineCockpit

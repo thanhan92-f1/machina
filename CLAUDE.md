@@ -171,12 +171,12 @@ Default port: **5092** (daemon), **5093** (controller), **50051** (agent gRPC).
 
 The UI follows **apple.com / Zeus OS** contracts — see [docs/design/APPLE-UX-CONTRACT.md](docs/design/APPLE-UX-CONTRACT.md) and [docs/design/DAYLIGHT-CONTRACT.md](docs/design/DAYLIGHT-CONTRACT.md).
 
-- **Shell:** Mac menubar (Zyvor tile + Machina / View / Window / Help) + Zeus **68px sidebar icon rail** (product flyouts; no dock). Default theme: **Apple light** (`tahoe-light`).
+- **Shell:** `GlobalBar` (top bar with product flyouts) + `SideNav` + `ChapterBar` in `layouts/PlatformLayout.tsx`; the Mac menubar, icon rail and dock are gone. Default theme: **Apple light** (`tahoe-light`). The current look lives in `web/src/styles/netra-look.css` (loaded last; namespace new tokens `--nl-*`). Audit UI changes with `node web/scripts/ux-audit.mjs` (see `docs/design/APPLE-UX-CONTRACT.md`).
 - **Story / Browse / Work** tiers: `apple-story-stack`, `TahoeToolbar`, `.tahoe-glass-card`; VM detail leads with [`VmConsoleHeroPreview`](web/src/components/vm/VmConsoleHeroPreview.tsx).
 - **Interactive blue:** apple.com `#0071e3` (CTAs, links, focus, sidebar active). Dark links `#2997ff`.
 - **Box fonts:** Apple shop `.form-selector` 1:1 — `--text-primary/secondary/muted` (`#1d1d1f` / `#6e6e73` / `#86868b` light; `#f5f5f7` / `#a1a1a6` / `#86868b` dark) in `zeus-parity.css`.
 - **Story type:** AirPods-scale `.apple-display` / `.apple-lede` (SF Pro Display).
-- **Login:** [`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css) — hero wordmark **machina**.
+- **Login:** [`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css) — one centered composition, hero wordmark **machina**.
 - Glass primitives remain in `web/src/components/glass/`. Framer Motion handles spring animations on modals/toasts.
 
 Platform desktop has three density tiers (Normal / Power User / Advanced), switchable via Settings → Appearance. The `usePlatformDesktopTier` hook reads the current tier.

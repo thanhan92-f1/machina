@@ -8,6 +8,7 @@ import {
   formatUserError,
   friendlyErrorCode,
   sanitizeErrorText,
+  unwrapJsonEnvelope,
 } from './apiError'
 
 describe('sanitizeErrorText', () => {
@@ -57,5 +58,24 @@ describe('formatUserError', () => {
     const err = new Error('</html> (operation_failed)')
     const out = formatUserError(err)
     expect(out).not.toContain('</html>')
+  })
+})
+
+describe('unwrapJsonEnvelope / sanitizeErrorText envelope handling', () => {
+  it('shows the message inside a {"error": …} envelope instead of the JSON', () => {
+    expect(unwrapJsonEnvelope('{"error":"pool default is busy"}')).toBe('pool default is busy')
+    expect(sanitizeErrorText('{"error":"pool default is busy"}')).toBe('pool default is busy')
+  })
+  it('accepts a {"message": …} envelope and trims it', () => {
+    expect(unwrapJsonEnvelope('  {"message":"  nope  "}  ')).toBe('nope')
+  })
+  it('leaves plain text, non-envelope JSON and malformed JSON alone', () => {
+    expect(unwrapJsonEnvelope('Bad gateway')).toBe('Bad gateway')
+    expect(unwrapJsonEnvelope('{"code":7}')).toBe('{"code":7}')
+    expect(unwrapJsonEnvelope('{not json')).toBe('{not json')
+    expect(unwrapJsonEnvelope('{"error":""}')).toBe('{"error":""}')
+  })
+  it('formatUserError unwraps an Error whose message is a raw envelope', () => {
+    expect(formatUserError(new Error('{"error":"host is in maintenance"}'))).toBe('host is in maintenance')
   })
 })

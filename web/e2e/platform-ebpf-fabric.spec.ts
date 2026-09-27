@@ -17,7 +17,7 @@ test('Security Center shows sensor matrix and fleet enroll CTA', async ({ page }
 
 test('runtime enforcement apply and TracingPolicy preview', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/security/enforcement')
+  await page.goto('/platform/zyra/security/enforcement')
   await expect(page.getByRole('heading', { name: 'Runtime enforcement' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Block shadow file read')).toBeVisible()
   await page.getByRole('button', { name: 'Preview' }).first().click()
@@ -27,7 +27,7 @@ test('runtime enforcement apply and TracingPolicy preview', async ({ page }) => 
 
 test('threat hunting correlation row shows enforce action', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/security/hunt')
+  await page.goto('/platform/zyra/security/hunt')
   await expect(page.getByRole('heading', { name: 'Threat hunting' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Threat correlations')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Enforce' }).first()).toBeVisible({ timeout: 10_000 })

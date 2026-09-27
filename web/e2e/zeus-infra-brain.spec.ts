@@ -5,7 +5,7 @@ import { mockPlatformApi } from './platformMock'
 
 test('Zeus Graph Brain tab loads and path analysis works', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus?tab=brain')
+  await page.goto('/platform/zyra?tab=brain')
   await expect(page.getByText('Infrastructure Graph Brain')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/nodes · .* edges/)).toBeVisible()
   await page.getByRole('tab', { name: 'Graph Brain' }).click()
@@ -14,14 +14,14 @@ test('Zeus Graph Brain tab loads and path analysis works', async ({ page }) => {
 
 test('Zeus rightsizing page loads recommendations', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/rightsizing')
+  await page.goto('/platform/zyra/rightsizing')
   await expect(page.getByText('VM Rightsizing')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('idle-vm')).toBeVisible()
 })
 
 test('Incident commander page loads fleet RCA', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/incidents')
+  await page.goto('/platform/zyra/incidents')
   await expect(page.getByText('Incident Commander')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Fleet RCA')).toBeVisible()
   await expect(page.getByText(/Network configuration change/)).toBeVisible()
@@ -29,14 +29,14 @@ test('Incident commander page loads fleet RCA', async ({ page }) => {
 
 test('Zeus approvals page lists pending actions', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/approvals')
-  await expect(page.getByText('Zeus approvals')).toBeVisible({ timeout: 15_000 })
+  await page.goto('/platform/zyra/approvals')
+  await expect(page.getByText('Zyra approvals')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Restart idle-vm')).toBeVisible()
 })
 
 test('Zeus Fleet autonomous wizard dry-run shows plan steps', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus?tab=fleet')
+  await page.goto('/platform/zyra?tab=fleet')
   await page.getByRole('tab', { name: 'Fleet' }).click()
   await expect(page.getByRole('heading', { name: 'Autonomous run' })).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Dry-run plan' }).click()
@@ -69,8 +69,8 @@ test('Stopped VM overview shows AI troubleshoot panel', async ({ page }) => {
 
 test('Zeus settings shows enterprise posture and editable prompts', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/settings?section=zeus')
-  await expect(page.getByText('Enterprise Zeus posture')).toBeVisible({ timeout: 15_000 })
+  await page.goto('/platform/settings?section=zyra')
+  await expect(page.getByText('Enterprise Zyra posture')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('RCA template')).toBeVisible()
   await page.getByRole('button', { name: 'Edit' }).click()
   await page.locator('li.border input.input.text-sm').first().fill('Updated RCA')
@@ -83,21 +83,21 @@ test('AI Providers settings shows task-class routing table', async ({ page }) =>
   await page.goto('/platform/settings?section=ai-providers')
   await expect(page.getByRole('heading', { name: 'Task-class routing' })).toBeVisible({ timeout: 15_000 })
   await expect(
-    page.locator('span.font-medium.text-slate-200').filter({ hasText: /^Infrastructure$/ }).first(),
+    page.locator('.tahoe-glass-card', { hasText: 'Task-class routing' }).getByText('Infrastructure', { exact: true }),
   ).toBeVisible()
   await expect(page.getByRole('button', { name: 'Save' }).first()).toBeVisible()
 })
 
 test('Graph Brain tab shows historical scrubber', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus?tab=brain')
+  await page.goto('/platform/zyra?tab=brain')
   await expect(page.getByText('Time scrubber')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Graph at scrubber')).toBeVisible({ timeout: 10_000 })
 })
 
 test('Zeus Memory tab shows clear memory action', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus?tab=memory')
+  await page.goto('/platform/zyra?tab=memory')
   await expect(page.getByRole('button', { name: 'Clear memory' })).toBeVisible({ timeout: 15_000 })
 })
 

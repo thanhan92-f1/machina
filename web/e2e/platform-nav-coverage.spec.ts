@@ -3,29 +3,21 @@
 import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
 
-test('advanced tier shows sidebar policy and Go menu opens', { retries: 1 }, async ({ page }) => {
+test('advanced tier shows sidebar policy', async ({ page }) => {
+  // The old menubar's "Go" destination menu (All destinations…/Operations/Host/Networks) is gone
+  // — see "Go menu operations navigates without tier bounce on power tier" below, which covers its
+  // destination-navigation purpose via spotlight instead.
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/policy')
   await expect(page.getByRole('heading', { name: /Policy & Quotas/i })).toBeVisible()
-
-  await page.goto('/platform')
-  const goMenu = page.getByRole('button', { name: /^Go$/i })
-  if (await goMenu.count()) {
-    await goMenu.click()
-    const panel = page.getByRole('menu', { name: 'Go' })
-    await expect(panel.getByRole('menuitem', { name: 'All destinations…' })).toBeVisible({ timeout: 5000 })
-    await expect(panel.getByRole('menuitem', { name: 'Operations' })).toBeVisible()
-    await expect(panel.getByText('Host', { exact: true })).toBeVisible()
-    await expect(panel.getByRole('menuitem', { name: 'Networks' })).toBeVisible()
-  }
 })
 
 test('context bar shows security sub-nav on policy studio route', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/zeus/security/policies')
   await expect(page.getByRole('heading', { name: /Policy Studio/i })).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.tahoe-context-bar')).toBeVisible()
-  await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy Studio' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter')).toBeVisible()
+  await expect(page.locator('.gnb-chapter-link', { hasText: 'Policy Studio' })).toBeVisible()
 })
 
 test('dashboard has no desktop tabs row', async ({ page }) => {
@@ -33,7 +25,7 @@ test('dashboard has no desktop tabs row', async ({ page }) => {
   await page.goto('/platform/vms')
   await page.goto('/platform/hosts')
   await expect(page.locator('.mac-desktop-tabs')).toHaveCount(0)
-  await expect(page.locator('.tahoe-context-bar')).toHaveCount(0)
+  await expect(page.locator('.gnb-chapter')).toHaveCount(0)
 })
 
 test('policy studio route loads', async ({ page }) => {
@@ -52,16 +44,16 @@ test('normal tier hides sidebar on Jarvis landing', async ({ page }) => {
 test('normal tier hides context bar on dashboard', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform')
-  await expect(page.locator('.tahoe-context-bar')).toHaveCount(0)
+  await expect(page.locator('.gnb-chapter')).toHaveCount(0)
 })
 
 test('power tier shows context bar on hub roots only', { retries: 1 }, async ({ page }) => {
   test.setTimeout(60_000)
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/operations')
-  await expect(page.locator('.tahoe-context-bar')).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('.gnb-chapter')).toBeVisible({ timeout: 20_000 })
   await page.goto('/platform/tasks')
-  await expect(page.locator('.tahoe-context-bar')).toHaveCount(0)
+  await expect(page.locator('.gnb-chapter')).toHaveCount(0)
 })
 
 test('power tier dashboard shows launchpad and mission briefing', async ({ page }) => {
@@ -74,38 +66,48 @@ test('power tier dashboard shows launchpad and mission briefing', async ({ page 
 test('security context bar collapses overflow into More menu', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/zeus/security/policies')
-  await expect(page.locator('.tahoe-context-bar')).toBeVisible()
-  await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy Studio' })).toBeVisible()
-  await expect(page.locator('.tahoe-context-more')).toBeVisible()
-  await page.locator('.tahoe-context-more').click()
+  await expect(page.locator('.gnb-chapter')).toBeVisible()
+  await expect(page.locator('.gnb-chapter-link', { hasText: 'Policy Studio' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter-more')).toBeVisible()
+  await page.locator('.gnb-chapter-more').click()
   await expect(page.getByRole('menuitem', { name: 'Threat Hunting' })).toBeVisible()
 })
 
-test('mobile jump nav stays visible when sidebar is hidden', async ({ page }) => {
+// PlatformMobileJumpNav.tsx (the `<select>` this file used to drive via `#platform-mobile-jump`)
+// is unimported dead code. Mobile navigation today is the same `aside[aria-label="Sections"]`
+// drawer as desktop, opened via the GlobalBar burger (`aria-label="Menu"`) and auto-closed on
+// navigation (components/nav/SideNav.tsx) — these tests are rewritten against that.
+
+test('mobile burger nav stays reachable when the sidebar preference is hidden', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
-  await expect(page.locator('#platform-mobile-jump')).toBeVisible()
+  const burger = page.getByRole('button', { name: 'Menu' })
+  await expect(burger).toBeVisible()
+  // ⌘⌥S is a desktop "hide sidebar" preference; it must not strand mobile users without any nav.
   await page.keyboard.press('Meta+Alt+s')
-  await expect(page.locator('#platform-mobile-jump')).toBeVisible()
+  await expect(burger).toBeVisible()
+  await burger.click()
+  await expect(page.locator('aside[aria-label="Sections"]')).toBeVisible()
 })
 
-test('mobile jump nav navigates to hosts on normal tier', async ({ page }) => {
+test('mobile burger nav navigates to hosts on normal tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
-  const jump = page.getByRole('combobox', { name: 'Navigate platform' })
-  await jump.selectOption('/platform/hosts')
+  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.locator('aside[aria-label="Sections"] a[href="/platform/hosts"]').click()
   await expect(page).toHaveURL(/\/platform\/hosts/)
 })
 
-test('mobile jump nav includes hub sections on power tier', async ({ page }) => {
+test('mobile burger nav includes hub sections on power tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/tasks')
-  const jump = page.getByRole('combobox', { name: 'Navigate platform' })
-  await expect(jump).toHaveValue('/platform/tasks')
-  await jump.selectOption('/platform/observability')
+  await page.getByRole('button', { name: 'Menu' }).click()
+  const link = page.locator('aside[aria-label="Sections"] a[href="/platform/observability"]')
+  await expect(link).toBeVisible()
+  await link.click()
   await expect(page).toHaveURL(/\/platform\/observability/)
 })
 
@@ -119,61 +121,72 @@ test('settings context bar collapses overflow into More menu', { retries: 1 }, a
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/policy')
   await expect(page.getByRole('heading', { name: /Policy & Quotas/i })).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.tahoe-context-bar')).toBeVisible()
-  await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy' })).toBeVisible()
-  await expect(page.locator('.tahoe-context-more')).toBeVisible()
-  await page.locator('.tahoe-context-more').click()
-  await expect(page.getByRole('menuitem', { name: 'About' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter')).toBeVisible()
+  await expect(page.locator('.gnb-chapter-link', { hasText: 'Policy' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter-more')).toBeVisible()
+  await page.locator('.gnb-chapter-more').click()
+  // "About" moved into the "Machina" dropdown's Help entries — Settings' own context nav
+  // (SETTINGS_ENTRIES, platformNavRegistry.ts) never had it back; "Integrations" is last in that
+  // list and always overflows here since "Policy" (the active section) bumps into the visible set.
+  await expect(page.getByRole('menuitem', { name: 'Integrations' })).toBeVisible()
 })
 
 test('power tier hides context bar on policy workspace', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/policy')
   await expect(page.getByRole('heading', { name: /Policy & Quotas/i })).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.tahoe-context-bar')).toHaveCount(0)
+  await expect(page.locator('.gnb-chapter')).toHaveCount(0)
 })
 
-test('mobile jump nav reflects settings workspace on policy route', async ({ page }) => {
+test('mobile burger nav reaches Settings from the policy workspace', async ({ page }) => {
+  // The old jump-nav dropdown merged the sidebar's hub links with the context bar's settings
+  // sections into one mobile-only control, so a specific section (e.g. `?section=security`) was
+  // reachable there. The context bar (.gnb-chapter) doesn't render on mobile at all now — the
+  // burger drawer's "Settings" link only reaches the base workspace on this viewport.
   await mockPlatformApi(page, { tier: 'power' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/policy')
-  const jump = page.getByRole('combobox', { name: 'Navigate platform' })
-  await expect(jump).toHaveValue('/platform/settings?section=policy')
-  await jump.selectOption('/platform/settings?section=security')
-  await expect(page).toHaveURL(/\/platform\/settings\?section=security/)
+  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.locator('aside[aria-label="Sections"] a[href="/platform/settings"]').click()
+  await expect(page).toHaveURL(/\/platform\/settings/)
 })
 
 test('zeus context bar collapses overflow into More menu', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/zeus/security/policies')
   await expect(page.getByRole('heading', { name: /Policy Studio/i })).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.tahoe-context-bar')).toBeVisible()
-  await expect(page.locator('.tahoe-context-pill', { hasText: 'Policy Studio' })).toBeVisible()
-  await expect(page.locator('.tahoe-context-more')).toBeVisible()
-  await page.locator('.tahoe-context-more').click()
+  await expect(page.locator('.gnb-chapter')).toBeVisible()
+  await expect(page.locator('.gnb-chapter-link', { hasText: 'Policy Studio' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter-more')).toBeVisible()
+  await page.locator('.gnb-chapter-more').click()
   await expect(page.getByRole('menuitem', { name: 'Threat Hunting' })).toBeVisible()
 })
 
 test('operations context bar collapses overflow into More menu', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/tasks')
-  await expect(page.locator('.tahoe-context-bar')).toBeVisible()
-  await expect(page.locator('.tahoe-context-pill', { hasText: 'Tasks' })).toBeVisible()
-  await expect(page.locator('.tahoe-context-more')).toBeVisible()
-  await page.locator('.tahoe-context-more').click()
-  const opsNav = page.getByRole('navigation', { name: 'Operations sections' })
-  await expect(opsNav.getByRole('link', { name: 'Observability' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter')).toBeVisible()
+  await expect(page.locator('.gnb-chapter-link', { hasText: 'Tasks' })).toBeVisible()
+  await expect(page.locator('.gnb-chapter-more')).toBeVisible()
+  await page.locator('.gnb-chapter-more').click()
+  // The overflow menu (PlatformFloatingMenu) portals to the document body, so its items are role=
+  // "menuitem" links (PlatformMenuLinkItem) outside the `<nav aria-label="Operations sections">`
+  // DOM subtree — not reachable by scoping into that nav.
+  await expect(page.getByRole('menuitem', { name: 'Observability' })).toBeVisible()
 })
 
 test('spotlight lists platform hubs on power tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  const menubar = page.locator('.mac-menubar-inner')
-  await menubar.getByRole('button', { name: 'Help', exact: true }).click()
-  await page.getByRole('button', { name: 'Spotlight Search' }).click()
-  await expect(page.getByPlaceholder('Zeus — search or ask…')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
+  // The old menubar's Help → "Spotlight Search" menu item only lived in the orphaned
+  // PlatformMacAppMenus.tsx; Ctrl+K is spotlight's live entry point (as in every other test here).
+  // The wait above matters more than that old click ever did — without it, Ctrl+K can fire before
+  // the page has hydrated and the shortcut listener is attached, dropping the keystroke.
+  await page.keyboard.press('Control+k')
+  await expect(page.getByPlaceholder('Zyra — search or ask…')).toBeVisible({ timeout: 5000 })
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
   await expect(spotlight.getByText('Platform hubs', { exact: true })).toBeVisible()
   await expect(spotlight.getByRole('button', { name: /Operations Hub ·/i })).toBeVisible()
@@ -182,10 +195,10 @@ test('spotlight lists platform hubs on power tier', async ({ page }) => {
 test('spotlight lists operations workspaces on power tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
   await expect(
     spotlight.locator('button').filter({ hasText: 'Observability' }).filter({ hasNotText: /Hub ·/ }),
@@ -195,9 +208,9 @@ test('spotlight lists operations workspaces on power tier', async ({ page }) => 
 test('spotlight opens via keyboard shortcut', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
-  await expect(page.getByPlaceholder('Zeus — search or ask…')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByPlaceholder('Zyra — search or ask…')).toBeVisible({ timeout: 5000 })
 })
 
 test('spotlight keeps page context prefill from Ask Zyra', async ({ page }) => {
@@ -207,7 +220,7 @@ test('spotlight keeps page context prefill from Ask Zyra', async ({ page }) => {
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('machina-open-spotlight', { detail: { prefill: 'vm-1 guest health' } }))
   })
-  const input = page.getByPlaceholder('Zeus — search or ask…')
+  const input = page.getByPlaceholder('Zyra — search or ask…')
   await expect(input).toBeVisible({ timeout: 5000 })
   await expect(input).toHaveValue('vm-1 guest health')
 })
@@ -215,7 +228,7 @@ test('spotlight keeps page context prefill from Ask Zyra', async ({ page }) => {
 test('context overflow closes after navigation', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform/tasks')
-  const more = page.locator('.tahoe-context-more')
+  const more = page.locator('.gnb-chapter-more')
   await more.click()
   await expect(more).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('menuitem', { name: 'Observability' }).click()
@@ -230,12 +243,12 @@ test('normal tier hub preview unlocks operations', async ({ page }) => {
   await expect(page).toHaveURL(/\/platform\/zeus\/security/)
 })
 
-test('mobile jump nav navigates to resources on power tier', async ({ page }) => {
+test('mobile burger nav navigates to resources on power tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
-  const jump = page.getByRole('combobox', { name: 'Navigate platform' })
-  await jump.selectOption('/platform/infrastructure')
+  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.locator('aside[aria-label="Sections"] a[href="/platform/infrastructure"]').click()
   await expect(page).toHaveURL(/\/platform\/infrastructure/)
   await expect(page.getByText('Infrastructure', { exact: true }).first()).toBeVisible({ timeout: 15_000 })
 })
@@ -243,10 +256,10 @@ test('mobile jump nav navigates to resources on power tier', async ({ page }) =>
 test('spotlight lists resources workspaces on power tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
   await expect(
     spotlight.getByRole('button', { name: 'Networks Infrastructure workspace' }),
@@ -256,10 +269,10 @@ test('spotlight lists resources workspaces on power tier', async ({ page }) => {
 test('spotlight lists security workspaces on advanced tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
   await expect(
     spotlight.locator('button').filter({ hasText: 'Policy Studio' }).filter({ hasNotText: /Hub ·/ }),
@@ -269,53 +282,60 @@ test('spotlight lists security workspaces on advanced tier', async ({ page }) =>
 test('spotlight lists zeus workspaces on power tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
   await expect(
     spotlight.locator('button').filter({ hasText: 'Knowledge' }).filter({ hasNotText: /Hub ·/ }),
   ).toBeVisible()
 })
 
-test('mobile jump nav navigates security context on advanced tier', async ({ page }) => {
+test('mobile burger nav navigates security context on advanced tier', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'advanced' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/zeus/security')
-  await expect(page.locator('#platform-mobile-jump')).toBeVisible()
-  const jump = page.getByRole('combobox', { name: 'Navigate platform' })
-  await expect(jump).toHaveValue('/platform/zeus/security')
-  await jump.selectOption({ label: 'Policy Studio' })
+  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.locator('aside[aria-label="Sections"] a[href="/platform/zeus/security/policies"]').click()
   await expect(page).toHaveURL(/\/platform\/zeus\/security\/policies/)
 })
 
-test('normal tier zeus route renders in place without redirect', async ({ page }) => {
+test('normal tier zyra route renders in place without redirect', async ({ page }) => {
   // Tier only shapes dock/sidebar density; gated routes render in place (a8bef254).
+  // The Zeus OS AI hub route is /platform/zyra, not /platform/zeus (that's only a live prefix for
+  // /platform/zeus/security*) — an earlier version of this test 404'd on the wrong URL and the
+  // resulting PlatformNotFound page was misdiagnosed as a hang; see the finding note on
+  // "zyra fleet tab loads without JS crash" in platform-full.spec.ts.
   await mockPlatformApi(page, { tier: 'normal' })
-  await page.goto('/platform/zeus')
-  await expect(page.getByRole('heading', { name: 'Machina Zeus OS' })).toBeVisible({ timeout: 15_000 })
-  await expect(page).toHaveURL(/\/platform\/zeus/)
+  await page.goto('/platform/zyra')
+  await expect(page.getByRole('heading', { name: 'Machina Zyra OS' })).toBeVisible({ timeout: 15_000 })
+  await expect(page).toHaveURL(/\/platform\/zyra/)
 })
 
 test('spotlight hides legacy Pages category on platform desktop', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
   await expect(spotlight.getByText('Pages', { exact: true })).toHaveCount(0)
   await expect(spotlight.getByText('Resources workspace', { exact: true })).toHaveCount(0)
 })
 
 test('Go menu operations navigates without tier bounce on power tier', async ({ page }) => {
+  // The old menubar's "Go" destination menu is gone; spotlight (Ctrl+K) is the live way to jump
+  // straight to a hub, and covers the same "doesn't bounce to a different tier's route" concern.
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  const menubar = page.locator('.mac-menubar-inner')
-  await menubar.getByRole('button', { name: 'Go', exact: true }).click()
-  await page.getByRole('menu', { name: 'Go' }).getByRole('menuitem', { name: 'Operations' }).click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
+  await page.keyboard.press('Control+k')
+  const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
+    has: page.getByPlaceholder('Zyra — search or ask…'),
+  })
+  await spotlight.getByRole('button', { name: /Operations Hub ·/i }).click()
   await expect(page).toHaveURL(/\/platform\/operations/)
 })
 
@@ -331,12 +351,12 @@ test('fleet cloud More menu navigates overflow route', async ({ page }) => {
 test('spotlight platform command shows review before execute', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
-  await spotlight.getByPlaceholder('Zeus — search or ask…').fill('import storage')
+  await spotlight.getByPlaceholder('Zyra — search or ask…').fill('import storage')
   await spotlight.getByRole('button', { name: /Import storage/i }).click()
   await expect(spotlight.getByText('Review command')).toBeVisible()
   await expect(spotlight.getByText(/Discover storage pools/i)).toBeVisible()
@@ -347,12 +367,12 @@ test('spotlight platform command shows review before execute', async ({ page }) 
 test('spotlight import networks command shows review before execute', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder('Zeus — search or ask…'),
+    has: page.getByPlaceholder('Zyra — search or ask…'),
   })
-  await spotlight.getByPlaceholder('Zeus — search or ask…').fill('import networks')
+  await spotlight.getByPlaceholder('Zyra — search or ask…').fill('import networks')
   await spotlight.getByRole('button', { name: /Import networks/i }).click()
   await expect(spotlight.getByText('Review command')).toBeVisible()
   await expect(spotlight.getByText(/Import libvirt networks/i)).toBeVisible()

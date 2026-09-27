@@ -77,7 +77,7 @@ export function PremiumLoginShell({
               {wordmark}
             </p>
             {hostBadge ? (
-              <p className="inline-flex items-center gap-1.5 mt-1 mb-1 px-2.5 py-1 rounded-full text-[11px] font-mono text-zinc-500 bg-zinc-100/80 border border-zinc-200">
+              <p className="login-host-badge inline-flex items-center gap-1.5 mt-1 mb-1 px-2.5 py-1 rounded-full text-[11px] font-mono">
                 {hostBadge}
               </p>
             ) : null}
@@ -113,14 +113,14 @@ export function PremiumLoginShell({
 export function LoginError({ message }: { message: string }) {
   return (
     <div
-      className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3 mb-6 login-shake"
+      className="login-error flex items-start gap-2.5 rounded-xl p-3 mb-6 login-shake"
       role="alert"
       aria-live="assertive"
     >
-      <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" aria-hidden />
+      <AlertCircle className="login-error-icon h-4 w-4 shrink-0 mt-0.5" aria-hidden />
       <div>
-        <p className="text-sm font-medium text-red-700">Unable to sign in</p>
-        <p className="text-sm text-red-600/90 mt-0.5">{message}</p>
+        <p className="login-error-title text-sm font-medium">Unable to sign in</p>
+        <p className="login-error-message text-sm mt-0.5">{message}</p>
       </div>
     </div>
   )

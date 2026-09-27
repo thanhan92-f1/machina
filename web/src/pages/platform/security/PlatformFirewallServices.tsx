@@ -7,6 +7,8 @@ import { getFirewallOverview, getFirewallServices, type AllowedService } from '.
 import { formatUserError } from '../../../utils/apiError'
 import { firewallRiskClass, formatAllowedFrom } from '../../../utils/firewallDisplay'
 import { statusToneClass } from '../../../utils/semanticColors'
+import { useExpandable } from '../../../hooks/useExpandable'
+import { ExpandableToggle } from '../../../components/ui/ExpandableToggle'
 
 type ServiceRow = AllowedService & { target: string; targetId: string; key: string }
 
@@ -62,6 +64,7 @@ export default function PlatformFirewallServices() {
   }, [services, filter])
 
   const criticalCount = services.filter((s) => String(s.status).toLowerCase() === 'critical').length
+  const serviceList = useExpandable(visible, 30)
 
   return (
     <SecurityLensLayout
@@ -100,8 +103,8 @@ export default function PlatformFirewallServices() {
         </div>
         <span className="text-sm text-[var(--text-muted)] self-center">{visible.length} service(s)</span>
       </div>
-      <div className="space-y-2">
-        {visible.map((s) => (
+      <div className="space-y-2" id={serviceList.listId}>
+        {serviceList.shown.map((s) => (
           <article
             key={s.key}
             className="rounded-xl border border-white/[0.08] bg-[var(--apple-surface)] px-4 py-3 flex flex-wrap items-start justify-between gap-3"
@@ -126,6 +129,9 @@ export default function PlatformFirewallServices() {
           </article>
         ))}
       </div>
+      {serviceList.showToggle && (
+        <ExpandableToggle expanded={serviceList.expanded} hidden={serviceList.hidden} listId={serviceList.listId} onToggle={serviceList.toggle} noun="services" />
+      )}
     </SecurityLensLayout>
   )
 }

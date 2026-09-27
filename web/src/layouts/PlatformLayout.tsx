@@ -32,7 +32,7 @@ function PlatformDesktopShell() {
   const [searchParams, setSearchParams] = useSearchParams()
   const isPopout = isCenterPopoutMode(location.search)
   const [wallpaper, setWallpaper] = useState<PlatformWallpaper>(() => loadPlatformWallpaper())
-  const { sidebarVisible, cinemaChromeHidden } = usePlatformMacDesktop()
+  const { sidebarVisible, cinemaChromeHidden, toggleSidebar } = usePlatformMacDesktop()
   const [tier] = usePlatformDesktopTier()
   const { openMissionControl, closeMissionControl } = useMissionControl()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -113,6 +113,22 @@ function PlatformDesktopShell() {
     },
   })
 
+  // The "Machina" dropdown advertises these as ⌘, and ⌘⌥S, but until now neither had a live
+  // accelerator anywhere in the current shell — the only matching keydown handler lived in the
+  // orphaned PlatformMacAppMenus.tsx (unimported since the menubar/dock rewrite).
+  useKeyboardShortcut({
+    key: ',',
+    meta: true,
+    handler: () => navigate('/platform/settings'),
+  })
+
+  useKeyboardShortcut({
+    key: 's',
+    meta: true,
+    alt: true,
+    handler: () => toggleSidebar(),
+  })
+
   useEffect(() => {
     if (!location.pathname.startsWith('/platform')) return
     upsertPlatformDesktopTab({ path: location.pathname, label: platformPageLabel(location.pathname) })
@@ -157,7 +173,10 @@ function PlatformDesktopShell() {
       {contextBarVisible ? <ChapterBar /> : null}
 
       <div className="flex w-full flex-1 items-stretch min-h-0">
-        {sidebarVisible && !hideChrome ? (
+        {/* `sidebarVisible` (⌘⌥S) is a desktop preference; keep rendering on mobileNavOpen too so
+            the burger button (always visible) never opens a drawer for a component that isn't
+            there — hiding the sidebar on desktop must not strand mobile users with no nav at all. */}
+        {(sidebarVisible || mobileNavOpen) && !hideChrome ? (
           <SideNav mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
         ) : null}
         <div className="tahoe-canvas mac-desktop-main flex-1 min-w-0 relative min-h-0">

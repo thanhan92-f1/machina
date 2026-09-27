@@ -17,7 +17,9 @@ test('create vm wizard blocks finish when template not ready', async ({ page }) 
 test('storage pool wizard shows Next through review', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power', emptyStorage: true })
   await page.goto('/platform/storage?tab=pools')
-  await page.getByRole('button', { name: 'Add pool wizard' }).click()
+  // Both the toolbar action and the empty-state's secondary action are labeled "Add pool"
+  // (not "Add pool wizard") and open the same wizard — take the first.
+  await page.getByRole('button', { name: 'Add pool', exact: true }).first().click()
   await expect(page.getByRole('heading', { name: 'Add storage pool' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Next' })).toBeVisible()
   await page.getByRole('button', { name: 'Next' }).click()

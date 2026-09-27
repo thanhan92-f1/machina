@@ -21,6 +21,8 @@ import {
 } from '../../api/zeusSecurity'
 import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses, riskTone, statusToneClass } from '../../utils/semanticColors'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 function LlmBadge({ powered }: { powered?: boolean }) {
   if (!powered) return null
@@ -56,6 +58,8 @@ export default function PlatformThreatHunting() {
   const [structuredQuery, setStructuredQuery] = useState('process.binary:nc')
   const [structuredHostId, setStructuredHostId] = useState('')
   const [searchHits, setSearchHits] = useState<Array<{ summary: string; host_id?: string }>>([])
+  const hitsList = useExpandable(searchHits, 20)
+  const correlationsList = useExpandable(correlations, 20)
   const [searchMeta, setSearchMeta] = useState<{ query: string; llm?: boolean; count?: number; backend?: string } | null>(null)
   const [attackChain, setAttackChain] = useState<string[] | null>(null)
   const [attackSummary, setAttackSummary] = useState<string | null>(null)
@@ -291,8 +295,8 @@ export default function PlatformThreatHunting() {
           </p>
         )}
         {searchHits.length > 0 && (
-          <ul className="mt-2 space-y-1">
-            {searchHits.map((h) => (
+          <ul className="mt-2 space-y-1" id={hitsList.listId}>
+            {hitsList.shown.map((h) => (
               <li key={`${h.host_id}-${h.summary}`} className="text-sm text-[var(--text-secondary)] flex flex-wrap items-center gap-2 justify-between">
                 <span>{h.summary}</span>
                 <EbpfActionMenu
@@ -306,14 +310,17 @@ export default function PlatformThreatHunting() {
             ))}
           </ul>
         )}
+        {hitsList.showToggle && (
+          <ExpandableToggle expanded={hitsList.expanded} hidden={hitsList.hidden} listId={hitsList.listId} onToggle={hitsList.toggle} noun="hits" className="btn-secondary text-sm mt-2" />
+        )}
       </MacGlassPanel>
 
       <SecurityTimelinePanel events={timeline} />
 
       {correlations.length > 0 && (
         <MacGlassPanel title="Threat correlations" subtitle="Rule engine findings">
-          <ul className="text-sm text-[var(--text-secondary)] space-y-2">
-            {correlations.map((c) => {
+          <ul className="text-sm text-[var(--text-secondary)] space-y-2" id={correlationsList.listId}>
+            {correlationsList.shown.map((c) => {
               const enforce = correlationKindToEnforce(String(c.kind ?? ''))
               return (
                 <li key={`${String(c.host_id ?? '')}-${String(c.kind ?? '')}-${String(c.summary ?? '')}`} className="flex flex-wrap items-center justify-between gap-2">
@@ -334,6 +341,9 @@ export default function PlatformThreatHunting() {
               )
             })}
           </ul>
+          {correlationsList.showToggle && (
+            <ExpandableToggle expanded={correlationsList.expanded} hidden={correlationsList.hidden} listId={correlationsList.listId} onToggle={correlationsList.toggle} noun="correlations" className="btn-secondary text-sm mt-2" />
+          )}
         </MacGlassPanel>
       )}
 

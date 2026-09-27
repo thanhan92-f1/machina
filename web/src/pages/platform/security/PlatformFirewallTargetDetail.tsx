@@ -39,6 +39,8 @@ import { useBreadcrumbName } from '../../../contexts/BreadcrumbNameContext'
 import { useToastContext } from '../../../contexts/ToastContext'
 import { formatUserError } from '../../../utils/apiError'
 import { hubLinkClasses, riskTone, statusBadgeClasses, statusPillClasses, statusSurfaceClasses, statusToneClass } from '../../../utils/semanticColors'
+import { useExpandable } from '../../../hooks/useExpandable'
+import { ExpandableToggle } from '../../../components/ui/ExpandableToggle'
 
 type StealthLevel = 'off' | 'standard' | 'strict'
 type PaneId = 'firewall' | 'connections' | 'advanced'
@@ -68,6 +70,8 @@ export default function PlatformFirewallTargetDetail() {
   const [drift, setDrift] = useState<string | null>(null)
   const [timeline, setTimeline] = useState<Array<Record<string, unknown>>>([])
   const [checkpoints, setCheckpoints] = useState<Array<{ id: string; label: string; created_at: string }>>([])
+  const checkpointList = useExpandable(checkpoints, 20)
+  const timelineList = useExpandable(timeline, 20)
   const [aiExplain, setAiExplain] = useState<string | null>(null)
   const [securePlan, setSecurePlan] = useState<string | null>(null)
   const [previewSheet, setPreviewSheet] = useState<{ open: boolean; body: string }>({ open: false, body: '' })
@@ -424,7 +428,8 @@ export default function PlatformFirewallTargetDetail() {
                 )}
                 {checkpoints.length > 0 && (
                   <MacSettingsGroup title="Rollback checkpoints">
-                    {checkpoints.map((c) => (
+                    <div id={checkpointList.listId}>
+                    {checkpointList.shown.map((c) => (
                       <MacListRow
                         key={c.id}
                         title={c.label}
@@ -449,17 +454,24 @@ export default function PlatformFirewallTargetDetail() {
                         }
                       />
                     ))}
+                    </div>
+                    {checkpointList.showToggle && (
+                      <ExpandableToggle expanded={checkpointList.expanded} hidden={checkpointList.hidden} listId={checkpointList.listId} onToggle={checkpointList.toggle} noun="checkpoints" className="btn-secondary text-sm mt-2" />
+                    )}
                   </MacSettingsGroup>
                 )}
                 {timeline.length > 0 && (
                   <MacGlassPanel title="Timeline">
-                    <ul className="space-y-2 text-xs text-[var(--text-muted)]">
-                      {timeline.map((e, i) => (
+                    <ul className="space-y-2 text-xs text-[var(--text-muted)]" id={timelineList.listId}>
+                      {timelineList.shown.map((e, i) => (
                         <li key={`${String(e.created_at)}-${i}`}>
                           {String(e.created_at || '')} — {String(e.summary || e.kind || '')}
                         </li>
                       ))}
                     </ul>
+                    {timelineList.showToggle && (
+                      <ExpandableToggle expanded={timelineList.expanded} hidden={timelineList.hidden} listId={timelineList.listId} onToggle={timelineList.toggle} noun="events" className="btn-secondary text-sm mt-2" />
+                    )}
                   </MacGlassPanel>
                 )}
                 <MacGlassPanel title="Score">

@@ -2,12 +2,6 @@
 
 import { expect, type Page } from '@playwright/test'
 
-async function wakeDock(page: Page) {
-  const vp = page.viewportSize() ?? { width: 1280, height: 900 }
-  await page.mouse.move(vp.width / 2, vp.height - 8)
-  await page.waitForTimeout(350)
-}
-
 /** Invisible full-screen layers that swallow clicks after partial dismiss. */
 export async function assertNoShellClickBlockers(page: Page) {
   await expect(page.locator('.fixed.inset-0.z-40[aria-hidden="true"]')).toHaveCount(0)
@@ -15,12 +9,18 @@ export async function assertNoShellClickBlockers(page: Page) {
   await expect(page.locator('[aria-labelledby="dock-editor-title"]')).toHaveCount(0)
 }
 
-/** Sidebar + dock remain clickable after overlay churn. */
+/**
+ * Both primary navigation surfaces remain clickable after overlay churn: the sidebar
+ * (`aside[aria-label="Sections"]`, off-canvas below 1025px or hidden via "Hide Sidebar") and the
+ * top bar (`nav[aria-label="Primary"]` — a row of buttons that each open a `.gnb-flyout` of links,
+ * not direct links themselves). The Mac dock this used to also exercise is gone by design (see
+ * docs/design/APPLE-UX-CONTRACT.md — "do not reintroduce a dock").
+ */
 export async function assertShellNavResponsive(page: Page) {
   await assertNoShellClickBlockers(page)
 
-  const sidebarLink = page.locator('.platform-sidebar a[href^="/platform"]').first()
-  if (await sidebarLink.count()) {
+  const sidebarLink = page.locator('aside[aria-label="Sections"] a[href^="/platform"]').first()
+  if (await sidebarLink.isVisible().catch(() => false)) {
     const href = await sidebarLink.getAttribute('href')
     await sidebarLink.click()
     if (href) {
@@ -28,18 +28,17 @@ export async function assertShellNavResponsive(page: Page) {
     }
   }
 
-  const dock = page.getByRole('navigation', { name: 'Platform dock' })
-  await wakeDock(page)
-  await dock.scrollIntoViewIfNeeded()
-  const dockLink = dock.getByRole('link').first()
-  await expect(dockLink).toBeVisible()
-  await dockLink.click()
+  const groupButton = page.getByRole('navigation', { name: 'Primary' }).getByRole('button').first()
+  await groupButton.click()
+  const flyoutLink = page.locator('.gnb-flyout-link').first()
+  await expect(flyoutLink).toBeVisible()
+  await flyoutLink.click()
   await expect(page).toHaveURL(/\/platform/)
   await assertNoShellClickBlockers(page)
 }
 
 export async function clickRandomSidebar(page: Page) {
-  const links = page.locator('.platform-sidebar a[href^="/platform"]')
+  const links = page.locator('aside[aria-label="Sections"] a[href^="/platform"]')
   const count = await links.count()
   if (count === 0) return
   const idx = Math.floor(Math.random() * count)

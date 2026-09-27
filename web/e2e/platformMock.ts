@@ -656,6 +656,15 @@ export async function mockPlatformApi(page: Page, opts?: {
   let promptTitle = 'RCA template'
   let storagePools: Array<{ id: string; name: string; path: string; capacity_gib: number; used_gib: number }> =
     opts?.emptyStorage ? [] : [{ id: 'p1', name: 'default', path: '/var/lib/libvirt/images', capacity_gib: 500, used_gib: 12 }]
+  // Classic daemon storage.ts's StoragePoolInfo shape (gb, not gib; allocation/available/state/
+  // autostart) — a distinct type from the platform/controller StoragePool above (`storagePools`),
+  // which api/storage.ts's listPools() (GET /api/v1/storage/pools) never reads. Reusing that
+  // wrongly-shaped variable here used to leave every numeric field undefined, and Storage.tsx's
+  // unguarded .toFixed() calls on them crashed the whole app through AppErrorBoundary.
+  const classicStoragePools = opts?.emptyStorage ? [] : [
+    { name: 'default', uuid: 'a1b2c3d4-0000-0000-0000-000000000001', state: 'running', capacity_gb: 500, allocation_gb: 80, available_gb: 420, autostart: true },
+    { name: 'data', uuid: 'a1b2c3d4-0000-0000-0000-000000000002', state: 'running', capacity_gb: 1000, allocation_gb: 100, available_gb: 900, autostart: false },
+  ]
   let templateReadinessPolls = 0
   await page.addInitScript((t) => {
     localStorage.setItem('zyvor-platform-welcome-done', '1')
@@ -944,13 +953,21 @@ export async function mockPlatformApi(page: Page, opts?: {
     if (url.match(/\/platform\/controller\/api\/v1\/vms(\?|$)/)) {
       return route.fulfill({
         json: [
-          { id: 'v1', name: 'web-01', observed_state: 'running', host_id: 'h1', guest_ip: '192.168.122.10', inventory_source: 'libvirt' },
+          // v1 has no guest_ip so Machine Finder's batch guest-ip lookup (below, keyed off
+          // vmFixture.id === 'v1') actually fires and the fallback hint is genuinely exercised,
+          // instead of the primary guest_ip masking it every time.
+          { id: 'v1', name: 'web-01', observed_state: 'running', host_id: 'h1', guest_ip: null, inventory_source: 'libvirt' },
           { id: 'v2', name: 'db-01', observed_state: 'stopped', host_id: 'h1', guest_ip: '192.168.122.11', inventory_source: 'libvirt' },
         ],
       })
     }
-    if (url.match(/\/platform\/controller\/api\/v1\/networks(\?|$)/)) {
-      return route.fulfill({ json: [{ id: 'n1', name: 'private' }] })
+    if (url.match(/\/platform\/controller\/api\/v1\/networks(\?|$)/) && route.request().method() === 'GET') {
+      // Shares the same PlatformNetwork[] fixture as the '/networks' handler further below (which
+      // this regex-matched, platform/controller-proxied URL never reaches — it's caught here first).
+      // A previous hardcoded `[{ id: 'n1', name: 'private' }]` here lacked `backend`, which crashed
+      // PlatformNetworks.tsx's table row (`t.backend.replace(...)`) on every visit to /platform/networks.
+      // Scoped to GET so the POST-create handler further below still gets a turn.
+      return route.fulfill({ json: opts?.emptyNetworks ? [] : platformNetworks })
     }
     if (url.match(/\/platform\/controller\/api\/v1\/templates(\?|$)/)) {
       return route.fulfill({ json: [{ id: 'i1', name: 'ubuntu-22.04' }] })
@@ -1543,7 +1560,7 @@ export async function mockPlatformApi(page: Page, opts?: {
     if (url.includes('/ai/actions/hub')) {
       return route.fulfill({
         json: {
-          zeus_actions: [
+          zyra_actions: [
             {
               id: 'act-1',
               source: 'nl_ops',
@@ -1564,7 +1581,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         json: [{ id: 'fleet', name: 'Fleet Agent', description: 'Autonomous fleet ops', task_class: 'fleet' }],
       })
     }
-    if (url.includes('/ai/zeus/plan') && route.request().method() === 'POST') {
+    if (url.includes('/ai/zyra/plan') && route.request().method() === 'POST') {
       return route.fulfill({
         json: {
           goal: 'Rebalance idle VMs and clear failed tasks',
@@ -1576,7 +1593,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         },
       })
     }
-    if (url.includes('/ai/zeus/execute') && route.request().method() === 'POST') {
+    if (url.includes('/ai/zyra/execute') && route.request().method() === 'POST') {
       return route.fulfill({ json: { message: 'Queued 2 steps for approval' } })
     }
     if (url.includes('/ai/policy/export')) {
@@ -2149,17 +2166,13 @@ export async function mockPlatformApi(page: Page, opts?: {
     if (url.includes('/networks') && route.request().method() === 'POST') {
       return route.fulfill({ json: { id: 'n2', name: 'vm-net', bridge: 'br0', backend: 'bridge' } })
     }
-    if (url.includes('/networks') && !url.includes('/discover')) {
-      const nets = opts?.emptyNetworks ? [] : platformNetworks
-      return route.fulfill({ json: nets })
-    }
     if (url.includes('/storage/pools/live')) {
       return route.fulfill({
         json: {
           host_id: 'h1',
           pools: [
-            { name: 'default', state: 'active', path: '/var/lib/libvirt/images', capacity_gb: 500, available_gb: 420, autostart: true },
-            { name: 'data', state: 'inactive', path: '/data/libvirt', capacity_gb: 1000, available_gb: 900, autostart: false },
+            { name: 'default', state: 'active', path: '/var/lib/libvirt/images', capacity_gb: 500, allocation_gb: 80, available_gb: 420, autostart: true },
+            { name: 'data', state: 'inactive', path: '/data/libvirt', capacity_gb: 1000, allocation_gb: 100, available_gb: 900, autostart: false },
           ],
         },
       })
@@ -2193,7 +2206,11 @@ export async function mockPlatformApi(page: Page, opts?: {
       })
     }
     if (url.includes('/storage/pools') && !url.includes('/discover')) {
-      return route.fulfill({ json: storagePools })
+      // Both the platform/controller-routed StoragePool[] (api/platformStorage.ts, gib-shaped) and
+      // the classic daemon StoragePoolInfo[] (api/storage.ts, gb-shaped) hit a URL containing
+      // '/storage/pools' — the platform one is routed through PLATFORM_CONTROLLER_PROXY, so that
+      // substring in the URL is what tells the two apart.
+      return route.fulfill({ json: url.includes('/platform/controller/') ? storagePools : classicStoragePools })
     }
     if (url.includes('/enrollment/tokens') && route.request().method() === 'POST') {
       return route.fulfill({

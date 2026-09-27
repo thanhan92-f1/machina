@@ -13,6 +13,8 @@ import {
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import TerminalFrame from '../../components/TerminalFrame'
 import { renderHighlightedJson } from '../../utils/terminalHighlight'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 import {
   applyEnforcementPolicy,
   attachEnforcement,
@@ -56,6 +58,7 @@ export default function PlatformRuntimeEnforcement() {
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<EnforcementStatus | null>(null)
   const [policies, setPolicies] = useState<EnforcementPolicy[]>([])
+  const policyList = useExpandable(policies, 30)
   const [hosts, setHosts] = useState<PlatformHost[]>([])
   const [selectedHosts, setSelectedHosts] = useState<string[]>([])
   const [name, setName] = useState(searchParams.get('name') ?? '')
@@ -300,7 +303,8 @@ export default function PlatformRuntimeEnforcement() {
         {policies.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)] p-3">No policies yet.</p>
         ) : (
-          policies.map((p) => (
+          <div id={policyList.listId}>
+          {policyList.shown.map((p) => (
             <MacListRow
               key={p.id}
               title={p.name}
@@ -331,7 +335,13 @@ export default function PlatformRuntimeEnforcement() {
                 </div>
               }
             />
-          ))
+          ))}
+          </div>
+        )}
+        {policyList.showToggle && (
+          <div className="p-3 pt-0">
+            <ExpandableToggle expanded={policyList.expanded} hidden={policyList.hidden} listId={policyList.listId} onToggle={policyList.toggle} noun="policies" />
+          </div>
         )}
       </MacGlassPanel>
 

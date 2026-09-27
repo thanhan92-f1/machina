@@ -17,6 +17,8 @@ import {
 } from '../api/nativeVolumes'
 import { listVms, type NativeVm } from '../api/nativeVms'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useExpandable } from '../hooks/useExpandable'
+import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -77,6 +79,7 @@ function FleetCloudVolumesContent() {
   }, [load])
 
   const allSnapshots = Object.values(snapshotsByVol).flat()
+  const snapshotList = useExpandable(allSnapshots, 20)
 
   const filteredVolumes = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -88,6 +91,7 @@ function FleetCloudVolumesContent() {
         (v.attached_vm_id?.toLowerCase().includes(q) ?? false),
     )
   }, [volumes, search])
+  const volumeList = useExpandable(filteredVolumes, 40)
 
   const handleCreate = async () => {
     if (creating) return
@@ -216,7 +220,7 @@ function FleetCloudVolumesContent() {
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id={volumeList.listId}>
                 {filteredVolumes.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center text-[var(--text-muted)]">
@@ -224,7 +228,7 @@ function FleetCloudVolumesContent() {
                     </td>
                   </tr>
                 )}
-                {filteredVolumes.map((v) => (
+                {volumeList.shown.map((v) => (
                   <tr key={v.id}>
                     <td className="font-mono text-[var(--text-primary)]">
                       <Link to={`/fleet-cloud/volumes/${v.id}`} className="apple-link hover:opacity-90">
@@ -291,6 +295,9 @@ function FleetCloudVolumesContent() {
               </tbody>
             </table>
           </TahoeTableWrap>
+          {volumeList.showToggle && (
+            <ExpandableToggle expanded={volumeList.expanded} hidden={volumeList.hidden} listId={volumeList.listId} onToggle={volumeList.toggle} noun="volumes" className="btn-secondary text-sm mt-2" />
+          )}
 
           {allSnapshots.length > 0 && (
             <>
@@ -307,8 +314,8 @@ function FleetCloudVolumesContent() {
                       <th scope="col">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="font-mono text-xs">
-                    {allSnapshots.map((s) => (
+                  <tbody className="font-mono text-xs" id={snapshotList.listId}>
+                    {snapshotList.shown.map((s) => (
                       <tr key={s.id}>
                         <td className="text-[var(--text-primary)]">{s.name}</td>
                         <td className="text-[var(--text-muted)]">{s.volume_id.slice(0, 8)}</td>
@@ -327,6 +334,9 @@ function FleetCloudVolumesContent() {
                   </tbody>
                 </table>
               </TahoeTableWrap>
+              {snapshotList.showToggle && (
+                <ExpandableToggle expanded={snapshotList.expanded} hidden={snapshotList.hidden} listId={snapshotList.listId} onToggle={snapshotList.toggle} noun="snapshots" className="btn-secondary text-sm mt-2" />
+              )}
             </>
           )}
         </>

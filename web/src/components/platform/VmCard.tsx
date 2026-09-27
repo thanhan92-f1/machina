@@ -26,7 +26,7 @@ export default function VmCard({ vm, hostLabel, cpuPercent, memoryUsedMib, dragg
           <Monitor className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--text-primary)]">{vm.name}</h3>
+          <h2 className="font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--text-primary)]">{vm.name}</h2>
           <div className="mt-1">
             <VmStatusBadge state={vm.observed_state || vm.desired_state} />
           </div>

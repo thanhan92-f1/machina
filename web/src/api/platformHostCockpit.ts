@@ -1,6 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { platformFetch } from './platform'
+import { formatHttpErrorBody } from '../utils/apiError'
 
 const API = '/api/v1'
 
@@ -96,7 +97,7 @@ export const getClassicHostCockpitInventory = async (
 ): Promise<HostCockpitInventory> => {
   const q = section && section !== 'all' ? `?section=${section}` : ''
   const res = await fetch(`${API}/host/cockpit${q}`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(formatHttpErrorBody(res.status, res.statusText, await res.text()))
   const body = await res.json()
   return { host_id: 'local', ...body }
 }
@@ -111,7 +112,7 @@ export const runClassicHostCockpitAction = async (
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, payload }),
   })
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(formatHttpErrorBody(res.status, res.statusText, await res.text()))
   return res.json() as Promise<{ status?: string; message?: string }>
 }
 

@@ -30,10 +30,10 @@ export default function HostFleetCard({ host, linux, selected, onSelect }: Props
     >
       <header className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+          <h2 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
             <Server className="w-4 h-4 text-[var(--link)]" />
             {host.hostname}
-          </h3>
+          </h2>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">Libvirt host · {linux?.status ?? 'Linux ok'}</p>
         </div>
         <span className={statusPillClasses(online && !linuxPressure ? 'ok' : 'warn')}>

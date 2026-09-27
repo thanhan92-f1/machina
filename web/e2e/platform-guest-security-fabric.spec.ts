@@ -21,9 +21,11 @@ test('snapshots quiesce shows fs-freeze polling banner', async ({ page }) => {
 
 test('machine security enforcement tab shows host policies', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/machines/h1')
+  await page.goto('/platform/zyra/machines/h1')
   await expect(page.getByRole('heading', { name: 'Machine security' })).toBeVisible({ timeout: 15_000 })
-  await page.getByRole('tablist').getByRole('button', { name: 'More' }).click()
+  // The "More" overflow button is a sibling of the tab strip's role="tablist", not a descendant of
+  // it (DetailTabs.tsx) — scope to the sticky tab-strip container instead.
+  await page.locator('#platform-detail-tabs').getByRole('button', { name: 'More' }).click()
   await page.getByRole('menuitem', { name: 'Enforcement' }).click()
   await expect(page.getByText('Block reverse-shell listeners').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Fleet policies')).toBeVisible({ timeout: 10_000 })
@@ -32,7 +34,7 @@ test('machine security enforcement tab shows host policies', async ({ page }) =>
 
 test('runtime enforcement lists new policy kinds', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/security/enforcement')
+  await page.goto('/platform/zyra/security/enforcement')
   await expect(page.getByText('Block shadow file read')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Block raw socket capability')).toBeVisible()
 })

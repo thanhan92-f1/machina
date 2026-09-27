@@ -38,9 +38,12 @@ test.describe('platform admin UX', () => {
   })
 
   test('/platform/projects shows spaces briefing', async ({ page }) => {
+    // "Spaces strip" was the title of a MacGlassPanel that no longer exists — the page dropped it
+    // in the shell rewrite and now shows the summary line + stats directly in PlatformPageChrome's
+    // subtitle (see PlatformProjects.tsx), with the table beneath.
     await page.goto('/platform/projects')
     await expect(page.getByTestId('platform-projects-page')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText('Spaces strip')).toBeVisible()
+    await expect(page.getByText('1 space · 2 VMs')).toBeVisible()
     await expect(page.getByRole('table').getByText('default')).toBeVisible()
   })
 })

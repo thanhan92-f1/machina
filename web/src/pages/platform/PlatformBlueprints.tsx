@@ -117,6 +117,7 @@ export default function PlatformBlueprints() {
       {tab === 'launchpad' && (
         <>
           <AppleStoryHeader
+            as="h2"
             eyebrow="Launchpad"
             title="Shortcuts"
             lede="Run automation across VM sets — each shortcut queues tasks per machine."

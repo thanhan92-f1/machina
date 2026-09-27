@@ -35,7 +35,7 @@ function VmGalleryTile({ vm }: { vm: PlatformVm }) {
         </div>
       </div>
       <div className="p-3 space-y-2">
-        <h3 className="font-semibold text-sm text-[var(--text-primary)] truncate">{vm.name}</h3>
+        <h2 className="font-semibold text-sm text-[var(--text-primary)] truncate">{vm.name}</h2>
         {vm.guest_ip ? <p className="text-[11px] font-mono text-emerald-600/80 truncate">{vm.guest_ip}</p> : null}
         <div className="flex flex-wrap gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
           <Link to={cinemaHubPath(vm.id)} className="btn-primary text-xs py-1 px-2 inline-flex items-center gap-1 flex-1 justify-center">

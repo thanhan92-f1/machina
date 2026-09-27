@@ -48,7 +48,7 @@ test('Activity Monitor loads fleet summary', async ({ page }) => {
 
 test('Threat hunting workspace loads saved queries', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/security/hunt')
+  await page.goto('/platform/zyra/security/hunt')
   await expect(page.getByRole('heading', { name: 'Threat hunting' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('button', { name: 'Reverse shell listeners' })).toBeVisible({ timeout: 15_000 })
 })

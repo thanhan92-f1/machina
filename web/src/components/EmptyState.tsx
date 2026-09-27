@@ -25,7 +25,7 @@ export default function EmptyState({
   return (
     <div className={`apple-empty ${className}`}>
       {icon ? <div className="apple-empty-icon">{icon}</div> : null}
-      <h3 className="apple-empty-title">{title}</h3>
+      <h2 className="apple-empty-title">{title}</h2>
       {description ? <p className="apple-empty-copy">{description}</p> : null}
       {(primaryAction || secondaryAction) ? (
         <div className="apple-cta-row justify-center mt-8">

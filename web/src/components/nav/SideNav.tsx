@@ -1,6 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { Compass, LayoutGrid, Settings, type LucideIcon } from 'lucide-react'
 import { getFleetFinder } from '../../api/platform'
@@ -101,7 +101,16 @@ export default function SideNav({ mobileOpen, onCloseMobile }: { mobileOpen: boo
       .catch(() => setVmsNeedAttention(0))
   }, [])
 
+  // Skip the first run: this effect closes the drawer on navigation, but SideNav can now mount
+  // *because* the mobile drawer just opened (PlatformLayout renders it on `mobileNavOpen` even
+  // when the desktop "hide sidebar" preference is on) — without this guard, that initial mount
+  // immediately called onCloseMobile() and closed the drawer it had just opened.
+  const skippedFirstPathEffect = useRef(false)
   useEffect(() => {
+    if (!skippedFirstPathEffect.current) {
+      skippedFirstPathEffect.current = true
+      return
+    }
     onCloseMobile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])

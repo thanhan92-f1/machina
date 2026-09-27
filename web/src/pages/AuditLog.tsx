@@ -11,6 +11,8 @@ import { downloadJSON, downloadCSV } from '../utils/export'
 import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
 import PageLayout from '../components/PageLayout'
+import { useExpandable } from '../hooks/useExpandable'
+import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 
 export default function AuditLogPage() {
   const [events, setEvents] = useState<AuditEvent[]>([])
@@ -21,6 +23,9 @@ export default function AuditLogPage() {
   const [qInp, setQInp] = useState('')
   const toast = useToastContext()
   const { t } = useTranslation()
+  // Server-filtered but not paginated (limit: 8000 below); render a page at a time instead of
+  // up to 8000 rows at once.
+  const { shown: shownEvents, hidden, expanded, toggle, listId, showToggle } = useExpandable(events, 100)
   // Last-response-wins: a slow response for a previous filter combination
   // can't overwrite the results of a filter change made after it.
   const loadSeq = useRef(0)
@@ -144,8 +149,8 @@ export default function AuditLogPage() {
         <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden overflow-x-auto">
           <table className="w-full min-w-[56rem]" aria-label="Audit log">
             <thead><tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]"><th scope="col" className="px-6 py-3">Time</th><th scope="col" className="px-6 py-3">Action</th><th scope="col" className="px-6 py-3">Target</th><th scope="col" className="px-6 py-3">Actor</th><th scope="col" className="px-6 py-3">Result</th></tr></thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-              {events.map((e) => (
+            <tbody id={listId} className="divide-y divide-[var(--apple-hairline)]/30">
+              {shownEvents.map((e) => (
                 <tr key={`${e.timestamp}-${e.action}-${e.target}`} className="table-row-hover">
                   <td className="px-6 py-2 text-xs text-[var(--text-muted)] font-mono whitespace-nowrap">{e.timestamp}</td>
                   <td className="px-6 py-2 text-sm font-medium">{e.action}</td>
@@ -162,6 +167,11 @@ export default function AuditLogPage() {
               {events.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-[var(--text-muted)]">No audit events match these filters</td></tr>}
             </tbody>
           </table>
+          {showToggle && (
+            <div className="px-6 py-3 border-t border-[var(--apple-hairline)]">
+              <ExpandableToggle expanded={expanded} hidden={hidden} listId={listId} onToggle={toggle} noun="events" />
+            </div>
+          )}
         </div>
       )}
     </PageLayout>

@@ -126,7 +126,7 @@ export default function VmConsoleHeroPreview({
           <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden />
           {stateLabel}
         </span>
-        <h1 className="apple-display mt-4">{vmName}</h1>
+        <h2 className="apple-display mt-4">{vmName}</h2>
         <p className="apple-lede mt-2 max-w-2xl">{lede}</p>
         <div className="apple-cta-row">
           <Link

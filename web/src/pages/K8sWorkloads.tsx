@@ -52,6 +52,8 @@ import PageSkeleton from '../components/PageSkeleton'
 import JsonInspector, { asArray, asRecord } from '../components/platform/JsonInspector'
 import { formatUserError } from '../utils/apiError'
 import { statusBadgeClasses, statusPillClasses, statusToneClass } from '../utils/semanticColors'
+import { useExpandable } from '../hooks/useExpandable'
+import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 
 export default function K8sWorkloadsPage() {
   const toast = useToastContext()
@@ -127,6 +129,12 @@ spec:
   const [statefulsets, setStatefulsets] = useState<K8sDeployment[]>([])
   const [daemonsets, setDaemonsets] = useState<K8sDeployment[]>([])
   const [jobs, setJobs] = useState<K8sMetadataName[]>([])
+  const deploymentList = useExpandable(deployments, 40)
+  const podList = useExpandable(pods, 50)
+  const statefulsetList = useExpandable(statefulsets, 40)
+  const daemonsetList = useExpandable(daemonsets, 40)
+  const jobList = useExpandable(jobs, 40)
+  const kubevirtRowList = useExpandable(kubevirtRows, 40)
   const [eventsText, setEventsText] = useState('')
   const [eventsItems, setEventsItems] = useState<unknown[]>([])
   const [logPod, setLogPod] = useState('')
@@ -424,7 +432,7 @@ spec:
                 <th scope="col" className="text-center px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={deploymentList.listId}>
               {deployments.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8">
@@ -436,7 +444,7 @@ spec:
                   </td>
                 </tr>
               )}
-              {deployments.map((d) => {
+              {deploymentList.shown.map((d) => {
                 const key = `${d.metadata.namespace || 'default'}/${d.metadata.name}`
                 const replicaCurrent = d.spec?.replicas ?? 1
                 const scale = scaleValue[key] ?? replicaCurrent
@@ -487,6 +495,11 @@ spec:
               })}
             </tbody>
           </table>
+          {deploymentList.showToggle && (
+            <div className="p-3 border-t border-[var(--apple-hairline)]">
+              <ExpandableToggle expanded={deploymentList.expanded} hidden={deploymentList.hidden} listId={deploymentList.listId} onToggle={deploymentList.toggle} noun="deployments" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -496,8 +509,8 @@ spec:
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="StatefulSets">
               <thead><tr className="text-[var(--text-muted)] text-xs border-b border-[var(--apple-hairline)]"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
-              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-                {statefulsets.map((d) => {
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={statefulsetList.listId}>
+                {statefulsetList.shown.map((d) => {
                   const key = `${d.metadata?.namespace || 'default'}/${d.metadata?.name}`
                   return (
                     <tr key={key} className="hover:bg-[var(--surface-hover)]/20">
@@ -511,6 +524,11 @@ spec:
                 })}
               </tbody>
             </table>
+            {statefulsetList.showToggle && (
+              <div className="p-3 border-t border-[var(--apple-hairline)]">
+                <ExpandableToggle expanded={statefulsetList.expanded} hidden={statefulsetList.hidden} listId={statefulsetList.listId} onToggle={statefulsetList.toggle} noun="statefulsets" />
+              </div>
+            )}
           </div>
         </div>
         <div className="tahoe-glass-card overflow-hidden">
@@ -518,8 +536,8 @@ spec:
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
             <table className="w-full text-sm" aria-label="DaemonSets">
               <thead><tr className="text-[var(--text-muted)] text-xs border-b border-[var(--apple-hairline)]"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
-              <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-                {daemonsets.map((d) => {
+              <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={daemonsetList.listId}>
+                {daemonsetList.shown.map((d) => {
                   const key = `${d.metadata?.namespace || 'default'}/${d.metadata?.name}`
                   return (
                     <tr key={key} className="hover:bg-[var(--surface-hover)]/20">
@@ -533,6 +551,11 @@ spec:
                 })}
               </tbody>
             </table>
+            {daemonsetList.showToggle && (
+              <div className="p-3 border-t border-[var(--apple-hairline)]">
+                <ExpandableToggle expanded={daemonsetList.expanded} hidden={daemonsetList.hidden} listId={daemonsetList.listId} onToggle={daemonsetList.toggle} noun="daemonsets" />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -542,8 +565,8 @@ spec:
         <div className="overflow-x-auto max-h-56 overflow-y-auto">
           <table className="w-full text-sm" aria-label="Jobs">
             <thead><tr className="text-[var(--text-muted)] text-xs border-b border-[var(--apple-hairline)]"><th scope="col" className="text-left px-3 py-2">Name</th><th scope="col" className="text-left px-3 py-2">NS</th><th scope="col" className="text-right px-3 py-2">Action</th></tr></thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-              {jobs.map((j) => {
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={jobList.listId}>
+              {jobList.shown.map((j) => {
                 const n = j.metadata?.name ?? ''
                 const ns = j.metadata?.namespace || 'default'
                 const key = `${ns}/${n}`
@@ -559,6 +582,11 @@ spec:
               })}
             </tbody>
           </table>
+          {jobList.showToggle && (
+            <div className="p-3 border-t border-[var(--apple-hairline)]">
+              <ExpandableToggle expanded={jobList.expanded} hidden={jobList.hidden} listId={jobList.listId} onToggle={jobList.toggle} noun="jobs" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -774,8 +802,8 @@ spec:
                 <th scope="col" className="text-center px-4 py-3">Lifecycle</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-              {kubevirtRows.map((v) => {
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={kubevirtRowList.listId}>
+              {kubevirtRowList.shown.map((v) => {
                 const key = `${v.namespace}/${v.name}`
                 const runState =
                   v.spec_running === true ? 'on'
@@ -905,6 +933,11 @@ spec:
               })}
             </tbody>
           </table>
+        {kubevirtRowList.showToggle && (
+          <div className="p-3 border-t border-[var(--apple-hairline)]">
+            <ExpandableToggle expanded={kubevirtRowList.expanded} hidden={kubevirtRowList.hidden} listId={kubevirtRowList.listId} onToggle={kubevirtRowList.toggle} noun="VMs" />
+          </div>
+        )}
         </div>
         {kubevirtRows.length === 0 && !kubevirtListError && (
           <div className="p-6 text-center text-[var(--text-muted)] text-sm">No KubeVirt VirtualMachines in scope (or CRD not installed).</div>
@@ -933,7 +966,7 @@ spec:
                 <th scope="col" className="text-center px-4 py-3">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/30">
+            <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={podList.listId}>
               {pods.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8">
@@ -945,7 +978,7 @@ spec:
                   </td>
                 </tr>
               )}
-              {pods.map((p) => (
+              {podList.shown.map((p) => (
                 <tr key={`${p.metadata.namespace || 'default'}/${p.metadata?.name ?? ''}`} className="hover:bg-[var(--surface-hover)]/30">
                   <td className="px-4 py-3 text-[var(--text-primary)] font-medium">{p.metadata?.name ?? '—'}</td>
                   <td className="px-4 py-3 text-[var(--text-secondary)]">{p.metadata.namespace || 'default'}</td>
@@ -973,6 +1006,11 @@ spec:
               ))}
             </tbody>
           </table>
+        {podList.showToggle && (
+          <div className="p-3 border-t border-[var(--apple-hairline)]">
+            <ExpandableToggle expanded={podList.expanded} hidden={podList.hidden} listId={podList.listId} onToggle={podList.toggle} noun="pods" />
+          </div>
+        )}
         </div>
       </div>
 

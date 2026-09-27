@@ -11,6 +11,8 @@ import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../
 import { getFleetActivity, type FleetActivityOverview } from '../../api/platform'
 import { formatUserError } from '../../utils/apiError'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusToneClass, taskStatusTone, utilizationBarClass, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 const ACTIVITY_TABS = ['vms', 'hosts'] as const
 type Tab = (typeof ACTIVITY_TABS)[number]
@@ -37,6 +39,8 @@ export default function PlatformActivityMonitor() {
   const [data, setData] = useState<FleetActivityOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const vmList = useExpandable(data?.top_vms ?? [], 20)
+  const hostList = useExpandable(data?.hosts ?? [], 20)
 
   const load = useCallback(async () => {
     setError(null)
@@ -85,8 +89,8 @@ export default function PlatformActivityMonitor() {
 
       {!loading && tab === 'vms' && (
         data?.top_vms.length ? (
-          <ul className="space-y-2">
-            {data.top_vms.map((vm) => {
+          <ul className="space-y-2" id={vmList.listId}>
+            {vmList.shown.map((vm) => {
               // Per-VM utilization (used / this VM's own allocation) — matches
               // the "used / total MiB" text beside the bar. Previously divided by
               // the fleet's peak VM, so the bar contradicted its own label.
@@ -109,11 +113,15 @@ export default function PlatformActivityMonitor() {
           <PlatformEmptyState title="No running VMs" subtitle="Start a VM to see live CPU and memory usage." />
         )
       )}
+      {!loading && tab === 'vms' && vmList.showToggle && (
+        <ExpandableToggle expanded={vmList.expanded} hidden={vmList.hidden} listId={vmList.listId} onToggle={vmList.toggle} noun="VMs" />
+      )}
 
       {!loading && tab === 'hosts' && (
         data?.hosts.length ? (
           <MacGlassPanel title="Hypervisor hosts" subtitle="Inventory CPU/memory + Linux PSI when agent online">
-            {data.hosts.map((h) => (
+            <div id={hostList.listId}>
+            {hostList.shown.map((h) => (
               <div key={h.host_id} className="py-3 border-b border-white/[0.04] last:border-0">
                 <MacListRow
                   title={h.hostname}
@@ -135,6 +143,12 @@ export default function PlatformActivityMonitor() {
                 </div>
               </div>
             ))}
+            </div>
+            {hostList.showToggle && (
+              <div className="pt-3">
+                <ExpandableToggle expanded={hostList.expanded} hidden={hostList.hidden} listId={hostList.listId} onToggle={hostList.toggle} noun="hosts" />
+              </div>
+            )}
           </MacGlassPanel>
         ) : (
           <PlatformEmptyState title="No hosts" subtitle="Enroll hypervisors to monitor fleet activity." />

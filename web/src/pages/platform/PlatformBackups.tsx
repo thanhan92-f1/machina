@@ -28,6 +28,8 @@ import {
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 function dayLabel(iso: string) {
   const d = new Date(iso)
@@ -103,15 +105,20 @@ export default function PlatformBackups() {
 
   useEffect(() => { void load() }, [load])
 
+  // Capped before grouping, not after — capping per-day groups would need a second, nested
+  // "show more" per day; timeline entries already arrive newest-first, so this is just "show the
+  // N most recent events" the same way it would read without grouping.
+  const timelineList = useExpandable(timeline, 40)
+
   const grouped = useMemo(() => {
     const map = new Map<string, BackupTimelineEntry[]>()
-    for (const e of timeline) {
+    for (const e of timelineList.shown) {
       const key = dayLabel(e.created_at)
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(e)
     }
     return [...map.entries()]
-  }, [timeline])
+  }, [timelineList.shown])
 
   const restore = async (entry: BackupTimelineEntry) => {
     if (entry.kind !== 'backup' || entry.status !== 'completed') return
@@ -308,7 +315,7 @@ export default function PlatformBackups() {
             Need per-VM legacy jobs? <Link to="/backups" className={hubLinkClasses()}>Open classic backups UI →</Link>
           </p>
           {fleet?.summary ? <p className="text-sm text-[var(--text-muted)]">{fleet.summary}</p> : null}
-          <div className="space-y-6">
+          <div className="space-y-6" id={timelineList.listId}>
             {grouped.length === 0 && !error && (
               <PlatformEmptyState icon={Archive} title="No backup events yet" subtitle="Create backups from VM detail pages or run fleet backup jobs.">
                 <Link to="/platform/vms" className="tahoe-btn-ghost text-sm">Browse VMs</Link>
@@ -348,6 +355,9 @@ export default function PlatformBackups() {
               </section>
             ))}
           </div>
+          {timelineList.showToggle && (
+            <ExpandableToggle expanded={timelineList.expanded} hidden={timelineList.hidden} listId={timelineList.listId} onToggle={timelineList.toggle} noun="events" />
+          )}
         </>
       )}
       <MacGlassPanel title="Per-VM backups" subtitle="Full backup history and restore live on each VM detail page.">

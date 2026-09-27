@@ -21,11 +21,14 @@ import {
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import { statusToneClass, webhookDeliveryTone } from '../../utils/semanticColors'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = {}) {
   const toast = useToastContext()
   const [rows, setRows] = useState<WebhookRow[]>([])
   const [deliveries, setDeliveries] = useState<WebhookDeliveryRow[]>([])
+  const deliveryList = useExpandable(deliveries, 30)
   const [deliveryFilter, setDeliveryFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -203,8 +206,8 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
               subtitle="Deliveries appear after fleet events trigger your webhook endpoints."
             />
           ) : (
-            <ul className="space-y-2 text-xs">
-              {deliveries.map((d) => (
+            <ul className="space-y-2 text-xs" id={deliveryList.listId}>
+              {deliveryList.shown.map((d) => (
                 <li key={d.id} className="border-b border-white/[0.04] pb-2 text-[var(--text-muted)]">
                   <div className="flex justify-between gap-2">
                     <span>{d.event_kind} → {d.url}</span>
@@ -221,6 +224,9 @@ export default function PlatformWebhooks({ embedded }: { embedded?: boolean } = 
                 </li>
               ))}
             </ul>
+          )}
+          {deliveryList.showToggle && (
+            <ExpandableToggle expanded={deliveryList.expanded} hidden={deliveryList.hidden} listId={deliveryList.listId} onToggle={deliveryList.toggle} noun="deliveries" className="btn-secondary text-sm mt-2" />
           )}
         </MacGlassPanel>
       </OperatingSurfaceLayout>

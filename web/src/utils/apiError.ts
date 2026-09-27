@@ -22,9 +22,26 @@ export function friendlyErrorCode(code: string): string {
   return API_ERROR_LABELS[code] ?? code.replace(/_/g, ' ')
 }
 
+/**
+ * The daemon and controller answer failures as `{"error":"…"}` (or `{"message":"…"}`). When such an
+ * envelope reaches the UI as an Error message (e.g. a caller threw `await res.text()`), show the
+ * message, not the JSON. Anything that is not a recognisable envelope is returned unchanged.
+ */
+export function unwrapJsonEnvelope(text: string): string {
+  const t = text.trim()
+  if (!t.startsWith('{')) return text
+  try {
+    const j = JSON.parse(t) as { error?: unknown; message?: unknown }
+    const msg = typeof j.error === 'string' ? j.error : typeof j.message === 'string' ? j.message : ''
+    return msg.trim() ? msg.trim() : text
+  } catch {
+    return text
+  }
+}
+
 /** Strip HTML pages and trim noisy API text for UI display. */
 export function sanitizeErrorText(text: string): string {
-  const t = text.trim()
+  const t = unwrapJsonEnvelope(text).trim()
   if (!t) return ''
 
   if (/<!DOCTYPE\s+html/i.test(t) || /<html[\s>]/i.test(t) || t.includes('</html>')) {

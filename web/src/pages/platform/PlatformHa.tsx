@@ -120,7 +120,7 @@ export default function PlatformHa() {
                     <button
                       onClick={() => setPendingFence({ id: h.id, hostname: h.hostname })}
                       disabled={fencing === h.id}
-                      className="px-3 py-1 text-xs rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 disabled:opacity-50"
+                      className="px-3 py-1 text-xs rounded-md bg-[var(--nl-status-danger-bg)] text-[var(--nl-accent-red-text)] hover:opacity-80 disabled:opacity-50"
                     >
                       {fencing === h.id ? (
                         <RefreshCw className="w-3 h-3 animate-spin inline" />

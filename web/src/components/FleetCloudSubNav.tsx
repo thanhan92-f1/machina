@@ -40,7 +40,7 @@ function tabActive(pathname: string, tab: Tab): boolean {
 }
 
 function pillClass(active: boolean): string {
-  return `inline-flex items-center rounded-full px-3.5 py-1.5 text-[13px] font-medium tracking-tight transition-colors ${
+  return `inline-flex items-center min-h-9 rounded-full px-3.5 py-1.5 text-[13px] font-medium tracking-tight transition-colors ${
     active
       ? 'bg-[var(--accent)] text-[var(--text-on-accent,#fff)]'
       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover,rgba(16,20,28,0.05))]'
@@ -63,10 +63,10 @@ export default function FleetCloudSubNav() {
     <div className="mb-8 space-y-4">
       {Boolean(info?.control_plane?.proxy_url) && (
         <div className="flex flex-wrap items-center gap-6 text-[15px]">
-          <Link to="/platform" className="apple-link">
+          <Link to="/platform" className="apple-link inline-flex items-center min-h-9">
             Platform
           </Link>
-          <Link to="/platform/settings?section=integrations" className="apple-link">
+          <Link to="/platform/settings?section=integrations" className="apple-link inline-flex items-center min-h-9">
             Integrations
           </Link>
         </div>

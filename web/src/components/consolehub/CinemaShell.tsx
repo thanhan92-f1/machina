@@ -129,7 +129,10 @@ export default function CinemaShell({
         </button>
         <span className="text-[var(--text-muted)]">Machina Cinema</span>
         <span className={`w-2 h-2 rounded-full ${tone === 'ok' ? 'bg-emerald-400' : tone === 'warn' ? 'bg-amber-400' : 'bg-slate-500'}`} />
-        <span className="font-semibold text-[var(--text-primary)] truncate">{vmName}</span>
+        {/* This header is fixed-dark chrome (bg-[#030305]) in both themes, so it needs a fixed
+            light ink, not the theme-switching --text-primary (which is near-black in light theme
+            and was ~1.2:1 here). */}
+        <span className="font-semibold text-white truncate">{vmName}</span>
         {vmState ? <span className={`px-2 py-0.5 rounded-full capitalize ${statusBadgeClasses(tone)}`}>{vmState}</span> : null}
         {guestIp ? <span className="font-mono text-emerald-300/90 hidden sm:inline">{guestIp}</span> : null}
         {nodeName ? <span className="text-[var(--text-muted)] hidden md:inline">Node {nodeName}</span> : null}

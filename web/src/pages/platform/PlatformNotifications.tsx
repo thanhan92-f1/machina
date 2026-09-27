@@ -15,6 +15,8 @@ import { formatUserError } from '../../utils/apiError'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
 import type { PlatformDesktopTier } from '../../utils/platformDesktopTier'
 import { tasksHubHref } from '../../utils/platformHubLinks'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 function actionForKind(
   kind: string,
@@ -54,6 +56,7 @@ export default function PlatformNotifications() {
   useEffect(() => { void load() }, [load])
 
   const unread = rows.filter((n) => !n.delivered).length
+  const list = useExpandable(rows, 20)
 
   return (
     <PlatformPageChrome
@@ -98,8 +101,8 @@ export default function PlatformNotifications() {
           <Bell className="w-8 h-8 text-[var(--text-faint)] mx-auto mt-2" />
         </PlatformEmptyState>
       ) : (
-        <ul className="space-y-3">
-          {rows.map((n) => {
+        <ul id={list.listId} className="space-y-3">
+          {list.shown.map((n) => {
             const act = actionForKind(n.kind, n.payload, tier)
             // Most notification producers set `payload.message`, but SOC
             // detection alerts (engine/soc/detection.rs) and PacketWolf
@@ -149,6 +152,9 @@ export default function PlatformNotifications() {
             )
           })}
         </ul>
+      )}
+      {list.showToggle && (
+        <ExpandableToggle expanded={list.expanded} hidden={list.hidden} listId={list.listId} onToggle={list.toggle} noun="alerts" />
       )}
       {runbook && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50" onClick={() => setRunbook(null)}>
