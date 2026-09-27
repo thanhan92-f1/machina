@@ -439,7 +439,12 @@ export default function PlatformStorage() {
                     const pct = capacityRing(p.used_gib, p.capacity_gib)
                     return (
                       <tr key={p.id} data-testid={`storage-pool-${p.name}`}>
-                        <td className="font-medium">{p.name}</td>
+                        <td className="font-medium">
+                          {p.name}
+                          {snapshotPolicies[p.id] && (
+                            <p className="text-[10px] font-normal text-[var(--text-muted)]">{snapshotPolicies[p.id].summary}</p>
+                          )}
+                        </td>
                         <td className="capitalize text-[var(--text-muted)]">{p.storage_class} · {p.backend}</td>
                         <td>{p.used_gib} GiB</td>
                         <td>{p.capacity_gib || '—'} GiB ({pct}%)</td>
@@ -483,6 +488,14 @@ export default function PlatformStorage() {
                               {expandedPoolId === p.id ? 'Hide vols' : 'Volumes'}
                             </button>
                             <button type="button" className="btn-danger text-[10px]" onClick={() => setConfirmPoolId(p.id)}>Remove</button>
+                            <button
+                              type="button"
+                              className="btn-secondary text-[10px]"
+                              disabled={snapshotPolicyLoading === p.id}
+                              onClick={() => void loadSnapshotPolicy(p.id)}
+                            >
+                              {snapshotPolicyLoading === p.id ? 'Loading…' : 'Snapshot policy'}
+                            </button>
                           </div>
                         </td>
                       </tr>

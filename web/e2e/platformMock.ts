@@ -953,13 +953,21 @@ export async function mockPlatformApi(page: Page, opts?: {
     if (url.match(/\/platform\/controller\/api\/v1\/vms(\?|$)/)) {
       return route.fulfill({
         json: [
-          { id: 'v1', name: 'web-01', observed_state: 'running', host_id: 'h1', guest_ip: '192.168.122.10', inventory_source: 'libvirt' },
+          // v1 has no guest_ip so Machine Finder's batch guest-ip lookup (below, keyed off
+          // vmFixture.id === 'v1') actually fires and the fallback hint is genuinely exercised,
+          // instead of the primary guest_ip masking it every time.
+          { id: 'v1', name: 'web-01', observed_state: 'running', host_id: 'h1', guest_ip: null, inventory_source: 'libvirt' },
           { id: 'v2', name: 'db-01', observed_state: 'stopped', host_id: 'h1', guest_ip: '192.168.122.11', inventory_source: 'libvirt' },
         ],
       })
     }
-    if (url.match(/\/platform\/controller\/api\/v1\/networks(\?|$)/)) {
-      return route.fulfill({ json: [{ id: 'n1', name: 'private' }] })
+    if (url.match(/\/platform\/controller\/api\/v1\/networks(\?|$)/) && route.request().method() === 'GET') {
+      // Shares the same PlatformNetwork[] fixture as the '/networks' handler further below (which
+      // this regex-matched, platform/controller-proxied URL never reaches — it's caught here first).
+      // A previous hardcoded `[{ id: 'n1', name: 'private' }]` here lacked `backend`, which crashed
+      // PlatformNetworks.tsx's table row (`t.backend.replace(...)`) on every visit to /platform/networks.
+      // Scoped to GET so the POST-create handler further below still gets a turn.
+      return route.fulfill({ json: opts?.emptyNetworks ? [] : platformNetworks })
     }
     if (url.match(/\/platform\/controller\/api\/v1\/templates(\?|$)/)) {
       return route.fulfill({ json: [{ id: 'i1', name: 'ubuntu-22.04' }] })
@@ -2158,10 +2166,6 @@ export async function mockPlatformApi(page: Page, opts?: {
     if (url.includes('/networks') && route.request().method() === 'POST') {
       return route.fulfill({ json: { id: 'n2', name: 'vm-net', bridge: 'br0', backend: 'bridge' } })
     }
-    if (url.includes('/networks') && !url.includes('/discover')) {
-      const nets = opts?.emptyNetworks ? [] : platformNetworks
-      return route.fulfill({ json: nets })
-    }
     if (url.includes('/storage/pools/live')) {
       return route.fulfill({
         json: {
@@ -2202,7 +2206,11 @@ export async function mockPlatformApi(page: Page, opts?: {
       })
     }
     if (url.includes('/storage/pools') && !url.includes('/discover')) {
-      return route.fulfill({ json: classicStoragePools })
+      // Both the platform/controller-routed StoragePool[] (api/platformStorage.ts, gib-shaped) and
+      // the classic daemon StoragePoolInfo[] (api/storage.ts, gb-shaped) hit a URL containing
+      // '/storage/pools' — the platform one is routed through PLATFORM_CONTROLLER_PROXY, so that
+      // substring in the URL is what tells the two apart.
+      return route.fulfill({ json: url.includes('/platform/controller/') ? storagePools : classicStoragePools })
     }
     if (url.includes('/enrollment/tokens') && route.request().method() === 'POST') {
       return route.fulfill({

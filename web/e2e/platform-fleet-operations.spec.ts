@@ -5,7 +5,7 @@ import { mockPlatformApi } from './platformMock'
 
 test('threat hunting structured SIEM search returns index hits', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus/security/hunt')
+  await page.goto('/platform/zyra/security/hunt')
   await expect(page.getByRole('heading', { name: 'Threat hunting' })).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Search index' }).click()
   await expect(page.getByText('nc listener on port 4444')).toBeVisible({ timeout: 10_000 })

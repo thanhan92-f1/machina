@@ -18,7 +18,7 @@ test.describe('platform pages document scroll', () => {
     ['/platform/networks', /networks/i],
     ['/platform/zeus/security', /security center/i],
     ['/platform/vms?lens=topology', /machine finder|topology/i],
-    ['/platform/zeus/rightsizing', /vm rightsizing/i],
+    ['/platform/zyra/rightsizing', /vm rightsizing/i],
     ['/platform/create-iso', /create vm from iso/i],
     ['/platform/create-advanced', /advanced vm install/i],
     ['/platform/events', /logs & audit/i],

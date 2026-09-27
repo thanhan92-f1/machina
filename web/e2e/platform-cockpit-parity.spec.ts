@@ -30,9 +30,11 @@ test.describe('Cockpit parity surfaces (mock)', () => {
   test('Storage pool volumes expand and list', async ({ page }) => {
     await page.goto('/platform/storage')
     await page.getByRole('tab', { name: 'Pools' }).click()
-    await expect(page.getByTestId('storage-pool-default')).toBeVisible({ timeout: 15_000 })
-    const toggle = page.getByTestId('pool-volumes-toggle-default')
-    if (!(await toggle.textContent())?.includes('Hide volumes')) {
+    const row = page.getByTestId('storage-pool-default')
+    await expect(row).toBeVisible({ timeout: 15_000 })
+    // The toggle button has no testid and reads "Volumes" / "Hide vols", not "Hide volumes".
+    const toggle = row.getByRole('button', { name: /volumes|vols/i })
+    if (!(await toggle.textContent())?.toLowerCase().includes('hide')) {
       await toggle.click()
     }
     await expect(page.getByText('vol-a')).toBeVisible()
@@ -46,7 +48,8 @@ test.describe('Cockpit parity surfaces (mock)', () => {
 
   test('Snapshots panel loads with precheck API', async ({ page }) => {
     await page.goto('/platform/vms/v1')
-    await page.getByRole('button', { name: 'More', exact: true }).click()
+    // Scoped to the detail-page tab strip: GlobalBar now also has its own "More" nav-group button.
+    await page.locator('#platform-detail-tabs').getByRole('button', { name: 'More' }).click()
     await page.getByRole('menuitem', { name: 'Snapshots', exact: true }).click()
     await expect(page.getByTestId('vm-snapshots-panel')).toBeVisible({ timeout: 15_000 })
   })
@@ -101,7 +104,7 @@ test.describe('Cockpit parity surfaces (mock)', () => {
 
   test('VM settings shows storage live-migration fields', async ({ page }) => {
     await page.goto('/platform/vms/v1')
-    await page.getByRole('button', { name: 'More', exact: true }).click()
+    await page.locator('#platform-detail-tabs').getByRole('button', { name: 'More' }).click()
     await page.getByRole('menuitem', { name: 'Settings', exact: true }).click()
     await expect(page.getByTestId('vm-migrate-panel')).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('Copy disk storage (non-shared)')).toBeVisible()
