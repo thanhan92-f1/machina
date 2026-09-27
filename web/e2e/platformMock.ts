@@ -656,6 +656,15 @@ export async function mockPlatformApi(page: Page, opts?: {
   let promptTitle = 'RCA template'
   let storagePools: Array<{ id: string; name: string; path: string; capacity_gib: number; used_gib: number }> =
     opts?.emptyStorage ? [] : [{ id: 'p1', name: 'default', path: '/var/lib/libvirt/images', capacity_gib: 500, used_gib: 12 }]
+  // Classic daemon storage.ts's StoragePoolInfo shape (gb, not gib; allocation/available/state/
+  // autostart) — a distinct type from the platform/controller StoragePool above (`storagePools`),
+  // which api/storage.ts's listPools() (GET /api/v1/storage/pools) never reads. Reusing that
+  // wrongly-shaped variable here used to leave every numeric field undefined, and Storage.tsx's
+  // unguarded .toFixed() calls on them crashed the whole app through AppErrorBoundary.
+  const classicStoragePools = opts?.emptyStorage ? [] : [
+    { name: 'default', uuid: 'a1b2c3d4-0000-0000-0000-000000000001', state: 'running', capacity_gb: 500, allocation_gb: 80, available_gb: 420, autostart: true },
+    { name: 'data', uuid: 'a1b2c3d4-0000-0000-0000-000000000002', state: 'running', capacity_gb: 1000, allocation_gb: 100, available_gb: 900, autostart: false },
+  ]
   let templateReadinessPolls = 0
   await page.addInitScript((t) => {
     localStorage.setItem('zyvor-platform-welcome-done', '1')
@@ -2158,8 +2167,8 @@ export async function mockPlatformApi(page: Page, opts?: {
         json: {
           host_id: 'h1',
           pools: [
-            { name: 'default', state: 'active', path: '/var/lib/libvirt/images', capacity_gb: 500, available_gb: 420, autostart: true },
-            { name: 'data', state: 'inactive', path: '/data/libvirt', capacity_gb: 1000, available_gb: 900, autostart: false },
+            { name: 'default', state: 'active', path: '/var/lib/libvirt/images', capacity_gb: 500, allocation_gb: 80, available_gb: 420, autostart: true },
+            { name: 'data', state: 'inactive', path: '/data/libvirt', capacity_gb: 1000, allocation_gb: 100, available_gb: 900, autostart: false },
           ],
         },
       })
@@ -2193,7 +2202,7 @@ export async function mockPlatformApi(page: Page, opts?: {
       })
     }
     if (url.includes('/storage/pools') && !url.includes('/discover')) {
-      return route.fulfill({ json: storagePools })
+      return route.fulfill({ json: classicStoragePools })
     }
     if (url.includes('/enrollment/tokens') && route.request().method() === 'POST') {
       return route.fulfill({

@@ -4,50 +4,47 @@ import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
 import { waitForPlatformSession } from './helpers'
 
-test('shell bridge shows on classic import', async ({ page }) => {
+// ShellBridgeBar.tsx (the "Back to Platform" / "Apps & Integrations" banner these tests were
+// written against) is unimported dead code — classic (non-/platform) routes and /platform/* routes
+// share the same shell now (GlobalBar + SideNav, layouts/PlatformLayout.tsx), so there's no longer
+// a separate "classic" chrome to bridge back from. The GlobalBar's brand mark (`aria-label="Machina
+// home"`) is the shell's constant way home from anywhere, including these classic routes.
+
+test('classic import route stays inside the unified platform shell', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/import')
   await waitForPlatformSession(page)
-  const bar = page.locator('.shell-bridge-bar')
-  await expect(bar).toBeVisible({ timeout: 20_000 })
-  await expect(bar.getByRole('link', { name: /Back to Platform/i })).toBeVisible()
-  await expect(bar.getByRole('link', { name: /Apps.*Integrations/i })).toBeVisible()
+  await expect(page.locator('.gnb-bar')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('link', { name: 'Machina home' })).toBeVisible()
 })
 
-test('platform to K8s and back via shell bridge', async ({ page }) => {
+test('classic K8s route links back to platform via the shell brand mark', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/k8s')
   await waitForPlatformSession(page)
-  const bar = page.locator('.shell-bridge-bar')
-  await expect(bar).toBeVisible({ timeout: 20_000 })
-  const backLink = bar.getByRole('link', { name: /Back to Platform/i })
-  await backLink.click()
-  await expect(page).toHaveURL(/\/platform/, { timeout: 20_000 })
+  await expect(page.locator('.gnb-bar')).toBeVisible({ timeout: 20_000 })
+  await page.getByRole('link', { name: 'Machina home' }).click()
+  await expect(page).toHaveURL(/\/platform\/?$/, { timeout: 20_000 })
 })
 
-test('normal tier shell bridge links to integrations hub', async ({ page }) => {
+test('classic storage route stays inside the unified platform shell', async ({ page }) => {
+  // The old shell bridge bar's dedicated "Apps & Integrations" quick link no longer has an
+  // equivalent — Integrations now lives under Settings (PlatformSettingsHub.tsx), reachable via
+  // the sidebar's "Settings" link like everywhere else, not a classic-route-only shortcut.
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/storage')
   await waitForPlatformSession(page)
-  const bar = page.locator('.shell-bridge-bar')
-  await expect(bar).toBeVisible({ timeout: 20_000 })
-  const integrationsLink = bar.getByRole('link', { name: /Apps.*Integrations/i })
-  await expect(integrationsLink).toHaveAttribute('href', /\/platform\/integrations$/)
-  await integrationsLink.scrollIntoViewIfNeeded()
-  await Promise.all([
-    page.waitForURL(/\/platform\/integrations/, { timeout: 20_000 }),
-    integrationsLink.click(),
-  ])
+  await expect(page.locator('.gnb-bar')).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('aside[aria-label="Sections"]')).toBeVisible()
 })
 
-test('Fleet Cloud subnav links to platform when fleet mode', async ({ page }) => {
+test('Fleet Cloud stays inside the unified platform shell', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/fleet-cloud')
   await waitForPlatformSession(page)
-  const platformLink = page.getByRole('link', { name: /Platform desktop/i })
-  await expect(platformLink).toBeVisible({ timeout: 20_000 })
-  await platformLink.click()
-  await expect(page).toHaveURL(/\/platform/, { timeout: 20_000 })
+  await expect(page.locator('.gnb-bar')).toBeVisible({ timeout: 20_000 })
+  await page.getByRole('link', { name: 'Machina home' }).click()
+  await expect(page).toHaveURL(/\/platform\/?$/, { timeout: 20_000 })
 })
 
 test('classic storage shows empty state when no pools', async ({ page }) => {
