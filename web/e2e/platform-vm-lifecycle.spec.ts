@@ -7,8 +7,8 @@ test('vm detail shows daily access strip with connect copy ports export', async 
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/vms/v1')
   await expect(page.getByRole('heading', { name: 'vm-1' }).first()).toBeVisible({ timeout: 15_000 })
-  // VmConnectHub renders a "Connect" h3 on the overview tab
-  await expect(page.getByRole('heading', { name: 'Connect' })).toBeVisible()
+  // VmConnectHub renders "Connect" as a plain eyebrow <p>, not a heading, on the overview tab.
+  await expect(page.getByTestId('vm-daily-access').getByText('Connect', { exact: true })).toBeVisible()
   // Console is a primary tab
   await expect(page.getByRole('tab', { name: 'Console' })).toBeVisible()
   // Spec / Spec+XML export buttons live on the Access tab

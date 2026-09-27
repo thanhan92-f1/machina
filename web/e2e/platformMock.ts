@@ -969,9 +969,6 @@ export async function mockPlatformApi(page: Page, opts?: {
       // Scoped to GET so the POST-create handler further below still gets a turn.
       return route.fulfill({ json: opts?.emptyNetworks ? [] : platformNetworks })
     }
-    if (url.match(/\/platform\/controller\/api\/v1\/templates(\?|$)/)) {
-      return route.fulfill({ json: [{ id: 'i1', name: 'ubuntu-22.04' }] })
-    }
     if (url.includes('/k8s/overview')) {
       return route.fulfill({
         json: {

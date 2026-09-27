@@ -35,8 +35,10 @@ test.describe('Platform guest UX', () => {
     await page.goto('/platform/vms')
     await page.getByTestId('machine-finder-search').fill('empty-test')
     await page.getByRole('button', { name: 'Analyze' }).click()
-    const report = page.getByTestId('machine-finder-page').locator('div.rounded-xl').filter({
-      has: page.locator('p.text-slate-200', { hasText: 'No VMs matched for empty-test query.' }),
+    // The card's classes moved from literal Tailwind (rounded-xl, text-slate-200) to netra-look's
+    // CSS-var tokens (rounded-2xl, text-[var(--text-primary)]) — match on text instead of color class.
+    const report = page.getByTestId('machine-finder-page').locator('div.rounded-2xl').filter({
+      has: page.getByText('No VMs matched for empty-test query.'),
     })
     await expect(report).toBeVisible({ timeout: 15_000 })
     await report.locator('button[aria-label="Dismiss"]').evaluate((btn) => (btn as HTMLButtonElement).click())

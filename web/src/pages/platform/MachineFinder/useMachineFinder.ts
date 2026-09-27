@@ -49,7 +49,9 @@ function vmHasGpu(vm: PlatformVm): boolean {
 
 function parseLens(raw: string | null): MachineFinderLens {
   if (raw && VALID_LENSES.has(raw as MachineFinderLens)) return raw as MachineFinderLens
-  return 'table'
+  // 'grid' is the canonical default lens — setLens() below strips ?lens= from the URL specifically
+  // when switching back to grid, so a bare /platform/vms URL must resolve to grid to round-trip.
+  return 'grid'
 }
 
 function parseOverlay(raw: string | null): MachineFinderOverlay {
@@ -269,14 +271,17 @@ export function useMachineFinder() {
   // Apply ?vm=ID URL param to pre-select a VM after data has loaded, then drop
   // the param — otherwise every live vm.*/ha.* reload re-fires this and re-opens
   // the detail panel after the user dismissed it (vms changes on each event).
+  // The topology lens manages ?vm= itself as persistent selection state (its own inspector,
+  // independent of the command-center panel this effect opens) — skip there so this one-time
+  // pre-select-and-drop doesn't fight that lens's click handler over the same param.
   const vmParamId = searchParams.get('vm')
   useEffect(() => {
-    if (!vmParamId || vms.length === 0) return
+    if (!vmParamId || vms.length === 0 || lens === 'topology') return
     if (vms.some((v) => v.id === vmParamId)) setSelectedVmId(vmParamId)
     const next = new URLSearchParams(searchParams)
     next.delete('vm')
     setSearchParams(next, { replace: true })
-  }, [vmParamId, vms, searchParams, setSearchParams])
+  }, [vmParamId, vms, lens, searchParams, setSearchParams])
 
   useEffect(() => {
     if (overlay !== 'security') return

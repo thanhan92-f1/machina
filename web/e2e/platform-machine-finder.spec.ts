@@ -11,7 +11,12 @@ test('Machine Finder shows site → rack → host → VM columns', async ({ page
   await expect(page.getByRole('button', { name: 'Rack A' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'host-1' })).toBeVisible()
   await page.getByRole('button', { name: 'host-1' }).click()
-  await page.getByTestId('machine-finder-topology').getByRole('button', { name: 'vm-1', exact: true }).click()
+  // The Machine Finder list fixture names this VM "web-01" (id v1) — its own detail page (fetched
+  // separately) uses a differently-named fixture that still says "vm-1", which is why "Open VM"
+  // below still leads somewhere titled that.
+  // Two "web-01" buttons render once a host is selected (the VM chip row + the inspector's own VM
+  // list) — both open the same VmInspector, so take the first.
+  await page.getByTestId('machine-finder-topology').getByRole('button', { name: 'web-01', exact: true }).first().click()
   await expect(page.getByRole('link', { name: 'Open VM' })).toBeVisible()
 })
 

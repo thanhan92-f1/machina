@@ -24,7 +24,9 @@ test.beforeEach(async ({ page }) => {
 test('F01 — VM detail hero shows machine strip and status pills', async ({ page }) => {
   await openMockVmDetail(page)
   await expect(page.getByTestId('vm-detail-hero')).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.vm-detail-hero-icon--live')).toBeVisible()
+  // VmDetailHero's own name/state/host header (incl. .vm-detail-hero-icon--live) was removed as a
+  // duplicate of PlatformVmDetail's page header (fbe4638e) — the running state now shows there instead.
+  await expect(page.getByText('running', { exact: true }).first()).toBeVisible()
   await expect(
     page.getByTestId('vm-detail-hero').getByText(/blocker|Ready to connect|Doctor \d+/i).first(),
   ).toBeVisible({ timeout: 10_000 })
@@ -38,7 +40,8 @@ test('F02 — action bar exposes Cinema, SSH, and power overflow', async ({ page
   await expect(bar.getByRole('button', { name: 'SSH' })).toBeVisible()
   await openPowerOverflow(page)
   await expect(page.getByTestId('vm-force-reboot-button')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Studio' })).toBeVisible()
+  // SideNav also has its own "Cloud-Init Studio" link, which substring-matches an unscoped "Studio" query.
+  await expect(bar.getByRole('link', { name: 'Studio' })).toBeVisible()
 })
 
 test('F03 — attention stack chips swap expanded banner', async ({ page }) => {
@@ -135,10 +138,15 @@ test('F12 — Machine Finder table SSH and gallery Cinema', async ({ page }) => 
 })
 
 test('F13 — Mission Control command center opens SSH dialog', async ({ page }) => {
-  await page.goto('/platform')
-  await page.getByText('vm-1').first().click({ timeout: 15_000 })
-  await expect(page.getByTestId('fleet-command-center')).toBeVisible()
-  await page.getByTestId('fleet-command-center').getByRole('button', { name: 'SSH' }).click()
+  // FleetCommandCenter only ever renders from Machine Finder (MachineFinderPage.tsx), not from the
+  // bare Mission Control dashboard — go there directly. Every current caller overrides its default
+  // testId prop ('fleet-command-center') — MachineFinderCommandCenter.tsx uses
+  // 'machine-finder-command-center' instead, so that's what actually appears in the DOM.
+  // The Machine Finder list fixture names this VM "web-01" (id v1).
+  await page.goto('/platform/vms')
+  await page.getByText('web-01').first().click({ timeout: 15_000 })
+  await expect(page.getByTestId('machine-finder-command-center')).toBeVisible()
+  await page.getByTestId('machine-finder-command-center').getByRole('button', { name: 'SSH' }).click()
   await expect(page.getByTestId('vm-ssh-connect-dialog')).toBeVisible()
   await expect(page.getByTestId('vm-ssh-nat-banner')).toBeVisible()
 })

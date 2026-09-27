@@ -295,6 +295,18 @@ export default function PlatformVmDetail() {
     [libvirtDetails],
   )
 
+  // The CD-ROM target <select> below lists real cdrom disks once libvirtDetails loads (falling back
+  // to sda/sdb/hda when none are reported), but a browser auto-selects the first <option> visually
+  // even though the controlled `isoTarget` state stays '' until something calls setIsoTarget — so
+  // "Insert ISO" could silently submit an empty target. Keep it synced to a real option.
+  const cdromTargets = useMemo(() => {
+    const real = (libvirtDetails?.disks ?? []).filter((d) => d.device === 'cdrom').map((d) => d.target)
+    return real.length > 0 ? real : ['sda', 'sdb', 'hda']
+  }, [libvirtDetails])
+  useEffect(() => {
+    if (!cdromTargets.includes(isoTarget)) setIsoTarget(cdromTargets[0] ?? '')
+  }, [cdromTargets, isoTarget])
+
   const canBrowseHost = sessionRole === 'admin'
 
   const loadSeq = useRef(0)
@@ -1661,16 +1673,9 @@ export default function PlatformVmDetail() {
                   <label className="text-xs text-[var(--text-muted)]">
                     CD-ROM target
                     <select className="input mt-1 block w-24" value={isoTarget} onChange={(e) => setIsoTarget(e.target.value)}>
-                      {(libvirtDetails?.disks ?? []).filter((d) => d.device === 'cdrom').map((d) => (
-                        <option key={d.target} value={d.target}>{d.target}</option>
+                      {cdromTargets.map((t) => (
+                        <option key={t} value={t}>{t}</option>
                       ))}
-                      {(libvirtDetails?.disks ?? []).filter((d) => d.device === 'cdrom').length === 0 && (
-                        <>
-                          <option value="sda">sda</option>
-                          <option value="sdb">sdb</option>
-                          <option value="hda">hda</option>
-                        </>
-                      )}
                     </select>
                   </label>
                   <button

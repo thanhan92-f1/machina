@@ -254,7 +254,9 @@ test.describe('Platform ConsoleHub', () => {
 
   test('KubeVirt VM detail shows read-only Hardware tab', async ({ page }) => {
     await page.goto('/platform/vms/kv1')
-    await expect(page.getByRole('link', { name: /Open Cinema/i })).toBeVisible({ timeout: 15_000 })
+    // Two "Open Cinema" links coexist by design here: the kubevirt header action and
+    // VmConsoleHeroPreview's own CTA (rendered on the overview tab for every VM).
+    await expect(page.getByRole('link', { name: /Open Cinema/i }).first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('vm-detail-hardware')).toBeVisible()
     await page.getByRole('tab', { name: 'Hardware' }).click()
     await expect(page.getByTestId('vm-hardware-tab')).toBeVisible({ timeout: 15_000 })

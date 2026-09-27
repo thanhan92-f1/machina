@@ -390,7 +390,7 @@ export default function PlatformNetworks() {
                         </td>
                         <td className="text-right">
                           <div className="flex flex-wrap justify-end gap-1">
-                            <button type="button" className="btn-secondary text-[10px]" disabled={savingId === n.id} onClick={() => void saveNetwork(n)}>
+                            <button type="button" data-testid={`network-save-${n.id}`} className="btn-secondary text-[10px]" disabled={savingId === n.id} onClick={() => void saveNetwork(n)}>
                               {savingId === n.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Save'}
                             </button>
                             {!active ? (

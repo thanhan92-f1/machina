@@ -109,7 +109,8 @@ test('host linux tab shows GPU inventory', async ({ page }) => {
   await page.getByRole('tab', { name: 'Linux' }).click()
   await expect(page.getByRole('heading', { name: 'GPU inventory' })).toBeVisible({ timeout: 10_000 })
   await expect(page.getByText('NVIDIA L40', { exact: true })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'GPU Command Center' })).toBeVisible()
+  // SideNav also has its own "GPU Command Center" nav entry — scope to the page canvas.
+  await expect(page.locator('.mac-desktop-main').getByRole('link', { name: 'GPU Command Center' })).toBeVisible()
 })
 
 test('doctor tab deep-links GuestKit migrate plan on guest health', async ({ page }) => {
