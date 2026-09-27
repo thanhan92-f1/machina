@@ -22,7 +22,7 @@ export default function PlatformPageChrome({
 
 export function PlatformBackLink({ to, label }: { to: string; label: string }) {
   return (
-    <Link to={to} className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+    <Link to={to} className={`text-sm inline-flex items-center gap-1 min-h-9 -my-1 ${hubLinkClasses()}`}>
       <ArrowLeft className="w-4 h-4" />
       {label}
     </Link>

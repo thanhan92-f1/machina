@@ -1306,11 +1306,11 @@ export default function VMDetailsPage() {
     <PageLayout hideHeader title={vm.name}>
       {/* Header + lifecycle actions (sticky while scrolling) */}
       <div className="classic-detail-chrome-sticky -mx-1 px-1 py-2 bg-[var(--apple-surface)]/90 backdrop-blur-md border-b border-[var(--apple-hairline)]/80 space-y-3">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Link to="/vms" className="p-2 hover:bg-white/10 rounded-full transition" aria-label="Back to VM list"><ArrowLeft className="w-5 h-5" /></Link>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h1 className="page-title tracking-tight">{vm.name}</h1>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>
             {vm.libvirt_connection === 'session' && (
               <span className={sessionBadgeClasses('text-xs')} title="Domain on qemu:///session">

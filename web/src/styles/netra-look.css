@@ -78,6 +78,7 @@ html.light-theme {
   --nl-status-warn-border: #ffd8ba;
   --nl-status-warn-text: #8b3d00;
   --nl-status-danger-bg: #fff1f0;
+  --nl-status-danger-border: #ffb4ab;
 }
 
 /* ---- Dark ("tahoe" only) -------------------------------------------------- */
@@ -100,6 +101,7 @@ html[data-ui-shell='default'],
   --nl-status-warn-border: rgba(255, 159, 10, 0.35);
   --nl-status-warn-text: #ffd60a;
   --nl-status-danger-bg: rgba(255, 69, 58, 0.14);
+  --nl-status-danger-border: rgba(255, 69, 58, 0.35);
 }
 
 /* ---- Light: no ambient gradients ----------------------------------------- */
@@ -126,6 +128,16 @@ html.light-theme .apple-hero-band::before {
 .gnb-bar {
   background: var(--nl-bar-bg, hsl(var(--card) / 0.86));
   border-bottom-color: var(--nl-hairline, var(--apple-hairline));
+}
+
+/* ---- MacSegmentedControl: dark chrome carried onto the light theme -------- */
+/* Its unselected-option class is `text-[var(--text-muted)]` on a hardcoded `bg-black/30`
+   container: in light theme that composites to ~1.7:1. Neutral tint instead. */
+html[data-theme='tahoe-light'] .tahoe-segment,
+html.apple-light .tahoe-segment,
+html.light-theme .tahoe-segment {
+  background: var(--nl-fill) !important;
+  border-color: var(--nl-hairline) !important;
 }
 
 /* ---- Cards: 18px, neutral hairline, no card-in-card ----------------------- */

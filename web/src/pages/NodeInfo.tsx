@@ -148,7 +148,7 @@ function HostProcessTableBlock({
                         title="Send SIGKILL"
                         disabled={killBusyPid !== null}
                         onClick={() => void onKill(p, 'KILL')}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-900/25 text-red-200 border border-red-600/40 hover:bg-red-900/40 disabled:opacity-50 transition"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[var(--nl-status-danger-bg)] text-[var(--nl-accent-red-text)] border border-[var(--nl-status-danger-border)] hover:opacity-80 disabled:opacity-50 transition"
                       >
                         <Ban className="w-3.5 h-3.5 shrink-0" />
                         Kill

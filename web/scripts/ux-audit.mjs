@@ -544,6 +544,20 @@ async function auditOne(browser, route, modeName) {
     for (const e of errs.slice(0, 2)) findings.push({ kind: 'page-error', detail: e })
     for (const c of (await page.evaluate(probeContrast)).slice(0, 6)) findings.push({ kind: 'contrast', detail: `"${c.text}" ${c.ratio} ${c.sel}` })
     for (const c of await page.evaluate(probeClip)) findings.push({ kind: 'clip', detail: c })
+    if (process.env.UX_AUDIT_DEBUG_SHOT) await page.screenshot({ path: process.env.UX_AUDIT_DEBUG_SHOT, fullPage: false })
+    if (process.env.UX_AUDIT_DEBUG_DUMP) {
+      console.log(await page.evaluate(() => {
+        const vw = innerWidth
+        const out = []
+        for (const el of document.querySelectorAll('*')) {
+          const r = el.getBoundingClientRect()
+          if (r.right > vw + 5 && r.width > 15 && r.width < 120 && r.top < 400) {
+            out.push(`${el.tagName.toLowerCase()} class="${String(el.className).slice(0, 140)}" right=${Math.round(r.right)} top=${Math.round(r.top)} w=${Math.round(r.width)} parent=${el.parentElement?.tagName.toLowerCase()}.${String(el.parentElement?.className || '').slice(0, 90)}`)
+          }
+        }
+        return out.slice(0, 10).join('\n')
+      }))
+    }
     if (modeName !== 'dark') for (const f of await page.evaluate(probeA11y)) findings.push(f)
     if (modeName === 'phone') {
       const tap = await page.evaluate(probeTap)
