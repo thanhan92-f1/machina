@@ -189,7 +189,9 @@ means "no regressions", not "perfect": populated-state bugs need a real host
 - [x] Update or remove e2e specs that target the removed shell markup — `cross-shell.spec.ts`,
       `platform-chaos-navigation.spec.ts`, `platform-jarvis-shell.spec.ts`,
       `platform-nav-coverage.spec.ts`, `platform-batch-48.spec.ts`, `platform-full.spec.ts` all
-      pass against current markup now (two tests are `test.skip` with a dated finding comment: a
-      real, reproducible hang on `/platform/zeus`'s default Fleet tab, unrelated to the shell
-      rewrite and not yet root-caused).
+      pass against current markup now. (A "reproducible hang" initially reported here on two of
+      these tests turned out to be a stale URL — `/platform/zeus` vs the live `/platform/zyra` —
+      not a shell-rewrite bug; both are un-skipped and passing. Chasing it down also found the same
+      Zeus→Zyra rename had gone stale in `zeus-infra-brain.spec.ts`, `platform-linux-os.spec.ts`,
+      and `e2e/platformMock.ts`, all now fixed too.)
 - [ ] Real-host confirmation of populated states
