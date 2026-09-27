@@ -42,6 +42,9 @@ import EbpfActionMenu from '../../components/platform/EbpfActionMenu'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses, statusBadgeClasses, statusToneClass } from '../../utils/semanticColors'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
+import { bySeverityDesc } from '../../utils/topN'
 
 const SOC_TABS = ['overview', 'alerts', 'detections', 'asm', 'integrations', 'playbooks'] as const
 type Tab = (typeof SOC_TABS)[number]
@@ -85,6 +88,14 @@ export default function PlatformSoc() {
   const [qradarEnabled, setQradarEnabled] = useState(false)
   const [playbooks, setPlaybooks] = useState<SocPlaybook[]>([])
   const [playbookRuns, setPlaybookRuns] = useState<SocPlaybookRun[]>([])
+  // Each panel showed everything at once (or, for events, a silent slice(0, 12) with no way to see
+  // the rest); ranked-if-applicable top N with an honest expand instead.
+  const eventsList = useExpandable(events, 12)
+  const alertsList = useExpandable(alerts, 20, bySeverityDesc)
+  const rulesList = useExpandable(rules, 20)
+  const findingsList = useExpandable(asm?.open_port_findings ?? [], 20)
+  const playbooksList = useExpandable(playbooks, 20)
+  const playbookRunsList = useExpandable(playbookRuns, 20)
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
   const [selectedPlaybookId, setSelectedPlaybookId] = useState<string | null>(null)
   const [newPlaybook, setNewPlaybook] = useState(false)
@@ -351,16 +362,23 @@ export default function PlatformSoc() {
             {events.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] p-3">No SOC events yet — ingestion runs every 2 minutes.</p>
             ) : (
-              <ul className="divide-y divide-white/5">
-                {events.slice(0, 12).map((e) => (
-                  <li key={e.id} className="px-3 py-2 text-sm flex justify-between gap-2">
-                    <span className="text-[var(--text-primary)] truncate">{e.summary}</span>
-                    <span className={`text-xs shrink-0 ${statusToneClass(e.severity === 'high' ? 'error' : 'neutral')}`}>
-                      {e.source} · {e.severity}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul id={eventsList.listId} className="divide-y divide-white/5">
+                  {eventsList.shown.map((e) => (
+                    <li key={e.id} className="px-3 py-2 text-sm flex justify-between gap-2">
+                      <span className="text-[var(--text-primary)] truncate">{e.summary}</span>
+                      <span className={`text-xs shrink-0 ${statusToneClass(e.severity === 'high' ? 'error' : 'neutral')}`}>
+                        {e.source} · {e.severity}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {eventsList.showToggle && (
+                  <div className="p-3">
+                    <ExpandableToggle expanded={eventsList.expanded} hidden={eventsList.hidden} listId={eventsList.listId} onToggle={eventsList.toggle} noun="events" />
+                  </div>
+                )}
+              </>
             )}
           </MacGlassPanel>
         </div>
@@ -372,34 +390,41 @@ export default function PlatformSoc() {
             {alerts.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] p-3">No open alerts.</p>
             ) : (
-              <ul className="divide-y divide-white/5">
-                {alerts.map((a) => (
-                  <li key={a.id}>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-3 py-3 flex flex-wrap items-center justify-between gap-2 ${
-                        selectedAlertId === a.id ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'
-                      }`}
-                      onClick={() => setSelectedAlertId(a.id)}
-                    >
-                      <div>
-                        <p className="font-medium text-sm text-[var(--text-primary)]">{a.title}</p>
-                        <p className="text-xs text-[var(--text-muted)]">
-                          {a.severity} · {a.status} · {a.event_count} events
-                          {a.assigned_to ? ` · ${a.assigned_to}` : ''}
-                        </p>
-                      </div>
-                      <EbpfActionMenu
-                        suggestedKind="deny_process"
-                        suggestedMatch="/usr/bin/nc"
-                        huntQueryId={a.title.toLowerCase().includes('dns') ? 'dns-tunneling' : 'reverse-shell'}
-                        policyName={a.title}
-                        compact
-                      />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul id={alertsList.listId} className="divide-y divide-white/5">
+                  {alertsList.shown.map((a) => (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        className={`w-full text-left px-3 py-3 flex flex-wrap items-center justify-between gap-2 ${
+                          selectedAlertId === a.id ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'
+                        }`}
+                        onClick={() => setSelectedAlertId(a.id)}
+                      >
+                        <div>
+                          <p className="font-medium text-sm text-[var(--text-primary)]">{a.title}</p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {a.severity} · {a.status} · {a.event_count} events
+                            {a.assigned_to ? ` · ${a.assigned_to}` : ''}
+                          </p>
+                        </div>
+                        <EbpfActionMenu
+                          suggestedKind="deny_process"
+                          suggestedMatch="/usr/bin/nc"
+                          huntQueryId={a.title.toLowerCase().includes('dns') ? 'dns-tunneling' : 'reverse-shell'}
+                          policyName={a.title}
+                          compact
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {alertsList.showToggle && (
+                  <div className="p-3">
+                    <ExpandableToggle expanded={alertsList.expanded} hidden={alertsList.hidden} listId={alertsList.listId} onToggle={alertsList.toggle} noun="alerts" />
+                  </div>
+                )}
+              </>
             )}
           </MacGlassPanel>
           {selectedAlert ? (
@@ -414,11 +439,11 @@ export default function PlatformSoc() {
 
       {tab === 'detections' && (
         <MacGlassPanel title="Detection rules">
-          <ul className="divide-y divide-white/5">
+          <ul id={rulesList.listId} className="divide-y divide-white/5">
             {rules.length === 0 && (
               <li className="px-3 py-6 text-sm text-[var(--text-muted)] text-center">No detection rules configured yet.</li>
             )}
-            {rules.map((r) => (
+            {rulesList.shown.map((r) => (
               <li key={r.id} className="px-3 py-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-medium text-sm flex items-center gap-2">
@@ -445,6 +470,11 @@ export default function PlatformSoc() {
               </li>
             ))}
           </ul>
+          {rulesList.showToggle && (
+            <div className="p-3">
+              <ExpandableToggle expanded={rulesList.expanded} hidden={rulesList.hidden} listId={rulesList.listId} onToggle={rulesList.toggle} noun="rules" />
+            </div>
+          )}
         </MacGlassPanel>
       )}
 
@@ -466,15 +496,22 @@ export default function PlatformSoc() {
             {(asm?.open_port_findings ?? []).length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] p-3">No high-risk exposure findings.</p>
             ) : (
-              <ul>
-                {(asm?.open_port_findings ?? []).map((f, i) => (
-                  <MacListRow
-                    key={`${f.resource}-${i}`}
-                    title={f.resource}
-                    subtitle={`${f.kind} · ${f.detail}`}
-                  />
-                ))}
-              </ul>
+              <>
+                <ul id={findingsList.listId}>
+                  {findingsList.shown.map((f, i) => (
+                    <MacListRow
+                      key={`${f.resource}-${i}`}
+                      title={f.resource}
+                      subtitle={`${f.kind} · ${f.detail}`}
+                    />
+                  ))}
+                </ul>
+                {findingsList.showToggle && (
+                  <div className="p-3">
+                    <ExpandableToggle expanded={findingsList.expanded} hidden={findingsList.hidden} listId={findingsList.listId} onToggle={findingsList.toggle} noun="findings" />
+                  </div>
+                )}
+              </>
             )}
           </MacGlassPanel>
           {asm?.recommendations?.length ? (
@@ -509,50 +546,64 @@ export default function PlatformSoc() {
                 {playbooks.length === 0 ? (
                   <p className="text-sm text-[var(--text-muted)] p-3">No playbooks configured.</p>
                 ) : (
-                  <ul className="divide-y divide-white/5">
-                    {playbooks.map((p) => (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          className={`w-full text-left px-3 py-3 ${
-                            selectedPlaybookId === p.id && !newPlaybook ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'
-                          }`}
-                          onClick={() => {
-                            setSelectedPlaybookId(p.id)
-                            setNewPlaybook(false)
-                            setPlaybookDetail(null)
-                          }}
-                        >
-                          <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2">
-                            {p.name}
-                            <span className={statusBadgeClasses(p.enabled ? 'ok' : 'neutral')}>
-                              {p.enabled ? 'enabled' : 'disabled'}
-                            </span>
-                          </p>
-                          <p className="text-xs text-[var(--text-muted)] mt-1">{p.description}</p>
-                          <p className="text-[10px] text-[var(--text-faint)] mt-1">
-                            {(p.steps_json?.length ?? 0)} step(s) · min {(p.trigger_json?.min_severity as string) ?? 'high'}
-                          </p>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul id={playbooksList.listId} className="divide-y divide-white/5">
+                      {playbooksList.shown.map((p) => (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            className={`w-full text-left px-3 py-3 ${
+                              selectedPlaybookId === p.id && !newPlaybook ? 'bg-[var(--accent)]/10' : 'hover:bg-[var(--surface-hover)]'
+                            }`}
+                            onClick={() => {
+                              setSelectedPlaybookId(p.id)
+                              setNewPlaybook(false)
+                              setPlaybookDetail(null)
+                            }}
+                          >
+                            <p className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2">
+                              {p.name}
+                              <span className={statusBadgeClasses(p.enabled ? 'ok' : 'neutral')}>
+                                {p.enabled ? 'enabled' : 'disabled'}
+                              </span>
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)] mt-1">{p.description}</p>
+                            <p className="text-[10px] text-[var(--text-faint)] mt-1">
+                              {(p.steps_json?.length ?? 0)} step(s) · min {(p.trigger_json?.min_severity as string) ?? 'high'}
+                            </p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {playbooksList.showToggle && (
+                      <div className="p-3">
+                        <ExpandableToggle expanded={playbooksList.expanded} hidden={playbooksList.hidden} listId={playbooksList.listId} onToggle={playbooksList.toggle} noun="playbooks" />
+                      </div>
+                    )}
+                  </>
                 )}
               </MacGlassPanel>
               <MacGlassPanel title="Recent runs">
                 {playbookRuns.length === 0 ? (
                   <p className="text-sm text-[var(--text-muted)] p-3">No playbook runs yet.</p>
                 ) : (
-                  <ul className="divide-y divide-white/5">
-                    {playbookRuns.map((r) => (
-                      <li key={r.id} className="px-3 py-2 text-sm flex justify-between gap-2">
-                        <span className="text-[var(--text-secondary)] truncate">{r.playbook_id.slice(0, 8)}…</span>
-                        <span className={`text-xs shrink-0 ${statusToneClass(r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'error' : 'neutral')}`}>
-                          {r.status}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul id={playbookRunsList.listId} className="divide-y divide-white/5">
+                      {playbookRunsList.shown.map((r) => (
+                        <li key={r.id} className="px-3 py-2 text-sm flex justify-between gap-2">
+                          <span className="text-[var(--text-secondary)] truncate">{r.playbook_id.slice(0, 8)}…</span>
+                          <span className={`text-xs shrink-0 ${statusToneClass(r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'error' : 'neutral')}`}>
+                            {r.status}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    {playbookRunsList.showToggle && (
+                      <div className="p-3">
+                        <ExpandableToggle expanded={playbookRunsList.expanded} hidden={playbookRunsList.hidden} listId={playbookRunsList.listId} onToggle={playbookRunsList.toggle} noun="runs" />
+                      </div>
+                    )}
+                  </>
                 )}
               </MacGlassPanel>
             </div>

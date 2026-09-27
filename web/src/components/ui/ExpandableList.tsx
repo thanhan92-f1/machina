@@ -1,7 +1,9 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useId, useState, type ReactNode } from 'react'
-import { DEFAULT_TOP_N, visibleItems } from '../../utils/topN'
+import { type ReactNode } from 'react'
+import { DEFAULT_TOP_N } from '../../utils/topN'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from './ExpandableToggle'
 
 type Props<T> = {
   items: readonly T[]
@@ -21,25 +23,13 @@ type Props<T> = {
  * with no toggle.
  */
 export function ExpandableList<T>({ items, renderItem, limit = DEFAULT_TOP_N, compare, noun = 'items', className }: Props<T>) {
-  const [expanded, setExpanded] = useState(false)
-  const listId = useId()
-  const { shown, hidden } = visibleItems(items, expanded, limit, compare)
+  const { shown, hidden, expanded, toggle, listId, showToggle } = useExpandable(items, limit, compare)
   return (
     <>
       <div id={listId} className={className}>
         {shown.map((item, i) => renderItem(item, i))}
       </div>
-      {items.length > limit && (
-        <button
-          type="button"
-          className="btn-secondary text-sm mt-3"
-          aria-expanded={expanded}
-          aria-controls={listId}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? `Show fewer ${noun}` : `Show ${hidden} more ${noun}`}
-        </button>
-      )}
+      {showToggle && <ExpandableToggle expanded={expanded} hidden={hidden} listId={listId} onToggle={toggle} noun={noun} className="btn-secondary text-sm mt-3" />}
     </>
   )
 }
