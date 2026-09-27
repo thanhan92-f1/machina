@@ -907,6 +907,10 @@ export async function mockPlatformApi(page: Page, opts?: {
         },
       })
     }
+    if (url.includes('/zeus-firewall/profiles')) {
+      // Same shape-mismatch risk as /approvals above — listFirewallProfiles() expects an array.
+      return route.fulfill({ json: [{ name: 'ProductionServer', display_name: 'Production Server', description: '' }] })
+    }
     if (url.includes('/zeus-firewall/approvals')) {
       // Otherwise falls through to the generic '/zeus-firewall/' catch-all below, which returns an
       // object ({summary,targets,profiles}) — listFirewallApprovals() expects an array, and

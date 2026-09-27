@@ -1,17 +1,20 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft, Network } from 'lucide-react'
 import { MacGlassPanel, MacListRow } from '../../../components/platform/mac/PlatformMacUi'
 import PageLayout from '../../../components/PageLayout'
-import { simulateConnectivity } from '../../../api/zeusFirewall'
+import { listFirewallProfiles, simulateConnectivity } from '../../../api/zeusFirewall'
+import { listPlatformHosts, type PlatformHost } from '../../../api/platform'
 import { formatUserError } from '../../../utils/apiError'
 import { hubLinkClasses, statusSurfaceClasses, statusToneClass } from '../../../utils/semanticColors'
 
 type Cell = { source: string; destination: string; port: number; protocol: string; verdict: string; reason: string }
 
 export default function PlatformFirewallConnectivity() {
+  const [hosts, setHosts] = useState<PlatformHost[]>([])
+  const [profiles, setProfiles] = useState<Array<{ name: string; display_name: string }>>([])
   const [targetId, setTargetId] = useState('local')
   const [profile, setProfile] = useState('ProductionServer')
   const [allows, setAllows] = useState<Cell[]>([])
@@ -19,15 +22,25 @@ export default function PlatformFirewallConnectivity() {
   const [warnings, setWarnings] = useState<string[]>([])
   const [summary, setSummary] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [running, setRunning] = useState(false)
+  const [hasRun, setHasRun] = useState(false)
 
-  const run = () => {
+  useEffect(() => {
+    void listPlatformHosts().then(setHosts).catch(() => setHosts([]))
+    void listFirewallProfiles().then(setProfiles).catch(() => setProfiles([]))
+  }, [])
+
+  const run = useCallback(() => {
+    setError(null)
+    setRunning(true)
     void simulateConnectivity(targetId, profile).then((m) => {
       setAllows((m.allows as Cell[]) ?? [])
       setBlocks((m.blocks as Cell[]) ?? [])
       setWarnings((m.warnings as string[]) ?? [])
       setSummary(String(m.summary ?? ''))
-    }).catch((e: unknown) => setError(formatUserError(e)))
-  }
+      setHasRun(true)
+    }).catch((e: unknown) => setError(formatUserError(e))).finally(() => setRunning(false))
+  }, [targetId, profile])
 
   return (
     <PageLayout
@@ -45,9 +58,24 @@ export default function PlatformFirewallConnectivity() {
     >
       <MacGlassPanel title="Simulation">
         <div className="flex flex-wrap gap-2 mb-4 max-w-xl">
-          <input aria-label="Target host ID" className="input text-sm flex-1 min-w-[8rem]" value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder="host id or local" />
-          <input aria-label="Firewall profile" className="input text-sm flex-1 min-w-[8rem]" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="profile" />
-          <button type="button" className="btn-primary text-sm" onClick={run}>Simulate</button>
+          <select aria-label="Target host" className="input text-sm flex-1 min-w-[8rem]" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+            <option value="local">Local</option>
+            {hosts.map((h) => (
+              <option key={h.id} value={h.id}>{h.hostname}</option>
+            ))}
+            {targetId !== 'local' && !hosts.some((h) => h.id === targetId) && (
+              <option value={targetId}>{targetId}</option>
+            )}
+          </select>
+          <select aria-label="Firewall profile" className="input text-sm flex-1 min-w-[8rem]" value={profile} onChange={(e) => setProfile(e.target.value)}>
+            {profiles.map((p) => (
+              <option key={p.name} value={p.name}>{p.display_name || p.name}</option>
+            ))}
+            {!profiles.some((p) => p.name === profile) && (
+              <option value={profile}>{profile}</option>
+            )}
+          </select>
+          <button type="button" className="btn-primary text-sm" disabled={running} onClick={run}>{running ? 'Simulating…' : 'Simulate'}</button>
         </div>
         {summary && <p className="text-sm text-[var(--text-muted)] mb-4">{summary}</p>}
         {warnings.length > 0 && (
@@ -62,7 +90,7 @@ export default function PlatformFirewallConnectivity() {
             <p className={`text-xs font-semibold uppercase mb-2 ${statusToneClass('ok')}`}>Allowed</p>
             <div className="rounded-xl border border-white/[0.06] overflow-hidden">
               {allows.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-[var(--text-muted)]">Run simulation</p>
+                <p className="px-4 py-3 text-sm text-[var(--text-muted)]">{hasRun ? 'No allowed paths in this simulation.' : 'Run simulation'}</p>
               ) : (
                 allows.map((c, i) => (
                   <MacListRow
@@ -78,7 +106,7 @@ export default function PlatformFirewallConnectivity() {
             <p className={`text-xs font-semibold uppercase mb-2 ${statusToneClass('error')}`}>Blocked</p>
             <div className="rounded-xl border border-white/[0.06] overflow-hidden">
               {blocks.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-[var(--text-muted)]">Run simulation</p>
+                <p className="px-4 py-3 text-sm text-[var(--text-muted)]">{hasRun ? 'No blocked paths in this simulation.' : 'Run simulation'}</p>
               ) : (
                 blocks.map((c, i) => (
                   <MacListRow

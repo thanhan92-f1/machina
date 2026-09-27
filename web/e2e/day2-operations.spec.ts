@@ -121,3 +121,25 @@ test('Live Preview Wall is reachable from the Mission Control launchpad', async 
   await expect(page).toHaveURL(/\/platform\/mission-control\/live/)
   await expect(page.getByTestId('mission-control-live-wall')).toBeVisible({ timeout: 15_000 })
 })
+
+test('Firewall connectivity simulation uses host/profile pickers, shows loading state, and distinguishes never-run from zero-results', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  let resolveSim: (v: unknown) => void = () => {}
+  await page.route('**/zeus-firewall/connectivity', async (route) => {
+    await new Promise((resolve) => { resolveSim = resolve })
+    return route.fulfill({ json: { summary: 'Simulated', allows: [], blocks: [], warnings: [] } })
+  })
+  await page.goto('/platform/zeus/security/connectivity')
+  await expect(page.getByRole('heading', { name: 'Connectivity Matrix' })).toBeVisible({ timeout: 15_000 })
+  // Free-text inputs became pickers.
+  await expect(page.getByLabel('Target host')).toBeVisible()
+  await expect(page.getByLabel('Firewall profile')).toBeVisible()
+  await expect(page.getByText('Run simulation').first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'Simulate' }).click()
+  await expect(page.getByRole('button', { name: 'Simulating…' })).toBeDisabled()
+  resolveSim(null)
+  // Zero results after a real run reads differently than "never run".
+  await expect(page.getByText('No allowed paths in this simulation.')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('No blocked paths in this simulation.')).toBeVisible()
+})
