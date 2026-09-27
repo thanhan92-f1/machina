@@ -13,6 +13,8 @@ import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useExpandable } from '../hooks/useExpandable'
+import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 
@@ -65,6 +67,8 @@ function FleetCloudInstancesContent() {
       return true
     })
   }, [vms, search, statusFilter])
+
+  const instanceList = useExpandable(filtered, 50)
 
   const [pendingAction, setPendingAction] = useState<{
     vm: NativeVm
@@ -169,7 +173,7 @@ function FleetCloudInstancesContent() {
               <th scope="col" className="text-right">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id={instanceList.listId}>
             {loading && filtered.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-center text-[var(--text-muted)]">
@@ -184,7 +188,7 @@ function FleetCloudInstancesContent() {
                 </td>
               </tr>
             )}
-            {filtered.map((vm) => {
+            {instanceList.shown.map((vm) => {
               const status = vmDisplayStatus(vm)
               return (
                 <tr key={vm.id}>
@@ -242,6 +246,9 @@ function FleetCloudInstancesContent() {
           </tbody>
         </table>
       </TahoeTableWrap>
+      )}
+      {instanceList.showToggle && (
+        <ExpandableToggle expanded={instanceList.expanded} hidden={instanceList.hidden} listId={instanceList.listId} onToggle={instanceList.toggle} noun="instances" />
       )}
 
       <FleetCloudFooter />

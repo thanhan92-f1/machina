@@ -28,6 +28,8 @@ import { formatUserError } from '../utils/apiError'
 import { libvirtErrorHints } from '../utils/libvirtHints'
 import { sessionBadgeClasses, statusActionLinkClasses, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
+import { useExpandable } from '../hooks/useExpandable'
+import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 
 export default function VMList() {
   const [vms, setVMs] = useState<VmInfo[]>([])
@@ -125,6 +127,10 @@ export default function VMList() {
     const bp = isPinned(vmScopeKey(b)) ? 0 : 1
     return ap - bp
   })
+
+  // Select-all/export/etc. above operate on the full filtered/sorted set (search already narrows
+  // it); only the table/grid rendering itself is capped, so a large host isn't one giant DOM dump.
+  const vmList = useExpandable(sorted, 50)
 
   const toggleSelect = (key: string) => {
     setSelectedVMs(prev => {
@@ -293,8 +299,8 @@ export default function VMList() {
                 <th scope="col" className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--apple-hairline)]/50">
-              {sorted.map((vm) => (
+            <tbody className="divide-y divide-[var(--apple-hairline)]/50" id={vmList.listId}>
+              {vmList.shown.map((vm) => (
                 <tr key={vmScopeKey(vm)} className="hover:bg-[var(--surface-hover)]/50 transition">
                   <td className="px-3 py-4">
                     <input type="checkbox" aria-label={`Select ${vm.name}`} checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
@@ -373,10 +379,15 @@ export default function VMList() {
               ))}
             </tbody>
           </table>
+          {vmList.showToggle && (
+            <div className="p-3 border-t border-[var(--apple-hairline)]">
+              <ExpandableToggle expanded={vmList.expanded} hidden={vmList.hidden} listId={vmList.listId} onToggle={vmList.toggle} noun="VMs" />
+            </div>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sorted.map((vm) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id={vmList.listId}>
+          {vmList.shown.map((vm) => (
             <div key={vmScopeKey(vm)} className="card p-5 hover:border-white/15 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -426,6 +437,11 @@ export default function VMList() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {viewMode === 'grid' && vmList.showToggle && (
+        <div className="mt-4">
+          <ExpandableToggle expanded={vmList.expanded} hidden={vmList.hidden} listId={vmList.listId} onToggle={vmList.toggle} noun="VMs" />
         </div>
       )}
 

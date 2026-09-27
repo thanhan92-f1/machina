@@ -22,6 +22,8 @@ import { formatUserError } from '../../utils/apiError'
 import { statusPillClasses, hubLinkClasses } from '../../utils/semanticColors'
 import HostFleetCard, { HostCommandCenter } from '../../components/platform/fleet/HostFleetCard'
 import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 const VIEW_KEY = 'platform-hosts-finder-view'
 
@@ -92,6 +94,10 @@ export default function PlatformHosts() {
   }, [hosts, filterOffline, search])
 
   const selected = visibleHosts.find((h) => h.id === selectedId) ?? null
+  // All four Finder view modes (icons/list/columns' chip row/columns' pill row) render the same
+  // `visibleHosts`; `selected` stays looked up against the full list so an expanded-then-collapsed
+  // selection isn't lost.
+  const hostList = useExpandable(visibleHosts, 30)
 
   const toolbar = (
     <>
@@ -115,7 +121,7 @@ export default function PlatformHosts() {
           </tr>
         </thead>
         <tbody>
-          {visibleHosts.map((h) => (
+          {hostList.shown.map((h) => (
             <tr
               key={h.id}
               className={`cursor-pointer ${selectedId === h.id ? 'bg-[var(--accent)]/10' : ''}`}
@@ -149,7 +155,7 @@ export default function PlatformHosts() {
     </TahoeTableWrap>
   ) : (
     <div className="flex flex-wrap gap-2">
-      {visibleHosts.map((h) => (
+      {hostList.shown.map((h) => (
         <button
           key={h.id}
           type="button"
@@ -198,7 +204,7 @@ export default function PlatformHosts() {
   const columnsContent = (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-wrap gap-2">
-        {visibleHosts.map((h) => (
+        {hostList.shown.map((h) => (
           <button
             key={h.id}
             type="button"
@@ -254,7 +260,7 @@ export default function PlatformHosts() {
       {viewMode === 'icons' && visibleHosts.length > 0 && (
         <div className="flex flex-col gap-4 w-full" data-testid="host-fleet-panels">
           <div className="grid gap-3 sm:grid-cols-2 w-full">
-            {visibleHosts.map((h) => (
+            {hostList.shown.map((h) => (
               <HostFleetCard
                 key={h.id}
                 host={h}
@@ -266,6 +272,9 @@ export default function PlatformHosts() {
           </div>
           <HostCommandCenter host={selected} linux={selected ? linuxByHost[selected.id] : undefined} />
         </div>
+      )}
+      {hostList.showToggle && (
+        <ExpandableToggle expanded={hostList.expanded} hidden={hostList.hidden} listId={hostList.listId} onToggle={hostList.toggle} noun="hosts" />
       )}
       <FinderView
         title="Fleet"

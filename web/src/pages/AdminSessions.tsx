@@ -14,6 +14,8 @@ import { formatUserError } from '../utils/apiError'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
 import { statusActionLinkClasses, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
+import { useExpandable } from '../hooks/useExpandable'
+import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 
 export default function AdminSessionsPage() {
   const { username, isRoot } = useAuth()
@@ -21,6 +23,7 @@ export default function AdminSessionsPage() {
   const [data, setData] = useState<AdminSessionsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [revokeTarget, setRevokeTarget] = useState<{ sessionId: string; username: string; isCurrent: boolean } | null>(null)
+  const sessionList = useExpandable(data?.sessions ?? [], 50)
 
   const load = useCallback(async () => {
     if (!isRoot) return
@@ -99,8 +102,8 @@ export default function AdminSessionsPage() {
               <th scope="col" className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--apple-hairline)]/30">
-            {(data?.sessions ?? []).map((s) => (
+          <tbody className="divide-y divide-[var(--apple-hairline)]/30" id={sessionList.listId}>
+            {sessionList.shown.map((s) => (
               <tr key={s.session_id} className="table-row-hover">
                 <td className="px-4 py-3 font-mono text-xs text-[var(--text-muted)] break-all max-w-[200px]">{s.session_id}</td>
                 <td className="px-4 py-3 font-medium">
@@ -126,6 +129,11 @@ export default function AdminSessionsPage() {
             ))}
           </tbody>
         </table>
+        {sessionList.showToggle && (
+          <div className="p-3 border-t border-[var(--apple-hairline)]">
+            <ExpandableToggle expanded={sessionList.expanded} hidden={sessionList.hidden} listId={sessionList.listId} onToggle={sessionList.toggle} noun="sessions" />
+          </div>
+        )}
       </div>
       )}
       <ConfirmDialog

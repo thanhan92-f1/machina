@@ -7,6 +7,8 @@ import SecurityLensLayout from '../../../components/platform/SecurityLensLayout'
 import { explainFirewall, getFirewallOverview, getFirewallPorts, type OpenPort } from '../../../api/zeusFirewall'
 import { formatUserError } from '../../../utils/apiError'
 import { riskTone, statusBadgeClasses } from '../../../utils/semanticColors'
+import { useExpandable } from '../../../hooks/useExpandable'
+import { ExpandableToggle } from '../../../components/ui/ExpandableToggle'
 
 export default function PlatformFirewallPorts() {
   const [ports, setPorts] = useState<Array<OpenPort & { target: string; targetId: string }>>([])
@@ -52,6 +54,7 @@ export default function PlatformFirewallPorts() {
 
   const criticalCount = ports.filter((p) => String(p.risk).toLowerCase() === 'critical').length
   const warningCount = ports.filter((p) => String(p.risk).toLowerCase() === 'warning').length
+  const portList = useExpandable(filtered, 30)
 
   return (
     <SecurityLensLayout
@@ -84,8 +87,8 @@ export default function PlatformFirewallPorts() {
       emptyTitle={ports.length === 0 ? 'No open ports detected' : 'No ports match this filter'}
       emptySubtitle={ports.length === 0 ? 'Zeus Firewall will list listening ports when agents report inventory.' : 'Try a different risk filter.'}
     >
-      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-        {filtered.map((p) => (
+      <div className="rounded-xl border border-white/[0.06] overflow-hidden" id={portList.listId}>
+        {portList.shown.map((p) => (
           <MacListRow
             key={`${p.targetId}-${p.port}-${p.protocol}`}
             href={`/platform/zeus/security/firewall/${p.targetId}`}
@@ -99,6 +102,9 @@ export default function PlatformFirewallPorts() {
           />
         ))}
       </div>
+      {portList.showToggle && (
+        <ExpandableToggle expanded={portList.expanded} hidden={portList.hidden} listId={portList.listId} onToggle={portList.toggle} noun="ports" />
+      )}
     </SecurityLensLayout>
   )
 }

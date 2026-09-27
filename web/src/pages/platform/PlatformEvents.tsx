@@ -11,6 +11,8 @@ import { TahoeListEmpty, TahoeTableWrap, TahoeToolbar } from '../../components/p
 import { getFleetConsole, listAuditLogs, listPlatformEvents, type AuditLog, type FleetConsoleOverview, type PlatformEvent } from '../../api/platform'
 import { formatUserError } from '../../utils/apiError'
 import { statusBadgeClasses, statusBorderClass } from '../../utils/semanticColors'
+import { useExpandable } from '../../hooks/useExpandable'
+import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 type SourceFilter = 'all' | 'audit' | 'event' | 'task'
 
@@ -89,6 +91,9 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
       )
     })
   }, [fleet, source, query])
+
+  const streamList = useExpandable(entries, 100)
+  const auditList = useExpandable(controllerAudit, 100)
 
   return (
     <PlatformPageChrome
@@ -206,8 +211,8 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
                   <th scope="col">Message</th>
                 </tr>
               </thead>
-              <tbody>
-                {entries.map((e) => (
+              <tbody id={streamList.listId}>
+                {streamList.shown.map((e) => (
                   <tr key={`${e.source}-${e.id}`}>
                     <td className="text-[var(--text-muted)] whitespace-nowrap">{formatTime(e.created_at)}</td>
                     <td><span className={`px-1.5 py-0.5 rounded border uppercase text-[10px] tracking-wide ${severityClass(e.severity)}`}>{e.severity}</span></td>
@@ -223,6 +228,11 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
               </tbody>
             </table>
           </TahoeTableWrap>
+        )}
+        {streamList.showToggle && (
+          <div className="pt-3">
+            <ExpandableToggle expanded={streamList.expanded} hidden={streamList.hidden} listId={streamList.listId} onToggle={streamList.toggle} noun="entries" />
+          </div>
         )}
       </section>
 
@@ -240,8 +250,8 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
                   <th scope="col">Resource</th>
                 </tr>
               </thead>
-              <tbody>
-                {controllerAudit.map((a) => (
+              <tbody id={auditList.listId}>
+                {auditList.shown.map((a) => (
                   <tr key={a.id}>
                     <td className="text-[var(--text-muted)] whitespace-nowrap">{formatTime(a.created_at)}</td>
                     <td className="text-[var(--link)]">{a.actor}</td>
@@ -252,6 +262,11 @@ export default function PlatformEvents({ embedded }: { embedded?: boolean } = {}
               </tbody>
             </table>
           </TahoeTableWrap>
+          {auditList.showToggle && (
+            <div className="pt-3">
+              <ExpandableToggle expanded={auditList.expanded} hidden={auditList.hidden} listId={auditList.listId} onToggle={auditList.toggle} noun="entries" />
+            </div>
+          )}
         </section>
       )}
       </OperatingSurfaceLayout>
