@@ -482,7 +482,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/zeus-security/enforcement/policies/{id}/tetragon", get(zeus_security::enforcement_policy_tetragon))
         .route("/api/v1/zeus-security/enforcement/policies/{id}/apply", post(zeus_security::apply_enforcement_policy))
         .route(
-            "/api/v1/zyra-security/enforcement/policies/{id}",
+            "/api/v1/zeus-security/enforcement/policies/{id}",
             patch(zeus_security::patch_enforcement_policy).delete(zeus_security::delete_enforcement_policy),
         )
         .route("/api/v1/zeus-security/fleet/tetragon/install", post(zeus_security::install_fleet_tetragon))
@@ -871,7 +871,10 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/alert-rules",
             get(alerts::list_alert_rules).post(alerts::create_alert_rule),
         )
-        .route("/api/v1/alert-rules/{id}", delete(alerts::delete_alert_rule))
+        .route(
+            "/api/v1/alert-rules/{id}",
+            patch(alerts::patch_alert_rule).delete(alerts::delete_alert_rule),
+        )
         .route(
             "/api/v1/notification-channels",
             get(notification_channels::list_channels).post(notification_channels::create_channel),
@@ -891,7 +894,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route(
             "/api/v1/scheduled-jobs/{id}",
-            delete(scheduled_jobs::delete_scheduled_job),
+            patch(scheduled_jobs::patch_scheduled_job).delete(scheduled_jobs::delete_scheduled_job),
         )
         .route(
             "/api/v1/vms/{id}/watchdog",

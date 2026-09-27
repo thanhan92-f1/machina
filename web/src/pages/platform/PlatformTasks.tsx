@@ -169,11 +169,11 @@ export default function PlatformTasks() {
         value={filter}
         onChange={setFilter}
         options={[
-          { id: '', label: 'All' },
-          { id: 'pending', label: 'Pending' },
-          { id: 'running', label: 'Running' },
-          { id: 'completed', label: 'Completed' },
-          { id: 'failed', label: 'Failed' },
+          { id: '', label: 'All', count: statusCounts[''] },
+          { id: 'pending', label: 'Pending', count: statusCounts.pending },
+          { id: 'running', label: 'Running', count: statusCounts.running },
+          { id: 'completed', label: 'Completed', count: statusCounts.completed },
+          { id: 'failed', label: 'Failed', count: statusCounts.failed },
         ]}
       />
       <div className="relative max-w-xs">

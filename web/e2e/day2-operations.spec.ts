@@ -1,0 +1,123 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+//
+// Covers the wiring-audit fixes: alert-rule / scheduled-job enable-disable (previously no PATCH
+// route existed at all — see controller/src/api/{alerts,scheduled_jobs}.rs), the policy-quota
+// form no longer silently overwriting vCPU/memory/storage with a fixed multiple of Max VMs, and
+// the Fleet Cloud image detail/delete calls that used to 404/405 (see api/nativeTemplates.ts —
+// there's no single-id lookup route, only get/delete by name+version).
+
+import { test, expect } from '@playwright/test'
+import { mockPlatformApi } from './platformMock'
+
+test('alert rule can be disabled and re-enabled', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.goto('/platform/alert-rules')
+  await expect(page.getByRole('heading', { name: 'Alert rules' })).toBeVisible({ timeout: 15_000 })
+  // Scoped to the page container: an unscoped getByText('high-cpu') also matches the toast text
+  // ("Disabled/Enabled 'high-cpu'") this test itself triggers below.
+  const row = page.getByTestId('platform-alert-rules-page').getByText('high-cpu', { exact: true }).locator('..').locator('..')
+  await expect(row.getByText(/disabled/i)).toHaveCount(0)
+  await row.getByRole('button', { name: 'Disable' }).click()
+  await expect(row.getByText(/disabled/i)).toBeVisible({ timeout: 10_000 })
+  await row.getByRole('button', { name: 'Enable' }).click()
+  await expect(row.getByText(/disabled/i)).toHaveCount(0)
+})
+
+test('scheduled job can be disabled and re-enabled', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.goto('/platform/scheduled-jobs')
+  await expect(page.getByRole('heading', { name: 'Scheduled jobs' })).toBeVisible({ timeout: 15_000 })
+  const row = page.getByTestId('platform-scheduled-jobs-page').getByText('host-inventory-refresh', { exact: true }).locator('..').locator('..')
+  await expect(row.getByText(/disabled/i)).toHaveCount(0)
+  await row.getByRole('button', { name: 'Disable' }).click()
+  await expect(row.getByText(/disabled/i)).toBeVisible({ timeout: 10_000 })
+})
+
+test('policy quota save keeps custom vCPU/memory/storage values', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.route('**/api/v1/policy/quotas', async (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({
+        json: [{ project: 'default', max_vms: 50, max_vcpu: 999, max_memory_mib: 123456, max_storage_gib: 7777 }],
+      })
+    }
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON()
+      // The bug: this used to always be max_vms * 4 / 8192 / 100, clobbering the real values above.
+      expect(body.max_vcpu).toBe(999)
+      expect(body.max_memory_mib).toBe(123456)
+      expect(body.max_storage_gib).toBe(7777)
+      return route.fulfill({ json: { ok: true } })
+    }
+    return route.continue()
+  })
+  await page.goto('/platform/policy')
+  await expect(page.getByRole('heading', { name: 'Policy & Quotas' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByLabel('Max vCPU')).toHaveValue('999', { timeout: 10_000 })
+  await page.getByRole('button', { name: 'Save quota' }).click()
+})
+
+test('Fleet Cloud image detail loads by id and delete uses name+version', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.goto('/fleet-cloud/images')
+  await expect(page.getByRole('heading', { name: 'Images' })).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('link', { name: 'rhel-9' }).click()
+  // getTemplate(id) no longer exists — the detail page finds this by id in the already-fetched
+  // list, so it must show the real fleet-only image, not a "not found" state.
+  await expect(page.getByText('Private fleet RHEL 9 image')).toBeVisible({ timeout: 15_000 })
+
+  await page.goto('/fleet-cloud/images')
+  const deleteReq = page.waitForRequest(
+    (req) => req.method() === 'DELETE' && req.url().includes('/templates/rhel-9/1.0.0'),
+  )
+  await page.getByRole('row', { name: /rhel-9/ }).getByRole('button', { name: 'Delete image' }).click()
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await deleteReq
+})
+
+test('recommendation with an unwired fix_action shows a fallback toast instead of silently no-op-ing', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.route('**/api/v1/recommendations', async (route) => {
+    return route.fulfill({
+      json: [{
+        id: 'r1', impact: 'Medium', title: 'Rebalance overloaded host', why: 'host-3 is at 95% CPU',
+        risk: 'low', action: 'Rebalance host', fix_action: 'bulk_rebalance', object_ref: { vm_ids: [] },
+      }],
+    })
+  })
+  await page.goto('/platform/recommendations')
+  await expect(page.getByRole('heading', { name: 'Recommendations' })).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Rebalance host' }).click()
+  await expect(page.getByText(/isn't automated yet/i)).toBeVisible({ timeout: 10_000 })
+})
+
+test('firewall compliance PDF export downloads via fetch through the controller proxy, not a bare cross-origin link', async ({ page }) => {
+  // The old code built a plain <a href> straight at window.location.origin + the controller-only
+  // path (no daemon route exists there, and no auth header rides along with a bare navigation).
+  // downloadFirewallCompliancePdf now fetches it the same authenticated way every other controller
+  // export already does (downloadControllerExport) and saves the response as a blob.
+  await mockPlatformApi(page, { tier: 'power' })
+  let requestSeen = false
+  await page.route('**/zeus-firewall/compliance/*/export.pdf', async (route) => {
+    requestSeen = true
+    return route.fulfill({ contentType: 'application/pdf', body: Buffer.from('%PDF-1.4 mock') })
+  })
+  await page.goto('/platform/zeus/security/compliance')
+  await expect(page.getByRole('heading', { name: /Compliance/i }).first()).toBeVisible({ timeout: 15_000 })
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Export PDF' }).click(),
+  ])
+  expect(requestSeen).toBe(true)
+  expect(download).toBeTruthy()
+})
+
+test('Live Preview Wall is reachable from the Mission Control launchpad', async ({ page }) => {
+  // /platform/mission-control/live had no inbound link anywhere in the app.
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.goto('/platform')
+  await expect(page.getByTestId('mission-control-launchpad')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('link', { name: /Live Preview Wall/i }).click()
+  await expect(page).toHaveURL(/\/platform\/mission-control\/live/)
+  await expect(page.getByTestId('mission-control-live-wall')).toBeVisible({ timeout: 15_000 })
+})

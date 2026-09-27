@@ -85,6 +85,12 @@ export const createAlertRule = (body: {
     body: JSON.stringify(body),
   })
 
+export const setAlertRuleEnabled = (id: string, enabled: boolean) =>
+  platformFetch<AlertRule>(`/api/v1/alert-rules/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  })
+
 export const deleteAlertRule = (id: string) =>
   platformFetch<{ deleted: boolean }>(`/api/v1/alert-rules/${encodeURIComponent(id)}`, { method: 'DELETE' })
 
@@ -121,6 +127,12 @@ export const createScheduledJob = (body: {
   platformFetch<ScheduledJob>('/api/v1/scheduled-jobs', {
     method: 'POST',
     body: JSON.stringify(body),
+  })
+
+export const setScheduledJobEnabled = (id: string, enabled: boolean) =>
+  platformFetch<ScheduledJob>(`/api/v1/scheduled-jobs/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
   })
 
 export const deleteScheduledJob = (id: string) =>

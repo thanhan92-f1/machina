@@ -4403,7 +4403,7 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zyra-security/enforcement/policies/{id}",
+      "path": "/api/v1/zeus-security/enforcement/policies/{id}",
       "methods": [
         "PATCH"
       ],

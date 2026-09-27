@@ -35,16 +35,23 @@ export default function PlatformRecommendations() {
   const execute = async (r: PlatformRecommendation) => {
     try {
       const vmIds = (r.object_ref?.vm_ids as string[] | undefined) ?? []
+      // Capped at 5 per click as a safety limit on bulk actions — say so when there's more than 5,
+      // instead of a toast that implies every matched VM was handled.
+      const batch = vmIds.slice(0, 5)
+      const suffix = vmIds.length > batch.length ? ` (${batch.length} of ${vmIds.length} — run again for the rest)` : ''
       if (r.fix_action === 'bulk_backup') {
-        await Promise.all(vmIds.slice(0, 5).map((id) => createVmBackup(id)))
-        toast.success('Backup tasks queued')
+        await Promise.all(batch.map((id) => createVmBackup(id)))
+        toast.success(`Backup tasks queued${suffix}`)
       } else if (r.fix_action === 'bulk_ha') {
-        await Promise.all(vmIds.slice(0, 5).map((id) => setVmHa(id, { enabled: true })))
-        toast.success('HA enabled on selected VMs')
+        await Promise.all(batch.map((id) => setVmHa(id, { enabled: true })))
+        toast.success(`HA enabled on selected VMs${suffix}`)
       } else if (r.fix_action === 'open_hosts') {
         navigate('/platform/hosts')
       } else if (r.fix_action === 'open_vms') {
         navigate('/platform/vms')
+      } else {
+        toast.warning(`"${r.action}" isn't automated yet — this recommendation has no wired fix action.`)
+        return
       }
       await load()
     } catch (e: unknown) {

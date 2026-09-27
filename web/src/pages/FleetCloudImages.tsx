@@ -68,7 +68,7 @@ function FleetCloudImagesContent() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteTemplate(deleteTarget.id)
+      await deleteTemplate(deleteTarget.name, deleteTarget.version)
       toast.success(`Deleted image '${deleteTarget.name}'`)
       setDeleteTarget(null)
       await load()

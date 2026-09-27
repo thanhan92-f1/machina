@@ -153,13 +153,13 @@ export default function PlatformDeveloper() {
               <div>
                 <p className="text-xs text-[var(--text-muted)] mb-1">Zyra security telemetry (controller)</p>
                 <div className="flex items-start gap-2">
-                  <pre className="text-xs bg-[var(--apple-surface)]/80 rounded-lg p-3 overflow-x-auto text-[var(--text-secondary)] flex-1">{`POST /api/v1/zyra-security/ingest/{host_id}
+                  <pre className="text-xs bg-[var(--apple-surface)]/80 rounded-lg p-3 overflow-x-auto text-[var(--text-secondary)] flex-1">{`POST /api/v1/zeus-security/ingest/{host_id}
 Authorization: Bearer <controller-jwt-or-api-key>
 Content-Type: application/json
 
 {"events":[...]}`}</pre>
                   <CopyButton
-                    text={`curl -sS -X POST "$CONTROLLER/api/v1/zyra-security/ingest/$HOST_ID" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"events":[]}'`}
+                    text={`curl -sS -X POST "$CONTROLLER/api/v1/zeus-security/ingest/$HOST_ID" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"events":[]}'`}
                     label="Copy curl"
                   />
                 </div>

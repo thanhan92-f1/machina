@@ -30,6 +30,30 @@ test('topology digital twin runs batch simulate', async ({ page }) => {
   await expect(page.getByText('Batch: host shutdown affects 1 VM').first()).toBeVisible({ timeout: 10_000 })
 })
 
+test('topology LLDP strip shows real per-host neighbor data, not synthesized graph edges', async ({ page }) => {
+  // Wiring-audit fix: this strip used to fabricate every row from the topology graph's generic
+  // "uplink" edges (hardcoded local_interface: 'uplink', port_id: '') instead of calling the real
+  // per-host LLDP endpoint (GET /api/v1/hosts/{id}/lldp) that PlatformHostDetail already uses.
+  await mockPlatformApi(page, { tier: 'power' })
+  await page.route('**/hosts/h1/lldp', async (route) => {
+    return route.fulfill({
+      json: {
+        source: 'lldpctl',
+        neighbors: [{
+          local_interface: 'eno1', chassis_id: 'aa:bb:cc:dd:ee:ff', system_name: 'tor-switch-42',
+          port_id: 'Gi1/0/24', port_description: '', system_description: '', capabilities: '',
+        }],
+        raw_text: '', summary: '1 neighbor',
+      },
+    })
+  })
+  await page.goto('/platform/topology')
+  await expect(page.getByText('LLDP uplink strip')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('eno1')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('tor-switch-42')).toBeVisible()
+  await expect(page.getByText('(Gi1/0/24)')).toBeVisible()
+})
+
 test('firewall overview scores target and requests approval', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/zeus/security/firewall')

@@ -101,7 +101,7 @@ export default function PlatformFleetSnapshots() {
         <button type="button" className="btn-primary text-sm mt-3 flex items-center gap-1.5" disabled={saving} onClick={() => void add()}>
           <Plus className="w-4 h-4" /> {saving ? 'Saving…' : 'Add schedule'}
         </button>
-        <p className="text-xs text-[var(--text-muted)] mt-2">Runs about once per 23h per schedule. Set MACHINA_TEMPLATES_GIT_DIR for template git sync separately.</p>
+        <p className="text-xs text-[var(--text-muted)] mt-2">Runs about once per 23h per schedule.</p>
       </MacGlassPanel>
 
       <MacGlassPanel title="Active schedules" subtitle={loading ? 'Loading…' : `${rows.length} schedule(s)`}>
