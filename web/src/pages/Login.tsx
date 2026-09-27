@@ -71,10 +71,6 @@ export default function LoginPage() {
   }, [loginDest.host])
 
   useEffect(() => {
-    document.querySelector<HTMLElement>('.login-store-scroll')?.scrollTo({ top: 0 })
-  }, [])
-
-  useEffect(() => {
     void getAuthProviders().then(setProviders).catch(() => {})
     const params = new URLSearchParams(window.location.search)
     const errorParam = params.get('error')
@@ -88,10 +84,6 @@ export default function LoginPage() {
       setError('Authentication failed — please try again')
     }
   }, [])
-
-  const scrollToForm = () => {
-    document.getElementById('login-sign-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   const handleContinue = (e: FormEvent) => {
     e.preventDefault()
@@ -125,31 +117,6 @@ export default function LoginPage() {
     }
   }
 
-  const storeCta = (
-    <>
-      <a
-        href="#login-sign-in"
-        className="login-cta-primary"
-        onClick={(e) => {
-          e.preventDefault()
-          scrollToForm()
-        }}
-      >
-        Sign in
-      </a>
-      <a
-        href="#login-sign-in"
-        className="login-cta-secondary"
-        onClick={(e) => {
-          e.preventDefault()
-          scrollToForm()
-        }}
-      >
-        Continue
-      </a>
-    </>
-  )
-
   const panelSubtitle =
     step === 'password' ? (
       <>
@@ -159,81 +126,11 @@ export default function LoginPage() {
       'Sign in'
     )
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const localNav = (
-    <nav className="login-localnav" aria-label="Login chapters">
-      <a href="#login-product" onClick={(e) => { e.preventDefault(); scrollTo('login-product') }}>Product</a>
-      <a href="#login-machine" onClick={(e) => { e.preventDefault(); scrollTo('login-machine') }}>This machine</a>
-      <a href="#login-sign-in" onClick={(e) => { e.preventDefault(); scrollTo('login-sign-in') }}>Sign in</a>
-      {loginDest.host ? (
-        <span className="login-localnav-host" title={loginDest.origin}>{loginDest.host}</span>
-      ) : null}
-    </nav>
-  )
-
-  const middleChapters = (
-    <>
-      <section id="login-product" className="login-chapter login-chapter-product" aria-label="Product">
-        <div className="login-chapter-inner">
-          <p className="login-chapter-kicker">Product</p>
-          <h2 className="login-hero-title">machina.</h2>
-          <p className="login-tagline">
-            KubeVirt and libvirt — consoles, snapshots, and security from one private-cloud control plane.
-          </p>
-          <div className="login-cta">
-            <button type="button" className="login-cta-primary" onClick={() => scrollTo('login-machine')}>
-              See this machine
-            </button>
-          </div>
-        </div>
-      </section>
-      <section id="login-machine" className="login-chapter login-chapter-destination" aria-label="This machine">
-        <div className="login-chapter-inner">
-          <p className="login-chapter-kicker">This machine</p>
-          <h2 className="login-dest-title">{loginDest.host || 'localhost'}.</h2>
-          <p className="login-tagline">
-            You are signing in to <strong style={{ color: '#fff', fontWeight: 600 }}>machina</strong> on
-            this host — PAM / directory credentials for this node.
-          </p>
-          <ul className="login-dest-facts">
-            <li className="login-dest-fact">
-              <span className="login-dest-fact-label">Product</span>
-              <span className="login-dest-fact-value is-display">machina</span>
-            </li>
-            <li className="login-dest-fact">
-              <span className="login-dest-fact-label">Host</span>
-              <span className="login-dest-fact-value">{loginDest.host || '—'}</span>
-            </li>
-            <li className="login-dest-fact">
-              <span className="login-dest-fact-label">Origin</span>
-              <span className="login-dest-fact-value">{loginDest.origin || '—'}</span>
-            </li>
-            <li className="login-dest-fact">
-              <span className="login-dest-fact-label">Protocol</span>
-              <span className="login-dest-fact-value">
-                {loginDest.protocol || '—'}
-                {loginDest.port ? ` · ${loginDest.port}` : ''}
-              </span>
-            </li>
-          </ul>
-          <div className="login-cta">
-            <button type="button" className="login-cta-primary" onClick={() => scrollTo('login-sign-in')}>
-              Continue to sign in
-            </button>
-          </div>
-        </div>
-      </section>
-    </>
-  )
-
   return (
     <PremiumLoginShell
       productName="machina"
       productWordmark="machina"
-      themeSwitcher={localNav}
+      hostBadge={loginDest.host || undefined}
       heroTitle={
         <>
           Sign in to
@@ -243,15 +140,10 @@ export default function LoginPage() {
       }
       heroSubheadline={
         loginDest.host
-          ? `Private cloud on ${loginDest.host}. Confirm the machine below, then enter your credentials.`
-          : 'Private cloud control plane. Confirm the destination, then sign in.'
+          ? `Private cloud on ${loginDest.host}. Enter your credentials to continue.`
+          : 'Private cloud control plane. Enter your credentials to continue.'
       }
-      heroCta={storeCta}
-      chapterNote={
-        loginDest.host
-          ? `machina · ${loginDest.host} · scroll the chapters`
-          : 'machina · scroll the chapters'
-      }
+      chapterNote={null}
       panelSubtitle={panelSubtitle}
       panelHint={
         step === 'identify' ? (
@@ -267,18 +159,8 @@ export default function LoginPage() {
           )
         ) : null
       }
-      middleChapters={middleChapters}
       showSignInChapter
     >
-      <p className="login-sign-in-context">
-        Signing in to <strong>machina</strong>
-        {loginDest.host ? (
-          <>
-            {' '}
-            on <span className="login-apple-host">{loginDest.host}</span>
-          </>
-        ) : null}
-      </p>
       {step === 'identify' ? (
         <form
           key="identify"

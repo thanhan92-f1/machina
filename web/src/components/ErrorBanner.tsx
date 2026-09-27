@@ -26,15 +26,17 @@ const toneStyles: Record<Tone, { border: string; bg: string; title: string; text
   amber: {
     border: 'border-[color-mix(in_srgb,var(--machina-status-warn)_40%,transparent)]',
     bg: 'bg-[color-mix(in_srgb,var(--machina-status-warn)_10%,transparent)]',
-    title: 'text-[color-mix(in_srgb,var(--machina-status-warn)_85%,white)]',
-    text: 'text-[color-mix(in_srgb,var(--machina-status-warn)_70%,white)]',
+    // Text tokens are theme-aware (dark text on light, bright on dark). The old mix-toward-white
+    // values were ~2.3:1 on the light theme's tinted panel. Fallbacks cover steel/aurora/rack.
+    title: 'text-[var(--nl-status-warn-text,#ffd60a)]',
+    text: 'text-[var(--nl-status-warn-text,#ffd60a)]',
     semantic: 'warn',
   },
   red: {
     border: 'border-[color-mix(in_srgb,var(--machina-status-error)_40%,transparent)]',
     bg: 'bg-[color-mix(in_srgb,var(--machina-status-error)_10%,transparent)]',
-    title: 'text-[color-mix(in_srgb,var(--machina-status-error)_85%,white)]',
-    text: 'text-[color-mix(in_srgb,var(--machina-status-error)_70%,white)]',
+    title: 'text-[var(--nl-accent-red-text,#ff6961)]',
+    text: 'text-[var(--nl-accent-red-text,#ff6961)]',
     semantic: 'error',
   },
 }
@@ -64,7 +66,7 @@ export default function ErrorBanner({
       <div className="flex items-start gap-2">
         <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${statusToneClass(s.semantic)}`} />
         <div className="min-w-0 flex-1 space-y-1">
-          <h3 className={`text-sm font-semibold ${s.title}`}>{title}</h3>
+          <h2 className={`text-sm font-semibold ${s.title}`}>{title}</h2>
           <p className={`text-sm ${s.text} leading-relaxed`}>{headline}</p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">

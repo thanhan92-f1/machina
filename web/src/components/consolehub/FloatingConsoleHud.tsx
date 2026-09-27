@@ -38,18 +38,18 @@ export default function FloatingConsoleHud({ visible = true }: Props) {
     <div
       className={`absolute top-3 right-3 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-black/60 backdrop-blur-md text-xs text-[var(--text-primary)] shadow-lg">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-black/60 backdrop-blur-md text-xs text-white shadow-lg">
         <span className={`w-2 h-2 rounded-full ${tone}`} />
         <span>{label}</span>
-        <span className="text-[var(--text-muted)]">·</span>
-        <span className="uppercase text-[var(--text-muted)]">{vp.protocol}</span>
-        <span className="text-[var(--text-muted)]">·</span>
-        <span className="font-mono text-[var(--text-secondary)]">{vp.resolution}</span>
-        <span className="text-[var(--text-muted)]">·</span>
-        <span className="text-[var(--text-muted)] capitalize">{vp.mode}</span>
+        <span className="text-white/60">·</span>
+        <span className="uppercase text-white/60">{vp.protocol}</span>
+        <span className="text-white/60">·</span>
+        <span className="font-mono text-white/80">{vp.resolution}</span>
+        <span className="text-white/60">·</span>
+        <span className="text-white/60 capitalize">{vp.mode}</span>
         {vp.mode === 'zoom' ? (
           <>
-            <span className="text-[var(--text-muted)]">·</span>
+            <span className="text-white/60">·</span>
             <span>{vp.zoom}%</span>
           </>
         ) : null}
