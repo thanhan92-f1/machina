@@ -115,7 +115,7 @@ function PlatformDesktopShell() {
 
   // The "Machina" dropdown advertises these as ⌘, and ⌘⌥S, but until now neither had a live
   // accelerator anywhere in the current shell — the only matching keydown handler lived in the
-  // orphaned PlatformMacAppMenus.tsx (unimported since the menubar/dock rewrite).
+  // orphaned PlatformMacAppMenus.tsx, deleted along with the rest of the dead mac-shell components.
   useKeyboardShortcut({
     key: ',',
     meta: true,

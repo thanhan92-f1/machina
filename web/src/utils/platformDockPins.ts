@@ -41,7 +41,6 @@ export type PlatformDockItem = {
 
 const DOCK_KEY = 'machina-platform-dock-pins'
 export const PLATFORM_DOCK_CHANGED_EVENT = 'machina-platform-dock-changed'
-export const OPEN_PLATFORM_DOCK_EDITOR_EVENT = 'machina-open-dock-editor'
 
 const ICON_BY_PATH: Record<string, LucideIcon> = {
   '/platform': LayoutDashboard,
@@ -154,10 +153,6 @@ export function savePlatformDockPaths(paths: string[]) {
 
 export function resetPlatformDockPaths(tier: PlatformDesktopTier = loadPlatformDesktopTier()) {
   savePlatformDockPaths(defaultDockPathsForTier(tier))
-}
-
-export function openPlatformDockEditor() {
-  window.dispatchEvent(new CustomEvent(OPEN_PLATFORM_DOCK_EDITOR_EVENT))
 }
 
 export function usePlatformDockItems(): PlatformDockItem[] {

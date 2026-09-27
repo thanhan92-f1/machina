@@ -1,7 +1,6 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 import { useEffect, useState } from 'react'
-import { LayoutGrid } from 'lucide-react'
 import { MacSettingsGroup, MacSettingsGroupBody } from './mac/PlatformMacUi'
 import {
   PLATFORM_WALLPAPER_EVENT,
@@ -12,7 +11,6 @@ import {
   type PlatformWallpaper,
 } from '../../utils/platformWallpaper'
 import { getFleetGeneral, type FleetGeneralOverview } from '../../api/platform'
-import { openPlatformDockEditor } from '../../utils/platformDockPins'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
 import PlatformDesktopTierPicker from './PlatformDesktopTierPicker'
 import { useTheme, type AppTheme } from '../../contexts/ThemeContext'
@@ -99,15 +97,6 @@ export default function PlatformAppearanceSettings() {
           <p className="text-xs text-[var(--text-muted)] leading-relaxed">
             Normal hides the status strip and most sidebar apps. Advanced restores the full fleet surface.
           </p>
-        </MacSettingsGroupBody>
-      </MacSettingsGroup>
-
-      <MacSettingsGroup title="Dock">
-        <MacSettingsGroupBody>
-          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">Pin apps to the Machina dock — same as macOS Customize Dock.</p>
-          <button type="button" className="btn-primary text-sm inline-flex items-center gap-2" onClick={openPlatformDockEditor}>
-            <LayoutGrid className="w-4 h-4" /> Customize Dock…
-          </button>
         </MacSettingsGroupBody>
       </MacSettingsGroup>
 
