@@ -115,6 +115,14 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
     try {
       const r = await syncAllVaultProviders()
       toast.success(r.summary)
+      // The per-provider status column alone ("active") looks identical whether the probe was
+      // live or simulated — syncOne() already surfaces the caveat message per click, but "Sync
+      // all" only showed the aggregate summary, so a simulated Vault could look fully live to
+      // anyone who only ever uses the bulk button.
+      const simulated = r.results.filter((res) => /simulat/i.test(res.message))
+      if (simulated.length > 0) {
+        toast.warning(`Simulated probe (no live Vault reached): ${simulated.map((s) => s.provider_name).join(', ')}`)
+      }
       await load()
     } catch (e: unknown) {
       setActionError(formatUserError(e))
