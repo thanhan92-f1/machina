@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef } from 'react'
+import { restoreFocus, useCaptureTrigger } from '../../hooks/useCaptureTrigger'
 
 const spring = { type: 'spring' as const, stiffness: 320, damping: 28, mass: 0.85 }
 
@@ -20,7 +21,8 @@ export type GlassModalProps = {
 export function GlassModal({ open, onClose, title, subtitle, children, wide, footer, ariaLabel }: GlassModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const prevFocusRef = useRef<HTMLElement | null>(null)
+  // Captured during render, before any child autoFocus can take focus (see useCaptureTrigger).
+  const triggerRef = useCaptureTrigger(open)
 
   useEffect(() => {
     if (!open) return
@@ -29,24 +31,21 @@ export function GlassModal({ open, onClose, title, subtitle, children, wide, foo
     return () => document.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  // On open, remember what was focused and move focus into the modal (close
-  // button, or the panel itself for a title-less modal that has no close button).
-  // On close, restore focus to the element that had it before, so keyboard users
-  // aren't dumped at the top of the page.
+  // On open, move focus into the modal (close button, or the panel itself for a title-less modal
+  // that has no close button). On close, hand focus back to the element that opened it so keyboard
+  // users aren't dumped at the top of the page. The trigger may have been removed while the modal
+  // was open (confirming a delete removes the row that opened it), which restoreFocus tolerates.
+  const wasOpen = useRef(false)
   useEffect(() => {
     if (open) {
-      prevFocusRef.current = document.activeElement as HTMLElement | null
+      wasOpen.current = true
       if (closeButtonRef.current) closeButtonRef.current.focus()
       else panelRef.current?.focus()
-    } else if (prevFocusRef.current) {
-      // The triggering element may have been removed from the DOM while the
-      // modal was open (e.g. confirming a delete removes the row that opened
-      // it) — focusing a detached node is a no-op that silently drops focus,
-      // so only restore it when it's still attached to the document.
-      if (prevFocusRef.current.isConnected) prevFocusRef.current.focus?.()
-      prevFocusRef.current = null
+    } else if (wasOpen.current) {
+      wasOpen.current = false
+      restoreFocus(triggerRef.current)
     }
-  }, [open])
+  }, [open, triggerRef])
 
   useEffect(() => {
     if (!open) return

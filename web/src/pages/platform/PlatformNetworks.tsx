@@ -363,6 +363,7 @@ export default function PlatformNetworks() {
                         <td className="capitalize text-[var(--text-muted)]">{n.backend.replace('-', ' ')}</td>
                         <td>
                           <input
+                            aria-label={`Bridge for ${n.name}`}
                             className="input w-full font-mono text-xs max-w-[8rem]"
                             value={networkDraft(n).bridge}
                             onChange={(e) => setEditDraft((d) => ({ ...d, [n.id]: { ...networkDraft(n), bridge: e.target.value } }))}
@@ -371,6 +372,7 @@ export default function PlatformNetworks() {
                         </td>
                         <td>
                           <input
+                            aria-label={`VLAN for ${n.name}`}
                             className="input w-full text-xs max-w-[4rem]"
                             inputMode="numeric"
                             value={networkDraft(n).vlan}

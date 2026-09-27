@@ -117,7 +117,7 @@ export default function PlatformDatacenter() {
           </button>
         </div>
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Hosts ({hosts.length})</h3>
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Hosts ({hosts.length})</h2>
           <ul className="flex flex-wrap gap-2 text-xs">
             {hosts.map((h) => (
               <li key={h.id}>

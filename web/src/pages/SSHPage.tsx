@@ -24,6 +24,7 @@ export default function SSHPage() {
   if (!host.trim()) {
     return (
       <div className="space-y-4 animate-fade-in text-center text-[var(--text-muted)] py-12">
+        <h1 className="sr-only">SSH terminal</h1>
         <p>No host specified.</p>
         <p className="text-sm">
           Use <code className="text-[var(--text-muted)]">/ssh?host=192.168.122.10&amp;user=root</code> or open SSH from a VM details page.
@@ -35,6 +36,7 @@ export default function SSHPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <h1 className="sr-only">SSH terminal</h1>
       <div className="flex items-center gap-4">
         <Link to="/vms" className="p-2 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Back">
           <ArrowLeft className="w-5 h-5" aria-hidden="true" />

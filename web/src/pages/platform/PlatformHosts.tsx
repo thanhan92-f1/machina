@@ -169,7 +169,7 @@ export default function PlatformHosts() {
   const inspector = selected ? (
     <div className="platform-finder-inspector p-4 space-y-4">
       <div>
-        <h3 className="font-semibold text-[var(--text-primary)]">{selected.hostname}</h3>
+        <h2 className="font-semibold text-[var(--text-primary)]">{selected.hostname}</h2>
         <p className="platform-finder-inspector-subtitle mt-1">{selected.address || '—'}</p>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs">

@@ -376,14 +376,14 @@ export default function CinemaControlStrip({
 
         {/* AI */}
         {onOpenAi ? (
-          <button type="button" className={`${btn} text-indigo-700`} onClick={onOpenAi}>
+          <button type="button" className={`${btn} text-indigo-700`} onClick={onOpenAi} aria-label="Ask AI about this console" title="Ask AI about this console">
             <Sparkles className="w-3.5 h-3.5" />
           </button>
         ) : null}
 
         {/* More */}
         <div className="relative" ref={moreRef}>
-          <button type="button" className={btn} onClick={() => setMoreOpen((v) => !v)} data-testid="cinema-more">
+          <button type="button" className={btn} onClick={() => setMoreOpen((v) => !v)} data-testid="cinema-more" aria-label="More actions" aria-haspopup="menu" aria-expanded={moreOpen}>
             <MoreHorizontal className="w-3.5 h-3.5" />
           </button>
           {moreOpen ? (

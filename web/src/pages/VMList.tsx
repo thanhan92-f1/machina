@@ -18,7 +18,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { getAllTags, getVmTags } from '../api/extras'
 import { Play, Square, Power, Pause, RotateCcw, Trash2, RefreshCw, Terminal, Tag, LayoutGrid, LayoutList, X, Download, Star, Server, Copy, Monitor } from 'lucide-react'
 import VmResolvedSshConnectDialog from '../components/vm/VmResolvedSshConnectDialog'
-import { ChoiceCard, ChoiceCardGrid } from '../components/ChoiceCards'
+import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { downloadJSON, downloadCSV } from '../utils/export'
 import { isPinned, togglePin } from '../utils/pinnedVMs'
 import EmptyState from '../components/EmptyState'
@@ -209,26 +209,15 @@ export default function VMList() {
         <>
           <button onClick={() => downloadJSON(filtered, 'vms.json')} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Export JSON" aria-label="Export JSON"><Download className="w-4 h-4" /></button>
           <button onClick={() => downloadCSV(filtered as unknown as Record<string, unknown>[], 'vms.csv')} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Export CSV" aria-label="Export CSV"><Download className={`w-4 h-4 ${statusToneClass('ok')}`} /></button>
-          <ChoiceCardGrid className="max-w-[220px] sm:max-w-[240px] [&_button]:min-h-0">
-            <ChoiceCard
-              compact
-              tone="slate"
-              selected={viewMode === 'table'}
-              onClick={() => setViewMode('table')}
-              icon={<LayoutList className="w-4 h-4" />}
-              title="Table"
-              description="Dense rows"
-            />
-            <ChoiceCard
-              compact
-              tone="slate"
-              selected={viewMode === 'grid'}
-              onClick={() => setViewMode('grid')}
-              icon={<LayoutGrid className="w-4 h-4" />}
-              title="Grid"
-              description="Card tiles"
-            />
-          </ChoiceCardGrid>
+          <SegmentedControl
+            ariaLabel="View"
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              { value: 'table', label: 'Table', icon: <LayoutList className="w-4 h-4" /> },
+              { value: 'grid', label: 'Grid', icon: <LayoutGrid className="w-4 h-4" /> },
+            ]}
+          />
           <button onClick={load} className="p-2 hover:bg-[var(--surface-hover)] rounded transition" title="Refresh" aria-label="Refresh VM list">
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -295,7 +284,7 @@ export default function VMList() {
             <thead>
               <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">
                 <th scope="col" className="px-3 py-3 w-8">
-                  <input type="checkbox" checked={selectedVMs.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
+                  <input type="checkbox" aria-label="Select all VMs" checked={selectedVMs.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                 </th>
                 <th scope="col" className="px-6 py-3">Name</th>
                 <th scope="col" className="px-6 py-3">State</th>
@@ -308,7 +297,7 @@ export default function VMList() {
               {sorted.map((vm) => (
                 <tr key={vmScopeKey(vm)} className="hover:bg-[var(--surface-hover)]/50 transition">
                   <td className="px-3 py-4">
-                    <input type="checkbox" checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
+                    <input type="checkbox" aria-label={`Select ${vm.name}`} checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -391,7 +380,7 @@ export default function VMList() {
             <div key={vmScopeKey(vm)} className="card p-5 hover:border-white/15 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <input type="checkbox" checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)] shrink-0" />
+                  <input type="checkbox" aria-label={`Select ${vm.name}`} checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)] shrink-0" />
                   <button onClick={(e) => { e.preventDefault(); togglePin(vmScopeKey(vm)); setPinnedRefresh(n => n + 1) }} aria-label={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'} className="p-1 hover:bg-yellow-600/20 rounded transition" title={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'}>
                     <Star className={`w-3.5 h-3.5 ${isPinned(vmScopeKey(vm)) ? `${statusToneClass('warn')} fill-[var(--machina-status-warn)]` : 'text-[var(--text-muted)]'}`} />
                   </button>

@@ -11,6 +11,7 @@ export function AppleStoryHeader({
   lede,
   cta,
   centered = false,
+  as: Title = 'h1',
 }: {
   eyebrow?: string
   title: string
@@ -18,6 +19,8 @@ export function AppleStoryHeader({
   cta?: ReactNode
   /** Page-level hero (not a sub-section): use the centered AirPods-style hero band. */
   centered?: boolean
+  /** Heading level. Default h1; use h2 when the page's own header already renders the h1. */
+  as?: 'h1' | 'h2'
 }) {
   return (
     <header className={`apple-story-stack mb-8 ${centered ? 'apple-hero-band' : 'max-w-3xl'}`}>
@@ -32,7 +35,7 @@ export function AppleStoryHeader({
           {eyebrow}
         </p>
       ) : null}
-      <h1 className="apple-display text-[var(--text-primary)] tracking-tight">{title}</h1>
+      <Title className="apple-display text-[var(--text-primary)] tracking-tight">{title}</Title>
       {lede ? <p className="apple-lede text-[var(--text-secondary)] mt-3">{lede}</p> : null}
       {cta ? <div className={centered ? 'apple-cta-row' : 'mt-5 flex flex-wrap gap-3'}>{cta}</div> : null}
     </header>

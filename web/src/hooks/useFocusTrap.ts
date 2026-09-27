@@ -3,6 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { useEffect, useRef, type RefObject } from 'react'
+import { restoreFocus, useCaptureTrigger } from './useCaptureTrigger'
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -31,16 +32,20 @@ export function useFocusTrap(
   escapeRef.current = onEscape
   // Stable per-instance identity used to find this trap's position in the stack.
   const tokenRef = useRef<object>({})
+  // Captured during render: a child's autoFocus has already moved focus by the time the effect runs.
+  const triggerRef = useCaptureTrigger(active)
 
   useEffect(() => {
     if (!active || !containerRef.current) return
 
     const root = containerRef.current
-    const previouslyFocused = document.activeElement as HTMLElement | null
     const token = tokenRef.current
     trapStack.push(token)
 
     const timer = window.setTimeout(() => {
+      // Respect an autoFocus'd control (e.g. a type-to-confirm input): only move focus in when
+      // nothing inside the container already has it.
+      if (root.contains(document.activeElement)) return
       const nodes = getFocusableElements(root)
       nodes[0]?.focus()
     }, 0)
@@ -82,7 +87,7 @@ export function useFocusTrap(
       if (i !== -1) trapStack.splice(i, 1)
       root.removeEventListener('keydown', onTab)
       document.removeEventListener('keydown', onEscapeKey)
-      previouslyFocused?.focus?.()
+      restoreFocus(triggerRef.current)
     }
-  }, [active, containerRef])
+  }, [active, containerRef, triggerRef])
 }

@@ -2,7 +2,8 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { AlertTriangle } from 'lucide-react'
 
 interface Props {
@@ -32,17 +33,17 @@ export default function ConfirmDialog({
 }: Props) {
   const [typed, setTyped] = useState('')
   const titleId = useId()
+  const messageId = useId()
+  const inputId = useId()
+  const dialogRef = useRef<HTMLFormElement>(null)
+
+  // Trap Tab, close on Escape (topmost surface only) and give focus back to whatever opened the
+  // dialog. Replaces the ad hoc Escape listener, which did neither of the other two.
+  useFocusTrap(dialogRef, open, onCancel)
 
   useEffect(() => {
     if (open) setTyped('')
   }, [open, typeToMatch])
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onCancel])
 
   if (!open) return null
 
@@ -58,28 +59,30 @@ export default function ConfirmDialog({
       role="presentation"
     >
       <form
+        ref={dialogRef}
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className="bg-[rgba(29,29,31,0.96)] border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-scale-in"
+        aria-describedby={messageId}
+        className="bg-[var(--apple-surface-elevated)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => { e.preventDefault(); if (matchOk) onConfirm() }}
       >
-        <div className="flex items-center gap-2.5 p-5 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5 p-5 border-b border-[var(--apple-hairline)]">
           <div className="w-8 h-8 rounded-full bg-[color-mix(in_srgb,var(--machina-status-warn)_18%,transparent)] flex items-center justify-center">
             <AlertTriangle className="w-4 h-4 text-[var(--machina-status-warn)]" />
           </div>
-          <span id={titleId} className="text-lg font-semibold tracking-tight">{title}</span>
+          <h2 id={titleId} className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h2>
         </div>
         <div className="p-5 text-[var(--text-secondary)] text-sm leading-relaxed space-y-3">
-          <div>{message}</div>
+          <div id={messageId}>{message}</div>
           {needsMatch && (
             <div>
-              <label className="block text-xs text-[var(--text-muted)] mb-1.5" htmlFor="confirm-type-match">
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5" htmlFor={inputId}>
                 {typeToMatchLabel ?? 'Type the confirmation phrase exactly (case-sensitive):'}
               </label>
               <input
-                id="confirm-type-match"
+                id={inputId}
                 type="text"
                 autoFocus
                 autoComplete="off"
