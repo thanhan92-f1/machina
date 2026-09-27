@@ -836,15 +836,13 @@ html[data-theme='tahoe-light'] .zeus-empty-icon {
 }
 
 html[data-zeus-reduced-motion='1'] .zeus-cinematic-timeline,
-html[data-zeus-reduced-motion='1'] .mac-dock-ask-critical,
 html[data-zeus-reduced-motion='1'] .zeus-space-transition {
   animation: none !important;
   transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-zeus-reduced-motion='0']) .zeus-cinematic-timeline,
-  html:not([data-zeus-reduced-motion='0']) .mac-dock-ask-critical {
+  html:not([data-zeus-reduced-motion='0']) .zeus-cinematic-timeline {
     animation: none !important;
   }
 }
@@ -1108,23 +1106,6 @@ html[data-theme='tahoe-light'] .command-deck-capsule-live {
   box-shadow: 0 0 0 1px hsl(200 78% 40% / 0.18), 0 8px 24px -16px hsl(200 78% 40% / 0.35);
 }
 
-html[data-theme='tahoe-light'] .tahoe-sidebar-link-active {
-  background: color-mix(in srgb, #0071e3 10%, transparent) !important;
-  color: hsl(200 78% 30%) !important;
-  box-shadow: inset 3px 0 0 0 hsl(200 78% 40%), 0 4px 16px -10px hsl(200 78% 40% / 0.4);
-}
-
-html[data-theme='tahoe-light'] .tahoe-mobile-nav-active {
-  background: linear-gradient(135deg, hsl(200 78% 40% / 0.18), hsl(270 48% 52% / 0.12));
-  color: hsl(200 78% 32%);
-  border-color: hsl(200 78% 40% / 0.3);
-}
-
-html[data-theme='tahoe-light'] .mac-desktop-tab-active {
-  background: color-mix(in srgb, #0071e3 8%, transparent);
-  box-shadow: inset 0 -2px 0 0 hsl(200 78% 40%);
-}
-
 html[data-theme='tahoe-light'] .tahoe-page-root button.bg-primary,
 html[data-theme='tahoe-light'] .tahoe-page-root a.bg-primary,
 html[data-theme='tahoe-light'] .tahoe-page-root .bg-primary.text-primary-foreground {
@@ -1182,36 +1163,6 @@ html[data-theme='tahoe-light'] {
   scrollbar-color: hsl(200 55% 62%) transparent;
 }
 
-
-/* ── Machina class aliases → Zeus chrome selectors ── */
-.mac-finder-sidebar,
-.platform-sidebar,
-.tahoe-sidebar {
-  /* inherit zeus-sidebar wash rules via shared selectors below */
-}
-html[data-theme='tahoe-light'] .mac-finder-sidebar,
-html[data-theme='tahoe-light'] .platform-sidebar,
-html[data-theme='tahoe-light'] .tahoe-sidebar {
-  background: inherit;
-}
-html[data-theme='tahoe-light'] .mac-menubar-inner,
-html[data-ui-shell='default'] .mac-menubar-inner {
-  /* mirror .mac-menubar */
-}
-html[data-theme='tahoe-light'] .mac-menubar-inner {
-  background: rgba(250, 250, 252, 0.8) !important;
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  border-bottom: 1px solid hsl(205 22% 84% / 0.65);
-}
-html[data-ui-shell='default'] .mac-menubar-inner {
-  background:
-    radial-gradient(ellipse 80% 120% at 10% -30%, hsl(200 85% 52% / 0.18), transparent 55%),
-    linear-gradient(180deg, hsl(0 0% 12% / 0.92) 0%, hsl(0 0% 8% / 0.88) 100%);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  border-bottom: 1px solid hsl(0 0% 100% / 0.08);
-}
 
 /* Bridge Machina aliases to apple.com blue + shop box type.
    Interactive blue = #0071e3 (AirPods / shop). Box type = .form-selector. */

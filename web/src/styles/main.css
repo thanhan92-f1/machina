@@ -304,33 +304,6 @@ code, .font-mono, pre {
   .glass-hover-lift:hover {
     transform: none;
   }
-  .mac-dock-item:hover {
-    transform: none;
-  }
-}
-
-.platform-sidebar {
-  font-family: var(--font-display);
-}
-
-.platform-sidebar--rail {
-  --platform-sidebar-width: 68px;
-}
-
-.platform-sidebar--expanded {
-  --platform-sidebar-width: 15rem;
-}
-
-.platform-sidebar-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.platform-sidebar-divider {
-  height: 1px;
-  background: var(--apple-hairline);
-  opacity: 0.85;
 }
 
 .platform-mac-shell {
@@ -392,36 +365,6 @@ code, .font-mono, pre {
     linear-gradient(180deg, rgb(10, 8, 24) 0%, rgb(6, 10, 18) 100%);
 }
 
-.mac-menubar-inner {
-  background: var(--glass-bg);
-  background-image: linear-gradient(180deg, var(--glass-highlight), transparent 60%);
-  backdrop-filter: blur(var(--blur-liquid)) saturate(1.5);
-  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.5);
-  border-bottom: 1px solid var(--glass-border);
-  overflow: visible;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.mac-menubar-title {
-  z-index: 1;
-}
-
-.mac-dynamic-island {
-  backdrop-filter: blur(var(--blur-liquid)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.4);
-  box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.45);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-}
-
-.mac-dynamic-island:hover {
-  transform: scale(1.02);
-}
-
-.mac-dynamic-island[aria-expanded='true'] {
-  transform: scale(1.04);
-}
-
 .mac-popout-root .platform-mac-scroll-body {
   scroll-padding-top: 3.5rem;
   scroll-padding-bottom: 2rem;
@@ -455,172 +398,6 @@ code, .font-mono, pre {
   position: sticky;
   top: var(--classic-nav-height, 3.5rem);
   z-index: 20;
-}
-
-.mac-finder-sidebar {
-  position: sticky;
-  top: var(--platform-chrome-top, 6.5rem);
-  align-self: flex-start;
-  max-height: calc(100dvh - var(--platform-chrome-top, 6.5rem) - 1rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--glass-bg-elevated);
-  backdrop-filter: blur(calc(var(--blur-liquid) + 10px)) saturate(1.45);
-  -webkit-backdrop-filter: blur(calc(var(--blur-liquid) + 10px)) saturate(1.45);
-  border-color: var(--glass-border);
-  box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.04),
-    4px 0 24px -12px rgba(0, 0, 0, 0.35);
-}
-
-.tahoe-sidebar-expanded {
-  border-top-right-radius: 1.25rem;
-  border-bottom-right-radius: 1.25rem;
-}
-
-.tahoe-context-bar {
-  position: sticky;
-  top: 2.75rem;
-  z-index: 35;
-  border-bottom: 1px solid hsl(var(--foreground) / 0.08);
-  background: hsl(var(--card) / 0.72);
-  backdrop-filter: blur(calc(var(--blur-liquid) + 4px)) saturate(1.35);
-  -webkit-backdrop-filter: blur(calc(var(--blur-liquid) + 4px)) saturate(1.35);
-  color: hsl(var(--foreground) / 0.9);
-}
-
-.tahoe-context-bar-inner {
-  padding: 0.5rem 1rem 0.625rem;
-  max-width: 160rem;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.tahoe-context-app-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.5rem;
-  background: hsl(var(--foreground) / 0.06);
-  border: 1px solid hsl(var(--foreground) / 0.1);
-  color: hsl(var(--primary));
-}
-
-.tahoe-context-app-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: hsl(var(--foreground) / 0.9);
-  transition: color 0.15s ease;
-}
-
-a.tahoe-context-app-title:hover {
-  color: hsl(var(--primary));
-}
-
-.tahoe-context-pills {
-  scrollbar-width: none;
-  overflow-x: auto;
-}
-
-.tahoe-context-pills::-webkit-scrollbar {
-  display: none;
-}
-
-.tahoe-mobile-jump-select {
-  appearance: none;
-  border: 1px solid hsl(var(--foreground) / 0.12);
-  border-radius: 0.75rem;
-  background: hsl(var(--foreground) / 0.04);
-  color: hsl(var(--foreground) / 0.9);
-  font-size: 0.8125rem;
-  padding: 0.45rem 0.75rem;
-  outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.tahoe-mobile-jump-select:focus {
-  border-color: hsl(var(--primary) / 0.4);
-  background: hsl(var(--primary) / 0.08);
-}
-
-.tahoe-context-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-  color: hsl(var(--foreground) / 0.58);
-  border: 1px solid transparent;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
-}
-
-.tahoe-context-pill:hover {
-  color: hsl(var(--foreground) / 0.9);
-  background: hsl(var(--foreground) / 0.06);
-  transform: translateY(-1px);
-}
-
-.tahoe-context-pill-active {
-  color: hsl(var(--primary));
-  background: hsl(var(--primary) / 0.12);
-  border-color: hsl(var(--primary) / 0.22);
-}
-
-.tahoe-context-more {
-  cursor: pointer;
-  background: hsl(var(--foreground) / 0.04);
-  border-color: hsl(var(--foreground) / 0.08);
-}
-
-/* Legacy aliases — overflow menus now use .mac-menu-panel + .mac-menu-row */
-.tahoe-context-overflow-menu {
-  min-width: 11rem;
-  padding: 0.35rem;
-}
-
-.tahoe-context-overflow-item {
-  display: block;
-  padding: 0.45rem 0.65rem;
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
-}
-
-.tahoe-context-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.55rem;
-  border-radius: 9999px;
-  border: 1px solid hsl(var(--foreground) / 0.08);
-  background: hsl(var(--foreground) / 0.04);
-  color: hsl(var(--foreground) / 0.78);
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.tahoe-context-status-chip:hover {
-  background: hsl(var(--foreground) / 0.08);
-  color: hsl(var(--foreground) / 0.95);
-}
-
-.tahoe-sidebar-link-active {
-  background: rgba(56, 189, 248, 0.14);
-  box-shadow:
-    inset 0 0 0 1px rgba(56, 189, 248, 0.22),
-    0 2px 12px -4px rgba(14, 165, 233, 0.35);
-}
-
-.tahoe-sidebar-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-}
-
-.tahoe-sidebar-section-header {
-  user-select: none;
 }
 
 .tahoe-canvas {
@@ -673,174 +450,6 @@ a.tahoe-context-app-title:hover {
 .tahoe-segment-active {
   background: color-mix(in srgb, var(--accent) 28%, transparent);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
-}
-
-.mac-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 110;
-  display: flex;
-  justify-content: center;
-  padding: 0.35rem 1rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
-  pointer-events: none;
-}
-
-/* macOS Tahoe Liquid Glass tray */
-.mac-dock-inner {
-  pointer-events: auto;
-  display: flex;
-  align-items: flex-end;
-  gap: 0.2rem;
-  padding: 0.4rem 0.55rem 0.45rem;
-  border-radius: 1.35rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0.02) 100%),
-    rgba(28, 28, 30, 0.42);
-  backdrop-filter: blur(36px) saturate(1.85) brightness(1.05);
-  -webkit-backdrop-filter: blur(36px) saturate(1.85) brightness(1.05);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.35),
-    0 12px 40px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-}
-
-.mac-dock-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 22%;
-  color: hsl(var(--foreground) / 0.92);
-  transform-origin: bottom center;
-  will-change: transform;
-  transition: background 0.15s ease;
-}
-
-.mac-dock-item:hover {
-  background: hsl(var(--foreground) / 0.08);
-}
-
-.mac-dock-item:hover .mac-dock-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-.mac-dock-tooltip {
-  position: absolute;
-  bottom: calc(100% + 0.45rem);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  padding: 0.22rem 0.55rem;
-  border-radius: 0.4rem;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  color: var(--text-primary);
-  background: rgba(40, 40, 42, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 5;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-}
-
-.mac-dock-item-active {
-  background: color-mix(in srgb, #0071e3 16%, transparent);
-  color: #0071e3;
-}
-
-.mac-dock-item-preview {
-  opacity: 0.55;
-  border: 1px dashed hsl(var(--foreground) / 0.18);
-  background: hsl(var(--foreground) / 0.03);
-}
-
-.mac-dock-item-preview:hover {
-  opacity: 0.85;
-  background: hsl(var(--foreground) / 0.07);
-}
-
-.mac-dock-dot {
-  position: absolute;
-  bottom: 0.08rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0.22rem;
-  height: 0.22rem;
-  border-radius: 9999px;
-  background: #f5f5f7;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25);
-}
-
-.mac-dock-item-active .mac-dock-dot {
-  background: #0071e3;
-  box-shadow: 0 0 6px color-mix(in srgb, #0071e3 55%, transparent);
-}
-
-.mac-dock-divider {
-  width: 1px;
-  height: 2.4rem;
-  margin: 0 0.35rem 0.35rem;
-  align-self: flex-end;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.mac-dock-spotlight {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: 0.2rem;
-  margin-bottom: 0.2rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  color: hsl(var(--foreground) / 0.85);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  transition: transform 0.2s ease, background 0.15s ease;
-}
-
-.mac-dock-spotlight:hover {
-  transform: scale(1.05);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.mac-dock-ask {
-  color: hsl(var(--warning-hsl, 18 92% 48%) / 0.95);
-  border-color: hsl(var(--warning-hsl, 18 92% 48%) / 0.22);
-  background: hsl(var(--warning-hsl, 18 92% 48%) / 0.1);
-}
-
-.mac-dock-ask:hover {
-  background: hsl(var(--warning-hsl, 18 92% 48%) / 0.16);
-}
-
-.mac-dock-inner-scroll {
-  max-width: min(100vw - 2rem, 56rem);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.mac-dock-inner-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.mac-dock-autohide {
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
-}
-
-.mac-dock-hidden {
-  transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px)));
-  opacity: 0;
-  pointer-events: none;
 }
 
 .machine-finder-page {
@@ -913,97 +522,9 @@ a.tahoe-context-app-title:hover {
   box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.35), 0 0 12px rgba(56, 189, 248, 0.15);
 }
 
-.platform-rail-live {
-  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.25);
-  animation: mc-rail-pulse 2.4s ease-in-out infinite;
-}
-
-.platform-rail-attention {
-  box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.35);
-}
-
-.platform-rail-attention::after {
-  content: '';
-  position: absolute;
-  top: 0.45rem;
-  right: 0.45rem;
-  width: 0.35rem;
-  height: 0.35rem;
-  border-radius: 9999px;
-  background: rgb(251, 191, 36);
-}
-
-.platform-rail-critical {
-  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.45);
-}
-
-.platform-rail-critical::after {
-  content: '';
-  position: absolute;
-  top: 0.45rem;
-  right: 0.45rem;
-  width: 0.35rem;
-  height: 0.35rem;
-  border-radius: 9999px;
-  background: rgb(248, 113, 113);
-}
-
-.platform-rail-link {
-  position: relative;
-}
-
-@keyframes mc-rail-pulse {
-  0%, 100% { box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.2); }
-  50% { box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.45), 0 0 10px rgba(52, 211, 153, 0.12); }
-}
-
-.mac-dock-stats {
-  pointer-events: none;
-  padding: 0.35rem 0.65rem;
-  border-radius: 9999px;
-  background: hsl(var(--foreground) / 0.06);
-  border: 1px solid hsl(var(--foreground) / 0.1);
-  color: hsl(var(--foreground) / 0.78);
-}
-
-.mac-dock-attention-dot {
-  position: absolute;
-  top: 0.15rem;
-  right: 0.15rem;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 9999px;
-  background: rgb(251, 191, 36);
-  box-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
-}
-
 @media (max-width: 1023px) {
-  .mac-menubar-inner {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .mac-menubar-inner::-webkit-scrollbar {
-    display: none;
-  }
-
   .mac-desktop-main {
     padding-bottom: 5.5rem;
-  }
-
-  .mac-dock {
-    display: flex !important;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-
-  .mac-dock-inner-scroll {
-    max-width: 100%;
-  }
-
-  .mac-dock-item {
-    width: 2.65rem;
-    height: 2.65rem;
   }
 }
 
@@ -1512,8 +1033,7 @@ a.tahoe-context-app-title:hover {
   color: var(--text-primary);
 }
 
-.platform-mac-desktop .mac-menu-panel button,
-.platform-mac-desktop .mac-dock-tooltip {
+.platform-mac-desktop .mac-menu-panel button {
   font-size: 0.8125rem;
 }
 
@@ -1565,16 +1085,6 @@ a.tahoe-context-app-title:hover {
 
 .mac-menubar-icon-btn:hover {
   background: hsl(var(--foreground) / 0.08);
-  color: hsl(var(--foreground));
-}
-
-.mac-desktop-tabs {
-  scrollbar-width: none;
-}
-
-.mac-desktop-tab-active {
-  background: hsl(var(--primary) / 0.12);
-  box-shadow: inset 0 -2px 0 hsl(var(--primary) / 0.7);
   color: hsl(var(--foreground));
 }
 
@@ -2163,13 +1673,6 @@ html {
   background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
-.liquid-glass-navbar {
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: saturate(1.8) blur(20px);
-  -webkit-backdrop-filter: saturate(1.8) blur(20px);
-  border-bottom: 1px solid var(--apple-hairline);
-}
-
 .liquid-glass-breadcrumb {
   background: transparent;
   border: none;
@@ -2675,14 +2178,6 @@ html {
   -webkit-backdrop-filter: none;
 }
 
-.steel-theme .liquid-glass-navbar {
-  backdrop-filter: saturate(1.4) blur(16px);
-  -webkit-backdrop-filter: saturate(1.4) blur(16px);
-  background: rgba(12, 16, 22, 0.82);
-  border-bottom-color: rgba(140, 160, 190, 0.14);
-  box-shadow: none;
-}
-
 .steel-theme .liquid-glass-modal-panel {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -2742,22 +2237,6 @@ html {
 .steel-theme .platform-action-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-.steel-theme .mac-finder-sidebar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(11, 16, 23, 0.98);
-}
-.steel-theme .mac-dock-inner {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(16, 23, 34, 0.97);
-}
-.steel-theme .tahoe-context-bar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(11, 16, 23, 0.95);
-  border-bottom-color: rgba(120, 145, 175, 0.18);
 }
 .steel-theme .platform-detail-tabs-sticky {
   backdrop-filter: none;
@@ -2933,14 +2412,6 @@ html {
   -webkit-backdrop-filter: none;
 }
 
-.rack-theme .liquid-glass-navbar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: linear-gradient(180deg, #0d1117 0%, #1a212b 50%, #0b0e13 100%);
-  border-bottom-color: rgba(51, 64, 79, 0.35);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-}
-
 .rack-theme .liquid-glass-modal-panel {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -2995,22 +2466,6 @@ html {
 .rack-theme .platform-action-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-.rack-theme .mac-finder-sidebar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(11, 14, 19, 0.98);
-}
-.rack-theme .mac-dock-inner {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(18, 23, 31, 0.97);
-}
-.rack-theme .tahoe-context-bar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(11, 14, 19, 0.95);
-  border-bottom-color: rgba(51, 64, 79, 0.35);
 }
 .rack-theme .platform-detail-tabs-sticky {
   backdrop-filter: none;
