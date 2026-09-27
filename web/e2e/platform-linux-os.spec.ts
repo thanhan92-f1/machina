@@ -43,7 +43,7 @@ test('maintenance mission shows blocked step when host not in maintenance', asyn
 
 test('Zeus OS fleet linux-health card visible', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus?tab=fleet')
+  await page.goto('/platform/zyra?tab=fleet')
   await expect(page.getByText('Fleet Linux health')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Pressure hosts')).toBeVisible()
   await expect(page.getByText('1 host(s) scanned')).toBeVisible()

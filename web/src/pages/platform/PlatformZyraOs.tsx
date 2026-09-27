@@ -123,7 +123,12 @@ export default function PlatformZyraOs() {
       setGpuSummary(gpu?.summary ?? null)
       setPowerSummary(power?.summary ?? null)
       setLinuxHealth(linux)
-      const summaryStr = summary
+      // A summary response with a missing/non-numeric aggregate_monthly_usd (an empty-array
+      // fallback from an unmocked/misbehaving endpoint, or a genuinely partial API response)
+      // used to throw here and abort the whole load — heatmap/rebalance/etc had already been set
+      // above, so the page ended up loaded but showing a cryptic JS TypeError instead of just
+      // omitting the one summary line it couldn't build.
+      const summaryStr = summary && typeof summary.aggregate_monthly_usd === 'number'
         ? `${summary.aggregate_vm_count} VMs · ${summary.reachable_peers}/${summary.peer_count} peers · $${summary.aggregate_monthly_usd.toFixed(0)}/mo`
         : null
       const localStr = local

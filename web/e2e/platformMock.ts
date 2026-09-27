@@ -1543,7 +1543,7 @@ export async function mockPlatformApi(page: Page, opts?: {
     if (url.includes('/ai/actions/hub')) {
       return route.fulfill({
         json: {
-          zeus_actions: [
+          zyra_actions: [
             {
               id: 'act-1',
               source: 'nl_ops',
@@ -1564,7 +1564,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         json: [{ id: 'fleet', name: 'Fleet Agent', description: 'Autonomous fleet ops', task_class: 'fleet' }],
       })
     }
-    if (url.includes('/ai/zeus/plan') && route.request().method() === 'POST') {
+    if (url.includes('/ai/zyra/plan') && route.request().method() === 'POST') {
       return route.fulfill({
         json: {
           goal: 'Rebalance idle VMs and clear failed tasks',
@@ -1576,7 +1576,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         },
       })
     }
-    if (url.includes('/ai/zeus/execute') && route.request().method() === 'POST') {
+    if (url.includes('/ai/zyra/execute') && route.request().method() === 'POST') {
       return route.fulfill({ json: { message: 'Queued 2 steps for approval' } })
     }
     if (url.includes('/ai/policy/export')) {

@@ -301,16 +301,16 @@ test('mobile burger nav navigates security context on advanced tier', async ({ p
   await expect(page).toHaveURL(/\/platform\/zeus\/security\/policies/)
 })
 
-test.skip('normal tier zeus route renders in place without redirect', async ({ page }) => {
+test('normal tier zyra route renders in place without redirect', async ({ page }) => {
   // Tier only shapes dock/sidebar density; gated routes render in place (a8bef254).
-  // FINDING (2026-09-27): /platform/zeus defaults to the Fleet tab (usePlatformTabState defaultTab
-  // 'fleet' in PlatformZyraOs.tsx), and that tab reproducibly hangs the browser regardless of
-  // tier — same root cause as the skipped "zeus OS fleet tab loads without JS crash" in
-  // platform-full.spec.ts (see the finding note there). Needs its own investigation.
+  // The Zeus OS AI hub route is /platform/zyra, not /platform/zeus (that's only a live prefix for
+  // /platform/zeus/security*) — an earlier version of this test 404'd on the wrong URL and the
+  // resulting PlatformNotFound page was misdiagnosed as a hang; see the finding note on
+  // "zyra fleet tab loads without JS crash" in platform-full.spec.ts.
   await mockPlatformApi(page, { tier: 'normal' })
-  await page.goto('/platform/zeus')
+  await page.goto('/platform/zyra')
   await expect(page.getByRole('heading', { name: 'Machina Zyra OS' })).toBeVisible({ timeout: 15_000 })
-  await expect(page).toHaveURL(/\/platform\/zeus/)
+  await expect(page).toHaveURL(/\/platform\/zyra/)
 })
 
 test('spotlight hides legacy Pages category on platform desktop', async ({ page }) => {

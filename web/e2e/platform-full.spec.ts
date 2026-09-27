@@ -162,18 +162,18 @@ test('developer route renders in place at power tier', async ({ page }) => {
   await expect(page).toHaveURL(/\/platform\/developer/)
 })
 
-test.skip('zeus OS fleet tab loads without JS crash', async ({ page }) => {
-  // FINDING (2026-09-27, unrelated to the shell-selector cleanup this file otherwise got): this
-  // test reproducibly hangs the browser — CPU stays near 0%, no `dialog` event fires, and even
-  // Playwright's own per-assertion/test timeouts stop taking effect once it's wedged, so it has to
-  // be killed externally. Isolated to `/platform/zeus?tab=fleet` at tier 'power'; `page.goto()`
-  // itself resolves fine, so it's triggered by something the fleet tab renders or fetches
-  // (ZyraAutonomousRunPanel and the fleet heatmap are the two fleet-tab-only pieces — neither has
-  // an obvious cause on inspection). Needs its own focused investigation, not a selector fix.
+test('zyra fleet tab loads without JS crash', async ({ page }) => {
+  // The earlier reported hang here was a misdiagnosis: this test used `/platform/zeus?tab=fleet`,
+  // which doesn't route anywhere (the Zeus OS AI hub is `/platform/zyra` — `/platform/zeus` is only
+  // a live prefix for `/platform/zeus/security*`), so it 404'd to PlatformNotFound, not the fleet
+  // tab. On the *correct* URL the tab renders fine. Investigating did surface one real bug, fixed
+  // separately: PlatformZyraOs.tsx's loadFleet threw on a summary response with a non-numeric
+  // aggregate_monthly_usd (e.g. this mock's empty-array fallback for the unmocked endpoint),
+  // silently swallowing the successfully-loaded heatmap/rebalance data behind a cryptic JS error.
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(err.message))
   await mockPlatformApi(page, { tier: 'power' })
-  await page.goto('/platform/zeus?tab=fleet')
+  await page.goto('/platform/zyra?tab=fleet')
   await expect(page.getByRole('heading', { name: 'Machina Zyra OS' })).toBeVisible({ timeout: 20_000 })
   await expect(page.getByText('Fleet Linux health')).toBeVisible({ timeout: 15_000 })
   expect(errors.filter((e) => !e.includes('ResizeObserver'))).toEqual([])
