@@ -44,7 +44,7 @@ Gate destructive or cloud-side actions on `phase === 'live'`. Nav and command pa
 
 **Intentionally unchanged:** primary CTAs (`bg-blue-600`), [`ChoiceCards`](../web/src/components/ChoiceCards.tsx) selection accents (wizard tone palette, not operational status), ApiDocs HTTP method colors, orange Zeus branding in Help.
 
-**Help — Platform guide:** Both Platform menubar ([`PlatformMacAppMenus`](../web/src/components/platform/mac/PlatformMacAppMenus.tsx)) and classic Navbar ([`Navbar`](../web/src/components/Navbar.tsx)) open the in-app Help dialog **Platform** tab via `onOpenHelp('platform')`.
+**Help — Platform guide:** GlobalBar's **Machina** dropdown ("Platform guide…") opens the in-app Help dialog **Platform** tab via `dispatchOpenHelp('platform')` — the old separate menubar/classic Navbar Help menus (`PlatformMacAppMenus`, `Navbar`) are gone; both were unimported dead code and have been deleted.
 
 **Machine Finder geography:** Mission Control ([`InfrastructureEarthView`](../web/src/components/platform/InfrastructureEarthView.tsx)) links to `/platform/hosts/finder` — four-column site → rack → host → VM browser aligned with `GET /api/v1/fleet/mission`.
 
@@ -54,7 +54,7 @@ Gate destructive or cloud-side actions on `phase === 'live'`. Nav and command pa
 
 **Infrastructure DNA:** [`InfrastructureDnaStrip`](../web/src/components/platform/InfrastructureDnaStrip.tsx) — score ring + grade + pillar chips from `GET /api/v1/fleet/dna` on Platform dashboard (power tier+) and Mission Control header.
 
-**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`). Primary navigation lives in the **sidebar icon rail** (always visible by default; View → Hide Sidebar) — see [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
+**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`). Primary navigation lives in `SideNav` (always visible by default) — see [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 **Infrastructure Earth globe (Phase 58 v3):** [`InfrastructureEarthGlobe`](../web/src/components/platform/InfrastructureEarthGlobe.tsx) — **WebGL** globe (lazy `three.js`) with **canvas 2D fallback**, per-site health markers, and a site legend (links to Machine Finder) on Mission Control and Machine Finder topology lens.
 
@@ -143,42 +143,37 @@ cd web && npm run build && npm run test:e2e -- e2e/platform-full.spec.ts e2e/she
 | Platform Host detail, agent offline | Remediation links to Enroll + classic Node |
 | K8s Workloads explorer | Table/summary default; raw JSON toggle |
 
-## Platform macOS desktop (Wave 3+)
+## Platform shell (current — GlobalBar / SideNav / ChapterBar)
 
-Navigation layers are tier-aware to avoid triple nav. Full contract: [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
+The Mac menubar, desktop tabs, 68px icon rail and dock described in earlier UX waves are gone
+(`de22b0e9` replaced them) — don't reintroduce them. Full contract:
+[design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 | Layer | Role | When visible |
 |-------|------|--------------|
-| **Menubar** | Zyvor tile + **Machina** app menu + View / Window / Help; Spotlight via ⌘K | Always on authenticated routes (`lg+`; product dropdowns fall back in menubar below `lg`) |
-| **Desktop tabs** | Open window strip | When >1 platform tab ([`PlatformMacDesktopTabs`](web/src/components/platform/mac/PlatformMacDesktopTabs.tsx)) |
-| **Context bar** | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) |
+| **GlobalBar** (`components/nav/GlobalBar.tsx`) | Top bar: brand/home, product flyouts, Search (⌘K), Control Center, New VM, **Machina** dropdown (About, Settings, sidebar toggle, Mission Control, tier switch, Add Host, Sign Out) | Always on authenticated routes |
+| **SideNav** (`components/nav/SideNav.tsx`) | Primary nav: pinned destinations + Workloads/Infra/Ops/Secure/Admin section groups, tier-aware via [`platformSidebarNav.ts`](../web/src/utils/platformSidebarNav.ts) | On by default; toggle from the Machina dropdown |
+| **ChapterBar** (`components/nav/ChapterBar.tsx`) | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) — see [`shouldShowContextBar`/`suppressContextBar`](../web/src/utils/platformNavRegistry.ts) |
 | **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](web/src/components/PageLayout.tsx) | Every platform page |
 | **DetailTabs** | In-app sections with `?tab=` | Tab-heavy pages only |
-| **Sidebar** | Zeus **68px icon rail** (default): pinned destinations + Workloads/Infra/Ops/Secure/Admin/More section icons with hover flyouts ([`platformSidebarNav.ts`](../web/src/utils/platformSidebarNav.ts)). Optional expand for labels. **No shortcut badges.** | **On by default** all tiers; View → Hide Sidebar |
 | **Fleet Cloud pills** | Section switch | Primary Overview/Instances/Images/Volumes/Create + **More** ([`FleetCloudSubNav`](web/src/components/FleetCloudSubNav.tsx)) |
 
-**Submenus:** menubar dropdowns, context-bar **More**, and Fleet Cloud **More** share [`PlatformFloatingMenu`](web/src/components/platform/mac/PlatformFloatingMenu.tsx) (portaled, `role="menu"`) and [`PlatformMenuItem`](web/src/components/platform/mac/PlatformMenuItem.tsx) row tokens (`--surface-hover`, `--accent-soft`).
-
-Helpers: [`shouldShowContextBar`](web/src/utils/platformNavRegistry.ts), [`suppressContextBar`](web/src/utils/platformNavRegistry.ts), [`defaultSidebarVisibleForTier`](web/src/utils/platformDesktopTier.ts).
+**Overflow menus:** GlobalBar's product flyouts, ChapterBar's **More**, and Fleet Cloud **More** share
+[`PlatformFloatingMenu`](web/src/components/platform/mac/PlatformFloatingMenu.tsx) (portaled,
+`role="menu"`) and [`PlatformMenuItem`](web/src/components/platform/mac/PlatformMenuItem.tsx) row
+tokens (`--surface-hover`, `--accent-soft`).
 
 **Browse lists:** [`TahoeListKit`](web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty`.
 
-**Zeus status:** pending approvals surface in [`PlatformDynamicIsland`](web/src/components/platform/mac/PlatformDynamicIsland.tsx); [`ZyraAmbientBar`](web/src/components/ai/ZyraAmbientBar.tsx) is hidden on `/platform/*`.
+**Zeus/Zyra status:** pending approvals and attention surface in GlobalBar's attention dot / product
+flyouts, not a separate island component; [`ZyraAmbientBar`](web/src/components/ai/ZyraAmbientBar.tsx)
+is hidden on `/platform/*`.
 
 **Dashboard / Story:** [`MissionControlPage`](web/src/pages/platform/MissionControl/MissionControlPage.tsx) (`/platform`); classic [`Dashboard.tsx`](web/src/pages/Dashboard.tsx) and [`FleetCloudOverview`](web/src/pages/FleetCloudOverview.tsx) use `apple-story-stack` / `apple-metric-band` / destination rows (not card grids).
 
 **Glass tokens:** `--glass-panel` in `main.css` unifies [`MacGlassPanel`](web/src/components/platform/mac/PlatformMacUi.tsx), `.tahoe-glass-card`, and `.platform-mac-panel`. Work panels prefer `.tahoe-glass-card`.
 
-## Platform lean desktop (Wave 4)
-
 **Naming:** Product shell stays **Machina**; the AI assistant is always **Zyra** ([`aiBrand.ts`](../web/src/config/aiBrand.ts), [`AskZyraButton`](../web/src/components/ai/AskZyraButton.tsx)). Use "Ask Zyra" — not "Ask Machina" or "Copilot" — in user-facing AI entry points.
-
-| Surface | Rule |
-|---------|------|
-| **Jarvis strip** | Slim search bar + up to 5 intent chips; Normal tier adds greeting; no duplicate action buttons (menubar owns Mission Control & Spotlight) |
-| **Fleet insights** | Collapsed by default; badge only on header; no approval queue or posture panel on dashboard (Dynamic Island + Security Center) |
-| **Classic shell** | Navbar **Zeus** button only — [`ZyraAmbientBar`](web/src/components/ai/ZyraAmbientBar.tsx) hidden when Navbar Zeus is shown |
-| **About / tasks** | Marketing copy on Support only; no Recent tasks panel on dashboard |
 
 ## Dashboard & shell
 
