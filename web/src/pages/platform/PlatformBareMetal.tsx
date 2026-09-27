@@ -13,6 +13,7 @@ import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
+import { statusBadgeClasses } from '../../utils/semanticColors'
 import {
   listBaremetalServers,
   registerBaremetalServer,
@@ -22,6 +23,12 @@ import {
 } from '../../api/platform'
 
 type PowerAction = BmcPowerBody['action']
+
+// engine/baremetal.rs's set_power writes one of these into `state` (plus the pre-power-action
+// 'registered' default) — not the bare 'on'/'off' this page used to compare against, which never
+// matched anything (onlineCount was always 0, and the already-in-that-state button never disabled).
+const isOn = (state: string) => state === 'powered_on'
+const isOff = (state: string) => state === 'powered_off' || state === 'registered'
 
 export default function PlatformBareMetal() {
   const toast = useToastContext()
@@ -53,12 +60,10 @@ export default function PlatformBareMetal() {
   const handlePower = async (id: string, name: string, action: PowerAction) => {
     setActionInProgress(id)
     try {
+      // A non-2xx response throws (caught below) — there's no separate success/failure flag on a
+      // 200, just the real outcome in `summary`.
       const result = await baremetalServerPower(id, { action })
-      if (result.success) {
-        toast.success(`Power ${action} sent to ${name}`)
-      } else {
-        toast.error(result.message)
-      }
+      toast.success(result.summary)
       await load()
     } catch (e: unknown) {
       toast.error(formatUserError(e))
@@ -84,7 +89,7 @@ export default function PlatformBareMetal() {
     }
   }
 
-  const onlineCount = servers.filter((s) => s.state === 'on').length
+  const onlineCount = servers.filter((s) => isOn(s.state)).length
   const totalCores = servers.reduce((n, s) => n + s.cpu_cores, 0)
   const totalMemGib = Math.round(servers.reduce((n, s) => n + s.memory_mib, 0) / 1024)
 
@@ -188,7 +193,7 @@ export default function PlatformBareMetal() {
                   title={s.hostname}
                   subtitle={`${s.bmc_type.toUpperCase()} · ${s.bmc_address} · ${s.cpu_cores} cores · ${Math.round(s.memory_mib / 1024)} GiB`}
                   badge={
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${s.state === 'on' ? 'bg-emerald-500/10 text-emerald-9000' : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${isOn(s.state) ? statusBadgeClasses('ok') : 'bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]'}`}>
                       {s.state}
                     </span>
                   }
@@ -196,14 +201,14 @@ export default function PlatformBareMetal() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => void handlePower(s.id, s.hostname, 'on')}
-                        disabled={actionInProgress === s.id || s.state === 'on'}
+                        disabled={actionInProgress === s.id || isOn(s.state)}
                         className="px-2 py-1 text-xs rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 disabled:opacity-40"
                       >
                         On
                       </button>
                       <button
                         onClick={() => setPendingPower({ id: s.id, name: s.hostname, action: 'off' })}
-                        disabled={actionInProgress === s.id || s.state === 'off'}
+                        disabled={actionInProgress === s.id || isOff(s.state)}
                         className="px-2 py-1 text-xs rounded bg-red-500/10 text-red-600 hover:bg-red-500/20 disabled:opacity-40"
                       >
                         Off
