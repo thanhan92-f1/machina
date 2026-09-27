@@ -8,6 +8,7 @@ interface ShortcutOptions {
   key: string
   ctrl?: boolean
   meta?: boolean
+  alt?: boolean
   handler: (e: KeyboardEvent) => void
   enabled?: boolean
 }
@@ -21,16 +22,18 @@ function isInputFocused(): boolean {
   return false
 }
 
-export function useKeyboardShortcut({ key, ctrl, meta, handler, enabled = true }: ShortcutOptions) {
+export function useKeyboardShortcut({ key, ctrl, meta, alt, handler, enabled = true }: ShortcutOptions) {
   useEffect(() => {
     if (!enabled) return
 
     const onKeyDown = (e: KeyboardEvent) => {
       const wantCtrl = ctrl || false
       const wantMeta = meta || false
+      const wantAlt = alt || false
 
       if (wantCtrl && !e.ctrlKey && !e.metaKey) return
       if (wantMeta && !e.metaKey && !e.ctrlKey) return
+      if (wantAlt && !e.altKey) return
       if (e.key.toLowerCase() !== key.toLowerCase()) return
 
       // Bare-key shortcuts (no Ctrl/Meta) must not hijack typing in form fields —
@@ -44,7 +47,7 @@ export function useKeyboardShortcut({ key, ctrl, meta, handler, enabled = true }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [key, ctrl, meta, handler, enabled])
+  }, [key, ctrl, meta, alt, handler, enabled])
 }
 
 export { isInputFocused }

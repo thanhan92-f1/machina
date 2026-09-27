@@ -25,7 +25,7 @@ test.describe.serial('template readiness', () => {
     await page.goto('/platform/templates')
     await page.getByRole('tab', { name: /^Templates$/ }).click()
     await expect(page.getByText('ubuntu-24.04').first()).toBeVisible({ timeout: 20_000 })
-    await page.getByRole('button', { name: /Get · Deploy VM/i }).first().click()
+    await page.getByRole('button', { name: 'Deploy', exact: true }).first().click()
   }
 
   test('template deploy sheet shows readiness traffic light', async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe.serial('template readiness', () => {
     await page.goto('/platform/templates')
     await page.getByRole('tab', { name: /^Templates$/ }).click()
     await expect(page.getByText('ubuntu-24.04').first()).toBeVisible({ timeout: 20_000 })
-    await page.getByRole('button', { name: /Get · Deploy VM/i }).first().click()
+    await page.getByRole('button', { name: 'Deploy', exact: true }).first().click()
     await expect(page.getByText('Missing disk image')).toBeVisible({ timeout: 20_000 })
     await expect(page.getByText(/Upload the golden image/i)).toBeVisible()
     await expect(page.getByRole('link', { name: /Content Library/i })).toBeVisible()
@@ -62,12 +62,16 @@ test('platform support shows Zyvor guidance', async ({ page }) => {
 test('show offline hosts command navigates to filtered hosts', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal', staleHost: true })
   await page.goto('/platform')
-  await page.locator('.mac-menubar-inner').click()
+  await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
+  // The old menubar click here (`.mac-menubar-inner`, now gone) was just insurance for focus —
+  // unneeded: CommandPalette's Ctrl+K listens on `window` (useKeyboardShortcut), not an element.
+  // The explicit wait above matters more than that click ever did: without it, Ctrl+K can fire
+  // before the page has hydrated and the shortcut listener is attached, dropping the keystroke.
   await page.keyboard.press('Control+k')
   const spotlight = page.locator('.liquid-glass-modal-backdrop').filter({
-    has: page.getByPlaceholder(/Zeus/i),
+    has: page.getByPlaceholder(/Zyra/i),
   })
-  await spotlight.getByPlaceholder(/Zeus/i).fill('show offline hosts')
+  await spotlight.getByPlaceholder(/Zyra/i).fill('show offline hosts')
   await spotlight.getByRole('button', { name: /Show offline hosts/i }).click()
   await expect(spotlight.getByText('Review command')).toBeVisible()
   await spotlight.getByRole('button', { name: /Confirm/i }).click()

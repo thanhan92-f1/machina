@@ -106,6 +106,12 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
               onClose={() => setOpenGroup(null)}
             >
               <PlatformMacMenuItem label="About Machina…" onClick={() => { dispatchOpenHelp('about'); setOpenGroup(null) }} />
+              {/* Platform guide / Keyboard shortcuts: the old menubar had a separate "Help" menu with
+                  these two items plus About; the shell rewrite folded About into this dropdown but
+                  dropped the other two, even though the dialogs they open (PlatformAboutHelp.tsx,
+                  App.tsx's OPEN_HELP_EVENT listener) are still fully wired — restoring the entry point. */}
+              <PlatformMacMenuItem label="Platform guide…" onClick={() => { dispatchOpenHelp('platform'); setOpenGroup(null) }} />
+              <PlatformMacMenuItem label="Keyboard shortcuts" onClick={() => { dispatchOpenHelp('shortcuts'); setOpenGroup(null) }} />
               <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => { navigate('/platform/settings'); setOpenGroup(null) }} />
               <div className="my-1 border-t border-[var(--apple-hairline)]" />
               <PlatformMacMenuItem label={sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'} shortcut="⌘⌥S" checked={sidebarVisible} onClick={() => { toggleSidebar(); setOpenGroup(null) }} />
@@ -130,7 +136,11 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
                 aria-expanded={openGroup === group.id}
                 onMouseEnter={() => enter(group.id)}
                 onFocus={() => enter(group.id)}
-                onClick={() => setOpenGroup((prev) => (prev === group.id ? null : group.id))}
+                // Just open, don't toggle: `onMouseEnter` already opens the flyout as the pointer
+                // arrives, so a real click's toggle would immediately close what hover just opened
+                // — a mouse user could never click-open a group. Closing already has its own paths
+                // (Escape, the scrim, `onMouseLeave` via scheduleClose, route change).
+                onClick={() => enter(group.id)}
               >
                 {group.compact}
               </button>

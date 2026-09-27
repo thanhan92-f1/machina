@@ -23,8 +23,8 @@ import { hubLinkClasses } from '../../../utils/semanticColors'
 // `firewall_policies` rows only ever carry `id`/`name`/`spec_yaml` — there's no
 // top-level `profile` column, it's embedded in the YAML text. Pull it out for
 // display rather than reading a `p.profile` field that's always undefined.
-function profileFromSpecYaml(specYaml: string): string | null {
-  const match = specYaml.match(/^\s*profile:\s*(\S+)/m)
+function profileFromSpecYaml(specYaml: string | null | undefined): string | null {
+  const match = specYaml?.match(/^\s*profile:\s*(\S+)/m)
   return match ? match[1] : null
 }
 

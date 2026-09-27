@@ -3,26 +3,36 @@
 import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
 
-test('Jarvis shell hides sidebar on Normal tier dashboard', async ({ page }) => {
+// This file predates the shell unification (GlobalBar + SideNav, layouts/PlatformLayout.tsx).
+// Two things it tested no longer exist: PlatformSidebar.tsx / PlatformJarvisBriefing.tsx are
+// unimported dead code, and tier no longer hides the sidebar or swaps in a different dashboard
+// shell — "Desktop tier no longer starves the menubar" (utils/platformMacMenus.ts) applies to the
+// sidebar too. What each test actually verified — a briefing-chip action, the dashboard's search
+// entry point, the Normal-tier launchpad's reduced density — is rewritten against current markup.
+
+test('Normal tier dashboard shows a working briefing chip', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform')
   await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByRole('button', { name: 'Migration planner' })).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('aside.platform-sidebar')).toHaveCount(0)
+  // "Recovery" is the one briefing chip MissionControlBriefing.tsx always renders (the others are
+  // conditional on fleet state); the sidebar is present at every tier now, just fewer sections.
+  await expect(page.getByRole('button', { name: 'Recovery' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('aside[aria-label="Sections"]')).toBeVisible()
 })
 
-test('Jarvis intent chip navigates to Maintenance Mission', async ({ page }) => {
+test('Jarvis briefing chip navigates to its target route', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform')
-  await page.getByRole('button', { name: 'Migration planner' }).click()
-  await expect(page).toHaveURL(/\/platform\/vms\?lens=migration/, { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Recovery' }).click()
+  await expect(page).toHaveURL(/\/platform\/backups/, { timeout: 15_000 })
 })
 
-test('Jarvis shell visible on power tier dashboard', async ({ page }) => {
+test('Jarvis shell search entry point visible on power tier dashboard', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform')
   await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByPlaceholder(/Ask Zyra or search fleet/i)).toBeVisible()
+  // Scoped to the GlobalBar: the briefing itself also has its own "Search ⌘K" chip.
+  await expect(page.locator('.gnb-bar').getByRole('button', { name: 'Search' })).toBeVisible()
 })
 
 test('normal tier dashboard shows launchpad without fleet insights', async ({ page }) => {

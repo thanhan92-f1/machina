@@ -8,7 +8,11 @@ import {
   clickRandomSidebar,
 } from './helpers/platformShellHelpers'
 
-test.describe.configure({ mode: 'serial' })
+// Each test below gets its own fresh page/context and depends on none of the others, so there's
+// no need for `mode: 'serial'` — and serial mode's retry semantics restart the *whole group* from
+// test 1 rather than just the failing test, which made the occasional Mission Control close race
+// (see the retries note below) waste a full group re-run. Plain per-test retries fix that.
+test.describe.configure({ retries: 1 })
 
 test.beforeEach(async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
@@ -22,12 +26,14 @@ test('control center tile navigation does not trap clicks', async ({ page }) => 
   })
 
   await page.getByRole('button', { name: 'Control Center' }).click()
-  await page.getByRole('link', { name: 'Cluster' }).click()
+  // Scoped to the Control Center panel: the sidebar's "Clusters" link is also on this page and
+  // its accessible name substring-matches an unscoped "Cluster" query (strict-mode violation).
+  await page.locator('.glass-strong').getByRole('link', { name: 'Cluster' }).click()
   await expect(page).toHaveURL(/\/platform\/?$/)
   await assertShellNavResponsive(page)
 })
 
-test('mission control plus dock navigation stays responsive', async ({ page }) => {
+test('mission control dismiss keeps navigation responsive', async ({ page }) => {
   await page.goto('/platform/hosts')
   await expect(page.getByRole('heading', { name: /Hosts/i })).toBeVisible({ timeout: 15_000 })
 
@@ -35,19 +41,22 @@ test('mission control plus dock navigation stays responsive', async ({ page }) =
     window.dispatchEvent(new CustomEvent('machina-open-mission-control'))
   })
   await expect(page.getByRole('dialog', { name: 'Mission Control' })).toBeVisible({ timeout: 5000 })
+  // Occasionally races (rare, pre-existing, not reproduced by a second Escape or isolated run) —
+  // retried like the other chaos-navigation tests rather than masked with an arbitrary wait.
+  await page.keyboard.press('Escape')
 
-  const dock = page.getByRole('navigation', { name: 'Platform dock' })
-  await page.mouse.move(720, 895)
-  await page.waitForTimeout(350)
-  await dock.getByRole('link', { name: 'Machines' }).click()
-  await expect(page).toHaveURL(/\/platform\/vms/)
+  // The dock this used to click through is gone (docs/design/APPLE-UX-CONTRACT.md — do not
+  // reintroduce it); the current primary nav is the sidebar + GlobalBar's flyouts.
   await assertNoShellClickBlockers(page)
   await assertShellNavResponsive(page)
 })
 
-test('random sidebar, dock, and menubar clicks stay navigable', { retries: 1 }, async ({ page }) => {
+test('random sidebar, top-nav flyout, and menubar clicks stay navigable', async ({ page }) => {
   await page.goto('/platform')
   await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
+
+  const primaryGroups = page.getByRole('navigation', { name: 'Primary' }).getByRole('button')
+  const groupCount = await primaryGroups.count()
 
   for (let round = 0; round < 6; round++) {
     await clickRandomSidebar(page)
@@ -67,10 +76,10 @@ test('random sidebar, dock, and menubar clicks stay navigable', { retries: 1 }, 
       await assertNoShellClickBlockers(page)
     }
 
-    const dock = page.getByRole('navigation', { name: 'Platform dock' })
-    await page.mouse.move(720, 895)
-    await page.waitForTimeout(350)
-    await dock.getByRole('link').nth(round % 3).click()
+    // Top nav: open a different product-group flyout each round and follow a link from it. The
+    // dock this used to click through instead is gone by design — see assertShellNavResponsive.
+    await primaryGroups.nth(round % groupCount).click()
+    await page.locator('.gnb-flyout-link').first().click()
     await expect(page).toHaveURL(/\/platform/)
     await assertNoShellClickBlockers(page)
   }
