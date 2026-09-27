@@ -32,10 +32,13 @@ test.describe('Platform SSH connect dialog', () => {
   })
 
   test('Mission Control SSH opens NAT-aware dialog', async ({ page }) => {
-    await page.goto('/platform')
-    await page.getByText('vm-1').first().click({ timeout: 15_000 })
-    await expect(page.getByTestId('fleet-command-center')).toBeVisible()
-    await page.getByTestId('fleet-command-center').getByRole('button', { name: 'SSH' }).click()
+    // FleetCommandCenter isn't reachable from the bare Mission Control dashboard — it only ever
+    // renders from Machine Finder, which overrides testId to "machine-finder-command-center".
+    // The Machine Finder list fixture names this VM "web-01" (id v1).
+    await page.goto('/platform/vms')
+    await page.getByText('web-01').first().click({ timeout: 15_000 })
+    await expect(page.getByTestId('machine-finder-command-center')).toBeVisible()
+    await page.getByTestId('machine-finder-command-center').getByRole('button', { name: 'SSH' }).click()
     await expect(page.getByTestId('vm-ssh-connect-dialog')).toBeVisible()
     await expect(page.getByTestId('vm-ssh-nat-banner')).toBeVisible()
   })

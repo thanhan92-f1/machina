@@ -50,12 +50,9 @@ test('Fleet page loads when authenticated', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Fleet', exact: true })).toBeVisible({ timeout: 15_000 })
 })
 
-test('language switcher changes login label', async ({ page }) => {
-  await mockUnauthenticatedApi(page)
-  await page.goto('/login')
-  await page.getByLabel('Language').selectOption('es')
-  await expect(page.getByLabel('Usuario')).toBeVisible()
-})
+// The login page's language switcher (and all useTranslation()/i18n usage in Login.tsx generally)
+// was removed when the login flow was rebuilt as PremiumLoginShell's single centered composition —
+// LanguageSwitcher.tsx is only used by the orphaned classic Navbar.tsx now. No replacement to test.
 
 test('Fleet Cloud instances shows sanitized error when API returns HTML', async ({ page }) => {
   await mockAuthenticatedApi(page)
@@ -69,6 +66,7 @@ test('Fleet Cloud instances shows sanitized error when API returns HTML', async 
     })
   })
   await page.goto('/fleet-cloud/instances')
-  await expect(page.getByText(/Failed to load instances/i)).toBeVisible({ timeout: 15_000 })
+  // Both the error heading and the detail body text start with "Failed to load instances".
+  await expect(page.getByText(/Failed to load instances/i).first()).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/HTML error page/i).first()).toBeVisible()
 })
