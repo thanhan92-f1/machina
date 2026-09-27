@@ -197,13 +197,18 @@ Product themes map to Zeus: **Tahoe Light** (`light`, **default**), **Classic Bl
 
 **Story type ([AirPods](https://www.apple.com/airpods/)):** `.apple-display` / `.apple-lede` SF Pro Display metrics.
 
-**Dock:** retired — do not reintroduce. Primary app navigation is the sidebar icon rail.
+**Shell:** `GlobalBar` (top bar + flyout), `SideNav` and `ChapterBar` inside `PlatformLayout`. The dock, Mac menubar and 68px icon rail are gone — do not reintroduce them. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
+
+**Look layer:** `web/src/styles/netra-look.css` is loaded last and holds the current look. Namespace new tokens `--nl-*`; do not add global element resets (Tailwind utilities are layered, so an unlayered rule would clobber them).
+
+**Audit:** `node scripts/ux-audit.mjs` (see the contract) sweeps every route for contrast, clipping, headings, names, tap targets and focus indicators.
 
 ## Login & accessibility
 
 - [`Login.tsx`](../web/src/pages/Login.tsx) — apple.com **machina** wordmark via [`PremiumLoginShell`](../web/src/components/PremiumLoginShell.tsx); Zyvor mark icon-only; SSO when OIDC enabled; host label from `window.location.hostname`
 - Login CSS: [`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css) (Apple Account paper + SF Pro / system display stack)
-- Menubar (authenticated): [`ZyvorTileMark`](../web/src/components/ZyvorMark.tsx) in the Apple-logo slot before the Machina menu
+- Top bar (authenticated): the Zyvor mark links home; the **Machina** dropdown holds About, Settings, sidebar toggle, Mission Control, tier switch, Add Host and Sign Out
+- Dialogs restore focus to their trigger via [`useCaptureTrigger`](../web/src/hooks/useCaptureTrigger.ts) (used by `useFocusTrap`, `GlassModal`, `ConfirmDialog`); capture happens during render because a child's `autoFocus` moves focus before effects run
 - **URL behavior:** the login page renders outside `BrowserRouter` when unauthenticated. `/` and `/login` both work. After auth, [`AuthContext`](../web/src/contexts/AuthContext.tsx) replaces `/login` with `/`, and authenticated routes register `<Navigate from="/login" to="/" />` so bookmarked `/login` never shows 404
 - **Zeus AI shell:** [`AiProvider`](../web/src/contexts/AiContext.tsx) must stay **inside** `BrowserRouter` (uses `useLocation` / `useParams` for ambient route context)
 - [`usePrefersReducedMotion`](../web/src/hooks/usePrefersReducedMotion.ts) — respects reduced motion on login entrance animations
