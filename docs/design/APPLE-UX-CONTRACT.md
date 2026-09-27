@@ -170,11 +170,16 @@ means "no regressions", not "perfect": populated-state bugs need a real host
 - [x] Button focus ring; light-theme text-safe accent remap; `ErrorBanner` tokens
 - [x] `SegmentedControl` for view switches; headings and names fixed on audited routes
 - [x] `scripts/ux-audit.mjs` sweep with a saved baseline
-- [x] `useExpandable`/`ExpandableToggle` applied to the confirmed-unbounded lists (`AuditLog`,
-      `PlatformSoc`'s six sections, `PlatformNotifications`); `ExpandableList` itself now built on
-      the same hook. Several more candidates were surveyed (`VMList`, `PlatformHosts`,
-      `PlatformEvents`, the firewall pages, etc.) but not yet converted — see the survey notes
-      before starting the next batch.
+- [x] `useExpandable`/`ExpandableToggle` applied fleet-wide: `AuditLog`, `PlatformSoc`'s six
+      sections, `PlatformNotifications`, then a second batch covering every strong candidate a
+      ~175-file survey found — `VMList`, `AdminSessions`, `PlatformActivityMonitor`,
+      `PlatformHosts` (all four Finder view modes), `PlatformEvents`, the firewall pages,
+      `PlatformThreatHunting`, `PlatformWebhooks`, `PlatformBackups`, `FleetCloudInstances`,
+      `FleetCloudVolumes`, `K8sWorkloads` (six independent lists), `PlatformRuntimeEnforcement`.
+      `ExpandableList` itself is now built on the same hook. A few borderline items from that
+      survey (`K8sOverview`, `PlatformIncidentCommander`, `SocAlertDetailPanel`,
+      `HostNetworking`, other FleetCloud resource pages, classic Storage/Networks/Containers) were
+      not reviewed — worth a pass if this keeps coming up in practice.
 - [ ] Delete the superseded rules from `main.css` / `machina-daylight.css` / `zeus-parity.css`
 - [x] Update or remove e2e specs that target the removed shell markup — `cross-shell.spec.ts`,
       `platform-chaos-navigation.spec.ts`, `platform-jarvis-shell.spec.ts`,
