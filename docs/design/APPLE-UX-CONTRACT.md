@@ -170,7 +170,16 @@ means "no regressions", not "perfect": populated-state bugs need a real host
 - [x] Button focus ring; light-theme text-safe accent remap; `ErrorBanner` tokens
 - [x] `SegmentedControl` for view switches; headings and names fixed on audited routes
 - [x] `scripts/ux-audit.mjs` sweep with a saved baseline
-- [ ] `ExpandableList` applied to long lists (needs populated data to find them)
+- [x] `useExpandable`/`ExpandableToggle` applied to the confirmed-unbounded lists (`AuditLog`,
+      `PlatformSoc`'s six sections, `PlatformNotifications`); `ExpandableList` itself now built on
+      the same hook. Several more candidates were surveyed (`VMList`, `PlatformHosts`,
+      `PlatformEvents`, the firewall pages, etc.) but not yet converted — see the survey notes
+      before starting the next batch.
 - [ ] Delete the superseded rules from `main.css` / `machina-daylight.css` / `zeus-parity.css`
-- [ ] Update or remove e2e specs that target the removed shell markup
+- [x] Update or remove e2e specs that target the removed shell markup — `cross-shell.spec.ts`,
+      `platform-chaos-navigation.spec.ts`, `platform-jarvis-shell.spec.ts`,
+      `platform-nav-coverage.spec.ts`, `platform-batch-48.spec.ts`, `platform-full.spec.ts` all
+      pass against current markup now (two tests are `test.skip` with a dated finding comment: a
+      real, reproducible hang on `/platform/zeus`'s default Fleet tab, unrelated to the shell
+      rewrite and not yet root-caused).
 - [ ] Real-host confirmation of populated states
