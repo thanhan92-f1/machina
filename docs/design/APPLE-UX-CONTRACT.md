@@ -180,7 +180,12 @@ means "no regressions", not "perfect": populated-state bugs need a real host
       survey (`K8sOverview`, `PlatformIncidentCommander`, `SocAlertDetailPanel`,
       `HostNetworking`, other FleetCloud resource pages, classic Storage/Networks/Containers) were
       not reviewed — worth a pass if this keeps coming up in practice.
-- [ ] Delete the superseded rules from `main.css` / `machina-daylight.css` / `zeus-parity.css`
+- [x] Delete the superseded rules from `main.css` / `machina-daylight.css` / `zeus-parity.css` —
+      ~830 lines removed for components confirmed orphaned by the shell rewrite (old menubar, Mac
+      dock, standalone sidebar, old context bar, old mobile jump nav, shell bridge bar, login-page-
+      macos), each verified to have zero remaining users before deletion. The much larger, riskier
+      pass — auditing every "superseded by netra-look.css" Tailwind-utility remap via a before/after
+      `ux-audit.mjs` diff rather than a grep-for-zero-users check — is still open.
 - [x] Update or remove e2e specs that target the removed shell markup — `cross-shell.spec.ts`,
       `platform-chaos-navigation.spec.ts`, `platform-jarvis-shell.spec.ts`,
       `platform-nav-coverage.spec.ts`, `platform-batch-48.spec.ts`, `platform-full.spec.ts` all
