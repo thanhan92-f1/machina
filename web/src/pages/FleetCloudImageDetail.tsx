@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowLeft, HardDrive } from 'lucide-react'
-import { getTemplate, type NativeTemplate } from '../api/nativeTemplates'
+import { listTemplates, type NativeTemplate } from '../api/nativeTemplates'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
@@ -35,9 +35,11 @@ function FleetCloudImageDetailContent() {
     const alive = () => seq === loadSeq.current
     setLoading(true)
     try {
-      const img = await getTemplate(id)
+      // No single-id lookup route exists on the controller (only get-by-name+version) — load the
+      // catalog and find this one by its own id.
+      const list = await listTemplates()
       if (!alive()) return
-      setImage(img)
+      setImage(list.find((t) => t.id === id) ?? null)
     } catch (e: unknown) {
       if (!alive()) return
       toast.error(formatUserError(e))

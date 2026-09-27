@@ -15522,11 +15522,11 @@
         }
       }
     },
-    "/api/v1/zyra-security/enforcement/policies/{id}": {
+    "/api/v1/zeus-security/enforcement/policies/{id}": {
       "patch": {
-        "summary": "PATCH /api/v1/zyra-security/enforcement/policies/{id}",
+        "summary": "PATCH /api/v1/zeus-security/enforcement/policies/{id}",
         "tags": [
-          "zyra-security"
+          "zeus-security"
         ],
         "responses": {
           "200": {

@@ -34,6 +34,6 @@ pub async fn sync_inventory(
         imported: count as usize,
         message: "VMware/vSphere remains import + migration-assistant only. Use Platform → Migration for pre-checks, or export OVA/qcow2 and Machina import.".into(),
         scope: "import_and_migrate_advisor".into(),
-        migration_advisor: "POST /api/v1/ai/migration/advisor?provider=vmware".into(),
+        migration_advisor: "GET /api/v1/migrations/advisor?provider=vmware".into(),
     }))
 }

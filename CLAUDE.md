@@ -138,9 +138,9 @@ PACKETWOLF_ENABLED    false
 `web/src/`:
 
 - **`pages/`** — One file per route. Classic daemon-backed pages (e.g. `VMList.tsx`, `Dashboard.tsx`) live at the top level. Platform (controller) pages live in `pages/platform/` and are prefixed `Platform*`. Fleet Cloud pages live at `/fleet-cloud/*` and are prefixed `FleetCloud*` (e.g. `FleetCloudInstances.tsx`). The legacy external-cloud client integration this used to gate on has been fully removed — Fleet Cloud is entirely native now, backed by the controller's own APIs.
-- **`components/`** — Shared UI components. Glass design system components (`GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs`) are in `components/glass/`. AI/Zeus components are in `components/ai/`. Platform shell components are in `components/consolehub/`.
+- **`components/`** — Shared UI components. Glass design system components (`GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs`) are in `components/glass/`. AI/Zeus components are in `components/ai/`. Platform shell components (`GlobalBar`, `SideNav`, `ChapterBar`) are in `components/nav/`; `components/consolehub/` holds the console UI (`CinemaShell`, `ConsoleHubShell`, etc.), not the shell chrome.
 - **`api/`** — One TypeScript module per API domain. `client.ts` is the base fetch wrapper. `platform.ts` sets the controller proxy base URL. Files prefixed `platform*` call the controller; others call the daemon.
-- **`contexts/`** — React contexts: `AuthContext`, `ThemeContext`, `WebSocketContext` (WS live updates), `AiContext`, `PlatformInfoContext`, `ToastContext`.
+- **`contexts/`** — React contexts: `AuthContext`, `ThemeContext`, `WebSocketContext` (WS live updates), `AiContext`, `PlatformInfoContext`, `ToastContext`, `BreadcrumbNameContext` (per-page breadcrumb label override).
 - **`hooks/`** — Custom hooks for keyboard shortcuts, fleet settings, console access policy, SSH, K8s context, etc.
 
 ### Route structure

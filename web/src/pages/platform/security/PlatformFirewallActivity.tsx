@@ -63,15 +63,23 @@ export default function PlatformFirewallActivity() {
 
   const load = useCallback(async () => {
     setError(null)
+    setNote(null)
     setLoading(true)
     try {
       const ov = await getFirewallOverview()
-      // Each target's activity query is independent — fire concurrently.
-      const results = await Promise.all(ov.targets.map((t) => getFirewallActivity(t.id)))
+      // Each target's activity query is independent — fire concurrently. allSettled so one
+      // unreachable/erroring target doesn't blank the whole page; its events are just omitted.
+      const results = await Promise.allSettled(ov.targets.map((t) => getFirewallActivity(t.id)))
+      const failedTargets: string[] = []
       const blockedEv: ActivityEvent[] = []
       const allowedEv: ActivityEvent[] = []
       ov.targets.forEach((t, i) => {
-        const act = results[i]
+        const result = results[i]
+        if (result.status === 'rejected') {
+          failedTargets.push(t.name)
+          return
+        }
+        const act = result.value
         if (typeof act.note === 'string') setNote(act.note)
         const ev = act.events
         if (!Array.isArray(ev)) return
@@ -88,6 +96,12 @@ export default function PlatformFirewallActivity() {
       })
       setBlocked(blockedEv)
       setAllowed(allowedEv)
+      if (failedTargets.length > 0) {
+        setNote((prev) => {
+          const failMsg = `Activity unavailable for ${failedTargets.length} target(s): ${failedTargets.join(', ')}`
+          return prev ? `${prev} · ${failMsg}` : failMsg
+        })
+      }
     } catch (e: unknown) {
       setError(formatUserError(e))
     } finally {
@@ -115,7 +129,7 @@ export default function PlatformFirewallActivity() {
         { label: 'Allowed', value: String(allowed.length), tone: allowed.length > 0 ? 'ok' : 'default' },
         { label: 'Total events', value: String(totalEvents) },
       ]}
-      panelTitle="Today"
+      panelTitle="Recent"
       isEmpty={totalEvents === 0}
       emptyTitle="No connection events yet"
       emptySubtitle="Enable PacketWolf for live blocked flows and connection telemetry."
@@ -130,6 +144,9 @@ export default function PlatformFirewallActivity() {
                 <MacListRow key={`b-${i}`} title={eventTitle(e)} subtitle={eventSubtitle(e)} />
               ))}
             </div>
+            {blocked.length > 25 && (
+              <p className="text-xs text-[var(--text-muted)] mt-1 px-1">+{blocked.length - 25} more</p>
+            )}
           </div>
         )}
         {allowed.length > 0 && (
@@ -140,6 +157,9 @@ export default function PlatformFirewallActivity() {
                 <MacListRow key={`a-${i}`} title={eventTitle(e)} subtitle={eventSubtitle(e)} />
               ))}
             </div>
+            {allowed.length > 15 && (
+              <p className="text-xs text-[var(--text-muted)] mt-1 px-1">+{allowed.length - 15} more</p>
+            )}
           </div>
         )}
       </div>

@@ -130,6 +130,38 @@ pub async fn create_alert_rule(
     Ok(Json(row))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct PatchAlertRuleBody {
+    pub enabled: bool,
+}
+
+pub async fn patch_alert_rule(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<PatchAlertRuleBody>,
+) -> Result<Json<AlertRuleRow>, ApiError> {
+    require_operator(&actor)?;
+    let updated = sqlx::query("UPDATE alert_rules SET enabled = ? WHERE id = ?")
+        .bind(body.enabled)
+        .bind(id)
+        .execute(&state.pool)
+        .await?
+        .rows_affected();
+    if updated == 0 {
+        return Err(ApiError::not_found("alert rule not found"));
+    }
+    let row = sqlx::query_as::<_, AlertRuleRow>(
+        "SELECT id, name, metric, comparator, threshold, severity,
+                scope_project, scope_tag, cooldown_minutes, enabled, last_fired_at, created_at
+         FROM alert_rules WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await?;
+    Ok(Json(row))
+}
+
 pub async fn delete_alert_rule(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,

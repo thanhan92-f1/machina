@@ -11,6 +11,7 @@ import {
   createAlertRule,
   deleteAlertRule,
   listAlertRules,
+  setAlertRuleEnabled,
   type AlertComparator,
   type AlertMetric,
   type AlertRule,
@@ -85,6 +86,16 @@ export default function PlatformAlertRules() {
     }
   }
 
+  const toggleEnabled = async (r: AlertRule) => {
+    try {
+      await setAlertRuleEnabled(r.id, !r.enabled)
+      toast.success(r.enabled ? `Disabled '${r.name}'` : `Enabled '${r.name}'`)
+      await load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
   return (
     <PlatformPageChrome
       eyebrow="Platform"
@@ -142,9 +153,14 @@ export default function PlatformAlertRules() {
                     r.scope_project || r.scope_tag ? `scope ${r.scope_project || '*'}/${r.scope_tag || '*'}` : 'all VMs'
                   }${r.enabled ? '' : ' · disabled'} · last fired ${r.last_fired_at ? new Date(r.last_fired_at).toLocaleString() : 'never'}`}
                   badge={
-                    <button type="button" className="btn-secondary text-xs p-1.5" aria-label="Delete" onClick={() => setConfirmDeleteId(r.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button type="button" className="btn-secondary text-xs px-2 py-1" onClick={() => void toggleEnabled(r)}>
+                        {r.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                      <button type="button" className="btn-secondary text-xs p-1.5" aria-label="Delete" onClick={() => setConfirmDeleteId(r.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   }
                 />
               ))}

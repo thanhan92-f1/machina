@@ -11,6 +11,7 @@ import {
   createScheduledJob,
   deleteScheduledJob,
   listScheduledJobs,
+  setScheduledJobEnabled,
   SCHEDULED_JOB_OPERATIONS,
   type ScheduledJob,
 } from '../../api/day2'
@@ -84,6 +85,16 @@ export default function PlatformScheduledJobs() {
 
   const hostName = (id: string) => hosts.find((h) => h.id === id)?.hostname || id
 
+  const toggleEnabled = async (j: ScheduledJob) => {
+    try {
+      await setScheduledJobEnabled(j.id, !j.enabled)
+      toast.success(j.enabled ? `Disabled '${j.name}'` : `Enabled '${j.name}'`)
+      await load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
   return (
     <PlatformPageChrome
       eyebrow="Platform"
@@ -137,9 +148,14 @@ export default function PlatformScheduledJobs() {
                     j.target_host_id ? hostName(j.target_host_id) : 'all hosts'
                   }${j.enabled ? '' : ' · disabled'} · last run ${j.last_run_at ? new Date(j.last_run_at).toLocaleString() : 'never'}`}
                   badge={
-                    <button type="button" className="btn-secondary text-xs p-1.5" aria-label="Delete" onClick={() => setConfirmDeleteId(j.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button type="button" className="btn-secondary text-xs px-2 py-1" onClick={() => void toggleEnabled(j)}>
+                        {j.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                      <button type="button" className="btn-secondary text-xs p-1.5" aria-label="Delete" onClick={() => setConfirmDeleteId(j.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   }
                 />
               ))}

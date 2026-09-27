@@ -15,6 +15,7 @@ const DESTINATIONS: Array<{
 }> = [
   { id: 'finder', label: 'Machine Finder', subtitle: 'Inventory, power, migrate', href: '/platform/vms' },
   { id: 'create', label: 'Create a VM', subtitle: 'Four steps from image to boot', action: 'create' },
+  { id: 'live-wall', label: 'Live Preview Wall', subtitle: 'Live VNC thumbnails of running VMs', href: '/platform/mission-control/live' },
   { id: 'security', label: 'Security', subtitle: 'Firewall, risk, compliance', href: '/platform/zeus/security' },
   { id: 'recovery', label: 'Recovery', subtitle: 'Snapshots and backups', href: '/platform/backups' },
   { id: 'templates', label: 'Templates', subtitle: 'Golden images', href: '/platform/templates' },

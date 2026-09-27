@@ -67,12 +67,14 @@ asserted by vitest; do not rename them for styling.
 `+` button (its text stays in the DOM, so the accessible name is unchanged), the decorative avatar
 and the duplicate sign-out icon are hidden (Sign Out remains in the Machina menu).
 
-**Removed and orphaned.** The Mac menubar, 68px icon rail, hover flyouts, desktop tabs and dock are
-gone (commit `de22b0e9`). `PlatformSidebar`, `PlatformMacAppMenus`, `PlatformProductNavMenus`,
+**Removed.** The Mac menubar, 68px icon rail, hover flyouts, desktop tabs and dock are gone (commit
+`de22b0e9`). `PlatformSidebar`, `PlatformMacAppMenus`, `PlatformProductNavMenus`,
 `PlatformMacDesktopTabs`, `PlatformMacDock`, `PlatformDynamicIsland`, `Navbar.tsx` and
-`Breadcrumb.tsx` are still in the tree with no importers. **Do not reintroduce a dock.** Some e2e
-specs still target the old markup (`.mac-menubar-inner`, `.platform-sidebar`, `.tahoe-context-bar`);
-they fail against the live shell independent of styling.
+`Breadcrumb.tsx` had zero importers and have been deleted along with their dead trigger (the
+Appearance settings "Customize Dock…" button, which opened a listener that no longer existed).
+**Do not reintroduce a dock.** The e2e specs that used to target the old markup
+(`.mac-menubar-inner`, `.platform-sidebar`, `.tahoe-context-bar`) have been updated to match the
+live `gnb-*` shell — see the "Update or remove e2e specs" checklist item below.
 
 ## Laws
 

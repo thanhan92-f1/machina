@@ -420,6 +420,45 @@ const sampleNetwork = {
 
 let platformNetworks = [{ ...sampleNetwork }]
 
+let alertRules: Array<{
+  id: string
+  name: string
+  metric: string
+  comparator: string
+  threshold: number
+  severity: string
+  scope_project: string
+  scope_tag: string
+  cooldown_minutes: number
+  enabled: boolean
+  last_fired_at: string | null
+  created_at: string
+}> = [
+  {
+    id: 'ar1', name: 'high-cpu', metric: 'cpu_percent', comparator: 'gt', threshold: 85,
+    severity: 'warning', scope_project: '', scope_tag: '', cooldown_minutes: 30, enabled: true,
+    last_fired_at: null, created_at: new Date().toISOString(),
+  },
+]
+
+let scheduledJobs: Array<{
+  id: string
+  name: string
+  operation: string
+  payload: string
+  target_host_id: string | null
+  interval_minutes: number
+  enabled: boolean
+  last_run_at: string | null
+  created_at: string
+}> = [
+  {
+    id: 'sj1', name: 'host-inventory-refresh', operation: 'host.inventory', payload: '{}',
+    target_host_id: null, interval_minutes: 60, enabled: true, last_run_at: null,
+    created_at: new Date().toISOString(),
+  },
+]
+
 const mockHostCockpitStorage = {
   probed: true,
   mdraid: [{ name: '/dev/md0', detail: 'raid1 · 2 devices', state: 'clean' }],
@@ -867,6 +906,17 @@ export async function mockPlatformApi(page: Page, opts?: {
           created_at: new Date().toISOString(),
         },
       })
+    }
+    if (url.includes('/zeus-firewall/profiles')) {
+      // Same shape-mismatch risk as /approvals above — listFirewallProfiles() expects an array.
+      return route.fulfill({ json: [{ name: 'ProductionServer', display_name: 'Production Server', description: '' }] })
+    }
+    if (url.includes('/zeus-firewall/approvals')) {
+      // Otherwise falls through to the generic '/zeus-firewall/' catch-all below, which returns an
+      // object ({summary,targets,profiles}) — listFirewallApprovals() expects an array, and
+      // PlatformFirewallCompliance.tsx calls .map() on it directly, so that shape mismatch crashed
+      // the whole page.
+      return route.fulfill({ json: [] })
     }
     if (url.includes('/zeus-firewall/overview')) {
       return route.fulfill({
@@ -3632,6 +3682,63 @@ export async function mockPlatformApi(page: Page, opts?: {
     }
     if (url.match(/\/api\/v1\/api-keys(\?|$)/)) {
       return route.fulfill({ json: [{ id: 'k1', name: 'automation', role: 'operator', created_at: new Date().toISOString() }] })
+    }
+    if (url.match(/\/api\/v1\/alert-rules\/[^/]+$/)) {
+      const id = url.split('/').pop()!.split('?')[0]
+      if (route.request().method() === 'PATCH') {
+        const idx = alertRules.findIndex((r) => r.id === id)
+        if (idx < 0) return route.fulfill({ status: 404, json: { error: 'alert rule not found' } })
+        const body = (route.request().postDataJSON() ?? {}) as { enabled: boolean }
+        alertRules[idx] = { ...alertRules[idx], enabled: body.enabled }
+        return route.fulfill({ json: alertRules[idx] })
+      }
+      if (route.request().method() === 'DELETE') {
+        alertRules = alertRules.filter((r) => r.id !== id)
+        return route.fulfill({ json: { deleted: true } })
+      }
+    }
+    if (url.match(/\/api\/v1\/alert-rules(\?|$)/)) {
+      if (route.request().method() === 'POST') {
+        const body = (route.request().postDataJSON() ?? {}) as Partial<(typeof alertRules)[number]>
+        const row = {
+          id: `ar${alertRules.length + 1}`, name: body.name ?? 'rule', metric: body.metric ?? 'cpu_percent',
+          comparator: body.comparator ?? 'gt', threshold: body.threshold ?? 80, severity: body.severity ?? 'warning',
+          scope_project: body.scope_project ?? '', scope_tag: body.scope_tag ?? '',
+          cooldown_minutes: body.cooldown_minutes ?? 30, enabled: body.enabled ?? true,
+          last_fired_at: null, created_at: new Date().toISOString(),
+        }
+        alertRules = [row, ...alertRules]
+        return route.fulfill({ json: row })
+      }
+      return route.fulfill({ json: alertRules })
+    }
+    if (url.match(/\/api\/v1\/scheduled-jobs\/[^/]+$/)) {
+      const id = url.split('/').pop()!.split('?')[0]
+      if (route.request().method() === 'PATCH') {
+        const idx = scheduledJobs.findIndex((j) => j.id === id)
+        if (idx < 0) return route.fulfill({ status: 404, json: { error: 'scheduled job not found' } })
+        const body = (route.request().postDataJSON() ?? {}) as { enabled: boolean }
+        scheduledJobs[idx] = { ...scheduledJobs[idx], enabled: body.enabled }
+        return route.fulfill({ json: scheduledJobs[idx] })
+      }
+      if (route.request().method() === 'DELETE') {
+        scheduledJobs = scheduledJobs.filter((j) => j.id !== id)
+        return route.fulfill({ json: { deleted: true } })
+      }
+    }
+    if (url.match(/\/api\/v1\/scheduled-jobs(\?|$)/)) {
+      if (route.request().method() === 'POST') {
+        const body = (route.request().postDataJSON() ?? {}) as Partial<(typeof scheduledJobs)[number]>
+        const row = {
+          id: `sj${scheduledJobs.length + 1}`, name: body.name ?? 'job', operation: body.operation ?? 'host.inventory',
+          payload: body.payload ?? '{}', target_host_id: body.target_host_id ?? null,
+          interval_minutes: body.interval_minutes ?? 60, enabled: body.enabled ?? true,
+          last_run_at: null, created_at: new Date().toISOString(),
+        }
+        scheduledJobs = [row, ...scheduledJobs]
+        return route.fulfill({ json: row })
+      }
+      return route.fulfill({ json: scheduledJobs })
     }
     if (url.includes('/webhooks/deliveries')) {
       return route.fulfill({ json: [] })

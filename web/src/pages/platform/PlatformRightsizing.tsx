@@ -62,6 +62,14 @@ export default function PlatformRightsizing() {
     toast.success(`Queued ${r.action} for ${r.vm_name}`)
   }
 
+  const queueSingle = async (r: RightsizingRecommendation) => {
+    try {
+      await queueAction(r)
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    }
+  }
+
   const queueSelected = async () => {
     const picks = recs.filter((r) => selected.has(recKey(r)))
     if (picks.length === 0) return
@@ -124,7 +132,7 @@ export default function PlatformRightsizing() {
                     <p className="text-xs text-[var(--text-muted)] mt-1">{r.action} · risk {r.risk}{r.savings_usd > 0 ? ` · $${r.savings_usd.toFixed(0)}/mo` : ''}</p>
                   </span>
                 </label>
-                <button type="button" className="text-xs text-orange-400 mt-2 hover:underline ml-6" onClick={() => void queueAction(r)}>
+                <button type="button" className="text-xs text-orange-400 mt-2 hover:underline ml-6" onClick={() => void queueSingle(r)}>
                   Queue single
                 </button>
               </li>

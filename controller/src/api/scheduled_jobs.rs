@@ -112,6 +112,38 @@ pub async fn create_scheduled_job(
     Ok(Json(row))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct PatchScheduledJobBody {
+    pub enabled: bool,
+}
+
+pub async fn patch_scheduled_job(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<PatchScheduledJobBody>,
+) -> Result<Json<ScheduledJobRow>, ApiError> {
+    require_operator(&actor)?;
+    let updated = sqlx::query("UPDATE scheduled_jobs SET enabled = ? WHERE id = ?")
+        .bind(body.enabled)
+        .bind(id)
+        .execute(&state.pool)
+        .await?
+        .rows_affected();
+    if updated == 0 {
+        return Err(ApiError::not_found("scheduled job not found"));
+    }
+    let row = sqlx::query_as::<_, ScheduledJobRow>(
+        "SELECT id, name, operation, payload, target_host_id, interval_minutes, enabled,
+                last_run_at, created_at
+         FROM scheduled_jobs WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await?;
+    Ok(Json(row))
+}
+
 pub async fn delete_scheduled_job(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,

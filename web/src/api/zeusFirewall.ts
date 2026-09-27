@@ -488,8 +488,12 @@ export const applyK8sFirewall = (namespace: string, profile: string, dry_run = f
     body: JSON.stringify({ namespace, profile, dry_run }),
   })
 
-export const firewallCompliancePdfUrl = (kind: string) =>
-  `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/zeus-firewall/compliance/${encodeURIComponent(kind)}/export.pdf`
+// Was a bare window.location.origin + path used as a plain <a href> — that hits the daemon (this
+// route only exists on the controller, reached through the platform/controller proxy) and carries
+// no auth header, so the download 404'd/401'd. Route it through the same authenticated blob-fetch
+// pattern as the other controller exports (see downloadControllerExport in ./platform).
+export const downloadFirewallCompliancePdf = (kind: string, filename = `${kind}-compliance.pdf`) =>
+  downloadControllerExport(`/api/v1/zeus-firewall/compliance/${encodeURIComponent(kind)}/export.pdf`, filename)
 
 export const getMultisiteExport = () =>
   platformFetch<Record<string, unknown>>('/api/v1/zeus-firewall/multisite/export')

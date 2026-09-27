@@ -10,14 +10,14 @@ import { formatUserError } from '../../utils/apiError'
 import { statusSurfaceClasses, statusToneClass, hubLinkClasses } from '../../utils/semanticColors'
 import MachinaNetworkLens from '../../components/ai/MachinaNetworkLens'
 import MachinaDigitalTwin from '../../components/ai/MachinaDigitalTwin'
-import { getClusterTopology, type TopologyGraph } from '../../api/platform'
+import { getClusterTopology, getHostLldp, type HostLldpInventory, type TopologyGraph } from '../../api/platform'
 import { getSimilarIncidents } from '../../api/ai'
 import { getZeusAssetInventory } from '../../api/zeusSecurity'
 
 type LldpStripEntry = {
   hostId: string
   hostname: string
-  neighbors: Array<{ local_interface: string; system_name: string; chassis_id: string; port_id: string }>
+  neighbors: HostLldpInventory['neighbors']
   source?: string
 }
 
@@ -29,6 +29,12 @@ export default function PlatformTopology() {
   const [similarIncidents, setSimilarIncidents] = useState<Array<{ label: string; score: number; summary: string }>>([])
   const [memorySearch, setMemorySearch] = useState<{ searched: boolean; summary: string }>({ searched: false, summary: '' })
   const [trafficHosts, setTrafficHosts] = useState<Array<Record<string, unknown>>>([])
+  // Real per-host LLDP inventory (GET /api/v1/hosts/{id}/lldp — the same endpoint PlatformHostDetail
+  // uses) keyed by host id. The strip below used to synthesize fake neighbor rows straight from the
+  // topology graph's generic "uplink" edges (hardcoded local_interface: 'uplink', port_id: '') —
+  // this fetches the real thing instead.
+  const [lldpByHost, setLldpByHost] = useState<Record<string, HostLldpInventory>>({})
+  const [lldpLoading, setLldpLoading] = useState(false)
 
   const load = useCallback(async () => {
     setError(null)
@@ -49,6 +55,23 @@ export default function PlatformTopology() {
 
   useEffect(() => { void load() }, [load])
 
+  const hostNodes = useMemo(() => graph?.nodes.filter((n) => n.kind === 'host') ?? [], [graph])
+
+  const loadLldp = useCallback(async () => {
+    if (hostNodes.length === 0) return
+    setLldpLoading(true)
+    try {
+      const entries = await Promise.all(
+        hostNodes.map(async (h) => [h.id, await getHostLldp(h.id).catch(() => null)] as const),
+      )
+      setLldpByHost(Object.fromEntries(entries.filter((e): e is [string, HostLldpInventory] => e[1] !== null)))
+    } finally {
+      setLldpLoading(false)
+    }
+  }, [hostNodes])
+
+  useEffect(() => { void loadLldp() }, [loadLldp])
+
   const segmentLegend = useMemo(
     () => graph?.nodes.filter((n) => n.kind === 'segment') ?? [],
     [graph],
@@ -60,26 +83,13 @@ export default function PlatformTopology() {
   )
 
   const lldpStrip = useMemo((): LldpStripEntry[] => {
-    if (!graph) return []
-    const hosts = graph.nodes.filter((n) => n.kind === 'host')
-    const switches = new Map(graph.nodes.filter((n) => n.kind === 'switch').map((n) => [n.id, n]))
-    return hosts
+    return hostNodes
       .map((host) => {
-        const uplinks = graph.edges.filter((e) => e.from === host.id && e.label === 'uplink')
-        const neighbors = uplinks.map((e) => {
-          const sw = switches.get(e.to)
-          return {
-            local_interface: 'uplink',
-            system_name: sw?.name ?? 'switch',
-            chassis_id: sw?.id ?? e.to,
-            port_id: '',
-          }
-        })
-        const source = switches.get(uplinks[0]?.to ?? '')?.state ?? undefined
-        return { hostId: host.id, hostname: host.name, neighbors, source }
+        const inv = lldpByHost[host.id]
+        return { hostId: host.id, hostname: host.name, neighbors: inv?.neighbors ?? [], source: inv?.source }
       })
       .filter((entry) => entry.neighbors.length > 0)
-  }, [graph])
+  }, [hostNodes, lldpByHost])
 
   return (
     <PlatformPageChrome
@@ -90,7 +100,7 @@ export default function PlatformTopology() {
       title="Topology"
       subtitle="Digital twin graph — hosts, VMs, overlay segments, and LLDP uplinks"
       icon={<GitBranch className="w-6 h-6 text-[var(--text-muted)]" />}
-      actions={<PlatformRefreshButton onClick={() => void load()} label="Refresh LLDP" />}
+      actions={<PlatformRefreshButton onClick={() => { void load(); void loadLldp() }} label={lldpLoading ? 'Refreshing LLDP…' : 'Refresh LLDP'} />}
       contentLoading={loading && !graph}
       contentClassName="space-y-4"
     >
@@ -175,7 +185,7 @@ export default function PlatformTopology() {
       )}
 
       {lldpStrip.length > 0 && (
-        <MacGlassPanel title="LLDP uplink strip" subtitle="Switch neighbors from topology cache (deduped chassis IDs).">
+        <MacGlassPanel title="LLDP uplink strip" subtitle="Live LLDP neighbor data per host (agent-reported, cached on failure).">
           <div className="space-y-3">
             {lldpStrip.map((entry) => (
               <div key={entry.hostId} className="rounded-xl border border-white/[0.06] bg-[var(--apple-surface)] p-3">
@@ -193,6 +203,7 @@ export default function PlatformTopology() {
                       <span className="text-[var(--accent)]">{n.local_interface}</span>
                       <span>→</span>
                       <span>{n.system_name || n.chassis_id || 'switch'}</span>
+                      {n.port_id && <span className="text-[var(--text-muted)]">({n.port_id})</span>}
                     </li>
                   ))}
                 </ul>

@@ -18,6 +18,9 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
   const [loading, setLoading] = useState(true)
   const [project, setProject] = useState('default')
   const [maxVms, setMaxVms] = useState(50)
+  const [maxVcpu, setMaxVcpu] = useState(50 * 4)
+  const [maxMemoryMib, setMaxMemoryMib] = useState(50 * 8192)
+  const [maxStorageGib, setMaxStorageGib] = useState(50 * 100)
 
   const load = useCallback(async () => {
     setError(null)
@@ -34,12 +37,18 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
 
   useEffect(() => { void load() }, [load])
 
-  // Keep Max VMs in sync with the matching existing quota whenever Project
-  // changes to an already-configured project, so Save doesn't silently
-  // clobber a real quota (e.g. 100) with the form's default (50).
+  // Keep the whole quota form in sync with the matching existing quota whenever Project changes to
+  // an already-configured project, so Save doesn't silently clobber real vCPU/memory/storage values
+  // with a fixed multiple of Max VMs — upsertProjectQuota is a full replace, not a partial patch, so
+  // every field submitted has to reflect what the user actually intends.
   useEffect(() => {
     const match = quotas.find((q) => q.project === project)
-    if (match) setMaxVms(match.max_vms)
+    if (match) {
+      setMaxVms(match.max_vms)
+      setMaxVcpu(match.max_vcpu)
+      setMaxMemoryMib(match.max_memory_mib)
+      setMaxStorageGib(match.max_storage_gib)
+    }
   }, [project, quotas])
 
   const downloadPolicyYaml = async () => {
@@ -63,9 +72,9 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
       await upsertProjectQuota({
         project,
         max_vms: maxVms,
-        max_vcpu: maxVms * 4,
-        max_memory_mib: maxVms * 8192,
-        max_storage_gib: maxVms * 100,
+        max_vcpu: maxVcpu,
+        max_memory_mib: maxMemoryMib,
+        max_storage_gib: maxStorageGib,
       })
       toast.success('Quota saved')
       await load()
@@ -112,7 +121,7 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
         )}
       </MacGlassPanel>
       <MacGlassPanel title="Project quotas">
-        <div className="grid gap-3 sm:grid-cols-3 max-w-xl mb-4">
+        <div className="grid gap-3 sm:grid-cols-3 max-w-2xl mb-4">
           <label className="block text-xs text-[var(--text-muted)]">
             Project
             <input className="input text-sm mt-1 w-full" value={project} onChange={(e) => setProject(e.target.value)} />
@@ -120,6 +129,18 @@ export default function PlatformPolicy({ embedded }: { embedded?: boolean } = {}
           <label className="block text-xs text-[var(--text-muted)]">
             Max VMs
             <input type="number" className="input text-sm mt-1 w-full" value={maxVms} onChange={(e) => setMaxVms(Number(e.target.value))} />
+          </label>
+          <label className="block text-xs text-[var(--text-muted)]">
+            Max vCPU
+            <input type="number" className="input text-sm mt-1 w-full" value={maxVcpu} onChange={(e) => setMaxVcpu(Number(e.target.value))} />
+          </label>
+          <label className="block text-xs text-[var(--text-muted)]">
+            Max memory (MiB)
+            <input type="number" className="input text-sm mt-1 w-full" value={maxMemoryMib} onChange={(e) => setMaxMemoryMib(Number(e.target.value))} />
+          </label>
+          <label className="block text-xs text-[var(--text-muted)]">
+            Max storage (GiB)
+            <input type="number" className="input text-sm mt-1 w-full" value={maxStorageGib} onChange={(e) => setMaxStorageGib(Number(e.target.value))} />
           </label>
           <div className="flex items-end">
             <button type="button" className="btn-primary text-sm w-full" onClick={() => void saveQuota()}>Save quota</button>
