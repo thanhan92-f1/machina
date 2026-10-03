@@ -786,3 +786,46 @@ html[data-theme='tahoe'] .nl-node, html[data-ui-shell='default'] .nl-node { fill
 .nl-dot { fill: var(--apple-blue, #0071e3); }
 .nl-vm { fill: var(--text-faint, #a1a1a6); opacity: 0.55; }
 .nl-vm.is-running { fill: var(--apple-blue, #0071e3); opacity: 1; }
+
+/* ---- Header stat strip (Netra pulse figures) -------------------------------- */
+.nl-stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin-top: 0.25rem;
+}
+.nl-stat {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nl-stat b {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.nl-stat small {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ---- Pages that pass space-y-* on a flex/gap container double their spacing --- */
+.apple-page[class*='space-y-'] > * {
+  margin-block: 0 !important;
+}
+
+/* ---- Sticky detail tabs: page-coloured strip, no tinted band overhanging the content ---- */
+html .platform-detail-tabs-sticky,
+html.apple-light .platform-detail-tabs-sticky,
+html.light-theme .platform-detail-tabs-sticky,
+html[data-theme='tahoe-light'] .platform-detail-tabs-sticky,
+html[data-theme='tahoe'] .platform-detail-tabs-sticky {
+  margin: 0 0 0.75rem !important;
+  padding: 0.35rem 0 0.65rem !important;
+  background: var(--page-bg, #fff) !important;
+  backdrop-filter: none !important;
+  border-bottom: 1px solid var(--nl-hairline) !important;
+}

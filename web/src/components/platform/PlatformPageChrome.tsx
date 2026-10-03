@@ -43,11 +43,11 @@ export function platformStatSubtitle(
   stats: Array<{ label: string; value: string | number }>,
 ): ReactNode {
   return (
-    <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[var(--text-muted)] tracking-tight">
+    <span className="nl-stat-strip">
       {stats.map((s) => (
-        <span key={s.label}>
-          <span className="text-[var(--text-faint)]">{s.label}</span>{' '}
-          <span className="text-[var(--text-primary)] tabular-nums font-medium">{s.value}</span>
+        <span key={s.label} className="nl-stat">
+          <b>{s.value}</b>
+          <small>{s.label}</small>
         </span>
       ))}
     </span>
