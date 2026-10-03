@@ -6,6 +6,7 @@
 [![License: Zyvor Production v1.0](https://img.shields.io/badge/License-Zyvor%20Production%20v1.0-orange.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-daemon%20%C2%B7%20controller%20%C2%B7%20agent-1d1d1f?logo=rust)](Cargo.toml)
 [![KVM](https://img.shields.io/badge/libvirt-QEMU%2FKVM-6e3ad6)](docs/README.md)
+[![Website](https://img.shields.io/badge/Website-zyvorai.github.io%2Fmachina-0071e3)](https://zyvorai.github.io/machina/)
 
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=machina&utm_campaign=readme_hero)
 [![30-day PoC](https://img.shields.io/badge/30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=machina&utm_campaign=readme_hero)
