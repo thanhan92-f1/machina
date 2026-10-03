@@ -2867,7 +2867,7 @@ export default function VMDetailsPage() {
                             </div>
                             <div className="flex-1 min-w-[240px]">
                               <label className="block text-xs text-[var(--text-muted)] mb-1">External file override (optional)</label>
-                              <input
+                              <input aria-label="External file override (optional)"
                                 value={d.file || ''}
                                 onChange={(e) => setSnapDisks((p) => p.map((x, j) => (j === idx ? { ...x, file: e.target.value } : x)))}
                                 className="input-field"
@@ -2877,7 +2877,7 @@ export default function VMDetailsPage() {
                             </div>
                             <div className="min-w-[120px]">
                               <label className="block text-xs text-[var(--text-muted)] mb-1">Driver</label>
-                              <input
+                              <input aria-label="Driver"
                                 value={d.driver || ''}
                                 onChange={(e) => setSnapDisks((p) => p.map((x, j) => (j === idx ? { ...x, driver: e.target.value } : x)))}
                                 className="input-field"

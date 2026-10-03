@@ -212,12 +212,12 @@ export default function ApiDocs() {
                 <div className="bg-[var(--apple-surface)] border-t border-[var(--apple-hairline)]/30 px-5 py-4 space-y-3">
                   <div>
                     <label className="block text-xs text-[var(--text-muted)] mb-1">URL</label>
-                    <input value={tryPath} onChange={e => setTryPath(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] font-mono text-xs" />
+                    <input aria-label="URL" value={tryPath} onChange={e => setTryPath(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] font-mono text-xs" />
                   </div>
                   {ep.method !== 'GET' && (
                     <div>
                       <label className="block text-xs text-[var(--text-muted)] mb-1">Request Body (JSON)</label>
-                      <textarea value={tryBody} onChange={e => setTryBody(e.target.value)} rows={4} className="w-full px-3 py-2 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] font-mono text-xs" placeholder='{"key": "value"}' />
+                      <textarea aria-label="Request Body (JSON)" value={tryBody} onChange={e => setTryBody(e.target.value)} rows={4} className="w-full px-3 py-2 bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] text-[var(--text-primary)] font-mono text-xs" placeholder='{"key": "value"}' />
                     </div>
                   )}
                   <button onClick={() => tryIt(ep.method, tryPath, tryBody)} disabled={tryLoading} className="btn-primary text-sm disabled:opacity-50">

@@ -321,7 +321,7 @@ export default function KubeVirtExposeServiceModal({ vm, services, onClose, onCo
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Service name</label>
-              <input
+              <input aria-label="Service name"
                 value={serviceName}
                 onChange={(e) => setServiceName(e.target.value)}
                 className="w-full bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] font-mono"

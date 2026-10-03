@@ -2389,7 +2389,7 @@ export default function PlatformVmDetail() {
                   {newSchedAction === 'snapshot' && (
                     <div className="col-span-2 flex items-center gap-2">
                       <label className="text-xs text-[var(--text-muted)] whitespace-nowrap">Keep last</label>
-                      <input
+                      <input aria-label="Keep last"
                         type="number"
                         className="input w-20 text-sm"
                         min={1}

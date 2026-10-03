@@ -346,7 +346,7 @@ export default function StoragePoolDetail() {
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-1">Name</label>
-                <input type="text" value={newVolName} onChange={(e) => setNewVolName(e.target.value)} placeholder="my-volume.qcow2" className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
+                <input aria-label="Name" type="text" value={newVolName} onChange={(e) => setNewVolName(e.target.value)} placeholder="my-volume.qcow2" className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
               </div>
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-1">Capacity (GB)</label>
