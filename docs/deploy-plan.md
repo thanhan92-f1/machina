@@ -71,6 +71,4 @@ Previous successful deploy (Phases 38–47): commit `001a2d5`, E2E 277 passed / 
 
 ## Related docs
 
-- [`platform-roadmap.md`](platform-roadmap.md)
 - [`machina-macos-os-manager-roadmap.md`](machina-macos-os-manager-roadmap.md)
-- Phase stubs: `docs/zeus-os-ai-582-591.md` … `docs/zeus-os-ai-682-691.md`

@@ -54,7 +54,7 @@ Each phase ships: **backend aggregator or agent lift → Mac UI pane → Spotlig
 | **48** | 682–691 | **General** — fleet desktop prefs + dock editor | **Shipped (v1)** |
 | **59** | 692–701 | **Linux Base OS** — remote patch apply, reboot, host+fleet depth | **Shipped (v1)** |
 
-Layer **6 Network** and Layer **9 Software Update** depth: see [`zeus-os-ai-692-701.md`](zeus-os-ai-692-701.md) (network-diag + package apply/reboot).
+
 
 ---
 
@@ -65,7 +65,6 @@ Layer **6 Network** and Layer **9 Software Update** depth: see [`zeus-os-ai-692-
 | Backend | `GET /api/v1/fleet/general` |
 | UI | Settings → General — wallpaper, dock editor, fleet summary |
 | Spotlight | `general settings`, `customize dock` |
-| Doc | [`zeus-os-ai-682-691.md`](zeus-os-ai-682-691.md) |
 
 ## Phase acceptance checklist (every phase)
 
@@ -85,7 +84,7 @@ Layer **6 Network** and Layer **9 Software Update** depth: see [`zeus-os-ai-692-
 - No live WebAuthn on `main` until enterprise backlog lifts — Keychain phases stay **inventory + link-out**
 - Kernel route mutation stays read-only in platform UI (Network pane shows diag + deep links)
 
-See [`platform-ux-vision.md`](platform-ux-vision.md), [`machina-fleet-desktop-vision.md`](machina-fleet-desktop-vision.md), [`machina-infrastructure-vision.md`](machina-infrastructure-vision.md), [`enterprise-backlog.md`](enterprise-backlog.md).
+See [`machina-infrastructure-vision.md`](machina-infrastructure-vision.md), [`enterprise-backlog.md`](enterprise-backlog.md).
 
 ---
 

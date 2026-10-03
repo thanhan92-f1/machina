@@ -63,7 +63,6 @@ Web UI (/platform/*)  →  machina-controller  →  gRPC  →  machina-agent  �
 | Leader-gated sync, cluster leadership API | Done |
 | Configurable sync interval, ES256 JWKS, snap clone migrate | Done |
 
-See [`platform-slices.md`](platform-slices.md) (batch 5), [`platform-slices-batch6.md`](platform-slices-batch6.md) (batch 6), [`platform-slices-batch7.md`](platform-slices-batch7.md) (batch 7), [`platform-batch8.md`](platform-batch8.md) (OIDC, leader election, IPMI, webhook retries), [`platform-slices-batch9.md`](platform-slices-batch9.md) (NATS consumer, deliveries, tags, rate limits), [`platform-slices-batch10.md`](platform-slices-batch10.md) (JWKS, snap clone, leadership API), and [`platform-slices-batch11.md`](platform-slices-batch11.md) (sync interval, ES256, cross-host clone).
 
 ## Quick start
 
@@ -299,7 +298,7 @@ Services: `machina-controller`, `machina-agent`, `postgresql`. Config: `/etc/def
 
 ## Batches 12–16 (vCenter-class hardening)
 
-See [`platform-roadmap.md`](platform-roadmap.md), [`platform-runbooks.md`](platform-runbooks.md), and [`platform-cert-matrix.md`](platform-cert-matrix.md).
+See [`platform-runbooks.md`](platform-runbooks.md), and [`platform-cert-matrix.md`](platform-cert-matrix.md).
 
 Highlights:
 

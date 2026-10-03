@@ -192,5 +192,4 @@ Live: start PacketWolf on 9091, set `PACKETWOLF_ENABLED=1`, open Security Center
 ## Related docs
 
 - [`machina-zeus-os-vision.md`](machina-zeus-os-vision.md)
-- [`platform-roadmap.md`](platform-roadmap.md) — Phase 18 PacketWolf fabric
 - [`ux.md`](ux.md) — Security Center UX patterns

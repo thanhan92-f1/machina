@@ -112,7 +112,7 @@ Optional GitHub Actions: workflow_dispatch job `live-ux` (secrets: `LIVE_HOST`, 
 
 ## Overall UX polish (P14)
 
-Cross-shell presentation pass after backend wiring (P6–P13). See [`backend-ux-wiring-audit.md`](backend-ux-wiring-audit.md) P14 for the full checklist.
+Cross-shell presentation pass after backend wiring (P6–P13).
 
 | Area | Pattern |
 |------|---------|

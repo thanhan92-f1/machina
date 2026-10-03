@@ -46,7 +46,6 @@
 
 ## Roadmap batches
 
-See [`platform-roadmap.md`](platform-roadmap.md) batches AI-49 through AI-87 (all shipped).
 
 ## v2 batches (AI-57+)
 

@@ -4,7 +4,7 @@
 
 **Scope:** Machina Intelligence vs Zeus OS boundaries are documented in [`machina-infrastructure-vision.md`](machina-infrastructure-vision.md). Zeus Firewall, K8s workloads, and app fabric are Zeus-owned; host geography, Living Server cards, and fleet patching are Machina-owned.
 
-**Status (main):** Layers 1–9 shipping in batches **AI-88–AI-137**. See [`platform-roadmap.md`](platform-roadmap.md).
+**Status (main):** Layers 1–9 shipping in batches **AI-88–AI-137**.
 
 ---
 
@@ -57,9 +57,9 @@ See [`packetwolf-zeus-fabric.md`](packetwolf-zeus-fabric.md) for the full Securi
 
 UI: `/platform/zeus/security/firewall` and related Machine Security views.
 
-**macOS-like UX (AI-372–391, UX-49–56):** System Settings firewall pane per host (`MacToggle`, stealth segmented control, profile preview sheet), fleet Launchpad overview, VM Security tab (guest ports), Settings hub Network/Firewall pane, Control Center 3.0 module grid. See [`zeus-os-ai-372-391.md`](zeus-os-ai-372-391.md).
+**macOS-like UX (AI-372–391, UX-49–56):** System Settings firewall pane per host (`MacToggle`, stealth segmented control, profile preview sheet), fleet Launchpad overview, VM Security tab (guest ports), Settings hub Network/Firewall pane, Control Center 3.0 module grid.
 
-**Bare metal firewall (AI-312–331):** `bare_metal` targets in Zeus overview, metal profiles, exposure scan, policy-only apply. See [`zeus-os-ai-312-331.md`](zeus-os-ai-312-331.md).
+**Bare metal firewall (AI-312–331):** `bare_metal` targets in Zeus overview, metal profiles, exposure scan, policy-only apply.
 
 Daemon: `GET /api/v1/guestkit/status` proxies worker health when `[guestkit]` enabled in `config.toml`.
 
