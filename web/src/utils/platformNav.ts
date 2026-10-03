@@ -124,7 +124,7 @@ export const PLATFORM_PAGE_LABELS: Record<string, string> = {
   '/platform/datacenter': 'Datacenter View',
   '/platform/fleet-snapshots': 'Fleet Snapshots',
   '/platform/migration': 'Migration Assistant',
-  '/platform/backups': 'Time Machine',
+  '/platform/backups': 'Backups',
   '/platform/placement': 'Disaster Recovery',
   '/platform/tasks': 'Tasks',
   '/platform/notifications': 'Alerts',

@@ -196,7 +196,7 @@ export default function PlatformBackups() {
   return (
     <PlatformStandardView
       className="space-y-6 max-w-3xl"
-      title="Time Machine"
+      title="Backups"
       description="Fleet backup timeline, S3/MinIO destinations, and scheduled snapshots."
       icon={Archive}
       loading={loading}

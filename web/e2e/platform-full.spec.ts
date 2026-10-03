@@ -23,7 +23,7 @@ const NORMAL_ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   // "Apps & Integrations" is no longer its own page heading; "Settings" is what's on screen.
   { path: '/platform/integrations', heading: 'Settings' },
   { path: '/platform/settings', heading: /Settings|General/i },
-  { path: '/platform/backups', heading: 'Time Machine' },
+  { path: '/platform/backups', heading: 'Backups' },
   { path: '/platform/storage', heading: 'Storage' },
 ]
 
