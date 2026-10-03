@@ -223,7 +223,7 @@ export default function PlatformRuntimeEnforcement() {
       eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
-      prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>← Security Center</Link>}
+      prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>← Security Center</Link>}
       title="Runtime enforcement"
       subtitle="eBPF deny rules — process · DNS · port · IP · file · cap · namespace via Tetragon TracingPolicy"
       icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}

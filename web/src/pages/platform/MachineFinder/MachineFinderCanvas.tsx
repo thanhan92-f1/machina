@@ -81,7 +81,7 @@ function GridLens({ state, compact }: { state: MachineFinderState; compact?: boo
     <div className="space-y-6">
       {groups.map((group) => (
         <section key={group.key}>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">{group.label}</h3>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">{group.label}</h2>
           {/* `grid-cols-N` resolves to `repeat(N, minmax(0, 1fr))`, which lets a
               track shrink to 0 whenever fixed-width siblings (smart-folders
               sidebar, command center) leave little room for `main`. The fixed

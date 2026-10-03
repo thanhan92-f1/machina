@@ -166,7 +166,7 @@ export default function PlatformThreatHunting() {
       eyebrow="Platform"
       error={error}
       onErrorRetry={() => void load()}
-      prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>← Security Center</Link>}
+      prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>← Security Center</Link>}
       title="Threat hunting"
       subtitle="Search · timeline · graph · evidence · AI summary"
       icon={<Search className="w-6 h-6 text-[var(--text-muted)]" />}

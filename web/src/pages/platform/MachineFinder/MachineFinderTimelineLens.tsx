@@ -22,7 +22,7 @@ export default function MachineFinderTimelineLens() {
   return (
     <div className="card p-4 space-y-3" data-testid="machine-finder-timeline">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-[var(--text-primary)]">Fleet timeline</h3>
+        <h2 className="font-medium text-[var(--text-primary)]">Fleet timeline</h2>
         <Link to="/platform/activity" className="btn-secondary text-xs">Open Activity Monitor</Link>
       </div>
       <p className="text-sm text-[var(--text-muted)]">{data.summary}</p>

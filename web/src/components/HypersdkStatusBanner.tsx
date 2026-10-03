@@ -65,7 +65,7 @@ export default function HypersdkStatusBanner({ title = 'HyperSDK unavailable', c
                 setTesting(false)
               }
             }}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs disabled:opacity-50 ${statusSurfaceClasses('warn', 'hover:opacity-90')}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 min-h-9 rounded-lg border text-xs disabled:opacity-50 ${statusSurfaceClasses('warn', 'hover:opacity-90')}`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${testing ? 'animate-spin' : ''}`} />
             Retry
@@ -74,14 +74,14 @@ export default function HypersdkStatusBanner({ title = 'HyperSDK unavailable', c
             href={dashboardUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-xs"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 min-h-9 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-xs"
           >
             HyperSDK dashboard
             <ExternalLink className="w-3 h-3" />
           </a>
           <Link
             to="/settings"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-xs"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 min-h-9 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] text-xs"
           >
             Settings
           </Link>

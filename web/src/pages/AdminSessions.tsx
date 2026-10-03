@@ -47,7 +47,7 @@ export default function AdminSessionsPage() {
           Only the UNIX <strong className="text-[var(--text-secondary)]">root</strong> user may list or revoke browser sessions.
           You are signed in as <code className="bg-[var(--apple-fill-tertiary)] px-1 rounded text-[var(--text-secondary)]">{username || '?'}</code>.
         </p>
-        <Link to="/" className={`inline-block text-sm ${statusActionLinkClasses('info')}`}>Back to dashboard</Link>
+        <Link to="/" className={`inline-block min-h-9 text-sm ${statusActionLinkClasses('info')}`}>Back to dashboard</Link>
       </div>
     )
   }

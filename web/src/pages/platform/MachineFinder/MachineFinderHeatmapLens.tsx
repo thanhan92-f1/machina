@@ -24,7 +24,7 @@ export default function MachineFinderHeatmapLens() {
   return (
     <div className="card p-4 space-y-3" data-testid="machine-finder-heatmap">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-[var(--text-primary)]">Fleet heatmap</h3>
+        <h2 className="font-medium text-[var(--text-primary)]">Fleet heatmap</h2>
         <Link to="/platform/zyra" className="btn-secondary text-xs">Open Zyra OS</Link>
       </div>
       {data.hotspots?.length > 0 && (

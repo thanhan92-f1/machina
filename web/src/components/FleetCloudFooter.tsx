@@ -27,7 +27,7 @@ export default function FleetCloudFooter() {
             }
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[var(--link)] hover:underline"
+            className="inline-flex items-center gap-1 min-h-9 text-[var(--link)] hover:underline"
           >
             HyperSDK dashboard — bulk export and migrations
             <ExternalLink className="w-3 h-3" />
