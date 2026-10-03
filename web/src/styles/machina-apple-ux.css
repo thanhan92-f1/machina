@@ -14,15 +14,6 @@
   padding-bottom: clamp(0.85rem, 1.5vw, 1.25rem);
 }
 
-.apple-section--hero {
-  padding-top: clamp(1.5rem, 3vw, 2.5rem);
-  padding-bottom: clamp(1.25rem, 2.5vw, 2rem);
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
 .apple-eyebrow {
   font-family: var(--font-display);
   font-size: 0.75rem;
@@ -358,7 +349,6 @@ html.light-theme .mission-control-page .mc-hero-ribbon {
 }
 
 /* Classic + platform canvases share Work type scale */
-.app-shell .page-title,
 .mac-desktop-main .page-title,
 .liquid-glass-app .page-title {
   font-size: clamp(1.375rem, 2.2vw, 1.75rem);
@@ -366,28 +356,24 @@ html.light-theme .mission-control-page .mc-hero-ribbon {
   letter-spacing: -0.025em;
 }
 
-.app-shell .page-lede,
 .mac-desktop-main .page-lede,
 .liquid-glass-app .page-lede {
   font-size: 0.9375rem;
   max-width: 42rem;
 }
 
-.app-shell .section-title,
 .mac-desktop-main .section-title {
   font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
   letter-spacing: -0.02em;
 }
 
 /* Work-tier tables: quieter hairlines */
-.app-shell table,
 .mac-desktop-main table,
 .liquid-glass-app table {
   border-collapse: separate;
   border-spacing: 0;
 }
 
-.app-shell thead th,
 .mac-desktop-main thead th,
 .liquid-glass-app thead th {
   font-size: 0.75rem;
@@ -399,7 +385,6 @@ html.light-theme .mission-control-page .mc-hero-ribbon {
   padding-bottom: 0.55rem;
 }
 
-.app-shell tbody td,
 .mac-desktop-main tbody td,
 .liquid-glass-app tbody td {
   border-bottom: 1px solid color-mix(in srgb, var(--apple-hairline) 65%, transparent);
@@ -409,34 +394,20 @@ html.light-theme .mission-control-page .mc-hero-ribbon {
 }
 
 /* Cards / panels default to white work surfaces under light */
-html.apple-light .app-shell .rounded-xl.border,
-html.light-theme .app-shell .rounded-xl.border,
 html.apple-light .mac-desktop-main .rounded-xl.border,
 html.light-theme .mac-desktop-main .rounded-xl.border,
-html.apple-light .app-shell .rounded-2xl.border,
-html.light-theme .app-shell .rounded-2xl.border,
 html.apple-light .mac-desktop-main .rounded-2xl.border,
 html.light-theme .mac-desktop-main .rounded-2xl.border {
   border-color: var(--apple-hairline);
 }
 
-html.apple-light .tahoe-empty,
-html.light-theme .tahoe-empty {
-  background: #ffffff !important;
-  border-color: #d2d2d7 !important;
-  color: var(--text-primary);
-}
-
-html.apple-light .tahoe-empty .text-white,
-html.light-theme .tahoe-empty .text-white,
 html.apple-light .tahoe-hero .text-white,
 html.light-theme .tahoe-hero .text-white {
   color: var(--text-primary) !important;
 }
 
 /* Machine Finder browse chrome */
-.machine-finder-page,
-.machine-finder-shell {
+.machine-finder-page {
   width: 100%;
   max-width: none;
 }
@@ -461,38 +432,16 @@ html.light-theme .tahoe-hero .text-white {
 }
 
 /* Work panels: consistent white cards */
-.apple-panel,
 .apple-page .rounded-2xl.border {
   box-shadow: var(--shadow-1);
 }
 
-html.apple-light .app-shell .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
-html.light-theme .app-shell .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
 html.apple-light .mac-desktop-main .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
 html.light-theme .mac-desktop-main .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--apple-hairline);
 }
 
-/* Catch any leftover slate text under light shells */
-html.apple-light .app-shell .text-slate-100,
-html.light-theme .app-shell .text-slate-100,
-html.apple-light .mac-desktop-main .text-slate-100,
-html.light-theme .mac-desktop-main .text-slate-100,
-html.apple-light .app-shell .text-slate-50,
-html.light-theme .app-shell .text-slate-50 {
-  color: var(--text-primary) !important;
-}
-html.apple-light .app-shell .text-slate-300,
-html.light-theme .app-shell .text-slate-300,
-html.apple-light .mac-desktop-main .text-slate-300,
-html.light-theme .mac-desktop-main .text-slate-300 {
-  color: var(--text-secondary) !important;
-}
-html.apple-light .app-shell .bg-slate-900,
-html.light-theme .app-shell .bg-slate-900,
 html.apple-light .mac-desktop-main .bg-slate-900,
-html.light-theme .mac-desktop-main .bg-slate-900,
-html.apple-light .app-shell .bg-slate-950,
-html.light-theme .app-shell .bg-slate-950 {
+html.light-theme .mac-desktop-main .bg-slate-900 {
   background-color: #ffffff !important;
 }

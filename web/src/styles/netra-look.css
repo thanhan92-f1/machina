@@ -143,12 +143,10 @@ html.light-theme .tahoe-segment {
 }
 
 /* ---- Cards: 18px, neutral hairline, no card-in-card ----------------------- */
-.tahoe-glass-card,
-.glass-card {
+.tahoe-glass-card {
   border-radius: var(--nl-radius-card);
 }
-html[data-theme='tahoe-light'] .tahoe-glass-card,
-html[data-theme='tahoe-light'] .glass-card {
+html[data-theme='tahoe-light'] .tahoe-glass-card {
   border-color: var(--nl-hairline) !important;
 }
 /* A table wrapper inside a card is not a second card. */
@@ -383,11 +381,9 @@ html .btn-primary:focus-visible,
 html .btn-secondary:focus-visible,
 html .btn-ghost:focus-visible,
 html .btn-destructive:focus-visible,
-html .btn-danger:focus-visible,
 html .tahoe-btn-primary:focus-visible,
 html .tahoe-btn-ghost:focus-visible,
-html .tahoe-btn-secondary:focus-visible,
-html .tahoe-btn-destructive:focus-visible {
+html .tahoe-btn-secondary:focus-visible {
   box-shadow: var(--focus-ring) !important;
 }
 
@@ -611,71 +607,24 @@ html[data-ui-shell='default'] .tahoe-mesh {
 html[data-theme='tahoe'] .text-red-600:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-red-700:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-red-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-red-900:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-rose-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-rose-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-rose-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-rose-900:not([class*='bg-white']) { color: var(--nl-accent-red-text) !important; }
+html[data-theme='tahoe'] .text-rose-700:not([class*='bg-white']) { color: var(--nl-accent-red-text) !important; }
 html[data-theme='tahoe'] .text-orange-600:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-orange-700:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-orange-800:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-orange-900:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-amber-600:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-amber-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-amber-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-amber-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-yellow-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-yellow-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-yellow-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-yellow-900:not([class*='bg-white']) { color: var(--nl-accent-amber-text) !important; }
-html[data-theme='tahoe'] .text-green-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-green-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-green-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-green-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-amber-800:not([class*='bg-white']) { color: var(--nl-accent-amber-text) !important; }
 html[data-theme='tahoe'] .text-emerald-600:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-emerald-700:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-emerald-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-emerald-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-teal-600:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-teal-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-teal-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-teal-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-lime-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-lime-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-lime-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-lime-900:not([class*='bg-white']) { color: var(--nl-accent-green-text) !important; }
+html[data-theme='tahoe'] .text-teal-800:not([class*='bg-white']) { color: var(--nl-accent-green-text) !important; }
 html[data-theme='tahoe'] .text-sky-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-sky-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-sky-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-sky-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-cyan-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-cyan-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-cyan-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-cyan-900:not([class*='bg-white']) { color: var(--nl-accent-cyan-text) !important; }
-html[data-theme='tahoe'] .text-blue-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-blue-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-blue-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-blue-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-indigo-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-indigo-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-indigo-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-indigo-900:not([class*='bg-white']) { color: #2997ff !important; }
-html[data-theme='tahoe'] .text-purple-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-purple-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-purple-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-purple-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-violet-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-violet-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-violet-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-violet-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-fuchsia-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-fuchsia-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-fuchsia-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-fuchsia-900:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-pink-600:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-pink-700:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-pink-800:not([class*='bg-white']),
-html[data-theme='tahoe'] .text-pink-900:not([class*='bg-white']) { color: var(--nl-accent-purple-text) !important; }
+html[data-theme='tahoe'] .text-sky-700:not([class*='bg-white']) { color: var(--nl-accent-cyan-text) !important; }
+html[data-theme='tahoe'] .text-indigo-700:not([class*='bg-white']) { color: #2997ff !important; }
+html[data-theme='tahoe'] .text-purple-600:not([class*='bg-white']) { color: var(--nl-accent-purple-text) !important; }
 
 /* ---- Light: Machine Finder tiles are white cards, not grey panels ---------- */
 /* APPLE-UX-CONTRACT: "a grey panel on a white page is a bug". The tile fill was --nl-fill (4% black). */

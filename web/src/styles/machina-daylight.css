@@ -162,9 +162,7 @@ html.light-theme .mac-desktop-main,
 html[data-theme='tahoe-light'] .mac-desktop-main,
 html.apple-light .tahoe-page-root,
 html.light-theme .tahoe-page-root,
-html[data-theme='tahoe-light'] .tahoe-page-root,
-html.apple-light .app-shell,
-html.light-theme .app-shell {
+html[data-theme='tahoe-light'] .tahoe-page-root {
   background-color: #ffffff !important;
   background-image: none !important;
   color: var(--text-primary);
@@ -299,17 +297,11 @@ html[data-theme='tahoe-light'] .text-white\/35 {
 }
 
 html.apple-light .mac-desktop-root .text-slate-200,
-html.light-theme .mac-desktop-root .text-slate-200,
-html.apple-light .mac-desktop-root .text-slate-300,
-html.light-theme .mac-desktop-root .text-slate-300 {
+html.light-theme .mac-desktop-root .text-slate-200 {
   color: var(--text-secondary) !important;
 }
 html.apple-light .mac-desktop-root .text-slate-400,
-html.light-theme .mac-desktop-root .text-slate-400,
-html.apple-light .mac-desktop-root .text-slate-500,
-html.light-theme .mac-desktop-root .text-slate-500,
-html.apple-light .mac-desktop-root .text-slate-600,
-html.light-theme .mac-desktop-root .text-slate-600 {
+html.light-theme .mac-desktop-root .text-slate-400 {
   color: var(--text-muted) !important;
 }
 
@@ -334,20 +326,9 @@ html.light-theme .mac-desktop-root .bg-\[var\(--glass-bg\)\] {
 }
 
 /* Mission Control / home panels — Zeus command-deck panel look */
-html.apple-light .mc-briefing,
-html.light-theme .mc-briefing,
 html.apple-light .mission-control-root > section,
 html.light-theme .mission-control-root > section {
   border-color: hsl(200 35% 84%);
-}
-
-html.apple-light .mc-briefing,
-html.light-theme .mc-briefing {
-  background:
-    linear-gradient(160deg, hsl(200 60% 99%) 0%, hsl(0 0% 100%) 45%, hsl(270 30% 99%) 100%);
-  border: 1px solid hsl(200 35% 84%);
-  border-radius: 1.75rem;
-  box-shadow: 0 1px 0 hsl(200 50% 90% / 0.6) inset;
 }
 
 html.apple-light .mission-control-page,
@@ -365,8 +346,6 @@ html.light-theme .table-row-hover:hover {
 }
 
 /* TTY remains a carbon island */
-html.apple-light .tty-surface,
-html.light-theme .tty-surface,
 html.apple-light [data-tty],
 html.light-theme [data-tty] {
   background: var(--tty-bg) !important;
@@ -461,11 +440,7 @@ html.light-theme .liquid-glass-app .bg-slate-900,
 html.apple-light .liquid-glass-app .bg-slate-800\/40,
 html.light-theme .liquid-glass-app .bg-slate-800\/40,
 html.apple-light .liquid-glass-app .bg-slate-800\/50,
-html.light-theme .liquid-glass-app .bg-slate-800\/50,
-html.apple-light .app-shell .bg-slate-900,
-html.light-theme .app-shell .bg-slate-900,
-html.apple-light .app-shell .bg-slate-800\/40,
-html.light-theme .app-shell .bg-slate-800\/40 {
+html.light-theme .liquid-glass-app .bg-slate-800\/50 {
   background-color: #ffffff !important;
   background-image: none !important;
 }
@@ -492,28 +467,13 @@ html.light-theme .liquid-glass-app .border-slate-700,
 html.apple-light .liquid-glass-app .border-slate-700\/50,
 html.light-theme .liquid-glass-app .border-slate-700\/50,
 html.apple-light .liquid-glass-app .border-slate-700\/60,
-html.light-theme .liquid-glass-app .border-slate-700\/60,
-html.apple-light .app-shell .border-slate-700\/60,
-html.light-theme .app-shell .border-slate-700\/60 {
+html.light-theme .liquid-glass-app .border-slate-700\/60 {
   border-color: #d2d2d7 !important;
-}
-
-html.apple-light .mac-desktop-root .from-slate-900\/80,
-html.light-theme .mac-desktop-root .from-slate-900\/80,
-html.apple-light .mac-desktop-root .to-slate-950\/60,
-html.light-theme .mac-desktop-root .to-slate-950\/60,
-html.apple-light .mac-desktop-root .bg-gradient-to-r.from-slate-900\/80,
-html.light-theme .mac-desktop-root .bg-gradient-to-r.from-slate-900\/80 {
-  --tw-gradient-from: hsl(200 48% 98%) !important;
-  --tw-gradient-to: #ffffff !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
 }
 
 /* Machine Finder / Mission Control work surfaces */
 html.apple-light .machine-finder-briefing,
 html.light-theme .machine-finder-briefing,
-html.apple-light .mc-host-panel,
-html.light-theme .mc-host-panel,
 html.apple-light .mc-host-fleet-card,
 html.light-theme .mc-host-fleet-card,
 html.apple-light .mc-geography,
@@ -541,8 +501,6 @@ html.light-theme .tahoe-hero {
   border: 1px solid #d2d2d7;
 }
 
-html.apple-light .tahoe-stat-tile,
-html.light-theme .tahoe-stat-tile,
 html.apple-light .tahoe-remediate-strip,
 html.light-theme .tahoe-remediate-strip {
   background: #ffffff !important;
@@ -571,9 +529,7 @@ html.light-theme .tahoe-remediate-more {
 html.apple-light .tahoe-remediate-chip,
 html.light-theme .tahoe-remediate-chip,
 html.apple-light .tahoe-btn-ghost,
-html.light-theme .tahoe-btn-ghost,
-html.apple-light .tahoe-quick-nav-link,
-html.light-theme .tahoe-quick-nav-link {
+html.light-theme .tahoe-btn-ghost {
   color: var(--text-secondary) !important;
   background: hsl(200 55% 97% / 0.9) !important;
   border-color: #d2d2d7 !important;
@@ -585,22 +541,6 @@ html[data-theme='tahoe-light'] .tahoe-toolbar {
   background: hsl(200 55% 98% / 0.92) !important;
   border-color: hsl(200 40% 78% / 0.65) !important;
   color: var(--text-primary);
-}
-
-html.apple-light .tahoe-page-root .tahoe-content thead th,
-html.light-theme .tahoe-page-root .tahoe-content thead th {
-  color: var(--text-muted) !important;
-  border-bottom-color: #d2d2d7 !important;
-}
-
-html.apple-light .tahoe-page-root .tahoe-content tbody td,
-html.light-theme .tahoe-page-root .tahoe-content tbody td {
-  color: var(--text-primary) !important;
-}
-
-html.apple-light .tahoe-page-root .tahoe-content tbody tr:hover,
-html.light-theme .tahoe-page-root .tahoe-content tbody tr:hover {
-  background: hsl(200 55% 96% / 0.85) !important;
 }
 
 html.apple-light .tahoe-stat-violet .tahoe-stat-value,
@@ -619,13 +559,6 @@ html.light-theme .platform-finder-inspector dt {
   color: var(--text-muted) !important;
 }
 
-html.apple-light .stat-card-purple,
-html.light-theme .stat-card-purple {
-  background: #ffffff !important;
-  border-color: hsl(270 28% 84%) !important;
-  color: var(--text-primary) !important;
-}
-
 /* Classic shell: slightly wider under Daylight so lists aren't squeezed */
 html.apple-light,
 html.light-theme,
@@ -633,16 +566,6 @@ html[data-theme='tahoe-light'] {
   --layout-max-width: 90rem;
 }
 
-html.apple-light .app-shell .text-slate-100,
-html.light-theme .app-shell .text-slate-100,
-html.apple-light .app-shell .text-slate-200,
-html.light-theme .app-shell .text-slate-200,
-html.apple-light .liquid-glass-app .text-slate-100,
-html.light-theme .liquid-glass-app .text-slate-100 {
-  color: var(--text-primary) !important;
-}
-html.apple-light .app-shell .text-slate-400,
-html.light-theme .app-shell .text-slate-400,
 html.apple-light .liquid-glass-app .text-slate-400,
 html.light-theme .liquid-glass-app .text-slate-400 {
   color: var(--text-muted) !important;

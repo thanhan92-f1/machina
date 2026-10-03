@@ -28,8 +28,7 @@
 }
 
 html[data-theme='tahoe-light'] .login-page,
-html[data-ui-shell='default'] .login-page,
-.login-page.zeus-login {
+html[data-ui-shell='default'] .login-page {
   background-color: hsl(0 0% 100%);
   background-image: none;
   color: hsl(240 6% 10%);
@@ -96,14 +95,6 @@ html[data-ui-shell='default'] .login-page,
   max-width: 26rem;
 }
 
-.login-mark,
-.login-mark.zyvor-mark,
-.login-page .zyvor-mark {
-  display: block;
-  border-radius: 14px;
-  filter: none;
-}
-
 /* Brand first — screenshot: “Zeus OS” */
 .login-wordmark {
   margin: 0;
@@ -146,61 +137,6 @@ html[data-ui-shell='default'] .login-page,
   align-items: center;
   gap: 0.85rem;
   margin-top: 2rem;
-}
-
-.login-cta-primary,
-.login-cta-secondary,
-a.login-cta-primary,
-a.login-cta-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  min-height: 2.75rem;
-  padding: 0.7rem 1.35rem;
-  border-radius: 980px;
-  font-family: inherit;
-  font-size: 1.0625rem;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-}
-
-.login-cta-primary,
-a.login-cta-primary {
-  border: none;
-  background: hsl(211 100% 45%); /* #0071e3 */
-  color: hsl(0 0% 100%);
-  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.18) inset;
-}
-
-.login-cta-primary:hover,
-a.login-cta-primary:hover {
-  background: hsl(211 100% 40%);
-  color: hsl(0 0% 100%);
-}
-
-.login-cta-secondary,
-a.login-cta-secondary {
-  border: 1px solid hsl(211 100% 45%);
-  background: hsl(0 0% 100%);
-  color: hsl(211 100% 45%);
-}
-
-.login-cta-secondary:hover,
-a.login-cta-secondary:hover {
-  background: hsl(211 100% 45% / 0.06);
-  color: hsl(211 100% 40%);
-}
-
-.login-cta-primary:active,
-.login-cta-secondary:active,
-a.login-cta-primary:active,
-a.login-cta-secondary:active {
-  transform: scale(0.98);
 }
 
 .login-chapter-note {
@@ -316,66 +252,6 @@ a.login-cta-secondary:active {
   cursor: not-allowed;
 }
 
-.login-btn-secondary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.8125rem 1rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: hsl(211 100% 45%);
-  border-radius: 980px;
-  border: 1px solid hsl(211 100% 45%);
-  background: hsl(0 0% 100%);
-  text-decoration: none;
-  font-family: inherit;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-.login-btn-secondary:hover {
-  background: hsl(211 100% 45% / 0.06);
-}
-
-.login-method-toggle {
-  margin-bottom: 1.5rem;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 0.25rem;
-  border-radius: 980px;
-  border: 1px solid hsl(240 5% 84%);
-  background: hsl(240 5% 96%);
-  padding: 0.25rem;
-}
-
-.login-method-toggle [role="tab"] {
-  border-radius: 980px;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  transition: color 0.15s ease, background 0.15s ease;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.login-method-toggle [role="tab"][aria-selected="true"] {
-  background: hsl(211 100% 45%);
-  color: hsl(0 0% 100%);
-}
-
-.login-method-toggle [role="tab"][aria-selected="false"] {
-  color: hsl(240 3% 46%);
-}
-
-.login-method-toggle [role="tab"][aria-selected="false"]:hover {
-  color: hsl(240 6% 10%);
-}
-
 .login-hint {
   color: hsl(240 3% 46%);
   font-size: 0.75rem;
@@ -391,15 +267,7 @@ a.login-cta-secondary:active {
   display: none;
 }
 
-.login-page .login-btn-primary,
-.login-accent-zeus .login-btn-primary,
-.login-accent-orange .login-btn-primary,
-.login-accent-amber .login-btn-primary,
-.login-accent-violet .login-btn-primary,
-.login-accent-rose .login-btn-primary,
-.login-accent-cyan .login-btn-primary,
-.login-accent-copper .login-btn-primary,
-.login-accent-steel .login-btn-primary {
+.login-page .login-btn-primary {
   background: hsl(211 100% 45%);
   color: hsl(0 0% 100%);
   box-shadow: 0 1px 0 hsl(0 0% 100% / 0.18) inset;
@@ -410,31 +278,8 @@ a.login-cta-secondary:active {
   filter: none;
 }
 
-.login-aurora,
-.login-hero-mesh,
-.login-spotlight,
-.login-panel-grid,
-.login-panel-glow,
-.login-zyvor-eyebrow,
 .login-page .nav-bar {
   display: none !important;
-}
-
-.login-glass {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  animation: none;
-}
-
-.login-logo-ring {
-  animation: none;
-  box-shadow: none;
-}
-
-.login-text-gradient {
-  color: hsl(240 6% 10%);
-  background: none;
 }
 
 .login-apple-step {
@@ -499,162 +344,3 @@ a.login-cta-secondary:active {
 
 /* ── Destination / product chapters (apple.com “where you are”) ── */
 
-.login-chapter-destination {
-  background: hsl(240 6% 10%); /* ink */
-  color: hsl(0 0% 100%);
-  text-align: center;
-}
-
-.login-chapter-destination .login-chapter-inner {
-  max-width: 48rem;
-}
-
-.login-chapter-kicker {
-  margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: hsl(0 0% 100% / 0.45);
-}
-
-.login-chapter-destination .login-hero-title,
-.login-chapter-destination .login-dest-title {
-  margin: 0.65rem 0 0;
-  font-family: var(--font-hero, var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif));
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
-  color: hsl(0 0% 100%);
-  word-break: break-word;
-}
-
-.login-chapter-destination .login-tagline {
-  color: hsl(0 0% 100% / 0.72);
-}
-
-.login-dest-facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 1.25rem 1.5rem;
-  width: 100%;
-  margin: 2.25rem auto 0;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-}
-
-.login-dest-fact {
-  border-top: 1px solid hsl(0 0% 100% / 0.14);
-  padding-top: 0.85rem;
-}
-
-.login-dest-fact-label {
-  display: block;
-  margin: 0 0 0.35rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: hsl(0 0% 100% / 0.45);
-}
-
-.login-dest-fact-value {
-  display: block;
-  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
-  font-size: clamp(0.9375rem, 2vw, 1.125rem);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  color: hsl(0 0% 100%);
-  word-break: break-all;
-  font-variant-numeric: tabular-nums;
-}
-
-.login-dest-fact-value.is-display {
-  font-family: var(--font-display, -apple-system, BlinkMacSystemFont, sans-serif);
-  font-size: clamp(1.125rem, 2.4vw, 1.375rem);
-  font-weight: 600;
-}
-
-.login-chapter-product {
-  background: hsl(240 5% 96%);
-  text-align: center;
-}
-
-.login-chapter-product .login-hero-title {
-  font-size: clamp(2.5rem, 7vw, 4.25rem);
-}
-
-.login-localnav {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.35rem 1.25rem;
-  padding: 0.75rem 1rem;
-  background: hsl(0 0% 100% / 0.82);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  border-bottom: 1px solid hsl(240 6% 10% / 0.08);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.login-localnav a {
-  color: hsl(211 100% 40%);
-  text-decoration: none;
-}
-
-.login-localnav a:hover {
-  text-decoration: underline;
-}
-
-.login-localnav-host {
-  color: hsl(240 3% 46%);
-  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
-  font-size: 0.6875rem;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.login-sign-in-context {
-  margin: 0 0 1.25rem;
-  text-align: center;
-  font-size: 0.875rem;
-  line-height: 1.45;
-  color: hsl(240 3% 46%);
-}
-
-.login-sign-in-context strong {
-  color: hsl(240 6% 10%);
-  font-weight: 600;
-}
-
-.login-sign-in-context .login-apple-host {
-  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
-  font-size: 0.8125rem;
-}
-
-.login-chapter-destination .login-cta-secondary,
-.login-chapter-destination a.login-cta-secondary {
-  border-color: hsl(0 0% 100% / 0.55);
-  background: transparent;
-  color: hsl(0 0% 100%);
-}
-
-.login-chapter-destination .login-cta-secondary:hover,
-.login-chapter-destination a.login-cta-secondary:hover {
-  background: hsl(0 0% 100% / 0.1);
-  color: #fff;
-  border-color: #fff;
-}
-
-.login-chapter-product .login-chapter-kicker {
-  color: hsl(240 3% 46%);
-}

@@ -1,6 +1,3 @@
 /* macOS login overrides — disabled for Apple Store chapter login (h2kvm parity).
  * Store styles live entirely in zyvor-premium-login.css (.login-store-page). */
 
-.login-page-macos:not(.login-store-page) {
-  /* legacy dark macos shell kept only if explicitly combined without store */
-}
