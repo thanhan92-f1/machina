@@ -1,0 +1,493 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+//! machina-bpfd: the single owner of the host eBPF datapath.
+//!
+//! Serves newline-delimited JSON ([`crate::api`]) on a Unix socket. One engine
+//! task owns the [`Datapath`]; ring-buffer readers feed a shared event store,
+//! the anomaly detectors and any live subscribers.
+
+use std::collections::{HashMap, VecDeque};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+use anyhow::{anyhow, Context, Result};
+use serde_json::json;
+use tokio::io::{unix::AsyncFd, AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{UnixListener, UnixStream};
+use std::sync::{Mutex, MutexGuard};
+use tokio::sync::broadcast;
+
+use machina_bpf_common::*;
+
+use crate::anomaly::{Ctx, Detector};
+use crate::api::*;
+use crate::attribution::{self, CgroupCache};
+use crate::loader::{self, mono_to_epoch_us, mono_to_rfc3339, Datapath};
+use crate::pcapng::PcapngWriter;
+use crate::policy::{self, proto_name, Prefix, Rule};
+use crate::{dns, fmt_addr};
+
+mod listen;
+mod ops;
+mod readers;
+
+pub use listen::{run, Config};
+
+const NET_STORE_CAP: usize = 5000;
+const PROC_STORE_CAP: usize = 5000;
+const DNS_STORE_CAP: usize = 2000;
+const ANOMALY_STORE_CAP: usize = 1000;
+const SOCK_PROGS: &[&str] = &["mn_cg_connect4", "mn_cg_connect6", "mn_cg_sendmsg4", "mn_cg_sendmsg6"];
+
+// ---------------------------------------------------------------------------
+// Shared state (read by ring-buffer readers, engine and request handlers)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Default)]
+struct IfaceMeta {
+    name: String,
+    vm: Option<String>,
+}
+
+struct ActiveCapture {
+    info: CaptureInfo,
+    ifindex: u32,
+    writer: PcapngWriter,
+    deadline: Instant,
+}
+
+#[derive(Default)]
+struct Shared {
+    ifaces: HashMap<u32, IfaceMeta>,
+    /// policy id → match label, for annotating events.
+    policy_labels: HashMap<u32, String>,
+    /// DNS deny policies: policy num → (suffix, scope) for resolve-and-block.
+    dns_denies: HashMap<u32, (String, u32)>,
+    net: VecDeque<NetEventRecord>,
+    procs: VecDeque<ProcRecord>,
+    dns: VecDeque<DnsRecord>,
+    anomalies: VecDeque<Anomaly>,
+    captures: HashMap<String, ActiveCapture>,
+    counters: Counters,
+    detector: Detector,
+    cgroups: CgroupCache,
+    /// Resolved DNS-deny answers awaiting the engine: (scope, prefix, policy num).
+    dns_block_queue: Vec<(u32, Prefix, u32)>,
+}
+
+impl Shared {
+    fn iface(&self, ifindex: u32) -> (Option<String>, Option<String>) {
+        match self.ifaces.get(&ifindex) {
+            Some(m) => (Some(m.name.clone()), m.vm.clone()),
+            None => (None, None),
+        }
+    }
+
+    fn push_capped<T>(q: &mut VecDeque<T>, item: T, cap: usize) {
+        q.push_back(item);
+        while q.len() > cap {
+            q.pop_front();
+        }
+    }
+}
+
+type SharedState = Arc<Mutex<Shared>>;
+
+fn publish<T: serde::Serialize>(bus: &broadcast::Sender<StreamEvent>, topic: &str, ev: &T) {
+    if bus.receiver_count() == 0 {
+        return;
+    }
+    if let Ok(event) = serde_json::to_value(ev) {
+        let _ = bus.send(StreamEvent {
+            topic: topic.to_string(),
+            event,
+        });
+    }
+}
+
+fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+// ---------------------------------------------------------------------------
+// Engine
+// ---------------------------------------------------------------------------
+
+struct ScopeInfo {
+    id: u32,
+    /// cgroup path when this scope is cgroup-backed.
+    cgroup: Option<PathBuf>,
+    cgroup_id: Option<u64>,
+}
+
+struct CompiledPolicy {
+    policy: Policy,
+    scope_id: u32,
+    rules: Vec<Rule>,
+}
+
+struct Engine {
+    dp: Datapath,
+    features: KernelFeatures,
+    programs_compiled: bool,
+    policies: HashMap<String, CompiledPolicy>,
+    policy_nums: HashMap<String, u32>,
+    next_policy_num: u32,
+    /// Resolved DNS-deny addresses: (scope, prefix) → policy num.
+    dns_blocked: HashMap<(u32, Prefix), u32>,
+    scopes: HashMap<String, ScopeInfo>,
+    next_scope: u32,
+    mode: Mode,
+    lease_deadline_mono: u64,
+    lease_wall: Option<chrono::DateTime<chrono::Utc>>,
+    lease_lapsed: bool,
+    /// Interfaces attached by request (survive rescans): name → (guest_side, xdp).
+    explicit: HashMap<String, (bool, bool)>,
+    qos_by_vm: HashMap<String, (u64, u64)>,
+    drop_names: HashMap<u32, String>,
+    telemetry: TelemetryConfig,
+    /// ifindex → (name, guest_side, xdp, vm, mac, qos_egress, qos_ingress)
+    ifaces: HashMap<u32, IfaceRuntime>,
+    shared: SharedState,
+    bus: broadcast::Sender<StreamEvent>,
+    capture_seq: u64,
+}
+
+#[derive(Clone)]
+struct IfaceRuntime {
+    name: String,
+    guest_side: bool,
+    xdp: bool,
+    vm: Option<String>,
+    mac: Option<String>,
+    qos_egress_bps: u64,
+    qos_ingress_bps: u64,
+}
+
+fn if_nametoindex(name: &str) -> Option<u32> {
+    let c = std::ffi::CString::new(name).ok()?;
+    let idx = unsafe { libc::if_nametoindex(c.as_ptr()) };
+    (idx != 0).then_some(idx)
+}
+
+fn list_links() -> Vec<String> {
+    std::fs::read_dir("/sys/class/net")
+        .map(|rd| {
+            rd.flatten()
+                .filter_map(|e| e.file_name().into_string().ok())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+impl Engine {
+    fn new(shared: SharedState, bus: broadcast::Sender<StreamEvent>) -> Result<Self> {
+        let features = loader::kernel_features();
+        let dp = Datapath::load()?;
+        let mut eng = Self {
+            dp,
+            features,
+            programs_compiled: true,
+            policies: HashMap::new(),
+            policy_nums: HashMap::new(),
+            next_policy_num: 1,
+            dns_blocked: HashMap::new(),
+            scopes: HashMap::new(),
+            next_scope: 1,
+            mode: Mode::Observe,
+            lease_deadline_mono: 0,
+            lease_wall: None,
+            lease_lapsed: false,
+            explicit: HashMap::new(),
+            qos_by_vm: HashMap::new(),
+            drop_names: HashMap::new(),
+            telemetry: TelemetryConfig::default(),
+            ifaces: HashMap::new(),
+            shared,
+            bus,
+            capture_seq: 0,
+        };
+        eng.init()?;
+        Ok(eng)
+    }
+
+    fn init(&mut self) -> Result<()> {
+        self.dp.set_global(GlobalCfg {
+            mode: MODE_OBSERVE,
+            flags: self.global_flags(),
+            lease_deadline_ns: 0,
+        })?;
+        if let Some(root) = crate::tracefs::tracefs_root() {
+            let offs = crate::tracefs::resolve_offsets(&root);
+            self.dp.set_tp_offsets(&offs)?;
+            self.drop_names = crate::tracefs::drop_reason_names(&root);
+        }
+        self.dp.attach_telemetry();
+        self.push_file_watch()?;
+        // Host-wide container enforcement: scope 0 at the cgroup root.
+        if self.features.cgroup2 {
+            let root = Path::new(attribution::CGROUP_ROOT);
+            if let Err(e) = self.dp.attach_cgroup(root, SOCK_PROGS, false) {
+                self.dp.notes.push(format!("host cgroup enforcement unavailable: {e:#}"));
+            } else if let Some(id) = attribution::cgroup_id(root) {
+                let _ = self.dp.set_cgroup_scope(id, 0);
+            }
+        }
+        Ok(())
+    }
+
+    fn global_flags(&self) -> u32 {
+        let mut f = 0;
+        if self.telemetry.exec {
+            f |= GLOBAL_EXEC_EVENTS;
+        }
+        if self.telemetry.fork {
+            f |= GLOBAL_FORK_EVENTS;
+        }
+        if self.telemetry.connect {
+            f |= GLOBAL_CONNECT_EVENTS;
+        }
+        // File-watch / exec-deny / cap-deny are enabled whenever matching
+        // policies or watch prefixes exist.
+        if !self.telemetry.file_watch.is_empty() || self.has_kind("deny_file") {
+            f |= GLOBAL_FILE_WATCH;
+        }
+        if self.has_kind("deny_process") {
+            f |= GLOBAL_EXEC_DENY;
+        }
+        if self.has_kind("deny_cap") {
+            f |= GLOBAL_CAP_DENY;
+        }
+        f
+    }
+
+    fn has_kind(&self, kind: &str) -> bool {
+        self.policies
+            .values()
+            .any(|p| p.policy.enabled && p.policy.kind == kind)
+    }
+
+    fn refresh_global(&mut self) -> Result<()> {
+        let flags = self.global_flags();
+        let mode = if self.mode == Mode::Enforce {
+            MODE_ENFORCE
+        } else {
+            MODE_OBSERVE
+        };
+        self.dp.set_global(GlobalCfg {
+            mode,
+            flags,
+            lease_deadline_ns: self.lease_deadline_mono,
+        })
+    }
+
+    // ---- scopes ----------------------------------------------------------
+
+    fn scope_id_for(&mut self, scope: &Scope) -> Result<u32> {
+        let Some(key) = scope.key() else {
+            return Ok(0);
+        };
+        if let Some(s) = self.scopes.get(&key) {
+            return Ok(s.id);
+        }
+        let id = self.next_scope;
+        self.next_scope += 1;
+        let mut info = ScopeInfo {
+            id,
+            cgroup: None,
+            cgroup_id: None,
+        };
+        match scope {
+            Scope::Cgroup { path } => {
+                let full = Path::new(attribution::CGROUP_ROOT).join(path.trim_matches('/'));
+                let cid = attribution::cgroup_id(&full)
+                    .ok_or_else(|| anyhow!("cgroup path {} not found", full.display()))?;
+                self.dp.attach_cgroup(&full, SOCK_PROGS, true)?;
+                self.dp.set_cgroup_scope(cid, id)?;
+                info.cgroup = Some(full);
+                info.cgroup_id = Some(cid);
+            }
+            Scope::Vm { name } => {
+                // Assign this scope to the VM's current taps.
+                let idxs: Vec<u32> = self
+                    .ifaces
+                    .iter()
+                    .filter(|(_, r)| r.vm.as_deref() == Some(name.as_str()))
+                    .map(|(i, _)| *i)
+                    .collect();
+                self.scopes.insert(key.clone(), info);
+                for idx in idxs {
+                    self.program_iface(idx)?;
+                }
+                return Ok(id);
+            }
+            Scope::Host => unreachable!(),
+        }
+        self.scopes.insert(key, info);
+        Ok(id)
+    }
+
+    fn scope_of_iface(&self, r: &IfaceRuntime) -> u32 {
+        r.vm
+            .as_ref()
+            .and_then(|vm| self.scopes.get(&format!("vm:{vm}")))
+            .map(|s| s.id)
+            .unwrap_or(0)
+    }
+
+    /// Does `scope_id` (or host scope 0) have any enabled policy of the given kinds?
+    fn scope_has(&self, scope_id: u32, kinds: &[&str]) -> bool {
+        self.policies.values().any(|p| {
+            p.policy.enabled
+                && (p.scope_id == scope_id || p.scope_id == 0)
+                && kinds.contains(&p.policy.kind.as_str())
+        })
+    }
+
+    // ---- interfaces ------------------------------------------------------
+
+    fn add_iface(
+        &mut self,
+        name: &str,
+        guest_side: bool,
+        xdp: bool,
+        vm: Option<String>,
+        mac: Option<String>,
+    ) -> Result<()> {
+        let Some(idx) = if_nametoindex(name) else {
+            return Err(anyhow!("interface {name} not found"));
+        };
+        self.dp.attach_tc(name)?;
+        if xdp {
+            if let Err(e) = self.dp.attach_xdp(name) {
+                self.dp.notes.push(format!("XDP attach to {name} failed: {e:#}"));
+            }
+        }
+        self.ifaces.insert(
+            idx,
+            IfaceRuntime {
+                name: name.to_string(),
+                guest_side,
+                xdp,
+                vm: vm.clone(),
+                mac: mac.clone(),
+                qos_egress_bps: 0,
+                qos_ingress_bps: 0,
+            },
+        );
+        {
+            let mut sh = lock(&self.shared);
+            sh.ifaces.insert(idx, IfaceMeta { name: name.to_string(), vm });
+        }
+        self.program_iface(idx)?;
+        Ok(())
+    }
+
+    fn remove_iface(&mut self, name: &str) {
+        let Some(idx) = if_nametoindex(name).or_else(|| {
+            self.ifaces
+                .iter()
+                .find(|(_, r)| r.name == name)
+                .map(|(i, _)| *i)
+        }) else {
+            return;
+        };
+        self.dp.detach_tc(name);
+        self.dp.detach_xdp(name);
+        self.dp.remove_iface_cfg(idx);
+        self.ifaces.remove(&idx);
+        lock(&self.shared).ifaces.remove(&idx);
+    }
+
+    /// Recompute and push an interface's IfaceCfg from current policy/telemetry.
+    fn program_iface(&mut self, idx: u32) -> Result<()> {
+        let Some(r) = self.ifaces.get(&idx).cloned() else {
+            return Ok(());
+        };
+        let scope = self.scope_of_iface(&r);
+        let mut flags = 0u32;
+        if r.guest_side {
+            flags |= IF_GUEST_SIDE;
+        }
+        if self.scope_has(scope, &["deny_ip", "deny_port"])
+            || self.dns_blocked.keys().any(|(s, _)| *s == scope || *s == 0)
+        {
+            flags |= IF_DENY;
+        }
+        if self.scope_has(scope, &["tc_allow", "allow_port"]) {
+            flags |= IF_ALLOW;
+        }
+        if self.telemetry.flows {
+            flags |= IF_FLOWS;
+        }
+        if self.telemetry.dns || self.has_kind("deny_dns") {
+            flags |= IF_DNS;
+        }
+        if r.qos_egress_bps > 0 || r.qos_ingress_bps > 0 {
+            flags |= IF_QOS;
+        }
+        {
+            let sh = lock(&self.shared);
+            if sh.captures.values().any(|c| c.ifindex == idx && !c.info.done) {
+                flags |= IF_CAPTURE;
+            }
+        }
+        self.dp.set_iface_cfg(
+            idx,
+            IfaceCfg {
+                scope,
+                flags,
+                // API rates are bits/s; the datapath paces in bytes/s.
+                qos_egress_bps: r.qos_egress_bps / 8,
+                qos_ingress_bps: r.qos_ingress_bps / 8,
+                capture_sample: 0,
+                capture_snaplen: 0,
+            },
+        )
+    }
+
+    fn reprogram_all_ifaces(&mut self) -> Result<()> {
+        let idxs: Vec<u32> = self.ifaces.keys().copied().collect();
+        for idx in idxs {
+            self.program_iface(idx)?;
+        }
+        Ok(())
+    }
+
+    fn refresh_scope_flags(&mut self, scope_id: u32) -> Result<()> {
+        let mut f = 0;
+        if self.scope_has(scope_id, &["deny_ip", "deny_port"]) || self.dns_blocked.keys().any(|(s, _)| *s == scope_id) {
+            f |= IF_DENY;
+        }
+        // Scope 0 is bound at the cgroup root: an allowlist there would
+        // default-deny every host process, so host allowlists stay on taps.
+        if scope_id != 0 && self.scope_has(scope_id, &["tc_allow", "allow_port"]) {
+            f |= IF_ALLOW;
+        }
+        self.dp.set_scope_flags(scope_id, f)
+    }
+
+    fn push_file_watch(&mut self) -> Result<()> {
+        // deny_file prefixes (with deny flag) first, then observe-only watches.
+        let mut entries: Vec<(String, Option<u32>)> = Vec::new();
+        for p in self.policies.values() {
+            if p.policy.enabled && p.policy.kind == "deny_file" {
+                if let Some(Rule::FileDeny { prefix }) = p.rules.first() {
+                    let num = self.policy_nums.get(&p.policy.id).copied().unwrap_or(0);
+                    entries.push((prefix.clone(), Some(num)));
+                }
+            }
+        }
+        for w in &self.telemetry.file_watch {
+            if entries.len() as u32 >= FILE_WATCH_SLOTS {
+                break;
+            }
+            if !entries.iter().any(|(p, _)| p == w) {
+                entries.push((w.clone(), None));
+            }
+        }
+        self.dp.set_file_watch(&entries)
+    }
+}

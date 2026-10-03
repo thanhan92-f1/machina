@@ -22,7 +22,6 @@ pub fn adapter_for(backend: super::types::FirewallBackend) -> Box<dyn FirewallAd
         super::types::FirewallBackend::Ufw => Box::new(ufw::UfwAdapter),
         super::types::FirewallBackend::Nftables => Box::new(nftables::NftablesAdapter),
         super::types::FirewallBackend::K8sNetworkPolicy => Box::new(k8s::K8sNetworkPolicyAdapter),
-        super::types::FirewallBackend::Cilium => Box::new(k8s::CiliumAdapter),
         _ => Box::new(iptables::IptablesAdapter),
     }
 }

@@ -13,6 +13,7 @@ machina-core = { path = "../core" }
 machina-spec = { path = "../spec" }
 machina-translate = { path = "../translate" }
 machina-agent = { path = "../agent" }
+machina-bpf = { path = "../bpf/machina-bpf" }
 guestkit = { path = "../../guestkit", default-features = false, features = ["guest-inspect"] }
 guestkit-job-spec = { path = "../../guestkit/crates/guestkit-job-spec" }
 axum = { workspace = true }

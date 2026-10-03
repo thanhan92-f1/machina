@@ -679,13 +679,13 @@ pub async fn analyze_incident(
     let mut result = ai::root_cause::analyze(&state.pool, &q)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    let pw = crate::engine::packetwolf_bridge::fetch_anomalies(&state.config).await;
+    let pw = crate::engine::bpf::telemetry::anomalies(&state.pool).await;
     if pw
         .get("anomalies")
         .and_then(|v| v.as_array())
         .is_some_and(|a| !a.is_empty())
     {
-        ai::root_cause::merge_packetwolf(&mut result.timeline, &pw);
+        ai::root_cause::merge_bpf_anomalies(&mut result.timeline, &pw);
     }
     Ok(Json(result))
 }
@@ -1583,13 +1583,13 @@ pub async fn analyze_incident_post(
     let mut result = ai::root_cause::analyze_post(&state.pool, &body)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    let pw = crate::engine::packetwolf_bridge::fetch_anomalies(&state.config).await;
+    let pw = crate::engine::bpf::telemetry::anomalies(&state.pool).await;
     if pw
         .get("anomalies")
         .and_then(|v| v.as_array())
         .is_some_and(|a| !a.is_empty())
     {
-        ai::root_cause::merge_packetwolf(&mut result.timeline, &pw);
+        ai::root_cause::merge_bpf_anomalies(&mut result.timeline, &pw);
     }
     let _ = ai::memory_store::remember(
         &state.pool,

@@ -267,10 +267,9 @@ async fn platform_info() -> Json<serde_json::Value> {
             "base_url": cfg.guestkit.base_url,
             "insecure_tls": cfg.guestkit.insecure_tls,
         },
-        "packetwolf": {
-            "enabled": cfg.packetwolf.enabled,
-            "base_url": cfg.packetwolf.base_url,
-            "insecure_tls": cfg.packetwolf.insecure_tls,
+        "native_bpf": {
+            "socket": std::env::var("MACHINA_BPFD_SOCK")
+                .unwrap_or_else(|_| machina_core::bpf_probe::BPFD_SOCKET.to_string()),
         },
         "zeus_firewall": {
             "enabled": true,

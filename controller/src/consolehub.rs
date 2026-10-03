@@ -1434,7 +1434,7 @@ pub async fn consolehub_explain(
         }
         "fix_network" => {
             lines.push("Check guest NIC, cloud-init network config, and host/CNI routes.".into());
-            lines.push("Use **Network** lens or PacketWolf trace when fabric is enabled.".into());
+            lines.push("Use **Network** lens or a native eBPF capture for packet-level detail.".into());
         }
         _ => {
             lines.push(

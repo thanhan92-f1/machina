@@ -87,25 +87,13 @@ pub fn compile_k8s_policies(
         ingress.join("\n")
     );
 
-    let cnp_yaml = format!(
-        "apiVersion: cilium.io/v2\nkind: CiliumNetworkPolicy\nmetadata:\n  name: {safe_name}\n  namespace: {safe_ns}\n  labels:\n    app.kubernetes.io/managed-by: zeus-firewall\nspec:\n  endpointSelector: {{}}\n  ingress:\n  - fromEntities:\n    - cluster\n  - toPorts:\n    - ports:\n      - port: \"22\"\n        protocol: TCP\n",
-    );
-
     Ok((
-        vec![
-            K8sPolicyManifest {
-                kind: "NetworkPolicy".into(),
-                namespace: safe_ns.into(),
-                name: safe_name.clone(),
-                yaml: np_yaml,
-            },
-            K8sPolicyManifest {
-                kind: "CiliumNetworkPolicy".into(),
-                namespace: safe_ns.into(),
-                name: safe_name,
-                yaml: cnp_yaml,
-            },
-        ],
+        vec![K8sPolicyManifest {
+            kind: "NetworkPolicy".into(),
+            namespace: safe_ns.into(),
+            name: safe_name,
+            yaml: np_yaml,
+        }],
         warnings,
     ))
 }
@@ -163,13 +151,6 @@ pub fn k8s_cluster_ready() -> bool {
 
 pub fn detect_k8s_backend() -> FirewallBackend {
     if run_cmd(
-        "kubectl",
-        &["get", "ciliumnetworkpolicies", "-A", "--request-timeout=3s"],
-    )
-    .is_ok()
-    {
-        FirewallBackend::Cilium
-    } else if run_cmd(
         "kubectl",
         &["get", "networkpolicy", "-A", "--request-timeout=3s"],
     )

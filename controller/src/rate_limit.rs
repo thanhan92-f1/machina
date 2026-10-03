@@ -83,7 +83,7 @@ impl RateLimiter {
 }
 
 /// Constant-time byte comparison so the e2e bypass secret can't be recovered
-/// via response-timing (mirrors `packetwolf_ingest::ct_eq`).
+/// via response-timing (constant-time compare).
 fn ct_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;

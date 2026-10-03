@@ -59,10 +59,10 @@ pub struct ControllerConfig {
     pub guestkit_enabled: bool,
     pub guestkit_worker_url: String,
     pub guestkit_insecure_tls: bool,
-    pub packetwolf_enabled: bool,
-    pub packetwolf_base_url: String,
-    pub packetwolf_api_key: Option<String>,
-    pub packetwolf_insecure_tls: bool,
+    /// Enforce lease (seconds) requested from each host's machina-bpfd when
+    /// a runtime policy is applied or enforcement attached. bpfd clamps to
+    /// [60, 86400] and fails open (observe) when the lease lapses.
+    pub bpf_enforce_lease_secs: u64,
     /// Atlas — Zyvor storage control plane (Ceph/NFS/ZFS) used to provision
     /// VM disks as backend volumes and route snapshot/backup/restore.
     pub atlas_enabled: bool,
@@ -85,17 +85,6 @@ pub struct ControllerConfig {
     pub atlas_rbd_mon_hosts: String,
     pub atlas_rbd_auth_user: Option<String>,
     pub atlas_rbd_secret_uuid: Option<String>,
-    /// Netra — standalone eBPF network enforcement (../netra). Backs the
-    /// `deny_ip` runtime-enforcement policy kind with real kernel-level
-    /// deny/allow rules via netrad's REST API, distinct from (and not a
-    /// wire-compatible replacement for) the simulated PacketWolf fabric above.
-    pub netra_enabled: bool,
-    pub netra_base_url: String,
-    pub netra_api_key: Option<String>,
-    pub netra_insecure_tls: bool,
-    /// Enforcement lease requested when a Netra-backed policy is applied
-    /// (`PUT /api/v1/ebpf/mode?lease=`); Netra clamps to [1m, 24h] itself.
-    pub netra_enforce_lease: String,
     /// Co-located machina-daemon base URL for KubeVirt inventory sync.
     pub daemon_base_url: String,
     pub consolehub_session_ttl_secs: u64,
@@ -152,16 +141,10 @@ impl Default for ControllerConfig {
                 // Secure by default — set GUESTKIT_INSECURE_TLS=1 for a self-signed
                 // HTTPS worker. Default worker URL is HTTP, where TLS doesn't apply.
                 .unwrap_or(false),
-            packetwolf_enabled: std::env::var("PACKETWOLF_ENABLED")
-                .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
-                .unwrap_or(false),
-            packetwolf_base_url: std::env::var("PACKETWOLF_BASE_URL")
-                .unwrap_or_else(|_| "http://127.0.0.1:9091".into()),
-            packetwolf_api_key: std::env::var("PACKETWOLF_API_KEY").ok(),
-            packetwolf_insecure_tls: std::env::var("PACKETWOLF_INSECURE_TLS")
-                .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
-                // Secure by default — set PACKETWOLF_INSECURE_TLS=1 for a self-signed fabric.
-                .unwrap_or(false),
+            bpf_enforce_lease_secs: std::env::var("MACHINA_BPF_ENFORCE_LEASE_SECS")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(900),
             atlas_enabled: std::env::var("ATLAS_ENABLED")
                 .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
                 .unwrap_or(false),
@@ -186,18 +169,6 @@ impl Default for ControllerConfig {
             atlas_rbd_secret_uuid: std::env::var("ATLAS_RBD_SECRET_UUID")
                 .ok()
                 .filter(|s| !s.is_empty()),
-            netra_enabled: std::env::var("NETRA_ENABLED")
-                .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
-                .unwrap_or(false),
-            netra_base_url: std::env::var("NETRA_BASE_URL")
-                .unwrap_or_else(|_| "http://127.0.0.1:30870".into()),
-            netra_api_key: std::env::var("NETRA_API_KEY").ok().filter(|s| !s.is_empty()),
-            netra_insecure_tls: std::env::var("NETRA_INSECURE_TLS")
-                .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
-                // Secure by default — set NETRA_INSECURE_TLS=1 for a self-signed netrad.
-                .unwrap_or(false),
-            netra_enforce_lease: std::env::var("NETRA_ENFORCE_LEASE")
-                .unwrap_or_else(|_| "15m".into()),
             daemon_base_url: std::env::var("MACHINA_DAEMON_URL")
                 .unwrap_or_else(|_| "http://127.0.0.1:5092".into()),
             consolehub_session_ttl_secs: std::env::var("CONSOLEHUB_SESSION_TTL_SECS")
@@ -247,13 +218,7 @@ impl std::fmt::Debug for ControllerConfig {
             .field("guestkit_enabled", &self.guestkit_enabled)
             .field("guestkit_worker_url", &self.guestkit_worker_url)
             .field("guestkit_insecure_tls", &self.guestkit_insecure_tls)
-            .field("packetwolf_enabled", &self.packetwolf_enabled)
-            .field("packetwolf_base_url", &self.packetwolf_base_url)
-            .field(
-                "packetwolf_api_key",
-                &self.packetwolf_api_key.as_ref().map(|_| REDACTED),
-            )
-            .field("packetwolf_insecure_tls", &self.packetwolf_insecure_tls)
+            .field("bpf_enforce_lease_secs", &self.bpf_enforce_lease_secs)
             .field("atlas_enabled", &self.atlas_enabled)
             .field("atlas_base_url", &self.atlas_base_url)
             .field("atlas_token", &self.atlas_token.as_ref().map(|_| REDACTED))
@@ -267,11 +232,6 @@ impl std::fmt::Debug for ControllerConfig {
                 "atlas_rbd_secret_uuid",
                 &self.atlas_rbd_secret_uuid.as_ref().map(|_| REDACTED),
             )
-            .field("netra_enabled", &self.netra_enabled)
-            .field("netra_base_url", &self.netra_base_url)
-            .field("netra_api_key", &self.netra_api_key.as_ref().map(|_| REDACTED))
-            .field("netra_insecure_tls", &self.netra_insecure_tls)
-            .field("netra_enforce_lease", &self.netra_enforce_lease)
             .field("daemon_base_url", &self.daemon_base_url)
             .field(
                 "consolehub_session_ttl_secs",

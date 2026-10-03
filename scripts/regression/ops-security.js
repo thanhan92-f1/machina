@@ -180,17 +180,16 @@ async function getJson(path) {
     return `ok=${j.ok}`;
   });
 
-  await mark('security-ingest', async () => {
-    const r = await api('POST', `${P}/api/v1/zeus-security/ingest/${HID}`, { events: [] });
-    if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
-    const j = JSON.parse(r.body);
-    if (j.ingested == null) throw new Error('empty');
-    return `ingested=${j.ingested}`;
+  await mark('host-fabric-status', async () => {
+    const j = await getJson(`${P}/api/v1/zeus-security/hosts/${HID}/fabric-status`);
+    if (j.agent_reachable == null) throw new Error('empty');
+    return `agent_reachable=${j.agent_reachable}`;
   });
 
-  await mark('agent-bundle', async () => {
-    const j = await getJson(`${P}/api/v1/zeus-security/agents/${HID}/bundle`);
-    return `keys=${Object.keys(j).length}`;
+  await mark('host-enforcement', async () => {
+    const j = await getJson(`${P}/api/v1/zeus-security/hosts/${HID}/enforcement`);
+    if (j.api_mode !== 'native') throw new Error(`api_mode=${j.api_mode}`);
+    return `policies=${(j.policies || []).length}`;
   });
 
   await mark('hunt-queries', async () => {

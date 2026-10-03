@@ -33,7 +33,6 @@ const DOCUMENTED = new Set([
   '/api/v1/metrics/ingest/prometheus',
   '/api/v1/metrics/ingest/remote-write',
   '/api/v1/metrics/ingest/batch',
-  '/api/v1/zeus-security/ingest/{id}',
   '/api/v1/install.sh',
   '/install.sh',
   '/api/v1/hosts/join',

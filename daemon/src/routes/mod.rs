@@ -4,6 +4,7 @@
 mod advanced;
 mod automation;
 mod backup;
+mod bpf;
 mod console;
 pub mod consolehub;
 pub(crate) mod events;
@@ -66,6 +67,7 @@ pub fn api_routes() -> Router<LibvirtManager> {
         .merge(consolehub::api_routes())
         .merge(advanced::advanced_routes())
         .merge(backup::backup_routes())
+        .merge(bpf::bpf_routes())
         .merge(host_network::host_network_routes())
         .merge(extras::extras_routes())
         .merge(automation::automation_routes())

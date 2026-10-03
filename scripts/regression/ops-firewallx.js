@@ -84,7 +84,7 @@ async function step(name, fn) {
   });
 
   await get('guest-ports', `${P}/api/v1/zeus-firewall/vms/${PID}/guest-ports`, (j) => `ports=${(j.ports || []).length}`);
-  await get('packetwolf-anomalies', `${P}/api/v1/zeus-firewall/packetwolf/anomalies`, (j) => `n=${(j.anomalies || []).length}`);
+  await get('anomalies', `${P}/api/v1/zeus-firewall/anomalies`, (j) => `n=${(j.anomalies || []).length}`);
   await get('siem-export', `${P}/api/v1/zeus-firewall/siem/export`, (j) => `events=${j.event_count}`);
 
   await mark('profile-dry-run', async () => {

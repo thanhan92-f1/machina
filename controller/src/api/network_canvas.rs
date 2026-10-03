@@ -10,7 +10,7 @@ use serde_json::Value;
 use crate::api::topology::{build_topology, TopologyGraph};
 use crate::api::ApiError;
 use crate::auth::{require_operator, AuthUser};
-use crate::engine::packetwolf_bridge;
+use crate::engine::bpf::{self, telemetry};
 use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
@@ -19,7 +19,7 @@ pub struct NetworkCanvasResponse {
     pub flows: serde_json::Value,
     pub flow_stats: serde_json::Value,
     pub anomalies: serde_json::Value,
-    pub packetwolf: packetwolf_bridge::PacketwolfStatus,
+    pub native_bpf: bpf::FleetBpfStatus,
     pub network_pulse: serde_json::Value,
 }
 
@@ -172,14 +172,12 @@ pub async fn network_canvas(
 ) -> Result<Json<NetworkCanvasResponse>, ApiError> {
     require_operator(&actor)?;
     let topology = build_topology(&state.pool, None).await?;
-    let (pw_cfg, discovery) = packetwolf_bridge::resolved_config(&state.config).await;
-
-    let (flows, flow_stats, anomalies, network_pulse, packetwolf) = tokio::join!(
-        packetwolf_bridge::fetch_fleet_flows(&pw_cfg, 40),
-        packetwolf_bridge::fetch_fleet_flow_stats(&pw_cfg),
-        packetwolf_bridge::fetch_anomalies(&pw_cfg),
-        packetwolf_bridge::fetch_network_pulse_bundle(&pw_cfg),
-        packetwolf_bridge::status_async_with_discovery(&pw_cfg, discovery),
+    let (flows, flow_stats, anomalies, network_pulse, native_bpf) = tokio::join!(
+        telemetry::flows(&state.pool, 40),
+        telemetry::flow_stats(&state.pool),
+        telemetry::anomalies(&state.pool),
+        telemetry::network_pulse(&state.pool),
+        bpf::fleet_status(&state.pool),
     );
 
     Ok(Json(NetworkCanvasResponse {
@@ -187,7 +185,7 @@ pub async fn network_canvas(
         flows,
         flow_stats,
         anomalies: normalize_anomalies(anomalies),
-        packetwolf,
+        native_bpf,
         network_pulse: normalize_network_pulse(network_pulse),
     }))
 }
@@ -212,13 +210,13 @@ mod tests {
         let mut pulse = json!({
             "service_map": {
                 "nodes": [
-                    {"namespace":"cilium","name":"host"},
+                    {"namespace":"host","name":"node1"},
                     {"namespace":"hermes-system","name":"hermes-64c699dd97"}
                 ],
                 "edges": [
                     {
-                        "source":"host",
-                        "source_namespace":"cilium",
+                        "source":"node1",
+                        "source_namespace":"host",
                         "target":"hermes-64c699dd97",
                         "target_namespace":"hermes-system"
                     }
@@ -228,7 +226,7 @@ mod tests {
         pulse = normalize_network_pulse(pulse);
         assert_eq!(
             pulse["service_map"]["edges"][0]["source_key"].as_str(),
-            Some("cilium/host")
+            Some("host/node1")
         );
         assert_eq!(
             pulse["service_map"]["edges"][0]["target_key"].as_str(),

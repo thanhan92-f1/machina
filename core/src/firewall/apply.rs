@@ -104,7 +104,7 @@ pub fn compile_profile_plan(
     }
     if profile.name == "EmergencyIsolation" {
         operations.push("zeus-lockdown:enable".into());
-        operations.push("packetwolf:capture:start".into());
+        operations.push("bpf:capture:start".into());
     }
 
     let after_rules: Vec<FirewallRule> = profile
@@ -141,7 +141,7 @@ pub fn apply_plan(
         return Ok(plan);
     }
     for op in &plan.operations {
-        if op.starts_with("zeus-") || op.starts_with("packetwolf:") {
+        if op.starts_with("zeus-") || op.starts_with("bpf:") {
             continue;
         }
         let parts: Vec<&str> = op.split_whitespace().collect();

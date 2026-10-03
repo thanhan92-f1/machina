@@ -225,24 +225,30 @@ async fn analyze_with_symptoms(
     })
 }
 
-/// Merge PacketWolf anomalies and correlations into incident timeline.
-pub fn merge_packetwolf(timeline: &mut Vec<TimelineEntry>, packetwolf: &serde_json::Value) {
-    let Some(items) = packetwolf.get("anomalies").and_then(|v| v.as_array()) else {
+/// Merge native eBPF anomalies into the incident timeline.
+pub fn merge_bpf_anomalies(timeline: &mut Vec<TimelineEntry>, anomalies: &serde_json::Value) {
+    let Some(items) = anomalies.get("anomalies").and_then(|v| v.as_array()) else {
         return;
     };
     for a in items {
         let summary = a
             .get("summary")
             .and_then(|v| v.as_str())
-            .unwrap_or("PacketWolf security event");
+            .unwrap_or("eBPF security event");
         let severity = a
             .get("severity")
             .and_then(|v| v.as_str())
             .unwrap_or("medium");
         let kind = a.get("kind").and_then(|v| v.as_str()).unwrap_or("security");
+        let at = a
+            .get("ts")
+            .and_then(|v| v.as_str())
+            .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
+            .map(|t| t.with_timezone(&chrono::Utc))
+            .unwrap_or_else(chrono::Utc::now);
         timeline.push(TimelineEntry {
-            at: chrono::Utc::now(),
-            source: "packetwolf".into(),
+            at,
+            source: "machina-bpf".into(),
             kind: kind.into(),
             message: summary.into(),
             severity: severity.into(),

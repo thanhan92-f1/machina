@@ -1,9 +1,9 @@
 [Unit]
 Description=Machina libvirt management daemon
 Documentation=https://github.com/zyvorai/machina
-After=libvirtd.service network-online.target
+After=libvirtd.service network-online.target machina-bpfd.service
 Requires=libvirtd.service
-Wants=network-online.target
+Wants=network-online.target machina-bpfd.service
 StartLimitIntervalSec=300
 StartLimitBurst=10
 

@@ -13,7 +13,7 @@ use crate::engine::zeus_firewall::inventory::apply_target;
 pub struct LockdownPreview {
     pub summary: String,
     pub actions: Vec<String>,
-    pub capture_packetwolf: bool,
+    pub capture_traffic: bool,
     pub create_incident: bool,
 }
 
@@ -25,13 +25,13 @@ pub fn lockdown_preview(capture: bool) -> LockdownPreview {
             "Preserve current logs".into(),
             "Create rollback checkpoint".into(),
             if capture {
-                "Start PacketWolf capture".into()
+                "Start native eBPF packet capture".into()
             } else {
-                "Skip PacketWolf capture".into()
+                "Skip packet capture".into()
             },
             "Create security incident event".into(),
         ],
-        capture_packetwolf: capture,
+        capture_traffic: capture,
         create_incident: true,
     }
 }
@@ -46,7 +46,7 @@ pub async fn lockdown_target(
     let plan = plan_for_profile("EmergencyIsolation", false)?;
     let result = apply_target(pool, cfg, target_id, plan, actor).await?;
     if capture {
-        let _ = crate::engine::packetwolf_bridge::start_capture(cfg, target_id).await;
+        let _ = crate::engine::bpf::telemetry::capture_target(pool, target_id).await;
     }
     if let Ok(host_id) = Uuid::parse_str(target_id) {
         let _ = sqlx::query(

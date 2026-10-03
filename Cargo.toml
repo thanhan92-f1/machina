@@ -10,7 +10,11 @@ members = [
     "agent",
     "controller",
     "vessel",
+    "bpf/machina-bpf-common",
+    "bpf/machina-bpf",
 ]
+# Kernel-side eBPF programs: built by bpf/machina-bpf/build.rs for bpfel-unknown-none.
+exclude = ["bpf/machina-bpf-ebpf"]
 resolver = "2"
 
 [workspace.package]

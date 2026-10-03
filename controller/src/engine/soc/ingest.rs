@@ -7,14 +7,13 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::config::ControllerConfig;
-use crate::engine::packetwolf_bridge;
 
-pub async fn ingest_recent(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Result<IngestStats> {
+pub async fn ingest_recent(pool: &SqlitePool, _cfg: &ControllerConfig) -> anyhow::Result<IngestStats> {
     let mut stats = IngestStats::default();
     stats.firewall += ingest_firewall_timeline(pool).await?;
     stats.audit += ingest_audit_logs(pool).await?;
     stats.platform += ingest_platform_events(pool).await?;
-    stats.packetwolf += ingest_packetwolf(pool, cfg).await?;
+    stats.native_bpf += ingest_bpf_anomalies(pool).await?;
     Ok(stats)
 }
 
@@ -23,7 +22,7 @@ pub struct IngestStats {
     pub firewall: usize,
     pub audit: usize,
     pub platform: usize,
-    pub packetwolf: usize,
+    pub native_bpf: usize,
 }
 
 async fn watermark(pool: &SqlitePool, source: &str) -> anyhow::Result<DateTime<Utc>> {
@@ -300,24 +299,31 @@ async fn ingest_platform_events(pool: &SqlitePool) -> anyhow::Result<usize> {
     Ok(n)
 }
 
-async fn ingest_packetwolf(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Result<usize> {
-    if !cfg.packetwolf_enabled {
-        return Ok(0);
-    }
-    let pw = packetwolf_bridge::fetch_anomalies(cfg).await;
-    let anomalies = pw
+async fn ingest_bpf_anomalies(pool: &SqlitePool) -> anyhow::Result<usize> {
+    let since = watermark(pool, "machina-bpf").await?;
+    let native = crate::engine::bpf::telemetry::anomalies(pool).await;
+    let anomalies = native
         .get("anomalies")
         .and_then(|v| v.as_array())
         .cloned()
         .unwrap_or_default();
     let mut n = 0usize;
-    let now = Utc::now();
+    let mut max_ts = since;
     for a in anomalies {
-        let summary = a
-            .get("description")
-            .or_else(|| a.get("summary"))
+        let ts = a
+            .get("ts")
             .and_then(|v| v.as_str())
-            .unwrap_or("PacketWolf anomaly");
+            .and_then(|t| DateTime::parse_from_rfc3339(t).ok())
+            .map(|t| t.with_timezone(&Utc))
+            .unwrap_or_else(Utc::now);
+        if ts <= since {
+            continue;
+        }
+        max_ts = max_ts.max(ts);
+        let summary = a
+            .get("summary")
+            .and_then(|v| v.as_str())
+            .unwrap_or("eBPF anomaly");
         let severity = a
             .get("severity")
             .and_then(|v| v.as_str())
@@ -326,42 +332,31 @@ async fn ingest_packetwolf(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow:
             .get("host_id")
             .and_then(|v| v.as_str())
             .and_then(|s| Uuid::parse_str(s).ok());
-        let anomaly_type = a
-            .get("anomaly_type")
-            .and_then(|v| v.as_str())
-            .unwrap_or("unknown");
-        let anomaly_id = a
-            .get("id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
-        let dedupe = if !anomaly_id.is_empty() {
-            format!("pw:id:{anomaly_id}")
-        } else {
-            format!(
-                "pw:{}:{}",
-                anomaly_type,
-                a.get("detected_at").and_then(|v| v.as_str()).unwrap_or("")
-            )
-        };
-        let source_ns = a.get("source_namespace").and_then(|v| v.as_str());
-        let source_pod = a.get("source_pod").and_then(|v| v.as_str());
+        let kind = a.get("kind").and_then(|v| v.as_str()).unwrap_or("unknown");
+        let anomaly_id = a.get("id").and_then(|v| v.as_str()).unwrap_or("");
+        let dedupe = format!(
+            "bpf:{}:{}",
+            a.get("host_id").and_then(|v| v.as_str()).unwrap_or(""),
+            if anomaly_id.is_empty() { kind } else { anomaly_id }
+        );
         let ecs = json!({
-            "@timestamp": a.get("detected_at").and_then(|v| v.as_str()).unwrap_or(&now.to_rfc3339()),
-            "event.dataset": "machina.packetwolf",
+            "@timestamp": ts.to_rfc3339(),
+            "event.dataset": "machina.bpf",
             "event.category": ["intrusion_detection"],
             "event.kind": "alert",
             "event.severity": severity_to_ecs(severity),
             "message": summary,
-            "machina.packetwolf.anomaly_type": anomaly_type,
-            "machina.packetwolf.anomaly_id": anomaly_id,
-            "kubernetes.namespace": source_ns,
-            "kubernetes.pod.name": source_pod,
-            "source.ip": a.get("source_ip"),
+            "machina.bpf.anomaly_type": kind,
+            "machina.bpf.anomaly_id": anomaly_id,
+            "machina.vm.name": a.get("vm"),
+            "observer.ingress.interface.name": a.get("iface"),
+            "source.ip": a.get("local"),
+            "destination.ip": a.get("remote"),
         });
         if insert_event(
             pool,
-            now,
-            "packetwolf",
+            ts,
+            "machina-bpf",
             "intrusion_detection",
             severity,
             host_id,
@@ -377,7 +372,9 @@ async fn ingest_packetwolf(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow:
             n += 1;
         }
     }
-    advance_watermark(pool, "packetwolf", now).await?;
+    if max_ts > since {
+        advance_watermark(pool, "machina-bpf", max_ts).await?;
+    }
     Ok(n)
 }
 

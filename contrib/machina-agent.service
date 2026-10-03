@@ -1,8 +1,8 @@
 [Unit]
 Description=Machina host agent (libvirt executor)
 Documentation=https://github.com/zyvorai/machina
-After=network-online.target machina-controller.service
-Wants=network-online.target libvirtd.service
+After=network-online.target machina-controller.service machina-bpfd.service
+Wants=network-online.target libvirtd.service machina-bpfd.service
 StartLimitIntervalSec=300
 StartLimitBurst=10
 # Do not Requires=libvirtd: on RHEL/CentOS 9 the monolithic unit may start
@@ -16,6 +16,7 @@ Group=root
 EnvironmentFile=-/etc/default/machina-platform
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=MACHINA_LIBVIRT_URI=qemu:///system
+Environment=MACHINA_BPFD_SOCK=/run/machina-bpf/bpfd.sock
 
 ExecStartPre=-/usr/bin/systemctl start libvirtd.service
 ExecStart=/usr/local/bin/machina-agent --listen 127.0.0.1:50051 --console-listen 127.0.0.1:50052

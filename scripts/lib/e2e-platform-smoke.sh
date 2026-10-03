@@ -634,12 +634,11 @@ except Exception:
     e2e_platform_fail "POST /api/v1/soc/ingest/run — HTTP ${http}"
   fi
   ingest_host="$(e2e_platform_curl "${E2E_PLATFORM_BASE}/api/v1/zeus-security/fleet/sensors" | python3 -c "import json,sys; d=json.load(sys.stdin); m=d.get('matrix') or []; print(m[0]['host_id'] if m else 'test-host')" 2>/dev/null || echo test-host)"
-  http="$(e2e_platform_curl -o /dev/null -w '%{http_code}' -X POST "${E2E_PLATFORM_BASE}/api/v1/zeus-security/ingest/${ingest_host}" \
-    -H 'Content-Type: application/json' -d '{"events":[{"test":true,"process":"smoke"}]}')"
+  http="$(e2e_platform_http_code "${E2E_PLATFORM_BASE}/api/v1/zeus-security/hosts/${ingest_host}/fabric-status")"
   if [[ "$http" == "200" ]]; then
-    e2e_platform_ok "POST /api/v1/zeus-security/ingest/{host} smoke (HTTP ${http})"
+    e2e_platform_ok "GET /api/v1/zeus-security/hosts/{host}/fabric-status (native eBPF, HTTP ${http})"
   else
-    e2e_platform_fail "POST /api/v1/zeus-security/ingest/{host} — HTTP ${http}"
+    e2e_platform_fail "GET /api/v1/zeus-security/hosts/{host}/fabric-status — HTTP ${http}"
   fi
 
   e2e_platform_smoke_get "/api/v1/soc/events?limit=5" "GET /api/v1/soc/events" || true
@@ -673,9 +672,9 @@ except Exception:
   else
     e2e_platform_fail "POST /api/v1/zeus-firewall/connectivity — HTTP ${http}"
   fi
-  e2e_platform_smoke_get "/api/v1/zeus-firewall/packetwolf/anomalies" "GET /api/v1/zeus-firewall/packetwolf/anomalies" || true
+  e2e_platform_smoke_get "/api/v1/zeus-firewall/anomalies" "GET /api/v1/zeus-firewall/anomalies" || true
 
-  e2e_platform_hdr "PLATFORM SMOKE: ZEUS SECURITY + PACKETWOLF FABRIC"
+  e2e_platform_hdr "PLATFORM SMOKE: ZEUS SECURITY + NATIVE eBPF FABRIC"
   e2e_platform_smoke_get "/api/v1/zeus-security/status" "GET /api/v1/zeus-security/status" || true
   e2e_platform_smoke_get "/api/v1/zeus-security/fabric/health" "GET /api/v1/zeus-security/fabric/health" || true
   e2e_platform_smoke_get "/api/v1/zeus-security/fleet/threat" "GET /api/v1/zeus-security/fleet/threat" || true
@@ -689,10 +688,10 @@ except Exception:
     e2e_platform_fail "GET /api/v1/zeus-security/enforcement/policies — missing policies array"
   fi
   canvas="$(e2e_platform_curl "${E2E_PLATFORM_BASE}/api/v1/network-canvas")"
-  if echo "$canvas" | grep -q '"packetwolf"' && echo "$canvas" | grep -q '"network_pulse"'; then
-    e2e_platform_ok "GET /api/v1/network-canvas (PacketWolf pulse bundle)"
+  if echo "$canvas" | grep -q '"native_bpf"' && echo "$canvas" | grep -q '"network_pulse"'; then
+    e2e_platform_ok "GET /api/v1/network-canvas (native eBPF pulse bundle)"
   else
-    e2e_platform_fail "GET /api/v1/network-canvas — missing packetwolf/network_pulse"
+    e2e_platform_fail "GET /api/v1/network-canvas — missing native_bpf/network_pulse"
   fi
   if echo "$canvas" | grep -q '"service_map"'; then
     e2e_platform_ok "GET /api/v1/network-canvas includes service_map"

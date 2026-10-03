@@ -1,0 +1,2157 @@
+{
+ "generatedAt": "2026-10-03T10:02:45.783Z",
+ "base": "http://127.0.0.1:5192",
+ "routes": 130,
+ "modes": [
+  "light",
+  "dark",
+  "phone"
+ ],
+ "results": [
+  {
+   "route": "/admin/sessions",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/admin/sessions",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/admin/sessions",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/api-docs",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/api-docs",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/api-docs",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/audit",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/audit",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/audit",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/backups",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/backups",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/backups",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Download as tar.gz 32x32"
+    }
+   ]
+  },
+  {
+   "route": "/capabilities",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/capabilities",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/capabilities",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/create",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/create",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/create",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/devices",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/devices",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/devices",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Filter by capability typ 89x31"
+    }
+   ]
+  },
+  {
+   "route": "/disk-images",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/disk-images",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/disk-images",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/events",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/events",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/events",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/create",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/create",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/create",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Instances 76x17"
+    }
+   ]
+  },
+  {
+   "route": "/fleet-cloud/flavors",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/flavors",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/flavors",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/floating-ips",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/floating-ips",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/floating-ips",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/heat",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/heat",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/heat",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/identity",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/identity",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/identity",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/images",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/images",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/images",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/instances",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/instances",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/instances",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/keypairs",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/keypairs",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/keypairs",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/load-balancers",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/load-balancers",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/load-balancers",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/migrations",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/migrations",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/migrations",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/networking",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/networking",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/networking",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/security-groups",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/security-groups",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/security-groups",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Attach on instance detai 126x14"
+    }
+   ]
+  },
+  {
+   "route": "/fleet-cloud/server-groups",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/server-groups",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/server-groups",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/topology",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/topology",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/topology",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/volume-snapshots",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/volume-snapshots",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/volume-snapshots",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/volumes",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/volumes",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud/volumes",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet-cloud",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/fleet",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/fleet",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/fleet",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/host-networking",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/host-networking",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/host-networking",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/host-ssh",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/host-ssh",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/host-ssh",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/import",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/import",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/import",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/jobs",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/jobs",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/jobs",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/k8s/kata",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/k8s/kata",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/k8s/kata",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Cloud Hypervisor 130x22 | ← Kubernetes overview 127x17 | K8s workloads 80x17"
+    }
+   ]
+  },
+  {
+   "route": "/k8s/workloads",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/k8s/workloads",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/k8s/workloads",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "6: INPUT 132x24 | INPUT 112x24 | opt 112x24"
+    }
+   ]
+  },
+  {
+   "route": "/k8s",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/k8s",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/k8s",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "9: BUTTON 143x31 | e.g. v1.30.3+k3s1 298x28 | Default: first address f 298x28"
+    }
+   ]
+  },
+  {
+   "route": "/",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/logs",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/logs",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/logs",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/mission-control",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/mission-control",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/mission-control",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "2: Open Machine Finder 154x24 | DC-1\n1 · 100% 101x28"
+    }
+   ]
+  },
+  {
+   "route": "/networks",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/networks",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/networks",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/node",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/node",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/node",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Throughput sample window 221x31"
+    }
+   ]
+  },
+  {
+   "route": "/nwfilters",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/nwfilters",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/nwfilters",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/activity",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/activity",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/activity",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "5: HA status & fence events 141x14 | Developer SDK → 89x14 | Ops runbooks → 84x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/administration",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/administration",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/administration",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/ai-providers",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/ai-providers",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/ai-providers",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: OpenAI · default 89x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/alert-rules",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/alert-rules",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/alert-rules",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/api-keys",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/api-keys",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/api-keys",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/applications",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/applications",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/applications",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/backups",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/backups",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/backups",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Fleet snapshot schedules 148x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/baremetal",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/baremetal",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/baremetal",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/blueprints",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/blueprints",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/blueprints",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Operations runbooks → 127x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/cloud-init",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/cloud-init",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/cloud-init",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/content",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/content",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/content",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/create-advanced",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/create-advanced",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/create-advanced",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/create-iso",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/create-iso",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/create-iso",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/datacenter",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/datacenter",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/datacenter",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/developer",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/developer",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/developer",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/enroll",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/enroll",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/enroll",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/enterprise",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/enterprise",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/enterprise",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "2: System Settings → Securi 150x17 | API keys 46x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/events",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/events",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/events",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/fleet-snapshots",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/fleet-snapshots",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/fleet-snapshots",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/gpu",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/gpu",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/gpu",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: vm-1 47x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/ha",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/ha",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/ha",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts/98e60da1-5656-404c-87e9-207ae19ebd86",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts/98e60da1-5656-404c-87e9-207ae19ebd86",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts/98e60da1-5656-404c-87e9-207ae19ebd86",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Fence 33x40 | Open NodeInfo → 89x14 | HA status & fence events 141x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/hosts/finder",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts/finder",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts/finder",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: DC-1\n1 · 100% 101x28"
+    }
+   ]
+  },
+  {
+   "route": "/platform/hosts",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/hosts",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "2: Filter hosts… 244x31 | BUTTON 30x36"
+    }
+   ]
+  },
+  {
+   "route": "/platform/infrastructure",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/infrastructure",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/infrastructure",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/integrations",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/integrations",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/integrations",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Settings → Appearance →  198x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/launchpad",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/launchpad",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/launchpad",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/maintenance",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/maintenance",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/maintenance",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "2: Host Linux tab → 86x14 | Operations hub → 91x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/marketplace",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/marketplace",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/marketplace",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/migration",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/migration",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/migration",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Single-VM import 105x14 | All migration tools → 105x14 | View migration tasks → 118x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/mission-control/live",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/mission-control/live",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/mission-control/live",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/network-canvas",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/network-canvas",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/network-canvas",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Fabric health 64x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/networks",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/networks",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/networks",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/notifications",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/notifications",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/notifications",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/observability",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/observability",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/observability",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/operations",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/operations",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/operations",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/placement",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/placement",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/placement",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: INPUT 340x16"
+    }
+   ]
+  },
+  {
+   "route": "/platform/policy",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/policy",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/policy",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/projects",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/projects",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/projects",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/recommendations",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/recommendations",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/recommendations",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/reports",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/reports",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/reports",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/resources",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/resources",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/resources",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/scheduled-jobs",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/scheduled-jobs",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/scheduled-jobs",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/settings",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/settings",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/settings",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Open classic automation  147x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/soc",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/soc",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/soc",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage-atlas",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage-atlas",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage-atlas",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage-tiers",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage-tiers",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage-tiers",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/storage",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/support",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/support",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/support",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "7: Platform UX vision (in-r 167x17 | Platform architecture 130x17 | Platform roadmap 113x17"
+    }
+   ]
+  },
+  {
+   "route": "/platform/tasks",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/tasks",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/tasks",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/templates",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/templates",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/templates",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Open Templates → 95x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/topology",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/topology",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/topology",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Infrastructure Graph Bra 161x17 | Incident Commander → 127x17 | Security Center 79x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/upgrade",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/upgrade",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/upgrade",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/users",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/users",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/users",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/vm-builder",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/vm-builder",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/vm-builder",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/3b2803c9-68e9-4235-b0f8-ef46a42c7a80",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/3b2803c9-68e9-4235-b0f8-ef46a42c7a80",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/3b2803c9-68e9-4235-b0f8-ef46a42c7a80",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "4: Ubuntu 24.04 LTS · 6.8.0 191x27 | Guide 46x14 | Expose 38x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/vms/b539747e-c228-4807-bc93-7b77657c6b69",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/b539747e-c228-4807-bc93-7b77657c6b69",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/b539747e-c228-4807-bc93-7b77657c6b69",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "4: Ubuntu 24.04 LTS · 6.8.0 191x27 | Guide 46x14 | Expose 38x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/vms/c53c701c-cfa1-4c28-b639-4fa7fef77bed",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/c53c701c-cfa1-4c28-b639-4fa7fef77bed",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms/c53c701c-cfa1-4c28-b639-4fa7fef77bed",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "4: Ubuntu 24.04 LTS · 6.8.0 191x27 | Guide 46x14 | Expose 38x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/vms",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/vms",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "10: Default 50x20 | Health 47x20 | Backup 51x20"
+    }
+   ]
+  },
+  {
+   "route": "/platform/webhooks",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/webhooks",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/webhooks",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/workloads",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/workloads",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/workloads",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/activity",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/activity",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/activity",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/cloud",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/cloud",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/cloud",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/compliance",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/compliance",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/compliance",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "2: HA & fence events → 114x17 | Open firewall target → 113x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/zeus/security/connectivity",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/connectivity",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/connectivity",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/firewall",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/firewall",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/firewall",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/k8s",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/k8s",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/k8s",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/policies",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/policies",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/policies",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/ports",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/ports",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/ports",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/services",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/services",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security/services",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zeus/security",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Machine security 87x14"
+    }
+   ]
+  },
+  {
+   "route": "/platform/zyra/approvals",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/approvals",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/approvals",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/configure",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/configure",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/configure",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/incidents",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/incidents",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/incidents",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/rightsizing",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/rightsizing",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/rightsizing",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/security/enforcement",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/security/enforcement",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/security/enforcement",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/security/hunt",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/security/hunt",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra/security/hunt",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform/zyra",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Activity Monitor → 93x14 | Maintenance mission → 119x14 | Approvals → 52x28"
+    }
+   ]
+  },
+  {
+   "route": "/platform",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/platform",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/platform",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/secrets",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/secrets",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/secrets",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/services",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/services",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/services",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/settings",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/settings",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/settings",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Settings → Apps & Integr 190x24 | Apply suggested SP URLs 132x14 | View SP metadata 92x14"
+    }
+   ]
+  },
+  {
+   "route": "/snapshots",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/snapshots",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/snapshots",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/ssh",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/ssh",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/ssh",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/storage/default",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/storage/default",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/storage/default",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "1: Show 30x36"
+    }
+   ]
+  },
+  {
+   "route": "/storage",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/storage",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/storage",
+   "mode": "phone",
+   "findings": []
+  },
+  {
+   "route": "/system-check",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/system-check",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/system-check",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Services 44x14 | Capabilities 60x14 | Host overview 72x14"
+    }
+   ]
+  },
+  {
+   "route": "/vms/chrome-e2e-vm/consolehub",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/vms/chrome-e2e-vm/consolehub",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/vms/chrome-e2e-vm/consolehub",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "3: Move access note 26x26 | Access note: SSH key-onl 331x26 | novnc 46x22"
+    }
+   ]
+  },
+  {
+   "route": "/vms/chrome-e2e-vm",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/vms/chrome-e2e-vm",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/vms/chrome-e2e-vm",
+   "mode": "phone",
+   "findings": [
+    {
+     "kind": "tap-target",
+     "detail": "2: Add tag 64x20 | Guide 46x14"
+    }
+   ]
+  },
+  {
+   "route": "/vms",
+   "mode": "dark",
+   "findings": []
+  },
+  {
+   "route": "/vms",
+   "mode": "light",
+   "findings": []
+  },
+  {
+   "route": "/vms",
+   "mode": "phone",
+   "findings": []
+  }
+ ]
+}

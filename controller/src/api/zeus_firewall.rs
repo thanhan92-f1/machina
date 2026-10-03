@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::api::ApiError;
 use crate::auth::{require_admin, require_operator, AuthUser};
 use crate::engine::ai::firewall as ai_firewall;
-use crate::engine::packetwolf_bridge;
+use crate::engine::bpf::{self, telemetry};
 use crate::engine::zeus_firewall;
 use crate::state::AppState;
 
@@ -22,7 +22,7 @@ pub async fn status(
     crate::auth::require_operator(&actor)?;
     Ok(Json(serde_json::json!({
         "zeus_firewall": zeus_firewall::zeus_firewall_status().await,
-        "packetwolf": packetwolf_bridge::status_async(&state.config).await,
+        "native_bpf": bpf::fleet_status(&state.pool).await,
     })))
 }
 
@@ -380,8 +380,8 @@ pub async fn siem_export(
     let export = zeus_firewall::siem::export_timeline(&state.pool, q.hours)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    let pw = packetwolf_bridge::fetch_anomalies(&state.config).await;
-    let anomalies = pw
+    let native = telemetry::anomalies(&state.pool).await;
+    let anomalies = native
         .get("anomalies")
         .and_then(|v| v.as_array())
         .cloned()
@@ -390,8 +390,8 @@ pub async fn siem_export(
         "exported_at": export.exported_at,
         "event_count": export.event_count + anomalies.len(),
         "events": export.events,
-        "packetwolf_anomalies": anomalies,
-        "sources": ["firewall_timeline", "packetwolf"]
+        "bpf_anomalies": anomalies,
+        "sources": ["firewall_timeline", telemetry::SOURCE]
     })))
 }
 
@@ -428,11 +428,7 @@ pub async fn get_activity(
         Uuid::parse_str(&id).map_err(|_| ApiError::bad_request("invalid host id"))?;
     }
     let hours = q.hours.unwrap_or(24);
-    if state.config.packetwolf_enabled {
-        Ok(Json(
-            packetwolf_bridge::fetch_activity(&state.config, &id, hours).await,
-        ))
-    } else if let Ok(addr) = resolve_agent(&state, &id).await {
+    if let Ok(addr) = resolve_agent(&state, &id).await {
         if let Ok(act) = crate::agent_client::get_firewall_activity(&addr, hours).await {
             return Ok(Json(act));
         }
@@ -718,12 +714,12 @@ pub async fn compliance_export_pdf(
         .map_err(|e| ApiError::internal(e.to_string()))?)
 }
 
-pub async fn packetwolf_anomalies(
+pub async fn anomalies(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    Ok(Json(packetwolf_bridge::fetch_anomalies(&state.config).await))
+    Ok(Json(telemetry::anomalies(&state.pool).await))
 }
 
 pub async fn baremetal_overview(

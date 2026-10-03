@@ -38,7 +38,6 @@ pub mod run_as_user;
 pub mod sprite_net;
 pub mod state;
 pub mod system_accounts;
-pub mod tetragon;
 pub mod trace_context;
 pub mod validate;
 pub mod xml;
@@ -48,7 +47,7 @@ pub use api_error::{
 };
 pub use config::{
     AuthConfig, FleetConfig, FleetPeer, GuestkitConfig, HypersdkConfig, KubeVirtConfig, LdapConfig,
-    MachinaConfig, OidcConfig, OidcDefaultRole, PacketwolfConfig, RunAsUserConfig,
+    MachinaConfig, OidcConfig, OidcDefaultRole, RunAsUserConfig,
     SshTerminalConfig, SshTerminalTarget, VesselConfig, VmCreateBackend, DEFAULT_DAEMON_PORT,
 };
 pub use firewall::{
@@ -108,10 +107,6 @@ pub use state::{
     ResourceView, RestoreRequest, SidebarCategory, SidebarItem, SnapshotInfo, SortColumn,
     SortDirection, StoragePoolInfo, StorageVolumeInfo, ViewMode, VmBlockDeviceMetrics, VmDetails,
     VmInfo, VmMetrics, VmNetDeviceMetrics, VmTemplate,
-};
-pub use tetragon::{
-    apply_security_bundle, render_install_script, run_tetragon_install, security_fabric_status,
-    SecurityBundleApplyResult, SecurityFabricStatus, TetragonInstallResult, TetragonInstallSpec,
 };
 pub use trace_context::{format_traceparent, trace_context_from_headers, HttpTraceContext};
 

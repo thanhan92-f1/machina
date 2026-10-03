@@ -163,8 +163,6 @@ async fn process_one(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> 
         "kubevirt.inventory" => kubevirt_inventory_task(state, msg).await?,
         "host.maintenance" => host_maintenance(state, msg).await?,
         "host.validate" => host_validate_task(state, msg).await?,
-        "host.tetragon.install" => host_tetragon_install(state, msg).await?,
-        "k8s.tetragon.install" => k8s_tetragon_install(state, msg).await?,
         "host.enforcement.apply" => host_enforcement_apply(state, msg).await?,
         "host.linux.package_upgrade" => host_linux_package_upgrade(state, msg).await?,
         "host.linux.reboot" => host_linux_reboot(state, msg).await?,
@@ -705,15 +703,12 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
     {
         tracing::warn!(%host_id, "firewall posture sync during inventory: {e:#}");
     }
-    if let Err(e) = crate::engine::packetwolf_sync::sync_host_security_bundle(
-        &state.config,
-        &state.pool,
-        host_id,
-        &agent_addr,
-    )
-    .await
-    {
-        tracing::warn!(%host_id, "security bundle sync during inventory: {e:#}");
+    match crate::engine::bpf::policies::sync_hosts(&state.pool, Some(&[host_id.to_string()])).await {
+        Ok(r) if r.iter().any(|x| x["ok"] != true) => {
+            tracing::warn!(%host_id, "native eBPF policy sync during inventory: {r:?}");
+        }
+        Err(e) => tracing::warn!(%host_id, "native eBPF policy sync during inventory: {e:#}"),
+        _ => {}
     }
 
     update_task_progress(&state.pool, msg.task_id, 100, "inventory synced").await?;
@@ -2308,120 +2303,6 @@ async fn kubevirt_inventory_task(state: &AppState, msg: &TaskMessage) -> anyhow:
     Ok(())
 }
 
-async fn host_tetragon_install(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let host_id_str = msg
-        .payload
-        .get("host_id")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    let host_id =
-        Uuid::parse_str(host_id_str).map_err(|_| anyhow::anyhow!("host_id missing or invalid"))?;
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        20,
-        "registering PacketWolf sensor",
-    )
-    .await?;
-    if let Ok(agent_addr) = host_agent_addr(&state.pool, host_id).await {
-        if let Err(e) = crate::engine::packetwolf_sync::sync_host_tetragon_install(
-            &state.pool,
-            &state.config,
-            host_id,
-            &agent_addr,
-        )
-        .await
-        {
-            anyhow::bail!("Tetragon enrollment failed: {e:#}");
-        }
-    } else {
-        anyhow::bail!("host agent address not found");
-    }
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        100,
-        "Tetragon enrollment complete",
-    )
-    .await?;
-    Ok(())
-}
-
-async fn k8s_tetragon_install(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
-    let cluster_id = msg
-        .payload
-        .get("cluster_id")
-        .and_then(|v| v.as_str())
-        .unwrap_or("default");
-    let cluster_name = msg
-        .payload
-        .get("cluster_name")
-        .and_then(|v| v.as_str())
-        .unwrap_or(cluster_id);
-    let namespace_raw = msg
-        .payload
-        .get("namespace")
-        .and_then(|v| v.as_str())
-        .unwrap_or("kube-system");
-    let namespace = namespace_raw.trim();
-    if namespace.is_empty() {
-        anyhow::bail!("namespace must not be empty");
-    }
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        20,
-        &format!("planning Tetragon Helm release for {cluster_name}"),
-    )
-    .await?;
-    let cfg_clone = state.config.clone();
-    let cluster_id_owned = cluster_id.to_string();
-    let namespace_owned = namespace.to_string();
-    let cluster_name_owned = cluster_name.to_string();
-    let helm = tokio::task::spawn_blocking(move || {
-        crate::engine::packetwolf_k8s::install_tetragon_helm(
-            &cfg_clone,
-            &cluster_id_owned,
-            &namespace_owned,
-            &cluster_name_owned,
-        )
-    })
-    .await
-    .map_err(|e| anyhow::anyhow!("tetragon install task panicked: {e}"))?;
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        55,
-        if helm.helm_output.is_empty() {
-            "Tetragon Helm release applied"
-        } else {
-            "Tetragon Helm release applied — deploying PacketWolf export forwarder"
-        },
-    )
-    .await?;
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        85,
-        if helm.forwarder_applied {
-            "PacketWolf export forwarder deployed"
-        } else {
-            "PacketWolf export forwarder pending (kubectl required)"
-        },
-    )
-    .await?;
-    let _ = crate::engine::packetwolf_bridge::register_sensor(
-        &state.config,
-        &format!("k8s-{cluster_id}"),
-    )
-    .await;
-    if !helm.ok {
-        anyhow::bail!(helm.message);
-    }
-    update_task_progress(&state.pool, msg.task_id, 100, &helm.message).await?;
-    Ok(())
-}
-
 async fn host_linux_package_upgrade(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
     let host_id = msg
         .payload
@@ -2479,63 +2360,23 @@ async fn host_enforcement_apply(state: &AppState, msg: &TaskMessage) -> anyhow::
         .and_then(|v| v.as_str())
         .filter(|s| !s.is_empty())
         .ok_or_else(|| anyhow::anyhow!("host_id missing or empty"))?;
-    let policy_id = msg
-        .payload
-        .get("policy_id")
-        .and_then(|v| v.as_str())
-        .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("policy_id missing or empty"))?;
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        30,
-        &format!("rendering Tetragon TracingPolicy for {policy_id}"),
-    )
-    .await?;
-    let result = crate::engine::packetwolf_bridge::apply_enforcement_policy(
-        &state.config,
-        policy_id,
-        &[host_id.to_string()],
-    )
-    .await;
-    // Don't report "enforcement active" when the fabric push actually failed.
-    // The non-production path returns the fabric result directly (ok:false on
-    // failure); the production path nests them under "packetwolf".
-    let apply_failed = result.get("ok").and_then(|v| v.as_bool()) == Some(false)
-        || result
-            .get("packetwolf")
-            .and_then(|v| v.as_array())
-            .map(|arr| arr.iter().any(|r| r.get("ok").and_then(|v| v.as_bool()) == Some(false)))
-            .unwrap_or(false);
-    if apply_failed {
-        anyhow::bail!("enforcement policy {policy_id} failed to apply on the fabric");
-    }
-    update_task_progress(
-        &state.pool,
-        msg.task_id,
-        60,
-        "pushing TracingPolicy bundle to machina-agent",
-    )
-    .await?;
-    if let Ok(host_uuid) = Uuid::parse_str(host_id) {
-        if let Ok(agent_addr) = host_agent_addr(&state.pool, host_uuid).await {
-            if let Err(e) = crate::engine::packetwolf_sync::sync_host_security_bundle(
-                &state.config,
-                &state.pool,
-                host_uuid,
-                &agent_addr,
-            )
-            .await
-            {
-                tracing::warn!(host_id = %host_id, "sync_host_security_bundle failed: {e:#}");
-            }
-        }
+    update_task_progress(&state.pool, msg.task_id, 30, "reconciling native eBPF policies").await?;
+    let results =
+        crate::engine::bpf::policies::sync_hosts(&state.pool, Some(&[host_id.to_string()])).await?;
+    let Some(r) = results.first() else {
+        anyhow::bail!("host {host_id} is not online");
+    };
+    if r["ok"] != true {
+        anyhow::bail!(
+            "native policy sync failed on {host_id}: {}",
+            r["error"].as_str().unwrap_or("unknown error")
+        );
     }
     update_task_progress(
         &state.pool,
         msg.task_id,
         100,
-        &format!("Runtime enforcement active for {host_id}"),
+        &format!("Native eBPF policies reconciled on {host_id}"),
     )
     .await?;
     Ok(())

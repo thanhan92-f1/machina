@@ -62,8 +62,11 @@ service HostAgent {
   rpc HostLinuxReboot(HostLinuxRebootRequest) returns (HostLinuxRebootResponse);
   rpc GetLinuxFilesystems(GetLinuxFilesystemsRequest) returns (GetLinuxFilesystemsResponse);
   rpc GetLinuxTopProcesses(GetLinuxTopProcessesRequest) returns (GetLinuxTopProcessesResponse);
-  rpc ApplySecurityBundle(ApplySecurityBundleRequest) returns (ApplySecurityBundleResponse);
-  rpc GetSecurityFabricStatus(GetSecurityFabricStatusRequest) returns (GetSecurityFabricStatusResponse);
+  // Native eBPF (machina-bpfd on the host). Requests/responses are the
+  // machina_bpf::api JSON wire types.
+  rpc BpfCall(BpfCallRequest) returns (BpfCallResponse);
+  rpc BpfSubscribe(BpfSubscribeRequest) returns (stream BpfEvent);
+  rpc BpfSyncPolicies(BpfSyncPoliciesRequest) returns (BpfSyncPoliciesResponse);
   rpc ListPortForwards(ListPortForwardsRequest) returns (ListPortForwardsResponse);
   rpc CreatePortForward(CreatePortForwardRequest) returns (CreatePortForwardResponse);
   rpc DeletePortForward(DeletePortForwardRequest) returns (DeletePortForwardResponse);
@@ -762,22 +765,36 @@ message GetLinuxTopProcessesResponse {
   string message = 3;
 }
 
-message ApplySecurityBundleRequest {
-  string bundle_json = 1;
-  bool dry_run = 2;
+message BpfCallRequest {
+  string request_json = 1;
 }
 
-message ApplySecurityBundleResponse {
+message BpfCallResponse {
+  bool ok = 1;
+  string data_json = 2;
+  string error = 3;
+}
+
+message BpfSubscribeRequest {
+  repeated string topics = 1;
+}
+
+message BpfEvent {
+  string topic = 1;
+  string event_json = 2;
+}
+
+// Reconcile the controller-owned policy set: apply every policy in
+// `policies_json` and remove bpfd policies whose id starts with `owned_prefix`
+// but are absent from the set.
+message BpfSyncPoliciesRequest {
+  string policies_json = 1;
+  string owned_prefix = 2;
+}
+
+message BpfSyncPoliciesResponse {
   bool ok = 1;
   string result_json = 2;
-  string message = 3;
-}
-
-message GetSecurityFabricStatusRequest {}
-
-message GetSecurityFabricStatusResponse {
-  bool ok = 1;
-  string status_json = 2;
   string message = 3;
 }
 

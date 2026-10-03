@@ -1477,14 +1477,7 @@ impl HostAgent for AgentService {
         &self,
         _request: Request<GetFirewallActivityRequest>,
     ) -> Result<Response<GetFirewallActivityResponse>, Status> {
-        let activity = serde_json::json!({
-            "blocked_today": 0,
-            "allowed_today": 0,
-            "suspicious_scans": 0,
-            "new_open_ports": 0,
-            "events": [],
-            "note": "PacketWolf integration provides live activity when enabled"
-        });
+        let activity = crate::bpf_ops::firewall_activity().await;
         Ok(Response::new(GetFirewallActivityResponse {
             ok: true,
             activity_json: activity.to_string(),
@@ -1766,55 +1759,73 @@ impl HostAgent for AgentService {
         }
     }
 
-    async fn apply_security_bundle(
+    async fn bpf_call(
         &self,
-        request: Request<ApplySecurityBundleRequest>,
-    ) -> Result<Response<ApplySecurityBundleResponse>, Status> {
+        request: Request<BpfCallRequest>,
+    ) -> Result<Response<BpfCallResponse>, Status> {
         let req = request.into_inner();
-        let dry_run = req.dry_run;
-        let bundle_json = req.bundle_json;
-        match tokio::task::spawn_blocking(move || {
-            machina_core::apply_security_bundle(&bundle_json, dry_run)
-        })
-        .await
-        {
-            Ok(Ok(result)) => {
-                let json = serde_json::to_string(&result).unwrap_or_else(|_| "{}".into());
-                Ok(Response::new(ApplySecurityBundleResponse {
-                    ok: result.ok,
-                    result_json: json,
-                    message: result.message,
-                }))
-            }
-            Ok(Err(e)) => Ok(Response::new(ApplySecurityBundleResponse {
+        Ok(Response::new(match crate::bpf_ops::call(&req.request_json).await {
+            Ok(data) => BpfCallResponse {
+                ok: true,
+                data_json: data.to_string(),
+                error: String::new(),
+            },
+            Err(e) => BpfCallResponse {
                 ok: false,
-                result_json: String::new(),
-                message: e.to_string(),
-            })),
-            Err(e) => Err(Status::internal(e.to_string())),
-        }
+                data_json: String::new(),
+                error: format!("{e:#}"),
+            },
+        }))
     }
 
-    async fn get_security_fabric_status(
+    type BpfSubscribeStream = std::pin::Pin<
+        Box<dyn futures_util::Stream<Item = Result<BpfEvent, Status>> + Send + 'static>,
+    >;
+
+    async fn bpf_subscribe(
         &self,
-        _request: Request<GetSecurityFabricStatusRequest>,
-    ) -> Result<Response<GetSecurityFabricStatusResponse>, Status> {
-        match tokio::task::spawn_blocking(machina_core::security_fabric_status).await {
-            Ok(Ok(status)) => {
-                let json = serde_json::to_string(&status).unwrap_or_else(|_| "{}".into());
-                Ok(Response::new(GetSecurityFabricStatusResponse {
-                    ok: true,
-                    status_json: json,
-                    message: String::new(),
-                }))
+        request: Request<BpfSubscribeRequest>,
+    ) -> Result<Response<Self::BpfSubscribeStream>, Status> {
+        let topics = request.into_inner().topics;
+        let refs: Vec<&str> = topics.iter().map(String::as_str).collect();
+        let mut rx = machina_bpf::BpfdClient::from_env()
+            .subscribe(&refs)
+            .await
+            .map_err(|e| Status::unavailable(format!("{e:#}")))?;
+        let (tx, out) = tokio::sync::mpsc::channel(256);
+        tokio::spawn(async move {
+            while let Some(ev) = rx.recv().await {
+                let msg = BpfEvent {
+                    topic: ev.topic,
+                    event_json: ev.event.to_string(),
+                };
+                if tx.send(Ok(msg)).await.is_err() {
+                    break;
+                }
             }
-            Ok(Err(e)) => Ok(Response::new(GetSecurityFabricStatusResponse {
-                ok: false,
-                status_json: String::new(),
-                message: e.to_string(),
-            })),
-            Err(e) => Err(Status::internal(e.to_string())),
-        }
+        });
+        Ok(Response::new(Box::pin(tokio_stream::wrappers::ReceiverStream::new(out))))
+    }
+
+    async fn bpf_sync_policies(
+        &self,
+        request: Request<BpfSyncPoliciesRequest>,
+    ) -> Result<Response<BpfSyncPoliciesResponse>, Status> {
+        let req = request.into_inner();
+        Ok(Response::new(
+            match crate::bpf_ops::sync_policies(&req.policies_json, &req.owned_prefix).await {
+                Ok(result) => BpfSyncPoliciesResponse {
+                    ok: result["errors"].as_array().is_none_or(|e| e.is_empty()),
+                    result_json: result.to_string(),
+                    message: String::new(),
+                },
+                Err(e) => BpfSyncPoliciesResponse {
+                    ok: false,
+                    result_json: String::new(),
+                    message: format!("{e:#}"),
+                },
+            },
+        ))
     }
 
     async fn list_port_forwards(

@@ -625,7 +625,13 @@ pub(crate) async fn collect_prometheus_exposition(
     }
 
     let bpf = bpf_probe::probe_bpf_summary();
-    if bpf.available {
+    add_gauge(
+        &mut output,
+        "machina_bpfd_up",
+        "machina-bpfd control socket present (native eBPF datapath)",
+        u32::from(bpf.bpfd_present),
+    );
+    if !bpf.bpftool_path.is_empty() {
         add_gauge(
             &mut output,
             "machina_bpf_programs",

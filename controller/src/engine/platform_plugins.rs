@@ -8,7 +8,6 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::config::ControllerConfig;
-use crate::engine::packetwolf_bridge;
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct PluginRow {
@@ -40,7 +39,7 @@ pub struct PluginInstallResult {
 
 pub async fn marketplace_overview(
     pool: &SqlitePool,
-    cfg: &ControllerConfig,
+    _cfg: &ControllerConfig,
 ) -> anyhow::Result<MarketplaceOverview> {
     let mut plugins: Vec<PluginRow> = sqlx::query_as(
         "SELECT id, slug, name, category, description, version, author, featured, installed
@@ -49,11 +48,10 @@ pub async fn marketplace_overview(
     .fetch_all(pool)
     .await?;
 
-    // PacketWolf is runtime-enabled via PACKETWOLF_ENABLED + a live health check
-    // (see engine::packetwolf_bridge), independent of this table's install-stub
-    // bookkeeping — reflect real connectivity instead of the static seed value.
-    if let Some(pw) = plugins.iter_mut().find(|p| p.slug == "packetwolf") {
-        pw.installed = packetwolf_bridge::status_async(cfg).await.reachable;
+    // Native eBPF is installed when machina-bpfd answers on at least one host,
+    // not when this table's install-stub says so.
+    if let Some(p) = plugins.iter_mut().find(|p| p.slug == "native-bpf") {
+        p.installed = crate::engine::bpf::fleet_status(pool).await.reachable;
     }
 
     let installed_count = plugins.iter().filter(|p| p.installed).count();

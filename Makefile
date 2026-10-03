@@ -7,7 +7,7 @@ UNITDIR ?= /usr/lib/systemd/system
 CARGO ?= cargo
 CARGO_FLAGS ?=
 
-.PHONY: all build release debug clean install uninstall fmt fmt-check lint test web-test web-e2e regression-api regression-ops regression-lifecycle regression-platform regression-infra regression-fleet regression-fleetcloud regression-mission regression-catalog regression-hardware regression-host regression-storage regression-zeus regression-audit regression-volume regression-disk regression-power regression-net regression-guest regression-parity regression-admin regression-ai regression-operations regression-resize regression-planner regression-alerts regression-enterprise regression-apps regression-policy regression-diag regression-obs regression-security regression-provision regression-providers regression-hub regression-hunt regression-atlas regression-guestkit regression-batch regression-aiops regression-watchdog regression-linuxhost regression-firewallx regression-authz regression-fleetx regression-ui regression-ui-settings regression-ui-wizards regression-ui-security regression-ui-k8s-os regression-ui-mission regression-ui-catalog regression-ui-hardware regression-ui-host regression-ui-storage regression-ui-zeus regression-ui-audit regression-ui-volume regression-ui-power regression-ui-net regression-ui-guest regression-ui-parity regression-ui-admin regression-ui-ai regression-ui-operations regression-ui-resize regression-ui-planner regression-ui-alerts regression-ui-enterprise regression-ui-apps regression-ui-policy regression-ui-diag regression-ui-obs regression-ui-fabric regression-ui-provision regression-ui-providers regression-ui-hub regression-ui-hunt regression-ui-atlas regression-ui-guestkit regression-ui-batch regression-ui-aiops regression-ui-watchdog regression-ui-linuxhost regression-ui-firewallx regression-ui-authz regression-ui-fleetx regression-pages regression-setup check web web-clean start stop restart status deploy run-daemon help
+.PHONY: all build release debug clean install uninstall fmt fmt-check lint test web-test web-e2e regression-api regression-ops regression-lifecycle regression-platform regression-infra regression-fleet regression-fleetcloud regression-mission regression-catalog regression-hardware regression-host regression-storage regression-zeus regression-audit regression-volume regression-disk regression-power regression-net regression-guest regression-parity regression-admin regression-ai regression-operations regression-resize regression-planner regression-alerts regression-enterprise regression-apps regression-policy regression-diag regression-obs regression-security regression-provision regression-providers regression-hub regression-hunt regression-atlas regression-guestkit regression-batch regression-aiops regression-watchdog regression-linuxhost regression-firewallx regression-authz regression-fleetx regression-ui regression-ui-settings regression-ui-wizards regression-ui-security regression-ui-k8s-os regression-ui-mission regression-ui-catalog regression-ui-hardware regression-ui-host regression-ui-storage regression-ui-zeus regression-ui-audit regression-ui-volume regression-ui-power regression-ui-net regression-ui-guest regression-ui-parity regression-ui-admin regression-ui-ai regression-ui-operations regression-ui-resize regression-ui-planner regression-ui-alerts regression-ui-enterprise regression-ui-apps regression-ui-policy regression-ui-diag regression-ui-obs regression-ui-fabric regression-ui-provision regression-ui-providers regression-ui-hub regression-ui-hunt regression-ui-atlas regression-ui-guestkit regression-ui-batch regression-ui-aiops regression-ui-watchdog regression-ui-linuxhost regression-ui-firewallx regression-ui-authz regression-ui-fleetx regression-pages regression-setup check web web-clean start stop restart status deploy run-daemon bpf bpf-deps bpf-test help
 
 all: release web ## Build everything (Rust + web)
 
@@ -352,6 +352,17 @@ regression-ui-complx: ## Live CDP compliance/enforcement/HA/placement shells (ne
 regression-pages: ## Live CDP page sweep (needs Chrome :9222; LOOPS=N; see scripts/regression/README.md)
 	cd scripts/regression && npm install --silent && node page-sweep.js --loops $(LOOPS)
 
+bpf-deps: ## Install the eBPF toolchain (nightly rust-src + bpf-linker)
+	rustup toolchain install nightly --component rust-src
+	$(CARGO) install bpf-linker
+
+bpf: ## Build machina-bpfd with the embedded eBPF datapath (Linux; see bpf-deps)
+	$(CARGO) build --release -p machina-bpf --bin machina-bpfd $(CARGO_FLAGS)
+	./target/release/machina-bpfd --probe
+
+bpf-test: ## netns enforcement/telemetry smoke test against machina-bpfd (needs root)
+	sudo ./scripts/bpf/netns-smoke.sh ./target/release/machina-bpfd
+
 check: ## Run cargo check
 	$(CARGO) check --workspace
 
@@ -364,6 +375,10 @@ web-clean: ## Remove web build artifacts
 install: ## Install binaries, web UI, config, systemd unit, and mkosi workspace defs
 	@test -f target/release/machina-daemon || { echo "Run 'make' or 'make release' first"; exit 1; }
 	install -Dm755 target/release/machina-daemon $(DESTDIR)$(BINDIR)/machina-daemon
+	@if [ -f target/release/machina-bpfd ]; then \
+		install -Dm755 target/release/machina-bpfd $(DESTDIR)$(BINDIR)/machina-bpfd; \
+		install -Dm644 contrib/machina-bpfd.service $(DESTDIR)$(UNITDIR)/machina-bpfd.service; \
+	fi
 	@if [ "$(INSTALL_PLATFORM)" = "1" ]; then \
 		install -Dm755 target/release/machina-controller $(DESTDIR)$(BINDIR)/machina-controller; \
 		install -Dm755 target/release/machina-agent $(DESTDIR)$(BINDIR)/machina-agent; \
@@ -397,14 +412,18 @@ install: ## Install binaries, web UI, config, systemd unit, and mkosi workspace 
 
 uninstall: stop ## Remove installed files and stop service
 	systemctl disable machina-daemon 2>/dev/null || true
+	systemctl disable --now machina-bpfd 2>/dev/null || true
 	rm -f $(DESTDIR)$(BINDIR)/machina-daemon
+	rm -f $(DESTDIR)$(BINDIR)/machina-bpfd
+	rm -f $(DESTDIR)$(UNITDIR)/machina-bpfd.service
 	rm -f $(DESTDIR)$(BINDIR)/machina
 	rm -f $(DESTDIR)$(UNITDIR)/machina-daemon.service
 	rm -rf $(DESTDIR)$(DATADIR)/machina
 	rm -rf $(DESTDIR)$(SYSCONFDIR)/machina
 	systemctl daemon-reload 2>/dev/null || true
 
-start: ## Start the daemon service
+start: ## Start the daemon service (and machina-bpfd when installed)
+	@if [ -f $(UNITDIR)/machina-bpfd.service ]; then systemctl enable --now machina-bpfd; fi
 	systemctl enable --now machina-daemon
 
 stop: ## Stop the daemon service

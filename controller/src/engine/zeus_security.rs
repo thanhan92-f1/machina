@@ -1,28 +1,28 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-// Zeus Security Fabric — fleet risk aggregation and PacketWolf orchestration.
+// Zeus Security Fabric — fleet risk aggregation over native eBPF telemetry.
 
 use serde::Serialize;
 use sqlx::SqlitePool;
 
 use crate::config::ControllerConfig;
 use crate::engine::ai::security_graph;
-use crate::engine::packetwolf_bridge;
+use crate::engine::bpf::{self, telemetry};
 use crate::engine::zeus_firewall;
 
 #[derive(Debug, Serialize)]
 pub struct ZeusSecurityStatus {
-    pub packetwolf: packetwolf_bridge::PacketwolfStatus,
+    pub native_bpf: bpf::FleetBpfStatus,
     pub zeus_firewall: serde_json::Value,
     pub fabric_reachable: bool,
 }
 
-pub async fn status(cfg: &ControllerConfig) -> ZeusSecurityStatus {
-    let pw = packetwolf_bridge::status_async(cfg).await;
+pub async fn status(pool: &SqlitePool) -> ZeusSecurityStatus {
+    let native = bpf::fleet_status(pool).await;
     ZeusSecurityStatus {
-        fabric_reachable: pw.reachable,
-        packetwolf: pw,
+        fabric_reachable: native.reachable,
+        native_bpf: native,
         zeus_firewall: zeus_firewall::zeus_firewall_status().await,
     }
 }
@@ -32,7 +32,7 @@ pub struct FleetThreatSummary {
     pub fleet_threat_score: f32,
     pub firewall_targets: usize,
     pub critical_events: Vec<serde_json::Value>,
-    pub packetwolf: serde_json::Value,
+    pub native_bpf: serde_json::Value,
     pub security_graph_summary: String,
 }
 
@@ -40,16 +40,16 @@ pub async fn fleet_threat(
     pool: &SqlitePool,
     cfg: &ControllerConfig,
 ) -> anyhow::Result<FleetThreatSummary> {
-    let pw = packetwolf_bridge::fleet_threat_summary(cfg).await;
+    let threat = telemetry::fleet_threat_summary(pool).await;
     let overview = zeus_firewall::overview(pool, cfg).await?;
     let graph = security_graph::build_graph(pool).await?;
 
-    let fleet_score = pw
+    let fleet_score = threat
         .get("fleet_threat_score")
         .and_then(|v| v.as_f64())
-        .unwrap_or(75.0) as f32;
+        .unwrap_or(100.0) as f32;
 
-    let critical = pw
+    let critical = threat
         .get("critical_events")
         .and_then(|v| v.as_array())
         .cloned()
@@ -59,7 +59,7 @@ pub async fn fleet_threat(
         fleet_threat_score: fleet_score,
         firewall_targets: overview.targets.len(),
         critical_events: critical,
-        packetwolf: pw,
+        native_bpf: threat,
         security_graph_summary: format!(
             "{} nodes · {} edges in infrastructure security graph",
             graph.nodes.len(),
@@ -68,31 +68,26 @@ pub async fn fleet_threat(
     })
 }
 
-pub async fn host_summary(cfg: &ControllerConfig, host_id: &str) -> serde_json::Value {
-    packetwolf_bridge::host_fabric(cfg, host_id, "summary", "").await
+pub async fn host_summary(pool: &SqlitePool, host_id: &str) -> serde_json::Value {
+    telemetry::host_resource(pool, host_id, "summary", 0).await
 }
 
 pub async fn host_resource(
-    cfg: &ControllerConfig,
+    pool: &SqlitePool,
     host_id: &str,
     resource: &str,
     hours: u32,
 ) -> serde_json::Value {
-    let q = if hours > 0 {
-        format!("?hours={hours}&limit=100")
-    } else {
-        String::new()
-    };
-    packetwolf_bridge::host_fabric(cfg, host_id, resource, &q).await
+    telemetry::host_resource(pool, host_id, resource, hours).await
 }
 
-pub async fn fleet_timeline(cfg: &ControllerConfig, hours: u32) -> serde_json::Value {
-    packetwolf_bridge::fleet_timeline(cfg, hours).await
+pub async fn fleet_timeline(pool: &SqlitePool, hours: u32) -> serde_json::Value {
+    telemetry::fleet_timeline(pool, hours).await
 }
 
-pub async fn sync_security_alerts(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Result<usize> {
-    let pw = packetwolf_bridge::fetch_anomalies(cfg).await;
-    let anomalies = pw
+pub async fn sync_security_alerts(pool: &SqlitePool) -> anyhow::Result<usize> {
+    let anomalies = telemetry::anomalies(pool)
+        .await
         .get("anomalies")
         .and_then(|v| v.as_array())
         .cloned()
@@ -114,7 +109,7 @@ pub async fn sync_security_alerts(pool: &SqlitePool, cfg: &ControllerConfig) -> 
         }
     }
 
-    let health = packetwolf_bridge::fabric_health(cfg).await;
+    let health = telemetry::fabric_health(pool).await;
     if let Some(issues) = health.get("issues").and_then(|v| v.as_array()) {
         for issue in issues.iter().filter(|x| {
             x.get("severity")
@@ -146,7 +141,7 @@ async fn insert_security_alert(
         "host_id": host_id,
         "severity": detail.get("severity"),
         "kind": detail.get("kind"),
-        "source": "packetwolf",
+        "source": telemetry::SOURCE,
     });
     let exists: bool = sqlx::query_scalar(
         "SELECT EXISTS(

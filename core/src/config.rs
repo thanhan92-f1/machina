@@ -32,9 +32,6 @@ pub struct MachinaConfig {
     /// Optional GuestKit worker proxy (`/api/v1/guestkit/*`) for offline disk assurance jobs.
     #[serde(default)]
     pub guestkit: GuestkitConfig,
-    /// Optional PacketWolf traffic intelligence proxy for Zeus Firewall activity views.
-    #[serde(default)]
-    pub packetwolf: PacketwolfConfig,
     /// Local Podman/Docker container engine (Vessel).
     #[serde(default)]
     pub vessel: VesselConfig,
@@ -470,25 +467,6 @@ impl Default for GuestkitConfig {
             insecure_tls: default_guestkit_insecure_tls(),
         }
     }
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct PacketwolfConfig {
-    #[serde(default)]
-    pub enabled: bool,
-    #[serde(default = "default_packetwolf_base_url")]
-    pub base_url: String,
-    #[serde(default = "default_packetwolf_insecure_tls")]
-    pub insecure_tls: bool,
-}
-
-fn default_packetwolf_base_url() -> String {
-    "http://127.0.0.1:9091".into()
-}
-
-fn default_packetwolf_insecure_tls() -> bool {
-    // Secure by default; opt in for a self-signed PacketWolf fabric over HTTPS.
-    false
 }
 
 /// Local container engine (Podman / Docker) via Vessel.

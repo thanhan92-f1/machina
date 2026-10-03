@@ -186,7 +186,7 @@ pub async fn diagnose(pool: &SqlitePool, req: &TroubleshootRequest) -> anyhow::R
         if r + w > 8000 {
             findings.push(Finding {
                 severity: "medium".into(),
-                message: "Disk I/O saturation — correlate with PacketWolf flows and pool backend"
+                message: "Disk I/O saturation — correlate with native eBPF flows and pool backend"
                     .into(),
                 domain: "disk".into(),
             });

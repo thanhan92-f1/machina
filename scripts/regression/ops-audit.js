@@ -198,7 +198,7 @@ async function ensureRunning() {
   });
 
   await mark('packetwolf-anomalies', async () => {
-    const j = await getJson(`${P}/api/v1/zeus-firewall/packetwolf/anomalies`);
+    const j = await getJson(`${P}/api/v1/zeus-firewall/anomalies`);
     if (!Array.isArray(j.anomalies)) throw new Error('no anomalies');
     return `count=${j.anomalies.length} note=${(j.note || '').slice(0, 40)}`;
   });

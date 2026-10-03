@@ -956,38 +956,48 @@ pub async fn apply_firewall_plan(
     }
 }
 
-pub async fn apply_security_bundle(
+/// One machina-bpfd request on the host behind `addr`; returns bpfd's `data`.
+pub async fn bpf_call(
     addr: &str,
-    bundle_json: &str,
-    dry_run: bool,
-) -> anyhow::Result<machina_core::SecurityBundleApplyResult> {
-    let mut client = connect(addr).await?;
-    let resp = client
-        .apply_security_bundle(ApplySecurityBundleRequest {
-            bundle_json: bundle_json.to_string(),
-            dry_run,
-        })
-        .await?
-        .into_inner();
-    if resp.ok {
-        serde_json::from_str(&resp.result_json).map_err(|e| anyhow::anyhow!("result json: {e}"))
-    } else {
-        anyhow::bail!(resp.message)
-    }
-}
-
-pub async fn get_security_fabric_status(
-    addr: &str,
-) -> anyhow::Result<machina_core::SecurityFabricStatus> {
+    req: &machina_bpf::api::Request,
+) -> anyhow::Result<serde_json::Value> {
     let mut client = connect(addr).await?;
     let resp = timed(
-        "get_security_fabric_status",
-        client.get_security_fabric_status(GetSecurityFabricStatusRequest {}),
+        "bpf_call",
+        client.bpf_call(BpfCallRequest {
+            request_json: serde_json::to_string(req)?,
+        }),
     )
     .await?
     .into_inner();
     if resp.ok {
-        serde_json::from_str(&resp.status_json).map_err(|e| anyhow::anyhow!("status json: {e}"))
+        serde_json::from_str(&resp.data_json).map_err(|e| anyhow::anyhow!("bpf data json: {e}"))
+    } else {
+        anyhow::bail!(resp.error)
+    }
+}
+
+/// Reconcile the controller-owned (`owned_prefix`) policy set on one host.
+pub async fn bpf_sync_policies(
+    addr: &str,
+    policies: &[machina_bpf::api::Policy],
+    owned_prefix: &str,
+) -> anyhow::Result<serde_json::Value> {
+    let mut client = connect(addr).await?;
+    let resp = timed(
+        "bpf_sync_policies",
+        client.bpf_sync_policies(BpfSyncPoliciesRequest {
+            policies_json: serde_json::to_string(policies)?,
+            owned_prefix: owned_prefix.to_string(),
+        }),
+    )
+    .await?
+    .into_inner();
+    let result: serde_json::Value = serde_json::from_str(&resp.result_json).unwrap_or_default();
+    if resp.ok {
+        Ok(result)
+    } else if resp.message.is_empty() {
+        anyhow::bail!("policy sync reported errors: {}", result["errors"])
     } else {
         anyhow::bail!(resp.message)
     }

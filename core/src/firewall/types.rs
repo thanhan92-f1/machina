@@ -10,8 +10,9 @@ pub enum FirewallBackend {
     Ufw,
     Nftables,
     Iptables,
+    /// Enforced on-node by machina-cni.
+    #[serde(alias = "cilium")]
     K8sNetworkPolicy,
-    Cilium,
     Policy,
     Unknown,
 }
@@ -24,7 +25,6 @@ impl FirewallBackend {
             Self::Nftables => "nftables",
             Self::Iptables => "iptables",
             Self::K8sNetworkPolicy => "k8s_network_policy",
-            Self::Cilium => "cilium",
             Self::Policy => "policy",
             Self::Unknown => "unknown",
         }
@@ -185,7 +185,7 @@ pub struct FirewallEvent {
     pub risk: ExposureRisk,
     pub timestamp: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub packetwolf_flow_id: Option<String>,
+    pub flow_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

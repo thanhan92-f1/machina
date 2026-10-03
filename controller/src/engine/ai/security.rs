@@ -133,7 +133,7 @@ pub async fn explain_event(
     let mut out = explain_event_heuristic(event, host_id);
     if let Ok(Some(llm)) = super::llm::complete_simple(
         pool,
-        "You are Zyra Security. Explain Tetragon/eBPF security events for operators in 2-4 sentences. End with one concrete next step.",
+        "You are Zyra Security. Explain eBPF runtime security events for operators in 2-4 sentences. End with one concrete next step.",
         &format!(
             "Host: {}\nEvent:\n{}",
             host_id.unwrap_or("unknown"),
