@@ -159,7 +159,7 @@ function VmInspector({ vm }: { vm: PlatformVm }) {
   )
 }
 
-export type MachineFinderSelection = {
+type MachineFinderSelection = {
   site: string | null
   rack: string | null
   hostId: string | null

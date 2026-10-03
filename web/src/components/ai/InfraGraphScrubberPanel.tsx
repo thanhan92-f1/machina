@@ -7,7 +7,7 @@ import { getInfraGraphAt } from '../../api/ai'
 import { formatUserError } from '../../utils/apiError'
 import { statusToneClass } from '../../utils/semanticColors'
 
-export type InfraGraphDiff = {
+type InfraGraphDiff = {
   summary: string
   added: string[]
   removed: string[]

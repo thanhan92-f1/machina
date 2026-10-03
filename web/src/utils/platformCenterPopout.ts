@@ -4,13 +4,13 @@
 import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-export const CENTER_POPOUT_QUERY = 'popout'
+const CENTER_POPOUT_QUERY = 'popout'
 
 export function isCenterPopoutMode(search: string): boolean {
   return new URLSearchParams(search).get(CENTER_POPOUT_QUERY) === '1'
 }
 
-export function withPopoutQuery(path: string, popout: boolean): string {
+function withPopoutQuery(path: string, popout: boolean): string {
   const qIndex = path.indexOf('?')
   const pathname = qIndex >= 0 ? path.slice(0, qIndex) : path
   const params = new URLSearchParams(qIndex >= 0 ? path.slice(qIndex + 1) : '')
@@ -20,7 +20,7 @@ export function withPopoutQuery(path: string, popout: boolean): string {
   return query ? `${pathname}?${query}` : pathname
 }
 
-export function popoutWindowName(path: string): string {
+function popoutWindowName(path: string): string {
   const slug = path.split('?')[0].replace(/\W+/g, '-').replace(/^-+|-+$/g, '') || 'platform'
   return `machina-center-${slug}`
 }

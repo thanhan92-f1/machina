@@ -4,7 +4,7 @@
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 
-export type UsePlatformTabStateOptions<T extends string> = {
+type UsePlatformTabStateOptions<T extends string> = {
   /** Query param name (default `tab`). */
   paramKey?: string
   /** Tab when param missing or invalid. */

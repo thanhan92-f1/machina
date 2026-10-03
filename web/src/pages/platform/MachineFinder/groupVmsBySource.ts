@@ -3,7 +3,7 @@
 
 import type { PlatformVm } from '../../../api/platform'
 
-export type SourceGroup = { key: string; label: string; vms: PlatformVm[] }
+type SourceGroup = { key: string; label: string; vms: PlatformVm[] }
 
 export function groupVmsBySource(vms: PlatformVm[], hostMap: Map<string, string>): SourceGroup[] {
   const buckets = new Map<string, PlatformVm[]>()

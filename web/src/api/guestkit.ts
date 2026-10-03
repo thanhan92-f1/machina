@@ -88,7 +88,7 @@ export interface GuestkitJobRow {
   created_at?: string
 }
 
-export interface GuestkitCapabilities {
+interface GuestkitCapabilities {
   features: string[]
   summary: string
 }

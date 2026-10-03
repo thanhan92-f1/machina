@@ -7,7 +7,7 @@ import { listVms, type NativeVm } from '../api/nativeVms'
 import { listNetworks } from '../api/nativeNetworks'
 import { listTemplates } from '../api/nativeTemplates'
 
-export type FleetCloudPreviewStats = {
+type FleetCloudPreviewStats = {
   instances: number
   networks: number
   images: number

@@ -5,7 +5,7 @@ import { parseResponseError } from './parseResponseError'
 
 const API = '/api/v1'
 
-export interface AdminSessionRow {
+interface AdminSessionRow {
   session_id: string
   username: string
   age_secs: number

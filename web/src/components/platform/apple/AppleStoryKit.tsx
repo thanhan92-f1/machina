@@ -44,7 +44,7 @@ export function AppleStoryHeader({
   )
 }
 
-export type AppleDestinationItem = {
+type AppleDestinationItem = {
   to: string
   title: string
   subtitle?: string

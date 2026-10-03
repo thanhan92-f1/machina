@@ -46,7 +46,7 @@ import VmKubevirtHardwareDrawer from '../vm/VmKubevirtHardwareDrawer'
 import { useKubevirtHardware } from '../../hooks/useKubevirtHardware'
 import VmNetworkDrawer from '../vm/VmNetworkDrawer'
 
-export type MachineCockpitProps = {
+type MachineCockpitProps = {
   vmId: string
   vmName: string
   plan: ConsoleHubPlan | null

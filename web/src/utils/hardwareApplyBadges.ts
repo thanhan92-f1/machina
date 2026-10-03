@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 /** Backend hardware apply badge identifiers (snake_case). */
-export type HardwareApplyBadgeId =
+type HardwareApplyBadgeId =
   | 'live'
   | 'restart_required'
   | 'windows_recommended'
@@ -56,7 +56,7 @@ const BADGE_REGISTRY: Record<HardwareApplyBadgeId, HardwareApplyBadgeMeta> = {
   },
 }
 
-export function normalizeHardwareBadge(raw: string): HardwareApplyBadgeId | null {
+function normalizeHardwareBadge(raw: string): HardwareApplyBadgeId | null {
   const key = raw.trim().toLowerCase().replace(/[\s-]+/g, '_') as HardwareApplyBadgeId
   return key in BADGE_REGISTRY ? key : null
 }

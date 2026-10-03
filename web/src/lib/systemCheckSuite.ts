@@ -47,16 +47,16 @@ export interface CheckResult {
   durationMs: number
 }
 
-export interface SystemCheckContext {
+interface SystemCheckContext {
   wsConnected: boolean
 }
 
-export interface SystemCheckProgress {
+interface SystemCheckProgress {
   category: CheckCategory
   label: string
 }
 
-export interface CheckSummary {
+interface CheckSummary {
   pass: number
   warn: number
   fail: number

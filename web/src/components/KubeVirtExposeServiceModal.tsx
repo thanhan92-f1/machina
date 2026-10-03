@@ -7,7 +7,7 @@ import type { K8sService } from '../api/k8s'
 import { statusSurfaceClasses, statusToneClass } from '../utils/semanticColors'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
-export type KubeVirtExposeVmContext = {
+type KubeVirtExposeVmContext = {
   name: string
   namespace: string
   nodeInternalIp?: string | null
@@ -15,7 +15,7 @@ export type KubeVirtExposeVmContext = {
 
 type ServiceType = 'ClusterIP' | 'NodePort' | 'LoadBalancer'
 
-export type ExposePortRow = {
+type ExposePortRow = {
   id: string
   name: string
   servicePort: number
@@ -43,7 +43,7 @@ function defaultRows(): ExposePortRow[] {
 }
 
 /** Services virtctl-style expose creates for this VM (selector matches VM / VMI identity). */
-export function kubeVirtExposeServiceMatchesVm(svc: K8sService, vmNamespace: string, vmName: string): boolean {
+function kubeVirtExposeServiceMatchesVm(svc: K8sService, vmNamespace: string, vmName: string): boolean {
   const ns = svc.metadata?.namespace || 'default'
   if (ns !== vmNamespace) return false
   const sel = svc.spec?.selector

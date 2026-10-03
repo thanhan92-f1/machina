@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import PlatformPageChrome, { platformStatSubtitle } from '../PlatformPageChrome'
 import type { TahoeStat } from './tahoeTypes'
 
-export interface PlatformStandardViewProps {
+interface PlatformStandardViewProps {
   title: string
   description?: string
   eyebrow?: string

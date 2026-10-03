@@ -24,7 +24,7 @@ export interface StorageVolumeInfo {
   vol_type: string
 }
 
-export interface CreateVolumeRequest {
+interface CreateVolumeRequest {
   name: string
   capacity_gb: number
   format: string

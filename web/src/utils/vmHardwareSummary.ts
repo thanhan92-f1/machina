@@ -37,14 +37,14 @@ function countXmlTag(xml: string, tag: string): number {
   return (xml.match(re) ?? []).length
 }
 
-export function parseCpuFromXml(xml: string): { mode: string; model: string | null } {
+function parseCpuFromXml(xml: string): { mode: string; model: string | null } {
   const cpuBlock = xml.match(/<cpu\b[^>]*>[\s\S]*?<\/cpu>/i)?.[0] ?? xml.match(/<cpu\b[^/>]*\/?>/i)?.[0] ?? ''
   const mode = extractAttr(cpuBlock, 'cpu', 'mode') ?? 'custom'
   const model = extractAttr(cpuBlock, 'model', 'fallback') ?? extractAttr(cpuBlock, 'cpu', 'model')
   return { mode, model }
 }
 
-export function parseFirmwareFromXml(xml: string): { firmware: string; secureBoot: boolean } {
+function parseFirmwareFromXml(xml: string): { firmware: string; secureBoot: boolean } {
   const osBlock = xml.match(/<os\b[^>]*>[\s\S]*?<\/os>/i)?.[0] ?? ''
   const loaderBlock = osBlock.match(/<loader\b[^/>]*\/?>/i)?.[0] ?? ''
   const fw = extractAttr(osBlock, 'os', 'firmware') ?? ''
@@ -60,7 +60,7 @@ export function parseFirmwareFromXml(xml: string): { firmware: string; secureBoo
   return { firmware: isUefi ? 'UEFI' : 'BIOS', secureBoot: secure && isUefi }
 }
 
-export function parseTpmFromXml(xml: string): string {
+function parseTpmFromXml(xml: string): string {
   if (!xml.includes('<tpm')) return 'Not configured'
   const block = xml.match(/<tpm\b[^>]*>[\s\S]*?<\/tpm>/i)?.[0] ?? ''
   const model = extractAttr(block, 'tpm', 'model') ?? 'emulator'
@@ -69,13 +69,13 @@ export function parseTpmFromXml(xml: string): string {
   return `TPM ${model}${persistent}`
 }
 
-export function parseVideoFromXml(xml: string): string {
+function parseVideoFromXml(xml: string): string {
   const block = xml.match(/<video\b[^>]*\/?>/i)?.[0] ?? ''
   const model = extractAttr(block, 'video', 'model') ?? extractAttr(block, 'model', 'type')
   return model ?? 'default'
 }
 
-export function parseBalloonFromXml(xml: string): boolean {
+function parseBalloonFromXml(xml: string): boolean {
   return xml.includes('<memballoon') || xml.includes('<memballoon ')
 }
 

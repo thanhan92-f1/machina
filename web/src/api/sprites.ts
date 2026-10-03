@@ -5,7 +5,7 @@ import { readJsonArray, apiPost, apiDelete } from './client'
 
 const API = '/api/v1'
 
-export type SpriteState = 'booting' | 'running' | 'paused' | 'suspended' | 'reaping' | 'gone'
+type SpriteState = 'booting' | 'running' | 'paused' | 'suspended' | 'reaping' | 'gone'
 export type SpriteBackend = 'libvirt' | 'cloudhypervisor' | 'firecracker'
 
 export interface SpriteHandle {
@@ -25,7 +25,7 @@ export interface SpriteHandle {
   suspended_at?: string
 }
 
-export interface SpriteCreateRequest {
+interface SpriteCreateRequest {
   golden_image: string
   vcpus?: number
   memory_mb?: number
@@ -34,7 +34,7 @@ export interface SpriteCreateRequest {
   network_egress?: boolean
 }
 
-export interface SpriteRestoreRequest {
+interface SpriteRestoreRequest {
   ttl_seconds?: number
 }
 

@@ -52,7 +52,7 @@ import {
   Search,
 } from 'lucide-react'
 
-export interface NavItem {
+interface NavItem {
   to: string
   icon: React.ReactNode
   label: string
@@ -99,12 +99,12 @@ export function navItemVisible(
   return true
 }
 
-export interface NavSection {
+interface NavSection {
   label: string
   items: NavItem[]
 }
 
-export interface NavGroup {
+interface NavGroup {
   /** Full name (tooltips, mobile drawer, aria). */
   label: string
   /** Top-bar icon trigger (v9s-style icon cluster). */
@@ -117,7 +117,7 @@ export interface NavGroup {
 }
 
 /** Sections for dropdown / mobile drawer (single section when `items` only). */
-export function navDropdownSections(group: NavGroup): NavSection[] {
+function navDropdownSections(group: NavGroup): NavSection[] {
   if (group.sections?.length) return group.sections
   if (group.items.length) return [{ label: '', items: group.items }]
   return []

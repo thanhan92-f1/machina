@@ -106,7 +106,7 @@ export const patchAiSettings = (body: Partial<AiSettings & { api_key?: string }>
 export const aiSpotlight = (query: string) =>
   platformFetch<SpotlightResult>('/api/v1/ai/spotlight', { method: 'POST', body: JSON.stringify({ query }) })
 
-export type FleetVmGuestRow = {
+type FleetVmGuestRow = {
   vm_id: string
   vm_name: string
   os_pretty_name: string
@@ -137,7 +137,7 @@ export const fleetGuestQuery = (body: {
     body: JSON.stringify(body),
   })
 
-export type VmMigrationReadinessRow = {
+type VmMigrationReadinessRow = {
   vm_id: string
   vm_name: string
   readiness_percent: number
@@ -164,7 +164,7 @@ export const migrationReadinessReport = (body: { vm_ids?: string[]; provider?: s
     body: JSON.stringify(body),
   })
 
-export interface CopilotStreamEvent {
+interface CopilotStreamEvent {
   type: 'chunk' | 'done' | 'error'
   text?: string
   deterministic?: boolean
@@ -257,7 +257,7 @@ export const aiNetworkExplain = (vm_a: string, vm_b: string, port?: number) =>
     { method: 'POST', body: JSON.stringify({ vm_a, vm_b, port }) },
   )
 
-export interface PolicyExport {
+interface PolicyExport {
   yaml: string
   rule_count: number
   quota_count: number
@@ -274,7 +274,7 @@ export interface ProposedAction {
   object_ref: Record<string, unknown>
 }
 
-export interface AutopilotProposal {
+interface AutopilotProposal {
   mode: string
   actions: ProposedAction[]
 }
@@ -355,7 +355,7 @@ export const getDigitalTwinGraph = () => platformFetch<DigitalTwinGraph>('/api/v
 export const analyzeTwinImpact = (body: { action: string; target_kind: string; target_id: string }) =>
   platformFetch<ImpactAnalysis>('/api/v1/ai/twin/impact', { method: 'POST', body: JSON.stringify(body) })
 
-export interface TimelineEntry {
+interface TimelineEntry {
   at: string
   source: string
   kind: string
@@ -465,7 +465,7 @@ export interface FleetHeatmap {
 
 export const getFleetHeatmap = () => platformFetch<FleetHeatmap>('/api/v1/ai/fleet/heatmap')
 
-export interface FleetClusterSlice {
+interface FleetClusterSlice {
   label: string
   reachable: boolean
   vm_count: number
@@ -474,7 +474,7 @@ export interface FleetClusterSlice {
   security_risk_level: string
 }
 
-export interface FleetZyraSummary {
+interface FleetZyraSummary {
   clusters: FleetClusterSlice[]
   aggregate_monthly_usd: number
   aggregate_vm_count: number
@@ -497,7 +497,7 @@ export interface RebalanceProposal {
 export const getFleetRebalanceProposal = (maxMoves = 5) =>
   platformFetch<RebalanceProposal>(`/api/v1/ai/fleet/rebalance/propose?max_moves=${maxMoves}`)
 
-export interface RebalanceExecuteResult {
+interface RebalanceExecuteResult {
   dry_run: boolean
   task_ids: string[]
   moves: RebalanceProposal['moves']
@@ -519,7 +519,7 @@ export interface CostAttributionReport {
 
 export const getCostAttribution = () => platformFetch<CostAttributionReport>('/api/v1/ai/cost/attribution')
 
-export interface ComplianceFrameworksReport {
+interface ComplianceFrameworksReport {
   frameworks: Array<{ framework: string; score: number; grade: string; control_count: number; failed_count: number }>
   controls: Array<{ id: string; framework: string; title: string; passed: boolean; score: number }>
   summary: string
@@ -556,7 +556,7 @@ export interface KnowledgeHit {
   navigate?: string
 }
 
-export interface ServiceGraph {
+interface ServiceGraph {
   nodes: Array<{ kind: string; id: string; name: string }>
   edges: Array<{ from: string; to: string; label: string }>
   service_count: number
@@ -587,7 +587,7 @@ export const planMissionStack = (query: string) =>
     body: JSON.stringify({ query }),
   })
 
-export interface MissionStackExecuteResult {
+interface MissionStackExecuteResult {
   dry_run: boolean
   plan: MissionStackPlan
   vm_tasks: Array<{ name: string; host: string; task_id?: string }>
@@ -632,7 +632,7 @@ export const getSimilarIncidents = (q: string, limit = 10) =>
     `/api/v1/ai/memory/similar?q=${encodeURIComponent(q)}&limit=${limit}`,
   )
 
-export interface RemediationHubItem {
+interface RemediationHubItem {
   id: string
   source: string
   label: string
@@ -667,7 +667,7 @@ export interface CostBudgetReport {
 
 export const getCostBudget = () => platformFetch<CostBudgetReport>('/api/v1/ai/cost/budget')
 
-export interface MissionStackStatus {
+interface MissionStackStatus {
   gpu_vms: Array<{ name: string; observed_state: string; host: string | null; tags: string[] }>
   environment_vms: Array<{ name: string; observed_state: string; host: string | null; tags: string[] }>
   total_stack_vms: number
@@ -764,7 +764,7 @@ export interface ZyraAgentInfo {
   task_class: string
 }
 
-export interface ZyraChatResponse {
+interface ZyraChatResponse {
   reply: string
   deterministic: boolean
   agent_id: string
@@ -923,7 +923,7 @@ export const zyraAutonomousExecute = (goal: string, agent?: string) =>
 
 // --- Infrastructure Graph Brain (AI-138–147) ---
 
-export interface InfraGraphNode {
+interface InfraGraphNode {
   kind: string
   id: string
   name: string

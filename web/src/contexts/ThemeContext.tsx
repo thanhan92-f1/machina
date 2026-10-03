@@ -11,7 +11,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 export type AppTheme = 'dark' | 'light'
 
 /** Product default — apple.com white paper (Zeus tahoe-light). */
-export const DEFAULT_THEME: AppTheme = 'light'
+const DEFAULT_THEME: AppTheme = 'light'
 
 const THEME_CYCLE: AppTheme[] = ['light', 'dark']
 

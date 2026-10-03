@@ -14,9 +14,9 @@ import {
   zyraNavItemsForTier,
 } from './platformNavRegistry'
 
-export type MacMenuNavItem = { to: string; label: string }
+type MacMenuNavItem = { to: string; label: string }
 
-export type MenubarProductSection = {
+type MenubarProductSection = {
   label?: string
   items: MacMenuNavItem[]
 }

@@ -6,7 +6,7 @@ import type { FleetMissionOverview, MissionHost } from '../api/platform'
 export const UNASSIGNED_SITE = '__unassigned__'
 export const UNASSIGNED_RACK = 'All hosts'
 
-export type MachineFinderHostContext = {
+type MachineFinderHostContext = {
   site: string
   rack: string
   host: MissionHost

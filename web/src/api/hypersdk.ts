@@ -13,13 +13,13 @@ export interface HypersdkStatus {
   last_error?: string
 }
 
-export interface HypersdkProvider {
+interface HypersdkProvider {
   provider: string
   connected?: boolean
   name?: string
 }
 
-export interface HypersdkProviderVm {
+interface HypersdkProviderVm {
   id?: string
   name: string
   status?: string

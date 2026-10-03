@@ -3,7 +3,7 @@
 
 /** VM state visuals aligned with HyperSDK k8s-vms palette. */
 
-export type VmSemanticKind =
+type VmSemanticKind =
   | 'running'
   | 'stopped'
   | 'paused'
@@ -46,7 +46,7 @@ export function vmSemanticKind(state: string | undefined | null): VmSemanticKind
 }
 
 /** iPhone 17–aligned: Sage / Mist Blue / Cosmic Orange — no purple/indigo neon. */
-export const VM_LAUNCHPAD_GRADIENTS: Record<VmSemanticKind, string> = {
+const VM_LAUNCHPAD_GRADIENTS: Record<VmSemanticKind, string> = {
   running: 'from-emerald-600 to-emerald-800',
   stopped: 'from-stone-400 to-stone-600',
   paused: 'from-amber-500 to-orange-700',
@@ -68,12 +68,6 @@ export function vmStatusBadgeClasses(
   const kind = vmSemanticKind(state)
   const base = `machina-vm-status machina-vm-status--${kind}`
   return variant === 'solid' ? `${base} machina-vm-status--solid` : base
-}
-
-export function vmStatusDotClass(state: string | undefined | null): string {
-  const kind = vmSemanticKind(state)
-  const pulse = kind === 'running' ? ' machina-vm-dot--pulse' : ''
-  return `machina-vm-dot machina-vm-dot--${kind}${pulse}`
 }
 
 /** Safe GiB label for VM memory — avoids NaN when API omits memory_mib. */

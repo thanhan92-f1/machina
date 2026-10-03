@@ -15,7 +15,7 @@ export interface HttpTraceSpan {
   timestamp_ms: number
 }
 
-export interface MetricsTracesResponse {
+interface MetricsTracesResponse {
   traces: HttpTraceSpan[]
   count: number
 }

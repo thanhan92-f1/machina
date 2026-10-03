@@ -4,7 +4,7 @@
 import { useEffect, useId, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-export type PlatformStepWizardProps = {
+type PlatformStepWizardProps = {
   open: boolean
   onClose: () => void
   title: string

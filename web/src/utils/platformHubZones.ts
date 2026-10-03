@@ -14,7 +14,7 @@ export type { DesktopHubTile }
 export { DESKTOP_HUB_TILES, hubTilesForTier, hubTileById }
 
 /** Shown on Normal tier as muted dock previews until Power user is enabled. */
-export const DOCK_PREVIEW_HUB_PATHS: string[] = ['/platform/infrastructure', '/platform/operations']
+const DOCK_PREVIEW_HUB_PATHS: string[] = ['/platform/infrastructure', '/platform/operations']
 
 export function dockPreviewPathsForTier(tier: PlatformDesktopTier): string[] {
   return tier === 'normal' ? DOCK_PREVIEW_HUB_PATHS : []

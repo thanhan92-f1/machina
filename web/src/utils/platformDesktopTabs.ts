@@ -3,11 +3,11 @@
 
 import { PLATFORM_PAGE_LABELS } from './platformNav'
 
-export type PlatformDesktopTab = { path: string; label: string }
+type PlatformDesktopTab = { path: string; label: string }
 
 const KEY = 'machina-platform-desktop-tabs'
-export const PLATFORM_DESKTOP_TABS_EVENT = 'machina-platform-desktop-tabs-changed'
-export const MAX_PLATFORM_DESKTOP_TABS = 12
+const PLATFORM_DESKTOP_TABS_EVENT = 'machina-platform-desktop-tabs-changed'
+const MAX_PLATFORM_DESKTOP_TABS = 12
 
 const VM_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

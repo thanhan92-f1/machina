@@ -16,7 +16,7 @@ const SIZES = {
   xl: { svg: 36, word: 'text-[2.25rem]', gap: 'gap-3' },
 } as const
 
-export type ZyvorMarkSize = keyof typeof SIZES
+type ZyvorMarkSize = keyof typeof SIZES
 
 type ZyvorMarkProps = {
   /** App route (default `/`). Pass `null` for a non-link mark. */

@@ -29,7 +29,7 @@ import {
   type PortForwardServiceTemplate,
 } from '../../utils/vmPortForwardServices'
 
-export interface VmPortForwardPanelProps {
+interface VmPortForwardPanelProps {
   platformVmId: string
   vmName: string
   guestIp: string

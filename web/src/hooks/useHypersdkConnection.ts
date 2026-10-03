@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getHypersdkStatus, type HypersdkStatus } from '../api/hypersdk'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 
-export type HypersdkPhase = 'off' | 'unreachable' | 'live'
+type HypersdkPhase = 'off' | 'unreachable' | 'live'
 
 export function useHypersdkConnection() {
   const { info, refreshKey } = usePlatformInfo()

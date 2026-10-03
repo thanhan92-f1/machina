@@ -3,7 +3,7 @@
 
 import { useEffect, useState, type RefObject } from 'react'
 
-export type WebGlGlobeSite = {
+type WebGlGlobeSite = {
   name: string
   hosts: number
   healthPct: number
@@ -24,7 +24,7 @@ function healthColor(pct: number): number {
  * bind one context type for its lifetime. Claiming it with getContext('2d')
  * during 'pending' permanently breaks the later getContext('webgl') call.
  */
-export type WebGlGlobeStatus = 'pending' | 'active' | 'unavailable'
+type WebGlGlobeStatus = 'pending' | 'active' | 'unavailable'
 
 export function useWebGlGlobe(
   canvasRef: RefObject<HTMLCanvasElement | null>,

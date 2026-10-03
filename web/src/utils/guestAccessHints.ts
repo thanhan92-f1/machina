@@ -13,7 +13,7 @@ export function isWindowsGuest(osFamily: string | null | undefined): boolean {
   return (osFamily ?? '').trim().toLowerCase().startsWith('windows')
 }
 
-export interface AccessHintOpts {
+interface AccessHintOpts {
   sshUser?: string
   guestIp?: string
   hypervisorHost?: string

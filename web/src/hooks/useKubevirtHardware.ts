@@ -7,7 +7,7 @@ import { getK8sKubevirtVmSummary, type KubeVirtVmSummaryRow } from '../api/k8s'
 import { formatUserError } from '../utils/apiError'
 import { buildKubevirtHardwareSummary, type KubevirtHardwareSummary } from '../utils/kubevirtHardwareSummary'
 
-export type UseKubevirtHardwareOptions = {
+type UseKubevirtHardwareOptions = {
   vmId: string | null | undefined
   enabled?: boolean
 }

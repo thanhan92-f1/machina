@@ -27,7 +27,7 @@ export interface ObservabilitySettingsView {
   config_path: string
 }
 
-export interface ObservabilitySettingsPatch {
+interface ObservabilitySettingsPatch {
   otlp_enabled?: boolean
   otlp_endpoint?: string
   otlp_interval_secs?: number
@@ -54,7 +54,7 @@ export function putObservabilitySettings(patch: ObservabilitySettingsPatch) {
   }>(`${API}/system/observability-settings`, patch)
 }
 
-export interface AuditVerifyReport {
+interface AuditVerifyReport {
   total_lines: number
   signed_valid: number
   signed_invalid: number

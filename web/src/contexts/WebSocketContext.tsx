@@ -9,7 +9,7 @@ interface WSMessage {
   data?: unknown
 }
 
-export interface VMEvent {
+interface VMEvent {
   event: 'state_change' | 'vm_added' | 'vm_removed'
   name: string
   old_state?: string
@@ -19,7 +19,7 @@ export interface VMEvent {
 }
 
 /** `live` = VM watch socket open; `connecting` = fetching token or opening socket / backoff; `offline` = repeated token failure (e.g. session gone). */
-export type WsConnection = 'live' | 'connecting' | 'offline'
+type WsConnection = 'live' | 'connecting' | 'offline'
 
 interface WebSocketContextType {
   /** True when real-time `/ws/v1/watch` is connected. */

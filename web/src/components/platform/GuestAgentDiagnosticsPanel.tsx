@@ -26,7 +26,7 @@ import {
   type NatRuleLike,
 } from '../../utils/vmPortForwardServices'
 
-export function installStateLabel(state: string) {
+function installStateLabel(state: string) {
   switch (state) {
     case 'running':
       return 'Guest agent active'

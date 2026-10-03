@@ -7,9 +7,9 @@ import { inferConsoleMonitors } from '../../utils/consoleMonitors'
 
 export type ViewportMode = 'fit' | 'fill' | 'native' | 'scroll' | 'zoom' | 'stretch'
 export type ZoomLevel = 75 | 100 | 125 | 150 | 200
-export type ConsoleKeyPreset = 'esc' | 'ctrl_alt_del' | 'alt_tab'
+type ConsoleKeyPreset = 'esc' | 'ctrl_alt_del' | 'alt_tab'
 
-export type ViewportState = {
+type ViewportState = {
   mode: ViewportMode
   zoom: ZoomLevel
   scaledFit: boolean

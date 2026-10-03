@@ -6,7 +6,7 @@ import { formatHttpErrorBody } from '../utils/apiError'
 
 const API = '/api/v1'
 
-export type CockpitStorageLine = { name: string; detail: string; state: string }
+type CockpitStorageLine = { name: string; detail: string; state: string }
 
 export type HostCockpitStorage = {
   probed: boolean
@@ -20,7 +20,7 @@ export type HostCockpitStorage = {
   summary: string
 }
 
-export type NmConnection = {
+type NmConnection = {
   name: string
   uuid: string
   kind: string
@@ -28,7 +28,7 @@ export type NmConnection = {
   state: string
 }
 
-export type FirewalldZone = {
+type FirewalldZone = {
   name: string
   target: string
   services: string[]
@@ -59,7 +59,7 @@ export type HostCockpitNetwork = {
   summary: string
 }
 
-export type SystemdUnitRow = {
+type SystemdUnitRow = {
   unit: string
   load: string
   active: string

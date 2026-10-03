@@ -5,7 +5,7 @@
 
 const storageKey = (vmName: string) => `machina:vm-ssh:${encodeURIComponent(vmName)}`
 
-export interface VmSshPrefs {
+interface VmSshPrefs {
   host: string
   user: string
 }

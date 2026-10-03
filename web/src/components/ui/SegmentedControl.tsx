@@ -3,7 +3,7 @@
 
 import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 
-export type SegmentedOption<V extends string> = {
+type SegmentedOption<V extends string> = {
   value: V
   label: string
   icon?: ReactNode

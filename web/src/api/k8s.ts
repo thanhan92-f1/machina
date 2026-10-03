@@ -19,7 +19,7 @@ export interface K8sOverview {
   extra_resource_counts?: Record<string, number>
 }
 
-export interface K8sHostSignals {
+interface K8sHostSignals {
   k3s_config_present: boolean
   k3s_data_dir_present: boolean
   rke2_config_present: boolean
@@ -49,7 +49,7 @@ export interface K8sEnvironment {
   snippets: Record<string, string>
 }
 
-export interface K8sNodeTaint {
+interface K8sNodeTaint {
   key: string
   value?: string | null
   effect: string
@@ -89,12 +89,12 @@ export interface K8sNodeInfo {
   daemon_matches_this_machine?: boolean | null
 }
 
-export interface K8sWebhookSummaryRow {
+interface K8sWebhookSummaryRow {
   name: string
   webhook_rules_count: number
 }
 
-export interface K8sAddonDaemonSetRow {
+interface K8sAddonDaemonSetRow {
   namespace: string
   name: string
   primary_image: string
@@ -121,12 +121,12 @@ export interface K8sPlaneRollup {
   memory_allocatable_bytes: number
 }
 
-export interface K8sTaintPlaneRollup {
+interface K8sTaintPlaneRollup {
   nodes_total: number
   nodes_with_scheduling_taints: number
 }
 
-export interface K8sCpStackPod {
+interface K8sCpStackPod {
   component: string
   namespace: string
   name: string
@@ -137,7 +137,7 @@ export interface K8sCpStackPod {
   inferred_k8s_semver_tag?: string | null
 }
 
-export interface K8sUpgradeInsights {
+interface K8sUpgradeInsights {
   disclaimer?: string
   inferred_etcd_member_pods_running?: number
   max_kubelet_minor_lag_behind_apiserver?: number | null
@@ -179,7 +179,7 @@ export interface K8sClusterInventoryResponse {
   extended?: K8sExtendedClusterInsights
 }
 
-export interface K8sObjectMeta {
+interface K8sObjectMeta {
   name?: string
   namespace?: string
 }
@@ -201,7 +201,7 @@ export interface K8sPod {
   status?: { phase?: string; podIP?: string; hostIP?: string }
 }
 
-export interface K8sServicePort {
+interface K8sServicePort {
   name?: string
   port?: number
   /** Service target; may be number or named port string from pod spec. */
@@ -252,7 +252,7 @@ export interface KubeVirtVmSummaryRow {
   vnc_subresource_path: string
 }
 
-export type K8sAction =
+type K8sAction =
   | 'node_cordon'
   | 'node_uncordon'
   | 'node_drain'
@@ -264,7 +264,7 @@ export type K8sAction =
   | 'scale_deployment'
   | 'scale_stateful_set'
 
-export interface K8sActionRequest {
+interface K8sActionRequest {
   action: K8sAction
   name: string
   namespace?: string
@@ -306,7 +306,7 @@ export const getK8sClusterInventory = (context?: string) =>
     withK8sContext(`${API}/k8s/cluster-inventory`, context),
   )
 
-export interface K8sTopRow {
+interface K8sTopRow {
   name: string
   cpu: string
   cpu_percent: string
@@ -522,7 +522,7 @@ export const getK8sKubevirtVmSummary = (namespace?: string, context?: string) =>
     ),
   )
 
-export type KubeVirtLifecycleAction = 'start' | 'stop' | 'restart'
+type KubeVirtLifecycleAction = 'start' | 'stop' | 'restart'
 
 export const postK8sKubevirtVmLifecycle = (
   namespace: string,

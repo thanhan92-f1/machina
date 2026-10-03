@@ -12,7 +12,7 @@ import { useEventStream, type MachinaEvent } from '../hooks/useEventStream'
  * `<Hero/>` to show capability badges (TLS, OIDC, KubeVirt cluster exec) and
  * by every page to react to broadcast events without polling.
  */
-export interface PlatformInfoContextValue {
+interface PlatformInfoContextValue {
   info: PlatformInfo | null
   providers: AuthProviders | null
   loading: boolean
@@ -35,7 +35,7 @@ const DEFAULT: PlatformInfoContextValue = {
 const PlatformInfoContext = createContext<PlatformInfoContextValue>(DEFAULT)
 
 /** Slow-changing subset only — {@link usePlatformInfoSlow} doesn't re-render on every SSE tick. */
-export type PlatformInfoSlow = Pick<PlatformInfoContextValue, 'info' | 'providers' | 'loading'>
+type PlatformInfoSlow = Pick<PlatformInfoContextValue, 'info' | 'providers' | 'loading'>
 const SLOW_DEFAULT: PlatformInfoSlow = { info: DEFAULT.info, providers: DEFAULT.providers, loading: DEFAULT.loading }
 const PlatformInfoSlowContext = createContext<PlatformInfoSlow>(SLOW_DEFAULT)
 

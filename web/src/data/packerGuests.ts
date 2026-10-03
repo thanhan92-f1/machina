@@ -6,9 +6,9 @@
  * matching `virt-install --install os=…` short-ids (libosinfo).
  */
 
-export type PackerGuestFamily = 'rpm' | 'debian' | 'ubuntu' | 'windows'
+type PackerGuestFamily = 'rpm' | 'debian' | 'ubuntu' | 'windows'
 
-export interface MachinaPackerScriptGuest {
+interface MachinaPackerScriptGuest {
   /** First argument to `build-linux-image.sh` */
   id: string
   label: string

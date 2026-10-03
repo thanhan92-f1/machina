@@ -42,7 +42,7 @@ export interface VmWizardInitial {
   hostId?: string
 }
 
-export interface VmWizardWindowsOptions {
+interface VmWizardWindowsOptions {
   virtio: boolean
   virtioIsoPath: string
   uefi: boolean

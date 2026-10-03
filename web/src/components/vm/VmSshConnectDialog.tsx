@@ -14,7 +14,7 @@ import {
   sshNatHostPort,
 } from '../../utils/vmPortForwardServices'
 
-export interface VmSshConnectDialogProps {
+interface VmSshConnectDialogProps {
   open: boolean
   vmName: string
   platformVmId?: string

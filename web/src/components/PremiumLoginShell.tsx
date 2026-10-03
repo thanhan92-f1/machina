@@ -9,12 +9,12 @@ import type { ReactNode } from 'react'
 import { AlertCircle } from 'lucide-react'
 import '../styles/zyvor-premium-login.css'
 
-export type PremiumLoginPill = {
+type PremiumLoginPill = {
   icon?: ReactNode
   label: string
 }
 
-export type PremiumLoginShellProps = {
+type PremiumLoginShellProps = {
   themeSwitcher?: ReactNode
   logo?: ReactNode
   productName: string

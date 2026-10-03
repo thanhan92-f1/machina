@@ -11,12 +11,12 @@ export function isGenericClusterName(name?: string | null): boolean {
   return GENERIC_CLUSTER_NAMES.has(normalized)
 }
 
-export function isPlaceholderHostname(hostname?: string | null): boolean {
+function isPlaceholderHostname(hostname?: string | null): boolean {
   const h = hostname?.trim().toLowerCase()
   return !h || h === 'localhost' || h === '127.0.0.1'
 }
 
-export function isUsableHostAddress(address?: string | null): boolean {
+function isUsableHostAddress(address?: string | null): boolean {
   const a = address?.trim()
   return !!a && a !== '127.0.0.1' && a !== '::1'
 }

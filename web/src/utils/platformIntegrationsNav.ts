@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import React from 'react'
-import { Boxes, Cloud, Cpu, Layers } from 'lucide-react'
+import { Cloud, Cpu, Layers } from 'lucide-react'
 import type { PlatformInfo } from '../api/system'
 import type { PlatformNavItem } from './platformNav'
 
@@ -25,7 +25,7 @@ export function integrationNavItems(info: PlatformInfo | null): PlatformNavItem[
   return items
 }
 
-export type IntegrationCard = {
+type IntegrationCard = {
   id: string
   title: string
   description: string

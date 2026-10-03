@@ -29,7 +29,7 @@ export interface FleetThreatSummary {
   security_graph_summary: string
 }
 
-export interface SecurityGraphNode {
+interface SecurityGraphNode {
   id: string
   kind: string
   label: string
@@ -74,7 +74,7 @@ export const getFleetSecurityTimeline = (hours = 24) =>
 export const getSecurityCorrelations = () =>
   platformFetch<{ correlations: Array<Record<string, unknown>> }>('/api/v1/zeus-security/correlations')
 
-export interface FabricHealthIssue {
+interface FabricHealthIssue {
   severity?: string
   kind?: string
   summary?: string
@@ -155,7 +155,7 @@ export const getHostProcessGraph = (hostId: string, pid?: number) => {
 }
 
 /** machina-bpfd status as reported through the host's agent. */
-export type SecurityFabricStatus = BpfStatus
+type SecurityFabricStatus = BpfStatus
 
 export interface HostFabricStatusResponse {
   host_id: string

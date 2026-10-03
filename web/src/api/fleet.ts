@@ -37,7 +37,7 @@ export function getFleetVms() {
   return readJsonObject<{ enabled: boolean; vms: FleetVmRow[] }>(`${API}/fleet/vms`)
 }
 
-export interface FleetCapacity {
+interface FleetCapacity {
   score: number
   label: 'low' | 'medium' | 'high' | string
 }

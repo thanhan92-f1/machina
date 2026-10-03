@@ -13,7 +13,7 @@ export type OsFlavor = {
   windows?: boolean
 }
 
-export const OS_FLAVORS: OsFlavor[] = [
+const OS_FLAVORS: OsFlavor[] = [
   { id: 'ubuntu-24.04', label: 'Ubuntu 24.04 LTS', subtitle: 'Stable cloud-init image', category: 'Linux', icon: '🐧', featured: true },
   { id: 'ubuntu-25.10', label: 'Ubuntu 25.10', subtitle: 'Current interim release', category: 'Linux', icon: '🐧', featured: true },
   { id: 'ubuntu-26.04', label: 'Ubuntu 26.04 LTS', subtitle: 'Latest LTS (Resolute Raccoon)', category: 'Linux', icon: '🐧', featured: true },
@@ -70,7 +70,7 @@ export function osFlavorById(id: string): OsFlavor | undefined {
   return OS_FLAVORS.find((o) => o.id === id)
 }
 
-export type ApiTemplateLike = {
+type ApiTemplateLike = {
   name: string
   version: string
   description?: string | null
@@ -94,7 +94,7 @@ function categoryFromTemplate(t: ApiTemplateLike): OsFlavor['category'] {
   return 'Linux'
 }
 
-export function templateToFlavor(t: ApiTemplateLike): OsFlavor {
+function templateToFlavor(t: ApiTemplateLike): OsFlavor {
   const cat = categoryFromTemplate(t)
   return {
     id: t.name,

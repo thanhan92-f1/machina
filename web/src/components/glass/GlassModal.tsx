@@ -8,7 +8,7 @@ import { restoreFocus, useCaptureTrigger } from '../../hooks/useCaptureTrigger'
 
 const spring = { type: 'spring' as const, stiffness: 320, damping: 28, mass: 0.85 }
 
-export type GlassModalProps = {
+type GlassModalProps = {
   open: boolean
   onClose: () => void
   title?: string

@@ -14,7 +14,7 @@ export interface NetworkInfo {
   bridge: string
 }
 
-export interface CreateNetworkRequest {
+interface CreateNetworkRequest {
   name: string
   subnet: string
   dhcp_start: string

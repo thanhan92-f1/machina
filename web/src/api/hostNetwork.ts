@@ -34,14 +34,14 @@ export interface FirewallRule {
   description: string
 }
 
-export interface CreateBridgeRequest {
+interface CreateBridgeRequest {
   name: string
   interfaces: string[]
   mtu: number
   stp: boolean
 }
 
-export interface CreatePortForwardRequest {
+interface CreatePortForwardRequest {
   protocol: string
   host_port: number
   vm_ip: string
@@ -49,7 +49,7 @@ export interface CreatePortForwardRequest {
   description?: string
 }
 
-export interface CreateFirewallRuleRequest {
+interface CreateFirewallRuleRequest {
   vm_ip: string
   direction: string
   protocol: string
@@ -83,7 +83,7 @@ export interface SystemdNetworkDiagnostics {
   resolved_recent_logs: string
 }
 
-export interface LldpNeighbor {
+interface LldpNeighbor {
   local_interface: string
   chassis_id: string
   system_name: string
@@ -107,7 +107,7 @@ export interface HostRoutingTables {
 }
 
 /** Add or delete one static route via `ip route` (validated on the daemon; browser session). */
-export interface KernelRouteChangeRequest {
+interface KernelRouteChangeRequest {
   family: 'ipv4' | 'ipv6' | string
   operation: 'add' | 'delete' | string
   destination: string

@@ -34,7 +34,7 @@ function hashSite(name: string): { lat: number; lng: number } {
   return { lat, lng }
 }
 
-export function sitesFromMission(mission: FleetMissionOverview): GlobeSite[] {
+function sitesFromMission(mission: FleetMissionOverview): GlobeSite[] {
   const sites: GlobeSite[] = mission.sites.map((site) => {
     const hosts = site.racks.flatMap((r) => r.hosts)
     const online = hosts.filter((h) => h.state === 'online' && !h.maintenance_mode).length

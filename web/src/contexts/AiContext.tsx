@@ -6,7 +6,7 @@ import { useLocation, useParams } from 'react-router'
 import { getAiSettings } from '../api/ai'
 import { usePlatformInfo } from './PlatformInfoContext'
 
-export type AiMode = 'off' | 'advisor' | 'autopilot_preview' | 'autopilot'
+type AiMode = 'off' | 'advisor' | 'autopilot_preview' | 'autopilot'
 
 interface AiContextValue {
   mode: AiMode

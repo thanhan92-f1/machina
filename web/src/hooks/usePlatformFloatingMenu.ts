@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 
 export type PlatformFloatingAlign = 'start' | 'end'
 
-export interface PlatformFloatingMenuStyle {
+interface PlatformFloatingMenuStyle {
   top?: number
   left?: number
   bottom?: number
@@ -35,7 +35,7 @@ function readBottomReserve(): number {
   return DEFAULT_DOCK_RESERVE_PX
 }
 
-export function computePlatformFloatingPosition(
+function computePlatformFloatingPosition(
   triggerRect: DOMRect,
   menuRect: DOMRect,
   opts: { align: PlatformFloatingAlign; sideOffset: number; viewportMargin: number },

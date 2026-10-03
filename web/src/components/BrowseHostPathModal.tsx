@@ -24,7 +24,7 @@ function formatEntrySize(bytes: number): string {
   return `${bytes} B`
 }
 
-export type BrowseHostPathModalProps = {
+type BrowseHostPathModalProps = {
   open: boolean
   onClose: () => void
   title: string

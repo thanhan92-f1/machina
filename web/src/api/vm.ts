@@ -101,13 +101,13 @@ export function vmScopeKey(vm: Pick<VmInfo, 'name' | 'libvirt_connection'>): str
   return `${vm.libvirt_connection ?? 'system'}::${vm.name}`
 }
 
-export interface InterfaceInfo {
+interface InterfaceInfo {
   mac_address: string
   source: string
   model: string
 }
 
-export interface DiskInfo {
+interface DiskInfo {
   device: string
   source: string
   driver: string
@@ -118,7 +118,7 @@ export interface DiskInfo {
   shareable?: boolean
 }
 
-export interface FilesystemInfo {
+interface FilesystemInfo {
   source: string
   mount_tag: string
   driver?: string
@@ -126,7 +126,7 @@ export interface FilesystemInfo {
   xattr?: boolean
 }
 
-export interface VmBlockDeviceMetrics {
+interface VmBlockDeviceMetrics {
   device: string
   rd_bytes: number
   wr_bytes: number
@@ -134,7 +134,7 @@ export interface VmBlockDeviceMetrics {
   wr_ops: number
 }
 
-export interface VmNetDeviceMetrics {
+interface VmNetDeviceMetrics {
   device: string
   rx_bytes: number
   tx_bytes: number
@@ -142,7 +142,7 @@ export interface VmNetDeviceMetrics {
   tx_packets: number
 }
 
-export interface VmVcpuMetrics {
+interface VmVcpuMetrics {
   vcpu: number
   cpu_time_ns: number
   state: string
@@ -296,7 +296,7 @@ export interface KubeVirtClusterExecResult {
   stderr: string
 }
 
-export type KubeVirtBundleQuery = {
+type KubeVirtBundleQuery = {
   namespace?: string
   k8s_vm_name?: string
   datavolume_name?: string
@@ -347,7 +347,7 @@ export function postKubeVirtStart(name: string, body: KubeVirtBundleBody = {}) {
   )
 }
 
-export interface CreateVmStreamResult {
+interface CreateVmStreamResult {
   status: string
   name: string
 }
@@ -532,7 +532,7 @@ export const getMetrics = () => readJsonArray<VmMetrics>(`${API}/metrics`)
 export const getVMMetrics = (name: string, connection?: string | null) =>
   readJsonObject<VmMetrics>(appendVmConnection(`${API}/metrics/${encodeURIComponent(name)}`, connection))
 
-export interface MetricsHistoryPoint {
+interface MetricsHistoryPoint {
   timestamp_ms: number
   host_cpu_percent: number
   host_memory_percent: number
@@ -565,7 +565,7 @@ export interface GuestIpAddress {
   dns_ptr?: string
 }
 
-export interface GuestInterfacesResponse {
+interface GuestInterfacesResponse {
   addresses: GuestIpAddress[]
   /** ISO-8601 — when the hypervisor collected this snapshot. */
   queried_at: string
@@ -582,7 +582,7 @@ export interface BootConfig {
   cmdline?: string
 }
 
-export interface ManagedSaveStatus {
+interface ManagedSaveStatus {
   name: string
   has_managed_save: boolean
 }
@@ -596,7 +596,7 @@ export const getHostname = (name: string, connection?: string | null) =>
     appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/hostname`, connection),
   )
 
-export interface GuestFilesystemMetric {
+interface GuestFilesystemMetric {
   mountpoint: string
   name: string
   fs_type: string
@@ -634,7 +634,7 @@ export const getGuestHealth = (name: string, connection?: string | null) =>
   readJsonObject<GuestHealthReport>(
     appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/guest-health`, connection),
   )
-export interface CdromInsertResult {
+interface CdromInsertResult {
   status: string
   target: string
   bus: string
@@ -655,7 +655,7 @@ export const ejectCdrom = (name: string, target: string, connection?: string | n
   apiPostVoid(
     appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/cdrom/eject/${encodeURIComponent(target)}`, connection),
   )
-export interface GuestAgentInstallResult {
+interface GuestAgentInstallResult {
   status: string
   vm: string
   iso_path: string
@@ -676,7 +676,7 @@ export const installGuestAgentMedia = (name: string, connection?: string | null)
     {},
   )
 
-export interface WindowsRdpEnableResult {
+interface WindowsRdpEnableResult {
   status: string
   vm: string
   result: { disk_path: string; applied: string[]; firewall_manual: boolean; notes: string[] }
@@ -689,7 +689,7 @@ export const enableWindowsRdp = (name: string, connection?: string | null) =>
     {},
   )
 
-export interface LinuxOfflineResult {
+interface LinuxOfflineResult {
   status: string
   vm: string
   result: { disk_path: string; operation: string; applied: string[]; notes: string[] }
@@ -761,7 +761,7 @@ export const getBootConfig = (name: string, connection?: string | null) =>
   readJsonObject<BootConfig>(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/boot`, connection))
 export const setBootOrder = (name: string, devices: string[], connection?: string | null) =>
   apiPostVoid(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/boot`, connection), { devices })
-export interface MigrateOptions {
+interface MigrateOptions {
   parameters?: { bandwidth?: number; bandwidth_postcopy?: number; parallel_connections?: number }
   extra_flags?: number
   unsafe_migrate?: boolean
@@ -780,7 +780,7 @@ export const migrateVM = (name: string, destUri: string, live: boolean, opts?: M
 export const setMigrateBandwidth = (name: string, mbps: number) =>
   apiPost<{ mbps: number }>(`${API}/vms/${encodeURIComponent(name)}/migrate/max-bandwidth`, { mbps })
 
-export type GuestKeyPreset = 'ctrl_alt_del' | 'esc' | 'alt_tab'
+type GuestKeyPreset = 'ctrl_alt_del' | 'esc' | 'alt_tab'
 
 export const sendGuestKey = (
   name: string,
@@ -811,7 +811,7 @@ export const attachVmSerial = (name: string, port: number, connection?: string |
 export const setVmVideoModel = (name: string, model: string, connection?: string | null) =>
   apiPostVoid(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/devices/video-model`, connection), { model })
 
-export interface DiskTuneBody {
+interface DiskTuneBody {
   target: string
   bus?: string
   cache?: string
@@ -823,7 +823,7 @@ export interface DiskTuneBody {
 export const tuneVmDisk = (name: string, body: DiskTuneBody, connection?: string | null) =>
   apiPostVoid(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/disk/tune`, connection), body)
 
-export interface NicTuneBody {
+interface NicTuneBody {
   mac_address: string
   model?: string
   network?: string
@@ -864,7 +864,7 @@ export const getCpuTune = (name: string, connection?: string | null) =>
 export const getMemTune = (name: string, connection?: string | null) =>
   readJsonObject<MemTuneInfo>(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/memtune`, connection))
 
-export interface NumaTuneState {
+interface NumaTuneState {
   node_set?: string | null
   mode?: number | null
 }

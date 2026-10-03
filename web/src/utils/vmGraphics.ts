@@ -3,11 +3,11 @@
 
 export type GraphicsKind = 'vnc' | 'spice'
 
-export type VmGraphicsEntry = {
+type VmGraphicsEntry = {
   listen: string
 }
 
-export type VmGraphicsState = {
+type VmGraphicsState = {
   vnc?: VmGraphicsEntry
   spice?: VmGraphicsEntry
 }

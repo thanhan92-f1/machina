@@ -73,12 +73,12 @@ export interface SocPlaybookStepDraft {
   useGlobalWebhook: boolean
 }
 
-export interface MitreTag {
+interface MitreTag {
   id: string
   name: string
 }
 
-export interface SocLinkedEvent {
+interface SocLinkedEvent {
   id: string
   occurred_at: string
   source: string
@@ -88,7 +88,7 @@ export interface SocLinkedEvent {
   ecs_json: Record<string, unknown>
 }
 
-export interface SocPlaybookRunDetail {
+interface SocPlaybookRunDetail {
   id: string
   playbook_id: string
   playbook_name?: string
@@ -108,7 +108,7 @@ export interface SocAlertDetail extends SocAlert {
   playbook_runs: SocPlaybookRunDetail[]
 }
 
-export interface SocSettings {
+interface SocSettings {
   webhook_url: string
 }
 
@@ -121,7 +121,7 @@ export interface SocPlaybookRun {
   finished_at?: string
 }
 
-export interface SocIngestCycle {
+interface SocIngestCycle {
   ingest: { firewall: number; audit: number; platform: number; native_bpf: number }
   alerts_fired: number
   forwarded: number

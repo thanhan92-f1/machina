@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-export type DetailTabDef<T extends string> = {
+type DetailTabDef<T extends string> = {
   id: T
   label: string
   group?: string

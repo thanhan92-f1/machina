@@ -29,7 +29,7 @@ export interface NativeVm {
   guest_tools_status: string | null
 }
 
-export interface TaskResponse {
+interface TaskResponse {
   task_id: string
   status: string
   operation: string
@@ -47,7 +47,7 @@ export function vmDisplayStatus(vm: Pick<NativeVm, 'observed_state' | 'lifecycle
   return vm.observed_state.toUpperCase() || 'UNKNOWN'
 }
 
-export interface CreateFromTemplateBody {
+interface CreateFromTemplateBody {
   template_ref: string
   name: string
   memory?: string

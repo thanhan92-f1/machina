@@ -5,7 +5,7 @@ import type { PlatformHost, PlatformVm } from '../../../api/platform'
 
 export type VmPowerAction = 'start' | 'stop' | 'shutdown' | 'pause' | 'resume'
 
-export type FleetCommandCenterActions = {
+type FleetCommandCenterActions = {
   onSsh: (vm: PlatformVm) => void
   onMigrate: (vm: PlatformVm, destId: string, destName: string) => void
   onPower: (vm: PlatformVm, action: VmPowerAction) => void | Promise<void>

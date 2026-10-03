@@ -34,7 +34,7 @@ export type SpotlightNavEntry = {
   kind: 'hub' | 'destination'
 }
 
-export type DesktopHubId = 'infrastructure' | 'workloads' | 'operations' | 'administration' | 'security'
+type DesktopHubId = 'infrastructure' | 'workloads' | 'operations' | 'administration' | 'security'
 
 export type DesktopHubTile = {
   id: DesktopHubId
@@ -119,9 +119,6 @@ const ADMINISTRATION_ITEMS: ContextNavItem[] = [
   { to: '/platform/settings?section=integrations', label: 'Integrations' },
 ]
 
-/** @deprecated Use infrastructureNavItemsForTier */
-const RESOURCES_ITEMS = INFRASTRUCTURE_ITEMS
-
 const OPERATIONS_ITEMS: ContextNavItem[] = [
   { to: '/platform/operations', label: 'Overview' },
   { to: '/platform/activity', label: 'Monitoring' },
@@ -151,11 +148,6 @@ const ZEUS_ITEMS: ContextNavItem[] = [
   { to: '/platform/zyra?tab=knowledge', label: 'Knowledge' },
   { to: '/platform/zyra?tab=baremetal', label: 'Bare Metal' },
   { to: '/platform/zeus/security', label: 'Security Center' },
-]
-
-const INTEGRATIONS_ITEMS: ContextNavItem[] = [
-  { to: '/platform/settings?section=integrations', label: 'Overview' },
-  { to: '/platform/applications', label: 'Applications' },
 ]
 
 /** Hub launchpads — deep routes live inside these pages, not as duplicate chrome. */
@@ -197,7 +189,7 @@ export const DESKTOP_HUB_TILES: DesktopHubTile[] = [
   },
 ]
 
-export const HUB_DEFINITIONS: ContextDefinition[] = [
+const HUB_DEFINITIONS: ContextDefinition[] = [
   {
     id: 'security',
     match: (p) => p.startsWith('/platform/zeus/security'),

@@ -21,7 +21,7 @@ export const GOLDEN_FORGE_TIMELINE_LABELS = [
 
 export const VIRT_IMAGE_TIMELINE_LABELS = ['Queued', 'Build disk image', 'Finished'] as const
 
-export interface TimelineState {
+interface TimelineState {
   /** Step index that is in progress (0..labels.length-1), or last index when failed on last step */
   activeIndex: number
   allComplete: boolean

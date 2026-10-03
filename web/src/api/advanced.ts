@@ -30,7 +30,7 @@ export interface SecretInfo {
   usage_id: string
 }
 
-export interface CreatePoolRequest {
+interface CreatePoolRequest {
   name: string
   pool_type: string
   target_path: string
@@ -46,7 +46,7 @@ export const defineNwfilter = (xml: string) => apiPost<{ status: string; name: s
 export const deleteNwfilter = (name: string) => apiDelete(`${API}/nwfilters/${encodeURIComponent(name)}`)
 export const listSecrets = () => readJsonArray<SecretInfo>(`${API}/secrets`)
 
-export interface DefineSecretRequest {
+interface DefineSecretRequest {
   xml: string
   value_base64?: string
   validate_xml?: boolean

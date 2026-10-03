@@ -3,7 +3,7 @@
 
 import { platformFetch } from './platform'
 
-export type VmLibvirtInvokeAction =
+type VmLibvirtInvokeAction =
   | 'block.commit'
   | 'block.pull'
   | 'block.job.abort'
@@ -33,9 +33,9 @@ export type VmLibvirtInvokeAction =
   | 'domain.xml.update'
   | 'cpu.topology.set'
 
-export type VmLibvirtAction = VmLibvirtInvokeAction
+type VmLibvirtAction = VmLibvirtInvokeAction
 
-export type HostLibvirtQueryAction =
+type HostLibvirtQueryAction =
   | 'browse.isos'
   | 'host.usb'
   | 'host.pci'
@@ -59,7 +59,7 @@ export type HostLibvirtInvokeAction =
   | 'network.autostart'
   | 'network.delete'
 
-export type VmLibvirtQueryAction =
+type VmLibvirtQueryAction =
   | 'block.job'
   | 'cputune.get'
   | 'memtune.get'
@@ -78,7 +78,7 @@ export type SnapshotPrecheck = {
   available_bytes?: number | null
 }
 
-export type SnapshotActionPrecheck = {
+type SnapshotActionPrecheck = {
   ok: boolean
   blocked: boolean
   message: string
@@ -173,7 +173,7 @@ export const invokeHostLibvirt = <T = unknown>(
     body: JSON.stringify({ action, payload }),
   })
 
-export interface BatchTaskItem {
+interface BatchTaskItem {
   vm_id: string
   task_id?: string
   error?: string

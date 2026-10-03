@@ -26,7 +26,7 @@ export interface OidcSettingsView {
   callback_path: string
 }
 
-export type OidcSettingsPatch = Partial<{
+type OidcSettingsPatch = Partial<{
   enabled: boolean
   issuer_url: string
   client_id: string
@@ -62,7 +62,7 @@ export interface SamlSettingsView {
   metadata_path: string
 }
 
-export type SamlSettingsPatch = Partial<{
+type SamlSettingsPatch = Partial<{
   enabled: boolean
   sp_entity_id: string
   sp_acs_url: string

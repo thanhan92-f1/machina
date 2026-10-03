@@ -5,7 +5,7 @@ import { readJsonObject, readJsonItemsList } from './client'
 
 const API = '/api/v1'
 
-export interface VirtualizationHostStatus {
+interface VirtualizationHostStatus {
   cpu_virt_supported: boolean
   kvm_device_present: boolean
   libvirt_system_socket_present: boolean

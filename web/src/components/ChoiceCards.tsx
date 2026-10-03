@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
 /** Accent used for selected state (ring + border + tint). */
-export type ChoiceTone = 'blue' | 'amber' | 'sky' | 'cyan' | 'purple' | 'emerald' | 'slate' | 'violet'
+type ChoiceTone = 'blue' | 'amber' | 'sky' | 'cyan' | 'purple' | 'emerald' | 'slate' | 'violet'
 
 /** Selected shell: hairline surface + accent border — never accent-on-accent wash. */
 const selectedClass: Record<ChoiceTone, string> = {

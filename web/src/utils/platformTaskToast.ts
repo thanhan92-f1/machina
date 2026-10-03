@@ -5,7 +5,7 @@ import type { ToastAction } from '../hooks/useToast'
 import type { PlatformDesktopTier } from './platformDesktopTier'
 import { tasksHubHref } from './platformHubLinks'
 
-export function taskToastAction(taskId: string, tier: PlatformDesktopTier): ToastAction {
+function taskToastAction(taskId: string, tier: PlatformDesktopTier): ToastAction {
   return {
     label: 'View task',
     href: `${tasksHubHref(tier)}?task=${encodeURIComponent(taskId)}`,

@@ -15,12 +15,12 @@ export interface ImageFile {
 }
 
 /** ISO / disk browse API: discovered files plus directories scanned (libvirt pools + defaults). */
-export interface BrowseFilesResponse {
+interface BrowseFilesResponse {
   files: ImageFile[]
   scan_directories: string[]
 }
 
-export interface BrowseDirEntry {
+interface BrowseDirEntry {
   name: string
   path: string
   is_directory: boolean
@@ -51,7 +51,7 @@ export interface AuditEvent {
   actor?: string
 }
 
-export interface GetAuditLogParams {
+interface GetAuditLogParams {
   action?: string
   actor?: string
   q?: string
@@ -65,7 +65,7 @@ export const browseDir = (path = '') =>
   readJsonObject<BrowseDirResponse>(`${API}/browse/dir?path=${encodeURIComponent(path)}`)
 export const listDiskImages = () => readJsonObject<BrowseFilesResponse>(`${API}/browse/disks`)
 
-export interface IsoDownloadStarted {
+interface IsoDownloadStarted {
   status: string
   job_id: string
   name: string
@@ -92,14 +92,14 @@ export interface JobSummary {
 
 export const listJobs = () => readJsonArray<JobSummary>(`${API}/jobs`)
 
-export interface IsoUploadResult {
+interface IsoUploadResult {
   status: string
   name: string
   path: string
   size_bytes: number
 }
 
-export interface IsoUploadOptions {
+interface IsoUploadOptions {
   /** Replace an ISO of the same name that is already on the hypervisor. */
   overwrite?: boolean
   onProgress?: (pct: number, loaded: number, total: number) => void
@@ -159,7 +159,7 @@ export function uploadIso(file: File, opts: IsoUploadOptions = {}): Promise<IsoU
 export const deleteDiskImage = (path: string) =>
   apiDelete(`${API}/browse/disks/delete?path=${encodeURIComponent(path)}`)
 
-export interface VirtBuilderTemplateRow {
+interface VirtBuilderTemplateRow {
   name: string
   summary?: string | null
   arch?: string | null
@@ -333,20 +333,20 @@ export interface HostStats {
 }
 export const getHostStats = () => readJsonObject<HostStats>(`${API}/host/stats`)
 
-export interface PressureAvg {
+interface PressureAvg {
   some: number
   full: number
   total: number
 }
 
-export interface HostPressureStats {
+interface HostPressureStats {
   cpu: PressureAvg
   memory: PressureAvg
   io: PressureAvg
   available: boolean
 }
 
-export interface DiskIoStat {
+interface DiskIoStat {
   device: string
   read_bytes: number
   write_bytes: number
@@ -354,14 +354,14 @@ export interface DiskIoStat {
   write_ios: number
 }
 
-export interface SmartDiskHealth {
+interface SmartDiskHealth {
   device: string
   passed: boolean
   summary: string
   probed: boolean
 }
 
-export interface CgroupV2Stats {
+interface CgroupV2Stats {
   unified_path: string
   memory_current_bytes?: number | null
   memory_max_bytes?: number | null
@@ -378,14 +378,14 @@ export interface VmCgroupStats {
   available: boolean
 }
 
-export interface HwmonTemp {
+interface HwmonTemp {
   sensor: string
   label: string
   temp_celsius: number
   critical_celsius?: number | null
 }
 
-export interface BpfProbeSummary {
+interface BpfProbeSummary {
   available: boolean
   bpftool_path: string
   program_count: number
@@ -408,7 +408,7 @@ export interface LinuxHostObservability {
 export const getHostLinuxObservability = () =>
   readJsonObject<LinuxHostObservability>(`${API}/host/linux-observability`)
 
-export interface LinuxAuditEvent {
+interface LinuxAuditEvent {
   timestamp: string
   event_type: string
   summary: string
@@ -450,7 +450,7 @@ export interface HostProcess {
 }
 
 /** `sort`: `rss` (default) = highest memory first; `cpu` = highest %CPU first. */
-export type HostTopProcessSort = 'rss' | 'cpu'
+type HostTopProcessSort = 'rss' | 'cpu'
 
 export const getHostTopProcesses = (limit = 20, opts?: { sort?: HostTopProcessSort }) => {
   const sp = new URLSearchParams()
@@ -516,7 +516,7 @@ export interface NetDevCounter {
 
 export const getHostNetCounters = () => readJsonArray<NetDevCounter>(`${API}/host/net-counters`)
 
-export interface NetDevRate {
+interface NetDevRate {
   iface: string
   rx_bytes_per_sec: number
   tx_bytes_per_sec: number
@@ -585,7 +585,7 @@ export interface PciDevice {
 export const listPciDevices = () => readJsonArray<PciDevice>(`${API}/host/pci`)
 
 // IOMMU Groups
-export interface IommuDevice {
+interface IommuDevice {
   bdf: string
   vendor: string
   device_name: string
@@ -623,7 +623,7 @@ export interface JournalBootEntry {
   last_entry: string
 }
 
-export interface JournalLogsQuery {
+interface JournalLogsQuery {
   lines?: number
   priority?: string
   unit?: string
@@ -729,7 +729,7 @@ export const setHostname = (hostname: string) => apiPost<{ status: string }>(`${
 export const setTimezone = (timezone: string) => apiPost<{ status: string }>(`${API}/host/timezone`, { timezone })
 
 /** Sysfs + SMBIOS/DMI + libvirt caps — VMware-style platform inventory for audits. */
-export interface DmiInventory {
+interface DmiInventory {
   product_uuid: string | null
   product_serial: string
   sys_vendor: string
@@ -740,7 +740,7 @@ export interface DmiInventory {
   bios_date: string
 }
 
-export interface CpuTopologySysfs {
+interface CpuTopologySysfs {
   logical_cpus: number
   sockets: number
   socket_package_ids: number[]
@@ -749,13 +749,13 @@ export interface CpuTopologySysfs {
   cores_per_socket: number[]
 }
 
-export interface NumaNodeInventory {
+interface NumaNodeInventory {
   node_id: number
   cpu_list: string
   memory_total_kb: number
 }
 
-export interface LibvirtCpuCapsule {
+interface LibvirtCpuCapsule {
   cpu_model: string
   cpu_sockets: number
   cpu_cores: number

@@ -9,8 +9,8 @@ import { VirtImageBuildRequest } from './extras'
 
 const API = '/api/v1'
 
-export type JobKind = 'virt_image_build' | 'vm_create' | 'packer_golden_build'
-export type JobStatus = 'running' | 'completed' | 'failed'
+type JobKind = 'virt_image_build' | 'vm_create' | 'packer_golden_build'
+type JobStatus = 'running' | 'completed' | 'failed'
 
 export interface JobSummary {
   id: string
@@ -34,7 +34,7 @@ export const getJob = (id: string) =>
   readJsonObject<JobDetail>(`${API}/jobs/${encodeURIComponent(id)}`)
 
 /** Start async virt-image-build; poll `getJob` or open `streamJobLogs`. */
-export interface PackerGoldenBuildRequest {
+interface PackerGoldenBuildRequest {
   guest: string
 }
 

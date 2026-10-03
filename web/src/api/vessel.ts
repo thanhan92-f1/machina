@@ -3,9 +3,9 @@
 
 import { apiDelete, apiGet, apiPost } from './client'
 
-export type EngineKind = 'podman' | 'docker' | 'Podman' | 'Docker'
+type EngineKind = 'podman' | 'docker' | 'Podman' | 'Docker'
 
-export interface EngineCapabilities {
+interface EngineCapabilities {
   pods: boolean
   logs: boolean
   stats: boolean
@@ -26,7 +26,7 @@ export interface VesselStatus {
   capabilities?: EngineCapabilities
 }
 
-export interface PortMapping {
+interface PortMapping {
   ip?: string | null
   private_port: number
   public_port?: number | null

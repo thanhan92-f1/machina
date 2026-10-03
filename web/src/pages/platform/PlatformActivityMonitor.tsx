@@ -4,19 +4,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import { Link } from 'react-router'
-import { Activity, Server, Terminal } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import DetailTabs from '../../components/platform/DetailTabs'
 import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import { getFleetActivity, type FleetActivityOverview } from '../../api/platform'
 import { formatUserError } from '../../utils/apiError'
-import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusToneClass, taskStatusTone, utilizationBarClass, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
+import { statusToneClass, utilizationBarClass, hubLinkClasses } from '../../utils/semanticColors'
 import { useExpandable } from '../../hooks/useExpandable'
 import { ExpandableToggle } from '../../components/ui/ExpandableToggle'
 
 const ACTIVITY_TABS = ['vms', 'hosts'] as const
-type Tab = (typeof ACTIVITY_TABS)[number]
 
 function bar(label: string, value: number, tone: 'cpu' | 'mem' | 'io' | 'thermal') {
   // Thermal is a temperature in °C, not a percentage — its own thresholds and

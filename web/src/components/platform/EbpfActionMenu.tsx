@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router'
 import { Ban, Radar, Search, Shield } from 'lucide-react'
 import { hubLinkClasses } from '../../utils/semanticColors'
 
-export interface EbpfActionMenuProps {
+interface EbpfActionMenuProps {
   hostId?: string
   suggestedKind?: string
   suggestedMatch?: string

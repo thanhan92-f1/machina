@@ -14,7 +14,7 @@
 
 import { listVms, patchVmTags, type NativeVm } from './nativeVms'
 
-export const ANTI_AFFINITY_PREFIX = 'anti-affinity:'
+const ANTI_AFFINITY_PREFIX = 'anti-affinity:'
 
 export interface DerivedServerGroup {
   name: string

@@ -5,8 +5,8 @@
 
 import { loadPlatformDesktopTier, type PlatformDesktopTier } from './platformDesktopTier'
 
-export const JARVIS_SHELL_KEY = 'machina-jarvis-shell'
-export const JARVIS_SHELL_EVENT = 'machina-jarvis-shell-changed'
+const JARVIS_SHELL_KEY = 'machina-jarvis-shell'
+const JARVIS_SHELL_EVENT = 'machina-jarvis-shell-changed'
 export const OPEN_SPOTLIGHT_EVENT = 'machina-open-spotlight'
 export const CLOSE_PLATFORM_MENUS_EVENT = 'machina-close-platform-menus'
 export const CLOSE_MISSION_CONTROL_EVENT = 'machina-close-mission-control'
@@ -20,7 +20,7 @@ export function dismissPlatformShellOverlays() {
   window.dispatchEvent(new CustomEvent(DISMISS_PLATFORM_SHELL_EVENT))
 }
 
-export function defaultJarvisShellForTier(tier: PlatformDesktopTier): boolean {
+function defaultJarvisShellForTier(tier: PlatformDesktopTier): boolean {
   return tier === 'normal'
 }
 

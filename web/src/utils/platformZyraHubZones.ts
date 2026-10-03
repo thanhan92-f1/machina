@@ -1,6 +1,6 @@
 
 
-export type ZyraHubGroup = {
+type ZyraHubGroup = {
   label: string
   subtitle?: string
   tiles: ZyraHubTile[]

@@ -11,7 +11,7 @@
 
 import { platformFetch } from './platform'
 
-export interface StackSecurityGroupRule {
+interface StackSecurityGroupRule {
   direction?: string
   protocol?: string
   port_min?: number
@@ -32,7 +32,7 @@ export interface StackTemplate {
   }[]
 }
 
-export interface StackResourceRef {
+interface StackResourceRef {
   kind: string
   id: string
   name: string

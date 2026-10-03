@@ -7,7 +7,7 @@ import { useKeyboardShortcut } from '../../hooks/useKeyboardShortcut'
 import { isInputFocused } from '../../hooks/useKeyboardShortcut'
 import type { ViewportMode } from './ConsoleViewportContext'
 
-export type ConsolePaletteAction = {
+type ConsolePaletteAction = {
   id: string
   label: string
   keywords?: string

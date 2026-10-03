@@ -22,7 +22,6 @@ import CopyButton from '../../components/CopyButton'
 import { hubLinkClasses } from '../../utils/semanticColors'
 
 const DEV_TABS = ['sdk', 'console'] as const
-type DevTab = (typeof DEV_TABS)[number]
 
 export default function PlatformDeveloper() {
   const [tab, setTab] = usePlatformTabState(DEV_TABS, { defaultTab: 'sdk' })

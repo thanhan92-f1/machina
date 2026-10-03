@@ -7,7 +7,7 @@ const API = '/api/v1'
 
 /** RBAC role from session or API token (daemon `roles.json` / token metadata). */
 export type SessionRole = 'admin' | 'operator' | 'readonly'
-export type SessionAuthSource = 'pam' | 'ldap' | 'oidc' | 'api_token'
+type SessionAuthSource = 'pam' | 'ldap' | 'oidc' | 'api_token'
 
 export interface AuthSession {
   authenticated: boolean
@@ -39,7 +39,7 @@ const DEFAULT_PROVIDERS: AuthProviders = {
 }
 
 /** Map daemon JSON (OIDC/PAM) to a known role; unknown shapes become `undefined` so callers can apply `?? fallback`. */
-export function parseSessionRole(value: unknown): SessionRole | undefined {
+function parseSessionRole(value: unknown): SessionRole | undefined {
   if (value === 'admin' || value === 'operator' || value === 'readonly') return value
   if (typeof value !== 'string') return undefined
   const x = value.trim().toLowerCase()
@@ -58,7 +58,7 @@ function parseAuthSource(value: unknown): SessionAuthSource | undefined {
 /**
  * Normalize `/auth/session` JSON so UI never crashes on missing fields (proxies, partial responses, OIDC edge cases).
  */
-export function normalizeAuthSession(raw: unknown): AuthSession {
+function normalizeAuthSession(raw: unknown): AuthSession {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { authenticated: false }
   }

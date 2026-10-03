@@ -6,7 +6,7 @@ import { readJsonObject } from './client'
 
 const DAEMON_API = '/api/v1'
 
-export type ExposureRisk = 'Safe' | 'Warning' | 'Critical' | 'safe' | 'warning' | 'critical'
+type ExposureRisk = 'Safe' | 'Warning' | 'Critical' | 'safe' | 'warning' | 'critical'
 
 export interface FirewallTargetSummary {
   id: string
@@ -57,7 +57,7 @@ export interface FirewallScore {
   recommendations: Array<{ label: string; points: number; action: string }>
 }
 
-export interface FirewallInventory {
+interface FirewallInventory {
   hostname: string
   posture: {
     enabled: boolean
@@ -77,7 +77,7 @@ export interface FirewallTargetDetail {
   inventory: FirewallInventory
 }
 
-export interface FirewallExplainReport {
+interface FirewallExplainReport {
   target: string
   risk: string
   evidence: string[]
@@ -85,7 +85,7 @@ export interface FirewallExplainReport {
   summary: string
 }
 
-export interface SecurePlanReport {
+interface SecurePlanReport {
   target: string
   steps: Array<{ step: number; action: string }>
   risk_after: string
@@ -116,11 +116,11 @@ export const getFirewallServices = (id: string) =>
 export const getFirewallScore = (id: string) =>
   platformFetch<FirewallScore>(`/api/v1/zeus-firewall/targets/${id}/score`)
 
-export interface FirewallPlanDiff {
+interface FirewallPlanDiff {
   warnings?: string[]
 }
 
-export interface FirewallPlanResult {
+interface FirewallPlanResult {
   diff: FirewallPlanDiff
   operations: string[]
 }
@@ -224,7 +224,7 @@ export const simulateConnectivity = (target_id: string, profile: string) =>
 export const getBpfAnomalies = () =>
   platformFetch<Record<string, unknown>>('/api/v1/zeus-firewall/anomalies')
 
-export interface BaremetalFirewallOverview {
+interface BaremetalFirewallOverview {
   servers: Array<{
     id: string
     hostname: string
@@ -411,7 +411,7 @@ export interface FleetSecurePlan {
 export const getOperatorSecurePlan = () =>
   platformFetch<FleetSecurePlan>('/api/v1/zeus-firewall/operator/plan')
 
-export interface OperatorExecuteResult {
+interface OperatorExecuteResult {
   dry_run: boolean
   host_id: string
   applied: boolean

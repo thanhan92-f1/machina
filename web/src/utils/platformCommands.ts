@@ -12,7 +12,7 @@ import {
   vmMigrate,
 } from '../api/platform'
 
-export type PlatformCommandId =
+type PlatformCommandId =
   | 'import-networks'
   | 'import-storage'
   | 'sync-hosts'

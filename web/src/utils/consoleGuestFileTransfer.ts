@@ -1,7 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-export type GuestFileTransferPlan = {
+type GuestFileTransferPlan = {
   fileName: string
   destPath?: string
   sshUser?: string
@@ -11,7 +11,7 @@ export type GuestFileTransferPlan = {
   guestIpPrivate?: boolean
 }
 
-export type GuestFileTransferCommand = {
+type GuestFileTransferCommand = {
   command: string
   summary: string
 }

@@ -4,7 +4,7 @@
 import { cinemaHubPath, studioHubPath } from '../../../utils/consoleExperienceMode'
 
 /** Display order for Cockpit-style console lenses in Machine Finder. */
-export const CONSOLE_PROTOCOL_ORDER = ['novnc', 'spice', 'webrtc_spice', 'serial', 'native_ssh'] as const
+const CONSOLE_PROTOCOL_ORDER = ['novnc', 'spice', 'webrtc_spice', 'serial', 'native_ssh'] as const
 
 export const CONSOLE_PROTOCOL_LABELS: Record<string, string> = {
   novnc: 'VNC',

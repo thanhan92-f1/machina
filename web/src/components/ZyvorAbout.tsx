@@ -6,16 +6,16 @@ import { ZyvorMark } from './ZyvorMark'
 import { ZYVOR_URL, ZYVOR_BRAND, ZYVOR_COPY, ZYVOR_LINE } from './ZyvorBrand'
 import { MACHINA_HELP, ZEUS_OS_HELP, ZYVOR_HELP, type HelpDocLink } from '../config/zyvorHelp'
 
-export const MACHINA_PRODUCT = MACHINA_HELP.name
-export const MACHINA_VERSION = MACHINA_HELP.version
-export const MACHINA_TAGLINE = MACHINA_HELP.tagline
-export const ZEUS_OS_PRODUCT = ZEUS_OS_HELP.name
+const MACHINA_PRODUCT = MACHINA_HELP.name
+const MACHINA_VERSION = MACHINA_HELP.version
+const MACHINA_TAGLINE = MACHINA_HELP.tagline
+const ZEUS_OS_PRODUCT = ZEUS_OS_HELP.name
 
 const ORANGE = '#f97316'
 
 export type { HelpDocLink }
 
-export const MACHINA_HELP_LINKS: HelpDocLink[] = [
+const MACHINA_HELP_LINKS: HelpDocLink[] = [
   {
     label: 'Documentation index',
     href: 'https://github.com/zyvorai/machina/blob/main/docs/README.md',

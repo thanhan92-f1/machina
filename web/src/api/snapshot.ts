@@ -29,7 +29,7 @@ export interface SnapshotDiskSpec {
   driver?: string
 }
 
-export interface CreateSnapshotRequest {
+interface CreateSnapshotRequest {
   name: string
   description?: string
   disk_only?: boolean

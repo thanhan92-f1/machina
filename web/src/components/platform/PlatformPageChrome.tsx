@@ -9,7 +9,7 @@ import { hubLinkClasses } from '../../utils/semanticColors'
 
 type PageLayoutProps = ComponentProps<typeof PageLayout>
 
-export type PlatformPageChromeProps = PageLayoutProps & {
+type PlatformPageChromeProps = PageLayoutProps & {
   compact?: boolean
 }
 

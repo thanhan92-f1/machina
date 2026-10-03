@@ -3,7 +3,7 @@
 
 import { navActiveChipClasses } from '../../utils/semanticColors'
 
-export interface FilterPill {
+interface FilterPill {
   id: string
   label: string
   count?: number

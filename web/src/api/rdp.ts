@@ -6,7 +6,7 @@ import { appendVmConnection } from './vm'
 
 const API = '/api/v1'
 
-export interface RdpInfo {
+interface RdpInfo {
   host: string
   port: number
   ws_path: string
@@ -19,7 +19,7 @@ export function getRdpInfo(vmName: string, connection?: string | null) {
 }
 
 /** Build a minimal .rdp file for Windows/macOS Remote Desktop clients. */
-export function buildRdpFile(host: string, port: number, username?: string): string {
+function buildRdpFile(host: string, port: number, username?: string): string {
   const lines = [
     'screen mode id:i:2',
     'use multimon:i:0',

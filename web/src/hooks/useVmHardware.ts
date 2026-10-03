@@ -22,7 +22,7 @@ import { queryVmLibvirt, type CpuMemoryTopology } from '../api/platformVmLibvirt
 import { formatUserError } from '../utils/apiError'
 import { buildVmHardwareSummary, type VmHardwareSummary } from '../utils/vmHardwareSummary'
 
-export type UseVmHardwareOptions = {
+type UseVmHardwareOptions = {
   vmId: string | null | undefined
   enabled?: boolean
   inventorySource?: string | null

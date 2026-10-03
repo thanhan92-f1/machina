@@ -22,7 +22,7 @@ export interface OsUserCapability {
   sudoSupplementaryGroup?: string | null
 }
 
-export interface CreateOsUserResult {
+interface CreateOsUserResult {
   libvirt_group_attached: boolean
   account_backend?: string
 }

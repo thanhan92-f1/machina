@@ -28,7 +28,7 @@ const variantLineDone: Record<Variant, string> = {
   violet: doneLineClasses,
 }
 
-export interface BuildStepTimelineProps {
+interface BuildStepTimelineProps {
   steps: readonly string[]
   /** Step currently in progress when not allComplete and not failed */
   activeIndex: number

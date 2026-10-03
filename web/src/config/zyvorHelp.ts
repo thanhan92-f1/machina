@@ -18,7 +18,7 @@ export const ZYVOR_HELP = {
   info: 'mailto:info@zyvor.dev',
 } as const;
 
-export type ProductHelpMeta = {
+type ProductHelpMeta = {
   name: string;
   tagline: string;
   version: string;

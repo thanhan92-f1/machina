@@ -3,7 +3,7 @@
 
 import { Link } from 'react-router'
 
-export function macMenuRowClass(active = false): string {
+function macMenuRowClass(active = false): string {
   return [
     'mac-menu-row',
     'flex w-full items-center justify-between gap-4 px-3.5 py-2 text-[0.9375rem] text-left transition-colors',

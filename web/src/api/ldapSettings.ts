@@ -25,14 +25,14 @@ export interface LdapSettingsView {
   preset?: string | null
 }
 
-export type LdapSettingsPatch = Partial<
+type LdapSettingsPatch = Partial<
   Omit<LdapSettingsView, 'bind_password_set' | 'config_path' | 'preset'>
 > & {
   preset?: string
   bind_password?: string
 }
 
-export interface LdapTestResponse {
+interface LdapTestResponse {
   ok: boolean
   message: string
   username?: string | null

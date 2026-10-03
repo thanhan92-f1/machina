@@ -28,7 +28,7 @@ export interface BackupRequest {
   retain?: number
 }
 
-export interface RestoreRequest {
+interface RestoreRequest {
   backup_id: string
 }
 

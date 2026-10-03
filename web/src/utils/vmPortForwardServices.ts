@@ -35,7 +35,7 @@ export const KNOWN_PORT_FORWARD_SERVICES: PortForwardServiceTemplate[] = [
 
 const CUSTOM_STORAGE_PREFIX = 'machina-port-forward-custom:'
 
-export function customServicesStorageKey(platformVmId: string): string {
+function customServicesStorageKey(platformVmId: string): string {
   return `${CUSTOM_STORAGE_PREFIX}${platformVmId}`
 }
 
@@ -118,11 +118,11 @@ export function sshNatHostPort(rules: NatRuleLike[]): number | undefined {
   return natRuleForGuestPort(rules, 22)?.host_port
 }
 
-export function templateForGuestPort(guestPort: number): PortForwardServiceTemplate | undefined {
+function templateForGuestPort(guestPort: number): PortForwardServiceTemplate | undefined {
   return KNOWN_PORT_FORWARD_SERVICES.find((s) => s.vmPort === guestPort)
 }
 
-export function buildExposePayload(
+function buildExposePayload(
   vmName: string,
   guestPort: number,
   takenHostPorts: number[] = [],

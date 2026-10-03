@@ -4,7 +4,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-export interface PlatformTahoeEmptyStateProps {
+interface PlatformTahoeEmptyStateProps {
   icon: LucideIcon
   title: string
   description: string

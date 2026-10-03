@@ -9,7 +9,7 @@ export type LibvirtNodeDevice = {
   xml: string
 }
 
-export type NodeDeviceAttachAction =
+type NodeDeviceAttachAction =
   | { kind: 'pci'; pci: string; label: string }
   | { kind: 'usb'; vendor_id: string; product_id: string; label: string }
   | { kind: 'unsupported'; label: string; reason: string }
@@ -51,14 +51,14 @@ export function pciBdfFromNodeDevice(dev: LibvirtNodeDevice): string | null {
   return `${hexPad(domain, 4)}:${hexPad(bus, 2)}:${hexPad(slot, 2)}.${parseInt(func.replace(/^0x/i, ''), 16)}`
 }
 
-export function normalizePciBdf(value: string): string {
+function normalizePciBdf(value: string): string {
   const raw = value.trim().toLowerCase()
   if (/^[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-7]$/.test(raw)) return raw
   if (/^[0-9a-f]{2}:[0-9a-f]{2}\.[0-7]$/.test(raw)) return `0000:${raw}`
   return raw
 }
 
-export function pciBdfFromHostdevBlock(block: string): string | null {
+function pciBdfFromHostdevBlock(block: string): string | null {
   const domain = extractAttr(block, 'address', 'domain') ?? '0x0000'
   const bus = extractAttr(block, 'address', 'bus')
   const slot = extractAttr(block, 'address', 'slot')
@@ -110,7 +110,7 @@ export function lookupPciIommu(pci: string, devices: HostPciInfo[]): string | nu
   return null
 }
 
-export function usbIdsFromNodeDevice(dev: LibvirtNodeDevice): { vendor_id: string; product_id: string } | null {
+function usbIdsFromNodeDevice(dev: LibvirtNodeDevice): { vendor_id: string; product_id: string } | null {
   const vendor = extractAttr(dev.xml, 'vendor', 'id')
   const product = extractAttr(dev.xml, 'product', 'id')
   if (!vendor || !product) return null

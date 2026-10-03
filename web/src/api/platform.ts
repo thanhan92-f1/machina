@@ -197,7 +197,7 @@ export function platformHeaders(extra?: HeadersInit): Headers {
 import { formatHttpErrorBody } from '../utils/apiError'
 import { redirectToLoginOnce } from './authRedirect'
 
-export interface PlatformApiError extends Error {
+interface PlatformApiError extends Error {
   error_code?: string
   remediation?: string
   object_ref?: { kind: string; id: string; name?: string }
@@ -435,7 +435,7 @@ export interface GuestAccessHints {
   ssh_nat_host_port?: number | null
 }
 
-export interface ConsolePermissions {
+interface ConsolePermissions {
   role: string
   read_only: boolean
   can_power: boolean
@@ -474,7 +474,7 @@ export interface ConsoleHubSessionResponse {
   recording_enabled?: boolean
 }
 
-export interface SpectatorValidateResponse {
+interface SpectatorValidateResponse {
   valid: boolean
   vm_id: string
   actor: string
@@ -525,7 +525,7 @@ export const uploadConsoleSessionReplay = async (sessionId: string, blob: Blob) 
   return res.json() as Promise<{ uploaded: boolean; bytes: number }>
 }
 
-export const consoleSessionReplayUrl = (sessionId: string) =>
+const consoleSessionReplayUrl = (sessionId: string) =>
   resolvePlatformApiUrl(`/api/v1/consolehub/sessions/${sessionId}/replay`)
 
 export const fetchConsoleSessionReplay = async (sessionId: string) => {
@@ -662,7 +662,7 @@ export type FipsMatrix = {
   summary: string
 }
 
-export type TenantIsolationItem = {
+type TenantIsolationItem = {
   project_name: string
   vm_count: number
   network_isolation: string
@@ -759,7 +759,7 @@ export const executeOpsRunbook = (incident: string, context: Record<string, unkn
 export const getOpsShowback = () =>
   platformFetch<OpsShowbackOverview>('/api/v1/operations/showback')
 
-export type SdkPackageInfo = {
+type SdkPackageInfo = {
   path: string
   version: string
   install: string
@@ -911,7 +911,7 @@ export const getHostNetworkDiag = (hostId: string) =>
 export const getHostLinuxAudit = (hostId: string) =>
   platformFetch<HostLinuxAuditReport>(`/api/v1/hosts/${hostId}/linux/audit`)
 
-export type GuestAgentCheckRow = {
+type GuestAgentCheckRow = {
   id: string
   label: string
   passed: boolean
@@ -950,7 +950,7 @@ export type GuestObservabilitySnapshot = {
   fs_freeze?: { frozen: boolean; detail: string }
 }
 
-export type GuestAgentActionResult = {
+type GuestAgentActionResult = {
   action: string
   ok: boolean
   message: string
@@ -961,7 +961,7 @@ export type GuestAgentActionResult = {
   network?: GuestNetworkConfig
 }
 
-export type GuestNetworkInterface = {
+type GuestNetworkInterface = {
   name: string
   mac?: string | null
   addresses: string[]
@@ -976,12 +976,12 @@ export type GuestNetworkConfig = {
   backend_detail?: string
 }
 
-export type GuestStaticRoute = {
+type GuestStaticRoute = {
   to: string
   via: string
 }
 
-export type GuestNetworkApplyRequest = {
+type GuestNetworkApplyRequest = {
   iface: string
   address_cidr: string
   gateway?: string
@@ -1016,13 +1016,13 @@ export const guestServiceAction = (vmId: string, unit: string, action: 'start' |
 export const getGuestFsFreezeStatus = (vmId: string) =>
   platformFetch<GuestAgentActionResult>(`/api/v1/vms/${vmId}/guest/fs-freeze-status`)
 
-export type GuestAiInsightRow = {
+type GuestAiInsightRow = {
   title: string
   severity: string
   detail: string
 }
 
-export type GuestAiRecommendation = {
+type GuestAiRecommendation = {
   label: string
   action: string
   risk: string
@@ -1070,7 +1070,7 @@ export const getVmGuestHealth = (vmId: string) =>
 export const getVmGuestServices = (vmId: string) =>
   platformFetch<VmGuestServicesReport>(`/api/v1/vms/${vmId}/guest/services`)
 
-export type OsDiagnoseHypothesis = {
+type OsDiagnoseHypothesis = {
   title: string
   confidence: number
   evidence: string
@@ -1165,7 +1165,7 @@ export const getFleetMission = () =>
 
 export type GpuProfileKind = 'mig' | 'vgpu' | 'passthrough' | 'cuda' | 'unknown'
 
-export type GpuHostItem = {
+type GpuHostItem = {
   host_id: string
   hostname: string
   site: string
@@ -1180,7 +1180,7 @@ export type GpuHostItem = {
   cuda_ready: boolean
 }
 
-export type GpuVmItem = {
+type GpuVmItem = {
   vm_id: string
   vm_name: string
   host_id?: string | null
@@ -1205,7 +1205,7 @@ export type FleetGpuOverview = {
 export const getFleetGpu = () =>
   platformFetch<FleetGpuOverview>('/api/v1/fleet/gpu')
 
-export type MaintenanceMissionStepId =
+type MaintenanceMissionStepId =
   | 'scan'
   | 'assess'
   | 'schedule'
@@ -1216,7 +1216,7 @@ export type MaintenanceMissionStepId =
 
 export type MaintenanceStepStatus = 'pending' | 'ready' | 'done' | 'blocked' | 'skipped'
 
-export type MaintenanceMissionStep = {
+type MaintenanceMissionStep = {
   id: MaintenanceMissionStepId
   label: string
   status: MaintenanceStepStatus
@@ -1249,7 +1249,7 @@ export type FleetMaintenanceMissionOverview = {
 export const getFleetMaintenanceMission = () =>
   platformFetch<FleetMaintenanceMissionOverview>('/api/v1/fleet/maintenance-mission')
 
-export type FleetDnaPillar = {
+type FleetDnaPillar = {
   id: string
   label: string
   score: number
@@ -1287,7 +1287,7 @@ export type FleetLinuxHealthOverview = {
 export const getFleetLinuxHealth = () =>
   platformFetch<FleetLinuxHealthOverview>('/api/v1/fleet/linux-health')
 
-export type VmActivityItem = {
+type VmActivityItem = {
   vm_id: string
   vm_name: string
   host_id?: string | null
@@ -1297,7 +1297,7 @@ export type VmActivityItem = {
   memory_mib: number
 }
 
-export type HostActivityItem = {
+type HostActivityItem = {
   host_id: string
   hostname: string
   state: string
@@ -1322,7 +1322,7 @@ export type FleetActivityOverview = {
 export const getFleetActivity = () =>
   platformFetch<FleetActivityOverview>('/api/v1/fleet/activity')
 
-export type FleetBackupEvent = {
+type FleetBackupEvent = {
   kind: string
   id: string
   vm_id: string
@@ -1345,7 +1345,7 @@ export type FleetBackupOverview = {
 export const getFleetBackups = () =>
   platformFetch<FleetBackupOverview>('/api/v1/fleet/backups')
 
-export type SmartFolder = {
+type SmartFolder = {
   id: string
   label: string
   count: number
@@ -1362,7 +1362,7 @@ export type FleetFinderOverview = {
 export const getFleetFinder = () =>
   platformFetch<FleetFinderOverview>('/api/v1/fleet/finder')
 
-export type FleetNetworkSegment = {
+type FleetNetworkSegment = {
   id: string
   name: string
   tier: string
@@ -1386,7 +1386,7 @@ export type FleetNetworkOverview = {
 export const getFleetNetwork = () =>
   platformFetch<FleetNetworkOverview>('/api/v1/fleet/network')
 
-export type FleetStoragePoolItem = {
+type FleetStoragePoolItem = {
   id: string
   name: string
   storage_class: string
@@ -1397,7 +1397,7 @@ export type FleetStoragePoolItem = {
   status: string
 }
 
-export type FleetSmartDiskItem = {
+type FleetSmartDiskItem = {
   host_id: string
   hostname: string
   device: string
@@ -1422,7 +1422,7 @@ export type FleetStorageOverview = {
 export const getFleetStorage = () =>
   platformFetch<FleetStorageOverview>('/api/v1/fleet/storage')
 
-export type FleetConsoleEntry = {
+type FleetConsoleEntry = {
   source: string
   id: string
   severity: string
@@ -1448,7 +1448,7 @@ export type FleetConsoleOverview = {
 export const getFleetConsole = () =>
   platformFetch<FleetConsoleOverview>('/api/v1/fleet/console')
 
-export type FleetHostUpdateItem = {
+type FleetHostUpdateItem = {
   host_id: string
   hostname: string
   agent_version: string
@@ -1474,7 +1474,7 @@ export type FleetUpdatesOverview = {
 export const getFleetUpdates = () =>
   platformFetch<FleetUpdatesOverview>('/api/v1/fleet/updates')
 
-export type FleetKeychainEntry = {
+type FleetKeychainEntry = {
   kind: string
   id: string
   name: string
@@ -1492,7 +1492,7 @@ export type FleetKeychainOverview = {
 export const getFleetKeychain = () =>
   platformFetch<FleetKeychainOverview>('/api/v1/fleet/keychain')
 
-export type FleetUserItem = {
+type FleetUserItem = {
   id: string
   username: string
   role: string
@@ -1521,7 +1521,7 @@ export type FleetUsersOverview = {
 export const getFleetUsers = () =>
   platformFetch<FleetUsersOverview>('/api/v1/fleet/users')
 
-export type FleetShortcutItem = {
+type FleetShortcutItem = {
   id: string
   name: string
   description: string
@@ -1542,7 +1542,7 @@ export type FleetShortcutsOverview = {
 export const getFleetShortcuts = () =>
   platformFetch<FleetShortcutsOverview>('/api/v1/fleet/shortcuts')
 
-export type FleetSpaceItem = {
+type FleetSpaceItem = {
   name: string
   vm_count: number
   running_count: number
@@ -1564,8 +1564,8 @@ export type FleetSpacesOverview = {
 export const getFleetSpaces = () =>
   platformFetch<FleetSpacesOverview>('/api/v1/fleet/spaces')
 
-export type FleetGeneralWallpaperOption = { id: string; label: string }
-export type FleetGeneralDockOption = { path: string; label: string }
+type FleetGeneralWallpaperOption = { id: string; label: string }
+type FleetGeneralDockOption = { path: string; label: string }
 
 export type FleetGeneralOverview = {
   summary: string
@@ -1586,7 +1586,7 @@ export const getFleetGeneral = () =>
 export const exportNetworkSegmentsGitops = () =>
   platformFetch('/api/v1/network/segments/gitops/export')
 
-export interface SegmentConnectivityCell {
+interface SegmentConnectivityCell {
   source: string
   destination: string
   port: number
@@ -1749,7 +1749,7 @@ export const attachVmDisk = (id: string, body: { disk_path: string; target_dev?:
     body: JSON.stringify(body),
   })
 
-export interface VmLibvirtDisk {
+interface VmLibvirtDisk {
   device: string
   source: string
   driver: string
@@ -1763,7 +1763,7 @@ export interface VmLibvirtDisk {
   physical_bytes?: number | null
 }
 
-export interface VmLibvirtFilesystem {
+interface VmLibvirtFilesystem {
   source: string
   mount_tag: string
   driver?: string
@@ -1771,7 +1771,7 @@ export interface VmLibvirtFilesystem {
   xattr?: boolean
 }
 
-export interface VmPendingChange {
+interface VmPendingChange {
   category: string
   summary: string
 }
@@ -1786,7 +1786,7 @@ export interface VmPendingConfig {
 export const getVmPendingConfig = (id: string) =>
   platformFetch<VmPendingConfig>(`/api/v1/vms/${id}/pending-config`)
 
-export interface VmParitySummary {
+interface VmParitySummary {
   needs_shutdown: boolean
   spice: boolean
   state?: string
@@ -1799,7 +1799,7 @@ export const batchVmParitySummary = (vm_ids: string[]) =>
     body: JSON.stringify({ vm_ids }),
   })
 
-export type BatchGuestIpItem = { guest_ip?: string | null; nic_ip?: string | null }
+type BatchGuestIpItem = { guest_ip?: string | null; nic_ip?: string | null }
 
 export const batchVmGuestIps = (vm_ids: string[]) =>
   platformFetch<{ items: Record<string, BatchGuestIpItem> }>('/api/v1/vms/guest-ips/batch', {
@@ -1838,7 +1838,7 @@ export const removeVmGraphics = (id: string, graphics_type: 'vnc' | 'spice') =>
     body: JSON.stringify({ graphics_type }),
   })
 
-export interface VmLibvirtInterface {
+interface VmLibvirtInterface {
   mac_address: string
   source: string
   model: string
@@ -1869,7 +1869,7 @@ export interface VmHardwareSection {
   badges?: string[]
 }
 
-export interface VmHardwareWindowsItem {
+interface VmHardwareWindowsItem {
   label: string
   status: string
   ok: boolean
@@ -1881,7 +1881,7 @@ export interface VmHardwareWindowsReadiness {
   ready: boolean
 }
 
-export interface VmHardwareCompatIssue {
+interface VmHardwareCompatIssue {
   severity: string
   category: string
   message: string
@@ -2079,7 +2079,7 @@ export const deleteVmPortForward = (
     body: JSON.stringify(body),
   })
 
-export interface PortForwardTemplateRecord {
+interface PortForwardTemplateRecord {
   id: string
   name: string
   vm_port: number
@@ -2426,7 +2426,7 @@ export interface NetworkSegmentOverview {
   micro_seg_score: number
 }
 
-export interface NetworkSegmentsOverview {
+interface NetworkSegmentsOverview {
   segments: NetworkSegmentOverview[]
   summary: string
 }
@@ -2441,7 +2441,7 @@ export interface IpamPoolRow {
   reservation_count: number
 }
 
-export interface IpamAllocation {
+interface IpamAllocation {
   reservation_id: string
   pool_id: string
   ip_address: string
@@ -2450,7 +2450,7 @@ export interface IpamAllocation {
   segment_name: string
 }
 
-export interface HostLldpNeighbor {
+interface HostLldpNeighbor {
   local_interface: string
   chassis_id: string
   system_name: string
@@ -2602,7 +2602,7 @@ export const deleteVmSnapshot = (vmId: string, name: string) =>
 
 export const listUsers = () => platformFetch<PlatformUser[]>('/api/v1/users')
 
-export function normalizePlatformUser(raw: Partial<PlatformUser> & { username?: string; role?: string }): PlatformUser | null {
+function normalizePlatformUser(raw: Partial<PlatformUser> & { username?: string; role?: string }): PlatformUser | null {
   const username = raw.username?.trim()
   if (!username) return null
   return {
@@ -2781,7 +2781,7 @@ export interface NotificationRow {
   delivered_at?: string | null
 }
 
-export interface HealthIssue {
+interface HealthIssue {
   id: string
   severity: string
   message: string
@@ -2821,7 +2821,7 @@ export interface ApplicationGroup {
   created_at: string
 }
 
-export interface ApplicationGroupDetail extends ApplicationGroup {
+interface ApplicationGroupDetail extends ApplicationGroup {
   vm_ids: string[]
   vm_names: string[]
 }
@@ -2960,7 +2960,7 @@ export interface BaremetalServer {
   created_at: string
 }
 
-export interface RegisterBaremetalBody {
+interface RegisterBaremetalBody {
   hostname: string
   bmc_address: string
   bmc_type?: string
@@ -2983,7 +2983,7 @@ export interface BmcPowerBody {
 // neither of which the backend ever sends, so PlatformBareMetal.tsx's success/failure branch on
 // `result.success` was always falsy and showed a spurious error toast on every power action that
 // actually succeeded.
-export interface BmcPowerResult {
+interface BmcPowerResult {
   server_id: string
   hostname: string
   action: string

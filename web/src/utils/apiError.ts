@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 /** Stable daemon `error_code` values → short user-facing labels. */
-export const API_ERROR_LABELS: Record<string, string> = {
+const API_ERROR_LABELS: Record<string, string> = {
   operation_failed: 'The operation failed on the server',
   not_found: 'The requested resource was not found',
   invalid_request: 'The request was invalid',

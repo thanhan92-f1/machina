@@ -4,7 +4,7 @@
 /**
  * Normalize noisy kubectl / client-go stderr for UI (repeated memcache lines, etc.).
  */
-export function dedupeKubectlLines(raw: string): string {
+function dedupeKubectlLines(raw: string): string {
   const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
   const out: string[] = []
   for (const line of lines) {
@@ -13,7 +13,7 @@ export function dedupeKubectlLines(raw: string): string {
   return out.join('\n')
 }
 
-export type K8sClientErrorSummary = {
+type K8sClientErrorSummary = {
   /** Short human-readable summary for banners and compact toasts. */
   headline: string
   /** True when the cluster TLS cert is not trusted for the current kubeconfig. */
