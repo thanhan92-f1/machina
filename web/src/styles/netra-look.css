@@ -655,7 +655,20 @@ html.light-theme .machine-finder-card .mx-auto.rounded-2xl svg {
 @keyframes nl-dash {
   to { stroke-dashoffset: -24; }
 }
+/* Children of a grid/list rise in one after another (no wrapper elements, so layout and test ids
+   are untouched). */
+.nl-stagger > * {
+  animation: nl-fade-rise 0.42s var(--nl-ease) both;
+}
+.nl-stagger > *:nth-child(2) { animation-delay: 0.05s; }
+.nl-stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.nl-stagger > *:nth-child(4) { animation-delay: 0.15s; }
+.nl-stagger > *:nth-child(5) { animation-delay: 0.2s; }
+.nl-stagger > *:nth-child(6) { animation-delay: 0.25s; }
+.nl-stagger > *:nth-child(7) { animation-delay: 0.3s; }
+.nl-stagger > *:nth-child(n + 8) { animation-delay: 0.35s; }
 @media (prefers-reduced-motion: reduce) {
+  .nl-stagger > * { animation: none; }
   .nl-fade-rise { animation: none; }
   .nl-reveal { opacity: 1; transform: none; transition: none; }
   .nl-live-pill i, .nl-link { animation: none !important; }

@@ -260,7 +260,7 @@ export default function PlatformHosts() {
     >
       {viewMode === 'icons' && visibleHosts.length > 0 && (
         <div className="flex flex-col gap-4 w-full" data-testid="host-fleet-panels">
-          <div className="grid gap-3 sm:grid-cols-2 w-full">
+          <div className="grid gap-3 sm:grid-cols-2 w-full nl-stagger">
             {hostList.shown.map((h) => (
               <HostFleetCard
                 key={h.id}

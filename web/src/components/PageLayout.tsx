@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react'
 import ErrorBanner from './ErrorBanner'
 import PageSkeleton from './PageSkeleton'
+import { useNavGroupEyebrow } from '../hooks/useNavGroupEyebrow'
 
 type PageLayoutProps = {
   title?: string
@@ -67,6 +68,7 @@ export default function PageLayout({
   className,
   contentClassName,
 }: PageLayoutProps) {
+  const navEyebrow = useNavGroupEyebrow()
   if (loading) {
     return <PageSkeleton />
   }
@@ -91,7 +93,7 @@ export default function PageLayout({
       {!hideHeader ? (
         <header className="apple-page-header">
           <div className="min-w-0 flex-1 max-w-3xl">
-            {eyebrow ? <p className="apple-eyebrow">{eyebrow}</p> : null}
+            {eyebrow ?? navEyebrow ? <p className="apple-eyebrow">{eyebrow ?? navEyebrow}</p> : null}
             {icon ? (
               <div className="flex items-center gap-3">
                 <span className="shrink-0 text-[var(--text-muted)]" aria-hidden>{icon}</span>
