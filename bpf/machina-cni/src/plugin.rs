@@ -237,6 +237,7 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addr: Ipv4Addr) -> Result<(String
     ip(&["link", "set", host, "up"])?;
     ip(&["route", "replace", &cidr, "dev", host, "scope", "link", "proto", "static"])?;
     let _ = std::fs::write(format!("/proc/sys/net/ipv4/conf/{host}/rp_filter"), "0");
+    let _ = std::fs::write(format!("/proc/sys/net/ipv4/conf/{host}/accept_local"), "1");
     Ok((pod_mac, host_mac))
 }
 

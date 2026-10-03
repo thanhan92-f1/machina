@@ -24,6 +24,12 @@ use crate::compile::{self, Inputs};
 /// Routes we own carry this protocol number so stale ones can be found.
 const ROUTE_PROTO: &str = "233";
 const NFT_TABLE: &str = "machina_cni";
+const SYSCTL_OVERRIDE: &str = "/etc/sysctl.d/99-zzz-machina-cni.conf";
+/// NodePort replies leave a pod veth with the node address as source, which
+/// the kernel drops as martian unless reverse-path filtering is off and local
+/// sources are accepted. systemd-sysctl re-applies `*.rp_filter=2` to every
+/// new link after the plugin ran, so the override has to live in sysctl.d.
+const VETH_SYSCTLS: &[(&str, &str)] = &[("rp_filter", "0"), ("accept_local", "1")];
 const RESYNC_EVERY: Duration = Duration::from_secs(30);
 
 pub struct Config {
@@ -83,9 +89,10 @@ fn install_plugin(bin_dirs: &[String]) {
 impl Config {
     pub fn from_env() -> Self {
         let env = |k: &str, d: &str| std::env::var(k).ok().filter(|v| !v.is_empty()).unwrap_or_else(|| d.to_string());
-        let host = std::fs::read_to_string("/proc/sys/kernel/hostname").unwrap_or_default();
+        // kubelet registers the node under the lowercased hostname.
+        let host = std::fs::read_to_string("/proc/sys/kernel/hostname").unwrap_or_default().trim().to_lowercase();
         Self {
-            node: env("NODE_NAME", host.trim()),
+            node: env("NODE_NAME", &host),
             kubectl: env("MACHINA_CNI_KUBECTL", "kubectl"),
             cluster_cidr: env("MACHINA_CNI_CLUSTER_CIDR", "10.42.0.0/16"),
             conf_dirs: list(env(
@@ -209,6 +216,31 @@ pub fn nft_rules(cluster_cidr: &str) -> String {
     )
 }
 
+pub fn sysctl_override() -> String {
+    let mut s = String::from("# Written by machina-cni agent.\n");
+    for (k, v) in VETH_SYSCTLS {
+        s.push_str(&format!("net.ipv4.conf.mc*.{k} = {v}\n"));
+    }
+    s
+}
+
+/// Pin the veth sysctls on existing pod veths (new ones get the sysctl.d override).
+fn pin_veth_sysctls() {
+    let Ok(dir) = std::fs::read_dir("/proc/sys/net/ipv4/conf") else { return };
+    for e in dir.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if !name.starts_with("mc") {
+            continue;
+        }
+        for (k, v) in VETH_SYSCTLS {
+            let path = e.path().join(k);
+            if std::fs::read_to_string(&path).map(|c| c.trim() != *v).unwrap_or(false) {
+                let _ = std::fs::write(&path, v);
+            }
+        }
+    }
+}
+
 fn ensure_masquerade(cluster_cidr: &str) -> Result<()> {
     let _ = std::fs::write("/proc/sys/net/ipv4/ip_forward", "1");
     let _ = run_cmd("nft", &["delete", "table", "ip", NFT_TABLE]);
@@ -271,6 +303,9 @@ async fn reconcile(
             }
         }
         ensure_masquerade(&cfg.cluster_cidr)?;
+        if let Err(e) = write_if_changed(SYSCTL_OVERRIDE, &sysctl_override()) {
+            tracing::warn!("write {SYSCTL_OVERRIDE}: {e:#}");
+        }
         let uplink = iface_with_addr(&addr);
         bpfd.call(&Request::CniConfigure { node_addr: addr.clone(), uplink: uplink.clone() })
             .await
@@ -285,6 +320,7 @@ async fn reconcile(
         .filter_map(|n| Some((pod_cidr(n)?, internal_ip(n)?)))
         .collect();
     tokio::task::block_in_place(|| sync_routes(&routes))?;
+    pin_veth_sysctls();
 
     let pods = compile::pods(&of_kind("Pod"));
     let compiled = compile::compile(&Inputs {
@@ -340,5 +376,8 @@ mod tests {
         assert_eq!(c["plugins"][0]["type"], "machina-cni");
         assert_eq!(c["plugins"][0]["subnet"], "10.42.0.0/24");
         assert!(nft_rules("10.42.0.0/16").contains("ip saddr 10.42.0.0/16 ip daddr != 10.42.0.0/16 masquerade"));
+        let sysctl = sysctl_override();
+        assert!(sysctl.contains("net.ipv4.conf.mc*.rp_filter = 0"));
+        assert!(sysctl.contains("net.ipv4.conf.mc*.accept_local = 1"));
     }
 }
