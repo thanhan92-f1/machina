@@ -126,7 +126,7 @@ live `gnb-*` shell — see the "Update or remove e2e specs" checklist item below
    `EmptyState` (title + sentence + next action).
 4. Two-way switches (view mode, range) use `components/ui/SegmentedControl`; `ChoiceCard` is for
    wizard-style "pick a path" tiles only.
-5. Very long lists: `components/ui/ExpandableList` + `utils/topN.ts` (rank, show the top N, expand
+5. Very long lists: `hooks/useExpandable` + `components/ui/ExpandableToggle` + `utils/topN.ts` (rank, show the top N, expand
    on request). Keep existing pagination where a page has it.
 6. Run the audit (below) and leave it no worse than before.
 
@@ -178,7 +178,7 @@ means "no regressions", not "perfect": populated-state bugs need a real host
       `PlatformHosts` (all four Finder view modes), `PlatformEvents`, the firewall pages,
       `PlatformThreatHunting`, `PlatformWebhooks`, `PlatformBackups`, `FleetCloudInstances`,
       `FleetCloudVolumes`, `K8sWorkloads` (six independent lists), `PlatformRuntimeEnforcement`.
-      `ExpandableList` itself is now built on the same hook. A few borderline items from that
+      (The old `ExpandableList` component was unused and has been removed.) A few borderline items from that
       survey (`K8sOverview`, `PlatformIncidentCommander`, `SocAlertDetailPanel`,
       `HostNetworking`, other FleetCloud resource pages, classic Storage/Networks/Containers) were
       not reviewed — worth a pass if this keeps coming up in practice.
