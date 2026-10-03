@@ -5,7 +5,7 @@
    .text-white/.mac-desktop-root history for why that matters here. */
 
 :root {
-  --gnb-bar-h: 2.75rem;
+  --gnb-bar-h: 3rem;
   --gnb-side-w: 15rem;
   --gnb-side-w-rail: 68px;
 }
@@ -25,8 +25,8 @@
   z-index: 50;
   border-bottom: 1px solid var(--apple-hairline);
   background: hsl(var(--card) / 0.72);
-  backdrop-filter: blur(calc(var(--blur-liquid, 12px) + 4px)) saturate(1.35);
-  -webkit-backdrop-filter: blur(calc(var(--blur-liquid, 12px) + 4px)) saturate(1.35);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 .gnb-bar-inner {
   max-width: 160rem;
@@ -76,6 +76,28 @@
 .gnb-nav-item[aria-expanded='true'] {
   color: var(--text-primary);
   background: var(--surface-hover, rgba(255, 255, 255, 0.06));
+}
+/* Netra: the active group gets a 2px blue underline that sweeps in. */
+.gnb-nav-item {
+  position: relative;
+}
+.gnb-nav-item::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--apple-link, #0066cc);
+  transform: scaleX(0);
+  transition: transform 0.25s var(--nl-ease, cubic-bezier(0.28, 0.11, 0.32, 1));
+}
+.gnb-nav-item[aria-current='true'] {
+  color: var(--text-primary);
+}
+.gnb-nav-item[aria-current='true']::after {
+  transform: scaleX(1);
 }
 .gnb-right {
   display: flex;

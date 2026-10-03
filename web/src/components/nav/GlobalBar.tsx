@@ -134,6 +134,7 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
                 key={group.id}
                 type="button"
                 className="gnb-nav-item"
+                aria-current={group.sections.some((sec) => sec.items.some((item) => navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search))) ? 'true' : undefined}
                 aria-expanded={openGroup === group.id}
                 onMouseEnter={() => enter(group.id)}
                 onFocus={() => enter(group.id)}
