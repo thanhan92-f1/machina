@@ -3923,14 +3923,6 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-firewall/packetwolf/anomalies",
-      "methods": [
-        "GET"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
       "path": "/api/v1/zeus-firewall/policies",
       "methods": [
         "GET"

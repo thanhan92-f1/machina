@@ -34,16 +34,6 @@ NETRA_API_KEY=<token>
 NETRA_ENFORCE_LEASE=15m
 ```
 
-## PacketWolf
-
-Network intelligence, SIEM export and TC egress allowlists.
-
-```bash
-PACKETWOLF_ENABLED=1
-PACKETWOLF_BASE_URL=http://127.0.0.1:9191
-PACKETWOLF_API_KEY=<key>
-```
-
 ## Containers and Kubernetes
 
 - **Containers.** Local Podman or Docker containers and Podman pods run next to your VMs (configure the socket in

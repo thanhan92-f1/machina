@@ -669,7 +669,7 @@ VM=chrome-e2e-vm ./scripts/feature-test.sh 127.0.0.1 sus max   # E via :5092 tun
 
 | Item | Result |
 |------|--------|
-| `ops-complx.js` | **21/21 PASS** — firewall compliance summary+host, enforcement status/host/policies, create/apply schema negatives, tetragon soft, attach/sync/detach PacketWolf soft, platform rename/clone/snapshot schema negatives, snapshots list, cordon schema+missing, cluster settings, HA status, VM running + host schedulable postchecks |
+| `ops-complx.js` | **21/21 PASS** — firewall compliance summary+host, enforcement status/host/policies, create/apply schema negatives, tetragon soft, platform rename/clone/snapshot schema negatives, snapshots list, cordon schema+missing, cluster settings, HA status, VM running + host schedulable postchecks |
 | `ui-complx.js` | **10/10 PASS** — compliance / policies / enforcement / security / ha / placement / hosts / vms / datacenter / topology |
 
 ```bash

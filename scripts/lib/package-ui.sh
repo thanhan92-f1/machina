@@ -205,7 +205,6 @@ pkg_env_bootstrap() {
     fi
 }
 
-# Alias used by packetwolf install paths.
 pkg_env_bootstrap_auth() {
     pkg_env_bootstrap_auth_for_file "$1"
 }

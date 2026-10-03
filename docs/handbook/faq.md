@@ -17,7 +17,7 @@ the `machinactl` CLI.
 **Q2. Where does Machina fit in the Zyvor stack?**
 It is the *physical hypervisor OS* — the layer that owns the metal. Zeus OS (v9s)
 is the cloud / KubeVirt control plane that sits on top. Other siblings include
-hypercluster (k8s bootstrap), packetwolf (network intelligence), and hypersdk
+hypercluster (k8s bootstrap), and hypersdk
 (VM migration).
 
 **Q3. Is it a replacement for `virsh`?**

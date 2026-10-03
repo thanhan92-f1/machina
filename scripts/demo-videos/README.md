@@ -67,7 +67,7 @@ node render-cards-hw.mjs
 rm -rf raw/seg-hw-feats
 node seg-hw-feats.mjs                 # classic Devices tab → Hardware drawer
 # Translate mark() times → video-relative (see build-hw.sh header), then:
-./build-hw.sh /tmp/hw-marks.env       # → out/ + Desktop/PacketWolf-Demo-Videos/machina-hardware/
+./build-hw.sh /tmp/hw-marks.env       # → out/ + Desktop/Machina-Demo-Videos/machina-hardware/
 ```
 
 ## Publishing

@@ -78,14 +78,6 @@ pkg_env_bootstrap_auth_for_file() {
     [[ -f "${env_file}" ]] || touch "${env_file}"
 
     case "${base}" in
-        packetwolf)
-            pkg_env_ensure_var "${env_file}" "PACKETWOLF_HOST" "0.0.0.0"
-            pkg_env_ensure_var "${env_file}" "PACKETWOLF_PORT" "9191"
-            pkg_env_ensure_var "${env_file}" "PACKETWOLF_ADMIN_API_KEY" "Admin@321"
-            pkg_env_ensure_var "${env_file}" "PACKETWOLF_ADMIN_PASSWORD" "Admin@321"
-            pkg_env_ensure_jwt_secret "${env_file}" "JWT_SECRET"
-            pkg_env_ensure_var "${env_file}" "UI_DIST_DIR" "${root}/ui"
-            ;;
         vmrogue)
             pkg_env_ensure_var "${env_file}" "VMROGUE_API_KEY" "Admin@321"
             ;;

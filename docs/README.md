@@ -87,7 +87,6 @@ Part of the [Zyvor / HyperSDK platform stack](https://zyvor.dev):
 | **forge** | AI infrastructure on K8s |
 | **hypersdk / hyper2kvm** | VM migration |
 | **guestkit** | Offline VM assurance |
-| **packetwolf** | Network intelligence |
 | **Aether** | Runtime portability |
 | **hermes** | Application layer for K8s |
 

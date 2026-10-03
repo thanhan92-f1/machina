@@ -214,8 +214,6 @@ _A firewall control plane, network intelligence, SIEM/SOC tooling, and complianc
 
 - **Zeus firewall control plane** — Fleet-wide firewall with profiles, drift detection, lockdown, GitOps sync, approvals, and change checkpoints. — _Consistent, reviewable network policy across every host._
   - **How:** Web → Platform → Zeus firewall → profiles / lockdown / approvals.
-- **PacketWolf network intelligence** — Kernel-native traffic discovery, ingest, and enforcement integrated as a bridge into the controller. — _See and contain real traffic at the packet level._
-  - **How:** Web → Platform → Security Center → PacketWolf (bridge into the controller).
 - **SOC & SIEM** — Security operations center with detection, event ingest, playbooks, and a SIEM pipeline. — _Detect and respond to threats without a separate SOC stack._
   - **How:** Web → Platform → SOC → detections / event ingest / playbooks.
 - **Threat hunting & attack surface** — Threat-hunting workspace and attack-surface-management (ASM) discovery. — _Proactively find exposure before attackers do._
@@ -295,7 +293,7 @@ _Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
   - **How:** Web → Infrastructure → Containers; API `/api/v1/vessel/*`. Enable or point `[vessel].socket` in daemon config (on by default).
 - **VMware & Proxmox awareness** — Controller APIs to interoperate with VMware and Proxmox sources. — _Onboard estates from other hypervisors._
   - **How:** Web → Platform → Integrations → add VMware / Proxmox source.
-- **Zyvor platform stack** — Fits with hypercluster, Zeus OS, forge, Atlas, PacketWolf, and more across the Zyvor ecosystem. — _Machina is the metal layer of a full private-cloud stack._
+- **Zyvor platform stack** — Fits with hypercluster, Zeus OS, forge, Atlas, and more across the Zyvor ecosystem. — _Machina is the metal layer of a full private-cloud stack._
   - **How:** CLI `machinactl integrations` shows KubeVirt/k8s/automation status; wire endpoints per integration.
 
 ## 12. Interfaces & Administration
@@ -330,7 +328,7 @@ _Three ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-t
 5. **Turn on protection & telemetry** — Enable scheduled backups with ./machinactl backup enable, point them off-box, and wire Prometheus scrape or OTLP export.
 6. **Scale to a fleet (optional)** — Install the controller and agents with INSTALL_PLATFORM=1 or deploy-remote --platform to unlock HA, DRS, and the platform UI.
 
-> **Good to know:** Machina builds and runs on Linux only (it depends on libvirt/QEMU/KVM headers and /dev/kvm) — the workspace does not compile on macOS, though the web UI alone does. HTTPS ships with a self-signed certificate that should be replaced with a CA-signed one for production. Security defaults matter: an empty roles.json grants every user admin, and the dev-only auth-bypass flags must never be set in production. The multi-host controller and agent tier is systemd-only (the Helm chart deploys just the daemon), and SAML is config-only today. Integrations such as KubeVirt, PacketWolf, and Atlas are disabled by default and require their own endpoints or credentials; Fleet Cloud is native and always on.
+> **Good to know:** Machina builds and runs on Linux only (it depends on libvirt/QEMU/KVM headers and /dev/kvm) — the workspace does not compile on macOS, though the web UI alone does. HTTPS ships with a self-signed certificate that should be replaced with a CA-signed one for production. Security defaults matter: an empty roles.json grants every user admin, and the dev-only auth-bypass flags must never be set in production. The multi-host controller and agent tier is systemd-only (the Helm chart deploys just the daemon), and SAML is config-only today. Integrations such as KubeVirt and Atlas are disabled by default and require their own endpoints or credentials; Fleet Cloud is native and always on.
 
 ---
 _Machina is developed by ZyvorAI Labs. Contact **info@zyvor.dev** · Proprietary & Confidential._

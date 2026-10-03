@@ -197,12 +197,6 @@ async function ensureRunning() {
     return `agent=${j.agent_reachable} ports=${(j.ports || []).length}`;
   });
 
-  await mark('packetwolf-anomalies', async () => {
-    const j = await getJson(`${P}/api/v1/zeus-firewall/anomalies`);
-    if (!Array.isArray(j.anomalies)) throw new Error('no anomalies');
-    return `count=${j.anomalies.length} note=${(j.note || '').slice(0, 40)}`;
-  });
-
   await mark('siem-export', async () => {
     const j = await getJson(`${P}/api/v1/zeus-firewall/siem/export`);
     if (!Array.isArray(j.events)) throw new Error('no events');

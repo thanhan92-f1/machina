@@ -23,7 +23,6 @@ Zeus Security — Machina Platform / Security page at `/platform/zeus/security`.
 4. Runtime enforcement.
 5. Open Ports.
 6. Threat hunting.
-7. **Empty:** PacketWolf fabric unreachable.
 8. **Success:** Posture tiles green/nominal.
 
 If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.

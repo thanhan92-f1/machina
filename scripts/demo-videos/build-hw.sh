@@ -99,10 +99,10 @@ cp out/machina-hardware-wow-reel.mp4 out/machina-hardware-wow-reel-linkedin-1080
 ffmpeg -y -i out/machina-hardware-wow-reel.mp4 -c:v libvpx-vp9 -b:v 0 -crf 32 -an \
   out/machina-hardware-wow-reel.webm -loglevel error
 
-mkdir -p "$HOME/Desktop/PacketWolf-Demo-Videos/machina-hardware"
+mkdir -p "$HOME/Desktop/Machina-Demo-Videos/machina-hardware"
 cp -f out/machina-hardware-wow-reel.mp4 \
       out/machina-hardware-wow-reel-linkedin-1080p.mp4 \
       out/machina-hardware-wow-reel.webm \
-      "$HOME/Desktop/PacketWolf-Demo-Videos/machina-hardware/"
+      "$HOME/Desktop/Machina-Demo-Videos/machina-hardware/"
 cp -f out/machina-hardware-wow-reel.mp4 "$HOME/Desktop/"
 echo "== Done =="

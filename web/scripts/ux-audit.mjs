@@ -334,7 +334,6 @@ const EXTRA_MOCKS = [
       { title: 'Stale temporary rule', detail: 'Temporary rule for 8080/tcp expired 3h ago but is still active', severity: 'warning', target_id: 'h-2' },
     ],
   } },
-  { match: '/api/v1/zeus-firewall/packetwolf/anomalies', json: { summary: '1 anomaly in the last hour', anomalies: [{ type: 'port-scan', detail: '10.0.0.77 probed 240 ports on kvm-lab-01' }] } },
   { match: /\/zeus-firewall\/approvals(\?|$)/, json: [
     { id: 'ap-1', target_kind: 'host', target_id: '00000000-0000-4000-8000-000000000001', profile: 'ProductionServer', plan_json: {}, status: 'pending', requested_by: 'sus', created_at: '2026-09-27T08:00:00Z' },
   ] },

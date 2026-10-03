@@ -1,6 +1,6 @@
 # SOC integrations (SIEM export)
 
-Machina's Security Operations Center normalizes audit, firewall, PacketWolf, and platform events into ECS-shaped records, runs detection rules, and forwards to external SIEMs.
+Machina's Security Operations Center normalizes audit, firewall, eBPF, and platform events into ECS-shaped records, runs detection rules, and forwards to external SIEMs.
 
 ## Splunk HEC (primary)
 
@@ -25,7 +25,7 @@ Machina's Security Operations Center normalizes audit, firewall, PacketWolf, and
 index=machina sourcetype="machina:soc:alert"
 | stats count by machina.severity, message
 
-index=machina sourcetype="machina:soc:ecs" event.dataset="machina.packetwolf"
+index=machina sourcetype="machina:soc:ecs" event.dataset="machina.bpf"
 | where event.severity>=70
 | table _time, message, machina.source, host
 ```
@@ -93,7 +93,7 @@ Alternatively set `bearer_token` for a pre-issued token.
 | Field | Description |
 |-------|-------------|
 | `@timestamp` | Event time |
-| `event.dataset` | `machina.firewall`, `machina.audit`, `machina.packetwolf`, `machina.platform` |
+| `event.dataset` | `machina.firewall`, `machina.audit`, `machina.bpf`, `machina.platform` |
 | `event.severity` | Numeric 10–90 |
 | `event.action` | Source-specific action |
 | `message` | Human summary |

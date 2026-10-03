@@ -103,7 +103,7 @@ Autonomous diagnostics across the fleet, incident correlation, rightsizing and n
 - **Kubernetes**: KubeVirt inventory and a documented migration path. [KubeVirt →](docs/kubevirt-migration.md)
 - **Observability**: Prometheus metrics, OTLP export, PSI/cgroup pressure, alerts and webhooks. [Observability →](docs/guides/observability.md)
 - **Storage**: Atlas integration puts VM disks on Ceph RBD, NFS or ZFS volumes with snapshot, backup and restore. [Atlas →](docs/atlas-storage.md)
-- **Network security**: real kernel-level deny rules through [Netra](https://github.com/zyvorai/netra) eBPF, with leases that fail open, plus PacketWolf flow intelligence.
+- **Network security**: real kernel-level deny rules through the native eBPF datapath, with leases that fail open.
 - **Automation**: [Terraform provider](terraform/machina/README.md), [TypeScript SDK](sdk/typescript/README.md), OpenAPI spec, `machinactl`.
 
 ---
@@ -155,7 +155,6 @@ From your laptop to a remote host (sources are rsync'd and built on the server; 
 | **Machina** | Private cloud on KVM: VMs, fleet, Fleet Cloud, Zyra AI |
 | **[Netra](https://github.com/zyvorai/netra)** | eBPF network observability and emergency control |
 | **Atlas** | Storage control plane (Ceph/NFS/ZFS) for VM disks, snapshots, backups |
-| **PacketWolf** | Kernel-native network intelligence |
 | **GuestKit** | Offline VM migration assurance |
 | **HyperSDK / hyper2kvm** | Multi-cloud VM migration into KVM |
 

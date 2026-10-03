@@ -13862,25 +13862,6 @@
         }
       }
     },
-    "/api/v1/zeus-firewall/packetwolf/anomalies": {
-      "get": {
-        "summary": "GET /api/v1/zeus-firewall/packetwolf/anomalies",
-        "tags": [
-          "zeus-firewall"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
     "/api/v1/zeus-firewall/policies": {
       "get": {
         "summary": "GET /api/v1/zeus-firewall/policies",

@@ -50,8 +50,8 @@ PY
 URL="https://youtu.be/${ID}"
 echo "YouTube: $URL"
 
-mkdir -p "$HOME/Desktop/PacketWolf-Demo-Videos/machina-hardware"
-cat > "$HOME/Desktop/PacketWolf-Demo-Videos/machina-hardware/youtube-upload.json" <<EOF
+mkdir -p "$HOME/Desktop/Machina-Demo-Videos/machina-hardware"
+cat > "$HOME/Desktop/Machina-Demo-Videos/machina-hardware/youtube-upload.json" <<EOF
 {
   "id": "$ID",
   "url": "$URL",

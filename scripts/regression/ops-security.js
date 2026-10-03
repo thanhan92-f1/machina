@@ -61,8 +61,8 @@ async function getJson(path) {
 
   await mark('security-status', async () => {
     const j = await getJson(`${P}/api/v1/zeus-security/status`);
-    if (!j.packetwolf && !j.summary) throw new Error('empty');
-    return j.packetwolf ? `pw=${j.packetwolf.enabled}` : 'ok';
+    if (!j.summary) throw new Error('empty');
+    return 'ok';
   });
 
   await mark('security-sensors', async () => {

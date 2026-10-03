@@ -223,7 +223,7 @@ new `backend` field (`"libvirt"`, the default, or `"cloudhypervisor"`).
 - `daemon/src/routes/sprites.rs` — `create_sprite` dispatches on
   `req.backend`; `list`/`get`/`delete` are unchanged.
 
-Deliberately out of scope for this pass: network egress / PacketWolf
+Deliberately out of scope for this pass: network egress
 allow-list integration (Cloud Hypervisor sprites stay vsock-only, matching
 today's libvirt sprites), a Kubernetes CRD/operator wrapper, a pluggable
 disk-backend abstraction, and multi-host scheduling through the controller.

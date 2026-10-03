@@ -6,7 +6,7 @@ Customer tarballs from `scripts/package-binary-remote.sh` must **never** require
 
 | Type | Products | What ships | Customer runs |
 |------|----------|------------|---------------|
-| **A — Native binary** | VMRogue, v9s, machina, guestkit, hypersdk, packetwolf, ragnarok, Aether, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
+| **A — Native binary** | VMRogue, v9s, machina, guestkit, hypersdk, ragnarok, Aether, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
 | **B — Container extract** | VMRogue, v9s | Binary + UI from OCI image build (still type A at install time) | Same as A |
 | **C — Python venv bundle** | **hyper2kvm**, **forge** | `venv/` with `pip install` already done, wrapper scripts in `bin/`, static UI | `./install.sh`; run `./bin/*` (uses bundled `venv/`) |
 | **D — Go multi-binary** | hypersdk | `bin/hypervisord`, `hyperctl`, … + `dashboard/` | `./bin/hypervisord` |
@@ -41,7 +41,6 @@ forge bundles **minimal** `services/api-gateway/` (entry module) + full **venv**
 | guestkit | A | No | `guestkit` binary only |
 | hypersdk | D | No | `bin/*` + `dashboard/` |
 | hyper2kvm | C + Go | No app source | **`venv/` required**; not a single static binary |
-| packetwolf | A | No | `packetwolf-api` + `ui/` |
 | ragnarok | A | No | `ragnarok` + `frontend/dist` |
 | Aether | A | No | `aether` (embedded UI) |
 | IronWolf | A | No | `ironwolf-web` + `dashboard/dist` |

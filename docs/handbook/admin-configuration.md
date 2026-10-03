@@ -247,7 +247,7 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
   `socket` (unix path or `unix://…`); `auto_discover=true` searches common
   Podman/Docker socket locations when `socket` is empty. REST:
   `/api/v1/vessel/*`; WebSocket stats/logs under `/ws/v1/vessel/…`.
-- `[kubevirt]`, `[hypersdk]`, `[guestkit]`, `[packetwolf]` —
+- `[kubevirt]`, `[hypersdk]`, and `[guestkit]` —
   integration blocks, all `enabled=false` by default (see
   [Product Guide → Integrations](product-guide.md#integrations)).
 
@@ -283,7 +283,7 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
 | `MACHINA_CONTROLLER_ID` | Unique instance ID | — |
 | `MACHINA_DAEMON_URL` | URL the controller uses to reach the daemon | — |
 | `MACHINA_API_KEY_MASTER_KEY` | 64-char hex AES-256-GCM key encrypting LLM provider keys at rest (`openssl rand -hex 32`) | unset = plaintext |
-| `GUESTKIT_ENABLED` / `PACKETWOLF_ENABLED` | Integration toggles | `true` / `false` |
+| `GUESTKIT_ENABLED` | Integration toggle | `true` / `false` |
 
 ### Web (Vite, dev)
 | Variable | Effect |
