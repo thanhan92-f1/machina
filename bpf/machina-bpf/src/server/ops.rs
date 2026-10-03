@@ -520,7 +520,8 @@ impl Engine {
             }
             ifaces.insert(ep.host_iface.clone(), pod);
         }
-        let pods = attribution::pod_index(Path::new(attribution::CGROUP_ROOT), &sandboxes);
+        let mut pods = attribution::pod_log_index(Path::new(attribution::KUBELET_POD_LOGS));
+        pods.extend(attribution::pod_index(Path::new(attribution::CGROUP_ROOT), &sandboxes));
         let mut sh = lock(&self.shared);
         sh.pods = pods;
         sh.pod_ifaces = ifaces;

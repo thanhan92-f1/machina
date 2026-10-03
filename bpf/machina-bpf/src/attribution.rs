@@ -198,6 +198,24 @@ pub fn pod_index(root: &Path, sandboxes: &HashMap<String, (String, String)>) -> 
     out
 }
 
+pub const KUBELET_POD_LOGS: &str = "/var/log/pods";
+
+/// Pod UID → (namespace, name) from kubelet's `<ns>_<name>_<uid>` log
+/// directories; covers hostNetwork pods and pods without a CNI endpoint.
+pub fn pod_log_index(dir: &Path) -> HashMap<String, (String, String)> {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return HashMap::new();
+    };
+    rd.flatten()
+        .filter_map(|e| {
+            let n = e.file_name().to_string_lossy().into_owned();
+            let mut it = n.splitn(3, '_');
+            let (ns, name, uid) = (it.next()?, it.next()?, it.next()?);
+            (uid.len() >= 32 && !ns.is_empty() && !name.is_empty()).then(|| (uid.to_string(), (ns.to_string(), name.to_string())))
+        })
+        .collect()
+}
+
 /// Workload for a cgroup path; `pods` is [`pod_index`]. Pods whose UID is not
 /// indexed (no machina-cni endpoint) are named by UID.
 pub fn cgroup_workload(path: &str, pods: &HashMap<String, (String, String)>) -> Option<crate::api::Workload> {
@@ -375,6 +393,14 @@ mod tests {
         let idx = pod_index(&root, &sandboxes);
         std::fs::remove_dir_all(&root).ok();
         assert_eq!(idx.get("0f4a2b1c-1111-2222-3333-444455556666"), Some(&("prod".to_string(), "web-0".to_string())));
+        assert_eq!(idx.len(), 1);
+
+        let logs = std::env::temp_dir().join(format!("mnpodlogs-{}", std::process::id()));
+        std::fs::create_dir_all(logs.join("kube-system_coredns-5d8_0f4a2b1c-1111-2222-3333-444455556666")).unwrap();
+        std::fs::create_dir_all(logs.join("junk")).unwrap();
+        let idx = pod_log_index(&logs);
+        std::fs::remove_dir_all(&logs).ok();
+        assert_eq!(idx.get("0f4a2b1c-1111-2222-3333-444455556666"), Some(&("kube-system".to_string(), "coredns-5d8".to_string())));
         assert_eq!(idx.len(), 1);
     }
 }

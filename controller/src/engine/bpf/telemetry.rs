@@ -259,6 +259,74 @@ pub async fn accounting(pool: &SqlitePool) -> Value {
     })
 }
 
+/// Per-host state of the native data plane features (service LB, VM edge,
+/// QEMU sandbox, shield, node isolation, TLS sampling), one entry per host.
+pub async fn native_dataplane(pool: &SqlitePool) -> Value {
+    let hosts = super::online_hosts(pool).await;
+    let per_host = futures_util::future::join_all(hosts.iter().map(|h| async move {
+        let reqs = [
+            ("cni", Request::CniStatus),
+            ("vm_edge", Request::VmEdgeStatus),
+            ("vm_sandbox", Request::VmSandboxStatus),
+            ("shield", Request::ShieldStatus),
+            ("node_iso", Request::NodeIsoStatus),
+            ("tls", Request::TlsStatus),
+        ];
+        let results = futures_util::future::join_all(reqs.iter().map(|(_, r)| call(h, r))).await;
+        let mut o = serde_json::Map::new();
+        o.insert("host_id".into(), json!(h.id));
+        o.insert("hostname".into(), json!(h.hostname));
+        for ((k, _), r) in reqs.iter().zip(results) {
+            o.insert((*k).into(), r.unwrap_or(Value::Null));
+        }
+        Value::Object(o)
+    }))
+    .await;
+    let isolating: Vec<&Value> = per_host.iter().filter(|h| h["node_iso"]["isolating"] == true).collect();
+    json!({
+        "hosts": per_host,
+        "isolating_hosts": isolating.len(),
+        "source": SOURCE,
+    })
+}
+
+/// JA3/JA4 ClientHello fingerprints across the fleet, plus the most common
+/// JA4s with the SNIs and workloads that sent them.
+pub async fn tls_fingerprints(pool: &SqlitePool, limit: usize) -> Value {
+    let mut items = fan_out_items(pool, &Request::TlsFingerprints { limit: Some(FLEET_LIMIT) }).await;
+    newest_first(&mut items);
+    let mut by_ja4: HashMap<String, (u64, BTreeSet<String>, BTreeSet<String>)> = HashMap::new();
+    for f in &items {
+        let e = by_ja4.entry(str_of(f, "ja4").to_string()).or_default();
+        e.0 += 1;
+        if let Some(s) = f["sni"].as_str() {
+            e.1.insert(s.to_string());
+        }
+        if let Some(w) = f["workload"]["name"].as_str() {
+            e.2.insert(w.to_string());
+        }
+    }
+    let mut top: Vec<_> = by_ja4.into_iter().collect();
+    top.sort_by_key(|(_, (n, _, _))| std::cmp::Reverse(*n));
+    let total = items.len();
+    items.truncate(limit);
+    json!({
+        "records": items,
+        "total": total,
+        "top_ja4": top.into_iter().take(20).map(|(ja4, (n, snis, workloads))| json!({
+            "ja4": ja4, "count": n, "snis": snis, "workloads": workloads,
+        })).collect::<Vec<_>>(),
+        "source": SOURCE,
+    })
+}
+
+/// ICMP error histogram (unreachable / time exceeded / too big …) per host.
+pub async fn icmp_errors(pool: &SqlitePool) -> Value {
+    let mut items = fan_out_items(pool, &Request::IcmpErrors).await;
+    items.sort_by_key(|r| std::cmp::Reverse(u64_of(r, "count")));
+    json!({ "errors": items, "source": SOURCE })
+}
+
 /// Workload → peer service map plus threats / timeline, in the shape the
 /// Network Canvas renders.
 pub async fn network_pulse(pool: &SqlitePool) -> Value {

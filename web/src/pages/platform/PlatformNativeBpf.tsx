@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 // Native eBPF on this host: machina-bpfd status, enforcement mode, interfaces,
-// flows, live event stream, DNS / process telemetry, packet captures and QoS.
+// flows, live event stream, DNS / process telemetry, packet captures, QoS and
+// the native data plane (service LB, VM edge, shield, TCP health, TLS, node isolation).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
@@ -39,12 +40,22 @@ import {
   type BpfProcRecord,
   type BpfStatus,
   type BpfTelemetryConfig,
+  workloadLabel,
 } from '../../api/bpf'
+import ServiceLbTab from '../../components/bpf/ServiceLbTab'
+import VmEdgeTab from '../../components/bpf/VmEdgeTab'
+import ShieldTab from '../../components/bpf/ShieldTab'
+import TcpHealthTab from '../../components/bpf/TcpHealthTab'
+import TlsTab from '../../components/bpf/TlsTab'
+import NodeIsoTab from '../../components/bpf/NodeIsoTab'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses, statusPillClasses, statusToneClass } from '../../utils/semanticColors'
 
-const TABS = ['Overview', 'Flows', 'L7', 'Accounting', 'Live', 'DNS & processes', 'Captures', 'QoS & telemetry'] as const
+const TABS = [
+  'Overview', 'Flows', 'L7', 'Accounting', 'Live', 'DNS & processes', 'Captures', 'QoS & telemetry',
+  'Service LB', 'VM Edge', 'Shield', 'TCP Health', 'TLS / JA4', 'Node Isolation',
+] as const
 type Tab = (typeof TABS)[number]
 
 const TOPICS = ['net', 'dns', 'l7', 'proc', 'anomaly'] as const
@@ -232,7 +243,9 @@ export default function PlatformNativeBpf() {
       )}
 
       {available && (
-        <MacSegmentedControl options={TABS.map((t) => ({ value: t, label: t }))} value={tab} onChange={setTab} />
+        <div className="overflow-x-auto pb-1">
+          <MacSegmentedControl options={TABS.map((t) => ({ value: t, label: t }))} value={tab} onChange={setTab} />
+        </div>
       )}
 
       {available && tab === 'Overview' && status && (
@@ -414,7 +427,7 @@ export default function PlatformNativeBpf() {
                 <tbody>
                   {flows.map((f) => (
                     <tr key={`${f.iface}-${f.proto}-${f.local}:${f.local_port}-${f.remote}:${f.remote_port}`} className="border-b border-white/[0.04]">
-                      <td className="py-2 pr-2 font-mono">{f.vm ?? f.iface} {f.local}:{f.local_port}</td>
+                      <td className="py-2 pr-2 font-mono">{workloadLabel(f.workload) || f.vm || f.iface} {f.local}:{f.local_port}</td>
                       <td className="py-2 pr-2 font-mono">{f.origin === 'remote' ? '← ' : '→ '}{f.remote}:{f.remote_port}</td>
                       <td className="py-2 pr-2">{f.proto}</td>
                       <td className="py-2 pr-2">{fmtBytes(f.tx_bytes)}</td>
@@ -620,7 +633,7 @@ export default function PlatformNativeBpf() {
                     {p.kind} {p.comm}[{p.pid}] {p.path ?? ''}
                     {p.daddr ? ` → ${p.daddr}:${p.dport ?? ''}` : ''}
                     {p.capability ? ` ${p.capability}` : ''}
-                    {p.vm || p.container || p.unit ? <span className="text-[var(--text-muted)]"> ({p.vm ?? p.container ?? p.unit})</span> : null}
+                    {p.workload || p.vm || p.container || p.unit ? <span className="text-[var(--text-muted)]"> ({workloadLabel(p.workload) || p.vm || p.container || p.unit})</span> : null}
                     {p.denied ? ' · denied' : ''}
                   </li>
                 ))}
@@ -799,6 +812,13 @@ export default function PlatformNativeBpf() {
           )}
         </>
       )}
+
+      {available && tab === 'Service LB' && <ServiceLbTab />}
+      {available && tab === 'VM Edge' && <VmEdgeTab />}
+      {available && tab === 'Shield' && <ShieldTab />}
+      {available && tab === 'TCP Health' && <TcpHealthTab />}
+      {available && tab === 'TLS / JA4' && <TlsTab />}
+      {available && tab === 'Node Isolation' && <NodeIsoTab />}
     </PlatformPageChrome>
   )
 }

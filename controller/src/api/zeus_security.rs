@@ -105,6 +105,38 @@ pub async fn fleet_accounting(
     Ok(Json(telemetry::accounting(&state.pool).await))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct LimitQuery {
+    pub limit: Option<usize>,
+}
+
+/// Service LB / VM edge / sandbox / shield / node isolation / TLS state per host.
+pub async fn fleet_native_dataplane(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    Ok(Json(telemetry::native_dataplane(&state.pool).await))
+}
+
+pub async fn fleet_tls_fingerprints(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Query(q): Query<LimitQuery>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    let limit = q.limit.unwrap_or(500).clamp(1, 5000);
+    Ok(Json(telemetry::tls_fingerprints(&state.pool, limit).await))
+}
+
+pub async fn fleet_icmp_errors(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    Ok(Json(telemetry::icmp_errors(&state.pool).await))
+}
+
 pub async fn security_graph(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,

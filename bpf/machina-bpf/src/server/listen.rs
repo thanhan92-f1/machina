@@ -353,6 +353,7 @@ impl Daemon {
                 v(&st)
             }
             Request::CniStatus => v(&lock(&self.engine).cni_status()),
+            Request::CniServices => v(&lock(&self.engine).cni_services()),
             Request::VmEdgeSync { state } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_edge_sync(state)?;

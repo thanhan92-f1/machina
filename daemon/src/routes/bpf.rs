@@ -13,7 +13,7 @@ use axum::routing::{delete, get, put};
 use axum::{Json, Router};
 use base64::Engine as _;
 use futures_util::Stream;
-use machina_bpf::api::{Mode, Policy, Request, ShieldConfig, TelemetryConfig, TlsConfig, VmEdgeState, VmSandboxConfig};
+use machina_bpf::api::{Mode, NodeIsoConfig, Policy, Request, ShieldConfig, TelemetryConfig, TlsConfig, VmEdgeState, VmSandboxConfig};
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
 use serde::Deserialize;
@@ -397,6 +397,26 @@ async fn shield_configure(
     bpfd(Request::ShieldConfigure { config }).await
 }
 
+async fn node_iso_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::NodeIsoStatus).await
+}
+
+async fn node_iso_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<NodeIsoConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Isolating the node")?;
+    bpfd(Request::NodeIsoConfigure { config }).await
+}
+
+async fn cni_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::CniStatus).await
+}
+
+async fn cni_services() -> Result<Json<Value>, AppError> {
+    bpfd(Request::CniServices).await
+}
+
 /// After a VM lifecycle change, have bpfd re-follow VM taps and QEMU scopes
 /// now instead of on its next rescan. Best-effort: bpfd may not be running.
 pub fn notify_vm_lifecycle() {
@@ -432,6 +452,9 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/vm-edge", get(vm_edge_status).put(vm_edge_sync))
         .route("/bpf/shield", get(shield_status).put(shield_configure))
         .route("/bpf/icmp-errors", get(icmp_errors))
+        .route("/bpf/node-iso", get(node_iso_status).put(node_iso_configure))
+        .route("/bpf/cni", get(cni_status))
+        .route("/bpf/cni/services", get(cni_services))
         .route("/bpf/tls", get(tls_status).put(tls_configure))
         .route("/bpf/tls/fingerprints", get(tls_fingerprints))
         .route("/bpf/tls/ssl", get(ssl_events))

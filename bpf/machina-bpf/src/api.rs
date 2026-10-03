@@ -523,6 +523,16 @@ pub struct CniService {
     pub affinity_secs: Option<u32>,
 }
 
+/// A synced service as programmed: Maglev table (2+ backends) and live
+/// ClientIP affinity pins.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CniServiceStatus {
+    #[serde(flatten)]
+    pub service: CniService,
+    pub maglev: bool,
+    pub affinity_entries: usize,
+}
+
 /// Node-level datapath settings for `cni_configure`.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct CniNodeConfig {
@@ -1092,6 +1102,7 @@ pub enum Request {
         state: CniState,
     },
     CniStatus,
+    CniServices,
     /// VM group identities, policy and rate limits on VM taps.
     VmEdgeSync {
         state: VmEdgeState,

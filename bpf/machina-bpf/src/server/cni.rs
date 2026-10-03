@@ -397,6 +397,26 @@ impl Engine {
             last_sync: self.cni.last_sync.clone(),
         }
     }
+
+    pub(super) fn cni_services(&mut self) -> Vec<CniServiceStatus> {
+        let mut pins: HashMap<u32, usize> = HashMap::new();
+        for (k, _) in self.dp.hash_entries::<AffinityKey, AffinityVal>("CNI_AFFINITY").unwrap_or_default() {
+            *pins.entry(k.svc_id).or_default() += 1;
+        }
+        self.cni
+            .last
+            .services
+            .iter()
+            .map(|s| {
+                let id = self.cni.svc_ids.get(&(s.addr.clone(), s.port, s.proto)).copied();
+                CniServiceStatus {
+                    service: s.clone(),
+                    maglev: id.is_some_and(|i| self.cni.maglev.contains_key(&i)),
+                    affinity_entries: id.and_then(|i| pins.get(&i).copied()).unwrap_or(0),
+                }
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
