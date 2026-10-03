@@ -11,6 +11,11 @@
 //! Limits: IPv4 only; ipBlock `except` and named ports towards ipBlock peers
 //! are not supported (reported in [`Compiled::warnings`]); overlapping
 //! ipBlocks resolve by longest prefix.
+//!
+//! CiliumNetworkPolicy / CiliumClusterwideNetworkPolicy compile into the same
+//! tuples when supplied (see [`cilium`]).
+
+mod cilium;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -229,6 +234,41 @@ impl World<'_> {
             .map(|p| pod_identity(&p.namespace, &p.labels))
             .collect()
     }
+
+    /// Insert subject × peer × port entries, resolving named ports on the
+    /// destination side (subject for ingress, peer for egress).
+    #[allow(clippy::too_many_arguments)]
+    fn emit(
+        &self,
+        policy: &mut BTreeSet<CniPolicyEntry>,
+        warnings: &mut Vec<String>,
+        name: &str,
+        subjects: &BTreeSet<u32>,
+        peers: &BTreeSet<u32>,
+        ports: &[RulePort],
+        egress: bool,
+    ) {
+        for s in subjects {
+            for peer in peers {
+                for rp in ports {
+                    let resolved: Vec<(u8, u16)> = match rp {
+                        RulePort::Num(proto, port) => vec![(*proto, *port)],
+                        RulePort::Named(proto, pname) => {
+                            let dst = if egress { *peer } else { *s };
+                            if dst & 0x8000_0000 != 0 {
+                                warnings.push(format!("{name}: named port `{pname}` cannot apply to an ipBlock peer"));
+                                continue;
+                            }
+                            self.resolve_named(dst, pname, *proto).into_iter().map(|n| (*proto, n)).collect()
+                        }
+                    };
+                    for (proto, port) in resolved {
+                        policy.insert(CniPolicyEntry { subject: *s, peer: *peer, egress, proto, port });
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub struct Inputs<'a> {
@@ -237,6 +277,9 @@ pub struct Inputs<'a> {
     pub policies: &'a [Value],
     pub services: &'a [Value],
     pub endpoint_slices: &'a [Value],
+    /// CiliumNetworkPolicy / CiliumClusterwideNetworkPolicy objects (empty
+    /// unless the agent runs with `MACHINA_CNI_CILIUM_POLICIES`).
+    pub cilium_policies: &'a [Value],
     /// This node's name (NodePort frontends only get local backends).
     pub node: &'a str,
 }
@@ -315,34 +358,23 @@ pub fn compile(inp: &Inputs) -> Compiled {
                         }
                     }
                 }
-                for s in &subjects {
-                    for peer in &peers {
-                        for rp in &ports {
-                            let resolved: Vec<(u8, u16)> = match rp {
-                                RulePort::Num(proto, port) => vec![(*proto, *port)],
-                                RulePort::Named(proto, pname) => {
-                                    let dst = if egress { *peer } else { *s };
-                                    if dst & 0x8000_0000 != 0 {
-                                        warnings.push(format!("{name}: named port `{pname}` cannot apply to an ipBlock peer"));
-                                        continue;
-                                    }
-                                    world.resolve_named(dst, pname, *proto).into_iter().map(|n| (*proto, n)).collect()
-                                }
-                            };
-                            for (proto, port) in resolved {
-                                policy.insert(CniPolicyEntry {
-                                    subject: *s,
-                                    peer: *peer,
-                                    egress,
-                                    proto,
-                                    port,
-                                });
-                            }
-                        }
-                    }
-                }
+                world.emit(&mut policy, &mut warnings, &name, &subjects, &peers, &ports, egress);
             }
         }
+    }
+
+    if !inp.cilium_policies.is_empty() {
+        cilium::compile_into(
+            &world,
+            inp.cilium_policies,
+            &mut cilium::Acc {
+                policy: &mut policy,
+                cidrs: &mut cidrs,
+                ingress_iso: &mut ingress_iso,
+                egress_iso: &mut egress_iso,
+                warnings: &mut warnings,
+            },
+        );
     }
 
     let mut identities: Vec<CniIdentity> = inp
@@ -532,6 +564,7 @@ mod tests {
             policies: &policies,
             services: &[],
             endpoint_slices: &[],
+            cilium_policies: &[],
             node: "n1",
         });
         let web = pod_identity("prod", &pods[0].labels);
@@ -574,7 +607,7 @@ mod tests {
                     {"to": [{"ipBlock": {"cidr": "10.0.0.0/8"}}], "ports": [{"port": "http"}]}
                 ]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], node: "n1" });
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node: "n1" });
         let api = pod_identity("a", &pods[0].labels);
         let cli = pod_identity("a", &pods[1].labels);
         let got: BTreeSet<(u32, u8, u16)> =
@@ -592,7 +625,7 @@ mod tests {
             "metadata": {"namespace": "a", "name": "lockdown"},
             "spec": {"podSelector": {}, "policyTypes": ["Ingress", "Egress"], "ingress": [{}]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], node: "n1" });
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node: "n1" });
         let id = pod_identity("a", &pods[0].labels);
         assert_eq!(c.state.policy, vec![CniPolicyEntry { subject: id, peer: 0, egress: false, proto: 0, port: 0 }]);
         assert!(c.state.identities[0].ingress_isolated && c.state.identities[0].egress_isolated);
@@ -615,7 +648,7 @@ mod tests {
                 {"addresses": ["10.42.1.6"], "nodeName": "n2", "conditions": {"ready": false}}
             ]
         })];
-        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &services, endpoint_slices: &slices, node: "n1" });
+        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &services, endpoint_slices: &slices, cilium_policies: &[], node: "n1" });
         let s = &c.state.services;
         assert_eq!(s.len(), 2);
         let np = s.iter().find(|x| x.addr == "0.0.0.0").unwrap();

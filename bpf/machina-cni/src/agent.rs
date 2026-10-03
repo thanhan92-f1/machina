@@ -43,7 +43,11 @@ pub struct Config {
     pub bin_dirs: Vec<String>,
     pub mtu: u32,
     pub interval: Duration,
+    /// Also enforce CiliumNetworkPolicy / CiliumClusterwideNetworkPolicy.
+    pub cilium_policies: bool,
 }
+
+const CILIUM_RESOURCES: &str = "ciliumnetworkpolicies.cilium.io,ciliumclusterwidenetworkpolicies.cilium.io";
 
 fn list(v: String) -> Vec<String> {
     v.split(',').map(str::trim).filter(|s| !s.is_empty()).map(String::from).collect()
@@ -105,6 +109,10 @@ impl Config {
             )),
             mtu: env("MACHINA_CNI_MTU", "1500").parse().unwrap_or(1500),
             interval: Duration::from_secs(env("MACHINA_CNI_INTERVAL_SECS", "3").parse().unwrap_or(3).max(1)),
+            cilium_policies: matches!(
+                env("MACHINA_CNI_CILIUM_POLICIES", "0").to_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            ),
         }
     }
 }
@@ -282,6 +290,19 @@ async fn reconcile(
             &["get", "nodes,namespaces,pods,networkpolicies,services,endpointslices", "-A", "-o", "json"],
         )
     })?;
+    let mut cilium_warning = None;
+    let cilium_policies = if cfg.cilium_policies {
+        match tokio::task::block_in_place(|| kubectl(cfg, &["get", CILIUM_RESOURCES, "-A", "-o", "json"])) {
+            Ok(v) => items(&v),
+            Err(e) if format!("{e:#}").contains("doesn't have a resource type") => {
+                cilium_warning = Some("MACHINA_CNI_CILIUM_POLICIES is set but the cilium.io CRDs are not installed".into());
+                Vec::new()
+            }
+            Err(e) => return Err(e.context("list Cilium policies")),
+        }
+    } else {
+        Vec::new()
+    };
     let all = items(&list);
     let of_kind = |k: &str| -> Vec<Value> { all.iter().filter(|i| i["kind"] == k).cloned().collect() };
     let nodes = of_kind("Node");
@@ -323,14 +344,16 @@ async fn reconcile(
     pin_veth_sysctls();
 
     let pods = compile::pods(&of_kind("Pod"));
-    let compiled = compile::compile(&Inputs {
+    let mut compiled = compile::compile(&Inputs {
         pods: &pods,
         namespaces: &of_kind("Namespace"),
         policies: &of_kind("NetworkPolicy"),
         services: &of_kind("Service"),
         endpoint_slices: &of_kind("EndpointSlice"),
+        cilium_policies: &cilium_policies,
         node: &cfg.node,
     });
+    compiled.warnings.extend(cilium_warning);
     if compiled.warnings != *last_warnings {
         for w in &compiled.warnings {
             tracing::warn!("{w}");

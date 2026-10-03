@@ -585,7 +585,7 @@ impl Engine {
                 }
             })
             .collect();
-        out.sort_by(|a, b| (b.tx_bytes + b.rx_bytes).cmp(&(a.tx_bytes + a.rx_bytes)));
+        out.sort_by_key(|a| std::cmp::Reverse(a.tx_bytes + a.rx_bytes));
         Ok(out)
     }
 
