@@ -908,7 +908,7 @@ export default function PlatformVmDetail() {
     <PageLayout
       compact
       prepend={!isPopout ? (
-        <Link to="/platform/vms" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+        <Link to="/platform/vms" className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>
           <ArrowLeft className="w-4 h-4" /> Virtual Machines
         </Link>
       ) : undefined}
@@ -1342,7 +1342,7 @@ export default function PlatformVmDetail() {
                 </div>
               )}
               {vm.host_id && (
-                <Link to={`/platform/hosts/${vm.host_id}`} className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+                <Link to={`/platform/hosts/${vm.host_id}`} className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>
                   View host resources →
                 </Link>
               )}

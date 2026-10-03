@@ -67,7 +67,7 @@ export default function SecurityLensLayout({
       error={error ?? null}
       onErrorRetry={onRefresh}
       prepend={
-        <Link to={backHref} className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+        <Link to={backHref} className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>
           <ArrowLeft className="w-4 h-4" /> {backLabel}
         </Link>
       }

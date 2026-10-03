@@ -48,7 +48,7 @@ export default function PlatformFirewallConnectivity() {
       compact
       error={error}
       prepend={
-        <Link to="/platform/zeus/security/firewall" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+        <Link to="/platform/zeus/security/firewall" className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>
           <ArrowLeft className="w-4 h-4" /> Firewall
         </Link>
       }

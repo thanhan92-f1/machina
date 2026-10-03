@@ -288,7 +288,7 @@ export default function PlatformHostDetailPage() {
       compact
       contentLoading={loading && !host}
       prepend={
-        <Link to="/platform/hosts" className={`text-sm inline-flex items-center gap-1 ${hubLinkClasses()}`}>
+        <Link to="/platform/hosts" className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>
           <ArrowLeft className="w-4 h-4" /> Hosts
         </Link>
       }
