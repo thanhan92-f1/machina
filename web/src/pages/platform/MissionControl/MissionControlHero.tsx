@@ -36,16 +36,6 @@ export default function MissionControlHero({ state, warnings, onCreateVm }: Prop
   const hour = new Date().getHours()
   const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
-  const metrics = [
-    { label: 'VMs running', value: state.loading || controlPlaneDown ? '—' : String(running) },
-    {
-      label: 'Hosts online',
-      value: state.loading || controlPlaneDown ? '—' : `${onlineHosts}/${hosts.length}`,
-    },
-    { label: 'Memory used', value: controlPlaneDown ? '—' : storagePct != null ? `${Math.round(storagePct)}%` : '—' },
-    { label: 'Alerts', value: controlPlaneDown ? '—' : warnings ? String(warnings) : 'None' },
-  ]
-
   return (
     <>
       <header className="apple-section apple-hero-band mc-hero mc-hero-ribbon" data-testid="mission-control-hero">
@@ -83,16 +73,6 @@ export default function MissionControlHero({ state, warnings, onCreateVm }: Prop
         </div>
       </header>
 
-      <section className="apple-section apple-section--tight" aria-label="Fleet metrics">
-        <div className="apple-metric-band">
-          {metrics.map((g) => (
-            <div key={g.label} className="min-w-0">
-              <div className="apple-metric-value">{g.value}</div>
-              <div className="apple-metric-label">{g.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
     </>
   )
 }

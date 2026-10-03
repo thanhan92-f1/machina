@@ -42,7 +42,7 @@ html.light-theme {
   --nl-hairline: rgba(0, 0, 0, 0.1);
   --nl-fill: rgba(0, 0, 0, 0.04);
   --nl-fill-hover: #f5f5f7;
-  --nl-bar-bg: rgba(251, 251, 253, 0.86);
+  --nl-bar-bg: rgba(251, 251, 253, 0.93);
   /* Was hsl(220 8% 58%): ~2.9:1 on white/tint, used for placeholders and "—" empties. */
   --text-faint: #7d7d83;
 
@@ -85,7 +85,7 @@ html[data-ui-shell='default'],
   --nl-hairline: rgba(255, 255, 255, 0.12);
   --nl-fill: rgba(255, 255, 255, 0.08);
   --nl-fill-hover: #2c2c2e;
-  --nl-bar-bg: rgba(22, 22, 23, 0.86);
+  --nl-bar-bg: rgba(22, 22, 23, 0.92);
   --nl-danger: #ff453a;
   --text-faint: #8e8e93;
   --nl-accent-cyan-text: #64d2ff;
@@ -625,3 +625,164 @@ html.apple-light .machine-finder-card .mx-auto.rounded-2xl svg,
 html.light-theme .machine-finder-card .mx-auto.rounded-2xl svg {
   color: var(--text-muted) !important;
 }
+
+/* =============================================================================
+   Netra signature layer: motion, page heroes, pulse band, fleet stage
+   ========================================================================== */
+
+/* ---- Motion ---------------------------------------------------------------- */
+@keyframes nl-fade-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.nl-fade-rise {
+  animation: nl-fade-rise 0.42s var(--nl-ease) both;
+}
+.nl-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s var(--nl-ease), transform 0.7s var(--nl-ease);
+  transition-delay: var(--nl-delay, 0s);
+}
+.nl-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+@keyframes nl-ping {
+  0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.5); }
+  100% { box-shadow: 0 0 0 8px rgba(48, 209, 88, 0); }
+}
+@keyframes nl-dash {
+  to { stroke-dashoffset: -24; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nl-fade-rise { animation: none; }
+  .nl-reveal { opacity: 1; transform: none; transition: none; }
+  .nl-live-pill i, .nl-link { animation: none !important; }
+}
+
+/* ---- Page header: Netra eyebrow / title / lede ------------------------------ */
+.apple-page-header .apple-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--apple-link, #0066cc);
+  margin: 0 0 0.5rem;
+}
+.apple-page-header .page-title {
+  font-size: clamp(1.5rem, 2.6vw, 2.125rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.apple-page-header .page-lede {
+  font-size: 1rem;
+  line-height: 1.4;
+  max-width: 70ch;
+  color: var(--text-secondary);
+}
+
+/* ---- Pulse band ------------------------------------------------------------- */
+.nl-pulse {
+  border: 1px solid var(--nl-hairline);
+  border-radius: 24px;
+  padding: clamp(1.25rem, 2.4vw, 1.75rem);
+  background: var(--surface-1, #fff);
+}
+.nl-pulse-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.nl-pulse-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.nl-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--nl-hairline);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+.nl-live-pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #30d158;
+  animation: nl-ping 1.8s infinite;
+}
+.nl-live-pill.is-down i {
+  background: var(--nl-danger, #ff3b30);
+  animation: none;
+}
+.nl-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem 2rem;
+}
+@media (min-width: 900px) {
+  .nl-pulse-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.nl-pulse-value {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.nl-pulse-value.is-warn {
+  color: var(--nl-accent-amber-text, #8b4b00);
+}
+.nl-pulse-label {
+  margin-top: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.nl-pulse-spark {
+  margin-top: 0.75rem;
+  height: 32px;
+  color: var(--apple-blue, #0071e3);
+}
+.nl-spark { display: block; max-width: 100%; }
+.nl-spark-warm {
+  font-size: 0.6875rem;
+  color: var(--text-faint, #7d7d83);
+}
+
+/* ---- Fleet stage (signature SVG) -------------------------------------------- */
+.nl-stage {
+  position: relative;
+  border: 1px solid var(--nl-hairline);
+  border-radius: 24px;
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+  background: var(--surface-1, #fff);
+  overflow: hidden;
+}
+html[data-theme='tahoe'] .nl-stage,
+html[data-ui-shell='default'] .nl-stage {
+  background:
+    radial-gradient(60% 80% at 20% 30%, rgba(41, 151, 255, 0.14), transparent 70%),
+    radial-gradient(50% 70% at 90% 90%, rgba(175, 82, 222, 0.12), transparent 70%),
+    var(--surface-1, #1d1d1f);
+}
+.nl-stage-svg { display: block; width: 100%; height: auto; max-height: 340px; }
+.nl-node { fill: var(--surface-1, #fff); stroke: var(--nl-hairline); stroke-width: 1.25; }
+html[data-theme='tahoe'] .nl-node, html[data-ui-shell='default'] .nl-node { fill: #2c2c2e; stroke: rgba(255, 255, 255, 0.14); }
+.nl-node.is-down { stroke: var(--nl-danger, #ff3b30); stroke-dasharray: 4 4; }
+.nl-node-title { font-size: 14px; font-weight: 600; fill: var(--text-primary); font-family: var(--font-display); }
+.nl-node-sub { font-size: 11.5px; fill: var(--text-secondary); font-family: var(--font-display); }
+.nl-link { stroke: url(#nl-link); stroke-width: 1.75; stroke-dasharray: 6 6; animation: nl-dash 1.4s linear infinite; }
+.nl-link.is-down { stroke: var(--nl-danger, #ff3b30); stroke-opacity: 0.6; animation: none; }
+.nl-dot { fill: var(--apple-blue, #0071e3); }
+.nl-vm { fill: var(--text-faint, #a1a1a6); opacity: 0.55; }
+.nl-vm.is-running { fill: var(--apple-blue, #0071e3); opacity: 1; }

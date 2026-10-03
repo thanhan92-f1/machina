@@ -188,7 +188,9 @@ function PlatformDesktopShell() {
                     : 'platform-readable tahoe-readable-stack py-3 pb-8'
               }
             >
-              <Outlet />
+              <div key={location.pathname} className={hideChrome ? 'h-full min-h-0' : 'nl-fade-rise'}>
+                <Outlet />
+              </div>
             </div>
           </div>
         </div>

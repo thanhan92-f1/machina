@@ -25,6 +25,9 @@ import MissionControlBriefing from './MissionControlBriefing'
 import MissionControlGeography from './MissionControlGeography'
 import MissionControlHero from './MissionControlHero'
 import MissionControlLaunchpad from './MissionControlLaunchpad'
+import MissionControlPulse from './MissionControlPulse'
+import FleetHero from './FleetHero'
+import Reveal from '../../../components/Reveal'
 import { useMissionControlFleet } from './useMissionControlFleet'
 import EnterpriseSecurityStrip from '../../../components/platform/EnterpriseSecurityStrip'
 
@@ -158,6 +161,12 @@ export default function MissionControlPage() {
         )}
 
         <MissionControlHero state={state} warnings={warnings} onCreateVm={() => setWizardOpen(true)} />
+
+        <MissionControlPulse state={state} warnings={warnings} />
+
+        <Reveal>
+          <FleetHero state={state} />
+        </Reveal>
 
         <MissionControlBriefing
           state={state}

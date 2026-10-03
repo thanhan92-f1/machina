@@ -34,6 +34,8 @@ export function useMissionControlFleet() {
   const [capacity, setCapacity] = useState<CapacityReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null)
+  const [sampleTick, setSampleTick] = useState(0)
   const [selectedVmId, setSelectedVmId] = useState<string | null>(null)
   const [attentionMode, setAttentionMode] = useState(false)
   const [sshVm, setSshVm] = useState<PlatformVm | null>(null)
@@ -43,9 +45,9 @@ export function useMissionControlFleet() {
 
   const hostMap = useMemo(() => new Map(hosts.map((h) => [h.id, h.hostname])), [hosts])
 
-  const load = useCallback(async () => {
+  const fetchAll = useCallback(async (quiet: boolean) => {
     setError(null)
-    setLoading(true)
+    if (!quiet) setLoading(true)
     try {
       const [h, v, f, c, cap] = await Promise.all([
         listPlatformHosts(),
@@ -59,14 +61,25 @@ export function useMissionControlFleet() {
       setFinder(f)
       setCluster(c)
       setCapacity(cap)
+      setUpdatedAt(Date.now())
+      setSampleTick((n) => n + 1)
     } catch (e: unknown) {
       setError(formatUserError(e))
     } finally {
-      setLoading(false)
+      if (!quiet) setLoading(false)
     }
   }, [])
 
+  const load = useCallback(() => fetchAll(false), [fetchAll])
+
   useEffect(() => { void load() }, [load])
+
+  // Quiet background refresh (no loading flash) so the live figures and sparklines keep moving.
+  useEffect(() => {
+    const first = window.setTimeout(() => { if (!document.hidden) void fetchAll(true) }, 4000)
+    const id = window.setInterval(() => { if (!document.hidden) void fetchAll(true) }, 30_000)
+    return () => { window.clearTimeout(first); window.clearInterval(id) }
+  }, [fetchAll])
 
   const running = vms.filter((v) => v.observed_state === 'running').length
   const onlineHosts = hosts.filter((h) => h.state !== 'offline').length
@@ -176,6 +189,8 @@ export function useMissionControlFleet() {
     error,
     loading,
     load,
+    updatedAt,
+    sampleTick,
     hostMap,
     running,
     onlineHosts,
