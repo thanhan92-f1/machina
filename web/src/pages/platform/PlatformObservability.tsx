@@ -20,6 +20,7 @@ import {
 import { fleetPrometheusAggregateUrl } from '../../api/fleet'
 import { getControllerBase } from '../../api/platform'
 import { formatUserError } from '../../utils/apiError'
+import { safeHref } from '../../utils/safeHref'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusBgClass, statusPillClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
 
 function sloTone(status: string): 'ok' | 'warn' | 'error' {
@@ -184,10 +185,10 @@ export default function PlatformObservability() {
             <MacGlassPanel title="Fleet Prometheus" subtitle="Scrape aggregate metrics from the controller">
               <p className="text-sm text-[var(--text-muted)] mb-2">Text exposition format — suitable for Prometheus or Grafana data source.</p>
               <div className="flex flex-wrap gap-3">
-                <a href={fleetPrometheusAggregateUrl()} className={`text-sm ${hubLinkClasses()}`} target="_blank" rel="noreferrer">
+                <a href={safeHref(fleetPrometheusAggregateUrl())} className={`text-sm ${hubLinkClasses()}`} target="_blank" rel="noreferrer">
                   Fleet aggregate →
                 </a>
-                <a href={`${getControllerBase()}/api/v1/metrics/prometheus`} className={`text-sm ${hubLinkClasses()}`} target="_blank" rel="noreferrer">
+                <a href={safeHref(`${getControllerBase()}/api/v1/metrics/prometheus`)} className={`text-sm ${hubLinkClasses()}`} target="_blank" rel="noreferrer">
                   Controller /metrics/prometheus →
                 </a>
               </div>

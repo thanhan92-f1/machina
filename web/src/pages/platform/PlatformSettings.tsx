@@ -55,6 +55,7 @@ import {
 } from '../../api/platform'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
+import { safeHref } from '../../utils/safeHref'
 import { statusToneClass } from '../../utils/semanticColors'
 import { getAiSettings, patchAiSettings, type AiSettings } from '../../api/ai'
 import { useAi } from '../../contexts/AiContext'
@@ -210,7 +211,7 @@ export default function PlatformSettings({ embedded }: { embedded?: boolean }) {
             try { await patchOidcSettings(oidc); toast.success('OIDC settings saved') } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Save OIDC</button>
           {oidc.enabled && (
-            <a href={getOidcLoginUrl()} className="btn-primary text-sm inline-flex items-center">Login with OIDC</a>
+            <a href={safeHref(getOidcLoginUrl())} className="btn-primary text-sm inline-flex items-center">Login with OIDC</a>
           )}
         </div>
       </SettingsBlock>

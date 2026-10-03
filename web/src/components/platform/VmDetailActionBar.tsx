@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import type { VmGuestHealthReport } from '../../api/platform'
 import { cinemaHubPath, studioHubPath } from '../../utils/consoleExperienceMode'
+import { safeHref } from '../../utils/safeHref'
 import SpotlightPageAction from './SpotlightPageAction'
 
 type ActFn = (msg: string, fn: () => Promise<unknown>) => void
@@ -202,7 +203,7 @@ export default function VmDetailActionBar({
               </Link>
               {virtViewerUrl ? (
                 <a
-                  href={virtViewerUrl}
+                  href={safeHref(virtViewerUrl)}
                   download={`${vmName}.vv`}
                   className="block px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-white/5"
                   data-testid="vm-virt-viewer-download"
