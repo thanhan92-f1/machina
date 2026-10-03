@@ -48,6 +48,7 @@ export default function MachineFinderCommandBar({ state }: Props) {
             }}
             placeholder="Search machines… (⌘K)"
             className="input-field w-full pl-9 pr-3 py-2.5 text-sm"
+            style={{ paddingLeft: '2.25rem' }}
             data-testid="machine-finder-search"
           />
         </div>
