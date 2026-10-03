@@ -411,6 +411,7 @@ impl Engine {
         self.refresh_global()?;
         self.reprogram_all_ifaces()?;
         self.rescan_ifaces();
+        self.sync_sockops();
         Ok(self.telemetry.clone())
     }
 
@@ -490,7 +491,13 @@ impl Engine {
             .collect();
         tcp.sort_by_key(|t| std::cmp::Reverse(t.count));
         tcp.truncate(200);
-        Ok(NetHealth { drop_reasons, tcp })
+        Ok(NetHealth {
+            drop_reasons,
+            tcp,
+            connect: self.connect_health(),
+            pressure: self.tcp_pressure(),
+            sockops: self.dp.sockops_attached().map(String::from),
+        })
     }
 
     /// Age out idle flows and feed byte counters to the volume detector.

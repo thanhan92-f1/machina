@@ -11,8 +11,8 @@ use std::path::Path;
 use anyhow::{anyhow, bail, Context, Result};
 use aya::programs::{
     cgroup_device::CgroupDeviceLinkId, cgroup_skb::CgroupSkbLinkId, cgroup_sock_addr::CgroupSockAddrLinkId,
-    tc::SchedClassifierLinkId, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb, CgroupSkbAttachType,
-    CgroupSockAddr, KProbe, SchedClassifier, TcAttachType, TracePoint, Xdp, XdpMode,
+    sock_ops::SockOpsLinkId, tc::SchedClassifierLinkId, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb,
+    CgroupSkbAttachType, CgroupSockAddr, KProbe, SchedClassifier, SockOps, TcAttachType, TracePoint, Xdp, XdpMode,
 };
 use aya::util::KernelVersion;
 use aya::{Ebpf, EbpfLoader, VerifierLogLevel};
@@ -105,6 +105,7 @@ pub struct Datapath {
     xdp: StdHashMap<String, (String, XdpLinkId)>,
     cgroups: StdHashMap<String, CgroupLinks>,
     sandboxes: StdHashMap<String, (CgroupDeviceLinkId, CgroupSkbLinkId)>,
+    sockops: Option<(String, SockOpsLinkId)>,
     pub tracepoints: Vec<String>,
     pub notes: Vec<String>,
     tcx: bool,
@@ -133,6 +134,7 @@ impl Datapath {
             xdp: StdHashMap::new(),
             cgroups: StdHashMap::new(),
             sandboxes: StdHashMap::new(),
+            sockops: None,
             tracepoints: Vec::new(),
             notes: Vec::new(),
             tcx: kernel_features().tcx,
@@ -220,6 +222,42 @@ impl Datapath {
 
     pub fn tc_one_attached(&self, iface: &str, prog: &str) -> bool {
         self.uplink.contains_key(&format!("{iface}:{prog}"))
+    }
+
+    /// `mn_sockops` (connect latency, TCP pressure) on a cgroup; observe only.
+    pub fn attach_sockops(&mut self, cg_path: &Path) -> Result<()> {
+        let key = cg_path.display().to_string();
+        if self.sockops.as_ref().is_some_and(|(k, _)| *k == key) {
+            return Ok(());
+        }
+        self.detach_sockops();
+        let first = !self.loaded.contains("mn_sockops");
+        let p: &mut SockOps = self
+            .ebpf
+            .program_mut("mn_sockops")
+            .ok_or_else(|| anyhow!("program mn_sockops missing"))?
+            .try_into()?;
+        if first {
+            p.load().context("verifier rejected mn_sockops")?;
+            self.loaded.insert("mn_sockops".into());
+        }
+        let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
+        let id = p.attach(f, CgroupAttachMode::default()).context("attach mn_sockops")?;
+        self.sockops = Some((key, id));
+        Ok(())
+    }
+
+    pub fn detach_sockops(&mut self) {
+        let Some((_, id)) = self.sockops.take() else { return };
+        if let Some(p) = self.ebpf.program_mut("mn_sockops") {
+            if let Ok(p) = <&mut SockOps>::try_from(p) {
+                let _ = p.detach(id);
+            }
+        }
+    }
+
+    pub fn sockops_attached(&self) -> Option<&str> {
+        self.sockops.as_ref().map(|(k, _)| k.as_str())
     }
 
     /// QEMU sandbox on a machine scope: device allowlist + IP egress filter.

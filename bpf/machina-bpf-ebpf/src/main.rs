@@ -13,6 +13,7 @@ mod net;
 mod parse;
 mod proc;
 mod shield;
+mod tcp;
 mod vm;
 mod xdp;
 

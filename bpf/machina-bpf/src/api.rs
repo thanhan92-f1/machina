@@ -113,6 +113,9 @@ pub struct TelemetryConfig {
     /// Interface name globs auto-attached as workload taps.
     #[serde(default = "default_patterns")]
     pub iface_patterns: Vec<String>,
+    /// `mn_sockops` on the root cgroup: connect latency + TCP pressure.
+    #[serde(default = "default_true")]
+    pub tcp: bool,
 }
 
 fn default_watch() -> Vec<String> {
@@ -140,6 +143,7 @@ impl Default for TelemetryConfig {
             l7: true,
             file_watch: default_watch(),
             iface_patterns: default_patterns(),
+            tcp: true,
         }
     }
 }
@@ -370,10 +374,61 @@ pub struct TcpHealth {
     pub count: u64,
 }
 
+/// Active connect latency towards one remote endpoint.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ConnectHealth {
+    pub addr: String,
+    pub port: u16,
+    pub count: u64,
+    pub failures: u64,
+    pub avg_us: u64,
+    pub max_us: u64,
+    /// Upper bound of the bucket holding the 90th percentile (None = > 1 s).
+    pub p90_le_us: Option<u64>,
+    /// Counts per bucket: <100µs, <1ms, <5ms, <10ms, <50ms, <100ms, <1s, ≥1s.
+    pub hist: Vec<u64>,
+}
+
+/// Last TCP socket snapshot towards a peer (state change / retransmit).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TcpPeerPressure {
+    pub addr: String,
+    pub srtt_us: u32,
+    pub cwnd: u32,
+    pub ssthresh: u32,
+    pub mss: u32,
+    pub total_retrans: u32,
+    pub retrans_events: u32,
+    /// Bytes/s from the kernel's delivery-rate sample (0 = none yet).
+    pub delivery_rate_bps: u64,
+    pub age_secs: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct NetHealth {
     pub drop_reasons: Vec<DropReason>,
     pub tcp: Vec<TcpHealth>,
+    #[serde(default)]
+    pub connect: Vec<ConnectHealth>,
+    #[serde(default)]
+    pub pressure: Vec<TcpPeerPressure>,
+    /// Cgroup carrying `mn_sockops`, if attached.
+    #[serde(default)]
+    pub sockops: Option<String>,
+}
+
+/// ICMP errors per datapath interface.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct IcmpError {
+    pub iface: String,
+    pub vm: Option<String>,
+    /// unreachable | time_exceeded | param_problem | packet_too_big
+    pub kind: String,
+    pub code: u8,
+    pub family: String,
+    /// from_workload | to_workload
+    pub direction: String,
+    pub count: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -877,6 +932,7 @@ pub enum Request {
         config: ShieldConfig,
     },
     ShieldStatus,
+    IcmpErrors,
     /// Stream events (`net`, `dns`, `l7`, `proc`, `anomaly`) as JSON lines
     /// until the client disconnects.
     Subscribe {

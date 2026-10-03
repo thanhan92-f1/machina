@@ -14,6 +14,8 @@ HOST_IP=10.199.77.1
 PEER_IP=10.199.77.2
 WORK=$(mktemp -d /tmp/mnbpf-smoke.XXXX)
 SOCK=$WORK/bpfd.sock
+# mn_sockops is scoped to this cgroup instead of the host root.
+TCP_CG=/sys/fs/cgroup/mnbpf-smoke-tcp
 PASS=0
 FAIL=0
 
@@ -22,6 +24,7 @@ cleanup() {
   [[ -n "${HTTP_PID:-}" ]] && kill "$HTTP_PID" 2>/dev/null || true
   ip netns del "$NS" 2>/dev/null || true
   ip link del "$HOST_IF" 2>/dev/null || true
+  [[ -d "$TCP_CG" ]] && rmdir "$TCP_CG" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -87,7 +90,8 @@ cat >"$WORK/bpfd-state.json" <<EOF
                "file_watch": ["/etc/shadow"], "iface_patterns": ["$HOST_IF"]}}
 EOF
 
-RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" \
+mkdir -p "$TCP_CG"
+MACHINA_BPF_SOCKOPS_CGROUP=$TCP_CG RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" \
   >"$WORK/bpfd.log" 2>&1 &
 BPFD_PID=$!
 for _ in $(seq 50); do [[ -S "$SOCK" ]] && break; sleep 0.2; done
@@ -312,6 +316,22 @@ observe
 shield '"mode":"off"'
 check "shield off: dispatcher detached" bash -c "$(declare -f xdp_on); HOST_IF=$HOST_IF; ! xdp_on"
 check "shield off: ping restored" ping_ok
+
+# TCP connect latency / pressure via mn_sockops (test cgroup only) and the
+# ICMP error histogram on the test veth.
+in_tcp_cg() { bash -c "echo \$\$ > $TCP_CG/cgroup.procs && exec \"\$@\"" _ "$@"; }
+health() { req '{"op":"net_health"}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print($1)"; }
+check "sockops: attached to test cgroup" test "$(health "d.get('sockops')")" = "$TCP_CG"
+for _ in 1 2 3; do in_tcp_cg curl -s -m2 -o /dev/null "http://$HOST_IP:18080/" || true; done
+in_tcp_cg curl -s -m2 -o /dev/null "http://$HOST_IP:18099/" || true
+check "sockops: connect latency recorded" test "$(health "sum(c['count'] for c in d['connect'] if c['addr']=='$HOST_IP' and c['port']==18080)")" -ge 3
+check "sockops: refused connect counted as failure" test "$(health "sum(c['failures'] for c in d['connect'] if c['port']==18099)")" -ge 1
+check "sockops: peer pressure snapshot" test "$(health "sum(1 for p in d['pressure'] if p['addr']=='$HOST_IP' and p['mss']>0)")" -ge 1
+curl -s -m2 -o /dev/null "http://$HOST_IP:18080/" || true
+check "sockops: other cgroups not observed" test "$(health "sum(c['count'] for c in d['connect'] if c['addr']=='$HOST_IP' and c['port']==18080)")" -le 3
+ip netns exec "$NS" python3 -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(b'x', ('$HOST_IP', 33999))"
+sleep 0.3
+check "icmp: port unreachable counted on test veth" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"icmp_errors\"}' | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if any(e[\"iface\"]==\"$HOST_IF\" and e[\"kind\"]==\"unreachable\" and e[\"code\"]==3 and e[\"direction\"]==\"to_workload\" for e in d) else 1)'"
 
 echo
 echo "passed=$PASS failed=$FAIL  (log: $WORK/bpfd.log)"

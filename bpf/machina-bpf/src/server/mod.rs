@@ -34,6 +34,7 @@ mod listen;
 mod ops;
 mod readers;
 mod shield;
+mod tcp;
 mod uplink;
 mod vm;
 
@@ -283,6 +284,7 @@ impl Engine {
                 let _ = self.dp.set_cgroup_scope(id, 0);
             }
         }
+        self.sync_sockops();
         Ok(())
     }
 

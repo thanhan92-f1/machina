@@ -352,6 +352,10 @@ async fn vm_sandbox_detach(
     bpfd(Request::VmSandboxDetach { vm }).await
 }
 
+async fn icmp_errors() -> Result<Json<Value>, AppError> {
+    bpfd(Request::IcmpErrors).await
+}
+
 async fn shield_status() -> Result<Json<Value>, AppError> {
     bpfd(Request::ShieldStatus).await
 }
@@ -398,6 +402,7 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/stream", get(stream))
         .route("/bpf/vm-edge", get(vm_edge_status).put(vm_edge_sync))
         .route("/bpf/shield", get(shield_status).put(shield_configure))
+        .route("/bpf/icmp-errors", get(icmp_errors))
         .route("/bpf/vm-sandbox", get(vm_sandbox_status).put(vm_sandbox_configure))
         .route(
             "/bpf/vm-sandbox/{vm}",

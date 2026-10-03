@@ -364,6 +364,65 @@ pub struct HealthKey {
     pub addr: [u8; ADDR_LEN],
 }
 
+/// Connect latency histogram bucket upper bounds (µs); the last is open.
+pub const CONNECT_BUCKETS_US: [u64; 7] = [100, 1_000, 5_000, 10_000, 50_000, 100_000, 1_000_000];
+pub const CONNECT_BUCKETS: usize = 8;
+
+/// CONNECT_HEALTH key: remote address + port (host order).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct ConnKey {
+    pub addr: [u8; ADDR_LEN],
+    pub port: u16,
+    pub _pad: [u8; 6],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ConnStats {
+    /// Established active connects.
+    pub count: u64,
+    /// SYN_SENT → CLOSE (refused / timed out).
+    pub failures: u64,
+    pub sum_us: u64,
+    pub max_us: u64,
+    pub hist: [u64; CONNECT_BUCKETS],
+}
+
+/// TCP_PRESSURE: last socket snapshot towards a remote address.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct TcpPressure {
+    /// Smoothed RTT ×8 (as the kernel keeps it), µs.
+    pub srtt_us8: u32,
+    pub cwnd: u32,
+    pub ssthresh: u32,
+    pub mss: u32,
+    pub total_retrans: u32,
+    /// Retransmit callbacks seen across sockets to this peer.
+    pub retrans_events: u32,
+    pub rate_delivered: u32,
+    pub rate_interval_us: u32,
+    pub last_ns: u64,
+}
+
+pub const ICMP_ERR_UNREACH: u8 = 1;
+pub const ICMP_ERR_TIME_EXCEEDED: u8 = 2;
+pub const ICMP_ERR_PARAM: u8 = 3;
+/// IPv4 fragmentation needed / IPv6 packet too big.
+pub const ICMP_ERR_PTB: u8 = 4;
+
+/// ICMP_ERRORS key (value: count).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct IcmpErrKey {
+    pub ifindex: u32,
+    pub kind: u8,
+    pub code: u8,
+    pub from_workload: u8,
+    pub v6: u8,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct QosState {
@@ -780,7 +839,7 @@ mod pod {
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
         VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
-        ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats
+        ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey
     );
 }
 
@@ -816,6 +875,10 @@ mod tests {
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
         assert_eq!(size_of::<DevHitKey>(), 24);
         assert_eq!(size_of::<NetHitKey>(), 32);
+        assert_eq!(size_of::<ConnKey>(), 24);
+        assert_eq!(size_of::<ConnStats>(), 32 + 8 * CONNECT_BUCKETS);
+        assert_eq!(size_of::<TcpPressure>(), 40);
+        assert_eq!(size_of::<IcmpErrKey>(), 8);
         assert_eq!(size_of::<ShieldCfg>(), 32);
         assert_eq!(size_of::<ShieldSrcKey>(), 20);
         assert_eq!(size_of::<ShieldSrcState>(), 24);

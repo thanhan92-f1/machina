@@ -378,6 +378,7 @@ impl Daemon {
                 v(&st)
             }
             Request::ShieldStatus => v(&lock(&self.engine).shield_status()),
+            Request::IcmpErrors => v(&lock(&self.engine).icmp_errors()),
             Request::VmRefresh => {
                 let mut eng = lock(&self.engine);
                 eng.vm_edge_refresh();

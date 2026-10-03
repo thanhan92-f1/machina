@@ -588,6 +588,10 @@ fn tc_verdict(ctx: &TcContext, ingress: bool, ifindex: u32, cfg: &IfaceCfg, from
         }
         return TC_ACT_UNSPEC;
     }
+    // ICMP / ICMPv6
+    if t.proto == 1 || t.proto == 58 {
+        crate::tcp::icmp_error(ctx, &t, ifindex, from_workload);
+    }
 
     let (local, remote, lport, rport) = if from_workload {
         (t.src, t.dst, t.sport, t.dport)
