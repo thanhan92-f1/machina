@@ -146,7 +146,7 @@ export default function VmConsoleHeroPreview({
       </div>
 
       {/* Full-bleed media plane — no card radius / border / glass */}
-      <div className="relative -mx-1 sm:mx-0 bg-[#000] aspect-video w-full max-h-[min(56vh,32rem)] min-h-[12rem]">
+      <div className="relative -mx-1 sm:mx-0 bg-[#000] aspect-video w-full max-h-[min(58vh,34rem)] min-h-[12rem]">
         {!running ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
             <Power className="w-7 h-7 text-white/45" />

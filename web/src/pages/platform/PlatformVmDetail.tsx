@@ -30,6 +30,9 @@ import OsDiagnosePanel from '../../components/platform/OsDiagnosePanel'
 import VmDetailTabs, { type VmDetailTab, isGuestRelatedTab } from '../../components/platform/VmDetailTabs'
 import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
 import VmUsageBars from '../../components/platform/VmUsageBars'
+import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
+import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
+import { useVmMetricSeries } from '../../hooks/useVmMetricSeries'
 import JsonInspector from '../../components/platform/JsonInspector'
 import { StructuredErrorBanner } from '../../components/StructuredErrorBanner'
 import {
@@ -114,7 +117,6 @@ import VmStatusBadge from '../../components/VmStatusBadge'
 import {hostStateTone, httpStatusTone, migrationReadinessTone, riskTone, statusBadgeClasses, statusPillClasses, statusSurfaceClasses, statusToneClass, taskStatusTone, webhookDeliveryTone, hubLinkClasses} from '../../utils/semanticColors'
 import { cinemaHubPath, studioHubPath } from '../../utils/consoleExperienceMode'
 import { vmErrorPresentation } from '../../utils/vmErrorPresentation'
-import { formatVmMemoryGiB } from '../../utils/vmVisual'
 import { loadVmSshPrefs } from '../../utils/vmSshPrefs'
 import VmConnectHub from '../../components/vm/VmConnectHub'
 import VmConsoleHeroPreview from '../../components/vm/VmConsoleHeroPreview'
@@ -832,6 +834,8 @@ export default function PlatformVmDetail() {
     }
   }, [id, vm?.observed_state, vm?.inventory_source, resolvedGuestIp])
 
+  const metricSeries = useVmMetricSeries(id, vm?.observed_state === 'running' && vm?.inventory_source !== 'kubevirt', metrics)
+
   if (!id) return null
 
   const sshUser = (() => {
@@ -921,8 +925,6 @@ export default function PlatformVmDetail() {
           )}
           <span className="text-[var(--text-muted)] max-sm:hidden" aria-hidden>·</span>
           <span className="text-[var(--text-muted)]" title={hostRow?.address ?? undefined}>{hostLabel}</span>
-          <span className="text-[var(--text-muted)] max-sm:hidden" aria-hidden>·</span>
-          <span className="text-[var(--text-muted)]">{vm.vcpus ?? '—'} vCPU · {formatVmMemoryGiB(vm.memory_mib)}</span>
           {guestIp && (
             <>
               <span className="text-[var(--text-muted)] max-sm:hidden" aria-hidden>·</span>
@@ -1156,6 +1158,16 @@ export default function PlatformVmDetail() {
             </div>
           )}
 
+          {tab === 'overview' && vm && (
+            <VmOverviewStats
+              series={metricSeries}
+              vcpus={vm.vcpus}
+              memoryMib={vm.memory_mib}
+              healthScore={(() => { const n = Number.parseInt(String(health?.score ?? ''), 10); if (!Number.isNaN(n)) return n; const d = doctor ? Number(doctor.score_numeric) : NaN; return Number.isNaN(d) ? null : d })()}
+              running={vm.observed_state === 'running'}
+            />
+          )}
+
           {tab === 'overview' && id && vm && (
             <VmConsoleHeroPreview
               vmName={vm.name}
@@ -1328,7 +1340,7 @@ export default function PlatformVmDetail() {
                 </MacGlassPanel>
               )}
               {doctor && (
-                <div className="flex flex-wrap items-center gap-2 text-sm rounded-xl border border-violet-500/20 bg-[var(--apple-surface)] px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2 text-sm rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] px-4 py-3">
                   <span className="text-[var(--text-secondary)]">
                     Doctor: <span className="font-semibold text-[var(--link)]">{doctor.score_numeric}/100</span>
                     {(doctor.issues?.length ?? 0) > 0 ? ` · ${doctor.issues.length} issue(s)` : ' · all checks passed'}
@@ -1409,6 +1421,15 @@ export default function PlatformVmDetail() {
           )}
 
           {tab === 'console' && (
+            <>
+            <div className="pt-2">
+              <VmConsoleHeroPreview
+                vmName={vm.name}
+                vmState={vm.observed_state}
+                consoleHref={cinemaHubPath(id!)}
+                platformVmId={id}
+              />
+            </div>
             <div className="space-y-4 pt-2">
               <MacGlassPanel title="VNC console">
                 <p className="text-sm text-[var(--text-muted)] mb-4">
@@ -1427,23 +1448,15 @@ export default function PlatformVmDetail() {
                 <AiTerminalSuggestStrip vmId={id} vmName={vm.name} compact />
               </MacGlassPanel>
             </div>
+            </>
           )}
 
           {tab === 'performance' && (
-            <MacGlassPanel title="Performance">
-              {metrics ? (
-                <>
-                  <div className="flex flex-wrap gap-6 text-sm">
-                    <span className="flex items-center gap-2"><Activity className="w-4 h-4" /> CPU {metrics.cpu_percent.toFixed(1)}%</span>
-                    <span>Memory {metrics.memory_used_mib} MiB</span>
-                    <span className="text-[var(--text-muted)] text-xs">Updated {new Date(metrics.updated_at).toLocaleString()}</span>
-                  </div>
-                  <p className="text-xs text-[var(--text-muted)]">Guest tools will unlock richer CPU, disk latency, and noisy-neighbor insights.</p>
-                </>
-              ) : (
-                <p className="text-[var(--text-muted)] text-sm">Metrics appear after the next host inventory sync.</p>
-              )}
-            </MacGlassPanel>
+            <VmPerfPanel
+              series={metricSeries}
+              memoryTotalMib={vm.memory_mib ?? undefined}
+              vcpuCount={vm.vcpus ?? undefined}
+            />
           )}
 
           {tab === 'devices' && (vm.inventory_source === 'kubevirt' ? (

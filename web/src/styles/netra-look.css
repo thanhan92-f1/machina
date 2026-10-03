@@ -839,8 +839,8 @@ html.apple-light .platform-detail-tabs-sticky,
 html.light-theme .platform-detail-tabs-sticky,
 html[data-theme='tahoe-light'] .platform-detail-tabs-sticky,
 html[data-theme='tahoe'] .platform-detail-tabs-sticky {
-  margin: 0 0 0.75rem !important;
-  padding: 0.35rem 0 0.65rem !important;
+  margin: 0 0 1rem !important;
+  padding: 0.25rem 0 0 !important;
   background: var(--page-bg, #fff) !important;
   backdrop-filter: none !important;
   border-bottom: 1px solid var(--nl-hairline) !important;

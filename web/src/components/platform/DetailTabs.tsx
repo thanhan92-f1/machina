@@ -11,10 +11,10 @@ type DetailTabDef<T extends string> = {
 }
 
 function tabButtonClass(active: boolean): string {
-  return `px-3 py-2 min-h-9 text-sm whitespace-nowrap rounded-lg transition-colors ${
+  return `relative px-3 min-h-11 text-[13px] whitespace-nowrap transition-colors after:absolute after:left-3 after:right-3 after:-bottom-px after:h-0.5 after:rounded-full ${
     active
-      ? 'bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] font-medium ring-1 ring-[color-mix(in_srgb,var(--apple-hairline)_80%,transparent)]'
-      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--apple-surface)]'
+      ? 'text-[var(--text-primary)] font-medium after:bg-[var(--apple-link,#0066cc)]'
+      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] after:bg-transparent'
   }`
 }
 
@@ -77,7 +77,7 @@ export default function DetailTabs<T extends string>({
 
   return (
     <div ref={stickyRef} className="platform-detail-tabs-sticky" id="platform-detail-tabs">
-      <div className="flex flex-wrap items-center gap-1 pb-1">
+      <div className="flex flex-wrap items-center">
         <div role="tablist" aria-label="Detail sections" className="contents">
           {primary.map((tab) => (
             <button
