@@ -32,7 +32,7 @@
 | VMware renewal quotes keep climbing | Open KVM/libvirt underneath, with HA failover, DRS and live migration on top |
 | libvirt ops live in a pile of `virsh` scripts | One dashboard, a REST API with 900+ routes, a CLI and a Terraform provider over the same model |
 | Every console needs its own gateway | noVNC, SPICE, serial and SSH proxied by the daemon, with RBAC and audit |
-| Networking means Cilium + Tetragon + kube-proxy + a firewall agent | One eBPF service, `machina-bpfd`: service load balancing, Kubernetes CNI, DDoS shield, VM isolation and flow visibility |
+| Networking means Cilium + Tetragon + kube-proxy + a firewall agent | One eBPF service, `machina-bpfd`: load balancing, DDoS shield, VM isolation, flow visibility |
 | On-call means triaging the same incidents at 3 a.m. | Zyra AI diagnoses, correlates and proposes the fix, then waits for a human approval |
 
 ![Capabilities at a glance — Run, Reach, Scale, Operate](docs/ux/readme-capabilities.jpg)
@@ -45,17 +45,17 @@
 
 | | **Machina** | **OpenStack** (typical IaaS) |
 |---|---|---|
-| Services to run | **4** Rust services (daemon, controller, agent, `machina-bpfd`) | 9+ services (Keystone, Nova, Neutron, Glance, Cinder, Placement, Horizon, Heat, Octavia) |
+| Services to run | **4** Rust services | 9+ services (Keystone, Nova, Neutron, Glance, Cinder, Placement, Horizon, Heat, Octavia) |
 | Backing infrastructure | Embedded SQLite; optional NATS | MariaDB/Galera, RabbitMQ, Memcached |
-| Install | `./machinactl deploy` on one host, `deploy-remote.sh` for the next | Kolla-Ansible / OpenStack-Ansible deployment project |
+| Install | `./machinactl deploy` | Kolla-Ansible / OpenStack-Ansible project |
 | Smallest useful footprint | A single KVM host | A multi-node control plane |
-| Flavors, images, volumes, security groups, stacks, load balancers | Yes, in [Fleet Cloud](docs/customer/pages/fleet-cloud/fleet-cloud.md) | Yes (Nova, Glance, Cinder, Neutron, Heat, Octavia) |
-| Load balancer data plane | Maglev eBPF service LB (Kubernetes, QUIC at XDP) + iptables member rules for Fleet Cloud LBs; no amphora VM | Amphora VMs (Octavia) |
-| Network datapath and security | Native eBPF (XDP, TC, cgroup, BPF-LSM), lease-gated enforcement | Neutron agents + OVS/OVN, security groups via iptables/OVS |
-| Browser consoles | noVNC, SPICE, serial, SSH built into the daemon | noVNC/SPICE proxy services |
-| HA failover and DRS | Built into the controller ([controller HA](docs/controller-ha.md)) | Separate projects: Masakari (instance HA), Watcher (rebalancing) |
-| AI operations | Zyra AI: diagnostics, incidents, rightsizing, approvals | Not included |
-| Containers and Kubernetes | Podman containers and pods, KubeVirt inventory and migration | Zun / Magnum (separate projects) |
+| Flavors, images, volumes, SGs, stacks, LBs | Yes, in [Fleet Cloud](docs/customer/pages/fleet-cloud/fleet-cloud.md) | Yes, across six projects |
+| Load balancer data plane | eBPF Maglev on the host, no amphora VM | Amphora VMs (Octavia) |
+| Network datapath | Native eBPF, lease-gated enforcement | Neutron agents + OVS/OVN |
+| Browser consoles | Built into the daemon | noVNC/SPICE proxy services |
+| HA failover and DRS | Built in ([controller HA](docs/controller-ha.md)) | Masakari + Watcher (separate projects) |
+| AI operations | Zyra AI, approval-gated | Not included |
+| Containers and Kubernetes | Podman, KubeVirt | Zun / Magnum (separate projects) |
 | **Choose OpenStack when** | | You run thousands of tenants, need Neutron-grade SDN breadth, or depend on its ecosystem |
 
 Machina targets the fleets you own: a lab, a branch, a sovereign region, a VMware exit. It deliberately trades OpenStack's hyperscale multi-tenancy for a cloud one person can install, understand and upgrade.
@@ -103,7 +103,7 @@ Autonomous diagnostics across the fleet, incident correlation, rightsizing and n
 Machina ships its own eBPF datapath instead of bolting on Cilium, Tetragon or a separate firewall agent. One root service, `machina-bpfd`, provides:
 
 - **Load balancing**: Maglev service LB for Kubernetes (socket-level, NodePort at TC or XDP, DSR) and QUIC-LB at XDP.
-- **Kubernetes CNI** (opt-in): `machina-cni` can replace flannel, kube-proxy and Cilium, with NetworkPolicy and optional Cilium policy migration. Bootstrapped k3s clusters keep their default CNI unless you choose it, and the agent refuses to take over a node that already has one.
+- **Kubernetes CNI** (opt-in): `machina-cni` replaces flannel and kube-proxy where you choose it, with NetworkPolicy and Cilium policy migration. It never takes over an existing CNI.
 - **Protection**: XDP DDoS shield, emergency node isolation, VM edge isolation and rate limits, a QEMU sandbox and a BPF-LSM guard around the VMM.
 - **Visibility**: flows, DNS, L7 (HTTP, TLS SNI, gRPC, Redis, PostgreSQL, MySQL, Kafka), JA3/JA4 fingerprints, network-change audit and per-VM runtime histograms.
 - **Inside guests**: per-container network and LSM policy through GuestKit, from the VM's **Guest policy** tab.
@@ -127,12 +127,12 @@ Everything that can drop traffic starts in observe mode and enforces only under 
 
 | Component | Port | Role |
 |---|---|---|
-| `machina-daemon` | `:5092` | Single-host REST + WebSocket API, PAM/OIDC/SAML/LDAP, RBAC, console proxies, serves the web UI |
-| `machina-controller` | `:5093` | Multi-host control plane: fleet, HA, DRS, Fleet Cloud, Zyra AI. Embedded SQLite, optional NATS |
-| `machina-agent` | `:50051`, `:50052` | Per-hypervisor gRPC agent (TLS) that executes libvirt and eBPF operations for the controller; `:50052` is its console proxy |
-| `machina-bpfd` | `/run/machina-bpf/bpfd.sock` | Root eBPF service: datapath, telemetry and enforcement, exposed through the daemon at `/api/v1/bpf/*` |
-| `machina-cni` | — | Kubernetes CNI plugin + node agent (`contrib/machina-cni.service`), drives bpfd's service and policy maps |
-| `machina-scx` | — | Optional sched_ext VM scheduler, supervised by bpfd (kernel 6.12+) |
+| `machina-daemon` | `:5092` | Single-host API, auth/RBAC, console proxies, web UI |
+| `machina-controller` | `:5093` | Fleet, HA, DRS, Fleet Cloud, Zyra AI (embedded SQLite) |
+| `machina-agent` | `:50051`, `:50052` | Per-host gRPC agent (TLS) for libvirt and eBPF ops; `:50052` is its console proxy |
+| `machina-bpfd` | unix socket | Root eBPF datapath, telemetry and enforcement (`/api/v1/bpf/*`) |
+| `machina-cni` | — | Opt-in Kubernetes CNI plugin and node agent |
+| `machina-scx` | — | Optional sched_ext VM scheduler (kernel 6.12+) |
 
 The daemon alone is a complete single-host manager. Add the controller and an agent per host for a fleet; `machina-bpfd` runs on every host that should get the eBPF datapath.
 
@@ -179,14 +179,14 @@ From your laptop to a remote host (sources are rsync'd and built on the server; 
 
 | Area | Status |
 |---|---|
-| VM lifecycle, storage, networks, consoles, auth/RBAC, audit | Stable |
-| Controller fleet, HA with fencing, DRS, live migration | Stable |
-| Fleet Cloud (flavors, images, instances, volumes, security groups, stacks, LBs) | Stable |
-| Native eBPF observability (flows, DNS, L7, TLS, health, VM runtime) | Preview, observe-only |
-| Native eBPF enforcement (policies, shield, node isolation, VM edge, sandbox, VMM guard) | Preview, lease-gated |
-| `machina-cni` Kubernetes networking | Preview |
-| QUIC-LB, AF_XDP, direct redirect, sched_ext scheduler, guest policy | Opt-in, off by default |
-| Zyra AI | Stable; every change goes through human approval |
+| VMs, storage, networks, consoles, auth, audit | Stable |
+| Fleet, HA with fencing, DRS, live migration | Stable |
+| Fleet Cloud | Stable |
+| eBPF observability | Preview |
+| eBPF enforcement | Preview, lease-gated |
+| `machina-cni` | Preview, opt-in |
+| QUIC-LB, AF_XDP, sched_ext, guest policy | Opt-in |
+| Zyra AI | Stable, approval-gated |
 | Atlas storage integration | Opt-in (`ATLAS_ENABLED=1`) |
 
 ---
@@ -213,7 +213,7 @@ Start with [Engineering onboarding](docs/ENGINEERING_ONBOARDING.md); architectur
 |---|---|
 | **Machina** | Private cloud on KVM: VMs, fleet, Fleet Cloud, native eBPF, Zyra AI |
 | **Atlas** | Storage control plane (Ceph/NFS/ZFS) for VM disks, snapshots, backups |
-| **GuestKit** | In-guest agent: health, offline VM inspection, migration assurance, per-container eBPF policy |
+| **GuestKit** | In-guest agent, offline inspection, per-container eBPF policy |
 | **HyperSDK / hyper2kvm** | Multi-cloud VM migration into KVM |
 
 → [zyvor.dev](https://zyvor.dev)
