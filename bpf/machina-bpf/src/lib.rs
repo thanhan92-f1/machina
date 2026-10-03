@@ -17,6 +17,7 @@ pub mod api;
 pub mod attribution;
 pub mod client;
 pub mod dns;
+pub mod l7;
 pub mod pcapng;
 pub mod policy;
 pub mod tracefs;

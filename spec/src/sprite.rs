@@ -29,7 +29,7 @@ pub struct SpriteCreateRequest {
     /// sprites stay vsock-only unless a caller explicitly opts in. Shares
     /// the same network (and posture) any regular VM created on this host
     /// already gets; there's no per-sprite isolation or domain allow-list
-    /// (that's a later PacketWolf-integration concern, not v1).
+    /// (a `vm:` scoped native eBPF `tc_allow` policy is the way to add one).
     #[serde(default)]
     pub network_egress: bool,
 }

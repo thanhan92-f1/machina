@@ -123,11 +123,6 @@ enabled = true
 base_url = "http://127.0.0.1:8080"
 insecure_tls = true
 
-[packetwolf]
-enabled = false
-base_url = "http://127.0.0.1:9091"
-insecure_tls = true
-
 # Web UI login: PAM by default, with optional OpenID Connect for browser SSO.
 # [auth]
 # pam_service = "sshd"

@@ -128,6 +128,34 @@ struct ListQuery {
     limit: Option<usize>,
     kind: Option<String>,
     vm: Option<String>,
+    protocol: Option<String>,
+}
+
+async fn l7(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
+    bpfd(Request::L7 {
+        limit: q.limit,
+        vm: q.vm,
+        protocol: q.protocol,
+    })
+    .await
+}
+
+async fn accounting(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
+    bpfd(Request::Accounting { vm: q.vm }).await
+}
+
+#[derive(Deserialize, Default)]
+struct ResetBody {
+    vm: Option<String>,
+}
+
+async fn reset_accounting(
+    Extension(actor): Extension<RequestActor>,
+    body: Option<Json<ResetBody>>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Resetting traffic accounting")?;
+    let vm = body.and_then(|Json(b)| b.vm);
+    bpfd(Request::ResetAccounting { vm }).await
 }
 
 async fn flows(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
@@ -248,7 +276,7 @@ async fn set_telemetry(
 
 #[derive(Deserialize)]
 struct StreamQuery {
-    /// Comma-separated: net, flow, dns, proc, anomaly. Empty = all.
+    /// Comma-separated: net, dns, l7, proc, anomaly. Empty = all.
     topics: Option<String>,
 }
 
@@ -288,6 +316,9 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/flows", get(flows))
         .route("/bpf/events", get(events))
         .route("/bpf/dns", get(dns))
+        .route("/bpf/l7", get(l7))
+        .route("/bpf/accounting", get(accounting))
+        .route("/bpf/accounting/reset", axum::routing::post(reset_accounting))
         .route("/bpf/processes", get(processes))
         .route("/bpf/anomalies", get(anomalies))
         .route("/bpf/health", get(net_health))

@@ -109,10 +109,8 @@ export interface PlatformInfo {
     base_url: string
     insecure_tls: boolean
   }
-  packetwolf?: {
-    enabled: boolean
-    base_url: string
-    insecure_tls: boolean
+  native_bpf?: {
+    socket: string
   }
   zeus_firewall?: {
     enabled: boolean

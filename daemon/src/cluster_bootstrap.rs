@@ -1,8 +1,10 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-//! Host cluster bootstrap (k3s → Cilium → metrics-server → KubeVirt/CDI/virtctl).
-//! Mirrors the former `scripts/install-k3s-cilium.sh`; invoked from `POST /api/v1/k8s/cluster-bootstrap`.
+//! Host cluster bootstrap (k3s → machina-cni → metrics-server → KubeVirt/CDI/virtctl).
+//! k3s runs without flannel, its NetworkPolicy controller and kube-proxy: the
+//! native eBPF CNI (machina-bpfd + `machina-cni agent`) provides all three.
+//! Invoked from `POST /api/v1/k8s/cluster-bootstrap`.
 //!
 //! Linux-only; intended for `machina-daemon` running as **root** (stock systemd unit).
 
@@ -35,8 +37,6 @@ pub struct ClusterBootstrapParams {
 
 const K3S_INSTALL_URL: &str = "https://get.k3s.io";
 const KUBECONFIG_ADMIN: &str = "/etc/rancher/k3s/k3s.yaml";
-const CILIUM_CLI_STABLE: &str =
-    "https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt";
 const METRICS_SERVER_MANIFEST: &str =
     "https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml";
 const KUBEVIRT_STABLE_TXT: &str =
@@ -49,7 +49,7 @@ const TIMEOUT_SHELL_LONG_SECS: u64 = 1800;
 const TIMEOUT_KUBECTL_SECS: u64 = 600;
 /// `kubectl wait … --timeout=10m`
 const TIMEOUT_KUBECTL_WAIT_SECS: u64 = 660;
-const TIMEOUT_CILIUM_STATUS_SECS: u64 = 900;
+const TIMEOUT_CNI_READY_SECS: u64 = 660;
 const TIMEOUT_METRICS_ROLLOUT_SECS: u64 = 180;
 
 /// Machina-owned home for the admin kubeconfig this bootstrap writes.
@@ -243,7 +243,7 @@ async fn phase_k3s(
     stderr_log: &mut String,
 ) -> Result<(), LibvirtError> {
     let install = format!(
-        "curl -sfL {K3S_INSTALL_URL} | sh -s - server --flannel-backend=none --disable-network-policy --disable=traefik"
+        "curl -sfL {K3S_INSTALL_URL} | sh -s - server --flannel-backend=none --disable-network-policy --disable-kube-proxy --disable=traefik --disable=servicelb"
     );
     let no_env: Vec<(String, String)> = vec![];
     run_sh(
@@ -342,7 +342,7 @@ struct GithubReleaseTag {
     tag_name: String,
 }
 
-fn cilium_arch() -> &'static str {
+fn host_arch() -> &'static str {
     match std::env::consts::ARCH {
         "x86_64" => "amd64",
         "aarch64" => "arm64",
@@ -350,40 +350,30 @@ fn cilium_arch() -> &'static str {
     }
 }
 
-async fn phase_cilium(
-    server_ip: &str,
-    stdout_log: &mut String,
-    stderr_log: &mut String,
-) -> Result<(), LibvirtError> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(300))
-        .build()
-        .map_err(|e| LibvirtError::Internal(format!("reqwest client: {e}")))?;
+const MACHINA_CNI_BIN: &str = "/usr/local/bin/machina-cni";
 
-    let ver = download_text(&client, CILIUM_CLI_STABLE).await?;
-    let arch = cilium_arch();
-    let base =
-        format!("https://github.com/cilium/cilium-cli/releases/download/{ver}/cilium-linux-{arch}");
-    let tg = format!("{base}.tar.gz");
-    let sha_url = format!("{base}.tar.gz.sha256sum");
-
-    let tmp = std::env::temp_dir().join(format!("machina-cilium-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&tmp).map_err(|e| LibvirtError::Operation(format!("temp dir: {e}")))?;
-    let tg_path = tmp.join(format!("cilium-linux-{arch}.tar.gz"));
-    let sha_path = tmp.join(format!("cilium-linux-{arch}.tar.gz.sha256sum"));
-
-    download_file(&client, &tg, &tg_path).await?;
-    download_file(&client, &sha_url, &sha_path).await?;
-
-    let sha_check = format!(
-        "cd {} && sha256sum --check {}",
-        tmp.display(),
-        sha_path.file_name().unwrap().to_string_lossy()
-    );
+/// Native eBPF CNI: machina-bpfd owns the datapath, `machina-cni agent`
+/// writes the CNI config, node routes, masquerade and compiles
+/// NetworkPolicies / Services (k3s runs without flannel and kube-proxy).
+async fn phase_cni(stdout_log: &mut String, stderr_log: &mut String) -> Result<(), LibvirtError> {
+    if !Path::new(MACHINA_CNI_BIN).is_file() {
+        return Err(LibvirtError::Operation(format!(
+            "{MACHINA_CNI_BIN} not installed — rerun install.sh (it builds machina-cni with the workspace)"
+        )));
+    }
     let no_env: Vec<(String, String)> = vec![];
     run_sh(
-        "cilium_sha256sum",
-        &sha_check,
+        "machina_bpfd_active",
+        "systemctl enable --now machina-bpfd && systemctl is-active machina-bpfd",
+        &no_env,
+        60,
+        stdout_log,
+        stderr_log,
+    )
+    .await?;
+    run_sh(
+        "machina_cni_enable",
+        "systemctl daemon-reload && systemctl enable machina-cni && systemctl restart machina-cni",
         &no_env,
         60,
         stdout_log,
@@ -391,90 +381,25 @@ async fn phase_cilium(
     )
     .await?;
 
-    let tar_extract = format!("tar xzvfC {} /usr/local/bin", tg_path.display());
-    let no_env2: Vec<(String, String)> = vec![];
-    run_sh(
-        "cilium_tar",
-        &tar_extract,
-        &no_env2,
-        120,
-        stdout_log,
-        stderr_log,
-    )
-    .await?;
-
-    let _ = std::fs::remove_dir_all(&tmp);
-
     let kube_env = kubeconfig_env_pairs();
     let kubectl = kubectl_bin();
     wait_until_kubectl_nodes(&kubectl, &kube_env, stdout_log).await?;
-
     run_cmd_argv(
-        "cilium_install",
-        Path::new("cilium"),
+        "nodes_ready",
+        &kubectl,
         &[
-            "install".into(),
-            "--set".into(),
-            "kubeProxyReplacement=false".into(),
-            "--set".into(),
-            format!("k8sServiceHost={server_ip}"),
-            "--set".into(),
-            "k8sServicePort=6443".into(),
+            "wait".into(),
+            "--for=condition=Ready".into(),
+            "nodes".into(),
+            "--all".into(),
+            "--timeout=10m".into(),
         ],
         &kube_env,
-        TIMEOUT_SHELL_LONG_SECS,
+        TIMEOUT_CNI_READY_SECS,
         stdout_log,
         stderr_log,
     )
     .await?;
-
-    run_cmd_argv(
-        "cilium_status_wait",
-        Path::new("cilium"),
-        &["status".into(), "--wait".into()],
-        &kube_env,
-        TIMEOUT_CILIUM_STATUS_SECS,
-        stdout_log,
-        stderr_log,
-    )
-    .await?;
-
-    run_cmd_argv(
-        "cilium_upgrade",
-        Path::new("cilium"),
-        &[
-            "upgrade".into(),
-            "--set".into(),
-            "kubeProxyReplacement=false".into(),
-            "--set".into(),
-            format!("k8sServiceHost={server_ip}"),
-            "--set".into(),
-            "k8sServicePort=6443".into(),
-            "--set".into(),
-            "hubble.enabled=true".into(),
-            "--set".into(),
-            "hubble.relay.enabled=true".into(),
-            "--set".into(),
-            "hubble.ui.enabled=true".into(),
-        ],
-        &kube_env,
-        TIMEOUT_SHELL_LONG_SECS,
-        stdout_log,
-        stderr_log,
-    )
-    .await?;
-
-    run_cmd_argv(
-        "cilium_status_wait_2",
-        Path::new("cilium"),
-        &["status".into(), "--wait".into()],
-        &kube_env,
-        TIMEOUT_CILIUM_STATUS_SECS,
-        stdout_log,
-        stderr_log,
-    )
-    .await?;
-
     run_cmd_argv(
         "kubectl_get_nodes_wide",
         &kubectl,
@@ -488,30 +413,13 @@ async fn phase_cilium(
     run_cmd_argv(
         "kubectl_get_pods_A",
         &kubectl,
-        &["get".into(), "pods".into(), "-A".into()],
+        &["get".into(), "pods".into(), "-A".into(), "-o".into(), "wide".into()],
         &kube_env,
         TIMEOUT_KUBECTL_SECS,
         stdout_log,
         stderr_log,
     )
     .await?;
-
-    let mut sh_cmd = Command::new("/bin/sh");
-    sh_cmd
-        .arg("-c")
-        .arg("kubectl get svc -n kube-system 2>/dev/null | grep hubble || true");
-    sh_cmd.stdin(Stdio::null());
-    for (k, v) in &kube_env {
-        sh_cmd.env(k, v);
-    }
-    if let Ok(out) = sh_cmd.output().await {
-        append_section(
-            stdout_log,
-            "hubble_svc_grep",
-            &String::from_utf8_lossy(&out.stdout),
-        );
-    }
-
     Ok(())
 }
 
@@ -793,7 +701,7 @@ async fn phase_kubevirt_cdi(
         .await?;
     }
 
-    let arch = cilium_arch();
+    let arch = host_arch();
     let virt_url = format!(
         "https://github.com/kubevirt/kubevirt/releases/download/{kv_ver}/virtctl-{kv_ver}-linux-{arch}"
     );
@@ -852,11 +760,11 @@ async fn phase_kubevirt_cdi(
 }
 
 fn print_footer(skip_kv: bool, stdout_log: &mut String) {
-    let mut msg = String::from("\n[SUCCESS] k3s + Cilium + Hubble UI");
+    let mut msg = String::from("\n[SUCCESS] k3s + machina-cni (native eBPF)");
     if !skip_kv {
         msg.push_str(" + KubeVirt + CDI");
     }
-    msg.push_str("\n\nOpen Hubble UI:\n  cilium hubble ui\n\nOr:\n  kubectl -n kube-system port-forward svc/hubble-ui 12000:80\n  http://localhost:12000\n");
+    msg.push_str("\n\nCNI agent:\n  journalctl -u machina-cni -f\n  curl -sk https://127.0.0.1:5092/api/v1/bpf/status   # datapath\n");
     if !skip_kv {
         msg.push_str("\nKubeVirt / CDI:\n  kubectl get kubevirt -n kubevirt\n  kubectl get cdi\n  kubectl get storageclass\n  virtctl version\n\nConfigure [kubevirt] in machina config.toml for YAML bundles.\n");
     }
@@ -888,7 +796,7 @@ pub async fn run_cluster_bootstrap(
         match phase.as_str() {
             "full" => {
                 phase_k3s(&server_ip, &mut stdout_log, &mut stderr_log).await?;
-                phase_cilium(&server_ip, &mut stdout_log, &mut stderr_log).await?;
+                phase_cni(&mut stdout_log, &mut stderr_log).await?;
                 phase_metrics(
                     params.install_metrics_server,
                     &mut stdout_log,
@@ -908,7 +816,8 @@ pub async fn run_cluster_bootstrap(
                 Ok(())
             }
             "k3s" => phase_k3s(&server_ip, &mut stdout_log, &mut stderr_log).await,
-            "cilium" => phase_cilium(&server_ip, &mut stdout_log, &mut stderr_log).await,
+            // "cilium" is the pre-native phase name, kept so old clients still work.
+            "cni" | "cilium" => phase_cni(&mut stdout_log, &mut stderr_log).await,
             "metrics" => {
                 phase_metrics(
                     params.install_metrics_server,
@@ -919,7 +828,7 @@ pub async fn run_cluster_bootstrap(
             }
             "kubevirt_cdi" => phase_kubevirt_cdi(&mut stdout_log, &mut stderr_log).await,
             _ => Err(LibvirtError::Invalid(format!(
-                "unknown phase {phase} (expected full|k3s|cilium|metrics|kubevirt_cdi)"
+                "unknown phase {phase} (expected full|k3s|cni|metrics|kubevirt_cdi)"
             ))),
         }
     }

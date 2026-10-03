@@ -337,6 +337,154 @@ fn emit_capture(ctx: &TcContext, if_dir: u64, sample_snap: u64) {
     e.submit(0);
 }
 
+/// Report the first client→server payload of a TCP flow on L7_EVENTS.
+/// The payload end comes from the IP length so Ethernet padding on short
+/// segments is never mistaken for data.
+#[inline(never)]
+fn emit_l7(ctx: &TcContext, t: &Tuple, key: &FlowKey, from_workload: u64) {
+    let Some(f) = FLOWS.get_ptr_mut(key) else {
+        return;
+    };
+    let client_origin = if from_workload != 0 { ORIGIN_LOCAL } else { ORIGIN_REMOTE };
+    unsafe {
+        if (*f).origin != client_origin || (*f).tcp_flags & FLOW_L7_SEEN != 0 {
+            return;
+        }
+    }
+    let l3_end = if t.v6 {
+        match ctx.load::<[u8; 2]>(t.l3_off + 4) {
+            Ok(b) => t.l3_off + 40 + u16::from_be_bytes(b) as usize,
+            Err(_) => return,
+        }
+    } else {
+        match ctx.load::<[u8; 2]>(t.l3_off + 2) {
+            Ok(b) => t.l3_off + u16::from_be_bytes(b) as usize,
+            Err(_) => return,
+        }
+    };
+    let len = ctx.len() as usize;
+    let end = if l3_end < len { l3_end } else { len };
+    if t.payload_off == 0 || end <= t.payload_off {
+        return;
+    }
+    unsafe {
+        (*f).tcp_flags |= FLOW_L7_SEEN;
+    }
+    let mut n = end - t.payload_off;
+    if n > L7_PAYLOAD_LEN {
+        n = L7_PAYLOAD_LEN;
+    }
+    let n = ((n - 1) & (L7_PAYLOAD_LEN - 1)) + 1;
+    let Some(mut e) = L7_EVENTS.reserve::<L7Event>(0) else {
+        return;
+    };
+    let ev = e.as_mut_ptr();
+    unsafe {
+        (*ev).ts_ns = now_ns();
+        (*ev).ifindex = key.ifindex;
+        (*ev).dir = if from_workload != 0 {
+            DIR_FROM_WORKLOAD
+        } else {
+            DIR_TO_WORKLOAD
+        };
+        (*ev)._pad = 0;
+        core::ptr::copy_nonoverlapping(key, &raw mut (*ev).key, 1);
+        let ret = bpf_skb_load_bytes(
+            skb_ptr(ctx),
+            t.payload_off as u32,
+            (*ev).payload.as_mut_ptr().cast(),
+            n as u32,
+        );
+        if ret != 0 {
+            e.discard(0);
+            return;
+        }
+        (*ev).payload_len = n as u32;
+    }
+    e.submit(0);
+}
+
+/// Token bucket on new workload connections. Returns policy id + 1 when the
+/// connection exceeds the limit of the interface's scope (or the host scope).
+#[inline(never)]
+fn conn_rate(scope: u32, ifindex: u32, now: u64) -> u32 {
+    let rc = match unsafe { RATE_CFG.get(&scope) } {
+        Some(c) => *c,
+        None => match unsafe { RATE_CFG.get(&0) } {
+            Some(c) => *c,
+            None => return 0,
+        },
+    };
+    if rc.per_sec == 0 {
+        return 0;
+    }
+    let burst = (if rc.burst == 0 { rc.per_sec } else { rc.burst }) as u64 * 1000;
+    let st = match CONN_RATE.get_ptr_mut(&ifindex) {
+        Some(p) => p,
+        None => {
+            let fresh = QosState {
+                tokens: burst,
+                last_ns: now,
+                next_tstamp: 0,
+            };
+            if CONN_RATE.insert(&ifindex, &fresh, 0).is_err() {
+                return 0;
+            }
+            match CONN_RATE.get_ptr_mut(&ifindex) {
+                Some(p) => p,
+                None => return 0,
+            }
+        }
+    };
+    unsafe {
+        let mut elapsed = now.saturating_sub((*st).last_ns);
+        if elapsed > 60 * NSEC {
+            elapsed = 60 * NSEC;
+        }
+        // Milli-tokens: per_sec / 1e9 tokens per ns, times 1000.
+        let mut tokens = (*st).tokens + elapsed * rc.per_sec as u64 / 1_000_000;
+        if tokens > burst {
+            tokens = burst;
+        }
+        (*st).last_ns = now;
+        if tokens < 1000 {
+            (*st).tokens = tokens;
+            return rc.policy_id.wrapping_add(1);
+        }
+        (*st).tokens = tokens - 1000;
+    }
+    0
+}
+
+/// `bits`: from_workload (bit 0), dropped (bit 1).
+#[inline(never)]
+fn account(ifindex: u32, len: u64, bits: u64) {
+    let p = match IFACE_STATS.get_ptr_mut(&ifindex) {
+        Some(p) => p,
+        None => {
+            let zero = IfaceStats::default();
+            if IFACE_STATS.insert(&ifindex, &zero, 0).is_err() {
+                return;
+            }
+            match IFACE_STATS.get_ptr_mut(&ifindex) {
+                Some(p) => p,
+                None => return,
+            }
+        }
+    };
+    unsafe {
+        if bits & 2 != 0 {
+            (*p).drops += 1;
+        } else if bits & 1 != 0 {
+            (*p).tx_pkts += 1;
+            (*p).tx_bytes += len;
+        } else {
+            (*p).rx_pkts += 1;
+            (*p).rx_bytes += len;
+        }
+    }
+}
+
 /// Update (or create) the flow entry. `meta` packs: len (bits 0..32),
 /// tcp flags (32..40), from_workload (40), verdict (41..43), emit-open (43).
 #[inline(never)]
@@ -416,8 +564,19 @@ fn tc_handle(ctx: &TcContext, ingress: bool) -> i32 {
         Some(c) => *c,
         None => return TC_ACT_UNSPEC,
     };
-    let guest_side = cfg.flags & IF_GUEST_SIDE != 0;
-    let from_workload = guest_side == ingress;
+    let from_workload = (cfg.flags & IF_GUEST_SIDE != 0) == ingress;
+    let act = tc_verdict(ctx, ingress, ifindex, &cfg, from_workload);
+    account(
+        ifindex,
+        ctx.len() as u64,
+        from_workload as u64 | (((act == TC_ACT_SHOT) as u64) << 1),
+    );
+    act
+}
+
+#[inline(always)]
+fn tc_verdict(ctx: &TcContext, ingress: bool, ifindex: u32, cfg: &IfaceCfg, from_workload: bool) -> i32 {
+    let cfg = *cfg;
     let now = now_ns();
     let len = ctx.len();
 
@@ -445,7 +604,7 @@ fn tc_handle(ctx: &TcContext, ingress: bool) -> i32 {
         local,
         remote,
     };
-    let track = cfg.flags & (IF_FLOWS | IF_ALLOW) != 0;
+    let track = cfg.flags & (IF_FLOWS | IF_ALLOW | IF_RATE | IF_L7) != 0;
     let existing = if track { FLOWS.get_ptr_mut(&key) } else { None };
 
     let mut kind = 0u32;
@@ -468,6 +627,17 @@ fn tc_handle(ctx: &TcContext, ingress: bool) -> i32 {
         };
         if !reply && !check_allow(cfg.scope, t.proto, rport, &remote) {
             kind = NET_EV_ALLOW_MISS;
+        }
+    }
+    if kind == 0 && from_workload && cfg.flags & IF_RATE != 0 && existing.is_none() {
+        // TCP: count the opening SYN only; other protocols: any new tuple.
+        let opening = t.proto != IPPROTO_TCP || t.tcp_flags & (TCP_SYN | TCP_ACK) == TCP_SYN;
+        if opening {
+            let p = conn_rate(cfg.scope, ifindex, now);
+            if p != 0 {
+                kind = NET_EV_RATE_LIMIT;
+                policy = p - 1;
+            }
         }
     }
     let mut verdict = VERDICT_PASS;
@@ -501,7 +671,9 @@ fn tc_handle(ctx: &TcContext, ingress: bool) -> i32 {
         return TC_ACT_SHOT;
     }
 
-    if track {
+    // A rate-limited SYN leaves no flow behind, so its retransmit is counted again.
+    let rate_dropped = kind == NET_EV_RATE_LIMIT && verdict == VERDICT_DROP;
+    if track && !rate_dropped {
         let meta = (len as u64)
             | ((t.tcp_flags as u64) << 32)
             | ((from_workload as u64) << 40)
@@ -511,6 +683,9 @@ fn tc_handle(ctx: &TcContext, ingress: bool) -> i32 {
     }
     if verdict == VERDICT_DROP {
         return TC_ACT_SHOT;
+    }
+    if cfg.flags & IF_L7 != 0 && t.proto == IPPROTO_TCP {
+        emit_l7(ctx, &t, &key, from_workload as u64);
     }
 
     if cfg.flags & IF_DNS != 0 && t.proto == IPPROTO_UDP && (t.sport == 53 || t.dport == 53) {

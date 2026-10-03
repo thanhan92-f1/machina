@@ -106,7 +106,7 @@ export default function PlatformNotifications() {
           {list.shown.map((n) => {
             const act = actionForKind(n.kind, n.payload, tier)
             // Most notification producers set `payload.message`, but SOC
-            // detection alerts (engine/soc/detection.rs) and PacketWolf
+            // detection alerts (engine/soc/detection.rs) and native eBPF
             // security alerts (engine/zeus_security.rs) set `payload.title`
             // instead — without this fallback, every one of those rows
             // rendered as just the bare `kind` ("soc.alert") with no

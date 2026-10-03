@@ -125,9 +125,9 @@ export default function PlatformThreatHunting() {
         }))
         setSearchHits(hits)
         setSearchMeta({
-          query: r.query_name ?? queryId,
+          query: r.name ?? queryId,
           count: r.hit_count ?? hits.length,
-          backend: r.backend,
+          backend: r.source,
         })
       })
       .catch((e: unknown) => setError(formatUserError(e)))
@@ -245,7 +245,7 @@ export default function PlatformThreatHunting() {
         </div>
       </MacGlassPanel>
 
-      <MacGlassPanel title="Natural language search" subtitle="LLM query translation + PacketWolf index">
+      <MacGlassPanel title="Natural language search" subtitle="LLM query translation over native eBPF events">
         <div className="flex flex-wrap gap-2">
           <div className="relative flex-1 min-w-[14rem]">
             <input
@@ -304,7 +304,7 @@ export default function PlatformThreatHunting() {
                   hostId={h.host_id}
                   suggestedKind="deny_process"
                   suggestedMatch="/usr/bin/nc"
-                  huntQueryId="reverse-shell"
+                  huntQueryId="shell-spawn"
                   compact
                 />
               </li>

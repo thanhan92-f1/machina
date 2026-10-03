@@ -32,6 +32,29 @@ fn stage_empty(dst: &Path, why: &str) {
     fs::write(dst, b"").expect("write empty bpf object");
 }
 
+/// Cargo treats a missing `rerun-if-changed` path as always changed, so watching
+/// where the tool would be installed keeps re-running this script until it
+/// appears instead of caching the empty object forever.
+fn watch_install_paths(name: &str) {
+    let mut dirs: Vec<PathBuf> = env::var_os("PATH")
+        .map(|p| env::split_paths(&p).collect())
+        .unwrap_or_default();
+    if let Some(home) = env::var_os("HOME") {
+        dirs.push(Path::new(&home).join(".cargo/bin"));
+    }
+    dirs.push(PathBuf::from("/usr/local/bin"));
+    for d in dirs {
+        println!("cargo:rerun-if-changed={}", d.join(name).display());
+    }
+}
+
+fn toolchain_dir(toolchain: &str, arch: &str) -> Option<PathBuf> {
+    let home = env::var_os("RUSTUP_HOME")
+        .map(PathBuf::from)
+        .or_else(|| env::var_os("HOME").map(|h| Path::new(&h).join(".rustup")))?;
+    Some(home.join("toolchains").join(format!("{toolchain}-{arch}-unknown-linux-gnu")))
+}
+
 fn main() {
     let out = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR"));
     let dst = out.join("machina-bpf.o");
@@ -58,16 +81,18 @@ fn main() {
         stage_empty(&dst, "MACHINA_BPF_SKIP set");
         return;
     }
+    let toolchain = env::var("MACHINA_BPF_TOOLCHAIN").unwrap_or_else(|_| "nightly".into());
+    let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "x86_64".into());
     let Some(_linker) = find_tool("bpf-linker") else {
-        stage_empty(&dst, "bpf-linker not found; install with `cargo install bpf-linker`");
+        watch_install_paths("bpf-linker");
+        stage_empty(&dst, "bpf-linker not found; run `make bpf-deps`");
         return;
     };
     let Some(rustup) = find_tool("rustup") else {
+        watch_install_paths("rustup");
         stage_empty(&dst, "rustup not found (nightly toolchain required)");
         return;
     };
-    let toolchain = env::var("MACHINA_BPF_TOOLCHAIN").unwrap_or_else(|_| "nightly".into());
-    let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_else(|_| "x86_64".into());
     let target_dir = out.join("ebpf-target");
 
     let mut rustflags = String::new();
@@ -105,7 +130,10 @@ fn main() {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         if stderr.contains("toolchain") && stderr.contains("not installed") {
-            stage_empty(&dst, &format!("rustup toolchain `{toolchain}` not installed"));
+            if let Some(dir) = toolchain_dir(&toolchain, &arch) {
+                println!("cargo:rerun-if-changed={}", dir.display());
+            }
+            stage_empty(&dst, &format!("rustup toolchain `{toolchain}` not installed; run `make bpf-deps`"));
             return;
         }
         panic!("machina-bpf-ebpf build failed:\n{stderr}");

@@ -19,6 +19,8 @@ fn flag_names(flags: u32) -> Vec<String> {
         (IF_CAPTURE, "capture"),
         (IF_QOS, "qos"),
         (IF_DNS, "dns"),
+        (IF_RATE, "rate_limit"),
+        (IF_L7, "l7"),
     ]
     .iter()
     .filter(|(f, _)| flags & f != 0)
@@ -43,9 +45,32 @@ impl Engine {
                 Rule::DnsDeny { suffix } => {
                     lock(&self.shared).dns_denies.insert(num, (suffix.clone(), scope));
                 }
+                Rule::ConnRate { per_sec, burst } => self.dp.rate_set(scope, *per_sec, *burst, num)?,
             }
         }
         Ok(())
+    }
+
+    /// One RATE_CFG slot per scope: after removing a limit, reinstate any
+    /// other enabled limit on the same scope.
+    fn reinstate_rate(&mut self, scope: u32) {
+        let other = self.policies.values().find_map(|c| {
+            if !c.policy.enabled || c.scope_id != scope {
+                return None;
+            }
+            c.rules.iter().find_map(|r| match r {
+                Rule::ConnRate { per_sec, burst } => {
+                    Some((*per_sec, *burst, self.policy_nums.get(&c.policy.id).copied().unwrap_or(0)))
+                }
+                _ => None,
+            })
+        });
+        match other {
+            Some((p, b, n)) => {
+                let _ = self.dp.rate_set(scope, p, b, n);
+            }
+            None => self.dp.rate_remove(scope),
+        }
     }
 
     fn uninstall(&mut self, num: u32, scope: u32, rules: &[Rule]) {
@@ -59,6 +84,7 @@ impl Engine {
                 Rule::ExecDeny { hash, .. } => self.dp.exec_remove(*hash),
                 Rule::CapDeny { cap } => self.dp.cap_remove(scope, *cap),
                 Rule::FileDeny { .. } => {}
+                Rule::ConnRate { .. } => self.reinstate_rate(scope),
                 Rule::DnsDeny { .. } => {
                     lock(&self.shared).dns_denies.remove(&num);
                     let gone: Vec<(u32, Prefix)> = self
@@ -330,6 +356,7 @@ impl Engine {
             .map(|(i, r)| (*i, r.name.clone()))
             .collect();
         for (idx, name) in gone {
+            self.retire_iface_stats(idx);
             self.dp.forget_tc(&name);
             self.dp.remove_iface_cfg(idx);
             self.ifaces.remove(&idx);
@@ -498,6 +525,85 @@ impl Engine {
             self.dp.remove_flow(&k);
         }
         Ok(())
+    }
+
+    // ---- accounting ------------------------------------------------------
+
+    /// Move datapath counter deltas into the persisted per-workload totals.
+    pub(super) fn fold_accounting(&mut self) -> Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        for (idx, s) in self.dp.iface_stats()? {
+            let Some(r) = self.ifaces.get(&idx) else {
+                continue;
+            };
+            let key = acct_key(r);
+            let before = self.acct_offset.get(&idx).copied().unwrap_or_default();
+            self.acct_base.entry(key.clone()).or_default().add_delta(&s, &before);
+            self.acct_offset.insert(idx, s);
+            self.acct_since.entry(key).or_insert_with(|| now.clone());
+        }
+        Ok(())
+    }
+
+    pub(super) fn retire_iface_stats(&mut self, idx: u32) {
+        if let Err(e) = self.fold_accounting() {
+            tracing::debug!("fold accounting: {e:#}");
+        }
+        self.acct_offset.remove(&idx);
+        self.dp.remove_iface_stats(idx);
+    }
+
+    pub(super) fn accounting(&mut self, vm: Option<&str>) -> Result<Vec<AccountingRecord>> {
+        self.fold_accounting()?;
+        let mut out: Vec<AccountingRecord> = self
+            .acct_base
+            .iter()
+            .filter(|(k, _)| vm.is_none_or(|v| k.as_str() == v))
+            .map(|(k, t)| {
+                let mut interfaces: Vec<String> = self
+                    .ifaces
+                    .values()
+                    .filter(|r| acct_key(r) == *k)
+                    .map(|r| r.name.clone())
+                    .collect();
+                interfaces.sort();
+                let iface_only = k.strip_prefix("iface:");
+                if interfaces.is_empty() {
+                    if let Some(i) = iface_only {
+                        interfaces.push(i.to_string());
+                    }
+                }
+                AccountingRecord {
+                    vm: iface_only.is_none().then(|| k.clone()),
+                    interfaces,
+                    tx_bytes: t.tx_bytes,
+                    rx_bytes: t.rx_bytes,
+                    tx_pkts: t.tx_pkts,
+                    rx_pkts: t.rx_pkts,
+                    drops: t.drops,
+                    since: self.acct_since.get(k).cloned().unwrap_or_default(),
+                }
+            })
+            .collect();
+        out.sort_by(|a, b| (b.tx_bytes + b.rx_bytes).cmp(&(a.tx_bytes + a.rx_bytes)));
+        Ok(out)
+    }
+
+    /// Zero the totals (all workloads, or one VM) and restart their window.
+    pub(super) fn reset_accounting(&mut self, vm: Option<&str>) -> Result<usize> {
+        self.fold_accounting()?;
+        let now = chrono::Utc::now().to_rfc3339();
+        let keys: Vec<String> = self
+            .acct_base
+            .keys()
+            .filter(|k| vm.is_none_or(|v| k.as_str() == v))
+            .cloned()
+            .collect();
+        for k in &keys {
+            self.acct_base.insert(k.clone(), AcctTotals::default());
+            self.acct_since.insert(k.clone(), now.clone());
+        }
+        Ok(keys.len())
     }
 
     // ---- capture ---------------------------------------------------------

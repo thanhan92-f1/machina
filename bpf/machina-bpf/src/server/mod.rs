@@ -29,6 +29,7 @@ use crate::pcapng::PcapngWriter;
 use crate::policy::{self, proto_name, Prefix, Rule};
 use crate::{dns, fmt_addr};
 
+mod cni;
 mod listen;
 mod ops;
 mod readers;
@@ -38,6 +39,7 @@ pub use listen::{run, Config};
 const NET_STORE_CAP: usize = 5000;
 const PROC_STORE_CAP: usize = 5000;
 const DNS_STORE_CAP: usize = 2000;
+const L7_STORE_CAP: usize = 5000;
 const ANOMALY_STORE_CAP: usize = 1000;
 const SOCK_PROGS: &[&str] = &["mn_cg_connect4", "mn_cg_connect6", "mn_cg_sendmsg4", "mn_cg_sendmsg6"];
 
@@ -68,6 +70,7 @@ struct Shared {
     net: VecDeque<NetEventRecord>,
     procs: VecDeque<ProcRecord>,
     dns: VecDeque<DnsRecord>,
+    l7: VecDeque<L7Record>,
     anomalies: VecDeque<Anomaly>,
     captures: HashMap<String, ActiveCapture>,
     counters: Counters,
@@ -153,6 +156,36 @@ struct Engine {
     shared: SharedState,
     bus: broadcast::Sender<StreamEvent>,
     capture_seq: u64,
+    /// Accounting key (VM name, or `iface:<name>`) → totals folded from the datapath.
+    acct_base: HashMap<String, AcctTotals>,
+    /// ifindex → datapath counters already folded into `acct_base`.
+    acct_offset: HashMap<u32, IfaceStats>,
+    /// Accounting key → RFC 3339 start of its window.
+    acct_since: HashMap<String, String>,
+    cni: cni::CniRuntime,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+struct AcctTotals {
+    tx_bytes: u64,
+    rx_bytes: u64,
+    tx_pkts: u64,
+    rx_pkts: u64,
+    drops: u64,
+}
+
+impl AcctTotals {
+    fn add_delta(&mut self, now: &IfaceStats, before: &IfaceStats) {
+        self.tx_bytes += now.tx_bytes.saturating_sub(before.tx_bytes);
+        self.rx_bytes += now.rx_bytes.saturating_sub(before.rx_bytes);
+        self.tx_pkts += now.tx_pkts.saturating_sub(before.tx_pkts);
+        self.rx_pkts += now.rx_pkts.saturating_sub(before.rx_pkts);
+        self.drops += now.drops.saturating_sub(before.drops);
+    }
+}
+
+fn acct_key(r: &IfaceRuntime) -> String {
+    r.vm.clone().unwrap_or_else(|| format!("iface:{}", r.name))
 }
 
 #[derive(Clone)]
@@ -208,6 +241,10 @@ impl Engine {
             shared,
             bus,
             capture_seq: 0,
+            acct_base: HashMap::new(),
+            acct_offset: HashMap::new(),
+            acct_since: HashMap::new(),
+            cni: cni::CniRuntime::default(),
         };
         eng.init()?;
         Ok(eng)
@@ -394,6 +431,7 @@ impl Engine {
         }) else {
             return;
         };
+        self.retire_iface_stats(idx);
         self.dp.detach_tc(name);
         self.dp.detach_xdp(name);
         self.dp.remove_iface_cfg(idx);
@@ -418,6 +456,12 @@ impl Engine {
         }
         if self.scope_has(scope, &["tc_allow", "allow_port"]) {
             flags |= IF_ALLOW;
+        }
+        if self.scope_has(scope, &["rate_limit"]) {
+            flags |= IF_RATE;
+        }
+        if self.telemetry.l7 {
+            flags |= IF_L7;
         }
         if self.telemetry.flows {
             flags |= IF_FLOWS;

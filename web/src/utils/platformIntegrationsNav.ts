@@ -67,9 +67,9 @@ export function integrationCards(info: PlatformInfo | null): IntegrationCard[] {
       enabled: Boolean(info.guestkit?.enabled),
     },
     {
-      id: 'packetwolf',
-      title: 'PacketWolf Security Fabric',
-      description: 'Required eBPF nervous system for Zeus — processes, network, DNS, threat correlation.',
+      id: 'native-bpf',
+      title: 'Native eBPF',
+      description: 'machina-bpfd on every host — runtime enforcement, flows, process / DNS telemetry, QoS and packet capture.',
       href: '/platform/zeus/security',
       enabled: true,
       configured: true,

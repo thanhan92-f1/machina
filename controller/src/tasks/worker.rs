@@ -705,7 +705,16 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
     }
     match crate::engine::bpf::policies::sync_hosts(&state.pool, Some(&[host_id.to_string()])).await {
         Ok(r) if r.iter().any(|x| x["ok"] != true) => {
-            tracing::warn!(%host_id, "native eBPF policy sync during inventory: {r:?}");
+            let bpfd_absent = r.iter().filter(|x| x["ok"] != true).all(|x| {
+                x["error"]
+                    .as_str()
+                    .is_some_and(|e| e.contains("machina-bpfd not reachable"))
+            });
+            if bpfd_absent {
+                tracing::debug!(%host_id, "machina-bpfd not running; native policy sync skipped");
+            } else {
+                tracing::warn!(%host_id, "native eBPF policy sync during inventory: {r:?}");
+            }
         }
         Err(e) => tracing::warn!(%host_id, "native eBPF policy sync during inventory: {e:#}"),
         _ => {}

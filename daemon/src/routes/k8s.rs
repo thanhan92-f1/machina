@@ -4034,15 +4034,11 @@ async fn k8s_k3s_uninstall(
     Ok(Json(res))
 }
 
-/// `server_ip` is later spliced verbatim into a Cilium Helm invocation as
-/// `--set k8sServiceHost=<value>` (see `cluster_bootstrap.rs`). A denylist of
-/// whitespace/control characters isn't enough: a value containing a comma
-/// injects additional, arbitrary `--set key=value` pairs past the intended
-/// `k8sServiceHost` one, since Helm treats commas as `--set` pair separators.
-/// This validates the value is actually shaped like an IPv4/IPv6 address or a
-/// DNS hostname — and rejects `,` (and anything else outside that shape,
-/// including but not limited to the previous denylist) even for an otherwise
-/// valid-looking hostname.
+/// `server_ip` is written into the kubeconfig and passed to shell commands by
+/// `cluster_bootstrap.rs`, so a denylist of whitespace/control characters isn't
+/// enough. This validates the value is actually shaped like an IPv4/IPv6
+/// address or a DNS hostname, rejecting `,`, quotes and anything else outside
+/// that shape even for an otherwise valid-looking hostname.
 fn validate_bootstrap_server_ip(s: &str) -> Result<(), LibvirtError> {
     if s.is_empty() {
         return Err(LibvirtError::Invalid("server_ip cannot be empty".into()));
@@ -4079,13 +4075,13 @@ fn validate_bootstrap_server_ip(s: &str) -> Result<(), LibvirtError> {
 
 #[derive(Debug, Deserialize)]
 struct ClusterBootstrapRequest {
-    /// `full` | `k3s` | `cilium` | `metrics` | `kubevirt_cdi`
+    /// `full` | `k3s` | `cni` (alias `cilium`) | `metrics` | `kubevirt_cdi`
     #[serde(default)]
     phase: Option<String>,
-    /// API advertise IP for kubeconfig / Cilium (optional; defaults to first address from `hostname -I`).
+    /// API advertise IP for the kubeconfig (optional; defaults to first address from `hostname -I`).
     #[serde(default)]
     server_ip: Option<String>,
-    /// When `phase` is `full`, skip KubeVirt/CDI/virtctl after Cilium/metrics.
+    /// When `phase` is `full`, skip KubeVirt/CDI/virtctl after CNI/metrics.
     #[serde(default)]
     skip_kubevirt_cdi: Option<bool>,
     /// Install metrics-server on full/metrics phases (recommended on k3s labs).
@@ -4110,10 +4106,10 @@ async fn k8s_cluster_bootstrap(
 
     let phase = req.phase.as_deref().unwrap_or("full").trim();
     match phase {
-        "full" | "k3s" | "cilium" | "metrics" | "kubevirt_cdi" => {}
+        "full" | "k3s" | "cni" | "cilium" | "metrics" | "kubevirt_cdi" => {}
         _ => {
             return Err(LibvirtError::Invalid(
-                "phase must be \"full\", \"k3s\", \"cilium\", \"metrics\", or \"kubevirt_cdi\""
+                "phase must be \"full\", \"k3s\", \"cni\", \"metrics\", or \"kubevirt_cdi\""
                     .into(),
             )
             .into())

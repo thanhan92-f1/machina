@@ -6,7 +6,7 @@
 
 /**
  * Zeus firewall compliance + enforcement soft-paths + platform rename/clone/snapshot schema gates.
- * Avoids: real rename/clone/snapshot create, cordon live host, enforcement apply/delete, tetragon install.
+ * Avoids: real rename/clone/snapshot create, cordon live host, enforcement apply/delete.
  */
 
 const { loadConfig } = require('./lib/config');
@@ -99,11 +99,11 @@ async function step(name, fn) {
     return `${r.status}`;
   });
 
-  await mark('enforcement-tetragon-soft', async () => {
-    const r = await api('GET', `${P}/api/v1/zeus-security/enforcement/policies/${FAKE}/tetragon`);
-    if (!ok(r.status) || isHtml(r.body)) throw new Error(`${r.status}`);
+  await mark('enforcement-document-missing-404', async () => {
+    const r = await api('GET', `${P}/api/v1/zeus-security/enforcement/policies/${FAKE}/document`);
+    if (r.status !== 404 || isHtml(r.body)) throw new Error(`expected 404 got ${r.status}`);
     JSON.parse(r.body);
-    return 'ok';
+    return '404';
   });
 
   await mark('enforcement-attach-soft', async () => {

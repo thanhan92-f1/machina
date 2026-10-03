@@ -40,12 +40,11 @@ test('runtime enforcement lists new policy kinds', async ({ page }) => {
   await expect(page.getByText('Block raw socket capability')).toBeVisible()
 })
 
-test('k8s firewall shows tetragon install and export status', async ({ page }) => {
+test('k8s firewall is NetworkPolicy-only', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/zeus/security/k8s')
-  await expect(page.getByRole('heading', { name: 'PacketWolf Tetragon (cluster)' })).toBeVisible({ timeout: 15_000 })
-  await page.getByRole('button', { name: 'Check export forwarder' }).click()
-  await expect(page.getByText('Forwarder deployed')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/NetworkPolicy \(enforced by machina-cni\)/)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/Tetragon/i)).toHaveCount(0)
 })
 
 test('host audit tab renders recent AVC events', async ({ page }) => {

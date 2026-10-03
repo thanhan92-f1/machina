@@ -390,7 +390,7 @@ function CockpitInner({
           navigate(`/platform/vms/${vmId}?tab=disks`)
           setCommandCenter(false)
           break
-        case 'PacketWolf Trace':
+        case 'eBPF Trace':
           navigate(`/platform/vms/${vmId}?tab=security`)
           setCommandCenter(false)
           break

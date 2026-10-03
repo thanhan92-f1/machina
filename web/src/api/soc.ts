@@ -122,7 +122,7 @@ export interface SocPlaybookRun {
 }
 
 export interface SocIngestCycle {
-  ingest: { firewall: number; audit: number; platform: number; packetwolf: number }
+  ingest: { firewall: number; audit: number; platform: number; native_bpf: number }
   alerts_fired: number
   forwarded: number
 }

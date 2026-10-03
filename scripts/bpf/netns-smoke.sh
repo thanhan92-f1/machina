@@ -169,6 +169,117 @@ check "qos paces download (>= 2s)" bash -c "(( \$(echo '$secs >= 2' | bc) ))"
 req '{"op":"set_qos","iface":"'"$HOST_IF"'","ingress_bps":0}' | must
 kill $BLOB_PID 2>/dev/null || true
 
+# Connection rate limiting: 2 new connections/s, burst 2. The opening SYN of
+# each excess connection is dropped while enforcing (observed otherwise).
+http_burst() {
+  local ok=0
+  for _ in $(seq 10); do
+    ip netns exec "$NS" curl -s -m0.5 -o /dev/null "http://$HOST_IP:18080/" && ok=$((ok + 1))
+  done
+  echo "$ok"
+}
+policy smoke-rate rate_limit "2/s burst 2"
+n=$(http_burst)
+echo "      observe: $n/10 connections"
+check "observe: rate_limit does not block" test "$n" -eq 10
+check "observe: rate_limit counted" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"status\"}' | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)[\"data\"][\"counters\"][\"rate_limited\"]>0 else 1)'"
+enforce
+n=$(http_burst)
+echo "      enforce: $n/10 connections"
+check "enforce: rate_limit drops excess connections" bash -c "(( $n >= 1 && $n <= 6 ))"
+observe
+unpolicy smoke-rate
+sleep 1
+n=$(http_burst)
+check "rate_limit removed: http restored" test "$n" -eq 10
+
+# L7 visibility: HTTP request line + Host, TLS ClientHello SNI/ALPN.
+python3 - "$HOST_IP" <<'PY' >/dev/null 2>&1 &
+import socket, sys, time
+s = socket.socket()
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind((sys.argv[1], 18443))
+s.listen(8)
+end = time.time() + 30
+while time.time() < end:
+    c, _ = s.accept()
+    c.recv(4096)
+    c.close()
+PY
+TLS_PID=$!
+sleep 0.5
+ip netns exec "$NS" curl -s -m2 -o /dev/null -A mn-smoke/1 "http://$HOST_IP:18080/l7-probe" || true
+ip netns exec "$NS" python3 - "$HOST_IP" <<'PY' >/dev/null 2>&1 || true
+import socket, ssl, sys
+ctx = ssl.create_default_context()
+ctx.set_alpn_protocols(["h2", "http/1.1"])
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+s = socket.create_connection((sys.argv[1], 18443), timeout=2)
+try:
+    ctx.wrap_socket(s, server_hostname="smoke.machina.test")
+except Exception:
+    pass
+PY
+sleep 1
+kill $TLS_PID 2>/dev/null || true
+l7() { req '{"op":"l7","limit":200}'; }
+check "l7: http request recorded" bash -c "$(declare -f req l7); SOCK=$SOCK; l7 | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if any(r.get(\"path\")==\"/l7-probe\" and r.get(\"method\")==\"GET\" and r.get(\"user_agent\")==\"mn-smoke/1\" for r in d) else 1)'"
+check "l7: tls sni + alpn recorded" bash -c "$(declare -f req l7); SOCK=$SOCK; l7 | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if any(r.get(\"host\")==\"smoke.machina.test\" and \"h2\" in (r.get(\"alpn\") or []) for r in d) else 1)'"
+
+# Per-workload accounting: the test veth has no VM, so it is keyed by iface.
+acct() { req "{\"op\":\"accounting\",\"vm\":\"iface:$HOST_IF\"}"; }
+check "accounting: bytes counted both ways" bash -c "$(declare -f req acct); SOCK=$SOCK HOST_IF=$HOST_IF; acct | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if d and d[0][\"tx_bytes\"]>0 and d[0][\"rx_bytes\"]>0 and d[0][\"rx_pkts\"]>0 else 1)'"
+check "accounting: enforcement drops counted" bash -c "$(declare -f req acct); SOCK=$SOCK HOST_IF=$HOST_IF; acct | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)[\"data\"][0][\"drops\"]>0 else 1)'"
+req '{"op":"reset_accounting"}' | must
+check "accounting: reset zeroes totals" bash -c "$(declare -f req acct); SOCK=$SOCK HOST_IF=$HOST_IF; acct | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if d[0][\"tx_bytes\"] < 2000 else 1)'"
+
+# deny_dns: answers for *.blocked.test feed their A records into the deny set.
+DNS_TARGET=10.199.77.5
+ip addr add "$DNS_TARGET/32" dev "$HOST_IF"
+ip netns exec "$NS" ip route add "$DNS_TARGET/32" dev "$PEER_IF"
+python3 - "$HOST_IP" "$DNS_TARGET" <<'PY' >/dev/null 2>&1 &
+import socket, sys, time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind((sys.argv[1], 53))
+ip = socket.inet_aton(sys.argv[2])
+end = time.time() + 30
+while time.time() < end:
+    q, a = s.recvfrom(512)
+    end_q = 12
+    while q[end_q] != 0:
+        end_q += q[end_q] + 1
+    question = q[12:end_q + 5]
+    ans = b"\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04" + ip
+    s.sendto(q[:2] + b"\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00" + question + ans, a)
+PY
+DNS_PID=$!
+sleep 0.5
+dns_query() {
+  ip netns exec "$NS" python3 - "$HOST_IP" "$1" <<'PY'
+import socket, sys
+q = b"\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00"
+q += b"".join(bytes([len(p)]) + p.encode() for p in sys.argv[2].split(".")) + b"\x00\x00\x01\x00\x01"
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.settimeout(2)
+s.sendto(q, (sys.argv[1], 53))
+s.recv(512)
+PY
+}
+ping_target() { ip netns exec "$NS" ping -c1 -W1 "$DNS_TARGET" >/dev/null 2>&1; }
+check "dns: baseline target reachable" ping_target
+policy smoke-dns deny_dns "*.blocked.test"
+enforce
+dns_query www.blocked.test || true
+sleep 1
+check "dns: query recorded" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"dns\",\"limit\":200}' | grep -q www.blocked.test"
+check "enforce: deny_dns blocks the resolved address" bash -c "$(declare -f ping_target); NS=$NS DNS_TARGET=$DNS_TARGET; ! ping_target"
+check "enforce: deny_dns leaves other hosts alone" ping_ok
+observe
+unpolicy smoke-dns
+check "deny_dns removed: target restored" ping_target
+kill $DNS_PID 2>/dev/null || true
+
 echo
 echo "passed=$PASS failed=$FAIL  (log: $WORK/bpfd.log)"
 grep -E "WARN|ERROR" "$WORK/bpfd.log" | head -20 || true

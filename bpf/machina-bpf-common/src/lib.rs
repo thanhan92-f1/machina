@@ -13,6 +13,7 @@ pub const ADDR_LEN: usize = 16;
 pub const COMM_LEN: usize = 16;
 pub const PATH_LEN: usize = 256;
 pub const DNS_PAYLOAD_LEN: usize = 512;
+pub const L7_PAYLOAD_LEN: usize = 512;
 pub const CAPTURE_SNAPLEN: usize = 1024;
 pub const FILE_WATCH_SLOTS: u32 = 8;
 pub const FILE_WATCH_PREFIX_LEN: usize = 64;
@@ -60,6 +61,10 @@ pub const IF_FLOWS: u32 = 1 << 3;
 pub const IF_CAPTURE: u32 = 1 << 4;
 pub const IF_QOS: u32 = 1 << 5;
 pub const IF_DNS: u32 = 1 << 6;
+/// Token-bucket limit on new workload-initiated connections (`rate_limit`).
+pub const IF_RATE: u32 = 1 << 7;
+/// Report the first client payload of each TCP flow (TLS SNI / HTTP request).
+pub const IF_L7: u32 = 1 << 8;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -154,6 +159,32 @@ pub const NET_EV_FLOW_CLOSE: u32 = 2;
 pub const NET_EV_DENY: u32 = 3;
 pub const NET_EV_ALLOW_MISS: u32 = 4;
 pub const NET_EV_QOS_DROP: u32 = 5;
+pub const NET_EV_RATE_LIMIT: u32 = 6;
+
+/// Set in `FlowVal::tcp_flags` (above the 8 TCP flag bits) once the flow's
+/// first client payload has been reported on L7_EVENTS.
+pub const FLOW_L7_SEEN: u32 = 1 << 16;
+
+/// RATE_CFG value (key = policy scope): new connections per second + burst.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RateCfg {
+    pub per_sec: u32,
+    pub burst: u32,
+    pub policy_id: u32,
+    pub _pad: u32,
+}
+
+/// IFACE_STATS per-CPU value (key = ifindex), workload point of view.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct IfaceStats {
+    pub tx_bytes: u64,
+    pub rx_bytes: u64,
+    pub tx_pkts: u64,
+    pub rx_pkts: u64,
+    pub drops: u64,
+}
 
 pub const VERDICT_PASS: u32 = 0;
 pub const VERDICT_DROP: u32 = 1;
@@ -191,6 +222,19 @@ pub struct DnsEvent {
     pub local: [u8; ADDR_LEN],
     pub remote: [u8; ADDR_LEN],
     pub payload: [u8; DNS_PAYLOAD_LEN],
+}
+
+/// First client→server payload of a TCP flow (`key` from the workload's view).
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct L7Event {
+    pub ts_ns: u64,
+    pub ifindex: u32,
+    pub dir: u32,
+    pub payload_len: u32,
+    pub _pad: u32,
+    pub key: FlowKey,
+    pub payload: [u8; L7_PAYLOAD_LEN],
 }
 
 #[repr(C)]
@@ -480,7 +524,7 @@ mod pod {
     pod!(
         GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
-        NatCtKey, NatCtVal, NodeCfg
+        NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats
     );
 }
 
@@ -502,6 +546,9 @@ mod tests {
         assert_eq!(size_of::<Endpoint>(), 32);
         assert_eq!(size_of::<PolicyKey>(), 12);
         assert_eq!(size_of::<NatCtKey>(), 16);
+        assert_eq!(size_of::<RateCfg>(), 16);
+        assert_eq!(size_of::<IfaceStats>(), 40);
+        assert_eq!(size_of::<L7Event>(), 24 + 48 + L7_PAYLOAD_LEN);
     }
 
     #[test]

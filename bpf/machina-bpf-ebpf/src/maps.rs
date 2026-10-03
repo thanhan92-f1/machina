@@ -1,6 +1,6 @@
 use aya_ebpf::{
     macros::map,
-    maps::{Array, HashMap, LpmTrie, LruHashMap, RingBuf},
+    maps::{Array, HashMap, LpmTrie, LruHashMap, PerCpuHashMap, RingBuf},
 };
 use machina_bpf_common::*;
 
@@ -60,6 +60,21 @@ pub static PROC_EVENTS: RingBuf = RingBuf::with_byte_size(1 << 23, 0);
 
 #[map]
 pub static QOS_STATE: HashMap<u32, QosState> = HashMap::with_max_entries(4096, 0);
+
+/// scope → new-connection rate limit (`rate_limit` policies).
+#[map]
+pub static RATE_CFG: HashMap<u32, RateCfg> = HashMap::with_max_entries(4096, 0);
+
+/// ifindex → connection token bucket (tokens in milli-connections).
+#[map]
+pub static CONN_RATE: HashMap<u32, QosState> = HashMap::with_max_entries(4096, 0);
+
+/// ifindex → traffic accounting (every packet on a programmed interface).
+#[map]
+pub static IFACE_STATS: PerCpuHashMap<u32, IfaceStats> = PerCpuHashMap::with_max_entries(4096, 0);
+
+#[map]
+pub static L7_EVENTS: RingBuf = RingBuf::with_byte_size(1 << 22, 0);
 
 // ---- tracepoint layout + health -------------------------------------------
 

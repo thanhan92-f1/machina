@@ -586,7 +586,7 @@ export const postK8sK3sUninstall = (body: {
 }) => apiPost<K8sActionResult>(`${API}/k8s/k3s/uninstall`, body)
 
 /** Phased host bootstrap — implemented in machina-daemon (`cluster_bootstrap.rs`). */
-export type ClusterBootstrapPhase = 'full' | 'k3s' | 'cilium' | 'metrics' | 'kubevirt_cdi'
+export type ClusterBootstrapPhase = 'full' | 'k3s' | 'cni' | 'metrics' | 'kubevirt_cdi'
 
 export const postK8sClusterBootstrap = (body: {
   phase?: ClusterBootstrapPhase

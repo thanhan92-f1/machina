@@ -3,8 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowLeft, CheckCircle2, GitBranch, Radar, XCircle } from 'lucide-react'
-import { installK8sTetragon, getK8sExportStatus, type K8sExportForwarderStatus } from '../../../api/zeusSecurity'
+import { ArrowLeft, CheckCircle2, GitBranch, XCircle } from 'lucide-react'
 import ConfirmDialog from '../../../components/ConfirmDialog'
 import { MacGlassPanel, MacSheet } from '../../../components/platform/mac/PlatformMacUi'
 import PageLayout from '../../../components/PageLayout'
@@ -25,10 +24,6 @@ export default function PlatformFirewallK8s() {
   const [manifestYaml, setManifestYaml] = useState('')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [clusterId, setClusterId] = useState('k3s')
-  const [exportNs, setExportNs] = useState('kube-system')
-  const [exportStatus, setExportStatus] = useState<K8sExportForwarderStatus | null>(null)
-  const [tetragonBusy, setTetragonBusy] = useState(false)
   const [confirmApply, setConfirmApply] = useState(false)
 
   useEffect(() => {
@@ -50,7 +45,7 @@ export default function PlatformFirewallK8s() {
         </Link>
       }
       title="Kubernetes Firewall"
-      subtitle={`NetworkPolicy and Cilium · ${ready ? backend : 'cluster not ready'}`}
+      subtitle={`NetworkPolicy (enforced by machina-cni) · ${ready ? backend : 'cluster not ready'}`}
       icon={<GitBranch className="w-6 h-6 text-[var(--text-muted)]" />}
       contentClassName="space-y-4"
     >
@@ -65,60 +60,6 @@ export default function PlatformFirewallK8s() {
             <p className="text-sm text-[var(--text-primary)]">{ready ? 'kubectl reachable' : 'Cluster not ready'}</p>
             <p className="text-xs text-[var(--text-muted)]">Backend: {backend}</p>
           </div>
-        </div>
-      </MacGlassPanel>
-      <MacGlassPanel title="PacketWolf Tetragon (cluster)" subtitle="Helm install + export forwarder readiness">
-        <div className="space-y-3 max-w-lg text-sm">
-          <label className="block text-xs text-[var(--text-muted)]">Cluster ID</label>
-          <input aria-label="Cluster ID" className="input text-sm w-full font-mono" value={clusterId} onChange={(e) => setClusterId(e.target.value)} placeholder="k3s" />
-          <label className="block text-xs text-[var(--text-muted)]">Export namespace</label>
-          <input aria-label="Export namespace" className="input text-sm w-full font-mono" value={exportNs} onChange={(e) => setExportNs(e.target.value)} />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn-secondary text-xs inline-flex items-center gap-1"
-              disabled={tetragonBusy || !clusterId.trim()}
-              onClick={() => {
-                setTetragonBusy(true)
-                void installK8sTetragon(clusterId.trim())
-                  .then((r) => toast.success(r.summary || 'Tetragon install queued'))
-                  .catch((e: unknown) => toast.error(formatUserError(e)))
-                  .finally(() => setTetragonBusy(false))
-              }}
-            >
-              <Radar className="w-3.5 h-3.5" /> Install Tetragon
-            </button>
-            <button
-              type="button"
-              className="btn-secondary text-xs"
-              disabled={tetragonBusy || !clusterId.trim()}
-              onClick={() => {
-                setTetragonBusy(true)
-                void getK8sExportStatus(clusterId.trim(), exportNs.trim() || 'kube-system')
-                  .then(setExportStatus)
-                  .catch((e: unknown) => {
-                    setExportStatus(null)
-                    toast.error(formatUserError(e))
-                  })
-                  .finally(() => setTetragonBusy(false))
-              }}
-            >
-              Check export forwarder
-            </button>
-          </div>
-          {exportStatus && (
-            <div className={`rounded-lg border p-3 text-xs ${statusSurfaceClasses(exportStatus.forwarder_deployed ? 'ok' : 'warn')}`}>
-              <p className="font-medium text-[var(--text-primary)]">
-                {exportStatus.forwarder_deployed ? 'Forwarder deployed' : 'Forwarder not ready'}
-                {' · '}
-                {exportStatus.ready_replicas} ready replica(s)
-              </p>
-              <p className="text-[var(--text-muted)] mt-1">{exportStatus.message}</p>
-              {exportStatus.export_url && (
-                <p className="font-mono text-[var(--text-muted)] mt-1 truncate">{exportStatus.export_url}</p>
-              )}
-            </div>
-          )}
         </div>
       </MacGlassPanel>
       <MacGlassPanel title="Apply profile to namespace">

@@ -33,7 +33,7 @@ export default function ContainerHierarchyPanel({ data }: { data: ContainerHiera
   if (!data?.namespaces?.length) {
     return (
       <p className="text-sm text-[var(--text-muted)] p-3">
-        No K8s pod/container metadata yet. Install Tetragon on the cluster or enable K8s enrichment on this node.
+        No K8s pod/container metadata yet. Run machina-bpfd on this node to attribute processes to pods and containers.
       </p>
     )
   }

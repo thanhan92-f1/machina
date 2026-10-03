@@ -19,7 +19,7 @@ export const CONSOLE_RECIPES: ConsoleRecipe[] = [
       'Open Serial and verify interface inside guest',
       'Review cloud-init network config',
       'Check CNI route on the node',
-      'Run PacketWolf trace if fabric is enabled',
+      'Check eBPF flows and process events for the VM (Security tab)',
     ],
     lens: 'network',
   },

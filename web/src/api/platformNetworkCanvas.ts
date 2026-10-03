@@ -1,29 +1,31 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-// Fleet network canvas — Machina topology + PacketWolf Network Brain (kubeconfig-backed).
+// Fleet network canvas — Machina topology + native eBPF flows from every host's machina-bpfd.
 
 import { platformFetch, type TopologyGraph } from './platform'
+import type { NativeBpfStatus } from './zeusSecurity'
 
-export type PacketWolfFlowEndpoint = {
-  ip?: string
-  namespace?: string
-  pod?: string
-}
-
-export type PacketWolfFlow = {
+/** One tracked connection from machina-bpfd's flow table. */
+export type BpfFlow = {
   host_id?: string
+  hostname?: string
+  iface?: string
+  vm?: string | null
+  proto?: string
+  local?: string
+  local_port?: number
+  remote?: string
+  remote_port?: number
+  /** `local` = the workload opened it, `remote` = inbound. */
+  origin?: string
+  tx_bytes?: number
+  rx_bytes?: number
+  tx_pkts?: number
+  rx_pkts?: number
+  first_seen?: string
+  last_seen?: string
   verdict?: string
-  process?: string
-  destination_ip?: string
-  destination_port?: number
-  summary?: string
-  timestamp?: string
-  /** Hubble / K8s flow shape from PacketWolf Network Brain */
-  source?: PacketWolfFlowEndpoint
-  destination?: PacketWolfFlowEndpoint
-  port?: number
-  protocol?: string
 }
 
 export type ServiceMapNode = {
@@ -51,16 +53,17 @@ export type ServiceMapEdge = {
 
 export type NetworkCanvasPayload = {
   topology: TopologyGraph
-  flows: { flows?: PacketWolfFlow[]; note?: string }
-  flow_stats: { dropped?: number; forwarded?: number; dropped_count?: number; allowed?: number }
-  anomalies: { anomalies?: Array<{ summary?: string; description?: string; severity?: string; host_id?: string }>; note?: string }
-  packetwolf: {
-    enabled: boolean
-    reachable: boolean
-    summary: string
-    base_url?: string
-    discovery_source?: string
+  flows: { flows?: BpfFlow[]; total?: number; note?: string }
+  flow_stats: {
+    total_flows?: number
+    tx_bytes?: number
+    rx_bytes?: number
+    denied_flows?: number
+    by_proto?: Record<string, number>
+    top_talkers?: Array<{ name: string; tx_bytes: number; rx_bytes: number; flows: number }>
   }
+  anomalies: { anomalies?: Array<{ summary?: string; description?: string; severity?: string; host_id?: string; kind?: string; ts?: string }>; note?: string }
+  native_bpf: NativeBpfStatus
   network_pulse: {
     enabled?: boolean
     overview?: Record<string, unknown>
@@ -73,7 +76,7 @@ export type NetworkCanvasPayload = {
     workloads?: { workloads?: Array<{ namespace: string; name: string; status?: string }> }
     timeline?: { events?: Array<{ summary?: string; message?: string; severity?: string; timestamp?: string; kind?: string }> }
     threats?: { threats?: Array<{ title?: string; description?: string; severity?: string; summary?: string; kind?: string }> }
-    top_talkers?: { talkers?: Array<{ name?: string; flows?: number }> }
+    top_talkers?: { talkers?: Array<{ name?: string; flows?: number; tx_bytes?: number; rx_bytes?: number }> }
     k8s_nodes?: { nodes?: Array<{ name: string; status: string; pods_count?: number }> }
     flow_stats?: Record<string, unknown>
     anomalies?: { anomalies?: Array<{ summary?: string; description?: string }> }

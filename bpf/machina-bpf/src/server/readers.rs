@@ -62,6 +62,7 @@ fn net_kind(k: u32) -> &'static str {
         NET_EV_DENY => "deny",
         NET_EV_ALLOW_MISS => "allow_miss",
         NET_EV_QOS_DROP => "qos_drop",
+        NET_EV_RATE_LIMIT => "rate_limit",
         _ => "unknown",
     }
 }
@@ -107,6 +108,9 @@ pub(super) fn on_net(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: 
             rx_bytes: ev.rx_bytes,
         };
         s.counters.net_events += 1;
+        if ev.kind == NET_EV_RATE_LIMIT {
+            s.counters.rate_limited += 1;
+        }
         match ev.verdict {
             VERDICT_DROP => s.counters.drops += 1,
             VERDICT_OBSERVED => s.counters.observed += 1,
@@ -220,6 +224,68 @@ pub(super) fn on_dns(
     if let Some(a) = anomaly {
         publish(bus, "anomaly", &a);
     }
+}
+
+/// Build an [`L7Record`] from a kernel event. `None` for unrecognised payloads.
+pub(super) fn l7_record(ev: &L7Event, iface: Option<String>, vm: Option<String>) -> Option<L7Record> {
+    let n = (ev.payload_len as usize).min(L7_PAYLOAD_LEN);
+    let parsed = crate::l7::classify(&ev.payload[..n])?;
+    let k = ev.key;
+    // The client sent this payload: workload-side for outbound, remote for inbound.
+    let outbound = ev.dir == DIR_FROM_WORKLOAD;
+    let (client, client_port, server, server_port) = if outbound {
+        (fmt_addr(&k.local), k.local_port, fmt_addr(&k.remote), k.remote_port)
+    } else {
+        (fmt_addr(&k.remote), k.remote_port, fmt_addr(&k.local), k.local_port)
+    };
+    let mut rec = L7Record {
+        ts: mono_to_rfc3339(ev.ts_ns),
+        iface,
+        vm,
+        direction: if outbound { "outbound" } else { "inbound" }.into(),
+        client,
+        client_port,
+        server,
+        server_port,
+        ..L7Record::default()
+    };
+    match parsed {
+        crate::l7::L7::Tls(t) => {
+            rec.protocol = "tls".into();
+            rec.host = t.sni;
+            rec.alpn = t.alpn;
+            rec.tls_version = Some(t.version);
+        }
+        crate::l7::L7::Http(h) => {
+            rec.protocol = "http".into();
+            rec.host = h.host;
+            rec.method = Some(h.method);
+            rec.path = Some(h.path);
+            rec.user_agent = h.user_agent;
+        }
+        crate::l7::L7::Ssh { banner } => {
+            rec.protocol = "ssh".into();
+            rec.banner = Some(banner);
+        }
+    }
+    Some(rec)
+}
+
+pub(super) fn on_l7(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &[u8]) {
+    let Some(ev) = decode::<L7Event>(b) else {
+        return;
+    };
+    let rec = {
+        let mut s = lock(sh);
+        let (iface, vm) = s.iface(ev.key.ifindex);
+        let Some(rec) = l7_record(&ev, iface, vm) else {
+            return;
+        };
+        s.counters.l7_events += 1;
+        Shared::push_capped(&mut s.l7, rec.clone(), L7_STORE_CAP);
+        rec
+    };
+    publish(bus, "l7", &rec);
 }
 
 fn proc_kind(k: u32) -> &'static str {

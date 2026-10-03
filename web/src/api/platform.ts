@@ -2127,7 +2127,7 @@ export type { VmMigrateOptions } from './platformVmMigrate'
 export { listVmTimeline } from './platformVmTimeline'
 export type { VmTimelineEntry } from './platformVmTimeline'
 export { getNetworkCanvas } from './platformNetworkCanvas'
-export type { NetworkCanvasPayload, PacketWolfFlow } from './platformNetworkCanvas'
+export type { NetworkCanvasPayload, BpfFlow } from './platformNetworkCanvas'
 
 export const vmClone = (id: string, new_name: string, clone_mode: 'linked' | 'full' | 'xml' = 'linked') =>
   platformFetch<{ task_id: string }>(`/api/v1/vms/${id}/clone`, {

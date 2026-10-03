@@ -20,7 +20,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 chrono = { workspace = true }
 base64 = { workspace = true }
-clap = { workspace = true }
+clap = { workspace = true, features = ["env"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 aya = { version = "0.14", default-features = false }

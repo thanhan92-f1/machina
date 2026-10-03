@@ -50,6 +50,50 @@ pub enum Rule {
     CapDeny { cap: u32 },
     /// Resolved answers for names under this suffix are added to the deny trie.
     DnsDeny { suffix: String },
+    /// New workload-initiated connections per second (token bucket per interface).
+    ConnRate { per_sec: u32, burst: u32 },
+}
+
+pub const MAX_CONN_RATE: u32 = 1_000_000;
+
+/// `"100/s"`, `"600/m"`, `"50/s burst 200"`, `"50/s,200"`.
+fn parse_rate(s: &str) -> Result<Rule, String> {
+    let toks: Vec<&str> = s
+        .split(|c: char| c == ',' || c.is_whitespace())
+        .filter(|t| !t.is_empty())
+        .collect();
+    let first: &str = toks
+        .first()
+        .copied()
+        .ok_or("rate_limit requires a rate such as `100/s`")?;
+    let (n_s, unit) = first.split_once('/').unwrap_or((first, "s"));
+    let n: u32 = n_s
+        .parse()
+        .ok()
+        .filter(|n| *n > 0)
+        .ok_or_else(|| format!("invalid rate `{first}`"))?;
+    let per_sec = match unit.to_ascii_lowercase().as_str() {
+        "s" | "sec" | "second" => n,
+        "m" | "min" | "minute" => n.div_ceil(60),
+        other => return Err(format!("unsupported rate unit `{other}` (s or m)")),
+    };
+    if per_sec > MAX_CONN_RATE {
+        return Err(format!("rate above {MAX_CONN_RATE}/s"));
+    }
+    let burst_tok = match toks.get(1).copied() {
+        Some("burst") => toks.get(2).copied(),
+        Some(t) => Some(t.trim_start_matches("burst=")),
+        None => None,
+    };
+    let burst = match burst_tok {
+        Some(b) => b
+            .parse::<u32>()
+            .ok()
+            .filter(|b| *b > 0 && *b <= MAX_CONN_RATE)
+            .ok_or_else(|| format!("invalid burst `{b}`"))?,
+        None => per_sec,
+    };
+    Ok(Rule::ConnRate { per_sec, burst })
 }
 
 fn mask(mut addr: [u8; ADDR_LEN], bits: u32) -> [u8; ADDR_LEN] {
@@ -296,6 +340,7 @@ pub fn compile(kind: &str, match_value: &str) -> Result<Vec<Rule>, String> {
                 suffix: suffix.to_ascii_lowercase(),
             }])
         }
+        "rate_limit" => Ok(vec![parse_rate(m)?]),
         other => Err(format!(
             "policy kind `{other}` is not supported by the native datapath (supported: {})",
             crate::api::POLICY_KINDS.join(", ")
@@ -400,6 +445,30 @@ mod tests {
         );
         assert!(compile("deny_namespace", "kube-system").is_err());
         assert_eq!(compile("deny_ip", "1.2.3.4, 10.0.0.0/8").unwrap().len(), 2);
+    }
+
+    #[test]
+    fn rate_limits() {
+        assert_eq!(
+            compile("rate_limit", "100/s").unwrap(),
+            vec![Rule::ConnRate { per_sec: 100, burst: 100 }]
+        );
+        assert_eq!(
+            compile("rate_limit", "90/m").unwrap(),
+            vec![Rule::ConnRate { per_sec: 2, burst: 2 }]
+        );
+        assert_eq!(
+            compile("rate_limit", "50/s burst 200").unwrap(),
+            vec![Rule::ConnRate { per_sec: 50, burst: 200 }]
+        );
+        assert_eq!(
+            compile("rate_limit", "50/s,burst=10").unwrap(),
+            vec![Rule::ConnRate { per_sec: 50, burst: 10 }]
+        );
+        assert_eq!(compile("rate_limit", "20").unwrap(), vec![Rule::ConnRate { per_sec: 20, burst: 20 }]);
+        assert!(compile("rate_limit", "0/s").is_err());
+        assert!(compile("rate_limit", "5/h").is_err());
+        assert!(compile("rate_limit", "5000000/s").is_err());
     }
 
     #[test]

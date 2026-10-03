@@ -490,6 +490,7 @@ export const routeLabels: Record<string, string> = {
   '/platform/zeus/security/firewall': 'Firewall',
   '/platform/zyra/security/hunt': 'Threat Hunting',
   '/platform/zyra/security/enforcement': 'Runtime Enforcement',
+  '/platform/zyra/security/native-bpf': 'Native eBPF',
   '/platform/zeus/security/k8s': 'Kubernetes Security',
   '/platform/zeus/security/cloud': 'Cloud Security',
   '/platform/zeus/security/connectivity': 'Connectivity',

@@ -4,7 +4,7 @@
 //! Fleet views over each host's native eBPF telemetry: anomalies, flows,
 //! process / DNS / file activity, hunts and health.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use chrono::{DateTime, Duration, Utc};
 use machina_bpf::api::Request;
@@ -179,7 +179,7 @@ fn stats_of(all: &[Value]) -> Value {
         let (t, r) = (u64_of(f, "tx_bytes"), u64_of(f, "rx_bytes"));
         tx += t;
         rx += r;
-        if str_of(f, "verdict") == "deny" {
+        if str_of(f, "verdict") == "drop" {
             denied += 1;
         }
         *by_proto.entry(str_of(f, "proto").to_string()).or_default() += 1;
@@ -203,42 +203,137 @@ fn stats_of(all: &[Value]) -> Value {
     })
 }
 
+/// TLS SNI / HTTP / SSH first-payload records across the fleet, plus the
+/// most contacted hosts.
+pub async fn l7(pool: &SqlitePool, limit: usize, protocol: Option<&str>) -> Value {
+    let mut items = fan_out_items(
+        pool,
+        &Request::L7 {
+            limit: Some(FLEET_LIMIT),
+            vm: None,
+            protocol: protocol.map(String::from),
+        },
+    )
+    .await;
+    newest_first(&mut items);
+    let mut by_proto: BTreeMap<String, u64> = BTreeMap::new();
+    let mut hosts: HashMap<String, (u64, BTreeSet<String>)> = HashMap::new();
+    for r in &items {
+        *by_proto.entry(str_of(r, "protocol").to_string()).or_default() += 1;
+        if let Some(h) = r["host"].as_str() {
+            let e = hosts.entry(h.to_string()).or_default();
+            e.0 += 1;
+            e.1.insert(r["vm"].as_str().unwrap_or(str_of(r, "client")).to_string());
+        }
+    }
+    let mut top: Vec<(String, (u64, BTreeSet<String>))> = hosts.into_iter().collect();
+    top.sort_by_key(|(_, (n, _))| std::cmp::Reverse(*n));
+    let total = items.len();
+    items.truncate(limit);
+    json!({
+        "records": items,
+        "total": total,
+        "by_protocol": by_proto,
+        "top_hosts": top.into_iter().take(20).map(|(h, (n, clients))| json!({
+            "host": h, "count": n, "clients": clients,
+        })).collect::<Vec<_>>(),
+        "source": SOURCE,
+    })
+}
+
+/// Per-VM traffic totals across the fleet (billing / chargeback).
+pub async fn accounting(pool: &SqlitePool) -> Value {
+    let items = fan_out_items(pool, &Request::Accounting { vm: None }).await;
+    let (mut tx, mut rx, mut drops) = (0u64, 0u64, 0u64);
+    for r in &items {
+        tx += u64_of(r, "tx_bytes");
+        rx += u64_of(r, "rx_bytes");
+        drops += u64_of(r, "drops");
+    }
+    let mut items = items;
+    items.sort_by_key(|r| std::cmp::Reverse(u64_of(r, "tx_bytes") + u64_of(r, "rx_bytes")));
+    json!({
+        "workloads": items,
+        "totals": { "tx_bytes": tx, "rx_bytes": rx, "drops": drops },
+        "source": SOURCE,
+    })
+}
+
 /// Workload → peer service map plus threats / timeline, in the shape the
 /// Network Canvas renders.
 pub async fn network_pulse(pool: &SqlitePool) -> Value {
     let all = fan_out_items(pool, &Request::Flows { limit: Some(FLEET_LIMIT), vm: None }).await;
-    let mut nodes: BTreeMap<String, Value> = BTreeMap::new();
-    let mut edges: HashMap<(String, String, String), (u64, u64)> = HashMap::new();
+    // node key → (node json, flows out, flows in, denied)
+    let mut nodes: BTreeMap<String, (Value, u64, u64, u64)> = BTreeMap::new();
+    // (src key, dst key) → (bytes, flows, denied, ports)
+    let mut edges: BTreeMap<(String, String), (u64, u64, u64, BTreeSet<String>)> = BTreeMap::new();
     for f in &all {
         let src = talker_key(f);
         let ns = if f["vm"].is_string() { "vm" } else { "host" };
-        nodes
-            .entry(format!("{ns}/{src}"))
-            .or_insert_with(|| json!({ "name": src, "namespace": ns, "host_id": f["host_id"] }));
+        let skey = format!("{ns}/{src}");
         let dst = str_of(f, "remote").to_string();
-        nodes
-            .entry(format!("external/{dst}"))
-            .or_insert_with(|| json!({ "name": dst, "namespace": "external" }));
-        let port = format!("{}/{}", f["remote_port"], str_of(f, "proto"));
-        let e = edges.entry((format!("{ns}/{src}"), dst, port)).or_default();
+        let dkey = format!("external/{dst}");
+        let denied = u64::from(str_of(f, "verdict") == "deny");
+        let s = nodes
+            .entry(skey.clone())
+            .or_insert_with(|| (json!({ "name": src, "namespace": ns, "host_id": f["host_id"] }), 0, 0, 0));
+        s.1 += 1;
+        s.3 += denied;
+        let d = nodes
+            .entry(dkey.clone())
+            .or_insert_with(|| (json!({ "name": dst, "namespace": "external" }), 0, 0, 0));
+        d.2 += 1;
+        d.3 += denied;
+        let e = edges.entry((skey, dkey)).or_default();
         e.0 += u64_of(f, "tx_bytes") + u64_of(f, "rx_bytes");
         e.1 += 1;
+        e.2 += denied;
+        e.3.insert(format!("{}/{}", f["remote_port"], str_of(f, "proto")));
     }
-    let edges: Vec<Value> = edges
-        .into_iter()
-        .map(|((src, dst, port), (bytes, n))| {
-            let (sns, sname) = src.split_once('/').unwrap_or(("host", src.as_str()));
+    let blocked: u64 = edges.values().map(|e| e.2).sum();
+    let edge_list: Vec<Value> = edges
+        .iter()
+        .map(|((skey, dkey), (bytes, n, denied, ports))| {
+            let (sns, sname) = skey.split_once('/').unwrap_or(("host", skey.as_str()));
+            let dname = dkey.trim_start_matches("external/");
             json!({
+                "id": format!("{skey}->{dkey}"),
                 "source": sname, "source_namespace": sns,
-                "target": dst, "target_namespace": "external",
-                "port": port, "bytes": bytes, "flows": n,
+                "target": dname, "target_namespace": "external",
+                "source_key": skey, "target_key": dkey,
+                "ports": ports, "bytes": bytes, "flow_count": n, "dropped_count": denied,
+                "health": if *denied > 0 { "degraded" } else { "healthy" },
+                "is_external": true,
             })
         })
         .collect();
+    let node_list: Vec<Value> = nodes
+        .into_values()
+        .map(|(mut v, out, inn, denied)| {
+            v["connections_out"] = json!(out);
+            v["connections_in"] = json!(inn);
+            v["blocked_flows"] = json!(denied);
+            v["status"] = json!(if denied > 0 { "warning" } else { "healthy" });
+            v
+        })
+        .collect();
+    let stats = stats_of(&all);
+    let talkers: Vec<Value> = stats["top_talkers"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     let threats = fleet_threat_summary(pool).await;
     json!({
-        "overview": stats_of(&all),
-        "service_map": { "nodes": nodes.into_values().collect::<Vec<_>>(), "edges": edges },
+        "enabled": true,
+        "overview": stats,
+        "service_map": {
+            "meta": { "stats": {
+                "services": node_list.len(), "connections": edge_list.len(), "blocked": blocked,
+            } },
+            "nodes": node_list,
+            "edges": edge_list,
+        },
+        "top_talkers": { "talkers": talkers },
         "threats": { "threats": threats["critical_events"], "score": threats["fleet_threat_score"] },
         "timeline": fleet_timeline(pool, 1).await,
         "anomalies": anomalies(pool).await,

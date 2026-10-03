@@ -9,7 +9,7 @@ import PageLayout from '../../../components/PageLayout'
 import {
   getFirewallCompliance,
   exportFirewallSiem,
-  getPacketwolfAnomalies,
+  getBpfAnomalies,
   listFirewallApprovals,
   approveFirewallChange,
   rejectFirewallChange,
@@ -21,7 +21,7 @@ import {
   type FirewallApprovalApplyResult,
 } from '../../../api/zeusFirewall'
 import JsonInspector, { asRecord } from '../../../components/platform/JsonInspector'
-import { ComplianceReportSummary, PacketwolfAnomalySummary } from '../../../components/platform/FirewallComplianceViews'
+import { ComplianceReportSummary, BpfAnomalySummary } from '../../../components/platform/FirewallComplianceViews'
 import { formatUserError } from '../../../utils/apiError'
 import { hubLinkClasses, statusBadgeClasses, statusToneClass } from '../../../utils/semanticColors'
 import { useToastContext } from '../../../contexts/ToastContext'
@@ -42,8 +42,8 @@ export default function PlatformFirewallCompliance() {
   const [error, setError] = useState<string | null>(null)
   const [approvals, setApprovals] = useState<FirewallApproval[]>([])
   const [approvalsLoading, setApprovalsLoading] = useState(false)
-  const [packetwolf, setPacketwolf] = useState<Record<string, unknown> | null>(null)
-  const [packetwolfLoading, setPacketwolfLoading] = useState(false)
+  const [anomalies, setAnomalies] = useState<Record<string, unknown> | null>(null)
+  const [anomaliesLoading, setAnomaliesLoading] = useState(false)
   const [tempPort, setTempPort] = useState('22')
   const [tempProtocol, setTempProtocol] = useState('tcp')
   const [tempHours, setTempHours] = useState('4')
@@ -71,20 +71,20 @@ export default function PlatformFirewallCompliance() {
     }
   }, [])
 
-  const loadPacketwolf = useCallback(async () => {
-    setPacketwolfLoading(true)
+  const loadAnomalies = useCallback(async () => {
+    setAnomaliesLoading(true)
     try {
-      setPacketwolf(await getPacketwolfAnomalies())
+      setAnomalies(await getBpfAnomalies())
     } catch (e: unknown) {
       setError(formatUserError(e))
     } finally {
-      setPacketwolfLoading(false)
+      setAnomaliesLoading(false)
     }
   }, [])
 
   useEffect(() => { void load() }, [load])
   useEffect(() => { void loadApprovals() }, [loadApprovals])
-  useEffect(() => { void loadPacketwolf() }, [loadPacketwolf])
+  useEffect(() => { void loadAnomalies() }, [loadAnomalies])
 
   return (
     <PageLayout
@@ -96,7 +96,7 @@ export default function PlatformFirewallCompliance() {
         </Link>
       }
       title="Firewall Compliance"
-      subtitle="Production exposure, approvals, Packetwolf anomalies, and GitOps policy sync"
+      subtitle="Production exposure, approvals, eBPF anomalies, and GitOps policy sync"
       icon={<CheckCircle2 className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <button type="button" className="btn-secondary text-xs" onClick={() => void load()} aria-label="Refresh">
@@ -152,19 +152,19 @@ export default function PlatformFirewallCompliance() {
           </ul>
         )}
       </MacGlassPanel>
-      <MacGlassPanel title="Packetwolf anomalies" action={
-        <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={() => void loadPacketwolf()}>
+      <MacGlassPanel title="eBPF anomalies" action={
+        <button type="button" className={`text-xs ${hubLinkClasses()}`} onClick={() => void loadAnomalies()}>
           Refresh
         </button>
       }>
-        {packetwolfLoading ? (
+        {anomaliesLoading ? (
           <p className="text-sm text-[var(--text-muted)]">Loading…</p>
-        ) : packetwolf ? (
-          <JsonInspector data={packetwolf} emptyMessage="No Packetwolf data.">
-            {asRecord(packetwolf) && <PacketwolfAnomalySummary data={asRecord(packetwolf)!} />}
+        ) : anomalies ? (
+          <JsonInspector data={anomalies} emptyMessage="No anomaly data.">
+            {asRecord(anomalies) && <BpfAnomalySummary data={asRecord(anomalies)!} />}
           </JsonInspector>
         ) : (
-          <p className="text-sm text-[var(--text-muted)]">No Packetwolf anomaly feed — enable Zeus Firewall deep inspection.</p>
+          <p className="text-sm text-[var(--text-muted)]">No anomalies reported — machina-bpfd may not be running on any host.</p>
         )}
       </MacGlassPanel>
       <MacGlassPanel title="Global temporary rule">

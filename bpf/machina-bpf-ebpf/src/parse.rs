@@ -14,7 +14,9 @@ pub const IPPROTO_TCP: u8 = 6;
 pub const IPPROTO_UDP: u8 = 17;
 
 pub const TCP_FIN: u8 = 0x01;
+pub const TCP_SYN: u8 = 0x02;
 pub const TCP_RST: u8 = 0x04;
+pub const TCP_ACK: u8 = 0x10;
 
 pub trait Pkt {
     fn ld<T>(&self, off: usize) -> Option<T>;

@@ -214,7 +214,7 @@ export default function PlatformSoc() {
     try {
       const r = await runSocIngestCycle()
       const ing = r?.ingest
-      const total = (ing?.firewall ?? 0) + (ing?.audit ?? 0) + (ing?.platform ?? 0) + (ing?.packetwolf ?? 0)
+      const total = (ing?.firewall ?? 0) + (ing?.audit ?? 0) + (ing?.platform ?? 0) + (ing?.native_bpf ?? 0)
       toast.success(`Ingest: ${total} new events, ${r?.alerts_fired ?? 0} alerts, ${r?.forwarded ?? 0} forwarded`)
       void load()
     } catch (e: unknown) {
@@ -412,7 +412,7 @@ export default function PlatformSoc() {
                         <EbpfActionMenu
                           suggestedKind="deny_process"
                           suggestedMatch="/usr/bin/nc"
-                          huntQueryId={a.title.toLowerCase().includes('dns') ? 'dns-tunneling' : 'reverse-shell'}
+                          huntQueryId={a.title.toLowerCase().includes('dns') ? 'dns-anomalies' : 'shell-spawn'}
                           policyName={a.title}
                           compact
                         />

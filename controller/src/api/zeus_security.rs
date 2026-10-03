@@ -81,6 +81,30 @@ pub async fn correlations(
     Ok(Json(telemetry::correlations(&state.pool).await))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct L7Query {
+    pub limit: Option<usize>,
+    pub protocol: Option<String>,
+}
+
+pub async fn fleet_l7(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Query(q): Query<L7Query>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    let limit = q.limit.unwrap_or(500).clamp(1, 5000);
+    Ok(Json(telemetry::l7(&state.pool, limit, q.protocol.as_deref()).await))
+}
+
+pub async fn fleet_accounting(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    Ok(Json(telemetry::accounting(&state.pool).await))
+}
+
 pub async fn security_graph(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -443,7 +467,11 @@ pub async fn enforcement_policy_document(
     Path(policy_id): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    Ok(Json(policies::policy_document(&state.pool, &policy_id).await))
+    let doc = policies::policy_document(&state.pool, &policy_id).await;
+    if doc.get("ok").and_then(Value::as_bool) == Some(false) {
+        return Err(ApiError::not_found("enforcement policy not found"));
+    }
+    Ok(Json(doc))
 }
 
 pub async fn attach_enforcement(

@@ -22,21 +22,19 @@ import {
   createEnforcementPolicy,
   deleteEnforcementPolicy,
   detachEnforcement,
-  getAgentSecurityBundle,
   getEnforcementPolicies,
-  getEnforcementPolicyTetragon,
+  getEnforcementPolicyDocument,
   getEnforcementStatus,
   patchEnforcementPolicy,
   syncEnforcement,
+  type EnforcementMutation,
   type EnforcementPolicy,
   type EnforcementStatus,
 } from '../../api/zeusSecurity'
 import { listPlatformHosts, type PlatformHost } from '../../api/platform'
 import { formatUserError } from '../../utils/apiError'
 import { useToastContext } from '../../contexts/ToastContext'
-import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
 import { hubLinkClasses } from '../../utils/semanticColors'
-import { toastQueuedOperation } from '../../utils/platformTaskToast'
 
 const KINDS = [
   { id: 'deny_process', label: 'Deny process', hint: '/usr/bin/nc' },
@@ -44,9 +42,10 @@ const KINDS = [
   { id: 'deny_port', label: 'Deny port', hint: '4444/tcp' },
   { id: 'deny_ip', label: 'Deny IP/CIDR', hint: '10.0.0.0/8' },
   { id: 'deny_file', label: 'Deny file', hint: '/etc/shadow' },
+  { id: 'rate_limit', label: 'Connection rate limit', hint: '100/s burst 200' },
   { id: 'deny_cap', label: 'Deny capability', hint: 'CAP_NET_RAW' },
-  { id: 'deny_namespace', label: 'Deny K8s namespace', hint: 'kube-system' },
-  { id: 'tc_allow', label: 'TC egress allow', hint: '8.8.8.8:53/udp' },
+  { id: 'tc_allow', label: 'Egress allow (default deny)', hint: '8.8.8.8:53/udp' },
+  { id: 'allow_port', label: 'Ingress allow port', hint: '22/tcp' },
 ] as const
 
 function matchPlaceholder(kind: string): string {
@@ -55,7 +54,6 @@ function matchPlaceholder(kind: string): string {
 
 export default function PlatformRuntimeEnforcement() {
   const toast = useToastContext()
-  const [tier] = usePlatformDesktopTier()
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<EnforcementStatus | null>(null)
   const [policies, setPolicies] = useState<EnforcementPolicy[]>([])
@@ -67,7 +65,6 @@ export default function PlatformRuntimeEnforcement() {
   const [match, setMatch] = useState(searchParams.get('match') ?? '')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [agentBundle, setAgentBundle] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewYaml, setPreviewYaml] = useState('')
   const [previewTitle, setPreviewTitle] = useState('')
@@ -107,11 +104,15 @@ export default function PlatformRuntimeEnforcement() {
     )
   }
 
-  const notifyTasks = (summary: string, taskIds?: string[]) => {
-    if (taskIds?.length) {
-      toastQueuedOperation(toast, summary, taskIds[0], tier)
+  const syncFailures = (sync?: Array<{ ok: boolean; hostname: string; error?: string | null }>) =>
+    (sync ?? []).filter((r) => !r.ok).map((r) => `${r.hostname}: ${r.error ?? 'failed'}`)
+
+  const notifyResult = (fallback: string, r: EnforcementMutation) => {
+    const failed = syncFailures(r.native.sync)
+    if (r.native.ok === false || failed.length > 0) {
+      toast.warning(`${r.summary || fallback} — ${failed.join('; ') || 'not every host took the change'}`)
     } else {
-      toast.success(summary)
+      toast.success(r.summary || fallback)
     }
   }
 
@@ -122,7 +123,7 @@ export default function PlatformRuntimeEnforcement() {
     }
     void applyEnforcementPolicy(policyId, selectedHosts)
       .then((r) => {
-        notifyTasks(r.summary, r.task_ids)
+        notifyResult('Policy applied', r)
         void load()
       })
       .catch((e: unknown) => toast.error(formatUserError(e)))
@@ -133,7 +134,7 @@ export default function PlatformRuntimeEnforcement() {
     if (fleet.length === 0 || selectedHosts.length === 0) return
     void Promise.all(fleet.map((p) => (p.id ? applyEnforcementPolicy(p.id, selectedHosts) : Promise.resolve())))
       .then(() => {
-        toast.success(`Fleet apply queued for ${fleet.length} policy(ies) on ${selectedHosts.length} host(s)`)
+        toast.success(`Applied ${fleet.length} policy(ies) on ${selectedHosts.length} host(s)`)
         void load()
       })
       .catch((e: unknown) => toast.error(formatUserError(e)))
@@ -143,14 +144,7 @@ export default function PlatformRuntimeEnforcement() {
     if (!p.id) return
     void patchEnforcementPolicy(p.id, { enabled: p.enabled === false })
       .then((r) => {
-        // A Netra-backed deny_ip toggle Netra itself rejects (unreachable, etc.)
-        // comes back as 200 + {ok: false, error} — the live rule state didn't
-        // actually change, so this must not show a success toast.
-        if (r.ok === false) {
-          toast.error(r.error ?? 'Policy was not updated')
-          return
-        }
-        notifyTasks(r.summary ?? (p.enabled === false ? 'Policy enabled' : 'Policy disabled'), r.task_ids)
+        notifyResult(p.enabled === false ? 'Policy enabled' : 'Policy disabled', r)
         void load()
       })
       .catch((e: unknown) => toast.error(formatUserError(e)))
@@ -164,21 +158,17 @@ export default function PlatformRuntimeEnforcement() {
     setConfirmDeletePolicyId(null)
     void deleteEnforcementPolicy(policyId)
       .then((r) => {
-        if (r.ok === false) {
-          toast.error(r.error ?? 'Policy was not deleted — it may still be live')
-          return
-        }
-        notifyTasks(r.summary ?? 'Policy deleted', r.task_ids)
+        notifyResult('Policy deleted', r)
         void load()
       })
       .catch((e: unknown) => toast.error(formatUserError(e)))
   }
 
-  const previewTetragon = (policyId: string, policyName: string) => {
-    void getEnforcementPolicyTetragon(policyId)
+  const previewPolicy = (policyId: string, policyName: string) => {
+    void getEnforcementPolicyDocument(policyId)
       .then((r) => {
         setPreviewTitle(policyName)
-        setPreviewYaml(JSON.stringify(r.tetragon_policy ?? r, null, 2))
+        setPreviewYaml(JSON.stringify(r, null, 2))
         setPreviewOpen(true)
       })
       .catch((e: unknown) => toast.error(formatUserError(e)))
@@ -187,35 +177,13 @@ export default function PlatformRuntimeEnforcement() {
   const createPolicy = () => {
     if (!name.trim() || !match.trim()) return
     void createEnforcementPolicy({ name: name.trim(), kind, match: match.trim() })
-      .then((r) => {
-        // A malformed tc_allow/allow_port rule (e.g. missing destination IP) is rejected with a
-        // 200 + {ok: false, error}, not an HTTP error — nothing was actually created.
-        if (r.ok === false || !r.policy) {
-          toast.error(r.error ?? 'Policy was not created')
-          return
-        }
+      .then(() => {
         toast.success('Policy created')
         setName('')
         setMatch('')
         void load()
       })
       .catch((e: unknown) => toast.error(formatUserError(e)))
-  }
-
-  const previewBundle = () => {
-    const hostId = selectedHosts[0]
-    if (!hostId) {
-      toast.error('Select a host to preview bundle')
-      return
-    }
-    void getAgentSecurityBundle(hostId)
-      .then((b) => {
-        const removed = (b as { removed_policies?: string[] }).removed_policies?.length ?? 0
-        setAgentBundle(
-          `${b.policy_count ?? 0} TracingPolicy(ies)${removed > 0 ? ` · ${removed} removal(s)` : ''} for ${hostId}`,
-        )
-      })
-      .catch((e: unknown) => setError(formatUserError(e)))
   }
 
   return (
@@ -225,7 +193,7 @@ export default function PlatformRuntimeEnforcement() {
       onErrorRetry={() => void load()}
       prepend={<Link to="/platform/zeus/security" className={`text-sm inline-flex items-center gap-1 min-h-9 ${hubLinkClasses()}`}>← Security Center</Link>}
       title="Runtime enforcement"
-      subtitle="eBPF deny rules — process · DNS · port · IP · file · cap · namespace via Tetragon TracingPolicy"
+      subtitle="Native eBPF (machina-bpfd) — process · DNS · port · IP · file · capability rules, lease-gated and fail-open"
       icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={
         <div className="flex items-center gap-2">
@@ -254,74 +222,33 @@ export default function PlatformRuntimeEnforcement() {
         </div>
       )}
 
-      {status?.api_mode === 'production_tc' && (
-        <MacGlassPanel title="PacketWolf TC enforcement" subtitle={status.summary}>
+      {status && (
+        <MacGlassPanel
+          title="Datapath mode"
+          subtitle={
+            status.mode === 'enforce'
+              ? 'Enforcing under a lease — every host reverts to observe on its own when the lease lapses'
+              : 'Observing — rules match and are logged, nothing is dropped'
+          }
+        >
           <div className="p-3 flex flex-wrap gap-2">
             <button
               type="button"
               className="btn-secondary text-xs"
               onClick={() => void syncEnforcement().then((r) => {
-                if (r.ok === false) { toast.error(r.note ?? 'BPF map sync did not apply'); return }
-                toast.success('BPF map synced')
+                if (r.ok === false) { toast.warning(r.note ?? 'Not every host reconciled'); return }
+                toast.success(r.note ?? 'Policies synced')
                 void load()
               }).catch((e: unknown) => toast.error(formatUserError(e)))}
             >
-              Sync BPF map
+              Sync policies
             </button>
             <button
               type="button"
               className="btn-secondary text-xs"
               onClick={() => void attachEnforcement().then((r) => {
-                if (r.ok === false || r.attached === false) { toast.error(r.note ?? 'TC enforcement did not attach'); return }
-                toast.success('TC enforcement attached')
-                void load()
-              }).catch((e: unknown) => toast.error(formatUserError(e)))}
-            >
-              Attach
-            </button>
-            <button
-              type="button"
-              className="btn-secondary text-xs"
-              onClick={() => void detachEnforcement().then((r) => {
-                // Unlike attach, a successful detach IS attached:false — only ok:false (mode
-                // gating / unreachable fabric) means the call didn't actually apply.
-                if (r.ok === false) { toast.error(r.note ?? 'TC enforcement did not detach'); return }
-                toast.success('TC enforcement detached')
-                void load()
-              }).catch((e: unknown) => toast.error(formatUserError(e)))}
-            >
-              Detach
-            </button>
-            {status.attached != null && (
-              <span className="text-xs text-[var(--text-muted)] self-center">
-                BPF {status.attached ? 'attached' : 'detached'}
-                {status.default_deny ? ' · defaultDeny' : ''}
-              </span>
-            )}
-          </div>
-        </MacGlassPanel>
-      )}
-
-      {status?.api_mode === 'netra' && (
-        <MacGlassPanel title="Netra eBPF enforcement" subtitle={status.summary}>
-          <div className="p-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn-secondary text-xs"
-              onClick={() => void syncEnforcement().then((r) => {
-                if (r.ok === false) { toast.error(r.note ?? 'Netra sync did not apply'); return }
-                toast.success(r.note ?? 'Netra config refreshed')
-                void load()
-              }).catch((e: unknown) => toast.error(formatUserError(e)))}
-            >
-              Sync
-            </button>
-            <button
-              type="button"
-              className="btn-secondary text-xs"
-              onClick={() => void attachEnforcement().then((r) => {
-                if (r.ok === false || r.attached === false) { toast.error(r.note ?? 'Netra did not switch to enforce'); return }
-                toast.success(r.note ?? 'Netra enforce lease active')
+                if (r.ok === false || r.attached === false) { toast.error(r.note ?? 'Enforce lease was not granted'); return }
+                toast.success(r.note ?? 'Enforce lease active')
                 void load()
               }).catch((e: unknown) => toast.error(formatUserError(e)))}
             >
@@ -331,17 +258,33 @@ export default function PlatformRuntimeEnforcement() {
               type="button"
               className="btn-secondary text-xs"
               onClick={() => void detachEnforcement().then((r) => {
-                if (r.ok === false) { toast.error(r.note ?? 'Netra did not revert to observe'); return }
-                toast.success(r.note ?? 'Netra reverted to observe')
+                if (r.ok === false) { toast.warning(r.note ?? 'Not every host reverted to observe'); return }
+                toast.success(r.note ?? 'Reverted to observe')
                 void load()
               }).catch((e: unknown) => toast.error(formatUserError(e)))}
             >
               Observe (fail-open)
             </button>
             <span className="text-xs text-[var(--text-muted)] self-center">
-              {status.reachable ? 'netrad reachable' : 'netrad unreachable'}
+              {status.reachable ? 'machina-bpfd reachable' : 'machina-bpfd unreachable on every host'}
             </span>
           </div>
+          {(status.hosts?.length ?? 0) > 0 && (
+            <ul className="px-3 pb-3 text-sm space-y-1">
+              {status.hosts?.map((h) => (
+                <li key={h.host_id} className="flex flex-wrap justify-between gap-2 text-[var(--text-secondary)]">
+                  <span>{h.hostname || h.host_id}</span>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {!h.reachable
+                      ? h.error ?? 'unreachable'
+                      : h.mode?.mode === 'enforce'
+                        ? `enforce · ${h.mode.lease_remaining_secs ?? 0}s left`
+                        : 'observe'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </MacGlassPanel>
       )}
 
@@ -395,7 +338,7 @@ export default function PlatformRuntimeEnforcement() {
                   <button
                     type="button"
                     className="btn-secondary text-xs inline-flex items-center gap-1"
-                    onClick={() => p.id && previewTetragon(p.id, p.name)}
+                    onClick={() => p.id && previewPolicy(p.id, p.name)}
                   >
                     <Eye className="w-3 h-3" /> Preview
                   </button>
@@ -420,7 +363,7 @@ export default function PlatformRuntimeEnforcement() {
         )}
       </MacGlassPanel>
 
-      <MacGlassPanel title="Create policy" subtitle="Generates Tetragon TracingPolicy on apply">
+      <MacGlassPanel title="Create policy" subtitle="Compiled into machina-bpfd datapath rules on apply">
         <div className="p-3 space-y-3">
           <input className="input text-sm w-full" aria-label="Policy name" placeholder="Policy name" value={name} onChange={(e) => setName(e.target.value)} />
           <div className="flex flex-wrap gap-2">
@@ -441,19 +384,10 @@ export default function PlatformRuntimeEnforcement() {
         </div>
       </MacGlassPanel>
 
-      <MacGlassPanel title="Agent pull bundle" subtitle="machina-agent → GET /zeus-security/agents/{hostId}/bundle">
-        <div className="p-3 flex flex-wrap gap-2 items-center">
-          <button type="button" className="btn-secondary text-sm" onClick={previewBundle}>
-            Preview bundle ({selectedHosts[0] ?? 'select host'})
-          </button>
-          {agentBundle && <p className="text-sm text-[var(--text-muted)]">{agentBundle}</p>}
-        </div>
-      </MacGlassPanel>
-
       <MacSheet
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        title="TracingPolicy preview"
+        title="Policy document"
         subtitle={previewTitle}
         wide
       >
@@ -464,7 +398,7 @@ export default function PlatformRuntimeEnforcement() {
       <ConfirmDialog
         open={confirmDeletePolicyId !== null}
         title="Delete Enforcement Policy"
-        message="Delete this enforcement policy? Agents will remove the TracingPolicy on next sync."
+        message="Delete this enforcement policy? It is removed from every host's machina-bpfd immediately."
         confirmLabel="Delete"
         variant="danger"
         onCancel={() => setConfirmDeletePolicyId(null)}

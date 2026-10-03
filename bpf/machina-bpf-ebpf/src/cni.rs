@@ -194,34 +194,35 @@ pub fn mn_cni_from_pod(ctx: TcContext) -> i32 {
     }
 
     let reply = is_reply(&t);
-    let dst_ep = unsafe { CNI_ENDPOINTS.get(&dst4) }.copied();
-    let dst_id = match dst_ep {
-        Some(ep) => ep.identity,
-        None => identity_of(&dst4),
-    };
+    // Plain locals initialised on both arms: a copied `Option<Endpoint>` lets
+    // LLVM spill the undefined `None` payload, which the verifier rejects.
+    let (local, dst_id, dst_flags, dst_ifindex, pod_mac, host_mac) =
+        match unsafe { CNI_ENDPOINTS.get(&dst4) } {
+            Some(ep) => (true, ep.identity, ep.flags, ep.host_ifindex, ep.pod_mac, ep.host_mac),
+            None => (false, identity_of(&dst4), 0, 0, [0u8; 6], [0u8; 6]),
+        };
     if !reply {
         if src_ep.flags & EP_EGRESS_ISOLATED != 0
             && !policy_allows(src_ep.identity, dst_id, POLICY_EGRESS, t.proto, t.dport)
         {
             return deny(now, &t, len);
         }
-        if let Some(ep) = dst_ep {
-            if ep.flags & EP_INGRESS_ISOLATED != 0
-                && !policy_allows(ep.identity, src_ep.identity, POLICY_INGRESS, t.proto, t.dport)
-            {
-                return deny(now, &t, len);
-            }
+        if local
+            && dst_flags & EP_INGRESS_ISOLATED != 0
+            && !policy_allows(dst_id, src_ep.identity, POLICY_INGRESS, t.proto, t.dport)
+        {
+            return deny(now, &t, len);
         }
         ct_track(&t, now);
     }
 
-    let Some(ep) = dst_ep else {
-        return TC_ACT_UNSPEC;
-    };
-    if ctx.store(0, &ep.pod_mac, 0).is_err() || ctx.store(6, &ep.host_mac, 0).is_err() {
+    if !local {
         return TC_ACT_UNSPEC;
     }
-    unsafe { bpf_redirect_peer(ep.host_ifindex, 0) as i32 }
+    if ctx.store(0, &pod_mac, 0).is_err() || ctx.store(6, &host_mac, 0).is_err() {
+        return TC_ACT_UNSPEC;
+    }
+    unsafe { bpf_redirect_peer(dst_ifindex, 0) as i32 }
 }
 
 /// TC egress on a pod's host-side veth (traffic entering the pod via the

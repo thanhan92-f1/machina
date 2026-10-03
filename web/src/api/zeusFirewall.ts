@@ -94,7 +94,7 @@ export interface SecurePlanReport {
 }
 
 export const getZeusFirewallStatus = () =>
-  platformFetch<{ zeus_firewall: Record<string, unknown>; packetwolf: Record<string, unknown> }>(
+  platformFetch<{ zeus_firewall: Record<string, unknown>; native_bpf: Record<string, unknown> }>(
     '/api/v1/zeus-firewall/status',
   )
 
@@ -221,8 +221,8 @@ export const simulateConnectivity = (target_id: string, profile: string) =>
     body: JSON.stringify({ target_id, profile }),
   })
 
-export const getPacketwolfAnomalies = () =>
-  platformFetch<Record<string, unknown>>('/api/v1/zeus-firewall/packetwolf/anomalies')
+export const getBpfAnomalies = () =>
+  platformFetch<Record<string, unknown>>('/api/v1/zeus-firewall/anomalies')
 
 export interface BaremetalFirewallOverview {
   servers: Array<{

@@ -936,6 +936,85 @@ install_rust() {
     ok "Rust installed: $RUST_VER"
 }
 
+# ── eBPF toolchain (machina-bpfd datapath) ──────────────────────────
+# build.rs compiles machina-bpf-ebpf with `rustup run nightly` + bpf-linker;
+# without them it embeds an empty object and bpfd runs with no datapath.
+BPF_LINKER_VERSION="${BPF_LINKER_VERSION:-v0.11.1}"
+
+ensure_bpf_toolchain() {
+    step "Checking eBPF toolchain (nightly rust-src + bpf-linker)"
+    if [ "${MACHINA_BPF_SKIP:-0}" = "1" ]; then
+        info "MACHINA_BPF_SKIP=1 — skipping eBPF toolchain"
+        return
+    fi
+    local rustup_bin=""
+    if [ -n "${CARGO_BIN:-}" ] && [ -x "$(dirname "$CARGO_BIN")/rustup" ]; then
+        rustup_bin="$(dirname "$CARGO_BIN")/rustup"
+    else
+        rustup_bin="$(command -v rustup 2>/dev/null || true)"
+    fi
+    if [ -z "$rustup_bin" ]; then
+        warn "rustup not found — machina-bpfd will build without the eBPF datapath"
+        return
+    fi
+    # Install nightly as the toolchain owner so a sudo run never leaves
+    # root-owned files in a user's ~/.rustup.
+    local owner
+    owner="$(stat -c %U "$rustup_bin" 2>/dev/null || echo root)"
+    local -a as_owner=()
+    if [ "$owner" != "root" ] && [ "$(id -un)" != "$owner" ]; then
+        as_owner=(sudo -u "$owner" -H env "PATH=$(dirname "$rustup_bin"):$PATH")
+    fi
+    if "${as_owner[@]}" "$rustup_bin" component list --toolchain nightly --installed 2>/dev/null | grep -q '^rust-src'; then
+        ok "nightly + rust-src present"
+    else
+        info "Installing nightly toolchain with rust-src (eBPF target)..."
+        "${as_owner[@]}" "$rustup_bin" toolchain install nightly --profile minimal --component rust-src >> "$LOG_FILE" 2>&1 \
+            || { warn "nightly install failed — eBPF datapath will be unavailable"; return; }
+        ok "nightly + rust-src installed"
+    fi
+
+    if command -v bpf-linker >/dev/null 2>&1; then
+        ok "bpf-linker: $(command -v bpf-linker)"
+        return
+    fi
+    local arch
+    case "$(uname -m)" in
+        x86_64) arch=x86_64 ;;
+        aarch64|arm64) arch=aarch64 ;;
+        *) warn "no prebuilt bpf-linker for $(uname -m) — run: cargo install bpf-linker"; return ;;
+    esac
+    command -v zstd >/dev/null 2>&1 || install_pkg_quiet zstd
+    local url="https://github.com/aya-rs/bpf-linker/releases/download/${BPF_LINKER_VERSION}/bpf-linker-${arch}-unknown-linux-musl.tar.zst"
+    local tmp
+    tmp="$(mktemp -d /tmp/bpf-linker-XXXXXX)"
+    info "Downloading bpf-linker ${BPF_LINKER_VERSION} (${arch})..."
+    if curl -fsSL "$url" -o "$tmp/bpf-linker.tar.zst" >> "$LOG_FILE" 2>&1 \
+        && tar --zstd -xf "$tmp/bpf-linker.tar.zst" -C "$tmp" >> "$LOG_FILE" 2>&1; then
+        local bin
+        bin="$(find "$tmp" -type f -name bpf-linker | head -1)"
+        if [ -n "$bin" ]; then
+            install -Dm755 "$bin" /usr/local/bin/bpf-linker
+            ok "bpf-linker -> /usr/local/bin/bpf-linker"
+        else
+            warn "bpf-linker archive had no binary — eBPF datapath will be unavailable"
+        fi
+    else
+        warn "bpf-linker download failed ($url) — eBPF datapath will be unavailable"
+    fi
+    rm -rf "$tmp"
+}
+
+install_pkg_quiet() {
+    case "${PKG_MANAGER:-}" in
+        apt) DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$@" >> "$LOG_FILE" 2>&1 || true ;;
+        dnf|yum) "$PKG_MANAGER" install -y -q "$@" >> "$LOG_FILE" 2>&1 || true ;;
+        zypper) zypper -n install "$@" >> "$LOG_FILE" 2>&1 || true ;;
+        pacman) pacman -S --noconfirm --needed "$@" >> "$LOG_FILE" 2>&1 || true ;;
+        *) command -v apt-get >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$@" >> "$LOG_FILE" 2>&1 || true ;;
+    esac
+}
+
 # ── Clone and build ──────────────────────────────────────────────────
 
 detect_bundle_install() {
@@ -1207,6 +1286,16 @@ install_files() {
 
     # Binaries
     install -Dm755 target/release/machina-daemon /usr/local/bin/machina-daemon
+    if [ -x target/release/machina-bpfd ]; then
+        mkdir -p /var/lib/machina/bpf
+        install -Dm755 target/release/machina-bpfd /usr/local/bin/machina-bpfd
+        install -Dm644 contrib/machina-bpfd.service /usr/lib/systemd/system/machina-bpfd.service
+    fi
+    # Native Kubernetes CNI; enabled by the k3s cluster bootstrap, not here.
+    if [ -x target/release/machina-cni ]; then
+        install -Dm755 target/release/machina-cni /usr/local/bin/machina-cni
+        install -Dm644 contrib/machina-cni.service /usr/lib/systemd/system/machina-cni.service
+    fi
     ok "Binaries -> /usr/local/bin/"
 
     # Config
@@ -1448,10 +1537,29 @@ wait_for_https_health() {
     return 1
 }
 
+# Native eBPF datapath. Non-fatal: the daemon and platform run without it.
+start_bpfd() {
+    [ -f /usr/lib/systemd/system/machina-bpfd.service ] || return 0
+    step "Starting machina-bpfd (native eBPF datapath)"
+    /usr/local/bin/machina-bpfd --probe 2>&1 | sed 's/^/  /' | tee -a "$LOG_FILE" || true
+    systemctl daemon-reload
+    systemctl enable machina-bpfd >> "$LOG_FILE" 2>&1 || true
+    if systemctl restart machina-bpfd >> "$LOG_FILE" 2>&1; then
+        local i
+        for i in $(seq 1 20); do
+            [ -S /run/machina-bpf/bpfd.sock ] && { ok "machina-bpfd running (/run/machina-bpf/bpfd.sock)"; return 0; }
+            sleep 1
+        done
+    fi
+    warn "machina-bpfd did not come up — journalctl -u machina-bpfd"
+    journalctl -u machina-bpfd --no-pager -n 15 2>/dev/null || true
+}
+
 start_daemon() {
     step "Starting machina daemon"
 
     stop_daemon_for_upgrade
+    start_bpfd
 
     systemctl enable machina-daemon >> "$LOG_FILE" 2>&1 || fail "Failed to enable machina-daemon. Check: journalctl -u machina-daemon"
     systemctl start machina-daemon >> "$LOG_FILE" 2>&1 || fail "Failed to start daemon. Check: journalctl -u machina-daemon"
@@ -1916,6 +2024,7 @@ HELPEOF
 
     if [ "${BUNDLE_INSTALL:-false}" != true ]; then
         install_rust
+        ensure_bpf_toolchain
     else
         info "Client bundle detected — skipping Rust toolchain install (using prebuilt binaries)"
     fi

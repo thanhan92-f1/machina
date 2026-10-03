@@ -86,8 +86,8 @@ export default function PlatformFirewallOverview() {
       setOperatorPlan(op)
       setThresholds(th)
       setBaremetalFw(bm as Record<string, unknown> | null)
-      const pw = st.packetwolf as { summary?: string }
-      setStatusLine(pw?.summary || 'Zeus Firewall active')
+      const bpf = st.native_bpf as { summary?: string }
+      setStatusLine(bpf?.summary || 'Zeus Firewall active')
     } catch (e: unknown) {
       setError(formatUserError(e))
     }

@@ -215,18 +215,17 @@ test('VM migration history shows real hostnames and dates, not "undefined → un
   await expect(page.getByText(/Invalid Date/)).toHaveCount(0)
 })
 
-test('Runtime enforcement: a rejected policy (200 + {ok:false}) shows an error toast, not "Policy created"', async ({ page }) => {
-  // create_enforcement_policy rejects a malformed tc_allow/allow_port match with a 200 response
-  // body ({ok:false, error}) rather than an HTTP error status (packetwolf_enforcement.rs) — the UI
-  // used to ignore the response entirely and always show "Policy created".
+test('Runtime enforcement: a rejected policy (HTTP 400) shows an error toast, not "Policy created"', async ({ page }) => {
+  // The controller compiles every policy through machina-bpf before storing it; an invalid
+  // match comes back as 400 enforcement_rejected and nothing is created.
   await mockPlatformApi(page, { tier: 'power' })
   await page.route('**/zeus-security/enforcement/policies', async (route) => {
     if (route.request().method() === 'POST') {
       return route.fulfill({
+        status: 400,
         json: {
-          ok: false,
           error: 'invalid match: tc_allow/allow_port rules require an explicit destination IP',
-          api_mode: 'production_tc',
+          error_code: 'enforcement_rejected',
         },
       })
     }

@@ -1,0 +1,545 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+//! Kubernetes objects → [`CniState`]: label-derived identities, NetworkPolicy
+//! allow tuples and service frontends. Pure functions over `kubectl -o json`.
+//!
+//! Identity = hash(namespace, sorted pod labels), so every pod a selector can
+//! distinguish gets its own identity and policies compile to identity pairs.
+//! Limits: IPv4 only; named ports and ipBlock `except` are not supported
+//! (reported in [`Compiled::warnings`]); overlapping ipBlocks resolve by
+//! longest prefix.
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use machina_bpf::api::{CniBackend, CniIdentity, CniPolicyEntry, CniService, CniState};
+use serde_json::Value;
+
+pub const IPPROTO_TCP: u8 = 6;
+pub const IPPROTO_UDP: u8 = 17;
+const MAX_PORT_RANGE: u32 = 256;
+
+#[derive(Debug, Clone, Default)]
+pub struct Pod {
+    pub namespace: String,
+    pub ip: String,
+    pub labels: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Default)]
+pub struct Compiled {
+    pub state: CniState,
+    pub warnings: Vec<String>,
+}
+
+fn fnv32(s: &str) -> u32 {
+    let mut h: u32 = 0x811c_9dc5;
+    for b in s.bytes() {
+        h ^= b as u32;
+        h = h.wrapping_mul(0x0100_0193);
+    }
+    h
+}
+
+/// Pod identities live in [1024, 2^31); ipBlock identities have the top bit set.
+pub fn pod_identity(namespace: &str, labels: &BTreeMap<String, String>) -> u32 {
+    let mut key = format!("{namespace}|");
+    for (k, v) in labels {
+        key.push_str(k);
+        key.push('=');
+        key.push_str(v);
+        key.push(',');
+    }
+    fnv32(&key) % (0x7fff_0000 - 1024) + 1024
+}
+
+pub fn cidr_identity(cidr: &str) -> u32 {
+    0x8000_0000 | (fnv32(cidr) & 0x7fff_ffff)
+}
+
+fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
+    let mut cur = v;
+    for p in path {
+        cur = cur.get(*p)?;
+    }
+    cur.as_str()
+}
+
+fn labels_of(v: &Value) -> BTreeMap<String, String> {
+    v.pointer("/metadata/labels")
+        .and_then(|l| l.as_object())
+        .map(|m| {
+            m.iter()
+                .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Running, non-hostNetwork pods with an IPv4 address.
+pub fn pods(items: &[Value]) -> Vec<Pod> {
+    items
+        .iter()
+        .filter(|p| p["spec"]["hostNetwork"] != true)
+        .filter(|p| !matches!(str_at(p, &["status", "phase"]), Some("Succeeded" | "Failed")))
+        .filter_map(|p| {
+            let ip = str_at(p, &["status", "podIP"])?;
+            if ip.contains(':') {
+                return None;
+            }
+            Some(Pod {
+                namespace: str_at(p, &["metadata", "namespace"]).unwrap_or("default").to_string(),
+                ip: ip.to_string(),
+                labels: labels_of(p),
+            })
+        })
+        .collect()
+}
+
+/// Kubernetes label selector: `matchLabels` AND every `matchExpressions` term.
+/// An empty selector `{}` matches everything.
+pub fn selector_matches(sel: &Value, labels: &BTreeMap<String, String>) -> bool {
+    if let Some(ml) = sel.get("matchLabels").and_then(|m| m.as_object()) {
+        for (k, v) in ml {
+            if labels.get(k).map(String::as_str) != v.as_str() {
+                return false;
+            }
+        }
+    }
+    if let Some(exprs) = sel.get("matchExpressions").and_then(|m| m.as_array()) {
+        for e in exprs {
+            let key = e["key"].as_str().unwrap_or("");
+            let values: Vec<&str> = e["values"]
+                .as_array()
+                .map(|a| a.iter().filter_map(|v| v.as_str()).collect())
+                .unwrap_or_default();
+            let have = labels.get(key).map(String::as_str);
+            let ok = match e["operator"].as_str().unwrap_or("") {
+                "In" => have.is_some_and(|h| values.contains(&h)),
+                "NotIn" => have.is_none_or(|h| !values.contains(&h)),
+                "Exists" => have.is_some(),
+                "DoesNotExist" => have.is_none(),
+                _ => false,
+            };
+            if !ok {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn proto_num(p: Option<&str>) -> Option<u8> {
+    match p.unwrap_or("TCP") {
+        "TCP" => Some(IPPROTO_TCP),
+        "UDP" => Some(IPPROTO_UDP),
+        _ => None,
+    }
+}
+
+/// `ports` of a policy rule → (proto, port) tuples; (0, 0) = everything.
+fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<(u8, u16)> {
+    let Some(ports) = rule.get("ports").and_then(|p| p.as_array()).filter(|p| !p.is_empty()) else {
+        return vec![(0, 0)];
+    };
+    let mut out = Vec::new();
+    for p in ports {
+        let Some(proto) = proto_num(p["protocol"].as_str()) else {
+            warnings.push(format!("{ctx}: protocol {} not supported", p["protocol"]));
+            continue;
+        };
+        match &p["port"] {
+            Value::Null => out.push((proto, 0)),
+            Value::Number(n) => {
+                let start = n.as_u64().unwrap_or(0) as u32;
+                let end = p["endPort"].as_u64().map(|e| e as u32).unwrap_or(start);
+                if end < start || end - start >= MAX_PORT_RANGE {
+                    warnings.push(format!("{ctx}: port range {start}-{end} too wide (max {MAX_PORT_RANGE})"));
+                    continue;
+                }
+                out.extend((start..=end).filter(|x| *x > 0 && *x <= 65535).map(|x| (proto, x as u16)));
+            }
+            Value::String(s) => warnings.push(format!("{ctx}: named port `{s}` not supported")),
+            _ => {}
+        }
+    }
+    out
+}
+
+struct World<'a> {
+    pods: &'a [Pod],
+    ns_labels: BTreeMap<String, BTreeMap<String, String>>,
+}
+
+impl World<'_> {
+    fn ns_labels(&self, ns: &str) -> BTreeMap<String, String> {
+        let mut l = self.ns_labels.get(ns).cloned().unwrap_or_default();
+        l.entry("kubernetes.io/metadata.name".into()).or_insert_with(|| ns.to_string());
+        l
+    }
+
+    /// Identities of pods selected by a NetworkPolicy peer.
+    fn peer_identities(&self, policy_ns: &str, peer: &Value) -> BTreeSet<u32> {
+        let pod_sel = peer.get("podSelector");
+        let ns_sel = peer.get("namespaceSelector");
+        self.pods
+            .iter()
+            .filter(|p| match ns_sel {
+                Some(s) => selector_matches(s, &self.ns_labels(&p.namespace)),
+                None => p.namespace == policy_ns,
+            })
+            .filter(|p| pod_sel.is_none_or(|s| selector_matches(s, &p.labels)))
+            .map(|p| pod_identity(&p.namespace, &p.labels))
+            .collect()
+    }
+}
+
+pub struct Inputs<'a> {
+    pub pods: &'a [Pod],
+    pub namespaces: &'a [Value],
+    pub policies: &'a [Value],
+    pub services: &'a [Value],
+    pub endpoint_slices: &'a [Value],
+    /// This node's name (NodePort frontends only get local backends).
+    pub node: &'a str,
+}
+
+pub fn compile(inp: &Inputs) -> Compiled {
+    let mut warnings = Vec::new();
+    let world = World {
+        pods: inp.pods,
+        ns_labels: inp
+            .namespaces
+            .iter()
+            .filter_map(|n| Some((str_at(n, &["metadata", "name"])?.to_string(), labels_of(n))))
+            .collect(),
+    };
+
+    let mut policy: BTreeSet<CniPolicyEntry> = BTreeSet::new();
+    let mut cidrs: BTreeMap<String, u32> = BTreeMap::new();
+    let mut ingress_iso: BTreeSet<u32> = BTreeSet::new();
+    let mut egress_iso: BTreeSet<u32> = BTreeSet::new();
+
+    for np in inp.policies {
+        let ns = str_at(np, &["metadata", "namespace"]).unwrap_or("default");
+        let name = format!("{ns}/{}", str_at(np, &["metadata", "name"]).unwrap_or("?"));
+        let spec = &np["spec"];
+        let subject_sel = spec.get("podSelector").cloned().unwrap_or(Value::Object(Default::default()));
+        let subjects: BTreeSet<u32> = inp
+            .pods
+            .iter()
+            .filter(|p| p.namespace == ns && selector_matches(&subject_sel, &p.labels))
+            .map(|p| pod_identity(&p.namespace, &p.labels))
+            .collect();
+        let types: Vec<String> = match spec["policyTypes"].as_array() {
+            Some(t) => t.iter().filter_map(|x| x.as_str().map(String::from)).collect(),
+            None => {
+                let mut t = vec!["Ingress".to_string()];
+                if spec.get("egress").is_some() {
+                    t.push("Egress".into());
+                }
+                t
+            }
+        };
+        for (dir, peers_key, rules_key) in [("Ingress", "from", "ingress"), ("Egress", "to", "egress")] {
+            if !types.iter().any(|t| t == dir) {
+                continue;
+            }
+            let egress = dir == "Egress";
+            for s in &subjects {
+                if egress {
+                    egress_iso.insert(*s);
+                } else {
+                    ingress_iso.insert(*s);
+                }
+            }
+            for rule in spec[rules_key].as_array().into_iter().flatten() {
+                let ports = rule_ports(rule, &mut warnings, &name);
+                let mut peers: BTreeSet<u32> = BTreeSet::new();
+                match rule.get(peers_key).and_then(|p| p.as_array()).filter(|p| !p.is_empty()) {
+                    None => {
+                        peers.insert(0);
+                    }
+                    Some(list) => {
+                        for peer in list {
+                            if let Some(block) = peer.get("ipBlock") {
+                                let Some(cidr) = block["cidr"].as_str() else { continue };
+                                if cidr.contains(':') {
+                                    continue;
+                                }
+                                if block.get("except").and_then(|e| e.as_array()).is_some_and(|e| !e.is_empty()) {
+                                    warnings.push(format!("{name}: ipBlock except not supported ({cidr})"));
+                                }
+                                let id = *cidrs.entry(cidr.to_string()).or_insert_with(|| cidr_identity(cidr));
+                                peers.insert(id);
+                            } else {
+                                peers.extend(world.peer_identities(ns, peer));
+                            }
+                        }
+                    }
+                }
+                for s in &subjects {
+                    for peer in &peers {
+                        for (proto, port) in &ports {
+                            policy.insert(CniPolicyEntry {
+                                subject: *s,
+                                peer: *peer,
+                                egress,
+                                proto: *proto,
+                                port: *port,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut identities: Vec<CniIdentity> = inp
+        .pods
+        .iter()
+        .map(|p| {
+            let id = pod_identity(&p.namespace, &p.labels);
+            CniIdentity {
+                ip: p.ip.clone(),
+                identity: id,
+                ingress_isolated: ingress_iso.contains(&id),
+                egress_isolated: egress_iso.contains(&id),
+            }
+        })
+        .collect();
+    identities.sort();
+    identities.dedup_by(|a, b| a.ip == b.ip);
+
+    Compiled {
+        state: CniState {
+            identities,
+            policy: policy.into_iter().collect(),
+            cidrs: cidrs.into_iter().collect(),
+            services: services(inp, &mut warnings),
+        },
+        warnings,
+    }
+}
+
+/// Ready IPv4 endpoints of a service, by service port name → (ip, port, node).
+fn slice_backends(inp: &Inputs, ns: &str, svc: &str) -> BTreeMap<String, Vec<(String, u16, String)>> {
+    let mut out: BTreeMap<String, Vec<(String, u16, String)>> = BTreeMap::new();
+    for s in inp.endpoint_slices {
+        if str_at(s, &["metadata", "namespace"]) != Some(ns)
+            || s.pointer("/metadata/labels/kubernetes.io~1service-name").and_then(|v| v.as_str()) != Some(svc)
+            || s["addressType"].as_str().is_some_and(|t| t != "IPv4")
+        {
+            continue;
+        }
+        let ports: Vec<(String, u16)> = s["ports"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|p| Some((p["name"].as_str().unwrap_or("").to_string(), p["port"].as_u64()? as u16)))
+            .collect();
+        for ep in s["endpoints"].as_array().into_iter().flatten() {
+            if ep.pointer("/conditions/ready") == Some(&Value::Bool(false)) {
+                continue;
+            }
+            let node = ep["nodeName"].as_str().unwrap_or("").to_string();
+            for addr in ep["addresses"].as_array().into_iter().flatten().filter_map(|a| a.as_str()) {
+                for (pname, port) in &ports {
+                    out.entry(pname.clone()).or_default().push((addr.to_string(), *port, node.clone()));
+                }
+            }
+        }
+    }
+    out
+}
+
+fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
+    let mut out = Vec::new();
+    for svc in inp.services {
+        let ns = str_at(svc, &["metadata", "namespace"]).unwrap_or("default");
+        let name = str_at(svc, &["metadata", "name"]).unwrap_or("");
+        let spec = &svc["spec"];
+        let ty = spec["type"].as_str().unwrap_or("ClusterIP");
+        if ty == "ExternalName" {
+            continue;
+        }
+        let mut frontends: BTreeSet<String> = BTreeSet::new();
+        if let Some(ip) = spec["clusterIP"].as_str().filter(|ip| !ip.is_empty() && *ip != "None" && !ip.contains(':')) {
+            frontends.insert(ip.to_string());
+        }
+        for ip in spec["externalIPs"].as_array().into_iter().flatten().filter_map(|v| v.as_str()) {
+            frontends.insert(ip.to_string());
+        }
+        for ing in svc.pointer("/status/loadBalancer/ingress").and_then(|v| v.as_array()).into_iter().flatten() {
+            if let Some(ip) = ing["ip"].as_str() {
+                frontends.insert(ip.to_string());
+            }
+        }
+        let backends = slice_backends(inp, ns, name);
+        for p in spec["ports"].as_array().into_iter().flatten() {
+            let Some(proto) = proto_num(p["protocol"].as_str()) else {
+                warnings.push(format!("service {ns}/{name}: protocol {} not supported", p["protocol"]));
+                continue;
+            };
+            let Some(port) = p["port"].as_u64() else { continue };
+            let pname = p["name"].as_str().unwrap_or("");
+            let all: Vec<&(String, u16, String)> = backends.get(pname).map(|v| v.iter().collect()).unwrap_or_default();
+            let mut be: Vec<CniBackend> = all
+                .iter()
+                .map(|(a, port, _)| CniBackend { addr: a.clone(), port: *port })
+                .collect();
+            be.sort();
+            be.dedup();
+            let label = Some(format!("{ns}/{name}:{pname}"));
+            for fe in &frontends {
+                out.push(CniService {
+                    addr: fe.clone(),
+                    port: port as u16,
+                    proto,
+                    backends: be.clone(),
+                    name: label.clone(),
+                });
+            }
+            if let Some(np) = p["nodePort"].as_u64().filter(|_| ty == "NodePort" || ty == "LoadBalancer") {
+                let mut local: Vec<CniBackend> = all
+                    .iter()
+                    .filter(|(_, _, node)| node == inp.node)
+                    .map(|(a, port, _)| CniBackend { addr: a.clone(), port: *port })
+                    .collect();
+                local.sort();
+                local.dedup();
+                out.push(CniService {
+                    addr: "0.0.0.0".into(),
+                    port: np as u16,
+                    proto,
+                    backends: local,
+                    name: label.clone(),
+                });
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn pod(ns: &str, name: &str, ip: &str, labels: &[(&str, &str)]) -> Value {
+        let l: serde_json::Map<String, Value> =
+            labels.iter().map(|(k, v)| (k.to_string(), Value::String(v.to_string()))).collect();
+        json!({
+            "metadata": { "namespace": ns, "name": name, "labels": l },
+            "spec": { "nodeName": "n1" },
+            "status": { "phase": "Running", "podIP": ip },
+        })
+    }
+
+    #[test]
+    fn selectors() {
+        let l: BTreeMap<String, String> = [("app".into(), "web".into()), ("tier".into(), "fe".into())].into();
+        assert!(selector_matches(&json!({}), &l));
+        assert!(selector_matches(&json!({"matchLabels": {"app": "web"}}), &l));
+        assert!(!selector_matches(&json!({"matchLabels": {"app": "db"}}), &l));
+        assert!(selector_matches(
+            &json!({"matchExpressions": [{"key": "tier", "operator": "In", "values": ["fe", "be"]}]}),
+            &l
+        ));
+        assert!(!selector_matches(&json!({"matchExpressions": [{"key": "tier", "operator": "NotIn", "values": ["fe"]}]}), &l));
+        assert!(selector_matches(&json!({"matchExpressions": [{"key": "x", "operator": "DoesNotExist"}]}), &l));
+        assert!(!selector_matches(&json!({"matchExpressions": [{"key": "x", "operator": "Exists"}]}), &l));
+    }
+
+    #[test]
+    fn policy_compiles_to_identity_pairs() {
+        let items = vec![
+            pod("prod", "web-1", "10.42.0.5", &[("app", "web")]),
+            pod("prod", "db-1", "10.42.0.6", &[("app", "db")]),
+            pod("dev", "tool", "10.42.1.9", &[("app", "tool")]),
+            json!({ "metadata": {"namespace": "kube-system", "name": "h"}, "spec": {"hostNetwork": true}, "status": {"podIP": "10.0.0.1"} }),
+        ];
+        let pods = pods(&items);
+        assert_eq!(pods.len(), 3, "hostNetwork pods are skipped");
+        let namespaces = vec![json!({"metadata": {"name": "dev", "labels": {"env": "dev"}}})];
+        let policies = vec![json!({
+            "metadata": {"namespace": "prod", "name": "db-allow-web"},
+            "spec": {
+                "podSelector": {"matchLabels": {"app": "db"}},
+                "ingress": [
+                    {"from": [{"podSelector": {"matchLabels": {"app": "web"}}}], "ports": [{"port": 5432}]},
+                    {"from": [{"namespaceSelector": {"matchLabels": {"env": "dev"}}}, {"ipBlock": {"cidr": "192.168.0.0/16"}}],
+                     "ports": [{"protocol": "UDP", "port": 53, "endPort": 54}, {"port": "metrics"}]}
+                ]
+            }
+        })];
+        let c = compile(&Inputs {
+            pods: &pods,
+            namespaces: &namespaces,
+            policies: &policies,
+            services: &[],
+            endpoint_slices: &[],
+            node: "n1",
+        });
+        let web = pod_identity("prod", &pods[0].labels);
+        let db = pod_identity("prod", &pods[1].labels);
+        let tool = pod_identity("dev", &pods[2].labels);
+        let block = cidr_identity("192.168.0.0/16");
+        let st = &c.state;
+        assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: web, egress: false, proto: IPPROTO_TCP, port: 5432 }));
+        for port in [53, 54] {
+            assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: tool, egress: false, proto: IPPROTO_UDP, port }));
+            assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: block, egress: false, proto: IPPROTO_UDP, port }));
+        }
+        assert_eq!(st.policy.len(), 5);
+        assert_eq!(st.cidrs, vec![("192.168.0.0/16".to_string(), block)]);
+        assert!(c.warnings.iter().any(|w| w.contains("named port")));
+        let iso: Vec<(&str, bool, bool)> =
+            st.identities.iter().map(|i| (i.ip.as_str(), i.ingress_isolated, i.egress_isolated)).collect();
+        assert!(iso.contains(&("10.42.0.6", true, false)));
+        assert!(iso.contains(&("10.42.0.5", false, false)));
+        assert!(block & 0x8000_0000 != 0 && db & 0x8000_0000 == 0);
+    }
+
+    #[test]
+    fn default_deny_egress_and_allow_all_ingress() {
+        let items = vec![pod("a", "p", "10.42.0.7", &[("app", "x")])];
+        let pods = pods(&items);
+        let policies = vec![json!({
+            "metadata": {"namespace": "a", "name": "lockdown"},
+            "spec": {"podSelector": {}, "policyTypes": ["Ingress", "Egress"], "ingress": [{}]}
+        })];
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], node: "n1" });
+        let id = pod_identity("a", &pods[0].labels);
+        assert_eq!(c.state.policy, vec![CniPolicyEntry { subject: id, peer: 0, egress: false, proto: 0, port: 0 }]);
+        assert!(c.state.identities[0].ingress_isolated && c.state.identities[0].egress_isolated);
+    }
+
+    #[test]
+    fn services_and_nodeports() {
+        let services = vec![json!({
+            "metadata": {"namespace": "prod", "name": "web"},
+            "spec": {"type": "NodePort", "clusterIP": "10.43.0.10",
+                     "ports": [{"name": "http", "port": 80, "protocol": "TCP", "nodePort": 30080}]}
+        })];
+        let slices = vec![json!({
+            "metadata": {"namespace": "prod", "name": "web-abc", "labels": {"kubernetes.io/service-name": "web"}},
+            "addressType": "IPv4",
+            "ports": [{"name": "http", "port": 8080}],
+            "endpoints": [
+                {"addresses": ["10.42.0.5"], "nodeName": "n1", "conditions": {"ready": true}},
+                {"addresses": ["10.42.1.5"], "nodeName": "n2"},
+                {"addresses": ["10.42.1.6"], "nodeName": "n2", "conditions": {"ready": false}}
+            ]
+        })];
+        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &services, endpoint_slices: &slices, node: "n1" });
+        let s = &c.state.services;
+        assert_eq!(s.len(), 2);
+        let np = s.iter().find(|x| x.addr == "0.0.0.0").unwrap();
+        assert_eq!(np.port, 30080);
+        assert_eq!(np.backends, vec![CniBackend { addr: "10.42.0.5".into(), port: 8080 }]);
+        let cip = s.iter().find(|x| x.addr == "10.43.0.10").unwrap();
+        assert_eq!(cip.backends.len(), 2, "not-ready endpoints are excluded");
+    }
+}

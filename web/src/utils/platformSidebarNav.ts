@@ -161,6 +161,7 @@ const PATH_ICON_OVERRIDES: Record<string, LucideIcon> = {
   '/platform/zeus/security/policies': ScrollText,
   '/platform/zyra/security/hunt': Crosshair,
   '/platform/zyra/security/enforcement': Gavel,
+  '/platform/zyra/security/native-bpf': Cpu,
   '/platform/policy': Shield,
   // Admin / Zyra / other
   '/platform/administration': Settings,

@@ -46,6 +46,7 @@ pub const POLICY_KINDS: &[&str] = &[
     "deny_file",
     "deny_cap",
     "deny_dns",
+    "rate_limit",
 ];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -101,6 +102,9 @@ pub struct TelemetryConfig {
     pub flows: bool,
     #[serde(default = "default_true")]
     pub dns: bool,
+    /// First client payload per TCP flow: TLS SNI/ALPN, HTTP request line, SSH banner.
+    #[serde(default = "default_true")]
+    pub l7: bool,
     /// Path prefixes reported on open (max 8 including deny_file prefixes).
     #[serde(default = "default_watch")]
     pub file_watch: Vec<String>,
@@ -131,6 +135,7 @@ impl Default for TelemetryConfig {
             connect: true,
             flows: true,
             dns: true,
+            l7: true,
             file_watch: default_watch(),
             iface_patterns: default_patterns(),
         }
@@ -171,6 +176,10 @@ pub struct Counters {
     pub dns_events: u64,
     pub capture_packets: u64,
     pub anomalies: u64,
+    #[serde(default)]
+    pub l7_events: u64,
+    #[serde(default)]
+    pub rate_limited: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -254,6 +263,45 @@ pub struct DnsRecord {
     pub qtype: String,
     pub rcode: String,
     pub answers: Vec<DnsAnswer>,
+}
+
+/// First client payload of a TCP flow, classified.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct L7Record {
+    pub ts: String,
+    pub iface: Option<String>,
+    pub vm: Option<String>,
+    /// tls | http | ssh
+    pub protocol: String,
+    /// "outbound" (workload is the client) or "inbound".
+    pub direction: String,
+    pub client: String,
+    pub client_port: u16,
+    pub server: String,
+    pub server_port: u16,
+    /// TLS server name, or the HTTP Host header.
+    pub host: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alpn: Vec<String>,
+    pub tls_version: Option<String>,
+    pub method: Option<String>,
+    pub path: Option<String>,
+    pub user_agent: Option<String>,
+    pub banner: Option<String>,
+}
+
+/// Traffic totals for one workload (VM, or interface when unattributed).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct AccountingRecord {
+    pub vm: Option<String>,
+    pub interfaces: Vec<String>,
+    pub tx_bytes: u64,
+    pub rx_bytes: u64,
+    pub tx_pkts: u64,
+    pub rx_pkts: u64,
+    pub drops: u64,
+    /// RFC 3339 start of the accounting window (persisted across restarts).
+    pub since: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -341,6 +389,80 @@ pub struct CaptureInfo {
     pub done: bool,
 }
 
+// ---- machina-cni ------------------------------------------------------------
+
+/// A local pod: its IPv4 address and the host side of its veth pair.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct CniEndpoint {
+    pub ip: String,
+    pub host_iface: String,
+    pub pod_mac: String,
+    pub host_mac: String,
+    #[serde(default)]
+    pub pod: Option<String>,
+}
+
+/// One allowed (subject, peer, direction, proto, port) tuple; peer 0 = any,
+/// proto 0 = any, port 0 = any.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct CniPolicyEntry {
+    pub subject: u32,
+    pub peer: u32,
+    pub egress: bool,
+    pub proto: u8,
+    pub port: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct CniBackend {
+    pub addr: String,
+    pub port: u16,
+}
+
+/// A service frontend. `addr` "0.0.0.0" = NodePort on this node's address.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CniService {
+    pub addr: String,
+    pub port: u16,
+    pub proto: u8,
+    pub backends: Vec<CniBackend>,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// Identity / isolation for one pod IP (cluster-wide).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CniIdentity {
+    pub ip: String,
+    pub identity: u32,
+    #[serde(default)]
+    pub ingress_isolated: bool,
+    #[serde(default)]
+    pub egress_isolated: bool,
+}
+
+/// Full desired CNI state; each sync replaces the previous one.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct CniState {
+    pub identities: Vec<CniIdentity>,
+    pub policy: Vec<CniPolicyEntry>,
+    /// NetworkPolicy ipBlock CIDRs → identity.
+    pub cidrs: Vec<(String, u32)>,
+    pub services: Vec<CniService>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CniStatus {
+    pub configured: bool,
+    pub node_addr: Option<String>,
+    pub uplink: Option<String>,
+    pub endpoints: Vec<CniEndpoint>,
+    pub identities: usize,
+    pub policy_entries: usize,
+    pub services: usize,
+    pub last_sync: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Request {
@@ -384,6 +506,24 @@ pub enum Request {
         #[serde(default)]
         limit: Option<usize>,
     },
+    L7 {
+        #[serde(default)]
+        limit: Option<usize>,
+        #[serde(default)]
+        vm: Option<String>,
+        /// tls | http | ssh
+        #[serde(default)]
+        protocol: Option<String>,
+    },
+    /// Per-VM traffic totals since `since` (or since the last reset).
+    Accounting {
+        #[serde(default)]
+        vm: Option<String>,
+    },
+    ResetAccounting {
+        #[serde(default)]
+        vm: Option<String>,
+    },
     ProcEvents {
         #[serde(default)]
         limit: Option<usize>,
@@ -426,7 +566,24 @@ pub enum Request {
     SetTelemetry {
         telemetry: TelemetryConfig,
     },
-    /// Stream events (`net`, `flow`, `dns`, `proc`, `anomaly`) as JSON lines
+    /// Node address (NodePort matching) and the uplink that gets the NodePort
+    /// classifier; also attaches socket-level service load balancing.
+    CniConfigure {
+        node_addr: String,
+        #[serde(default)]
+        uplink: Option<String>,
+    },
+    CniAddEndpoint {
+        endpoint: CniEndpoint,
+    },
+    CniDelEndpoint {
+        ip: String,
+    },
+    CniSync {
+        state: CniState,
+    },
+    CniStatus,
+    /// Stream events (`net`, `dns`, `l7`, `proc`, `anomaly`) as JSON lines
     /// until the client disconnects.
     Subscribe {
         topics: Vec<String>,
@@ -491,6 +648,10 @@ mod tests {
         })
         .unwrap();
         assert_eq!(s, r#"{"op":"set_mode","mode":"enforce","lease_secs":60}"#);
+        let r: Request = serde_json::from_str(r#"{"op":"l7","protocol":"tls"}"#).unwrap();
+        assert!(matches!(r, Request::L7 { protocol: Some(ref p), .. } if p == "tls"));
+        let r: Request = serde_json::from_str(r#"{"op":"accounting"}"#).unwrap();
+        assert!(matches!(r, Request::Accounting { vm: None }));
     }
 
     #[test]

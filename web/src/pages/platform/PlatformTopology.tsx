@@ -152,7 +152,7 @@ export default function PlatformTopology() {
       </div>
       <MachinaDigitalTwin />
       {trafficHosts.length > 0 && (
-        <MacGlassPanel title="Live traffic overlay" subtitle="Observed connections from PacketWolf asset inventory">
+        <MacGlassPanel title="Live traffic overlay" subtitle="Observed connections from native eBPF flow tables">
           <ul className="text-sm text-[var(--text-secondary)] space-y-1">
             {trafficHosts.flatMap((h) => {
               const conns = (h.connections as Array<{ from?: string; to?: string }>) ?? []

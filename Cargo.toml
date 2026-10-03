@@ -12,6 +12,7 @@ members = [
     "vessel",
     "bpf/machina-bpf-common",
     "bpf/machina-bpf",
+    "bpf/machina-cni",
 ]
 # Kernel-side eBPF programs: built by bpf/machina-bpf/build.rs for bpfel-unknown-none.
 exclude = ["bpf/machina-bpf-ebpf"]

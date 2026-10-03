@@ -457,6 +457,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/zeus-security/asset-inventory", get(zeus_security::asset_inventory))
         .route("/api/v1/zeus-security/fleet/timeline", get(zeus_security::fleet_timeline))
         .route("/api/v1/zeus-security/correlations", get(zeus_security::correlations))
+        .route("/api/v1/zeus-security/l7", get(zeus_security::fleet_l7))
+        .route("/api/v1/zeus-security/accounting", get(zeus_security::fleet_accounting))
         .route("/api/v1/zeus-security/fabric/health", get(zeus_security::fabric_health))
         .route("/api/v1/zeus-security/hunt/queries", get(zeus_security::hunt_queries))
         .route("/api/v1/zeus-security/hunt/run/{query_id}", post(zeus_security::run_hunt_query))

@@ -137,6 +137,7 @@ export const PLATFORM_PAGE_LABELS: Record<string, string> = {
   '/platform/zeus/security': 'Security Center',
   '/platform/zyra/security/hunt': 'Threat Hunting',
   '/platform/zyra/security/enforcement': 'Runtime Enforcement',
+  '/platform/zyra/security/native-bpf': 'Native eBPF',
   '/platform/zeus/security/firewall': 'Zeus Firewall',
   '/platform/zeus/security/ports': 'Open Ports',
   '/platform/zeus/security/services': 'Allowed Apps',

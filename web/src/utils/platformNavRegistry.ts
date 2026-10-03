@@ -98,6 +98,7 @@ const SECURITY_ITEMS: ContextNavItem[] = [
   { to: '/platform/zeus/security/policies', label: 'Policy Studio' },
   { to: '/platform/zyra/security/hunt', label: 'Threat Hunting' },
   { to: '/platform/zyra/security/enforcement', label: 'Enforcement' },
+  { to: '/platform/zyra/security/native-bpf', label: 'Native eBPF' },
 ]
 
 const INFRASTRUCTURE_ITEMS: ContextNavItem[] = [

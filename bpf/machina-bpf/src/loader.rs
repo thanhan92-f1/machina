@@ -305,6 +305,35 @@ impl Datapath {
         Ok(())
     }
 
+    /// Attach sock_addr programs next to whatever else runs on `cg_path`,
+    /// tracked under `<path>#<tag>`. The default mode uses a bpf_link, which
+    /// the kernel always attaches multi-mode; passing `AllowMultiple` sets
+    /// BPF_F_ALLOW_MULTI on link_create and fails with EINVAL.
+    pub fn attach_cgroup_tagged(&mut self, cg_path: &Path, tag: &str, sock_progs: &[&str]) -> Result<()> {
+        let key = format!("{}#{tag}", cg_path.display());
+        if self.cgroups.contains_key(&key) {
+            return Ok(());
+        }
+        let mut links = CgroupLinks::default();
+        for name in sock_progs {
+            let first = !self.loaded.contains(*name);
+            let p: &mut CgroupSockAddr = self
+                .ebpf
+                .program_mut(name)
+                .ok_or_else(|| anyhow!("program {name} missing"))?
+                .try_into()?;
+            if first {
+                p.load().with_context(|| format!("verifier rejected {name}"))?;
+                self.loaded.insert(name.to_string());
+            }
+            let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
+            let id = p.attach(f, CgroupAttachMode::default())?;
+            links.sock.push((name.to_string(), id));
+        }
+        self.cgroups.insert(key, links);
+        Ok(())
+    }
+
     pub fn detach_cgroup(&mut self, cg_path: &Path) {
         let Some(links) = self.cgroups.remove(&cg_path.display().to_string()) else {
             return;

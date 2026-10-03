@@ -16,8 +16,8 @@ function field(obj: unknown, key: string): unknown {
   return (obj as Record<string, unknown>)[key]
 }
 
-// PacketWolf SecurityEvent nests details under process/network/dns objects;
-// some legacy flow shapes put flat fields at the top level — try both.
+// Some events nest details under process/network/dns objects, others put
+// flat fields at the top level — try both.
 function processBinary(e: ActivityEvent): unknown {
   return field(e.process, 'binary') ?? e.process_name ?? (typeof e.process === 'string' ? e.process : undefined)
 }
@@ -133,9 +133,9 @@ export default function PlatformFirewallActivity() {
       panelTitle="Recent"
       isEmpty={totalEvents === 0}
       emptyTitle="No connection events yet"
-      emptySubtitle="Enable PacketWolf for live blocked flows and connection telemetry."
+      emptySubtitle="Run machina-bpfd on the target host for live blocked flows and connection telemetry."
     >
-      <p className="text-xs text-[var(--text-muted)] mb-4">{note || 'PacketWolf provides live flows when connected'}</p>
+      <p className="text-xs text-[var(--text-muted)] mb-4">{note || 'Live flows come from machina-bpfd on the target host'}</p>
       <div className="space-y-4">
         {blocked.length > 0 && (
           <div>

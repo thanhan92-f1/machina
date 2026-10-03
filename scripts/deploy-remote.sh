@@ -71,7 +71,7 @@ deploy-remote.sh USER@HOST | USER HOST [PASSWORD] [--sync-only|--quick|--install
         [--skip-platform-e2e|--skip-daemon-e2e]
         [--e2e-auth pam|ldap|oidc|auto]
         [--remote-build|--remote-check] [--bind ADDR] [--open-firewall|--disable-firewalld]
-        [--with-packetwolf] [--no-start] [--deps-only] [extra install.sh args...]
+        [--no-start] [--deps-only] [extra install.sh args...]
 
 Prefer: ./scripts/deploy remote USER@HOST [flags]  |  ./scripts/deploy status
 
@@ -99,7 +99,6 @@ Examples:
   VSPASS=max deploy-remote.sh sus 185.165.240.5 --quick --e2e --platform
   VSPASS=max deploy-remote.sh sus 212.8.252.194 --platform --e2e --bind 0.0.0.0
   VSPASS=max deploy-remote.sh sus 212.8.252.194 --platform --e2e --e2e-auth ldap --bind 0.0.0.0 --disable-firewalld
-  deploy-remote.sh sus 212.8.252.194 --platform --with-packetwolf --quick
   deploy-remote.sh sus 212.8.252.194 --install-only --platform --prune-sources
   deploy-remote.sh sus@host --remote-check    # fast compile smoke after rsync
   deploy-remote.sh sus@host --remote-build   # full release build on server, then exit
@@ -156,11 +155,14 @@ ssh_r() {
     fi
 }
 
+# Checksum compare without preserving mtimes: a changed file lands with the
+# current time, so cargo (and build.rs rerun-if-changed) never mistakes a
+# source edited before the last remote build for an up-to-date one.
 rsync_r() {
     if [[ -n "${SSHPASS:-}" ]] && command -v sshpass &>/dev/null; then
-        SSHPASS="$SSHPASS" sshpass -e rsync -az --delete -e "$RSYNC_RSH" "$@"
+        SSHPASS="$SSHPASS" sshpass -e rsync -rlpcz --delete -e "$RSYNC_RSH" "$@"
     else
-        rsync -az --delete -e "$RSYNC_RSH" "$@"
+        rsync -rlpcz --delete -e "$RSYNC_RSH" "$@"
     fi
 }
 
@@ -298,8 +300,6 @@ SKIP_DAEMON_E2E=false
 SKIP_LIVE_UX=false
 RUN_LIBVIRT_DESKTOP_E2E=false
 E2E_AUTH_MODE="${E2E_AUTH_MODE:-auto}"
-WITH_PACKETWOLF=false
-PACKETWOLF_E2E=false
 
 parse_flags() {
     while [[ $# -gt 0 ]]; do
@@ -315,8 +315,6 @@ parse_flags() {
             --skip-daemon-e2e) SKIP_DAEMON_E2E=true; shift ;;
             --skip-live-ux) SKIP_LIVE_UX=true; shift ;;
             --e2e-auth) E2E_AUTH_MODE="${2:?pam|ldap|oidc|auto}"; shift 2 ;;
-            --with-packetwolf) WITH_PACKETWOLF=true; shift ;;
-            --packetwolf-e2e) PACKETWOLF_E2E=true; shift ;;
             --cleanup) CLEANUP=true; shift ;;
             --open-firewall) OPEN_FW=true; shift ;;
             --disable-firewalld) DISABLE_FW=true; shift ;;
@@ -436,8 +434,6 @@ fi
 if $QUICK; then MODE_LABEL="Quick — incremental make release web + install (--skip-build)"; fi
 if $INSTALL_ONLY; then MODE_LABEL="Install-only — copy existing binaries, no cargo/npm"; fi
 if $INSTALL_PLATFORM; then MODE_LABEL+=" + platform (PostgreSQL, controller :5093, agent)"; fi
-if $WITH_PACKETWOLF; then MODE_LABEL+=" + PacketWolf (../packetwolf :9443)"; fi
-if $PACKETWOLF_E2E; then MODE_LABEL+=" + PacketWolf E2E tiers"; fi
 if $PRUNE_SOURCES; then MODE_LABEL+=" + prune sources after install"; fi
 
 TOTAL_STEPS=4
@@ -496,19 +492,6 @@ if [[ -f "$GUESTKIT_SRC/Cargo.toml" ]]; then
     ok "GuestKit synced → ${REMOTE}:${GUESTKIT_REMOTE}"
 else
     warn "No sibling ../guestkit — ensure path ../../guestkit exists on remote for controller build"
-fi
-
-PACKETWOLF_SRC="$(cd "$REPO/.." && pwd)/packetwolf"
-PACKETWOLF_REMOTE="$(dirname "$REMOTE_DIR")/packetwolf"
-if $WITH_PACKETWOLF && [[ -f "$PACKETWOLF_SRC/Cargo.toml" ]]; then
-    tip "Syncing sibling PacketWolf repo for co-deploy"
-    ssh_r_bash "$REMOTE" "mkdir -p $(dirname "$REMOTE_DIR")/packetwolf"
-    rsync_r \
-        --exclude='target/' --exclude='node_modules/' --exclude='.git/' --exclude='web-ui/dist/' \
-        "$PACKETWOLF_SRC/" "$REMOTE:$PACKETWOLF_REMOTE/" || warn "packetwolf rsync failed"
-    ok "PacketWolf synced → ${REMOTE}:${PACKETWOLF_REMOTE}"
-elif $WITH_PACKETWOLF; then
-    warn "No sibling ../packetwolf — --with-packetwolf will try remote deploy script only"
 fi
 
 # If a previous run left root-owned files under the tree (e.g. interrupted sudo), cargo fails with EACCES.
@@ -663,13 +646,6 @@ sudo bash scripts/install-platform.sh${PLATFORM_OPTS}
 " || die "platform install failed"
     deploy_ui_highlight "Platform postflight — agent, inventory, e2e cleanup"
     ssh_r_bash "$REMOTE" "sudo bash $REMOTE_DIR/scripts/lib/platform-sweep-remote.sh" || warn "platform postflight had issues (non-fatal)"
-fi
-
-if $WITH_PACKETWOLF; then
-    # shellcheck source=lib/install-packetwolf-remote.sh
-    source "${SCRIPT_DIR}/lib/install-packetwolf-remote.sh"
-    phase "$((SNAPSHOT_PHASE))" "$TOTAL_STEPS" "Install / refresh PacketWolf" "sibling ../packetwolf deploy-remote --quick"
-    install_packetwolf_on_remote || warn "PacketWolf co-deploy had issues (non-fatal)"
 fi
 
 # Stale-binary guard: across the multiple install+restart cycles in a deploy, a
@@ -843,21 +819,6 @@ exit 1
                 --overall "$OVERALL" || true
             if [[ "$STRICT" == "1" ]] && { ! $FULL_E2E_OK || ! $LIVE_E2E_OK; }; then
                 die "STRICT=1: post-deploy E2E failed (API=${API_E2E_SUMMARY}, live=${LIVE_E2E_OK}, vm=${VM_E2E_SUMMARY})"
-            fi
-            if $WITH_PACKETWOLF || $PACKETWOLF_E2E; then
-                deploy_ui_highlight "🐺 Post-deploy PacketWolf integration E2E"
-                PW_E2E_OK=true
-                if PACKETWOLF_VERIFY_API_KEY="${PACKETWOLF_VERIFY_API_KEY:-${PACKETWOLF_ADMIN_API_KEY:-Admin@321}}" \
-                    PACKETWOLF_TEST_TIERS="${PACKETWOLF_TEST_TIERS:-zeus,runtime}" \
-                    "${SCRIPT_DIR}/e2e-packetwolf-remote.sh" "$USER" "$HOST"; then
-                    deploy_ui_celebrate "PacketWolf E2E passed"
-                else
-                    warn "PacketWolf E2E failed (deploy itself succeeded)"
-                    PW_E2E_OK=false
-                fi
-                if [[ "$STRICT" == "1" ]] && ! $PW_E2E_OK; then
-                    die "STRICT=1: PacketWolf E2E failed"
-                fi
             fi
         elif ! $SKIP_DAEMON_E2E; then
             deploy_ui_highlight "🧪 Post-deploy E2E (daemon :5092)"

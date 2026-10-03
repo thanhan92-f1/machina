@@ -4,26 +4,23 @@
 import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
 
-test('Security Center shows sensor matrix and fleet enroll CTA', async ({ page }) => {
+test('Security Center shows eBPF sensor matrix', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/zeus/security')
   await expect(page.getByRole('heading', { name: 'Security Center' })).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByText('Tetragon sensor matrix')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('eBPF sensor matrix')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('host-1', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Enroll fleet Tetragon' }).click()
-  // ConfirmDialog (React modal) — click the "Enroll" confirm button
-  await page.getByRole('dialog').getByRole('button', { name: 'Enroll' }).click()
-  await expect(page.getByText(/Tetragon enrollment queued/i)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/1 online host\(s\) without a healthy machina-bpfd/)).toBeVisible()
 })
 
-test('runtime enforcement apply and TracingPolicy preview', async ({ page }) => {
+test('runtime enforcement apply and policy document preview', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/zyra/security/enforcement')
   await expect(page.getByRole('heading', { name: 'Runtime enforcement' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Block shadow file read')).toBeVisible()
   await page.getByRole('button', { name: 'Preview' }).first().click()
-  await expect(page.getByText('TracingPolicy preview')).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByText('packetwolf-pol-deny-nc')).toBeVisible()
+  await expect(page.getByText('Policy document')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/exec deny path=\/usr\/bin\/nc/)).toBeVisible()
 })
 
 test('threat hunting correlation row shows enforce action', async ({ page }) => {

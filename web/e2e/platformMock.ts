@@ -865,7 +865,7 @@ export async function mockPlatformApi(page: Page, opts?: {
       return route.fulfill({
         json: {
           zeus_firewall: { enabled: true, agent_count: 1, summary: 'Zeus Firewall daemon active' },
-          packetwolf: { summary: 'PacketWolf IDS active' },
+          native_bpf: { summary: 'machina-bpfd healthy on 2/2 host(s)' },
         },
       })
     }
@@ -1389,12 +1389,12 @@ export async function mockPlatformApi(page: Page, opts?: {
             edges: [],
           },
           flows: { flows: [] },
-          flow_stats: { dropped: 2, forwarded: 48 },
+          flow_stats: { total_flows: 50, denied_flows: 2, tx_bytes: 4096, rx_bytes: 8192 },
           anomalies: { anomalies: [{ summary: 'Unusual east-west traffic', severity: 'medium', host_id: 'host-1' }] },
-          packetwolf: { enabled: true, reachable: true, summary: 'PacketWolf Network Brain connected', discovery_source: 'localhost:8787' },
+          native_bpf: { enabled: true, reachable: true, hosts_total: 2, hosts_reachable: 2, enforcing_hosts: 0, version: '0.1.0', summary: 'machina-bpfd healthy on 2/2 host(s)' },
           network_pulse: {
             enabled: true,
-            overview: { live_connections: 12, drop_rate: 0.04, services: 3, blocked_edges: 1 },
+            overview: { total_flows: 12, denied_flows: 1 },
             service_map: {
               nodes: [
                 { name: 'web', namespace: 'default', status: 'ok', connections_in: 2, connections_out: 5, blocked_flows: 0, risk: 'low' },
@@ -2278,7 +2278,7 @@ export async function mockPlatformApi(page: Page, opts?: {
             {
               id: 'e1',
               occurred_at: new Date().toISOString(),
-              source: 'packetwolf',
+              source: 'machina-bpf',
               category: 'intrusion_detection',
               severity: 'high',
               summary: 'Unusual port activity on db-01',
@@ -2308,7 +2308,7 @@ export async function mockPlatformApi(page: Page, opts?: {
                 {
                   id: 'e1',
                   occurred_at: new Date().toISOString(),
-                  source: 'packetwolf',
+                  source: 'machina-bpf',
                   category: 'intrusion_detection',
                   severity: 'high',
                   summary: 'Unusual port activity on db-01',
@@ -2355,7 +2355,7 @@ export async function mockPlatformApi(page: Page, opts?: {
             {
               id: 'r1',
               name: 'critical_anomaly',
-              description: 'PacketWolf critical or high severity anomaly',
+              description: 'eBPF critical or high severity anomaly',
               enabled: true,
               severity: 'high',
               query_json: { type: 'match' },
@@ -2442,7 +2442,7 @@ export async function mockPlatformApi(page: Page, opts?: {
       if (url.includes('/ingest/run')) {
         return route.fulfill({
           json: {
-            ingest: { firewall: 1, audit: 2, platform: 0, packetwolf: 1 },
+            ingest: { firewall: 1, audit: 2, platform: 0, native_bpf: 1 },
             alerts_fired: 0,
             forwarded: 2,
           },
@@ -2478,22 +2478,6 @@ export async function mockPlatformApi(page: Page, opts?: {
       }
       return route.fulfill({ json: [] })
     }
-    if (url.match(/\/zeus-security\/k8s\/[^/]+\/tetragon\/install/) && route.request().method() === 'POST') {
-      return route.fulfill({ json: { task_id: 'task-tetragon-k8s', summary: 'Tetragon Helm install queued for k3s' } })
-    }
-    if (url.match(/\/zeus-security\/k8s\/[^/]+\/export-status/)) {
-      return route.fulfill({
-        json: {
-          cluster_id: 'k3s',
-          host_id: 'h1',
-          namespace: 'kube-system',
-          forwarder_deployed: true,
-          ready_replicas: 1,
-          export_url: 'http://127.0.0.1:9091/api/v1/ingest',
-          message: 'Export forwarder ready',
-        },
-      })
-    }
     if (url.match(/\/zeus-security\/hosts\/[^/]+\/enforcement/)) {
       return route.fulfill({
         json: {
@@ -2508,17 +2492,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         return route.fulfill({
           json: {
             fabric_reachable: true,
-            packetwolf: {
-              enabled: true,
-              reachable: true,
-              summary: 'PacketWolf connected',
-              base_url: 'http://127.0.0.1:9091',
-              storage: {
-                clickhouse: { configured: true, reachable: true },
-                opensearch: { configured: true, reachable: true, document_count: 128 },
-                demo_mode: true,
-              },
-            },
+            native_bpf: { enabled: true, reachable: true, hosts_total: 2, hosts_reachable: 2, enforcing_hosts: 0, version: '0.1.0', summary: 'machina-bpfd healthy on 2/2 host(s)' },
             zeus_firewall: { ready: true },
           },
         })
@@ -2529,7 +2503,7 @@ export async function mockPlatformApi(page: Page, opts?: {
             fleet_threat_score: 78,
             firewall_targets: 1,
             critical_events: [{ summary: 'Possible reverse shell on port 4444', host_id: 'h1', severity: 'critical' }],
-            packetwolf: { fleet_threat_score: 78 },
+            native_bpf: { fleet_threat_score: 78 },
             security_graph_summary: '4 nodes · 3 edges in infrastructure security graph',
           },
         })
@@ -2560,7 +2534,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         return route.fulfill({
           json: {
             queries: [
-              { id: 'reverse-shell', name: 'Reverse shell listeners', query: 'nc OR netcat', severity: 'critical' },
+              { id: 'shell-spawn', name: 'Reverse shell listeners', query: 'nc OR netcat', severity: 'critical' },
             ],
           },
         })
@@ -2569,7 +2543,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         return route.fulfill({
           json: {
             ok: true,
-            query_id: 'reverse-shell',
+            query_id: 'shell-spawn',
             query_name: 'Reverse shell listeners',
             backend: 'opensearch',
             hit_count: 1,
@@ -2603,58 +2577,52 @@ export async function mockPlatformApi(page: Page, opts?: {
           },
         })
       }
-      if (url.includes('/fleet/tetragon/install') && route.request().method() === 'POST') {
-        return route.fulfill({
-          json: {
-            task_ids: ['task-fleet-tetragon-1'],
-            hosts: 2,
-            summary: 'Tetragon enrollment queued for 2 online host(s)',
-          },
-        })
-      }
       if (url.includes('/fleet/sensors')) {
         return route.fulfill({
           json: {
-            summary: '2 host(s) · 1 PacketWolf sensor(s)',
-            sensors: [{ host_id: 'h1', status: 'healthy', tetragon_version: '1.0.0', last_event_at: new Date().toISOString() }],
+            summary: '2 host(s) · 1 healthy machina-bpfd',
+            sensors: [{ host_id: 'h1', status: 'healthy', version: '0.1.0', kind: 'machina-bpf' }],
             matrix: [
-              { host_id: 'h1', hostname: 'host-1', host_state: 'online', tetragon_status: 'healthy' },
-              { host_id: 'h2', hostname: 'host-2', host_state: 'online', tetragon_status: 'missing' },
+              { host_id: 'h1', hostname: 'host-1', host_state: 'online', sensor_status: 'healthy' },
+              { host_id: 'h2', hostname: 'host-2', host_state: 'online', sensor_status: 'unreachable' },
             ],
           },
         })
       }
-      if (url.match(/\/enforcement\/policies\/[^/]+\/tetragon/)) {
+      if (url.match(/\/enforcement\/policies\/[^/]+\/document/)) {
         return route.fulfill({
           json: {
-            ok: true,
-            tetragon_policy_name: 'packetwolf-pol-deny-nc',
-            tetragon_policy: {
-              apiVersion: 'cilium.io/v1alpha1',
-              kind: 'TracingPolicy',
-              metadata: { name: 'packetwolf-pol-deny-nc' },
-            },
+            policy_id: 'pol-deny-nc',
+            native_policy: { id: 'ctl-pol-deny-nc', kind: 'deny_process', match: '/usr/bin/nc', scope: { kind: 'host' } },
+            datapath_rules: ['exec deny path=/usr/bin/nc'],
+            api_mode: 'native',
           },
         })
       }
       if (url.match(/\/enforcement\/policies\/[^/]+\/apply/)) {
         return route.fulfill({
-          json: { ok: true, summary: 'Applied Block reverse-shell listeners to 1 host(s)', task_ids: ['task-enforce-1'] },
+          json: {
+            native: { ok: true, sync: [{ host_id: 'h1', hostname: 'host-1', ok: true }] },
+            summary: 'Applied Block reverse-shell listeners to 1 host(s)',
+          },
         })
       }
       if (url.match(/\/enforcement\/policies\/[^/]+/) && route.request().method() === 'PATCH') {
         return route.fulfill({
-          json: { summary: 'Enforcement policy pol-deny-nc updated', task_ids: ['task-patch-1'] },
+          json: { native: { ok: true, sync: [] }, summary: 'Enforcement policy pol-deny-nc updated' },
         })
       }
       if (url.match(/\/enforcement\/policies\/[^/]+/) && route.request().method() === 'DELETE') {
         return route.fulfill({
-          json: { summary: 'Enforcement policy pol-deny-nc deleted', task_ids: ['task-delete-1'] },
+          json: { native: { ok: true, sync: [] }, summary: 'Enforcement policy pol-deny-nc deleted' },
         })
       }
       if (url.includes('/enforcement/policies') && route.request().method() === 'POST') {
         return route.fulfill({
-          json: { policy: { id: 'pol-new', name: 'test', kind: 'deny_process', match: '/bin/sh', enabled: true } },
+          json: {
+            native: { ok: true, policy: { id: 'pol-new', name: 'test', kind: 'deny_process', match: '/bin/sh', enabled: true } },
+            summary: 'Policy test created',
+          },
         })
       }
       if (url.includes('/enforcement/policies')) {
@@ -2671,16 +2639,6 @@ export async function mockPlatformApi(page: Page, opts?: {
       if (url.includes('/enforcement')) {
         return route.fulfill({ json: { mode: 'observe', policies: [] } })
       }
-      if (url.includes('/agents/') && url.includes('/bundle')) {
-        return route.fulfill({
-          json: {
-            host_id: 'h1',
-            policy_count: 2,
-            removed_policies: [],
-            tracing_policies: [{ kind: 'TracingPolicy' }],
-          },
-        })
-      }
       if (url.includes('/alerts/sync')) {
         return route.fulfill({ json: { inserted: 1, summary: 'Synced 1 security alert(s) to notification outbox' } })
       }
@@ -2696,7 +2654,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         })
       }
       if (url.includes('/sensors')) {
-        return route.fulfill({ json: { sensors: [{ host_id: 'h1', status: 'healthy', tetragon_version: '1.0.0' }] } })
+        return route.fulfill({ json: { sensors: [{ host_id: 'h1', status: 'healthy', version: '0.1.0', kind: 'machina-bpf' }] } })
       }
       if (url.includes('/process-graph')) {
         return route.fulfill({
@@ -2720,13 +2678,13 @@ export async function mockPlatformApi(page: Page, opts?: {
             host_id: 'h1',
             agent_reachable: true,
             fabric: {
-              policy_dir: '/var/lib/machina/tetragon/tracing-policies',
-              policy_files: ['packetwolf-pol-deny-nc.json'],
-              install_script_present: true,
-              tetragon_binary_found: true,
-              tetragon_service_active: true,
-              tetragon_export_timer_active: true,
-              export_url: 'http://127.0.0.1:9091/api/v1/ingest',
+              available: true,
+              programs_compiled: true,
+              version: '0.1.0',
+              mode: { mode: 'observe' },
+              policies_total: 1,
+              policies_enabled: 1,
+              interfaces: [{ name: 'vnet0', ifindex: 7, vm: 'web-1', scope: 1, flags: ['net'], guest_side: false, xdp: false, qos_egress_bps: 0, qos_ingress_bps: 0 }],
             },
           },
         })
@@ -2738,7 +2696,7 @@ export async function mockPlatformApi(page: Page, opts?: {
         return route.fulfill({
           json: {
             host_id: 'h1',
-            summary: '2 namespace(s) with pod/container metadata from Tetragon',
+            summary: '2 namespace(s) with pod/container metadata from machina-bpfd',
             namespaces: [
               {
                 namespace: 'zeus',

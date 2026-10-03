@@ -78,19 +78,23 @@ export default function EbpfActionMenu({
 export function correlationKindToEnforce(kind: string): { kind: string; match: string; huntId?: string } {
   switch (kind) {
     case 'reverse_shell':
-      return { kind: 'deny_process', match: '/usr/bin/nc', huntId: 'reverse-shell' }
+    case 'shell_spawn':
+      return { kind: 'deny_process', match: '/usr/bin/nc', huntId: 'shell-spawn' }
     case 'crypto_miner':
-      return { kind: 'deny_process', match: 'xmrig', huntId: 'crypto-miner' }
+    case 'suspicious_exec':
+      return { kind: 'deny_process', match: 'xmrig', huntId: 'suspicious-exec' }
     case 'dns_tunneling':
     case 'suspicious_dns':
-      return { kind: 'deny_dns', match: '*.xyz', huntId: 'dns-tunneling' }
-    case 'lateral_ssh':
-      return { kind: 'deny_process', match: '/usr/bin/ssh', huntId: 'lateral-ssh' }
-    case 'container_escape':
-      return { kind: 'deny_namespace', match: 'kube-system', huntId: 'container-escape' }
+      return { kind: 'deny_dns', match: '*.xyz', huntId: 'dns-anomalies' }
     case 'port_scan':
-      return { kind: 'deny_port', match: '4444/tcp', huntId: 'lateral-movement' }
+    case 'inbound_scan':
+      return { kind: 'deny_ip', match: '', huntId: 'port-scans' }
+    case 'beaconing':
+      return { kind: 'deny_ip', match: '', huntId: 'beaconing' }
+    case 'new_destination':
+    case 'egress_volume_spike':
+      return { kind: 'deny_ip', match: '', huntId: 'blocked-activity' }
     default:
-      return { kind: 'deny_process', match: '', huntId: 'reverse-shell' }
+      return { kind: 'deny_process', match: '', huntId: 'shell-spawn' }
   }
 }

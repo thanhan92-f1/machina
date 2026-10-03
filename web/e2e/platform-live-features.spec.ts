@@ -1,7 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-// Live E2E smoke for Batch 84 features (globe, KubeVirt CRUD, PacketWolf canvas).
+// Live E2E smoke for Batch 84 features (globe, KubeVirt CRUD, eBPF canvas).
 
 import { test, expect } from '@playwright/test'
 import { ensureLoggedIn, liveCredentials, setDesktopTier } from './helpers/liveAuth'
@@ -13,7 +13,7 @@ test.beforeEach(({ page: _page }, testInfo) => {
 })
 
 test.describe('Live Batch 84 features', () => {
-  test('network canvas + PacketWolf brain panels', async ({ page }, testInfo) => {
+  test('network canvas + native eBPF panels', async ({ page }, testInfo) => {
     test.setTimeout(180_000)
     const base = live()
     await setDesktopTier(page, 'normal')
@@ -25,14 +25,14 @@ test.describe('Live Batch 84 features', () => {
       testInfo.skip(true, 'network-canvas endpoint not available on this host')
       return
     }
-    let body: { packetwolf?: { reachable?: boolean } } = {}
+    let body: { native_bpf?: { reachable?: boolean } } = {}
     try {
-      body = (await res.json()) as { packetwolf?: { reachable?: boolean } }
+      body = (await res.json()) as { native_bpf?: { reachable?: boolean } }
     } catch {
-      testInfo.skip(true, 'network-canvas returned non-JSON — PacketWolf not configured on this host')
+      testInfo.skip(true, 'network-canvas returned non-JSON on this host')
       return
     }
-    testInfo.skip(!body.packetwolf?.reachable, 'PacketWolf not reachable on this host — skipping brain panel checks')
+    testInfo.skip(!body.native_bpf?.reachable, 'machina-bpfd not reachable on this host — skipping eBPF panel checks')
     await expect(page.getByTestId('network-service-map-graph')).toBeVisible({ timeout: 60_000 })
   })
 

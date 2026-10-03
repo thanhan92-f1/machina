@@ -5,7 +5,7 @@
 
 use anyhow::{anyhow, Result};
 use aya::maps::lpm_trie::Key;
-use aya::maps::{Array, HashMap, LpmTrie, MapData, RingBuf};
+use aya::maps::{Array, HashMap, LpmTrie, MapData, PerCpuHashMap, RingBuf};
 use aya::Pod;
 use machina_bpf_common::*;
 
@@ -67,6 +67,56 @@ impl Datapath {
         }
         if let Ok(mut m) = self.hash::<u32, QosState>("QOS_STATE") {
             let _ = m.remove(&ifindex);
+        }
+        if let Ok(mut m) = self.hash::<u32, QosState>("CONN_RATE") {
+            let _ = m.remove(&ifindex);
+        }
+    }
+
+    // ---- rate limit / accounting -----------------------------------------
+
+    pub fn rate_set(&mut self, scope: u32, per_sec: u32, burst: u32, policy: u32) -> Result<()> {
+        let v = RateCfg {
+            per_sec,
+            burst,
+            policy_id: policy,
+            _pad: 0,
+        };
+        self.hash::<u32, RateCfg>("RATE_CFG")?.insert(scope, v, 0)?;
+        Ok(())
+    }
+
+    pub fn rate_remove(&mut self, scope: u32) {
+        if let Ok(mut m) = self.hash::<u32, RateCfg>("RATE_CFG") {
+            let _ = m.remove(&scope);
+        }
+    }
+
+    /// Per-interface counters summed across CPUs.
+    pub fn iface_stats(&mut self) -> Result<Vec<(u32, IfaceStats)>> {
+        let m = self.ebpf.map_mut("IFACE_STATS").ok_or_else(|| anyhow!("map IFACE_STATS missing"))?;
+        let m: PerCpuHashMap<&mut MapData, u32, IfaceStats> = PerCpuHashMap::try_from(m)?;
+        Ok(m.iter()
+            .filter_map(|r| r.ok())
+            .map(|(k, per_cpu)| {
+                let mut s = IfaceStats::default();
+                for c in per_cpu.iter() {
+                    s.tx_bytes += c.tx_bytes;
+                    s.rx_bytes += c.rx_bytes;
+                    s.tx_pkts += c.tx_pkts;
+                    s.rx_pkts += c.rx_pkts;
+                    s.drops += c.drops;
+                }
+                (k, s)
+            })
+            .collect())
+    }
+
+    pub fn remove_iface_stats(&mut self, ifindex: u32) {
+        if let Some(m) = self.ebpf.map_mut("IFACE_STATS") {
+            if let Ok(mut m) = PerCpuHashMap::<&mut MapData, u32, IfaceStats>::try_from(m) {
+                let _ = m.remove(&ifindex);
+            }
         }
     }
 

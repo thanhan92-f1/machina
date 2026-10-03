@@ -10,7 +10,7 @@ import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import {
   getNetworkCanvas,
   type NetworkCanvasPayload,
-  type PacketWolfFlow,
+  type BpfFlow,
   type ServiceMapEdge,
   type ServiceMapNode,
 } from '../../api/platformNetworkCanvas'
@@ -20,26 +20,18 @@ import { hubLinkClasses, statusBadgeClasses, statusToneClass } from '../../utils
 
 type CanvasNode = { id: string; label: string; kind: string; detail?: string }
 
-function flowLabel(f: PacketWolfFlow): string {
-  const srcPod = f.source?.pod
-  const dstPod = f.destination?.pod
-  const dstIp = f.destination?.ip ?? f.destination_ip
-  const port = f.destination_port ?? f.port
-  const proto = f.protocol ? `/${f.protocol}` : ''
+function fmtBytes(n: number): string {
+  if (n >= 1 << 30) return `${(n / (1 << 30)).toFixed(1)} GiB`
+  if (n >= 1 << 20) return `${(n / (1 << 20)).toFixed(1)} MiB`
+  if (n >= 1 << 10) return `${(n / (1 << 10)).toFixed(1)} KiB`
+  return `${n} B`
+}
 
-  if (srcPod || dstPod || dstIp) {
-    const srcNs = f.source?.namespace
-    const src = srcPod ?? f.source?.ip ?? f.process ?? 'source'
-    const srcLabel = srcNs && srcPod ? `${src} (${srcNs})` : src
-    const dstNs = f.destination?.namespace
-    const dstBase = dstPod ?? (dstIp ? `${dstIp}${port ? `:${port}` : ''}${proto}` : 'unknown')
-    const dstLabel = dstNs && dstPod ? `${dstBase} (${dstNs})` : dstBase
-    return `${srcLabel} → ${dstLabel}`
-  }
-
-  const dst = dstIp ? `${dstIp}${port ? `:${port}` : ''}` : 'unknown'
-  const proc = f.process ?? 'process'
-  return `${proc} → ${dst}`
+function flowLabel(f: BpfFlow): string {
+  const src = f.vm ?? `${f.local ?? '?'}${f.local_port ? `:${f.local_port}` : ''}`
+  const dst = `${f.remote ?? '?'}${f.remote_port ? `:${f.remote_port}` : ''}`
+  const proto = f.proto ? `/${f.proto}` : ''
+  return f.origin === 'remote' ? `${dst}${proto} → ${src}` : `${src} → ${dst}${proto}`
 }
 
 function edgeTone(health?: string): string {
@@ -94,13 +86,9 @@ export default function PlatformNetworkCanvas() {
     return flows.slice(0, 24).map((f, i) => ({
       id: `flow-${i}`,
       label: flowLabel(f),
-      verdict: f.verdict ?? 'FORWARDED',
-      host: f.host_id ?? f.source?.namespace,
-      summary:
-        f.summary ??
-        (f.source?.pod && f.destination?.pod
-          ? `${f.source.pod} → ${f.destination.pod}${f.port ? `:${f.port}` : ''}`
-          : undefined),
+      verdict: f.verdict ?? 'pass',
+      host: f.hostname ?? f.host_id,
+      summary: `${f.iface ?? ''} · ↑${fmtBytes(f.tx_bytes ?? 0)} ↓${fmtBytes(f.rx_bytes ?? 0)}`,
     }))
   }, [data])
 
@@ -110,8 +98,9 @@ export default function PlatformNetworkCanvas() {
   const mapStats = svcMap?.meta?.stats
 
   const overview = data?.network_pulse?.overview as Record<string, unknown> | undefined
-  const liveConnections = typeof overview?.live_connections === 'number' ? overview.live_connections : null
-  const dropRate = typeof overview?.drop_rate === 'number' ? overview.drop_rate : null
+  const liveConnections = typeof overview?.total_flows === 'number' ? overview.total_flows : null
+  const dropRate =
+    liveConnections && typeof overview?.denied_flows === 'number' ? overview.denied_flows / liveConnections : null
 
   const k8sNodes = data?.network_pulse?.k8s_nodes?.nodes ?? []
   const threats = data?.network_pulse?.threats?.threats ?? []
@@ -133,31 +122,28 @@ export default function PlatformNetworkCanvas() {
   }, [data])
 
   const stats = data?.flow_stats
-  const dropped = stats?.dropped ?? stats?.dropped_count ?? 0
-  const forwarded = stats?.forwarded ?? stats?.allowed ?? 0
+  const dropped = stats?.denied_flows ?? 0
+  const forwarded = Math.max(0, (stats?.total_flows ?? 0) - dropped)
 
   return (
     <PlatformPageChrome
       eyebrow="Platform"
       compact
       title="Network canvas"
-      subtitle="Machina fleet topology + PacketWolf Network Brain (K8s/Hubble)"
+      subtitle="Machina fleet topology + native eBPF flows from every host"
       error={error}
       onErrorRetry={() => void load()}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentLoading={loading && !data}
       contentClassName="space-y-4"
     >
-        {data?.packetwolf && (
+        {data?.native_bpf && (
           <p
             className={`text-xs px-3 py-2 rounded-lg border ${
-              data.packetwolf.reachable ? statusBadgeClasses('ok') : statusBadgeClasses('warn')
+              data.native_bpf.reachable ? statusBadgeClasses('ok') : statusBadgeClasses('warn')
             }`}
           >
-            {data.packetwolf.summary}
-            {data.packetwolf.discovery_source && (
-              <span className="text-[var(--text-muted)] block mt-0.5">Discovery: {data.packetwolf.discovery_source}</span>
-            )}
+            {data.native_bpf.summary}
           </p>
         )}
 
@@ -167,7 +153,7 @@ export default function PlatformNetworkCanvas() {
               <>
                 <div className="min-w-0">
                   <div className="apple-metric-value">{String(mapStats.services ?? svcNodes.length)}</div>
-                  <div className="apple-metric-label">K8s services</div>
+                  <div className="apple-metric-label">Endpoints</div>
                 </div>
                 <div className="min-w-0">
                   <div className="apple-metric-value">{String(mapStats.connections ?? svcEdges.length)}</div>
@@ -207,7 +193,7 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {localAnomalies.length > 0 && (
-          <MacGlassPanel title="Anomalies" subtitle="Machina topology warnings + PacketWolf detections">
+          <MacGlassPanel title="Anomalies" subtitle="Machina topology warnings + machina-bpfd detections">
             <ul className="text-xs text-amber-700/90 space-y-2">
               {localAnomalies.map((a) => (
                 <li key={a} className="flex flex-wrap items-center justify-between gap-2">
@@ -220,7 +206,7 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {threats.length > 0 && (
-          <MacGlassPanel title="Threat pulse" subtitle="PacketWolf /api/v1/network/threats">
+          <MacGlassPanel title="Threat pulse" subtitle="Critical and high-severity eBPF events">
             <ul className="text-xs space-y-2">
               {threats.slice(0, 6).map((t, i) => {
                 const threat = t as { title?: string; description?: string; severity?: string; summary?: string; kind?: string; host_id?: string; suggested_kind?: string; suggested_match?: string; port?: number }
@@ -234,7 +220,7 @@ export default function PlatformNetworkCanvas() {
                     hostId={threat.host_id}
                     suggestedKind={threat.suggested_kind ?? 'deny_port'}
                     suggestedMatch={threat.suggested_match ?? (threat.port ? `${threat.port}/tcp` : '4444/tcp')}
-                    huntQueryId="reverse-shell"
+                    huntQueryId="shell-spawn"
                     compact
                   />
                 </li>
@@ -245,7 +231,7 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {svcNodes.length > 0 && (
-          <MacGlassPanel title="Service map" subtitle="PacketWolf Hubble-derived workload graph">
+          <MacGlassPanel title="Service map" subtitle="Workload → peer graph built from eBPF flow tables">
             <NetworkServiceMapGraph nodes={svcNodes} edges={svcEdges} className="mb-4" />
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 -mt-1 mb-4">
               {svcNodes.slice(0, 18).map((n: ServiceMapNode) => (
@@ -297,7 +283,7 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {workloads.length > 0 && (
-          <MacGlassPanel title="Workloads" subtitle="PacketWolf /api/v1/network/workloads">
+          <MacGlassPanel title="Workloads" subtitle="Workloads seen in eBPF flows">
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
               {workloads.slice(0, 18).map((w) => (
                 <li key={`${w.namespace}/${w.name}`} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-2">
@@ -313,10 +299,11 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {timelineEvents.length > 0 && (
-          <MacGlassPanel title="Fleet timeline" subtitle="PacketWolf network + correlation events">
+          <MacGlassPanel title="Fleet timeline" subtitle="Network denies, process events and anomalies (last hour)">
             <ul className="text-xs space-y-2 max-h-48 overflow-y-auto">
               {timelineEvents.slice(0, 20).map((ev, i) => {
-                const row = ev as { summary?: string; message?: string; severity?: string; timestamp?: string; kind?: string; type?: string }
+                const raw = ev as { summary?: string; message?: string; severity?: string; timestamp?: string; ts?: string; kind?: string; type?: string }
+                const row = { ...raw, timestamp: raw.timestamp ?? raw.ts }
                 const label = row.summary ?? row.message ?? row.kind ?? row.type ?? 'Event'
                 return (
                   <li key={`${row.timestamp ?? i}-${label}`} className="border-b border-white/[0.04] pb-2">
@@ -332,7 +319,7 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {k8sNodes.length > 0 && (
-          <MacGlassPanel title="Kubernetes nodes" subtitle="PacketWolf kubectl-backed inventory">
+          <MacGlassPanel title="Kubernetes nodes" subtitle="Kubernetes inventory">
             <ul className="flex flex-wrap gap-2 text-xs">
               {k8sNodes.slice(0, 12).map((n) => (
                 <li key={n.name} className="px-2 py-1 rounded-lg border border-[var(--apple-hairline)] text-[var(--text-secondary)] flex items-center gap-1">
@@ -347,13 +334,13 @@ export default function PlatformNetworkCanvas() {
         )}
 
         {flowEdges.length > 0 && (
-          <MacGlassPanel title="Host flows" subtitle="PacketWolf eBPF / libvirt host plane">
+          <MacGlassPanel title="Host flows" subtitle="Live connections tracked by machina-bpfd on VM taps">
             <ul className="grid gap-2 sm:grid-cols-2">
               {flowEdges.map((e) => (
                 <li key={e.id} className="rounded-lg border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-3 text-xs">
                   <span
                     className={`text-[10px] uppercase mr-2 ${
-                      e.verdict === 'DROPPED' || e.verdict === 'blocked' ? statusToneClass('error') : statusToneClass('ok')
+                      e.verdict === 'drop' || e.verdict === 'deny' ? statusToneClass('error') : statusToneClass('ok')
                     }`}
                   >
                     {e.verdict}
@@ -392,7 +379,7 @@ export default function PlatformNetworkCanvas() {
         </MacGlassPanel>
 
         <p className="text-xs text-[var(--text-muted)]">
-          PacketWolf APIs: network overview, service-map, threats, nodes (via kubeconfig). Deep dive:{' '}
+          Flows, service map and threats come from machina-bpfd on each host. Deep dive:{' '}
           <Link to="/platform/zeus/security" className={hubLinkClasses()}>
             Zeus Security
           </Link>

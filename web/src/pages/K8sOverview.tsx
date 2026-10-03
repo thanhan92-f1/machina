@@ -686,7 +686,7 @@ export default function K8sOverviewPage() {
         </section>
 
       <div className="tahoe-glass-card px-4 py-3 text-sm text-[var(--text-primary)]/90">
-        Tetragon + PacketWolf sensors enrich K8s node events with namespace/pod/container metadata.{' '}
+        machina-bpfd attributes K8s node events to namespace/pod/container via cgroups.{' '}
         <Link to="/platform/zeus/security" className="text-[var(--link)] underline">Open Security Center</Link>
       </div>
       </div>
@@ -1282,7 +1282,7 @@ export default function K8sOverviewPage() {
                 <div className="px-2 pb-3 pt-1 space-y-2 text-[11px] text-[var(--text-muted)]">
                   <p>
                     Runs on the machine where <code className="text-[var(--text-secondary)]">machina-daemon</code> executes (stock unit is root).
-                    Optional <code className="text-[var(--text-secondary)]">INSTALL_K3S_EXEC</code> flags — e.g. disable bundled networking for Cilium:{' '}
+                    Optional <code className="text-[var(--text-secondary)]">INSTALL_K3S_EXEC</code> flags — e.g. disable bundled networking for the native machina-cni:{' '}
                     <code className="break-all text-[var(--text-muted)]">
                       --disable=traefik --flannel-backend=none --disable-network-policy --disable-kube-proxy
                     </code>
@@ -1335,7 +1335,7 @@ export default function K8sOverviewPage() {
               </details>
               <details className="group mt-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--apple-surface)]/50">
                 <summary className="cursor-pointer list-none px-2 py-1.5 text-[11px] text-[var(--text-primary)] hover:bg-[var(--apple-surface)] rounded-md">
-                  <span className="font-medium">Cluster bootstrap:</span> k3s → Cilium → metrics → KubeVirt/CDI (daemon, phased)
+                  <span className="font-medium">Cluster bootstrap:</span> k3s → machina-cni (native eBPF) → metrics → KubeVirt/CDI (daemon, phased)
                 </summary>
                 <div className="px-2 pb-3 pt-1 space-y-3 text-[11px] text-[var(--text-muted)]">
                   <p>
@@ -1369,14 +1369,14 @@ export default function K8sOverviewPage() {
                       onChange={(e) => setBootstrapSkipKv(e.target.checked)}
                       className="rounded border-[var(--apple-hairline)]"
                     />
-                    <span>Full pipeline only: skip KubeVirt / CDI / virtctl (stop after Cilium + metrics)</span>
+                    <span>Full pipeline only: skip KubeVirt / CDI / virtctl (stop after CNI + metrics)</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {(
                       [
                         ['full', 'Full pipeline', true],
                         ['k3s', '1 · k3s + kubeconfig', false],
-                        ['cilium', '2 · Cilium + Hubble', false],
+                        ['cni', '2 · machina-cni (eBPF)', false],
                         ['metrics', '3 · metrics-server', false],
                         ['kubevirt_cdi', '4 · KubeVirt + CDI + virtctl', false],
                       ] as const
@@ -1734,7 +1734,7 @@ export default function K8sOverviewPage() {
         title={bootstrapConfirmPhase === 'full' ? 'Run full cluster bootstrap' : `Run bootstrap phase "${bootstrapConfirmPhase}"`}
         message={
           bootstrapConfirmPhase === 'full'
-            ? 'Run the full install-k3s-cilium.sh pipeline on this host (can take 30+ minutes: k3s → Cilium → metrics → KubeVirt/CDI)?'
+            ? 'Run the full cluster bootstrap on this host (can take 30+ minutes: k3s → machina-cni → metrics → KubeVirt/CDI)?'
             : `Run bootstrap phase "${bootstrapConfirmPhase}" on the Machina daemon host? Later phases assume earlier steps already succeeded.`
         }
         confirmLabel="Run"

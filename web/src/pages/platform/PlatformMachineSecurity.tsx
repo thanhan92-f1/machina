@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import PageLayout from '../../components/PageLayout'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, Radar, Shield } from 'lucide-react'
+import { ArrowLeft, Shield } from 'lucide-react'
 import {
   MacGlassPanel,
   MacListRow,
@@ -29,7 +29,6 @@ import {
   getHostEnforcement,
   getEnforcementPolicies,
   applyEnforcementPolicy,
-  installTetragonSensor,
   type EnforcementPolicy,
   type HostFabricStatusResponse,
   reconstructAttack,
@@ -173,19 +172,11 @@ export default function PlatformMachineSecurity() {
 
   const sensor = (summary?.sensor as Record<string, unknown>) ?? {}
   const threatScore = summary?.threat_score ?? '—'
-  const policyCount = fabricStatus?.fabric?.policy_files?.length ?? 0
-  const tetragonRunning = fabricStatus?.fabric?.tetragon_service_active === true
-  const exportActive = fabricStatus?.fabric?.tetragon_export_timer_active === true
-  const fabricLine = fabricStatus?.agent_reachable
-    ? `${policyCount} TracingPolicy file(s) on agent · ${
-        tetragonRunning
-          ? exportActive
-            ? 'Tetragon running · exporting to PacketWolf'
-            : 'Tetragon running · export pending'
-          : fabricStatus?.fabric?.tetragon_binary_found
-            ? 'Tetragon installed · service stopped'
-            : 'Tetragon pending install'
-      }`
+  const fabric = fabricStatus?.fabric
+  const fabricLine = fabricStatus?.agent_reachable && fabric?.available
+    ? `machina-bpfd ${fabric.version ?? ''} · ${fabric.programs_compiled ? 'datapath loaded' : 'datapath not compiled'} · ${
+        fabric.mode?.mode === 'enforce' ? 'enforcing' : 'observing'
+      } · ${fabric.policies_enabled ?? 0} policy(ies) · ${fabric.interfaces?.length ?? 0} interface(s)`
     : 'Agent fabric status unavailable'
 
   const threatTone = typeof threatScore === 'number' && threatScore > 70 ? 'error' : typeof threatScore === 'number' && threatScore > 40 ? 'warn' : 'ok'
@@ -210,13 +201,6 @@ export default function PlatformMachineSecurity() {
       }
       actions={
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn-secondary text-sm inline-flex items-center gap-1"
-            onClick={() => void installTetragonSensor(hostId).then((r) => toast.success(r.summary)).catch((e: unknown) => toast.error(formatUserError(e)))}
-          >
-            <Radar className="w-4 h-4" /> Install Tetragon
-          </button>
           <button
             type="button"
             className="btn-secondary text-sm"
@@ -247,7 +231,7 @@ export default function PlatformMachineSecurity() {
             ))
           )
         ) : tab === 'graph' ? (
-          <MacGlassPanel title="Process ancestry" subtitle="Powered by PacketWolf eBPF">
+          <MacGlassPanel title="Process ancestry" subtitle="Native eBPF exec / fork tracepoints">
             <ProcessGraphCanvas data={graph as Parameters<typeof ProcessGraphCanvas>[0]['data']} />
           </MacGlassPanel>
         ) : tab === 'containers' ? (
@@ -263,7 +247,7 @@ export default function PlatformMachineSecurity() {
                 <p className="text-[var(--text-secondary)]">
                   Mode: <span className="font-mono">{String(hostEnforcement.mode ?? 'observe')}</span>
                   {' · '}
-                  {String(hostEnforcement.summary ?? 'Per-host Tetragon enforcement posture')}
+                  {String(hostEnforcement.summary ?? 'Per-host native eBPF enforcement posture')}
                 </p>
                 {Array.isArray(hostEnforcement.policies) && (hostEnforcement.policies as unknown[]).length > 0 ? (
                   <ul className="divide-y divide-white/[0.04] -mx-1">
@@ -280,7 +264,7 @@ export default function PlatformMachineSecurity() {
                 )}
               </>
             ) : (
-              <p className="text-[var(--text-muted)]">Enforcement status unavailable — ensure PacketWolf fabric is reachable.</p>
+              <p className="text-[var(--text-muted)]">Enforcement status unavailable — ensure machina-bpfd is running on this host.</p>
             )}
             {enforcementPolicies.length > 0 && (
               <div className="pt-2 border-t border-white/[0.06] space-y-2">
@@ -310,7 +294,7 @@ export default function PlatformMachineSecurity() {
             )}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)] p-3">No events in this category. Enable PacketWolf + Tetragon sensor.</p>
+          <p className="text-sm text-[var(--text-muted)] p-3">No events in this category yet. machina-bpfd records them once its datapath is loaded.</p>
         ) : (
           <>
             {items.slice(0, 30).map((e, i) => {

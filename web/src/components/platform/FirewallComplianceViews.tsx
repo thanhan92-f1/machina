@@ -47,7 +47,7 @@ export function ComplianceReportSummary({ report }: { report: Record<string, unk
   )
 }
 
-export function PacketwolfAnomalySummary({ data }: { data: Record<string, unknown> }) {
+export function BpfAnomalySummary({ data }: { data: Record<string, unknown> }) {
   const summary = typeof data.summary === 'string' ? data.summary : null
   const anomalies = asArray(data.anomalies ?? data.items ?? data.results)
 
@@ -55,15 +55,19 @@ export function PacketwolfAnomalySummary({ data }: { data: Record<string, unknow
     <div className="space-y-3">
       {summary && <p className="text-sm text-[var(--text-secondary)]">{summary}</p>}
       {anomalies.length === 0 ? (
-        <p className="text-sm text-[var(--text-muted)]">No anomalies in the latest Packetwolf scan.</p>
+        <p className="text-sm text-[var(--text-muted)]">No anomalies reported by machina-bpfd.</p>
       ) : (
         <ul className="space-y-2 max-h-64 overflow-y-auto">
           {anomalies.slice(0, 15).map((item, i) => {
             const row = asRecord(item) ?? { detail: String(item) }
             return (
-              <li key={String(row.type ?? row.anomaly ?? row.title ?? i)} className={`rounded-lg px-3 py-2 text-sm ${statusSurfaceClasses('warn')}`}>
-                <p className={statusToneClass('warn')}>{String(row.type ?? row.anomaly ?? row.title ?? `Anomaly ${i + 1}`)}</p>
-                <p className={`text-xs mt-0.5 opacity-70 ${statusToneClass('warn')}`}>{String(row.detail ?? row.message ?? row.description ?? '')}</p>
+              <li key={String(row.id ?? i)} className={`rounded-lg px-3 py-2 text-sm ${statusSurfaceClasses('warn')}`}>
+                <p className={statusToneClass('warn')}>
+                  {String(row.kind ?? row.type ?? row.title ?? `Anomaly ${i + 1}`)}
+                  {row.severity ? ` · ${String(row.severity)}` : ''}
+                  {row.hostname ? ` · ${String(row.hostname)}` : ''}
+                </p>
+                <p className={`text-xs mt-0.5 opacity-70 ${statusToneClass('warn')}`}>{String(row.summary ?? row.detail ?? row.message ?? row.description ?? '')}</p>
               </li>
             )
           })}

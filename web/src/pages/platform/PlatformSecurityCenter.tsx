@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { useCallback, useEffect, useState } from 'react'
-import ConfirmDialog from '../../components/ConfirmDialog'
 import { Link } from 'react-router'
 import { AlertTriangle, Radar, Shield, Activity, Search, Lock } from 'lucide-react'
 import PlatformPageChrome, { PlatformBackLink, PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
@@ -20,7 +19,6 @@ import {
   getZeusSecurityGraph,
   getZeusSecuritySensors,
   getZeusSecurityStatus,
-  installFleetTetragon,
   nlSecuritySearch,
   syncSecurityAlerts,
   type FleetSensorRow,
@@ -45,7 +43,8 @@ const SECURITY_DESTINATIONS = [
   { to: '/platform/zeus/security/firewall', title: 'Zeus Firewall', subtitle: 'Host firewall profiles, ports, lockdown', icon: <Shield className="w-5 h-5" /> },
   { to: '/platform/soc', title: 'SOC', subtitle: 'Security operations center and alert triage', icon: <Radar className="w-5 h-5" /> },
   { to: '/platform/zyra/security/hunt', title: 'Threat hunting', subtitle: 'Interactive hunt workspace', icon: <Search className="w-5 h-5" /> },
-  { to: '/platform/zyra/security/enforcement', title: 'Runtime enforcement', subtitle: 'eBPF TracingPolicy and deny rules', icon: <Lock className="w-5 h-5" /> },
+  { to: '/platform/zyra/security/enforcement', title: 'Runtime enforcement', subtitle: 'Fleet eBPF deny / allow rules', icon: <Lock className="w-5 h-5" /> },
+  { to: '/platform/zyra/security/native-bpf', title: 'Native eBPF', subtitle: 'Flows, live events, captures and QoS on this host', icon: <Radar className="w-5 h-5" /> },
   { to: '/platform/zeus/security/activity', title: 'Firewall activity', subtitle: 'Blocked and allowed connections', icon: <Activity className="w-5 h-5" /> },
   { to: '/platform/zeus/security/ports', title: 'Open ports', subtitle: 'Exposure scanner with process metadata', icon: <AlertTriangle className="w-5 h-5" /> },
 ]
@@ -81,8 +80,6 @@ export default function PlatformSecurityCenter() {
   const [sensorCount, setSensorCount] = useState(0)
   const [sensorMatrix, setSensorMatrix] = useState<FleetSensorRow[]>([])
   const [sensorRegistry, setSensorRegistry] = useState<Array<Record<string, unknown>>>([])
-  const [fleetEnrollBusy, setFleetEnrollBusy] = useState(false)
-  const [confirmEnrollTetragon, setConfirmEnrollTetragon] = useState(false)
   const [timeline, setTimeline] = useState<SecurityEvent[]>([])
   const [fabricHealth, setFabricHealth] = useState<FabricHealth | null>(null)
   const [nlQuery, setNlQuery] = useState('')
@@ -135,20 +132,7 @@ export default function PlatformSecurityCenter() {
 
   const score = threat?.fleet_threat_score ?? 0
   const critical = threat?.critical_events ?? []
-  const unhealthySensors = sensorMatrix.filter((r) => r.tetragon_status !== 'healthy' && r.host_state === 'online')
-
-  const enrollFleetTetragon = () => {
-    setConfirmEnrollTetragon(true)
-  }
-
-  const doEnrollFleetTetragon = () => {
-    setConfirmEnrollTetragon(false)
-    setFleetEnrollBusy(true)
-    void installFleetTetragon()
-      .then((r) => toast.success(r.summary))
-      .catch((e: unknown) => toast.error(formatUserError(e)))
-      .finally(() => setFleetEnrollBusy(false))
-  }
+  const unhealthySensors = sensorMatrix.filter((r) => r.sensor_status !== 'healthy' && r.host_state === 'online')
 
   return (
     <PlatformPageChrome
@@ -171,7 +155,7 @@ export default function PlatformSecurityCenter() {
               {status.fabric_reachable ? 'Fabric online' : 'Fabric unreachable'}
             </span>
           )}
-          <span className="text-[var(--text-muted)]">PacketWolf eBPF · observe, understand, secure</span>
+          <span className="text-[var(--text-muted)]">Native eBPF · observe, understand, secure</span>
         </span>
       }
       icon={<Shield className="w-6 h-6 text-[var(--text-muted)]" />}
@@ -179,26 +163,14 @@ export default function PlatformSecurityCenter() {
       contentClassName="space-y-4"
     >
 
-      {status && !status.fabric_reachable && status.packetwolf.enabled && (
+      {status && !status.fabric_reachable && (
         <PlatformEmptyState
-          title="PacketWolf fabric unreachable"
-          subtitle={status.packetwolf.summary}
+          title="machina-bpfd unreachable"
+          subtitle={status.native_bpf.summary}
           action={
-            <Link to="/platform/settings?section=integrations" className="btn-primary text-sm">Wire in Settings</Link>
+            <Link to="/platform/zyra/security/native-bpf" className="btn-primary text-sm">Open Native eBPF</Link>
           }
         />
-      )}
-
-      {status?.packetwolf?.storage?.clickhouse?.reachable && (
-        <p className={`text-xs ${statusToneClass('ok')} opacity-90`}>ClickHouse hot storage connected</p>
-      )}
-      {status?.packetwolf?.storage?.opensearch?.reachable && (
-        <p className={`text-xs ${statusToneClass('ok')} opacity-90`}>
-          OpenSearch hunt index connected
-          {status.packetwolf.storage.opensearch.document_count != null
-            ? ` · ${status.packetwolf.storage.opensearch.document_count} documents`
-            : ''}
-        </p>
       )}
 
       {fabricHealth && (fabricHealth.issues?.length ?? 0) > 0 && (
@@ -230,14 +202,11 @@ export default function PlatformSecurityCenter() {
           <AppleDestinationList items={SECURITY_DESTINATIONS} />
 
           <MacGlassPanel
-            title="Tetragon sensor matrix"
-            subtitle="Fleet enrollment status — PacketWolf sensors joined with controller hosts"
-            action={
-              unhealthySensors.length > 0 ? (
-                <button type="button" className="btn-secondary text-xs" disabled={fleetEnrollBusy} onClick={enrollFleetTetragon}>
-                  Enroll fleet Tetragon
-                </button>
-              ) : undefined
+            title="eBPF sensor matrix"
+            subtitle={
+              unhealthySensors.length > 0
+                ? `${unhealthySensors.length} online host(s) without a healthy machina-bpfd`
+                : 'machina-bpfd status on every controller host'
             }
           >
             {sensorMatrix.length === 0 ? (
@@ -248,8 +217,8 @@ export default function PlatformSecurityCenter() {
                   <li key={row.host_id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.04] pb-2">
                     <span className="text-[var(--text-secondary)]">
                       {row.hostname || row.host_id}
-                      <span className={`ml-2 text-xs ${statusToneClass(row.tetragon_status === 'healthy' ? 'ok' : 'warn')}`}>
-                        {row.tetragon_status}
+                      <span className={`ml-2 text-xs ${statusToneClass(row.sensor_status === 'healthy' ? 'ok' : 'warn')}`}>
+                        {row.sensor_status}
                       </span>
                       <span className="text-[var(--text-muted)] text-xs ml-2">{row.host_state}</span>
                     </span>
@@ -265,7 +234,7 @@ export default function PlatformSecurityCenter() {
           {sensorRegistry.length > 0 && (
             <MacGlassPanel
               title="Sensor registry"
-              subtitle="GET /api/v1/zeus-security/sensors — enrolled PacketWolf / Tetragon endpoints"
+              subtitle="machina-bpfd instances reporting through their host agent"
             >
               <ul className="text-sm space-y-2">
                 {sensorRegistry.slice(0, 10).map((row, i) => (
@@ -295,7 +264,7 @@ export default function PlatformSecurityCenter() {
                       hostId={ev.host_id ? String(ev.host_id) : undefined}
                       suggestedKind="deny_process"
                       suggestedMatch="/usr/bin/nc"
-                      huntQueryId="reverse-shell"
+                      huntQueryId="shell-spawn"
                       compact
                     />
                   </li>
@@ -326,7 +295,7 @@ export default function PlatformSecurityCenter() {
                   {nlResults}
                   {nlLlm ? <span className="text-[var(--link)]/80 ml-1">· AI</span> : null}
                 </p>
-                <EbpfActionMenu suggestedKind="deny_process" suggestedMatch={nlQuery.trim() || '/usr/bin/nc'} huntQueryId="reverse-shell" compact />
+                <EbpfActionMenu suggestedKind="deny_process" suggestedMatch={nlQuery.trim() || '/usr/bin/nc'} huntQueryId="shell-spawn" compact />
               </div>
             )}
           </MacGlassPanel>
@@ -345,15 +314,6 @@ export default function PlatformSecurityCenter() {
 
         </>
       )}
-      <ConfirmDialog
-        open={confirmEnrollTetragon}
-        title="Enroll Fleet Tetragon"
-        message={`Enroll Tetragon on all online hosts (${unhealthySensors.length || 'fleet'} sensor gap)? Agents will be installed and TracingPolicies applied.`}
-        confirmLabel="Enroll"
-        variant="warning"
-        onCancel={() => setConfirmEnrollTetragon(false)}
-        onConfirm={doEnrollFleetTetragon}
-      />
     </PlatformPageChrome>
   )
 }

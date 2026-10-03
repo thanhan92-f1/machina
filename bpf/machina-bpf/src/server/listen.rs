@@ -9,7 +9,7 @@ use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
 
-use super::readers::{on_capture, on_dns, on_net, on_proc, spawn_reader};
+use super::readers::{on_capture, on_dns, on_l7, on_net, on_proc, spawn_reader};
 use super::*;
 
 const FLOW_IDLE_NS: u64 = 120 * 1_000_000_000;
@@ -36,6 +36,16 @@ struct Persisted {
     interfaces: Vec<(String, bool, bool)>,
     #[serde(default)]
     qos_by_vm: Vec<(String, u64, u64)>,
+    /// Per-workload traffic totals: (key, totals, window start).
+    #[serde(default)]
+    accounting: Vec<(String, AcctTotals, String)>,
+    /// machina-cni: (node address, uplink), local pod endpoints, last synced state.
+    #[serde(default)]
+    cni_node: Option<(String, Option<String>)>,
+    #[serde(default)]
+    cni_endpoints: Vec<CniEndpoint>,
+    #[serde(default)]
+    cni_state: Option<CniState>,
 }
 
 struct Daemon {
@@ -60,6 +70,14 @@ impl Daemon {
                 .iter()
                 .map(|(v, (e, i))| (v.clone(), *e, *i))
                 .collect(),
+            accounting: eng
+                .acct_base
+                .iter()
+                .map(|(k, t)| (k.clone(), *t, eng.acct_since.get(k).cloned().unwrap_or_default()))
+                .collect(),
+            cni_node: eng.cni.node_addr.clone().map(|a| (a, eng.cni.uplink.clone())),
+            cni_endpoints: eng.cni.endpoints.values().cloned().collect(),
+            cni_state: eng.cni.last_sync.is_some().then(|| eng.cni.last.clone()),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -82,6 +100,10 @@ impl Daemon {
                 return;
             }
         };
+        for (k, t, since) in p.accounting {
+            eng.acct_base.insert(k.clone(), t);
+            eng.acct_since.insert(k, since);
+        }
         if let Some(t) = p.telemetry {
             if let Err(e) = eng.set_telemetry(t) {
                 tracing::warn!("restore telemetry: {e:#}");
@@ -101,6 +123,23 @@ impl Daemon {
             let id = pol.id.clone();
             if let Err(e) = eng.apply_policy(pol) {
                 tracing::warn!("restore policy {id}: {e:#}");
+            }
+        }
+        // Pods keep running across a bpfd restart: restore their datapath.
+        if let Some((addr, uplink)) = p.cni_node {
+            if let Err(e) = eng.cni_configure(&addr, uplink.as_deref()) {
+                tracing::warn!("restore cni node: {e:#}");
+            }
+        }
+        if let Some(st) = p.cni_state {
+            if let Err(e) = eng.cni_sync(st) {
+                tracing::warn!("restore cni state: {e:#}");
+            }
+        }
+        for ep in p.cni_endpoints {
+            let ip = ep.ip.clone();
+            if let Err(e) = eng.cni_add_endpoint(ep) {
+                tracing::info!("restore cni endpoint {ip}: {e:#}");
             }
         }
     }
@@ -163,6 +202,25 @@ impl Daemon {
                 let out: Vec<&DnsRecord> = s.dns.iter().rev().take(lim(limit)).collect();
                 v(&out)
             }
+            Request::L7 { limit, vm, protocol } => {
+                let s = lock(&self.shared);
+                let out: Vec<&L7Record> = s
+                    .l7
+                    .iter()
+                    .rev()
+                    .filter(|e| vm.is_none() || e.vm == vm)
+                    .filter(|e| protocol.as_deref().is_none_or(|p| e.protocol == p))
+                    .take(lim(limit))
+                    .collect();
+                v(&out)
+            }
+            Request::Accounting { vm } => v(&lock(&self.engine).accounting(vm.as_deref())?),
+            Request::ResetAccounting { vm } => {
+                let mut eng = lock(&self.engine);
+                let n = eng.reset_accounting(vm.as_deref())?;
+                self.save(&eng);
+                json!({ "reset": n })
+            }
             Request::ProcEvents { limit, kind } => {
                 let s = lock(&self.shared);
                 let out: Vec<&ProcRecord> = s
@@ -219,6 +277,34 @@ impl Daemon {
                 self.save(&eng);
                 v(&t)
             }
+            Request::CniConfigure { node_addr, uplink } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.cni_configure(&node_addr, uplink.as_deref())?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::CniAddEndpoint { endpoint } => {
+                let mut eng = lock(&self.engine);
+                eng.cni_add_endpoint(endpoint)?;
+                self.save(&eng);
+                v(&eng.cni_status())
+            }
+            Request::CniDelEndpoint { ip } => {
+                let mut eng = lock(&self.engine);
+                let removed = eng.cni_del_endpoint(&ip)?;
+                self.save(&eng);
+                json!({ "removed": removed, "ip": ip })
+            }
+            Request::CniSync { state } => {
+                let mut eng = lock(&self.engine);
+                if eng.cni.last_sync.is_some() && eng.cni.last == state {
+                    return Ok(v(&eng.cni_status()));
+                }
+                let st = eng.cni_sync(state)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::CniStatus => v(&lock(&self.engine).cni_status()),
             Request::Subscribe { .. } => return Err(anyhow!("subscribe is handled per connection")),
         })
     }
@@ -319,6 +405,10 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
                 if n2.is_multiple_of(10) {
                     eng.sweep_flows(FLOW_IDLE_NS)?;
                 }
+                if n2.is_multiple_of(60) {
+                    eng.fold_accounting()?;
+                    d2.save(&eng);
+                }
                 Ok(())
             })
             .await;
@@ -347,6 +437,8 @@ pub async fn run(cfg: Config) -> Result<()> {
         spawn_reader(eng.dp.take_ringbuf("DNS_EVENTS")?, "dns", move |x| on_dns(&sh, &b, &w, x));
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("PROC_EVENTS")?, "proc", move |x| on_proc(&sh, &b, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("L7_EVENTS")?, "l7", move |x| on_l7(&sh, &b, x));
         let sh = shared.clone();
         spawn_reader(eng.dp.take_ringbuf("CAPTURE_EVENTS")?, "capture", move |x| on_capture(&sh, x));
     }

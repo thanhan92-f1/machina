@@ -2,19 +2,21 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { platformFetch } from './platform'
+import type { BpfStatus } from './bpf'
+
+/** Fleet summary of the native eBPF datapath (machina-bpfd on each host). */
+export interface NativeBpfStatus {
+  enabled: boolean
+  reachable: boolean
+  hosts_total: number
+  hosts_reachable: number
+  enforcing_hosts: number
+  version: string
+  summary: string
+}
 
 export interface ZeusSecurityStatus {
-  packetwolf: {
-    enabled: boolean
-    reachable: boolean
-    summary: string
-    base_url: string
-    storage?: {
-      clickhouse?: { configured?: boolean; reachable?: boolean }
-      opensearch?: { configured?: boolean; reachable?: boolean; document_count?: number }
-      demo_mode?: boolean
-    }
-  }
+  native_bpf: NativeBpfStatus
   zeus_firewall: Record<string, unknown>
   fabric_reachable: boolean
 }
@@ -23,7 +25,7 @@ export interface FleetThreatSummary {
   fleet_threat_score: number
   firewall_targets: number
   critical_events: Array<Record<string, unknown>>
-  packetwolf: Record<string, unknown>
+  native_bpf: Record<string, unknown>
   security_graph_summary: string
 }
 
@@ -94,7 +96,7 @@ export const getFabricHealth = () =>
 export interface HuntQuery {
   id: string
   name: string
-  query: string
+  query?: string
   description?: string
   severity?: string
 }
@@ -107,10 +109,10 @@ export const runHuntQuery = (queryId: string, hostId?: string) => {
   return platformFetch<{
     ok?: boolean
     query_id?: string
-    query_name?: string
+    name?: string
     results?: Array<Record<string, unknown>>
     hit_count?: number
-    backend?: string
+    source?: string
   }>(`/api/v1/zeus-security/hunt/run/${encodeURIComponent(queryId)}${q}`, { method: 'POST' })
 }
 
@@ -144,27 +146,6 @@ export interface ContainerHierarchy {
 export const getHostContainers = (hostId: string) =>
   platformFetch<ContainerHierarchy>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/containers`)
 
-export const installK8sTetragon = (clusterId: string, clusterName?: string) =>
-  platformFetch<{ task_id: string; summary: string }>(`/api/v1/zeus-security/k8s/${encodeURIComponent(clusterId)}/tetragon/install`, {
-    method: 'POST',
-    body: JSON.stringify({ cluster_name: clusterName ?? clusterId }),
-  })
-
-export interface K8sExportForwarderStatus {
-  cluster_id: string
-  host_id: string
-  namespace: string
-  forwarder_deployed: boolean
-  ready_replicas: number
-  export_url: string
-  message: string
-}
-
-export const getK8sExportStatus = (clusterId: string, namespace = 'kube-system') =>
-  platformFetch<K8sExportForwarderStatus>(
-    `/api/v1/zeus-security/k8s/${encodeURIComponent(clusterId)}/export-status?namespace=${encodeURIComponent(namespace)}`,
-  )
-
 export const getHostSecurityTimeline = (hostId: string, hours = 24) =>
   platformFetch<{ events: SecurityEvent[] }>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/timeline?hours=${hours}`)
 
@@ -173,18 +154,8 @@ export const getHostProcessGraph = (hostId: string, pid?: number) => {
   return platformFetch<Record<string, unknown>>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/process-graph${q}`)
 }
 
-export const installTetragonSensor = (hostId: string) =>
-  platformFetch<{ task_id: string; summary: string }>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/tetragon/install`, { method: 'POST' })
-
-export interface SecurityFabricStatus {
-  policy_dir?: string
-  policy_files?: string[]
-  install_script_present?: boolean
-  tetragon_binary_found?: boolean
-  tetragon_service_active?: boolean
-  tetragon_export_timer_active?: boolean
-  export_url?: string | null
-}
+/** machina-bpfd status as reported through the host's agent. */
+export type SecurityFabricStatus = BpfStatus
 
 export interface HostFabricStatusResponse {
   host_id: string
@@ -256,15 +227,34 @@ export interface EnforcementStatus {
   blocked_events?: number
   summary?: string
   attached?: boolean
-  default_deny?: boolean
-  // Netra-backed status (api_mode: 'netra') only — whether netrad answered at all.
+  /** At least one host's machina-bpfd answered. */
   reachable?: boolean
   api_mode?: string
-  // attach/sync/detach return this instead of a normalized status when the call didn't actually
-  // apply — e.g. not in production PacketWolf mode, or the fabric itself is unreachable. The
-  // caller always got a 200, so this has to be checked explicitly rather than relying on .catch().
+  kinds?: string[]
+  hosts?: Array<{
+    host_id: string
+    hostname: string
+    reachable: boolean
+    error?: string | null
+    mode?: { mode?: string; lease_expires_at?: string | null; lease_remaining_secs?: number | null } | null
+  }>
+  /** attach/sync/detach: false when some host didn't take the change. */
   ok?: boolean
   note?: string
+}
+
+/** Mutating enforcement calls wrap the native result; rejected policies are HTTP 400. */
+export interface EnforcementMutation {
+  native: {
+    ok?: boolean
+    policy?: EnforcementPolicy
+    sync?: Array<{ host_id: string; hostname: string; ok: boolean; error?: string | null }>
+    host_ids?: string[]
+    removed_from_hosts?: string[]
+    note?: string
+    summary?: string
+  }
+  summary: string
 }
 
 export const attachEnforcement = () =>
@@ -280,25 +270,22 @@ export const getEnforcementStatus = () =>
   platformFetch<EnforcementStatus>('/api/v1/zeus-security/enforcement/status')
 
 export const getEnforcementPolicies = () =>
-  platformFetch<{ policies: EnforcementPolicy[] }>('/api/v1/zeus-security/enforcement/policies')
+  platformFetch<{ policies: EnforcementPolicy[]; kinds?: string[] }>('/api/v1/zeus-security/enforcement/policies')
 
 export const createEnforcementPolicy = (body: {
   name: string
   kind: string
   match: string
+  scope?: string
   description?: string
 }) =>
-  // A malformed tc_allow/allow_port match (e.g. no explicit destination IP) is rejected with a 200
-  // + {ok: false, error: "..."} rather than a 4xx — the engine deliberately never redirects that
-  // case to the Tetragon fallback (see packetwolf_enforcement.rs), so callers have to check this
-  // explicitly instead of relying on a thrown/caught HTTP error.
-  platformFetch<{ policy?: EnforcementPolicy; ok?: boolean; error?: string }>('/api/v1/zeus-security/enforcement/policies', {
+  platformFetch<EnforcementMutation>('/api/v1/zeus-security/enforcement/policies', {
     method: 'POST',
     body: JSON.stringify(body),
   })
 
 export const applyEnforcementPolicy = (policyId: string, hostIds: string[]) =>
-  platformFetch<{ summary: string; task_ids?: string[] }>(`/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}/apply`, {
+  platformFetch<EnforcementMutation>(`/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}/apply`, {
     method: 'POST',
     body: JSON.stringify({ host_ids: hostIds }),
   })
@@ -307,43 +294,26 @@ export const patchEnforcementPolicy = (
   policyId: string,
   body: { enabled?: boolean; match?: string; description?: string },
 ) =>
-  // A Netra-backed deny_ip toggle that Netra itself rejects (unreachable, bad
-  // match value, etc.) comes back as a 200 + {ok: false, error}, not an HTTP
-  // error — the stored `enabled` flag only ever reflects what's actually
-  // live, so callers must check `ok` explicitly rather than assuming success.
-  platformFetch<{
-    summary?: string
-    task_ids?: string[]
-    packetwolf?: Record<string, unknown>
-    ok?: boolean
-    error?: string
-    policy?: EnforcementPolicy
-  }>(`/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}`, {
+  platformFetch<EnforcementMutation>(`/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
 
 export const deleteEnforcementPolicy = (policyId: string) =>
-  // A Netra-backed deny_ip delete that Netra rejects (unreachable, etc.) comes
-  // back as 200 + {ok: false} — the local record is deliberately kept in that
-  // case so the UI doesn't show a rule as gone while it's still live in the
-  // kernel — so callers must check `ok`, not just assume a 200 means removed.
-  platformFetch<{ summary?: string; task_ids?: string[]; ok?: boolean; error?: string }>(
-    `/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}`,
-    { method: 'DELETE' },
-  )
+  platformFetch<EnforcementMutation>(`/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}`, {
+    method: 'DELETE',
+  })
 
-export const getEnforcementPolicyTetragon = (policyId: string) =>
-  platformFetch<{ tetragon_policy?: Record<string, unknown>; tetragon_policy_name?: string }>(
-    `/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}/tetragon`,
+export const getEnforcementPolicyDocument = (policyId: string) =>
+  platformFetch<{ native_policy?: Record<string, unknown> | null; datapath_rules?: string[] }>(
+    `/api/v1/zeus-security/enforcement/policies/${encodeURIComponent(policyId)}/document`,
   )
 
 export interface FleetSensorRow {
   host_id: string
   hostname: string
   host_state: string
-  tetragon_status: string
-  last_event_at?: string
+  sensor_status: string
   sensor?: Record<string, unknown>
 }
 
@@ -352,19 +322,12 @@ export const getFleetSensors = () =>
     '/api/v1/zeus-security/fleet/sensors',
   )
 
-export const installFleetTetragon = () =>
-  platformFetch<{ task_ids: string[]; hosts: number; summary: string }>(
-    '/api/v1/zeus-security/fleet/tetragon/install',
-    { method: 'POST', body: '{}' },
-  )
-
 export const getHostEnforcement = (hostId: string) =>
   platformFetch<Record<string, unknown>>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/enforcement`)
 
-export const getAgentSecurityBundle = (hostId: string) =>
-  platformFetch<{
-    host_id: string
-    tracing_policies?: unknown[]
-    policy_count?: number
-    tetragon_install?: Record<string, unknown>
-  }>(`/api/v1/zeus-security/agents/${encodeURIComponent(hostId)}/bundle`)
+/** Admin passthrough to one host's machina-bpfd (interfaces, QoS, capture, telemetry). */
+export const hostBpfCall = <T = unknown>(hostId: string, request: Record<string, unknown>) =>
+  platformFetch<T>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/bpf`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })

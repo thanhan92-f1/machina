@@ -25,7 +25,6 @@ PUBLIC_URL=""
 # shellcheck source=lib/disable-firewalld.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/disable-firewalld.sh"
 SKIP_AUTH="${MACHINA_SKIP_AUTH:-0}"
-MERGE_PACKETWOLF_ONLY=false
 
 info()  { echo "ℹ️  $*"; }
 ok()    { echo "✅ $*"; }
@@ -57,7 +56,6 @@ while [[ $# -gt 0 ]]; do
     --disable-firewalld) DISABLE_FIREWALL=true; shift ;;
     --public-url) PUBLIC_URL="${2:?}"; shift 2 ;;
     --require-auth) SKIP_AUTH=0; shift ;;
-    --merge-packetwolf-env) MERGE_PACKETWOLF_ONLY=true; shift ;;
     -h|--help) usage ;;
     *) warn "Unknown arg: $1"; shift ;;
   esac
@@ -131,102 +129,15 @@ ensure_platform_env_var() {
   fi
 }
 
-packetwolf_read_config_env() {
-  local pw_cfg="/etc/packetwolf/config.env"
-  PACKETWOLF_CFG_TLS_PORT="9443"
-  PACKETWOLF_CFG_API_KEY=""
-  [[ -f "$pw_cfg" ]] || return 0
-  PACKETWOLF_CFG_TLS_PORT="$(grep -E '^TLS_PORT=' "$pw_cfg" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d ' "' || echo 9443)"
-  PACKETWOLF_CFG_API_KEY="$(grep -E '^PACKETWOLF_ADMIN_API_KEY=' "$pw_cfg" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d ' "' || true)"
-  [[ -z "$PACKETWOLF_CFG_API_KEY" ]] && PACKETWOLF_CFG_API_KEY="$(grep -E '^PACKETWOLF_API_KEY=' "$pw_cfg" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d ' "' || true)"
-}
-
-packetwolf_kubectl() {
-  if [[ -x /usr/local/bin/kubectl ]]; then
-    echo /usr/local/bin/kubectl
-  elif command -v kubectl &>/dev/null; then
-    command -v kubectl
-  else
-    return 1
-  fi
-}
-
-packetwolf_k8s_api_namespace() {
-  local kc="${1:-/etc/packetwolf/k3s.yaml}" kubectl_bin
-  kubectl_bin="$(packetwolf_kubectl)" || return 1
-  [[ -f "$kc" ]] || return 1
-  "$kubectl_bin" --kubeconfig="$kc" get svc -A -o jsonpath='{range .items[?(@.metadata.name=="packetwolf-api")]}{.metadata.namespace}{"\n"}{end}' 2>/dev/null | head -1
-}
-
-ensure_packetwolf_k8s_port_forward() {
-  local kc="/etc/packetwolf/k3s.yaml" ns unit_src unit_dst kubectl_bin
-  kubectl_bin="$(packetwolf_kubectl)" || return 1
-  ns="$(packetwolf_k8s_api_namespace "$kc")"
-  [[ -n "$ns" ]] || return 1
-  unit_src="${INSTALLER_ROOT}/contrib/packetwolf-api-port-forward.service"
-  unit_dst="/usr/lib/systemd/system/packetwolf-api-port-forward.service"
-  [[ -f "$unit_src" ]] || return 1
-  sed "s/-n packetwolf/-n ${ns}/" "$unit_src" >"$unit_dst"
-  systemctl daemon-reload
-  systemctl enable packetwolf-api-port-forward >>"$LOG_FILE" 2>&1 || true
-  systemctl restart packetwolf-api-port-forward >>"$LOG_FILE" 2>&1 || return 1
-  local i code
-  for i in $(seq 1 20); do
-    code="$(curl -sf -o /dev/null -w '%{http_code}' "http://127.0.0.1:9191/api/v1/anomalies?limit=1" 2>/dev/null || echo 000)"
-    [[ "$code" == "200" ]] && return 0
-    sleep 1
-  done
-  warn "PacketWolf k8s port-forward not ready on :9191 (namespace ${ns})"
-  return 1
-}
-
-packetwolf_k8s_api_key() {
-  local kc="/etc/packetwolf/k3s.yaml" ns key_b64 kubectl_bin
-  kubectl_bin="$(packetwolf_kubectl)" || return 1
-  ns="$(packetwolf_k8s_api_namespace "$kc")"
-  [[ -n "$ns" ]] || return 1
-  key_b64="$("$kubectl_bin" --kubeconfig="$kc" -n "$ns" get secret packetwolf-secret -o jsonpath='{.data.PACKETWOLF_ADMIN_API_KEY}' 2>/dev/null || true)"
-  [[ -n "$key_b64" ]] || return 1
-  printf '%s' "$key_b64" | base64 -d 2>/dev/null || true
-}
-
-# When PacketWolf is installed (host systemd or in-cluster k8s), wire controller RCA / anomaly bridge.
-merge_packetwolf_bridge_env() {
-  local pw_base_url="" pw_api_key="" pw_insecure_tls="1"
-  packetwolf_read_config_env
-  pw_api_key="$PACKETWOLF_CFG_API_KEY"
-
-  if systemctl cat packetwolf-api.service &>/dev/null; then
-    pw_base_url="https://127.0.0.1:${PACKETWOLF_CFG_TLS_PORT}"
-  elif ensure_packetwolf_k8s_port_forward; then
-    pw_base_url="http://127.0.0.1:9191"
-    pw_insecure_tls="0"
-    if [[ -z "$pw_api_key" ]]; then
-      pw_api_key="$(packetwolf_k8s_api_key || true)"
-    fi
-    ok "PacketWolf k8s API bridged via localhost:9191 port-forward"
-  else
-    return 0
-  fi
-
-  ensure_platform_env_var PACKETWOLF_ENABLED 1
-  ensure_platform_env_var PACKETWOLF_BASE_URL "$pw_base_url"
-  ensure_platform_env_var PACKETWOLF_INSECURE_TLS "$pw_insecure_tls"
-  if [[ -n "$pw_api_key" ]]; then
-    ensure_platform_env_var PACKETWOLF_API_KEY "$pw_api_key"
-  fi
-  ok "PacketWolf bridge env merged (RCA + zeus-firewall anomalies)"
-}
-
-ensure_ingest_key_env() {
+# Native eBPF (machina-bpfd) replaced the external PacketWolf / Netra / Tetragon
+# integrations; drop their now-unused keys so upgraded hosts don't carry dead config.
+drop_legacy_fabric_env() {
   local file="/etc/default/machina-platform"
-  if grep -q '^MACHINA_INGEST_KEY=' "$file" 2>/dev/null; then
-    return 0
+  [[ -f "$file" ]] || return 0
+  if grep -qE '^(PACKETWOLF_|NETRA_|MACHINA_INGEST_KEY=)' "$file"; then
+    sed -i -E '/^(PACKETWOLF_[A-Z_]*|NETRA_[A-Z_]*|MACHINA_INGEST_KEY)=/d' "$file"
+    ok "Removed legacy PacketWolf/Netra/ingest keys from $file"
   fi
-  local key
-  key="$(openssl rand -hex 16 2>/dev/null || echo "machina-ingest-dev")"
-  ensure_platform_env_var MACHINA_INGEST_KEY "$key"
-  ok "Generated MACHINA_INGEST_KEY for Tetragon export → controller ingest"
 }
 
 ensure_platform_secrets() {
@@ -284,8 +195,7 @@ write_platform_env() {
     grep -q '^MACHINA_SKIP_AUTH=' /etc/default/machina-platform \
       || echo 'MACHINA_SKIP_AUTH=1' >>/etc/default/machina-platform
   fi
-  merge_packetwolf_bridge_env || true
-  ensure_ingest_key_env || true
+  drop_legacy_fabric_env
   ensure_daemon_platform_proxy_env
   chmod 600 /etc/default/machina-platform
   ok "Config -> /etc/default/machina-platform (public URL: $pub)"
@@ -407,14 +317,6 @@ wait_for_health() {
   journalctl -u machina-agent --no-pager -n 20 2>/dev/null || true
   fail "Controller not healthy at http://127.0.0.1:5093/api/v1/health"
 }
-
-if $MERGE_PACKETWOLF_ONLY; then
-  step "Merge PacketWolf bridge env"
-  merge_packetwolf_bridge_env || true
-  ensure_ingest_key_env || true
-  ok "PacketWolf env merged into /etc/default/machina-platform"
-  exit 0
-fi
 
 detect_os
 install_binaries

@@ -229,7 +229,7 @@ export default function CommandCenterPanel({
               <div>
                 <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Quick actions</p>
                 <div className="flex flex-wrap gap-2">
-                  {['Snapshot', 'Restart', 'Inspect Disk', 'PacketWolf Trace', 'Migrate'].map((a) => (
+                  {['Snapshot', 'Restart', 'Inspect Disk', 'eBPF Trace', 'Migrate'].map((a) => (
                     <button
                       key={a}
                       type="button"
