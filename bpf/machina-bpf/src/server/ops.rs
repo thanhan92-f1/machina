@@ -346,8 +346,15 @@ impl Engine {
         Ok(names)
     }
 
-    /// Re-scan links: attach new taps matching the patterns, forget vanished ones.
+    /// Re-scan links: attach new taps matching the patterns, forget vanished
+    /// ones; then follow VMs for the VM edge and the QEMU sandbox.
     pub(super) fn rescan_ifaces(&mut self) {
+        self.rescan_links();
+        self.vm_edge_refresh();
+        self.sandbox_refresh();
+    }
+
+    fn rescan_links(&mut self) {
         let links: std::collections::HashSet<String> = list_links().into_iter().collect();
         let gone: Vec<(u32, String)> = self
             .ifaces

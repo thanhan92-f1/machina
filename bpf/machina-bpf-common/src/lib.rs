@@ -562,6 +562,122 @@ pub struct XdpCfg {
 }
 
 // ---------------------------------------------------------------------------
+// VM edge (tc on VM taps) and QEMU sandbox (cgroup hooks on machine scopes)
+// ---------------------------------------------------------------------------
+
+/// Default-deny traffic towards the VM (only policy / replies pass).
+pub const VME_ISOLATE_IN: u32 = 1 << 0;
+/// Default-deny traffic from the VM.
+pub const VME_ISOLATE_OUT: u32 = 1 << 1;
+/// The tap's tc ingress hook carries traffic *from* the VM.
+pub const VME_GUEST_SIDE: u32 = 1 << 2;
+
+/// Per-tap VM edge config (VM_EDGE, key = tap ifindex). Rates are policed
+/// with token buckets; 0 = unlimited.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmEdgeCfg {
+    pub identity: u32,
+    pub flags: u32,
+    /// Bytes/s from the VM.
+    pub out_bps: u64,
+    /// Bytes/s towards the VM.
+    pub in_bps: u64,
+    /// Packets/s, each direction.
+    pub pps: u32,
+    pub _pad: u32,
+}
+
+/// Token bucket state (VM_BUCKETS, key = ifindex << 1 | from_vm).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmBucket {
+    pub bytes: u64,
+    /// Milli-packets.
+    pub pkts: u64,
+    pub last_ns: u64,
+}
+
+/// Per-tap counters (VM_EDGE_STATS, per-CPU, key = ifindex).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmEdgeStats {
+    pub out_pkts: u64,
+    pub out_bytes: u64,
+    pub in_pkts: u64,
+    pub in_bytes: u64,
+    /// Policy misses dropped (enforce + lease).
+    pub denied: u64,
+    /// Policy misses let through (observe).
+    pub observed: u64,
+    /// Over the Mbps / PPS limit.
+    pub rate_dropped: u64,
+}
+
+pub const DEVCG_DEV_BLOCK: u32 = 1;
+pub const DEVCG_DEV_CHAR: u32 = 2;
+pub const DEVCG_ACC_MKNOD: u32 = 1;
+pub const DEVCG_ACC_READ: u32 = 2;
+pub const DEVCG_ACC_WRITE: u32 = 4;
+/// `QemuDevRule::minor` wildcard.
+pub const DEV_MINOR_ANY: u32 = u32::MAX;
+pub const QEMU_DEV_RULES: usize = 32;
+/// QEMU sandbox mode bit in `QemuSandboxCfg::flags`: deny (needs the lease).
+pub const SANDBOX_ENFORCE: u32 = 1 << 0;
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct QemuDevRule {
+    pub major: u32,
+    pub minor: u32,
+    pub dev_type: u32,
+    pub access: u32,
+}
+
+/// Device allowlist shared by every sandboxed QEMU scope (QEMU_SANDBOX[0]).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct QemuSandboxCfg {
+    pub n: u32,
+    pub flags: u32,
+    pub rules: [QemuDevRule; QEMU_DEV_RULES],
+}
+
+impl Default for QemuSandboxCfg {
+    fn default() -> Self {
+        Self {
+            n: 0,
+            flags: 0,
+            rules: [QemuDevRule::default(); QEMU_DEV_RULES],
+        }
+    }
+}
+
+/// Device access outside the allowlist (QEMU_DEV_HITS).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct DevHitKey {
+    pub cgroup: u64,
+    pub major: u32,
+    pub minor: u32,
+    pub dev_type: u16,
+    pub access: u16,
+    pub _pad: u32,
+}
+
+/// QEMU-originated IP egress outside loopback / allowed ports (QEMU_NET_HITS).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct NetHitKey {
+    pub cgroup: u64,
+    pub addr: [u8; ADDR_LEN],
+    /// Network order.
+    pub port: [u8; 2],
+    pub proto: u8,
+    pub _pad: [u8; 5],
+}
+
+// ---------------------------------------------------------------------------
 // Helpers usable from both sides
 // ---------------------------------------------------------------------------
 
@@ -599,7 +715,8 @@ mod pod {
     pod!(
         GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
-        NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg
+        NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
+        VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey
     );
 }
 
@@ -629,6 +746,12 @@ mod tests {
         assert_eq!(size_of::<AffinityKey>(), 20);
         assert_eq!(size_of::<AffinityVal>(), 16);
         assert_eq!(size_of::<NodeCfg>(), 40);
+        assert_eq!(size_of::<VmEdgeCfg>(), 32);
+        assert_eq!(size_of::<VmBucket>(), 24);
+        assert_eq!(size_of::<VmEdgeStats>(), 56);
+        assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
+        assert_eq!(size_of::<DevHitKey>(), 24);
+        assert_eq!(size_of::<NetHitKey>(), 32);
         assert_eq!(size_of::<RateCfg>(), 16);
         assert_eq!(size_of::<IfaceStats>(), 40);
         assert_eq!(size_of::<L7Event>(), 24 + 48 + L7_PAYLOAD_LEN);

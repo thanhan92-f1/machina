@@ -49,6 +49,13 @@ struct Persisted {
     cni_endpoints: Vec<CniEndpoint>,
     #[serde(default)]
     cni_state: Option<CniState>,
+    #[serde(default)]
+    vm_edge: Option<VmEdgeState>,
+    #[serde(default)]
+    vm_sandbox: Option<VmSandboxConfig>,
+    /// VMs sandboxed by request (re-attached when their scope reappears).
+    #[serde(default)]
+    vm_sandbox_pinned: Vec<String>,
 }
 
 struct Daemon {
@@ -82,6 +89,13 @@ impl Daemon {
             cni_config: eng.cni.config.clone(),
             cni_endpoints: eng.cni.endpoints.values().cloned().collect(),
             cni_state: eng.cni.last_sync.is_some().then(|| eng.cni.last.clone()),
+            vm_edge: (!eng.vm_edge.state.vms.is_empty()).then(|| eng.vm_edge.state.clone()),
+            vm_sandbox: Some(eng.sandbox.config.clone()),
+            vm_sandbox_pinned: {
+                let mut v: Vec<String> = eng.sandbox.pinned.iter().cloned().collect();
+                v.sort();
+                v
+            },
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -147,6 +161,17 @@ impl Daemon {
             let ip = ep.ip.clone();
             if let Err(e) = eng.cni_add_endpoint(ep) {
                 tracing::info!("restore cni endpoint {ip}: {e:#}");
+            }
+        }
+        // Sandbox mode is restored as configured, but enforcement still needs
+        // a fresh lease, so a restarted bpfd only observes.
+        if let Some(cfg) = p.vm_sandbox {
+            eng.sandbox.config = cfg;
+        }
+        eng.sandbox.pinned = p.vm_sandbox_pinned.into_iter().collect();
+        if let Some(st) = p.vm_edge {
+            if let Err(e) = eng.vm_edge_sync(st) {
+                tracing::warn!("restore vm edge: {e:#}");
             }
         }
     }
@@ -312,6 +337,38 @@ impl Daemon {
                 v(&st)
             }
             Request::CniStatus => v(&lock(&self.engine).cni_status()),
+            Request::VmEdgeSync { state } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.vm_edge_sync(state)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmEdgeStatus => v(&lock(&self.engine).vm_edge_status()),
+            Request::VmSandboxConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.vm_sandbox_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmSandboxAttach { vm, cgroup } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.vm_sandbox_attach(&vm, cgroup.as_deref())?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmSandboxDetach { vm } => {
+                let mut eng = lock(&self.engine);
+                let detached = eng.vm_sandbox_detach(&vm);
+                self.save(&eng);
+                json!({ "detached": detached, "vm": vm })
+            }
+            Request::VmSandboxStatus => v(&lock(&self.engine).vm_sandbox_status()),
+            Request::VmRefresh => {
+                let mut eng = lock(&self.engine);
+                eng.vm_edge_refresh();
+                eng.sandbox_refresh();
+                json!({ "refreshed": true })
+            }
             Request::Subscribe { .. } => return Err(anyhow!("subscribe is handled per connection")),
         })
     }

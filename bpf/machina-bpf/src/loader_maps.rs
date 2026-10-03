@@ -334,6 +334,41 @@ impl Datapath {
         Ok(m.keys().filter_map(|r| r.ok()).collect())
     }
 
+    /// Every entry of a hash / LRU hash map.
+    pub fn hash_entries<K: Pod, V: Pod>(&mut self, map: &str) -> Result<Vec<(K, V)>> {
+        let m = self.hash::<K, V>(map)?;
+        Ok(m.iter().filter_map(|r| r.ok()).collect())
+    }
+
+    pub fn array_set<V: Pod>(&mut self, map: &str, index: u32, v: V) -> Result<()> {
+        self.array::<V>(map)?.set(index, v, 0)?;
+        Ok(())
+    }
+
+    /// Per-CPU hash entries folded with `add`.
+    pub fn percpu_sum<K: Pod, V: Pod + Default>(&mut self, map: &str, add: impl Fn(&mut V, &V)) -> Result<Vec<(K, V)>> {
+        let m = self.ebpf.map_mut(map).ok_or_else(|| anyhow!("map {map} missing"))?;
+        let m: PerCpuHashMap<&mut MapData, K, V> = PerCpuHashMap::try_from(m)?;
+        Ok(m.iter()
+            .filter_map(|r| r.ok())
+            .map(|(k, per_cpu)| {
+                let mut s = V::default();
+                for c in per_cpu.iter() {
+                    add(&mut s, c);
+                }
+                (k, s)
+            })
+            .collect())
+    }
+
+    pub fn percpu_remove<K: Pod, V: Pod>(&mut self, map: &str, k: &K) {
+        if let Some(m) = self.ebpf.map_mut(map) {
+            if let Ok(mut m) = PerCpuHashMap::<&mut MapData, K, V>::try_from(m) {
+                let _ = m.remove(k);
+            }
+        }
+    }
+
     pub fn cni_cidr_insert(&mut self, addr: [u8; ADDR_LEN], bits: u32, id: u32) -> Result<()> {
         self.lpm::<[u8; ADDR_LEN], u32>("CNI_CIDR_IDS")?
             .insert(&Key::new(bits, addr), id, 0)?;

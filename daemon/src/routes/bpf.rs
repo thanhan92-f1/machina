@@ -13,7 +13,7 @@ use axum::routing::{delete, get, put};
 use axum::{Json, Router};
 use base64::Engine as _;
 use futures_util::Stream;
-use machina_bpf::api::{Mode, Policy, Request, TelemetryConfig};
+use machina_bpf::api::{Mode, Policy, Request, TelemetryConfig, VmEdgeState, VmSandboxConfig};
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
 use serde::Deserialize;
@@ -305,6 +305,63 @@ async fn stream(
     Ok(Sse::new(events).keep_alive(KeepAlive::default()))
 }
 
+async fn vm_edge_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::VmEdgeStatus).await
+}
+
+async fn vm_edge_sync(
+    Extension(actor): Extension<RequestActor>,
+    Json(state): Json<VmEdgeState>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing VM edge isolation")?;
+    bpfd(Request::VmEdgeSync { state }).await
+}
+
+async fn vm_sandbox_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::VmSandboxStatus).await
+}
+
+async fn vm_sandbox_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<VmSandboxConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the QEMU sandbox")?;
+    bpfd(Request::VmSandboxConfigure { config }).await
+}
+
+#[derive(Deserialize, Default)]
+struct SandboxAttachBody {
+    cgroup: Option<String>,
+}
+
+async fn vm_sandbox_attach(
+    Extension(actor): Extension<RequestActor>,
+    Path(vm): Path<String>,
+    body: Option<Json<SandboxAttachBody>>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the QEMU sandbox")?;
+    let cgroup = body.and_then(|Json(b)| b.cgroup);
+    bpfd(Request::VmSandboxAttach { vm, cgroup }).await
+}
+
+async fn vm_sandbox_detach(
+    Extension(actor): Extension<RequestActor>,
+    Path(vm): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the QEMU sandbox")?;
+    bpfd(Request::VmSandboxDetach { vm }).await
+}
+
+/// After a VM lifecycle change, have bpfd re-follow VM taps and QEMU scopes
+/// now instead of on its next rescan. Best-effort: bpfd may not be running.
+pub fn notify_vm_lifecycle() {
+    tokio::spawn(async {
+        if let Err(e) = BpfdClient::from_env().call(&Request::VmRefresh).await {
+            tracing::debug!("bpfd vm refresh: {e:#}");
+        }
+    });
+}
+
 pub fn bpf_routes() -> Router<LibvirtManager> {
     Router::new()
         .route("/bpf/status", get(status))
@@ -327,4 +384,10 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/qos", put(set_qos))
         .route("/bpf/telemetry", get(get_telemetry).put(set_telemetry))
         .route("/bpf/stream", get(stream))
+        .route("/bpf/vm-edge", get(vm_edge_status).put(vm_edge_sync))
+        .route("/bpf/vm-sandbox", get(vm_sandbox_status).put(vm_sandbox_configure))
+        .route(
+            "/bpf/vm-sandbox/{vm}",
+            axum::routing::post(vm_sandbox_attach).delete(vm_sandbox_detach),
+        )
 }

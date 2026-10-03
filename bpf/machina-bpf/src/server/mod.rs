@@ -34,6 +34,7 @@ mod listen;
 mod ops;
 mod readers;
 mod uplink;
+mod vm;
 
 pub use listen::{run, Config};
 
@@ -165,6 +166,8 @@ struct Engine {
     acct_since: HashMap<String, String>,
     cni: cni::CniRuntime,
     uplink: uplink::UplinkRuntime,
+    vm_edge: vm::VmEdgeRuntime,
+    sandbox: vm::SandboxRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -248,6 +251,8 @@ impl Engine {
             acct_since: HashMap::new(),
             cni: cni::CniRuntime::default(),
             uplink: uplink::UplinkRuntime::default(),
+            vm_edge: vm::VmEdgeRuntime::default(),
+            sandbox: vm::SandboxRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

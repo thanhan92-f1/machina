@@ -10,9 +10,9 @@ use std::path::Path;
 
 use anyhow::{anyhow, bail, Context, Result};
 use aya::programs::{
-    cgroup_skb::CgroupSkbLinkId, cgroup_sock_addr::CgroupSockAddrLinkId, tc::SchedClassifierLinkId,
-    xdp::XdpLinkId, CgroupAttachMode, CgroupSkb, CgroupSkbAttachType, CgroupSockAddr, KProbe,
-    SchedClassifier, TcAttachType, TracePoint, Xdp, XdpMode,
+    cgroup_device::CgroupDeviceLinkId, cgroup_skb::CgroupSkbLinkId, cgroup_sock_addr::CgroupSockAddrLinkId,
+    tc::SchedClassifierLinkId, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb, CgroupSkbAttachType,
+    CgroupSockAddr, KProbe, SchedClassifier, TcAttachType, TracePoint, Xdp, XdpMode,
 };
 use aya::util::KernelVersion;
 use aya::{Ebpf, EbpfLoader, VerifierLogLevel};
@@ -104,6 +104,7 @@ pub struct Datapath {
     uplink: StdHashMap<String, (String, SchedClassifierLinkId)>,
     xdp: StdHashMap<String, (String, XdpLinkId)>,
     cgroups: StdHashMap<String, CgroupLinks>,
+    sandboxes: StdHashMap<String, (CgroupDeviceLinkId, CgroupSkbLinkId)>,
     pub tracepoints: Vec<String>,
     pub notes: Vec<String>,
     tcx: bool,
@@ -131,6 +132,7 @@ impl Datapath {
             uplink: StdHashMap::new(),
             xdp: StdHashMap::new(),
             cgroups: StdHashMap::new(),
+            sandboxes: StdHashMap::new(),
             tracepoints: Vec::new(),
             notes: Vec::new(),
             tcx: kernel_features().tcx,
@@ -203,8 +205,94 @@ impl Datapath {
     /// Forget links for an interface that disappeared (kernel already dropped them).
     pub fn forget_tc(&mut self, iface: &str) {
         self.tc.remove(iface);
-        self.uplink.remove(iface);
+        let prefix = format!("{iface}:");
+        self.uplink.retain(|k, _| !k.starts_with(&prefix));
         self.xdp.remove(iface);
+    }
+
+    pub fn detach_tc_one(&mut self, iface: &str, prog: &str) {
+        if let Some((name, id)) = self.uplink.remove(&format!("{iface}:{prog}")) {
+            if let Ok(p) = self.classifier(&name) {
+                let _ = p.detach(id);
+            }
+        }
+    }
+
+    pub fn tc_one_attached(&self, iface: &str, prog: &str) -> bool {
+        self.uplink.contains_key(&format!("{iface}:{prog}"))
+    }
+
+    /// QEMU sandbox on a machine scope: device allowlist + IP egress filter.
+    /// bpf_link attaches are multi-mode, so libvirt's own device program
+    /// keeps running and the kernel ANDs both verdicts.
+    pub fn attach_sandbox(&mut self, cg_path: &Path) -> Result<()> {
+        let key = cg_path.display().to_string();
+        if self.sandboxes.contains_key(&key) {
+            return Ok(());
+        }
+        let first = !self.loaded.contains("mn_qemu_device");
+        let dev: &mut CgroupDevice = self
+            .ebpf
+            .program_mut("mn_qemu_device")
+            .ok_or_else(|| anyhow!("program mn_qemu_device missing"))?
+            .try_into()?;
+        if first {
+            dev.load().context("verifier rejected mn_qemu_device")?;
+            self.loaded.insert("mn_qemu_device".into());
+        }
+        let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
+        let dev_id = dev.attach(f, CgroupAttachMode::default()).context("attach mn_qemu_device")?;
+
+        let first = !self.loaded.contains("mn_qemu_egress");
+        let skb: &mut CgroupSkb = self
+            .ebpf
+            .program_mut("mn_qemu_egress")
+            .ok_or_else(|| anyhow!("program mn_qemu_egress missing"))?
+            .try_into()?;
+        let res = (|| -> Result<CgroupSkbLinkId> {
+            if first {
+                skb.load().context("verifier rejected mn_qemu_egress")?;
+            }
+            let f = File::open(cg_path)?;
+            Ok(skb.attach(f, CgroupSkbAttachType::Egress, CgroupAttachMode::default())?)
+        })();
+        if first && res.is_ok() {
+            self.loaded.insert("mn_qemu_egress".into());
+        }
+        let skb_id = match res {
+            Ok(id) => id,
+            Err(e) => {
+                if let Some(p) = self.ebpf.program_mut("mn_qemu_device") {
+                    if let Ok(p) = <&mut CgroupDevice>::try_from(p) {
+                        let _ = p.detach(dev_id);
+                    }
+                }
+                return Err(e.context("attach mn_qemu_egress"));
+            }
+        };
+        self.sandboxes.insert(key, (dev_id, skb_id));
+        Ok(())
+    }
+
+    pub fn detach_sandbox(&mut self, cg_path: &str) {
+        let Some((dev_id, skb_id)) = self.sandboxes.remove(cg_path) else {
+            return;
+        };
+        if let Some(p) = self.ebpf.program_mut("mn_qemu_device") {
+            if let Ok(p) = <&mut CgroupDevice>::try_from(p) {
+                let _ = p.detach(dev_id);
+            }
+        }
+        if let Some(p) = self.ebpf.program_mut("mn_qemu_egress") {
+            if let Ok(p) = <&mut CgroupSkb>::try_from(p) {
+                let _ = p.detach(skb_id);
+            }
+        }
+    }
+
+    /// Drop links of a scope whose cgroup is gone (the kernel released them).
+    pub fn forget_sandbox(&mut self, cg_path: &str) {
+        self.sandboxes.remove(cg_path);
     }
 
     pub fn tc_attached(&self) -> Vec<String> {

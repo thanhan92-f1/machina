@@ -13,6 +13,7 @@ mod net;
 mod parse;
 mod proc;
 mod shield;
+mod vm;
 mod xdp;
 
 #[cfg(not(test))]

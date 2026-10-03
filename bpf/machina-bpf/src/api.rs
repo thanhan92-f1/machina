@@ -3,6 +3,8 @@
 
 //! Wire types for the machina-bpfd Unix-socket API (newline-delimited JSON).
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -507,6 +509,141 @@ pub struct CniStatus {
     pub last_sync: Option<String>,
 }
 
+/// One VM at the edge. `group` (from controller VM labels) picks the policy
+/// identity; VMs without a group get their own (`vm:<name>`).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmEdgeVm {
+    pub name: String,
+    #[serde(default)]
+    pub group: Option<String>,
+    /// Guest addresses, so other VMs can match this one as a peer.
+    #[serde(default)]
+    pub addresses: Vec<String>,
+    /// Tap names; empty = discover from libvirt's live domain XML.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub taps: Vec<String>,
+    #[serde(default)]
+    pub isolate_ingress: bool,
+    #[serde(default)]
+    pub isolate_egress: bool,
+    /// Mbit/s from / towards the VM; 0 = unlimited.
+    #[serde(default)]
+    pub egress_mbps: u32,
+    #[serde(default)]
+    pub ingress_mbps: u32,
+    /// Packets/s each direction; 0 = unlimited.
+    #[serde(default)]
+    pub pps: u32,
+}
+
+/// Allow rule between groups. `peer` None = any peer (including non-VMs),
+/// proto 0 = any, port 0 = any.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VmEdgeRule {
+    pub group: String,
+    #[serde(default)]
+    pub peer: Option<String>,
+    #[serde(default)]
+    pub egress: bool,
+    #[serde(default)]
+    pub proto: u8,
+    #[serde(default)]
+    pub port: u16,
+}
+
+/// Desired VM edge state; each `vm_edge_sync` replaces the previous one.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmEdgeState {
+    pub vms: Vec<VmEdgeVm>,
+    #[serde(default)]
+    pub policy: Vec<VmEdgeRule>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmEdgeTap {
+    pub vm: String,
+    pub iface: String,
+    pub identity: u32,
+    pub flags: Vec<String>,
+    pub stats: VmEdgeCounters,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmEdgeCounters {
+    pub out_pkts: u64,
+    pub out_bytes: u64,
+    pub in_pkts: u64,
+    pub in_bytes: u64,
+    pub denied: u64,
+    pub observed: u64,
+    pub rate_dropped: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmEdgeStatus {
+    pub vms: usize,
+    pub rules: usize,
+    pub groups: BTreeMap<String, u32>,
+    pub taps: Vec<VmEdgeTap>,
+    /// VMs in the state with no tap on this host.
+    pub missing: Vec<String>,
+    pub enforcing: bool,
+}
+
+/// QEMU sandbox settings (device allowlist + egress ports). Enforcement
+/// also needs the bpfd enforcement lease.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct VmSandboxConfig {
+    /// "observe" (default) or "enforce".
+    #[serde(default = "default_observe")]
+    pub mode: String,
+    /// Attach to every running machine-qemu scope automatically.
+    #[serde(default)]
+    pub auto: bool,
+    /// Extra device rules, `c|b MAJOR:MINOR|* [rwm]`.
+    #[serde(default)]
+    pub extra_devices: Vec<String>,
+    /// QEMU egress ports besides loopback (live migration, NBD).
+    #[serde(default = "default_qemu_ports")]
+    pub egress_ports: Vec<String>,
+}
+
+fn default_observe() -> String {
+    "observe".into()
+}
+
+fn default_qemu_ports() -> Vec<String> {
+    vec!["49152-49215".into(), "10809".into()]
+}
+
+impl Default for VmSandboxConfig {
+    fn default() -> Self {
+        Self { mode: default_observe(), auto: false, extra_devices: Vec::new(), egress_ports: default_qemu_ports() }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SandboxHit {
+    pub vm: Option<String>,
+    pub cgroup: Option<String>,
+    /// "c 10:232 rw" for devices, "tcp 10.0.0.1:443" for egress.
+    pub target: String,
+    pub count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmSandboxStatus {
+    pub config: VmSandboxConfig,
+    /// The resolved device allowlist.
+    pub devices: Vec<String>,
+    /// VM → sandboxed cgroup path.
+    pub attached: BTreeMap<String, String>,
+    pub enforcing: bool,
+    pub device_hits: Vec<SandboxHit>,
+    pub egress_hits: Vec<SandboxHit>,
+    pub notes: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Request {
@@ -626,6 +763,27 @@ pub enum Request {
         state: CniState,
     },
     CniStatus,
+    /// VM group identities, policy and rate limits on VM taps.
+    VmEdgeSync {
+        state: VmEdgeState,
+    },
+    VmEdgeStatus,
+    VmSandboxConfigure {
+        config: VmSandboxConfig,
+    },
+    /// Sandbox one VM's QEMU (`cgroup` relative to /sys/fs/cgroup; default:
+    /// its machine-qemu scope).
+    VmSandboxAttach {
+        vm: String,
+        #[serde(default)]
+        cgroup: Option<String>,
+    },
+    VmSandboxDetach {
+        vm: String,
+    },
+    VmSandboxStatus,
+    /// Re-follow VM taps and QEMU scopes now (sent on VM start/stop).
+    VmRefresh,
     /// Stream events (`net`, `dns`, `l7`, `proc`, `anomaly`) as JSON lines
     /// until the client disconnects.
     Subscribe {

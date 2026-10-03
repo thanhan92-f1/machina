@@ -356,6 +356,7 @@ async fn start_vm(
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::start_vm(conn, &name2)).await?;
     log_audit("start", &name, "ok");
     vm_events::emit_vm_started(&name);
+    super::bpf::notify_vm_lifecycle();
     Ok(ok_json("started", &name))
 }
 
@@ -370,6 +371,7 @@ async fn stop_vm(
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::stop_vm(conn, &name2)).await?;
     log_audit("stop", &name, "ok");
     vm_events::emit_vm_stopped(&name);
+    super::bpf::notify_vm_lifecycle();
     Ok(ok_json("stopped", &name))
 }
 
@@ -475,6 +477,7 @@ async fn delete_vm_handler(
     .await?;
     log_audit_with_actor(Some(&actor.username), "delete", &name, "ok");
     vm_events::emit_vm_deleted(&name);
+    super::bpf::notify_vm_lifecycle();
     if leaked_network_disks.is_empty() {
         Ok(ok_json("deleted", &name))
     } else {
