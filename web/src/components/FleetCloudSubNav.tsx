@@ -38,15 +38,16 @@ function tabActive(pathname: string, tab: Tab): boolean {
   return pathname === tab.to || pathname.startsWith(`${tab.to}/`)
 }
 
+/** Same language as the top bar and ChapterBar: quiet text, 2px blue underline on the active tab. */
 function pillClass(active: boolean): string {
-  return `inline-flex items-center min-h-9 rounded-full px-3.5 py-1.5 text-[13px] font-medium tracking-tight transition-colors ${
+  return `relative inline-flex items-center min-h-11 px-3.5 text-[13px] font-medium tracking-tight transition-colors after:absolute after:left-3.5 after:right-3.5 after:-bottom-px after:h-0.5 after:rounded-full ${
     active
-      ? 'bg-[var(--accent)] text-[var(--text-on-accent,#fff)]'
-      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover,rgba(16,20,28,0.05))]'
+      ? 'text-[var(--text-primary)] after:bg-[var(--apple-link,#0066cc)]'
+      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] after:bg-transparent'
   }`
 }
 
-/** Compact Fleet Cloud context pills — replaces the old 15-tab strip. */
+/** Compact Fleet Cloud section tabs — replaces the old 15-tab strip. */
 export default function FleetCloudSubNav() {
   const { pathname } = useLocation()
   const { info } = usePlatformInfo()
@@ -59,18 +60,8 @@ export default function FleetCloudSubNav() {
   }, [pathname])
 
   return (
-    <div className="mb-8 space-y-4">
-      {Boolean(info?.control_plane?.proxy_url) && (
-        <div className="flex flex-wrap items-center gap-6 text-[15px]">
-          <Link to="/platform" className="apple-link inline-flex items-center min-h-9">
-            Platform
-          </Link>
-          <Link to="/platform/settings?section=integrations" className="apple-link inline-flex items-center min-h-9">
-            Integrations
-          </Link>
-        </div>
-      )}
-      <nav className="flex flex-wrap items-center gap-1.5" aria-label="Fleet Cloud">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 border-b border-[var(--apple-hairline)]">
+      <nav className="flex flex-wrap items-center" aria-label="Fleet Cloud">
         {PRIMARY.map((tab) => (
           <Link key={tab.to} to={tab.to} className={pillClass(tabActive(pathname, tab))}>
             {tab.label}
@@ -109,6 +100,16 @@ export default function FleetCloudSubNav() {
           </PlatformFloatingMenu>
         </div>
       </nav>
+      {Boolean(info?.control_plane?.proxy_url) && (
+        <div className="flex items-center gap-5 text-[13px]">
+          <Link to="/platform" className="apple-link inline-flex items-center min-h-9">
+            Platform
+          </Link>
+          <Link to="/platform/settings?section=integrations" className="apple-link inline-flex items-center min-h-9">
+            Integrations
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
