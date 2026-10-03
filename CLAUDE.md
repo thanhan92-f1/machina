@@ -149,6 +149,7 @@ MACHINA_BPF_ENFORCE_LEASE_SECS 900
 - `/platform/*` — Enterprise platform shell (controller-backed); uses `PlatformLayout` (top-bar-only navigation, no sidebar)
 - `/fleet-cloud/*` — "Fleet Cloud" UI (renamed from its old route; no redirect — old links 404). Backed entirely by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). The legacy external-cloud client integration (compute/image/network/identity management, disk push/pull) has been fully removed from core and daemon.
 - `/fleet` — Multi-host fleet overview
+- `/platform/zyra/security/network-policies` — VM network policy (CiliumNetworkPolicy schema → `machina-bpfd` VM edge; compiler in `bpf/machina-bpf/src/netpol/`, daemon `routes/netpol.rs`, controller `api/vm_network_policies.rs` + `engine/vm_netpol.rs`) and the Flows terminal (`components/flow/FlowTerminal.tsx`). CLI: `machinactl netpol|flow|vm label` (`scripts/lib/netpol-ctl.sh`). See `docs/ebpf/vm-network-policy.md`.
 
 ### Dev proxy
 In `npm run dev` mode, Vite proxies `/api` and `/ws` to `https://localhost:5092` (daemon). Platform API calls flow through `/api/v1/platform/controller` on the daemon, which reverse-proxies to the controller at `:5093`.

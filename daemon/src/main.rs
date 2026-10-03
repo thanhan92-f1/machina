@@ -186,6 +186,7 @@ async fn main() -> anyhow::Result<()> {
         config.inventory_history.clone(),
     );
     automation_worker::spawn_automation_worker(manager.clone());
+    routes::netpol::spawn_resync_loop(manager.clone());
 
     let bind_addr = config.bind_addr();
     let tls_enabled = config.tls.is_effectively_enabled();

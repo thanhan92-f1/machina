@@ -89,6 +89,7 @@ const SECURITY_ITEMS: ContextNavItem[] = [
   { to: '/platform/zyra/security/hunt', label: 'Threat Hunting' },
   { to: '/platform/zyra/security/enforcement', label: 'Enforcement' },
   { to: '/platform/zyra/security/native-bpf', label: 'Native eBPF' },
+  { to: '/platform/zyra/security/network-policies', label: 'VM Network Policies' },
 ]
 
 const INFRASTRUCTURE_ITEMS: ContextNavItem[] = [

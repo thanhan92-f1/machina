@@ -20,6 +20,7 @@ pub mod client;
 pub mod dns;
 pub mod l7;
 pub mod l7sample;
+pub mod netpol;
 pub mod pcapng;
 pub mod policy;
 pub mod rtnl;

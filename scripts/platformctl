@@ -49,6 +49,10 @@ Commands:
   vault-sync                Sync all Vault providers
   mfa-compliance            MFA enrollment compliance report
   fips                      FIPS crypto matrix
+  netpol <cmd>              Fleet VM network policies (apply/get/delete/test/selectors/
+                            endpoints/status/sync/enable/disable; `netpol help`)
+  flow <observe|top|stats>  Fleet packet flows (colorful; `flow help`)
+  label <vm> [k=v] [k-]     Show or edit VM labels
 
 Environment:
   MACHINA_CONTROLLER_URL   (default http://127.0.0.1:5093)
@@ -141,6 +145,19 @@ case "$cmd" in
   vault-sync) api POST /api/v1/enterprise/vault/sync-all -d '{}' | jq . ;;
   mfa-compliance) api GET /api/v1/enterprise/mfa/compliance | jq . ;;
   fips) api GET /api/v1/enterprise/fips/matrix | jq . ;;
+  netpol|flow|label)
+    # shellcheck source=lib/netpol-ctl.sh
+    source "$(dirname "${BASH_SOURCE[0]}")/lib/netpol-ctl.sh"
+    NP_BASE="${BASE}/api/v1"
+    NP_AUTH=(-H "$(auth)")
+    NP_FLEET=1
+    shift
+    case "$cmd" in
+      netpol) np_netpol_main "$@" ;;
+      flow) np_flow_main "$@" ;;
+      label) np_label_main "$@" ;;
+    esac
+    ;;
   -h|--help|help|'') usage ;;
   *) echo "unknown command: $cmd" >&2; usage; exit 1 ;;
 esac

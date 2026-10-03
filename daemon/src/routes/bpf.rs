@@ -542,6 +542,7 @@ pub fn notify_vm_lifecycle() {
             tracing::debug!("bpfd vm refresh: {e:#}");
         }
     });
+    super::netpol::trigger_resync();
 }
 
 pub fn bpf_routes() -> Router<LibvirtManager> {

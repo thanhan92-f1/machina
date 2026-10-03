@@ -1366,6 +1366,7 @@ pub struct PatchVmBody {
     pub project: Option<String>,
     pub tags: Option<Vec<String>>,
     pub description: Option<String>,
+    pub labels: Option<std::collections::BTreeMap<String, String>>,
 }
 
 pub async fn patch_vm(
@@ -1392,6 +1393,14 @@ pub async fn patch_vm(
     if let Some(tags) = &body.tags {
         sqlx::query("UPDATE vms SET tags = ?, updated_at = datetime('now') WHERE id = ?")
             .bind(serde_json::to_string(tags).unwrap_or_else(|_| "[]".into()))
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
+    }
+    if let Some(labels) = &body.labels {
+        super::vm_network_policies::validate_labels(labels)?;
+        sqlx::query("UPDATE vms SET labels = ?, updated_at = datetime('now') WHERE id = ?")
+            .bind(serde_json::to_string(labels).unwrap_or_else(|_| "{}".into()))
             .bind(id)
             .execute(&state.pool)
             .await?;

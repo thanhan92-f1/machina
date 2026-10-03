@@ -53,6 +53,7 @@ mod developer;
 mod fleet_automation;
 mod kubevirt;
 mod proxmox;
+mod vm_network_policies;
 mod vmware;
 mod observability;
 mod observability_middleware;
@@ -82,7 +83,7 @@ pub(crate) mod volumes;
 mod webhooks;
 
 use axum::middleware;
-use axum::routing::{delete, get, patch, post};
+use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 
 use crate::auth::auth_middleware;
@@ -139,6 +140,27 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/hosts/{id}/fence", post(maintenance::fence_host_manual))
         .route("/api/v1/vms/{id}", get(vms::get_vm).patch(vms::patch_vm))
+        .route(
+            "/api/v1/vms/{id}/labels",
+            get(vm_network_policies::get_labels).put(vm_network_policies::put_labels),
+        )
+        .route(
+            "/api/v1/vm-network-policies",
+            get(vm_network_policies::list).post(vm_network_policies::apply),
+        )
+        .route("/api/v1/vm-network-policies/validate", post(vm_network_policies::validate))
+        .route("/api/v1/vm-network-policies/trace", post(vm_network_policies::trace))
+        .route("/api/v1/vm-network-policies/endpoints", get(vm_network_policies::endpoints))
+        .route("/api/v1/vm-network-policies/selectors", get(vm_network_policies::selectors))
+        .route("/api/v1/vm-network-policies/status", get(vm_network_policies::status))
+        .route("/api/v1/vm-network-policies/sync", post(vm_network_policies::sync_now))
+        .route(
+            "/api/v1/vm-network-policies/{name}",
+            get(vm_network_policies::get_one).delete(vm_network_policies::delete_one),
+        )
+        .route("/api/v1/vm-network-policies/{name}/enabled", put(vm_network_policies::set_enabled))
+        .route("/api/v1/flows", get(vm_network_policies::flows))
+        .route("/api/v1/flows/stream", get(vm_network_policies::flow_stream))
         .route("/api/v1/vms/{id}/disks", get(vms::list_vm_disks))
         .route("/api/v1/vms/{id}/disks/attach", post(vms::attach_vm_disk))
         .route(

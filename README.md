@@ -104,6 +104,7 @@ Machina ships its own eBPF datapath instead of bolting on Cilium, Tetragon or a 
 
 - **Load balancing**: Maglev service LB for Kubernetes (socket-level, NodePort at TC or XDP, DSR) and QUIC-LB at XDP.
 - **Kubernetes CNI** (opt-in): `machina-cni` replaces flannel and kube-proxy where you choose it, with NetworkPolicy and Cilium policy migration. It never takes over an existing CNI.
+- **VM network policy**: which VM may talk to which, ingress and egress, written as CiliumNetworkPolicy YAML and enforced on each VM tap without Cilium. Comes with policy trace and Hubble-style flows in the UI and in `machinactl netpol` / `machinactl flow`.
 - **Protection**: XDP DDoS shield, emergency node isolation, VM edge isolation and rate limits, a QEMU sandbox and a BPF-LSM guard around the VMM.
 - **Visibility**: flows, DNS, L7 (HTTP, TLS SNI, gRPC, Redis, PostgreSQL, MySQL, Kafka), JA3/JA4 fingerprints, network-change audit and per-VM runtime histograms.
 - **Inside guests**: per-container network and LSM policy through GuestKit, from the VM's **Guest policy** tab.

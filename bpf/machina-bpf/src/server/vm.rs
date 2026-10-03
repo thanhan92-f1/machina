@@ -26,7 +26,100 @@ pub(super) struct VmEdgeRuntime {
     /// tap name → (ifindex, vm)
     taps: HashMap<String, (u32, String)>,
     ips: HashSet<[u8; ADDR_LEN]>,
-    policy: HashSet<PolicyKey>,
+    policy: HashMap<PolicyKey, u32>,
+    /// Identities with deny entries: (identity, egress).
+    deny: HashSet<(u32, bool)>,
+}
+
+/// What the flow reader needs to label events: identity → name/labels and
+/// the rule table for attribution.
+#[derive(Default, Clone)]
+pub(super) struct FlowIndex {
+    names: HashMap<u32, (String, BTreeMap<String, String>)>,
+    rules: crate::netpol::RuleIndex,
+}
+
+impl FlowIndex {
+    fn name(&self, id: u32) -> Option<&(String, BTreeMap<String, String>)> {
+        self.names.get(&id)
+    }
+
+    /// Same lookup order as the kernel; any deny match wins.
+    fn attribute(&self, subject: u32, peer: u32, egress: bool, proto: u8, port: u16) -> Option<String> {
+        let combos = [(peer, proto, port), (peer, proto, 0), (0, proto, port), (0, proto, 0), (peer, 0, 0), (0, 0, 0)];
+        let hits: Vec<&(bool, String)> =
+            combos.iter().filter_map(|(pe, pr, po)| self.rules.get(&(subject, *pe, egress, *pr, *po))).collect();
+        hits.iter().find(|h| h.0).or_else(|| hits.first()).map(|h| h.1.clone()).filter(|s| !s.is_empty())
+    }
+}
+
+fn tcp_flag_names(f: u8) -> String {
+    let mut out = Vec::new();
+    for (bit, n) in [(0x02, "SYN"), (0x10, "ACK"), (0x01, "FIN"), (0x04, "RST"), (0x08, "PSH"), (0x20, "URG")] {
+        if f & bit != 0 {
+            out.push(n);
+        }
+    }
+    out.join(",")
+}
+
+pub(super) fn on_vm_flow(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &[u8]) {
+    if b.len() < std::mem::size_of::<VmFlowEvent>() {
+        return;
+    }
+    let ev = unsafe { std::ptr::read_unaligned(b.as_ptr() as *const VmFlowEvent) };
+    let rec = {
+        let mut s = lock(sh);
+        let (iface, tap_vm) = s.iface(ev.ifindex);
+        let idx = &s.vm_flow_index;
+        let egress = ev.from_vm != 0;
+        let subject = idx.name(ev.subject).cloned();
+        let peer = idx.name(ev.peer).cloned();
+        let port = if ev.icmp != 0 { ev.icmp as u16 } else { ev.dport };
+        let policy = idx.attribute(ev.subject, ev.peer, egress, ev.proto, port);
+        let vm = tap_vm.or_else(|| subject.as_ref().map(|s| s.0.clone())).unwrap_or_default();
+        let (src_side, dst_side) = if egress { (subject, peer) } else { (peer, subject) };
+        let (src_id, dst_id) = if egress { (ev.subject, ev.peer) } else { (ev.peer, ev.subject) };
+        let rec = VmFlowRecord {
+            ts: mono_to_rfc3339(ev.ts_ns),
+            host: None,
+            iface: iface.unwrap_or_default(),
+            vm,
+            direction: if egress { "egress" } else { "ingress" }.into(),
+            src: fmt_addr(&ev.src),
+            src_port: if ev.icmp != 0 { 0 } else { ev.sport },
+            dst: fmt_addr(&ev.dst),
+            dst_port: if ev.icmp != 0 { 0 } else { ev.dport },
+            src_vm: src_side.as_ref().map(|s| s.0.clone()),
+            dst_vm: dst_side.as_ref().map(|s| s.0.clone()),
+            src_labels: src_side.map(|s| s.1).unwrap_or_default(),
+            dst_labels: dst_side.map(|s| s.1).unwrap_or_default(),
+            src_identity: src_id,
+            dst_identity: dst_id,
+            proto: match ev.proto {
+                132 => "sctp".into(),
+                p => proto_name(p).into(),
+            },
+            tcp_flags: if ev.proto == policy::IPPROTO_TCP { tcp_flag_names(ev.tcp_flags) } else { String::new() },
+            icmp_type: (ev.icmp != 0).then(|| ev.icmp - 1),
+            bytes: ev.len,
+            verdict: match ev.verdict {
+                VMF_DROPPED => "DROPPED",
+                VMF_AUDIT => "AUDIT",
+                _ => "FORWARDED",
+            }
+            .into(),
+            drop_reason: match ev.reason {
+                VMF_REASON_POLICY_DENY => Some("policy-deny".into()),
+                VMF_REASON_DEFAULT_DENY => Some("default-deny".into()),
+                _ => None,
+            },
+            policy,
+        };
+        Shared::push_capped(&mut s.vm_flows, rec.clone(), VM_FLOW_STORE_CAP);
+        rec
+    };
+    publish(bus, "flow", &rec);
 }
 
 #[derive(Default)]
@@ -56,6 +149,10 @@ fn vm_group(vm: &VmEdgeVm) -> String {
     vm.group.clone().unwrap_or_else(|| format!("vm:{}", vm.name))
 }
 
+fn vm_ident(vm: &VmEdgeVm) -> u32 {
+    vm.identity.unwrap_or_else(|| group_identity(&vm_group(vm)))
+}
+
 fn mbps_to_bytes(mbps: u32) -> u64 {
     mbps as u64 * 1_000_000 / 8
 }
@@ -70,6 +167,15 @@ fn edge_flag_names(f: u32) -> Vec<String> {
     }
     if f & VME_GUEST_SIDE != 0 {
         v.push("guest_side".to_string());
+    }
+    if f & VME_DENY_IN != 0 {
+        v.push("deny_ingress".to_string());
+    }
+    if f & VME_DENY_OUT != 0 {
+        v.push("deny_egress".to_string());
+    }
+    if f & VME_FLOW_LOG != 0 {
+        v.push("flow_log".to_string());
     }
     v
 }
@@ -199,29 +305,75 @@ impl Engine {
         }
         let mut groups: BTreeMap<String, u32> = BTreeMap::new();
         let mut ips: HashMap<[u8; ADDR_LEN], u32> = HashMap::new();
+        let mut index = FlowIndex::default();
+        for (id, n) in [(IDENTITY_HOST, "host"), (IDENTITY_WORLD, "world"), (crate::netpol::IDENTITY_REMOTE_NODE, "remote-node")] {
+            index.names.insert(id, (n.to_string(), BTreeMap::new()));
+        }
         for vm in &state.vms {
-            let g = vm_group(vm);
-            let id = group_identity(&g);
-            groups.insert(g, id);
+            let id = vm_ident(vm);
+            groups.insert(vm.identity.map_or_else(|| vm_group(vm), |_| format!("vm:{}", vm.name)), id);
+            if let Some(g) = &vm.group {
+                groups.entry(g.clone()).or_insert(id);
+            }
+            index.names.insert(id, (vm.name.clone(), vm.labels.clone()));
             for a in &vm.addresses {
                 ips.insert(addr16(a)?, id);
             }
         }
-        let mut policy: HashSet<PolicyKey> = HashSet::new();
+        let mut cidrs: Vec<(Prefix, u32)> = Vec::new();
+        for p in &state.peers {
+            if p.cidr.contains('/') {
+                let pre = policy::parse_prefix(&p.cidr).map_err(|e| anyhow!("peer {}: {e}", p.cidr))?;
+                cidrs.push((pre, p.identity));
+            } else {
+                ips.entry(addr16(&p.cidr)?).or_insert(p.identity);
+            }
+            if !p.name.is_empty() {
+                index.names.entry(p.identity).or_insert_with(|| (p.name.clone(), BTreeMap::new()));
+            }
+        }
+        let mut policy: HashMap<PolicyKey, u32> = HashMap::new();
+        let mut deny: HashSet<(u32, bool)> = HashSet::new();
         for r in &state.policy {
-            let subject = *groups.get(&r.group).ok_or_else(|| anyhow!("rule for unknown group `{}`", r.group))?;
-            let peer = match r.peer.as_deref() {
-                None | Some("") | Some("any") => 0,
-                Some("world") => IDENTITY_WORLD,
-                Some(p) => *groups.get(p).ok_or_else(|| anyhow!("rule peer `{p}` is not a group"))?,
+            let subject = match r.subject_identity {
+                Some(id) => id,
+                None => *groups.get(&r.group).ok_or_else(|| anyhow!("rule for unknown group `{}`", r.group))?,
             };
-            policy.insert(PolicyKey {
-                subject_identity: subject,
-                peer_identity: peer,
-                direction: if r.egress { POLICY_EGRESS } else { POLICY_INGRESS },
-                proto: r.proto,
-                port: r.port.to_be_bytes(),
-            });
+            let peer = match (r.peer_identity, r.peer.as_deref()) {
+                (Some(id), _) => id,
+                (None, None | Some("") | Some("any")) => 0,
+                (None, Some("world")) => IDENTITY_WORLD,
+                (None, Some(p)) => *groups.get(p).ok_or_else(|| anyhow!("rule peer `{p}` is not a group"))?,
+            };
+            let end = if r.port_end > r.port { r.port_end } else { r.port };
+            if end - r.port >= crate::netpol::MAX_PORT_RANGE as u16 {
+                return Err(anyhow!("rule port range {}-{end} wider than {}", r.port, crate::netpol::MAX_PORT_RANGE));
+            }
+            let val = if r.deny { VM_POLICY_DENY } else { VM_POLICY_ALLOW };
+            if r.deny {
+                deny.insert((subject, r.egress));
+            }
+            for port in r.port..=end {
+                let k = PolicyKey {
+                    subject_identity: subject,
+                    peer_identity: peer,
+                    direction: if r.egress { POLICY_EGRESS } else { POLICY_INGRESS },
+                    proto: r.proto,
+                    port: port.to_be_bytes(),
+                };
+                let e = policy.entry(k).or_insert(val);
+                if r.deny {
+                    *e = VM_POLICY_DENY;
+                }
+                let src = r.source.clone().unwrap_or_default();
+                let ie = index.rules.entry((subject, peer, r.egress, r.proto, port)).or_insert((r.deny, src.clone()));
+                if r.deny && !ie.0 {
+                    *ie = (true, src);
+                }
+            }
+        }
+        if policy.len() > 131_072 {
+            return Err(anyhow!("{} VM policy entries exceed the map size (131072)", policy.len()));
         }
 
         for k in self.vm_edge.ips.clone() {
@@ -232,20 +384,26 @@ impl Engine {
         for (k, id) in &ips {
             self.dp.cni_hash_insert("VM_IPS", *k, *id)?;
         }
-        for k in self.vm_edge.policy.clone() {
-            if !policy.contains(&k) {
+        self.dp.addr_lpm_clear::<u32>("VM_CIDR_IDS")?;
+        for (p, id) in &cidrs {
+            self.dp.addr_lpm_insert("VM_CIDR_IDS", p.addr, p.bits, *id)?;
+        }
+        for k in self.vm_edge.policy.keys().copied().collect::<Vec<_>>() {
+            if !policy.contains_key(&k) {
                 self.dp.cni_hash_remove::<PolicyKey, u32>("VM_POLICY", &k);
             }
         }
-        for k in &policy {
-            if !self.vm_edge.policy.contains(k) {
-                self.dp.cni_hash_insert("VM_POLICY", *k, 1u32)?;
+        for (k, v) in &policy {
+            if self.vm_edge.policy.get(k) != Some(v) {
+                self.dp.cni_hash_insert("VM_POLICY", *k, *v)?;
             }
         }
         self.vm_edge.ips = ips.into_keys().collect();
         self.vm_edge.policy = policy;
+        self.vm_edge.deny = deny;
         self.vm_edge.groups = groups;
         self.vm_edge.state = state;
+        lock(&self.shared).vm_flow_index = index;
         // Re-push every tap: limits or isolation may have changed.
         for (tap, (idx, _)) in std::mem::take(&mut self.vm_edge.taps) {
             self.vm_edge_unprogram(&tap, idx);
@@ -287,6 +445,7 @@ impl Engine {
                 .and_then(|i| self.ifaces.get(&i))
                 .map(|r| r.guest_side)
                 .unwrap_or(true);
+            let identity = vm_ident(vm);
             let mut flags = 0;
             if vm.isolate_ingress {
                 flags |= VME_ISOLATE_IN;
@@ -297,8 +456,17 @@ impl Engine {
             if guest_side {
                 flags |= VME_GUEST_SIDE;
             }
+            if self.vm_edge.deny.contains(&(identity, false)) {
+                flags |= VME_DENY_IN;
+            }
+            if self.vm_edge.deny.contains(&(identity, true)) {
+                flags |= VME_DENY_OUT;
+            }
+            if self.vm_edge.state.flow_log {
+                flags |= VME_FLOW_LOG;
+            }
             let cfg = VmEdgeCfg {
-                identity: self.vm_edge.groups.get(&vm_group(vm)).copied().unwrap_or(0),
+                identity,
                 flags,
                 out_bps: mbps_to_bytes(vm.egress_mbps),
                 in_bps: mbps_to_bytes(vm.ingress_mbps),
@@ -403,6 +571,10 @@ impl Engine {
                 .collect(),
             taps,
             enforcing: self.lease_live(),
+            owner: self.vm_edge.state.owner.clone(),
+            peers: self.vm_edge.state.peers.len(),
+            flow_log: self.vm_edge.state.flow_log,
+            cilium: crate::netpol::cilium_present(),
         }
     }
 

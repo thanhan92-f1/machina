@@ -57,6 +57,7 @@ const L7_STORE_CAP: usize = 5000;
 const TLS_STORE_CAP: usize = 2000;
 const SSL_STORE_CAP: usize = 2000;
 const ANOMALY_STORE_CAP: usize = 1000;
+const VM_FLOW_STORE_CAP: usize = 5000;
 const SOCK_PROGS: &[&str] = &["mn_cg_connect4", "mn_cg_connect6", "mn_cg_sendmsg4", "mn_cg_sendmsg6"];
 
 // ---------------------------------------------------------------------------
@@ -108,6 +109,8 @@ struct Shared {
     guard: VecDeque<GuardRecord>,
     /// Guarded cgroup id → VM.
     guard_cgroups: HashMap<u64, String>,
+    vm_flow_index: vm::FlowIndex,
+    vm_flows: VecDeque<VmFlowRecord>,
 }
 
 impl Shared {

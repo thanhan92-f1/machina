@@ -9,6 +9,7 @@ and PacketWolf agents; Machina no longer integrates with any of them.
 |---|---|
 | [datapath.md](datapath.md) | Uplink XDP dispatcher, service load balancing, DDoS shield, node isolation, TCP/ICMP health, TLS fingerprints |
 | [enforcement.md](enforcement.md) | Policy kinds and the enforcement lease, VM edge, QEMU sandbox, VMM guard (BPF-LSM), direct tap redirect |
+| [vm-network-policy.md](vm-network-policy.md) | VM-to-VM ingress/egress policy in the CiliumNetworkPolicy schema, VM labels, policy trace, packet flows (`machinactl netpol` / `flow`) |
 | [observability.md](observability.md) | Flows, DNS, L7, accounting, captures, network-change audit, sampled L7, VM runtime intelligence |
 | [fastpath.md](fastpath.md) | QUIC-LB, AF_XDP, sched_ext VM scheduler (`machina-scx`) |
 | [cni.md](cni.md) | `machina-cni`: Kubernetes CNI, NetworkPolicy and Cilium policy compile, services |
@@ -99,6 +100,7 @@ uplink or production VM taps.
 | VMs | `/bpf/vm-edge`, `/bpf/vm-sandbox`, `/bpf/guard`, `/bpf/guard/events`, `/bpf/direct`, `/bpf/vm-intel`, `/bpf/vm-intel/vms/{name}` |
 | Wave 2 | `/bpf/rtnl`, `/bpf/rtnl/events`, `/bpf/l7-sample`, `/bpf/quic-lb`, `/bpf/afxdp`, `/bpf/scx` |
 | Guests | `/vms/{name}/guest-policy`, `/vms/{name}/guest-lsm` |
+| VM network policy | `/vm-network-policies` (+ `/validate`, `/trace`, `/endpoints`, `/selectors`, `/status`, `/{name}`), `/flows`, `/flows/stream` (SSE), `/vms/{name}/labels` |
 
 Controller fleet views: `GET /api/v1/zeus-security/native-dataplane`,
 `/zeus-security/tls/fingerprints`, `/zeus-security/icmp-errors`; per-host
@@ -119,7 +121,7 @@ cgroups (Linux host only):
 |---|---|---|
 | `scripts/bpf/netns-smoke.sh` (`make bpf-test`) | Policies, capture, QoS, rate limit, L7, accounting, DNS deny, shield, node isolation, direct redirect | 112 |
 | `scripts/bpf/cni-smoke.sh` (`make bpf-cni-test`) | CNI routing, NetworkPolicy, socket-LB and NodePort services | 40 |
-| `scripts/bpf/vm-edge-smoke.sh` | VM edge + QEMU sandbox | — |
+| `scripts/bpf/vm-edge-smoke.sh` | VM edge, VM network policy (identity rules, deny, ranges, ICMP, CIDR, flows), QEMU sandbox | 50 |
 | `scripts/bpf/vmintel-smoke.sh` | VM runtime intelligence | 14 |
 | `scripts/bpf/guard-smoke.sh` | VMM guard | 12 |
 | `scripts/bpf/quiclb-smoke.sh` | QUIC-LB | 18 |

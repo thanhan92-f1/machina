@@ -20,6 +20,7 @@ mod jobs;
 mod k8s;
 mod kubevirt;
 mod metrics;
+pub(crate) mod netpol;
 mod networks;
 mod node;
 mod platform_controller;
@@ -70,6 +71,7 @@ pub fn api_routes() -> Router<LibvirtManager> {
         .merge(advanced::advanced_routes())
         .merge(backup::backup_routes())
         .merge(bpf::bpf_routes())
+        .merge(netpol::netpol_routes())
         .merge(host_network::host_network_routes())
         .merge(extras::extras_routes())
         .merge(automation::automation_routes())

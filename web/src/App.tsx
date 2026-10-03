@@ -160,6 +160,7 @@ const PlatformMachineSecurity = lazyWithRetry(() => import('./pages/platform/Pla
 const PlatformThreatHunting = lazyWithRetry(() => import('./pages/platform/PlatformThreatHunting'))
 const PlatformRuntimeEnforcement = lazyWithRetry(() => import('./pages/platform/PlatformRuntimeEnforcement'))
 const PlatformNativeBpf = lazyWithRetry(() => import('./pages/platform/PlatformNativeBpf'))
+const PlatformVmNetworkPolicies = lazyWithRetry(() => import('./pages/platform/PlatformVmNetworkPolicies'))
 const PlatformFirewallOverview = lazyWithRetry(() => import('./pages/platform/security/PlatformFirewallOverview'))
 const PlatformFirewallTargetDetail = lazyWithRetry(() => import('./pages/platform/security/PlatformFirewallTargetDetail'))
 const PlatformFirewallPorts = lazyWithRetry(() => import('./pages/platform/security/PlatformFirewallPorts'))
@@ -430,6 +431,7 @@ function AuthenticatedShellRoutes() {
                   <Route path="zyra/security/hunt" element={<PlatformThreatHunting />} />
                   <Route path="zyra/security/enforcement" element={<PlatformRuntimeEnforcement />} />
                   <Route path="zyra/security/native-bpf" element={<PlatformNativeBpf />} />
+                  <Route path="zyra/security/network-policies" element={<PlatformVmNetworkPolicies />} />
                   <Route path="soc" element={<PlatformSoc />} />
                   <Route path="zeus/security" element={<PlatformSecurityCenter />} />
                   <Route path="zyra/machines/:hostId" element={<PlatformMachineSecurity />} />

@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-10-04 — VM network policy and packet flows
+
+Which VM may talk to which, in both directions, using the CiliumNetworkPolicy
+schema. Enforced natively by `machina-bpfd` on each VM tap, so Cilium is not
+needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
+
+- **Policies.**
+  - Accepts `CiliumNetworkPolicy`, `CiliumClusterwideNetworkPolicy` and
+    `VmNetworkPolicy` YAML.
+  - L3/L4 support: endpoint selectors with expressions, ingress and egress,
+    `ingressDeny`/`egressDeny` (deny wins), `from/toRequires`, CIDR sets with
+    `except`, entities, port ranges, named ports, ICMP types and
+    `enableDefaultDeny`.
+  - Validation errors carry Cilium-style paths.
+  - FQDN, L7, services, groups and authentication are accepted with a warning
+    and are not enforced yet.
+- **Labels.** Each VM has key/value labels, which policies select on. The
+  daemon stores them in `vm-labels.json`. On the controller, migration 029
+  adds a `vms.labels` column, seeded from `key=value` tags.
+- **Single host or fleet.**
+  - The daemon compiles policies for its own host and resyncs on lifecycle
+    events and every 60 s.
+  - The controller stores policies (migration 029) and pushes a per-host
+    compiled state to every host's bpfd.
+  - An owner field keeps the two writers apart.
+- **Datapath.**
+  - Identity-keyed rules with deny precedence and port ranges.
+  - ICMP type rules.
+  - CIDR identities through an LPM map.
+  - ICMP echo conntrack keyed by identifier.
+  - A ring buffer of FORWARDED, DROPPED and AUDIT flow events with rule
+    attribution.
+  - Observe by default; drops only under the enforcement lease.
+- **Tools.**
+  - `machinactl netpol` subcommands: `apply`, `get`, `delete`, `validate`,
+    `test` (policy trace), `selectors`, `endpoints` and `status`.
+  - `machinactl flow observe|top|stats`, with colours on a TTY.
+  - `machinactl vm label`.
+  - The same commands in `scripts/platformctl` against the controller.
+- **UI.**
+  - A **VM Network Policies** page: policies, YAML editor with dry-run
+    preview and templates, policy tester, endpoints and selectors.
+  - A black macOS-style **Flows** terminal.
+  - A labels and policy panel on the VM's Network tab.
+
 ## 2026-10-04 — machina-cni is opt-in
 
 - **Cluster bootstrap keeps the default CNI.** `POST /api/v1/k8s/cluster-bootstrap`

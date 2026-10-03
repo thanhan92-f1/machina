@@ -637,12 +637,19 @@ pub struct VmEdgeVm {
     /// Packets/s each direction; 0 = unlimited.
     #[serde(default)]
     pub pps: u32,
+    /// Explicit identity (VM network policy compiler); overrides `group`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity: Option<u32>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub labels: BTreeMap<String, String>,
 }
 
-/// Allow rule between groups. `peer` None = any peer (including non-VMs),
-/// proto 0 = any, port 0 = any.
+/// Rule between groups or identities. `peer` None = any peer (including
+/// non-VMs), proto 0 = any, port 0 = any. For ICMP (1 / 58) `port` is the
+/// ICMP type + 1. `port_end` > `port` expands to a range (at most 256).
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct VmEdgeRule {
+    #[serde(default)]
     pub group: String,
     #[serde(default)]
     pub peer: Option<String>,
@@ -652,6 +659,33 @@ pub struct VmEdgeRule {
     pub proto: u8,
     #[serde(default)]
     pub port: u16,
+    #[serde(default, skip_serializing_if = "is_zero_u16")]
+    pub port_end: u16,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub deny: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subject_identity: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub peer_identity: Option<u32>,
+    /// `policy-name spec[0].ingress[1]`, for flow attribution.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+}
+
+fn is_zero_u16(v: &u16) -> bool {
+    *v == 0
+}
+
+/// Address (or prefix) → identity outside the VMs in the state: VMs on
+/// other hosts, CIDR peers, the host itself and other hypervisors.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VmEdgePeer {
+    /// Address or CIDR.
+    pub cidr: String,
+    pub identity: u32,
+    /// VM name, `host`, `remote-node` or the CIDR text.
+    #[serde(default)]
+    pub name: String,
 }
 
 /// Desired VM edge state; each `vm_edge_sync` replaces the previous one.
@@ -660,6 +694,53 @@ pub struct VmEdgeState {
     pub vms: Vec<VmEdgeVm>,
     #[serde(default)]
     pub policy: Vec<VmEdgeRule>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub peers: Vec<VmEdgePeer>,
+    /// Emit per-flow verdict events (`flow` topic) on every edge tap.
+    #[serde(default)]
+    pub flow_log: bool,
+    /// Who synced it (`daemon`, `controller`, empty = manual).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub owner: String,
+}
+
+/// One VM edge verdict (`flow` topic / `vm_flows`).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmFlowRecord {
+    pub ts: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+    pub iface: String,
+    /// The VM owning the tap.
+    pub vm: String,
+    /// "ingress" (towards the VM) or "egress" (from the VM).
+    pub direction: String,
+    pub src: String,
+    pub src_port: u16,
+    pub dst: String,
+    pub dst_port: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub src_vm: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dst_vm: Option<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub src_labels: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub dst_labels: BTreeMap<String, String>,
+    pub src_identity: u32,
+    pub dst_identity: u32,
+    pub proto: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub tcp_flags: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icmp_type: Option<u8>,
+    pub bytes: u32,
+    /// FORWARDED, DROPPED or AUDIT.
+    pub verdict: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drop_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policy: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -691,6 +772,15 @@ pub struct VmEdgeStatus {
     /// VMs in the state with no tap on this host.
     pub missing: Vec<String>,
     pub enforcing: bool,
+    #[serde(default)]
+    pub owner: String,
+    #[serde(default)]
+    pub peers: usize,
+    #[serde(default)]
+    pub flow_log: bool,
+    /// Why Cilium looks present on this host (None = absent).
+    #[serde(default)]
+    pub cilium: Option<String>,
 }
 
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
@@ -1642,6 +1732,15 @@ pub enum Request {
         state: VmEdgeState,
     },
     VmEdgeStatus,
+    /// Recent VM edge verdicts, newest first.
+    VmFlows {
+        #[serde(default)]
+        limit: Option<usize>,
+        #[serde(default)]
+        vm: Option<String>,
+        #[serde(default)]
+        verdict: Option<String>,
+    },
     VmSandboxConfigure {
         config: VmSandboxConfig,
     },

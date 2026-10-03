@@ -73,6 +73,7 @@ const POWER_PATHS = [
   '/platform/zyra/security/hunt',
   '/platform/zyra/security/enforcement',
   '/platform/zyra/security/native-bpf',
+  '/platform/zyra/security/network-policies',
   '/platform/zeus/security/firewall',
   '/platform/maintenance',
   '/platform/recommendations',

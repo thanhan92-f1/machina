@@ -55,7 +55,7 @@ export default function VmEdgeTab() {
       )}
       <MacGlassPanel
         title="VM edge"
-        subtitle="Per-tap identity policy, isolation and rate limits, synced from the controller's VM groups. Drops need the enforcement lease."
+        subtitle="Per-tap identity policy compiled from VM network policies, plus isolation and rate limits. Drops need the enforcement lease."
       >
         {edge.error ? (
           <Empty>{edge.error}</Empty>

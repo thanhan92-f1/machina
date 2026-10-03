@@ -1,8 +1,11 @@
 //! VM edge and QEMU sandbox.
 //!
 //! `mn_vm_edge_in/out` run on VM taps after the host datapath (`mn_tc_*`
-//! returns TCX_NEXT): group-identity policy with conntrack (same key shape as
-//! CNI NetworkPolicy), Mbps / PPS token buckets and per-tap counters.
+//! returns TCX_NEXT): identity policy with conntrack (same key shape as
+//! CNI NetworkPolicy; allow and deny entries, deny wins), Mbps / PPS token
+//! buckets, per-tap counters and flow verdict events. Peers resolve by exact
+//! address (VM_IPS), then longest CIDR prefix (VM_CIDR_IDS), then `world`.
+//! For ICMP the policy port is the ICMP type + 1.
 //!
 //! `mn_qemu_device` (cgroup device) and `mn_qemu_egress` (cgroup_skb egress)
 //! sandbox the QEMU process in its machine scope: a device-node allowlist
@@ -13,7 +16,7 @@
 use aya_ebpf::{
     helpers::generated::{bpf_get_current_cgroup_id, bpf_skb_cgroup_id},
     macros::{cgroup_device, cgroup_skb, classifier, map},
-    maps::{Array, HashMap, LruHashMap, PerCpuHashMap},
+    maps::{lpm_trie::Key, Array, HashMap, LpmTrie, LruHashMap, PerCpuHashMap, RingBuf},
     programs::{DeviceContext, SkBuffContext, TcContext},
 };
 use machina_bpf_common::*;
@@ -23,7 +26,10 @@ use crate::{
     parse::*,
 };
 
+const IPPROTO_ICMP: u8 = 1;
 const IPPROTO_ICMPV6: u8 = 58;
+/// Conntrack "port" of the request side of an ICMP echo exchange.
+const ICMP_ECHO_MARK: u16 = 0xffff;
 const NSEC: u64 = 1_000_000_000;
 /// Bucket depth: 100 ms of the configured rate (at least one jumbo frame).
 const BURST_DIV: u64 = 10;
@@ -36,8 +42,20 @@ pub static VM_EDGE: HashMap<u32, VmEdgeCfg> = HashMap::with_max_entries(4096, 0)
 #[map]
 pub static VM_IPS: HashMap<[u8; ADDR_LEN], u32> = HashMap::with_max_entries(65536, 0);
 
+/// CIDR peers, other hypervisors' prefixes → identity.
 #[map]
-pub static VM_POLICY: HashMap<PolicyKey, u32> = HashMap::with_max_entries(65536, 0);
+pub static VM_CIDR_IDS: LpmTrie<[u8; ADDR_LEN], u32> = LpmTrie::with_max_entries(16384, 0);
+
+/// Value: VM_POLICY_ALLOW or VM_POLICY_DENY.
+#[map]
+pub static VM_POLICY: HashMap<PolicyKey, u32> = HashMap::with_max_entries(131072, 0);
+
+#[map]
+pub static VM_FLOW_EVENTS: RingBuf = RingBuf::with_byte_size(1 << 21, 0);
+
+/// Drop / audit event throttle: flow → last emitted.
+#[map]
+pub static VM_FLOW_SEEN: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries(16384, 0);
 
 /// Conntrack: FlowKey (ifindex 0, local = originator) → last seen.
 #[map]
@@ -65,19 +83,99 @@ pub static QEMU_NET_HITS: LruHashMap<NetHitKey, u64> = LruHashMap::with_max_entr
 // ---- VM edge -------------------------------------------------------------------
 
 #[inline(always)]
-fn pol(subject: u32, peer: u32, dir: u8, proto: u8, port: u16) -> bool {
+fn pol(subject: u32, peer: u32, dir: u8, proto: u8, port: u16) -> u32 {
     let k = PolicyKey { subject_identity: subject, peer_identity: peer, direction: dir, proto, port: port.to_be_bytes() };
-    unsafe { VM_POLICY.get(&k) }.is_some()
+    match unsafe { VM_POLICY.get(&k) } {
+        Some(v) => *v,
+        None => 0,
+    }
+}
+
+/// 0 = no entry, VM_POLICY_ALLOW, or VM_POLICY_DENY (any deny match wins).
+#[inline(never)]
+fn vm_policy_verdict(subject: u32, peer: u32, dir: u8, proto: u8, port: u16) -> u32 {
+    let a = pol(subject, peer, dir, proto, port);
+    let b = pol(subject, peer, dir, proto, 0);
+    let c = pol(subject, 0, dir, proto, port);
+    let d = pol(subject, 0, dir, proto, 0);
+    let e = pol(subject, peer, dir, 0, 0);
+    let f = pol(subject, 0, dir, 0, 0);
+    if a == VM_POLICY_DENY
+        || b == VM_POLICY_DENY
+        || c == VM_POLICY_DENY
+        || d == VM_POLICY_DENY
+        || e == VM_POLICY_DENY
+        || f == VM_POLICY_DENY
+    {
+        VM_POLICY_DENY
+    } else if (a | b | c | d | e | f) != 0 {
+        VM_POLICY_ALLOW
+    } else {
+        0
+    }
 }
 
 #[inline(never)]
-fn vm_policy_allows(subject: u32, peer: u32, dir: u8, proto: u8, port: u16) -> bool {
-    pol(subject, peer, dir, proto, port)
-        || pol(subject, peer, dir, proto, 0)
-        || pol(subject, 0, dir, proto, port)
-        || pol(subject, 0, dir, proto, 0)
-        || pol(subject, peer, dir, 0, 0)
-        || pol(subject, 0, dir, 0, 0)
+fn peer_identity(addr: &[u8; ADDR_LEN]) -> u32 {
+    if let Some(id) = unsafe { VM_IPS.get(addr) } {
+        return *id;
+    }
+    match VM_CIDR_IDS.get(&Key::new(128, *addr)) {
+        Some(id) => *id,
+        None => IDENTITY_WORLD,
+    }
+}
+
+struct FlowMeta {
+    ifindex: u32,
+    subject: u32,
+    peer: u32,
+    len: u32,
+    from_vm: u8,
+    verdict: u8,
+    reason: u8,
+    icmp: u8,
+}
+
+/// Emit one verdict event; drops and audits at most once per flow per second.
+#[inline(never)]
+fn flow_event(t: &Tuple, m: &FlowMeta) {
+    let now = now_ns();
+    if m.verdict != VMF_FORWARDED {
+        let k = ct_key(t, false);
+        if let Some(last) = VM_FLOW_SEEN.get_ptr_mut(&k) {
+            let last = unsafe { &mut *last };
+            if now.saturating_sub(*last) < NSEC {
+                return;
+            }
+            *last = now;
+        } else {
+            let _ = VM_FLOW_SEEN.insert(&k, &now, 0);
+        }
+    }
+    let Some(mut e) = VM_FLOW_EVENTS.reserve::<VmFlowEvent>(0) else {
+        return;
+    };
+    let ev = e.as_mut_ptr();
+    unsafe {
+        (*ev).ts_ns = now;
+        (*ev).ifindex = m.ifindex;
+        (*ev).subject = m.subject;
+        (*ev).peer = m.peer;
+        (*ev).len = m.len;
+        (*ev).src = t.src;
+        (*ev).dst = t.dst;
+        (*ev).sport = t.sport;
+        (*ev).dport = t.dport;
+        (*ev).proto = t.proto;
+        (*ev).from_vm = m.from_vm;
+        (*ev).verdict = m.verdict;
+        (*ev).reason = m.reason;
+        (*ev).tcp_flags = t.tcp_flags;
+        (*ev).icmp = m.icmp;
+        (*ev)._pad = [0; 6];
+    }
+    e.submit(0);
 }
 
 /// DHCP and IPv6 neighbour discovery / link-local control always pass.
@@ -188,27 +286,74 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     count(ifindex, from_vm, len, 0);
 
     let isolated = flags & if from_vm { VME_ISOLATE_OUT } else { VME_ISOLATE_IN } != 0;
-    if !isolated {
+    let has_deny = flags & if from_vm { VME_DENY_OUT } else { VME_DENY_IN } != 0;
+    let flow_log = flags & VME_FLOW_LOG != 0;
+    if !isolated && !has_deny && !flow_log {
         return TC_ACT_UNSPEC;
     }
     let mut t = Tuple::zero();
     if parse_tc(ctx, &mut t) == 0 || is_control(&t) {
         return TC_ACT_UNSPEC;
     }
+    let mut icmp: u8 = 0;
+    if t.proto == IPPROTO_ICMP || t.proto == IPPROTO_ICMPV6 {
+        if let Ok(ty) = ctx.load::<u8>(t.l4_off) {
+            icmp = ty.wrapping_add(1);
+            // Echo request/reply carry the identifier in the ports, so only
+            // a reply matches the reverse of a request (an inbound request
+            // is never mistaken for a reply to our own ping).
+            let v6 = t.proto == IPPROTO_ICMPV6;
+            let request = if v6 { ty == 128 } else { ty == 8 };
+            let reply = if v6 { ty == 129 } else { ty == 0 };
+            if request || reply {
+                let id = ctx.load::<u16>(t.l4_off + 4).unwrap_or(0);
+                if request {
+                    t.sport = id;
+                    t.dport = ICMP_ECHO_MARK;
+                } else {
+                    t.sport = ICMP_ECHO_MARK;
+                    t.dport = id;
+                }
+            }
+        }
+    }
     if VM_CT.get_ptr(&ct_key(&t, true)).is_some() {
         return TC_ACT_UNSPEC;
     }
-    let (peer_addr, dir, port) =
-        if from_vm { (&t.dst, POLICY_EGRESS, t.dport) } else { (&t.src, POLICY_INGRESS, t.dport) };
-    let peer = unsafe { VM_IPS.get(peer_addr) }.copied().unwrap_or(IDENTITY_WORLD);
-    if !vm_policy_allows(identity, peer, dir, t.proto, port) {
+    let port = if icmp != 0 { icmp as u16 } else { t.dport };
+    let (peer_addr, dir) = if from_vm { (&t.dst, POLICY_EGRESS) } else { (&t.src, POLICY_INGRESS) };
+    let peer = peer_identity(peer_addr);
+    let verdict = vm_policy_verdict(identity, peer, dir, t.proto, port);
+    let k = ct_key(&t, false);
+    let is_new = VM_CT.get_ptr(&k).is_none();
+    let mut m = FlowMeta {
+        ifindex,
+        subject: identity,
+        peer,
+        len: len as u32,
+        from_vm: from_vm as u8,
+        verdict: VMF_FORWARDED,
+        reason: VMF_REASON_NONE,
+        icmp,
+    };
+    if verdict == VM_POLICY_DENY || (verdict == 0 && isolated) {
+        m.reason = if verdict == VM_POLICY_DENY { VMF_REASON_POLICY_DENY } else { VMF_REASON_DEFAULT_DENY };
         if enforce_active(now) {
             count(ifindex, from_vm, len, 1);
+            if flow_log {
+                m.verdict = VMF_DROPPED;
+                flow_event(&t, &m);
+            }
             return TC_ACT_SHOT;
         }
         count(ifindex, from_vm, len, 2);
+        if flow_log {
+            m.verdict = VMF_AUDIT;
+            flow_event(&t, &m);
+        }
+    } else if is_new && flow_log {
+        flow_event(&t, &m);
     }
-    let k = ct_key(&t, false);
     match VM_CT.get_ptr_mut(&k) {
         Some(p) => unsafe { *p = now },
         None => {

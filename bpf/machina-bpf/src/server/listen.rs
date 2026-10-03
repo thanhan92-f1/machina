@@ -399,6 +399,22 @@ impl Daemon {
                 v(&st)
             }
             Request::VmEdgeStatus => v(&lock(&self.engine).vm_edge_status()),
+            Request::VmFlows { limit, vm, verdict } => {
+                let s = lock(&self.shared);
+                let out: Vec<&VmFlowRecord> = s
+                    .vm_flows
+                    .iter()
+                    .rev()
+                    .filter(|f| {
+                        vm.as_deref().is_none_or(|v| {
+                            f.vm == v || f.src_vm.as_deref() == Some(v) || f.dst_vm.as_deref() == Some(v)
+                        })
+                    })
+                    .filter(|f| verdict.as_deref().is_none_or(|x| f.verdict.eq_ignore_ascii_case(x)))
+                    .take(lim(limit))
+                    .collect();
+                v(&out)
+            }
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;
@@ -694,6 +710,8 @@ pub async fn run(cfg: Config) -> Result<()> {
         spawn_reader(eng.dp.take_ringbuf("L7S_EVENTS")?, "l7s", move |x| super::l7sample::on_l7s(&sh, &b, x));
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("GUARD_EVENTS")?, "guard", move |x| super::guard::on_guard(&sh, &b, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("VM_FLOW_EVENTS")?, "vmflow", move |x| super::vm::on_vm_flow(&sh, &b, x));
     }
 
     let d = Arc::new(Daemon {

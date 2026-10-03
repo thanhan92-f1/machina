@@ -151,6 +151,58 @@ check "edge: empty state unprograms tap" [ "$(jpath vm_edge_status "len(d['taps'
 check "edge: no edge program left" bash -c "! bpftool net show dev $HOST_IF 2>/dev/null | grep -q mn_vm_edge"
 check "edge: unrestricted after unprogram" ping_ok
 
+# ---- VM network policy (compiled identity rules) ------------------------------
+# Same shape the netpol compiler emits: per-VM identity, peers by address or
+# prefix, identity rules with ranges / deny / ICMP type+1, flow log on.
+
+VMID=5000
+CIDR_ID=2147483700
+NPVM="{\"name\":\"$VM\",\"addresses\":[\"$VM_IP\"],\"taps\":[\"$HOST_IF\"],\"identity\":$VMID,\"isolate_egress\":true"
+HOSTPEER="{\"cidr\":\"$HOST_IP\",\"identity\":1,\"name\":\"host\"}"
+R_RANGE="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18070,\"port_end\":18090,\"source\":\"smoke spec.egress[0]\"}"
+R_ICMP="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":1,\"port\":9,\"source\":\"smoke spec.egress[1]\"}"
+R_DENY="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18080,\"deny\":true,\"source\":\"smoke spec.egressDeny[0]\"}"
+R_CIDR="{\"subject_identity\":$VMID,\"peer_identity\":$CIDR_ID,\"egress\":true,\"proto\":6,\"port\":18080,\"source\":\"smoke spec.egress[2]\"}"
+np() { edge "{\"vms\":[$1}],\"peers\":[$2],\"policy\":[$3],\"flow_log\":true,\"owner\":\"smoke\"}"; }
+flow_has() {
+  sleep 0.5
+  req '{"op":"vm_flows","limit":1000}' | python3 -c "import json,sys; d=json.load(sys.stdin).get('data') or []; sys.exit(0 if any($1 for f in d) else 1)"
+}
+host_ping_vm() { ping -c1 -W1 "$VM_IP" >/dev/null 2>&1; }
+
+np "$NPVM" "$HOSTPEER" "$R_RANGE"
+check "netpol: identity + peers reported" [ "$(jpath vm_edge_status "(d['owner'], d['peers'], d['flow_log'])")" = "('smoke', 1, True)" ]
+check "netpol observe: default-deny miss still forwards" ping_ok
+check "netpol observe: AUDIT flow for the miss" flow_has "f['verdict']=='AUDIT' and f['proto']=='icmp' and f['drop_reason']=='default-deny'"
+
+enforce
+check "netpol enforce: port range allows tcp/18080" http_ok
+check "netpol enforce: FORWARDED flow attributed to rule" flow_has "f['verdict']=='FORWARDED' and f['dst_port']==18080 and f.get('policy')=='smoke spec.egress[0]'"
+check "netpol enforce: ICMP not allowed yet" ping_blocked
+check "netpol enforce: DROPPED flow for ICMP" flow_has "f['verdict']=='DROPPED' and f['proto']=='icmp' and f.get('icmp_type')==8"
+
+np "$NPVM" "$HOSTPEER" "$R_RANGE,$R_ICMP"
+check "netpol enforce: ICMP echo-request rule allows ping" ping_ok
+
+np "$NPVM" "$HOSTPEER" "$R_RANGE,$R_ICMP,$R_DENY"
+check "netpol enforce: deny beats the allow range" bash -c "! ip netns exec $NS curl -s -m3 -o /dev/null http://$HOST_IP:18080/"
+check "netpol enforce: policy-deny flow" flow_has "f['verdict']=='DROPPED' and f.get('drop_reason')=='policy-deny' and f.get('policy')=='smoke spec.egressDeny[0]'"
+
+np "$NPVM" "{\"cidr\":\"10.199.81.0/30\",\"identity\":$CIDR_ID,\"name\":\"10.199.81.0/30\"}" "$R_CIDR"
+check "netpol enforce: CIDR peer via LPM allows tcp/18080" http_ok
+check "netpol enforce: host identity rules no longer match (ping blocked)" ping_blocked
+
+NPVM_OPEN="{\"name\":\"$VM\",\"addresses\":[\"$VM_IP\"],\"taps\":[\"$HOST_IF\"],\"identity\":$VMID"
+np "$NPVM_OPEN" "$HOSTPEER" "{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":false,\"proto\":1,\"port\":0,\"deny\":true,\"source\":\"smoke spec.ingressDeny[0]\"}"
+check "netpol enforce: ingressDeny applies without isolation" bash -c "! ping -c1 -W1 $VM_IP >/dev/null 2>&1"
+check "netpol enforce: VM egress unaffected by ingress deny" http_ok
+
+observe
+check "netpol observe: ingressDeny only audited" host_ping_vm
+
+edge '{"vms":[]}'
+check "netpol: cleared" [ "$(jpath vm_edge_status "len(d['taps'])")" = 0 ]
+
 # ---- QEMU sandbox -----------------------------------------------------------
 
 mkdir -p "$CG"

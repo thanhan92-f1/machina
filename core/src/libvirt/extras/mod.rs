@@ -673,6 +673,84 @@ pub fn get_vm_tags(vm_name: &str) -> Vec<String> {
     map.get(vm_name).cloned().unwrap_or_default()
 }
 
+// ── VM Labels (key/value, selected by VM network policies) ────────
+
+const LABELS_FILE: &str = "/var/lib/machina/vm-labels.json";
+
+pub type LabelMap = HashMap<String, std::collections::BTreeMap<String, String>>;
+
+/// Labels per VM. VMs without labels fall back to their `key=value` tags.
+pub fn load_labels() -> LabelMap {
+    let mut map: LabelMap = std::fs::read_to_string(LABELS_FILE)
+        .ok()
+        .and_then(|d| serde_json::from_str(&d).ok())
+        .unwrap_or_default();
+    for (vm, tags) in load_tags() {
+        map.entry(vm).or_insert_with(|| tags_as_labels(&tags));
+    }
+    map.retain(|_, l| !l.is_empty());
+    map
+}
+
+/// `key=value` tags as labels (other tags are ignored).
+pub fn tags_as_labels(tags: &[String]) -> std::collections::BTreeMap<String, String> {
+    tags.iter()
+        .filter_map(|t| t.split_once('='))
+        .filter(|(k, _)| !k.trim().is_empty())
+        .map(|(k, v)| (k.trim().to_string(), v.trim().to_string()))
+        .collect()
+}
+
+/// Label keys: optional `prefix/` + name (alphanumerics, `-`, `_`, `.`), values
+/// up to 63 of the same characters (Kubernetes label syntax).
+pub fn validate_labels(labels: &std::collections::BTreeMap<String, String>) -> Result<(), LibvirtError> {
+    let part = |s: &str, max: usize| {
+        !s.is_empty()
+            && s.len() <= max
+            && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'.')
+    };
+    for (k, v) in labels {
+        let name = match k.split_once('/') {
+            Some((prefix, name)) if part(prefix, 253) => name,
+            Some(_) => return Err(LibvirtError::Invalid(format!("label key `{k}`: bad prefix"))),
+            None => k.as_str(),
+        };
+        if !part(name, 63) {
+            return Err(LibvirtError::Invalid(format!("label key `{k}` is not a valid label name")));
+        }
+        if !v.is_empty() && !part(v, 63) {
+            return Err(LibvirtError::Invalid(format!("label `{k}`: value `{v}` is not a valid label value")));
+        }
+    }
+    Ok(())
+}
+
+pub fn get_vm_labels(vm_name: &str) -> std::collections::BTreeMap<String, String> {
+    load_labels().remove(vm_name).unwrap_or_default()
+}
+
+/// Replace a VM's labels (empty = remove).
+pub fn set_vm_labels(vm_name: &str, labels: std::collections::BTreeMap<String, String>) -> Result<(), LibvirtError> {
+    validate_labels(&labels)?;
+    with_json_lock(|| {
+        let mut map: LabelMap = std::fs::read_to_string(LABELS_FILE)
+            .ok()
+            .and_then(|d| serde_json::from_str(&d).ok())
+            .unwrap_or_default();
+        if labels.is_empty() {
+            map.remove(vm_name);
+        } else {
+            map.insert(vm_name.to_string(), labels);
+        }
+        let dir = Path::new(LABELS_FILE).parent().unwrap_or(Path::new("/var/lib/machina"));
+        let _ = std::fs::create_dir_all(dir);
+        let data = serde_json::to_string_pretty(&map)
+            .map_err(|e| LibvirtError::Operation(format!("Failed to serialize labels: {e}")))?;
+        std::fs::write(LABELS_FILE, data)
+            .map_err(|e| LibvirtError::Operation(format!("Failed to write labels file: {e}")))
+    })
+}
+
 // ── Host System Stats ──────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

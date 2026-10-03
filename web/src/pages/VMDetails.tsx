@@ -38,6 +38,7 @@ import ClassicVmPlatformHardware from './classic/ClassicVmPlatformHardware'
 import ClassicVmSpiceToVncButton from './classic/ClassicVmSpiceToVncButton'
 import VmPortForwardPanel from '../components/vm/VmPortForwardPanel'
 import VmGuestPolicyPanel from '../components/vm/VmGuestPolicyPanel'
+import VmNetworkPolicyPanel from '../components/vm/VmNetworkPolicyPanel'
 import VmSshConnectDialog, { navigateVmSshSession } from '../components/vm/VmSshConnectDialog'
 import type { GuestAccessHints } from '../utils/guestAccessHints'
 import { addRecentVM } from '../utils/recentVMs'
@@ -1966,6 +1967,7 @@ export default function VMDetailsPage() {
 
       {tab === 'network' && (
         <div className="space-y-4">
+          <VmNetworkPolicyPanel vmName={vm.name} />
           <details className="tahoe-glass-card p-4 group">
             <summary className="cursor-pointer text-sm font-medium text-[var(--text-primary)] list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
               <span className="text-[var(--text-muted)] group-open:rotate-90 transition">▸</span>

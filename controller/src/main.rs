@@ -177,6 +177,7 @@ async fn main() -> anyhow::Result<()> {
     machina_controller::engine::observability::spawn_trace_writer(state.pool.clone());
     machina_controller::engine::cert_monitor::spawn(state.clone());
     machina_controller::engine::vm_schedule_runner::spawn(state.clone());
+    machina_controller::engine::vm_netpol::spawn(state.clone());
     machina_controller::engine::soc::worker::spawn(state.clone());
 
     let app = api::router(state)

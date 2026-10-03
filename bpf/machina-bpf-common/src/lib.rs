@@ -882,6 +882,48 @@ pub const VME_ISOLATE_IN: u32 = 1 << 0;
 pub const VME_ISOLATE_OUT: u32 = 1 << 1;
 /// The tap's tc ingress hook carries traffic *from* the VM.
 pub const VME_GUEST_SIDE: u32 = 1 << 2;
+/// The VM has deny rules towards it / from it (checked even when not isolated).
+pub const VME_DENY_IN: u32 = 1 << 3;
+pub const VME_DENY_OUT: u32 = 1 << 4;
+/// Emit VM_FLOW_EVENTS for new flows and drops.
+pub const VME_FLOW_LOG: u32 = 1 << 5;
+
+/// VM_POLICY values.
+pub const VM_POLICY_ALLOW: u32 = 1;
+pub const VM_POLICY_DENY: u32 = 2;
+
+pub const VMF_FORWARDED: u8 = 0;
+pub const VMF_DROPPED: u8 = 1;
+/// Would have been dropped; let through (observe / no lease).
+pub const VMF_AUDIT: u8 = 2;
+
+pub const VMF_REASON_NONE: u8 = 0;
+pub const VMF_REASON_POLICY_DENY: u8 = 1;
+pub const VMF_REASON_DEFAULT_DENY: u8 = 2;
+
+/// One VM edge verdict (VM_FLOW_EVENTS): first packet of a flow, or a
+/// drop / audit (at most one per flow per second).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmFlowEvent {
+    pub ts_ns: u64,
+    pub ifindex: u32,
+    pub subject: u32,
+    pub peer: u32,
+    pub len: u32,
+    pub src: [u8; ADDR_LEN],
+    pub dst: [u8; ADDR_LEN],
+    pub sport: u16,
+    pub dport: u16,
+    pub proto: u8,
+    pub from_vm: u8,
+    pub verdict: u8,
+    pub reason: u8,
+    pub tcp_flags: u8,
+    /// ICMP type + 1 (0 = not ICMP).
+    pub icmp: u8,
+    pub _pad: [u8; 6],
+}
 
 /// Per-tap VM edge config (VM_EDGE, key = tap ifindex). Rates are policed
 /// with token buckets; 0 = unlimited.
@@ -1319,7 +1361,7 @@ mod pod {
         GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
-        VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
+        VmEdgeCfg, VmBucket, VmEdgeStats, VmFlowEvent, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
         ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey,
         SampleCfg, SampleBucket, SslReadArgs, NodeIsoCfg, NodeIsoStats, RtnlCfg, L7sCfg,
         VmiCfg, VmiThread, VmiKey, VmiBlk, GuardCfg, GuardFileKey, DirectCfg,
@@ -1356,6 +1398,7 @@ mod tests {
         assert_eq!(size_of::<VmEdgeCfg>(), 32);
         assert_eq!(size_of::<VmBucket>(), 24);
         assert_eq!(size_of::<VmEdgeStats>(), 56);
+        assert_eq!(size_of::<VmFlowEvent>(), 72);
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
         assert_eq!(size_of::<DevHitKey>(), 24);
         assert_eq!(size_of::<NetHitKey>(), 32);

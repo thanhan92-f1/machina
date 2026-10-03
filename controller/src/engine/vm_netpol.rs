@@ -1,0 +1,337 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+//! Fleet VM network policies: compile per host and push the result to each
+//! host's machina-bpfd VM edge (`owner = controller`, which makes the
+//! host daemon's local policies inactive). Re-pushes when the compiled
+//! state changes (policies, labels, addresses, placement) and periodically.
+
+use std::collections::{BTreeMap, HashMap};
+use std::hash::{Hash, Hasher};
+use std::sync::Mutex;
+
+use machina_bpf::api::Request;
+use machina_bpf::netpol::{self, Inputs, NetpolVm, VmNetworkPolicy};
+use serde::Serialize;
+use serde_json::Value;
+use sqlx::SqlitePool;
+use uuid::Uuid;
+
+use super::bpf::{self, HostRef, LOCAL_HOST_ID};
+use crate::state::AppState;
+
+pub const OWNER: &str = "controller";
+const TICK_SECS: u64 = 30;
+/// Push unchanged state again every this many ticks (bpfd restarts, drift).
+const FORCE_EVERY: u32 = 10;
+
+static LAST_PUSH: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
+
+pub async fn policies(
+    pool: &SqlitePool,
+) -> anyhow::Result<Vec<(VmNetworkPolicy, bool, i64, String)>> {
+    let rows: Vec<(String, bool, i64, String)> = sqlx::query_as(
+        "SELECT policy_json, enabled, generation, updated_at FROM vm_network_policies ORDER BY name",
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|(j, en, g, u)| serde_json::from_str(&j).ok().map(|p| (p, en, g, u)))
+        .collect())
+}
+
+pub async fn enabled_policies(pool: &SqlitePool) -> Vec<VmNetworkPolicy> {
+    policies(pool)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|p| p.1)
+        .map(|p| p.0)
+        .collect()
+}
+
+pub async fn upsert(pool: &SqlitePool, p: &VmNetworkPolicy, actor: &str) -> anyhow::Result<bool> {
+    let json = serde_json::to_string(p)?;
+    let existed: Option<String> =
+        sqlx::query_scalar("SELECT name FROM vm_network_policies WHERE name = ?")
+            .bind(&p.name)
+            .fetch_optional(pool)
+            .await?;
+    sqlx::query(
+        "INSERT INTO vm_network_policies (name, kind, policy_json, created_by) VALUES (?, ?, ?, ?)
+         ON CONFLICT(name) DO UPDATE SET kind = excluded.kind, policy_json = excluded.policy_json,
+           generation = generation + 1, updated_at = CURRENT_TIMESTAMP",
+    )
+    .bind(&p.name)
+    .bind(&p.kind)
+    .bind(json)
+    .bind(actor)
+    .execute(pool)
+    .await?;
+    Ok(existed.is_none())
+}
+
+pub async fn delete(pool: &SqlitePool, name: &str) -> anyhow::Result<bool> {
+    let r = sqlx::query("DELETE FROM vm_network_policies WHERE name = ?")
+        .bind(name)
+        .execute(pool)
+        .await?;
+    Ok(r.rows_affected() > 0)
+}
+
+pub async fn set_enabled(pool: &SqlitePool, name: &str, enabled: bool) -> anyhow::Result<bool> {
+    let r = sqlx::query(
+        "UPDATE vm_network_policies SET enabled = ?, generation = generation + 1, updated_at = CURRENT_TIMESTAMP WHERE name = ?",
+    )
+    .bind(enabled)
+    .bind(name)
+    .execute(pool)
+    .await?;
+    Ok(r.rows_affected() > 0)
+}
+
+/// libvirt VMs of the fleet (KubeVirt VMs are pod endpoints, not taps).
+pub async fn inventory(pool: &SqlitePool) -> Vec<NetpolVm> {
+    type Row = (
+        String,
+        Option<Uuid>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    );
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT name, host_id, project, labels, tags, guest_ip FROM vms
+             WHERE COALESCE(inventory_source, 'libvirt') != 'kubevirt' ORDER BY name",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    rows.into_iter()
+        .map(|(name, host, project, labels, tags, ip)| {
+            let mut l: BTreeMap<String, String> = labels
+                .as_deref()
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default();
+            if l.is_empty() {
+                let tags: Vec<String> = tags
+                    .as_deref()
+                    .and_then(|s| serde_json::from_str(s).ok())
+                    .unwrap_or_default();
+                l = tags
+                    .iter()
+                    .filter_map(|t| t.split_once('='))
+                    .filter(|(k, _)| !k.is_empty())
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect();
+            }
+            NetpolVm {
+                name,
+                host: host.map(|h| h.to_string()),
+                project: project.filter(|p| !p.is_empty()),
+                labels: l,
+                addresses: ip.into_iter().filter(|a| !a.is_empty()).collect(),
+            }
+        })
+        .collect()
+}
+
+/// host id → management address.
+pub async fn host_addresses(pool: &SqlitePool) -> BTreeMap<String, String> {
+    let rows: Vec<(Uuid, String)> = sqlx::query_as("SELECT id, address FROM hosts")
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+    rows.into_iter()
+        .map(|(id, a)| {
+            (
+                id.to_string(),
+                a.split(':').next().unwrap_or("").to_string(),
+            )
+        })
+        .filter(|(_, a)| a.parse::<std::net::IpAddr>().is_ok())
+        .collect()
+}
+
+/// Everything needed to compile for any host.
+pub struct Fleet {
+    pub policies: Vec<VmNetworkPolicy>,
+    pub vms: Vec<NetpolVm>,
+    pub host_addrs: BTreeMap<String, String>,
+}
+
+impl Fleet {
+    pub async fn load(pool: &SqlitePool) -> Self {
+        Fleet {
+            policies: enabled_policies(pool).await,
+            vms: inventory(pool).await,
+            host_addrs: host_addresses(pool).await,
+        }
+    }
+
+    /// Compile for one host (`None` / the local pseudo host = every VM).
+    pub fn compile(&self, host_id: Option<&str>) -> netpol::Compiled {
+        let host = host_id.filter(|h| *h != LOCAL_HOST_ID);
+        let own: Vec<String> = host
+            .and_then(|h| self.host_addrs.get(h))
+            .cloned()
+            .into_iter()
+            .collect();
+        let remote: Vec<String> = self
+            .host_addrs
+            .iter()
+            .filter(|(id, _)| Some(id.as_str()) != host)
+            .map(|(_, a)| a.clone())
+            .collect();
+        netpol::compile(&Inputs {
+            policies: &self.policies,
+            vms: &self.vms,
+            host,
+            host_addresses: &own,
+            remote_node_addresses: if host.is_some() { &remote } else { &[] },
+        })
+    }
+
+    pub fn all_host_addresses(&self) -> Vec<String> {
+        self.host_addrs.values().cloned().collect()
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct HostSync {
+    pub host_id: String,
+    pub hostname: String,
+    pub ok: bool,
+    pub pushed: bool,
+    pub error: Option<String>,
+    pub vms: usize,
+    pub rules: usize,
+    pub peers: usize,
+    pub warnings: Vec<String>,
+}
+
+fn hash_value(v: &Value) -> u64 {
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    v.to_string().hash(&mut h);
+    h.finish()
+}
+
+async fn record(pool: &SqlitePool, s: &HostSync) {
+    let _ = sqlx::query(
+        "INSERT INTO vm_netpol_host_status (host_id, hostname, synced_at, ok, error, vms, rules, peers, warnings)
+         VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(host_id) DO UPDATE SET hostname = excluded.hostname, synced_at = excluded.synced_at,
+           ok = excluded.ok, error = excluded.error, vms = excluded.vms, rules = excluded.rules,
+           peers = excluded.peers, warnings = excluded.warnings",
+    )
+    .bind(&s.host_id)
+    .bind(&s.hostname)
+    .bind(s.ok)
+    .bind(&s.error)
+    .bind(s.vms as i64)
+    .bind(s.rules as i64)
+    .bind(s.peers as i64)
+    .bind(serde_json::to_string(&s.warnings).unwrap_or_else(|_| "[]".into()))
+    .execute(pool)
+    .await;
+}
+
+async fn previously_synced(pool: &SqlitePool, host_id: &str) -> bool {
+    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM vm_netpol_host_status WHERE host_id = ?")
+        .bind(host_id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0)
+        > 0
+}
+
+async fn sync_host(pool: &SqlitePool, fleet: &Fleet, h: &HostRef, force: bool) -> HostSync {
+    let c = fleet.compile(Some(&h.id));
+    let mut state = c.state;
+    let empty = fleet.policies.is_empty();
+    let mut out = HostSync {
+        host_id: h.id.clone(),
+        hostname: h.hostname.clone(),
+        ok: true,
+        pushed: false,
+        error: None,
+        vms: state.vms.len(),
+        rules: state.policy.len(),
+        peers: state.peers.len(),
+        warnings: c.warnings,
+    };
+    if empty && !previously_synced(pool, &h.id).await {
+        return out;
+    }
+    if empty {
+        state.owner = String::new();
+        state.flow_log = false;
+    } else {
+        state.owner = OWNER.into();
+    }
+    let v = serde_json::to_value(&state).unwrap_or_default();
+    let digest = hash_value(&v);
+    let unchanged = LAST_PUSH
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get_or_insert_with(HashMap::new)
+        .get(&h.id)
+        == Some(&digest);
+    if unchanged && !force {
+        return out;
+    }
+    match bpf::call(h, &Request::VmEdgeSync { state }).await {
+        Ok(_) => {
+            out.pushed = true;
+            LAST_PUSH
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .get_or_insert_with(HashMap::new)
+                .insert(h.id.clone(), digest);
+        }
+        Err(e) => {
+            out.ok = false;
+            out.error = Some(format!("{e:#}"));
+        }
+    }
+    if empty && out.ok {
+        let _ = sqlx::query("DELETE FROM vm_netpol_host_status WHERE host_id = ?")
+            .bind(&h.id)
+            .execute(pool)
+            .await;
+    } else {
+        record(pool, &out).await;
+    }
+    out
+}
+
+/// Compile and push to every online host.
+pub async fn reconcile(pool: &SqlitePool, force: bool) -> Vec<HostSync> {
+    let fleet = Fleet::load(pool).await;
+    let hosts = bpf::online_hosts(pool).await;
+    let mut out = Vec::new();
+    for h in &hosts {
+        out.push(sync_host(pool, &fleet, h, force).await);
+    }
+    out
+}
+
+pub fn spawn(state: AppState) {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(TICK_SECS));
+        let mut n: u32 = 0;
+        loop {
+            interval.tick().await;
+            if !state.leader.is_leader() {
+                continue;
+            }
+            n = n.wrapping_add(1);
+            for r in reconcile(&state.pool, n.is_multiple_of(FORCE_EVERY)).await {
+                if let Some(e) = r.error {
+                    tracing::warn!(host = %r.hostname, "vm network policy sync: {e}");
+                }
+            }
+        }
+    });
+}

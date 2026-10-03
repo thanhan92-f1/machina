@@ -30,6 +30,9 @@
 #   audit verify    Verify signed audit log (API or local file)
 #   integrations    Show KubeVirt/k8s/automation integration status
 #   sprite          Manage disposable sandbox VMs (list/get/create/delete/golden-images)
+#   netpol          VM network policies (CiliumNetworkPolicy schema)
+#   flow            Packet flows (observe / top / stats)
+#   vm label        Show or edit VM labels
 #   help            Show this help
 #
 # Web UI sign-in uses PAM (Linux accounts on this host), not a separate machina password.
@@ -914,6 +917,50 @@ cmd_sprite() {
     esac
 }
 
+# ── VM network policy / labels / flows ───────────────────────────────────
+# Args: the remaining CLI args; consumes a leading or trailing --fleet.
+np_setup() {
+    # shellcheck source=scripts/lib/netpol-ctl.sh
+    source "$SCRIPT_DIR/scripts/lib/netpol-ctl.sh"
+    NP_BASE="$API_URL/api/$API_VERSION"
+    if [[ "${NP_FLEET:-0}" == 1 ]]; then
+        NP_BASE="$API_URL/api/$API_VERSION/platform/controller/api/$API_VERSION"
+    fi
+    NP_AUTH=()
+    if [[ -n "${MACHINA_API_TOKEN:-}" ]]; then
+        NP_AUTH=(-H "Authorization: Bearer ${MACHINA_API_TOKEN}")
+    elif [[ -n "${MACHINA_USER:-}" && -n "${MACHINA_PASS:-}" ]]; then
+        NP_JAR=$(mktemp)
+        trap 'rm -f "$NP_JAR"' EXIT
+        # Password over stdin so it never shows up in argv.
+        MACHINA_USER="$MACHINA_USER" MACHINA_PASS="$MACHINA_PASS" jq -n '{username: env.MACHINA_USER, password: env.MACHINA_PASS}' |
+            curl -sk -c "$NP_JAR" -o /dev/null -X POST "$API_URL/api/$API_VERSION/auth/login" \
+                -H 'Content-Type: application/json' --data-binary @- || true
+        NP_AUTH=(-b "$NP_JAR")
+    fi
+}
+
+np_run() {
+    local fn=$1
+    shift
+    local args=() a
+    NP_FLEET=0
+    for a in "$@"; do
+        if [[ "$a" == "--fleet" ]]; then NP_FLEET=1; else args+=("$a"); fi
+    done
+    np_setup
+    "$fn" "${args[@]+"${args[@]}"}"
+}
+
+cmd_vm() {
+    local sub="${1:-}"
+    shift || true
+    case "$sub" in
+        label|labels) np_run np_label_main "$@" ;;
+        *) echo "Usage: machinactl vm label VM [key=value ...] [key- ...] [--fleet]"; exit 1 ;;
+    esac
+}
+
 # ── help ────────────────────────────────────────────────────────────────
 cmd_help() {
     echo ""
@@ -958,11 +1005,22 @@ cmd_help() {
     echo "  sprite            Manage disposable sandbox VMs (list/get/create/delete/golden-images)"
     echo "  help              Show this help"
     echo ""
+    echo "🛡️  VM network policy (CiliumNetworkPolicy schema; add --fleet for the controller):"
+    echo "  netpol apply -f FILE [--dry-run]   Create/replace policies (CNP / CCNP / VmNetworkPolicy YAML)"
+    echo "  netpol get|delete|validate         List / show (-o yaml|json|wide) / delete / lint"
+    echo "  netpol test --from A --to B --port N   Trace a connection (like cilium policy trace)"
+    echo "  netpol selectors|endpoints|status  Selector matches, VM identities, sync state"
+    echo "  vm label VM k=v [k-]               Show or edit VM labels"
+    echo "  flow observe [-f] [filters]        Colorful packet flows (like hubble observe)"
+    echo "  flow top [--by pair|src|dst|port|policy] | flow stats"
+    echo ""
     echo "🚀 Quick start:"
     echo "  ./machinactl deploy          # Does everything in one command"
     echo ""
     echo "🌍 Environment:"
     echo "  MACHINA_URL    API URL (default: https://127.0.0.1:5092; self-signed — use curl -k from scripts)"
+    echo "  MACHINA_API_TOKEN, or MACHINA_USER + MACHINA_PASS   Auth for netpol / flow / vm label"
+    echo "  NO_COLOR       Disable colors in flow output"
     echo ""
 }
 
@@ -1002,6 +1060,9 @@ main() {
             ;;
         integrations) cmd_integrations "$@" ;;
         sprite)     cmd_sprite "$@" ;;
+        netpol|networkpolicy|cnp) np_run np_netpol_main "$@" ;;
+        flow|flows|hubble) np_run np_flow_main "$@" ;;
+        vm)         cmd_vm "$@" ;;
         help|--help|-h) cmd_help ;;
         *)
             err "Unknown command: $cmd"

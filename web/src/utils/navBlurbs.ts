@@ -53,6 +53,7 @@ const BLURBS: Record<string, string> = {
   '/platform/zyra/security/hunt': 'Search for threats',
   '/platform/zyra/security/enforcement': 'Kernel-level deny rules',
   '/platform/zyra/security/native-bpf': 'Native eBPF datapath',
+  '/platform/zyra/security/network-policies': 'Which VM talks to which',
   '/platform/administration': 'Users, projects, policy',
   '/platform/users': 'Accounts and groups',
   '/platform/projects': 'Group and isolate workloads',
