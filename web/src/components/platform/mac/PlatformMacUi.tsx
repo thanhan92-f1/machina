@@ -286,7 +286,7 @@ export function MacSegmentedControl<T extends string>({
             role="tab"
             aria-selected={value === opt.value}
             onClick={() => onChange(opt.value)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-full transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 min-h-[34px] text-xs font-medium rounded-full transition flex items-center gap-1.5 ${
               value === opt.value
                 ? 'tahoe-segment-active text-[var(--text-primary)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'

@@ -11,7 +11,7 @@ export type DetailTabDef<T extends string> = {
 }
 
 function tabButtonClass(active: boolean): string {
-  return `px-3 py-2 text-sm whitespace-nowrap rounded-lg transition-colors ${
+  return `px-3 py-2 min-h-9 text-sm whitespace-nowrap rounded-lg transition-colors ${
     active
       ? 'bg-[var(--apple-fill-tertiary)] text-[var(--text-primary)] font-medium ring-1 ring-[color-mix(in_srgb,var(--apple-hairline)_80%,transparent)]'
       : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--apple-surface)]'
