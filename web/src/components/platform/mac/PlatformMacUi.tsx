@@ -352,18 +352,21 @@ export function MacSettingsPane({
   active,
   onSelect,
   title,
+  hideTitle = false,
   children,
 }: {
   sections: Array<{ id: string; label: string; icon?: React.ReactNode }>
   active: string
   onSelect: (id: string) => void
   title: string
+  /** Keep the heading for assistive tech but not on screen (the page chrome already shows it). */
+  hideTitle?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="w-full max-w-none space-y-6">
       <div className="space-y-3">
-        <h2 className="apple-display text-2xl sm:text-3xl text-[var(--text-primary)] tracking-tight">{title}</h2>
+        <h2 className={hideTitle ? 'sr-only' : 'apple-display text-2xl sm:text-3xl text-[var(--text-primary)] tracking-tight'}>{title}</h2>
         <nav
           className="flex flex-wrap gap-2"
           aria-label={`${title} sections`}

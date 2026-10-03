@@ -84,9 +84,9 @@ export default function PlatformAppearanceSettings() {
           <MacSettingsGroupBody>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{general.summary}</p>
             <div className="grid gap-2 sm:grid-cols-3 text-sm text-[var(--text-muted)]">
-              <div>Cluster: <span className="text-[var(--text-primary)]">{general.cluster_name}</span></div>
-              <div>Controller: <span className="text-[var(--text-primary)]">{general.controller_version}</span></div>
-              <div>VMs: <span className="text-[var(--text-primary)]">{general.vm_count}</span></div>
+              <div>Cluster: <span className="text-[var(--text-primary)]">{general.cluster_name ?? '—'}</span></div>
+              <div>Controller: <span className="text-[var(--text-primary)]">{general.controller_version ?? '—'}</span></div>
+              <div>VMs: <span className="text-[var(--text-primary)]">{general.vm_count ?? '—'}</span></div>
             </div>
           </MacSettingsGroupBody>
         </MacSettingsGroup>

@@ -15,7 +15,7 @@ export const PLATFORM_DESKTOP_TIER_LABELS: Record<PlatformDesktopTier, string> =
 }
 
 export const PLATFORM_DESKTOP_TIER_HINTS: Record<PlatformDesktopTier, string> = {
-  normal: 'Clean desktop — Finder, hosts, backups, and settings. Dock-first layout.',
+  normal: 'Clean desktop — Finder, hosts, backups, and settings.',
   power: 'Operations toolkit — storage, networks, Zyra, tasks, and shortcuts.',
   advanced: 'Full Machina fleet surface — every pane, firewall module, and admin tool.',
 }

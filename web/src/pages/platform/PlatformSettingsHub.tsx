@@ -260,6 +260,7 @@ export default function PlatformSettingsHub() {
     >
     <MacSettingsPane
       title="Settings"
+      hideTitle
       sections={SECTIONS.map((s) => ({ id: s.id, label: s.label, icon: s.icon }))}
       active={section}
       onSelect={selectSection}
