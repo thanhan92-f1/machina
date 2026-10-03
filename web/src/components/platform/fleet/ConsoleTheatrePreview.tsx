@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { Maximize2, Monitor } from 'lucide-react'
+import { Maximize2, Monitor, Play } from 'lucide-react'
 import {
   getConsoleHubPlan,
   issuePlatformVmWsToken,
@@ -15,7 +15,7 @@ import VNCViewer from '../../VNCViewer'
 import { embeddedVncPreviewProps } from '../../../utils/embeddedVnc'
 import { openCenterPopout } from '../../../utils/platformCenterPopout'
 import VmConsoleQuickLinks from './VmConsoleQuickLinks'
-import { cinemaHubPath, cinemaPopoutPath } from '../../../utils/consoleExperienceMode'
+import { cinemaHubPath, cinemaPopoutPath, studioHubPath } from '../../../utils/consoleExperienceMode'
 import { consoleStatusLabel } from './vmConsoleLinks'
 
 type Props = {
@@ -24,6 +24,20 @@ type Props = {
   connected?: boolean
   /** `tile` — VNC only (live wall). `panel` — full theatre chrome (command center). */
   variant?: 'panel' | 'tile'
+  /** Panel variant: observed VM state, drives the glow-frame colour. */
+  vmState?: string
+  /** Panel variant: when set and the VM is not running, the stage shows a Start poster. */
+  onStart?: () => void
+}
+
+type StageTone = 'ok' | 'warn' | 'error' | 'neutral'
+
+function stageTone(state?: string): StageTone {
+  const v = (state ?? 'running').toLowerCase()
+  if (v.includes('run')) return 'ok'
+  if (v.includes('pause') || v.includes('migrat') || v.includes('suspend')) return 'warn'
+  if (v.includes('error') || v.includes('crash') || v.includes('fail')) return 'error'
+  return 'neutral'
 }
 
 export default function ConsoleTheatrePreview({
@@ -31,6 +45,8 @@ export default function ConsoleTheatrePreview({
   vmName,
   connected = true,
   variant = 'panel',
+  vmState,
+  onStart,
 }: Props) {
   const [plan, setPlan] = useState<ConsoleHubPlan | null>(null)
   const [wsUrl, setWsUrl] = useState<string | null>(null)
@@ -103,23 +119,29 @@ export default function ConsoleTheatrePreview({
     )
   }
 
+  const tone = stageTone(vmState)
+  const live = tone === 'ok'
+  const cinemaTo = cinemaHubPath(vmId, plan?.recommended && plan.recommended !== 'serial' ? { protocol: plan.recommended } : undefined)
+  const overlayBtn =
+    'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium backdrop-blur-md transition-colors'
+
   return (
-    <section className="rounded-lg border border-white/[0.08] bg-black/40 overflow-hidden" data-testid="console-theatre-preview">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] text-xs gap-2">
-        <span className="text-[var(--text-secondary)] font-medium shrink-0">Console Theatre</span>
-        <span className={connected ? 'text-emerald-400 truncate text-right' : 'text-[var(--text-muted)] truncate text-right'} title={status}>
-          {status}
-        </span>
-      </div>
-
-      <div className="px-3 pt-2 pb-1">
-        <VmConsoleQuickLinks vmId={vmId} running compact />
-      </div>
-
-      {loadError ? (
-        <p className="px-3 py-2 text-xs text-amber-300/90">{loadError}</p>
-      ) : showVnc ? (
-        <div className="relative mx-2 mb-2 rounded-md border border-white/[0.06] overflow-hidden bg-black aspect-video w-[calc(100%-1rem)] max-h-[11rem] flex flex-col" data-testid="console-theatre-vnc">
+    <section className="nl-console-stage" data-tone={tone} data-testid="console-theatre-preview">
+      <div className="nl-console-screen" data-testid="console-theatre-vnc">
+        {!live ? (
+          <div className="nl-console-poster">
+            <span className="nl-console-poster-icon" aria-hidden><Monitor className="w-7 h-7" /></span>
+            <p className="text-lg font-semibold tracking-tight text-white">{vmName}</p>
+            <p className="text-sm text-white/60">{tone === 'warn' ? 'Paused — resume to see the screen' : tone === 'error' ? 'This machine reported an error' : 'Powered off'}</p>
+            {onStart ? (
+              <button type="button" className={`${overlayBtn} bg-emerald-500 text-white hover:bg-emerald-400 mt-2`} onClick={onStart}>
+                <Play className="w-3.5 h-3.5" /> {tone === 'warn' ? 'Resume' : 'Start machine'}
+              </button>
+            ) : null}
+          </div>
+        ) : loadError ? (
+          <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-amber-300/90">{loadError}</p>
+        ) : showVnc ? (
           <VNCViewer
             vmName={vmName}
             wsUrl={wsUrl ?? undefined}
@@ -130,29 +152,38 @@ export default function ConsoleTheatrePreview({
             }}
             {...embeddedVncPreviewProps}
           />
-        </div>
-      ) : (
-        <div className="px-3 py-3 text-xs text-[var(--text-muted)]">
-          {plan?.protocols?.includes('spice') || plan?.protocols?.includes('webrtc_spice')
-            ? 'This VM uses SPICE — open SPICE or Performance above.'
-            : 'Open VNC above or use ConsoleHub for serial/SSH lenses.'}
-        </div>
-      )}
+        ) : (
+          <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-white/60">
+            {plan?.protocols?.includes('spice') || plan?.protocols?.includes('webrtc_spice')
+              ? 'This VM uses SPICE — open it in Cinema for the live screen.'
+              : 'Open Cinema for serial and SSH lenses.'}
+          </p>
+        )}
 
-      <div className="flex border-t border-white/[0.06] divide-x divide-white/[0.06]">
-        <Link
-          to={cinemaHubPath(vmId, plan?.recommended && plan.recommended !== 'serial' ? { protocol: plan.recommended } : undefined)}
-          className="flex-1 btn-secondary text-xs rounded-none border-0 py-2 inline-flex items-center justify-center gap-1"
-        >
+        {live ? (
+          <Link to={cinemaTo} className="absolute inset-0 z-[1]" aria-label={`Open ${vmName} in Cinema`} tabIndex={-1} />
+        ) : null}
+
+        <div className="nl-console-badges">
+          <span className="nl-console-pill" title={status}>
+            <i aria-hidden /> {live ? 'Live' : tone === 'warn' ? 'Paused' : tone === 'error' ? 'Error' : 'Off'}
+            <span className="nl-console-pill-sub">{status}</span>
+          </span>
+        </div>
+
+        <div className="nl-console-controls">
+          <Link to={cinemaTo} className={`${overlayBtn} bg-[#0071e3] text-white hover:bg-[#0a84ff]`}>
             <Monitor className="w-3.5 h-3.5" /> Open Cinema
-        </Link>
-        <button
-          type="button"
-          className="flex-1 btn-secondary text-xs rounded-none border-0 py-2 inline-flex items-center justify-center gap-1"
-          onClick={() => openCenterPopout(cinemaPopoutPath(vmId))}
-        >
-          <Maximize2 className="w-3.5 h-3.5" /> Pop out
-        </button>
+          </Link>
+          <button type="button" className={`${overlayBtn} bg-white/15 text-white hover:bg-white/25`} onClick={() => openCenterPopout(cinemaPopoutPath(vmId))}>
+            <Maximize2 className="w-3.5 h-3.5" /> Pop out
+          </button>
+          <Link to={studioHubPath(vmId)} className={`${overlayBtn} bg-white/15 text-white hover:bg-white/25`}>
+            Studio
+          </Link>
+          <span className="flex-1" />
+          <VmConsoleQuickLinks vmId={vmId} running={live} compact className="nl-console-protocols" />
+        </div>
       </div>
     </section>
   )
