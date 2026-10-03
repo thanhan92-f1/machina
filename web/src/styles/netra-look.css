@@ -548,6 +548,19 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
     min-width: 36px;
     min-height: 36px;
   }
+  /* Scroll hint: edge shadows appear only on the side that still has hidden columns. Uses
+     background-image only, so the card's own background colour is kept. */
+  .overflow-x-auto:has(> table) {
+    background-image:
+      linear-gradient(to right, var(--apple-surface, #fff) 30%, transparent),
+      linear-gradient(to left, var(--apple-surface, #fff) 30%, transparent),
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.16), transparent),
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.16), transparent);
+    background-position: 0 0, 100% 0, 0 0, 100% 0;
+    background-repeat: no-repeat;
+    background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
   /* Small text buttons, chips and tabs keep the >=36px phone touch target (APPLE-UX-CONTRACT). */
   main button.text-xs,
   main button.text-sm:not(.btn-primary):not(.btn-secondary),
