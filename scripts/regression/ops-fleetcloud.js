@@ -75,10 +75,10 @@ async function del(path) {
   const _ids = await resolveIds(api, cfg);
   if (_ids.hostId) HOST_ID = _ids.hostId;
   if (_ids.platformVmId) PID = _ids.platformVmId;
-  let pass = 0;
+  let passed = 0;
   let fail = 0;
   const mark = async (name, fn) => {
-    if (await step(name, fn)) pass++;
+    if (await step(name, fn)) passed++;
     else fail++;
   };
 
@@ -408,9 +408,9 @@ async function del(path) {
     }
   }
 
-  console.log(`PASS SUMMARY pass=${pass} fail=${fail}`);
-  log.append({ kind: 'SUMMARY', api: 'fleetcloud', ok: fail === 0, note: `pass=${pass} fail=${fail}` });
-  console.log(`FLEETCLOUD_DONE pass=${pass} fail=${fail}`);
+  console.log(`PASS SUMMARY pass=${passed} fail=${fail}`);
+  log.append({ kind: 'SUMMARY', api: 'fleetcloud', ok: fail === 0, note: `pass=${passed} fail=${fail}` });
+  console.log(`FLEETCLOUD_DONE pass=${passed} fail=${fail}`);
   process.exitCode = fail === 0 ? 0 : 1;
 })().catch((e) => {
   console.error(e);

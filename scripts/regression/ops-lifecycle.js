@@ -111,10 +111,10 @@ async function cleanupOrphans() {
 
 (async () => {
   await login();
-  let pass = 0;
+  let passed = 0;
   let fail = 0;
   const mark = async (name, fn) => {
-    if (await step(name, fn)) pass++;
+    if (await step(name, fn)) passed++;
     else fail++;
   };
 
@@ -313,8 +313,8 @@ async function cleanupOrphans() {
 
   if (fail > 0) await cleanupOrphans();
 
-  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${pass} fail=${fail}` });
-  console.log(`LIFECYCLE_DONE pass=${pass} fail=${fail}`);
+  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${passed} fail=${fail}` });
+  console.log(`LIFECYCLE_DONE pass=${passed} fail=${fail}`);
   process.exit(fail === 0 ? 0 : 1);
 })().catch(async (e) => {
   console.error('FATAL', e);

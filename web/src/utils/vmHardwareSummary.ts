@@ -101,7 +101,7 @@ export function buildVmHardwareSummary(input: {
   if (displayParts.length === 0) displayParts.push('none')
 
   const vcpus = topology?.vcpus ?? details?.vcpus ?? 0
-  const cpuMode = cpuInfo.mode.replace(/-/g, '-')
+  const cpuMode = cpuInfo.mode
   const cpuLabel = cpuInfo.model ? `${vcpus} vCPU · ${cpuMode} · ${cpuInfo.model}` : `${vcpus} vCPU · ${cpuMode}`
 
   const memGiB = topology

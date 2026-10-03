@@ -100,6 +100,13 @@ describe('getControllerBase precedence', () => {
     localStorage.setItem(LS_CONTROLLER, PROXY_BASE)
     expect(getControllerBase()).toBe(PROXY_BASE)
   })
+
+  it('ignores a saved override that is not an http(s) URL or same-origin path', () => {
+    for (const bad of ['javascript:alert(1)', ' JavaScript:alert(1)', 'data:text/html,x', '//evil.example']) {
+      localStorage.setItem(LS_CONTROLLER, bad)
+      expect(getControllerBase()).toBe(PROXY_BASE)
+    }
+  })
 })
 
 describe('platformFetch 401 handling', () => {

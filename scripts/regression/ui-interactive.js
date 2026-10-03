@@ -80,14 +80,14 @@ async function ensureRunningApi() {
 
   const cdp = await connectCdp(cfg.cdpUrl, { freshPage: true, url: cfg.baseUrl + '/' });
   await loginBrowser(cdp, cfg);
-  let pass = 0;
+  let passed = 0;
   let fail = 0;
 
   const check = async (name, fn) => {
     try {
       const note = await fn();
       log.append({ kind: 'UI', api: name, ok: true, note: String(note).slice(0, 160) });
-      pass++;
+      passed++;
     } catch (e) {
       log.append({ kind: 'UI', api: name, ok: false, note: e.message.slice(0, 200) });
       fail++;
@@ -189,8 +189,8 @@ async function ensureRunningApi() {
     /* ignore */
   }
 
-  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${pass} fail=${fail}` });
-  console.log(`UI_OPS_DONE pass=${pass} fail=${fail}`);
+  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${passed} fail=${fail}` });
+  console.log(`UI_OPS_DONE pass=${passed} fail=${fail}`);
   process.exit(fail === 0 ? 0 : 1);
 })().catch((e) => {
   console.error('FATAL', e);

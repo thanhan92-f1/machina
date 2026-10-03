@@ -55,11 +55,11 @@ async function waitTask(taskId, timeoutMs = 60000) {
 
 (async () => {
   await login();
-  let pass = 0;
+  let passed = 0;
   let fail = 0;
   const mark = async (name, fn) => {
     const good = await step(name, fn);
-    if (good) pass++;
+    if (good) passed++;
     else fail++;
   };
 
@@ -188,9 +188,9 @@ async function waitTask(taskId, timeoutMs = 60000) {
   log.append({
     kind: 'SUMMARY',
     ok: fail === 0,
-    note: `pass=${pass} fail=${fail}`,
+    note: `pass=${passed} fail=${fail}`,
   });
-  console.log(`OPS_DONE pass=${pass} fail=${fail}`);
+  console.log(`OPS_DONE pass=${passed} fail=${fail}`);
   process.exit(fail === 0 ? 0 : 1);
 })().catch((e) => {
   console.error('FATAL', e);

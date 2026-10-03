@@ -54,7 +54,7 @@ async function loadPath(cdp, path) {
   await tryLogin();
   const cdp = await connectCdp(cfg.cdpUrl, { freshPage: true, url: cfg.baseUrl + '/' });
   await loginBrowser(cdp, cfg);
-  let pass = 0;
+  let passed = 0;
   let soft = 0;
   let fail = 0;
   for (const path of PATHS) {
@@ -67,7 +67,7 @@ async function loadPath(cdp, path) {
         soft++;
         log.append({ kind: 'UI', path, ok: true, soft: true, note: `SOFT len=${t.length}` });
       } else {
-        pass++;
+        passed++;
         log.append({ kind: 'UI', path, ok: true, note: `len=${t.length}` });
       }
     } catch (e) {
@@ -80,8 +80,8 @@ async function loadPath(cdp, path) {
   } catch {
     /* ignore */
   }
-  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${pass} soft=${soft} fail=${fail}` });
-  console.log(`UI_EVENTX_DONE pass=${pass} soft=${soft} fail=${fail}`);
+  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${passed} soft=${soft} fail=${fail}` });
+  console.log(`UI_EVENTX_DONE pass=${passed} soft=${soft} fail=${fail}`);
   process.exit(fail === 0 ? 0 : 1);
 })().catch((e) => {
   console.error('FATAL', e);

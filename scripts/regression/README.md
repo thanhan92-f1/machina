@@ -25,6 +25,10 @@ Chrome with remote debugging (macOS example):
 export MACHINA_BASE_URL=https://HOST:5092
 export MACHINA_USER=sus
 export MACHINA_PASS=max
+# TLS is verified. For a self-signed daemon cert, trust it explicitly:
+export MACHINA_CA_FILE=/path/to/cert.pem   # copy of the host's /etc/machina/ssl/cert.pem
+# or, on a throwaway lab host only, skip verification:
+# export MACHINA_INSECURE_TLS=1
 
 # API heartbeat
 npm run api -- --loops 1

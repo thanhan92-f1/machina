@@ -22,7 +22,9 @@ function directControllerBase(): string {
 
 function normalizeSavedController(url: string | null): string | null {
   if (!url) return null
-  const u = url.replace(/\/$/, '')
+  const u = url.trim().replace(/\/$/, '')
+  // The saved base ends up in hrefs: anything but http(s) or a same-origin path is dropped.
+  if (!/^(https?:\/\/|\/(?!\/))/i.test(u)) return null
   if (typeof window === 'undefined') return u
   const host = window.location.hostname
   if (

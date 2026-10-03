@@ -60,10 +60,10 @@ async function ensureRunning() {
 
 (async () => {
   await login();
-  let pass = 0;
+  let passed = 0;
   let fail = 0;
   const mark = async (name, fn) => {
-    if (await step(name, fn)) pass++;
+    if (await step(name, fn)) passed++;
     else fail++;
   };
 
@@ -204,8 +204,8 @@ async function ensureRunning() {
     return state;
   });
 
-  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${pass} fail=${fail}` });
-  console.log(`STORAGE_OPS_DONE pass=${pass} fail=${fail}`);
+  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${passed} fail=${fail}` });
+  console.log(`STORAGE_OPS_DONE pass=${passed} fail=${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => {
   console.error('FATAL', e);

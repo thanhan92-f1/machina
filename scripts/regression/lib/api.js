@@ -3,6 +3,7 @@
 
 'use strict';
 
+const fs = require('fs');
 const https = require('https');
 const http = require('http');
 
@@ -12,7 +13,8 @@ function sleep(ms) {
 
 function createApi(cfg) {
   let cookie = '';
-  const insecure = cfg.baseUrl.startsWith('https:');
+  const tls = cfg.baseUrl.startsWith('https:');
+  const ca = cfg.caFile ? fs.readFileSync(cfg.caFile) : undefined;
 
   function api(method, path, body) {
     return new Promise((resolve, reject) => {
@@ -23,7 +25,7 @@ function createApi(cfg) {
         headers['Content-Type'] = 'application/json';
         headers['Content-Length'] = Buffer.byteLength(data);
       }
-      const lib = insecure ? https : http;
+      const lib = tls ? https : http;
       const opts = {
         host: cfg.host,
         port: cfg.port,
@@ -31,7 +33,10 @@ function createApi(cfg) {
         method,
         headers,
       };
-      if (insecure) opts.rejectUnauthorized = false;
+      if (tls) {
+        opts.ca = ca;
+        opts.rejectUnauthorized = !cfg.insecureTls;
+      }
       const r = lib.request(opts, (res) => {
         const set = res.headers['set-cookie'];
         if (set) cookie = set.map((c) => c.split(';')[0]).join('; ');

@@ -69,7 +69,7 @@ async function reconnect(prev) {
   while (args.forever || loop < args.loops) {
     loop++;
     console.log('LOOP', loop, 'START pages=', cfg.pages.length);
-    let pass = 0;
+    let passed = 0;
     let soft = 0;
     let fail = 0;
 
@@ -119,14 +119,14 @@ async function reconnect(prev) {
             note: `SOFT len=${t.length}`,
           });
         } else {
-          pass++;
-          if (pass % 25 === 0) {
+          passed++;
+          if (passed % 25 === 0) {
             log.append({
               loop,
               kind: 'PAGE',
               path: pagePath,
               ok: true,
-              note: `checkpoint pass=${pass}`,
+              note: `checkpoint pass=${passed}`,
             });
           }
         }
@@ -137,12 +137,12 @@ async function reconnect(prev) {
       }
     }
 
-    console.log(`LOOP ${loop} DONE pass=${pass} soft=${soft} fail=${fail}`);
+    console.log(`LOOP ${loop} DONE pass=${passed} soft=${soft} fail=${fail}`);
     log.append({
       loop,
       kind: 'SUMMARY',
       ok: fail === 0,
-      note: `pass=${pass} soft=${soft} fail=${fail}`,
+      note: `pass=${passed} soft=${soft} fail=${fail}`,
     });
   }
 

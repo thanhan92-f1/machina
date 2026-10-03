@@ -29,6 +29,7 @@ function summaryOf(file, dir) {
     if (t && !t.startsWith('#'))
       return t
         .replace(/\s+/g, ' ')
+        .replace(/\\/g, '\\\\')
         .replace(/\|/g, '\\|')
         .replace(/\*\*/g, '')
         .replace(/\]\(([a-zA-Z0-9_-]+\.md)\)/g, `](${dir}/$1)`)

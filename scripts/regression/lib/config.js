@@ -49,6 +49,8 @@ function loadConfig() {
     port: u.port ? Number(u.port) : u.protocol === 'https:' ? 443 : 80,
     username: process.env.MACHINA_USER || 'sus',
     password: process.env.MACHINA_PASS || 'max',
+    caFile: process.env.MACHINA_CA_FILE || '',
+    insecureTls: process.env.MACHINA_INSECURE_TLS === '1',
     cdpUrl: process.env.MACHINA_CDP_URL || 'http://127.0.0.1:9222',
     vmName: process.env.MACHINA_VM_NAME || 'chrome-e2e-vm',
     // Prefer env; leave empty so lib/ids.resolveIds can discover live UUIDs.

@@ -65,10 +65,10 @@ async function waitTask(taskId, { timeoutMs = 60000 } = {}) {
   const _ids = await resolveIds(api, cfg);
   if (_ids.hostId) HID = _ids.hostId;
   if (_ids.platformVmId) PID = _ids.platformVmId;
-  let pass = 0;
+  let passed = 0;
   let fail = 0;
   const mark = async (name, fn) => {
-    if (await step(name, fn)) pass++;
+    if (await step(name, fn)) passed++;
     else fail++;
   };
 
@@ -312,8 +312,8 @@ async function waitTask(taskId, { timeoutMs = 60000 } = {}) {
     /* ignore */
   }
 
-  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${pass} fail=${fail}` });
-  console.log(`HUNT_OPS_DONE pass=${pass} fail=${fail}`);
+  log.append({ kind: 'SUMMARY', ok: fail === 0, note: `pass=${passed} fail=${fail}` });
+  console.log(`HUNT_OPS_DONE pass=${passed} fail=${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => {
   console.error('FATAL', e);
