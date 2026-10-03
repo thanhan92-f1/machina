@@ -3,6 +3,7 @@
 
 import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
+import { sidebarLink } from './helpers/platformShellHelpers'
 
 test('advanced tier shows sidebar policy', async ({ page }) => {
   // The old menubar's "Go" destination menu (All destinations…/Operations/Host/Networks) is gone
@@ -97,7 +98,7 @@ test('mobile burger nav navigates to hosts on normal tier', async ({ page }) => 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await page.locator('aside[aria-label="Sections"] a[href="/platform/hosts"]').click()
+  await (await sidebarLink(page, '/platform/hosts')).click()
   await expect(page).toHaveURL(/\/platform\/hosts/)
 })
 
@@ -106,7 +107,7 @@ test('mobile burger nav includes hub sections on power tier', async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/tasks')
   await page.getByRole('button', { name: 'Menu' }).click()
-  const link = page.locator('aside[aria-label="Sections"] a[href="/platform/observability"]')
+  const link = await sidebarLink(page, '/platform/observability')
   await expect(link).toBeVisible()
   await link.click()
   await expect(page).toHaveURL(/\/platform\/observability/)
@@ -148,7 +149,7 @@ test('mobile burger nav reaches Settings from the policy workspace', async ({ pa
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/policy')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await page.locator('aside[aria-label="Sections"] a[href="/platform/settings"]').click()
+  await (await sidebarLink(page, '/platform/settings')).click()
   await expect(page).toHaveURL(/\/platform\/settings/)
 })
 
@@ -249,7 +250,7 @@ test('mobile burger nav navigates to resources on power tier', async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await page.locator('aside[aria-label="Sections"] a[href="/platform/infrastructure"]').click()
+  await (await sidebarLink(page, '/platform/infrastructure')).click()
   await expect(page).toHaveURL(/\/platform\/infrastructure/)
   await expect(page.getByText('Infrastructure', { exact: true }).first()).toBeVisible({ timeout: 15_000 })
 })
@@ -298,7 +299,7 @@ test('mobile burger nav navigates security context on advanced tier', async ({ p
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/zeus/security')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await page.locator('aside[aria-label="Sections"] a[href="/platform/zeus/security/policies"]').click()
+  await (await sidebarLink(page, '/platform/zeus/security/policies')).click()
   await expect(page).toHaveURL(/\/platform\/zeus\/security\/policies/)
 })
 

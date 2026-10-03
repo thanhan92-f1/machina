@@ -16,8 +16,8 @@ import {
 import { navItemActive } from '../../utils/routes'
 import PlatformSidebarSection from '../platform/PlatformSidebarSection'
 
-// The top-nav mega-menu covers every route; this sidebar is a fast, always-expanded
-// path to the categories people use most — Workloads/Infra/Ops/Secure — pulled from
+// The top-nav mega-menu covers every route; this sidebar is a fast path (only the section you are
+// in is open by default; the rest are one-line headers) to the categories people use most — Workloads/Infra/Ops/Secure — pulled from
 // the same live registry (sidebarProductSectionsForTier) so it never drifts out of
 // sync with the GlobalBar flyouts. Admin/More stay top-nav-only to keep this list
 // from growing unbounded.
@@ -30,7 +30,8 @@ const OVERVIEW: SidebarRailItem[] = [
 
 const SECTION_COLLAPSE_PREFIX = 'machina-sidenav-'
 
-function loadSectionExpanded(id: string): boolean {
+/** Explicit user choice for a section, or undefined to follow the active route. */
+function loadSectionExpanded(id: string): boolean | undefined {
   try {
     const raw = localStorage.getItem(`${SECTION_COLLAPSE_PREFIX}${id}`)
     if (raw === '0') return false
@@ -38,7 +39,7 @@ function loadSectionExpanded(id: string): boolean {
   } catch {
     /* ignore */
   }
-  return true
+  return undefined
 }
 
 function SideLink({
@@ -88,7 +89,7 @@ export default function SideNav({ mobileOpen, onCloseMobile }: { mobileOpen: boo
     () => allSections.filter((s) => RAIL_SECTION_IDS.includes(s.id)),
     [allSections],
   )
-  const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>(() =>
+  const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean | undefined>>(() =>
     Object.fromEntries(sections.map((s) => [s.id, loadSectionExpanded(s.id)])),
   )
   const [vmsNeedAttention, setVmsNeedAttention] = useState(0)
@@ -116,9 +117,11 @@ export default function SideNav({ mobileOpen, onCloseMobile }: { mobileOpen: boo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 
-  const toggleSection = useCallback((id: string) => {
+  // `currentlyOpen` is what the user sees now (explicit choice, else "is the active route in it"),
+  // so the first click always flips the visible state.
+  const toggleSection = useCallback((id: string, currentlyOpen: boolean) => {
     setSectionExpanded((prev) => {
-      const next = !(prev[id] ?? true)
+      const next = !currentlyOpen
       try {
         localStorage.setItem(`${SECTION_COLLAPSE_PREFIX}${id}`, next ? '1' : '0')
       } catch {
@@ -163,8 +166,8 @@ function SideNavBody({
   location,
 }: {
   sections: SidebarProductSection[]
-  sectionExpanded: Record<string, boolean>
-  toggleSection: (id: string) => void
+  sectionExpanded: Record<string, boolean | undefined>
+  toggleSection: (id: string, currentlyOpen: boolean) => void
   badgeFor: (to: string) => number
   location: ReturnType<typeof useLocation>
 }) {
@@ -189,14 +192,16 @@ function SideNavBody({
 
       <div className="gnb-side-divider mx-1 my-2" aria-hidden />
 
-      {sections.map((section: SidebarProductSection) => (
+      {sections.map((section: SidebarProductSection) => {
+        const open = sectionExpanded[section.id] ?? sectionHasActive(section)
+        return (
         <PlatformSidebarSection
           key={section.id}
           label={section.label}
           icon={section.icon as LucideIcon}
           collapsed={false}
-          expanded={sectionExpanded[section.id] ?? true}
-          onToggleExpanded={() => toggleSection(section.id)}
+          expanded={open}
+          onToggleExpanded={() => toggleSection(section.id, open)}
           hasActiveItem={sectionHasActive(section)}
           flyoutItems={null}
         >
@@ -212,7 +217,8 @@ function SideNavBody({
             ))}
           </ul>
         </PlatformSidebarSection>
-      ))}
+        )
+      })}
     </nav>
   )
 }

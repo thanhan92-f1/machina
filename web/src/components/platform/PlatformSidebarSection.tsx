@@ -117,6 +117,7 @@ export default function PlatformSidebarSection({
     <div className={`platform-sidebar-section ${hasActiveItem ? 'platform-sidebar-section--active' : ''}`}>
       <button
         type="button"
+        aria-expanded={isOpen}
         onClick={onToggleExpanded}
         className="platform-sidebar-section-header flex w-full items-center gap-1.5 px-2 py-1.5 mb-0.5 text-xs font-semibold tracking-normal text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
       >
