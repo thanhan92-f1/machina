@@ -561,6 +561,12 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
     background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
     background-attachment: local, local, scroll, scroll;
   }
+  /* Inline text links get a >=36px hit area without moving the layout: the padding is cancelled
+     by the negative margin. */
+  main .status-link {
+    padding-block: 0.75rem;
+    margin-block: -0.75rem;
+  }
   /* Small text buttons, chips and tabs keep the >=36px phone touch target (APPLE-UX-CONTRACT). */
   main button.text-xs,
   main button.text-sm:not(.btn-primary):not(.btn-secondary),

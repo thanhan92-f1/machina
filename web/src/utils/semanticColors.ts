@@ -63,7 +63,7 @@ export function sessionBadgeClasses(extra = ''): string {
 }
 
 export function statusActionLinkClasses(tone: 'ok' | 'warn' | 'error' | 'info' | 'neutral', extra = ''): string {
-  return `${statusToneClass(tone)} hover:underline ${extra}`.trim()
+  return `status-link ${statusToneClass(tone)} hover:underline ${extra}`.trim()
 }
 
 export function statusDestructiveButtonClasses(extra = ''): string {
