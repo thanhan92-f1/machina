@@ -14,17 +14,10 @@ html[data-ui-shell='tahoe-light'] {
   color-scheme: light;
 
   /* --- iPhone 17 named finishes ----------------------------------------- */
-  --iphone-mist-blue: hsl(200 62% 62%);
-  --iphone-mist-blue-deep: hsl(200 78% 40%);
-  --iphone-sage: hsl(110 18% 48%);
   --iphone-sage-deep: hsl(145 32% 36%);
-  --iphone-lavender: hsl(270 32% 62%);
   --iphone-lavender-deep: hsl(270 42% 48%);
-  --iphone-white: #ffffff;
-  --iphone-black: hsl(0 0% 11%);
   --iphone-cosmic-orange: hsl(18 92% 48%);
   --iphone-deep-blue: hsl(215 58% 32%);
-  --iphone-silver: hsl(210 12% 78%);
 
   /* Zeus Magichromatic HSL roles (as usable hex/hsl for Machina aliases) */
   --background: 0 0% 100%;
@@ -33,25 +26,16 @@ html[data-ui-shell='tahoe-light'] {
   --primary: 211 100% 45%;          /* apple.com #0071e3 */
   --primary-foreground: 0 0% 100%;
   --muted-foreground: 240 2% 44%;   /* Apple shop #6e6e73 */
-  --border-hsl: 205 22% 84%;
-  --accent-alt: 270 42% 48%;
-  --accent-live: 145 32% 36%;
-  --warning-hsl: 18 92% 48%;
-  --info-hsl: 211 100% 40%;
 
   /* --- Ground (Law 0) — mist-tinted paper, white working plane ----------- */
   --surface-0: #ffffff;
   --surface-1: hsl(205 32% 97%);
   --surface-2: #ffffff;
   --surface-3: #ffffff;
-  --surface-sunken: hsl(205 22% 90%);
   --surface-hover: hsl(210 40% 96% / 0.9);
-  --surface-active: color-mix(in srgb, #0071e3 10%, transparent);
 
-  --border-faint: hsl(205 22% 84% / 0.55);
   --border: hsl(205 22% 84%);
   --border-strong: hsl(200 28% 76%);
-  --divider: hsl(205 22% 84% / 0.7);
 
   --shadow-1: 0 1px 2px hsl(210 24% 40% / 0.05);
   --shadow-2: 0 2px 8px hsl(210 24% 40% / 0.06), 0 1px 2px hsl(210 24% 40% / 0.04);
@@ -63,7 +47,6 @@ html[data-ui-shell='tahoe-light'] {
   --text-muted: #86868b;
   --text-faint: hsl(220 8% 58%);
   --text-on-accent: #ffffff;
-  --text-inverse: #f2f4f7;
 
   /* --- Intent = apple.com blue (#0071e3) -------------------------------- */
   --plasma: #0071e3;
@@ -74,48 +57,31 @@ html[data-ui-shell='tahoe-light'] {
 
   /* Cosmic Orange = warn; Sage = good; Ember = fail */
   --amber: var(--iphone-cosmic-orange);
-  --amber-tint: hsl(18 92% 48% / 0.09);
   --ember: hsl(4 72% 42%);
-  --ember-tint: hsl(4 72% 42% / 0.08);
   --verdant: var(--iphone-sage-deep);
   --verdant-tint: hsl(145 32% 36% / 0.09);
 
   --mark-nominal: hsl(220 10% 46%);
   --mark-track: hsl(205 22% 84% / 0.65);
-  --mark-ghost: hsl(220 12% 38% / 0.2);
-  --grid-line: hsl(205 22% 84% / 0.55);
-  --unmeasured-stroke: hsl(220 12% 38% / 0.28);
-  --unmeasured-text: var(--text-muted);
 
   --tty-bg: #0b0d11;
   --tty-fg: #c6ceda;
-  --tty-dim: #6e7681;
   --tty-border: hsl(205 22% 84%);
 
-  --topbar-bg: transparent;
-  --topbar-border: hsl(200 28% 82%);
-  --rail-bg: transparent;
-  --rail-active-bg: linear-gradient(90deg, hsl(200 78% 40% / 0.16), hsl(270 42% 48% / 0.08));
-  --rail-active-fg: hsl(200 78% 32%);
-  --scrim: hsl(210 30% 20% / 0.28);
 
   /* --- Machina aliases -------------------------------------------------- */
   --page-bg: var(--surface-0);
   --apple-surface: var(--surface-2);
   --apple-surface-elevated: var(--surface-3);
   --apple-hairline: var(--border);
-  --apple-muted: var(--text-muted);
   --apple-fill-secondary: var(--surface-hover);
   --apple-fill-tertiary: hsl(200 40% 96% / 0.55);
 
   --accent: #0071e3;
   --accent-hover: #0077ed;
-  --accent-pressed: #006edb;
   --accent-soft: color-mix(in srgb, #0071e3 12%, transparent);
   --link: #0066cc;
   --link-hover: #0071e3;
-  --link-on-light: #0066cc;
-  --zyvor-accent: var(--iphone-cosmic-orange);
 
   --glass-bg: hsl(200 55% 97% / 0.9);
   --glass-bg-elevated: hsl(0 0% 100% / 0.96);
@@ -132,15 +98,12 @@ html[data-ui-shell='tahoe-light'] {
   --machina-status-neutral: var(--mark-nominal);
   --machina-accent: var(--plasma);
   --machina-accent-ai: var(--iphone-lavender-deep);
-  --machina-accent-network: var(--plasma);
-  --machina-accent-security: var(--ember);
   --machina-vm-running: var(--verdant);
   --machina-vm-stopped: var(--mark-nominal);
   --machina-vm-paused: var(--amber);
   --machina-vm-creating: var(--plasma);
   --machina-vm-failed: var(--ember);
   --machina-vm-migrating: var(--iphone-deep-blue);
-  --machina-vm-suspended: var(--plasma);
   --machina-vm-unknown: var(--mark-nominal);
 
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -563,7 +526,6 @@ html.light-theme .platform-finder-inspector dt {
 html.apple-light,
 html.light-theme,
 html[data-theme='tahoe-light'] {
-  --layout-max-width: 90rem;
 }
 
 html.apple-light .liquid-glass-app .text-slate-400,

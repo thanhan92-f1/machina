@@ -9,15 +9,12 @@
     --surface-1: hsl(var(--foreground) / 0.02);
     --surface-2: hsl(var(--foreground) / 0.05);
     --hairline-1: hsl(var(--foreground) / 0.07);
-    --hairline-2: hsl(var(--foreground) / 0.1);
     /* Apple dark graphite (~#000 / #1d1d1f) — not navy. */
     --background: 0 0% 0%;
     /* Apple shop dark primary #f5f5f7 */
     --foreground: 240 2% 96.5%;
     --card: 0 0% 11%;
     --card-foreground: 240 2% 96.5%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 240 2% 96.5%;
     /* apple.com blue (#0071e3) — AirPods / shop system blue, not Mist. */
     --primary: 211 100% 45%;
     --primary-foreground: 0 0% 100%;
@@ -29,51 +26,35 @@
     --accent: 0 0% 16%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 98%;
     --success: 158 64% 52%;
     /* Dark text — success is a medium-lightness green, too light for light/white text
        (was 158 64% 90%, ~1.7:1 contrast). Matches the dark-on-accent pattern already
        used by emerald-noir/nova/predator's own --success-foreground. */
-    --success-foreground: 158 64% 12%;
     --warning: 43 96% 56%;
     /* Same fix as --success-foreground above (was 43 96% 90%, ~1.5:1 contrast). */
-    --warning-foreground: 43 96% 12%;
     --info: 211 100% 58%;              /* apple.com dark link ~#2997ff family */
-    --info-foreground: 199 89% 92%;
-    --danger: 0 72% 51%;
-    --danger-foreground: 0 72% 90%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
     /* Focus accent — matches apple.com blue. */
     --ring: 211 100% 45%;
-    --radius: 0.75rem;
     /* Semantic accent tri-token — the deliberate accent language, matched to the
        existing literals so wiring them causes no visual shift:
        live/running/success = emerald, interactive/info = apple blue, AI/secondary = violet. */
-    --accent-live: 158 73% 54%;
     --accent-info: 211 100% 45%;       /* apple.com #0071e3 */
-    --accent-alt: 270 48% 68%;        /* Lavender (Magichromatic family, dark) */
     /* Canonical content radius + section gap (was split 0.9/1/0.75rem and
        1.25/1.5/1.75rem). */
     --radius-card: 0.9rem;
-    --zeus-section-gap: 1.5rem;
     /* Reserved workspace tokens — canonical values live in zeus-reserved-workspace.css */
-    --zeus-page-section-gap: 1.75rem;
-    --zeus-section-gap: 1.75rem;
-    --zeus-scroll-pad-top: 1rem;
-    --zeus-toolbar-row-gap: 0.5rem;
-    --zeus-chip-gap: 0.4rem;
-    --zeus-comfort-line-height: 1.5;
 
     /* ── Design system foundation tokens (2026 ref) ── */
-    --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
-    --sp-5: 24px;  --sp-6: 32px;  --sp-7: 48px;  --sp-8: 64px;
+--sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+--sp-6: 32px;  --sp-7: 48px;  --sp-8: 64px;
 
-    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 16px;
-    --fs-lg: 20px; --fs-xl: 28px; --fs-2xl: 36px;
+--fs-sm: 13px; --fs-base: 14px; --fs-md: 16px;
+--fs-xl: 28px; --fs-2xl: 36px;
 
-    --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
-    --lh-tight: 1.2;   --lh-normal: 1.5;
+--fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+--lh-normal: 1.5;
 
     /* Type families. --font-display = apple.com SF / system stack; self-hosted
        Inter sits after SF names so Linux/Windows get close metrics when SF is
@@ -81,18 +62,11 @@
     --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
 
-    --content-max: 100%;
-    --panel-min: 360px;
     --hit-min: 44px;
 
     --focus-ring: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
 
     /* ── Motion tokens ── */
-    --dur-fast: 120ms;
-    --dur-base: 200ms;
-    --dur-slow: 300ms;
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
   }
 
 /* ── tahoe-mesh / hero / buttons / glass / empty ── */
@@ -477,10 +451,7 @@ html[data-ui-shell='default'] {
   --primary-foreground: 0 0% 100%;
   --ring: 211 100% 45%;
   --info: 211 100% 58%;            /* #2997ff-ish on dark */
-  --info-foreground: 199 89% 92%;
   --accent-info: 211 100% 45%;
-  --accent-alt: 270 48% 68%;      /* Lavender */
-  --accent-live: 145 48% 52%;     /* Sage */
 }
 
 /* Classic Blue scrollbar — Mist thumb */
@@ -509,8 +480,6 @@ html[data-ui-shell='tahoe-light'] {
   --foreground: 240 2% 11%;         /* Apple shop .form-selector #1d1d1f */
   --card: 0 0% 100%;
   --card-foreground: 240 2% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 2% 11%;
   --primary: 211 100% 45%;          /* apple.com #0071e3 */
   --primary-foreground: 0 0% 100%;
   --secondary: 210 20% 97%;         /* Neutral near-white panel */
@@ -520,21 +489,13 @@ html[data-ui-shell='tahoe-light'] {
   --accent: 211 100% 45%;           /* apple.com #0071e3 */
   --accent-foreground: 0 0% 100%;
   --destructive: 4 76% 40%;
-  --destructive-foreground: 0 0% 100%;
   --success: 145 42% 36%;           /* Sage */
-  --success-foreground: 0 0% 100%;
   --warning: 24 95% 50%;            /* Cosmic Orange */
-  --warning-foreground: 0 0% 100%;
-  --danger: 4 76% 40%;
-  --danger-foreground: 0 0% 100%;
   --border: 205 28% 84%;
   --input: 205 28% 84%;
   --ring: 211 100% 45%;
   --info: 211 100% 40%;
-  --info-foreground: 0 0% 100%;
   --accent-info: 211 100% 45%;
-  --accent-live: 145 48% 40%;
-  --accent-alt: 270 48% 52%;        /* Lavender */
 }
 
 /* Shared Magichromatic wash — painted on surfaces the UI actually shows */
@@ -598,7 +559,6 @@ html[data-theme='tahoe-light'] {
 :root {
   --accent: #0071e3;
   --accent-hover: #0077ed;
-  --accent-pressed: #006edb;
   --accent-soft: color-mix(in srgb, #0071e3 14%, transparent);
   --plasma: #0071e3;
   --plasma-strong: #006edb;
@@ -607,31 +567,26 @@ html[data-theme='tahoe-light'] {
   --apple-surface: hsl(var(--card));
   --apple-surface-elevated: hsl(var(--card));
   --apple-hairline: hsl(var(--border) / 0.85);
-  --apple-muted: #86868b;
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1a6;
   --text-muted: #86868b;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-  --radius: 0.75rem;
   --radius-card: 0.9rem;
 }
 
 html[data-theme='tahoe-light'] {
   --accent: #0071e3;
   --accent-hover: #0077ed;
-  --accent-pressed: #006edb;
   --accent-soft: color-mix(in srgb, #0071e3 12%, transparent);
   --plasma: #0071e3;
   --link: #0066cc;
   --link-hover: #0071e3;
-  --link-on-light: #0066cc;
   --apple-surface: #ffffff;
   --apple-surface-elevated: #ffffff;
   --apple-hairline: hsl(205 28% 84%);
   --apple-fill-secondary: hsl(210 40% 96% / 0.9);
   --apple-fill-tertiary: hsl(210 20% 90%);
-  --apple-muted: #86868b;
   --foreground: 240 2% 11%;
   --card-foreground: 240 2% 11%;
   --muted-foreground: 240 2% 44%;

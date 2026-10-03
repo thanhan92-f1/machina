@@ -15,10 +15,7 @@
 
 /* Layout width — zyvor.dev / apple.com product rhythm (not a wide admin console) */
 :root {
-  --layout-max-width: 73.75rem; /* 1180px */
   --dock-height: 4.25rem;
-  --page-gutter: clamp(0.85rem, 2vw, 1.5rem);
-  --section-gap: clamp(2.5rem, 5vw, 4.5rem);
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', 'Helvetica Neue', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, 'JetBrains Mono', monospace;
 
@@ -36,18 +33,14 @@
   /* apple.com blue — before zeus-parity overrides */
   --accent: #0071e3;
   --accent-hover: #0077ed;
-  --accent-pressed: #006edb;
   --accent-soft: color-mix(in srgb, #0071e3 14%, transparent);
   --link: #2997ff;
   --link-hover: #55aeff;
-  --link-on-light: #0066cc;
-  --zyvor-accent: #cc420a;
   --apple-fill-secondary: rgba(255, 255, 255, 0.12);
   --apple-fill-tertiary: rgba(255, 255, 255, 0.06);
   --apple-surface: #161617;
   --apple-surface-elevated: #1d1d1f;
   --apple-hairline: rgba(255, 255, 255, 0.08);
-  --apple-muted: #86868b;
 
   --glass-bg: rgba(22, 22, 23, 0.72);
   --glass-bg-elevated: rgba(29, 29, 31, 0.88);
@@ -56,7 +49,6 @@
   --glass-border-strong: rgba(255, 255, 255, 0.12);
   --glass-shadow: none;
   --glass-highlight: rgba(255, 255, 255, 0.06);
-  --glass-tint: transparent;
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1a6;
   --text-muted: #86868b;
@@ -68,9 +60,7 @@
   --surface-2: #1a1f28;
   --surface-3: #222833;
   --surface-hover: rgba(255, 255, 255, 0.04);
-  --surface-active: rgba(255, 255, 255, 0.07);
   --border: rgba(255, 255, 255, 0.1);
-  --border-faint: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.16);
   --shadow-1: none;
   --shadow-2: none;
@@ -323,8 +313,6 @@ code, .font-mono, pre {
 
 /* ── Machina Platform: macOS Tahoe / Liquid Glass (aligned with v9s) ── */
 .mac-desktop-root {
-  --mac-vibrancy: rgba(12, 18, 32, 0.88);
-  --mac-border: rgba(255, 255, 255, 0.06);
   --glass-panel: linear-gradient(155deg, var(--glass-highlight) 0%, var(--glass-bg) 100%);
 }
 
@@ -425,7 +413,6 @@ code, .font-mono, pre {
 }
 
 .machine-finder-page {
-  --machine-finder-dock-pad: calc(var(--dock-height) + 1rem);
 }
 
 .machine-finder-root {
@@ -455,8 +442,6 @@ code, .font-mono, pre {
 
 .mission-control-page,
 .mission-control-root {
-  --mc-carbon: #0a0a0c;
-  --mc-horizon: rgba(56, 189, 248, 0.12);
   --mc-glass: rgba(15, 23, 42, 0.55);
   width: 100%;
   max-width: none;
@@ -517,8 +502,6 @@ code, .font-mono, pre {
   --machina-status-neutral: #8e8e93;
   --machina-accent: #0071e3;
   --machina-accent-ai: #0071e3;
-  --machina-accent-network: var(--machina-accent);
-  --machina-accent-security: var(--machina-status-error);
 
   --machina-vm-running: #34c759;
   --machina-vm-stopped: #8e8e93;
@@ -526,7 +509,6 @@ code, .font-mono, pre {
   --machina-vm-creating: #0071e3;
   --machina-vm-failed: #ff3b30;
   --machina-vm-migrating: #0071e3;
-  --machina-vm-suspended: #0071e3;
   --machina-vm-unknown: #8e8e93;
 }
 
@@ -839,7 +821,6 @@ code, .font-mono, pre {
 /* Page rhythm — apple.com-like breathing room */
 .tahoe-page-root,
 .machina-clean .tahoe-page-root {
-  --page-section-gap: 1.75rem;
 }
 .tahoe-page-root > * + * {
   margin-top: 0;
@@ -1942,7 +1923,6 @@ button.vm-detail-hero-pill:hover {
   --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, 'JetBrains Mono', monospace;
   --accent: #0071e3;
   --accent-hover: #0077ed;
-  --accent-pressed: #006edb;
   --accent-soft: color-mix(in srgb, #0071e3 14%, transparent);
   --plasma: #0071e3;
   --link: #2997ff;
@@ -1951,12 +1931,10 @@ button.vm-detail-hero-pill:hover {
 html[data-theme='tahoe-light'] {
   --accent: #0071e3;
   --accent-hover: #0077ed;
-  --accent-pressed: #006edb;
   --accent-soft: color-mix(in srgb, #0071e3 12%, transparent);
   --plasma: #0071e3;
   --link: #0066cc;
   --link-hover: #0071e3;
-  --link-on-light: #0066cc;
 }
 
 /* Shared macOS Terminal.app look (pure black, colorful monospace) for any
