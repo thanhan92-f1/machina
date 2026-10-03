@@ -11,8 +11,8 @@ use std::path::Path;
 use anyhow::{anyhow, bail, Context, Result};
 use aya::programs::{
     cgroup_device::CgroupDeviceLinkId, cgroup_skb::CgroupSkbLinkId, cgroup_sock_addr::CgroupSockAddrLinkId,
-    sock_ops::SockOpsLinkId, tc::SchedClassifierLinkId, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb,
-    CgroupSkbAttachType, CgroupSockAddr, KProbe, SchedClassifier, SockOps, TcAttachType, TracePoint, Xdp, XdpMode,
+    sock_ops::SockOpsLinkId, tc::SchedClassifierLinkId, uprobe::{UProbeLinkId, UProbeScope}, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb,
+    CgroupSkbAttachType, CgroupSockAddr, KProbe, SchedClassifier, SockOps, UProbe, TcAttachType, TracePoint, Xdp, XdpMode,
 };
 use aya::util::KernelVersion;
 use aya::{Ebpf, EbpfLoader, VerifierLogLevel};
@@ -106,6 +106,9 @@ pub struct Datapath {
     cgroups: StdHashMap<String, CgroupLinks>,
     sandboxes: StdHashMap<String, (CgroupDeviceLinkId, CgroupSkbLinkId)>,
     sockops: Option<(String, SockOpsLinkId)>,
+    tlsfp: Option<(String, CgroupSkbLinkId)>,
+    /// libssl path → (program, link) per attached symbol.
+    ssl: StdHashMap<String, Vec<(&'static str, UProbeLinkId)>>,
     pub tracepoints: Vec<String>,
     pub notes: Vec<String>,
     tcx: bool,
@@ -135,6 +138,8 @@ impl Datapath {
             cgroups: StdHashMap::new(),
             sandboxes: StdHashMap::new(),
             sockops: None,
+            tlsfp: None,
+            ssl: StdHashMap::new(),
             tracepoints: Vec::new(),
             notes: Vec::new(),
             tcx: kernel_features().tcx,
@@ -258,6 +263,95 @@ impl Datapath {
 
     pub fn sockops_attached(&self) -> Option<&str> {
         self.sockops.as_ref().map(|(k, _)| k.as_str())
+    }
+
+    fn load_once(&mut self, name: &'static str, load: impl FnOnce(&mut aya::programs::Program) -> Result<()>) -> Result<()> {
+        if self.loaded.contains(name) {
+            return Ok(());
+        }
+        let p = self.ebpf.program_mut(name).ok_or_else(|| anyhow!("program {name} missing"))?;
+        load(p).with_context(|| format!("verifier rejected {name}"))?;
+        self.loaded.insert(name.into());
+        Ok(())
+    }
+
+    /// `mn_tlsfp` (ClientHello sampler) on a cgroup's egress.
+    pub fn attach_tlsfp(&mut self, cg_path: &Path) -> Result<()> {
+        let key = cg_path.display().to_string();
+        if self.tlsfp.as_ref().is_some_and(|(k, _)| *k == key) {
+            return Ok(());
+        }
+        self.detach_tlsfp();
+        self.load_once("mn_tlsfp", |p| Ok(<&mut CgroupSkb>::try_from(p)?.load()?))?;
+        let p: &mut CgroupSkb = self.ebpf.program_mut("mn_tlsfp").expect("loaded").try_into()?;
+        let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
+        let id = p.attach(f, CgroupSkbAttachType::Egress, CgroupAttachMode::default()).context("attach mn_tlsfp")?;
+        self.tlsfp = Some((key, id));
+        Ok(())
+    }
+
+    pub fn detach_tlsfp(&mut self) {
+        let Some((_, id)) = self.tlsfp.take() else { return };
+        if let Some(p) = self.ebpf.program_mut("mn_tlsfp") {
+            if let Ok(p) = <&mut CgroupSkb>::try_from(p) {
+                let _ = p.detach(id);
+            }
+        }
+    }
+
+    pub fn tlsfp_attached(&self) -> Option<&str> {
+        self.tlsfp.as_ref().map(|(k, _)| k.as_str())
+    }
+
+    /// Uprobes on one libssl object. Symbols the library lacks (e.g. the
+    /// `_ex` variants before OpenSSL 1.1.1) are skipped; at least one of
+    /// SSL_write / SSL_read must attach.
+    pub fn attach_ssl(&mut self, lib: &str) -> Result<()> {
+        if self.ssl.contains_key(lib) {
+            return Ok(());
+        }
+        const PLAN: [(&str, &str); 6] = [
+            ("mn_ssl_write", "SSL_write"),
+            ("mn_ssl_write", "SSL_write_ex"),
+            ("mn_ssl_read_enter", "SSL_read"),
+            ("mn_ssl_read_ret", "SSL_read"),
+            ("mn_ssl_read_ex_enter", "SSL_read_ex"),
+            ("mn_ssl_read_ret", "SSL_read_ex"),
+        ];
+        let mut links = Vec::new();
+        let mut errs = Vec::new();
+        for (prog, sym) in PLAN {
+            let res = self.load_once(prog, |p| Ok(<&mut UProbe>::try_from(p)?.load()?)).and_then(|_| {
+                let p: &mut UProbe = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
+                Ok(p.attach(sym, lib, UProbeScope::AllProcesses)?)
+            });
+            match res {
+                Ok(id) => links.push((prog, id)),
+                Err(e) => errs.push(format!("{prog}@{sym}: {e:#}")),
+            }
+        }
+        if links.is_empty() {
+            bail!("no libssl symbol attached in {lib}: {}", errs.join("; "));
+        }
+        self.ssl.insert(lib.to_string(), links);
+        Ok(())
+    }
+
+    pub fn detach_ssl(&mut self, lib: &str) {
+        let Some(links) = self.ssl.remove(lib) else { return };
+        for (prog, id) in links {
+            if let Some(p) = self.ebpf.program_mut(prog) {
+                if let Ok(p) = <&mut UProbe>::try_from(p) {
+                    let _ = p.detach(id);
+                }
+            }
+        }
+    }
+
+    pub fn ssl_libraries(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.ssl.keys().cloned().collect();
+        v.sort();
+        v
     }
 
     /// QEMU sandbox on a machine scope: device allowlist + IP egress filter.

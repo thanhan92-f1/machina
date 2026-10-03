@@ -352,6 +352,7 @@ impl Engine {
         self.rescan_links();
         self.vm_edge_refresh();
         self.sandbox_refresh();
+        self.tls_refresh();
     }
 
     fn rescan_links(&mut self) {

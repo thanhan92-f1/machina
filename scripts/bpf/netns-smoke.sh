@@ -91,7 +91,7 @@ cat >"$WORK/bpfd-state.json" <<EOF
 EOF
 
 mkdir -p "$TCP_CG"
-MACHINA_BPF_SOCKOPS_CGROUP=$TCP_CG RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" \
+MACHINA_BPF_SOCKOPS_CGROUP=$TCP_CG MACHINA_BPF_TLSFP_CGROUP=$TCP_CG RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" \
   >"$WORK/bpfd.log" 2>&1 &
 BPFD_PID=$!
 for _ in $(seq 50); do [[ -S "$SOCK" ]] && break; sleep 0.2; done
@@ -332,6 +332,52 @@ check "sockops: other cgroups not observed" test "$(health "sum(c['count'] for c
 ip netns exec "$NS" python3 -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(b'x', ('$HOST_IP', 33999))"
 sleep 0.3
 check "icmp: port unreachable counted on test veth" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"icmp_errors\"}' | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if any(e[\"iface\"]==\"$HOST_IF\" and e[\"kind\"]==\"unreachable\" and e[\"code\"]==3 and e[\"direction\"]==\"to_workload\" for e in d) else 1)'"
+
+# TLS: JA3/JA4 from mn_tlsfp (test cgroup) and the tap L7 path, and HTTP
+# metadata from libssl uprobes limited to `curl`.
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=smoke.test \
+  -keyout "$WORK/tls.key" -out "$WORK/tls.crt" >/dev/null 2>&1
+python3 - "$HOST_IP" "$WORK" <<'PY' >/dev/null 2>&1 &
+import http.server, ssl, sys, threading, time
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.end_headers(); self.wfile.write(b"secret-body")
+    def log_message(self, *a): pass
+srv = http.server.HTTPServer((sys.argv[1], 18444), H)
+ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ctx.load_cert_chain(sys.argv[2] + "/tls.crt", sys.argv[2] + "/tls.key")
+srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+threading.Timer(40, srv.shutdown).start()
+srv.serve_forever()
+PY
+HTTPS_PID=$!
+sleep 1
+req '{"op":"tls_configure","config":{"fingerprints":true,"ssl_uprobes":true,"ssl_comms":["curl"]}}' | must
+tls() { req "{\"op\":\"$1\",\"limit\":500}" | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print($2)"; }
+check "tls: fingerprint sampler on test cgroup" test "$(tls tls_status "d.get('fingerprint_cgroup')")" = "$TCP_CG"
+check "tls: libssl uprobes attached" test "$(tls tls_status "len(d['ssl_libraries'])")" -ge 1
+in_tcp_cg curl -sk -m3 -o /dev/null --resolve "smoke.test:18444:$HOST_IP" "https://smoke.test:18444/ssl-probe" || true
+ip netns exec "$NS" python3 - "$HOST_IP" <<'PY' >/dev/null 2>&1 || true
+import socket, ssl, sys
+ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+ctx.set_alpn_protocols(["http/1.1"])
+with ctx.wrap_socket(socket.create_connection((sys.argv[1], 18444), timeout=2), server_hostname="tap.smoke.test") as s:
+    s.sendall(b"GET /from-python HTTP/1.1\r\nHost: tap\r\n\r\n"); s.recv(100)
+PY
+sleep 1
+check "tls: host ClientHello fingerprinted (JA4 t13d…)" test "$(tls tls_fingerprints "sum(1 for f in d if f['source']=='host' and f['sni']=='smoke.test' and f['ja4'].startswith('t13d') and len(f['ja3_hash'])==32)")" -ge 1
+check "tls: tap ClientHello fingerprinted" test "$(tls tls_fingerprints "sum(1 for f in d if f['source']=='tap' and f['sni']=='tap.smoke.test')")" -ge 1
+if curl -V 2>/dev/null | grep -q OpenSSL; then
+  check "ssl: curl request metadata (method/host/path)" test "$(tls ssl_events "sum(1 for r in d if r['comm']=='curl' and r.get('method')=='GET' and r.get('path')=='/ssl-probe' and (r.get('host') or '').startswith('smoke.test'))")" -ge 1
+  check "ssl: response status captured" test "$(tls ssl_events "sum(1 for r in d if r['comm']=='curl' and r.get('status')==200)")" -ge 1
+  check "ssl: no plaintext bodies leave bpfd" bash -c "$(declare -f req); SOCK=$SOCK; ! req '{\"op\":\"ssl_events\",\"limit\":500}' | grep -q secret-body"
+  check "ssl: processes outside the allowlist ignored" test "$(tls ssl_events "sum(1 for r in d if r['comm']!='curl')")" -eq 0
+else
+  echo "SKIP  ssl uprobes (curl is not linked against OpenSSL)"
+fi
+req '{"op":"tls_configure","config":{}}' | must
+check "tls off: sampler and uprobes detached" test "$(tls tls_status "(d.get('fingerprint_cgroup'), len(d['ssl_libraries']))")" = "(None, 0)"
+kill $HTTPS_PID 2>/dev/null || true
 
 echo
 echo "passed=$PASS failed=$FAIL  (log: $WORK/bpfd.log)"

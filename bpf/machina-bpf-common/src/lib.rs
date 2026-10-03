@@ -621,6 +621,75 @@ pub struct XdpCfg {
 }
 
 // ---------------------------------------------------------------------------
+// TLS fingerprints (mn_tlsfp) and OpenSSL uprobes (mn_ssl_*), both opt-in
+// ---------------------------------------------------------------------------
+
+/// ClientHello bytes captured per fingerprint sample (power of two).
+pub const TLSFP_LEN: usize = 2048;
+/// SSL_read/SSL_write plaintext bytes captured (HTTP heads only leave bpfd).
+pub const SSL_DATA_LEN: usize = 256;
+pub const SSL_DIR_WRITE: u32 = 1;
+pub const SSL_DIR_READ: u32 = 2;
+
+/// TLSFP_CFG[0] / SSL_CFG[0]. `rate` = samples per second, host-wide.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SampleCfg {
+    pub enabled: u32,
+    pub rate: u32,
+    /// SSL: capture every process instead of the SSL_COMMS allowlist.
+    pub all: u32,
+    pub _pad: u32,
+}
+
+/// Global sampling token bucket (milli-tokens).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SampleBucket {
+    pub tokens: u64,
+    pub last_ns: u64,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct TlsFpEvent {
+    pub ts_ns: u64,
+    pub cgroup: u64,
+    /// Payload bytes in the segment / bytes captured.
+    pub len: u32,
+    pub cap_len: u32,
+    pub sport: u16,
+    pub dport: u16,
+    pub v6: u8,
+    pub _pad: [u8; 3],
+    pub src: [u8; ADDR_LEN],
+    pub dst: [u8; ADDR_LEN],
+    pub data: [u8; TLSFP_LEN],
+}
+
+/// SSL_read(_ex) arguments saved between entry and return.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SslReadArgs {
+    pub buf: u64,
+    /// `size_t *readbytes` of SSL_read_ex; 0 for SSL_read.
+    pub readbytes: u64,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct SslEvent {
+    pub ts_ns: u64,
+    pub pid_tgid: u64,
+    pub len: u32,
+    pub dir: u32,
+    pub cap_len: u32,
+    pub _pad: u32,
+    pub comm: [u8; 16],
+    pub data: [u8; SSL_DATA_LEN],
+}
+
+// ---------------------------------------------------------------------------
 // XDP DDoS shield (inline in the uplink dispatcher)
 // ---------------------------------------------------------------------------
 
@@ -839,7 +908,8 @@ mod pod {
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
         VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
-        ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey
+        ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey,
+        SampleCfg, SampleBucket, SslReadArgs
     );
 }
 
@@ -875,6 +945,9 @@ mod tests {
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
         assert_eq!(size_of::<DevHitKey>(), 24);
         assert_eq!(size_of::<NetHitKey>(), 32);
+        assert_eq!(size_of::<TlsFpEvent>(), 64 + TLSFP_LEN);
+        assert_eq!(size_of::<SslEvent>(), 48 + SSL_DATA_LEN);
+        assert_eq!(size_of::<SampleCfg>(), 16);
         assert_eq!(size_of::<ConnKey>(), 24);
         assert_eq!(size_of::<ConnStats>(), 32 + 8 * CONNECT_BUCKETS);
         assert_eq!(size_of::<TcpPressure>(), 40);

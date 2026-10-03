@@ -186,6 +186,10 @@ pub struct Counters {
     pub l7_events: u64,
     #[serde(default)]
     pub rate_limited: u64,
+    #[serde(default)]
+    pub tls_fingerprints: u64,
+    #[serde(default)]
+    pub ssl_events: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -699,6 +703,94 @@ pub struct VmSandboxStatus {
     pub notes: Vec<String>,
 }
 
+/// Opt-in TLS visibility. Both parts are off by default and rate limited.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TlsConfig {
+    /// `mn_tlsfp`: sample ClientHellos on the root cgroup for JA3/JA4; also
+    /// fingerprints ClientHellos seen by the tap L7 path.
+    #[serde(default)]
+    pub fingerprints: bool,
+    #[serde(default = "default_fp_rate")]
+    pub fingerprint_rate: u32,
+    /// libssl uprobes: HTTP method/host/path/status from TLS plaintext
+    /// heads (bodies never leave bpfd).
+    #[serde(default)]
+    pub ssl_uprobes: bool,
+    /// Process names (`comm`) to capture; empty captures nothing unless
+    /// `ssl_all_processes`.
+    #[serde(default)]
+    pub ssl_comms: Vec<String>,
+    #[serde(default)]
+    pub ssl_all_processes: bool,
+    #[serde(default = "default_ssl_rate")]
+    pub ssl_rate: u32,
+}
+
+fn default_fp_rate() -> u32 {
+    50
+}
+fn default_ssl_rate() -> u32 {
+    200
+}
+
+impl Default for TlsConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("tls defaults")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TlsFingerprint {
+    pub ts: String,
+    /// `host` (mn_tlsfp, process egress) or `tap` (datapath L7 path).
+    pub source: String,
+    pub iface: Option<String>,
+    pub cgroup: Option<String>,
+    /// VM / pod / container owning the client.
+    pub workload: Option<String>,
+    pub client: String,
+    pub server: String,
+    pub server_port: u16,
+    pub sni: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alpn: Vec<String>,
+    pub tls_version: String,
+    pub ja3: String,
+    pub ja3_hash: String,
+    pub ja4: String,
+    /// The ClientHello did not fit in the sample; fingerprints are partial.
+    pub truncated: bool,
+}
+
+/// HTTP metadata from OpenSSL plaintext (never payload bodies).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SslRecord {
+    pub ts: String,
+    pub pid: u32,
+    pub comm: String,
+    /// write (request side) | read
+    pub direction: String,
+    pub bytes: u32,
+    /// http1 | http2 | other
+    pub protocol: String,
+    pub method: Option<String>,
+    pub host: Option<String>,
+    pub path: Option<String>,
+    pub status: Option<u16>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TlsStatus {
+    pub config: TlsConfig,
+    /// Cgroup carrying `mn_tlsfp`.
+    pub fingerprint_cgroup: Option<String>,
+    /// libssl objects with uprobes attached.
+    pub ssl_libraries: Vec<String>,
+    pub fingerprints_seen: u64,
+    pub ssl_events_seen: u64,
+    pub notes: Vec<String>,
+}
+
 /// XDP DDoS shield on the uplink (shares the `mn_xdp_uplink` dispatcher
 /// with the NodePort fast path, so both must use the same interface).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -933,6 +1025,18 @@ pub enum Request {
     },
     ShieldStatus,
     IcmpErrors,
+    TlsConfigure {
+        config: TlsConfig,
+    },
+    TlsStatus,
+    TlsFingerprints {
+        #[serde(default)]
+        limit: Option<usize>,
+    },
+    SslEvents {
+        #[serde(default)]
+        limit: Option<usize>,
+    },
     /// Stream events (`net`, `dns`, `l7`, `proc`, `anomaly`) as JSON lines
     /// until the client disconnects.
     Subscribe {

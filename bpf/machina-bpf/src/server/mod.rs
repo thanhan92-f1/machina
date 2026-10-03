@@ -35,6 +35,7 @@ mod ops;
 mod readers;
 mod shield;
 mod tcp;
+mod tls;
 mod uplink;
 mod vm;
 
@@ -44,6 +45,8 @@ const NET_STORE_CAP: usize = 5000;
 const PROC_STORE_CAP: usize = 5000;
 const DNS_STORE_CAP: usize = 2000;
 const L7_STORE_CAP: usize = 5000;
+const TLS_STORE_CAP: usize = 2000;
+const SSL_STORE_CAP: usize = 2000;
 const ANOMALY_STORE_CAP: usize = 1000;
 const SOCK_PROGS: &[&str] = &["mn_cg_connect4", "mn_cg_connect6", "mn_cg_sendmsg4", "mn_cg_sendmsg6"];
 
@@ -75,6 +78,10 @@ struct Shared {
     procs: VecDeque<ProcRecord>,
     dns: VecDeque<DnsRecord>,
     l7: VecDeque<L7Record>,
+    tls_fp: VecDeque<TlsFingerprint>,
+    ssl: VecDeque<SslRecord>,
+    /// Fingerprint ClientHellos seen by the tap L7 path too.
+    fp_from_l7: bool,
     anomalies: VecDeque<Anomaly>,
     captures: HashMap<String, ActiveCapture>,
     counters: Counters,
@@ -171,6 +178,7 @@ struct Engine {
     vm_edge: vm::VmEdgeRuntime,
     sandbox: vm::SandboxRuntime,
     shield: shield::ShieldRuntime,
+    tls: tls::TlsRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -257,6 +265,7 @@ impl Engine {
             vm_edge: vm::VmEdgeRuntime::default(),
             sandbox: vm::SandboxRuntime::default(),
             shield: shield::ShieldRuntime::default(),
+            tls: tls::TlsRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

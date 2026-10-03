@@ -13,7 +13,7 @@ use axum::routing::{delete, get, put};
 use axum::{Json, Router};
 use base64::Engine as _;
 use futures_util::Stream;
-use machina_bpf::api::{Mode, Policy, Request, ShieldConfig, TelemetryConfig, VmEdgeState, VmSandboxConfig};
+use machina_bpf::api::{Mode, Policy, Request, ShieldConfig, TelemetryConfig, TlsConfig, VmEdgeState, VmSandboxConfig};
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
 use serde::Deserialize;
@@ -352,6 +352,35 @@ async fn vm_sandbox_detach(
     bpfd(Request::VmSandboxDetach { vm }).await
 }
 
+async fn tls_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::TlsStatus).await
+}
+
+async fn tls_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<TlsConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing TLS fingerprinting / OpenSSL capture")?;
+    bpfd(Request::TlsConfigure { config }).await
+}
+
+#[derive(Deserialize)]
+struct LimitQuery {
+    limit: Option<usize>,
+}
+
+async fn tls_fingerprints(Query(q): Query<LimitQuery>) -> Result<Json<Value>, AppError> {
+    bpfd(Request::TlsFingerprints { limit: q.limit }).await
+}
+
+async fn ssl_events(
+    Extension(actor): Extension<RequestActor>,
+    Query(q): Query<LimitQuery>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Reading OpenSSL HTTP metadata")?;
+    bpfd(Request::SslEvents { limit: q.limit }).await
+}
+
 async fn icmp_errors() -> Result<Json<Value>, AppError> {
     bpfd(Request::IcmpErrors).await
 }
@@ -403,6 +432,9 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/vm-edge", get(vm_edge_status).put(vm_edge_sync))
         .route("/bpf/shield", get(shield_status).put(shield_configure))
         .route("/bpf/icmp-errors", get(icmp_errors))
+        .route("/bpf/tls", get(tls_status).put(tls_configure))
+        .route("/bpf/tls/fingerprints", get(tls_fingerprints))
+        .route("/bpf/tls/ssl", get(ssl_events))
         .route("/bpf/vm-sandbox", get(vm_sandbox_status).put(vm_sandbox_configure))
         .route(
             "/bpf/vm-sandbox/{vm}",

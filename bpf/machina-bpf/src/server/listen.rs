@@ -9,7 +9,7 @@ use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
 
-use super::readers::{on_capture, on_dns, on_l7, on_net, on_proc, spawn_reader};
+use super::readers::{on_capture, on_dns, on_l7, on_net, on_proc, on_ssl, on_tlsfp, spawn_reader};
 use super::*;
 
 const FLOW_IDLE_NS: u64 = 120 * 1_000_000_000;
@@ -58,6 +58,8 @@ struct Persisted {
     vm_sandbox_pinned: Vec<String>,
     #[serde(default)]
     shield: Option<ShieldConfig>,
+    #[serde(default)]
+    tls: Option<TlsConfig>,
 }
 
 struct Daemon {
@@ -99,6 +101,7 @@ impl Daemon {
                 v
             },
             shield: (eng.shield.config != ShieldConfig::default()).then(|| eng.shield.config.clone()),
+            tls: (eng.tls.config != TlsConfig::default()).then(|| eng.tls.config.clone()),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -175,6 +178,11 @@ impl Daemon {
         if let Some(st) = p.vm_edge {
             if let Err(e) = eng.vm_edge_sync(st) {
                 tracing::warn!("restore vm edge: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.tls {
+            if let Err(e) = eng.tls_configure(cfg) {
+                tracing::warn!("restore tls: {e:#}");
             }
         }
         if let Some(cfg) = p.shield {
@@ -379,6 +387,15 @@ impl Daemon {
             }
             Request::ShieldStatus => v(&lock(&self.engine).shield_status()),
             Request::IcmpErrors => v(&lock(&self.engine).icmp_errors()),
+            Request::TlsConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.tls_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::TlsStatus => v(&lock(&self.engine).tls_status()),
+            Request::TlsFingerprints { limit } => v(&super::tls::recent(&lock(&self.shared).tls_fp, limit)),
+            Request::SslEvents { limit } => v(&super::tls::recent(&lock(&self.shared).ssl, limit)),
             Request::VmRefresh => {
                 let mut eng = lock(&self.engine);
                 eng.vm_edge_refresh();
@@ -521,6 +538,10 @@ pub async fn run(cfg: Config) -> Result<()> {
         spawn_reader(eng.dp.take_ringbuf("L7_EVENTS")?, "l7", move |x| on_l7(&sh, &b, x));
         let sh = shared.clone();
         spawn_reader(eng.dp.take_ringbuf("CAPTURE_EVENTS")?, "capture", move |x| on_capture(&sh, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("TLSFP_EVENTS")?, "tlsfp", move |x| on_tlsfp(&sh, &b, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("SSL_EVENTS")?, "ssl", move |x| on_ssl(&sh, &b, x));
     }
 
     let d = Arc::new(Daemon {

@@ -281,6 +281,20 @@ pub(super) fn on_l7(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &
         let Some(rec) = l7_record(&ev, iface, vm) else {
             return;
         };
+        if s.fp_from_l7 && rec.protocol == "tls" {
+            let n = (ev.payload_len as usize).min(L7_PAYLOAD_LEN);
+            if let Some(mut fp) = tls_fingerprint(&ev.payload[..n]) {
+                fp.ts = rec.ts.clone();
+                fp.source = "tap".into();
+                fp.iface = rec.iface.clone();
+                fp.workload = rec.vm.as_ref().map(|v| format!("vm:{v}"));
+                fp.client = format!("{}:{}", rec.client, rec.client_port);
+                fp.server = rec.server.clone();
+                fp.server_port = rec.server_port;
+                s.counters.tls_fingerprints += 1;
+                Shared::push_capped(&mut s.tls_fp, fp, TLS_STORE_CAP);
+            }
+        }
         s.counters.l7_events += 1;
         Shared::push_capped(&mut s.l7, rec.clone(), L7_STORE_CAP);
         rec
@@ -392,4 +406,95 @@ pub(super) fn on_capture(sh: &SharedState, b: &[u8]) {
     c.info.packets = c.writer.packets();
     c.info.bytes = c.writer.bytes();
     s.counters.capture_packets += 1;
+}
+
+/// `vm:<name>`, `container:<id>` or `unit:<service>` for a cgroup path.
+pub(super) fn workload_label(path: &str) -> Option<String> {
+    let c = attribution::classify_cgroup(path);
+    c.vm.map(|v| format!("vm:{v}"))
+        .or_else(|| c.container.map(|v| format!("container:{v}")))
+        .or_else(|| c.unit.map(|v| format!("unit:{v}")))
+}
+
+/// JA3/JA4 for a captured ClientHello (`None` if it is not one).
+pub(super) fn tls_fingerprint(data: &[u8]) -> Option<TlsFingerprint> {
+    let h = crate::l7::parse_hello(data)?;
+    let (ja3, ja3_hash) = crate::l7::ja3(&h);
+    let ja4 = crate::l7::ja4(&h);
+    let version = crate::l7::parse_client_hello(data).map(|t| t.version).unwrap_or_default();
+    Some(TlsFingerprint {
+        truncated: !h.complete,
+        sni: h.sni,
+        alpn: h.alpn,
+        tls_version: version,
+        ja3,
+        ja3_hash,
+        ja4,
+        ..TlsFingerprint::default()
+    })
+}
+
+pub(super) fn on_tlsfp(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &[u8]) {
+    let Some(ev) = decode::<TlsFpEvent>(b) else {
+        return;
+    };
+    let n = (ev.cap_len as usize).min(TLSFP_LEN);
+    let Some(mut fp) = tls_fingerprint(&ev.data[..n]) else {
+        return;
+    };
+    fp.ts = mono_to_rfc3339(ev.ts_ns);
+    fp.source = "host".into();
+    fp.client = format!("{}:{}", fmt_addr(&ev.src), ev.sport);
+    fp.server = fmt_addr(&ev.dst);
+    fp.server_port = ev.dport;
+    fp.truncated |= ev.len as usize > n;
+    {
+        let mut s = lock(sh);
+        let path = s.cgroups.lookup(ev.cgroup);
+        fp.workload = path.as_deref().and_then(workload_label);
+        fp.cgroup = path;
+        s.counters.tls_fingerprints += 1;
+        Shared::push_capped(&mut s.tls_fp, fp.clone(), TLS_STORE_CAP);
+    }
+    publish(bus, "tls", &fp);
+}
+
+/// HTTP metadata only; the plaintext itself is dropped here.
+pub(super) fn ssl_record(ev: &SslEvent) -> SslRecord {
+    let n = (ev.cap_len as usize).min(SSL_DATA_LEN);
+    let data = &ev.data[..n];
+    let mut rec = SslRecord {
+        ts: mono_to_rfc3339(ev.ts_ns),
+        pid: (ev.pid_tgid >> 32) as u32,
+        comm: cstr(&ev.comm),
+        direction: if ev.dir == SSL_DIR_WRITE { "write" } else { "read" }.into(),
+        bytes: ev.len,
+        protocol: "other".into(),
+        ..SslRecord::default()
+    };
+    if let Some(h) = crate::l7::parse_http(data) {
+        rec.protocol = "http1".into();
+        rec.method = Some(h.method);
+        rec.path = Some(h.path);
+        rec.host = h.host;
+    } else if let Some(rest) = data.strip_prefix(b"HTTP/1.") {
+        rec.protocol = "http1".into();
+        rec.status = rest.get(2..5).and_then(|c| std::str::from_utf8(c).ok()).and_then(|c| c.parse().ok());
+    } else if data.starts_with(b"PRI * HTTP/2.0") {
+        rec.protocol = "http2".into();
+    }
+    rec
+}
+
+pub(super) fn on_ssl(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &[u8]) {
+    let Some(ev) = decode::<SslEvent>(b) else {
+        return;
+    };
+    let rec = ssl_record(&ev);
+    {
+        let mut s = lock(sh);
+        s.counters.ssl_events += 1;
+        Shared::push_capped(&mut s.ssl, rec.clone(), SSL_STORE_CAP);
+    }
+    publish(bus, "ssl", &rec);
 }

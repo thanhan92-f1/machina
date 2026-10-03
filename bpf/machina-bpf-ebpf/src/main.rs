@@ -14,6 +14,7 @@ mod parse;
 mod proc;
 mod shield;
 mod tcp;
+mod tls;
 mod vm;
 mod xdp;
 
