@@ -219,7 +219,7 @@ With `--platform --e2e`, deploy runs the **full E2E suite** (`e2e-full-test-remo
 VSPASS='…' ./scripts/e2e-platform-complete-remote.sh operator <ephemeral-ip>
 ```
 
-This runs, in order: full API/daemon E2E, UX API flow (create + delete VM), live UX wiring manifest (~84 routes), and live Playwright (create/delete VM, platform routes, host smoke). Results are written to [`docs/e2e-last-run.json`](e2e-last-run.json).
+This runs, in order: full API/daemon E2E, UX API flow (create + delete VM), live UX wiring manifest (~84 routes), and live Playwright (create/delete VM, platform routes, host smoke). Results are written to `docs/e2e-last-run.json` (not committed).
 
 Optional local mocked CI: `E2E_INCLUDE_MOCK=1` prepends `npm run test:e2e` in the web tree.
 

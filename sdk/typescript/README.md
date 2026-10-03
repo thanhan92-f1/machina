@@ -17,4 +17,3 @@ const health = await client.health()
 const slos = await client.observabilityOverview()
 ```
 
-See [`docs/zeus-os-ai-472-491.md`](../../docs/zeus-os-ai-472-491.md).

@@ -29,3 +29,7 @@ web/e2e/.auth/
 
 # Local deploy mailer secrets
 scripts/deploy-mailer.env
+
+# Written by scripts/e2e-*.sh on every live run
+docs/e2e-last-run*.json
+docs/ux-wiring-live-report.json

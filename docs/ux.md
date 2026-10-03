@@ -106,7 +106,7 @@ VSPASS='…' ./scripts/e2e-live-ux-remote.sh operator <ephemeral-ip>
 VSPASS='…' ./scripts/deploy-remote.sh operator HOST --quick --e2e
 ```
 
-Report: [`docs/ux-wiring-live-report.json`](ux-wiring-live-report.json) — pass/fail per route with API failure details.
+Report: `docs/ux-wiring-live-report.json` (written by the live UX run, not committed) — pass/fail per route with API failure details.
 
 Optional GitHub Actions: workflow_dispatch job `live-ux` (secrets: `LIVE_HOST`, `LIVE_USER`, `LIVE_PASS`).
 

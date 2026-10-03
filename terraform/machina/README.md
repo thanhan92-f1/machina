@@ -31,4 +31,4 @@ curl -s -u "$MACHINA_CONTROLLER_USER:$MACHINA_CONTROLLER_PASS" \
 | `machina_storage_pool` | resource | `POST /api/v1/storage/pools` |
 | `machina_network` | resource | `POST /api/v1/networks` |
 
-See [`docs/zeus-os-ai-472-491.md`](../../docs/zeus-os-ai-472-491.md) and [`examples/README.md`](examples/README.md).
+See [`examples/README.md`](examples/README.md).

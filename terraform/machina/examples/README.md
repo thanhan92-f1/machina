@@ -14,4 +14,3 @@ terraform plan
 
 Resource schemas: `GET /api/v1/developer/terraform/schema`
 
-See [`docs/zeus-os-ai-472-491.md`](../../../docs/zeus-os-ai-472-491.md).
