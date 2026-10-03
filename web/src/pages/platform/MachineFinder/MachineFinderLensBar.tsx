@@ -59,7 +59,7 @@ export default function MachineFinderLensBar({ state }: Props) {
             <button
               key={o.id}
               type="button"
-              className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${
+              className={`px-2 py-0.5 max-sm:min-h-9 max-sm:px-3 rounded text-[10px] uppercase tracking-wide ${
                 overlay === o.id
                   ? 'bg-[var(--verdant-tint)] text-[var(--verdant)] ring-1 ring-[color-mix(in_srgb,var(--verdant)_30%,transparent)]'
                   : 'text-[var(--text-faint)] hover:text-[var(--text-secondary)]'

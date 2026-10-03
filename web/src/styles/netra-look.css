@@ -561,6 +561,15 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
     background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
     background-attachment: local, local, scroll, scroll;
   }
+  /* Glyph-only buttons (arrows, expand icons) get a 36px minimum width too. */
+  main button {
+    min-width: 2.25rem;
+  }
+  /* Text inputs and selects keep a >=36px touch height on phones. */
+  main input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
+  main select {
+    min-height: 2.25rem;
+  }
   /* Inline text links get a >=36px hit area without moving the layout: the padding is cancelled
      by the negative margin. */
   main .status-link,
