@@ -12,8 +12,10 @@ conflict) and `machina-apple-ux.css` (Story / Browse primitives). See the "Where
 section of [APPLE-UX-CONTRACT.md](APPLE-UX-CONTRACT.md) for the load order and the rules for the
 final layer.
 
-Dark product theme is **Classic Blue** (`html[data-ui-shell='default']`, `data-theme=tahoe`)
-— Mist Blue CTAs on graphite, not System Blue / Zyvor Carbon.
+Dark product theme is **Classic Blue** (`html[data-ui-shell='default']`, `data-theme=tahoe`).
+It now follows the Netra dark theme: a flat `#000` canvas (no ambient wash or mesh), `#1d1d1f`
+cards, and the same apple.com `#0071e3` CTA as light — the old "Mist Blue on graphite" CTAs are
+gone.
 
 Login is one centered composition ([`PremiumLoginShell`](../../web/src/components/PremiumLoginShell.tsx)
 + [`zyvor-premium-login.css`](../../web/src/styles/zyvor-premium-login.css), chapter geometry

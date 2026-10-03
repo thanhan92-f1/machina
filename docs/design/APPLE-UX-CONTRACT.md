@@ -85,8 +85,8 @@ live `gnb-*` shell — see the "Update or remove e2e specs" checklist item below
    red/amber/green only when a value really deviates or is confirmed good.
 3. **One primary action per view**: `.btn-primary`, apple.com `#0071e3`. Secondary is a tinted
    neutral; `btn-destructive`/`btn-danger` is the only solid non-blue fill.
-4. **No ambient gradients in light.** `.tahoe-mesh` is `display: none` in the light theme; the dark
-   theme keeps its hero glow.
+4. **No ambient gradients.** `.tahoe-mesh` and the desktop-root radial wash are off in both light and
+   dark (flat `#000` in dark, as in Netra); only hero blocks may carry their own glow.
 5. **Cards are flat**: `.tahoe-glass-card`, 18px radius, hairline border, no blur, no shadow, no
    hover lift. A table wrapper inside a card is frameless (no card-in-card).
 6. **Type-safe status color.** Pale Tailwind shades (`text-emerald-400`, `text-orange-400`, …) are
@@ -197,3 +197,19 @@ means "no regressions", not "perfect": populated-state bugs need a real host
       Zeus→Zyra rename had gone stale in `zeus-infra-brain.spec.ts`, `platform-linux-os.spec.ts`,
       and `e2e/platformMock.ts`, all now fixed too.)
 - [ ] Real-host confirmation of populated states
+
+## Netra alignment (this pass)
+
+Machina inherited most Netra tokens; the remaining gaps were closed in `netra-look.css` and the nav:
+
+- **Type**: one `--font-display` / `--font-mono` (SF first, Inter only as a cross-platform fallback).
+  `.btn-primary` / `.btn-secondary` are 15px / 400, `10px 18px`, 44px tall.
+- **Destructive**: `.btn-destructive` is solid `--nl-danger` (`#ff3b30`, `#ff453a` in dark). `.btn-danger`
+  never had CSS — use `.btn-destructive`.
+- **Top bar**: 48px, `saturate(180%) blur(20px)`; the active group has a 2px blue underline
+  (`aria-current`). Flyout lists flow into columns; sidebar section headers are 12px/600, not 10px caps.
+- **Borders**: controls use neutral `#d2d2d7`, not the old blue-grey `hsl(205 22% 84%)`.
+- **Dark**: Tailwind shades written for a white page (`text-red-700`, `text-orange-800`, …) are remapped
+  to the text-safe `--nl-accent-*-text` tokens in dark, except on elements with their own white fill.
+- **Phone**: ≥36px targets via the `main` rules in `netra-look.css`; scrolling tables keep their
+  columns and show an edge shadow.
