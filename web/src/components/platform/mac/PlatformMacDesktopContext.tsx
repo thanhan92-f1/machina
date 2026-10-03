@@ -52,8 +52,8 @@ function defaultSidebarCollapsedForTier(): boolean {
   } catch {
     /* ignore */
   }
-  // Zeus-style icon rail by default
-  return true
+  // Full sidebar by default; the footer button switches to the icon rail.
+  return false
 }
 
 export function PlatformMacDesktopProvider({ children }: { children: ReactNode }) {

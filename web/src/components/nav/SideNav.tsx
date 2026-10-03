@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { Compass, LayoutGrid, Settings, type LucideIcon } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, Compass, LayoutGrid, Settings, type LucideIcon } from 'lucide-react'
 import { getFleetFinder } from '../../api/platform'
 import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
@@ -15,6 +15,7 @@ import {
 } from '../../utils/platformSidebarNav'
 import { navItemActive } from '../../utils/routes'
 import PlatformSidebarSection from '../platform/PlatformSidebarSection'
+import { usePlatformMacDesktop } from '../platform/mac/PlatformMacDesktopContext'
 
 // The top-nav mega-menu covers every route; this sidebar is a fast path (only the section you are
 // in is open by default; the rest are one-line headers) to the categories people use most — Workloads/Infra/Ops/Secure — pulled from
@@ -78,6 +79,9 @@ function SideLink({
 
 export default function SideNav({ mobileOpen, onCloseMobile }: { mobileOpen: boolean; onCloseMobile: () => void }) {
   const location = useLocation()
+  const { sidebarCollapsed, setSidebarCollapsed } = usePlatformMacDesktop()
+  // Icon rail on desktop; the mobile drawer is always the full-width list.
+  const rail = sidebarCollapsed && !mobileOpen
   const [tier] = usePlatformDesktopTier()
   const { info } = usePlatformInfo()
   const integrations = integrationNavItems(info)
@@ -136,7 +140,7 @@ export default function SideNav({ mobileOpen, onCloseMobile }: { mobileOpen: boo
   return (
     <>
       <aside
-        className={`gnb-side gnb-side--expanded flex flex-col shrink-0 border-r border-[var(--apple-hairline)] ${mobileOpen ? 'gnb-side-mobile-open' : ''}`}
+        className={`gnb-side ${rail ? 'gnb-side--rail' : 'gnb-side--expanded'} flex flex-col shrink-0 border-r border-[var(--apple-hairline)] ${mobileOpen ? 'gnb-side-mobile-open' : ''}`}
         aria-label="Sections"
       >
         <SideNavBody
@@ -145,12 +149,28 @@ export default function SideNav({ mobileOpen, onCloseMobile }: { mobileOpen: boo
           toggleSection={toggleSection}
           badgeFor={badgeFor}
           location={location}
+          rail={rail}
         />
         <div className="gnb-side-footer border-t border-[var(--apple-hairline)] p-2">
-          <NavLink to="/platform/settings" className="gnb-side-link flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-[var(--text-secondary)]">
-            <Settings className="h-[1.15rem] w-[1.15rem]" strokeWidth={1.5} />
+          <NavLink to="/platform/settings" title="Settings" aria-label="Settings" className="gnb-side-link flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-[var(--text-secondary)]">
+            <Settings className="h-[1.15rem] w-[1.15rem] shrink-0" strokeWidth={1.5} />
             <span>Settings</span>
           </NavLink>
+          <button
+            type="button"
+            className="gnb-side-link gnb-side-toggle hidden lg:flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-pressed={sidebarCollapsed}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar to icons'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse to icons'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronsRight className="h-[1.15rem] w-[1.15rem] shrink-0" strokeWidth={1.5} />
+            ) : (
+              <ChevronsLeft className="h-[1.15rem] w-[1.15rem] shrink-0" strokeWidth={1.5} />
+            )}
+            <span>Collapse</span>
+          </button>
         </div>
       </aside>
       {mobileOpen ? <div className="gnb-scrim gnb-scrim-mobile-only" onClick={onCloseMobile} /> : null}
@@ -164,12 +184,14 @@ function SideNavBody({
   toggleSection,
   badgeFor,
   location,
+  rail,
 }: {
   sections: SidebarProductSection[]
   sectionExpanded: Record<string, boolean | undefined>
   toggleSection: (id: string, currentlyOpen: boolean) => void
   badgeFor: (to: string) => number
   location: ReturnType<typeof useLocation>
+  rail: boolean
 }) {
   const sectionHasActive = (section: SidebarProductSection) =>
     section.items.some((item) =>
@@ -199,11 +221,25 @@ function SideNavBody({
           key={section.id}
           label={section.label}
           icon={section.icon as LucideIcon}
-          collapsed={false}
+          collapsed={rail}
           expanded={open}
           onToggleExpanded={() => toggleSection(section.id, open)}
           hasActiveItem={sectionHasActive(section)}
-          flyoutItems={null}
+          flyoutItems={section.items.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              role="menuitem"
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${
+                navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search)
+                  ? 'font-medium text-[var(--text-primary)] bg-[var(--nl-fill,rgba(0,0,0,0.04))]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover,rgba(0,0,0,0.04))]'
+              }`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+              <span className="truncate">{item.label}</span>
+            </NavLink>
+          ))}
         >
           <ul className="space-y-0.5 mb-2">
             {section.items.map((item) => (

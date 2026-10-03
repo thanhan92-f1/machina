@@ -359,6 +359,23 @@ html.dark .gnb-tasks {
 .gnb-side--expanded {
   width: var(--gnb-side-w);
 }
+/* Icon rail (desktop): icons only, section triggers open hover flyouts. */
+.gnb-side--rail {
+  width: var(--gnb-side-w-rail);
+}
+.gnb-side--rail .gnb-side-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.gnb-side--rail .gnb-side-link > span:not(.gnb-side-icon),
+.gnb-side--rail .gnb-side-link > .gnb-side-count {
+  display: none;
+}
+.gnb-side--rail .gnb-side-divider {
+  margin-left: 0.75rem;
+  margin-right: 0.75rem;
+}
 .gnb-side-divider {
   height: 1px;
   background: var(--apple-hairline);
