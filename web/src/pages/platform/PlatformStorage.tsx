@@ -356,7 +356,7 @@ export default function PlatformStorage() {
                         <th scope="col">Used %</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="nl-stagger">
                       {fleetStorage.pools.map((p) => (
                         <tr key={p.id}>
                           <td className="font-medium">{p.name}</td>
@@ -431,7 +431,7 @@ export default function PlatformStorage() {
                     <th scope="col" className="text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="nl-stagger">
                   {filteredPools.map((p) => {
                     const live = livePools[p.name]
                     const active = live?.state === 'running'

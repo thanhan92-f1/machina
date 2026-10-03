@@ -556,3 +556,61 @@ html.dark .gnb-tasks {
     padding: 0 0.375rem;
   }
 }
+
+/* ── ChapterBar: same 2px underline language as the top bar ── */
+.gnb-chapter-inner {
+  align-items: stretch;
+  min-height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.gnb-chapter-title {
+  align-items: center;
+}
+.gnb-chapter-links {
+  align-items: stretch;
+  gap: 0.125rem;
+}
+.gnb-chapter-link {
+  position: relative;
+  align-items: center;
+  border-radius: 0.375rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+}
+.gnb-chapter-link-active {
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.gnb-chapter-link-active::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--apple-link, #0066cc);
+}
+.gnb-chapter-links > div {
+  display: flex;
+  align-items: stretch;
+}
+.gnb-chapter-more {
+  height: 100%;
+}
+
+/* ── Very small phones (<= 400px): the bar's controls overflowed 360px by ~19px on every page.
+   Search is also in the burger sheet (and ⌘K), so the duplicate icon goes. ── */
+@media (max-width: 400px) {
+  .gnb-icon-btn[aria-label='Search'] {
+    display: none;
+  }
+}
+@media (max-width: 340px) {
+  /* 320px phones: Ask Zyra is reachable from the sheet and Spotlight. */
+  .gnb-icon-btn[aria-label^='Ask'] {
+    display: none;
+  }
+}

@@ -705,18 +705,21 @@ html.light-theme .machine-finder-card .mx-auto.rounded-2xl svg {
 }
 .nl-pulse-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   margin-bottom: 1.25rem;
 }
 .nl-pulse-title {
+  white-space: nowrap;
   font-size: 1.0625rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 .nl-live-pill {
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;

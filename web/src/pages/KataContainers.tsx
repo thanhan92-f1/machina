@@ -199,8 +199,8 @@ function KataAutomateSection() {
         >
           <RefreshCw className="w-4 h-4" /> Refresh contexts
         </button>
-        <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer shrink-0">
-          <input type="checkbox" className="rounded border-[var(--apple-hairline)]" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
+        <label className="flex items-start gap-2 text-sm text-[var(--text-secondary)] cursor-pointer min-w-0">
+          <input type="checkbox" className="rounded border-[var(--apple-hairline)] mt-0.5 shrink-0 w-4 h-4" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
           Dry-run (Helm: render only; kubectl apply: server dry-run)
         </label>
       </div>

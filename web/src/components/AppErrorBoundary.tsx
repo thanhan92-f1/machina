@@ -59,7 +59,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
     const chunk = isChunkLoadError(error)
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center" role="alert">
-        <div className="max-w-md">
+        <div className="max-w-md w-full min-w-0">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
             {chunk ? 'A newer version is available' : 'Something went wrong'}
           </h2>
@@ -69,7 +69,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
               : `This ${this.props.surface ?? 'page'} hit an unexpected error. You can reload, or go back and try again.`}
           </p>
           {!chunk && (
-            <pre className="mt-3 max-h-32 overflow-auto rounded-lg bg-[var(--apple-fill-tertiary)] p-3 text-left text-[11px] text-[var(--text-muted)]">
+            <pre className="mt-3 max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--apple-fill-tertiary)] p-3 text-left text-[11px] text-[var(--text-muted)]">
               {error.message}
             </pre>
           )}
