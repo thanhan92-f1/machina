@@ -104,7 +104,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
 
         <MacGlassPanel title="Desktop density">
           <p className="text-sm text-[var(--text-muted)] mb-3">
-            Start with <strong className="text-[var(--text-primary)]">Normal</strong> for a clean Finder-style desktop. Switch to Power or Advanced when you need Zeus, firewall modules, and the full sidebar.
+            Start with <strong className="text-[var(--text-primary)]">Normal</strong> for a clean Finder-style desktop. Switch to Power or Advanced when you need Zeus, firewall modules, and the full menus.
           </p>
           <PlatformDesktopTierPicker tier={tier} onChange={setTier} />
         </MacGlassPanel>
@@ -133,14 +133,14 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
 
         <MacGlassPanel title="Leaving the desktop">
           <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-            Fleet Cloud, HyperSDK, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the sidebar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
+            Fleet Cloud, HyperSDK, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the top bar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
           </p>
         </MacGlassPanel>
 
         <MacGlassPanel title="Need more?">
           <p className="text-sm text-[var(--text-muted)] flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[var(--accent)]" />
-            Switch to <Link to="/platform/settings?section=general" className={hubLinkClasses()}>Settings → Appearance → Advanced</Link> for the full fleet sidebar, Zeus Firewall panes, and developer SDK routes.
+            Switch to <Link to="/platform/settings?section=general" className={hubLinkClasses()}>Settings → Appearance → Advanced</Link> for the full fleet menus, Zeus Firewall panes, and developer SDK routes.
           </p>
         </MacGlassPanel>
 

@@ -78,7 +78,7 @@ export default function PlatformAppearanceSettings() {
         <MacSettingsGroupBody>
           <PlatformDesktopTierPicker tier={tier} onChange={setTier} />
           <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-            Normal hides the status strip and most sidebar apps. Advanced restores the full fleet surface.
+            Normal hides the status strip and most menu entries. Advanced restores the full fleet surface.
           </p>
         </MacSettingsGroupBody>
       </MacSettingsGroup>

@@ -344,7 +344,7 @@ export default function PlatformControlCenter() {
               <label className="flex items-center justify-between gap-3 text-xs text-[var(--text-secondary)] cursor-pointer">
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-[var(--link)]" />
-                  Jarvis shell (minimal sidebar)
+                  Jarvis shell (minimal menus)
                 </span>
                 <input
                   type="checkbox"
