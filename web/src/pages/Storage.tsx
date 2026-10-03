@@ -7,7 +7,8 @@ import { listPools, listVolumes, startPool, stopPool, refreshPool, deleteVolume,
 import { createPool, deletePool, getPoolXml, resizeVolume, cloneVolume } from '../api/advanced'
 import { useToastContext } from '../contexts/ToastContext'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { Play, Square, RefreshCw, Trash2, ArrowLeft, HardDrive, Plus, Code, X, Copy, Maximize, ToggleLeft, ToggleRight } from 'lucide-react'
+import { GlassModal } from '../components/glass/GlassModal'
+import { Play, Square, RefreshCw, Trash2, ArrowLeft, HardDrive, Plus, Code, Copy, Maximize, ToggleLeft, ToggleRight } from 'lucide-react'
 import { formatUserError } from '../utils/apiError'
 import { poolStateBadgeClasses, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 import PageLayout from '../components/PageLayout'
@@ -217,48 +218,44 @@ export default function StoragePage() {
         <ConfirmDialog open={!!deleteTarget} title="Delete Volume" message={`Delete volume '${deleteTarget?.vol}'?`} confirmLabel="Delete" onConfirm={handleDeleteVol} onCancel={() => setDeleteTarget(null)} />
 
         {resizeTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setResizeTarget(null)}>
-            <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-              <div className="p-5 border-b border-[var(--apple-hairline)]"><span className="text-lg font-semibold">Resize Volume</span></div>
-              <div className="p-5 space-y-4">
+          <GlassModal open onClose={() => setResizeTarget(null)} title="Resize Volume"
+            footer={<div className="flex justify-end gap-3">
+                <button onClick={() => setResizeTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+                <button onClick={handleResize} disabled={!(parseFloat(resizeGb) > 0)} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">Resize</button>
+            </div>}>
+            <div className="space-y-4">
                 <div className="text-sm text-[var(--text-muted)]">Volume: <span className="text-[var(--text-primary)] font-medium">{resizeTarget.vol}</span></div>
                 <div>
                   <label className="block text-sm text-[var(--text-muted)] mb-1">New Size (GB)</label>
                   <input type="number" step="0.01" min="0.01" value={resizeGb} onChange={(e) => setResizeGb(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
                 </div>
-              </div>
-              <div className="flex justify-end gap-3 px-5 pb-5">
-                <button onClick={() => setResizeTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
-                <button onClick={handleResize} disabled={!(parseFloat(resizeGb) > 0)} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">Resize</button>
-              </div>
             </div>
-          </div>
+          </GlassModal>
         )}
 
         {cloneTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCloneTarget(null)}>
-            <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-              <div className="p-5 border-b border-[var(--apple-hairline)]"><span className="text-lg font-semibold">Clone Volume</span></div>
-              <div className="p-5 space-y-4">
+          <GlassModal open onClose={() => setCloneTarget(null)} title="Clone Volume"
+            footer={<div className="flex justify-end gap-3">
+                <button onClick={() => setCloneTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+                <button onClick={handleClone} className="btn-primary text-sm">Clone</button>
+            </div>}>
+            <div className="space-y-4">
                 <div className="text-sm text-[var(--text-muted)]">Source: <span className="text-[var(--text-primary)] font-medium">{cloneTarget.vol}</span></div>
                 <div>
                   <label className="block text-sm text-[var(--text-muted)] mb-1">New Volume Name</label>
                   <input type="text" value={cloneName} onChange={(e) => setCloneName(e.target.value)} className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
                 </div>
-              </div>
-              <div className="flex justify-end gap-3 px-5 pb-5">
-                <button onClick={() => setCloneTarget(null)} className="btn-secondary text-sm font-medium transition">Cancel</button>
-                <button onClick={handleClone} className="btn-primary text-sm">Clone</button>
-              </div>
             </div>
-          </div>
+          </GlassModal>
         )}
 
         {showCreateVol && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateVol(false)}>
-            <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-              <div className="p-5 border-b border-[var(--apple-hairline)]"><span className="text-lg font-semibold">Create Volume</span></div>
-              <div className="p-5 space-y-4">
+          <GlassModal open onClose={() => setShowCreateVol(false)} title="Create Volume"
+            footer={<div className="flex justify-end gap-3">
+                <button onClick={() => setShowCreateVol(false)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+                <button onClick={handleCreateVol} disabled={creatingVol || !newVolName.trim() || !(parseFloat(newVolCapacity) > 0)} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">{creatingVol ? 'Creating…' : 'Create'}</button>
+            </div>}>
+            <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-[var(--text-muted)] mb-1">Name</label>
                   <input type="text" value={newVolName} onChange={(e) => setNewVolName(e.target.value)} placeholder="my-volume.qcow2" className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
@@ -275,13 +272,8 @@ export default function StoragePage() {
                     <option value="qcow">qcow</option>
                   </select>
                 </div>
-              </div>
-              <div className="flex justify-end gap-3 px-5 pb-5">
-                <button onClick={() => setShowCreateVol(false)} className="btn-secondary text-sm font-medium transition">Cancel</button>
-                <button onClick={handleCreateVol} disabled={creatingVol || !newVolName.trim() || !(parseFloat(newVolCapacity) > 0)} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">{creatingVol ? 'Creating…' : 'Create'}</button>
-              </div>
             </div>
-          </div>
+          </GlassModal>
         )}
       </PageLayout>
     )
@@ -397,10 +389,12 @@ export default function StoragePage() {
       <ConfirmDialog open={!!deletePoolTarget} title="Delete Pool" message={`Delete storage pool '${deletePoolTarget}'? This cannot be undone.`} confirmLabel="Delete" onConfirm={handleDeletePool} onCancel={() => setDeletePoolTarget(null)} />
 
       {showCreatePool && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreatePool(false)}>
-          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-[var(--apple-hairline)]"><span className="text-lg font-semibold">Create Storage Pool</span></div>
-            <div className="p-5 space-y-4">
+        <GlassModal open onClose={() => setShowCreatePool(false)} title="Create Storage Pool"
+          footer={<div className="flex justify-end gap-3">
+              <button onClick={() => setShowCreatePool(false)} className="btn-secondary text-sm font-medium transition">Cancel</button>
+              <button onClick={handleCreatePool} disabled={creatingPool || !newPoolName.trim()} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">{creatingPool ? 'Creating…' : 'Create'}</button>
+          </div>}>
+          <div className="space-y-4">
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-1">Name</label>
                 <input type="text" value={newPoolName} onChange={(e) => setNewPoolName(e.target.value)} placeholder="my-pool" className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
@@ -421,25 +415,14 @@ export default function StoragePage() {
                 <label className="block text-sm text-[var(--text-muted)] mb-1">Target Path</label>
                 <input type="text" value={newPoolPath} onChange={(e) => setNewPoolPath(e.target.value)} placeholder="/var/lib/libvirt/images" className="w-full px-3 py-2 bg-[var(--apple-surface)] border border-[var(--apple-hairline)] rounded-lg text-sm" />
               </div>
-            </div>
-            <div className="flex justify-end gap-3 px-5 pb-5">
-              <button onClick={() => setShowCreatePool(false)} className="btn-secondary text-sm font-medium transition">Cancel</button>
-              <button onClick={handleCreatePool} disabled={creatingPool || !newPoolName.trim()} className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed">{creatingPool ? 'Creating…' : 'Create'}</button>
-            </div>
           </div>
-        </div>
+        </GlassModal>
       )}
 
       {xmlContent !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setXmlContent(null)}>
-          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-[var(--apple-hairline)]">
-              <span className="text-lg font-semibold font-mono">{xmlName}</span>
-              <button type="button" onClick={() => setXmlContent(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 hover:bg-[var(--surface-hover)] rounded-lg transition" aria-label="Close XML viewer"><X className="w-4 h-4" /></button>
-            </div>
-            <pre className="p-5 text-sm text-[var(--text-secondary)] overflow-auto whitespace-pre-wrap font-mono flex-1">{xmlContent}</pre>
-          </div>
-        </div>
+        <GlassModal open onClose={() => setXmlContent(null)} title={xmlName} wide>
+          <pre className="text-sm text-[var(--text-secondary)] overflow-auto whitespace-pre-wrap font-mono">{xmlContent}</pre>
+        </GlassModal>
       )}
     </PageLayout>
   )
