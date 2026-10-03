@@ -206,7 +206,7 @@ Regenerate with `npm run generate-openapi` in `web/`.
 **Q36. What's the relationship to Zeus OS / v9s?**
 Machina manages the physical KVM hosts; Zeus OS is the cloud/KubeVirt control
 plane above it. The "Zeus AI" pages in the platform UI drive controller-side AI
-features. See [../machina-zeus-os-vision.md](../machina-zeus-os-vision.md).
+features.
 
 **Q37. Does the controller need PostgreSQL?**
 No — it uses embedded SQLite by default (`DATABASE_URL=

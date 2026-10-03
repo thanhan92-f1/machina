@@ -71,4 +71,3 @@ Previous successful deploy (Phases 38–47): commit `001a2d5`, E2E 277 passed / 
 
 ## Related docs
 
-- [`machina-macos-os-manager-roadmap.md`](machina-macos-os-manager-roadmap.md)

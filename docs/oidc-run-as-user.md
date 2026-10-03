@@ -66,7 +66,6 @@ Install: `contrib/run-as-user/README.md`
 
 - [`oidc-effective-linux-user.md`](oidc-effective-linux-user.md) — mapping claims to local users
 - [`macos-build.md`](macos-build.md) — building the daemon without Linux PAM
-- [`enterprise-backlog.md`](enterprise-backlog.md) — Vault, MFA, FIPS, fleet HA automation (not on `main`)
 
 ## Out of scope
 

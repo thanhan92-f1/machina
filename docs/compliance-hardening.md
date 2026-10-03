@@ -38,4 +38,3 @@ Use this when preparing Machina for security review (not a certification).
 
 ## Not in scope today
 
-See [enterprise-backlog.md](enterprise-backlog.md) for the full list (FIPS, Vault, MFA, fleet HA automation, etc.).
