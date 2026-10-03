@@ -34,7 +34,6 @@ Enterprise Linux hypervisor management platform: single-host daemon, multi-host 
 | Atlas storage (Ceph / NFS / ZFS volumes) | [atlas-storage.md](atlas-storage.md) |
 | KubeVirt migration | [kubevirt-migration.md](kubevirt-migration.md) |
 | SOC integrations | [soc-integrations.md](soc-integrations.md) |
-| Network fabric | [packetwolf-zeus-fabric.md](packetwolf-zeus-fabric.md) |
 | Built-in RDP, console hub, cinema mode | [builtin-rdp.md](builtin-rdp.md), [consolehub-architecture.md](consolehub-architecture.md), [machina-cinema-mode.md](machina-cinema-mode.md) |
 | Guides (AD, observability, VM access, integrations) | [guides/](guides/) |
 
@@ -54,7 +53,7 @@ The design contracts are enforced with `node web/scripts/ux-audit.mjs` (contrast
 
 ## API reference
 
-OpenAPI specs: [openapi-daemon.json](openapi-daemon.json), [openapi-controller.json](openapi-controller.json), [openapi-packetwolf-fabric.json](openapi-packetwolf-fabric.json). Route manifests used by the coverage checks: [api-ux-route-manifest.json](api-ux-route-manifest.json), [ux-wiring-live-manifest.json](ux-wiring-live-manifest.json).
+OpenAPI specs: [openapi-daemon.json](openapi-daemon.json), [openapi-controller.json](openapi-controller.json). Route manifests used by the coverage checks: [api-ux-route-manifest.json](api-ux-route-manifest.json), [ux-wiring-live-manifest.json](ux-wiring-live-manifest.json).
 
 Live e2e runs write `docs/e2e-last-run.json` and `docs/ux-wiring-live-report.json`; those files are generated and not committed.
 
