@@ -437,7 +437,7 @@ export default function BackupsPage() {
                       )}
                       <a
                         href={downloadBackupUrl(b.id)}
-                        className="p-1.5 hover:bg-[var(--accent-soft)] rounded transition"
+                        className="p-2.5 hover:bg-[var(--accent-soft)] rounded transition"
                         title="Download as tar.gz"
                         aria-label="Download as tar.gz"
                       >

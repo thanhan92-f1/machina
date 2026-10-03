@@ -153,7 +153,7 @@ function FleetCloudNetworkingContent() {
                   <td className="text-[var(--text-muted)]">{n.backend}</td>
                   <td className="text-[var(--text-muted)]">{n.vlan_id ?? '—'}</td>
                   <td>
-                    <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
+                    <button type="button" className={`min-h-9 px-1 ${statusActionLinkClasses('error', 'text-xs')}`}
                       onClick={() => setPendingDeleteNetwork(n)}>Delete</button>
                   </td>
                 </tr>
@@ -217,7 +217,7 @@ function FleetCloudNetworkingContent() {
                   <td className="text-[var(--text-muted)]">{p.mac_address || '—'}</td>
                   <td className="text-[var(--text-muted)]">{p.status}</td>
                   <td>
-                    <button type="button" className={statusActionLinkClasses('error', 'text-xs')}
+                    <button type="button" className={`min-h-9 px-1 ${statusActionLinkClasses('error', 'text-xs')}`}
                       onClick={() => setPendingDeletePort(p)}>Delete</button>
                   </td>
                 </tr>

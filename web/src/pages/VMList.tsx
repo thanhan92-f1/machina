@@ -291,11 +291,11 @@ export default function VMList() {
                 <th scope="col" className="px-3 py-3 w-8">
                   <input type="checkbox" aria-label="Select all VMs" checked={selectedVMs.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                 </th>
-                <th scope="col" className="px-6 py-3">Name</th>
-                <th scope="col" className="px-6 py-3">State</th>
-                <th scope="col" className="px-6 py-3 hidden md:table-cell">vCPUs</th>
-                <th scope="col" className="px-6 py-3 hidden md:table-cell">Memory</th>
-                <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                <th scope="col" className="px-3 sm:px-6 py-3">Name</th>
+                <th scope="col" className="px-3 sm:px-6 py-3">State</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 hidden md:table-cell">vCPUs</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 hidden md:table-cell">Memory</th>
+                <th scope="col" className="px-3 sm:px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--apple-hairline)]/50" id={vmList.listId}>
@@ -304,12 +304,12 @@ export default function VMList() {
                   <td className="px-3 py-4">
                     <input type="checkbox" aria-label={`Select ${vm.name}`} checked={selectedVMs.has(vmScopeKey(vm))} onChange={() => toggleSelect(vmScopeKey(vm))} className="rounded border-[var(--apple-hairline)] bg-[var(--apple-surface)]" />
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-4">
                     <div className="flex items-center gap-2 flex-wrap">
                       <button onClick={(e) => { e.preventDefault(); togglePin(vmScopeKey(vm)); setPinnedRefresh(n => n + 1) }} aria-label={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'} className="p-1 hover:bg-yellow-600/20 rounded transition" title={isPinned(vmScopeKey(vm)) ? 'Unpin' : 'Pin'}>
                         <Star className={`w-3.5 h-3.5 ${isPinned(vmScopeKey(vm)) ? `${statusToneClass('warn')} fill-[var(--machina-status-warn)]` : 'text-[var(--text-muted)]'}`} />
                       </button>
-                      <Link to={vmDetailRoute(vm.name, vm.libvirt_connection)} className={`font-medium ${statusActionLinkClasses('info')}`}>{vm.name}</Link>
+                      <Link to={vmDetailRoute(vm.name, vm.libvirt_connection)} className={`font-medium inline-flex items-center min-h-9 ${statusActionLinkClasses('info')}`}>{vm.name}</Link>
                       {vm.libvirt_connection === 'session' && (
                         <span className={sessionBadgeClasses()}>session</span>
                       )}
@@ -318,12 +318,12 @@ export default function VMList() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-4">
                     <span className={getStateBadgeClasses(vm.state)}>{vm.state}</span>
                   </td>
-                  <td className="px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.vcpus}</td>
-                  <td className="px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.memory_mb} MB</td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.vcpus}</td>
+                  <td className="px-3 sm:px-6 py-4 hidden md:table-cell text-[var(--text-secondary)]">{vm.memory_mb} MB</td>
+                  <td className="px-3 sm:px-6 py-4">
                     <div className="flex items-center justify-end gap-1">
                       {vm.state === 'running' && (
                         <>

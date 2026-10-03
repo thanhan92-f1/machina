@@ -2704,6 +2704,11 @@ button.vm-detail-hero-pill:hover {
     display: none;
   }
 
+  .overflow-x-auto table th:nth-child(n+4):not(.hidden),
+  .overflow-x-auto table td:nth-child(n+4):not(.hidden) {
+    display: table-cell;
+  }
+
   /* Make table cells compact */
   table th, table td {
     padding: 0.5rem 0.5rem;
@@ -2755,6 +2760,12 @@ button.vm-detail-hero-pill:hover {
   table th:nth-child(n+3),
   table td:nth-child(n+3) {
     display: none;
+  }
+
+  /* Tables that scroll horizontally keep every column (State, Actions, ...). */
+  .overflow-x-auto table th:nth-child(n+3):not(.hidden),
+  .overflow-x-auto table td:nth-child(n+3):not(.hidden) {
+    display: table-cell;
   }
 
   .input-field,
