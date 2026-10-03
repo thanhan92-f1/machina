@@ -223,7 +223,7 @@ html.dark .gnb-tasks {
   }
 }
 .gnb-flyout-inner {
-  max-width: 160rem;
+  max-width: 76rem;
   margin: 0 auto;
   padding: 1.5rem 1.5rem 2rem;
 }
@@ -236,7 +236,9 @@ html.dark .gnb-tasks {
 }
 .gnb-flyout-sections {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* auto-fit (not auto-fill): a group with a single section uses the whole row so its list can flow
+     into columns instead of one skinny column. */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem 2rem;
 }
 .gnb-flyout-section-label {
@@ -248,10 +250,14 @@ html.dark .gnb-tasks {
   margin-bottom: 0.375rem;
 }
 .gnb-flyout-list {
-  display: flex;
-  flex-direction: column;
+  display: block;
+  column-width: 13rem;
+  column-gap: 2rem;
 }
 .gnb-flyout-link {
+  display: block;
+  width: 100%;
+  break-inside: avoid;
   text-align: left;
   padding: 0.375rem 0;
   font-size: 0.9375rem;
