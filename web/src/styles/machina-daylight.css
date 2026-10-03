@@ -495,7 +495,7 @@ html.apple-light .liquid-glass-app .border-slate-700\/60,
 html.light-theme .liquid-glass-app .border-slate-700\/60,
 html.apple-light .app-shell .border-slate-700\/60,
 html.light-theme .app-shell .border-slate-700\/60 {
-  border-color: hsl(205 22% 84%) !important;
+  border-color: #d2d2d7 !important;
 }
 
 html.apple-light .mac-desktop-root .from-slate-900\/80,
@@ -521,7 +521,7 @@ html.light-theme .mc-geography,
 html.apple-light .machine-finder-migrate-zone,
 html.light-theme .machine-finder-migrate-zone {
   background: #ffffff !important;
-  border-color: hsl(205 22% 84%) !important;
+  border-color: #d2d2d7 !important;
   box-shadow: 0 1px 0 hsl(200 40% 92% / 0.55) inset, var(--shadow-1);
 }
 
@@ -538,7 +538,7 @@ html.light-theme .tahoe-hero {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: 0 1px 0 hsl(200 40% 92% / 0.6) inset, var(--shadow-1) !important;
-  border: 1px solid hsl(205 22% 84%);
+  border: 1px solid #d2d2d7;
 }
 
 html.apple-light .tahoe-stat-tile,
@@ -546,7 +546,7 @@ html.light-theme .tahoe-stat-tile,
 html.apple-light .tahoe-remediate-strip,
 html.light-theme .tahoe-remediate-strip {
   background: #ffffff !important;
-  border-color: hsl(205 22% 84%) !important;
+  border-color: #d2d2d7 !important;
   backdrop-filter: none !important;
   box-shadow: var(--shadow-1);
   color: var(--text-primary);
@@ -576,7 +576,7 @@ html.apple-light .tahoe-quick-nav-link,
 html.light-theme .tahoe-quick-nav-link {
   color: var(--text-secondary) !important;
   background: hsl(200 55% 97% / 0.9) !important;
-  border-color: hsl(205 22% 84%) !important;
+  border-color: #d2d2d7 !important;
 }
 
 html.apple-light .tahoe-toolbar,
@@ -590,7 +590,7 @@ html[data-theme='tahoe-light'] .tahoe-toolbar {
 html.apple-light .tahoe-page-root .tahoe-content thead th,
 html.light-theme .tahoe-page-root .tahoe-content thead th {
   color: var(--text-muted) !important;
-  border-bottom-color: hsl(205 22% 84%) !important;
+  border-bottom-color: #d2d2d7 !important;
 }
 
 html.apple-light .tahoe-page-root .tahoe-content tbody td,
@@ -663,7 +663,7 @@ html.light-theme .mac-desktop-root select,
 html.apple-light .mac-desktop-root textarea:not(.term-body),
 html.light-theme .mac-desktop-root textarea:not(.term-body) {
   background: #ffffff !important;
-  border-color: hsl(205 22% 84%) !important;
+  border-color: #d2d2d7 !important;
   color: var(--text-primary) !important;
 }
 html.apple-light .input-field::placeholder,

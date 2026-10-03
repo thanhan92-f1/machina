@@ -421,7 +421,7 @@ html.light-theme .mac-desktop-main .rounded-2xl.border {
 html.apple-light .tahoe-empty,
 html.light-theme .tahoe-empty {
   background: #ffffff !important;
-  border-color: hsl(205 22% 84%) !important;
+  border-color: #d2d2d7 !important;
   color: var(--text-primary);
 }
 

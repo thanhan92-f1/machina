@@ -676,3 +676,22 @@ html[data-theme='tahoe'] .text-pink-600:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-pink-700:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-pink-800:not([class*='bg-white']),
 html[data-theme='tahoe'] .text-pink-900:not([class*='bg-white']) { color: var(--nl-accent-purple-text) !important; }
+
+/* ---- Light: Machine Finder tiles are white cards, not grey panels ---------- */
+/* APPLE-UX-CONTRACT: "a grey panel on a white page is a bug". The tile fill was --nl-fill (4% black). */
+html[data-theme='tahoe-light'] .machine-finder-card,
+html.apple-light .machine-finder-card,
+html.light-theme .machine-finder-card {
+  background: #ffffff;
+  border-color: var(--nl-hairline);
+}
+html[data-theme='tahoe-light'] .machine-finder-card .mx-auto.rounded-2xl,
+html.apple-light .machine-finder-card .mx-auto.rounded-2xl,
+html.light-theme .machine-finder-card .mx-auto.rounded-2xl {
+  background: var(--nl-fill) !important;
+}
+html[data-theme='tahoe-light'] .machine-finder-card .mx-auto.rounded-2xl svg,
+html.apple-light .machine-finder-card .mx-auto.rounded-2xl svg,
+html.light-theme .machine-finder-card .mx-auto.rounded-2xl svg {
+  color: var(--text-muted) !important;
+}
