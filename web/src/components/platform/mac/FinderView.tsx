@@ -163,7 +163,8 @@ export default function FinderView({
           <button
             type="button"
             onClick={() => openCenterPopout(`${location.pathname}${location.search}`)}
-            className="mac-finder-nav-btn shrink-0 hidden sm:flex gap-1 px-2 w-auto text-xs"
+            className="mac-finder-nav-btn shrink-0 hidden sm:flex items-center gap-1 px-2 w-auto whitespace-nowrap text-xs"
+            style={{ width: 'auto' }}
             title="Move to new window (⌘⌥N)"
           >
             <ExternalLink className="h-3.5 w-3.5" />
