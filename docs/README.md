@@ -45,7 +45,7 @@ Machina's look follows the Netra design: two themes only (light and dark), apple
 |-------|----------|
 | **UX contract** (surface tiers, laws, theme map, Netra alignment) | [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md) |
 | **Light and dark tokens** | [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md) |
-| UX author guide (shell, login, tiers, sidebar and icon rail) | [ux.md](ux.md) |
+| UX author guide (shell, login, tiers, top-bar navigation) | [ux.md](ux.md) |
 | UX end-to-end coverage and API-to-UI coverage | [ux-e2e-coverage.md](ux-e2e-coverage.md), [api-ux-coverage.md](api-ux-coverage.md) |
 | Customer feature guide | [machina-customer-feature-guide.md](machina-customer-feature-guide.md) |
 

@@ -135,16 +135,16 @@ cd web && npm run build && npm run test:e2e -- e2e/platform-full.spec.ts e2e/she
 | Platform Host detail, agent offline | Remediation links to Enroll + classic Node |
 | K8s Workloads explorer | Table/summary default; raw JSON toggle |
 
-## Platform shell (current — GlobalBar / SideNav / ChapterBar)
+## Platform shell (current — GlobalBar / ChapterBar, no sidebar)
 
-The Mac menubar, desktop tabs, 68px icon rail and dock described in earlier UX waves are gone
+The Mac menubar, desktop tabs, sidebar / icon rail and dock described in earlier UX waves are gone
 (`de22b0e9` replaced them) — don't reintroduce them. Full contract:
 [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 | Layer | Role | When visible |
 |-------|------|--------------|
-| **GlobalBar** (`components/nav/GlobalBar.tsx`) | Top bar: brand/home, product flyouts, Search (⌘K), Control Center, New VM, **Machina** dropdown (About, Settings, sidebar toggle, Mission Control, tier switch, Add Host, Sign Out) | Always on authenticated routes |
-| **SideNav** (`components/nav/SideNav.tsx`) | Primary nav: pinned destinations + Workloads/Infra/Ops/Secure/Admin section groups, tier-aware via [`platformSidebarNav.ts`](../web/src/utils/platformSidebarNav.ts) | On by default; toggle from the Machina dropdown |
+| **GlobalBar** (`components/nav/GlobalBar.tsx`) | The only navigation: Z mark + wordmark, Machine Finder link (attention dot), six product groups with Netra mega-panel flyouts, Search (⌘K), Control Center, New VM, **Machina** dropdown (About, Settings, Mission Control, tier switch, Add Host, Sign Out) | Always on authenticated routes |
+| **MobileNavSheet** (`components/nav/MobileNavSheet.tsx`) | The same groups as collapsible sections in a full-height sheet | ≤1024px, opened from the burger |
 | **ChapterBar** (`components/nav/ChapterBar.tsx`) | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) — see [`shouldShowContextBar`/`suppressContextBar`](../web/src/utils/platformNavRegistry.ts) |
 | **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](web/src/components/PageLayout.tsx) | Every platform page |
 | **DetailTabs** | In-app sections with `?tab=` | Tab-heavy pages only |
@@ -178,13 +178,13 @@ is hidden on `/platform/*`.
 
 Product themes map to Zeus: **Tahoe Light** (`light`, **default**), **Classic Blue** (`dark`, opt-in), plus Machina **steel** / **aurora** / **rack**. Prefer semantic tokens (`--text-*`, `--accent`, `--apple-*`). Avoid hard-coded `slate-*` / `sky-*` / `blue-600` / slate hex (`#64748b`, `#94a3b8`, …).
 
-**Interactive blue:** apple.com `#0071e3` (CTAs, `--accent`, focus, sidebar active). Light links `#0066cc`; dark links `#2997ff`. Hover/pressed `#0077ed` / `#006edb`.
+**Interactive blue:** apple.com `#0071e3` (CTAs, `--accent`, focus, active nav). Light links `#0066cc`; dark links `#2997ff`. Hover/pressed `#0077ed` / `#006edb`.
 
 **Box type (Apple shop):** cards inherit Apple TV buy-flow fonts — light `#1d1d1f` / `#6e6e73` / `#86868b`; dark `#f5f5f7` / `#a1a1a6` / `#86868b`. SoT: [design/DAYLIGHT-CONTRACT.md](design/DAYLIGHT-CONTRACT.md) + `zeus-parity.css`. Immersive Console Hub / VNC keep carbon chrome but the same `--text-*` tokens.
 
 **Story type ([AirPods](https://www.apple.com/airpods/)):** `.apple-display` / `.apple-lede` SF Pro Display metrics.
 
-**Shell:** `GlobalBar` (top bar + flyout), `SideNav` and `ChapterBar` inside `PlatformLayout`. The dock, Mac menubar and 68px icon rail are gone — do not reintroduce them. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
+**Shell:** `GlobalBar` (top bar + flyout), `MobileNavSheet` and `ChapterBar` inside `PlatformLayout`. The sidebar, dock, Mac menubar and icon rail are gone — do not reintroduce them. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
 
 **Look layer:** `web/src/styles/netra-look.css` is loaded last and holds the current look. Namespace new tokens `--nl-*`; do not add global element resets (Tailwind utilities are layered, so an unlayered rule would clobber them).
 
@@ -194,7 +194,7 @@ Product themes map to Zeus: **Tahoe Light** (`light`, **default**), **Classic Bl
 
 - [`Login.tsx`](../web/src/pages/Login.tsx) — apple.com **machina** wordmark via [`PremiumLoginShell`](../web/src/components/PremiumLoginShell.tsx); Zyvor mark icon-only; SSO when OIDC enabled; host label from `window.location.hostname`
 - Login CSS: [`zyvor-premium-login.css`](../web/src/styles/zyvor-premium-login.css) (Apple Account paper + SF Pro / system display stack)
-- Top bar (authenticated): the Zyvor mark links home; the **Machina** dropdown holds About, Settings, sidebar toggle, Mission Control, tier switch, Add Host and Sign Out
+- Top bar (authenticated): the Zyvor mark links home; the **Machina** dropdown holds About, Settings, Mission Control, tier switch, Add Host and Sign Out
 - Dialogs restore focus to their trigger via [`useCaptureTrigger`](../web/src/hooks/useCaptureTrigger.ts) (used by `useFocusTrap`, `GlassModal`, `ConfirmDialog`); capture happens during render because a child's `autoFocus` moves focus before effects run
 - **URL behavior:** the login page renders outside `BrowserRouter` when unauthenticated. `/` and `/login` both work. After auth, [`AuthContext`](../web/src/contexts/AuthContext.tsx) replaces `/login` with `/`, and authenticated routes register `<Navigate from="/login" to="/" />` so bookmarked `/login` never shows 404
 - **Zeus AI shell:** [`AiProvider`](../web/src/contexts/AiContext.tsx) must stay **inside** `BrowserRouter` (uses `useLocation` / `useParams` for ambient route context)

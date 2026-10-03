@@ -27,10 +27,11 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 .gnb-bar-inner {
-  max-width: 160rem;
+  /* Same width and gutters as page content (Netra), so the brand lines up with the page edge. */
+  max-width: 1800px;
   margin: 0 auto;
   height: var(--gnb-bar-h);
-  padding: 0 0.75rem;
+  padding: 0 clamp(20px, 3.5vw, 64px);
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -39,6 +40,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  margin-left: -9px; /* optically align the Z with the page's left edge */
   margin-right: 0.5rem;
   flex-shrink: 0;
 }
@@ -314,9 +316,9 @@ html.dark .gnb-tasks {
   -webkit-backdrop-filter: blur(calc(var(--blur-liquid, 12px) + 4px)) saturate(1.35);
 }
 .gnb-chapter-inner {
-  max-width: 160rem;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 0.5rem 1rem 0.625rem;
+  padding: 0.5rem clamp(20px, 3.5vw, 64px) 0.625rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;

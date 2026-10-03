@@ -18,7 +18,7 @@ CSS is loaded in this order (`web/src/main.tsx` imports `main.css`, then `netra-
 |---|---|
 | `styles/main.css` | Tailwind v4 (`@import "tailwindcss"`), dark "carbon" `:root`, legacy component rules, then imports the files below |
 | `styles/platform-tahoe.css`, `machina-daylight.css`, `machina-apple-ux.css`, `zeus-parity.css` | Earlier layers: tahoe primitives, light tokens, Story/Browse primitives (`.apple-*`), Zeus HSL tokens |
-| `styles/nav-global-bar.css` | GlobalBar, flyout, SideNav, ChapterBar |
+| `styles/nav-global-bar.css` | GlobalBar, flyout, mobile sheet, ChapterBar |
 | `styles/zyvor-premium-login.css` | Login |
 | **`styles/netra-look.css`** | **The final look layer. Wins by source order.** New look changes go here. |
 
@@ -54,20 +54,20 @@ chrome).
 
 | Part | Component | Notes |
 |---|---|---|
-| Top bar | `components/nav/GlobalBar.tsx` | 45px translucent bar; product groups open a full-width **flyout** (multi-column, capped to the viewport and scrolls inside). Right side: Live chip, Search (⌘K), Control Center, Ask Zyra, New VM, avatar, sign out. |
-| Sidebar | `components/nav/SideNav.tsx` | Section tree with the needs-attention dot; collapse state per section in `localStorage` (`machina-sidenav-<id>`); off-canvas drawer on phones. |
+| Top bar | `components/nav/GlobalBar.tsx` | 48px frosted bar (`saturate(180%) blur(20px)`), inner row at the page width (1800px, `clamp(20px, 3.5vw, 64px)` gutters). Bare orange **Z** mark + 17px/600 "Machina" wordmark, a **Machine Finder** link (amber dot when machines need attention), then the six product groups. The active group gets a 2px blue underline. Groups open a **Netra mega panel** centred under the trigger (480–760px, one-line description per item, scrolls inside). Right side: Live chip, Search (⌘K), Control Center, Ask Zyra, New VM, avatar, sign out. |
+| Mobile sheet | `components/nav/MobileNavSheet.tsx` | At ≤1024px the burger opens a full-height sheet with the same groups as collapsible sections (the active group starts open), plus Search / Settings / New VM. |
 | Chapter bar | `components/nav/ChapterBar.tsx` | In-section pills (max 6 + More). Tier-gated: never at Normal, hub roots at Power, always at Advanced. |
 | Menus | `PlatformMacMenuDropdown`, `PlatformFloatingMenu`, `PlatformMenuItem` | Portaled `role="menu"` panels; the floating menu restores focus to its trigger. |
 
 Nav data is unchanged and test-covered: `utils/platformNavRegistry.ts`, `platformMacMenus.ts`,
-`platformSidebarNav.ts`. Group ids (`workloads`, `infra`, `ops`, `secure`, `admin`, `more`) are
+`navBlurbs.ts` (flyout descriptions). Group ids (`workloads`, `infra`, `ops`, `secure`, `admin`, `more`) are
 asserted by vitest; do not rename them for styling.
 
 **Phone (≤ 640px)** the bar icon-ises so it fits 390px: the Live chip shows its dot, **New VM** is a
 `+` button (its text stays in the DOM, so the accessible name is unchanged), the decorative avatar
 and the duplicate sign-out icon are hidden (Sign Out remains in the Machina menu).
 
-**Removed.** The Mac menubar, 68px icon rail, hover flyouts, desktop tabs and dock are gone (commit
+**Removed.** The Mac menubar, the sidebar and icon rail (the top bar is the only navigation, as in Netra), desktop tabs and dock are gone (commit
 `de22b0e9`). `PlatformSidebar`, `PlatformMacAppMenus`, `PlatformProductNavMenus`,
 `PlatformMacDesktopTabs`, `PlatformMacDock`, `PlatformDynamicIsland`, `Navbar.tsx` and
 `Breadcrumb.tsx` had zero importers and have been deleted along with their dead trigger (the
@@ -207,9 +207,25 @@ Machina inherited most Netra tokens; the remaining gaps were closed in `netra-lo
 - **Destructive**: `.btn-destructive` is solid `--nl-danger` (`#ff3b30`, `#ff453a` in dark). `.btn-danger`
   never had CSS — use `.btn-destructive`.
 - **Top bar**: 48px, `saturate(180%) blur(20px)`; the active group has a 2px blue underline
-  (`aria-current`). Flyout lists flow into columns; sidebar section headers are 12px/600, not 10px caps.
+  (`aria-current`). Flyouts are Netra mega panels with a description per item.
 - **Borders**: controls use neutral `#d2d2d7`, not the old blue-grey `hsl(205 22% 84%)`.
 - **Dark**: Tailwind shades written for a white page (`text-red-700`, `text-orange-800`, …) are remapped
   to the text-safe `--nl-accent-*-text` tokens in dark, except on elements with their own white fill.
 - **Phone**: ≥36px targets via the `main` rules in `netra-look.css`; scrolling tables keep their
   columns and show an edge shadow.
+
+## Shell: top bar only (Netra)
+
+The left sidebar and icon rail were removed. The freed width goes to content: pages sit in a centred
+1800px container with fluid gutters, and the bar's inner row uses the same width so the brand lines up
+with the page edge. Machine Finder (and its needs-attention dot) moved into the top bar; Settings,
+Mission Control and tier switching live in the Machina menu; on phones everything is in the burger sheet.
+
+- **Brand**: `public/zyvor-logomark.svg` (bare Z) in the bar; `public/zyvor-favicon.svg` (rounded
+  gradient tile) as favicon; `public/apple-touch-icon.png` full-bleed for iOS.
+- **Page headers**: eyebrow 12px/700/.14em caps in link blue, title `clamp(24px, 2.6vw, 34px)`, lede
+  ≤70ch; route changes fade-rise (`.nl-fade-rise`); `Reveal` + `useCountUp` for entrances.
+- **Mission Control signature visuals**: `MissionControlPulse` (count-up figures, `Sparkline`s, "Live ·
+  updated Ns ago" from a quiet 30s refresh) and `FleetHero` (controller → hosts → VM dots, animated flow
+  speed from running VMs; offline hosts dashed red). Both honour `prefers-reduced-motion`.
+- Removed state: `machina-platform-sidebar-*` and `machina-sidenav-*` localStorage keys are cleared on load.
