@@ -33,7 +33,7 @@ function PlatformDesktopShell() {
   const [searchParams, setSearchParams] = useSearchParams()
   const isPopout = isCenterPopoutMode(location.search)
   const [wallpaper, setWallpaper] = useState<PlatformWallpaper>(() => loadPlatformWallpaper())
-  const { sidebarVisible, cinemaChromeHidden, toggleSidebar } = usePlatformMacDesktop()
+  const { sidebarVisible, sidebarCollapsed, setSidebarCollapsed, cinemaChromeHidden, toggleSidebar } = usePlatformMacDesktop()
   const [tier] = usePlatformDesktopTier()
   const { openMissionControl, closeMissionControl } = useMissionControl()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -128,6 +128,14 @@ function PlatformDesktopShell() {
     meta: true,
     alt: true,
     handler: () => toggleSidebar(),
+  })
+
+  // ⌘⌥B: switch the sidebar between the full list and the icon rail.
+  useKeyboardShortcut({
+    key: 'b',
+    meta: true,
+    alt: true,
+    handler: () => setSidebarCollapsed(!sidebarCollapsed),
   })
 
   useEffect(() => {

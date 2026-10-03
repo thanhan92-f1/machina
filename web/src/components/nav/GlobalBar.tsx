@@ -34,7 +34,7 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
   const { openCopilot } = useAi()
   const { info } = usePlatformInfo()
   const [tier, setTier] = usePlatformDesktopTier()
-  const { toggleSidebar, sidebarVisible } = usePlatformMacDesktop()
+  const { toggleSidebar, sidebarVisible, sidebarCollapsed, setSidebarCollapsed } = usePlatformMacDesktop()
   const { desktop } = useFleetDesktop(true, 60_000)
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
@@ -116,6 +116,7 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
               <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => { navigate('/platform/settings'); setOpenGroup(null) }} />
               <div className="my-1 border-t border-[var(--apple-hairline)]" />
               <PlatformMacMenuItem label={sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'} shortcut="⌘⌥S" checked={sidebarVisible} onClick={() => { toggleSidebar(); setOpenGroup(null) }} />
+              <PlatformMacMenuItem label="Sidebar as icons" shortcut="⌘⌥B" checked={sidebarCollapsed} onClick={() => { setSidebarCollapsed(!sidebarCollapsed); setOpenGroup(null) }} />
               <PlatformMacMenuItem label="Mission Control" shortcut="F3" onClick={() => { dispatchOpenMissionControl(); setOpenGroup(null) }} />
               <div className="my-1 border-t border-[var(--apple-hairline)]" />
               <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.normal} checked={tier === 'normal'} onClick={() => pickTier('normal')} />
