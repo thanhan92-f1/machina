@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, Circle, Loader2, Power, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Circle, Loader2, Power, X, Info } from 'lucide-react'
 import type { VmGuestHealthReport, VmPendingConfig } from '../../api/platform'
 import { guestToolsStripVisible } from '../../utils/guestAgentUx'
 import type { GuestAccessHints } from '../../utils/guestAccessHints'
@@ -211,11 +211,13 @@ export default function VmAttentionStack({
   return (
     <div className="space-y-2 animate-fade-in" data-testid="vm-attention-stack">
       <div
-        className={`rounded-xl border p-4 ${statusSurfaceClasses(resolvedActive.tone === 'pending' ? 'warn' : 'warn')} ${bannerClass(resolvedActive.tone)}`}
+        className={`rounded-xl border p-4 ${statusSurfaceClasses(resolvedActive.tone === 'laptop' ? 'info' : 'warn')} ${bannerClass(resolvedActive.tone)}`}
         data-testid={resolvedActive.id === 'pending_config' ? 'vm-pending-config-banner' : undefined}
       >
         <div className="flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          {resolvedActive.tone === 'laptop'
+            ? <Info className="w-5 h-5 text-[var(--machina-status-info)] shrink-0 mt-0.5" />
+            : <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium text-[var(--text-primary)]">{resolvedActive.label}</p>
