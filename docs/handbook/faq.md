@@ -15,10 +15,12 @@ built on libvirt/QEMU/KVM. It exposes a web UI, a REST API and
 the `machinactl` CLI.
 
 **Q2. Where does Machina fit in the Zyvor stack?**
-It is the *physical hypervisor OS* — the layer that owns the metal. Zeus OS (v9s)
-is the cloud / KubeVirt control plane that sits on top. Other siblings include
-hypercluster (k8s bootstrap), and hypersdk
-(VM migration).
+It owns the metal: KVM hosts, their VMs, networking and storage, plus the
+self-service Fleet Cloud on top. Sibling products plug in: Atlas (Ceph/NFS/ZFS
+storage) and GuestKit (guest agent, in-guest eBPF policy, disk inspection).
+Zeus OS (v9s) is a KubeVirt-based cloud that can run on Machina hosts. Network
+enforcement and visibility are native (`machina-bpfd`), replacing Cilium,
+Tetragon, Netra and PacketWolf.
 
 **Q3. Is it a replacement for `virsh`?**
 It sits above libvirt and replaces ad-hoc `virsh` scripting with one API + UI +
@@ -204,14 +206,16 @@ Regenerate with `npm run generate-openapi` in `web/`.
 ## Zyvor stack
 
 **Q36. What's the relationship to Zeus OS / v9s?**
-Machina manages the physical KVM hosts; Zeus OS is the cloud/KubeVirt control
-plane above it. The "Zeus AI" pages in the platform UI drive controller-side AI
-features.
+Zeus OS is a separate KubeVirt-based cloud product. Machina can sit underneath
+it (managing the physical KVM hosts) or stand alone with its own Fleet Cloud.
+Machina's AI assistant is **Zyra AI** (`/platform/zyra`), backed by the
+controller's AI engine.
 
 **Q37. Does the controller need PostgreSQL?**
 No — it uses embedded SQLite by default (`DATABASE_URL=
-sqlite:///var/lib/machina/controller.db`). PostgreSQL (via SQLx) and NATS
-(`NATS_URL`) are optional for scale-out.
+sqlite:///var/lib/machina/controller.db`), created and migrated on first
+start. NATS (`NATS_URL`) is optional, for fanning tasks out across several
+controller instances.
 
 ---
 

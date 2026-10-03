@@ -72,7 +72,7 @@ Web UI (React, :3000 dev / :5092 prod)
     │       │
     │       └─► libvirt / QEMU/KVM (same host)
     │
-    └─► machina-controller (:5093)  ← Fleet control plane, Postgres, NATS
+    └─► machina-controller (:5093)  ← Fleet control plane, embedded SQLite, NATS
             │
             └─► machina-agent (:50051 gRPC)  ← per-host gRPC agent
                     │
@@ -81,7 +81,7 @@ Web UI (React, :3000 dev / :5092 prod)
 
 **`machina-daemon`** is the single-host hypervisor manager (the original product). It owns the REST API at `/api/v1`, handles VNC/SPICE/serial/SSH console proxying, PAM+RBAC auth, and speaks directly to libvirt.
 
-**`machina-controller`** is the multi-host enterprise control plane. It persists state in Postgres (via SQLx), distributes tasks via an in-memory or NATS bus, and communicates with hypervisor hosts through `machina-agent` over gRPC (TLS).
+**`machina-controller`** is the multi-host enterprise control plane. It persists state in embedded SQLite (via SQLx), distributes tasks via an in-memory or NATS bus, and communicates with hypervisor hosts through `machina-agent` over gRPC (TLS).
 
 **`machina-agent`** runs on each managed hypervisor. It exposes a gRPC service (`spec/` proto), executes libvirt operations, and provides console WebSocket proxying.
 
@@ -111,7 +111,7 @@ The **web UI** proxies all `/api/...` and `/ws/...` requests to `machina-daemon`
 
 - **`api/`** — Axum route handlers; one file per feature area (e.g. `api/vms.rs`, `api/fleet.rs`, `api/ai.rs`). All routes are assembled in `api/mod.rs`.
 - **`engine/`** — Background engine modules: `ha.rs` (HA failover), `drs.rs` (distributed resource scheduling), `reconcile.rs` (desired-state reconciliation), `scheduler.rs`, `webhook_worker.rs`. The AI sub-engine lives in `engine/ai/` with dozens of specialized modules (`llm.rs`, `agents.rs`, `actions.rs`, `providers.rs`, etc.).
-- **`db/`** — SQLx Postgres queries, migrations, bootstrap.
+- **`db/`** — SQLx SQLite queries, migrations (`controller/migrations/`), bootstrap.
 - **`tasks/`** — Async task bus abstraction: `InMemoryTaskBus` + optional `NatsTaskBus`; `worker.rs` processes tasks; `nats_subscriber.rs` bridges NATS → local bus.
 - **`state.rs`** — `AppState` holds config, DB pool, task bus, and agent client.
 - **`agent_client.rs`** — gRPC client to `machina-agent`.

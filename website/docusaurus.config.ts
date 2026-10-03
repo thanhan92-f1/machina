@@ -30,8 +30,6 @@ const config: Config = {
       onBrokenMarkdownLinks: 'warn',
     },
   },
-  themes: ['@docusaurus/theme-mermaid'],
-
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -53,6 +51,19 @@ const config: Config = {
           customCss: ['./src/css/custom.css', './src/css/machina.css'],
         },
       } satisfies Preset.Options,
+    ],
+  ],
+
+  themes: [
+    '@docusaurus/theme-mermaid',
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexBlog: false,
+        docsRouteBasePath: '/docs',
+        highlightSearchTermsOnTargetPage: true,
+      },
     ],
   ],
 
@@ -93,7 +104,9 @@ const config: Config = {
           items: [
             {label: 'Quickstart', to: '/docs/getting-started/quickstart'},
             {label: 'Architecture', to: '/docs/core-concepts/architecture'},
+            {label: 'Native eBPF', to: '/docs/networking/ebpf-overview'},
             {label: 'Security', to: '/docs/operations/security'},
+            {label: 'Troubleshooting', to: '/docs/operations/troubleshooting'},
             {label: 'Machina vs OpenStack', to: '/vs-openstack'},
           ],
         },
@@ -112,7 +125,6 @@ const config: Config = {
             {label: 'zyvor.dev', href: 'https://zyvor.dev'},
             {label: 'sales@zyvor.dev', href: 'mailto:sales@zyvor.dev'},
             {label: 'Subscription model', href: `${REPO}/blob/main/docs/SUBSCRIPTION-MODEL.md`},
-            {label: 'Netra (eBPF network control)', href: 'https://zyvorai.github.io/netra/'},
           ],
         },
       ],

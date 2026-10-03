@@ -38,7 +38,7 @@ Initial certification targets for batch 16. Expand with customer-driven OS/stora
 | Deploy | Notes |
 |--------|-------|
 | Single node | Default install.sh |
-| 3-node HA | Leader election + Patroni PG (see runbooks) |
+| Multi-controller | DB-lease leader election over a shared SQLite store + NATS fan-out (see [controller-ha.md](controller-ha.md#multiple-controllers)) |
 
 Run full suite: `./scripts/e2e-platform-test-remote.sh user host`
 

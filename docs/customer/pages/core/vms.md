@@ -34,6 +34,7 @@ If the page stays empty, check daemon health (`/api/v1/health`), libvirt connect
 
 - [Create new guest VM](create.md)
 - [Import guest VM](import.md)
+- [VM detail: Guest policy](vm-guest-policy.md)
 - [Machine Finder](../platform/platform-vms.md)
 - [Getting Started](../../getting-started.md)
 - [Dashboard](home.md)

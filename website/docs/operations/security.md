@@ -31,8 +31,18 @@ audit lines can be signed and shipped off-host.
 
 ## Network enforcement
 
-With the [Netra integration](../core-concepts/integrations.md#netra-network-enforcement), deny rules are enforced in
-the kernel with eBPF and every enforcement window is a lease that fails open when it expires.
+Machina's native eBPF service enforces policies, a DDoS shield, node isolation, VM isolation, a QEMU sandbox and a
+BPF-LSM guard around the VMM. Everything starts in observe or audit mode; enforcement is a lease that the kernel
+honours on its own and that fails open when it expires, and nothing is persisted across restarts. See
+[Security enforcement](../networking/security-enforcement.md).
+
+## Hardening checklist
+
+- Use a certificate from your CA instead of the installer's self-signed one.
+- Set `MACHINA_JWT_SECRET` and `MACHINA_API_KEY_MASTER_KEY` explicitly in production.
+- Keep `machina-agent` bound to localhost or a management network, with mTLS between controller and agents.
+- Give automation API tokens the least privilege they need (`operator` rather than `admin`).
+- Ship the signed audit log off-host.
 
 ## Reporting a vulnerability
 

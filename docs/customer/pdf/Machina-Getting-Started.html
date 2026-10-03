@@ -24,7 +24,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Mach<span>ina</span></h1>
 <div class="sub">Getting Started</div>
-<div class="badge">2026-08-29</div>
+<div class="badge">2026-10-03</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>What you need</h2>
 <table>
@@ -79,11 +79,13 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tbody></table>
 <p>RBAC roles: Admin / Operator / ReadOnly via <code>roles.json</code>, OIDC groups, or API tokens. Empty <code>roles.json</code> means everyone is Admin — fix that before production.</p>
 <h2>3. Orient yourself</h2>
+<p>After sign-in you get a <strong>Mac-style desktop</strong>: menubar (Zyvor mark + Machina / View / Window / Help), left <strong>icon rail</strong> sidebar, and Spotlight (<code>⌘K</code> or Window menu).</p>
 <ol>
-<li><strong>Core</strong> — Dashboard, VMs, Create, Import, Fleet on this host.</li>
-<li><strong>Platform</strong> — Mission Control for multi-host fleet (<code>/platform</code>).</li>
-<li><strong>Infrastructure / Fleet Cloud / Monitoring</strong> — storage, networks, Podman/Docker containers (Vessel), Fleet Cloud instances, host metrics.</li>
-<li>Spotlight / Finder for quick jump.</li>
+<li><strong>Sidebar</strong> — pinned icons (Mission Control, VMs, Machine Finder, Hosts, Settings) plus Workloads / Infra / Ops / Secure / Admin section flyouts. Hover a section icon for its routes; chevron at the bottom expands labels.</li>
+<li><strong>Platform</strong> (<code>/platform</code>) — Mission Control for the fleet.</li>
+<li><strong>Classic home</strong> (<code>/</code>) — this hypervisor’s guests and host health.</li>
+<li><strong>Fleet Cloud</strong> (<code>/fleet-cloud</code>) — native instances; use the pill nav (Overview / Instances / … / <strong>More</strong>).</li>
+<li>Settings → Appearance → <strong>Desktop density</strong> (Normal / Power / Advanced) controls how much of the fleet surface is unlocked; <strong>Apple</strong> light theme is the default.</li>
 </ol>
 <h2>4. First workflows</h2>
 <h3>A. List and open a VM console</h3>

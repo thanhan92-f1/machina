@@ -1,5 +1,7 @@
 # Machina deploy plan — macOS OS Manager Phases 38–48
 
+> **Historical snapshot (archived).** Kept for reference only; it describes an earlier state of the product and is not maintained. Current docs start at [docs/README.md](../README.md).
+
 > Snapshot saved before remote deploy. Update this file at each ship boundary.
 
 ## Deploy target

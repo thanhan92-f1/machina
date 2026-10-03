@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 title: Fleet, HA and DRS
 description: Turn hypervisors into one pool with HA failover, DRS and live migration.
 ---
@@ -9,7 +9,7 @@ description: Turn hypervisors into one pool with HA failover, DRS and live migra
 Add hypervisors by installing `machina-agent` on each one. The controller then treats them as one pool.
 
 ```bash
-./scripts/deploy-remote.sh HOST USER --platform
+./scripts/deploy-remote.sh USER@HOST --platform --platform-bind 0.0.0.0
 ```
 
 ## What the controller does
@@ -20,6 +20,10 @@ Add hypervisors by installing `machina-agent` on each one. The controller then t
 - **DRS.** Distributed resource scheduling rebalances load across hosts by live-migrating VMs.
 - **Live migration.** Move running VMs between hosts from the UI or API.
 - **Placement.** New VMs land on a host chosen by capacity and policy.
+- **Fleet-wide eBPF.** Policies, shield, isolation and telemetry fan out to every host's `machina-bpfd` through its
+  agent.
+
+How failover, fencing, DRS and multi-controller leader election work in detail: [Controller HA](controller-ha.md).
 
 ![High availability and host fencing](/machina-fleet.png)
 

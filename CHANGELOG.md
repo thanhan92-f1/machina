@@ -1,5 +1,72 @@
 # Changelog
 
+## 2026-10-03 — Native eBPF datapath (waves 1 and 2)
+
+`machina-bpfd` replaces the Cilium, Tetragon, Netra and PacketWolf
+integrations with Machina's own pure-Rust (Aya) programs. See
+[docs/ebpf/](docs/ebpf/README.md).
+
+- **Wave 1** — Policies with an observe default and a datapath-checked enforce
+  lease (`MACHINA_BPF_ENFORCE_LEASE_SECS`, never persisted); flows, DNS, L7,
+  per-VM accounting, captures, QoS and connection rate limits; `machina-cni`
+  (dual-stack routing, NetworkPolicy, opt-in CiliumNetworkPolicy, Maglev
+  services, XDP NodePort); VM edge and QEMU cgroup sandbox; XDP DDoS shield;
+  TCP health and ICMP error histograms; opt-in TLS / JA4 visibility; node
+  isolation with its own short lease. Daemon `/api/v1/bpf/*`, controller fleet
+  views under `/api/v1/zeus-security/*` through agent `BpfCall`.
+- **Wave 2** — Network-change audit (rtnetlink), sampled L7, VM runtime
+  intelligence, VMM guard (BPF-LSM), direct tap redirect, QUIC-LB, AF_XDP and
+  the `machina-scx` sched_ext VM scheduler. The Native eBPF page now has 22
+  tabs.
+- **Kernel features** — `GET /api/v1/bpf/status` reports `features` (`btf`,
+  `tcx`, `cgroup2`, `fentry`, `lsm_bpf`, `sched_ext`, `xsk`) detected natively
+  (no `bpftool` needed); the Overview tab shows them as pills. The `xsk` probe
+  falls back to `/proc/kallsyms` because the unit's `RestrictAddressFamilies`
+  blocks AF_XDP.
+- **Guest policy relay** — `GET/PUT /api/v1/vms/{name}/guest-policy` and
+  `/guest-lsm` relay per-container network and BPF-LSM rules to GuestKit's
+  `guestkitd` through QGA guest-exec (allowlisted to four methods). New VM
+  detail **Guest policy** tab.
+
+## 2026-10-03 — Security fixes and regression TLS
+
+- **CodeQL** — Verified TLS in the regression API helper, a URL scheme guard
+  for controller-derived links (`safeHref`, http/https only), markdown
+  escaping.
+- **Dependabot** — `jsonwebtoken` 10, `async-nats` 0.50, `pam-client`, npm
+  lockfile bumps.
+- **Regression TLS** — `scripts/regression` verifies certificates by default.
+  Set `MACHINA_CA_FILE` to trust a self-signed host CA, or
+  `MACHINA_INSECURE_TLS=1` to skip verification on a lab host.
+
+## 2026-10-03 — Docs refresh
+
+- New `docs/ebpf/` reference, `docs/controller-ha.md`,
+  `docs/daemon-peer-fleet.md` and `docs/handbook/runbook.md`; old fleet and
+  runbook docs are stubs pointing to them. Snapshots moved to `docs/archive/`.
+- One port table and full controller / agent / bpfd environment tables in the
+  admin guide; Native eBPF troubleshooting.
+- Website: networking category, intro, controller HA, upgrade and backup,
+  troubleshooting, reference (ports, environment, API) and local search.
+- Customer docs: Native eBPF, Guest policy and ten rewritten page guides; new
+  routes (Alert Rules, Scheduled Jobs, Machine Finder, Native eBPF); feature
+  guide PDF built by `build-customer-pdfs.mjs`.
+- `scripts/check-doc-links.py` and a customer-routes freshness check run in CI.
+
+## Earlier platform batches (moved from docs/platform.md)
+
+- **Batch 12** — VM `lifecycle_phase`, structured API errors with
+  remediation, host join validation, reconcile loop, live migrate after snap
+  clone.
+- **Batch 13** — Task drawer, command palette platform search,
+  dashboard → platform link, structured error banners.
+- **Batch 14** — Agent storage / network provisioning
+  (`storage.pool.provision`, `network.provision`).
+- **Batch 15** — Policy rules, project quotas, support bundle, upgrade
+  manager, task-failure alerts.
+- **Batch 16** — `scripts/platformctl`, Terraform stub under
+  `terraform/machina/`, chaos / soak scripts.
+
 ## 2026-09-03 — Regression harness + host-sync 404 + LB DNAT -p
 
 - **Stale host UUID** — Many `ops-*.js` / `ui-*.js` scripts defaulted to a

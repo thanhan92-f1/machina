@@ -1,31 +1,32 @@
-# Migration Radar
+# Migration Assistant
 
 ## Purpose
 
-Migration Assistant — Machina Platform page at `/platform/migration`.
+Migration Radar: bring VMs into Machina from VMware vCenter, ESXi, OVF/OVA, VMDK or cloud images. HyperSDK discovers and converts source VMs; GuestKit checks disks offline before and after conversion.
 
 ## When to use it
 
-- Operate **Migration Radar** when your job matches this page
-- Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
-- Confirm PAM/OIDC login and roles if actions are missing
+- Plan a move off VMware: scan a vCenter or ESXi host and review what will convert cleanly
+- Import a single OVF/OVA, VMDK or cloud image
+- Follow GuestKit offline inspection and doctor jobs
 
 ## How to get there
 
 - Route: `/platform/migration`
 - Nav: **Platform → Migration Assistant** (or spotlight / Finder search)
 
-## Operate from the console (UX)
+## What you can do
 
-1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
-2. Filters / tabs: **vCenter / ESXi / OVF·OVA / VMDK / Cloud Image**.
-3. Scan source.
-4. Open import wizard.
-5. Import.
-6. **Empty:** No scan yet → pick source.
-7. **Success:** Discovered VMs importable.
+1. Pick a source: **VMware vCenter**, **ESXi Host**, **OVF / OVA File**, **VMDK File** or **Cloud Image**.
+2. **Scan & migrate**: run a scan; **Scan results** list discovered VMs with **Migration Advisor Warnings** (drivers, firmware, disk layout).
+3. For one VM, **Open import wizard** (single-VM import).
+4. **GuestKit jobs** (`?tab=jobs`) is the queue of offline inspect / doctor / migrate-plan jobs; enter a disk path such as `/var/lib/libvirt/images/vm.qcow2` to run one.
+5. **HyperSDK proxy explorer** lets admins call provider-specific HyperSDK API paths directly.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
+## If something is wrong
+
+- **HyperSDK or GuestKit tabs disabled:** the integration is not enabled on the controller (`GUESTKIT_ENABLED`, HyperSDK settings).
+- **No scan yet:** pick a source and provide its credentials first.
 
 ## Related pages
 

@@ -46,6 +46,11 @@
       "category": "Platform"
     },
     {
+      "label": "Machine Finder",
+      "path": "/platform/hosts/finder",
+      "category": "Platform"
+    },
+    {
       "label": "Applications",
       "path": "/platform/applications",
       "category": "Platform"
@@ -151,6 +156,11 @@
       "category": "Platform / Security"
     },
     {
+      "label": "Native eBPF",
+      "path": "/platform/zyra/security/native-bpf",
+      "category": "Platform / Security"
+    },
+    {
       "label": "Security Operations",
       "path": "/platform/soc",
       "category": "Platform"
@@ -216,6 +226,16 @@
       "category": "Platform"
     },
     {
+      "label": "Alert Rules",
+      "path": "/platform/alert-rules",
+      "category": "Platform"
+    },
+    {
+      "label": "Scheduled Jobs",
+      "path": "/platform/scheduled-jobs",
+      "category": "Platform"
+    },
+    {
       "label": "Observability",
       "path": "/platform/observability",
       "category": "Platform"
@@ -268,11 +288,6 @@
     {
       "label": "API Keys",
       "path": "/platform/api-keys",
-      "category": "Platform"
-    },
-    {
-      "label": "Integrations",
-      "path": "/platform/integrations",
       "category": "Platform"
     },
     {
@@ -506,21 +521,9 @@
       "category": "Monitoring"
     },
     {
-      "label": "Mission Control",
-      "path": "/mission-control",
-      "category": "Core",
-      "legacy": false
-    },
-    {
       "label": "Settings",
       "path": "/settings",
       "category": "Platform",
-      "legacy": false
-    },
-    {
-      "label": "SSH",
-      "path": "/ssh",
-      "category": "Infrastructure",
       "legacy": false
     },
     {

@@ -75,7 +75,7 @@ export ZEUS_OS_LDAP_BIND_DN_TEMPLATE={}@zyvorai.local
 
 Sign in on the Zeus login page with `sshant@zyvorai.local`.
 
-See: [Enterprise auth and tenancy](../../v9s/docs/ENTERPRISE_AUTH_TENANCY.md) (sibling repo).
+See: Enterprise auth and tenancy, `../v9s/docs/ENTERPRISE_AUTH_TENANCY.md` (sibling repo).
 
 ## HyperSDK web
 

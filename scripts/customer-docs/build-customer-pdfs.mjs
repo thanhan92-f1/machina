@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -144,6 +144,16 @@ const books = [
     sources: [join(CUSTOMER, 'pages/README.md'), ...collectPageGuides(), join(CUSTOMER, 'PAGE_INDEX.md')],
   },
 ]
+const FEATURE_GUIDE = resolve(ROOT, 'docs/machina-customer-feature-guide.md')
+if (PRODUCT === 'Machina' && existsSync(FEATURE_GUIDE)) {
+  books.push({
+    id: `${prefix}-Feature-Guide`,
+    title: 'Feature Guide',
+    sources: [FEATURE_GUIDE],
+    pdfPath: resolve(ROOT, 'docs/machina-customer-feature-guide.pdf'),
+  })
+}
+const WEBSITE_RESOURCES = resolve(ROOT, 'website/static/resources')
 
 const indexLines = [`# ${PRODUCT} customer PDFs`, '', `Generated: ${new Date().toISOString().slice(0, 10)}`, '', 'Rebuild: `node scripts/customer-docs/build-customer-pdfs.mjs`', '']
 for (const book of books) {
@@ -155,11 +165,12 @@ for (const book of books) {
   const combined = parts.join('\n\n---\n\n')
   const bodyHtml = mdToHtmlBody(combined, join(PDF_DIR, book.id)).replace(/^\s*<h1[^>]*>.*?<\/h1>\s*/is, '')
   const htmlPath = join(PDF_DIR, `${book.id}.html`)
-  const pdfPath = join(PDF_DIR, `${book.id}.pdf`)
+  const pdfPath = book.pdfPath || join(PDF_DIR, `${book.id}.pdf`)
   writeFileSync(htmlPath, wrapHtml(book.title, bodyHtml))
-  console.log(`Printing ${book.id}.pdf …`)
+  console.log(`Printing ${basename(pdfPath)} …`)
   printPdf(chrome, `file://${htmlPath}`, pdfPath)
-  indexLines.push(`- \`${book.id}.pdf\` — ${book.title}`)
+  indexLines.push(`- \`${book.pdfPath ? relative(PDF_DIR, pdfPath) : `${book.id}.pdf`}\` — ${book.title}`)
+  if (PRODUCT === 'Machina' && existsSync(WEBSITE_RESOURCES)) copyFileSync(pdfPath, join(WEBSITE_RESOURCES, basename(pdfPath)))
 }
 writeFileSync(join(PDF_DIR, 'PDF_INDEX.md'), indexLines.join('\n') + '\n')
 console.log(`Done → ${PDF_DIR}`)

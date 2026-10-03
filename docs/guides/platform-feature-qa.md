@@ -84,9 +84,9 @@ E2E_FEATURE_MATRIX=1 VSPASS=max ./scripts/e2e-platform-complete-remote.sh operat
 
 | Suite | File |
 |-------|------|
-| Mock matrix | [`web/e2e/platform-feature-matrix.spec.ts`](../web/e2e/platform-feature-matrix.spec.ts) |
-| Live matrix | [`web/e2e/platform-live-feature-matrix.spec.ts`](../web/e2e/platform-live-feature-matrix.spec.ts) |
-| Helpers | [`web/e2e/helpers/featureMatrix.ts`](../web/e2e/helpers/featureMatrix.ts) |
+| Mock matrix | [`web/e2e/platform-feature-matrix.spec.ts`](../../web/e2e/platform-feature-matrix.spec.ts) |
+| Live matrix | [`web/e2e/platform-live-feature-matrix.spec.ts`](../../web/e2e/platform-live-feature-matrix.spec.ts) |
+| Helpers | [`web/e2e/helpers/featureMatrix.ts`](../../web/e2e/helpers/featureMatrix.ts) |
 
 ## Success criteria
 

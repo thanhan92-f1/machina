@@ -45,7 +45,7 @@ Quick deploy / self-hosted tarball: [LICENSE](../../LICENSE). Enterprise deals s
 | Document | File | Purpose |
 |----------|------|---------|
 | Corporate facts | [CORPORATE.md](CORPORATE.md) | MCA, directors, filing references |
-| Source PDF manifest | [SOURCE-DOCUMENTS.md](SOURCE-DOCUMENTS.md) | Incorporation & board docs on file |
+| Source PDF manifest | `SOURCE-DOCUMENTS.md` (kept outside the repository) | Incorporation & board docs on file |
 | Licensing model | [LICENSING-MODEL.md](LICENSING-MODEL.md) | Proprietary tiers, metrics |
 | Product matrix | [PRODUCT-MATRIX.md](PRODUCT-MATRIX.md) | License per product |
 | Trademark | [TRADEMARK-NOTICE.md](TRADEMARK-NOTICE.md) | Brand rights |

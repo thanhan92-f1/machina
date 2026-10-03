@@ -17,6 +17,7 @@ export const SHOTS: Shot[] = [
   {src: '/machina-fleet.png', title: 'High availability', caption: 'HA policy, host fencing and failover events from the controller.', url: 'https://machina:5092/platform/ha'},
   {src: '/machina-fleet-cloud.png', title: 'Fleet Cloud', caption: 'Self-service instances, images, volumes, flavors and more, all native.', url: 'https://machina:5092/fleet-cloud'},
   {src: '/machina-zyra.png', title: 'Zyra AI', caption: 'Fleet intelligence, security graph, knowledge and services in one place.', url: 'https://machina:5092/platform/zyra'},
+  {src: '/machina-native-ebpf.png', title: 'Native eBPF', caption: 'Connect latency per destination from the kernel, next to 21 other datapath tabs.', url: 'https://machina:5092/platform/zyra/security/native-bpf'},
 ];
 
 export type Feature = {
@@ -35,7 +36,7 @@ export const FEATURES: Feature[] = [
     body: 'Create, clone, snapshot, back up and migrate KVM guests from a UI, a REST API with 900+ routes, a CLI or Terraform.',
     bullets: ['Cloud-init and golden images (Packer)', 'GPU and PCI passthrough', 'Networks, storage pools and nwfilters'],
     shot: SHOTS[1],
-    doc: '/docs/getting-started/quickstart',
+    doc: '/docs/core-concepts/virtual-machines',
   },
   {
     eyebrow: 'Reach',
@@ -62,6 +63,14 @@ export const FEATURES: Feature[] = [
     doc: '/docs/core-concepts/fleet-cloud',
   },
   {
+    eyebrow: 'Protect',
+    title: 'Networking and security, in the kernel.',
+    body: 'One eBPF service, machina-bpfd, replaces Cilium, Tetragon, kube-proxy and a separate firewall agent: service load balancing, a Kubernetes CNI, DDoS shield, VM isolation and flow visibility.',
+    bullets: ['Maglev service LB and QUIC-LB at XDP', 'VM edge, QEMU sandbox and BPF-LSM guard', 'Observe first; enforce only under a lease'],
+    shot: SHOTS[6],
+    doc: '/docs/networking/ebpf-overview',
+  },
+  {
     eyebrow: 'Operate',
     title: 'Zyra AI: an operator that asks first.',
     body: 'Autonomous diagnostics, incident correlation, rightsizing and natural-language operations, with an approval queue in front of every change.',
@@ -72,10 +81,10 @@ export const FEATURES: Feature[] = [
 ];
 
 export const WHY = [
-  {problem: 'OpenStack is a six-week project and a full-time team.', answer: 'One machinactl deploy: three binaries, embedded SQLite, a browser UI minutes later.'},
+  {problem: 'OpenStack is a six-week project and a full-time team.', answer: 'One machinactl deploy: a few Rust services, embedded SQLite, a browser UI minutes later.'},
   {problem: 'VMware renewal quotes keep climbing.', answer: 'Open KVM/libvirt underneath, with HA failover, DRS and live migration on top.'},
   {problem: 'libvirt ops live in a pile of virsh scripts.', answer: 'One dashboard, a REST API, a CLI and a Terraform provider over the same model.'},
   {problem: 'Every console needs its own gateway.', answer: 'noVNC, SPICE, serial and SSH built into the daemon, with RBAC and audit.'},
   {problem: 'On-call triages the same incidents at 3 a.m.', answer: 'Zyra AI diagnoses and proposes the fix, then waits for a human approval.'},
-  {problem: 'Network and storage live in other silos.', answer: 'Atlas puts disks on Ceph, NFS or ZFS; Netra adds eBPF deny rules that fail open.'},
+  {problem: 'Network and storage live in other silos.', answer: 'Native eBPF does load balancing, CNI and isolation with leases that fail open; Atlas puts disks on Ceph, NFS or ZFS.'},
 ];

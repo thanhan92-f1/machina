@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 title: Fleet Cloud
 description: Public-cloud style self-service on your own KVM fleet, backed by native controller APIs.
 ---

@@ -1,6 +1,6 @@
 # Zeus ConsoleHub architecture
 
-ConsoleHub is the unified VM console product surface inside Zeus OS. It is **not** a separate remote-desktop product: noVNC, SPICE, serial, and native SSH are all served natively by the daemon/agent, and Windows RDP is exposed natively via a hypervisor NAT port-forward rather than an embedded gateway.
+ConsoleHub is the unified VM console product surface inside Machina. It is **not** a separate remote-desktop product: noVNC, SPICE, serial, and native SSH are all served natively by the daemon/agent, and Windows RDP is exposed natively via a hypervisor NAT port-forward rather than an embedded gateway.
 
 ## Layers
 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 title: Consoles
 description: noVNC, SPICE, serial and SSH consoles in the browser, with no gateway to deploy.
 ---

@@ -11,9 +11,10 @@
 Machina is an **enterprise Linux hypervisor management platform**. It is a
 unified control plane for **VMs, networks, storage, snapshots, and day-two
 operations** on bare-metal worker nodes, built directly on **libvirt / QEMU /
-KVM**. In the Zyvor stack it is the *physical hypervisor OS* — the layer that
-owns the metal — while Zeus OS (v9s) is the cloud / KubeVirt control plane on
-top.
+KVM**, with a native eBPF networking datapath (`machina-bpfd`) and a
+self-service **Fleet Cloud** layer on the same controller. In the Zyvor stack it
+owns the metal; Atlas (storage) and GuestKit (guest tooling) plug into it, and
+its native eBPF stack replaces separate Cilium/Tetragon-style agents.
 
 The problem it solves: libvirt operations are normally scattered across `virsh`
 scripts, consoles need separate gateways, and there is no fleet observability.
@@ -39,7 +40,7 @@ Machina is a **two-layer platform**:
   speaks directly to libvirt. Built with **Axum 0.8 / Tokio**. Serves on
   **:5092** (HTTPS by default).
 - **`machina-controller`** — the optional multi-host enterprise control plane.
-  It persists state (SQLite embedded by default, Postgres via SQLx supported),
+  It persists state in an embedded SQLite database (no external DB),
   distributes tasks over an in-memory or NATS bus, and runs the HA, DRS,
   reconcile and AI engines. Talks to hosts through `machina-agent` over gRPC/TLS.
   Serves on **:5093**.
@@ -199,13 +200,13 @@ Two shells share one daemon:
 - **Platform (controller-backed)** — `/platform/*` with its own shell:
   Mission Control, Virtual Machines, Hosts, Applications, Launchpad, Datacenter
   View, Disk Utility, Storage Tiers, Networks, Content, Templates, Cloud-Init
-  Studio, Migration Assistant, Blueprints, Zeus AI, Security Operations, Policy,
+  Studio, Migration Assistant, Blueprints, Zyra AI, Security Operations, Policy,
   Webhooks, Backup & Restore, Fleet Snapshots, Disaster Recovery, High
   Availability, Observability, Topology, GPU Command Center, Users & Groups,
   API Keys, Integrations, Marketplace, and more.
 
 The login page uses PAM (Linux host accounts) by default; LDAP and OIDC SSO can
-be enabled. See [Admin & Configuration → Authentication](admin-configuration.md#authentication--rbac).
+be enabled. See [Admin & Configuration → Authentication](admin-configuration.md#5-authentication--rbac).
 
 ---
 
@@ -262,9 +263,10 @@ sessions with TTLs and can be gated behind OIDC.
 The classic daemon has a lightweight peer-based fleet view
 (`[fleet]` config → `/fleet/*` API). For full multi-host operation the
 **controller** adds HA failover, DRS (distributed resource scheduling),
-desired-state reconciliation, a task bus (in-memory or NATS), and an AI engine
-(Zeus). See [../fleet-ha.md](../fleet-ha.md) and
-[../platform-runbooks.md](../platform-runbooks.md).
+desired-state reconciliation, a task bus (in-memory or NATS), and the AI
+engine behind Zyra AI. See [../controller-ha.md](../controller-ha.md),
+[../daemon-peer-fleet.md](../daemon-peer-fleet.md) and the
+[operator runbook](runbook.md).
 
 ### Integrations
 

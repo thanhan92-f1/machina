@@ -116,10 +116,10 @@ Cross-shell presentation pass after backend wiring (P6–P13).
 
 | Area | Pattern |
 |------|---------|
-| Initial fetch | [`PageSkeleton`](web/src/components/PageSkeleton.tsx) — never a blank content area |
-| Zero rows | [`PlatformEmptyState`](web/src/components/platform/PlatformEmptyState.tsx) (Platform) or [`EmptyState`](web/src/components/EmptyState.tsx) (Classic/Fleet Cloud/K8s) with at least one CTA |
-| API payloads | [`JsonInspector`](web/src/components/platform/JsonInspector.tsx) — summary/table first; raw JSON behind toggle |
-| Domain failures | [`formatUserError`](web/src/utils/apiError.ts) + hints ([`libvirtHints`](web/src/utils/libvirtHints.ts), [`hostErrorPresentation`](web/src/utils/hostErrorPresentation.ts), [`storageErrorPresentation`](web/src/utils/storageErrorPresentation.ts)) |
+| Initial fetch | [`PageSkeleton`](../web/src/components/PageSkeleton.tsx) — never a blank content area |
+| Zero rows | [`PlatformEmptyState`](../web/src/components/platform/PlatformEmptyState.tsx) (Platform) or [`EmptyState`](../web/src/components/EmptyState.tsx) (Classic/Fleet Cloud/K8s) with at least one CTA |
+| API payloads | [`JsonInspector`](../web/src/components/platform/JsonInspector.tsx) — summary/table first; raw JSON behind toggle |
+| Domain failures | [`formatUserError`](../web/src/utils/apiError.ts) + hints ([`libvirtHints`](../web/src/utils/libvirtHints.ts), [`hostErrorPresentation`](../web/src/utils/hostErrorPresentation.ts), [`storageErrorPresentation`](../web/src/utils/storageErrorPresentation.ts)) |
 
 **E2E (mocked):**
 
@@ -145,25 +145,25 @@ The Mac menubar, desktop tabs, sidebar / icon rail and dock described in earlier
 |-------|------|--------------|
 | **GlobalBar** (`components/nav/GlobalBar.tsx`) | The only navigation: Z mark + wordmark, Machine Finder link (attention dot), six product groups with Netra mega-panel flyouts, Search (⌘K), Control Center, New VM, **Machina** dropdown (About, Settings, Mission Control, tier switch, Add Host, Sign Out) | Always on authenticated routes |
 | **MobileNavSheet** (`components/nav/MobileNavSheet.tsx`) | The same groups as collapsible sections in a full-height sheet | ≤1024px, opened from the burger |
-| **ChapterBar** (`components/nav/ChapterBar.tsx`) | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](web/src/components/platform/DetailTabs.tsx) — see [`shouldShowContextBar`/`suppressContextBar`](../web/src/utils/platformNavRegistry.ts) |
-| **Page header** | [`PlatformPageChrome`](web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](web/src/components/PageLayout.tsx) | Every platform page |
+| **ChapterBar** (`components/nav/ChapterBar.tsx`) | Cross-links between hubs | **Normal:** hidden · **Power:** hub roots only · **Advanced:** unless route uses in-page [`DetailTabs`](../web/src/components/platform/DetailTabs.tsx) — see [`shouldShowContextBar`/`suppressContextBar`](../web/src/utils/platformNavRegistry.ts) |
+| **Page header** | [`PlatformPageChrome`](../web/src/components/platform/PlatformPageChrome.tsx) → [`PageLayout`](../web/src/components/PageLayout.tsx) | Every platform page |
 | **DetailTabs** | In-app sections with `?tab=` | Tab-heavy pages only |
-| **Fleet Cloud pills** | Section switch | Primary Overview/Instances/Images/Volumes/Create + **More** ([`FleetCloudSubNav`](web/src/components/FleetCloudSubNav.tsx)) |
+| **Fleet Cloud pills** | Section switch | Primary Overview/Instances/Images/Volumes/Create + **More** ([`FleetCloudSubNav`](../web/src/components/FleetCloudSubNav.tsx)) |
 
 **Overflow menus:** GlobalBar's product flyouts, ChapterBar's **More**, and Fleet Cloud **More** share
-[`PlatformFloatingMenu`](web/src/components/platform/mac/PlatformFloatingMenu.tsx) (portaled,
-`role="menu"`) and [`PlatformMenuItem`](web/src/components/platform/mac/PlatformMenuItem.tsx) row
+[`PlatformFloatingMenu`](../web/src/components/platform/mac/PlatformFloatingMenu.tsx) (portaled,
+`role="menu"`) and [`PlatformMenuItem`](../web/src/components/platform/mac/PlatformMenuItem.tsx) row
 tokens (`--surface-hover`, `--accent-soft`).
 
-**Browse lists:** [`TahoeListKit`](web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty`.
+**Browse lists:** [`TahoeListKit`](../web/src/components/platform/tahoe/TahoeListKit.tsx) — `TahoeToolbar`, `TahoeTableWrap`, `TahoeListEmpty`.
 
 **Zeus/Zyra status:** pending approvals and attention surface in GlobalBar's attention dot / product
-flyouts, not a separate island component; [`ZyraAmbientBar`](web/src/components/ai/ZyraAmbientBar.tsx)
+flyouts, not a separate island component; [`ZyraAmbientBar`](../web/src/components/ai/ZyraAmbientBar.tsx)
 is hidden on `/platform/*`.
 
-**Dashboard / Story:** [`MissionControlPage`](web/src/pages/platform/MissionControl/MissionControlPage.tsx) (`/platform`); classic [`Dashboard.tsx`](web/src/pages/Dashboard.tsx) and [`FleetCloudOverview`](web/src/pages/FleetCloudOverview.tsx) use `apple-story-stack` / `apple-metric-band` / destination rows (not card grids).
+**Dashboard / Story:** [`MissionControlPage`](../web/src/pages/platform/MissionControl/MissionControlPage.tsx) (`/platform`); classic [`Dashboard.tsx`](../web/src/pages/Dashboard.tsx) and [`FleetCloudOverview`](../web/src/pages/FleetCloudOverview.tsx) use `apple-story-stack` / `apple-metric-band` / destination rows (not card grids).
 
-**Glass tokens:** `--glass-panel` in `main.css` unifies [`MacGlassPanel`](web/src/components/platform/mac/PlatformMacUi.tsx), `.tahoe-glass-card`, and `.platform-mac-panel`. Work panels prefer `.tahoe-glass-card`.
+**Glass tokens:** `--glass-panel` in `main.css` unifies [`MacGlassPanel`](../web/src/components/platform/mac/PlatformMacUi.tsx), `.tahoe-glass-card`, and `.platform-mac-panel`. Work panels prefer `.tahoe-glass-card`.
 
 **Naming:** Product shell stays **Machina**; the AI assistant is always **Zyra** ([`aiBrand.ts`](../web/src/config/aiBrand.ts), [`AskZyraButton`](../web/src/components/ai/AskZyraButton.tsx)). Use "Ask Zyra" — not "Ask Machina" or "Copilot" — in user-facing AI entry points.
 
@@ -197,7 +197,7 @@ Product themes map to Zeus: **Tahoe Light** (`light`, **default**), **Classic Bl
 - Top bar (authenticated): the Zyvor mark links home; the **Machina** dropdown holds About, Settings, Mission Control, tier switch, Add Host and Sign Out
 - Dialogs restore focus to their trigger via [`useCaptureTrigger`](../web/src/hooks/useCaptureTrigger.ts) (used by `useFocusTrap`, `GlassModal`, `ConfirmDialog`); capture happens during render because a child's `autoFocus` moves focus before effects run
 - **URL behavior:** the login page renders outside `BrowserRouter` when unauthenticated. `/` and `/login` both work. After auth, [`AuthContext`](../web/src/contexts/AuthContext.tsx) replaces `/login` with `/`, and authenticated routes register `<Navigate from="/login" to="/" />` so bookmarked `/login` never shows 404
-- **Zeus AI shell:** [`AiProvider`](../web/src/contexts/AiContext.tsx) must stay **inside** `BrowserRouter` (uses `useLocation` / `useParams` for ambient route context)
+- **Zyra AI shell:** [`AiProvider`](../web/src/contexts/AiContext.tsx) must stay **inside** `BrowserRouter` (uses `useLocation` / `useParams` for ambient route context)
 - E2E: [`smoke.spec.ts`](../web/e2e/smoke.spec.ts) — `authenticated /login redirects to dashboard`
 - [`NotFound.tsx`](../web/src/pages/NotFound.tsx) — dashboard styling + Ctrl+K hint
 ## Manual QA (Phase 7)

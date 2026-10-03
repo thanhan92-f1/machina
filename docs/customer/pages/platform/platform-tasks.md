@@ -2,29 +2,31 @@
 
 ## Purpose
 
-Tasks — Machina Platform page at `/platform/tasks`.
+The controller's orchestration queue. Every long-running operation (VM create, migrate, backup, agent upgrade, …) is a task with an operation name, status, progress and message.
 
 ## When to use it
 
-- Operate **Tasks** when your job matches this page
-- Use Mission Control (`/platform`) for fleet-wide work; use Core routes for this host only
-- Confirm PAM/OIDC login and roles if actions are missing
+- Follow a long operation you started elsewhere
+- Find out why something failed
+- Check controller health
 
 ## How to get there
 
 - Route: `/platform/tasks`
 - Nav: **Platform → Tasks** (or spotlight / Finder search)
 
-## Operate from the console (UX)
+## What you can do
 
-1. Open the route against the Machina daemon (`https://<host>:5092`) and wait for live data.
-2. Filters / tabs: **Pending / Running / Completed / Failed**.
-3. Refresh.
-4. Open task detail.
-5. **Empty:** No tasks.
-6. **Success:** Task Completed.
+1. Filter by status: **All**, **Pending**, **Running**, **Completed**, **Failed**.
+2. **Filter by operation** (for example `vm.migrate`); **Clear filter** resets it.
+3. Open a row for **Task detail**: operation, target, progress, message, the controller that ran it, and created/updated times.
+4. **Controller health** shows the result of `GET /api/v1/health`.
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.
+## If something is wrong
+
+- **Task stuck in Pending:** the controller worker or (with NATS) the task bus is not processing; check controller health and logs.
+- **Failed:** the message carries the error and usually a remediation hint.
+- Scripts can poll the same data at `/api/v1/tasks/{task_id}`.
 
 ## Related pages
 

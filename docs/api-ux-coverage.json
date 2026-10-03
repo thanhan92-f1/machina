@@ -1,18 +1,19 @@
 {
-  "generated_at": "2026-08-24T20:26:13.836Z",
-  "controller_total": 550,
-  "daemon_total": 318,
+  "generated_at": "2026-10-03T19:43:23.603Z",
+  "controller_total": 548,
+  "daemon_total": 381,
   "websocket_total": 12,
-  "total_routes": 880,
+  "total_routes": 941,
   "counts": {
-    "page": 484,
-    "console": 349,
+    "page": 469,
+    "console": 414,
     "fleet-cloud": 27,
-    "documented": 20
+    "documented": 19,
+    "classic": 12
   },
   "by_source": {
-    "controller": 550,
-    "daemon": 318,
+    "controller": 548,
+    "daemon": 381,
     "websocket": 12
   },
   "unmapped_count": 0,
@@ -159,7 +160,7 @@
         "POST"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/ai/copilot/stream",
@@ -407,7 +408,7 @@
         "GET"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/ai/knowledge/diagnose",
@@ -559,7 +560,7 @@
         "GET"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/ai/prompts",
@@ -852,7 +853,7 @@
     {
       "path": "/api/v1/alert-rules/{id}",
       "methods": [
-        "DELETE"
+        "PATCH"
       ],
       "source": "controller",
       "surface": "page"
@@ -1167,7 +1168,7 @@
         "DELETE"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/backups/timeline",
@@ -1370,30 +1371,6 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/enterprise/mfa/compliance",
-      "methods": [
-        "GET"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
-      "path": "/api/v1/enterprise/mfa/policies",
-      "methods": [
-        "GET"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
-      "path": "/api/v1/enterprise/mfa/policies/{role}",
-      "methods": [
-        "POST"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
       "path": "/api/v1/enterprise/security/overview",
       "methods": [
         "GET"
@@ -1411,30 +1388,6 @@
     },
     {
       "path": "/api/v1/enterprise/tenants/policies/{project}",
-      "methods": [
-        "POST"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
-      "path": "/api/v1/enterprise/vault/providers",
-      "methods": [
-        "GET"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
-      "path": "/api/v1/enterprise/vault/providers/{id}/sync",
-      "methods": [
-        "POST"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
-      "path": "/api/v1/enterprise/vault/sync-all",
       "methods": [
         "POST"
       ],
@@ -1954,6 +1907,14 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/launchpad/catalog",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
       "path": "/api/v1/load-balancers",
       "methods": [
         "GET"
@@ -2397,7 +2358,7 @@
     {
       "path": "/api/v1/scheduled-jobs/{id}",
       "methods": [
-        "DELETE"
+        "PATCH"
       ],
       "source": "controller",
       "surface": "page"
@@ -2952,7 +2913,7 @@
         "GET"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/vms/{id}/delete",
@@ -3488,7 +3449,7 @@
         "POST"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/vms/{id}/viewer.vv",
@@ -3707,6 +3668,14 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/zeus-firewall/anomalies",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "page"
+    },
+    {
       "path": "/api/v1/zeus-firewall/approvals",
       "methods": [
         "GET"
@@ -3776,7 +3745,7 @@
         "GET"
       ],
       "source": "controller",
-      "surface": "console"
+      "surface": "page"
     },
     {
       "path": "/api/v1/zeus-firewall/connectivity",
@@ -4099,12 +4068,12 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-security/agents/{id}/bundle",
+      "path": "/api/v1/zeus-security/accounting",
       "methods": [
         "GET"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
       "path": "/api/v1/zeus-security/alerts/sync",
@@ -4155,6 +4124,14 @@
       "surface": "page"
     },
     {
+      "path": "/api/v1/zeus-security/enforcement/policies/{id}",
+      "methods": [
+        "PATCH"
+      ],
+      "source": "controller",
+      "surface": "page"
+    },
+    {
       "path": "/api/v1/zeus-security/enforcement/policies/{id}/apply",
       "methods": [
         "POST"
@@ -4163,7 +4140,7 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-security/enforcement/policies/{id}/tetragon",
+      "path": "/api/v1/zeus-security/enforcement/policies/{id}/document",
       "methods": [
         "GET"
       ],
@@ -4203,14 +4180,6 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-security/fleet/tetragon/install",
-      "methods": [
-        "POST"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
       "path": "/api/v1/zeus-security/fleet/threat",
       "methods": [
         "GET"
@@ -4233,6 +4202,22 @@
       ],
       "source": "controller",
       "surface": "page"
+    },
+    {
+      "path": "/api/v1/zeus-security/guard-events",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/zeus-security/hosts/{id}/bpf",
+      "methods": [
+        "POST"
+      ],
+      "source": "controller",
+      "surface": "console"
     },
     {
       "path": "/api/v1/zeus-security/hosts/{id}/connections",
@@ -4315,14 +4300,6 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-security/hosts/{id}/tetragon/install",
-      "methods": [
-        "POST"
-      ],
-      "source": "controller",
-      "surface": "page"
-    },
-    {
       "path": "/api/v1/zeus-security/hosts/{id}/timeline",
       "methods": [
         "GET"
@@ -4347,28 +4324,36 @@
       "surface": "console"
     },
     {
-      "path": "/api/v1/zeus-security/ingest/{id}",
-      "methods": [
-        "POST"
-      ],
-      "source": "controller",
-      "surface": "documented"
-    },
-    {
-      "path": "/api/v1/zeus-security/k8s/{cluster_id}/export-status",
+      "path": "/api/v1/zeus-security/icmp-errors",
       "methods": [
         "GET"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
     },
     {
-      "path": "/api/v1/zeus-security/k8s/{cluster_id}/tetragon/install",
+      "path": "/api/v1/zeus-security/l7",
       "methods": [
-        "POST"
+        "GET"
       ],
       "source": "controller",
-      "surface": "page"
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/zeus-security/native-dataplane",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/zeus-security/rtnl-events",
+      "methods": [
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
     },
     {
       "path": "/api/v1/zeus-security/search",
@@ -4395,9 +4380,17 @@
       "surface": "page"
     },
     {
-      "path": "/api/v1/zeus-security/enforcement/policies/{id}",
+      "path": "/api/v1/zeus-security/tls/fingerprints",
       "methods": [
-        "PATCH"
+        "GET"
+      ],
+      "source": "controller",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/zeus-security/vm-intel",
+      "methods": [
+        "GET"
       ],
       "source": "controller",
       "surface": "console"
@@ -4510,6 +4503,342 @@
       "path": "/api/v1/backups/schedule",
       "methods": [
         "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/accounting",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/accounting/reset",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/afxdp",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/anomalies",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/captures",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/captures/{id}",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/cni",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/cni/services",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/direct",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/dns",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/events",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/flows",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/guard",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/guard/events",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/health",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/icmp-errors",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/interfaces",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/interfaces/{name}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/l7",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/l7-sample",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/mode",
+      "methods": [
+        "PUT"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/node-iso",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/policies",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/policies/{id}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/processes",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/qos",
+      "methods": [
+        "PUT"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/quic-lb",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/rtnl",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/rtnl/events",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/scx",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/shield",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/status",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/stream",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/telemetry",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/tls",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/tls/fingerprints",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/tls/ssl",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/vm-edge",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/vm-intel",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/vm-intel/vms/{name}",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/vm-sandbox",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/bpf/vm-sandbox/{vm}",
+      "methods": [
+        "POST"
       ],
       "source": "daemon",
       "surface": "console"
@@ -5961,6 +6290,46 @@
       "surface": "console"
     },
     {
+      "path": "/api/v1/sprites/{id}/pause",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites/{id}/resize",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites/{id}/restore",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites/{id}/resume",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/sprites/{id}/snapshot",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
       "path": "/api/v1/sprites/golden-images",
       "methods": [
         "GET"
@@ -6201,6 +6570,118 @@
       ],
       "source": "daemon",
       "surface": "console"
+    },
+    {
+      "path": "/api/v1/vessel/containers",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/containers/{id}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/containers/{id}/logs",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vessel/containers/{id}/restart",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/containers/{id}/start",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/containers/{id}/stats",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vessel/containers/{id}/stop",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/pods",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/pods/{id}",
+      "methods": [
+        "DELETE"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/pods/{id}/start",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/pods/{id}/stop",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/reconnect",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/status",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "classic"
+    },
+    {
+      "path": "/api/v1/vessel/windows-dockur",
+      "methods": [
+        "POST"
+      ],
+      "source": "daemon",
+      "surface": "classic"
     },
     {
       "path": "/api/v1/vms",
@@ -6454,7 +6935,23 @@
       "surface": "console"
     },
     {
+      "path": "/api/v1/vms/{name}/guest-lsm",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
       "path": "/api/v1/vms/{name}/guest-observability",
+      "methods": [
+        "GET"
+      ],
+      "source": "daemon",
+      "surface": "console"
+    },
+    {
+      "path": "/api/v1/vms/{name}/guest-policy",
       "methods": [
         "GET"
       ],

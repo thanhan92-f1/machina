@@ -28,8 +28,10 @@ first real day isn't lost to access requests.
 
 ## Day 1 — Orient: what talks to what
 
-Three Rust binaries, one web app. The daemon is the original product — a single-host hypervisor
-manager. The controller is the newer, optional fleet layer on top of it.
+Three main Rust services (daemon, controller, agent), one web app, plus the root eBPF service
+`machina-bpfd` on each host (see [ebpf/README.md](ebpf/README.md)). The daemon is the original
+product — a single-host hypervisor manager. The controller is the newer, optional fleet layer on
+top of it.
 
 ```
 Web UI (React, :3000 dev / :5092 prod)
@@ -38,7 +40,7 @@ Web UI (React, :3000 dev / :5092 prod)
     │       │
     │       └─► libvirt / QEMU/KVM (same host)
     │
-    └─► machina-controller (:5093)  ← Fleet control plane, Postgres/SQLite, NATS
+    └─► machina-controller (:5093)  ← Fleet control plane, embedded SQLite, NATS
             │
             └─► machina-agent (:50051 gRPC)  ← per-host gRPC agent
                     │
@@ -121,8 +123,9 @@ commit → push → deploy → verify-in-browser loop once, for real.
   controller, or related crates — don't go chasing them.
 - Only commit when you're asked to, only push when you're asked to, and confirm before deploying
   to a shared or customer host. None of that is a suggestion.
-- "Launchpad" is an overloaded name in the web app — it can mean the generic macOS-style
-  app-icon-grid component used all over the desktop shell, or a specific integration feature.
+- "Launchpad" is an overloaded name in the web app — it can mean an app-grid hub component
+  (`ApplicationLaunchpad`, `PlatformZyraHubLaunchpad`, `/platform/launchpad`) or a specific
+  integration feature.
   Check what a component actually imports before assuming which one you're touching.
 
 ## Where to get help

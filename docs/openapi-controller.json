@@ -2656,8 +2656,8 @@
       }
     },
     "/api/v1/alert-rules/{id}": {
-      "delete": {
-        "summary": "DELETE /api/v1/alert-rules/{id}",
+      "patch": {
+        "summary": "PATCH /api/v1/alert-rules/{id}",
         "tags": [
           "alert-rules"
         ],
@@ -2681,7 +2681,17 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/api-keys": {
@@ -4446,83 +4456,6 @@
         }
       }
     },
-    "/api/v1/enterprise/mfa/compliance": {
-      "get": {
-        "summary": "GET /api/v1/enterprise/mfa/compliance",
-        "tags": [
-          "enterprise"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/v1/enterprise/mfa/policies": {
-      "get": {
-        "summary": "GET /api/v1/enterprise/mfa/policies",
-        "tags": [
-          "enterprise"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/v1/enterprise/mfa/policies/{role}": {
-      "post": {
-        "summary": "POST /api/v1/enterprise/mfa/policies/{role}",
-        "tags": [
-          "enterprise"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "parameters": [
-          {
-            "name": "role",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/enterprise/security/overview": {
       "get": {
         "summary": "GET /api/v1/enterprise/security/overview",
@@ -4588,93 +4521,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enterprise/vault/providers": {
-      "get": {
-        "summary": "GET /api/v1/enterprise/vault/providers",
-        "tags": [
-          "enterprise"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/v1/enterprise/vault/providers/{id}/sync": {
-      "post": {
-        "summary": "POST /api/v1/enterprise/vault/providers/{id}/sync",
-        "tags": [
-          "enterprise"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/enterprise/vault/sync-all": {
-      "post": {
-        "summary": "POST /api/v1/enterprise/vault/sync-all",
-        "tags": [
-          "enterprise"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -6353,6 +6199,25 @@
         }
       }
     },
+    "/api/v1/launchpad/catalog": {
+      "get": {
+        "summary": "GET /api/v1/launchpad/catalog",
+        "tags": [
+          "launchpad"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/v1/load-balancers": {
       "get": {
         "summary": "GET /api/v1/load-balancers",
@@ -7810,8 +7675,8 @@
       }
     },
     "/api/v1/scheduled-jobs/{id}": {
-      "delete": {
-        "summary": "DELETE /api/v1/scheduled-jobs/{id}",
+      "patch": {
+        "summary": "PATCH /api/v1/scheduled-jobs/{id}",
         "tags": [
           "scheduled-jobs"
         ],
@@ -7835,7 +7700,17 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/security-group-rules/{id}": {
@@ -13189,6 +13064,25 @@
         }
       }
     },
+    "/api/v1/zeus-firewall/anomalies": {
+      "get": {
+        "summary": "GET /api/v1/zeus-firewall/anomalies",
+        "tags": [
+          "zeus-firewall"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/v1/zeus-firewall/approvals": {
       "get": {
         "summary": "GET /api/v1/zeus-firewall/approvals",
@@ -14500,9 +14394,9 @@
         ]
       }
     },
-    "/api/v1/zeus-security/agents/{id}/bundle": {
+    "/api/v1/zeus-security/accounting": {
       "get": {
-        "summary": "GET /api/v1/zeus-security/agents/{id}/bundle",
+        "summary": "GET /api/v1/zeus-security/accounting",
         "tags": [
           "zeus-security"
         ],
@@ -14516,17 +14410,7 @@
           "500": {
             "description": "Server error"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v1/zeus-security/alerts/sync": {
@@ -14673,6 +14557,45 @@
         }
       }
     },
+    "/api/v1/zeus-security/enforcement/policies/{id}": {
+      "patch": {
+        "summary": "PATCH /api/v1/zeus-security/enforcement/policies/{id}",
+        "tags": [
+          "zeus-security"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/zeus-security/enforcement/policies/{id}/apply": {
       "post": {
         "summary": "POST /api/v1/zeus-security/enforcement/policies/{id}/apply",
@@ -14712,9 +14635,9 @@
         }
       }
     },
-    "/api/v1/zeus-security/enforcement/policies/{id}/tetragon": {
+    "/api/v1/zeus-security/enforcement/policies/{id}/document": {
       "get": {
-        "summary": "GET /api/v1/zeus-security/enforcement/policies/{id}/tetragon",
+        "summary": "GET /api/v1/zeus-security/enforcement/policies/{id}/document",
         "tags": [
           "zeus-security"
         ],
@@ -14827,35 +14750,6 @@
         }
       }
     },
-    "/api/v1/zeus-security/fleet/tetragon/install": {
-      "post": {
-        "summary": "POST /api/v1/zeus-security/fleet/tetragon/install",
-        "tags": [
-          "zeus-security"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/zeus-security/fleet/threat": {
       "get": {
         "summary": "GET /api/v1/zeus-security/fleet/threat",
@@ -14909,6 +14803,64 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/zeus-security/guard-events": {
+      "get": {
+        "summary": "GET /api/v1/zeus-security/guard-events",
+        "tags": [
+          "zeus-security"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/zeus-security/hosts/{id}/bpf": {
+      "post": {
+        "summary": "POST /api/v1/zeus-security/hosts/{id}/bpf",
+        "tags": [
+          "zeus-security"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
           }
         }
       }
@@ -15203,45 +15155,6 @@
         ]
       }
     },
-    "/api/v1/zeus-security/hosts/{id}/tetragon/install": {
-      "post": {
-        "summary": "POST /api/v1/zeus-security/hosts/{id}/tetragon/install",
-        "tags": [
-          "zeus-security"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "401": {
-            "description": "Authentication required"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/zeus-security/hosts/{id}/timeline": {
       "get": {
         "summary": "GET /api/v1/zeus-security/hosts/{id}/timeline",
@@ -15329,9 +15242,9 @@
         }
       }
     },
-    "/api/v1/zeus-security/ingest/{id}": {
-      "post": {
-        "summary": "POST /api/v1/zeus-security/ingest/{id}",
+    "/api/v1/zeus-security/icmp-errors": {
+      "get": {
+        "summary": "GET /api/v1/zeus-security/icmp-errors",
         "tags": [
           "zeus-security"
         ],
@@ -15344,33 +15257,13 @@
           },
           "500": {
             "description": "Server error"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
           }
         }
       }
     },
-    "/api/v1/zeus-security/k8s/{cluster_id}/export-status": {
+    "/api/v1/zeus-security/l7": {
       "get": {
-        "summary": "GET /api/v1/zeus-security/k8s/{cluster_id}/export-status",
+        "summary": "GET /api/v1/zeus-security/l7",
         "tags": [
           "zeus-security"
         ],
@@ -15384,22 +15277,12 @@
           "500": {
             "description": "Server error"
           }
-        },
-        "parameters": [
-          {
-            "name": "cluster_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
-    "/api/v1/zeus-security/k8s/{cluster_id}/tetragon/install": {
-      "post": {
-        "summary": "POST /api/v1/zeus-security/k8s/{cluster_id}/tetragon/install",
+    "/api/v1/zeus-security/native-dataplane": {
+      "get": {
+        "summary": "GET /api/v1/zeus-security/native-dataplane",
         "tags": [
           "zeus-security"
         ],
@@ -15413,25 +15296,24 @@
           "500": {
             "description": "Server error"
           }
-        },
-        "parameters": [
-          {
-            "name": "cluster_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
+        }
+      }
+    },
+    "/api/v1/zeus-security/rtnl-events": {
+      "get": {
+        "summary": "GET /api/v1/zeus-security/rtnl-events",
+        "tags": [
+          "zeus-security"
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }
@@ -15503,9 +15385,9 @@
         }
       }
     },
-    "/api/v1/zeus-security/enforcement/policies/{id}": {
-      "patch": {
-        "summary": "PATCH /api/v1/zeus-security/enforcement/policies/{id}",
+    "/api/v1/zeus-security/tls/fingerprints": {
+      "get": {
+        "summary": "GET /api/v1/zeus-security/tls/fingerprints",
         "tags": [
           "zeus-security"
         ],
@@ -15519,25 +15401,24 @@
           "500": {
             "description": "Server error"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
+        }
+      }
+    },
+    "/api/v1/zeus-security/vm-intel": {
+      "get": {
+        "summary": "GET /api/v1/zeus-security/vm-intel",
+        "tags": [
+          "zeus-security"
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }

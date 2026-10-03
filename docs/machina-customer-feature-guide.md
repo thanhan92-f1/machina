@@ -4,33 +4,35 @@
 
 Machina is a unified control plane for virtual machines running on libvirt / QEMU / KVM. It folds scattered virsh scripting, separate console gateways, and missing fleet observability into a single Rust daemon with a web dashboard, REST API, and the machinactl CLI. It is built for infrastructure teams and NOC operators who run VMs on their own metal and want cloud-grade lifecycle, consoles, security, and automation without vendor hypervisor lock-in.
 
-**70+** web console screens · **3** ways to drive it: Web, REST, CLI · **11** workspace components, one shared core
+**100+** web console pages · **3** ways to drive it: Web, REST, CLI · **14** workspace crates, one shared core · built-in eBPF datapath
+
+_Version: October 2026 (updated 2026-10-03)._
 
 This is the customer-facing onboarding guide — how to access the product, your first workflows, and how to use every feature. A print-ready PDF of the same content sits alongside this file.
 
 ## Contents
 
 0. [Getting started — access & first workflows](#getting-started)
-1. [VM Lifecycle & Compute](#1-vm-lifecycle-compute)
-2. [Storage & Disk Management](#2-storage-disk-management)
+1. [VM Lifecycle & Compute](#1-vm-lifecycle--compute)
+2. [Storage & Disk Management](#2-storage--disk-management)
 3. [Networking](#3-networking)
-4. [Consoles & Remote Access](#4-consoles-remote-access)
-5. [Snapshots, Backup & Recovery](#5-snapshots,-backup-recovery)
-6. [Fleet, HA & Multi-Host Control Plane](#6-fleet,-ha-multi-host-control-plane)
-7. [Observability & Operations](#7-observability-operations)
-8. [Security, Compliance & SOC](#8-security,-compliance-soc)
-9. [AI & Automation (Zeus AI)](#9-ai-automation-(zeus-ai))
-10. [Applications, Templates & Provisioning](#10-applications,-templates-provisioning)
-11. [Integrations & Migration](#11-integrations-migration)
-12. [Interfaces & Administration](#12-interfaces-administration)
+4. [Consoles & Remote Access](#4-consoles--remote-access)
+5. [Snapshots, Backup & Recovery](#5-snapshots-backup--recovery)
+6. [Fleet, HA & Multi-Host Control Plane](#6-fleet-ha--multi-host-control-plane)
+7. [Observability & Operations](#7-observability--operations)
+8. [Security, Compliance & SOC](#8-security-compliance--soc)
+9. [AI & Automation (Zyra AI)](#9-ai--automation-zyra-ai)
+10. [Applications, Templates & Provisioning](#10-applications-templates--provisioning)
+11. [Integrations & Migration](#11-integrations--migration)
+12. [Interfaces & Administration](#12-interfaces--administration)
 
 ## Getting started
 
 **How to access it**
 
-- **Web:** React dashboard at `https://:5092` (self-signed TLS by default) — a classic single-host shell plus a multi-host platform shell under `/platform/*`.
+- **Web:** React dashboard at `https://<host>:5092` (self-signed TLS by default) — a classic single-host shell plus a multi-host platform shell under `/platform/*`.
 - **CLI:** `machinactl` operates and deploys a host (`machinactl deploy`, `backup`, `health`, `doctor`, `audit verify`); `machina-daemon` is the server process.
-- **API:** REST at base `/api/v1` with WebSocket streams under `/ws/v1`; the live OpenAPI contract is served at `/api-docs` (e.g. `curl -sk https://:5092/api/v1/health`).
+- **API:** REST at base `/api/v1` with WebSocket streams under `/ws/v1`; the live OpenAPI contract is served at `/api-docs` (e.g. `curl -sk https://<host>:5092/api/v1/health`).
 - **Login:** Sign in on the web UI with a Linux host account via PAM — there is no separate Machina password; optional LDAP or OIDC SSO can front it.
 - **Needs:** A Linux host with libvirt / QEMU / KVM and `/dev/kvm` (Machina builds and runs on Linux only).
 
@@ -40,17 +42,21 @@ This is the customer-facing onboarding guide — how to access the product, your
   1. Run `./machinactl doctor` to confirm `/dev/kvm`, systemd, libvirtd, and tooling are present.
   1. Run `./machinactl deploy` (deps → build → install → start → verify).
   1. Confirm the API is up: `curl -sk https://127.0.0.1:5092/api/v1/health`.
-  1. Browse to `https://:5092` and sign in with a Linux host account (PAM).
+  1. Browse to `https://<host>:5092` and sign in with a Linux host account (PAM).
 - **Create and boot your first VM**
   1. Web → VMs → New, or Web → Platform → Create (virt-install or domain XML).
   1. Pick an image/template, CPU, memory, disk, and network; optionally attach cloud-init.
   1. Submit to create — `POST /api/v1/vms` under the hood.
-  1. Start it from Web → VMs →  → Start (`POST /api/v1/vms/{name}/start`).
+  1. Start it from Web → VMs → *VM* → Start (`POST /api/v1/vms/{name}/start`).
 - **Open a browser console to a VM**
   1. Web → VMs → select the VM.
   1. Choose a console: VNC or SPICE for graphical, Serial/Terminal for text.
   1. The daemon proxies the session over an authenticated WebSocket — no client install.
   1. For Windows guests use the built-in RDP tab; download a `.vv` file to hand off to virt-viewer if preferred.
+- **Lock down access**
+  1. Populate `/var/lib/machina/roles.json` (an empty file makes every user admin) or map OIDC groups to roles.
+  1. Set a strong `MACHINA_JWT_SECRET` and choose PAM, LDAP or OIDC.
+  1. Replace the self-signed certificate with a CA-signed one.
 - **Protect VMs with scheduled backups**
   1. Enable the daily timer: `./machinactl backup enable`.
   1. Point backups off-box (backup directory or NFS target) and set retention.
@@ -78,19 +84,19 @@ _Full create-to-delete control over every virtual machine, with live resource ch
 - **Golden image builder** — Build reusable base images asynchronously as background jobs using virt-builder or mkosi. — _Standardized, ready-to-clone images without hand-crafting each VM._
   - **How:** Web → Platform → Content → build image (virt-builder / mkosi) as a background job.
 - **Disk & NIC hot-plug** — Attach, detach, and resize disks and network cards on a running VM without a reboot. — _Adjust capacity live, avoiding downtime for storage and network changes._
-  - **How:** Web → VMs →  → Hardware → attach/detach; API `POST /api/v1/vms/{name}/disk/attach`, `.../nic/attach`, `.../disk/resize/{target}`.
+  - **How:** Web → VMs → *VM* → Hardware → attach/detach; API `POST /api/v1/vms/{name}/disk/attach`, `.../nic/attach`, `.../disk/resize/{target}`.
 - **Live CPU & memory resize** — Change vCPU count and RAM allocation on running guests, with CPU pinning and scheduler tuning. — _Right-size workloads on the fly as demand shifts._
-  - **How:** Web → VMs →  → resize; API `POST /api/v1/vms/{name}/vcpus/{count}` and `.../memory/{mb}`.
+  - **How:** Web → VMs → *VM* → resize; API `POST /api/v1/vms/{name}/vcpus/{count}` and `.../memory/{mb}`.
 - **CPU & memory tuning** — Fine-grained cputune, memtune, per-vCPU pinning, and scheduler policy controls. — _Squeeze predictable performance out of shared hosts._
-  - **How:** Web → VMs →  → CPU/Memory tuning (cputune / memtune / pinning).
+  - **How:** Web → VMs → *VM* → CPU/Memory tuning (cputune / memtune / pinning).
 - **Live migration** — Move running VMs between hosts with tunable max bandwidth and max downtime. — _Evacuate hosts for maintenance with no service interruption._
-  - **How:** Web → VMs →  → Migrate, or Web → Platform → Migration; API `POST /api/v1/vms/{name}/migrate`.
+  - **How:** Web → VMs → *VM* → Migrate, or Web → Platform → Migration; API `POST /api/v1/vms/{name}/migrate`.
 - **Online block jobs** — Run block commit and pull operations, and abort jobs, on live disks. — _Consolidate or reshape disk chains without stopping the guest._
-  - **How:** Web → VMs →  → Disks → block commit / pull / abort.
+  - **How:** Web → VMs → *VM* → Disks → block commit / pull / abort.
 - **Guest agent by default** — Optionally inject the GuestKit QEMU guest agent into every new VM for cloud-init seeding and offline changes. — _In-guest coordination and reliable graceful shutdowns out of the box._
   - **How:** Web → Settings → enable GuestKit guest-agent injection for new VMs.
 - **Autostart & domain XML access** — Toggle per-VM autostart and read the raw libvirt domain XML for any machine. — _Bring VMs back after reboots and inspect exactly what libvirt runs._
-  - **How:** Web → VMs →  → toggle Autostart / view XML; API `POST /api/v1/vms/{name}/autostart/{enabled}`, `GET .../xml`.
+  - **How:** Web → VMs → *VM* → toggle Autostart / view XML; API `POST /api/v1/vms/{name}/autostart/{enabled}`, `GET .../xml`.
 
 ## 2. Storage & Disk Management
 
@@ -125,25 +131,31 @@ _Virtual networks, host interfaces, filters, and a visual canvas for wiring the 
   - **How:** Web → Platform → Network Canvas → design segments/overlays.
 - **Network overlay & sync** — Build overlay networks spanning hosts and keep network state synchronized across the fleet. — _Consistent connectivity for VMs wherever they run._
   - **How:** Web → Platform → Networks → overlay / sync across hosts.
+- **Native eBPF datapath** — `machina-bpfd` on every host loads Machina's own eBPF programs for per-VM flows, DNS and L7 visibility, byte accounting, packet capture and QoS, with no Cilium, Tetragon or other agent to install. — _Deep network visibility on every hypervisor out of the box._
+  - **How:** Web → Security Center → Native eBPF (22 tabs); API `/api/v1/bpf/*`; fleet view `/api/v1/zeus-security/native-dataplane`.
+- **Load balancing & DDoS shield** — XDP service load balancing (weighted, health-checked), QUIC connection-ID load balancing, and a per-source rate-limiting shield on the uplink. Fleet Cloud load balancers need no appliance VM. — _Front services and absorb floods at line rate on the host itself._
+  - **How:** Web → Native eBPF → Service LB / QUIC LB / Shield; Fleet Cloud → Load Balancers.
+- **Kubernetes CNI** — `machina-cni` gives Kubernetes pods eBPF routing, NetworkPolicy (and compiled Cilium policies) and socket-level service load balancing. — _One datapath for VMs and containers._
+  - **How:** Install `machina-cni` on the node (see docs/ebpf/cni.md).
 
 ## 4. Consoles & Remote Access
 
 _Built-in VNC, SPICE, serial, SSH, and RDP proxies mean no separate console gateway._
 
 - **noVNC graphical console** — Browser-based VNC console served directly by the daemon over WebSocket. — _Reach any VM's screen from a browser, no client install._
-  - **How:** Web → VMs →  → Console → VNC (streamed over `/ws/v1`).
+  - **How:** Web → VMs → *VM* → Console → VNC (streamed over `/ws/v1`).
 - **SPICE HTML5 console** — SPICE remote desktop rendered in the browser via a built-in HTML5 client. — _Rich desktop access with clipboard and multi-monitor support._
-  - **How:** Web → VMs →  → Console → SPICE.
+  - **How:** Web → VMs → *VM* → Console → SPICE.
 - **Serial & terminal streams** — Serial console and PTY terminal sessions streamed over authenticated WebSockets. — _Debug boot issues and drop into a shell from the UI._
-  - **How:** Web → VMs →  → Console → Serial / Terminal.
+  - **How:** Web → VMs → *VM* → Console → Serial / Terminal.
 - **SSH terminal proxy** — In-browser SSH terminal to VMs and ad-hoc hosts, with session TTLs. — _One authenticated path to shells across the fleet._
   - **How:** Web → SSH (VM) or Web → Host SSH (ad-hoc host).
 - **Native RDP for Windows guests** — A Windows guest is auto-detected, and RDP is exposed via a hypervisor NAT port-forward to the guest's port 3389 once the agent confirms Remote Desktop is actually listening. — _Windows desktops without a bolted-on gateway._
-  - **How:** Web → VMs →  → Console → download the generated `.rdp` file and open it with Microsoft Remote Desktop (macOS) or `mstsc` (Windows).
+  - **How:** Web → VMs → *VM* → Console → download the generated `.rdp` file and open it with Microsoft Remote Desktop (macOS) or `mstsc` (Windows).
 - **ConsoleHub session broker** — Brokers console sessions with time-to-live limits, a cinema/wall multi-console view, and optional OIDC gating. — _Governed, auditable console access with a NOC-style live wall._
   - **How:** Web → ConsoleHub (classic) or Web → Platform → ConsoleHub → cinema/wall view.
 - **Virt-viewer handoff** — Download a .vv connection file to open a VM in a native virt-viewer client. — _Fall back to a desktop console client when preferred._
-  - **How:** Web → VMs →  → download `.vv` and open in virt-viewer.
+  - **How:** Web → VMs → *VM* → download `.vv` and open in virt-viewer.
 
 ## 5. Snapshots, Backup & Recovery
 
@@ -166,10 +178,10 @@ _An optional enterprise controller adds HA failover, resource scheduling, and de
 
 - **Fleet view** — Lightweight peer-based fleet status, metrics, alerts, and VM inventory in the daemon. — _See more than one host without the full controller._
   - **How:** Web → Fleet → peer status / metrics / inventory.
-- **Multi-host controller** — Optional control plane persisting state (SQLite or Postgres) and driving hosts through per-host gRPC agents. — _Scale from one box to a managed estate._
+- **Multi-host controller** — Optional control plane persisting state in embedded SQLite and driving hosts through per-host gRPC agents. — _Scale from one box to a managed estate._
   - **How:** Deploy with `INSTALL_PLATFORM=1` (or deploy-remote `--platform`), then Web → Platform → Hosts.
 - **High availability & fencing** — HA engine with health watchdog and fencing that restarts VMs elsewhere when a host fails. — _Workloads survive host failures automatically._
-  - **How:** Web → Platform → HA → configure fencing / anti-affinity (see docs/fleet-ha.md).
+  - **How:** Web → Platform → HA → configure fencing / anti-affinity (see docs/controller-ha.md).
 - **DRS & rebalancing** — Distributed resource scheduling with placement, heatmaps, and fleet rebalancing. — _Keeps load spread evenly without manual juggling._
   - **How:** Web → Platform → Placement → DRS recommendations / auto-balancing.
 - **Smart placement** — Placement engine picks the best host for new or migrating VMs from live capacity. — _New VMs land where they fit, not where you guessed._
@@ -190,7 +202,7 @@ _Prometheus metrics, history, OTLP export, alerts, events, and scheduled operati
 - **Live & historical metrics** — Per-VM and host metrics with a metrics-history ring buffer persisted to disk. — _Trend performance over time, not just this instant._
   - **How:** Web → Dashboard / Platform → Observability; API `/api/v1/metrics`.
 - **Prometheus scrape** — A native /prometheus endpoint plus remote-write ingest for existing monitoring stacks. — _Drop Machina into your Grafana dashboards immediately._
-  - **How:** Point your scraper at `https://:5092/prometheus`.
+  - **How:** Point your scraper at `https://<host>:5092/prometheus`.
 - **OTLP export** — Export metrics, logs, and traces over OTLP/HTTP to Grafana Alloy or an OpenTelemetry Collector. — _Feed one open pipeline instead of a bespoke agent._
   - **How:** Web → Settings → configure OTLP/HTTP endpoint (see docs/guides/observability.md).
 - **Alerts & webhooks** — Alert rules with an evaluator, notification channels, and outbound webhooks. — _Get told about problems where your team already looks._
@@ -222,6 +234,10 @@ _A firewall control plane, network intelligence, SIEM/SOC tooling, and complianc
   - **How:** Web → Platform → Security Center → Compliance → evaluate / export PDF.
 - **Runtime enforcement & policy** — Policy engine plus runtime enforcement of security guardrails on running workloads. — _Rules that actually stop bad behavior, not just flag it._
   - **How:** Web → Platform → Policy and Web → Platform → Runtime Enforcement.
+- **eBPF enforcement with a safety lease** — Deny/allow policies, VM edge anti-spoofing, a QEMU sandbox, a BPF-LSM guard around QEMU and a node-isolation kill switch. Everything starts in observe/audit; enforce runs only under a lease that the kernel datapath itself expires, and nothing is persisted. — _Block real traffic without risking a permanent lockout._
+  - **How:** Web → Native eBPF → Overview (mode + lease), VM Edge, VMM guard, Node Isolation.
+- **Guest per-container policy** — Per-container network allow rules and BPF-LSM restrictions (exec allowlist, W+X, devices, writable paths) enforced inside the guest by GuestKit, relayed through the QEMU guest agent. — _Least privilege for workloads inside your VMs, with no network path into the guest._
+  - **How:** Web → VMs → *VM* → Guest policy tab; API `/api/v1/vms/{name}/guest-policy` and `/guest-lsm`.
 - **Signed audit log** — Tamper-evident audit log with optional line signing, syslog, and webhook shipping, verifiable via CLI. — _Prove who did what, and that the record wasn't altered._
   - **How:** Web → Audit Log to review; verify integrity with CLI `machinactl audit verify`.
 - **Linux audit integration** — Ingests Linux audit and SELinux AVC events with a health threshold. — _Host-level security signals folded into fleet health._
@@ -229,7 +245,7 @@ _A firewall control plane, network intelligence, SIEM/SOC tooling, and complianc
 - **Encrypted secrets & keys** — Secrets management plus AES-256-GCM encryption of stored provider keys with a master key. — _Credentials stay protected at rest, not in plaintext._
   - **How:** Web → Secrets → store/manage secrets (provider keys encrypted with a master key).
 
-## 9. AI & Automation (Zeus AI)
+## 9. AI & Automation (Zyra AI)
 
 _A controller-side AI engine adds natural-language ops, autonomous remediation, cost intelligence, and predictive SRE._
 
@@ -292,20 +308,20 @@ _Move VMs to and from KubeVirt, and connect Machina to the wider Zyvor stack._
 - **Vessel (Podman / Docker)** — List, create, and lifecycle local containers on the hypervisor host; Podman pod groups on `/containers/pods`. Live stats over WebSocket. — _Run sidecars and lab containers next to libvirt VMs without a separate tool._
   - **How:** Web → Infrastructure → Containers; API `/api/v1/vessel/*`. Enable or point `[vessel].socket` in daemon config (on by default).
 - **VMware & Proxmox awareness** — Controller APIs to interoperate with VMware and Proxmox sources. — _Onboard estates from other hypervisors._
-  - **How:** Web → Platform → Integrations → add VMware / Proxmox source.
-- **Zyvor platform stack** — Fits with hypercluster, Zeus OS, forge, Atlas, and more across the Zyvor ecosystem. — _Machina is the metal layer of a full private-cloud stack._
+  - **How:** Web → Platform → Settings → Apps & Integrations → add VMware / Proxmox source.
+- **Zyvor platform stack** — Plugs into Atlas (storage) and GuestKit (guest tooling); network enforcement and visibility are built in through native eBPF. — _Machina is the metal layer of a full private-cloud stack._
   - **How:** CLI `machinactl integrations` shows KubeVirt/k8s/automation status; wire endpoints per integration.
 
 ## 12. Interfaces & Administration
 
 _Three ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-tenancy, and one-command deploys._
 
-- **Web dashboard** — React 19 Liquid Glass UI with classic single-host and platform multi-host shells covering 70+ screens. — _A polished, complete console for the whole platform._
-  - **How:** Browse `https://:5092` (classic shell; multi-host under `/platform/*`).
+- **Web dashboard** — React 19 Liquid Glass UI with classic single-host and platform multi-host shells covering 100+ pages. — _A polished, complete console for the whole platform._
+  - **How:** Browse `https://<host>:5092` (classic shell; multi-host under `/platform/*`).
 - **REST + WebSocket API** — Complete /api/v1 REST surface and /ws/v1 streams with a published OpenAPI contract at /api-docs. — _Automate anything and generate typed clients._
   - **How:** Call base `/api/v1`; stream `/ws/v1`; browse the contract at `/api-docs`.
 - **machinactl CLI** — One CLI for deps, build, install, deploy, upgrade, backup, verify, health, doctor, audit, and integrations status. — _Stand up and operate a host with single commands._
-  - **How:** Run `machinactl ` (e.g. `machinactl deploy`, `machinactl health`).
+  - **How:** Run `machinactl <command>` (e.g. `machinactl deploy`, `machinactl health`).
 - **PAM / LDAP / OIDC auth** — Log in with Linux host accounts via PAM, with optional LDAP and OIDC SSO and Active Directory integration. — _Use the identity system you already run._
   - **How:** Web → Login signs in via PAM by default; enable LDAP/OIDC in the daemon config (see docs/ldap-auth.md).
 - **RBAC roles** — Admin, Operator, and ReadOnly roles mapped from a roles file, OIDC groups, or scoped API tokens. — _Least-privilege access for every operator._
@@ -315,18 +331,9 @@ _Three ways to operate the platform, backed by PAM/LDAP/OIDC auth, RBAC, multi-t
 - **Projects & multi-tenancy** — Organize resources into projects with users, groups, and per-project scoping. — _Cleanly separate teams and tenants on shared infrastructure._
   - **How:** Web → Platform → Projects → create project, assign users/groups.
 - **Flexible deployment** — Single-host machinactl, remote rsync deploy, multi-host controller/agent, or a daemon-only Helm chart. — _Install the way that fits your environment._
-  - **How:** CLI `machinactl deploy` (single host) or `scripts/deploy-remote.sh HOST USER` (remote/platform).
+  - **How:** CLI `machinactl deploy` (single host) or `scripts/deploy-remote.sh USER@HOST` (add `--platform` for the controller and agent).
 - **Support & upgrade tooling** — In-console support bundle, upgrade flows, and self-updating deploys with health verification. — _Maintain and troubleshoot the platform from inside it._
   - **How:** Web → Platform → Support (bundle) / Upgrade; CLI `machinactl upgrade`.
-
-## Getting started
-
-1. **Prepare a Linux KVM host** — Run ./machinactl doctor to confirm /dev/kvm, systemd, libvirtd, and required tools are present. Build only on Linux.
-2. **Deploy in one command** — Run ./machinactl deploy to install dependencies, build a release, install, start the daemon, and smoke-test the API.
-3. **Open the console** — Browse to https://<host>:5092 (self-signed TLS by default) and sign in with a Linux host account via PAM.
-4. **Lock down access** — Populate /var/lib/machina/roles.json (an empty file makes everyone admin), set a strong MACHINA_JWT_SECRET, and choose PAM, LDAP, or OIDC.
-5. **Turn on protection & telemetry** — Enable scheduled backups with ./machinactl backup enable, point them off-box, and wire Prometheus scrape or OTLP export.
-6. **Scale to a fleet (optional)** — Install the controller and agents with INSTALL_PLATFORM=1 or deploy-remote --platform to unlock HA, DRS, and the platform UI.
 
 > **Good to know:** Machina builds and runs on Linux only (it depends on libvirt/QEMU/KVM headers and /dev/kvm) — the workspace does not compile on macOS, though the web UI alone does. HTTPS ships with a self-signed certificate that should be replaced with a CA-signed one for production. Security defaults matter: an empty roles.json grants every user admin, and the dev-only auth-bypass flags must never be set in production. The multi-host controller and agent tier is systemd-only (the Helm chart deploys just the daemon), and SAML is config-only today. Integrations such as KubeVirt and Atlas are disabled by default and require their own endpoints or credentials; Fleet Cloud is native and always on.
 

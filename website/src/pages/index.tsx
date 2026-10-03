@@ -35,7 +35,7 @@ function Hero() {
           </p>
           <p className={styles.heroLede}>
             The private cloud you can install before lunch. VMs, browser consoles, fleet HA/DRS, a self-service
-            cloud and AI operations, from three Rust binaries on plain Linux + KVM.
+            cloud, a native eBPF datapath and AI operations, from a handful of Rust services on plain Linux + KVM.
           </p>
           <div className={styles.heroCtas}>
             <Link className="mx-btn mx-btn--primary" to="/docs/getting-started/quickstart">
@@ -61,7 +61,7 @@ function Hero() {
 
 function Stats() {
   const stats = [
-    {value: 3, suffix: '', label: 'Rust binaries'},
+    {value: 4, suffix: '', label: 'core Rust services'},
     {value: 900, suffix: '+', label: 'REST routes'},
     {value: 1, suffix: '', label: 'command to install'},
     {value: 4, suffix: '', label: 'console protocols'},
@@ -116,7 +116,7 @@ function Features() {
         <Reveal className="mx-center text--center">
           <div className="mx-eyebrow">The platform</div>
           <Heading as="h2">
-            Run it. Reach it. Scale it. <span className="mx-gradient--light">Let AI watch it.</span>
+            Run it. Reach it. Scale it. Protect it. <span className="mx-gradient--light">Let AI watch it.</span>
           </Heading>
         </Reveal>
         {FEATURES.map((f, i) => (
@@ -161,7 +161,7 @@ function VsOpenStack() {
             <span className="mx-gradient">A fraction of the moving parts.</span>
           </Heading>
           <p className={clsx('mx-lede mx-center', styles.darkLede)}>
-            Three binaries and embedded SQLite instead of nine-plus services, a Galera cluster and a message bus. Choose
+            Four Rust services and embedded SQLite instead of nine-plus services, a Galera cluster and a message bus. Choose
             OpenStack for thousands of tenants; choose Machina for the fleets you own.
           </p>
         </Reveal>
@@ -183,7 +183,8 @@ function Architecture() {
   const parts = [
     {name: 'machina-daemon', port: ':5092', body: 'Single-host REST + WebSocket API, auth, RBAC and console proxies. Serves the web UI.'},
     {name: 'machina-controller', port: ':5093', body: 'Fleet, HA, DRS, Fleet Cloud and Zyra AI. Embedded SQLite, optional NATS.'},
-    {name: 'machina-agent', port: ':50051', body: 'gRPC over TLS on every hypervisor. Executes libvirt operations for the fleet.'},
+    {name: 'machina-agent', port: ':50051', body: 'gRPC over TLS on every hypervisor. Executes libvirt and eBPF operations for the fleet.'},
+    {name: 'machina-bpfd', port: 'unix socket', body: 'Root eBPF service on every host: load balancing, CNI datapath, shield, isolation and telemetry.'},
   ];
   return (
     <section className="mx-section">
@@ -191,7 +192,7 @@ function Architecture() {
         <Reveal className="mx-center text--center">
           <div className="mx-eyebrow">How it fits together</div>
           <Heading as="h2">
-            Three binaries. <span className="mx-gradient--light">One private cloud.</span>
+            Four services. <span className="mx-gradient--light">One private cloud.</span>
           </Heading>
         </Reveal>
         <Reveal>
@@ -303,7 +304,7 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title="Machina — private cloud on KVM"
-      description="VMs, browser consoles, fleet HA/DRS, Fleet Cloud and Zyra AI operations from three Rust binaries. An OpenStack alternative you can install in one command.">
+      description="VMs, browser consoles, fleet HA/DRS, Fleet Cloud, a native eBPF datapath and Zyra AI operations from a handful of Rust services. An OpenStack alternative you can install in one command.">
       <Hero />
       <main>
         <Stats />

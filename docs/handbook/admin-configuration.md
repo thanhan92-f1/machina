@@ -79,6 +79,7 @@ daemon + TUI + `web/dist` into `./dist/` for client handoff.
 |----------|------|
 | Daemon binary | `/usr/local/bin/machina-daemon` |
 | Controller / agent (if `INSTALL_PLATFORM=1`) | `/usr/local/bin/machina-controller`, `/usr/local/bin/machina-agent` |
+| eBPF (when built) | `/usr/local/bin/machina-bpfd`, `/usr/local/bin/machina-cni` |
 | Config | `/etc/machina/config.toml` |
 | Daemon env file | `/etc/default/machina-daemon` |
 | Platform env file | `/etc/default/machina-platform` |
@@ -95,18 +96,15 @@ daemon + TUI + `web/dist` into `./dist/` for client handoff.
 | `machina-controller.service` | `/usr/local/bin/machina-controller --host 0.0.0.0 --port 5093` | reads `-/etc/default/machina-platform` |
 | `machina-agent.service` | `/usr/local/bin/machina-agent --listen 127.0.0.1:50051 --console-listen 127.0.0.1:50052` | `Environment=MACHINA_LIBVIRT_URI=qemu:///system`, starts libvirtd first |
 | `machina-backup.service` / `.timer` | `backup.sh --config /etc/machina/backup.conf` | oneshot, daily 2 AM |
+| `machina-bpfd.service` | `/usr/local/bin/machina-bpfd` | `User=root`, ordered before agent and daemon, reads `-/etc/default/machina-bpfd`; stopping detaches every program (fails open) |
+| `machina-cni.service` | `/usr/local/bin/machina-cni agent` | Kubernetes nodes only |
 
 ---
 
 ## 2. Ports
 
-| Port | Component | Bind default | How to change |
-|------|-----------|--------------|---------------|
-| **5092** | `machina-daemon` (HTTPS) | `0.0.0.0:5092` | `[daemon] host/port`, `--host/--port`, Helm `daemon.port` |
-| **5093** | `machina-controller` | `0.0.0.0:5093` | `machina-controller --host --port` |
-| **50051** | `machina-agent` gRPC | `127.0.0.1:50051` | `machina-agent --listen` |
-| **50052** | `machina-agent` console | `127.0.0.1:50052` | `machina-agent --console-listen` |
-| **3000** | Vite dev server | dev only | `web/vite.config.ts` |
+The port and socket table (daemon 5092, controller 5093, agent 50051/50052, NATS 4222, the `machina-bpfd` socket,
+Vite 3000) lives in one place: [README.md#ports](README.md#ports).
 
 ---
 
@@ -264,6 +262,9 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
 | `MACHINA_DEFAULT_SSH_USER` | Default SSH user for terminal targets | `ubuntu` |
 | `MACHINA_PLATFORM_CONTROLLER_URL` | Upstream controller URL for the reverse proxy | — |
 | `MACHINA_PLATFORM_AUTH` | Credentials for the controller proxy | — |
+| `MACHINA_BPFD_SOCK` | `machina-bpfd` socket for `/api/v1/bpf/*` | `/run/machina-bpf/bpfd.sock` |
+| `MACHINA_BACKUP_DIR` | Backup directory override | `[backup] backup_dir` |
+| `MACHINA_DOCKUR_DISK_SIZE`, `_RAM_SIZE`, `_CPU_CORES`, `_GOLDEN` | Windows dockur golden build overrides | — |
 | `MACHINA_H2KVM_NO_SUDO` | Run hyper2kvm without sudo | unset |
 | `CONSOLEHUB_REQUIRE_OIDC` | Gate ConsoleHub behind OIDC | unset |
 | `CONSOLEHUB_SESSION_TTL_SECS` | ConsoleHub session TTL override | — |
@@ -273,17 +274,61 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
 ### Controller (`machina-controller`)
 | Variable | Effect | Default |
 |----------|--------|---------|
-| `DATABASE_URL` | State store | `sqlite:///var/lib/machina/controller.db` (embedded; Postgres via SQLx also supported) |
+| `DATABASE_URL` | State store | `sqlite:///var/lib/machina/controller.db` (embedded SQLite; no external database) |
 | `NATS_URL` | Enables NATS task fan-out | `nats://127.0.0.1:4222` (optional) |
 | `MACHINA_AGENT_ADDR` | gRPC agent address | `http://127.0.0.1:50051` |
 | `MACHINA_JWT_SECRET` | JWT signing secret | unset → a random secret is generated per process start (sessions won't survive a restart); explicitly set to the literal `machina-dev-jwt-secret-change-me` and the controller **refuses to start** unless `MACHINA_ALLOW_DEV_SECRETS=1`/`MACHINA_SKIP_AUTH=1` |
 | `MACHINA_PUBLIC_URL` | Public controller URL | `http://127.0.0.1:5093` |
 | `MACHINA_WEB_URL` | Web UI URL | `http://127.0.0.1:5173` |
 | `MACHINA_SKIP_AUTH` | `=1` disables JWT auth (dev only) | unset |
-| `MACHINA_CONTROLLER_ID` | Unique instance ID | — |
+| `MACHINA_CONTROLLER_ID` | Stable instance ID (set on every instance when running several controllers) | random `ctrl-xxxxxxxx` per start |
+| `MACHINA_CONTROLLER_HOST` / `MACHINA_CONTROLLER_PORT` | Bind address (same as `--host` / `--port`) | `0.0.0.0` / `5093` |
 | `MACHINA_DAEMON_URL` | URL the controller uses to reach the daemon | — |
 | `MACHINA_API_KEY_MASTER_KEY` | 64-char hex AES-256-GCM key encrypting LLM provider keys at rest (`openssl rand -hex 32`) | unset = plaintext |
-| `GUESTKIT_ENABLED` | Integration toggle | `true` / `false` |
+| `MACHINA_ALLOW_DEV_SECRETS` | `=1` allows the well-known dev JWT secret | unset |
+| `MACHINA_ADMIN_USER` / `MACHINA_ADMIN_PASSWORD` | Bootstrap controller admin | `admin` / `admin` — **change in production** |
+| `MACHINA_AGENT_CA`, `MACHINA_AGENT_CLIENT_CERT`, `MACHINA_AGENT_CLIENT_KEY` | mTLS to agents | unset |
+| `MACHINA_AGENT_TOKEN` | Shared controller ↔ agent token | unset |
+| `MACHINA_FENCE_COMMAND` | Fallback fence command (`{hostname}` substituted), run by a reachable agent | unset |
+| `MACHINA_MAINTENANCE_DRAIN_TIMEOUT_SECS` | Max time to drain a host entering maintenance | `900` |
+| `MACHINA_BPF_ENFORCE_LEASE_SECS` | Default eBPF enforcement lease | `900` |
+| `MACHINA_RATE_LIMIT_ENABLED` / `MACHINA_RATE_LIMIT_PER_MIN` | API rate limiting | on / `300` |
+| `MACHINA_SMTP_HOST`, `_PORT`, `_USER`, `_PASS`, `_FROM` | Email notifications | unset, `587`, —, —, `machina@localhost` |
+| `MACHINA_SOC_WEBHOOK_URL` | Forward SOC events to a webhook | unset |
+| `MACHINA_AI_DISABLED` | `=1` turns off Zyra AI | unset |
+| `MACHINA_AI_API_KEY` | Default LLM provider key (else configured in the UI) | unset |
+| `MACHINA_CERT_WARN_DAYS` | Warn when certificates expire within N days | `30` |
+| `MACHINA_TLS_CERT_PATH` | Certificate checked for expiry | `/etc/machina/ssl/cert.pem` |
+| `MACHINA_WATCHDOG_DISABLED` | `=1` disables the health watchdog | unset |
+| `MACHINA_TEMPLATES_GIT_DIR` / `MACHINA_TEMPLATES_SYNC_TOKEN` | Git-backed template sync | unset |
+| `MACHINA_FIREWALL_ZONES` | Firewall zone definitions | unset |
+| `GUESTKIT_ENABLED` | GuestKit features | `true` |
+| `GUESTKIT_WORKER_URL` / `GUESTKIT_INSECURE_TLS` | GuestKit worker | `http://127.0.0.1:8080` / unset |
+| `ATLAS_ENABLED`, `ATLAS_BASE_URL`, `ATLAS_TOKEN`, `ATLAS_*` | Atlas storage (see [CLAUDE.md](../../CLAUDE.md#extra-environment-variables)) | off |
+
+### Agent (`machina-agent`)
+| Variable | Effect | Default |
+|----------|--------|---------|
+| `MACHINA_LIBVIRT_URI` | libvirt connection | `qemu:///system` |
+| `MACHINA_AGENT_TLS_CERT` / `MACHINA_AGENT_TLS_KEY` | gRPC TLS certificate | unset |
+| `MACHINA_AGENT_TOKEN` | Token the controller must present | unset |
+| `MACHINA_AGENT_HOSTNAME` | Name reported to the controller | system hostname |
+| `MACHINA_FENCE_COMMAND` | Fence command run on `FenceHost` | unset |
+| `MACHINA_BPFD_SOCK` | `machina-bpfd` socket | `/run/machina-bpf/bpfd.sock` |
+
+### eBPF (`machina-bpfd`, `/etc/default/machina-bpfd`)
+| Variable | Effect | Default |
+|----------|--------|---------|
+| `MACHINA_BPFD_SOCK` | Control socket | `/run/machina-bpf/bpfd.sock` |
+| `MACHINA_BPFD_SOCKET_GROUP` | Group allowed on the socket | empty (0600, root only) |
+| `MACHINA_BPFD_STATE_DIR` | Persisted accounting | `/var/lib/machina/bpf` |
+| `MACHINA_BPF_ENFORCE_LEASE_SECS` | Enforcement lease | `900` |
+| `MACHINA_BPF_SOCKOPS_CGROUP`, `MACHINA_BPF_TLSFP_CGROUP`, `MACHINA_BPF_L7S_CGROUP` | cgroup for TCP timing, TLS fingerprints, sampled L7 | root cgroup |
+| `MACHINA_BPF_XDP_SKB` | Force generic XDP | unset |
+| `MACHINA_SCX_BIN` | `machina-scx` helper | next to `machina-bpfd` |
+| `MACHINA_BPF_GUARD_ASSUME_LSM` | Tests only: attach the VMM guard without BPF-LSM | unset |
+
+Kubernetes CNI variables (`MACHINA_CNI_*`) are listed in [../ebpf/cni.md](../ebpf/cni.md#environment).
 
 ### Web (Vite, dev)
 | Variable | Effect |
@@ -382,7 +427,13 @@ readiness (`/dev/kvm`, systemd, `virsh`, `qemu-img`, etc.).
 - [ ] Choose an auth backend: PAM service, or enable `[auth.ldap]` / `[auth.oidc]`.
 - [ ] Set a strong `MACHINA_JWT_SECRET` (and `MACHINA_API_KEY_MASTER_KEY` on the
       controller) in `/etc/default/machina-daemon` / `machina-platform`.
+- [ ] Change the controller bootstrap admin (`MACHINA_ADMIN_USER` /
+      `MACHINA_ADMIN_PASSWORD`, default `admin` / `admin`).
 - [ ] Never set `MACHINA_DAEMON_SKIP_AUTH=1` / `MACHINA_SKIP_AUTH=1` in prod.
+- [ ] Multi-controller: set a stable `MACHINA_CONTROLLER_ID` per instance and
+      enable agent mTLS (`MACHINA_AGENT_CA` / `_CLIENT_CERT` / `_CLIENT_KEY`).
+- [ ] Native eBPF: check `GET /api/v1/bpf/status` (`programs_compiled`, kernel
+      `features`); run in observe mode first and enforce only under a lease.
 - [ ] Bind carefully: `[daemon] host` is `0.0.0.0` by default — front with a
       firewall or reverse proxy.
 - [ ] Enable backups: `./machinactl backup enable` (daily timer); point

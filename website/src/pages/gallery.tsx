@@ -13,7 +13,7 @@ import styles from './subpage.module.css';
 
 const CARDS = [
   {src: '/readme-capabilities.jpg', title: 'Capabilities at a glance'},
-  {src: '/readme-architecture.jpg', title: 'Three binaries, one private cloud'},
+  {src: '/readme-architecture.jpg', title: 'How the core services fit together'},
   {src: '/readme-vs-openstack.jpg', title: 'Machina vs OpenStack'},
   {src: '/machina-social-card.jpg', title: 'Install, run, console, fleet, operate'},
 ];

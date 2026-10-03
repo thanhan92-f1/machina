@@ -3,10 +3,10 @@
 A consolidated, cross-linked handbook for **Machina** — the enterprise Linux
 hypervisor management platform in the [Zyvor](https://zyvor.dev) stack.
 
-> Machina is the **physical hypervisor OS** layer: it manages VMs, networks,
-> storage, snapshots, and day-two operations on bare-metal hosts, built directly
-> on **libvirt / QEMU / KVM**. Zeus OS (v9s) is the cloud/KubeVirt layer that
-> sits on top.
+> Machina turns bare-metal KVM hosts into a private cloud: VMs, consoles,
+> networks (including a native eBPF datapath), storage, snapshots, fleet HA and
+> self-service **Fleet Cloud**, built directly on **libvirt / QEMU / KVM** and
+> managed from one UI, one REST API and `machinactl`.
 
 ---
 
@@ -36,11 +36,17 @@ metrics, VM backup, and a documented KubeVirt migration path.
 
      machina-controller :5093  ──gRPC/TLS──►  machina-agent :50051 (console :50052)
       (fleet, HA, DRS, AI)                     (per hypervisor host)
+
+  Native eBPF datapath (every host that wants it):
+
+     machina-bpfd  ◄── /run/machina-bpf/bpfd.sock ──  daemon /api/v1/bpf/* · agent BpfCall · machina-cni
 ```
 
 ---
 
-## Ports at a glance
+## Ports
+
+The one authoritative port table; other docs link here.
 
 | Port | Component | Protocol | Default | Configured by |
 |------|-----------|----------|---------|---------------|
@@ -50,9 +56,10 @@ metrics, VM backup, and a documented KubeVirt migration path.
 | **50052** | `machina-agent` console | WebSocket console proxy | `127.0.0.1:50052` | `machina-agent --console-listen` |
 | **3000** | Web dev server (Vite) | HTTP | dev only | `web/vite.config.ts`, proxies `/api` + `/ws` to `:5092` |
 | **4222** | NATS (optional, controller) | — | `NATS_URL` | controller env |
+| socket | `machina-bpfd` | newline-delimited JSON over a Unix socket (root, 0600) | `/run/machina-bpf/bpfd.sock` | `MACHINA_BPFD_SOCK` |
 
 TLS on `:5092` is **on by default** — the installer generates a self-signed cert
-at `/etc/machina/ssl/cert.pem` (see [admin-configuration.md](admin-configuration.md#tls--certificates)).
+at `/etc/machina/ssl/cert.pem` (see [admin-configuration.md](admin-configuration.md#6-tls--certificates)).
 
 ---
 
@@ -73,15 +80,15 @@ git clone https://github.com/zyvorai/machina.git && cd machina
 Remote deploy from your workstation (builds on the remote Linux host):
 
 ```bash
-./scripts/deploy-remote.sh USER@HOST --remote-build
-# add --platform to also install the controller (:5093) + agent (:50051)
+./scripts/deploy-remote.sh USER@HOST              # rsync, build and install on the server
+./scripts/deploy-remote.sh USER@HOST --platform   # also install the controller (:5093) + agent (:50051)
 ```
 
-See the full matrix in [admin-configuration.md](admin-configuration.md#deployment--run-models).
+See the full matrix in [admin-configuration.md](admin-configuration.md#1-deployment--run-models).
 
 ---
 
-## The four guides
+## The guides
 
 | Guide | What's inside |
 |-------|---------------|
@@ -89,7 +96,8 @@ See the full matrix in [admin-configuration.md](admin-configuration.md#deploymen
 | [Product Guide](product-guide.md) | Concepts, every surface (CLI/API/UI), and feature deep-dives: VM lifecycle, storage, networks, snapshots, consoles, fleet, integrations. |
 | [Administration & Configuration](admin-configuration.md) | Deploy/run models, ports, full `config.toml` + env-var reference, auth/RBAC, TLS, building from source, production checklist. |
 | [FAQ](faq.md) | 30+ real questions on auth, ports, deploy, VMs, consoles, backups, integrations. |
-| [Troubleshooting](troubleshooting.md) | Symptom-indexed fixes with real diagnostic commands (`machinactl health`, `journalctl`, `virsh`). |
+| [Troubleshooting](troubleshooting.md) | Symptom-indexed fixes with real diagnostic commands (`machinactl health`, `journalctl`, `virsh`), including native eBPF. |
+| [Operator runbook](runbook.md) | Procedures: install/upgrade, backup, sign-in, fleet playbooks (host down, HA, migration), eBPF enforcement and emergency isolation. |
 
 ---
 
@@ -104,8 +112,9 @@ The handbook cross-links rather than duplicates these existing guides:
 | UX author guide | [../ux.md](../ux.md) |
 | KubeVirt migration | [../kubevirt-migration.md](../kubevirt-migration.md) |
 | Observability | [../guides/observability.md](../guides/observability.md) |
-| Fleet / HA | [../fleet-ha.md](../fleet-ha.md) · [../fleet.md](../fleet.md) |
-| Runbooks | [../runbook.md](../runbook.md) · [../platform-runbooks.md](../platform-runbooks.md) |
+| Native eBPF | [../ebpf/README.md](../ebpf/README.md) |
+| Controller HA, fencing, DRS | [../controller-ha.md](../controller-ha.md) |
+| Daemon peer fleet | [../daemon-peer-fleet.md](../daemon-peer-fleet.md) |
 | User stories | [../USER_STORIES.md](../USER_STORIES.md) |
 
 ---

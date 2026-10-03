@@ -1,28 +1,4 @@
-# Fleet control plane
+# Fleet (moved)
 
-Machina can aggregate multiple hypervisor hosts from a single UI entry point.
-
-## Configuration
-
-```toml
-[fleet]
-enabled = true
-primary_peer = "hv2"
-standby_peer = "hv3"
-
-[[fleet.peers]]
-name = "hv2"
-url = "https://hypervisor2.example.com:5092"
-api_token = "<automation-token-from-remote-host>"
-insecure_tls = false
-```
-
-- **Local host** — always included in `/api/v1/fleet/vms`.
-- **Peers** — health via `/api/v1/fleet/status`; VM inventory merged on the Fleet page.
-- **Lifecycle** — `POST /api/v1/fleet/peers/{name}/proxy` forwards `GET`/`POST`/`DELETE` to peer API paths (e.g. `/vms/{name}/start`).
-
-Use API tokens on peers with least privilege (`operator` role recommended).
-
-## Web UI
-
-Open **Fleet** in the Core nav group for peer status, cross-host start/stop/shutdown, and **Prometheus (aggregated scrape)** — copy the `GET /api/v1/fleet/prometheus` URL for a single job covering local + peers (`machina_peer` label).
+This page moved to [daemon-peer-fleet.md](daemon-peer-fleet.md). Controller HA, fencing and DRS are in
+[controller-ha.md](controller-ha.md).

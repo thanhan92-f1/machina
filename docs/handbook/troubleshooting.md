@@ -238,6 +238,69 @@ systemctl status machina-agent       # per-host gRPC agent (:50051)
 
 ---
 
+## Native eBPF
+
+Start with the status: it reports whether programs were compiled in, the
+attached interfaces, the enforcement mode and what the kernel supports.
+
+```bash
+systemctl status machina-bpfd
+journalctl -u machina-bpfd -n 100 --no-hostname
+curl -sk -b /tmp/machina.jar https://127.0.0.1:5092/api/v1/bpf/status | jq '{programs_compiled, mode, features}'
+```
+
+### Symptom: `programs_compiled: false`
+The build had no eBPF toolchain, so `build.rs` staged an empty object. Run
+`make bpf-deps` (nightly + rust-src + prebuilt `bpf-linker`), rebuild and
+reinstall `machina-bpfd`.
+
+### Symptom: a feature is unavailable / `features` shows `false`
+Map the flag to the kernel requirement:
+
+| `features` field | Needs |
+|------------------|-------|
+| `btf` | `/sys/kernel/btf/vmlinux` (`CONFIG_DEBUG_INFO_BTF`) |
+| `tcx` | kernel 6.6+ |
+| `cgroup2` | unified cgroup v2 hierarchy |
+| `fentry` | BTF + 5.5+ |
+| `lsm_bpf` | `bpf` in `/sys/kernel/security/lsm` |
+| `sched_ext` | 6.12+ with `CONFIG_SCHED_CLASS_EXT` |
+| `xsk` | `CONFIG_XDP_SOCKETS` |
+
+### Symptom: VMM guard reports `lsm_inactive` and refuses enforce
+BPF-LSM is compiled in but not active. Append `bpf` to the `lsm=` boot
+parameter (keep the existing list, e.g. `lsm=lockdown,capability,landlock,yama,apparmor,bpf`),
+update the bootloader and reboot. Audit mode works without it.
+
+### Symptom: `xsk` is `true` but bpfd can't open AF_XDP sockets
+Expected. `machina-bpfd.service` sets
+`RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6`; bpfd never opens
+XSK sockets itself, so the probe falls back to `xsk_map_ops` in
+`/proc/kallsyms`. AF_XDP consumers run outside that unit, open their own
+sockets and hand them to bpfd with `register_xsk`.
+
+### Symptom: enforcement stopped on its own
+The lease expired or bpfd restarted. Enforcement is never persisted and fails
+open by design. Re-arm with a new lease (Native eBPF → Overview, or
+`PUT /api/v1/bpf/mode`). Node isolation, the VMM guard and the scheduler carry
+their own leases.
+
+### Symptom: `enforcement_rejected` (HTTP 400) creating a policy
+The policy match is invalid for its kind (bad CIDR, port, or `rate_limit`
+spec). Nothing was stored; fix the match and retry.
+
+### Symptom: node isolation refuses to enable
+Allowlist TCP 22 or add an exempt CIDR. This guard prevents locking yourself
+out of the host.
+
+### Symptom: CNI pods have no network after an upgrade
+`machina-bpfd` rejects a `CniSync` whose ABI version differs. Upgrade
+`machina-bpfd` and `machina-cni` together, then `systemctl restart machina-cni`.
+
+More: [../ebpf/README.md](../ebpf/README.md).
+
+---
+
 ## Quick reference: diagnostic commands
 
 | Goal | Command |
@@ -253,6 +316,8 @@ systemctl status machina-agent       # per-host gRPC agent (:50051)
 | Port listening? | `sudo ss -ltnp \| grep 5092` |
 | Regenerate TLS cert | `./machinactl tls` |
 | Backup timer state | `./machinactl backup status` |
+| eBPF datapath state | `curl -sk -b /tmp/machina.jar https://127.0.0.1:5092/api/v1/bpf/status \| jq .` |
+| eBPF service logs | `journalctl -u machina-bpfd -f --no-hostname` |
 
 ---
 

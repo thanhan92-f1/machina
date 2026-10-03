@@ -2,7 +2,7 @@
 
 Every primary navigable dashboard route.
 
-_Generated: 2026-08-29 · 105 routes_
+_Generated: 2026-10-03 · 106 routes_
 
 Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
@@ -20,7 +20,6 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Capabilities | `/capabilities` | Capabilities — Machina Core page at `/capabilities`. | [Open](pages/core/capabilities.md) |
 | Node Devices | `/devices` | Node Devices — Machina Core page at `/devices`. | [Open](pages/core/devices.md) |
 | Services | `/services` | Services — Machina Core page at `/services`. | [Open](pages/core/services.md) |
-| Mission Control | `/mission-control` | Mission Control — Core surface. | [Open](pages/core/mission-control.md) |
 
 ## Platform
 
@@ -29,6 +28,7 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Mission Control | `/platform` | Mission Control — multi-host platform overview. | [Open](pages/platform/platform.md) |
 | Virtual Machines | `/platform/vms` | Fleet VM finder across enrolled hosts. | [Open](pages/platform/platform-vms.md) |
 | Hosts | `/platform/hosts` | Hosts — Machina Platform page at `/platform/hosts`. | [Open](pages/platform/platform-hosts.md) |
+| Machine Finder | `/platform/hosts/finder` | Machine Finder: opens the fleet VM list in its topology lens (/platform/vms?lens=topology) to find any VM by host, network or name. | [Open](pages/platform/platform-hosts-finder.md) |
 | Applications | `/platform/applications` | Applications — Machina Platform page at `/platform/applications`. | [Open](pages/platform/platform-applications.md) |
 | Launchpad (Mission Control) | `/platform/launchpad` | Launchpad tiles live on Mission Control (`/platform`) — there is no separate `/platform/launchpad` route. | [Open](pages/platform/platform-launchpad.md) |
 | Datacenter View | `/platform/datacenter` | Datacenter View — Machina Platform page at `/platform/datacenter`. | [Open](pages/platform/platform-datacenter.md) |
@@ -58,6 +58,8 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Maintenance | `/platform/maintenance` | Maintenance — Machina Platform page at `/platform/maintenance`. | [Open](pages/platform/platform-maintenance.md) |
 | Recommendations | `/platform/recommendations` | Recommendations — Machina Platform page at `/platform/recommendations`. | [Open](pages/platform/platform-recommendations.md) |
 | Alerts | `/platform/notifications` | Alerts — Machina Platform page at `/platform/notifications`. | [Open](pages/platform/platform-notifications.md) |
+| Alert Rules | `/platform/alert-rules` | Threshold alert rules on VM CPU and memory: notify (via Alerts / webhooks) when a metric crosses a bound. | [Open](pages/platform/platform-alert-rules.md) |
+| Scheduled Jobs | `/platform/scheduled-jobs` | Recurring controller operations from a whitelist, for example periodic host inventory refresh. | [Open](pages/platform/platform-scheduled-jobs.md) |
 | Observability | `/platform/observability` | Observability — Machina Platform page at `/platform/observability`. | [Open](pages/platform/platform-observability.md) |
 | Activity Monitor | `/platform/activity` | Activity Monitor — Machina Platform page at `/platform/activity`. | [Open](pages/platform/platform-activity.md) |
 | Topology | `/platform/topology` | Topology — Machina Platform page at `/platform/topology`. | [Open](pages/platform/platform-topology.md) |
@@ -68,7 +70,6 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Stage Manager | `/platform/projects` | Stage Manager — Machina Platform page at `/platform/projects`. | [Open](pages/platform/platform-projects.md) |
 | Add Host | `/platform/enroll` | Add Host — Machina Platform page at `/platform/enroll`. | [Open](pages/platform/platform-enroll.md) |
 | API Keys | `/platform/api-keys` | API Keys — Machina Platform page at `/platform/api-keys`. | [Open](pages/platform/platform-api-keys.md) |
-| Integrations | `/platform/integrations` | Integrations — Machina Platform page at `/platform/integrations`. | [Open](pages/platform/platform-integrations.md) |
 | Marketplace | `/platform/marketplace` | Marketplace — Machina Platform page at `/platform/marketplace`. | [Open](pages/platform/platform-marketplace.md) |
 | AI Providers | `/platform/ai-providers` | AI Providers — Machina Platform page at `/platform/ai-providers`. | [Open](pages/platform/platform-ai-providers.md) |
 | Enterprise Features | `/platform/enterprise` | Enterprise Features — Machina Platform page at `/platform/enterprise`. | [Open](pages/platform/platform-enterprise.md) |
@@ -85,6 +86,7 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Zyra AI | `/platform/zyra` | Zyra AI assistant for Machina operations. | [Open](pages/platform-security/platform-zyra.md) |
 | Configure Zyra | `/platform/zyra/configure` | Configure Zyra — Machina Platform / Security page at `/platform/zyra/configure`. | [Open](pages/platform-security/platform-zyra-configure.md) |
 | Zeus Security | `/platform/zeus/security` | Zeus Security — Machina Platform / Security page at `/platform/zeus/security`. | [Open](pages/platform-security/platform-zeus-security.md) |
+| Native eBPF | `/platform/zyra/security/native-bpf` | Native eBPF: per-host machina-bpfd status, observe/enforce mode under a lease, deny/allow policies, flows, DNS, L7, load balancing, CNI and guest policy across 22 tabs. | [Open](pages/platform-security/platform-zyra-security-native-bpf.md) |
 | Incident Commander | `/platform/zyra/incidents` | Incident Commander — Machina Platform / Security page at `/platform/zyra/incidents`. | [Open](pages/platform-security/platform-zyra-incidents.md) |
 | Approvals | `/platform/zyra/approvals` | Approvals — Machina Platform / Security page at `/platform/zyra/approvals`. | [Open](pages/platform-security/platform-zyra-approvals.md) |
 | Rightsizing | `/platform/zyra/rightsizing` | Rightsizing — Machina Platform / Security page at `/platform/zyra/rightsizing`. | [Open](pages/platform-security/platform-zyra-rightsizing.md) |
@@ -103,7 +105,6 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Secrets | `/secrets` | Secrets — Machina Infrastructure page at `/secrets`. | [Open](pages/infrastructure/secrets.md) |
 | Containers | `/containers` | Local Podman/Docker containers via Vessel — list, create, lifecycle, and live stats on this host. | [Open](pages/infrastructure/containers.md) |
 | Container Pods | `/containers/pods` | Podman pods via Vessel — create and manage shared-namespace container groups (not Kubernetes pods). | [Open](pages/infrastructure/containers-pods.md) |
-| SSH | `/ssh` | SSH — Infrastructure surface. | [Open](pages/infrastructure/ssh.md) |
 
 ## Kubernetes
 

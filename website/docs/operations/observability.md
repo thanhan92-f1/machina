@@ -16,6 +16,16 @@ description: Prometheus metrics, OTLP export, Linux pressure signals and fleet-w
 | `GET /api/v1/host/linux-observability` | PSI, diskstats, SMART, thermal, cgroups |
 | `GET /api/v1/vms/{name}/guest-health` | Guest agent, metrics and detected issues |
 | `GET /api/v1/fleet/prometheus` | One scrape for the local host and all peers |
+| `GET /api/v1/bpf/flows`, `/bpf/dns`, `/bpf/l7`, `/bpf/health` | Kernel-level flows, DNS, L7 and TCP health from `machina-bpfd` |
+| `GET /api/v1/bpf/stream` | Server-sent events of all eBPF telemetry |
+
+## eBPF telemetry
+
+`machina-bpfd` adds what metrics alone can't show: per-flow traffic with VM/pod attribution, DNS, L7 requests
+(HTTP, TLS SNI, gRPC, Redis, PostgreSQL, MySQL, Kafka), TCP connect latency and retransmits, JA3/JA4 fingerprints,
+an audit of who changed routes and links, and per-VM KVM exit, run-queue and I/O latency histograms. The controller
+feeds it into the SOC, the network canvas and Zyra AI root-cause analysis. See
+[Native eBPF](../networking/ebpf-overview.md).
 
 ## Prometheus
 

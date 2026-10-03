@@ -1,12 +1,12 @@
 ---
-sidebar_position: 6
+sidebar_position: 8
 title: Integrations
 description: Storage, network security, containers, Kubernetes and automation integrations.
 ---
 
 # Integrations
 
-Each integration is off by default and enabled with environment variables on the controller.
+Integrations are enabled with environment variables on the controller. Atlas is off by default.
 
 ## Atlas storage
 
@@ -21,18 +21,17 @@ ATLAS_TOKEN=<service-account JWT>
 
 Create a VM on Atlas storage by passing `atlas_root_disk: true` to `POST /api/v1/vms`.
 
-## Netra network enforcement
+## GuestKit
 
-[Netra](https://zyvorai.github.io/netra/) applies kernel-level IP and CIDR deny rules with eBPF. Machina requests a
-lease when it applies a policy, and Netra reverts to observe mode (fail-open) when the lease expires, regardless of
-controller state.
+GuestKit's in-guest agent reports guest health, checks VMs offline before migration, and enforces per-container eBPF
+policy inside guests. Machina talks to it through the QEMU guest agent; see [Guest policy](../networking/guest-policy.md).
+Controller-side features are on by default (`GUESTKIT_ENABLED=true`).
 
-```bash
-NETRA_ENABLED=1
-NETRA_BASE_URL=http://127.0.0.1:30870
-NETRA_API_KEY=<token>
-NETRA_ENFORCE_LEASE=15m
-```
+## Networking and security
+
+Network enforcement and observability are built in, not integrated: Machina's own eBPF service, `machina-bpfd`,
+replaces Cilium, Tetragon, Netra and PacketWolf, and Machina no longer talks to any of them. See
+[Native eBPF](../networking/ebpf-overview.md).
 
 ## Containers and Kubernetes
 

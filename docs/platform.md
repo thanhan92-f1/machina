@@ -5,10 +5,13 @@ vCenter-style centralized management for libvirt/KVM. libvirt remains the engine
 ## Architecture
 
 ```text
-Web UI (/platform/*)  →  machina-controller  →  gRPC  →  machina-agent  →  libvirt
-                              ↓
-                         PostgreSQL
+Web UI (/platform/*)  →  machina-daemon proxy  →  machina-controller  →  gRPC  →  machina-agent  →  libvirt
+                                                         ↓
+                                       embedded SQLite (/var/lib/machina/controller.db)
 ```
+
+The controller needs no external database: state lives in an embedded SQLite file
+created and migrated on first start (`controller/migrations/`).
 
 ## Crates
 
@@ -19,57 +22,21 @@ Web UI (/platform/*)  →  machina-controller  →  gRPC  →  machina-agent  �
 | `agent` | Per-host gRPC executor + VNC console proxy |
 | `controller` | Central API, inventory, task orchestration |
 
-## Feature status
+## Capabilities
 
-| Feature | Status |
-|---------|--------|
-| Declarative VM spec + XML translation | Done |
-| Host agent (gRPC + console proxy :50052) | Done |
-| Controller REST API + PostgreSQL | Done |
-| Task engine (create/power/delete/migrate/clone/maintenance) | Done |
-| Host enrollment tokens + `install.sh` | Done |
-| Templates, storage pools, networks (API + DB) | Done |
-| Console proxy (controller WS → agent WS → VNC) | Done |
-| Web UI (`/platform/*`) | Done |
-| Templates + linked-clone deploy | Done |
-| Migration pre-checks | Done |
-| HA engine (host failure → VM recover) | Done |
-| DRS placement recommendations | Done |
-| Optional mTLS (agent gRPC) | Done |
-| DRS auto-balancing (unattended migrate) | Done |
-| Agent-side migration pre-checks (CPU compat) | Done |
-| Host fencing (`MACHINA_FENCE_COMMAND`) | Done |
-| Cloud-init on template deploy | Done |
-| Task list/cancel, audit log, cluster summary | Done |
-| Host detail/patch/delete, sync-all | Done |
-| VM spec API, HA read, fence/anti-affinity | Done |
-| Migration/fence history APIs | Done |
-| Snapshot/backup queue APIs + UI | Done |
-| Platform Storage/Networks/Tasks/Events UI | Done |
-| Agent snapshot/backup execution | Done |
-| RBAC users, API keys, webhooks | Done |
-| Prometheus metrics, capacity reports | Done |
-| Maintenance schedules, task retry | Done |
-| Snapshot revert, backup restore | Done |
-| Webhook HMAC signing, event filters | Done |
-| OIDC settings stub, CPU compat matrix | Done |
-| VM/host tags, notification outbox UI | Done |
-| NATS task fan-out, packed placement | Done |
-| OIDC login + JWT, controller leader election | Done |
-| IPMI fencing, webhook delivery retries | Done |
-| NATS task consumer, tag placement, rate limits | Done |
-| Webhook delivery API/UI, snapshot clone | Done |
-| OIDC JWKS validation, non-destructive snap clone | Done |
-| Leader-gated sync, cluster leadership API | Done |
-| Configurable sync interval, ES256 JWKS, snap clone migrate | Done |
-
+Task engine (create, power, delete, migrate, clone, maintenance), host enrollment, templates and linked clones,
+storage pools and networks, console proxying, snapshots and backups, HA with IPMI/command fencing, DRS
+recommendations and auto-balancing, migration pre-checks, optional agent mTLS, RBAC users, API keys, webhooks with
+HMAC signing and retries, OIDC + JWT, Prometheus metrics, NATS task fan-out and DB-lease leader election. Fleet-wide
+native eBPF (policies, shield, isolation, telemetry) fans out through each agent. History is in
+[../CHANGELOG.md](../CHANGELOG.md).
 
 ## Quick start
 
-**PostgreSQL**
+**State store** (optional — this is the default)
 
 ```bash
-export DATABASE_URL=postgres://machina:machina@127.0.0.1:5432/machina
+export DATABASE_URL=sqlite:///var/lib/machina/controller.db
 ```
 
 **Host agent** (each KVM node)
@@ -85,7 +52,7 @@ export MACHINA_SKIP_AUTH=1   # dev only
 cargo run -p machina-controller
 ```
 
-**Web UI** — open the daemon UI at `https://HOST:5092/` or `/login`, sign in with PAM (or OIDC when enabled), then use the **Platform** nav group; set controller URL `http://127.0.0.1:5093` (or set `VITE_MACHINA_CONTROLLER_URL` at build time).
+**Web UI** — open the daemon UI at `https://HOST:5092/`, sign in with PAM (or OIDC/LDAP when enabled) and pick a platform section from the top bar. Controller calls go through the daemon's same-origin proxy (`/api/v1/platform/controller`), so no controller URL needs configuring on co-located installs; `VITE_MACHINA_CONTROLLER_URL` overrides it for standalone web development.
 
 ## Host enrollment
 
@@ -184,15 +151,10 @@ export MACHINA_AGENT_CLIENT_CERT=/etc/machina/controller.crt
 export MACHINA_AGENT_CLIENT_KEY=/etc/machina/controller.key
 ```
 
-## Host fencing
+## Host fencing and HA
 
-When a host stops heartbeating and any HA-enabled VM on that host has `fence_on_failure`, the controller invokes the agent `FenceHost` RPC. Configure a shell command on each agent:
-
-```bash
-export MACHINA_FENCE_COMMAND='ipmitool -H {hostname} -U admin -P secret power off'
-```
-
-Events are recorded in `fence_events`; the host is marked `fenced = true` on success.
+HA recovery waits for the failed host to be fenced (IPMI from the controller, or `MACHINA_FENCE_COMMAND` on the
+agent). Details, DRS and multi-controller leader election: [controller-ha.md](controller-ha.md).
 
 ## Desired vs observed state
 
@@ -207,7 +169,7 @@ VSPASS='…' ./scripts/deploy-remote.sh operator <ephemeral-ip> \
   --quick --platform --e2e --bind 0.0.0.0 --open-firewall
 ```
 
-This rsyncs sources, runs `make release web` on the server, installs **machina-daemon** (`:5092`), then `scripts/install-platform.sh` (PostgreSQL + **machina-controller** `:5093` + **machina-agent**).
+This rsyncs sources, runs `make release web` on the server, installs **machina-daemon** (`:5092`), then `scripts/install-platform.sh` (**machina-controller** `:5093` with its embedded SQLite store + **machina-agent**).
 
 With `--platform --e2e`, deploy runs the **full E2E suite** (`e2e-full-test-remote.sh`): daemon libvirt checks, host checklist (no nbd SMART noise), UI platform proxy via `/api/v1/platform/controller`, read-only controller smoke, and VM lifecycle on `:5093`.
 
@@ -294,20 +256,11 @@ VSPASS='…' ./scripts/e2e-test-remote.sh operator <ephemeral-ip>
 ./scripts/e2e-platform-install-smoke-remote.sh operator <ephemeral-ip>
 ```
 
-Services: `machina-controller`, `machina-agent`, `postgresql`. Config: `/etc/default/machina-platform`. Dev E2E sets `MACHINA_SKIP_AUTH=1`; use `--require-auth` on install for production.
+Services: `machina-controller`, `machina-agent`. Config: `/etc/default/machina-platform`. Dev E2E sets `MACHINA_SKIP_AUTH=1`; use `--require-auth` on install for production.
 
-## Batches 12–16 (vCenter-class hardening)
+## Operations
 
-See [`platform-runbooks.md`](platform-runbooks.md), and [`platform-cert-matrix.md`](platform-cert-matrix.md).
-
-Highlights:
-
-- **Batch 12:** VM `lifecycle_phase`, structured API errors with remediation, host join validation, reconcile loop, live migrate after snap clone
-- **Batch 13:** Task drawer, command palette platform search, dashboard → platform link, structured error banners
-- **Batch 14:** Agent storage/network provisioning (`storage.pool.provision`, `network.provision`)
-- **Batch 15:** Policy rules, project quotas, support bundle, upgrade manager, task-failure alerts
-- **Batch 16:** [`scripts/platformctl`](../scripts/platformctl), Terraform stub under `terraform/machina/`, chaos/soak scripts
-
-### Controller HA (3 nodes)
-
-Run three controller instances with unique `MACHINA_CONTROLLER_ID`; use Patroni or managed HA for PostgreSQL. Leader election ensures only one node runs reconcile, HA, DRS, and periodic sync. Web UI uses the daemon same-origin proxy (`/api/v1/platform/controller`) so operators need not configure a separate controller URL on co-located deploys.
+Playbooks (host down, HA restart, migration, rolling upgrade, support bundle) are in
+[handbook/runbook.md](handbook/runbook.md); the certification matrix is in
+[platform-cert-matrix.md](platform-cert-matrix.md). Tooling: [`scripts/platformctl`](../scripts/platformctl), the
+Terraform provider under `terraform/machina/`, and chaos/soak scripts.

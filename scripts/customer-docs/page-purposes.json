@@ -53,7 +53,6 @@
   "/platform/projects": "Stage Manager \u2014 Machina Platform page at `/platform/projects`.",
   "/platform/enroll": "Add Host \u2014 Machina Platform page at `/platform/enroll`.",
   "/platform/api-keys": "API Keys \u2014 Machina Platform page at `/platform/api-keys`.",
-  "/platform/integrations": "Integrations \u2014 Machina Platform page at `/platform/integrations`.",
   "/platform/marketplace": "Marketplace \u2014 Machina Platform page at `/platform/marketplace`.",
   "/platform/ai-providers": "AI Providers \u2014 Machina Platform page at `/platform/ai-providers`.",
   "/platform/enterprise": "Enterprise Features \u2014 Machina Platform page at `/platform/enterprise`.",
@@ -101,7 +100,9 @@
   "/audit": "Audit Log \u2014 Machina Monitoring page at `/audit`.",
   "/admin/sessions": "Web Sessions \u2014 Machina Monitoring page at `/admin/sessions`.",
   "/settings": "Daemon and UI settings, including Fleet Cloud wiring.",
-  "/mission-control": "Mission Control \u2014 Core surface.",
-  "/ssh": "SSH \u2014 Infrastructure surface.",
-  "/api-docs": "API Docs \u2014 Platform surface."
+  "/api-docs": "API Docs \u2014 Platform surface.",
+  "/platform/hosts/finder": "Machine Finder: opens the fleet VM list in its topology lens (/platform/vms?lens=topology) to find any VM by host, network or name.",
+  "/platform/alert-rules": "Threshold alert rules on VM CPU and memory: notify (via Alerts / webhooks) when a metric crosses a bound.",
+  "/platform/scheduled-jobs": "Recurring controller operations from a whitelist, for example periodic host inventory refresh.",
+  "/platform/zyra/security/native-bpf": "Native eBPF: per-host machina-bpfd status, observe/enforce mode under a lease, deny/allow policies, flows, DNS, L7, load balancing, CNI and guest policy across 22 tabs."
 }

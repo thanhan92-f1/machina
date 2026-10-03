@@ -100,7 +100,7 @@ sign_lines = true   # prefix each line with sha256:<hex> for tamper detection
 ## Linux auditd & eBPF
 
 - **auditd:** `[observability.linux_audit]` + `GET /host/linux-audit`; set `health_avc_threshold` for `/health/problems`.
-- **eBPF:** `bpftool` summary included in `linux-observability` and Prometheus (`machina_bpf_*`); no custom BPF programs shipped.
+- **eBPF:** Machina ships its own eBPF programs through `machina-bpfd` (service LB, VM edge, Shield, TCP health, TLS/JA4, net-change audit, sampled L7, VM runtime intelligence and more). Status and kernel capabilities are at `GET /api/v1/bpf/status`; the `bpftool` summary is still included in `linux-observability` and Prometheus (`machina_bpf_*`). See [../ebpf/README.md](../ebpf/README.md), and [../ebpf/observability.md](../ebpf/observability.md) for the telemetry features.
 
 ## Automation
 

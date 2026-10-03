@@ -1,8 +1,8 @@
-# Mission Control
+# Machine Finder
 
 ## Purpose
 
-Mission Control — Core surface.
+Machine Finder: opens the fleet VM list in its topology lens (/platform/vms?lens=topology) to find any VM by host, network or name.
 
 ## When to use it
 
@@ -12,17 +12,17 @@ Mission Control — Core surface.
 
 ## How to get there
 
-- Route: `/mission-control`
-- Nav: **Core → Mission Control** (or spotlight / Finder search)
+- Route: `/platform/hosts/finder`
+- Nav: **Platform → Machine Finder** (or spotlight / Finder search)
 
 ## What you can do
 
-1. Open `/mission-control` against the Machina daemon (`https://<host>:5092`).
+1. Open `/platform/hosts/finder` against the Machina daemon (`https://<host>:5092`).
 2. Use filters and host/VM selectors when the page provides them.
 3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
 4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, Transiva, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
 
 ## Related pages
 

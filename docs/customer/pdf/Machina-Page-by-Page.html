@@ -24,7 +24,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Mach<span>ina</span></h1>
 <div class="sub">Page-by-Page Product Manual</div>
-<div class="badge">2026-08-29</div>
+<div class="badge">2026-10-03</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>Page-by-page guides</h2>
 <p>Each guide follows: Purpose → When to use it → How to get there → What you can do → Related pages.</p>
@@ -66,16 +66,16 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Import VM — Machina Core page at <code>/import</code>.</td>
 </tr>
 <tr>
-<td><a href="core/mission-control.md">Mission Control</a></td>
-<td>Mission Control — Core surface.</td>
-</tr>
-<tr>
 <td><a href="core/services.md">Systemd Services</a></td>
 <td>Services — Machina Core page at <code>/services</code>.</td>
 </tr>
 <tr>
 <td><a href="core/sprites.md">Sprites</a></td>
 <td>Instant, disposable sandbox VMs — boot on libvirt/QEMU, Cloud Hypervisor, or Firecracker, TTL-reaped automatically, no persistent state.</td>
+</tr>
+<tr>
+<td><a href="core/vm-guest-policy.md">VM detail: Guest policy</a></td>
+<td>Restrict what individual containers inside a VM may do: which networks they reach, which programs they run, which devices they open and where they write. The rules are enforced inside the guest by GuestKit&#39;s agent (<code>guestkitd</code>) with its own eBPF programs. Machina sends them through the QEMU guest agent, so no network path into the guest is needed.</td>
 </tr>
 <tr>
 <td><a href="core/vms.md">Virtual Machines</a></td>
@@ -200,10 +200,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Snapshots — Machina Infrastructure page at <code>/snapshots</code>.</td>
 </tr>
 <tr>
-<td><a href="infrastructure/ssh.md">SSH</a></td>
-<td>SSH — Infrastructure surface.</td>
-</tr>
-<tr>
 <td><a href="infrastructure/storage.md">Storage pools</a></td>
 <td>Storage Pools — Machina Infrastructure page at <code>/storage</code>.</td>
 </tr>
@@ -287,6 +283,10 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>AI Providers — Machina Platform page at <code>/platform/ai-providers</code>.</td>
 </tr>
 <tr>
+<td><a href="platform/platform-alert-rules.md">Alert Rules</a></td>
+<td>Threshold alert rules on VM CPU and memory: notify (via Alerts / webhooks) when a metric crosses a bound.</td>
+</tr>
+<tr>
 <td><a href="platform/platform-api-keys.md">API keys</a></td>
 <td>API Keys — Machina Platform page at <code>/platform/api-keys</code>.</td>
 </tr>
@@ -295,8 +295,8 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Applications — Machina Platform page at <code>/platform/applications</code>.</td>
 </tr>
 <tr>
-<td><a href="platform/platform-backups.md">Time Machine</a></td>
-<td>Backup &amp; Restore — Machina Platform page at <code>/platform/backups</code>.</td>
+<td><a href="platform/platform-backups.md">Backup &amp; Restore</a></td>
+<td>Fleet backups: a timeline of backup runs, backup destinations (NFS, S3/MinIO or local), recurring schedules by project or tag, and one-off backups of a single VM.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-baremetal.md">Register Server</a></td>
@@ -332,7 +332,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 <tr>
 <td><a href="platform/platform-enroll.md">Host Enrollment</a></td>
-<td>Add Host — Machina Platform page at <code>/platform/enroll</code>.</td>
+<td>Join new KVM hypervisors to the control plane. You generate a one-time join token here and run the install command on the new host; its <code>machina-agent</code> then registers with the controller.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-enterprise.md">Enterprise Features</a></td>
@@ -351,16 +351,16 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>GPU Command Center — Machina Platform page at <code>/platform/gpu</code>.</td>
 </tr>
 <tr>
-<td><a href="platform/platform-ha.md">HA Events</a></td>
-<td>High Availability — Machina Platform page at <code>/platform/ha</code>.</td>
+<td><a href="platform/platform-ha.md">High Availability</a></td>
+<td>Fleet high availability: which hosts are healthy, fence events, and HA restarts of VMs from failed hosts. The controller fences a failed host before it restarts that host&#39;s VMs elsewhere, so a VM never runs twice.</td>
+</tr>
+<tr>
+<td><a href="platform/platform-hosts-finder.md">Machine Finder</a></td>
+<td>Machine Finder: opens the fleet VM list in its topology lens (/platform/vms?lens=topology) to find any VM by host, network or name.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-hosts.md">Hosts</a></td>
-<td>Hosts — Machina Platform page at <code>/platform/hosts</code>.</td>
-</tr>
-<tr>
-<td><a href="platform/platform-integrations.md">Integrations</a></td>
-<td>Integrations — Machina Platform page at <code>/platform/integrations</code>.</td>
+<td>Every hypervisor enrolled with the controller: online/offline state, agent heartbeat, capacity and the VMs it runs. This is where you start any host-level task in the fleet.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-launchpad.md">Launchpad (on Mission Control)</a></td>
@@ -375,8 +375,8 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Marketplace — Machina Platform page at <code>/platform/marketplace</code>.</td>
 </tr>
 <tr>
-<td><a href="platform/platform-migration.md">Migration Radar</a></td>
-<td>Migration Assistant — Machina Platform page at <code>/platform/migration</code>.</td>
+<td><a href="platform/platform-migration.md">Migration Assistant</a></td>
+<td>Migration Radar: bring VMs into Machina from VMware vCenter, ESXi, OVF/OVA, VMDK or cloud images. HyperSDK discovers and converts source VMs; GuestKit checks disks offline before and after conversion.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-network-canvas.md">Network canvas</a></td>
@@ -384,7 +384,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 <tr>
 <td><a href="platform/platform-networks.md">Networks</a></td>
-<td>Networks — Machina Platform page at <code>/platform/networks</code>.</td>
+<td>The fleet network pane: libvirt networks across hosts, overlay segments with east-west policy, and IPAM pools that hand out addresses from a segment CIDR.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-notifications.md">Alerts</a></td>
@@ -415,8 +415,12 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Reports — Machina Platform page at <code>/platform/reports</code>.</td>
 </tr>
 <tr>
+<td><a href="platform/platform-scheduled-jobs.md">Scheduled Jobs</a></td>
+<td>Recurring controller operations from a whitelist, for example periodic host inventory refresh.</td>
+</tr>
+<tr>
 <td><a href="platform/platform-settings.md">Settings</a></td>
-<td>Settings — Machina Platform page at <code>/platform/settings</code>.</td>
+<td>One hub for platform configuration: general and cluster preferences, identity and SSO, users and groups, API keys, AI providers, Zyra, network, policy and quotas, webhooks, reports, console, keychain and updates.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-soc.md">Security Operations Center</a></td>
@@ -440,7 +444,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 <tr>
 <td><a href="platform/platform-tasks.md">Tasks</a></td>
-<td>Tasks — Machina Platform page at <code>/platform/tasks</code>.</td>
+<td>The controller&#39;s orchestration queue. Every long-running operation (VM create, migrate, backup, agent upgrade, …) is a task with an operation name, status, progress and message.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-templates.md">Marketplace (Templates)</a></td>
@@ -451,8 +455,8 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Topology — Machina Platform page at <code>/platform/topology</code>.</td>
 </tr>
 <tr>
-<td><a href="platform/platform-upgrade.md">Upgrade Guide</a></td>
-<td>Upgrade Matrix — Machina Platform page at <code>/platform/upgrade</code>.</td>
+<td><a href="platform/platform-upgrade.md">Upgrade Matrix</a></td>
+<td>Version compatibility between the controller and host agents (controller version, minimum and recommended agent) and a per-host Upgrade Agent action.</td>
 </tr>
 <tr>
 <td><a href="platform/platform-users.md">Users &amp; Groups</a></td>
@@ -489,7 +493,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </thead>
 <tbody><tr>
 <td><a href="platform-security/platform-zeus-security.md">Security Center</a></td>
-<td>Zeus Security — Machina Platform / Security page at <code>/platform/zeus/security</code>.</td>
+<td>Fleet security overview: the infrastructure security graph, critical findings, natural-language event search, and the eBPF sensor matrix showing <code>machina-bpfd</code> on every host as reported through its agent.</td>
 </tr>
 <tr>
 <td><a href="platform-security/platform-zyra-approvals.md">Zyra Approvals</a></td>
@@ -508,12 +512,16 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Rightsizing — Machina Platform / Security page at <code>/platform/zyra/rightsizing</code>.</td>
 </tr>
 <tr>
+<td><a href="platform-security/platform-zyra-security-native-bpf.md">Native eBPF</a></td>
+<td>Operate Machina&#39;s built-in eBPF datapath on a host. One root service, <code>machina-bpfd</code>, loads Machina&#39;s own kernel programs for flow visibility, policy enforcement, load balancing, DDoS protection, VM isolation and scheduling. This page is the console for it; there is no separate Cilium, Tetragon, Netra or PacketWolf agent to install.</td>
+</tr>
+<tr>
 <td><a href="platform-security/platform-zyra.md">Machina Zyra OS</a></td>
 <td>Zyra AI assistant for Machina operations.</td>
 </tr>
 </tbody></table>
 <hr>
-<p>105 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
+<p>107 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
 <hr>
 <h2>Capabilities</h2>
 <h3>Purpose</h3>
@@ -767,36 +775,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Mission Control</h2>
-<h3>Purpose</h3>
-<p>Mission Control — Core surface.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Open this page when the job matches the purpose above</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/mission-control</code></li>
-<li>Nav: <strong>Core → Mission Control</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>What you can do</h3>
-<ol>
-<li>Open <code>/mission-control</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
-<li>Use filters and host/VM selectors when the page provides them.</li>
-<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
-<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, Transiva, or Launchpad to be enabled.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
-<li><a href="../platform/platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
 <h2>Systemd Services</h2>
 <h3>Purpose</h3>
 <p>Services — Machina Core page at <code>/services</code>.</p>
@@ -864,6 +842,68 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
+<h2>VM detail: Guest policy</h2>
+<h3>Purpose</h3>
+<p>Restrict what individual containers <strong>inside a VM</strong> may do: which networks they reach, which programs they run, which devices they open and where they write. The rules are enforced inside the guest by GuestKit&#39;s agent (<code>guestkitd</code>) with its own eBPF programs. Machina sends them through the QEMU guest agent, so no network path into the guest is needed.</p>
+<h3>When to use it</h3>
+<ul>
+<li>A VM runs Docker, Podman or Kubernetes workloads and one container should only reach, say, its database</li>
+<li>You want to block unexpected binaries, writable+executable memory, or writes outside a data directory for one container</li>
+<li>You need evidence first: audit mode reports what <em>would</em> be blocked</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Open a VM (<strong>Virtual Machines → VM name</strong>) and pick the <strong>Guest policy</strong> tab.</li>
+<li>The VM must be running.</li>
+</ul>
+<h3>Before you start</h3>
+<ul>
+<li>QEMU guest agent running in the VM.</li>
+<li>GuestKit (<code>guestkitd</code> and <code>guestkitctl</code>) installed in the guest, with
+<code>capabilities.ebpf: true</code> in <code>/etc/guestkit/agent-policy.yaml</code>. Without the
+opt-in the tab reports that guest eBPF is disabled.</li>
+<li>Guest kernel with BTF and cgroup v2. The MAC section also needs <code>bpf</code> in the
+guest&#39;s active LSM list.</li>
+<li>Viewing needs any role; applying needs <strong>Admin</strong>.</li>
+</ul>
+<h3>What you can do</h3>
+<p>The tab has two sections. Each one lists the containers that already have
+rules, with their mode and audited hits, and a form to apply new rules.</p>
+<p><strong>Container network policy</strong></p>
+<ol>
+<li>Enter the container name or id.</li>
+<li>Choose which directions to police (egress, ingress).</li>
+<li>Add allow rules, one per line, for example <code>egress 10.0.0.0/8 tcp 5432</code> or <code>egress 0.0.0.0/0 udp 53</code>.</li>
+<li>Apply in <strong>Audit (report only)</strong>. Watch the hit counters.</li>
+</ol>
+<p><strong>Container MAC (BPF-LSM)</strong></p>
+<ul>
+<li><strong>Deny exec</strong> with an allowlist (<code>/usr/bin/python3, /app/server</code>)</li>
+<li><strong>Deny W+X</strong> memory mappings</li>
+<li><strong>Restrict devices</strong> with an allowlist (<code>c 10:200, b 8:*</code>)</li>
+<li><strong>Restrict writes</strong> to allowlisted paths (<code>/tmp, /data</code>)</li>
+</ul>
+<h3>Audit, then enforce</h3>
+<ul>
+<li><strong>Audit</strong> is the default and only reports violations.</li>
+<li><strong>Enforce (leased)</strong> denies them for the lease you enter (1–3600 s). The
+deadline lives in the guest&#39;s policy map, so the guest kernel reverts to
+audit by itself when it expires, even if Machina is unreachable.</li>
+<li>Nothing is persisted. A guest reboot or <code>guestkitd</code> restart clears the rules.</li>
+</ul>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>Guest agent not connected:</strong> start <code>qemu-guest-agent</code> in the VM.</li>
+<li><strong>eBPF disabled in guest:</strong> set <code>capabilities.ebpf: true</code> in the guest&#39;s agent policy and restart <code>guestkitd</code>.</li>
+<li><strong>Container not found:</strong> use the name or id shown by <code>docker ps</code> / <code>podman ps</code> / <code>crictl ps</code> in the guest.</li>
+</ul>
+<h3>Related pages</h3>
+<ul>
+<li><a href="vms.md">Virtual Machines</a></li>
+<li><a href="../platform-security/platform-zyra-security-native-bpf.md">Native eBPF</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
 <h2>Virtual Machines</h2>
 <h3>Purpose</h3>
 <p>Virtual machine inventory for this libvirt host.</p>
@@ -896,6 +936,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <ul>
 <li><a href="create.md">Create new guest VM</a></li>
 <li><a href="import.md">Import guest VM</a></li>
+<li><a href="vm-guest-policy.md">VM detail: Guest policy</a></li>
 <li><a href="../platform/platform-vms.md">Machine Finder</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="home.md">Dashboard</a></li>
@@ -1744,36 +1785,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>SSH</h2>
-<h3>Purpose</h3>
-<p>SSH — Infrastructure surface.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Open this page when the job matches the purpose above</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/ssh</code></li>
-<li>Nav: <strong>Infrastructure → SSH</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>What you can do</h3>
-<ol>
-<li>Open <code>/ssh</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
-<li>Use filters and host/VM selectors when the page provides them.</li>
-<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
-<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, Transiva, or Launchpad to be enabled.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
-<li><a href="../platform/platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
 <h2>Storage pools</h2>
 <h3>Purpose</h3>
 <p>Storage Pools — Machina Infrastructure page at <code>/storage</code>.</p>
@@ -2250,6 +2261,36 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
+<h2>Alert Rules</h2>
+<h3>Purpose</h3>
+<p>Threshold alert rules on VM CPU and memory: notify (via Alerts / webhooks) when a metric crosses a bound.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
+<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/platform/alert-rules</code></li>
+<li>Nav: <strong>Platform → Alert Rules</strong> (or spotlight / Finder search)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/platform/alert-rules</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
+<li>Use filters and host/VM selectors when the page provides them.</li>
+<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
+<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
+</ol>
+<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../core/home.md">Dashboard</a></li>
+<li><a href="../platform/platform.md">Mission Control</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
 <h2>API keys</h2>
 <h3>Purpose</h3>
 <p>API Keys — Machina Platform page at <code>/platform/api-keys</code>.</p>
@@ -2319,33 +2360,34 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Time Machine</h2>
+<h2>Backup &amp; Restore</h2>
 <h3>Purpose</h3>
-<p>Backup &amp; Restore — Machina Platform page at <code>/platform/backups</code>.</p>
+<p>Fleet backups: a timeline of backup runs, backup destinations (NFS, S3/MinIO or local), recurring schedules by project or tag, and one-off backups of a single VM.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Time Machine</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Register where backups are stored</li>
+<li>Back up every VM in a project or with a tag on a schedule, with retention</li>
+<li>Queue an immediate full or incremental backup of one VM</li>
+<li>Restore a VM</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/backups</code></li>
 <li>Nav: <strong>Platform → Backup &amp; Restore</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>Destinations / schedules / events</strong>.</li>
-<li>Add destination.</li>
-<li>Queue backup.</li>
-<li>Add schedule.</li>
-<li>Restore.</li>
-<li>Browse VMs.</li>
-<li><strong>Empty:</strong> No schedules/events → queue or schedule.</li>
-<li><strong>Success:</strong> Backup event completed; restore OK.</li>
+<li><strong>Backup destinations</strong>: register an NFS, S3 or local target and pick the default target.</li>
+<li><strong>Queue VM backup</strong>: enter a VM id, choose <strong>Full backup</strong> (whole qcow2) or <strong>Incremental</strong> (chains on the previous completed backup on that host), then <strong>Queue backup</strong>. The job shows up in <a href="platform-tasks.md">Tasks</a>.</li>
+<li><strong>New backup schedule</strong>: name, interval in hours, retain count, and an optional project or tag filter. <strong>Active schedules</strong> lists them; delete with confirmation.</li>
+<li><strong>Restore VM from backup</strong>: restore runs from the VM detail page, where each VM&#39;s backup history lives (<strong>Browse VMs</strong>).</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>Incremental fails:</strong> there is no completed full backup for that VM on its current host yet; run a full one first.</li>
+<li><strong>S3 target errors:</strong> check endpoint, bucket and credentials, and that the hosts can reach the endpoint.</li>
+<li>Snapshot schedules (not backups) live in <a href="platform-fleet-snapshots.md">Fleet snapshot schedules</a>.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="../infrastructure/backups.md">Backups (Snapshot Backups)</a></li>
@@ -2633,31 +2675,35 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <hr>
 <h2>Host Enrollment</h2>
 <h3>Purpose</h3>
-<p>Add Host — Machina Platform page at <code>/platform/enroll</code>.</p>
+<p>Join new KVM hypervisors to the control plane. You generate a one-time join token here and run the install command on the new host; its <code>machina-agent</code> then registers with the controller.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Host Enrollment</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Adding a new hypervisor to the fleet</li>
+<li>Re-enrolling a host after a reinstall</li>
+<li>Auditing which join tokens were issued, used or revoked</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/enroll</code></li>
 <li>Nav: <strong>Platform → Add Host</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>Token history</strong>.</li>
-<li>Generate join token.</li>
-<li>Copy install command.</li>
-<li><strong>Empty:</strong> No enrollment tokens yet.</li>
-<li><strong>Success:</strong> Host appears on /platform/hosts.</li>
+<li>Under <strong>Join token</strong>, generate a token. The <strong>Active token</strong> panel shows the token, its expiry and a ready-made <strong>Install command</strong>; copy either.</li>
+<li>On the new KVM host (with libvirt installed), run the install command, or <code>machina-agent join --controller URL --token TOKEN</code>.</li>
+<li>The host appears on <a href="platform-hosts.md">Hosts</a> once its first heartbeat arrives. Run <strong>Validate</strong> there.</li>
+<li><strong>Recent tokens</strong> lists issued tokens with their state. Used and revoked tokens stay for audit.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>Token expired:</strong> generate a new one; tokens are single-use and time-limited.</li>
+<li><strong>Host never appears:</strong> check that the host resolves and reaches the controller URL in the command, and that <code>machina-agent</code> is running (<code>journalctl -u machina-agent</code>).</li>
+<li>Deploying the controller and agent together on a test host: <code>./scripts/deploy-remote.sh USER@HOST --platform</code>.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="platform-hosts.md">Hosts</a></li>
+<li><a href="platform-upgrade.md">Upgrade Matrix</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="platform.md">Mission Control</a></li>
@@ -2801,102 +2847,115 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>HA Events</h2>
+<h2>High Availability</h2>
 <h3>Purpose</h3>
-<p>High Availability — Machina Platform page at <code>/platform/ha</code>.</p>
+<p>Fleet high availability: which hosts are healthy, fence events, and HA restarts of VMs from failed hosts. The controller fences a failed host before it restarts that host&#39;s VMs elsewhere, so a VM never runs twice.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>HA Events</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Confirm the fleet is healthy and fencing is configured</li>
+<li>Review what happened after a host failure (fence and HA events)</li>
+<li>Fence a host by hand when you know it is broken</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/ha</code></li>
 <li>Nav: <strong>Platform → High Availability</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Refresh.</li>
-<li><strong>Empty:</strong> No HA events / No hosts.</li>
-<li><strong>Success:</strong> HA status healthy.</li>
+<li><strong>Host Fencing</strong> lists hosts and their state. <strong>Fence</strong> on a host (with confirmation) isolates it; use it only when the host is really unhealthy.</li>
+<li><strong>Fence Events</strong> shows each fence attempt and its result.</li>
+<li><strong>HA Events</strong> shows VMs restarted on other hosts after a failure.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<p>How automatic HA works:</p>
+<ul>
+<li>A host whose agent heartbeat is older than <strong>90 s</strong> is considered failed. The controller scans for failed hosts every <strong>45 s</strong>.</li>
+<li>Before recovering VMs it fences the host: IPMI power-off from the controller when the host has BMC details, otherwise the command in <code>MACHINA_FENCE_COMMAND</code>.</li>
+<li>If fencing fails, VMs are <strong>not</strong> restarted unless the operator opted in with <code>allow_unfenced</code>.</li>
+<li>Only one controller acts at a time when several run (leader lease).</li>
+</ul>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>&quot;Enroll hosts to enable fencing&quot;:</strong> no hosts yet; see <a href="platform-enroll.md">Host Enrollment</a>.</li>
+<li><strong>Fence fails:</strong> check BMC address and credentials on the host (Bare Metal) or the fence command, and that the controller can reach the BMC network.</li>
+<li>Details for admins: <code>docs/controller-ha.md</code> in the repository.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="platform-placement.md">Placement &amp; HA</a></li>
 <li><a href="platform-hosts.md">Hosts</a></li>
+<li><a href="platform-maintenance.md">Maintenance</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="platform.md">Mission Control</a></li>
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Hosts</h2>
+<h2>Machine Finder</h2>
 <h3>Purpose</h3>
-<p>Hosts — Machina Platform page at <code>/platform/hosts</code>.</p>
+<p>Machine Finder: opens the fleet VM list in its topology lens (/platform/vms?lens=topology) to find any VM by host, network or name.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Hosts</strong> when your job matches this page</li>
+<li>Open this page when the job matches the purpose above</li>
 <li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
 <li>Confirm PAM/OIDC login and roles if actions are missing</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/platform/hosts/finder</code></li>
+<li>Nav: <strong>Platform → Machine Finder</strong> (or spotlight / Finder search)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/platform/hosts/finder</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
+<li>Use filters and host/VM selectors when the page provides them.</li>
+<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
+<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
+</ol>
+<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../core/home.md">Dashboard</a></li>
+<li><a href="../platform/platform.md">Mission Control</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Hosts</h2>
+<h3>Purpose</h3>
+<p>Every hypervisor enrolled with the controller: online/offline state, agent heartbeat, capacity and the VMs it runs. This is where you start any host-level task in the fleet.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Check whether a host is online and its agent heartbeat is current</li>
+<li>Find hosts that went offline (<code>?filter=offline</code>)</li>
+<li>Re-sync inventory after changes made outside Machina</li>
+<li>Validate a newly joined host before you place VMs on it</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/hosts</code></li>
 <li>Nav: <strong>Platform → Hosts</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>?filter=offline; search</strong>.</li>
-<li>Add/Enroll host.</li>
-<li>Sync all.</li>
-<li>Open host.</li>
-<li>Open in Machine Finder.</li>
-<li><strong>Empty:</strong> No hosts enrolled → Add host.</li>
-<li><strong>Success:</strong> Host online + heartbeat.</li>
+<li>The list shows each managed host with status and last heartbeat. Use search, or open <code>?filter=offline</code> to see only offline hosts.</li>
+<li><strong>Sync all</strong> asks every agent to refresh its VM, storage and network inventory.</li>
+<li>Select a host and <strong>Open host</strong> for its detail page (VMs, capacity, maintenance mode, agent version).</li>
+<li><strong>Validate</strong> runs host join validation (agent reachable, libvirt connected, versions compatible) and shows the result under <strong>Validation</strong>.</li>
+<li><strong>Open in Machine Finder</strong> jumps to the fleet VM list filtered to that host.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>No hosts:</strong> enroll one from <a href="platform-enroll.md">Host Enrollment</a>.</li>
+<li><strong>Host offline:</strong> on the host, check <code>systemctl status machina-agent</code> and that it can reach the controller on port 5093 (and the controller can reach the agent on 50051).</li>
+<li>A host whose heartbeat is older than 90 seconds is treated as failed by HA; see <a href="platform-ha.md">High Availability</a>.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="platform-enroll.md">Host Enrollment</a></li>
 <li><a href="platform-vms.md">Machine Finder</a></li>
-<li><a href="../../getting-started.md">Getting Started</a></li>
-<li><a href="../core/home.md">Dashboard</a></li>
-<li><a href="platform.md">Mission Control</a></li>
-<li><a href="../../PAGE_INDEX.md">Page index</a></li>
-</ul>
-<hr>
-<h2>Integrations</h2>
-<h3>Purpose</h3>
-<p>Integrations — Machina Platform page at <code>/platform/integrations</code>.</p>
-<h3>When to use it</h3>
-<ul>
-<li>Operate <strong>Integrations</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
-</ul>
-<h3>How to get there</h3>
-<ul>
-<li>Route: <code>/platform/integrations</code></li>
-<li>Nav: <strong>Platform → Integrations</strong> (or spotlight / Finder search)</li>
-</ul>
-<h3>Operate from the console (UX)</h3>
-<ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>Launchpad grid</strong>.</li>
-<li>Enroll host.</li>
-<li>Connect tiles.</li>
-<li><strong>Empty:</strong> No hypervisors enrolled.</li>
-<li><strong>Success:</strong> Integration connected.</li>
-</ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
-<h3>Related pages</h3>
-<ul>
-<li><a href="platform-enroll.md">Host Enrollment</a></li>
-<li><a href="../fleet-cloud/fleet-cloud.md">Fleet Cloud</a></li>
+<li><a href="platform-ha.md">High Availability</a></li>
+<li><a href="platform-upgrade.md">Upgrade Matrix</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="platform.md">Mission Control</a></li>
@@ -3007,31 +3066,33 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Migration Radar</h2>
+<h2>Migration Assistant</h2>
 <h3>Purpose</h3>
-<p>Migration Assistant — Machina Platform page at <code>/platform/migration</code>.</p>
+<p>Migration Radar: bring VMs into Machina from VMware vCenter, ESXi, OVF/OVA, VMDK or cloud images. HyperSDK discovers and converts source VMs; GuestKit checks disks offline before and after conversion.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Migration Radar</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Plan a move off VMware: scan a vCenter or ESXi host and review what will convert cleanly</li>
+<li>Import a single OVF/OVA, VMDK or cloud image</li>
+<li>Follow GuestKit offline inspection and doctor jobs</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/migration</code></li>
 <li>Nav: <strong>Platform → Migration Assistant</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>vCenter / ESXi / OVF·OVA / VMDK / Cloud Image</strong>.</li>
-<li>Scan source.</li>
-<li>Open import wizard.</li>
-<li>Import.</li>
-<li><strong>Empty:</strong> No scan yet → pick source.</li>
-<li><strong>Success:</strong> Discovered VMs importable.</li>
+<li>Pick a source: <strong>VMware vCenter</strong>, <strong>ESXi Host</strong>, <strong>OVF / OVA File</strong>, <strong>VMDK File</strong> or <strong>Cloud Image</strong>.</li>
+<li><strong>Scan &amp; migrate</strong>: run a scan; <strong>Scan results</strong> list discovered VMs with <strong>Migration Advisor Warnings</strong> (drivers, firmware, disk layout).</li>
+<li>For one VM, <strong>Open import wizard</strong> (single-VM import).</li>
+<li><strong>GuestKit jobs</strong> (<code>?tab=jobs</code>) is the queue of offline inspect / doctor / migrate-plan jobs; enter a disk path such as <code>/var/lib/libvirt/images/vm.qcow2</code> to run one.</li>
+<li><strong>HyperSDK proxy explorer</strong> lets admins call provider-specific HyperSDK API paths directly.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>HyperSDK or GuestKit tabs disabled:</strong> the integration is not enabled on the controller (<code>GUESTKIT_ENABLED</code>, HyperSDK settings).</li>
+<li><strong>No scan yet:</strong> pick a source and provide its credentials first.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="../core/import.md">Import guest VM</a></li>
@@ -3079,34 +3140,36 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <hr>
 <h2>Networks</h2>
 <h3>Purpose</h3>
-<p>Networks — Machina Platform page at <code>/platform/networks</code>.</p>
+<p>The fleet network pane: libvirt networks across hosts, overlay segments with east-west policy, and IPAM pools that hand out addresses from a segment CIDR.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Networks</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Make an existing libvirt network (for example <code>virbr0</code>) known to the platform, or create a bridge-backed VM network</li>
+<li>Build Tier-0 (uplink) / Tier-1 (workload) overlay segments with east-west defaults</li>
+<li>Allocate addresses from IPAM pools instead of tracking them by hand</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/networks</code></li>
 <li>Nav: <strong>Platform → Networks</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>Overlay segments; IPAM</strong>.</li>
-<li>New network.</li>
-<li>New segment.</li>
-<li>Import/Sync from hosts.</li>
-<li><strong>Empty:</strong> No networks yet → create/enroll.</li>
-<li><strong>Success:</strong> Segment + IPAM pool present.</li>
+<li><strong>Networks</strong>: import libvirt networks from online hosts, or create a bridge-backed network. Search with the filter box; <strong>Activate</strong> / <strong>Deactivate</strong> / remove per row.</li>
+<li><strong>Overlay segments</strong>: <strong>Create segment</strong> with a CIDR, gateway, east-west default (allow or deny) and an optional Zyra firewall profile. Open a segment to see its allowed and blocked paths and micro-segmentation grade.</li>
+<li><strong>IPAM pools</strong>: segments with IPAM enabled show reservations and the next free offset.</li>
+<li><strong>Emergency Unlock Segment</strong> lifts a segment&#39;s east-west deny when it is blocking legitimate traffic during an incident.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>No networks yet:</strong> import from a host that is online, or create one.</li>
+<li>East-west policy here is simulated and planned at the platform level; host-level packet enforcement is done by <a href="../platform-security/platform-zyra-security-native-bpf.md">Native eBPF</a>.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="../infrastructure/networks.md">Networks</a></li>
 <li><a href="platform-network-canvas.md">Network canvas</a></li>
 <li><a href="../platform-security/platform-zeus-security.md">Security Center</a></li>
+<li><a href="../platform-security/platform-zyra-security-native-bpf.md">Native eBPF</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="platform.md">Mission Control</a></li>
@@ -3345,35 +3408,70 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Settings</h2>
+<h2>Scheduled Jobs</h2>
 <h3>Purpose</h3>
-<p>Settings — Machina Platform page at <code>/platform/settings</code>.</p>
+<p>Recurring controller operations from a whitelist, for example periodic host inventory refresh.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Settings</strong> when your job matches this page</li>
+<li>Open this page when the job matches the purpose above</li>
 <li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
 <li>Confirm PAM/OIDC login and roles if actions are missing</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/platform/scheduled-jobs</code></li>
+<li>Nav: <strong>Platform → Scheduled Jobs</strong> (or spotlight / Finder search)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/platform/scheduled-jobs</code> against the Machina daemon (<code>https://&lt;host&gt;:5092</code>).</li>
+<li>Use filters and host/VM selectors when the page provides them.</li>
+<li>Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.</li>
+<li>For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).</li>
+</ol>
+<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../core/home.md">Dashboard</a></li>
+<li><a href="../platform/platform.md">Mission Control</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Settings</h2>
+<h3>Purpose</h3>
+<p>One hub for platform configuration: general and cluster preferences, identity and SSO, users and groups, API keys, AI providers, Zyra, network, policy and quotas, webhooks, reports, console, keychain and updates.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Configuring SSO or adding users</li>
+<li>Creating API keys for automation</li>
+<li>Setting policy (for example, require confirmation for production VM deletion) or quotas</li>
+<li>Connecting AI providers for Zyra</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/settings</code></li>
 <li>Nav: <strong>Platform → Settings</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>General / Identity &amp; SSO / Zyra / AI Providers / Security</strong>.</li>
-<li>Save.</li>
-<li>Generate YAML.</li>
-<li>Open Keychain/Network Lens.</li>
-<li><strong>Empty:</strong> —.</li>
-<li><strong>Success:</strong> Settings persist.</li>
+<li>Pick a section on the left: <strong>General</strong>, <strong>Identity &amp; SSO</strong>, <strong>Users &amp; Groups</strong>, <strong>Security</strong>, <strong>API Keys</strong>, <strong>AI Providers</strong>, <strong>Zyra</strong>, <strong>Network</strong>, <strong>Infrastructure</strong>, <strong>Policy &amp; Quotas</strong>, <strong>Apps &amp; Integrations</strong>, <strong>Webhooks</strong>, <strong>Reports</strong>, <strong>Console</strong>, <strong>Keychain</strong>, <strong>Stage Manager</strong>, <strong>Updates</strong>.</li>
+<li>Many sections show a summary with an <strong>Open full … workspace</strong> link to the dedicated page.</li>
+<li><strong>Security</strong> holds cluster-wide switches such as <strong>Require confirmation for production VM deletion</strong> (deletes queue for approval), air-gap bundles with artifact checksums, and tenant policy export as YAML (<strong>Generate YAML</strong>).</li>
+<li><strong>Policy &amp; Quotas</strong> opens the full policy rules and project quota workspace.</li>
+<li>Integrations moved here: the old <code>/platform/integrations</code> URL opens <code>?section=integrations</code>.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>Section read-only:</strong> your role is not Admin.</li>
+<li>Host-level daemon settings (PAM, TLS, libvirt URI) are in <code>/etc/machina/config.toml</code>, not here; see the admin configuration guide.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="platform-ai-providers.md">AI Providers</a></li>
 <li><a href="../platform-security/platform-zyra-configure.md">Configure Zyra</a></li>
+<li><a href="platform-users.md">Users</a></li>
+<li><a href="platform-api-keys.md">API keys</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="platform.md">Mission Control</a></li>
@@ -3550,28 +3648,31 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <hr>
 <h2>Tasks</h2>
 <h3>Purpose</h3>
-<p>Tasks — Machina Platform page at <code>/platform/tasks</code>.</p>
+<p>The controller&#39;s orchestration queue. Every long-running operation (VM create, migrate, backup, agent upgrade, …) is a task with an operation name, status, progress and message.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Tasks</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Follow a long operation you started elsewhere</li>
+<li>Find out why something failed</li>
+<li>Check controller health</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/tasks</code></li>
 <li>Nav: <strong>Platform → Tasks</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>Pending / Running / Completed / Failed</strong>.</li>
-<li>Refresh.</li>
-<li>Open task detail.</li>
-<li><strong>Empty:</strong> No tasks.</li>
-<li><strong>Success:</strong> Task Completed.</li>
+<li>Filter by status: <strong>All</strong>, <strong>Pending</strong>, <strong>Running</strong>, <strong>Completed</strong>, <strong>Failed</strong>.</li>
+<li><strong>Filter by operation</strong> (for example <code>vm.migrate</code>); <strong>Clear filter</strong> resets it.</li>
+<li>Open a row for <strong>Task detail</strong>: operation, target, progress, message, the controller that ran it, and created/updated times.</li>
+<li><strong>Controller health</strong> shows the result of <code>GET /api/v1/health</code>.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>Task stuck in Pending:</strong> the controller worker or (with NATS) the task bus is not processing; check controller health and logs.</li>
+<li><strong>Failed:</strong> the message carries the error and usually a remediation hint.</li>
+<li>Scripts can poll the same data at <code>/api/v1/tasks/{task_id}</code>.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="platform-events.md">Platform events</a></li>
@@ -3651,32 +3752,42 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
-<h2>Upgrade Guide</h2>
+<h2>Upgrade Matrix</h2>
 <h3>Purpose</h3>
-<p>Upgrade Matrix — Machina Platform page at <code>/platform/upgrade</code>.</p>
+<p>Version compatibility between the controller and host agents (controller version, minimum and recommended agent) and a per-host <strong>Upgrade Agent</strong> action.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Upgrade Guide</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Before or after upgrading the controller, to see which agents are behind</li>
+<li>Rolling agent upgrades, one host at a time</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/upgrade</code></li>
 <li>Nav: <strong>Platform → Upgrade Matrix</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Apply agent upgrades.</li>
-<li><strong>Empty:</strong> No hosts enrolled.</li>
-<li><strong>Success:</strong> Hosts on target version.</li>
+<li><strong>Upgrade Matrix</strong> shows the controller version, the minimum and the recommended agent version.</li>
+<li><strong>Hosts</strong> lists each host&#39;s agent version against that matrix.</li>
+<li>Follow the <strong>Upgrade Guide</strong> for each host:<ol>
+<li>Put the host into maintenance mode from <a href="platform-hosts.md">Hosts</a>.</li>
+<li>Click <strong>Upgrade Agent</strong>; this enqueues a <code>host.agent.upgrade</code> task.</li>
+<li>Watch it in <a href="platform-tasks.md">Tasks</a>.</li>
+<li>When the agent heartbeat is back, take the host out of maintenance.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+</li>
+</ol>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>No hosts enrolled:</strong> enroll a host first.</li>
+<li><strong>Upgrade task fails:</strong> check the task message in Tasks and <code>journalctl -u machina-agent</code> on the host.</li>
+<li>Backing up before upgrades and upgrading the controller and daemon themselves: see the operator runbook (<code>docs/handbook/runbook.md</code>).</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
 <li><a href="platform-maintenance.md">Maintenance</a></li>
 <li><a href="platform-hosts.md">Hosts</a></li>
+<li><a href="platform-tasks.md">Tasks</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
 <li><a href="../core/home.md">Dashboard</a></li>
 <li><a href="platform.md">Mission Control</a></li>
@@ -3840,7 +3951,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <h3>Operate from the console (UX)</h3>
 <ol>
 <li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>?mission=1 geography; host/VM dock</strong>.</li>
+<li>Filters / tabs: <strong>?mission=1</strong> geography; host/VM sidebar rail.</li>
 <li>Create VM (wizard).</li>
 <li>Use Launchpad tiles.</li>
 <li>Power VM.</li>
@@ -3895,31 +4006,34 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <hr>
 <h2>Security Center</h2>
 <h3>Purpose</h3>
-<p>Zeus Security — Machina Platform / Security page at <code>/platform/zeus/security</code>.</p>
+<p>Fleet security overview: the infrastructure security graph, critical findings, natural-language event search, and the eBPF sensor matrix showing <code>machina-bpfd</code> on every host as reported through its agent.</p>
 <h3>When to use it</h3>
 <ul>
-<li>Operate <strong>Security Center</strong> when your job matches this page</li>
-<li>Use Mission Control (<code>/platform</code>) for fleet-wide work; use Core routes for this host only</li>
-<li>Confirm PAM/OIDC login and roles if actions are missing</li>
+<li>Daily security review of the fleet</li>
+<li>Search events in plain language (&quot;show every process that opened port 8080 last week&quot;)</li>
+<li>Check that every host&#39;s eBPF sensor is reporting</li>
 </ul>
 <h3>How to get there</h3>
 <ul>
 <li>Route: <code>/platform/zeus/security</code></li>
-<li>Nav: <strong>Platform / Security → Zeus Security</strong> (or spotlight / Finder search)</li>
+<li>Nav: <strong>Security Center</strong> (or spotlight / Finder search)</li>
 </ul>
-<h3>Operate from the console (UX)</h3>
+<h3>What you can do</h3>
 <ol>
-<li>Open the route against the Machina daemon (<code>https://&lt;host&gt;:5092</code>) and wait for live data.</li>
-<li>Filters / tabs: <strong>Hub tiles → firewall/ports/services/…</strong>.</li>
-<li>Enroll Tetragon.</li>
-<li>Runtime enforcement.</li>
-<li>Open Ports.</li>
-<li>Threat hunting.</li>
-<li><strong>Success:</strong> Posture tiles green/nominal.</li>
+<li><strong>Critical</strong> / <strong>Requires attention</strong> summarise findings that need action.</li>
+<li><strong>Infrastructure security graph</strong> links hosts, VMs, networks and findings.</li>
+<li><strong>Zeus security search</strong> takes a natural-language query and returns matching events.</li>
+<li><strong>eBPF sensor matrix</strong> / <strong>Sensor registry</strong> list each host&#39;s <code>machina-bpfd</code> (version, mode, health). A host shown as <strong>machina-bpfd unreachable</strong> has no running bpfd or no agent link.</li>
+<li><strong>Open Native eBPF</strong> goes to the per-host console. The sub-nav also has Kubernetes, Cloud SGs, Connectivity, Policy Studio, Threat Hunting and Enforcement.</li>
 </ol>
-<p>If the page stays empty, check daemon health (<code>/api/v1/health</code>), libvirt connectivity, and whether the feature requires Fleet Cloud or Mission Control enrollment.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>machina-bpfd unreachable:</strong> on that host, <code>systemctl status machina-bpfd machina-agent</code>.</li>
+<li><strong>Search returns nothing:</strong> check that AI providers are configured for Zyra and that hosts are sending events.</li>
+</ul>
 <h3>Related pages</h3>
 <ul>
+<li><a href="platform-zyra-security-native-bpf.md">Native eBPF</a></li>
 <li><a href="../platform/platform-soc.md">Security Operations Center</a></li>
 <li><a href="platform-zyra.md">Machina Zyra OS</a></li>
 <li><a href="../../getting-started.md">Getting Started</a></li>
@@ -4075,6 +4189,157 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <li><a href="../../PAGE_INDEX.md">Page index</a></li>
 </ul>
 <hr>
+<h2>Native eBPF</h2>
+<h3>Purpose</h3>
+<p>Operate Machina&#39;s built-in eBPF datapath on a host. One root service, <code>machina-bpfd</code>, loads Machina&#39;s own kernel programs for flow visibility, policy enforcement, load balancing, DDoS protection, VM isolation and scheduling. This page is the console for it; there is no separate Cilium, Tetragon, Netra or PacketWolf agent to install.</p>
+<h3>When to use it</h3>
+<ul>
+<li>See which VMs talk to what (flows, DNS, L7, per-VM byte accounting)</li>
+<li>Block or allow traffic with policies, first in <strong>observe</strong>, then <strong>enforce</strong> under a lease</li>
+<li>Load-balance services on the uplink, absorb floods (Shield), or isolate a node during an incident</li>
+<li>Check what the running kernel supports before turning on a feature</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/platform/zyra/security/native-bpf</code></li>
+<li>Nav: <strong>Security Center → Native eBPF</strong> (or spotlight / Finder search for &quot;eBPF&quot;)</li>
+<li>Per-VM container rules live in a different place: VM detail → <strong>Guest policy</strong> (see <a href="../core/vm-guest-policy.md">Guest policy</a>)</li>
+</ul>
+<h3>Before you start</h3>
+<ul>
+<li><code>machina-bpfd</code> must be running on the host (<code>systemctl status machina-bpfd</code>).
+If it is not, the page shows &quot;bpfd unavailable&quot; and every tab stays empty.</li>
+<li><strong>Overview → programs compiled = no</strong> means the build had no eBPF toolchain;
+the admin runs <code>make bpf-deps</code> and rebuilds.</li>
+<li>Viewing needs any logged-in role. Every change (mode, policies, attach, leases) is <strong>Admin</strong> only.</li>
+</ul>
+<h3>Tabs</h3>
+<p>The page has 22 tabs. The first eight are the core console; the rest are one tab per datapath feature.</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>What it shows / does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Overview</strong></td>
+<td>Version, mode (observe / enforce + lease left), kernel feature pills (<code>btf</code>, <code>tcx</code>, <code>lsm_bpf</code>, <code>sched_ext</code>, <code>xsk</code>…), policy count, attached interfaces, flow / drop / anomaly counters. Switch mode and manage policies here.</td>
+</tr>
+<tr>
+<td><strong>Flows</strong></td>
+<td>Live connection table per VM (5-tuple, bytes, verdict). Filter by VM.</td>
+</tr>
+<tr>
+<td><strong>L7</strong></td>
+<td>Parsed HTTP / DNS / TLS-SNI requests by protocol.</td>
+</tr>
+<tr>
+<td><strong>Accounting</strong></td>
+<td>Per-VM byte and packet counters; reset one VM or all.</td>
+</tr>
+<tr>
+<td><strong>Live</strong></td>
+<td>Streaming events (net, dns, l7, proc, anomaly topics) over SSE.</td>
+</tr>
+<tr>
+<td><strong>DNS &amp; processes</strong></td>
+<td>DNS answers seen and which host processes opened sockets.</td>
+</tr>
+<tr>
+<td><strong>Captures</strong></td>
+<td>Start a ring-buffer packet capture on one interface and download it as pcapng for Wireshark.</td>
+</tr>
+<tr>
+<td><strong>QoS &amp; telemetry</strong></td>
+<td>Per-VM rate limits and the datapath telemetry counters.</td>
+</tr>
+<tr>
+<td><strong>Service LB</strong></td>
+<td>Uplink service load balancing (VIP → backends, weighted, with health).</td>
+</tr>
+<tr>
+<td><strong>VM Edge</strong></td>
+<td>Per-VM tap programs: anti-spoof, isolation, QEMU sandbox.</td>
+</tr>
+<tr>
+<td><strong>Shield</strong></td>
+<td>XDP DDoS shield on the uplink: per-source SYN / UDP / ICMP rate limits with allow and deny lists; shows the top over-rate sources.</td>
+</tr>
+<tr>
+<td><strong>TCP Health</strong></td>
+<td>Retransmits, RTT and ICMP errors per peer.</td>
+</tr>
+<tr>
+<td><strong>TLS / JA4</strong></td>
+<td>TLS client fingerprints (JA4) and SNI seen per VM.</td>
+</tr>
+<tr>
+<td><strong>Node Isolation</strong></td>
+<td>Incident kill-switch for the host: drop everything except an allowlist, with its own 10–900 s lease. Refuses to arm unless SSH or an exempt CIDR is allowlisted.</td>
+</tr>
+<tr>
+<td><strong>Net changes</strong></td>
+<td>Audit of netlink changes (links, addresses, routes) on the host.</td>
+</tr>
+<tr>
+<td><strong>L7 sampling</strong></td>
+<td>Sampled L7 payload metadata for low-overhead visibility.</td>
+</tr>
+<tr>
+<td><strong>VM runtime</strong></td>
+<td>Per-VM runtime intelligence (vCPU exits, block and network activity from QEMU).</td>
+</tr>
+<tr>
+<td><strong>VMM guard</strong></td>
+<td>BPF-LSM guard around QEMU processes (audit, or enforce under a lease; needs <code>lsm_bpf</code>).</td>
+</tr>
+<tr>
+<td><strong>Direct redirect</strong></td>
+<td>Opt-in per VM: frames for the VM on an outer interface go straight into its tap (and back with reverse), bypassing the bridge. Idle unless the enforcement lease is live.</td>
+</tr>
+<tr>
+<td><strong>QUIC LB</strong></td>
+<td>Connection-ID aware QUIC load balancing on the uplink.</td>
+</tr>
+<tr>
+<td><strong>AF_XDP</strong></td>
+<td>Zero-copy AF_XDP sockets for a chosen interface (never the default-route NIC).</td>
+</tr>
+<tr>
+<td><strong>Scheduler</strong></td>
+<td><code>machina-scx</code> sched_ext VM scheduler: status, start / stop under a lease (needs <code>sched_ext</code>).</td>
+</tr>
+</tbody></table>
+<h3>Safe workflow for enforcement</h3>
+<ol>
+<li>Add the policy while the host is in <strong>observe</strong>. Misses are counted, nothing is dropped.</li>
+<li>Watch <strong>Flows</strong> / <strong>Live</strong> for the hits you expect. Fix the rule until only unwanted traffic would be blocked.</li>
+<li>Switch to <strong>enforce</strong> with a lease (default 900 s). The lease is checked in the datapath, so drops stop on time even if bpfd stalls.</li>
+<li>Extend the lease only once you are sure. A bpfd restart always comes back in observe: mode and leases are never persisted.</li>
+</ol>
+<p>Guard rails you will see: auto-attach only touches VM taps (<code>vnet*</code> / <code>tap*</code>),
+default-deny is never attached to an uplink, and direct redirect refuses a
+physical NIC unless forced. Test new enforcement on a lab host first.</p>
+<h3>Fleet view</h3>
+<p>On the controller, <strong>Security Center</strong> aggregates every host&#39;s dataplane
+(<code>/api/v1/zeus-security/native-dataplane</code>) and pushes per-host changes through
+the host&#39;s agent. Use this page for one host, Security Center for the fleet.</p>
+<h3>If something is wrong</h3>
+<ul>
+<li><strong>bpfd unavailable:</strong> start the unit, then check <code>journalctl -u machina-bpfd</code>.</li>
+<li><strong>A tab says the kernel lacks a feature:</strong> compare the Overview feature pills with the kernel requirements in the admin docs.</li>
+<li><strong>Enforcement went back to observe:</strong> the lease expired or bpfd restarted. This is by design.</li>
+</ul>
+<h3>Related pages</h3>
+<ul>
+<li><a href="platform-zeus-security.md">Security Center</a></li>
+<li><a href="../core/vm-guest-policy.md">Guest policy</a></li>
+<li><a href="../platform/platform-network-canvas.md">Network Canvas</a></li>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
 <h2>Machina Zyra OS</h2>
 <h3>Purpose</h3>
 <p>Zyra AI assistant for Machina operations.</p>
@@ -4118,7 +4383,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <hr>
 <h2>Machina — Complete page index</h2>
 <p>Every primary navigable dashboard route.</p>
-<p><em>Generated: 2026-08-29 · 105 routes</em></p>
+<p><em>Generated: 2026-10-03 · 106 routes</em></p>
 <p>Regenerate: <code>node scripts/customer-docs/generate-page-index.mjs</code></p>
 <h3>Core</h3>
 <table>
@@ -4190,12 +4455,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td>Services — Machina Core page at <code>/services</code>.</td>
 <td><a href="pages/core/services.md">Open</a></td>
 </tr>
-<tr>
-<td>Mission Control</td>
-<td><code>/mission-control</code></td>
-<td>Mission Control — Core surface.</td>
-<td><a href="pages/core/mission-control.md">Open</a></td>
-</tr>
 </tbody></table>
 <h3>Platform</h3>
 <table>
@@ -4224,6 +4483,12 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/platform/hosts</code></td>
 <td>Hosts — Machina Platform page at <code>/platform/hosts</code>.</td>
 <td><a href="pages/platform/platform-hosts.md">Open</a></td>
+</tr>
+<tr>
+<td>Machine Finder</td>
+<td><code>/platform/hosts/finder</code></td>
+<td>Machine Finder: opens the fleet VM list in its topology lens (/platform/vms?lens=topology) to find any VM by host, network or name.</td>
+<td><a href="pages/platform/platform-hosts-finder.md">Open</a></td>
 </tr>
 <tr>
 <td>Applications</td>
@@ -4400,6 +4665,18 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><a href="pages/platform/platform-notifications.md">Open</a></td>
 </tr>
 <tr>
+<td>Alert Rules</td>
+<td><code>/platform/alert-rules</code></td>
+<td>Threshold alert rules on VM CPU and memory: notify (via Alerts / webhooks) when a metric crosses a bound.</td>
+<td><a href="pages/platform/platform-alert-rules.md">Open</a></td>
+</tr>
+<tr>
+<td>Scheduled Jobs</td>
+<td><code>/platform/scheduled-jobs</code></td>
+<td>Recurring controller operations from a whitelist, for example periodic host inventory refresh.</td>
+<td><a href="pages/platform/platform-scheduled-jobs.md">Open</a></td>
+</tr>
+<tr>
 <td>Observability</td>
 <td><code>/platform/observability</code></td>
 <td>Observability — Machina Platform page at <code>/platform/observability</code>.</td>
@@ -4458,12 +4735,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/platform/api-keys</code></td>
 <td>API Keys — Machina Platform page at <code>/platform/api-keys</code>.</td>
 <td><a href="pages/platform/platform-api-keys.md">Open</a></td>
-</tr>
-<tr>
-<td>Integrations</td>
-<td><code>/platform/integrations</code></td>
-<td>Integrations — Machina Platform page at <code>/platform/integrations</code>.</td>
-<td><a href="pages/platform/platform-integrations.md">Open</a></td>
 </tr>
 <tr>
 <td>Marketplace</td>
@@ -4541,6 +4812,12 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/platform/zeus/security</code></td>
 <td>Zeus Security — Machina Platform / Security page at <code>/platform/zeus/security</code>.</td>
 <td><a href="pages/platform-security/platform-zeus-security.md">Open</a></td>
+</tr>
+<tr>
+<td>Native eBPF</td>
+<td><code>/platform/zyra/security/native-bpf</code></td>
+<td>Native eBPF: per-host machina-bpfd status, observe/enforce mode under a lease, deny/allow policies, flows, DNS, L7, load balancing, CNI and guest policy across 22 tabs.</td>
+<td><a href="pages/platform-security/platform-zyra-security-native-bpf.md">Open</a></td>
 </tr>
 <tr>
 <td>Incident Commander</td>
@@ -4630,12 +4907,6 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><code>/containers/pods</code></td>
 <td>Podman pods via Vessel — create and manage shared-namespace container groups (not Kubernetes pods).</td>
 <td><a href="pages/infrastructure/containers-pods.md">Open</a></td>
-</tr>
-<tr>
-<td>SSH</td>
-<td><code>/ssh</code></td>
-<td>SSH — Infrastructure surface.</td>
-<td><a href="pages/infrastructure/ssh.md">Open</a></td>
 </tr>
 </tbody></table>
 <h3>Kubernetes</h3>

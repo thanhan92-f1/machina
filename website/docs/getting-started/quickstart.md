@@ -32,15 +32,24 @@ can log in to the host can log in to Machina, subject to role-based access.
 `ssh` and `rsync`.
 
 ```bash
-./scripts/deploy-remote.sh HOST USER              # daemon + web UI
-./scripts/deploy-remote.sh HOST USER --platform   # plus controller and agent
+./scripts/deploy-remote.sh USER@HOST                  # daemon + web UI
+./scripts/deploy-remote.sh USER@HOST --platform       # plus controller and agent
+./scripts/deploy-remote.sh USER@HOST --open-firewall  # also open 5092 in the host firewall
 ```
+
+The installer generates a self-signed certificate; replace it with one from your CA for production browsers.
 
 ## Grow into a fleet
 
 Add `--platform` to also install `machina-controller` (`:5093`) and `machina-agent` (`:50051`). The controller turns
 a set of hosts into one pool with HA failover, DRS, live migration and the self-service Fleet Cloud. See
-[Architecture](../core-concepts/architecture.md).
+[Architecture](../core-concepts/architecture.md) and [Controller HA](../core-concepts/controller-ha.md).
+
+## Turn on the eBPF datapath
+
+`machina-bpfd` is built and installed with the rest of Machina when the eBPF toolchain is present (`make bpf-deps`).
+Open **Platform → Security → Native eBPF** to see what your kernel supports and what the datapath observes. See
+[Native eBPF](../networking/ebpf-overview.md).
 
 ## Next steps
 
@@ -49,4 +58,6 @@ a set of hosts into one pool with HA failover, DRS, live migration and the self-
 | Hardware and OS requirements | [Requirements](requirements.md) |
 | Ports, auth, TLS, config | [Configuration](../operations/configuration.md) |
 | Browser consoles | [Consoles](../core-concepts/consoles.md) |
+| Create and manage VMs | [Virtual machines](../core-concepts/virtual-machines.md) |
+| Something not working | [Troubleshooting](../operations/troubleshooting.md) |
 | Production pilot checklist | [Customer site readiness](https://github.com/zyvorai/machina/blob/main/docs/CUSTOMER_SITE_READINESS.md) |

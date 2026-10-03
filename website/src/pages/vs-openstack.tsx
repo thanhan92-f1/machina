@@ -12,12 +12,13 @@ import {DEMO_URL, REPO} from '@site/src/data/product';
 import styles from './subpage.module.css';
 
 const ROWS: {topic: string; machina: string; openstack: string}[] = [
-  {topic: 'Services to run', machina: '3 Rust binaries: daemon, controller, agent', openstack: '9+ services: Keystone, Nova, Neutron, Glance, Cinder, Placement, Horizon, Heat, Octavia'},
+  {topic: 'Services to run', machina: '4 Rust services: daemon, controller, agent, machina-bpfd', openstack: '9+ services: Keystone, Nova, Neutron, Glance, Cinder, Placement, Horizon, Heat, Octavia'},
   {topic: 'Backing infrastructure', machina: 'Embedded SQLite; NATS only if you want it', openstack: 'MariaDB/Galera, RabbitMQ, Memcached'},
   {topic: 'Install', machina: './machinactl deploy on one host; deploy-remote.sh for the next', openstack: 'Kolla-Ansible or OpenStack-Ansible deployment project'},
   {topic: 'Smallest useful footprint', machina: 'A single KVM host', openstack: 'A multi-node control plane'},
   {topic: 'Self-service primitives', machina: 'Flavors, images, volumes, security groups, keypairs, stacks, load balancers in Fleet Cloud', openstack: 'Nova, Glance, Cinder, Neutron, Heat, Octavia'},
-  {topic: 'Load balancer data plane', machina: 'iptables rules pushed to the owning host, no amphora VM', openstack: 'Amphora VMs (Octavia)'},
+  {topic: 'Load balancer data plane', machina: 'Maglev XDP service LB + iptables member rules; no amphora VM', openstack: 'Amphora VMs (Octavia)'},
+  {topic: 'Network datapath and security', machina: 'Native eBPF (XDP, TC, cgroup, BPF-LSM): CNI, DDoS shield, VM isolation, lease-gated enforcement', openstack: 'Neutron agents with OVS/OVN; security groups via iptables or OVS flows'},
   {topic: 'Browser consoles', machina: 'noVNC, SPICE, serial and SSH built into the daemon', openstack: 'noVNC/SPICE proxy services'},
   {topic: 'HA failover and DRS', machina: 'Built into the controller', openstack: 'Separate projects: Masakari (instance HA), Watcher (rebalancing)'},
   {topic: 'AI operations', machina: 'Zyra AI: diagnostics, incidents, rightsizing, approvals', openstack: 'Not included'},

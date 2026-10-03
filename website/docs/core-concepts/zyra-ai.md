@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 7
 title: Zyra AI
 description: An AI operator that diagnoses, correlates and proposes, then asks before it changes anything.
 ---

@@ -378,6 +378,894 @@
         }
       }
     },
+    "/api/v1/bpf/accounting": {
+      "get": {
+        "summary": "GET /api/v1/bpf/accounting",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/accounting/reset": {
+      "post": {
+        "summary": "POST /api/v1/bpf/accounting/reset",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/afxdp": {
+      "get": {
+        "summary": "GET /api/v1/bpf/afxdp",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/anomalies": {
+      "get": {
+        "summary": "GET /api/v1/bpf/anomalies",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/captures": {
+      "get": {
+        "summary": "GET /api/v1/bpf/captures",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/captures/{id}": {
+      "get": {
+        "summary": "GET /api/v1/bpf/captures/{id}",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/bpf/cni": {
+      "get": {
+        "summary": "GET /api/v1/bpf/cni",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/cni/services": {
+      "get": {
+        "summary": "GET /api/v1/bpf/cni/services",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/direct": {
+      "get": {
+        "summary": "GET /api/v1/bpf/direct",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/dns": {
+      "get": {
+        "summary": "GET /api/v1/bpf/dns",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/events": {
+      "get": {
+        "summary": "GET /api/v1/bpf/events",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/flows": {
+      "get": {
+        "summary": "GET /api/v1/bpf/flows",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/guard": {
+      "get": {
+        "summary": "GET /api/v1/bpf/guard",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/guard/events": {
+      "get": {
+        "summary": "GET /api/v1/bpf/guard/events",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/health": {
+      "get": {
+        "summary": "GET /api/v1/bpf/health",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/icmp-errors": {
+      "get": {
+        "summary": "GET /api/v1/bpf/icmp-errors",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/interfaces": {
+      "get": {
+        "summary": "GET /api/v1/bpf/interfaces",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/interfaces/{name}": {
+      "delete": {
+        "summary": "DELETE /api/v1/bpf/interfaces/{name}",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/bpf/l7": {
+      "get": {
+        "summary": "GET /api/v1/bpf/l7",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/l7-sample": {
+      "get": {
+        "summary": "GET /api/v1/bpf/l7-sample",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/mode": {
+      "put": {
+        "summary": "PUT /api/v1/bpf/mode",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/node-iso": {
+      "get": {
+        "summary": "GET /api/v1/bpf/node-iso",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/policies": {
+      "get": {
+        "summary": "GET /api/v1/bpf/policies",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/policies/{id}": {
+      "delete": {
+        "summary": "DELETE /api/v1/bpf/policies/{id}",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/bpf/processes": {
+      "get": {
+        "summary": "GET /api/v1/bpf/processes",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/qos": {
+      "put": {
+        "summary": "PUT /api/v1/bpf/qos",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/quic-lb": {
+      "get": {
+        "summary": "GET /api/v1/bpf/quic-lb",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/rtnl": {
+      "get": {
+        "summary": "GET /api/v1/bpf/rtnl",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/rtnl/events": {
+      "get": {
+        "summary": "GET /api/v1/bpf/rtnl/events",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/scx": {
+      "get": {
+        "summary": "GET /api/v1/bpf/scx",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/shield": {
+      "get": {
+        "summary": "GET /api/v1/bpf/shield",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/status": {
+      "get": {
+        "summary": "GET /api/v1/bpf/status",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/stream": {
+      "get": {
+        "summary": "GET /api/v1/bpf/stream",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/telemetry": {
+      "get": {
+        "summary": "GET /api/v1/bpf/telemetry",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/tls": {
+      "get": {
+        "summary": "GET /api/v1/bpf/tls",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/tls/fingerprints": {
+      "get": {
+        "summary": "GET /api/v1/bpf/tls/fingerprints",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/tls/ssl": {
+      "get": {
+        "summary": "GET /api/v1/bpf/tls/ssl",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/vm-edge": {
+      "get": {
+        "summary": "GET /api/v1/bpf/vm-edge",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/vm-intel": {
+      "get": {
+        "summary": "GET /api/v1/bpf/vm-intel",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/vm-intel/vms/{name}": {
+      "get": {
+        "summary": "GET /api/v1/bpf/vm-intel/vms/{name}",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/bpf/vm-sandbox": {
+      "get": {
+        "summary": "GET /api/v1/bpf/vm-sandbox",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/vm-sandbox/{vm}": {
+      "post": {
+        "summary": "POST /api/v1/bpf/vm-sandbox/{vm}",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/browse/dir": {
       "get": {
         "summary": "GET /api/v1/browse/dir",
@@ -2614,7 +3502,7 @@
     },
     "/api/v1/jobs/packer-golden-build": {
       "post": {
-        "summary": "POST /api/v1/jobs/packer-golden-build — Golden Forge (Linux Packer or Windows dockur win10/win11)",
+        "summary": "POST /api/v1/jobs/packer-golden-build",
         "tags": [
           "jobs"
         ],
@@ -4887,6 +5775,201 @@
         ]
       }
     },
+    "/api/v1/sprites/{id}/pause": {
+      "post": {
+        "summary": "POST /api/v1/sprites/{id}/pause",
+        "tags": [
+          "sprites"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sprites/{id}/resize": {
+      "post": {
+        "summary": "POST /api/v1/sprites/{id}/resize",
+        "tags": [
+          "sprites"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sprites/{id}/restore": {
+      "post": {
+        "summary": "POST /api/v1/sprites/{id}/restore",
+        "tags": [
+          "sprites"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sprites/{id}/resume": {
+      "post": {
+        "summary": "POST /api/v1/sprites/{id}/resume",
+        "tags": [
+          "sprites"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sprites/{id}/snapshot": {
+      "post": {
+        "summary": "POST /api/v1/sprites/{id}/snapshot",
+        "tags": [
+          "sprites"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sprites/golden-images": {
       "get": {
         "summary": "GET /api/v1/sprites/golden-images",
@@ -5771,6 +6854,432 @@
             }
           }
         ]
+      }
+    },
+    "/api/v1/vessel/containers": {
+      "get": {
+        "summary": "GET /api/v1/vessel/containers",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/containers/{id}": {
+      "delete": {
+        "summary": "DELETE /api/v1/vessel/containers/{id}",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/vessel/containers/{id}/logs": {
+      "get": {
+        "summary": "GET /api/v1/vessel/containers/{id}/logs",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/vessel/containers/{id}/restart": {
+      "post": {
+        "summary": "POST /api/v1/vessel/containers/{id}/restart",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/containers/{id}/start": {
+      "post": {
+        "summary": "POST /api/v1/vessel/containers/{id}/start",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/containers/{id}/stats": {
+      "get": {
+        "summary": "GET /api/v1/vessel/containers/{id}/stats",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/vessel/containers/{id}/stop": {
+      "post": {
+        "summary": "POST /api/v1/vessel/containers/{id}/stop",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/pods": {
+      "get": {
+        "summary": "GET /api/v1/vessel/pods",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/pods/{id}": {
+      "delete": {
+        "summary": "DELETE /api/v1/vessel/pods/{id}",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/vessel/pods/{id}/start": {
+      "post": {
+        "summary": "POST /api/v1/vessel/pods/{id}/start",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/pods/{id}/stop": {
+      "post": {
+        "summary": "POST /api/v1/vessel/pods/{id}/stop",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/reconnect": {
+      "post": {
+        "summary": "POST /api/v1/vessel/reconnect",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/status": {
+      "get": {
+        "summary": "GET /api/v1/vessel/status",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vessel/windows-dockur": {
+      "post": {
+        "summary": "POST /api/v1/vessel/windows-dockur",
+        "tags": [
+          "vessel"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/vms": {
@@ -7031,9 +8540,67 @@
         ]
       }
     },
+    "/api/v1/vms/{name}/guest-lsm": {
+      "get": {
+        "summary": "GET /api/v1/vms/{name}/guest-lsm",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
     "/api/v1/vms/{name}/guest-observability": {
       "get": {
         "summary": "GET /api/v1/vms/{name}/guest-observability",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/vms/{name}/guest-policy": {
+      "get": {
+        "summary": "GET /api/v1/vms/{name}/guest-policy",
         "tags": [
           "vms"
         ],
