@@ -138,7 +138,7 @@ MACHINA_BPF_ENFORCE_LEASE_SECS 900
 `web/src/`:
 
 - **`pages/`** — One file per route. Classic daemon-backed pages (e.g. `VMList.tsx`, `Dashboard.tsx`) live at the top level. Platform (controller) pages live in `pages/platform/` and are prefixed `Platform*`. Fleet Cloud pages live at `/fleet-cloud/*` and are prefixed `FleetCloud*` (e.g. `FleetCloudInstances.tsx`). The legacy external-cloud client integration this used to gate on has been fully removed — Fleet Cloud is entirely native now, backed by the controller's own APIs.
-- **`components/`** — Shared UI components. Glass components (`GlassCard`, `GlassModal`) are in `components/glass/`. AI/Zeus components are in `components/ai/`. Platform shell components (`GlobalBar`, `SideNav`, `ChapterBar`) are in `components/nav/`; `components/consolehub/` holds the console UI (`CinemaShell`, `ConsoleHubShell`, etc.), not the shell chrome.
+- **`components/`** — Shared UI components. Glass components (`GlassCard`, `GlassModal`) are in `components/glass/`. AI/Zeus components are in `components/ai/`. Platform shell components (`GlobalBar`, `MobileNavSheet`, `ChapterBar`) are in `components/nav/`; `components/consolehub/` holds the console UI (`CinemaShell`, etc.), not the shell chrome.
 - **`api/`** — One TypeScript module per API domain. `client.ts` is the base fetch wrapper. `platform.ts` sets the controller proxy base URL. Files prefixed `platform*` call the controller; others call the daemon.
 - **`contexts/`** — React contexts: `AuthContext`, `ThemeContext`, `WebSocketContext` (WS live updates), `AiContext`, `PlatformInfoContext`, `ToastContext`, `BreadcrumbNameContext` (per-page breadcrumb label override).
 - **`hooks/`** — Custom hooks for keyboard shortcuts, fleet settings, console access policy, SSH, K8s context, etc.
@@ -146,7 +146,7 @@ MACHINA_BPF_ENFORCE_LEASE_SECS 900
 ### Route structure
 - `/` and `/vms/*` — Classic daemon-backed hypervisor UI
 - `/containers` and `/containers/pods` — Local Podman/Docker containers and Podman pods (Vessel)
-- `/platform/*` — Enterprise platform shell (controller-backed); uses `PlatformLayout` with its own sidebar/nav
+- `/platform/*` — Enterprise platform shell (controller-backed); uses `PlatformLayout` (top-bar-only navigation, no sidebar)
 - `/fleet-cloud/*` — "Fleet Cloud" UI (renamed from its old route; no redirect — old links 404). Backed entirely by Machina's own native controller APIs for every page: flavors, images/templates, instances/VMs, volumes, security groups, stacks, projects, server groups, floating IPs via port-forwards, keypairs, and load balancers (`controller/src/api/load_balancers.rs` + `controller/src/engine/load_balancer.rs` — a weighted round-robin iptables rule set pushed to the owning host's agent, no amphora VM). The legacy external-cloud client integration (compute/image/network/identity management, disk push/pull) has been fully removed from core and daemon.
 - `/fleet` — Multi-host fleet overview
 
@@ -171,9 +171,9 @@ Default port: **5092** (daemon), **5093** (controller), **50051** (agent gRPC).
 
 The UI follows **apple.com / Zeus OS** contracts — see [docs/design/APPLE-UX-CONTRACT.md](docs/design/APPLE-UX-CONTRACT.md) and [docs/design/DAYLIGHT-CONTRACT.md](docs/design/DAYLIGHT-CONTRACT.md).
 
-- **Shell:** `GlobalBar` (top bar with product flyouts) + `SideNav` + `ChapterBar` in `layouts/PlatformLayout.tsx`; the Mac menubar, icon rail and dock are gone. Default theme: **Apple light** (`tahoe-light`). The current look lives in `web/src/styles/netra-look.css` (loaded last; namespace new tokens `--nl-*`). Audit UI changes with `node web/scripts/ux-audit.mjs` (see `docs/design/APPLE-UX-CONTRACT.md`).
+- **Shell:** `GlobalBar` (48px top bar: Z mark, Machine Finder link, six product groups with Netra mega-panel flyouts) + `MobileNavSheet` (≤1024px burger) + `ChapterBar` in `layouts/PlatformLayout.tsx`; the sidebar, icon rail, Mac menubar and dock are gone. Mission Control has the fleet pulse band and `FleetHero` SVG. Default theme: **Apple light** (`tahoe-light`). The current look lives in `web/src/styles/netra-look.css` (loaded last; namespace new tokens `--nl-*`). Audit UI changes with `node web/scripts/ux-audit.mjs` (see `docs/design/APPLE-UX-CONTRACT.md`).
 - **Story / Browse / Work** tiers: `apple-story-stack`, `TahoeToolbar`, `.tahoe-glass-card`; VM detail leads with [`VmConsoleHeroPreview`](web/src/components/vm/VmConsoleHeroPreview.tsx).
-- **Interactive blue:** apple.com `#0071e3` (CTAs, links, focus, sidebar active). Dark links `#2997ff`.
+- **Interactive blue:** apple.com `#0071e3` (CTAs, links, focus, active nav). Dark links `#2997ff`.
 - **Box fonts:** Apple shop `.form-selector` 1:1 — `--text-primary/secondary/muted` (`#1d1d1f` / `#6e6e73` / `#86868b` light; `#f5f5f7` / `#a1a1a6` / `#86868b` dark) in `zeus-parity.css`.
 - **Story type:** AirPods-scale `.apple-display` / `.apple-lede` (SF Pro Display).
 - **Login:** [`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css) — one centered composition, hero wordmark **machina**.
