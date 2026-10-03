@@ -33,6 +33,7 @@ mod cni;
 mod listen;
 mod ops;
 mod readers;
+mod shield;
 mod uplink;
 mod vm;
 
@@ -168,6 +169,7 @@ struct Engine {
     uplink: uplink::UplinkRuntime,
     vm_edge: vm::VmEdgeRuntime,
     sandbox: vm::SandboxRuntime,
+    shield: shield::ShieldRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -253,6 +255,7 @@ impl Engine {
             uplink: uplink::UplinkRuntime::default(),
             vm_edge: vm::VmEdgeRuntime::default(),
             sandbox: vm::SandboxRuntime::default(),
+            shield: shield::ShieldRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

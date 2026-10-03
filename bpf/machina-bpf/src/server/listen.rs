@@ -56,6 +56,8 @@ struct Persisted {
     /// VMs sandboxed by request (re-attached when their scope reappears).
     #[serde(default)]
     vm_sandbox_pinned: Vec<String>,
+    #[serde(default)]
+    shield: Option<ShieldConfig>,
 }
 
 struct Daemon {
@@ -96,6 +98,7 @@ impl Daemon {
                 v.sort();
                 v
             },
+            shield: (eng.shield.config != ShieldConfig::default()).then(|| eng.shield.config.clone()),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -172,6 +175,11 @@ impl Daemon {
         if let Some(st) = p.vm_edge {
             if let Err(e) = eng.vm_edge_sync(st) {
                 tracing::warn!("restore vm edge: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.shield {
+            if let Err(e) = eng.shield_configure(cfg) {
+                tracing::warn!("restore shield: {e:#}");
             }
         }
     }
@@ -363,6 +371,13 @@ impl Daemon {
                 json!({ "detached": detached, "vm": vm })
             }
             Request::VmSandboxStatus => v(&lock(&self.engine).vm_sandbox_status()),
+            Request::ShieldConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.shield_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::ShieldStatus => v(&lock(&self.engine).shield_status()),
             Request::VmRefresh => {
                 let mut eng = lock(&self.engine);
                 eng.vm_edge_refresh();

@@ -280,6 +280,39 @@ unpolicy smoke-dns
 check "deny_dns removed: target restored" ping_target
 kill $DNS_PID 2>/dev/null || true
 
+# XDP shield on the test veth (host side = traffic from the netns): per-source
+# ICMP bucket of 5 pps, then deny/allow CIDRs. Drops only under the lease.
+shield() { req "{\"op\":\"shield_configure\",\"config\":{\"iface\":\"$HOST_IF\",\"protected\":[\"$HOST_IP\"],\"icmp_pps\":5,\"burst_secs\":1,$1}}" | must; }
+shjs() { req '{"op":"shield_status"}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print($1)"; }
+flood() { ip netns exec "$NS" ping -c40 -i0.01 -W1 -q "$HOST_IP" 2>/dev/null | sed -n 's/.* \([0-9]*\) received.*/\1/p'; }
+xdp_on() { ip -d link show dev "$HOST_IF" | grep -q 'prog/xdp'; }
+shield '"mode":"audit"'
+check "shield: dispatcher attached to test veth" xdp_on
+n=$(flood)
+echo "      shield audit: $n/40 replies"
+check "shield audit: flood not dropped" test "${n:-0}" -eq 40
+check "shield audit: over-rate audited" test "$(shjs "d['stats']['audited']")" -gt 0
+check "shield: top source is the netns" bash -c "$(declare -f req shjs); SOCK=$SOCK; shjs \"[s['addr']+'/'+s['class'] for s in d['sources']]\" | grep -q '$PEER_IP/icmp'"
+shield '"mode":"enforce"'
+check "shield enforce without lease: not enforcing" test "$(shjs "d['enforcing']")" = False
+enforce
+check "shield enforce: status enforcing" test "$(shjs "d['enforcing']")" = True
+sleep 1
+n=$(flood)
+echo "      shield enforce: $n/40 replies"
+check "shield enforce: flood rate-limited" bash -c "(( ${n:-40} >= 1 && ${n:-40} <= 20 ))"
+check "shield enforce: drops counted" test "$(shjs "d['stats']['dropped']")" -gt 0
+shield "\"mode\":\"enforce\",\"deny\":[\"$PEER_IP/32\"]"
+sleep 1
+check "shield enforce: deny CIDR blocks source" ping_blocked
+shield "\"mode\":\"enforce\",\"allow\":[\"$PEER_IP/32\"]"
+n=$(flood)
+check "shield enforce: allow CIDR bypasses limits" test "${n:-0}" -eq 40
+observe
+shield '"mode":"off"'
+check "shield off: dispatcher detached" bash -c "$(declare -f xdp_on); HOST_IF=$HOST_IF; ! xdp_on"
+check "shield off: ping restored" ping_ok
+
 echo
 echo "passed=$PASS failed=$FAIL  (log: $WORK/bpfd.log)"
 grep -E "WARN|ERROR" "$WORK/bpfd.log" | head -20 || true

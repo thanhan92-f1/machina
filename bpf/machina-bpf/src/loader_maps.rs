@@ -376,11 +376,41 @@ impl Datapath {
     }
 
     pub fn cni_cidr_clear(&mut self) -> Result<()> {
-        let mut m = self.lpm::<[u8; ADDR_LEN], u32>("CNI_CIDR_IDS")?;
+        self.addr_lpm_clear::<u32>("CNI_CIDR_IDS")
+    }
+
+    /// Insert into an LPM trie keyed by a 16-byte (IPv4-mapped) address.
+    pub fn addr_lpm_insert<V: Pod>(&mut self, map: &str, addr: [u8; ADDR_LEN], bits: u32, v: V) -> Result<()> {
+        self.lpm::<[u8; ADDR_LEN], V>(map)?.insert(&Key::new(bits, addr), v, 0)?;
+        Ok(())
+    }
+
+    pub fn addr_lpm_clear<V: Pod>(&mut self, map: &str) -> Result<()> {
+        let mut m = self.lpm::<[u8; ADDR_LEN], V>(map)?;
         let keys: Vec<Key<[u8; ADDR_LEN]>> = m.keys().filter_map(|r| r.ok()).collect();
         for k in keys {
             let _ = m.remove(&k);
         }
         Ok(())
+    }
+
+    /// One per-CPU array slot folded with `add`.
+    pub fn percpu_array_sum<V: Pod + Default>(&mut self, map: &str, index: u32, add: impl Fn(&mut V, &V)) -> Result<V> {
+        let m = self.ebpf.map_mut(map).ok_or_else(|| anyhow!("map {map} missing"))?;
+        let m: aya::maps::PerCpuArray<&mut MapData, V> = aya::maps::PerCpuArray::try_from(m)?;
+        let mut s = V::default();
+        for c in m.get(&index, 0)?.iter() {
+            add(&mut s, c);
+        }
+        Ok(s)
+    }
+
+    pub fn hash_clear<K: Pod, V: Pod>(&mut self, map: &str) {
+        if let Ok(mut m) = self.hash::<K, V>(map) {
+            let keys: Vec<K> = m.keys().filter_map(|r| r.ok()).collect();
+            for k in keys {
+                let _ = m.remove(&k);
+            }
+        }
     }
 }

@@ -13,7 +13,7 @@ use axum::routing::{delete, get, put};
 use axum::{Json, Router};
 use base64::Engine as _;
 use futures_util::Stream;
-use machina_bpf::api::{Mode, Policy, Request, TelemetryConfig, VmEdgeState, VmSandboxConfig};
+use machina_bpf::api::{Mode, Policy, Request, ShieldConfig, TelemetryConfig, VmEdgeState, VmSandboxConfig};
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
 use serde::Deserialize;
@@ -352,6 +352,18 @@ async fn vm_sandbox_detach(
     bpfd(Request::VmSandboxDetach { vm }).await
 }
 
+async fn shield_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::ShieldStatus).await
+}
+
+async fn shield_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<ShieldConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the XDP DDoS shield")?;
+    bpfd(Request::ShieldConfigure { config }).await
+}
+
 /// After a VM lifecycle change, have bpfd re-follow VM taps and QEMU scopes
 /// now instead of on its next rescan. Best-effort: bpfd may not be running.
 pub fn notify_vm_lifecycle() {
@@ -385,6 +397,7 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/telemetry", get(get_telemetry).put(set_telemetry))
         .route("/bpf/stream", get(stream))
         .route("/bpf/vm-edge", get(vm_edge_status).put(vm_edge_sync))
+        .route("/bpf/shield", get(shield_status).put(shield_configure))
         .route("/bpf/vm-sandbox", get(vm_sandbox_status).put(vm_sandbox_configure))
         .route(
             "/bpf/vm-sandbox/{vm}",

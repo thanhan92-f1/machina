@@ -644,6 +644,95 @@ pub struct VmSandboxStatus {
     pub notes: Vec<String>,
 }
 
+/// XDP DDoS shield on the uplink (shares the `mn_xdp_uplink` dispatcher
+/// with the NodePort fast path, so both must use the same interface).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ShieldConfig {
+    #[serde(default)]
+    pub iface: String,
+    /// `off`, `audit` or `enforce` (drops need the enforcement lease).
+    #[serde(default = "default_shield_mode")]
+    pub mode: String,
+    /// Protect every destination instead of `protected`.
+    #[serde(default)]
+    pub protect_all: bool,
+    /// Protected destination addresses.
+    #[serde(default)]
+    pub protected: Vec<String>,
+    /// Per-source packets/s per class; 0 = unlimited.
+    #[serde(default = "default_syn_pps")]
+    pub syn_pps: u32,
+    #[serde(default = "default_udp_pps")]
+    pub udp_pps: u32,
+    #[serde(default = "default_icmp_pps")]
+    pub icmp_pps: u32,
+    #[serde(default)]
+    pub other_pps: u32,
+    #[serde(default = "default_burst_secs")]
+    pub burst_secs: u32,
+    /// Source CIDRs never limited / always dropped.
+    #[serde(default)]
+    pub allow: Vec<String>,
+    #[serde(default)]
+    pub deny: Vec<String>,
+}
+
+fn default_shield_mode() -> String {
+    "off".into()
+}
+fn default_syn_pps() -> u32 {
+    1000
+}
+fn default_udp_pps() -> u32 {
+    5000
+}
+fn default_icmp_pps() -> u32 {
+    100
+}
+fn default_burst_secs() -> u32 {
+    2
+}
+
+impl Default for ShieldConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("shield defaults")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ShieldCounters {
+    pub checked: u64,
+    pub passed: u64,
+    pub audited: u64,
+    pub dropped: u64,
+    pub dropped_bytes: u64,
+    pub denied: u64,
+    pub malformed: u64,
+    pub syn_limited: u64,
+    pub udp_limited: u64,
+    pub icmp_limited: u64,
+    pub other_limited: u64,
+}
+
+/// A source over its rate (top talkers by hits).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShieldSource {
+    pub addr: String,
+    pub class: String,
+    pub hits: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ShieldStatus {
+    pub config: ShieldConfig,
+    /// Interface carrying the dispatcher with the shield on.
+    pub attached: Option<String>,
+    pub enforcing: bool,
+    pub stats: ShieldCounters,
+    pub sources: Vec<ShieldSource>,
+    pub tracked_sources: usize,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Request {
@@ -784,6 +873,10 @@ pub enum Request {
     VmSandboxStatus,
     /// Re-follow VM taps and QEMU scopes now (sent on VM start/stop).
     VmRefresh,
+    ShieldConfigure {
+        config: ShieldConfig,
+    },
+    ShieldStatus,
     /// Stream events (`net`, `dns`, `l7`, `proc`, `anomaly`) as JSON lines
     /// until the client disconnects.
     Subscribe {

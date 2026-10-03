@@ -184,7 +184,7 @@ fn qemu_scopes() -> BTreeMap<String, String> {
 }
 
 impl Engine {
-    fn lease_live(&self) -> bool {
+    pub(super) fn lease_live(&self) -> bool {
         self.mode == Mode::Enforce && loader::monotonic_ns() < self.lease_deadline_mono
     }
 

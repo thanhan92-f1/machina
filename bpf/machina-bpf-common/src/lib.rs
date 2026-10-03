@@ -562,6 +562,69 @@ pub struct XdpCfg {
 }
 
 // ---------------------------------------------------------------------------
+// XDP DDoS shield (inline in the uplink dispatcher)
+// ---------------------------------------------------------------------------
+
+pub const SHIELD_OFF: u32 = 0;
+pub const SHIELD_AUDIT: u32 = 1;
+/// Drops need the enforcement lease too; without it enforce acts as audit.
+pub const SHIELD_ENFORCE: u32 = 2;
+
+pub const SHIELD_CLASS_SYN: u8 = 0;
+pub const SHIELD_CLASS_UDP: u8 = 1;
+pub const SHIELD_CLASS_ICMP: u8 = 2;
+pub const SHIELD_CLASS_OTHER: u8 = 3;
+pub const SHIELD_CLASSES: usize = 4;
+
+/// SHIELD_CFG[0]. `pps[class]` per source; 0 = unlimited.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ShieldCfg {
+    pub mode: u32,
+    pub protect_all: u32,
+    pub pps: [u32; SHIELD_CLASSES],
+    /// Bucket depth in seconds of `pps`.
+    pub burst_secs: u32,
+    pub _pad: u32,
+}
+
+/// Per-source, per-class bucket (SHIELD_SOURCES, LRU).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct ShieldSrcKey {
+    pub addr: [u8; ADDR_LEN],
+    pub class: u8,
+    pub _pad: [u8; 3],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ShieldSrcState {
+    /// Milli-tokens.
+    pub tokens: u64,
+    pub last_ns: u64,
+    /// Packets over the rate (dropped or audited).
+    pub hits: u64,
+}
+
+/// SHIELD_STATS (per-CPU, one slot).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ShieldStats {
+    /// Packets towards a protected destination.
+    pub checked: u64,
+    pub passed: u64,
+    /// Would have been dropped (audit, or enforce without a lease).
+    pub audited: u64,
+    pub dropped: u64,
+    pub dropped_bytes: u64,
+    /// Source in the deny CIDR set.
+    pub denied: u64,
+    pub malformed: u64,
+    pub limited: [u64; SHIELD_CLASSES],
+}
+
+// ---------------------------------------------------------------------------
 // VM edge (tc on VM taps) and QEMU sandbox (cgroup hooks on machine scopes)
 // ---------------------------------------------------------------------------
 
@@ -716,7 +779,8 @@ mod pod {
         GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
-        VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey
+        VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
+        ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats
     );
 }
 
@@ -752,6 +816,10 @@ mod tests {
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
         assert_eq!(size_of::<DevHitKey>(), 24);
         assert_eq!(size_of::<NetHitKey>(), 32);
+        assert_eq!(size_of::<ShieldCfg>(), 32);
+        assert_eq!(size_of::<ShieldSrcKey>(), 20);
+        assert_eq!(size_of::<ShieldSrcState>(), 24);
+        assert_eq!(size_of::<ShieldStats>(), 56 + 8 * SHIELD_CLASSES);
         assert_eq!(size_of::<RateCfg>(), 16);
         assert_eq!(size_of::<IfaceStats>(), 40);
         assert_eq!(size_of::<L7Event>(), 24 + 48 + L7_PAYLOAD_LEN);
