@@ -10,7 +10,6 @@ import { usePlatformInfo } from '../../contexts/PlatformInfoContext'
 import { ASK_ZYRA_LABEL } from '../../config/aiBrand'
 import { useFleetDesktop } from '../../hooks/useFleetDesktop'
 import { usePlatformDesktopTier } from '../../hooks/usePlatformDesktopTier'
-import { usePlatformMacDesktop } from '../platform/mac/PlatformMacDesktopContext'
 import PlatformControlCenter from '../platform/PlatformControlCenter'
 import PlatformMacMenuDropdown, { PlatformMacMenuItem } from '../platform/mac/PlatformMacMenuDropdown'
 import { integrationNavItems } from '../../utils/platformIntegrationsNav'
@@ -27,15 +26,14 @@ import { operationsHubHref } from '../../utils/platformHubLinks'
 
 const FLYOUT_CLOSE_DELAY_MS = 650
 
-export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
+export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: () => void; needsAttention?: number }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { username, logout } = useAuth()
   const { openCopilot } = useAi()
   const { info } = usePlatformInfo()
   const [tier, setTier] = usePlatformDesktopTier()
-  const { toggleSidebar, sidebarVisible, sidebarCollapsed, setSidebarCollapsed } = usePlatformMacDesktop()
-  const { desktop } = useFleetDesktop(true, 60_000)
+    const { desktop } = useFleetDesktop(true, 60_000)
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
   const closeTimer = useRef<number | null>(null)
@@ -115,8 +113,6 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
               <PlatformMacMenuItem label="Keyboard shortcuts" onClick={() => { dispatchOpenHelp('shortcuts'); setOpenGroup(null) }} />
               <PlatformMacMenuItem label="Settings…" shortcut="⌘," onClick={() => { navigate('/platform/settings'); setOpenGroup(null) }} />
               <div className="my-1 border-t border-[var(--apple-hairline)]" />
-              <PlatformMacMenuItem label={sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'} shortcut="⌘⌥S" checked={sidebarVisible} onClick={() => { toggleSidebar(); setOpenGroup(null) }} />
-              <PlatformMacMenuItem label="Sidebar as icons" shortcut="⌘⌥B" checked={sidebarCollapsed} onClick={() => { setSidebarCollapsed(!sidebarCollapsed); setOpenGroup(null) }} />
               <PlatformMacMenuItem label="Mission Control" shortcut="F3" onClick={() => { dispatchOpenMissionControl(); setOpenGroup(null) }} />
               <div className="my-1 border-t border-[var(--apple-hairline)]" />
               <PlatformMacMenuItem label={PLATFORM_DESKTOP_TIER_LABELS.normal} checked={tier === 'normal'} onClick={() => pickTier('normal')} />
@@ -130,12 +126,21 @@ export default function GlobalBar({ onBurger }: { onBurger: () => void }) {
           </div>
 
           <nav className="gnb-nav" aria-label="Primary">
+            <Link
+              to="/platform/vms"
+              className="gnb-nav-item gnb-nav-link"
+              aria-current={location.pathname === '/platform/vms' || location.pathname.startsWith('/platform/hosts/finder') ? 'true' : undefined}
+              onMouseEnter={() => setOpenGroup(null)}
+            >
+              Machine Finder
+              {needsAttention > 0 ? <i className="gnb-attn" title={`${needsAttention} need attention`} aria-label={`${needsAttention} need attention`} /> : null}
+            </Link>
             {groups.map((group) => (
               <button
                 key={group.id}
                 type="button"
                 className="gnb-nav-item"
-                aria-current={group.sections.some((sec) => sec.items.some((item) => navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search))) ? 'true' : undefined}
+                aria-current={group.sections.some((sec) => sec.items.some((item) => item.to !== '/platform/vms' && navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search))) ? 'true' : undefined}
                 aria-expanded={openGroup === group.id}
                 onMouseEnter={() => enter(group.id)}
                 onFocus={() => enter(group.id)}
@@ -227,6 +232,7 @@ function GlobalBarFlyout({
                       key={item.to}
                       type="button"
                       className={`gnb-flyout-link ${active ? 'gnb-flyout-link-active' : ''}`}
+                      data-to={item.to}
                       onClick={() => onNavigate(item.to)}
                     >
                       {item.label}

@@ -31,12 +31,12 @@ test('classic K8s route links back to platform via the shell brand mark', async 
 test('classic storage route stays inside the unified platform shell', async ({ page }) => {
   // The old shell bridge bar's dedicated "Apps & Integrations" quick link no longer has an
   // equivalent — Integrations now lives under Settings (PlatformSettingsHub.tsx), reachable via
-  // the sidebar's "Settings" link like everywhere else, not a classic-route-only shortcut.
+  // the Machina menu's "Settings" item like everywhere else, not a classic-route-only shortcut.
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/storage')
   await waitForPlatformSession(page)
   await expect(page.locator('.gnb-bar')).toBeVisible({ timeout: 20_000 })
-  await expect(page.locator('aside[aria-label="Sections"]')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()
 })
 
 test('Fleet Cloud stays inside the unified platform shell', async ({ page }) => {

@@ -6,8 +6,6 @@
 
 :root {
   --gnb-bar-h: 3rem;
-  --gnb-side-w: 15rem;
-  --gnb-side-w-rail: 68px;
 }
 
 /* ── global bar ── */
@@ -352,89 +350,14 @@ html.dark .gnb-tasks {
   font-weight: 500;
 }
 
-/* ── side nav ── */
-.gnb-side {
-  background: transparent;
-}
-.gnb-side--expanded {
-  width: var(--gnb-side-w);
-}
-/* Icon rail (desktop): icons only, section triggers open hover flyouts. */
-.gnb-side--rail {
-  width: var(--gnb-side-w-rail);
-}
-.gnb-side--rail .gnb-side-link {
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
-}
-.gnb-side--rail .gnb-side-link > span:not(.gnb-side-icon),
-.gnb-side--rail .gnb-side-link > .gnb-side-count {
-  display: none;
-}
-.gnb-side--rail .gnb-side-divider {
-  margin-left: 0.75rem;
-  margin-right: 0.75rem;
-}
-.gnb-side-divider {
-  height: 1px;
-  background: var(--apple-hairline);
-}
-.gnb-side-link-active {
-  background: var(--apple-fill-secondary, var(--surface-hover));
-  font-weight: 500;
-}
-.gnb-side-icon {
-  position: relative;
-}
-.gnb-side-dot {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #ff9f0a;
-}
-.gnb-side-count {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  min-width: 1.125rem;
-  text-align: right;
-}
-
 /* ── responsive ── */
-/* One SideNav DOM instance for both desktop and mobile (no duplicate content —
-   that used to render the sidebar twice, which showed as duplicate entries to
-   any tool reading the page's text/accessibility tree). Below the breakpoint it
-   becomes a fixed off-canvas drawer instead of an in-flow column. */
+/* Below 1025px the group buttons are replaced by the burger, which opens .gnb-sheet. */
 @media (max-width: 1024px) {
   .gnb-nav {
     display: none;
   }
   .gnb-burger {
     display: grid !important;
-  }
-  .gnb-side {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 60;
-    width: min(280px, 82vw) !important;
-    background: var(--apple-surface, hsl(var(--card)));
-    border-right: 1px solid var(--apple-hairline);
-    transform: translateX(-100%);
-    transition: transform 0.2s ease;
-    padding-top: env(safe-area-inset-top, 0);
-  }
-  .gnb-side.gnb-side-mobile-open {
-    transform: translateX(0);
-  }
-}
-@media (min-width: 1025px) {
-  .gnb-scrim-mobile-only {
-    display: none;
   }
 }
 .gnb-burger {
@@ -462,8 +385,134 @@ html.dark .gnb-tasks {
 @media (prefers-reduced-motion: reduce) {
   .gnb-bar *,
   .gnb-chapter *,
-  .gnb-side * {
+  .gnb-sheet * {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* ── Machine Finder link + attention dot ── */
+.gnb-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  text-decoration: none;
+}
+.gnb-attn {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff9f0a;
+  flex-shrink: 0;
+}
+
+/* ── Page gutter: Netra's 1800px content width with fluid side padding ── */
+.nl-page-gutter {
+  max-width: 1800px;
+  padding-left: clamp(20px, 3.5vw, 64px);
+  padding-right: clamp(20px, 3.5vw, 64px);
+}
+
+/* ── Mobile / tablet navigation sheet ── */
+.gnb-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--page-bg, #fff);
+  padding-top: env(safe-area-inset-top, 0);
+  animation: gnb-sheet-in 0.22s var(--nl-ease, cubic-bezier(0.28, 0.11, 0.32, 1));
+}
+@keyframes gnb-sheet-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.gnb-sheet-head {
+  height: var(--gnb-bar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(16px, 4vw, 28px);
+  border-bottom: 1px solid var(--apple-hairline);
+}
+.gnb-sheet-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.gnb-sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px clamp(16px, 4vw, 28px) 24px;
+}
+.gnb-sheet-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--apple-hairline);
+}
+.gnb-sheet-link.active,
+.gnb-sheet-link.is-active {
+  color: var(--apple-link, #0066cc);
+}
+.gnb-sheet-link--item {
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 400;
+  border-bottom: none;
+  padding-left: 4px;
+}
+.gnb-sheet-count {
+  font-size: 12px;
+  color: #8b4b00;
+  background: rgba(255, 159, 10, 0.16);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.gnb-sheet-group > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-bottom: 1px solid var(--apple-hairline);
+}
+.gnb-sheet-group > summary::-webkit-details-marker {
+  display: none;
+}
+.gnb-sheet-group[open] > summary svg {
+  transform: rotate(180deg);
+}
+.gnb-sheet-section-label {
+  margin: 12px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.gnb-sheet-foot {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px clamp(16px, 4vw, 28px) calc(12px + env(safe-area-inset-bottom, 0));
+  border-top: 1px solid var(--apple-hairline);
 }

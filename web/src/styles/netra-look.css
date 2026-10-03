@@ -502,22 +502,6 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
   color: var(--nl-accent-cyan-text);
 }
 
-/* ---- Closed off-canvas drawer must not be focusable ------------------------- */
-/* Below 1025px the sidebar is a drawer parked at translateX(-100%). It was still rendered and
-   focusable, so a keyboard user on a small screen tabbed through invisible controls (and the
-   audit counted their 30px tap targets). visibility: hidden removes it from the tab order while
-   closed; the delay lets the slide-out finish before it hides. */
-@media (max-width: 1024px) {
-  .gnb-side {
-    visibility: hidden;
-    transition: transform 0.2s ease, visibility 0s linear 0.2s;
-  }
-  .gnb-side.gnb-side-mobile-open {
-    visibility: visible;
-    transition-delay: 0s;
-  }
-}
-
 /* ---- Touch targets on phones ---------------------------------------------- */
 /* Desktop density is intentional. On phones the .btn-* size modifiers (.text-sm = 33px,
    .text-xs = 28px) and 32px icon buttons fall short of a comfortable tap. `html ` outranks the

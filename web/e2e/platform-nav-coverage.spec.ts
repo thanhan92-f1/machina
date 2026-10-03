@@ -3,7 +3,7 @@
 
 import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
-import { sidebarLink } from './helpers/platformShellHelpers'
+import { navLink } from './helpers/platformShellHelpers'
 
 test('advanced tier shows sidebar policy', async ({ page }) => {
   // The old menubar's "Go" destination menu (All destinations…/Operations/Host/Networks) is gone
@@ -36,11 +36,11 @@ test('policy studio route loads', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Policy Studio/i })).toBeVisible()
 })
 
-test('normal tier hides sidebar on Jarvis landing', async ({ page }) => {
+test('shell has no sidebar', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform')
   await expect(page.getByTestId('mission-control-briefing')).toBeVisible()
-  await expect(page.locator('.platform-sidebar')).toHaveCount(0)
+  await expect(page.locator('aside[aria-label="Sections"]')).toHaveCount(0)
 })
 
 test('normal tier hides context bar on dashboard', async ({ page }) => {
@@ -76,21 +76,17 @@ test('security context bar collapses overflow into More menu', async ({ page }) 
 })
 
 // PlatformMobileJumpNav.tsx (the `<select>` this file used to drive via `#platform-mobile-jump`)
-// is unimported dead code. Mobile navigation today is the same `aside[aria-label="Sections"]`
-// drawer as desktop, opened via the GlobalBar burger (`aria-label="Menu"`) and auto-closed on
-// navigation (components/nav/SideNav.tsx) — these tests are rewritten against that.
+// is unimported dead code. Mobile navigation is the full-height sheet (components/nav/MobileNavSheet.tsx)
+// opened via the GlobalBar burger (`aria-label="Menu"`) and auto-closed on navigation.
 
-test('mobile burger nav stays reachable when the sidebar preference is hidden', async ({ page }) => {
+test('mobile burger opens the navigation sheet', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
   const burger = page.getByRole('button', { name: 'Menu' })
   await expect(burger).toBeVisible()
-  // ⌘⌥S is a desktop "hide sidebar" preference; it must not strand mobile users without any nav.
-  await page.keyboard.press('Meta+Alt+s')
-  await expect(burger).toBeVisible()
   await burger.click()
-  await expect(page.locator('aside[aria-label="Sections"]')).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Navigation' })).toBeVisible()
 })
 
 test('mobile burger nav navigates to hosts on normal tier', async ({ page }) => {
@@ -98,7 +94,7 @@ test('mobile burger nav navigates to hosts on normal tier', async ({ page }) => 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await (await sidebarLink(page, '/platform/hosts')).click()
+  await (await navLink(page, '/platform/hosts')).click()
   await expect(page).toHaveURL(/\/platform\/hosts/)
 })
 
@@ -107,7 +103,7 @@ test('mobile burger nav includes hub sections on power tier', async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/tasks')
   await page.getByRole('button', { name: 'Menu' }).click()
-  const link = await sidebarLink(page, '/platform/observability')
+  const link = await navLink(page, '/platform/observability')
   await expect(link).toBeVisible()
   await link.click()
   await expect(page).toHaveURL(/\/platform\/observability/)
@@ -149,7 +145,7 @@ test('mobile burger nav reaches Settings from the policy workspace', async ({ pa
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/policy')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await (await sidebarLink(page, '/platform/settings')).click()
+  await (await navLink(page, '/platform/settings')).click()
   await expect(page).toHaveURL(/\/platform\/settings/)
 })
 
@@ -241,7 +237,7 @@ test('context overflow closes after navigation', async ({ page }) => {
 test('normal tier hub preview unlocks operations', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'normal' })
   await page.goto('/platform')
-  await page.getByRole('link', { name: 'Security Center' }).click()
+  await (await navLink(page, '/platform/zeus/security')).click()
   await expect(page).toHaveURL(/\/platform\/zeus\/security/)
 })
 
@@ -250,7 +246,7 @@ test('mobile burger nav navigates to resources on power tier', async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await (await sidebarLink(page, '/platform/infrastructure')).click()
+  await (await navLink(page, '/platform/infrastructure')).click()
   await expect(page).toHaveURL(/\/platform\/infrastructure/)
   await expect(page.getByText('Infrastructure', { exact: true }).first()).toBeVisible({ timeout: 15_000 })
 })
@@ -299,7 +295,7 @@ test('mobile burger nav navigates security context on advanced tier', async ({ p
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/platform/zeus/security')
   await page.getByRole('button', { name: 'Menu' }).click()
-  await (await sidebarLink(page, '/platform/zeus/security/policies')).click()
+  await (await navLink(page, '/platform/zeus/security/policies')).click()
   await expect(page).toHaveURL(/\/platform\/zeus\/security\/policies/)
 })
 

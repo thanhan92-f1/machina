@@ -155,11 +155,3 @@ export function isPathAllowedForTier(path: string, tier: PlatformDesktopTier): b
 export function tierAtLeast(current: PlatformDesktopTier, min: PlatformDesktopTier): boolean {
   return TIER_RANK[current] >= TIER_RANK[min]
 }
-
-/**
- * Default Finder locations rail visibility. Users can hide via View → Hide Sidebar
- * (preference persisted in PlatformMacDesktopContext). Dock remains retired.
- */
-export function defaultSidebarVisibleForTier(_tier: PlatformDesktopTier): boolean {
-  return true
-}

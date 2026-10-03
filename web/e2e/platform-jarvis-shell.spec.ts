@@ -16,9 +16,9 @@ test('Normal tier dashboard shows a working briefing chip', async ({ page }) => 
   await page.goto('/platform')
   await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
   // "Recovery" is the one briefing chip MissionControlBriefing.tsx always renders (the others are
-  // conditional on fleet state); the sidebar is present at every tier now, just fewer sections.
+  // conditional on fleet state); the top bar is present at every tier.
   await expect(page.getByRole('button', { name: 'Recovery' })).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('aside[aria-label="Sections"]')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()
 })
 
 test('Jarvis briefing chip navigates to its target route', async ({ page }) => {

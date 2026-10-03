@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 import GlobalBar from '../components/nav/GlobalBar'
 import ChapterBar from '../components/nav/ChapterBar'
-import SideNav from '../components/nav/SideNav'
+import MobileNavSheet from '../components/nav/MobileNavSheet'
+import { useNeedsAttention } from '../hooks/useNeedsAttention'
 import { PlatformMacDesktopProvider, usePlatformMacDesktop } from '../components/platform/mac/PlatformMacDesktopContext'
 import PopoutTitleBar from '../components/platform/mac/PopoutTitleBar'
 import MissionControlOverlay from '../components/platform/MissionControlOverlay'
@@ -33,7 +34,8 @@ function PlatformDesktopShell() {
   const [searchParams, setSearchParams] = useSearchParams()
   const isPopout = isCenterPopoutMode(location.search)
   const [wallpaper, setWallpaper] = useState<PlatformWallpaper>(() => loadPlatformWallpaper())
-  const { sidebarVisible, sidebarCollapsed, setSidebarCollapsed, cinemaChromeHidden, toggleSidebar } = usePlatformMacDesktop()
+  const { cinemaChromeHidden } = usePlatformMacDesktop()
+  const needsAttention = useNeedsAttention()
   const [tier] = usePlatformDesktopTier()
   const { openMissionControl, closeMissionControl } = useMissionControl()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -123,21 +125,6 @@ function PlatformDesktopShell() {
     handler: () => navigate('/platform/settings'),
   })
 
-  useKeyboardShortcut({
-    key: 's',
-    meta: true,
-    alt: true,
-    handler: () => toggleSidebar(),
-  })
-
-  // ⌘⌥B: switch the sidebar between the full list and the icon rail.
-  useKeyboardShortcut({
-    key: 'b',
-    meta: true,
-    alt: true,
-    handler: () => setSidebarCollapsed(!sidebarCollapsed),
-  })
-
   useEffect(() => {
     if (!location.pathname.startsWith('/platform')) return
     upsertPlatformDesktopTab({ path: location.pathname, label: platformPageLabel(location.pathname) })
@@ -178,25 +165,18 @@ function PlatformDesktopShell() {
       data-context-bar={contextBarVisible ? 'visible' : 'hidden'}
       data-cinema-chrome={hideChrome ? 'hidden' : undefined}
     >
-      {!hideChrome ? <GlobalBar onBurger={() => setMobileNavOpen((v) => !v)} /> : null}
+      {!hideChrome ? <GlobalBar onBurger={() => setMobileNavOpen((v) => !v)} needsAttention={needsAttention} /> : null}
+      {!hideChrome ? <MobileNavSheet open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} needsAttention={needsAttention} /> : null}
       {contextBarVisible ? <ChapterBar /> : null}
 
       <div className="flex w-full flex-1 items-stretch min-h-0">
-        {/* `sidebarVisible` (⌘⌥S) is a desktop preference; keep rendering on mobileNavOpen too so
-            the burger button (always visible) never opens a drawer for a component that isn't
-            there — hiding the sidebar on desktop must not strand mobile users with no nav at all. */}
-        {(sidebarVisible || mobileNavOpen) && !hideChrome ? (
-          <SideNav mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
-        ) : null}
         <div className="tahoe-canvas mac-desktop-main flex-1 min-w-0 relative min-h-0">
           {!hideChrome ? <div className={`tahoe-mesh pointer-events-none${meshSubtle ? ' tahoe-mesh-subtle' : ''}`} aria-hidden /> : null}
           <div
             className={
               hideChrome
                 ? 'relative z-[1] w-full platform-mac-scroll-body p-0 max-w-none h-full min-h-0'
-                : platformHome
-                  ? 'relative z-[1] w-full platform-mac-scroll-body px-3 sm:px-4 lg:px-5 xl:px-6 pt-1 pb-20 max-w-none'
-                  : 'relative z-[1] w-full platform-mac-scroll-body px-4 lg:px-6 pt-1 pb-16 lg:pb-24 max-w-[160rem] mx-auto'
+                : 'relative z-[1] w-full platform-mac-scroll-body nl-page-gutter pt-1 pb-24 mx-auto'
             }
           >
             <div

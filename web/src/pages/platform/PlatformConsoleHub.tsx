@@ -45,7 +45,7 @@ export default function PlatformConsoleHub() {
   const protocolFromUrl = new URLSearchParams(location.search).get('protocol')
   const isPopout = isCenterPopoutMode(location.search)
   const experienceMode = resolveConsoleMode(location.search, id)
-  const { setCinemaChromeHidden, setSidebarVisible } = usePlatformMacDesktop()
+  const { setCinemaChromeHidden } = usePlatformMacDesktop()
   const [plan, setPlan] = useState<ConsoleHubPlan | null>(null)
   const [session, setSession] = useState<ConsoleHubSessionResponse | null>(null)
   const [activeProtocol, setActiveProtocol] = useState('novnc')
@@ -75,11 +75,10 @@ export default function PlatformConsoleHub() {
 
   useEffect(() => {
     setCinemaChromeHidden(cinemaChrome)
-    if (cinemaChrome) setSidebarVisible(false)
     return () => {
       setCinemaChromeHidden(false)
     }
-  }, [cinemaChrome, setCinemaChromeHidden, setSidebarVisible])
+  }, [cinemaChrome, setCinemaChromeHidden])
 
   useEffect(() => {
     if (!id) return

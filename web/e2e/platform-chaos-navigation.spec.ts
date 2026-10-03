@@ -6,7 +6,7 @@ import { mockPlatformApi } from './platformMock'
 import {
   assertNoShellClickBlockers,
   assertShellNavResponsive,
-  clickRandomSidebar,
+  clickRandomNavLink,
 } from './helpers/platformShellHelpers'
 
 // Each test below gets its own fresh page/context and depends on none of the others, so there's
@@ -52,7 +52,7 @@ test('mission control dismiss keeps navigation responsive', async ({ page }) => 
   await assertShellNavResponsive(page)
 })
 
-test('random sidebar, top-nav flyout, and menubar clicks stay navigable', async ({ page }) => {
+test('random top-nav flyout, and menubar clicks stay navigable', async ({ page }) => {
   await page.goto('/platform')
   await expect(page.getByTestId('mission-control-briefing')).toBeVisible({ timeout: 15_000 })
 
@@ -60,7 +60,7 @@ test('random sidebar, top-nav flyout, and menubar clicks stay navigable', async 
   const groupCount = await primaryGroups.count()
 
   for (let round = 0; round < 6; round++) {
-    await clickRandomSidebar(page)
+    await clickRandomNavLink(page)
     await assertNoShellClickBlockers(page)
 
     await page.keyboard.press('Meta+,')

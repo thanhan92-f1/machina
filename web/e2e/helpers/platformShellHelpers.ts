@@ -11,25 +11,18 @@ export async function assertNoShellClickBlockers(page: Page) {
 }
 
 /**
- * Both primary navigation surfaces remain clickable after overlay churn: the sidebar
- * (`aside[aria-label="Sections"]`, off-canvas below 1025px or hidden via "Hide Sidebar") and the
- * top bar (`nav[aria-label="Primary"]` — a row of buttons that each open a `.gnb-flyout` of links,
- * not direct links themselves). The Mac dock this used to also exercise is gone by design (see
- * docs/design/APPLE-UX-CONTRACT.md — "do not reintroduce a dock").
+ * The shell has one navigation surface: the top bar (`nav[aria-label="Primary"]`, a row of buttons
+ * that each open a `.gnb-flyout` of items) and, at <= 1024px, the burger-opened `.gnb-sheet`. The
+ * sidebar and the Mac dock are gone by design (see docs/design/APPLE-UX-CONTRACT.md).
  */
+const MOBILE_MAX = 1024
+
+function isMobile(page: Page) {
+  return (page.viewportSize()?.width ?? 1280) <= MOBILE_MAX
+}
+
 export async function assertShellNavResponsive(page: Page) {
   await assertNoShellClickBlockers(page)
-
-  await expandAllSidebarSections(page)
-  const sidebarLink = page.locator('aside[aria-label="Sections"] a[href^="/platform"]').first()
-  if (await sidebarLink.isVisible().catch(() => false)) {
-    const href = await sidebarLink.getAttribute('href')
-    await sidebarLink.click()
-    if (href) {
-      await expect(page).toHaveURL(new RegExp(`${href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\?|$)`))
-    }
-  }
-
   const groupButton = page.getByRole('navigation', { name: 'Primary' }).getByRole('button').first()
   await groupButton.click()
   const flyoutLink = page.locator('.gnb-flyout-link').first()
@@ -39,36 +32,40 @@ export async function assertShellNavResponsive(page: Page) {
   await assertNoShellClickBlockers(page)
 }
 
-export async function clickRandomSidebar(page: Page) {
-  await expandAllSidebarSections(page)
-  const links = page.locator('aside[aria-label="Sections"] a[href^="/platform"]')
-  const count = await links.count()
-  if (count === 0) return
+/** Locator for a navigation item by route, opening whichever flyout / sheet section holds it. */
+export async function navLink(page: Page, href: string) {
+  if (isMobile(page)) {
+    const sheet = page.getByRole('dialog', { name: 'Navigation' })
+    if (!(await sheet.isVisible().catch(() => false))) await page.getByRole('button', { name: 'Menu' }).click()
+    const link = sheet.locator(`a[href="${href}"]`).first()
+    const groups = sheet.locator('details.gnb-sheet-group:not([open]) > summary')
+    for (let i = 0, n = await groups.count(); i < n && !(await link.isVisible().catch(() => false)); i++) {
+      await groups.first().click()
+    }
+    return link
+  }
+  const item = page.locator(`.gnb-flyout-link[data-to="${href}"]`)
+  const triggers = page.getByRole('navigation', { name: 'Primary' }).locator('button.gnb-nav-item')
+  await triggers.first().waitFor({ state: 'visible', timeout: 20_000 })
+  for (let i = 0, n = await triggers.count(); i < n; i++) {
+    await triggers.nth(i).hover()
+    await page.locator('.gnb-flyout').first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
+    if (await item.isVisible().catch(() => false)) return item
+  }
+  return item
+}
+
+/** Click a random item from a random top-bar flyout and confirm the route changed. */
+export async function clickRandomNavLink(page: Page) {
+  const triggers = page.getByRole('navigation', { name: 'Primary' }).locator('button.gnb-nav-item')
+  await triggers.first().waitFor({ state: 'visible', timeout: 20_000 })
+  const n = await triggers.count()
+  await triggers.nth(Math.floor(Math.random() * n)).hover()
+  const items = page.locator('.gnb-flyout-link')
+  await expect(items.first()).toBeVisible()
+  const count = await items.count()
   const idx = Math.floor(Math.random() * count)
-  const href = await links.nth(idx).getAttribute('href')
-  await links.nth(idx).click()
-  if (href) {
-    await expect(page).toHaveURL(new RegExp(`${href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\?|$)`))
-  }
-}
-
-/**
- * Sidebar sections are accordions (only the section containing the current route is open), so a link
- * may exist in a collapsed section. Open collapsed sections one by one until `href` is visible.
- */
-export async function sidebarLink(page: Page, href: string) {
-  const link = page.locator(`aside[aria-label="Sections"] a[href="${href}"]`)
-  if (await link.isVisible().catch(() => false)) return link
-  const collapsed = page.locator('aside[aria-label="Sections"] .platform-sidebar-section-header[aria-expanded="false"]')
-  const n = await collapsed.count()
-  for (let i = 0; i < n; i++) {
-    await collapsed.first().click()
-    if (await link.isVisible().catch(() => false)) break
-  }
-  return link
-}
-
-export async function expandAllSidebarSections(page: Page) {
-  const collapsed = page.locator('aside[aria-label="Sections"] .platform-sidebar-section-header[aria-expanded="false"]')
-  while ((await collapsed.count()) > 0) await collapsed.first().click()
+  const to = await items.nth(idx).getAttribute('data-to')
+  await items.nth(idx).click()
+  if (to) await expect(page).toHaveURL(new RegExp(`${to.split('?')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`))
 }
