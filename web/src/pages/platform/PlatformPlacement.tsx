@@ -150,7 +150,7 @@ export default function PlatformPlacement() {
           <label className="text-sm w-full mt-3 block">
             CPU/memory threshold: {settings.drs_cpu_threshold}%
             <input type="range" min={50} max={95} value={settings.drs_cpu_threshold}
-              onChange={(e) => void updateThreshold(Number(e.target.value))} className="w-full mt-1" />
+              onChange={(e) => void updateThreshold(Number(e.target.value))} className="w-full mt-1 h-11" />
           </label>
           <label className="text-sm w-full mt-3 block">
             Placement policy
