@@ -419,7 +419,7 @@ export default function PlatformNetworks() {
                                 }}>Bind</button>
                               </>
                             )}
-                            <button type="button" className="btn-danger text-[10px] min-h-9" onClick={() => setConfirmDeleteNetwork({ id: n.id, name: n.name })}>Remove</button>
+                            <button type="button" className="btn-destructive text-[10px] min-h-9" onClick={() => setConfirmDeleteNetwork({ id: n.id, name: n.name })}>Remove</button>
                           </div>
                         </td>
                       </tr>
@@ -520,7 +520,7 @@ export default function PlatformNetworks() {
                             </button>
                             <button
                               type="button"
-                              className="btn-danger text-xs"
+                              className="btn-destructive text-xs"
                               onClick={() => setConfirmUnlockSegment({ id: s.id, name: s.name })}
                             >
                               Unlock

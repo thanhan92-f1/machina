@@ -65,7 +65,7 @@ test('live delete vm returns to list without page crash', async ({ page }) => {
   await expect(page.getByTestId('machine-finder-command-center')).toBeVisible({ timeout: 15_000 })
   await page.getByRole('link', { name: 'Open VM detail' }).click()
 
-  await expect(page.locator('button.btn-danger').filter({ hasText: 'Delete' })).toBeVisible({
+  await expect(page.locator('button.btn-destructive').filter({ hasText: 'Delete' })).toBeVisible({
     timeout: 20_000,
   })
 
@@ -74,7 +74,7 @@ test('live delete vm returns to list without page crash', async ({ page }) => {
     (r) => r.url().includes(`/vms/${vmId}/delete`) && r.request().method() === 'POST',
     { timeout: 60_000 },
   )
-  await page.locator('button.btn-danger').filter({ hasText: 'Delete' }).click()
+  await page.locator('button.btn-destructive').filter({ hasText: 'Delete' }).click()
   const res = await deleteReq
   expect(res.status()).toBeLessThan(500)
 

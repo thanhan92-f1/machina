@@ -206,7 +206,7 @@ export default function PlatformBlueprints() {
                   <button type="button" className="btn-primary text-xs flex items-center gap-1" onClick={() => void runShortcut(bp.id)}>
                     <Play className="w-3 h-3" /> Run
                   </button>
-                  <button type="button" className="btn-danger text-xs flex items-center gap-1" onClick={() => setConfirmDeleteId(bp.id)}><Trash2 className="w-3 h-3" /> Delete</button>
+                  <button type="button" className="btn-destructive text-xs flex items-center gap-1" onClick={() => setConfirmDeleteId(bp.id)}><Trash2 className="w-3 h-3" /> Delete</button>
                 </div>
               </MacGlassPanel>
             ))}

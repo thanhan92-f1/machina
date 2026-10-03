@@ -164,7 +164,7 @@ export default function PlatformZyraSettings({ embedded }: { embedded?: boolean 
           }}>Save memory settings</button>
           <button
             type="button"
-            className="btn-danger text-xs"
+            className="btn-destructive text-xs"
             disabled={purging}
             onClick={() => setConfirmPurgeAll(true)}
           >

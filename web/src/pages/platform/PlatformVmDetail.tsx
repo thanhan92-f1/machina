@@ -1147,7 +1147,7 @@ export default function PlatformVmDetail() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="btn-danger text-sm"
+                className="btn-destructive text-sm"
                 onClick={() => setVmConfirmOp('remove_stale')}
               >
                 <Trash2 className="w-4 h-4" /> Remove stale record

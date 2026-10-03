@@ -83,7 +83,7 @@ export default function MachinaInfrastructureMemory() {
         action={
           <button
             type="button"
-            className="btn-danger text-xs"
+            className="btn-destructive text-xs"
             disabled={purging}
             onClick={() => setShowClearConfirm(true)}
           >

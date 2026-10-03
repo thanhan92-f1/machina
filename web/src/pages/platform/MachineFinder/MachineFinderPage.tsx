@@ -157,7 +157,7 @@ export default function MachineFinderPage() {
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchPower('stop')}><Square className="w-4 h-4" /> Stop</button>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchPower('pause')}><Pause className="w-4 h-4" /> Pause</button>
           <button type="button" className="btn-secondary text-sm inline-flex items-center gap-1" disabled={batchPowerBusy} onClick={() => void handleBatchSnapshot()}><Camera className="w-4 h-4" /> Snapshot</button>
-          <button type="button" className="btn-danger text-sm inline-flex items-center gap-1" disabled={batchDeleteBusy} onClick={() => setBatchDeleteOpen(true)}><Trash2 className="w-4 h-4" /> Delete</button>
+          <button type="button" className="btn-destructive text-sm inline-flex items-center gap-1" disabled={batchDeleteBusy} onClick={() => setBatchDeleteOpen(true)}><Trash2 className="w-4 h-4" /> Delete</button>
           <button type="button" aria-label="Clear selection" onClick={() => state.setSelectedVmIds(new Set())} className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
         </div>
       )}

@@ -392,7 +392,7 @@ export default function PlatformHostDetailPage() {
                     </button>
                     <button type="button" className="btn-secondary text-sm" onClick={() => void enqueueValidateHost(id).then(() => { toast.success('Validation queued'); return load() }).catch((e: unknown) => toast.error(formatUserError(e)))}>Queue validate</button>
                     <button type="button" className="btn-secondary text-sm" onClick={() => void hostMaintenance(id, 'enter').then(() => { toast.success('Maintenance mode entered'); return load() }).catch((e: unknown) => toast.error(formatUserError(e)))}>Maintenance</button>
-                    <button type="button" className="btn-danger text-sm" onClick={() => setShowFenceConfirm(true)}>Fence</button>
+                    <button type="button" className="btn-destructive text-sm" onClick={() => setShowFenceConfirm(true)}>Fence</button>
                   </div>
                 </MacSettingsGroup>
                 {healthChecks && (
@@ -504,7 +504,7 @@ export default function PlatformHostDetailPage() {
                     <p className="text-xs text-[var(--text-muted)]">Removes the host from fleet inventory. VMs must be evacuated first.</p>
                     <button
                       type="button"
-                      className="btn-danger text-sm"
+                      className="btn-destructive text-sm"
                       disabled={opsBusy || (host.vm_count ?? 0) > 0}
                       onClick={() => setConfirmRemoveHost(true)}
                     >

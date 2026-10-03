@@ -52,7 +52,7 @@ export default function MachineFinderCanvas({ state }: Props) {
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800">
           <p className="font-medium">Missing from hypervisor inventory</p>
           <p className="text-xs text-amber-700/80 mt-1">Prune removes stale database rows (admin only).</p>
-          <button type="button" className="btn-danger text-sm mt-2" disabled={pruneBusy} onClick={() => pruneMissing()}>
+          <button type="button" className="btn-destructive text-sm mt-2" disabled={pruneBusy} onClick={() => pruneMissing()}>
             {pruneBusy ? 'Pruning…' : 'Prune missing records'}
           </button>
         </div>

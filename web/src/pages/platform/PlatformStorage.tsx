@@ -486,7 +486,7 @@ export default function PlatformStorage() {
                             <button type="button" className="btn-secondary text-[10px]" onClick={() => togglePoolVolumes(p.id)}>
                               {expandedPoolId === p.id ? 'Hide vols' : 'Volumes'}
                             </button>
-                            <button type="button" className="btn-danger text-[10px]" onClick={() => setConfirmPoolId(p.id)}>Remove</button>
+                            <button type="button" className="btn-destructive text-[10px]" onClick={() => setConfirmPoolId(p.id)}>Remove</button>
                             <button
                               type="button"
                               className="btn-secondary text-[10px]"
@@ -510,7 +510,7 @@ export default function PlatformStorage() {
                 {poolVolumes[expandedPoolId].map((v) => (
                   <li key={v.name} className="flex justify-between gap-2">
                     <span>{v.name} · {v.capacity_gb} GiB</span>
-                    <button type="button" className="btn-danger text-[10px]" onClick={() => setConfirmVolume({ poolId: expandedPoolId, volName: v.name, poolName: rows.find((r) => r.id === expandedPoolId)?.name ?? '' })}>Delete</button>
+                    <button type="button" className="btn-destructive text-[10px]" onClick={() => setConfirmVolume({ poolId: expandedPoolId, volName: v.name, poolName: rows.find((r) => r.id === expandedPoolId)?.name ?? '' })}>Delete</button>
                   </li>
                 ))}
               </ul>

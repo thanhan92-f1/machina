@@ -291,7 +291,7 @@ export default function PlatformContent() {
                   <button type="button" className="btn-primary text-xs flex items-center gap-1" onClick={() => void approve(r.id)}>
                     <Check className="w-3 h-3" /> Approve
                   </button>
-                  <button type="button" className="btn-danger text-xs flex items-center gap-1" onClick={() => setRejectTargetId(r.id)}>
+                  <button type="button" className="btn-destructive text-xs flex items-center gap-1" onClick={() => setRejectTargetId(r.id)}>
                     <X className="w-3 h-3" /> Reject
                   </button>
                 </div>
@@ -379,7 +379,7 @@ export default function PlatformContent() {
                         {r.status === 'pending' && (
                           <>
                             <button type="button" className="btn-primary text-xs" onClick={() => void approve(r.id)}>Approve</button>
-                            <button type="button" className="btn-danger text-xs" onClick={() => setRejectTargetId(r.id)}>Reject</button>
+                            <button type="button" className="btn-destructive text-xs" onClick={() => setRejectTargetId(r.id)}>Reject</button>
                           </>
                         )}
                         {r.status === 'available' && r.kind === 'iso' && (
