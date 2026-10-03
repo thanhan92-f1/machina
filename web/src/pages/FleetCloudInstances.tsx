@@ -206,7 +206,7 @@ function FleetCloudInstancesContent() {
                     </span>
                   </td>
                   <td className="text-[var(--text-secondary)]">
-                    {vm.vcpus} vCPU / {vm.memory_mib} MiB
+                    {vm.vcpus ?? '—'} vCPU / {vm.memory_mib ?? '—'} MiB
                   </td>
                   <td className="text-[var(--text-muted)] font-mono text-xs">
                     {vm.guest_ip || '—'}

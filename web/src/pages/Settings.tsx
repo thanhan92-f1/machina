@@ -185,19 +185,19 @@ export default function SettingsPage() {
             <div>
               <dt className="text-[var(--text-muted)] text-xs">Automation worker</dt>
               <dd>
-                {integrations.automation.last_tick_unix
-                  ? `tick ${new Date(integrations.automation.last_tick_unix * 1000).toLocaleString()}`
+                {integrations.automation?.last_tick_unix
+                  ? `tick ${new Date(integrations.automation?.last_tick_unix * 1000).toLocaleString()}`
                   : 'no tick yet'}
               </dd>
             </div>
             <div>
               <dt className="text-[var(--text-muted)] text-xs">Alerts (unacked)</dt>
-              <dd>{integrations.automation.alerts_unacknowledged}</dd>
+              <dd>{integrations.automation?.alerts_unacknowledged ?? '—'}</dd>
             </div>
             <div>
               <dt className="text-[var(--text-muted)] text-xs">Alert rules</dt>
               <dd>
-                {integrations.automation.alert_rules_enabled}/{integrations.automation.alert_rules_total} enabled
+                {integrations.automation?.alert_rules_enabled ?? '—'}/{integrations.automation?.alert_rules_total ?? '—'} enabled
               </dd>
             </div>
             <div>

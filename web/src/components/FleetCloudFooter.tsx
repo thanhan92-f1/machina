@@ -10,7 +10,7 @@ export default function FleetCloudFooter() {
   const { info } = usePlatformInfo()
 
   return (
-    <footer className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-fill-tertiary)] px-4 py-3 text-xs text-[var(--text-muted)] space-y-2">
+    <footer className="mt-4 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 bg-[var(--apple-fill-tertiary)] px-4 py-3 text-xs text-[var(--text-muted)] space-y-2">
       <p>
         Push qcow2 from{' '}
         <Link to="/disk-images" className="text-[var(--link)] hover:underline">Disk images</Link>
