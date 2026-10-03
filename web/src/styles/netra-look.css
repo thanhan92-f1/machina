@@ -277,7 +277,8 @@ html.light-theme .btn-secondary:hover:not(:disabled) {
 /* Links were ~30px tall; give them a 36px row so they are usable by touch. */
 .gnb-flyout-link {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
   min-height: 36px;
 }
 

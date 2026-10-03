@@ -15,6 +15,7 @@ import PlatformMacMenuDropdown, { PlatformMacMenuItem } from '../platform/mac/Pl
 import { integrationNavItems } from '../../utils/platformIntegrationsNav'
 import { menubarProductGroupsForTier, type MenubarProductGroup } from '../../utils/platformMacMenus'
 import { navItemActive } from '../../utils/routes'
+import { navBlurb } from '../../utils/navBlurbs'
 import {
   PLATFORM_DESKTOP_TIER_LABELS,
   type PlatformDesktopTier,
@@ -36,6 +37,8 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
     const { desktop } = useFleetDesktop(true, 60_000)
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
+  // Horizontal centre (px) of the trigger that opened the flyout, so the panel sits under it like Netra's.
+  const [flyoutX, setFlyoutX] = useState<number | null>(null)
   const closeTimer = useRef<number | null>(null)
 
   const groups = useMemo(
@@ -50,8 +53,9 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
     }
   }, [])
 
-  const enter = useCallback((id: string) => {
+  const enter = useCallback((id: string, el?: HTMLElement | null) => {
     cancelClose()
+    if (el) { const r = el.getBoundingClientRect(); setFlyoutX(r.left + r.width / 2) }
     setOpenGroup(id)
   }, [cancelClose])
 
@@ -142,13 +146,13 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
                 className="gnb-nav-item"
                 aria-current={group.sections.some((sec) => sec.items.some((item) => item.to !== '/platform/vms' && navItemActive({ to: item.to, label: item.label, icon: null }, location.pathname, location.search))) ? 'true' : undefined}
                 aria-expanded={openGroup === group.id}
-                onMouseEnter={() => enter(group.id)}
-                onFocus={() => enter(group.id)}
+                onMouseEnter={(e) => enter(group.id, e.currentTarget)}
+                onFocus={(e) => enter(group.id, e.currentTarget)}
                 // Just open, don't toggle: `onMouseEnter` already opens the flyout as the pointer
                 // arrives, so a real click's toggle would immediately close what hover just opened
                 // — a mouse user could never click-open a group. Closing already has its own paths
                 // (Escape, the scrim, `onMouseLeave` via scheduleClose, route change).
-                onClick={() => enter(group.id)}
+                onClick={(e) => enter(group.id, e.currentTarget)}
               >
                 {group.compact}
               </button>
@@ -188,6 +192,7 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
         {activeGroup ? (
           <GlobalBarFlyout
             group={activeGroup}
+            anchorX={flyoutX}
             pathname={location.pathname}
             search={location.search}
             onEnter={() => enter(activeGroup.id)}
@@ -201,8 +206,19 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
   )
 }
 
+/** Panel width follows the number of columns (Netra: 480-720px) and is clamped to the viewport. */
+function flyoutStyle(anchorX: number | null, sections: number): React.CSSProperties {
+  const width = Math.min(Math.max(480, sections * 260), 760)
+  const vw = typeof window === 'undefined' ? 1440 : window.innerWidth
+  const w = Math.min(width, vw - 32)
+  const x = anchorX ?? vw / 2
+  const left = Math.min(Math.max(16, x - w / 2), vw - w - 16)
+  return { width: w, left, right: 'auto' }
+}
+
 function GlobalBarFlyout({
   group,
+  anchorX,
   pathname,
   search,
   onEnter,
@@ -210,6 +226,7 @@ function GlobalBarFlyout({
   onNavigate,
 }: {
   group: MenubarProductGroup
+  anchorX: number | null
   pathname: string
   search: string
   onEnter: () => void
@@ -217,9 +234,8 @@ function GlobalBarFlyout({
   onNavigate: (to: string) => void
 }) {
   return (
-    <div className="gnb-flyout" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    <div className="gnb-flyout" onMouseEnter={onEnter} onMouseLeave={onLeave} style={flyoutStyle(anchorX, group.sections.length)}>
       <div className="gnb-flyout-inner">
-        <div className="gnb-flyout-title">Browse {group.compact.toLowerCase()}</div>
         <div className="gnb-flyout-sections">
           {group.sections.map((section, i) => (
             <div className="gnb-flyout-section" key={section.label || `${group.id}-${i}`}>
@@ -235,7 +251,8 @@ function GlobalBarFlyout({
                       data-to={item.to}
                       onClick={() => onNavigate(item.to)}
                     >
-                      {item.label}
+                      <span className="gnb-flyout-label">{item.label}</span>
+                      {navBlurb(item.to) ? <span className="gnb-flyout-blurb">{navBlurb(item.to)}</span> : null}
                     </button>
                   )
                 })}
