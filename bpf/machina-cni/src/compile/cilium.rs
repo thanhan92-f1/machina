@@ -147,9 +147,7 @@ fn rule_peers(world: &World, rule: &Value, dir: &Dir, ns: Option<&str>, acc: &mu
         }
     }
     let mut add_cidr = |cidr: &str, acc: &mut Acc| {
-        if !cidr.contains(':') {
-            peers.insert(*acc.cidrs.entry(cidr.to_string()).or_insert_with(|| cidr_identity(cidr)));
-        }
+        peers.insert(*acc.cidrs.entry(cidr.to_string()).or_insert_with(|| cidr_identity(cidr)));
     };
     if let Some(list) = nonempty(dir.cidr) {
         has_peer_field = true;
@@ -363,6 +361,7 @@ mod tests {
             services: &[],
             endpoint_slices: &[],
             cilium_policies: policies,
+            node_ips: &BTreeMap::new(),
             node: "n1",
         });
         (pods, c)

@@ -417,9 +417,16 @@ pub struct CniPolicyEntry {
 pub struct CniBackend {
     pub addr: String,
     pub port: u16,
+    /// Backend runs on another node (NodePort reaches it by SNAT or DSR).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub remote: bool,
+    /// Address of the node hosting a remote backend (DSR encap target).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub node: Option<String>,
 }
 
-/// A service frontend. `addr` "0.0.0.0" = NodePort on this node's address.
+/// A service frontend. `addr` "0.0.0.0" / "::" = NodePort on this node's
+/// IPv4 / IPv6 address.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CniService {
     pub addr: String,
@@ -428,6 +435,27 @@ pub struct CniService {
     pub backends: Vec<CniBackend>,
     #[serde(default)]
     pub name: Option<String>,
+    /// `sessionAffinity: ClientIP` timeout in seconds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub affinity_secs: Option<u32>,
+}
+
+/// Node-level datapath settings for `cni_configure`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct CniNodeConfig {
+    /// Node primary IPv4 address (NodePort frontend).
+    pub node_addr: String,
+    #[serde(default)]
+    pub node_addr6: Option<String>,
+    /// Interface that gets the NodePort classifier (none = no NodePort).
+    #[serde(default)]
+    pub uplink: Option<String>,
+    /// How NodePort reaches remote backends: "snat" (default) or "dsr".
+    #[serde(default)]
+    pub lb_mode: Option<String>,
+    /// Also accelerate NodePort → local backend in XDP on the uplink.
+    #[serde(default)]
+    pub xdp: bool,
 }
 
 /// Identity / isolation for one pod IP (cluster-wide).
@@ -441,9 +469,15 @@ pub struct CniIdentity {
     pub egress_isolated: bool,
 }
 
+/// The CNI state ABI this build speaks (see [`CniState::version`]).
+pub const CNI_STATE_VERSION: u32 = machina_bpf_common::CNI_ABI_VERSION;
+
 /// Full desired CNI state; each sync replaces the previous one.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct CniState {
+    /// Must equal [`CNI_STATE_VERSION`]; bpfd rejects other agents.
+    #[serde(default)]
+    pub version: u32,
     pub identities: Vec<CniIdentity>,
     pub policy: Vec<CniPolicyEntry>,
     /// NetworkPolicy ipBlock CIDRs → identity.
@@ -454,8 +488,18 @@ pub struct CniState {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CniStatus {
     pub configured: bool,
+    pub version: u32,
     pub node_addr: Option<String>,
+    #[serde(default)]
+    pub node_addr6: Option<String>,
     pub uplink: Option<String>,
+    #[serde(default)]
+    pub lb_mode: String,
+    #[serde(default)]
+    pub xdp: bool,
+    /// Services with a Maglev table (two or more backends).
+    #[serde(default)]
+    pub maglev_services: usize,
     pub endpoints: Vec<CniEndpoint>,
     pub identities: usize,
     pub policy_entries: usize,
@@ -569,9 +613,8 @@ pub enum Request {
     /// Node address (NodePort matching) and the uplink that gets the NodePort
     /// classifier; also attaches socket-level service load balancing.
     CniConfigure {
-        node_addr: String,
-        #[serde(default)]
-        uplink: Option<String>,
+        #[serde(flatten)]
+        config: CniNodeConfig,
     },
     CniAddEndpoint {
         endpoint: CniEndpoint,

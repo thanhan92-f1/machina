@@ -1,12 +1,13 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-//! CNI 1.0 plugin. Pods get a veth pair, a /32 address and a default route
-//! via the link-local gateway 169.254.1.1 (a permanent neighbour entry for the
-//! host-side MAC), so there is no bridge and no per-node gateway address.
+//! CNI 1.0 plugin. Pods get a veth pair, a /32 (and, dual-stack, a /128)
+//! address and default routes via the link-local gateways 169.254.1.1 /
+//! fe80::1 (permanent neighbour entries for the host-side MAC), so there is
+//! no bridge and no per-node gateway address.
 
 use std::io::Read;
-use std::net::Ipv4Addr;
+use std::net::IpAddr;
 use std::path::Path;
 use std::process::Command;
 
@@ -18,6 +19,7 @@ use serde_json::{json, Value};
 use crate::ipam::{Ipam, Subnet};
 
 pub const GATEWAY: &str = "169.254.1.1";
+pub const GATEWAY6: &str = "fe80::1";
 /// Fixed host-side veth MAC. Set explicitly so udev (MACAddressPolicy=persistent)
 /// does not re-randomise it after the pod's permanent gateway neighbour entry
 /// was written; every veth is point-to-point, so sharing one MAC is fine.
@@ -33,6 +35,9 @@ struct NetConf {
     mtu: Option<u32>,
     /// Node podCIDR (written by `machina-cni agent`).
     subnet: String,
+    /// IPv6 podCIDR on dual-stack nodes.
+    #[serde(default)]
+    subnet6: Option<String>,
     #[serde(default)]
     ipam_dir: Option<String>,
 }
@@ -155,9 +160,21 @@ pub fn run() -> i32 {
     }
 }
 
-fn ipam(conf: &NetConf) -> Result<Ipam> {
-    let root = conf.ipam_dir.as_deref().unwrap_or(IPAM_ROOT);
-    Ipam::new(Path::new(root), Subnet::parse(&conf.subnet)?)
+/// One IPAM per configured family (IPv4 first).
+fn ipams(conf: &NetConf) -> Result<Vec<Ipam>> {
+    let root = Path::new(conf.ipam_dir.as_deref().unwrap_or(IPAM_ROOT));
+    let mut out = vec![Ipam::new(root, Subnet::parse(&conf.subnet)?)?];
+    if let Some(s6) = conf.subnet6.as_deref().filter(|s| !s.is_empty()) {
+        out.push(Ipam::new(root, Subnet::parse(s6)?)?);
+    }
+    Ok(out)
+}
+
+fn host_prefix(ip: IpAddr) -> String {
+    match ip {
+        IpAddr::V4(a) => format!("{a}/32"),
+        IpAddr::V6(a) => format!("{a}/128"),
+    }
 }
 
 fn bpfd(req: Request) -> Result<()> {
@@ -170,44 +187,65 @@ fn add(conf: &NetConf, a: &Args) -> Result<Value> {
     if a.netns.is_empty() || a.container_id.is_empty() {
         bail!("CNI_NETNS and CNI_CONTAINERID are required for ADD");
     }
-    let ipam = ipam(conf)?;
-    let addr: Ipv4Addr = ipam.allocate(&a.container_id, &a.ifname)?;
+    let ipams = ipams(conf)?;
     let host = host_veth(&a.container_id, &a.ifname);
-    let res = plumb(conf, a, &host, addr);
+    let mut addrs = Vec::new();
+    let mut res = Ok(());
+    for ipam in &ipams {
+        match ipam.allocate(&a.container_id, &a.ifname) {
+            Ok(ip) => addrs.push(ip),
+            Err(e) => {
+                res = Err(e);
+                break;
+            }
+        }
+    }
+    let res = res.and_then(|_| plumb(conf, a, &host, &addrs));
     if res.is_err() {
         let _ = ip(&["link", "del", &host]);
-        ipam.release(&a.container_id, &a.ifname);
+        for ipam in &ipams {
+            ipam.release(&a.container_id, &a.ifname);
+        }
     }
     let (pod_mac, host_mac) = res?;
 
     // The pod is reachable through the kernel route even if bpfd is down;
     // bpfd adds same-node redirect and NetworkPolicy on top.
-    if let Err(e) = bpfd(Request::CniAddEndpoint {
-        endpoint: CniEndpoint {
-            ip: addr.to_string(),
-            host_iface: host.clone(),
-            pod_mac: pod_mac.clone(),
-            host_mac: host_mac.clone(),
-            pod: a.pod.clone(),
-        },
-    }) {
-        eprintln!("machina-cni: machina-bpfd registration failed (policy not enforced): {e:#}");
+    for addr in &addrs {
+        if let Err(e) = bpfd(Request::CniAddEndpoint {
+            endpoint: CniEndpoint {
+                ip: addr.to_string(),
+                host_iface: host.clone(),
+                pod_mac: pod_mac.clone(),
+                host_mac: host_mac.clone(),
+                pod: a.pod.clone(),
+            },
+        }) {
+            eprintln!("machina-cni: machina-bpfd registration failed (policy not enforced): {e:#}");
+        }
     }
 
+    let mut ips = Vec::new();
+    let mut routes = Vec::new();
+    for addr in &addrs {
+        let (gw, dst) = if addr.is_ipv6() { (GATEWAY6, "::/0") } else { (GATEWAY, "0.0.0.0/0") };
+        ips.push(json!({ "address": host_prefix(*addr), "gateway": gw, "interface": 1 }));
+        routes.push(json!({ "dst": dst, "gw": gw }));
+    }
     Ok(json!({
         "cniVersion": conf.cni_version,
         "interfaces": [
             { "name": host, "mac": host_mac },
             { "name": a.ifname, "mac": pod_mac, "sandbox": a.netns },
         ],
-        "ips": [{ "address": format!("{addr}/32"), "gateway": GATEWAY, "interface": 1 }],
-        "routes": [{ "dst": "0.0.0.0/0", "gw": GATEWAY }],
+        "ips": ips,
+        "routes": routes,
         "dns": {},
     }))
 }
 
 /// Create the veth pair and configure both ends. Returns (pod MAC, host MAC).
-fn plumb(conf: &NetConf, a: &Args, host: &str, addr: Ipv4Addr) -> Result<(String, String)> {
+fn plumb(conf: &NetConf, a: &Args, host: &str, addrs: &[IpAddr]) -> Result<(String, String)> {
     let mtu = conf.mtu.unwrap_or(1500).to_string();
     // Created inside the pod netns with the peer moved to PID 1's (host) netns.
     if ip(&["link", "show", host]).is_err() {
@@ -221,21 +259,47 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addr: Ipv4Addr) -> Result<(String
     }
     ip(&["link", "set", host, "address", HOST_MAC])?;
     let host_mac = link_mac(&ip(&["-j", "link", "show", host])?).ok_or_else(|| anyhow!("no MAC on {host}"))?;
-    let cidr = format!("{addr}/32");
     ns_ip(&a.netns, &["link", "set", "lo", "up"])?;
-    ns_ip(&a.netns, &["addr", "replace", &cidr, "dev", &a.ifname])?;
+    for addr in addrs {
+        let cidr = host_prefix(*addr);
+        if addr.is_ipv6() {
+            ns_ip(&a.netns, &["-6", "addr", "replace", &cidr, "dev", &a.ifname, "nodad"])?;
+        } else {
+            ns_ip(&a.netns, &["addr", "replace", &cidr, "dev", &a.ifname])?;
+        }
+    }
     ns_ip(&a.netns, &["link", "set", &a.ifname, "up"])?;
-    ns_ip(&a.netns, &["route", "replace", GATEWAY, "dev", &a.ifname, "scope", "link"])?;
-    ns_ip(&a.netns, &["route", "replace", "default", "via", GATEWAY, "dev", &a.ifname])?;
-    ns_ip(
-        &a.netns,
-        &["neigh", "replace", GATEWAY, "lladdr", &host_mac, "dev", &a.ifname, "nud", "permanent"],
-    )?;
+    for addr in addrs {
+        if addr.is_ipv6() {
+            ns_ip(&a.netns, &["-6", "route", "replace", "default", "via", GATEWAY6, "dev", &a.ifname])?;
+            ns_ip(
+                &a.netns,
+                &["-6", "neigh", "replace", GATEWAY6, "lladdr", &host_mac, "dev", &a.ifname, "nud", "permanent"],
+            )?;
+        } else {
+            ns_ip(&a.netns, &["route", "replace", GATEWAY, "dev", &a.ifname, "scope", "link"])?;
+            ns_ip(&a.netns, &["route", "replace", "default", "via", GATEWAY, "dev", &a.ifname])?;
+            ns_ip(
+                &a.netns,
+                &["neigh", "replace", GATEWAY, "lladdr", &host_mac, "dev", &a.ifname, "nud", "permanent"],
+            )?;
+        }
+    }
     let pod_mac = link_mac(&ns_ip(&a.netns, &["-j", "link", "show", &a.ifname])?)
         .ok_or_else(|| anyhow!("no MAC on pod {}", a.ifname))?;
 
     ip(&["link", "set", host, "up"])?;
-    ip(&["route", "replace", &cidr, "dev", host, "scope", "link", "proto", "static"])?;
+    // The pod's IPv6 gateway lives on the host veth, so a host without a
+    // global IPv6 address still sources pod-bound traffic from an address
+    // the pod can reach (otherwise another link's link-local is picked).
+    if addrs.iter().any(IpAddr::is_ipv6) {
+        ip(&["-6", "addr", "replace", &format!("{GATEWAY6}/64"), "dev", host, "nodad"])?;
+    }
+    for addr in addrs {
+        let cidr = host_prefix(*addr);
+        let fam = if addr.is_ipv6() { "-6" } else { "-4" };
+        ip(&[fam, "route", "replace", &cidr, "dev", host, "proto", "static"])?;
+    }
     let _ = std::fs::write(format!("/proc/sys/net/ipv4/conf/{host}/rp_filter"), "0");
     let _ = std::fs::write(format!("/proc/sys/net/ipv4/conf/{host}/accept_local"), "1");
     Ok((pod_mac, host_mac))
@@ -243,9 +307,9 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addr: Ipv4Addr) -> Result<(String
 
 fn del(conf: &NetConf, a: &Args) -> Result<()> {
     let host = host_veth(&a.container_id, &a.ifname);
-    let released = ipam(conf).ok().and_then(|i| i.release(&a.container_id, &a.ifname));
-    if let Some(addr) = released {
-        let _ = ip(&["route", "del", &format!("{addr}/32"), "dev", &host]);
+    for ipam in ipams(conf).unwrap_or_default() {
+        let Some(addr) = ipam.release(&a.container_id, &a.ifname) else { continue };
+        let _ = ip(&["route", "del", &host_prefix(addr), "dev", &host]);
         if let Err(e) = bpfd(Request::CniDelEndpoint { ip: addr.to_string() }) {
             eprintln!("machina-cni: machina-bpfd unregister failed: {e:#}");
         }

@@ -39,9 +39,12 @@ struct Persisted {
     /// Per-workload traffic totals: (key, totals, window start).
     #[serde(default)]
     accounting: Vec<(String, AcctTotals, String)>,
-    /// machina-cni: (node address, uplink), local pod endpoints, last synced state.
-    #[serde(default)]
+    /// machina-cni: node config, local pod endpoints, last synced state.
+    /// `cni_node` is the pre-dual-stack (address, uplink) form.
+    #[serde(default, skip_serializing)]
     cni_node: Option<(String, Option<String>)>,
+    #[serde(default)]
+    cni_config: Option<CniNodeConfig>,
     #[serde(default)]
     cni_endpoints: Vec<CniEndpoint>,
     #[serde(default)]
@@ -75,7 +78,8 @@ impl Daemon {
                 .iter()
                 .map(|(k, t)| (k.clone(), *t, eng.acct_since.get(k).cloned().unwrap_or_default()))
                 .collect(),
-            cni_node: eng.cni.node_addr.clone().map(|a| (a, eng.cni.uplink.clone())),
+            cni_node: None,
+            cni_config: eng.cni.config.clone(),
             cni_endpoints: eng.cni.endpoints.values().cloned().collect(),
             cni_state: eng.cni.last_sync.is_some().then(|| eng.cni.last.clone()),
         };
@@ -126,8 +130,11 @@ impl Daemon {
             }
         }
         // Pods keep running across a bpfd restart: restore their datapath.
-        if let Some((addr, uplink)) = p.cni_node {
-            if let Err(e) = eng.cni_configure(&addr, uplink.as_deref()) {
+        let cfg = p.cni_config.or_else(|| {
+            p.cni_node.map(|(node_addr, uplink)| CniNodeConfig { node_addr, uplink, ..Default::default() })
+        });
+        if let Some(cfg) = cfg {
+            if let Err(e) = eng.cni_configure(cfg) {
                 tracing::warn!("restore cni node: {e:#}");
             }
         }
@@ -277,9 +284,9 @@ impl Daemon {
                 self.save(&eng);
                 v(&t)
             }
-            Request::CniConfigure { node_addr, uplink } => {
+            Request::CniConfigure { config } => {
                 let mut eng = lock(&self.engine);
-                let st = eng.cni_configure(&node_addr, uplink.as_deref())?;
+                let st = eng.cni_configure(config)?;
                 self.save(&eng);
                 v(&st)
             }

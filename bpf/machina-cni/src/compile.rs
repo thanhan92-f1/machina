@@ -8,7 +8,9 @@
 //! distinguish gets its own identity and policies compile to identity pairs.
 //! Named ports resolve against the destination pod's container ports (the
 //! subject for ingress, the peer for egress).
-//! Limits: IPv4 only; ipBlock `except` and named ports towards ipBlock peers
+//! Dual-stack: pods carry every `podIPs` entry and services every
+//! `clusterIPs` entry; NodePorts emit one frontend per `ipFamilies` family.
+//! Limits: ipBlock `except` and named ports towards ipBlock peers
 //! are not supported (reported in [`Compiled::warnings`]); overlapping
 //! ipBlocks resolve by longest prefix.
 //!
@@ -19,7 +21,7 @@ mod cilium;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use machina_bpf::api::{CniBackend, CniIdentity, CniPolicyEntry, CniService, CniState};
+use machina_bpf::api::{CniBackend, CniIdentity, CniPolicyEntry, CniService, CniState, CNI_STATE_VERSION};
 use serde_json::Value;
 
 pub const IPPROTO_TCP: u8 = 6;
@@ -29,7 +31,8 @@ const MAX_PORT_RANGE: u32 = 256;
 #[derive(Debug, Clone, Default)]
 pub struct Pod {
     pub namespace: String,
-    pub ip: String,
+    /// Every pod address (`status.podIPs`, one per family).
+    pub ips: Vec<String>,
     pub labels: BTreeMap<String, String>,
     /// Named container ports: (name, proto) → port.
     pub named_ports: BTreeMap<(String, u8), u16>,
@@ -85,20 +88,25 @@ fn labels_of(v: &Value) -> BTreeMap<String, String> {
         .unwrap_or_default()
 }
 
-/// Running, non-hostNetwork pods with an IPv4 address.
+/// Running, non-hostNetwork pods with at least one address.
 pub fn pods(items: &[Value]) -> Vec<Pod> {
     items
         .iter()
         .filter(|p| p["spec"]["hostNetwork"] != true)
         .filter(|p| !matches!(str_at(p, &["status", "phase"]), Some("Succeeded" | "Failed")))
         .filter_map(|p| {
-            let ip = str_at(p, &["status", "podIP"])?;
-            if ip.contains(':') {
-                return None;
+            let mut ips: Vec<String> = p["status"]["podIPs"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|i| i["ip"].as_str().map(String::from))
+                .collect();
+            if ips.is_empty() {
+                ips.push(str_at(p, &["status", "podIP"])?.to_string());
             }
             Some(Pod {
                 namespace: str_at(p, &["metadata", "namespace"]).unwrap_or("default").to_string(),
-                ip: ip.to_string(),
+                ips,
                 labels: labels_of(p),
                 named_ports: named_ports_of(p),
             })
@@ -280,6 +288,8 @@ pub struct Inputs<'a> {
     /// CiliumNetworkPolicy / CiliumClusterwideNetworkPolicy objects (empty
     /// unless the agent runs with `MACHINA_CNI_CILIUM_POLICIES`).
     pub cilium_policies: &'a [Value],
+    /// Node name → InternalIP addresses (remote NodePort backends' nodes).
+    pub node_ips: &'a BTreeMap<String, Vec<String>>,
     /// This node's name (NodePort frontends only get local backends).
     pub node: &'a str,
 }
@@ -344,9 +354,6 @@ pub fn compile(inp: &Inputs) -> Compiled {
                         for peer in list {
                             if let Some(block) = peer.get("ipBlock") {
                                 let Some(cidr) = block["cidr"].as_str() else { continue };
-                                if cidr.contains(':') {
-                                    continue;
-                                }
                                 if block.get("except").and_then(|e| e.as_array()).is_some_and(|e| !e.is_empty()) {
                                     warnings.push(format!("{name}: ipBlock except not supported ({cidr})"));
                                 }
@@ -380,14 +387,10 @@ pub fn compile(inp: &Inputs) -> Compiled {
     let mut identities: Vec<CniIdentity> = inp
         .pods
         .iter()
-        .map(|p| {
+        .flat_map(|p| {
             let id = pod_identity(&p.namespace, &p.labels);
-            CniIdentity {
-                ip: p.ip.clone(),
-                identity: id,
-                ingress_isolated: ingress_iso.contains(&id),
-                egress_isolated: egress_iso.contains(&id),
-            }
+            let (ingress_isolated, egress_isolated) = (ingress_iso.contains(&id), egress_iso.contains(&id));
+            p.ips.iter().map(move |ip| CniIdentity { ip: ip.clone(), identity: id, ingress_isolated, egress_isolated })
         })
         .collect();
     identities.sort();
@@ -395,6 +398,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
 
     Compiled {
         state: CniState {
+            version: CNI_STATE_VERSION,
             identities,
             policy: policy.into_iter().collect(),
             cidrs: cidrs.into_iter().collect(),
@@ -404,13 +408,13 @@ pub fn compile(inp: &Inputs) -> Compiled {
     }
 }
 
-/// Ready IPv4 endpoints of a service, by service port name → (ip, port, node).
+/// Ready IPv4/IPv6 endpoints of a service, by service port name → (ip, port, node).
 fn slice_backends(inp: &Inputs, ns: &str, svc: &str) -> BTreeMap<String, Vec<(String, u16, String)>> {
     let mut out: BTreeMap<String, Vec<(String, u16, String)>> = BTreeMap::new();
     for s in inp.endpoint_slices {
         if str_at(s, &["metadata", "namespace"]) != Some(ns)
             || s.pointer("/metadata/labels/kubernetes.io~1service-name").and_then(|v| v.as_str()) != Some(svc)
-            || s["addressType"].as_str().is_some_and(|t| t != "IPv4")
+            || s["addressType"].as_str().is_some_and(|t| t != "IPv4" && t != "IPv6")
         {
             continue;
         }
@@ -446,9 +450,19 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
             continue;
         }
         let mut frontends: BTreeSet<String> = BTreeSet::new();
-        if let Some(ip) = spec["clusterIP"].as_str().filter(|ip| !ip.is_empty() && *ip != "None" && !ip.contains(':')) {
-            frontends.insert(ip.to_string());
+        let cluster_ips = spec["clusterIPs"].as_array().into_iter().flatten().filter_map(|v| v.as_str());
+        for ip in cluster_ips.chain(spec["clusterIP"].as_str()) {
+            if !ip.is_empty() && ip != "None" {
+                frontends.insert(ip.to_string());
+            }
         }
+        let affinity_secs = (spec["sessionAffinity"].as_str() == Some("ClientIP")).then(|| {
+            spec.pointer("/sessionAffinityConfig/clientIP/timeoutSeconds")
+                .and_then(|t| t.as_u64())
+                .map(|t| t.clamp(1, 86_400) as u32)
+                .unwrap_or(10_800)
+        });
+        let etp_local = spec["externalTrafficPolicy"].as_str() == Some("Local");
         for ip in spec["externalIPs"].as_array().into_iter().flatten().filter_map(|v| v.as_str()) {
             frontends.insert(ip.to_string());
         }
@@ -466,37 +480,55 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
             let Some(port) = p["port"].as_u64() else { continue };
             let pname = p["name"].as_str().unwrap_or("");
             let all: Vec<&(String, u16, String)> = backends.get(pname).map(|v| v.iter().collect()).unwrap_or_default();
-            let mut be: Vec<CniBackend> = all
-                .iter()
-                .map(|(a, port, _)| CniBackend { addr: a.clone(), port: *port })
-                .collect();
-            be.sort();
-            be.dedup();
+            // Backends of one family; NodePorts also mark remote-node backends.
+            let pick = |v6: bool, nodeport: bool| -> Vec<CniBackend> {
+                let mut be: Vec<CniBackend> = all
+                    .iter()
+                    .filter(|(a, _, _)| a.contains(':') == v6)
+                    .filter(|(_, _, node)| !(nodeport && etp_local) || node == inp.node)
+                    .map(|(a, port, node)| {
+                        let remote = nodeport && node != inp.node;
+                        CniBackend {
+                            addr: a.clone(),
+                            port: *port,
+                            remote,
+                            node: remote
+                                .then(|| inp.node_ips.get(node)?.iter().find(|ip| ip.contains(':') == v6).cloned())
+                                .flatten(),
+                        }
+                    })
+                    .collect();
+                be.sort();
+                be.dedup();
+                be
+            };
             let label = Some(format!("{ns}/{name}:{pname}"));
             for fe in &frontends {
                 out.push(CniService {
                     addr: fe.clone(),
                     port: port as u16,
                     proto,
-                    backends: be.clone(),
+                    backends: pick(fe.contains(':'), false),
                     name: label.clone(),
+                    affinity_secs,
                 });
             }
             if let Some(np) = p["nodePort"].as_u64().filter(|_| ty == "NodePort" || ty == "LoadBalancer") {
-                let mut local: Vec<CniBackend> = all
-                    .iter()
-                    .filter(|(_, _, node)| node == inp.node)
-                    .map(|(a, port, _)| CniBackend { addr: a.clone(), port: *port })
-                    .collect();
-                local.sort();
-                local.dedup();
-                out.push(CniService {
-                    addr: "0.0.0.0".into(),
-                    port: np as u16,
-                    proto,
-                    backends: local,
-                    name: label.clone(),
-                });
+                let families = spec["ipFamilies"].as_array().map(|f| f.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>());
+                for (v6, fe) in [(false, "0.0.0.0"), (true, "::")] {
+                    let fam = if v6 { "IPv6" } else { "IPv4" };
+                    if families.as_ref().is_some_and(|f| !f.contains(&fam)) || (families.is_none() && v6) {
+                        continue;
+                    }
+                    out.push(CniService {
+                        addr: fe.into(),
+                        port: np as u16,
+                        proto,
+                        backends: pick(v6, true),
+                        name: label.clone(),
+                        affinity_secs,
+                    });
+                }
             }
         }
     }
@@ -565,6 +597,7 @@ mod tests {
             services: &[],
             endpoint_slices: &[],
             cilium_policies: &[],
+            node_ips: &BTreeMap::new(),
             node: "n1",
         });
         let web = pod_identity("prod", &pods[0].labels);
@@ -607,7 +640,7 @@ mod tests {
                     {"to": [{"ipBlock": {"cidr": "10.0.0.0/8"}}], "ports": [{"port": "http"}]}
                 ]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node: "n1" });
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node_ips: &BTreeMap::new(), node: "n1" });
         let api = pod_identity("a", &pods[0].labels);
         let cli = pod_identity("a", &pods[1].labels);
         let got: BTreeSet<(u32, u8, u16)> =
@@ -625,7 +658,7 @@ mod tests {
             "metadata": {"namespace": "a", "name": "lockdown"},
             "spec": {"podSelector": {}, "policyTypes": ["Ingress", "Egress"], "ingress": [{}]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node: "n1" });
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node_ips: &BTreeMap::new(), node: "n1" });
         let id = pod_identity("a", &pods[0].labels);
         assert_eq!(c.state.policy, vec![CniPolicyEntry { subject: id, peer: 0, egress: false, proto: 0, port: 0 }]);
         assert!(c.state.identities[0].ingress_isolated && c.state.identities[0].egress_isolated);
@@ -648,13 +681,61 @@ mod tests {
                 {"addresses": ["10.42.1.6"], "nodeName": "n2", "conditions": {"ready": false}}
             ]
         })];
-        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &services, endpoint_slices: &slices, cilium_policies: &[], node: "n1" });
+        let node_ips: BTreeMap<String, Vec<String>> =
+            [("n2".to_string(), vec!["192.0.2.2".to_string(), "2001:db8::2".to_string()])].into();
+        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &services, endpoint_slices: &slices, cilium_policies: &[], node_ips: &node_ips, node: "n1" });
         let s = &c.state.services;
         assert_eq!(s.len(), 2);
         let np = s.iter().find(|x| x.addr == "0.0.0.0").unwrap();
         assert_eq!(np.port, 30080);
-        assert_eq!(np.backends, vec![CniBackend { addr: "10.42.0.5".into(), port: 8080 }]);
+        let local = CniBackend { addr: "10.42.0.5".into(), port: 8080, ..Default::default() };
+        let remote = CniBackend { addr: "10.42.1.5".into(), port: 8080, remote: true, node: Some("192.0.2.2".into()) };
+        assert_eq!(np.backends, vec![local.clone(), remote], "eTP=Cluster: remote backends via their node");
         let cip = s.iter().find(|x| x.addr == "10.43.0.10").unwrap();
         assert_eq!(cip.backends.len(), 2, "not-ready endpoints are excluded");
+        assert!(cip.backends.iter().all(|b| !b.remote), "ClusterIP backends are plain (socket LB)");
+        assert_eq!(cip.affinity_secs, None);
+
+        // eTP=Local, ClientIP affinity, dual-stack.
+        let mut svc = services[0].clone();
+        svc["spec"]["externalTrafficPolicy"] = json!("Local");
+        svc["spec"]["sessionAffinity"] = json!("ClientIP");
+        svc["spec"]["sessionAffinityConfig"] = json!({"clientIP": {"timeoutSeconds": 60}});
+        svc["spec"]["clusterIPs"] = json!(["10.43.0.10", "fd43::10"]);
+        svc["spec"]["ipFamilies"] = json!(["IPv4", "IPv6"]);
+        let mut slices6 = slices.clone();
+        slices6.push(json!({
+            "metadata": {"namespace": "prod", "name": "web-v6", "labels": {"kubernetes.io/service-name": "web"}},
+            "addressType": "IPv6",
+            "ports": [{"name": "http", "port": 8080}],
+            "endpoints": [{"addresses": ["fd42::5"], "nodeName": "n1"}]
+        }));
+        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &[svc], endpoint_slices: &slices6, cilium_policies: &[], node_ips: &node_ips, node: "n1" });
+        let s = &c.state.services;
+        assert_eq!(s.len(), 4, "{s:?}");
+        assert!(s.iter().all(|x| x.affinity_secs == Some(60)));
+        assert_eq!(s.iter().find(|x| x.addr == "0.0.0.0").unwrap().backends, vec![local]);
+        let np6 = s.iter().find(|x| x.addr == "::").unwrap();
+        assert_eq!(np6.backends, vec![CniBackend { addr: "fd42::5".into(), port: 8080, ..Default::default() }]);
+        let cip6 = s.iter().find(|x| x.addr == "fd43::10").unwrap();
+        assert_eq!(cip6.backends.len(), 1, "v6 frontend only gets v6 backends");
+    }
+
+    #[test]
+    fn dual_stack_pods_get_one_identity_per_address() {
+        let mut p = pod("prod", "web", "10.42.0.5", &[("app", "web")]);
+        p["status"]["podIPs"] = json!([{"ip": "10.42.0.5"}, {"ip": "fd42::5"}]);
+        let pods = pods(&[p]);
+        assert_eq!(pods[0].ips, vec!["10.42.0.5", "fd42::5"]);
+        let policies = vec![json!({
+            "metadata": {"namespace": "prod", "name": "v6-block"},
+            "spec": {"podSelector": {}, "policyTypes": ["Egress"],
+                     "egress": [{"to": [{"ipBlock": {"cidr": "2001:db8::/32"}}]}]}
+        })];
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node_ips: &BTreeMap::new(), node: "n1" });
+        assert_eq!(c.state.identities.len(), 2);
+        assert_eq!(c.state.identities[0].identity, c.state.identities[1].identity);
+        assert_eq!(c.state.cidrs, vec![("2001:db8::/32".to_string(), cidr_identity("2001:db8::/32"))]);
+        assert_eq!(c.state.version, CNI_STATE_VERSION);
     }
 }

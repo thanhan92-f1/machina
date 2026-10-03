@@ -4,6 +4,8 @@ use aya_ebpf::{
 };
 use machina_bpf_common::*;
 
+const BPF_F_NO_PREALLOC: u32 = 1;
+
 // ---- shared config ---------------------------------------------------------
 
 #[map]
@@ -92,17 +94,18 @@ pub static TCP_HEALTH: LruHashMap<HealthKey, u64> = LruHashMap::with_max_entries
 #[map]
 pub static CNI_NODE: Array<NodeCfg> = Array::with_max_entries(1, 0);
 
-/// Local pod endpoints keyed by IPv4 (network order bytes).
+/// Local pod endpoints keyed by 16-byte address (IPv4-mapped for v4).
 #[map]
-pub static CNI_ENDPOINTS: HashMap<[u8; 4], Endpoint> = HashMap::with_max_entries(4096, 0);
+pub static CNI_ENDPOINTS: HashMap<[u8; ADDR_LEN], Endpoint> = HashMap::with_max_entries(8192, 0);
 
 /// Cluster-wide pod IP → identity.
 #[map]
-pub static CNI_IDENTITIES: HashMap<[u8; 4], u32> = HashMap::with_max_entries(65536, 0);
+pub static CNI_IDENTITIES: HashMap<[u8; ADDR_LEN], u32> = HashMap::with_max_entries(131072, 0);
 
-/// NetworkPolicy ipBlock CIDRs → identity (fallback when the peer is not a pod).
+/// NetworkPolicy ipBlock CIDRs → identity (fallback when the peer is not a
+/// pod). IPv4 prefixes are stored IPv4-mapped (prefix + 96).
 #[map]
-pub static CNI_CIDR_IDS: LpmTrie<[u8; 4], u32> = LpmTrie::with_max_entries(16384, 0);
+pub static CNI_CIDR_IDS: LpmTrie<[u8; ADDR_LEN], u32> = LpmTrie::with_max_entries(16384, 0);
 
 #[map]
 pub static CNI_POLICY: HashMap<PolicyKey, u32> = HashMap::with_max_entries(65536, 0);
@@ -111,10 +114,19 @@ pub static CNI_POLICY: HashMap<PolicyKey, u32> = HashMap::with_max_entries(65536
 #[map]
 pub static CNI_CT: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries(262144, 0);
 
-/// NodePort session affinity: client-side tuple → chosen backend.
+/// NodePort flow pinning: client-side tuple → chosen backend.
 #[map]
 pub static CNI_NODEPORT_FWD: LruHashMap<NatCtKey, Backend> =
     LruHashMap::with_max_entries(65536, 0);
+
+/// Maglev tables: (svc, slot) → backend index. Only services with two or
+/// more backends have a table; not preallocated.
+#[map]
+pub static CNI_MAGLEV: HashMap<MaglevKey, u32> = HashMap::with_max_entries(1 << 20, BPF_F_NO_PREALLOC);
+
+/// ClientIP session affinity: (client, svc) → backend index.
+#[map]
+pub static CNI_AFFINITY: LruHashMap<AffinityKey, AffinityVal> = LruHashMap::with_max_entries(65536, 0);
 
 #[map]
 pub static CNI_SERVICES: HashMap<SvcKey, SvcVal> = HashMap::with_max_entries(16384, 0);

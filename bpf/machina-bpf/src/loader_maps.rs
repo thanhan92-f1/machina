@@ -295,6 +295,22 @@ impl Datapath {
         Ok(m.iter().filter_map(|r| r.ok()).collect())
     }
 
+    // ---- uplink XDP ------------------------------------------------------
+
+    pub fn xdp_set_cfg(&mut self, cfg: XdpCfg) -> Result<()> {
+        self.array::<XdpCfg>("XDP_CFG")?.set(0, cfg, 0)?;
+        Ok(())
+    }
+
+    /// Point a dispatcher tail-call slot at an XDP program (loading it).
+    pub fn xdp_set_slot(&mut self, slot: u32, prog: &str) -> Result<()> {
+        let fd = self.xdp_program(prog)?.fd()?.try_clone()?;
+        let map = self.ebpf.map_mut("XDP_PROGS").ok_or_else(|| anyhow!("map XDP_PROGS missing"))?;
+        let mut arr: aya::maps::ProgramArray<&mut MapData> = aya::maps::ProgramArray::try_from(map)?;
+        arr.set(slot, &fd, 0)?;
+        Ok(())
+    }
+
     // ---- CNI -------------------------------------------------------------
 
     pub fn cni_set_node(&mut self, cfg: NodeCfg) -> Result<()> {
@@ -318,15 +334,15 @@ impl Datapath {
         Ok(m.keys().filter_map(|r| r.ok()).collect())
     }
 
-    pub fn cni_cidr_insert(&mut self, addr: [u8; 4], bits: u32, id: u32) -> Result<()> {
-        self.lpm::<[u8; 4], u32>("CNI_CIDR_IDS")?
+    pub fn cni_cidr_insert(&mut self, addr: [u8; ADDR_LEN], bits: u32, id: u32) -> Result<()> {
+        self.lpm::<[u8; ADDR_LEN], u32>("CNI_CIDR_IDS")?
             .insert(&Key::new(bits, addr), id, 0)?;
         Ok(())
     }
 
     pub fn cni_cidr_clear(&mut self) -> Result<()> {
-        let mut m = self.lpm::<[u8; 4], u32>("CNI_CIDR_IDS")?;
-        let keys: Vec<Key<[u8; 4]>> = m.keys().filter_map(|r| r.ok()).collect();
+        let mut m = self.lpm::<[u8; ADDR_LEN], u32>("CNI_CIDR_IDS")?;
+        let keys: Vec<Key<[u8; ADDR_LEN]>> = m.keys().filter_map(|r| r.ok()).collect();
         for k in keys {
             let _ = m.remove(&k);
         }

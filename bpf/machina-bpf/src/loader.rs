@@ -102,7 +102,7 @@ pub struct Datapath {
     loaded: HashSet<String>,
     tc: StdHashMap<String, (String, TcLinks)>,
     uplink: StdHashMap<String, (String, SchedClassifierLinkId)>,
-    xdp: StdHashMap<String, XdpLinkId>,
+    xdp: StdHashMap<String, (String, XdpLinkId)>,
     cgroups: StdHashMap<String, CgroupLinks>,
     pub tracepoints: Vec<String>,
     pub notes: Vec<String>,
@@ -228,30 +228,47 @@ impl Datapath {
     }
 
     pub fn attach_xdp(&mut self, iface: &str) -> Result<()> {
-        if self.xdp.contains_key(iface) {
-            return Ok(());
-        }
-        let first = !self.loaded.contains("mn_xdp_deny");
+        self.attach_xdp_prog(iface, "mn_xdp_deny")
+    }
+
+    pub(crate) fn xdp_program(&mut self, name: &str) -> Result<&mut Xdp> {
+        let first = !self.loaded.contains(name);
         let p: &mut Xdp = self
             .ebpf
-            .program_mut("mn_xdp_deny")
-            .ok_or_else(|| anyhow!("program mn_xdp_deny missing"))?
+            .program_mut(name)
+            .ok_or_else(|| anyhow!("program {name} missing"))?
             .try_into()?;
         if first {
-            p.load().context("verifier rejected mn_xdp_deny")?;
-            self.loaded.insert("mn_xdp_deny".into());
+            p.load().with_context(|| format!("verifier rejected {name}"))?;
+            self.loaded.insert(name.to_string());
         }
+        Ok(p)
+    }
+
+    /// Attach an XDP program (native, falling back to generic/skb mode).
+    /// One XDP program per interface; a different one replaces it.
+    pub fn attach_xdp_prog(&mut self, iface: &str, prog: &str) -> Result<()> {
+        match self.xdp.get(iface) {
+            Some((p, _)) if p == prog => return Ok(()),
+            Some(_) => self.detach_xdp(iface),
+            None => {}
+        }
+        let p = self.xdp_program(prog)?;
         let id = p
             .attach(iface, XdpMode::default())
             .or_else(|_| p.attach(iface, XdpMode::Skb))
-            .with_context(|| format!("attach XDP to {iface}"))?;
-        self.xdp.insert(iface.to_string(), id);
+            .with_context(|| format!("attach {prog} to {iface}"))?;
+        self.xdp.insert(iface.to_string(), (prog.to_string(), id));
         Ok(())
     }
 
+    pub fn xdp_attached(&self, iface: &str) -> Option<&str> {
+        self.xdp.get(iface).map(|(p, _)| p.as_str())
+    }
+
     pub fn detach_xdp(&mut self, iface: &str) {
-        if let Some(id) = self.xdp.remove(iface) {
-            if let Some(p) = self.ebpf.program_mut("mn_xdp_deny") {
+        if let Some((prog, id)) = self.xdp.remove(iface) {
+            if let Some(p) = self.ebpf.program_mut(&prog) {
                 if let Ok(p) = <&mut Xdp>::try_from(p) {
                     let _ = p.detach(id);
                 }

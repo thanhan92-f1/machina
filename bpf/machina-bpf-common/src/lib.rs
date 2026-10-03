@@ -382,7 +382,11 @@ pub const IDENTITY_WORLD: u32 = 2;
 pub const EP_INGRESS_ISOLATED: u32 = 1 << 0;
 pub const EP_EGRESS_ISOLATED: u32 = 1 << 1;
 
-/// Local pod endpoint (CNI_ENDPOINTS, key = pod IPv4 in network order).
+/// Version of the CNI map/state ABI; bpfd rejects `CniSync` from agents
+/// built against another one. Addresses are 16-byte (IPv4-mapped for v4).
+pub const CNI_ABI_VERSION: u32 = 2;
+
+/// Local pod endpoint (CNI_ENDPOINTS, key = 16-byte pod address).
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Endpoint {
@@ -412,23 +416,35 @@ pub struct PolicyKey {
 pub const POLICY_INGRESS: u8 = 0;
 pub const POLICY_EGRESS: u8 = 1;
 
-/// ClusterIP / NodePort service frontend (CNI_SERVICES).
+/// ClusterIP / NodePort service frontend (CNI_SERVICES / CNI_NODEPORTS).
+/// NodePorts use the unspecified address of their family
+/// (`::ffff:0.0.0.0` for IPv4, `::` for IPv6).
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct SvcKey {
-    /// IPv4, network order.
-    pub addr: [u8; 4],
+    pub addr: [u8; ADDR_LEN],
     /// Network order.
     pub port: [u8; 2],
     pub proto: u8,
     pub _pad: u8,
 }
 
+/// Session affinity by client address (`sessionAffinity: ClientIP`).
+pub const SVC_F_AFFINITY: u32 = 1 << 0;
+/// externalTrafficPolicy=Local: NodePort only uses this node's backends.
+pub const SVC_F_LOCAL: u32 = 1 << 1;
+
+/// Maglev lookup table size per service (prime, ≥ 10× the backends of any
+/// realistic service so disruption on backend churn stays near 1/N).
+pub const MAGLEV_M: u32 = 1021;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct SvcVal {
     pub svc_id: u32,
     pub backend_count: u32,
+    pub flags: u32,
+    pub affinity_secs: u32,
 }
 
 #[repr(C)]
@@ -438,12 +454,42 @@ pub struct BackendKey {
     pub index: u32,
 }
 
+/// Backend lives on another node (NodePort needs SNAT or DSR to reach it).
+pub const BE_F_REMOTE: u8 = 1 << 0;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Backend {
-    pub addr: [u8; 4],
+    pub addr: [u8; ADDR_LEN],
     pub port: [u8; 2],
-    pub _pad: u16,
+    pub flags: u8,
+    pub _pad: u8,
+    /// Remote node address hosting the backend (DSR encap target).
+    pub node: [u8; ADDR_LEN],
+}
+
+/// Maglev slot (CNI_MAGLEV): `slot` in [0, MAGLEV_M) → backend index.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct MaglevKey {
+    pub svc_id: u32,
+    pub slot: u32,
+}
+
+/// Session affinity entry (CNI_AFFINITY): (service, client) → backend index.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct AffinityKey {
+    pub client: [u8; ADDR_LEN],
+    pub svc_id: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct AffinityVal {
+    pub index: u32,
+    pub _pad: u32,
+    pub last_ns: u64,
 }
 
 /// UDP reverse translation for socket LB (CNI_UDP_REVNAT).
@@ -451,9 +497,9 @@ pub struct Backend {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct RevNatKey {
     pub cookie: u64,
-    pub addr: [u8; 4],
+    pub addr: [u8; ADDR_LEN],
     pub port: [u8; 2],
-    pub _pad: u16,
+    pub _pad: [u8; 6],
 }
 
 /// NodePort DNAT conntrack (CNI_NODEPORT_CT): key is the backend-side tuple
@@ -461,29 +507,58 @@ pub struct RevNatKey {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct NatCtKey {
-    pub backend_addr: [u8; 4],
-    pub client_addr: [u8; 4],
+    pub backend_addr: [u8; ADDR_LEN],
+    pub client_addr: [u8; ADDR_LEN],
     pub backend_port: [u8; 2],
     pub client_port: [u8; 2],
     pub proto: u8,
     pub _pad: [u8; 3],
 }
 
+/// The client address was replaced by the node address (eTP=Cluster SNAT).
+pub const NAT_F_SNAT: u16 = 1 << 0;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct NatCtVal {
-    pub frontend_addr: [u8; 4],
+    pub frontend_addr: [u8; ADDR_LEN],
     pub frontend_port: [u8; 2],
-    pub _pad: u16,
+    pub flags: u16,
+    pub _pad: u32,
+    /// Original client address when `NAT_F_SNAT` is set.
+    pub client_addr: [u8; ADDR_LEN],
     pub last_ns: u64,
 }
+
+/// NodePort to remote backends: 0 = SNAT through this node, 1 = DSR (IPIP).
+pub const NODE_F_DSR: u32 = 1 << 0;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct NodeCfg {
-    /// Node primary IPv4 (network order) for NodePort matching.
-    pub node_addr: [u8; 4],
+    /// Node primary IPv4 (IPv4-mapped) for NodePort matching.
+    pub node_addr: [u8; ADDR_LEN],
+    /// Node primary IPv6, all-zero when the node is single-stack.
+    pub node_addr6: [u8; ADDR_LEN],
     pub flags: u32,
+    pub uplink_ifindex: u32,
+}
+
+// ---------------------------------------------------------------------------
+// Uplink XDP dispatcher
+// ---------------------------------------------------------------------------
+
+pub const XDP_SLOTS: u32 = 4;
+pub const XDP_SLOT_NODEPORT: u32 = 0;
+
+pub const XDP_F_SHIELD: u32 = 1 << 0;
+pub const XDP_F_NODEPORT: u32 = 1 << 1;
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct XdpCfg {
+    pub flags: u32,
+    pub _pad: u32,
 }
 
 // ---------------------------------------------------------------------------
@@ -524,7 +599,7 @@ mod pod {
     pod!(
         GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
-        NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats
+        NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg
     );
 }
 
@@ -545,7 +620,15 @@ mod tests {
         assert_eq!(size_of::<ProcEvent>(), 64 + 32 + 16 + PATH_LEN);
         assert_eq!(size_of::<Endpoint>(), 32);
         assert_eq!(size_of::<PolicyKey>(), 12);
-        assert_eq!(size_of::<NatCtKey>(), 16);
+        assert_eq!(size_of::<NatCtKey>(), 40);
+        assert_eq!(size_of::<NatCtVal>(), 48);
+        assert_eq!(size_of::<SvcKey>(), 20);
+        assert_eq!(size_of::<SvcVal>(), 16);
+        assert_eq!(size_of::<Backend>(), 36);
+        assert_eq!(size_of::<RevNatKey>(), 32);
+        assert_eq!(size_of::<AffinityKey>(), 20);
+        assert_eq!(size_of::<AffinityVal>(), 16);
+        assert_eq!(size_of::<NodeCfg>(), 40);
         assert_eq!(size_of::<RateCfg>(), 16);
         assert_eq!(size_of::<IfaceStats>(), 40);
         assert_eq!(size_of::<L7Event>(), 24 + 48 + L7_PAYLOAD_LEN);

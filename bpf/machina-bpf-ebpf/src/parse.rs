@@ -13,6 +13,13 @@ pub const ETH_P_IPV6: u16 = 0x86dd;
 pub const IPPROTO_TCP: u8 = 6;
 pub const IPPROTO_UDP: u8 = 17;
 
+const IPV6_HOPOPTS: u8 = 0;
+const IPV6_ROUTING: u8 = 43;
+const IPV6_FRAGMENT: u8 = 44;
+const IPV6_AH: u8 = 51;
+const IPV6_DSTOPTS: u8 = 60;
+const MAX_V6_EXT: usize = 4;
+
 pub const TCP_FIN: u8 = 0x01;
 pub const TCP_SYN: u8 = 0x02;
 pub const TCP_RST: u8 = 0x04;
@@ -118,11 +125,45 @@ fn parse_l3_into<P: Pkt>(p: &P, l3_off: usize, t: &mut Tuple) -> bool {
             let Some(proto) = p.ld::<u8>(l3_off + 6) else {
                 return false;
             };
-            t.proto = proto;
             if !p.ld_into(l3_off + 8, &mut t.src) || !p.ld_into(l3_off + 24, &mut t.dst) {
                 return false;
             }
-            t.l4_off = l3_off + 40;
+            let mut next = proto;
+            let mut off = l3_off + 40;
+            // Bounded extension-header walk (hop-by-hop, routing, fragment,
+            // destination options, AH); anything deeper is left unparsed.
+            let mut i = 0;
+            while i < MAX_V6_EXT {
+                let len = match next {
+                    IPV6_HOPOPTS | IPV6_ROUTING | IPV6_DSTOPTS => match p.ld::<[u8; 2]>(off) {
+                        Some(h) => {
+                            next = h[0];
+                            (h[1] as usize + 1) * 8
+                        }
+                        None => return false,
+                    },
+                    IPV6_FRAGMENT => match p.ld::<[u8; 4]>(off) {
+                        Some(h) => {
+                            next = h[0];
+                            fragmented = (u16::from_be_bytes([h[2], h[3]]) & 0xfff8) != 0;
+                            8
+                        }
+                        None => return false,
+                    },
+                    IPV6_AH => match p.ld::<[u8; 2]>(off) {
+                        Some(h) => {
+                            next = h[0];
+                            (h[1] as usize + 2) * 4
+                        }
+                        None => return false,
+                    },
+                    _ => break,
+                };
+                off += len;
+                i += 1;
+            }
+            t.proto = next;
+            t.l4_off = off;
         }
         _ => return false,
     }
@@ -181,6 +222,13 @@ pub fn parse_tc(ctx: &TcContext, out: &mut Tuple) -> u32 {
         Some(ETH_P_IP | ETH_P_IPV6) => parse_l3_into(ctx, ETH_HLEN, out) as u32,
         _ => 0,
     }
+}
+
+/// Parse an encapsulated IPv4 packet at `off` (IPIP inner header).
+#[inline(never)]
+pub fn parse_inner_v4(ctx: &TcContext, off: usize, out: &mut Tuple) -> u32 {
+    *out = Tuple::zero();
+    (parse_l3_into(ctx, off, out) && !out.v6) as u32
 }
 
 /// Out-of-line L3 parse for cgroup_skb programs (no Ethernet header).

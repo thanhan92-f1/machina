@@ -33,6 +33,7 @@ mod cni;
 mod listen;
 mod ops;
 mod readers;
+mod uplink;
 
 pub use listen::{run, Config};
 
@@ -163,6 +164,7 @@ struct Engine {
     /// Accounting key → RFC 3339 start of its window.
     acct_since: HashMap<String, String>,
     cni: cni::CniRuntime,
+    uplink: uplink::UplinkRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -245,6 +247,7 @@ impl Engine {
             acct_offset: HashMap::new(),
             acct_since: HashMap::new(),
             cni: cni::CniRuntime::default(),
+            uplink: uplink::UplinkRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

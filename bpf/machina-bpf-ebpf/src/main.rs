@@ -12,6 +12,8 @@ mod maps;
 mod net;
 mod parse;
 mod proc;
+mod shield;
+mod xdp;
 
 #[cfg(not(test))]
 #[panic_handler]
