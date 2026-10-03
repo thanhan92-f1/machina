@@ -58,7 +58,7 @@ export default function MobileNavSheet({
     <div className="gnb-sheet" role="dialog" aria-modal="true" aria-label="Navigation" ref={panelRef} tabIndex={-1}>
       <div className="gnb-sheet-head">
         <Link to="/platform" className="gnb-sheet-brand" onClick={onClose}>
-          <img src="/zyvor-favicon.svg" width={22} height={22} alt="" />
+          <img src="/zyvor-logomark.svg" width={22} height={22} alt="" className="gnb-logomark" />
           <span>Machina</span>
         </Link>
         <button type="button" className="gnb-icon-btn" aria-label="Close menu" onClick={onClose}>

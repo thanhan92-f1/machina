@@ -52,6 +52,26 @@
 .gnb-brand-mark:hover {
   background: var(--surface-hover, rgba(255, 255, 255, 0.06));
 }
+/* Netra: bare orange Z + a 17px/600 wordmark. */
+.gnb-logomark {
+  display: block;
+  border-radius: 6px;
+  transition: opacity 0.15s var(--ease-standard);
+}
+.gnb-brand-mark:hover .gnb-logomark {
+  opacity: 0.8;
+}
+.gnb-brand-mark {
+  min-width: 36px;
+  min-height: 36px;
+  justify-content: center;
+}
+.gnb-brand > div > button,
+.gnb-brand button {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
 .gnb-nav {
   display: flex;
   height: 100%;

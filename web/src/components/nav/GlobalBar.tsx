@@ -100,7 +100,7 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
 
           <div className="gnb-brand">
             <Link to="/platform" className="gnb-brand-mark" title="Machina" aria-label="Machina home">
-              <img src="/zyvor-favicon.svg" width={22} height={22} alt="" />
+              <img src="/zyvor-logomark.svg" width={22} height={22} alt="" className="gnb-logomark" />
             </Link>
             <PlatformMacMenuDropdown
               label="Machina"
