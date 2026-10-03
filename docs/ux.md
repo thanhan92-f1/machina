@@ -54,17 +54,13 @@ Gate destructive or cloud-side actions on `phase === 'live'`. Nav and command pa
 
 **Infrastructure DNA:** [`InfrastructureDnaStrip`](../web/src/components/platform/InfrastructureDnaStrip.tsx) — score ring + grade + pillar chips from `GET /api/v1/fleet/dna` on Platform dashboard (power tier+) and Mission Control header.
 
-**Full Jarvis shell (Phase 57):** [`PlatformJarvisBriefing`](../web/src/components/platform/PlatformJarvisBriefing.tsx) on all tiers — landing intents from `GET /api/v1/ai/jarvis/landing`, inline search opens Spotlight (`⌘Space`). Primary navigation lives in `SideNav` (always visible by default) — see [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
-
 **Infrastructure Earth globe (Phase 58 v3):** [`InfrastructureEarthGlobe`](../web/src/components/platform/InfrastructureEarthGlobe.tsx) — **WebGL** globe (lazy `three.js`) with **canvas 2D fallback**, per-site health markers, and a site legend (links to Machine Finder) on Mission Control and Machine Finder topology lens.
 
 **Enterprise security strip:** [`EnterpriseSecurityStrip`](../web/src/components/platform/EnterpriseSecurityStrip.tsx) on advanced dashboard; vault sync failures use persistent [`ErrorBanner`](../web/src/components/ErrorBanner.tsx) on [`PlatformEnterprise`](../web/src/pages/platform/PlatformEnterprise.tsx).
 
-| [`ShellBridgeBar`](../web/src/components/ShellBridgeBar.tsx) | Classic / Fleet Cloud / K8s routes — link back to Platform desktop |
 | [`JsonInspector`](../web/src/components/platform/JsonInspector.tsx) | Power-user API payloads — human summary first, raw JSON behind toggle |
 | [`PlatformIntegrationEmbeds`](../web/src/components/platform/PlatformIntegrationEmbeds.tsx) | Integrations hub — live Fleet Cloud/K8s inventory preview when backends are reachable |
 | [`ErrorBanner`](../web/src/components/ErrorBanner.tsx) | Actionable failure with hints + optional copy |
-| [`PageHeader`](../web/src/components/PageHeader.tsx) | Title, subtitle, refresh, primary action |
 | [`CopyButton`](../web/src/components/CopyButton.tsx) | Wire scripts, kubectl, verify commands |
 | [`WizardStepper`](../web/src/components/WizardStepper.tsx) | Multi-step Create VM / Import VM |
 
@@ -77,7 +73,6 @@ The daemon returns `{ "error": "…", "error_code": "operation_failed" }` on fai
 | [`formatHttpErrorBody`](../web/src/utils/apiError.ts) | Parsing a non-OK `fetch` body (used by [`client.ts`](../web/src/api/client.ts)) |
 | [`parseResponseError`](../web/src/api/parseResponseError.ts) | Custom `fetch` calls outside `apiPost` / `readJsonObject` |
 | [`formatUserError`](../web/src/utils/apiError.ts) | Any `catch (e: unknown)` shown in toasts or banners |
-| [`toastFailure`](../web/src/utils/toastError.ts) | `toastFailure(toast, 'Label', e)` shorthand |
 
 **Do not** display raw `response.text()` or bare `error_code` strings. Toasts run through [`Toast.tsx`](../web/src/components/Toast.tsx), which sanitizes error messages globally.
 
@@ -88,8 +83,6 @@ Tests: `cd web && npm test` ([`apiError.test.ts`](../web/src/utils/apiError.test
 Rust/TUI: [`core/src/api_error.rs`](../core/src/api_error.rs) mirrors web formatting; TUI HTTP client uses it for status bar messages.
 
 Multi-host VM list: configure `[libvirt] extra_uris` in daemon config; VMs from remote URIs appear with a connection badge (read-only federation; lifecycle on primary/dual connections only).
-
-HyperSDK: [`HypersdkStatusBanner`](../web/src/components/HypersdkStatusBanner.tsx) on migrations and push modals when enabled but unreachable.
 
 ## Developer / API Console
 
@@ -127,7 +120,6 @@ Cross-shell presentation pass after backend wiring (P6–P13). See [`backend-ux-
 | Zero rows | [`PlatformEmptyState`](web/src/components/platform/PlatformEmptyState.tsx) (Platform) or [`EmptyState`](web/src/components/EmptyState.tsx) (Classic/Fleet Cloud/K8s) with at least one CTA |
 | API payloads | [`JsonInspector`](web/src/components/platform/JsonInspector.tsx) — summary/table first; raw JSON behind toggle |
 | Domain failures | [`formatUserError`](web/src/utils/apiError.ts) + hints ([`libvirtHints`](web/src/utils/libvirtHints.ts), [`hostErrorPresentation`](web/src/utils/hostErrorPresentation.ts), [`storageErrorPresentation`](web/src/utils/storageErrorPresentation.ts)) |
-| Cross-shell nav | [`ShellBridgeBar`](web/src/components/ShellBridgeBar.tsx) on Classic, Fleet Cloud, K8s routes |
 
 **E2E (mocked):**
 
@@ -206,9 +198,7 @@ Product themes map to Zeus: **Tahoe Light** (`light`, **default**), **Classic Bl
 - Dialogs restore focus to their trigger via [`useCaptureTrigger`](../web/src/hooks/useCaptureTrigger.ts) (used by `useFocusTrap`, `GlassModal`, `ConfirmDialog`); capture happens during render because a child's `autoFocus` moves focus before effects run
 - **URL behavior:** the login page renders outside `BrowserRouter` when unauthenticated. `/` and `/login` both work. After auth, [`AuthContext`](../web/src/contexts/AuthContext.tsx) replaces `/login` with `/`, and authenticated routes register `<Navigate from="/login" to="/" />` so bookmarked `/login` never shows 404
 - **Zeus AI shell:** [`AiProvider`](../web/src/contexts/AiContext.tsx) must stay **inside** `BrowserRouter` (uses `useLocation` / `useParams` for ambient route context)
-- [`usePrefersReducedMotion`](../web/src/hooks/usePrefersReducedMotion.ts) — respects reduced motion on login entrance animations
 - E2E: [`smoke.spec.ts`](../web/e2e/smoke.spec.ts) — `authenticated /login redirects to dashboard`
-- [`ConnectionStatus`](../web/src/components/ConnectionStatus.tsx) — `role="status"` + `aria-label` (not color-only)
 - [`NotFound.tsx`](../web/src/pages/NotFound.tsx) — dashboard styling + Ctrl+K hint
 ## Manual QA (Phase 7)
 

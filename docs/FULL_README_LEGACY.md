@@ -101,7 +101,7 @@ The Machina web UI uses a **Liquid Glass** design system inspired by macOS Tahoe
 
 - **Dark theme = Liquid Glass** — the default `dark` theme applies glass tokens across daemon pages and the platform desktop shell
 - **Platform desktop tiers** — **Normal** / **Power** / **Advanced** (route catalogs + context bar); switch in **Settings → Appearance** or **View → Desktop density**. Sidebar icon rail on by default. See [design/APPLE-UX-CONTRACT.md](design/APPLE-UX-CONTRACT.md).
-- **Reusable components** — `GlassCard`, `GlassButton`, `GlassModal`, `GlassInput`, `GlassTabs` in `web/src/components/glass/`
+- **Reusable components** — `GlassCard`, `GlassModal` in `web/src/components/glass/`
 - **Steel / Aurora** themes remain available via the navbar theme picker
 
 - **Machina login page** — Apple Account paper + apple.com **machina** wordmark ([`PremiumLoginShell`](web/src/components/PremiumLoginShell.tsx) + [`zyvor-premium-login.css`](web/src/styles/zyvor-premium-login.css)); entry at `/` or `/login`; after sign-in the URL normalizes to `/` (dashboard)
