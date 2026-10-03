@@ -563,7 +563,9 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
   }
   /* Inline text links get a >=36px hit area without moving the layout: the padding is cancelled
      by the negative margin. */
-  main .status-link {
+  main .status-link,
+  main a.hover\:underline,
+  main button.hover\:underline {
     padding-block: 0.75rem;
     margin-block: -0.75rem;
   }
