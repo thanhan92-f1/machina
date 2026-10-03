@@ -3,7 +3,7 @@
 Shipped **default** light shell is apple.com white / Magichromatic Tahoe Light
 (`html.apple-light`, `html[data-theme='tahoe-light']`) — port from
 [`../zeus-os/ui/src/index.css`](../../zeus-os/ui/src/index.css).
-Classic Blue and other dark shells are opt-in via Appearance.
+The dark theme is opt-in via Appearance (light and dark are the only two themes).
 
 Live SoT in Machina: **`web/src/styles/netra-look.css`** (the final layer, loaded after `main.css`;
 it wins by source order and holds every current look override). Underneath it:

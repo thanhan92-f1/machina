@@ -4,43 +4,34 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 
 /**
- * Product themes mapped 1:1 onto Zeus OS identities.
- * Default: `light` → apple.com white / tahoe-light.
- * `dark` → Classic Blue (`data-ui-shell=default`).
+ * Two product themes, as in Netra: `light` (apple.com white / tahoe-light, the default) and
+ * `dark` (flat black canvas, `data-theme=tahoe`, `data-ui-shell=default`).
+ * The former steel / aurora / rack themes were removed; stored values for them load as `dark`.
  */
-export type AppTheme = 'dark' | 'steel' | 'aurora' | 'rack' | 'light'
+export type AppTheme = 'dark' | 'light'
 
 /** Product default — apple.com white paper (Zeus tahoe-light). */
 export const DEFAULT_THEME: AppTheme = 'light'
 
-const THEME_CYCLE: AppTheme[] = ['light', 'dark', 'steel', 'aurora', 'rack']
+const THEME_CYCLE: AppTheme[] = ['light', 'dark']
 
 const THEME_MIGRATION_APPLE = 'machina-theme-migrated-apple-light-v1'
 
 export const THEME_LABELS: Record<AppTheme, string> = {
   light: 'Apple',
-  dark: 'Classic Blue',
-  steel: 'Dark Steel',
-  aurora: 'Aurora',
-  rack: 'Rack',
+  dark: 'Dark',
 }
 
 /** html[data-theme] values — match Zeus themeStore HTML_THEME. */
 const HTML_THEME: Record<AppTheme, string> = {
   light: 'tahoe-light',
   dark: 'tahoe',
-  steel: 'dark-steel',
-  aurora: 'aurora',
-  rack: 'rack',
 }
 
 /** html[data-ui-shell] — Zeus palette selectors. */
 const HTML_UI_SHELL: Record<AppTheme, string> = {
   light: 'tahoe-light',
   dark: 'default',
-  steel: 'dark-steel',
-  aurora: 'aurora',
-  rack: 'rack',
 }
 
 interface ThemeContextType {
@@ -69,9 +60,9 @@ function parseStoredTheme(raw: string | null): AppTheme {
   } catch {
     /* ignore */
   }
-  if (raw === 'light' || raw === 'aurora' || raw === 'steel' || raw === 'rack' || raw === 'dark') {
-    return raw
-  }
+  if (raw === 'light' || raw === 'dark') return raw
+  // The removed dark variants (steel / aurora / rack) fall back to the dark theme.
+  if (raw === 'steel' || raw === 'aurora' || raw === 'rack') return 'dark'
   return DEFAULT_THEME
 }
 
@@ -95,27 +86,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement
     root.style.removeProperty('background-color')
     root.style.removeProperty('color-scheme')
-    root.classList.remove(
-      'steel-theme',
-      'aurora-theme',
-      'rack-theme',
-      'liquid-glass-app',
-      'apple-light',
-      'light-theme',
-    )
+    root.classList.remove('liquid-glass-app', 'apple-light', 'light-theme')
     root.classList.add('machina-clean')
     applyHtmlThemeAttrs(theme)
-    if (theme === 'steel') {
-      root.classList.add('steel-theme')
-    } else if (theme === 'aurora') {
-      root.classList.add('aurora-theme')
-    } else if (theme === 'rack') {
-      root.classList.add('rack-theme')
-    } else if (theme === 'light') {
+    if (theme === 'light') {
       root.classList.add('apple-light', 'light-theme')
       root.style.colorScheme = 'light'
     } else {
-      // Classic Blue — Zeus graphite + Mist (not System Blue liquid-glass)
+      // Dark: flat black canvas
       root.classList.add('liquid-glass-app')
       root.style.colorScheme = 'dark'
     }

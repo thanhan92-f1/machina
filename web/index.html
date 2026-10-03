@@ -34,12 +34,11 @@
             root.style.colorScheme = 'light'
             root.style.backgroundColor = '#f5f5f7'
           } else {
-            root.dataset.theme = t === 'dark' ? 'tahoe' : t === 'steel' ? 'dark-steel' : t === 'aurora' ? 'aurora' : 'rack'
-            root.setAttribute('data-ui-shell', t === 'dark' ? 'default' : t === 'steel' ? 'dark-steel' : t === 'aurora' ? 'aurora' : 'rack')
-            if (t === 'dark') root.classList.add('liquid-glass-app')
-            else if (t === 'steel') root.classList.add('steel-theme')
-            else if (t === 'aurora') root.classList.add('aurora-theme')
-            else root.classList.add('rack-theme')
+            // Dark. The removed steel / aurora / rack themes load as dark too.
+            root.dataset.theme = 'tahoe'
+            root.setAttribute('data-ui-shell', 'default')
+            root.classList.add('liquid-glass-app')
+            root.style.colorScheme = 'dark'
           }
         } catch (e) {
           var r = document.documentElement

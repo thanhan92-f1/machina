@@ -35,8 +35,8 @@ auditable, and superseded rules can be deleted from the older files later.
    clobber `h-8 px-2` on every input. Style classes, not bare elements.
 3. **Don't touch immersive chrome**: `.tty-surface`, `[data-tty]`, Mission Control carbon, Console
    Hub, SSH and VNC views stay dark in both themes.
-4. **Only light and dark are restyled.** `steel`, `aurora` and `rack` keep their own tokens and
-   inherit the dark base. Token fallbacks (`var(--nl-x, #fallback)`) keep them legible.
+4. **Two themes only: light and dark.** The former `steel`, `aurora` and `rack` themes were removed
+   (CSS, theme switcher and boot script); a stored value for one of them loads as `dark`.
 
 ## Surface tiers
 
@@ -161,7 +161,7 @@ means "no regressions", not "perfect": populated-state bugs need a real host
 |---|---|---|
 | `light` (default) | `tahoe-light` | Restyled (Netra-flat) |
 | `dark` | `tahoe` | Restyled |
-| `steel`, `aurora`, `rack` | own | Inherit the dark base; not restyled or audited |
+| `steel`, `aurora`, `rack` | own | Removed; a stored value loads as `dark` |
 
 ## Rollout status
 

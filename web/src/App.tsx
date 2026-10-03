@@ -341,15 +341,9 @@ function AuthenticatedShellRoutes() {
   }, [location.pathname])
 
   const shellClass =
-    theme === 'steel'
-      ? 'dashboard-steel min-h-screen flex flex-col text-[#d7dde5]'
-      : theme === 'aurora'
-        ? 'dashboard-aurora min-h-screen flex flex-col text-[#e8e4f8]'
-        : theme === 'rack'
-          ? 'dashboard-rack min-h-screen flex flex-col text-[#e7edf4]'
-          : theme === 'light'
-            ? 'apple-light-shell min-h-screen flex flex-col text-[var(--text-primary)]'
-            : 'dashboard-liquid-glass liquid-glass-app min-h-screen flex flex-col text-[var(--text-primary)]'
+    theme === 'light'
+      ? 'apple-light-shell min-h-screen flex flex-col text-[var(--text-primary)]'
+      : 'dashboard-liquid-glass liquid-glass-app min-h-screen flex flex-col text-[var(--text-primary)]'
 
   return (
     <>

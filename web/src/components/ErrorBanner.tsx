@@ -26,7 +26,7 @@ const toneStyles: Record<Tone, { border: string; bg: string; title: string; text
     border: 'border-[color-mix(in_srgb,var(--machina-status-warn)_40%,transparent)]',
     bg: 'bg-[color-mix(in_srgb,var(--machina-status-warn)_10%,transparent)]',
     // Text tokens are theme-aware (dark text on light, bright on dark). The old mix-toward-white
-    // values were ~2.3:1 on the light theme's tinted panel. Fallbacks cover steel/aurora/rack.
+    // values were ~2.3:1 on the light theme's tinted panel.
     title: 'text-[var(--nl-status-warn-text,#ffd60a)]',
     text: 'text-[var(--nl-status-warn-text,#ffd60a)]',
     semantic: 'warn',
