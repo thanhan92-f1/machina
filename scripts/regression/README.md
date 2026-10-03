@@ -1,8 +1,7 @@
 # Machina live regression (CDP + API)
 
-Page-by-page and API heartbeat sweeps against a deployed Machina host. Scripts under
-`archive/` are the historical CDP rounds from the Aug 2026 live bug-hunt; the
-maintained entrypoints are `page-sweep.js` and `api-sweep.js`.
+Page-by-page and API heartbeat sweeps against a deployed Machina host. The maintained
+entrypoints are `page-sweep.js` and `api-sweep.js`.
 
 ## Setup
 
