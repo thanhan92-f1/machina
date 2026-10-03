@@ -539,3 +539,20 @@ html.dark .gnb-tasks {
   padding: 12px clamp(16px, 4vw, 28px) calc(12px + env(safe-area-inset-bottom, 0));
   border-top: 1px solid var(--apple-hairline);
 }
+
+/* ── Mid widths (1025–1279px): the nav, brand and controls share one row ── */
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .gnb-tasks {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+@media (min-width: 1025px) and (max-width: 1119px) {
+  /* "Live" collapses to its dot (the text stays in the DOM for assistive tech). */
+  .gnb-live {
+    font-size: 0;
+    padding: 0 0.375rem;
+  }
+}

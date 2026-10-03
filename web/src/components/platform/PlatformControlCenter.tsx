@@ -214,7 +214,7 @@ export default function PlatformControlCenter() {
         aria-expanded={open}
       >
         <SlidersHorizontal className="w-4 h-4" />
-        <span className="hidden sm:inline">Control Center</span>
+        <span className="hidden xl:inline">Control Center</span>
         {(warnings > 0 || fwCritical > 0 || metalCritical > 0) && (
           <span className="w-2 h-2 rounded-full bg-[var(--machina-status-warn)] animate-pulse-dot" role="status" aria-label="Active alerts present" />
         )}
