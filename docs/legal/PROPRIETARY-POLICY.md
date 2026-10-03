@@ -21,7 +21,7 @@ Agreements should state:
 ## Repositories
 
 - Do not add `LICENSE` files implying Apache/MIT for Zyvor-owned code.
-- Use the company **proprietary LICENSE** (synced via `scripts/sync-proprietary-license.sh`).
+- Use the company **proprietary LICENSE**.
 - Keep confidential materials out of public repos; if a repo is private, access is still under proprietary terms unless a separate contract says otherwise.
 
 ## Contributions

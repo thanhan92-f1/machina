@@ -36,7 +36,7 @@ Customer
    → Acceptable Use Policy (AUP) + Export Compliance (incorporated by reference)
 ```
 
-Quick deploy / self-hosted tarball: [LICENSE](../../LICENSE) + install acceptance (`scripts/lib/license-accept.sh`). Enterprise deals should still execute the full stack above.
+Quick deploy / self-hosted tarball: [LICENSE](../../LICENSE). Enterprise deals should still execute the full stack above.
 
 ---
 

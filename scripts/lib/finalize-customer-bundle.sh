@@ -12,26 +12,18 @@ PRODUCT="${3:?product name}"
 VERSION="${4:-${V9S_PACKAGE_VERSION:-latest}}"
 LIB="${BUILD_DIR}/scripts/lib"
 
-# License pack (LICENSE, LEGAL-INDEX.txt, docs/legal/, Zyvor terms when applicable)
-# NOTE: gate on -f + chmod (not -x) and hard-fail if neither script is found —
-# a missing/non-executable legal-copy script must not silently produce a
-# customer bundle with no LICENSE.
-if [[ -f "${LIB}/copy-legal-to-bundle.sh" ]]; then
-  chmod +x "${LIB}/copy-legal-to-bundle.sh"
-  "${LIB}/copy-legal-to-bundle.sh" "${STAGE}" "${BUILD_DIR}"
-elif [[ -f "${LIB}/copy-zyvor-legal-to-bundle.sh" ]]; then
-  chmod +x "${LIB}/copy-zyvor-legal-to-bundle.sh"
-  extra=()
-  [[ -f "${BUILD_DIR}/ZYVOR-COMPANY-TERMS.md" ]] && extra=(--with-accept)
-  "${LIB}/copy-zyvor-legal-to-bundle.sh" "${STAGE}" "${BUILD_DIR}" "${extra[@]}"
-else
-  echo "ERROR: missing ${LIB}/copy-legal-to-bundle.sh (and copy-zyvor-legal-to-bundle.sh) — cannot produce a customer bundle without a LICENSE" >&2
+# License pack: LICENSE (hard-fail if missing) and the legal reference docs. A customer bundle must
+# never be produced without a LICENSE.
+mkdir -p "${STAGE}/docs/legal"
+for lic in LICENSE LICENSE.txt; do
+  [[ -f "${BUILD_DIR}/${lic}" ]] && cp "${BUILD_DIR}/${lic}" "${STAGE}/${lic}"
+done
+if [[ ! -f "${STAGE}/LICENSE" && ! -f "${STAGE}/LICENSE.txt" ]]; then
+  echo "ERROR: no LICENSE or LICENSE.txt in ${BUILD_DIR} — cannot produce a customer bundle without a LICENSE" >&2
   exit 1
 fi
-if [[ -f "${LIB}/license-accept.sh" ]]; then
-  mkdir -p "${STAGE}/.package-lib"
-  cp "${LIB}/license-accept.sh" "${STAGE}/.package-lib/"
-  chmod +x "${STAGE}/.package-lib/license-accept.sh"
+if [[ -d "${BUILD_DIR}/docs/legal" ]]; then
+  cp -R "${BUILD_DIR}/docs/legal/." "${STAGE}/docs/legal/"
 fi
 
 for tool in generate-customer-pdfs.sh verify-bundle-script-paths.sh; do

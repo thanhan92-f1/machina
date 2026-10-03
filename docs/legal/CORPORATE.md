@@ -66,9 +66,7 @@ Always use **ZyvorAI Labs Private Limited** on licenses, contracts, and customer
 
 - Deploy EULA: [LICENSE](../../LICENSE) (v1.6+)  
 - Framework index: [README.md](README.md) (MSA, ELA, SLA, DPA, Order Form, AUP, export)  
-- Deploy / install acceptance: `scripts/lib/license-accept.sh`  
-- Customer bundles: `LEGAL-INDEX.txt` + `legal/` via `scripts/lib/copy-legal-to-bundle.sh`  
-- Sync to sibling repos: `scripts/sync-legal-framework.sh`  
+- Customer bundles: `LICENSE` + `docs/legal/` (added by `scripts/lib/finalize-customer-bundle.sh`)  
 - Contact: **info@zyvor.dev** (general) · **legal@zyvor.dev** (licensing)
 
 ## Related PDFs on file (`~/Downloads/PDFs`)
