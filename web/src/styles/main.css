@@ -19,8 +19,8 @@
   --dock-height: 4.25rem;
   --page-gutter: clamp(0.85rem, 2vw, 1.5rem);
   --section-gap: clamp(2.5rem, 5vw, 4.5rem);
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, 'JetBrains Mono', monospace;
 
   /* Apple.com / iPhone-style system tokens */
   --radius-liquid: 12px;
@@ -700,10 +700,10 @@ code, .font-mono, pre {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.7rem 1.4rem;
+  padding: 0.625rem 1.125rem;
   min-height: 2.75rem;
-  font-size: 1.0625rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 400;
   letter-spacing: -0.01em;
   line-height: 1.2;
   color: #fff !important;
@@ -753,10 +753,10 @@ code, .font-mono, pre {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.7rem 1.4rem;
+  padding: 0.625rem 1.125rem;
   min-height: 2.75rem;
-  font-size: 1.0625rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 400;
   letter-spacing: -0.01em;
   line-height: 1.2;
   color: var(--text-primary, #f5f5f7) !important;
@@ -827,14 +827,14 @@ code, .font-mono, pre {
   letter-spacing: -0.01em;
   color: #fff !important;
   border-radius: 980px !important;
-  background: #ff453a !important;
+  background: var(--nl-danger, #ff3b30) !important;
   border: none !important;
   box-shadow: none !important;
   cursor: pointer;
   text-decoration: none !important;
   transition: background 0.18s var(--ease-standard), transform 0.1s var(--ease-standard);
 }
-.btn-destructive:hover:not(:disabled) { background: #ff6961 !important; }
+.btn-destructive:hover:not(:disabled) { filter: brightness(1.08); }
 .btn-destructive:active:not(:disabled) { transform: scale(0.98); }
 
 .btn-primary.text-xs, .btn-secondary.text-xs, .btn-ghost.text-xs, .btn-destructive.text-xs, .tahoe-btn-primary.text-xs {
@@ -2777,8 +2777,8 @@ button.vm-detail-hero-pill:hover {
 
 /* ── apple.com blue final reassert (must stay last in this file) ─────────── */
 :root {
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, 'JetBrains Mono', monospace;
   --accent: #0071e3;
   --accent-hover: #0077ed;
   --accent-pressed: #006edb;

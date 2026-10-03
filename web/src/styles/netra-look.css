@@ -30,6 +30,7 @@
   --nl-radius-control: 12px;
   --nl-hit-min: 44px;
   --nl-ease: cubic-bezier(0.28, 0.11, 0.32, 1);
+  --nl-danger: #ff3b30;
 }
 
 /* ---- Light: neutral tokens ------------------------------------------------ */
@@ -89,6 +90,7 @@ html[data-ui-shell='default'],
   --nl-fill: rgba(255, 255, 255, 0.08);
   --nl-fill-hover: #2c2c2e;
   --nl-bar-bg: rgba(22, 22, 23, 0.86);
+  --nl-danger: #ff453a;
   --text-faint: #8e8e93;
   --nl-accent-cyan-text: #64d2ff;
   --nl-accent-green-text: #30d158;
