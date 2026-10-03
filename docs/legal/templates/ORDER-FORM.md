@@ -18,7 +18,6 @@
 
 | Product | Edition | Deployment |
 |---------|---------|------------|
-| PacketWolf / NetPredator | ☐ Enterprise | ☐ Self-hosted ☐ Hosted |
 | Ragnarok | ☐ Enterprise | ☐ Self-hosted |
 | Aether | ☐ Enterprise | ☐ Self-hosted |
 | GuestKit | ☐ Enterprise | ☐ Self-hosted |
@@ -36,7 +35,6 @@
 | Confidential / TEE nodes | | |
 | Tenant trust domains | | |
 | GPU confidential pools | | |
-| Monitored workloads (PacketWolf) | | |
 | Named support contacts | | |
 
 ---

@@ -3,7 +3,6 @@
 ZyvorAI Labs Private Limited claims rights in the following marks (registered or unregistered, as applicable):
 
 - **Zyvor**, **zyvor.dev**
-- **PacketWolf**, **NetPredator**
 - **Ragnarok**, **Aether**, **GuestKit**, **HyperSDK**
 
 ## No trademark license

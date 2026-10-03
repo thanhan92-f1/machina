@@ -4,7 +4,6 @@
 
 | Product | License | Hosted SaaS | Trademark |
 |---------|---------|-------------|-----------|
-| **PacketWolf / NetPredator** | Proprietary EULA / ELA | Optional | PacketWolf, NetPredator |
 | **Ragnarok** | Proprietary EULA / ELA | Optional | Ragnarok |
 | **Aether** | Proprietary EULA / ELA | Optional | Aether |
 | **GuestKit** | Proprietary EULA / ELA | Optional | GuestKit |

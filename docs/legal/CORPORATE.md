@@ -1,12 +1,11 @@
 # ZyvorAI Labs — corporate reference
 
-Licensor for PacketWolf and the zyvor.dev product suite. See [LICENSE](../../LICENSE) and the [commercial legal framework](README.md).
+Licensor for the zyvor.dev product suite. See [LICENSE](../../LICENSE) and the [commercial legal framework](README.md).
 
 ## Product portfolio (recommended structure)
 
 ```text
 ZyvorAI Labs Private Limited
-    ├── PacketWolf / NetPredator
     ├── Ragnarok Enterprise
     ├── Aether Enterprise
     ├── GuestKit Enterprise
@@ -52,8 +51,6 @@ ZyvorAI Labs is incorporated to carry on, among other things:
 - R&D in AI, machine learning, data analytics, cloud, cybersecurity, digital technologies  
 - Licensing, distribution, and SaaS / subscription digital products  
 - Training and advisory in software, IT, and digital infrastructure  
-
-PacketWolf / NetPredator (network intelligence, eBPF, Kubernetes) falls within these objects.
 
 ## Name variants in other files (clarification)
 
