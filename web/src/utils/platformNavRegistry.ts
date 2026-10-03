@@ -4,17 +4,7 @@
 // Single source of truth for platform hub context nav and Spotlight entries.
 
 import type { LucideIcon } from 'lucide-react'
-import {
-  Cpu,
-  LayoutGrid,
-  Monitor,
-  Package,
-  Plug,
-  Server,
-  Settings,
-  ShieldAlert,
-  Wrench,
-} from 'lucide-react'
+import { Cpu, LayoutGrid, Monitor, Package, Server, Settings, ShieldAlert, Wrench } from 'lucide-react'
 import type { PlatformDesktopTier } from './platformDesktopTier'
 import { isPathAllowedForTier, tierAtLeast } from './platformDesktopTier'
 import { platformPageLabel } from './platformDesktopTabs'
@@ -385,20 +375,12 @@ export function administrationNavItemsForTier(tier: PlatformDesktopTier): Contex
   return filterItems(ADMINISTRATION_ITEMS, tier)
 }
 
-export function resourcesNavItemsForTier(tier: PlatformDesktopTier): ContextNavItem[] {
-  return infrastructureNavItemsForTier(tier)
-}
-
 export function securityNavItemsForTier(tier: PlatformDesktopTier): ContextNavItem[] {
   return filterItems(SECURITY_ITEMS, tier)
 }
 
 export function zyraNavItemsForTier(tier: PlatformDesktopTier): ContextNavItem[] {
   return filterItems(ZEUS_ITEMS, tier)
-}
-
-export function integrationsNavItemsForTier(tier: PlatformDesktopTier): ContextNavItem[] {
-  return filterItems(INTEGRATIONS_ITEMS, tier)
 }
 
 export function hubTilesForTier(tier: PlatformDesktopTier): DesktopHubTile[] {

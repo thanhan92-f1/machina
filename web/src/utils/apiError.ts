@@ -141,14 +141,3 @@ export function formatUserError(e: unknown): string {
   }
   return sanitizeErrorText(String(e)) || 'Unknown error'
 }
-
-export type ParsedApiError = {
-  message: string
-  code?: string
-}
-
-export function parseUserError(e: unknown): ParsedApiError {
-  const message = formatUserError(e)
-  const m = message.match(ERROR_CODE_RE)
-  return { message: message.replace(ERROR_CODE_RE, '').trim() || message, code: m?.[1] }
-}

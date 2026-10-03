@@ -70,10 +70,6 @@ export function vmStatusBadgeClasses(
   return variant === 'solid' ? `${base} machina-vm-status--solid` : base
 }
 
-export function vmCardAccentClass(state: string | undefined | null): string {
-  return `machina-vm-card-accent machina-vm-card-accent--${vmSemanticKind(state)}`
-}
-
 export function vmStatusDotClass(state: string | undefined | null): string {
   const kind = vmSemanticKind(state)
   const pulse = kind === 'running' ? ' machina-vm-dot--pulse' : ''

@@ -17,11 +17,6 @@ const THEME_CYCLE: AppTheme[] = ['light', 'dark']
 
 const THEME_MIGRATION_APPLE = 'machina-theme-migrated-apple-light-v1'
 
-export const THEME_LABELS: Record<AppTheme, string> = {
-  light: 'Apple',
-  dark: 'Dark',
-}
-
 /** html[data-theme] values — match Zeus themeStore HTML_THEME. */
 const HTML_THEME: Record<AppTheme, string> = {
   light: 'tahoe-light',

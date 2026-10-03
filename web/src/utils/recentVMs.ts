@@ -16,10 +16,6 @@ export function getRecentVMs(): string[] {
   } catch { return [] }
 }
 
-export function removeRecentVM(name: string) {
-  removeRecentVMs([name])
-}
-
 export function removeRecentVMs(names: string[]) {
   if (!names.length) return
   const drop = new Set(names)

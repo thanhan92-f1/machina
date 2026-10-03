@@ -188,12 +188,3 @@ export function LoginRemember({
     </div>
   )
 }
-
-export function LoginDivider({ label = 'or' }: { label?: string }) {
-  return (
-    <div className="relative py-3 mt-2 text-center text-xs uppercase tracking-[0.18em] text-zinc-400">
-      <span className="relative z-[1] px-3 bg-white">{label}</span>
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-zinc-200" />
-    </div>
-  )
-}

@@ -226,11 +226,6 @@ export function useVmHardware({
   }
 }
 
-/** Drop cached hardware for a VM after mutations (attach, edit, graphics). */
-export function invalidateVmHardwareCache(vmId: string | null | undefined) {
-  if (vmId) hardwareCache.delete(vmId)
-}
-
 /**
  * Drop ALL cached VM hardware. This cache is a module-level singleton, so it
  * otherwise survives logout — call this from the logout path so a second user

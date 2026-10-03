@@ -4,8 +4,6 @@
 import type { VmGuestHealthReport } from '../api/platform'
 
 export const GUEST_TOAST_CHANNEL_ATTACH = 'Guest agent channel attach queued'
-export const GUEST_TOAST_AGENT_IN_GUEST =
-  'Install guestkit-agent inside the VM (Guest health tab has steps), then refresh'
 
 /** QGA fully active: channel + responding agent. */
 export function qgaHealthy(report: VmGuestHealthReport | null | undefined): boolean {

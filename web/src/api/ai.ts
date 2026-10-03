@@ -31,12 +31,6 @@ export interface SpotlightResult {
   suggested_action?: SpotlightIntent
 }
 
-export interface CopilotResponse {
-  reply: string
-  deterministic: boolean
-  context_summary?: string
-}
-
 export interface VmDoctorReport {
   vm_id: string
   vm_name: string
@@ -111,25 +105,6 @@ export const patchAiSettings = (body: Partial<AiSettings & { api_key?: string }>
 
 export const aiSpotlight = (query: string) =>
   platformFetch<SpotlightResult>('/api/v1/ai/spotlight', { method: 'POST', body: JSON.stringify({ query }) })
-
-export const getJarvisLanding = () =>
-  platformFetch<SpotlightResult>('/api/v1/ai/jarvis/landing')
-
-export const aiCopilotChat = (
-  message: string,
-  vmId?: string,
-  hostId?: string,
-  vmIds?: string[],
-) =>
-  platformFetch<CopilotResponse>('/api/v1/ai/copilot/chat', {
-    method: 'POST',
-    body: JSON.stringify({
-      message,
-      vm_id: vmId,
-      host_id: hostId,
-      vm_ids: vmIds,
-    }),
-  })
 
 export type FleetVmGuestRow = {
   vm_id: string
@@ -326,10 +301,6 @@ export const executeAutopilotAction = (action_type: string, object_ref: Record<s
 
 export const getAiCompliance = () => platformFetch<ComplianceReport>('/api/v1/ai/compliance')
 
-export const getAiComplianceExportUrl = () => `${getControllerBase()}/api/v1/ai/compliance/export`
-
-export const getAiCompliancePdfUrl = () => `${getControllerBase()}/api/v1/ai/compliance/export.pdf`
-
 export interface TerminalSuggestResult {
   vm_name: string
   observed_state: string
@@ -359,10 +330,6 @@ export interface AutopilotHistoryEntry {
 
 export const getAutopilotHistory = (limit = 20) =>
   platformFetch<AutopilotHistoryEntry[]>(`/api/v1/ai/autopilot/history?limit=${limit}`)
-
-export const getAiCostExportUrl = () => `${getControllerBase()}/api/v1/ai/cost/export.csv`
-
-export const getAiCapacityExportUrl = () => `${getControllerBase()}/api/v1/ai/capacity/export.csv`
 
 export interface DigitalTwinGraph {
   nodes: Array<{ kind: string; id: string; name: string; state?: string }>
@@ -710,8 +677,6 @@ export interface MissionStackStatus {
 
 export const getMissionStackStatus = () => platformFetch<MissionStackStatus>('/api/v1/ai/mission/stack/status')
 
-export const getCostAttributionExportUrl = () => `${getControllerBase()}/api/v1/ai/cost/attribution/export.csv`
-
 export const downloadAiCostExport = () =>
   downloadControllerExport('/api/v1/ai/cost/export.csv', 'machina-cost-guardian.csv')
 
@@ -992,17 +957,6 @@ export interface DiagnosisReport {
   recommended_actions: string[]
 }
 
-export interface Prediction {
-  resource: string
-  resource_kind: string
-  kind: string
-  severity: string
-  message: string
-  hours_until_critical?: number
-  confidence: number
-  evidence: string
-}
-
 export interface RightsizingRecommendation {
   vm_id: string
   vm_name: string
@@ -1072,9 +1026,6 @@ export const explainInfraObject = (kind: string, id: string) =>
 
 export const troubleshootVm = (body: { vm_id?: string; vm_name?: string; symptom?: string }) =>
   platformFetch<DiagnosisReport>('/api/v1/ai/troubleshoot', { method: 'POST', body: JSON.stringify(body) })
-
-export const getPredictions = () =>
-  platformFetch<{ predictions: Prediction[]; summary: string }>('/api/v1/ai/predictions')
 
 export const getRightsizingReport = () =>
   platformFetch<{

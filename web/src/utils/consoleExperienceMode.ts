@@ -40,11 +40,6 @@ export function saveConsoleModePreference(vmId: string, mode: ConsoleExperienceM
   }
 }
 
-export function consoleModeSearchParam(mode: ConsoleExperienceMode): string {
-  if (mode === 'cinema') return ''
-  return `mode=${mode}`
-}
-
 /** Minimal plan shape needed for default-lens / protocol selection. */
 interface PlanSnapshot {
   native: { console_type: string; available: boolean }

@@ -74,35 +74,6 @@ export interface AtlasBackup {
   created_at?: string
 }
 
-export interface AtlasBucket {
-  id: string
-  name: string
-  bucket_name?: string
-  endpoint?: string
-  state: string
-  created_at?: string
-}
-
-export interface AtlasPolicy {
-  intent: string
-  storage_class: string
-  access_mode: string
-  volume_mode: string
-  description: string
-}
-
-export interface VmAtlasVolume {
-  id: string
-  vm_id: string
-  volume_id: string
-  role: string
-  size_bytes: number
-  policy: string
-  backend_native_id?: string | null
-  state: string
-  created_at: string
-}
-
 const A = '/api/v1/atlas'
 
 export const getAtlasStatus = () => platformFetch<AtlasStatus>(`${A}/status`)
@@ -114,8 +85,6 @@ export const listAtlasVolumes = (query?: Record<string, string>) => {
 export const listAtlasSnapshots = () => platformFetch<AtlasSnapshot[]>(`${A}/snapshots`)
 export const listAtlasBackups = (volumeId?: string) =>
   platformFetch<AtlasBackup[]>(`${A}/backups${volumeId ? `?volume_id=${encodeURIComponent(volumeId)}` : ''}`)
-export const listAtlasBuckets = () => platformFetch<AtlasBucket[]>(`${A}/buckets`)
-export const listAtlasPolicies = () => platformFetch<AtlasPolicy[]>(`${A}/policies`)
 export const listAtlasJobs = () => platformFetch<AtlasJob[]>(`${A}/jobs`)
 
 export const createAtlasVolume = (body: {
@@ -129,22 +98,10 @@ export const createAtlasVolume = (body: {
 export const deleteAtlasVolume = (id: string) =>
   platformFetch<unknown>(`${A}/volumes/${id}`, { method: 'DELETE' })
 
-export const expandAtlasVolume = (id: string, newSizeBytes: number) =>
-  platformFetch<AtlasJob>(`${A}/volumes/${id}/expand`, {
-    method: 'POST',
-    body: JSON.stringify({ new_size_bytes: newSizeBytes }),
-  })
-
 export const snapshotAtlasVolume = (id: string, name?: string) =>
   platformFetch<AtlasJob>(`${A}/volumes/${id}/snapshots`, {
     method: 'POST',
     body: JSON.stringify(name ? { name } : {}),
-  })
-
-export const cloneAtlasSnapshot = (id: string, name: string) =>
-  platformFetch<AtlasJob>(`${A}/snapshots/${id}/clone`, {
-    method: 'POST',
-    body: JSON.stringify({ name }),
   })
 
 export const restoreAtlasSnapshot = (id: string, name?: string) =>
@@ -156,12 +113,6 @@ export const restoreAtlasSnapshot = (id: string, name?: string) =>
 export const deleteAtlasSnapshot = (id: string, force = false) =>
   platformFetch<unknown>(`${A}/snapshots/${id}${force ? '?force=true' : ''}`, { method: 'DELETE' })
 
-export const createAtlasBucket = (name: string, namespace?: string) =>
-  platformFetch<AtlasJob>(`${A}/buckets`, {
-    method: 'POST',
-    body: JSON.stringify(namespace ? { name, namespace } : { name }),
-  })
-
 export const backupAtlasVolume = (body: {
   volume_id: string
   bucket_id?: string
@@ -169,26 +120,5 @@ export const backupAtlasVolume = (body: {
   keep?: number
 }) => platformFetch<AtlasJob>(`${A}/backups`, { method: 'POST', body: JSON.stringify(body) })
 
-export const restoreAtlasBackup = (body: { backup_id: string; name?: string; mode?: string }) =>
-  platformFetch<AtlasJob>(`${A}/restore-jobs`, { method: 'POST', body: JSON.stringify(body) })
-
 export const deleteAtlasBackup = (id: string) =>
   platformFetch<unknown>(`${A}/backups/${id}`, { method: 'DELETE' })
-
-// VM ↔ Atlas volume orchestration
-export const listVmAtlasVolumes = (vmId: string) =>
-  platformFetch<VmAtlasVolume[]>(`${A}/vms/${vmId}/volumes`)
-
-export const provisionVmAtlasVolume = (
-  vmId: string,
-  body: { size_gib: number; policy?: string; role?: string; name?: string },
-) => platformFetch<VmAtlasVolume>(`${A}/vms/${vmId}/volumes`, { method: 'POST', body: JSON.stringify(body) })
-
-export const snapshotVmAtlas = (vmId: string, name?: string) =>
-  platformFetch<AtlasJob[]>(`${A}/vms/${vmId}/snapshot`, {
-    method: 'POST',
-    body: JSON.stringify(name ? { name } : {}),
-  })
-
-export const backupVmAtlas = (vmId: string, body: { bucket_id?: string; mode?: string; keep?: number }) =>
-  platformFetch<AtlasJob[]>(`${A}/vms/${vmId}/backup`, { method: 'POST', body: JSON.stringify(body) })

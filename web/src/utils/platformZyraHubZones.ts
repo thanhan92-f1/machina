@@ -1,7 +1,4 @@
-// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import type { ReactNode } from 'react'
 
 export type ZyraHubGroup = {
   label: string
@@ -53,10 +50,3 @@ export const ZYRA_HUB_GROUPS: ZyraHubGroup[] = [
     ],
   },
 ]
-
-/** Map tab query to launchpad icon name for PlatformMacUi gradients. */
-export function zyraTileIconName(tile: ZyraHubTile): string {
-  return tile.label
-}
-
-export type ZyraHubTileRender = ZyraHubTile & { icon: ReactNode }

@@ -6,7 +6,7 @@ import { Link } from 'react-router'
 import { Plus } from 'lucide-react'
 import { GlassCard } from '../../glass/GlassCard'
 import { GlassModal } from '../../glass/GlassModal'
-import { navActiveChipClasses, statusBgClass, statusToneClass } from '../../../utils/semanticColors'
+import { navActiveChipClasses, statusBgClass } from '../../../utils/semanticColors'
 
 export function MacGlassPanel({
   title,
@@ -39,11 +39,6 @@ export function MacGlassPanel({
   )
 }
 
-/** Canonical desktop panel — alias over MacGlassPanel with Wave 3 spacing. */
-export function PlatformDesktopPanel(props: Parameters<typeof MacGlassPanel>[0]) {
-  return <MacGlassPanel {...props} />
-}
-
 export function MacSectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-6 platform-readable">
@@ -51,35 +46,6 @@ export function MacSectionTitle({ title, subtitle }: { title: string; subtitle?:
       {subtitle && <p className="page-lede !mt-2 !text-[1.0625rem]">{subtitle}</p>}
     </div>
   )
-}
-
-export function MacStatWidget({
-  label,
-  value,
-  icon,
-  href,
-  tone = 'default',
-}: {
-  label: string
-  value: string
-  icon: React.ReactNode
-  href?: string
-  tone?: 'default' | 'ok' | 'warn'
-}) {
-  const toneClass =
-    tone === 'ok' ? statusToneClass('ok') : tone === 'warn' ? statusToneClass('warn') : 'text-[var(--text-primary)]'
-  const inner = (
-    <>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[var(--text-muted)] text-xs font-medium tracking-tight">{label}</span>
-        <span className="text-[var(--text-faint)]">{icon}</span>
-      </div>
-      <p className={`text-[28px] font-semibold mt-3 tracking-tight tabular-nums ${toneClass}`}>{value}</p>
-    </>
-  )
-  const cls = 'platform-mac-stat rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-5 shadow-[var(--shadow-1)] hover:border-[color-mix(in_srgb,var(--accent)_30%,var(--apple-hairline))] transition'
-  if (href) return <Link to={href} className={`${cls} block`}>{inner}</Link>
-  return <div className={cls}>{inner}</div>
 }
 
 export function MacSheet({

@@ -252,12 +252,6 @@ export interface KubeVirtVmSummaryRow {
   vnc_subresource_path: string
 }
 
-export interface K8sListResponse<T> {
-  items: T[]
-}
-
-export type K8sNamespaceList = K8sListResponse<K8sMetadataName>
-
 export type K8sAction =
   | 'node_cordon'
   | 'node_uncordon'

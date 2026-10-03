@@ -18,9 +18,4 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
-export function setAppLanguage(lang: 'en' | 'es') {
-  void i18n.changeLanguage(lang)
-  localStorage.setItem('machina_lang', lang)
-}
-
 export default i18n

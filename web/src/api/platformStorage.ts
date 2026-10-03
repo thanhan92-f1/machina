@@ -62,8 +62,6 @@ export const createStoragePool = (body: {
   capacity_gib?: number
 }) =>
   platformFetch<StoragePool>('/api/v1/storage/pools', { method: 'POST', body: JSON.stringify(body) })
-
-export const getStoragePool = (id: string) => platformFetch<StoragePool>(`/api/v1/storage/pools/${id}`)
 export const deleteStoragePool = (id: string) => platformFetch(`/api/v1/storage/pools/${id}`, { method: 'DELETE' })
 
 export const discoverStoragePools = () =>

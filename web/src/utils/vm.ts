@@ -1,11 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import { vmStatusBadgeClasses, vmStatusDotClass } from './vmVisual'
-
-export function getStateColor(state: string): string {
-  return vmStatusDotClass(state)
-}
+import { vmStatusBadgeClasses } from './vmVisual'
 
 export function getStateBadgeClasses(state: string): string {
   return vmStatusBadgeClasses(state)

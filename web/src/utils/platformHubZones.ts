@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import type { PlatformDesktopTier } from './platformDesktopTier'
-import { tierAtLeast } from './platformDesktopTier'
 import {
   DESKTOP_HUB_TILES,
   hubTilesForTier,
@@ -13,10 +12,6 @@ import {
 export type { DesktopHubTile }
 
 export { DESKTOP_HUB_TILES, hubTilesForTier, hubTileById }
-
-export function showPlatformHubsForTier(tier: PlatformDesktopTier): boolean {
-  return tierAtLeast(tier, 'power')
-}
 
 /** Shown on Normal tier as muted dock previews until Power user is enabled. */
 export const DOCK_PREVIEW_HUB_PATHS: string[] = ['/platform/infrastructure', '/platform/operations']

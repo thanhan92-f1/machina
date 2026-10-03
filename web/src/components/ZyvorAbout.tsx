@@ -10,7 +10,6 @@ export const MACHINA_PRODUCT = MACHINA_HELP.name
 export const MACHINA_VERSION = MACHINA_HELP.version
 export const MACHINA_TAGLINE = MACHINA_HELP.tagline
 export const ZEUS_OS_PRODUCT = ZEUS_OS_HELP.name
-export const ZEUS_OS_TAGLINE = ZEUS_OS_HELP.tagline
 
 const ORANGE = '#f97316'
 

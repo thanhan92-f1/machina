@@ -1,7 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import { getControllerBase, platformFetch, downloadControllerExport } from './platform'
+import { platformFetch, downloadControllerExport } from './platform'
 import { readJsonObject } from './client'
 
 const DAEMON_API = '/api/v1'
@@ -361,9 +361,6 @@ export interface ExposureFinOpsReport {
 
 export const getFirewallExposureFinOps = () =>
   platformFetch<ExposureFinOpsReport>('/api/v1/zeus-firewall/finops/exposure')
-
-export const getFirewallExposureFinOpsExportUrl = () =>
-  `${getControllerBase()}/api/v1/zeus-firewall/finops/exposure/export.csv`
 
 export const downloadFirewallExposureFinOpsExport = () =>
   downloadControllerExport('/api/v1/zeus-firewall/finops/exposure/export.csv', 'machina-firewall-exposure.csv')

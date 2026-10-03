@@ -1,7 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import { apiDelete, apiGet, apiPost, getWsToken } from './client'
+import { apiDelete, apiGet, apiPost } from './client'
 
 export type EngineKind = 'podman' | 'docker' | 'Podman' | 'Docker'
 
@@ -52,14 +52,6 @@ export interface PodSummary {
   containers: string[]
   created: string
   labels: Record<string, string>
-}
-
-export interface ContainerStats {
-  cpu_percent: number
-  memory_usage: number
-  memory_limit: number
-  network_rx: number
-  network_tx: number
 }
 
 function shortId(id: string): string {
@@ -150,35 +142,4 @@ export function stopVesselPod(id: string): Promise<{ status: string; name: strin
 
 export function removeVesselPod(id: string, force = false): Promise<void> {
   return apiDelete(`/api/v1/vessel/pods/${encodeURIComponent(id)}?force=${force ? 'true' : 'false'}`)
-}
-
-export async function openVesselStatsWs(
-  id: string,
-  onMessage: (stats: ContainerStats) => void,
-  onError?: (err: string) => void,
-): Promise<() => void> {
-  const token = await getWsToken()
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const url = `${protocol}//${window.location.host}/ws/v1/vessel/containers/${encodeURIComponent(id)}/stats?token=${encodeURIComponent(token)}`
-  const ws = new WebSocket(url)
-  ws.onmessage = (ev) => {
-    try {
-      const data = JSON.parse(String(ev.data)) as ContainerStats & { error?: string }
-      if (data.error) {
-        onError?.(data.error)
-        return
-      }
-      onMessage(data)
-    } catch {
-      /* ignore */
-    }
-  }
-  ws.onerror = () => onError?.('WebSocket error')
-  return () => {
-    try {
-      ws.close()
-    } catch {
-      /* ignore */
-    }
-  }
 }

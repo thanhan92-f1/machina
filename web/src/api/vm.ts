@@ -1,15 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import {
-  apiGetBlob,
-  apiPost,
-  apiPostVoid,
-  apiDelete,
-  readJsonArray,
-  readJsonObject,
-  apiGetText,
-} from './client'
+import { apiPost, apiPostVoid, apiDelete, readJsonArray, readJsonObject, apiGetText } from './client'
 import type { VmCgroupStats } from './extras'
 import { streamResponseError } from './streamResponseError'
 import { formatUserError } from '../utils/apiError'
@@ -86,12 +78,6 @@ export interface VmDetails {
   libvirt_connection?: string
   /** Best-effort IPv4 from libvirt lease / ARP / guest agent. */
   guest_ip?: string | null
-}
-
-/** Append `?connection=` for dual-hypervisor APIs when scoped to session. */
-export function vmConnectionQs(connection?: string | null): string {
-  if (!connection || connection === 'system') return ''
-  return `?connection=${encodeURIComponent(connection)}`
 }
 
 /** Append `connection=` to a path or full URL that may already have a `?…` query string. */
@@ -360,7 +346,6 @@ export function postKubeVirtStart(name: string, body: KubeVirtBundleBody = {}) {
     body,
   )
 }
-export const createVM = (req: CreateVmRequest) => apiPost<unknown>(`${API}/vms`, req)
 
 export interface CreateVmStreamResult {
   status: string
@@ -691,13 +676,6 @@ export const installGuestAgentMedia = (name: string, connection?: string | null)
     {},
   )
 
-/** Add the virtio-serial channel the QEMU guest agent talks over. */
-export const ensureGuestAgentChannel = (name: string, connection?: string | null) =>
-  apiPost<{ status: string; vm: string; channel: { added: boolean; requires_restart: boolean } }>(
-    appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/guest-agent/channel`, connection),
-    {},
-  )
-
 export interface WindowsRdpEnableResult {
   status: string
   vm: string
@@ -760,12 +738,6 @@ export const setLinuxHostname = (
     body,
   )
 
-/** Remove the CD-ROM drive itself, not just its media. */
-export const detachCdrom = (name: string, target: string, connection?: string | null) =>
-  apiPostVoid(
-    appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/cdrom/detach/${encodeURIComponent(target)}`, connection),
-  )
-
 export const addShare = (name: string, sourceDir: string, mountTag: string, xattr: boolean, connection?: string | null) =>
   apiPostVoid(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/share`, connection), {
     source_dir: sourceDir,
@@ -805,23 +777,8 @@ export const migrateVM = (name: string, destUri: string, live: boolean, opts?: M
     live,
     ...opts,
   })
-
-export const getMigrateBandwidth = (name: string) =>
-  readJsonObject<{ mbps: number }>(`${API}/vms/${encodeURIComponent(name)}/migrate/max-bandwidth`)
 export const setMigrateBandwidth = (name: string, mbps: number) =>
   apiPost<{ mbps: number }>(`${API}/vms/${encodeURIComponent(name)}/migrate/max-bandwidth`, { mbps })
-export const setMigrateDowntime = (name: string, downtime_ns: number) =>
-  apiPost<{ downtime_ns: number }>(`${API}/vms/${encodeURIComponent(name)}/migrate/max-downtime`, { downtime_ns })
-
-export interface VmJobInfo {
-  job_type: string
-  time_elapsed_ms: number
-  data_total_bytes: number
-  data_processed_bytes: number
-  data_remaining_bytes: number
-}
-export const getVmJob = (name: string) =>
-  readJsonObject<VmJobInfo>(`${API}/vms/${encodeURIComponent(name)}/job`)
 
 export type GuestKeyPreset = 'ctrl_alt_del' | 'esc' | 'alt_tab'
 
@@ -830,11 +787,6 @@ export const sendGuestKey = (
   body: { preset?: GuestKeyPreset; keycodes?: number[]; holdtime_ms?: number },
   connection?: string | null,
 ) => apiPost(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/guest/send-key`, connection), body)
-
-export const getGuestScreenshotBlob = (name: string, screen = 0, connection?: string | null) =>
-  apiGetBlob(
-    appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/guest/screenshot?screen=${screen}`, connection),
-  )
 
 export const setVmFirmware = (name: string, uefi: boolean, connection?: string | null) =>
   apiPostVoid(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/firmware`, connection), { uefi })
@@ -879,10 +831,6 @@ export interface NicTuneBody {
 
 export const tuneVmNic = (name: string, body: NicTuneBody, connection?: string | null) =>
   apiPostVoid(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/nic/tune`, connection), body)
-
-/** Absolute URL path for Remote Viewer (`virt-viewer`) connection file download. */
-export const virtViewerVvUrl = (name: string, connection?: string | null) =>
-  appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/viewer.vv`, connection)
 
 /** Run `virt-xml --convert-to-vnc` for this domain (requires virt-xml on the host). */
 export const convertGraphicsSpiceToVnc = (name: string, connection?: string | null) =>

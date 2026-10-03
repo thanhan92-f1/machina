@@ -1,35 +1,8 @@
-// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import {
-  Activity,
-  Bell,
-  FileBarChart,
-  GitBranch,
-  HardDrive,
-  LayoutDashboard,
-  Monitor,
-  Network,
-  Server,
-  Settings,
-  Sparkles,
-  Terminal,
-  Download,
-  FolderOpen,
-  Wrench,
-  ShieldAlert,
-} from 'lucide-react'
+import { Activity, Bell, FileBarChart, GitBranch, HardDrive, LayoutDashboard, Monitor, Network, Server, Settings, Sparkles, Terminal, Download, Wrench, ShieldAlert } from 'lucide-react'
 import { PLATFORM_SIDEBAR } from './platformNav'
-import {
-  DOCK_PATHS_BY_TIER,
-  isPathAllowedForTier,
-  loadPlatformDesktopTier,
-  PLATFORM_DESKTOP_TIER_EVENT,
-  savePlatformDesktopTier,
-  type PlatformDesktopTier,
-} from './platformDesktopTier'
+import { DOCK_PATHS_BY_TIER, loadPlatformDesktopTier, type PlatformDesktopTier } from './platformDesktopTier'
 import { dockPreviewPathsForTier } from './platformHubZones'
 
 export type PlatformDockItem = {
@@ -91,8 +64,6 @@ export function defaultDockPathsForTier(tier: PlatformDesktopTier = loadPlatform
   return DOCK_PATHS_BY_TIER[tier]
 }
 
-export const DEFAULT_PLATFORM_DOCK_PATHS = defaultDockPathsForTier('advanced')
-
 export const PLATFORM_SIDEBAR_FLAT = PLATFORM_SIDEBAR.flatMap((s) =>
   s.items.map((item) => ({ path: item.to, label: item.label })),
 )
@@ -108,43 +79,12 @@ function itemForPath(path: string, preview = false): PlatformDockItem | null {
   return null
 }
 
-export function loadPlatformDockItems(): PlatformDockItem[] {
-  const tier = loadPlatformDesktopTier()
-  try {
-    const raw = localStorage.getItem(DOCK_KEY)
-    if (raw) {
-      const paths = JSON.parse(raw) as string[]
-      if (Array.isArray(paths)) {
-        const allowed = paths.filter((p) => isPathAllowedForTier(p, tier))
-        const items = allowed.map((p) => itemForPath(p)).filter(Boolean) as PlatformDockItem[]
-        if (items.length) return appendPreviewItems(items, tier)
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  const items = defaultDockPathsForTier(tier).map((p) => itemForPath(p)).filter(Boolean) as PlatformDockItem[]
-  return appendPreviewItems(items, tier)
-}
-
 function appendPreviewItems(items: PlatformDockItem[], tier: PlatformDesktopTier): PlatformDockItem[] {
   const previews = dockPreviewPathsForTier(tier)
     .filter((path) => !items.some((item) => item.path === path))
     .map((path) => itemForPath(path, true))
     .filter(Boolean) as PlatformDockItem[]
   return [...items, ...previews]
-}
-
-export function unlockDockPreviewPath(path: string) {
-  if (loadPlatformDesktopTier() !== 'normal') return false
-  if (!dockPreviewPathsForTier('normal').includes(path)) return false
-  savePlatformDesktopTier('power')
-  resetPlatformDockPaths('power')
-  return true
-}
-
-export function loadPlatformDockPaths(): string[] {
-  return loadPlatformDockItems().map((i) => i.path)
 }
 
 export function savePlatformDockPaths(paths: string[]) {
@@ -155,20 +95,3 @@ export function savePlatformDockPaths(paths: string[]) {
 export function resetPlatformDockPaths(tier: PlatformDesktopTier = loadPlatformDesktopTier()) {
   savePlatformDockPaths(defaultDockPathsForTier(tier))
 }
-
-export function usePlatformDockItems(): PlatformDockItem[] {
-  const [items, setItems] = useState(loadPlatformDockItems)
-  useEffect(() => {
-    const refresh = () => setItems(loadPlatformDockItems())
-    window.addEventListener(PLATFORM_DOCK_CHANGED_EVENT, refresh)
-    window.addEventListener(PLATFORM_DESKTOP_TIER_EVENT, refresh)
-    return () => {
-      window.removeEventListener(PLATFORM_DOCK_CHANGED_EVENT, refresh)
-      window.removeEventListener(PLATFORM_DESKTOP_TIER_EVENT, refresh)
-    }
-  }, [])
-  return items
-}
-
-/** @deprecated use loadPlatformDockItems */
-export const PLATFORM_DOCK_ITEMS = loadPlatformDockItems()

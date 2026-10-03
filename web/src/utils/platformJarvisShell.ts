@@ -49,7 +49,3 @@ export function dispatchOpenSpotlight(prefill?: string) {
 export function dispatchScrollGeography() {
   window.dispatchEvent(new CustomEvent(SCROLL_GEOGRAPHY_EVENT))
 }
-
-export function isJarvisLandingPath(pathname: string): boolean {
-  return pathname === '/platform'
-}

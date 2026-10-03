@@ -28,10 +28,6 @@ export function platformDesktopTabGroup(pathname: string): string {
   return path
 }
 
-export function platformDesktopTabActive(currentPath: string, tabPath: string): boolean {
-  return platformDesktopTabGroup(currentPath) === platformDesktopTabGroup(tabPath)
-}
-
 function normalizePlatformDesktopTabs(tabs: PlatformDesktopTab[]): PlatformDesktopTab[] {
   const byGroup = new Map<string, PlatformDesktopTab>()
   for (const tab of tabs) {
@@ -72,14 +68,6 @@ export function upsertPlatformDesktopTab(tab: PlatformDesktopTab): PlatformDeskt
   const canonical: PlatformDesktopTab = { path: group, label: tab.label }
   const rest = loadPlatformDesktopTabs().filter((t) => platformDesktopTabGroup(t.path) !== group)
   const next = normalizePlatformDesktopTabs([...rest, canonical])
-  save(next)
-  return next
-}
-
-export function removePlatformDesktopTab(path: string): PlatformDesktopTab[] {
-  const group = platformDesktopTabGroup(path)
-  const next = loadPlatformDesktopTabs().filter((t) => platformDesktopTabGroup(t.path) !== group)
-  if (!next.length) next.push({ path: '/platform', label: 'Mission Control' })
   save(next)
   return next
 }

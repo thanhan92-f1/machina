@@ -116,16 +116,6 @@ export function k8sPhaseTone(phase: string): 'ok' | 'warn' | 'error' | 'info' | 
   return 'neutral'
 }
 
-export type IntegrationPhase = 'off' | 'needsSetup' | 'needsWire' | 'unreachable' | 'live'
-
-export function integrationPhaseTone(phase: IntegrationPhase): 'ok' | 'warn' | 'error' | 'info' | 'neutral' {
-  if (phase === 'live') return 'ok'
-  if (phase === 'unreachable') return 'error'
-  if (phase === 'needsSetup' || phase === 'needsWire') return 'warn'
-  if (phase === 'off') return 'neutral'
-  return 'neutral'
-}
-
 export function httpStatusTone(code: number): 'ok' | 'warn' | 'error' | 'neutral' {
   if (code >= 500) return 'error'
   if (code >= 400) return 'warn'

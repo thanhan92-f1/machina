@@ -1,7 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import { readJsonArray, apiGet, apiPost, apiDelete } from './client'
+import { readJsonArray, apiPost, apiDelete } from './client'
 
 const API = '/api/v1'
 
@@ -34,17 +34,11 @@ export interface SpriteCreateRequest {
   network_egress?: boolean
 }
 
-export interface SpriteResizeRequest {
-  vcpus?: number
-  memory_mb?: number
-}
-
 export interface SpriteRestoreRequest {
   ttl_seconds?: number
 }
 
 export const listSprites = () => readJsonArray<SpriteHandle>(`${API}/sprites`)
-export const getSprite = (id: string) => apiGet<SpriteHandle>(`${API}/sprites/${encodeURIComponent(id)}`)
 export const createSprite = (body: SpriteCreateRequest) => apiPost<SpriteHandle>(`${API}/sprites`, body)
 export const deleteSprite = (id: string) => apiDelete(`${API}/sprites/${encodeURIComponent(id)}`)
 
@@ -52,9 +46,6 @@ export const deleteSprite = (id: string) => apiDelete(`${API}/sprites/${encodeUR
 export const pauseSprite = (id: string) => apiPost<SpriteHandle>(`${API}/sprites/${encodeURIComponent(id)}/pause`, {})
 /** Resume a paused sprite. */
 export const resumeSprite = (id: string) => apiPost<SpriteHandle>(`${API}/sprites/${encodeURIComponent(id)}/resume`, {})
-/** Live-resize vcpus and/or memory — Cloud Hypervisor sprites only. */
-export const resizeSprite = (id: string, body: SpriteResizeRequest) =>
-  apiPost<SpriteHandle>(`${API}/sprites/${encodeURIComponent(id)}/resize`, body)
 /** Snapshot to disk and kill the process ("suspend"). */
 export const snapshotSprite = (id: string) => apiPost<SpriteHandle>(`${API}/sprites/${encodeURIComponent(id)}/snapshot`, {})
 /** Restore a suspended sprite from its snapshot. */

@@ -41,16 +41,6 @@ export function TahoeToolbar({
   )
 }
 
-export function TahoePanel({
-  children,
-  className = '',
-}: {
-  children: ReactNode
-  className?: string
-}) {
-  return <div className={`tahoe-glass-card ${className}`.trim()}>{children}</div>
-}
-
 export function TahoeTableWrap({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div className={`tahoe-table-wrap tahoe-glass-card overflow-hidden ${className}`.trim()}>

@@ -37,15 +37,6 @@ export function listTemplates(): Promise<NativeTemplate[]> {
   return platformFetch<NativeTemplate[]>('/api/v1/templates')
 }
 
-// The controller only has a get/delete route keyed on name+version (see mod.rs), not on the
-// catalog's own opaque `id` — there's no single-id lookup endpoint. Callers that only have an
-// `id` (e.g. from a URL param) should fetch listTemplates() and find the entry by id instead.
-export function getTemplate(name: string, version: string): Promise<NativeTemplate> {
-  return platformFetch<NativeTemplate>(
-    `/api/v1/templates/${encodeURIComponent(name)}/${encodeURIComponent(version)}`,
-  )
-}
-
 export function createTemplate(body: {
   name: string
   version: string

@@ -89,22 +89,6 @@ export function navItemActive(
   return pathname === path
 }
 
-export function navGroupHasActive(
-  group: NavGroup,
-  pathname: string,
-  search: string,
-  username: string,
-  hypersdkEnabled = false,
-): boolean {
-  return navDropdownSections(group).some((section) =>
-    section.items.some(
-      (item) =>
-        navItemVisible(item, username, hypersdkEnabled) &&
-        navItemActive(item, pathname, search),
-    ),
-  )
-}
-
 export function navItemVisible(
   item: NavItem,
   username: string,

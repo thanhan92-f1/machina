@@ -163,7 +163,3 @@ export function tierAtLeast(current: PlatformDesktopTier, min: PlatformDesktopTi
 export function defaultSidebarVisibleForTier(_tier: PlatformDesktopTier): boolean {
   return true
 }
-
-export function showPlatformMenuBarForTier(tier: PlatformDesktopTier): boolean {
-  return tier !== 'normal'
-}

@@ -30,7 +30,3 @@ export function useBreadcrumbName(entityName: string | null | undefined) {
     return () => setName(null)
   }, [entityName, setName])
 }
-
-export function useBreadcrumbNameValue(): string | null {
-  return useContext(BreadcrumbNameContext).name
-}

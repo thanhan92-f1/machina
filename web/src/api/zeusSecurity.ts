@@ -324,10 +324,3 @@ export const getFleetSensors = () =>
 
 export const getHostEnforcement = (hostId: string) =>
   platformFetch<Record<string, unknown>>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/enforcement`)
-
-/** Admin passthrough to one host's machina-bpfd (interfaces, QoS, capture, telemetry). */
-export const hostBpfCall = <T = unknown>(hostId: string, request: Record<string, unknown>) =>
-  platformFetch<T>(`/api/v1/zeus-security/hosts/${encodeURIComponent(hostId)}/bpf`, {
-    method: 'POST',
-    body: JSON.stringify(request),
-  })

@@ -134,7 +134,3 @@ export function useAi() {
   if (!ctx) throw new Error('useAi requires AiProvider')
   return ctx
 }
-
-/** Zyra-branded alias for ambient assistant context. */
-export const useZyra = useAi
-export const ZyraProvider = AiProvider
