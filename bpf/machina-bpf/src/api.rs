@@ -90,6 +90,10 @@ pub struct ModeState {
     /// True when enforce was requested but the lease has lapsed (datapath failed open).
     #[serde(default)]
     pub lease_expired: bool,
+    /// Enforcers that drop only under a live lease. All of them start in
+    /// observe when bpfd starts; `node_isolation` holds its own shorter lease.
+    #[serde(default)]
+    pub covers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -211,6 +215,9 @@ pub struct BpfStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct FlowRecord {
+    /// Owning workload (`vm`, `pod`, `container` or `service`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
     pub iface: String,
     pub ifindex: u32,
     pub vm: Option<String>,
@@ -234,6 +241,9 @@ pub struct FlowRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct NetEventRecord {
+    /// Owning workload (`vm`, `pod`, `container` or `service`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
     pub ts: String,
     /// flow_open | flow_close | deny | allow_miss | qos_drop
     pub kind: String,
@@ -262,6 +272,9 @@ pub struct DnsAnswer {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DnsRecord {
+    /// Owning workload (`vm`, `pod`, `container` or `service`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
     pub ts: String,
     pub iface: Option<String>,
     pub vm: Option<String>,
@@ -278,6 +291,9 @@ pub struct DnsRecord {
 /// First client payload of a TCP flow, classified.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct L7Record {
+    /// Owning workload (`vm`, `pod`, `container` or `service`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
     pub ts: String,
     pub iface: Option<String>,
     pub vm: Option<String>,
@@ -316,6 +332,9 @@ pub struct AccountingRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProcRecord {
+    /// Owning workload (`vm`, `pod`, `container` or `service`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
     pub ts: String,
     /// exec | exit | fork | file_open | connect | cap_denied
     pub kind: String,
@@ -461,6 +480,9 @@ pub struct CniEndpoint {
     pub host_mac: String,
     #[serde(default)]
     pub pod: Option<String>,
+    /// CNI_CONTAINERID (the pod sandbox); joins the pod to its kubepods cgroup.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container_id: Option<String>,
 }
 
 /// One allowed (subject, peer, direction, proto, port) tuple; peer 0 = any,
@@ -747,7 +769,7 @@ pub struct TlsFingerprint {
     pub iface: Option<String>,
     pub cgroup: Option<String>,
     /// VM / pod / container owning the client.
-    pub workload: Option<String>,
+    pub workload: Option<Workload>,
     pub client: String,
     pub server: String,
     pub server_port: u16,
@@ -765,6 +787,9 @@ pub struct TlsFingerprint {
 /// HTTP metadata from OpenSSL plaintext (never payload bodies).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SslRecord {
+    /// Owning workload (`vm`, `pod`, `container` or `service`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
     pub ts: String,
     pub pid: u32,
     pub comm: String,
@@ -878,6 +903,74 @@ pub struct ShieldStatus {
     pub stats: ShieldCounters,
     pub sources: Vec<ShieldSource>,
     pub tracked_sources: usize,
+}
+
+/// Emergency node isolation on the uplink: drop everything except the
+/// allowlist, for at most `lease_secs` (mandatory, short), then fail open.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct NodeIsoConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub iface: String,
+    /// Required when enabling; renewing re-arms the deadline.
+    #[serde(default)]
+    pub lease_secs: Option<u64>,
+    /// Count would-be drops without dropping.
+    #[serde(default)]
+    pub dry_run: bool,
+    /// Ports allowed in either direction (local or remote side).
+    #[serde(default = "default_nodeiso_tcp")]
+    pub allow_tcp: Vec<u16>,
+    #[serde(default)]
+    pub allow_udp: Vec<u16>,
+    /// Peer CIDRs that bypass isolation entirely.
+    #[serde(default)]
+    pub exempt: Vec<String>,
+    #[serde(default = "default_true")]
+    pub allow_icmp: bool,
+}
+
+/// SSH, kube-apiserver, machina daemon/controller, agent gRPC, kubelet.
+fn default_nodeiso_tcp() -> Vec<u16> {
+    vec![22, 6443, 5092, 5093, 50051, 10250]
+}
+
+impl Default for NodeIsoConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("nodeiso defaults")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct NodeIsoCounters {
+    pub checked: u64,
+    pub passed: u64,
+    pub dropped_in: u64,
+    pub dropped_out: u64,
+    pub would_drop: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct NodeIsoStatus {
+    pub config: NodeIsoConfig,
+    pub attached: Option<String>,
+    /// Dropping right now (enabled, not dry-run, lease live).
+    pub isolating: bool,
+    pub lease_expires_at: Option<String>,
+    pub lease_remaining_secs: Option<u64>,
+    /// The last isolation ended because its lease ran out.
+    pub lease_expired: bool,
+    pub stats: NodeIsoCounters,
+}
+
+/// Who a record belongs to: `vm`, `pod`, `container` or `service`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct Workload {
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ns: Option<String>,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1024,6 +1117,10 @@ pub enum Request {
         config: ShieldConfig,
     },
     ShieldStatus,
+    NodeIsoConfigure {
+        config: NodeIsoConfig,
+    },
+    NodeIsoStatus,
     IcmpErrors,
     TlsConfigure {
         config: TlsConfig,

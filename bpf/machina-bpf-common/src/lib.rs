@@ -612,12 +612,45 @@ pub const XDP_SLOT_NODEPORT: u32 = 0;
 
 pub const XDP_F_SHIELD: u32 = 1 << 0;
 pub const XDP_F_NODEPORT: u32 = 1 << 1;
+pub const XDP_F_NODEISO: u32 = 1 << 2;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct XdpCfg {
     pub flags: u32,
     pub _pad: u32,
+}
+
+// ---------------------------------------------------------------------------
+// Node isolation (uplink drop-all with an allowlist, under its own lease)
+// ---------------------------------------------------------------------------
+
+/// NODEISO_CFG[0]. Drops happen only while `now < deadline_ns`
+/// (CLOCK_MONOTONIC) and `dry_run == 0`; a zeroed config passes everything.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct NodeIsoCfg {
+    pub enabled: u32,
+    pub dry_run: u32,
+    pub allow_icmp: u32,
+    pub _pad: u32,
+    pub deadline_ns: u64,
+}
+
+/// NODEISO_PORTS key: `proto << 16 | port`.
+#[inline(always)]
+pub const fn nodeiso_port_key(proto: u8, port: u16) -> u32 {
+    (proto as u32) << 16 | port as u32
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct NodeIsoStats {
+    pub checked: u64,
+    pub passed: u64,
+    pub dropped_in: u64,
+    pub dropped_out: u64,
+    pub would_drop: u64,
 }
 
 // ---------------------------------------------------------------------------
@@ -909,7 +942,7 @@ mod pod {
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
         VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
         ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey,
-        SampleCfg, SampleBucket, SslReadArgs
+        SampleCfg, SampleBucket, SslReadArgs, NodeIsoCfg, NodeIsoStats
     );
 }
 
@@ -953,6 +986,8 @@ mod tests {
         assert_eq!(size_of::<TcpPressure>(), 40);
         assert_eq!(size_of::<IcmpErrKey>(), 8);
         assert_eq!(size_of::<ShieldCfg>(), 32);
+        assert_eq!(size_of::<NodeIsoCfg>(), 24);
+        assert_eq!(size_of::<NodeIsoStats>(), 40);
         assert_eq!(size_of::<ShieldSrcKey>(), 20);
         assert_eq!(size_of::<ShieldSrcState>(), 24);
         assert_eq!(size_of::<ShieldStats>(), 56 + 8 * SHIELD_CLASSES);

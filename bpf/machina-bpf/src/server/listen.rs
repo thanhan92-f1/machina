@@ -386,6 +386,8 @@ impl Daemon {
                 v(&st)
             }
             Request::ShieldStatus => v(&lock(&self.engine).shield_status()),
+            Request::NodeIsoConfigure { config } => v(&lock(&self.engine).nodeiso_configure(config)?),
+            Request::NodeIsoStatus => v(&lock(&self.engine).nodeiso_status()),
             Request::IcmpErrors => v(&lock(&self.engine).icmp_errors()),
             Request::TlsConfigure { config } => {
                 let mut eng = lock(&self.engine);
@@ -495,11 +497,13 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
                 let mut eng = lock(&d2.engine);
                 eng.drain_dns_blocks()?;
                 eng.expire_lease()?;
+                eng.nodeiso_expire()?;
                 eng.sweep_captures()?;
                 if n2.is_multiple_of(5) {
                     eng.rescan_ifaces();
                 }
                 if n2.is_multiple_of(10) {
+                    eng.refresh_workloads();
                     eng.sweep_flows(FLOW_IDLE_NS)?;
                 }
                 if n2.is_multiple_of(60) {

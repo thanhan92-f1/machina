@@ -243,6 +243,9 @@ impl Engine {
             lease_expires_at: active.then(|| self.lease_wall.map(|w| w.to_rfc3339())).flatten(),
             lease_remaining_secs: active.then(|| (self.lease_deadline_mono - now) / 1_000_000_000),
             lease_expired: self.lease_lapsed || (self.mode == Mode::Enforce && !active),
+            covers: ["policies", "shield", "vm_edge", "vm_sandbox", "node_isolation"]
+                .map(String::from)
+                .to_vec(),
         }
     }
 
@@ -420,6 +423,7 @@ impl Engine {
 
     pub(super) fn flows(&mut self, limit: usize, vm: Option<&str>) -> Result<Vec<FlowRecord>> {
         let raw = self.dp.dump_flows()?;
+        let sh = lock(&self.shared);
         let mut out: Vec<FlowRecord> = raw
             .into_iter()
             .filter_map(|(k, v)| {
@@ -428,6 +432,7 @@ impl Engine {
                     return None;
                 }
                 Some(FlowRecord {
+                    workload: sh.iface_workload(k.ifindex),
                     iface: r.map(|r| r.name.clone()).unwrap_or_else(|| format!("if{}", k.ifindex)),
                     ifindex: k.ifindex,
                     vm: r.and_then(|r| r.vm.clone()),
@@ -502,6 +507,25 @@ impl Engine {
     }
 
     /// Age out idle flows and feed byte counters to the volume detector.
+    /// Rebuild pod attribution from CNI endpoints and the kubepods cgroups.
+    pub(super) fn refresh_workloads(&mut self) {
+        let mut sandboxes = HashMap::new();
+        let mut ifaces = HashMap::new();
+        for ep in self.cni.endpoints.values() {
+            let Some(pod) = ep.pod.as_deref().and_then(attribution::split_pod) else {
+                continue;
+            };
+            if let Some(id) = &ep.container_id {
+                sandboxes.insert(id.clone(), pod.clone());
+            }
+            ifaces.insert(ep.host_iface.clone(), pod);
+        }
+        let pods = attribution::pod_index(Path::new(attribution::CGROUP_ROOT), &sandboxes);
+        let mut sh = lock(&self.shared);
+        sh.pods = pods;
+        sh.pod_ifaces = ifaces;
+    }
+
     pub(super) fn sweep_flows(&mut self, idle_ns: u64) -> Result<()> {
         let now = loader::monotonic_ns();
         let raw = self.dp.dump_flows()?;

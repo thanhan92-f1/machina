@@ -219,6 +219,7 @@ fn add(conf: &NetConf, a: &Args) -> Result<Value> {
                 pod_mac: pod_mac.clone(),
                 host_mac: host_mac.clone(),
                 pod: a.pod.clone(),
+                container_id: Some(a.container_id.clone()),
             },
         }) {
             eprintln!("machina-cni: machina-bpfd registration failed (policy not enforced): {e:#}");

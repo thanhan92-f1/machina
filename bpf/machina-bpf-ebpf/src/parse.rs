@@ -1,10 +1,12 @@
-//! Packet parsing through `bpf_skb_load_bytes`, shared by TC and cgroup_skb.
+//! Packet parsing through `bpf_skb_load_bytes` (TC, cgroup_skb) and
+//! `bpf_xdp_load_bytes` (XDP, so the parse can run in a subprogram).
 
 use core::ffi::c_void;
 
 use aya_ebpf::bindings::__sk_buff;
-use aya_ebpf::helpers::bpf_skb_load_bytes;
-use aya_ebpf::programs::{SkBuffContext, TcContext};
+use aya_ebpf::helpers::{bpf_skb_load_bytes, generated::bpf_xdp_load_bytes};
+use aya_ebpf::programs::{SkBuffContext, TcContext, XdpContext};
+use aya_ebpf::EbpfContext;
 use machina_bpf_common::ADDR_LEN;
 
 pub const ETH_HLEN: usize = 14;
@@ -62,6 +64,21 @@ impl Pkt for SkBuffContext {
     #[inline(always)]
     fn ld_into<const N: usize>(&self, off: usize, dst: &mut [u8; N]) -> bool {
         skb_load(self.skb.skb, off, dst)
+    }
+}
+
+impl Pkt for XdpContext {
+    #[inline(always)]
+    fn ld<T>(&self, off: usize) -> Option<T> {
+        let mut v = core::mem::MaybeUninit::<T>::uninit();
+        let r = unsafe {
+            bpf_xdp_load_bytes(self.as_ptr().cast(), off as u32, v.as_mut_ptr().cast(), core::mem::size_of::<T>() as u32)
+        };
+        (r == 0).then(|| unsafe { v.assume_init() })
+    }
+    #[inline(always)]
+    fn ld_into<const N: usize>(&self, off: usize, dst: &mut [u8; N]) -> bool {
+        unsafe { bpf_xdp_load_bytes(self.as_ptr().cast(), off as u32, dst.as_mut_ptr().cast(), N as u32) == 0 }
     }
 }
 
@@ -217,6 +234,16 @@ impl Tuple {
 /// of the caller's stack frame). Returns 1 on success.
 #[inline(never)]
 pub fn parse_tc(ctx: &TcContext, out: &mut Tuple) -> u32 {
+    *out = Tuple::zero();
+    match ethertype(ctx) {
+        Some(ETH_P_IP | ETH_P_IPV6) => parse_l3_into(ctx, ETH_HLEN, out) as u32,
+        _ => 0,
+    }
+}
+
+/// Out-of-line Ethernet parse for XDP (helper loads, no packet pointers).
+#[inline(never)]
+pub fn parse_xdp(ctx: &XdpContext, out: &mut Tuple) -> u32 {
     *out = Tuple::zero();
     match ethertype(ctx) {
         Some(ETH_P_IP | ETH_P_IPV6) => parse_l3_into(ctx, ETH_HLEN, out) as u32,

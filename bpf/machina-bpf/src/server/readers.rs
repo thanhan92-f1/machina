@@ -88,6 +88,7 @@ pub(super) fn on_net(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: 
         let (iface, vm) = s.iface(k.ifindex);
         let is_open = ev.kind == NET_EV_FLOW_OPEN;
         let rec = NetEventRecord {
+            workload: s.iface_workload(k.ifindex),
             ts: mono_to_rfc3339(ev.ts_ns),
             kind: net_kind(ev.kind).into(),
             verdict: verdict_name(ev.verdict).into(),
@@ -167,6 +168,7 @@ pub(super) fn on_dns(
         let mut s = lock(sh);
         let (iface, vm) = s.iface(ev.ifindex);
         let rec = DnsRecord {
+            workload: s.iface_workload(ev.ifindex),
             ts: mono_to_rfc3339(ev.ts_ns),
             iface: iface.clone(),
             vm: vm.clone(),
@@ -278,16 +280,17 @@ pub(super) fn on_l7(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &
     let rec = {
         let mut s = lock(sh);
         let (iface, vm) = s.iface(ev.key.ifindex);
-        let Some(rec) = l7_record(&ev, iface, vm) else {
+        let Some(mut rec) = l7_record(&ev, iface, vm) else {
             return;
         };
+        rec.workload = s.iface_workload(ev.key.ifindex);
         if s.fp_from_l7 && rec.protocol == "tls" {
             let n = (ev.payload_len as usize).min(L7_PAYLOAD_LEN);
             if let Some(mut fp) = tls_fingerprint(&ev.payload[..n]) {
                 fp.ts = rec.ts.clone();
                 fp.source = "tap".into();
                 fp.iface = rec.iface.clone();
-                fp.workload = rec.vm.as_ref().map(|v| format!("vm:{v}"));
+                fp.workload = rec.workload.clone();
                 fp.client = format!("{}:{}", rec.client, rec.client_port);
                 fp.server = rec.server.clone();
                 fp.server_port = rec.server_port;
@@ -336,6 +339,7 @@ pub(super) fn on_proc(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b:
         let denied = ev.flags & PROC_FLAG_EXEC_DENIED != 0;
         let is_connect = ev.kind == PROC_EV_CONNECT;
         let rec = ProcRecord {
+            workload: cgroup.as_deref().and_then(|p| s.cgroup_workload(p)),
             ts: mono_to_rfc3339(ev.ts_ns),
             kind: proc_kind(ev.kind).into(),
             pid: ev.pid,
@@ -408,14 +412,6 @@ pub(super) fn on_capture(sh: &SharedState, b: &[u8]) {
     s.counters.capture_packets += 1;
 }
 
-/// `vm:<name>`, `container:<id>` or `unit:<service>` for a cgroup path.
-pub(super) fn workload_label(path: &str) -> Option<String> {
-    let c = attribution::classify_cgroup(path);
-    c.vm.map(|v| format!("vm:{v}"))
-        .or_else(|| c.container.map(|v| format!("container:{v}")))
-        .or_else(|| c.unit.map(|v| format!("unit:{v}")))
-}
-
 /// JA3/JA4 for a captured ClientHello (`None` if it is not one).
 pub(super) fn tls_fingerprint(data: &[u8]) -> Option<TlsFingerprint> {
     let h = crate::l7::parse_hello(data)?;
@@ -451,7 +447,7 @@ pub(super) fn on_tlsfp(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b
     {
         let mut s = lock(sh);
         let path = s.cgroups.lookup(ev.cgroup);
-        fp.workload = path.as_deref().and_then(workload_label);
+        fp.workload = path.as_deref().and_then(|p| s.cgroup_workload(p));
         fp.cgroup = path;
         s.counters.tls_fingerprints += 1;
         Shared::push_capped(&mut s.tls_fp, fp.clone(), TLS_STORE_CAP);
@@ -490,9 +486,11 @@ pub(super) fn on_ssl(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: 
     let Some(ev) = decode::<SslEvent>(b) else {
         return;
     };
-    let rec = ssl_record(&ev);
+    let mut rec = ssl_record(&ev);
+    let cgroup = attribution::pid_cgroup(rec.pid);
     {
         let mut s = lock(sh);
+        rec.workload = cgroup.as_deref().and_then(|p| s.cgroup_workload(p));
         s.counters.ssl_events += 1;
         Shared::push_capped(&mut s.ssl, rec.clone(), SSL_STORE_CAP);
     }

@@ -39,6 +39,9 @@ pub fn mn_xdp_uplink(ctx: XdpContext) -> u32 {
         return xdp_action::XDP_PASS;
     };
     let flags = cfg.flags;
+    if flags & XDP_F_NODEISO != 0 && crate::nodeiso::nodeiso_xdp(&ctx) == xdp_action::XDP_DROP {
+        return xdp_action::XDP_DROP;
+    }
     if flags & XDP_F_SHIELD != 0 && crate::shield::shield(&ctx) == xdp_action::XDP_DROP {
         return xdp_action::XDP_DROP;
     }

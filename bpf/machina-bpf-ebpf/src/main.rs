@@ -10,6 +10,7 @@ mod cni;
 mod health;
 mod maps;
 mod net;
+mod nodeiso;
 mod parse;
 mod proc;
 mod shield;

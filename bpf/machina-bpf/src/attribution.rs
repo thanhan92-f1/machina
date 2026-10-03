@@ -135,6 +135,101 @@ pub fn classify_cgroup(path: &str) -> CgroupInfo {
     info
 }
 
+/// Pod UID from a kubepods cgroup path (systemd `kubepods-…-pod<uid>.slice`
+/// or cgroupfs `pod<uid>`), with systemd's `_` turned back into `-`.
+pub fn pod_uid(path: &str) -> Option<String> {
+    if !path.contains("kubepods") {
+        return None;
+    }
+    path.split('/').find_map(|seg| {
+        let s = seg.trim_end_matches(".slice");
+        let uid = s.rsplit_once("-pod").map(|(_, u)| u).or_else(|| s.strip_prefix("pod"))?;
+        (uid.len() >= 32 && uid.bytes().all(|b| b.is_ascii_hexdigit() || b == b'_' || b == b'-'))
+            .then(|| uid.replace('_', "-"))
+    })
+}
+
+/// Container id of a runtime scope (`cri-containerd-<id>.scope`, `crio-…`,
+/// `docker-…`) or a bare 64-hex cgroupfs directory.
+fn container_seg(seg: &str) -> Option<&str> {
+    let id = seg
+        .strip_prefix("cri-containerd-")
+        .or_else(|| seg.strip_prefix("crio-"))
+        .or_else(|| seg.strip_prefix("docker-"))
+        .map(|s| s.trim_end_matches(".scope"))
+        .unwrap_or(seg);
+    (id.len() == 64 && id.bytes().all(|b| b.is_ascii_hexdigit())).then_some(id)
+}
+
+/// Pod UID → (namespace, name): find each pod's sandbox container
+/// (`sandboxes`: CNI container id → pod) under the kubepods trees of `root`.
+pub fn pod_index(root: &Path, sandboxes: &HashMap<String, (String, String)>) -> HashMap<String, (String, String)> {
+    let mut out = HashMap::new();
+    if sandboxes.is_empty() {
+        return out;
+    }
+    let Ok(rd) = std::fs::read_dir(root) else {
+        return out;
+    };
+    let mut stack: Vec<(std::path::PathBuf, usize)> = rd
+        .flatten()
+        .filter(|e| e.file_name().to_string_lossy().starts_with("kubepods"))
+        .map(|e| (e.path(), 0))
+        .collect();
+    while let Some((dir, depth)) = stack.pop() {
+        let name = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        if let Some(id) = container_seg(&name) {
+            if let (Some(pod), Some(uid)) = (sandboxes.get(id), pod_uid(&dir.to_string_lossy())) {
+                out.insert(uid, pod.clone());
+            }
+            continue;
+        }
+        if depth >= 4 {
+            continue;
+        }
+        if let Ok(rd) = std::fs::read_dir(&dir) {
+            for e in rd.flatten() {
+                if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    stack.push((e.path(), depth + 1));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Workload for a cgroup path; `pods` is [`pod_index`]. Pods whose UID is not
+/// indexed (no machina-cni endpoint) are named by UID.
+pub fn cgroup_workload(path: &str, pods: &HashMap<String, (String, String)>) -> Option<crate::api::Workload> {
+    use crate::api::Workload;
+    if let Some(uid) = pod_uid(path) {
+        return Some(match pods.get(&uid) {
+            Some((ns, name)) => Workload { kind: "pod".into(), ns: Some(ns.clone()), name: name.clone() },
+            None => Workload { kind: "pod".into(), ns: None, name: uid },
+        });
+    }
+    let c = classify_cgroup(path);
+    let (kind, name) = if let Some(v) = c.vm {
+        ("vm", v)
+    } else if let Some(v) = c.container {
+        ("container", v)
+    } else {
+        ("service", c.unit?)
+    };
+    Some(Workload { kind: kind.into(), ns: None, name })
+}
+
+/// cgroup v2 path of a live process (relative to the cgroup root).
+pub fn pid_cgroup(pid: u32) -> Option<String> {
+    let cg = std::fs::read_to_string(format!("/proc/{pid}/cgroup")).ok()?;
+    cg.lines().find_map(|l| l.strip_prefix("0::")).map(|p| p.trim_start_matches('/').to_string())
+}
+
+/// `ns/name` → (ns, name).
+pub fn split_pod(pod: &str) -> Option<(String, String)> {
+    pod.split_once('/').map(|(n, p)| (n.to_string(), p.to_string()))
+}
+
 /// cgroup v2 id (== inode of the cgroup directory) → relative path cache.
 #[derive(Default)]
 pub struct CgroupCache {
@@ -245,5 +340,41 @@ mod tests {
         assert_eq!(c.unit.as_deref(), Some("machina-daemon.service"));
         let c = classify_cgroup("machine.slice/libpod-0123456789abcdef.scope/container");
         assert_eq!(c.container.as_deref(), Some("0123456789ab"));
+    }
+
+    const UID: &str = "0f4a2b1c_1111_2222_3333_444455556666";
+    const SANDBOX: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    #[test]
+    fn pod_uids_and_workloads() {
+        let p = format!("kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-pod{UID}.slice/cri-containerd-{SANDBOX}.scope");
+        assert_eq!(pod_uid(&p).as_deref(), Some("0f4a2b1c-1111-2222-3333-444455556666"));
+        assert_eq!(pod_uid("kubepods/burstable/pod0f4a2b1c-1111-2222-3333-444455556666/abc").as_deref(), Some("0f4a2b1c-1111-2222-3333-444455556666"));
+        assert_eq!(pod_uid("system.slice/podman.service"), None);
+
+        let mut pods = HashMap::new();
+        assert_eq!(cgroup_workload(&p, &pods).unwrap().name, "0f4a2b1c-1111-2222-3333-444455556666");
+        pods.insert("0f4a2b1c-1111-2222-3333-444455556666".to_string(), ("prod".to_string(), "web-0".to_string()));
+        let w = cgroup_workload(&p, &pods).unwrap();
+        assert_eq!((w.kind.as_str(), w.ns.as_deref(), w.name.as_str()), ("pod", Some("prod"), "web-0"));
+        let w = cgroup_workload("machine.slice/machine-qemu\\x2d3\\x2dweb.scope/libvirt/emulator", &pods).unwrap();
+        assert_eq!((w.kind.as_str(), w.name.as_str()), ("vm", "web"));
+        let w = cgroup_workload("system.slice/sshd.service", &pods).unwrap();
+        assert_eq!((w.kind.as_str(), w.name.as_str()), ("service", "sshd.service"));
+        assert!(cgroup_workload("user.slice", &pods).is_none());
+        assert_eq!(split_pod("ns/n"), Some(("ns".into(), "n".into())));
+    }
+
+    #[test]
+    fn pod_index_joins_sandbox_scopes() {
+        let root = std::env::temp_dir().join(format!("mnpodidx-{}", std::process::id()));
+        let pod_dir = root.join(format!("kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod{UID}.slice"));
+        std::fs::create_dir_all(pod_dir.join(format!("cri-containerd-{SANDBOX}.scope"))).unwrap();
+        std::fs::create_dir_all(pod_dir.join(format!("cri-containerd-{}.scope", "b".repeat(64)))).unwrap();
+        let sandboxes = HashMap::from([(SANDBOX.to_string(), ("prod".to_string(), "web-0".to_string()))]);
+        let idx = pod_index(&root, &sandboxes);
+        std::fs::remove_dir_all(&root).ok();
+        assert_eq!(idx.get("0f4a2b1c-1111-2222-3333-444455556666"), Some(&("prod".to_string(), "web-0".to_string())));
+        assert_eq!(idx.len(), 1);
     }
 }

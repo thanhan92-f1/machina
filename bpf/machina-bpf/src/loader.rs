@@ -447,6 +447,23 @@ impl Datapath {
         Ok(())
     }
 
+    /// Like [`attach_tc_one`](Self::attach_tc_one) but first in the TCX chain,
+    /// so no earlier classifier can redirect around it.
+    pub fn attach_tc_first(&mut self, iface: &str, prog: &str, ingress: bool) -> Result<()> {
+        let key = format!("{iface}:{prog}");
+        if self.uplink.contains_key(&key) {
+            return Ok(());
+        }
+        self.ensure_clsact(iface);
+        let dir = if ingress { TcAttachType::Ingress } else { TcAttachType::Egress };
+        let id = self
+            .classifier(prog)?
+            .attach_with_options(iface, dir, aya::programs::tc::TcAttachOptions::TcxOrder(aya::programs::LinkOrder::first()))
+            .with_context(|| format!("attach {prog} first on {iface}"))?;
+        self.uplink.insert(key, (prog.to_string(), id));
+        Ok(())
+    }
+
     pub fn attach_xdp(&mut self, iface: &str) -> Result<()> {
         self.attach_xdp_prog(iface, "mn_xdp_deny")
     }

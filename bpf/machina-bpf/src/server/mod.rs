@@ -31,6 +31,7 @@ use crate::{dns, fmt_addr};
 
 mod cni;
 mod listen;
+mod nodeiso;
 mod ops;
 mod readers;
 mod shield;
@@ -89,6 +90,10 @@ struct Shared {
     cgroups: CgroupCache,
     /// Resolved DNS-deny answers awaiting the engine: (scope, prefix, policy num).
     dns_block_queue: Vec<(u32, Prefix, u32)>,
+    /// Pod UID → (namespace, name), from kubepods joined with CNI endpoints.
+    pods: HashMap<String, (String, String)>,
+    /// CNI host veth → (namespace, name).
+    pod_ifaces: HashMap<String, (String, String)>,
 }
 
 impl Shared {
@@ -97,6 +102,22 @@ impl Shared {
             Some(m) => (Some(m.name.clone()), m.vm.clone()),
             None => (None, None),
         }
+    }
+
+    /// Workload behind a datapath interface: the VM on a tap, the pod on a
+    /// CNI host veth.
+    fn iface_workload(&self, ifindex: u32) -> Option<Workload> {
+        let m = self.ifaces.get(&ifindex)?;
+        if let Some(vm) = &m.vm {
+            return Some(Workload { kind: "vm".into(), ns: None, name: vm.clone() });
+        }
+        self.pod_ifaces
+            .get(&m.name)
+            .map(|(ns, name)| Workload { kind: "pod".into(), ns: Some(ns.clone()), name: name.clone() })
+    }
+
+    fn cgroup_workload(&self, path: &str) -> Option<Workload> {
+        attribution::cgroup_workload(path, &self.pods)
     }
 
     fn push_capped<T>(q: &mut VecDeque<T>, item: T, cap: usize) {
@@ -178,6 +199,7 @@ struct Engine {
     vm_edge: vm::VmEdgeRuntime,
     sandbox: vm::SandboxRuntime,
     shield: shield::ShieldRuntime,
+    nodeiso: nodeiso::NodeIsoRuntime,
     tls: tls::TlsRuntime,
 }
 
@@ -265,6 +287,7 @@ impl Engine {
             vm_edge: vm::VmEdgeRuntime::default(),
             sandbox: vm::SandboxRuntime::default(),
             shield: shield::ShieldRuntime::default(),
+            nodeiso: nodeiso::NodeIsoRuntime::default(),
             tls: tls::TlsRuntime::default(),
         };
         eng.init()?;

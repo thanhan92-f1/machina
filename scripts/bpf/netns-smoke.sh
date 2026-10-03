@@ -25,6 +25,7 @@ cleanup() {
   ip netns del "$NS" 2>/dev/null || true
   ip link del "$HOST_IF" 2>/dev/null || true
   [[ -d "$TCP_CG" ]] && rmdir "$TCP_CG" 2>/dev/null || true
+  rmdir /sys/fs/cgroup/mnsmoke-attr.service 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -378,6 +379,46 @@ fi
 req '{"op":"tls_configure","config":{}}' | must
 check "tls off: sampler and uprobes detached" test "$(tls tls_status "(d.get('fingerprint_cgroup'), len(d['ssl_libraries']))")" = "(None, 0)"
 kill $HTTPS_PID 2>/dev/null || true
+
+# Node isolation on the test veth only (never a real uplink): XDP ingress
+# from the netns, mn_nodeiso on egress towards it. Own short lease.
+iso() { req "{\"op\":\"node_iso_configure\",\"config\":{\"iface\":\"$HOST_IF\",$1}}"; }
+isojs() { req '{"op":"node_iso_status"}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print($1)"; }
+host_ping() { ping -c1 -W1 "$PEER_IP" >/dev/null 2>&1; }
+check "nodeiso: lease is mandatory" bash -c "$(declare -f req iso); SOCK=$SOCK HOST_IF=$HOST_IF; ! iso '\"enabled\":true' | grep -q '\"ok\":true'"
+check "nodeiso: lease capped at 900s" bash -c "$(declare -f req iso); SOCK=$SOCK HOST_IF=$HOST_IF; ! iso '\"enabled\":true,\"lease_secs\":3600' | grep -q '\"ok\":true'"
+check "nodeiso: refuses to drop SSH without an exempt CIDR" bash -c "$(declare -f req iso); SOCK=$SOCK HOST_IF=$HOST_IF; ! iso '\"enabled\":true,\"lease_secs\":30,\"allow_tcp\":[6443]' | grep -q '\"ok\":true'"
+iso '"enabled":true,"lease_secs":30,"dry_run":true,"allow_icmp":false' | must
+check "nodeiso dry-run: ping still passes" ping_ok
+check "nodeiso dry-run: would-drop counted" test "$(isojs "d['stats']['would_drop']")" -gt 0
+check "nodeiso dry-run: not isolating" test "$(isojs "d['isolating']")" = False
+iso '"enabled":true,"lease_secs":30,"allow_icmp":false,"allow_tcp":[22,18080]' | must
+check "nodeiso: isolating under lease" test "$(isojs "d['isolating'] and 0 < d['lease_remaining_secs'] <= 30")" = True
+check "nodeiso: inbound ping dropped (XDP)" ping_blocked
+check "nodeiso: outbound ping dropped (tc egress)" bash -c "$(declare -f host_ping); PEER_IP=$PEER_IP; ! host_ping"
+check "nodeiso: allowlisted tcp port still served" http_ok
+check "nodeiso: drops counted both ways" test "$(isojs "d['stats']['dropped_in'] > 0 and d['stats']['dropped_out'] > 0")" = True
+check "nodeiso: policy lease untouched" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"status\"}' | python3 -c 'import json,sys; m=json.load(sys.stdin)[\"data\"][\"mode\"]; sys.exit(0 if m[\"mode\"]==\"observe\" and \"node_isolation\" in m[\"covers\"] else 1)'"
+iso "\"enabled\":true,\"lease_secs\":30,\"allow_icmp\":false,\"exempt\":[\"$PEER_IP/32\"]" | must
+check "nodeiso: exempt CIDR passes" ping_ok
+iso '"enabled":true,"lease_secs":10,"allow_icmp":false' | must
+check "nodeiso: short lease armed" ping_blocked
+sleep 12
+check "nodeiso: lease lapsed, traffic restored" ping_ok
+check "nodeiso: auto-reverted and detached" test "$(isojs "(d['lease_expired'], d['attached'], d['isolating'])")" = "(True, None, False)"
+check "nodeiso: dispatcher gone from test veth" bash -c "$(declare -f xdp_on); HOST_IF=$HOST_IF; ! xdp_on"
+iso '"enabled":true,"lease_secs":30,"allow_icmp":false' | must
+iso '"enabled":false' | must
+check "nodeiso off: ping restored" ping_ok
+
+# Attribution: exec events carry workload{kind,name} from the cgroup path.
+ATTR_CG=/sys/fs/cgroup/mnsmoke-attr.service
+mkdir -p "$ATTR_CG"
+sleep 6 # cgroup id cache rescans at most every 5s
+bash -c "echo \$\$ > $ATTR_CG/cgroup.procs && exec /bin/true"
+sleep 0.5
+check "attribution: exec workload from cgroup" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"proc_events\",\"kind\":\"exec\",\"limit\":5000}' | python3 -c 'import json,sys; d=json.load(sys.stdin)[\"data\"]; sys.exit(0 if any((r.get(\"workload\") or {}).get(\"name\")==\"mnsmoke-attr.service\" and r[\"workload\"][\"kind\"]==\"service\" for r in d) else 1)'"
+rmdir "$ATTR_CG" 2>/dev/null || true
 
 echo
 echo "passed=$PASS failed=$FAIL  (log: $WORK/bpfd.log)"
