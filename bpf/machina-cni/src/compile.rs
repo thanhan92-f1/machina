@@ -6,9 +6,11 @@
 //!
 //! Identity = hash(namespace, sorted pod labels), so every pod a selector can
 //! distinguish gets its own identity and policies compile to identity pairs.
-//! Limits: IPv4 only; named ports and ipBlock `except` are not supported
-//! (reported in [`Compiled::warnings`]); overlapping ipBlocks resolve by
-//! longest prefix.
+//! Named ports resolve against the destination pod's container ports (the
+//! subject for ingress, the peer for egress).
+//! Limits: IPv4 only; ipBlock `except` and named ports towards ipBlock peers
+//! are not supported (reported in [`Compiled::warnings`]); overlapping
+//! ipBlocks resolve by longest prefix.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -24,6 +26,8 @@ pub struct Pod {
     pub namespace: String,
     pub ip: String,
     pub labels: BTreeMap<String, String>,
+    /// Named container ports: (name, proto) → port.
+    pub named_ports: BTreeMap<(String, u8), u16>,
 }
 
 #[derive(Debug, Default)]
@@ -91,9 +95,25 @@ pub fn pods(items: &[Value]) -> Vec<Pod> {
                 namespace: str_at(p, &["metadata", "namespace"]).unwrap_or("default").to_string(),
                 ip: ip.to_string(),
                 labels: labels_of(p),
+                named_ports: named_ports_of(p),
             })
         })
         .collect()
+}
+
+fn named_ports_of(p: &Value) -> BTreeMap<(String, u8), u16> {
+    let mut out = BTreeMap::new();
+    for c in p["spec"]["containers"].as_array().into_iter().flatten() {
+        for port in c["ports"].as_array().into_iter().flatten() {
+            let (Some(name), Some(num)) = (port["name"].as_str(), port["containerPort"].as_u64()) else {
+                continue;
+            };
+            if let (Some(proto), Ok(n)) = (proto_num(port["protocol"].as_str()), u16::try_from(num)) {
+                out.insert((name.to_string(), proto), n);
+            }
+        }
+    }
+    out
 }
 
 /// Kubernetes label selector: `matchLabels` AND every `matchExpressions` term.
@@ -137,10 +157,18 @@ fn proto_num(p: Option<&str>) -> Option<u8> {
     }
 }
 
-/// `ports` of a policy rule → (proto, port) tuples; (0, 0) = everything.
-fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<(u8, u16)> {
+#[derive(Debug, Clone, PartialEq)]
+enum RulePort {
+    /// (proto, port); (0, 0) = everything, (proto, 0) = every port of proto.
+    Num(u8, u16),
+    /// Resolved against the destination pod's container ports.
+    Named(u8, String),
+}
+
+/// `ports` of a policy rule.
+fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<RulePort> {
     let Some(ports) = rule.get("ports").and_then(|p| p.as_array()).filter(|p| !p.is_empty()) else {
-        return vec![(0, 0)];
+        return vec![RulePort::Num(0, 0)];
     };
     let mut out = Vec::new();
     for p in ports {
@@ -149,7 +177,7 @@ fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<(u8, u
             continue;
         };
         match &p["port"] {
-            Value::Null => out.push((proto, 0)),
+            Value::Null => out.push(RulePort::Num(proto, 0)),
             Value::Number(n) => {
                 let start = n.as_u64().unwrap_or(0) as u32;
                 let end = p["endPort"].as_u64().map(|e| e as u32).unwrap_or(start);
@@ -157,9 +185,9 @@ fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<(u8, u
                     warnings.push(format!("{ctx}: port range {start}-{end} too wide (max {MAX_PORT_RANGE})"));
                     continue;
                 }
-                out.extend((start..=end).filter(|x| *x > 0 && *x <= 65535).map(|x| (proto, x as u16)));
+                out.extend((start..=end).filter(|x| *x > 0 && *x <= 65535).map(|x| RulePort::Num(proto, x as u16)));
             }
-            Value::String(s) => warnings.push(format!("{ctx}: named port `{s}` not supported")),
+            Value::String(s) => out.push(RulePort::Named(proto, s.clone())),
             _ => {}
         }
     }
@@ -172,6 +200,15 @@ struct World<'a> {
 }
 
 impl World<'_> {
+    /// Port numbers a named port maps to on pods with `identity` (0 = any pod).
+    fn resolve_named(&self, identity: u32, name: &str, proto: u8) -> BTreeSet<u16> {
+        self.pods
+            .iter()
+            .filter(|p| identity == 0 || pod_identity(&p.namespace, &p.labels) == identity)
+            .filter_map(|p| p.named_ports.get(&(name.to_string(), proto)).copied())
+            .collect()
+    }
+
     fn ns_labels(&self, ns: &str) -> BTreeMap<String, String> {
         let mut l = self.ns_labels.get(ns).cloned().unwrap_or_default();
         l.entry("kubernetes.io/metadata.name".into()).or_insert_with(|| ns.to_string());
@@ -280,14 +317,27 @@ pub fn compile(inp: &Inputs) -> Compiled {
                 }
                 for s in &subjects {
                     for peer in &peers {
-                        for (proto, port) in &ports {
-                            policy.insert(CniPolicyEntry {
-                                subject: *s,
-                                peer: *peer,
-                                egress,
-                                proto: *proto,
-                                port: *port,
-                            });
+                        for rp in &ports {
+                            let resolved: Vec<(u8, u16)> = match rp {
+                                RulePort::Num(proto, port) => vec![(*proto, *port)],
+                                RulePort::Named(proto, pname) => {
+                                    let dst = if egress { *peer } else { *s };
+                                    if dst & 0x8000_0000 != 0 {
+                                        warnings.push(format!("{name}: named port `{pname}` cannot apply to an ipBlock peer"));
+                                        continue;
+                                    }
+                                    world.resolve_named(dst, pname, *proto).into_iter().map(|n| (*proto, n)).collect()
+                                }
+                            };
+                            for (proto, port) in resolved {
+                                policy.insert(CniPolicyEntry {
+                                    subject: *s,
+                                    peer: *peer,
+                                    egress,
+                                    proto,
+                                    port,
+                                });
+                            }
                         }
                     }
                 }
@@ -454,9 +504,11 @@ mod tests {
 
     #[test]
     fn policy_compiles_to_identity_pairs() {
+        let mut db_pod = pod("prod", "db-1", "10.42.0.6", &[("app", "db")]);
+        db_pod["spec"]["containers"] = json!([{"ports": [{"name": "metrics", "containerPort": 9187}]}]);
         let items = vec![
             pod("prod", "web-1", "10.42.0.5", &[("app", "web")]),
-            pod("prod", "db-1", "10.42.0.6", &[("app", "db")]),
+            db_pod,
             pod("dev", "tool", "10.42.1.9", &[("app", "tool")]),
             json!({ "metadata": {"namespace": "kube-system", "name": "h"}, "spec": {"hostNetwork": true}, "status": {"podIP": "10.0.0.1"} }),
         ];
@@ -492,14 +544,44 @@ mod tests {
             assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: tool, egress: false, proto: IPPROTO_UDP, port }));
             assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: block, egress: false, proto: IPPROTO_UDP, port }));
         }
-        assert_eq!(st.policy.len(), 5);
+        for peer in [tool, block] {
+            assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer, egress: false, proto: IPPROTO_TCP, port: 9187 }));
+        }
+        assert_eq!(st.policy.len(), 7);
         assert_eq!(st.cidrs, vec![("192.168.0.0/16".to_string(), block)]);
-        assert!(c.warnings.iter().any(|w| w.contains("named port")));
+        assert!(c.warnings.is_empty(), "{:?}", c.warnings);
         let iso: Vec<(&str, bool, bool)> =
             st.identities.iter().map(|i| (i.ip.as_str(), i.ingress_isolated, i.egress_isolated)).collect();
         assert!(iso.contains(&("10.42.0.6", true, false)));
         assert!(iso.contains(&("10.42.0.5", false, false)));
         assert!(block & 0x8000_0000 != 0 && db & 0x8000_0000 == 0);
+    }
+
+    #[test]
+    fn named_ports_resolve_on_the_destination() {
+        let mut api = pod("a", "api", "10.42.0.8", &[("app", "api")]);
+        api["spec"]["containers"] = json!([{"ports": [
+            {"name": "http", "containerPort": 8080},
+            {"name": "dns", "containerPort": 5353, "protocol": "UDP"}]}]);
+        let items = vec![api, pod("a", "cli", "10.42.0.9", &[("app", "cli")])];
+        let pods = pods(&items);
+        let policies = vec![json!({
+            "metadata": {"namespace": "a", "name": "cli-out"},
+            "spec": {"podSelector": {"matchLabels": {"app": "cli"}}, "policyTypes": ["Egress"],
+                "egress": [
+                    {"to": [{"podSelector": {"matchLabels": {"app": "api"}}}],
+                     "ports": [{"port": "http"}, {"port": "dns", "protocol": "UDP"}, {"port": "nope"}]},
+                    {"to": [{"ipBlock": {"cidr": "10.0.0.0/8"}}], "ports": [{"port": "http"}]}
+                ]}
+        })];
+        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], node: "n1" });
+        let api = pod_identity("a", &pods[0].labels);
+        let cli = pod_identity("a", &pods[1].labels);
+        let got: BTreeSet<(u32, u8, u16)> =
+            c.state.policy.iter().map(|p| (p.peer, p.proto, p.port)).collect();
+        assert!(c.state.policy.iter().all(|p| p.subject == cli && p.egress));
+        assert_eq!(got, [(api, IPPROTO_TCP, 8080), (api, IPPROTO_UDP, 5353)].into());
+        assert!(c.warnings.iter().any(|w| w.contains("ipBlock peer")));
     }
 
     #[test]
