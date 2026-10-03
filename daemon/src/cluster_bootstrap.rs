@@ -1,9 +1,11 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-//! Host cluster bootstrap (k3s → machina-cni → metrics-server → KubeVirt/CDI/virtctl).
-//! k3s runs without flannel, its NetworkPolicy controller and kube-proxy: the
-//! native eBPF CNI (machina-bpfd + `machina-cni agent`) provides all three.
+//! Host cluster bootstrap (k3s → metrics-server → KubeVirt/CDI/virtctl).
+//! By default k3s keeps its own networking (flannel, NetworkPolicy controller,
+//! kube-proxy). The native eBPF CNI (machina-bpfd + `machina-cni agent`) is
+//! opt-in: with `cni: "machina"` k3s is installed without those three and
+//! machina-cni provides them instead.
 //! Invoked from `POST /api/v1/k8s/cluster-bootstrap`.
 //!
 //! Linux-only; intended for `machina-daemon` running as **root** (stock systemd unit).
@@ -27,12 +29,40 @@ pub struct BootstrapCmdResult {
     pub ok: bool,
 }
 
+/// Pod networking for the bootstrapped cluster.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CniChoice {
+    /// k3s defaults: flannel, NetworkPolicy controller, kube-proxy.
+    #[default]
+    Default,
+    /// Native eBPF machina-cni replaces all three.
+    Machina,
+}
+
+impl CniChoice {
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim() {
+            "" | "default" => Some(Self::Default),
+            "machina" => Some(Self::Machina),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Machina => "machina",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ClusterBootstrapParams {
     pub phase: String,
     pub server_ip: Option<String>,
     pub skip_kubevirt_cdi: bool,
     pub install_metrics_server: bool,
+    pub cni: CniChoice,
 }
 
 const K3S_INSTALL_URL: &str = "https://get.k3s.io";
@@ -237,13 +267,24 @@ async fn wait_until_kubectl_nodes(
     ))
 }
 
+fn k3s_server_flags(cni: CniChoice) -> &'static str {
+    match cni {
+        CniChoice::Default => "--disable=traefik --disable=servicelb",
+        CniChoice::Machina => {
+            "--flannel-backend=none --disable-network-policy --disable-kube-proxy --disable=traefik --disable=servicelb"
+        }
+    }
+}
+
 async fn phase_k3s(
     server_ip: &str,
+    cni: CniChoice,
     stdout_log: &mut String,
     stderr_log: &mut String,
 ) -> Result<(), LibvirtError> {
     let install = format!(
-        "curl -sfL {K3S_INSTALL_URL} | sh -s - server --flannel-backend=none --disable-network-policy --disable-kube-proxy --disable=traefik --disable=servicelb"
+        "curl -sfL {K3S_INSTALL_URL} | sh -s - server {}",
+        k3s_server_flags(cni)
     );
     let no_env: Vec<(String, String)> = vec![];
     run_sh(
@@ -351,15 +392,62 @@ fn host_arch() -> &'static str {
 }
 
 const MACHINA_CNI_BIN: &str = "/usr/local/bin/machina-cni";
+const MACHINA_CNI_ENV_FILE: &str = "/etc/default/machina-cni";
+/// Same defaults as `machina-cni agent` (`MACHINA_CNI_CONF_DIRS`).
+const CNI_CONF_DIRS: &[&str] = &["/etc/cni/net.d", "/var/lib/rancher/k3s/agent/etc/cni/net.d"];
+const MACHINA_CONFLIST: &str = "05-machina.conflist";
 
-/// Native eBPF CNI: machina-bpfd owns the datapath, `machina-cni agent`
+/// CNI configs in `dirs` that machina-cni did not write.
+fn foreign_cni_configs(dirs: &[&Path]) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    for dir in dirs {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        for e in entries.flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let is_cfg = name.ends_with(".conf") || name.ends_with(".conflist") || name.ends_with(".json");
+            if is_cfg && name != MACHINA_CONFLIST && e.path().is_file() {
+                found.push(e.path());
+            }
+        }
+    }
+    found.sort();
+    found
+}
+
+fn takeover_enabled(env_file: &str) -> bool {
+    env_file.lines().any(|l| {
+        let l = l.trim();
+        l.strip_prefix("MACHINA_CNI_TAKEOVER=")
+            .map(|v| matches!(v.trim_matches(['"', '\'']).to_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+            .unwrap_or(false)
+    })
+}
+
+/// Native eBPF CNI (opt-in): machina-bpfd owns the datapath, `machina-cni agent`
 /// writes the CNI config, node routes, masquerade and compiles
-/// NetworkPolicies / Services (k3s runs without flannel and kube-proxy).
+/// NetworkPolicies / Services. Refuses to replace a CNI that is already
+/// configured unless `MACHINA_CNI_TAKEOVER=1` is set in `/etc/default/machina-cni`.
 async fn phase_cni(stdout_log: &mut String, stderr_log: &mut String) -> Result<(), LibvirtError> {
     if !Path::new(MACHINA_CNI_BIN).is_file() {
         return Err(LibvirtError::Operation(format!(
             "{MACHINA_CNI_BIN} not installed — rerun install.sh (it builds machina-cni with the workspace)"
         )));
+    }
+    let dirs: Vec<&Path> = CNI_CONF_DIRS.iter().map(Path::new).collect();
+    let foreign = foreign_cni_configs(&dirs);
+    if !foreign.is_empty() {
+        let takeover = std::fs::read_to_string(MACHINA_CNI_ENV_FILE).is_ok_and(|s| takeover_enabled(&s));
+        let list = foreign.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", ");
+        if !takeover {
+            return Err(LibvirtError::Operation(format!(
+                "another CNI is already configured ({list}); machina-cni will not replace it. \
+                 Reinstall k3s with cni=\"machina\" (no flannel/kube-proxy), or set \
+                 MACHINA_CNI_TAKEOVER=1 in {MACHINA_CNI_ENV_FILE} to take over deliberately"
+            )));
+        }
+        append_section(stdout_log, "cni_takeover", &format!("MACHINA_CNI_TAKEOVER=1: replacing {list}"));
     }
     let no_env: Vec<(String, String)> = vec![];
     run_sh(
@@ -380,7 +468,11 @@ async fn phase_cni(stdout_log: &mut String, stderr_log: &mut String) -> Result<(
         stderr_log,
     )
     .await?;
+    phase_wait_nodes(stdout_log, stderr_log).await
+}
 
+/// Wait until every node is Ready (the CNI, default or machina, is up).
+async fn phase_wait_nodes(stdout_log: &mut String, stderr_log: &mut String) -> Result<(), LibvirtError> {
     let kube_env = kubeconfig_env_pairs();
     let kubectl = kubectl_bin();
     wait_until_kubectl_nodes(&kubectl, &kube_env, stdout_log).await?;
@@ -759,12 +851,17 @@ async fn phase_kubevirt_cdi(
     Ok(())
 }
 
-fn print_footer(skip_kv: bool, stdout_log: &mut String) {
-    let mut msg = String::from("\n[SUCCESS] k3s + machina-cni (native eBPF)");
+fn print_footer(skip_kv: bool, cni: CniChoice, stdout_log: &mut String) {
+    let mut msg = String::from(match cni {
+        CniChoice::Default => "\n[SUCCESS] k3s (default CNI: flannel + kube-proxy)",
+        CniChoice::Machina => "\n[SUCCESS] k3s + machina-cni (native eBPF)",
+    });
     if !skip_kv {
         msg.push_str(" + KubeVirt + CDI");
     }
-    msg.push_str("\n\nCNI agent:\n  journalctl -u machina-cni -f\n  curl -sk https://127.0.0.1:5092/api/v1/bpf/status   # datapath\n");
+    if cni == CniChoice::Machina {
+        msg.push_str("\n\nCNI agent:\n  journalctl -u machina-cni -f\n  curl -sk https://127.0.0.1:5092/api/v1/bpf/status   # datapath\n");
+    }
     if !skip_kv {
         msg.push_str("\nKubeVirt / CDI:\n  kubectl get kubevirt -n kubevirt\n  kubectl get cdi\n  kubectl get storageclass\n  virtctl version\n\nConfigure [kubevirt] in machina config.toml for YAML bundles.\n");
     }
@@ -776,10 +873,11 @@ pub async fn run_cluster_bootstrap(
 ) -> Result<BootstrapCmdResult, LibvirtError> {
     let phase = params.phase.trim().to_string();
     let summary = format!(
-        "cluster_bootstrap Rust phase={phase} server_ip={:?} skip_kubevirt_cdi={} install_metrics_server={}",
+        "cluster_bootstrap Rust phase={phase} server_ip={:?} skip_kubevirt_cdi={} install_metrics_server={} cni={}",
         params.server_ip.as_deref(),
         params.skip_kubevirt_cdi,
-        params.install_metrics_server
+        params.install_metrics_server,
+        params.cni.as_str()
     );
     info!(target: "machina_bootstrap", summary = %summary, "start");
 
@@ -795,8 +893,11 @@ pub async fn run_cluster_bootstrap(
     let result = async {
         match phase.as_str() {
             "full" => {
-                phase_k3s(&server_ip, &mut stdout_log, &mut stderr_log).await?;
-                phase_cni(&mut stdout_log, &mut stderr_log).await?;
+                phase_k3s(&server_ip, params.cni, &mut stdout_log, &mut stderr_log).await?;
+                match params.cni {
+                    CniChoice::Default => phase_wait_nodes(&mut stdout_log, &mut stderr_log).await?,
+                    CniChoice::Machina => phase_cni(&mut stdout_log, &mut stderr_log).await?,
+                }
                 phase_metrics(
                     params.install_metrics_server,
                     &mut stdout_log,
@@ -812,10 +913,10 @@ pub async fn run_cluster_bootstrap(
                 } else {
                     phase_kubevirt_cdi(&mut stdout_log, &mut stderr_log).await?;
                 }
-                print_footer(params.skip_kubevirt_cdi, &mut stdout_log);
+                print_footer(params.skip_kubevirt_cdi, params.cni, &mut stdout_log);
                 Ok(())
             }
-            "k3s" => phase_k3s(&server_ip, &mut stdout_log, &mut stderr_log).await,
+            "k3s" => phase_k3s(&server_ip, params.cni, &mut stdout_log, &mut stderr_log).await,
             // "cilium" is the pre-native phase name, kept so old clients still work.
             "cni" | "cilium" => phase_cni(&mut stdout_log, &mut stderr_log).await,
             "metrics" => {
@@ -848,5 +949,51 @@ pub async fn run_cluster_bootstrap(
                 "{msg}\n\n--- stdout ---\n{stdout_log}\n--- stderr ---\n{stderr_log}"
             )))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cni_choice_parse() {
+        assert_eq!(CniChoice::parse(""), Some(CniChoice::Default));
+        assert_eq!(CniChoice::parse("default"), Some(CniChoice::Default));
+        assert_eq!(CniChoice::parse("machina"), Some(CniChoice::Machina));
+        assert_eq!(CniChoice::parse("cilium"), None);
+    }
+
+    #[test]
+    fn default_k3s_keeps_bundled_networking() {
+        let flags = k3s_server_flags(CniChoice::Default);
+        assert!(!flags.contains("flannel-backend"));
+        assert!(!flags.contains("disable-kube-proxy"));
+        assert!(!flags.contains("disable-network-policy"));
+        let flags = k3s_server_flags(CniChoice::Machina);
+        assert!(flags.contains("--flannel-backend=none"));
+        assert!(flags.contains("--disable-kube-proxy"));
+    }
+
+    #[test]
+    fn foreign_configs_ignore_our_own() {
+        let dir = std::env::temp_dir().join(format!("machina-cni-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(MACHINA_CONFLIST), "{}").unwrap();
+        assert!(foreign_cni_configs(&[dir.as_path()]).is_empty());
+        std::fs::write(dir.join("10-flannel.conflist"), "{}").unwrap();
+        std::fs::write(dir.join("README"), "").unwrap();
+        let found = foreign_cni_configs(&[dir.as_path(), Path::new("/nonexistent-cni-dir")]);
+        assert_eq!(found, vec![dir.join("10-flannel.conflist")]);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn takeover_parsing() {
+        assert!(takeover_enabled("MACHINA_CNI_TAKEOVER=1\n"));
+        assert!(takeover_enabled("# x\nMACHINA_CNI_TAKEOVER=\"true\""));
+        assert!(!takeover_enabled("# MACHINA_CNI_TAKEOVER=1"));
+        assert!(!takeover_enabled("MACHINA_CNI_TAKEOVER=0"));
+        assert!(!takeover_enabled(""));
     }
 }

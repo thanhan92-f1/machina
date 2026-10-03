@@ -38,7 +38,7 @@ flowchart TB
 | `machina-controller` | `:5093` | Multi-host control plane: fleet inventory, desired-state reconciliation, HA failover, DRS, Fleet Cloud and Zyra AI. State in embedded SQLite; NATS fan-out is optional. |
 | `machina-agent` | `:50051` (gRPC), `:50052` (consoles) | Runs on each managed hypervisor. Executes libvirt and eBPF operations for the controller over gRPC with TLS and proxies consoles. |
 | `machina-bpfd` | `/run/machina-bpf/bpfd.sock` | Root eBPF service: load balancing, CNI datapath, DDoS shield, isolation, enforcement and telemetry. See [Native eBPF](../networking/ebpf-overview.md). |
-| `machina-cni` | — | Kubernetes CNI plugin and node agent for clusters Machina bootstraps. |
+| `machina-cni` | — | Opt-in Kubernetes CNI plugin and node agent (clusters keep their default CNI otherwise). |
 | `machina-scx` | — | Optional sched_ext VM scheduler, supervised by `machina-bpfd`. |
 
 ## Request path

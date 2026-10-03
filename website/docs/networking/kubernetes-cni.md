@@ -1,13 +1,22 @@
 ---
 sidebar_position: 3
 title: Kubernetes CNI
-description: machina-cni replaces Cilium, flannel and kube-proxy on clusters Machina creates.
+description: Opt-in machina-cni replaces flannel, kube-proxy and Cilium; clusters keep their default CNI unless you choose it.
 ---
 
 # Kubernetes CNI
 
-When Machina bootstraps a Kubernetes cluster it installs k3s without flannel,
-kube-proxy, network policy or servicelb, and enables **`machina-cni`** instead.
+**`machina-cni`** is opt-in. When Machina bootstraps a k3s cluster it keeps
+k3s's default networking (flannel, NetworkPolicy controller, kube-proxy)
+unless you ask for machina-cni: tick **Use machina-cni** in Kubernetes →
+Cluster bootstrap, or send `"cni": "machina"` to
+`POST /api/v1/k8s/cluster-bootstrap`. k3s is then installed without flannel,
+kube-proxy and network policy, and machina-cni provides all three.
+
+The agent never takes over a node that already has another CNI configured
+(flannel, Calico, Cilium, …): it exits with status 78 and changes nothing.
+Set `MACHINA_CNI_TAKEOVER=1` in `/etc/default/machina-cni` only to replace the
+existing CNI on purpose.
 
 ## What you get
 
@@ -33,5 +42,6 @@ kube-proxy, network policy or servicelb, and enables **`machina-cni`** instead.
 | `MACHINA_CNI_XDP` | off | NodePort at XDP |
 | `MACHINA_CNI_CILIUM_POLICIES` | off | Enforce Cilium policy CRDs |
 | `MACHINA_CNI_MTU` | auto | Pod MTU |
+| `MACHINA_CNI_TAKEOVER` | off | Replace an already configured CNI |
 
 Inspect the state with `GET /api/v1/bpf/cni` or the **Service LB** tab.

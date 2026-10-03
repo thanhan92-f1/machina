@@ -20,7 +20,7 @@ use tracing::{info, warn};
 use machina_core::{LibvirtError, LibvirtManager};
 
 use crate::auth::{require_browser_session_for_host_insight, RequestActor};
-use crate::cluster_bootstrap::{run_cluster_bootstrap, ClusterBootstrapParams};
+use crate::cluster_bootstrap::{run_cluster_bootstrap, ClusterBootstrapParams, CniChoice};
 use crate::error::AppError;
 use crate::k8s_quantity::{parse_cpu_to_millicores, parse_memory_to_bytes};
 
@@ -4087,8 +4087,17 @@ struct ClusterBootstrapRequest {
     /// Install metrics-server on full/metrics phases (recommended on k3s labs).
     #[serde(default)]
     install_metrics_server: Option<bool>,
+    /// Pod networking: `default` (k3s flannel + kube-proxy, the default) or
+    /// `machina` (opt-in native eBPF machina-cni).
+    #[serde(default)]
+    cni: Option<String>,
     #[serde(default)]
     dry_run: Option<bool>,
+}
+
+fn parse_bootstrap_cni(v: Option<&str>) -> Result<CniChoice, LibvirtError> {
+    CniChoice::parse(v.unwrap_or("default"))
+        .ok_or_else(|| LibvirtError::Invalid("cni must be \"default\" or \"machina\"".into()))
 }
 
 /// Runs phased cluster bootstrap in-process (`daemon/src/cluster_bootstrap.rs`).
@@ -4119,6 +4128,7 @@ async fn k8s_cluster_bootstrap(
     if let Some(ip) = req.server_ip.as_ref() {
         validate_bootstrap_server_ip(ip)?;
     }
+    let cni = parse_bootstrap_cni(req.cni.as_deref())?;
 
     if req.dry_run == Some(true) {
         let preview = serde_json::json!({
@@ -4127,6 +4137,7 @@ async fn k8s_cluster_bootstrap(
             "server_ip": req.server_ip,
             "skip_kubevirt_cdi": req.skip_kubevirt_cdi,
             "install_metrics_server": req.install_metrics_server,
+            "cni": cni.as_str(),
         });
         return Ok(Json(KubectlResult {
             command: format!("(dry_run) MACHINA_BOOTSTRAP_PHASE={phase}"),
@@ -4149,6 +4160,7 @@ async fn k8s_cluster_bootstrap(
         server_ip: req.server_ip.clone(),
         skip_kubevirt_cdi: req.skip_kubevirt_cdi == Some(true),
         install_metrics_server: req.install_metrics_server != Some(false),
+        cni,
     })
     .await?;
 
@@ -4373,5 +4385,18 @@ mod k3s_install_env_value_tests {
             INSTALL_K3S_EXEC_MAX,
         )
         .is_err());
+    }
+}
+
+#[cfg(test)]
+mod bootstrap_cni_tests {
+    use super::*;
+
+    #[test]
+    fn cni_defaults_to_k3s_networking() {
+        assert_eq!(parse_bootstrap_cni(None).unwrap(), CniChoice::Default);
+        assert_eq!(parse_bootstrap_cni(Some("default")).unwrap(), CniChoice::Default);
+        assert_eq!(parse_bootstrap_cni(Some("machina")).unwrap(), CniChoice::Machina);
+        assert!(parse_bootstrap_cni(Some("flannel; rm -rf /")).is_err());
     }
 }

@@ -1291,7 +1291,7 @@ install_files() {
         install -Dm755 target/release/machina-bpfd /usr/local/bin/machina-bpfd
         install -Dm644 contrib/machina-bpfd.service /usr/lib/systemd/system/machina-bpfd.service
     fi
-    # Native Kubernetes CNI; enabled by the k3s cluster bootstrap, not here.
+    # Native Kubernetes CNI (opt-in); enabled only by the cluster bootstrap with cni=machina, not here.
     if [ -x target/release/machina-cni ]; then
         install -Dm755 target/release/machina-cni /usr/local/bin/machina-cni
         install -Dm644 contrib/machina-cni.service /usr/lib/systemd/system/machina-cni.service

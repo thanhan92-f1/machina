@@ -2,8 +2,9 @@
 
 Back to [native eBPF overview](README.md).
 
-`bpf/machina-cni` replaces Cilium, flannel and kube-proxy on clusters Machina
-bootstraps. One binary plays two roles:
+`bpf/machina-cni` is an **opt-in** Kubernetes CNI that replaces flannel,
+kube-proxy and Cilium on clusters where you choose it. Clusters keep their
+default CNI unless you opt in. One binary plays two roles:
 
 - **CNI plugin** (when `CNI_COMMAND` is set): creates the pod veth (`eth0` in
   the pod, `mcXXXXXXXXXXXX` on the host), assigns a pod `/32` with link-local
@@ -20,11 +21,34 @@ bpfd, which owns the `CNI_*` maps. `CniState.version` must equal
 `CNI_ABI_VERSION` or bpfd rejects the sync, so upgrade bpfd and the agent
 together.
 
-## Cluster bootstrap
+## Opting in
 
-The daemon's cluster bootstrap installs k3s with
-`--flannel-backend=none --disable-network-policy --disable-kube-proxy --disable=servicelb`;
-its `cni` phase (alias `cilium`, kept for old clients) enables `machina-cni`.
+By default the daemon's cluster bootstrap (`POST /api/v1/k8s/cluster-bootstrap`,
+Kubernetes page → Cluster bootstrap) installs k3s with its bundled networking:
+flannel, the NetworkPolicy controller and kube-proxy (only traefik and
+servicelb are disabled). `machina-cni` is not enabled.
+
+To use machina-cni instead, pass `"cni": "machina"` (or tick **Use machina-cni**
+in the UI). k3s is then installed with
+`--flannel-backend=none --disable-network-policy --disable-kube-proxy --disable=traefik --disable=servicelb`
+and the `cni` phase (alias `cilium`, kept for old clients) enables
+`machina-bpfd` and `machina-cni`.
+
+```bash
+curl -sk -b cookies -H 'Content-Type: application/json' \
+  -d '{"phase":"full","cni":"machina"}' https://HOST:5092/api/v1/k8s/cluster-bootstrap
+```
+
+On an existing cluster (k3s or any Kubernetes), install the cluster without
+its bundled CNI first, then `systemctl enable --now machina-bpfd machina-cni`.
+
+**Takeover guard.** The agent never replaces a CNI that is already configured.
+If any other `*.conf` / `*.conflist` / `*.json` exists in the CNI config
+directories (flannel, Calico, Cilium, …) it writes nothing and exits with
+status 78; the unit's `RestartPreventExitStatus=78` stops the restart loop.
+The bootstrap's `cni` phase runs the same check and fails with the file list.
+Set `MACHINA_CNI_TAKEOVER=1` in `/etc/default/machina-cni` only to replace the
+existing CNI deliberately.
 
 ## Policy
 
@@ -69,6 +93,7 @@ Inspect with `GET /api/v1/bpf/cni` and `GET /api/v1/bpf/cni/services`, or the
 | `MACHINA_CNI_CILIUM_POLICIES` | off | Also enforce Cilium policy CRDs |
 | `MACHINA_CNI_LB_MODE` | `snat` | `snat` or `dsr` for remote NodePort backends |
 | `MACHINA_CNI_XDP` | off | NodePort to local backends at XDP |
+| `MACHINA_CNI_TAKEOVER` | off | Start even when another CNI config is present (replaces it) |
 
 ## Test
 

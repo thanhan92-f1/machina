@@ -45,6 +45,7 @@ description: The first checks to run, and fixes for the most common problems.
 | Enforcement stopped by itself | Its lease expired or bpfd restarted. This is intentional; re-arm with a new lease. |
 | Node isolation refuses to enable | Allowlist TCP 22 or add an exempt CIDR first. |
 | CNI sync rejected | `machina-bpfd` and `machina-cni` are different versions; upgrade both. |
+| `machina-cni` exits with status 78 | Another CNI is already configured; machina-cni is opt-in and will not replace it. Keep that CNI, or set `MACHINA_CNI_TAKEOVER=1` in `/etc/default/machina-cni` to replace it. |
 
 ## More
 

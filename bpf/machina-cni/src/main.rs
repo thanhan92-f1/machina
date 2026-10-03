@@ -33,7 +33,9 @@ fn main() {
             let res = rt.map_err(anyhow::Error::from).and_then(|rt| rt.block_on(agent::run(agent::Config::from_env())));
             if let Err(e) = res {
                 eprintln!("machina-cni agent: {e:#}");
-                std::process::exit(1);
+                // EX_CONFIG: the unit's RestartPreventExitStatus stops the restart loop.
+                let code = if e.downcast_ref::<agent::ForeignCni>().is_some() { 78 } else { 1 };
+                std::process::exit(code);
             }
         }
         Some("version") | Some("--version") => println!("machina-cni {}", env!("CARGO_PKG_VERSION")),

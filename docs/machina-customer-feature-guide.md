@@ -135,8 +135,8 @@ _Virtual networks, host interfaces, filters, and a visual canvas for wiring the 
   - **How:** Web → Security Center → Native eBPF (22 tabs); API `/api/v1/bpf/*`; fleet view `/api/v1/zeus-security/native-dataplane`.
 - **Load balancing & DDoS shield** — XDP service load balancing (weighted, health-checked), QUIC connection-ID load balancing, and a per-source rate-limiting shield on the uplink. Fleet Cloud load balancers need no appliance VM. — _Front services and absorb floods at line rate on the host itself._
   - **How:** Web → Native eBPF → Service LB / QUIC LB / Shield; Fleet Cloud → Load Balancers.
-- **Kubernetes CNI** — `machina-cni` gives Kubernetes pods eBPF routing, NetworkPolicy (and compiled Cilium policies) and socket-level service load balancing. — _One datapath for VMs and containers._
-  - **How:** Install `machina-cni` on the node (see docs/ebpf/cni.md).
+- **Kubernetes CNI (opt-in)** — `machina-cni` gives Kubernetes pods eBPF routing, NetworkPolicy (and compiled Cilium policies) and socket-level service load balancing. — _One datapath for VMs and containers._
+  - **How:** Kubernetes → Cluster bootstrap → tick **Use machina-cni** (k3s otherwise keeps flannel + kube-proxy). It never replaces a CNI that is already configured (see docs/ebpf/cni.md).
 
 ## 4. Consoles & Remote Access
 

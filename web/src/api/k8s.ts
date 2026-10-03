@@ -588,5 +588,7 @@ export const postK8sClusterBootstrap = (body: {
   /** When phase is `full`, skip KubeVirt/CDI/metrics virt stack */
   skip_kubevirt_cdi?: boolean
   install_metrics_server?: boolean
+  /** Pod networking: k3s default (flannel + kube-proxy) unless `machina` opts in to machina-cni */
+  cni?: 'default' | 'machina'
   dry_run?: boolean
 }) => apiPost<K8sActionResult>(`${API}/k8s/cluster-bootstrap`, body)

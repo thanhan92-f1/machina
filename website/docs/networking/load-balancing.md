@@ -10,7 +10,7 @@ Machina has three load balancers for different jobs.
 
 ## Kubernetes services (Maglev)
 
-Clusters bootstrapped by Machina use `machina-cni` instead of kube-proxy.
+Clusters that opt in to `machina-cni` use it instead of kube-proxy.
 Services are load-balanced in the kernel:
 
 - **ClusterIP, externalIP and LoadBalancer** are rewritten at `connect()` time

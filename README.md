@@ -103,7 +103,7 @@ Autonomous diagnostics across the fleet, incident correlation, rightsizing and n
 Machina ships its own eBPF datapath instead of bolting on Cilium, Tetragon or a separate firewall agent. One root service, `machina-bpfd`, provides:
 
 - **Load balancing**: Maglev service LB for Kubernetes (socket-level, NodePort at TC or XDP, DSR) and QUIC-LB at XDP.
-- **Kubernetes CNI**: `machina-cni` replaces flannel, kube-proxy and Cilium on clusters Machina bootstraps, with NetworkPolicy and optional Cilium policy migration.
+- **Kubernetes CNI** (opt-in): `machina-cni` can replace flannel, kube-proxy and Cilium, with NetworkPolicy and optional Cilium policy migration. Bootstrapped k3s clusters keep their default CNI unless you choose it, and the agent refuses to take over a node that already has one.
 - **Protection**: XDP DDoS shield, emergency node isolation, VM edge isolation and rate limits, a QEMU sandbox and a BPF-LSM guard around the VMM.
 - **Visibility**: flows, DNS, L7 (HTTP, TLS SNI, gRPC, Redis, PostgreSQL, MySQL, Kafka), JA3/JA4 fingerprints, network-change audit and per-VM runtime histograms.
 - **Inside guests**: per-container network and LSM policy through GuestKit, from the VM's **Guest policy** tab.

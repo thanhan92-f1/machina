@@ -293,6 +293,13 @@ spec). Nothing was stored; fix the match and retry.
 Allowlist TCP 22 or add an exempt CIDR. This guard prevents locking yourself
 out of the host.
 
+### Symptom: `machina-cni` stopped with status 78 ("another CNI is already configured")
+machina-cni is opt-in and never replaces an existing CNI. The journal
+(`journalctl -u machina-cni`) lists the foreign configs it found. Either keep
+the existing CNI (disable the unit), reinstall the cluster without its bundled
+CNI (k3s bootstrap with `cni: "machina"`), or set `MACHINA_CNI_TAKEOVER=1` in
+`/etc/default/machina-cni` and restart to replace it deliberately.
+
 ### Symptom: CNI pods have no network after an upgrade
 `machina-bpfd` rejects a `CniSync` whose ABI version differs. Upgrade
 `machina-bpfd` and `machina-cni` together, then `systemctl restart machina-cni`.

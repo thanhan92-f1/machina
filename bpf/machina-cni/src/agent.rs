@@ -51,6 +51,47 @@ pub struct Config {
     pub lb_mode: Option<String>,
     /// NodePort fast path for local backends at XDP on the uplink.
     pub xdp: bool,
+    /// Start even when another CNI is already configured on this node.
+    pub takeover: bool,
+}
+
+const MACHINA_CONFLIST: &str = "05-machina.conflist";
+
+/// Another CNI owns this node and `MACHINA_CNI_TAKEOVER` is off.
+#[derive(Debug)]
+pub struct ForeignCni(pub Vec<String>);
+
+impl std::fmt::Display for ForeignCni {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "another CNI is already configured ({}); refusing to replace it. \
+             Install the cluster without its bundled CNI (k3s: --flannel-backend=none \
+             --disable-network-policy --disable-kube-proxy) or set MACHINA_CNI_TAKEOVER=1",
+            self.0.join(", ")
+        )
+    }
+}
+
+impl std::error::Error for ForeignCni {}
+
+/// CNI configs in the usable conf dirs that this agent did not write.
+pub fn foreign_cni_configs(conf_dirs: &[String]) -> Vec<String> {
+    let mut found = Vec::new();
+    for dir in usable_dirs(conf_dirs) {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for e in entries.flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let is_cfg = name.ends_with(".conf") || name.ends_with(".conflist") || name.ends_with(".json");
+            if is_cfg && name != MACHINA_CONFLIST && e.path().is_file() {
+                found.push(e.path().display().to_string());
+            }
+        }
+    }
+    found.sort();
+    found
 }
 
 fn truthy(v: &str) -> bool {
@@ -123,6 +164,7 @@ impl Config {
             cluster_cidr6: Some(env("MACHINA_CNI_CLUSTER_CIDR6", "")).filter(|v| !v.is_empty()),
             lb_mode: Some(env("MACHINA_CNI_LB_MODE", "")).filter(|v| !v.is_empty()),
             xdp: truthy(&env("MACHINA_CNI_XDP", "0")),
+            takeover: truthy(&env("MACHINA_CNI_TAKEOVER", "0")),
         }
     }
 }
@@ -300,6 +342,13 @@ struct NodeSetup {
 
 pub async fn run(cfg: Config) -> Result<()> {
     tracing::info!(node = %cfg.node, cluster_cidr = %cfg.cluster_cidr, "machina-cni agent starting");
+    let foreign = foreign_cni_configs(&cfg.conf_dirs);
+    if !foreign.is_empty() {
+        if !cfg.takeover {
+            return Err(ForeignCni(foreign).into());
+        }
+        tracing::warn!(configs = ?foreign, "MACHINA_CNI_TAKEOVER set: replacing the existing CNI");
+    }
     let bpfd = BpfdClient::from_env();
     let mut setup: Option<NodeSetup> = None;
     let mut last_pushed: Option<(machina_bpf::api::CniState, Instant)> = None;
@@ -362,7 +411,7 @@ async fn reconcile(
     if setup.as_ref() != Some(&want) {
         install_plugin(&cfg.bin_dirs);
         for dir in usable_dirs(&cfg.conf_dirs) {
-            let path = format!("{dir}/05-machina.conflist");
+            let path = format!("{dir}/{MACHINA_CONFLIST}");
             if write_if_changed(&path, &conflist(&want.pod_cidr, want.pod_cidr6.as_deref(), cfg.mtu))? {
                 tracing::info!("wrote {path} (podCIDR {} {:?})", want.pod_cidr, want.pod_cidr6);
             }
@@ -437,6 +486,24 @@ async fn reconcile(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn foreign_cni_detection() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("net.d");
+        std::fs::create_dir_all(&dir).unwrap();
+        let dirs = vec![dir.display().to_string(), "/nonexistent/parent/net.d".to_string()];
+        assert!(foreign_cni_configs(&dirs).is_empty());
+        std::fs::write(dir.join(MACHINA_CONFLIST), "{}").unwrap();
+        std::fs::write(dir.join("notes.txt"), "").unwrap();
+        assert!(foreign_cni_configs(&dirs).is_empty());
+        std::fs::write(dir.join("10-flannel.conflist"), "{}").unwrap();
+        std::fs::write(dir.join("87-podman.conf"), "{}").unwrap();
+        let found = foreign_cni_configs(&dirs);
+        assert_eq!(found.len(), 2);
+        assert!(found[0].ends_with("10-flannel.conflist"));
+        assert!(ForeignCni(found).to_string().contains("MACHINA_CNI_TAKEOVER=1"));
+    }
 
     #[test]
     fn node_fields() {

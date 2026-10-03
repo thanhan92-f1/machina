@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-04 — machina-cni is opt-in
+
+- **Cluster bootstrap keeps the default CNI.** `POST /api/v1/k8s/cluster-bootstrap`
+  now installs k3s with its bundled flannel, NetworkPolicy controller and
+  kube-proxy and waits for nodes Ready. Pass `"cni": "machina"` (or tick
+  **Use machina-cni** on the Kubernetes page) to get the previous behaviour:
+  k3s without those three, plus `machina-bpfd` and `machina-cni`.
+- **Takeover guard.** `machina-cni agent` exits with status 78 without
+  touching the node when another CNI config is present in the CNI conf dirs;
+  `contrib/machina-cni.service` has `RestartPreventExitStatus=78`. The
+  bootstrap `cni` phase runs the same check. `MACHINA_CNI_TAKEOVER=1` overrides.
+
 ## 2026-10-03 — Native eBPF datapath (waves 1 and 2)
 
 `machina-bpfd` replaces the Cilium, Tetragon, Netra and PacketWolf
