@@ -548,4 +548,13 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
     min-width: 36px;
     min-height: 36px;
   }
+  /* Small text buttons, chips and tabs keep the >=36px phone touch target (APPLE-UX-CONTRACT). */
+  main button.text-xs,
+  main button.text-sm:not(.btn-primary):not(.btn-secondary),
+  main [role='tab'],
+  main a.apple-text-link {
+    min-height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+  }
 }
