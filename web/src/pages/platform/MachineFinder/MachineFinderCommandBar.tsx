@@ -32,7 +32,7 @@ export default function MachineFinderCommandBar({ state }: Props) {
       </div>
 
       <div className="apple-page-actions flex-1 sm:justify-end min-w-0">
-        <div className="relative flex-1 min-w-[12rem] max-w-md">
+        <div className="relative flex-1 min-w-[14rem] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)] pointer-events-none" />
           <input
             id="machine-finder-search"

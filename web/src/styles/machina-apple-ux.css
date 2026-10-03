@@ -296,6 +296,8 @@ html.light-theme .mission-control-page .mc-hero-ribbon {
   }
   .apple-page-header > .apple-page-actions {
     margin-left: auto;
+    /* natural width (wrap below the title when it does not fit) rather than sharing the row equally */
+    flex: 0 1 auto;
   }
 }
 

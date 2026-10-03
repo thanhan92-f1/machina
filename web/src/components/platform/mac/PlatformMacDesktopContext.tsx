@@ -52,8 +52,9 @@ function defaultSidebarCollapsedForTier(): boolean {
   } catch {
     /* ignore */
   }
-  // Full sidebar by default; the footer button switches to the icon rail.
-  return false
+  // No saved choice: full sidebar on wide screens, icon rail below 1280px where a 240px sidebar
+  // squeezes page headers. The footer button overrides this and the choice is remembered.
+  return typeof window !== 'undefined' && window.innerWidth < 1280
 }
 
 export function PlatformMacDesktopProvider({ children }: { children: ReactNode }) {
