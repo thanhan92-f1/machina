@@ -36,7 +36,7 @@ reqwest = { workspace = true }
 dns-lookup = "2.0"
 axum-server = { workspace = true }
 sd-notify = "0.4"
-jsonwebtoken = "9.3"
+jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 # rustls 0.23 requires an explicit process default CryptoProvider when deps enable multiple backends.
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
 portable-pty = { workspace = true }
@@ -45,4 +45,4 @@ ldap3 = { version = "0.11", default-features = false, features = ["sync", "tls"]
 vessel-core = { path = "../vessel" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-pam = { workspace = true }
+pam-client = { workspace = true }

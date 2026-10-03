@@ -1394,13 +1394,18 @@ async fn admin_revoke_session(
 
 #[cfg(target_os = "linux")]
 fn pam_authenticate(username: &str, password: &str, pam_service: &str) -> Result<(), String> {
-    let mut client = pam::Client::with_password(pam_service)
-        .map_err(|e| format!("PAM init failed ({pam_service}): {e}"))?;
-    client
-        .conversation_mut()
-        .set_credentials(username, password);
-    client
-        .authenticate()
+    use pam_client::conv_mock::Conversation;
+    use pam_client::{Context, Flag};
+
+    let mut ctx = Context::new(
+        pam_service,
+        None,
+        Conversation::with_credentials(username, password),
+    )
+    .map_err(|e| format!("PAM init failed ({pam_service}): {e}"))?;
+    ctx.authenticate(Flag::NONE)
+        .map_err(|e| format!("PAM auth failed: {e}"))?;
+    ctx.acct_mgmt(Flag::NONE)
         .map_err(|e| format!("PAM auth failed: {e}"))?;
     // Skip open_session() — pam_loginuid fails under systemd with NoNewPrivileges.
     // We only need credential verification, not a full login session.
