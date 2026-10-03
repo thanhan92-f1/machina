@@ -919,13 +919,13 @@ export default function PlatformVmDetail() {
           {vm.lifecycle_phase && vm.lifecycle_phase !== vm.observed_state && (
             <VmStatusBadge state={vm.lifecycle_phase} />
           )}
-          <span className="text-[var(--text-muted)]">·</span>
+          <span className="text-[var(--text-muted)] max-sm:hidden" aria-hidden>·</span>
           <span className="text-[var(--text-muted)]" title={hostRow?.address ?? undefined}>{hostLabel}</span>
-          <span className="text-[var(--text-muted)]">·</span>
+          <span className="text-[var(--text-muted)] max-sm:hidden" aria-hidden>·</span>
           <span className="text-[var(--text-muted)]">{vm.vcpus ?? '—'} vCPU · {formatVmMemoryGiB(vm.memory_mib)}</span>
           {guestIp && (
             <>
-              <span className="text-[var(--text-muted)]">·</span>
+              <span className="text-[var(--text-muted)] max-sm:hidden" aria-hidden>·</span>
               <span className="font-mono text-emerald-600/90">{guestIp}</span>
             </>
           )}
