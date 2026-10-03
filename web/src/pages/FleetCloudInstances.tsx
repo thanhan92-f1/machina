@@ -100,7 +100,7 @@ function FleetCloudInstancesContent() {
       onErrorRetry={() => void load()}
       onErrorDismiss={() => setLoadError(null)}
       actions={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             to="/fleet-cloud/images"
             className="btn-secondary text-sm inline-flex items-center gap-2"
