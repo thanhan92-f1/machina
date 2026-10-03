@@ -590,3 +590,89 @@ html[data-theme='tahoe-light'] [class*='text-cyan-400/']:not(:where(.tty-surface
     align-items: center;
   }
 }
+
+/* ---- Dark: flat black canvas (Netra) -------------------------------------- */
+/* The desktop root carried an ambient navy radial wash (and the mesh layer), which Netra's dark
+   theme does not have; heroes keep their own glow. */
+html[data-theme='tahoe'] .mac-desktop-root,
+html[data-theme='tahoe'] .tahoe-page-root,
+html[data-ui-shell='default'] .mac-desktop-root,
+html[data-ui-shell='default'] .tahoe-page-root {
+  background-image: none !important;
+}
+html[data-theme='tahoe'] .tahoe-mesh,
+html[data-ui-shell='default'] .tahoe-mesh {
+  display: none !important;
+}
+
+/* ---- Dark: Tailwind palette shades written for a white page ----------------- */
+/* text-red-700, text-orange-800 ... are ~2:1 on the flat black canvas. Map them onto the
+   text-safe accent tokens instead of editing each page. Light theme is untouched. */
+html[data-theme='tahoe'] .text-red-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-red-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-red-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-red-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-rose-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-rose-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-rose-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-rose-900:not([class*='bg-white']) { color: var(--nl-accent-red-text) !important; }
+html[data-theme='tahoe'] .text-orange-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-orange-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-orange-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-orange-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-amber-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-amber-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-amber-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-amber-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-yellow-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-yellow-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-yellow-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-yellow-900:not([class*='bg-white']) { color: var(--nl-accent-amber-text) !important; }
+html[data-theme='tahoe'] .text-green-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-green-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-green-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-green-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-emerald-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-emerald-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-emerald-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-emerald-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-teal-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-teal-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-teal-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-teal-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-lime-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-lime-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-lime-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-lime-900:not([class*='bg-white']) { color: var(--nl-accent-green-text) !important; }
+html[data-theme='tahoe'] .text-sky-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-sky-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-sky-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-sky-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-cyan-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-cyan-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-cyan-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-cyan-900:not([class*='bg-white']) { color: var(--nl-accent-cyan-text) !important; }
+html[data-theme='tahoe'] .text-blue-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-blue-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-blue-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-blue-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-indigo-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-indigo-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-indigo-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-indigo-900:not([class*='bg-white']) { color: #2997ff !important; }
+html[data-theme='tahoe'] .text-purple-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-purple-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-purple-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-purple-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-violet-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-violet-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-violet-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-violet-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-fuchsia-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-fuchsia-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-fuchsia-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-fuchsia-900:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-pink-600:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-pink-700:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-pink-800:not([class*='bg-white']),
+html[data-theme='tahoe'] .text-pink-900:not([class*='bg-white']) { color: var(--nl-accent-purple-text) !important; }

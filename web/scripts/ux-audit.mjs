@@ -108,7 +108,8 @@ function probeContrast() {
     if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0 || !r.width || !r.height) continue
     const fg = parse(cs.color)
     const bg = backgroundOf(el)
-    if (!fg || bg === 'image') continue
+    // Fully transparent text is deliberate (overlay editors such as the terminal textarea).
+    if (!fg || fg.a === 0 || bg === 'image') continue
     const l1 = lum(fg)
     const l2 = lum(bg)
     const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
