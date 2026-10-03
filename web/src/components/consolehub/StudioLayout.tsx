@@ -21,6 +21,7 @@ type Props = {
   onCommandCenter?: () => void
   onAi?: () => void
   onOpenCinema?: () => void
+  onPopout?: () => void
   primary: ReactNode
   timeline?: ReactNode
 }
@@ -41,6 +42,7 @@ export default function StudioLayout({
   onCommandCenter,
   onAi,
   onOpenCinema,
+  onPopout,
   primary,
   timeline,
 }: Props) {
@@ -54,6 +56,7 @@ export default function StudioLayout({
         healthScore={healthScore}
         osHint={osHint}
         onEnterTheatre={onOpenCinema}
+        onPopout={onPopout}
         onCommandCenter={onCommandCenter}
         onAi={onAi}
       />

@@ -299,7 +299,7 @@ export default function PlatformConsoleHub() {
       className={
         cinemaChrome
           ? 'fixed inset-0 z-[50] flex flex-col min-h-0 h-dvh w-full'
-          : 'flex flex-col flex-1 min-h-0 h-full min-h-[calc(100dvh-14rem)]'
+          : 'flex flex-col flex-1 min-h-0 h-full'
       }
       data-cinema-route={cinemaChrome ? 'true' : undefined}
     >
@@ -307,13 +307,6 @@ export default function PlatformConsoleHub() {
         <div className="mb-2 px-1">
           <button type="button" className="btn-secondary text-sm" onClick={() => void requestAccess()}>
             Request console access
-          </button>
-        </div>
-      ) : null}
-      {!cinemaChrome && !isPopout && id ? (
-        <div className="flex justify-end mb-2 px-1">
-          <button type="button" className="btn-secondary text-sm" onClick={() => openCenterPopout(cinemaPopoutPath(id!))}>
-            Pop out
           </button>
         </div>
       ) : null}
@@ -336,6 +329,7 @@ export default function PlatformConsoleHub() {
         history={history}
         machineTimeline={machineTimeline}
         isPopout={isPopout}
+        onPopout={id && !isPopout ? () => openCenterPopout(cinemaPopoutPath(id)) : undefined}
         onReconnect={() => setConnectKey((k) => k + 1)}
         connectKey={connectKey}
         hypervisorAddress={plan?.hypervisor_address ?? undefined}

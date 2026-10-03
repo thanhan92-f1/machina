@@ -101,6 +101,7 @@ function CockpitInner({
   history = [],
   machineTimeline = [],
   isPopout,
+  onPopout,
   onReconnect,
   connectKey = 0,
   prepend,
@@ -689,8 +690,9 @@ function CockpitInner({
           onCommandCenter={() => { setCommandCenter(true); setCcTab('Overview') }}
           onAi={() => { setCommandCenter(true); setCcTab('AI') }}
           onOpenCinema={() => onExperienceModeChange?.('cinema')}
+          onPopout={onPopout}
           primary={
-            <MachineCanvas vmState={vmState} healthScore={healthScore} theatre className="flex-1 min-h-[50vh]">
+            <MachineCanvas vmState={vmState} healthScore={healthScore} theatre className="flex-1">
               {loading ? (
                 <div className="flex items-center justify-center flex-1 text-[var(--text-muted)] text-sm">Loading…</div>
               ) : (

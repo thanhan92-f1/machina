@@ -48,7 +48,7 @@ export default function MachineCanvas({ children, vmState, healthScore, theatre,
   const tone = machineAuraTone(vmState, healthScore)
   return (
     <div
-      className={`relative flex-1 min-h-0 rounded-xl overflow-hidden bg-[#0a0a0c] ${machineAuraClass(tone)} ${theatre ? 'min-h-[calc(100dvh-8rem)]' : 'min-h-[50vh]'} ${className}`}
+      className={`relative flex-1 min-h-0 rounded-xl overflow-hidden bg-[#0a0a0c] ${machineAuraClass(tone)} ${theatre ? 'min-h-[22rem]' : 'min-h-[50vh]'} ${className}`}
       style={{
         backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 1px, transparent 1px)',
         backgroundSize: '24px 24px',

@@ -43,6 +43,7 @@ function PlatformDesktopShell() {
   const navEpoch = useRef(0)
   const cinemaRoute = location.pathname.includes('/consolehub') && cinemaChromeHidden
   const hideChrome = cinemaRoute
+  const studioRoute = !hideChrome && !isPopout && /\/platform\/vms\/[^/]+\/consolehub/.test(location.pathname)
   const platformHome =
     location.pathname === '/platform' || location.pathname.replace(/\/$/, '') === '/platform'
   const meshSubtle = location.pathname !== '/platform' && suppressContextBar(location.pathname)
@@ -176,19 +177,23 @@ function PlatformDesktopShell() {
             className={
               hideChrome
                 ? 'relative z-[1] w-full platform-mac-scroll-body p-0 max-w-none h-full min-h-0'
-                : 'relative z-[1] w-full platform-mac-scroll-body nl-page-gutter pt-1 pb-24 mx-auto'
+                : studioRoute
+                  ? 'relative z-[1] w-full platform-mac-scroll-body px-3 sm:px-4 pt-2 pb-3 max-w-none'
+                  : 'relative z-[1] w-full platform-mac-scroll-body nl-page-gutter pt-1 pb-24 mx-auto'
             }
           >
             <div
               className={
                 hideChrome
                   ? 'h-full min-h-0'
+                  : studioRoute
+                    ? `flex flex-col min-h-[26rem] ${contextBarVisible ? 'h-[calc(100dvh-6.5rem)]' : 'h-[calc(100dvh-4.75rem)]'}`
                   : platformHome
                     ? 'w-full min-w-0 py-2 pb-8'
                     : 'platform-readable tahoe-readable-stack py-3 pb-8'
               }
             >
-              <div key={location.pathname} className={hideChrome ? 'h-full min-h-0' : 'nl-fade-rise'}>
+              <div key={location.pathname} className={hideChrome ? 'h-full min-h-0' : studioRoute ? 'flex flex-col flex-1 min-h-0' : 'nl-fade-rise'}>
                 <Outlet />
               </div>
             </div>

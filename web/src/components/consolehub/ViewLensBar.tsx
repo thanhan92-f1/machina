@@ -73,7 +73,7 @@ export default function ViewLensBar({
 
   return (
     <div className="flex flex-col gap-2 shrink-0">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex gap-1.5 overflow-x-auto sm:flex-wrap sm:overflow-visible pb-0.5 [scrollbar-width:none] [&>*]:shrink-0">
         {lenses.map(({ id, label, icon: Icon }) => {
           const isActive = active === id
           return (
@@ -94,7 +94,7 @@ export default function ViewLensBar({
         })}
       </div>
       {active === 'display' && displayProtocols.length > 0 && onProtocolChange ? (
-        <div className="flex flex-wrap gap-1 pl-1">
+        <div className="flex gap-1 pl-1 overflow-x-auto sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&>*]:shrink-0">
           {displayProtocols.map((p) => (
             <button
               key={p}

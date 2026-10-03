@@ -14,6 +14,7 @@ type Props = {
   healthScore?: number | null
   theatre?: boolean
   onEnterTheatre?: () => void
+  onPopout?: () => void
   onCommandCenter?: () => void
   onAi?: () => void
 }
@@ -37,6 +38,7 @@ export default function MachineCommandStrip({
   healthScore,
   theatre,
   onEnterTheatre,
+  onPopout,
   onCommandCenter,
   onAi,
 }: Props) {
@@ -58,10 +60,15 @@ export default function MachineCommandStrip({
         </span>
       ) : null}
       <div className="flex-1" />
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 max-w-full overflow-x-auto [scrollbar-width:none] [&>*]:shrink-0">
         {!theatre && onEnterTheatre ? (
           <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={onEnterTheatre}>
             Open Cinema
+          </button>
+        ) : null}
+        {onPopout ? (
+          <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={onPopout}>
+            Pop out
           </button>
         ) : null}
         {onCommandCenter ? (
