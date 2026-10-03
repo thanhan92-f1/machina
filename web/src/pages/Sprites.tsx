@@ -196,7 +196,7 @@ export default function SpritesPage() {
           description="Sprites are throwaway sandbox VMs cloned from a golden image and torn down automatically after their TTL — useful for AI-agent or CI sandboxes that don't need to persist."
         />
       ) : (
-        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+        <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-x-auto">
           <table className="w-full" aria-label="Sprites">
             <thead>
               <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">

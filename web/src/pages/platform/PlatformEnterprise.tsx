@@ -226,6 +226,7 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
               Save policy
             </button>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm text-left" aria-label="Tenant isolation policies">
             <thead className="text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]">
               <tr>
@@ -248,6 +249,7 @@ export default function PlatformEnterprise({ embedded }: { embedded?: boolean } 
               ))}
             </tbody>
           </table>
+          </div>
         </MacGlassPanel>
       )}
     </PlatformPageChrome>

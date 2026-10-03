@@ -11,6 +11,7 @@ import {
 import { listVMs, VmInfo } from '../api/vm'
 import { useToastContext } from '../contexts/ToastContext'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { GlassModal } from '../components/glass/GlassModal'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
@@ -459,15 +460,15 @@ export default function BackupsPage() {
 
       {/* Verify result dialog */}
       {verifyResult && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setVerifyResult(null)}>
-          <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <GlassModal open onClose={() => setVerifyResult(null)} ariaLabel="Backup verification result"
+          footer={<button onClick={() => setVerifyResult(null)} className="w-full btn-secondary text-sm transition">Close</button>}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               {verifyResult.verified ? (
                 <><CheckCircle className={`w-5 h-5 ${statusToneClass('ok')}`} /> Verification Passed</>
               ) : (
                 <><XCircle className={`w-5 h-5 ${statusToneClass('error')}`} /> Verification Failed</>
               )}
-            </h3>
+          </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-[var(--text-muted)]">Backup</span><span className="font-mono">{verifyResult.backup_id}</span></div>
               <div className="flex justify-between"><span className="text-[var(--text-muted)]">Files checked</span><span>{verifyResult.files_checked}</span></div>
@@ -481,9 +482,7 @@ export default function BackupsPage() {
                 </>
               )}
             </div>
-            <button onClick={() => setVerifyResult(null)} className="mt-4 w-full btn-secondary text-sm transition">Close</button>
-          </div>
-        </div>
+        </GlassModal>
       )}
 
       <ConfirmDialog

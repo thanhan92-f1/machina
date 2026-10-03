@@ -294,6 +294,7 @@ export default function GuestAgentDiagnosticsPanel({
           <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] px-3 py-2 bg-[var(--apple-surface)]">
             Guest filesystems
           </p>
+          <div className="overflow-x-auto">
           <table className="w-full text-xs" aria-label="Guest filesystems">
             <thead>
               <tr className="text-left text-[var(--text-muted)] border-b border-white/[0.06]">
@@ -317,6 +318,7 @@ export default function GuestAgentDiagnosticsPanel({
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

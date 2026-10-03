@@ -6,9 +6,10 @@ import { listDevices, getDeviceXml, NodeDeviceInfo } from '../api/advanced'
 import { useToastContext } from '../contexts/ToastContext'
 import EmptyState from '../components/EmptyState'
 import PageLayout from '../components/PageLayout'
-import { RefreshCw, Usb, Code, X } from 'lucide-react'
+import { RefreshCw, Usb, Code } from 'lucide-react'
 import { formatUserError } from '../utils/apiError'
 import { statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
+import { GlassModal } from '../components/glass/GlassModal'
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<NodeDeviceInfo[]>([])
@@ -104,15 +105,9 @@ export default function DevicesPage() {
       )}
 
       {xmlContent !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setXmlContent(null)}>
-          <div className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-[var(--apple-hairline)]">
-              <span className="text-lg font-semibold font-mono">{xmlName}</span>
-              <button onClick={() => setXmlContent(null)} aria-label="Close" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 hover:bg-[var(--surface-hover)] rounded-lg transition"><X className="w-4 h-4" /></button>
-            </div>
-            <pre className="p-5 text-sm text-[var(--text-secondary)] overflow-auto whitespace-pre-wrap font-mono flex-1">{xmlContent}</pre>
-          </div>
-        </div>
+        <GlassModal open onClose={() => setXmlContent(null)} title={xmlName} wide>
+          <pre className="text-sm text-[var(--text-secondary)] overflow-auto whitespace-pre-wrap font-mono">{xmlContent}</pre>
+        </GlassModal>
       )}
     </PageLayout>
   )

@@ -284,7 +284,7 @@ export default function VMList() {
           }
         />
       ) : viewMode === 'table' ? (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <table className="w-full" aria-label="Virtual machines">
             <thead>
               <tr className="border-b border-[var(--apple-hairline)] text-left text-sm text-[var(--text-muted)]">

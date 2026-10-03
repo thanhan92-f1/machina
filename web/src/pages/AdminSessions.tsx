@@ -90,7 +90,7 @@ export default function AdminSessionsPage() {
       {!loading && data && data.sessions.length === 0 ? (
         <EmptyState title="No active sessions" description="No browser sessions are currently tracked by the daemon." />
       ) : (
-      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-hidden">
+      <div className="bg-[var(--apple-surface)] rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)]/50 overflow-x-auto">
         <table className="w-full text-sm" aria-label="Active sessions">
           <thead>
             <tr className="border-b border-[var(--apple-hairline)] text-left text-[var(--text-muted)]">

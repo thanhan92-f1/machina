@@ -144,6 +144,7 @@ function FleetCloudInstanceDetailContent() {
         {nics.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No NICs.</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="apple-table" aria-label="Network interfaces">
             <thead className="text-[var(--text-muted)] text-left">
               <tr><th scope="col" className="py-1">Network</th><th scope="col" className="py-1">MAC</th><th scope="col" className="py-1">IP</th></tr>
@@ -158,6 +159,7 @@ function FleetCloudInstanceDetailContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 
@@ -166,6 +168,7 @@ function FleetCloudInstanceDetailContent() {
         {disks.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No disks.</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="apple-table" aria-label="Disks">
             <thead className="text-[var(--text-muted)] text-left">
               <tr><th scope="col" className="py-1">Name</th><th scope="col" className="py-1">Size</th><th scope="col" className="py-1">Class</th></tr>
@@ -180,6 +183,7 @@ function FleetCloudInstanceDetailContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 

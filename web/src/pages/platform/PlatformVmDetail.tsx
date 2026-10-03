@@ -2337,6 +2337,7 @@ export default function PlatformVmDetail() {
                 ) : schedules.length === 0 ? (
                   <p className="text-sm text-[var(--text-muted)] mb-3">No schedules configured.</p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm mb-3">
                     <thead><tr className="text-left text-xs text-[var(--text-muted)] border-b border-[var(--apple-hairline)]"><th scope="col" className="pb-1 pr-4">Action</th><th scope="col" className="pb-1 pr-4">Every</th><th scope="col" className="pb-1 pr-4">Next run</th><th scope="col" className="pb-1 pr-4">Label</th><th scope="col" /></tr></thead>
                     <tbody className="divide-y divide-[var(--apple-hairline)]/30">
@@ -2369,6 +2370,7 @@ export default function PlatformVmDetail() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
                 <div className="grid grid-cols-2 gap-2 text-sm mt-1">
                   <select aria-label="Action" className="input" value={newSchedAction} onChange={(e) => setNewSchedAction(e.target.value as VmScheduleAction)}>
