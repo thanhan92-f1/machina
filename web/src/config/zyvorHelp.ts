@@ -55,9 +55,9 @@ export const ZYVOR_PLATFORM_TAGLINE =
   'Manage your entire virtual datacenter like a modern operating system — not like a pile of scripts.';
 
 export const ZYVOR_PLATFORM_HELP_LINKS: HelpDocLink[] = [
-  { label: 'Platform UX vision (in-repo)', href: 'https://github.com/zyvorailabs/machina/blob/main/docs/platform-ux-vision.md' },
-  { label: 'Platform architecture', href: 'https://github.com/zyvorailabs/machina/blob/main/docs/platform.md' },
-  { label: 'Platform roadmap', href: 'https://github.com/zyvorailabs/machina/blob/main/docs/platform-roadmap.md' },
+  { label: 'Platform UX vision (in-repo)', href: 'https://github.com/zyvorai/machina/blob/main/docs/platform-ux-vision.md' },
+  { label: 'Platform architecture', href: 'https://github.com/zyvorai/machina/blob/main/docs/platform.md' },
+  { label: 'Platform roadmap', href: 'https://github.com/zyvorai/machina/blob/main/docs/platform-roadmap.md' },
   { label: 'Support Assistant', href: '/platform/support' },
   { label: 'Zyvor documentation', href: ZYVOR_HELP.docs },
   { label: 'Contact Zyvor', href: ZYVOR_HELP.contact },

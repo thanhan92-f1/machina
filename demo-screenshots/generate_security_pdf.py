@@ -87,7 +87,7 @@ def slide_title():
     tc(d, 490, "Input validation | SSRF prevention | Audit logging | Panic-free design", fb, LIGHT)
     tc(d, 600, "Built with Rust for memory safety", fsh, GREEN)
     tc(d, 660, "Zero unsafe blocks | No C dependencies in core logic", fb, GRAY)
-    tc(d, 800, "https://github.com/zyvorailabs/machina", fs, ACCENT)
+    tc(d, 800, "https://github.com/zyvorai/machina", fs, ACCENT)
     return img
 
 def slide_architecture():

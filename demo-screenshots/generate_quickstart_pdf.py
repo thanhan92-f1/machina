@@ -108,7 +108,7 @@ def slide_title():
     text_center(draw, 540, "Prerequisites: Fedora/RHEL/Ubuntu with libvirt + QEMU", font_body, LIGHT)
     text_center(draw, 590, "Rust toolchain (rustup) + Node.js 18+", font_body, LIGHT)
     text_center(draw, 700, "Estimated setup time: 5 minutes", font_subheading, GREEN)
-    text_center(draw, 800, "https://github.com/zyvorailabs/machina", font_small, ACCENT)
+    text_center(draw, 800, "https://github.com/zyvorai/machina", font_small, ACCENT)
     return img
 
 def slide_prerequisites():
@@ -164,7 +164,7 @@ def slide_build():
     draw_step_number(draw, 100, 170, 1)
     draw.text((160, 175), "Clone the repository", font=font_subheading, fill=LIGHT)
     draw_code_block(draw, 100, 230, 1720, [
-        "$ git clone https://github.com/zyvorailabs/machina.git",
+        "$ git clone https://github.com/zyvorai/machina.git",
         "$ cd machina",
     ])
 
@@ -517,7 +517,7 @@ def slide_summary():
 
     draw_code_block(draw, 300, 280, 1320, [
         "# Build",
-        "$ git clone https://github.com/zyvorailabs/machina.git",
+        "$ git clone https://github.com/zyvorai/machina.git",
         "$ cd machina && make all",
         "",
         "# Deploy",
@@ -534,7 +534,7 @@ def slide_summary():
 
     text_center(draw, 830, "machina  —  Linux hypervisor host manager (libvirt/KVM, optional KubeVirt)", font_subheading, ACCENT)
     text_center(draw, 890, "Built with Rust + React  |  Secure  |  Fast  |  Production-Ready", font_body, GRAY)
-    text_center(draw, 950, "https://github.com/zyvorailabs/machina", font_small, ACCENT)
+    text_center(draw, 950, "https://github.com/zyvorai/machina", font_small, ACCENT)
     return img
 
 # ── Build PDF ───────────────────────────────────────────────────────────

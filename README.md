@@ -2,7 +2,7 @@
 
 # Machina
 
-[![CI](https://github.com/zyvorailabs/machina/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorailabs/machina/actions/workflows/ci.yml)
+[![CI](https://github.com/zyvorai/machina/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/machina/actions/workflows/ci.yml)
 [![License: Zyvor Production v1.0](https://img.shields.io/badge/License-Zyvor%20Production%20v1.0-orange.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-daemon%20%C2%B7%20controller%20%C2%B7%20agent-1d1d1f?logo=rust)](Cargo.toml)
 [![KVM](https://img.shields.io/badge/libvirt-QEMU%2FKVM-6e3ad6)](docs/README.md)
@@ -124,7 +124,7 @@ Autonomous diagnostics across the fleet, incident correlation, rightsizing and n
 On any Linux host with KVM (Ubuntu, Debian, Fedora, RHEL/Alma/Rocky, openSUSE, Arch):
 
 ```bash
-git clone https://github.com/zyvorailabs/machina.git && cd machina
+git clone https://github.com/zyvorai/machina.git && cd machina
 ./machinactl deploy        # deps · build · install · start · verify
 # open https://<host>:5092 and sign in with a local (PAM) account
 ```
@@ -179,6 +179,6 @@ Contributions are welcome under the same license; see [CONTRIBUTING.md](CONTRIBU
 
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=machina&utm_campaign=readme_footer)
 [![30-day PoC](https://img.shields.io/badge/Start_a_30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=machina&utm_campaign=readme_footer)
-[![Star on GitHub](https://img.shields.io/github/stars/zyvorailabs/machina?style=for-the-badge&logo=github&label=Star&color=6e3ad6)](https://github.com/zyvorailabs/machina)
+[![Star on GitHub](https://img.shields.io/github/stars/zyvorai/machina?style=for-the-badge&logo=github&label=Star&color=6e3ad6)](https://github.com/zyvorai/machina)
 
 </div>

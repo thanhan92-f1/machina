@@ -1,6 +1,6 @@
 # Security
 
-Report suspected vulnerabilities privately through GitHub's **[private vulnerability reporting](https://github.com/zyvorailabs/machina/security/advisories/new)** or by email to [security@zyvor.dev](mailto:security@zyvor.dev). Do not publish exploitable details in a public issue before coordination.
+Report suspected vulnerabilities privately through GitHub's **[private vulnerability reporting](https://github.com/zyvorai/machina/security/advisories/new)** or by email to [security@zyvor.dev](mailto:security@zyvor.dev). Do not publish exploitable details in a public issue before coordination.
 
 ## Scope
 

@@ -301,7 +301,7 @@ async fn download_text(client: &reqwest::Client, url: &str) -> Result<String, Li
         .get(url)
         .header(
             "User-Agent",
-            "machina-daemon-cluster-bootstrap/1.0 (compatible; +https://github.com/zyvorailabs/machina)",
+            "machina-daemon-cluster-bootstrap/1.0 (compatible; +https://github.com/zyvorai/machina)",
         )
         .timeout(Duration::from_secs(120))
         .send()

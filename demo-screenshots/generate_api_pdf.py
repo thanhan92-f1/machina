@@ -126,7 +126,7 @@ def slide_title():
         d.text((x+16, 665), m, font=fl, fill=WHITE)
         x += 100
     tc(d, 750, "Content-Type: application/json", fc, GRAY)
-    tc(d, 850, "https://github.com/zyvorailabs/machina", fs, ACCENT)
+    tc(d, 850, "https://github.com/zyvorai/machina", fs, ACCENT)
     return img
 
 def slide_vm_endpoints():

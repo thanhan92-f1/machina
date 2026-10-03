@@ -1,6 +1,6 @@
 [Unit]
 Description=Daily Machina VM backup
-Documentation=https://github.com/zyvorailabs/machina
+Documentation=https://github.com/zyvorai/machina
 
 [Timer]
 # Run daily at 2:00 AM

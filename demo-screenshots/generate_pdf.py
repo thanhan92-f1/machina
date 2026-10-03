@@ -77,7 +77,7 @@ def make_title_slide():
     # Bottom info
     text_center(draw, 700, "Built with Rust + React + TypeScript", font_body, GRAY)
     text_center(draw, 760, "Secure | Fast | Production-Ready", font_body, LIGHT)
-    text_center(draw, 860, "https://github.com/zyvorailabs/machina", font_small, ACCENT)
+    text_center(draw, 860, "https://github.com/zyvorai/machina", font_small, ACCENT)
     return img
 
 def make_section_slide(title, bullets):
