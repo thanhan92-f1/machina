@@ -284,9 +284,18 @@ html.light-theme .mission-control-page .mc-hero-ribbon {
 @media (min-width: 1024px) {
   .apple-page-header {
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
     gap: 1.25rem;
+  }
+  /* Keep the title/lede readable: when the action row is too wide it wraps below instead of
+     squeezing the text into a narrow column. */
+  .apple-page-header > :first-child {
+    flex: 1 1 24rem;
+  }
+  .apple-page-header > .apple-page-actions {
+    margin-left: auto;
   }
 }
 
