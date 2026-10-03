@@ -129,6 +129,34 @@ pub async fn fleet_tls_fingerprints(
     Ok(Json(telemetry::tls_fingerprints(&state.pool, limit).await))
 }
 
+pub async fn fleet_rtnl_events(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Query(q): Query<LimitQuery>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    let limit = q.limit.unwrap_or(500).clamp(1, 5000);
+    Ok(Json(telemetry::rtnl_events(&state.pool, limit).await))
+}
+
+pub async fn fleet_guard_events(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Query(q): Query<LimitQuery>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    let limit = q.limit.unwrap_or(500).clamp(1, 5000);
+    Ok(Json(telemetry::guard_events(&state.pool, limit).await))
+}
+
+pub async fn fleet_vm_intel(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    Ok(Json(telemetry::vm_intel(&state.pool).await))
+}
+
 pub async fn fleet_icmp_errors(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,

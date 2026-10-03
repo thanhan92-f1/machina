@@ -6,13 +6,20 @@
 #![no_std]
 #![no_main]
 
+mod afxdp;
 mod cni;
+mod direct;
+mod quiclb;
 mod health;
+mod l7sample;
 mod maps;
+mod vmintel;
+mod vmmguard;
 mod net;
 mod nodeiso;
 mod parse;
 mod proc;
+mod rtnl;
 mod shield;
 mod tcp;
 mod tls;

@@ -56,7 +56,18 @@ export interface BpfStatus {
   available: boolean
   programs_compiled?: boolean
   version?: string
-  features?: { kernel: string; btf: boolean; tcx: boolean; lsm_bpf: boolean; tracefs?: string | null; cgroup2: boolean }
+  features?: {
+    kernel: string
+    btf: boolean
+    tcx: boolean
+    lsm_bpf: boolean
+    tracefs?: string | null
+    cgroup2: boolean
+    fentry?: boolean
+    sched_ext?: boolean
+    sched_ext_state?: string | null
+    xsk?: boolean
+  }
   mode?: BpfModeState
   policies_total?: number
   policies_enabled?: number
@@ -484,6 +495,277 @@ export const getBpfTls = () => apiGet<BpfTlsStatus>(`${B}/tls`)
 export const setBpfTls = (c: BpfTlsConfig) => apiPut<BpfTlsStatus>(`${B}/tls`, c)
 export const getBpfTlsFingerprints = (limit = 200) => apiGet<BpfTlsFingerprint[]>(`${B}/tls/fingerprints${qs({ limit })}`)
 export const getBpfSslEvents = (limit = 200) => apiGet<BpfSslRecord[]>(`${B}/tls/ssl${qs({ limit })}`)
+
+export interface BpfRtnlConfig {
+  enabled: boolean
+  host_netns_only: boolean
+  kinds: string[]
+}
+
+export interface BpfRtnlStatus {
+  config: BpfRtnlConfig
+  attached: boolean
+  events: number
+  dropped: number
+  stored: number
+  notes: string[]
+}
+
+export interface BpfRtnlRecord {
+  ts: string
+  kind: string
+  action: string
+  create: boolean
+  ifindex?: number | null
+  iface?: string | null
+  dst?: string | null
+  pid: number
+  tgid: number
+  uid: number
+  comm: string
+  cmdline?: string | null
+  cgroup?: string | null
+  workload?: BpfWorkload | null
+  netns?: number | null
+  host_netns?: boolean | null
+}
+
+export const getBpfRtnl = () => apiGet<BpfRtnlStatus>(`${B}/rtnl`)
+export const setBpfRtnl = (c: BpfRtnlConfig) => apiPut<BpfRtnlStatus>(`${B}/rtnl`, c)
+export const getBpfRtnlEvents = (limit = 200, iface?: string) =>
+  apiGet<BpfRtnlRecord[]>(`${B}/rtnl/events${qs({ limit, iface })}`)
+
+export type BpfL7SampleProtocol = 'redis' | 'postgres' | 'mysql' | 'kafka' | 'http2'
+
+export interface BpfL7SampleConfig {
+  enabled: boolean
+  ports: { port: number; protocol: BpfL7SampleProtocol }[]
+  flow_gap_ms: number
+  rate: number
+}
+
+export interface BpfL7SampleStatus {
+  config: BpfL7SampleConfig
+  attached: string | null
+  eligible: number
+  emitted: number
+  rate_limited: number
+  ringbuf_full: number
+  load_fail: number
+  undecoded: number
+  top: { protocol: string; op: string; count: number }[]
+  notes: string[]
+}
+
+export type BpfVmIntelFeature = 'flight' | 'io' | 'mem' | 'topology'
+
+export interface BpfVmIntelConfig {
+  enabled: boolean
+  features: BpfVmIntelFeature[]
+  extra: { name: string; cgroup: string }[]
+}
+
+export interface BpfVmIntelStatus {
+  config: BpfVmIntelConfig
+  hooks: string[]
+  vms: { name: string; cgroup: string; processes: number; threads: number; vcpus: number }[]
+  cpus: { cpu: number; irq_ns: number; softirq_ns: number }[]
+  notes: string[]
+}
+
+export interface BpfVmIntelHist {
+  count: number
+  p50_ns: number
+  p99_ns: number
+  buckets: { le_ns: number; count: number }[]
+}
+
+export interface BpfVmIntelReport {
+  name: string
+  exits: { reason: number; name: string; count: number }[]
+  runq: BpfVmIntelHist
+  block: BpfVmIntelHist
+  fault: BpfVmIntelHist
+  reclaim: BpfVmIntelHist
+  vhost_work: number
+  vhost_kicks: number
+  migrations: number
+  residency: { cpu: number; ns: number }[]
+  boot_to_first_entry_ms: number | null
+}
+
+export const getBpfVmIntel = () => apiGet<BpfVmIntelStatus>(`${B}/vm-intel`)
+export const setBpfVmIntel = (c: BpfVmIntelConfig) => apiPut<BpfVmIntelStatus>(`${B}/vm-intel`, c)
+export const getBpfVmIntelVm = (name: string) =>
+  apiGet<BpfVmIntelReport>(`${B}/vm-intel/vms/${encodeURIComponent(name)}`)
+
+export interface BpfGuardConfig {
+  enabled: boolean
+  mode: 'audit' | 'enforce'
+  lease_secs?: number | null
+  exec: boolean
+  wx: boolean
+  devices: boolean
+  allow_exec: string[]
+  allow_devices: string[]
+  vms: string[]
+  extra: { name: string; cgroup: string }[]
+}
+
+export interface BpfGuardStatus {
+  config: BpfGuardConfig
+  lsm_active: boolean
+  lsm_list: string
+  hooks: string[]
+  enforcing: boolean
+  lease_remaining_secs: number | null
+  lease_expired: boolean
+  guarded: { name: string; cgroup: string; cgroups: number }[]
+  allowed_exec: string[]
+  allowed_devices: string[]
+  audited: number
+  denied: number
+  dropped: number
+  notes: string[]
+}
+
+export interface BpfGuardRecord {
+  ts: string
+  hook: 'exec' | 'mprotect' | 'open' | string
+  denied: boolean
+  vm: string | null
+  tgid: number
+  pid: number
+  comm: string
+  detail: string
+}
+
+export const getBpfGuard = () => apiGet<BpfGuardStatus>(`${B}/guard`)
+export const setBpfGuard = (c: BpfGuardConfig) => apiPut<BpfGuardStatus>(`${B}/guard`, c)
+export const getBpfGuardEvents = (limit = 200) => apiGet<BpfGuardRecord[]>(`${B}/guard/events${qs({ limit })}`)
+
+export interface BpfDirectConfig {
+  vm: string
+  outer_iface: string
+  enabled?: boolean
+  force?: boolean
+  tap?: string | null
+  mac?: string | null
+  ips?: string[]
+  reverse?: boolean
+}
+
+export interface BpfDirectEntry {
+  vm: string
+  outer_iface: string
+  tap: string
+  mac: string
+  ips: string[]
+  reverse: boolean
+}
+
+export interface BpfDirectStatus {
+  entries: BpfDirectEntry[]
+  attached: string[]
+  active: boolean
+  redirected_in: number
+  redirected_out: number
+  idle: number
+}
+
+export const getBpfDirect = () => apiGet<BpfDirectStatus>(`${B}/direct`)
+export const setBpfDirect = (c: BpfDirectConfig) => apiPut<BpfDirectStatus>(`${B}/direct`, c)
+
+export type BpfQuicLbMode = 'dsr' | 'ipip'
+
+export interface BpfQuicLbBackend {
+  addr: string
+  mac?: string | null
+  server_id?: number | null
+}
+
+export interface BpfQuicLbConfig {
+  iface?: string
+  vip: string
+  port: number
+  backends?: BpfQuicLbBackend[]
+  cid_len?: number
+  config_id?: number
+  mode?: BpfQuicLbMode
+  encap_src?: string | null
+  enabled?: boolean
+}
+
+export interface BpfQuicLbService {
+  vip: string
+  port: number
+  mode: BpfQuicLbMode
+  cid_len: number
+  config_id: number
+  backends: { addr: string; mac: string; server_id: number }[]
+  routed_cid: number
+  maglev: number
+  initial: number
+  unknown_sid: number
+  tx: number
+  errors: number
+}
+
+export interface BpfQuicLbStatus {
+  iface: string | null
+  attached: boolean
+  services: BpfQuicLbService[]
+}
+
+export const getBpfQuicLb = () => apiGet<BpfQuicLbStatus>(`${B}/quic-lb`)
+export const setBpfQuicLb = (c: BpfQuicLbConfig) => apiPut<BpfQuicLbStatus>(`${B}/quic-lb`, c)
+
+export interface BpfAfxdpStatus {
+  iface: string | null
+  attached: boolean
+  queues: { queue: number; enabled: boolean; redirected: number; no_socket: number }[]
+}
+
+export const getBpfAfxdp = () => apiGet<BpfAfxdpStatus>(`${B}/afxdp`)
+export const setBpfAfxdp = (c: { iface: string; enabled: boolean }) => apiPut<BpfAfxdpStatus>(`${B}/afxdp`, c)
+
+export interface BpfScxConfig {
+  enabled: boolean
+  lease_secs?: number | null
+  vms?: string[]
+  latency_target_us?: number | null
+}
+
+export interface BpfScxVm {
+  name: string
+  vcpus: number
+  enqueues: number
+  dispatches: number
+  avg_queue_delay_us: number
+  max_queue_delay_us: number
+  runtime_ms: number
+  latency_violations: number
+}
+
+export interface BpfScxStatus {
+  supported: boolean
+  helper: string | null
+  running: boolean
+  kernel_state: string
+  ops: string | null
+  nr_rejected: number
+  lease_remaining_secs: number | null
+  lease_expired: boolean
+  last_exit: string | null
+  vms: BpfScxVm[]
+  notes: string[]
+}
+
+export const getBpfScx = () => apiGet<BpfScxStatus>(`${B}/scx`)
+export const setBpfScx = (c: BpfScxConfig) => apiPut<BpfScxStatus>(`${B}/scx`, c)
+
+export const getBpfL7Sample = () => apiGet<BpfL7SampleStatus>(`${B}/l7-sample`)
+export const setBpfL7Sample = (c: BpfL7SampleConfig) => apiPut<BpfL7SampleStatus>(`${B}/l7-sample`, c)
 
 /** SSE URL for live events; topics: net, dns, l7, proc, anomaly (empty = all). */
 export const bpfStreamUrl = (topics: string[] = []) => `${B}/stream${qs({ topics: topics.join(',') })}`

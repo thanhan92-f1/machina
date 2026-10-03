@@ -32,6 +32,7 @@ mod system;
 mod templates;
 mod vessel;
 mod vm_guest;
+mod guest_policy;
 mod vms;
 mod ws;
 mod zeus_firewall;
@@ -54,6 +55,7 @@ pub fn api_routes() -> Router<LibvirtManager> {
         .merge(vms::vm_routes())
         .merge(sprites::sprite_routes())
         .merge(vm_guest::vm_guest_routes())
+        .merge(guest_policy::guest_policy_routes())
         .merge(snapshots::snapshot_routes())
         .merge(networks::network_routes())
         .merge(storage::storage_routes())

@@ -311,6 +311,24 @@ impl Datapath {
         Ok(())
     }
 
+    // ---- AF_XDP ----------------------------------------------------------
+
+    /// The map takes its own socket reference; the caller may close `fd`.
+    pub fn xsk_set(&mut self, queue: u32, fd: impl std::os::fd::AsRawFd) -> Result<()> {
+        let map = self.ebpf.map_mut("AFXDP_XSKS").ok_or_else(|| anyhow!("map AFXDP_XSKS missing"))?;
+        let mut m: aya::maps::XskMap<&mut MapData> = aya::maps::XskMap::try_from(map)?;
+        m.set(queue, fd, 0)?;
+        Ok(())
+    }
+
+    pub fn xsk_unset(&mut self, queue: u32) {
+        if let Some(map) = self.ebpf.map_mut("AFXDP_XSKS") {
+            if let Ok(mut m) = aya::maps::XskMap::<&mut MapData>::try_from(map) {
+                let _ = m.unset(queue);
+            }
+        }
+    }
+
     // ---- CNI -------------------------------------------------------------
 
     pub fn cni_set_node(&mut self, cfg: NodeCfg) -> Result<()> {

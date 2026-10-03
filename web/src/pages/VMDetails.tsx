@@ -37,6 +37,7 @@ import VmConsoleHeroPreview from '../components/vm/VmConsoleHeroPreview'
 import ClassicVmPlatformHardware from './classic/ClassicVmPlatformHardware'
 import ClassicVmSpiceToVncButton from './classic/ClassicVmSpiceToVncButton'
 import VmPortForwardPanel from '../components/vm/VmPortForwardPanel'
+import VmGuestPolicyPanel from '../components/vm/VmGuestPolicyPanel'
 import VmSshConnectDialog, { navigateVmSshSession } from '../components/vm/VmSshConnectDialog'
 import type { GuestAccessHints } from '../utils/guestAccessHints'
 import { addRecentVM } from '../utils/recentVMs'
@@ -112,7 +113,7 @@ function SnapshotTableRows({
   )
 }
 
-const VM_DETAIL_TABS = ['overview', 'disks', 'network', 'snapshots', 'devices', 'xml', 'logs', 'advanced'] as const
+const VM_DETAIL_TABS = ['overview', 'disks', 'network', 'snapshots', 'devices', 'guest-policy', 'xml', 'logs', 'advanced'] as const
 type Tab = (typeof VM_DETAIL_TABS)[number]
 type Dialog = null | 'cdrom' | 'clone' | 'rename' | 'migrate' | 'snapshot' | 'boot-order' | 'vcpus' | 'memory' | 'balloon' | 'attach-disk' | 'resize-disk' | 'attach-nic' | 'attach-usb' | 'save-template' | 'linux-ssh-key' | 'linux-password' | 'linux-hostname'
   | 'delete-vm' | 'scheduler-tune' | 'memtune' | 'numa-tune' | 'emulator-pin' | 'pin-vcpu' | 'block-commit'
@@ -1296,6 +1297,7 @@ export default function VMDetailsPage() {
     { key: 'network', label: `Network (${vm.interfaces.length})` },
     { key: 'snapshots', label: `Snapshots (${snapshots.length})` },
     { key: 'devices', label: 'Devices' },
+    { key: 'guest-policy', label: 'Guest policy' },
     { key: 'xml', label: 'XML' },
     { key: 'logs', label: 'Logs' },
     { key: 'advanced', label: 'Advanced' },
@@ -2590,6 +2592,8 @@ export default function VMDetailsPage() {
           </div>
         </div>
       )}
+
+      {tab === 'guest-policy' && <VmGuestPolicyPanel vmName={vm.name} running={vm.state === 'running'} />}
 
       {/* ── XML Tab ──────────────────────────────────────────────── */}
 

@@ -24,6 +24,9 @@ cleanup() {
   [[ -n "${HTTP_PID:-}" ]] && kill "$HTTP_PID" 2>/dev/null || true
   ip netns del "$NS" 2>/dev/null || true
   ip link del "$HOST_IF" 2>/dev/null || true
+  ip link del mnsmoke-rtnl0 2>/dev/null || true
+  ip netns del mnd-a 2>/dev/null || true
+  ip netns del mnd-b 2>/dev/null || true
   [[ -d "$TCP_CG" ]] && rmdir "$TCP_CG" 2>/dev/null || true
   rmdir /sys/fs/cgroup/mnsmoke-attr.service 2>/dev/null || true
 }
@@ -92,7 +95,7 @@ cat >"$WORK/bpfd-state.json" <<EOF
 EOF
 
 mkdir -p "$TCP_CG"
-MACHINA_BPF_SOCKOPS_CGROUP=$TCP_CG MACHINA_BPF_TLSFP_CGROUP=$TCP_CG RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" \
+MACHINA_BPF_SOCKOPS_CGROUP=$TCP_CG MACHINA_BPF_TLSFP_CGROUP=$TCP_CG MACHINA_BPF_L7S_CGROUP=$TCP_CG RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" \
   >"$WORK/bpfd.log" 2>&1 &
 BPFD_PID=$!
 for _ in $(seq 50); do [[ -S "$SOCK" ]] && break; sleep 0.2; done
@@ -410,6 +413,120 @@ check "nodeiso: dispatcher gone from test veth" bash -c "$(declare -f xdp_on); H
 iso '"enabled":true,"lease_secs":30,"allow_icmp":false' | must
 iso '"enabled":false' | must
 check "nodeiso off: ping restored" ping_ok
+
+# Network change audit: requests are credited to the process that sent them.
+rtnl_has() {
+  req '{"op":"rtnl_events","limit":2000}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; sys.exit(0 if any($1 for r in d) else 1)"
+}
+check "rtnl: kprobe attached" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"rtnl_status\"}' | grep -q '\"attached\":true'"
+ip link add mnsmoke-rtnl0 type dummy
+ip route add 10.199.250.0/24 dev "$HOST_IF"
+ip route del 10.199.250.0/24 dev "$HOST_IF"
+ip link del mnsmoke-rtnl0
+sleep 0.5
+check "rtnl: link create by ip recorded" rtnl_has "r['kind']=='link' and r['action']=='new' and r['create'] and r['comm']=='ip' and r.get('iface')=='mnsmoke-rtnl0'"
+check "rtnl: link delete recorded" rtnl_has "r['kind']=='link' and r['action']=='del' and r['comm']=='ip'"
+check "rtnl: route add with destination" rtnl_has "r['kind']=='route' and r['action']=='new' and r.get('dst')=='10.199.250.0/24' and r.get('iface')=='$HOST_IF'"
+check "rtnl: route delete recorded" rtnl_has "r['kind']=='route' and r['action']=='del' and r.get('dst')=='10.199.250.0/24'"
+ip netns exec "$NS" ip link add mnsmoke-ns0 type dummy
+ip netns exec "$NS" ip link del mnsmoke-ns0
+sleep 0.5
+check "rtnl: host requests carry the host netns" rtnl_has "r['comm']=='ip' and r.get('host_netns') is True"
+check "rtnl: other netns filtered in the kernel" bash -c "$(declare -f req rtnl_has); SOCK=$SOCK; ! rtnl_has \"r.get('iface')=='mnsmoke-ns0'\""
+
+# Sampled plaintext L7 on the test cgroup: a fake Redis and PostgreSQL
+# server; only operation names may come back out of bpfd.
+python3 - <<'PY' >/dev/null 2>&1 &
+import socket, threading, time
+def serve(port, reply):
+    s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(("127.0.0.1", port)); s.listen(8)
+    def conn(c):
+        while c.recv(4096): c.sendall(reply)
+    while True:
+        c, _ = s.accept(); threading.Thread(target=conn, args=(c,), daemon=True).start()
+for p, r in ((16379, b"+OK\r\n"), (15432, b"C\x00\x00\x00\x0dSELECT 1\x00")):
+    threading.Thread(target=serve, args=(p, r), daemon=True).start()
+time.sleep(30)
+PY
+L7S_PID=$!
+sleep 0.5
+l7sjs() { req '{"op":"l7_sample_status"}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print($1)"; }
+req '{"op":"l7_sample_configure","config":{"enabled":true,"flow_gap_ms":0,"ports":[{"port":16379,"protocol":"redis"},{"port":15432,"protocol":"postgres"}]}}' | must
+check "l7s: sampler on test cgroup" test "$(l7sjs "d.get('attached')")" = "$TCP_CG"
+in_tcp_cg python3 - <<'PY' || true
+import socket, struct, time
+r = socket.create_connection(("127.0.0.1", 16379), timeout=2)
+r.sendall(b"*3\r\n$3\r\nSET\r\n$9\r\nsecretkey\r\n$11\r\nsecretvalue\r\n"); r.recv(64)
+time.sleep(0.05)
+r.sendall(b"*2\r\n$3\r\nGET\r\n$9\r\nsecretkey\r\n"); r.recv(64)
+q = b"select * from users where pw='secretpw'\x00"
+p = socket.create_connection(("127.0.0.1", 15432), timeout=2)
+p.sendall(b"Q" + struct.pack(">I", len(q) + 4) + q); p.recv(64)
+PY
+sleep 1
+l7s_has() {
+  req '{"op":"l7","limit":500}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; sys.exit(0 if any($1 for r in d) else 1)"
+}
+check "l7s: redis SET sampled" l7s_has "r['protocol']=='redis' and r.get('method')=='SET' and r['server_port']==16379 and r['direction']=='outbound'"
+check "l7s: redis GET sampled" l7s_has "r['protocol']=='redis' and r.get('method')=='GET'"
+check "l7s: redis reply sampled" l7s_has "r['protocol']=='redis' and r.get('method')=='reply REPLY'"
+check "l7s: postgres query verb" l7s_has "r['protocol']=='postgres' and r.get('method')=='SELECT' and r['server_port']==15432"
+check "l7s: no keys, values or literals leave bpfd" bash -c "$(declare -f req); SOCK=$SOCK; ! req '{\"op\":\"l7\",\"limit\":500}' | grep -q secret"
+check "l7s: top operations counted" test "$(l7sjs "sum(o['count'] for o in d['top'] if o['op'] in ('SET','GET','SELECT'))")" -ge 3
+req '{"op":"l7_sample_configure","config":{"enabled":true,"flow_gap_ms":10000,"ports":[{"port":16379,"protocol":"redis"}]}}' | must
+in_tcp_cg python3 -c '
+import socket
+r = socket.create_connection(("127.0.0.1", 16379), timeout=2)
+for _ in range(5): r.sendall(b"PING\r\n"); r.recv(64)' || true
+sleep 0.5
+check "l7s: per-flow gap rate-limits" test "$(l7sjs "d['rate_limited']")" -gt 0
+req '{"op":"l7_sample_configure","config":{"enabled":false}}' | must
+check "l7s off: detached" test "$(l7sjs "d.get('attached')")" = None
+kill $L7S_PID 2>/dev/null || true
+
+# Bridge-less direct redirect: netns A (outer side) and netns B (the "VM"
+# behind a tap stand-in) share no bridge; only bpfd's redirect joins them.
+ip netns add mnd-a
+ip netns add mnd-b
+ip link add mnd-out type veth peer name mnd-outp
+ip link add mnd-tap type veth peer name mnd-tapp
+ip link set mnd-outp netns mnd-a
+ip link set mnd-tapp netns mnd-b
+ip link set mnd-out up
+ip link set mnd-tap up
+ip -n mnd-a link set lo up
+ip -n mnd-b link set lo up
+ip -n mnd-b link set mnd-tapp address 52:54:00:88:00:02
+ip -n mnd-a addr add 10.199.88.1/24 dev mnd-outp
+ip -n mnd-b addr add 10.199.88.2/24 dev mnd-tapp
+ip -n mnd-a link set mnd-outp up
+ip -n mnd-b link set mnd-tapp up
+A_MAC=$(ip netns exec mnd-a cat /sys/class/net/mnd-outp/address)
+ip -n mnd-a neigh replace 10.199.88.2 lladdr 52:54:00:88:00:02 dev mnd-outp
+ip -n mnd-b neigh replace 10.199.88.1 lladdr "$A_MAC" dev mnd-tapp
+d_ping() { ip netns exec mnd-a ping -c1 -W1 10.199.88.2 >/dev/null 2>&1; }
+dsjs() { req '{"op":"direct_status"}' | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print($1)"; }
+check "direct: no path without redirect" bash -c "$(declare -f d_ping); ! d_ping"
+PHYS=$(for i in /sys/class/net/*; do [[ -e $i/device ]] && basename "$i" && break; done || true)
+if [[ -n "$PHYS" ]]; then
+  check "direct: physical NIC refused without force" bash -c "$(declare -f req); SOCK=$SOCK; req '{\"op\":\"direct_configure\",\"config\":{\"vm\":\"x\",\"outer_iface\":\"$PHYS\",\"tap\":\"mnd-tap\"}}' | grep -q 'physical NIC'"
+fi
+req '{"op":"direct_configure","config":{"vm":"mnd-vm","outer_iface":"mnd-out","tap":"mnd-tap","mac":"52:54:00:88:00:02","ips":["10.199.88.2"]}}' | must
+check "direct: programs on outer + tap" test "$(dsjs "sorted(d['attached'])")" = "['mnd-out:mn_direct', 'mnd-tap:mn_direct_out']"
+check "direct: guest MAC from config" test "$(dsjs "d['entries'][0]['mac']")" = "52:54:00:88:00:02"
+check "direct: idle without the lease" bash -c "$(declare -f d_ping); ! d_ping"
+check "direct: idle hits counted" test "$(dsjs "d['idle']")" -gt 0
+enforce
+check "direct: active under the lease" test "$(dsjs "d['active']")" = True
+check "direct: ping across the redirect (both ways)" d_ping
+check "direct: redirected in and out" test "$(dsjs "d['redirected_in'] > 0 and d['redirected_out'] > 0")" = True
+observe
+check "direct: lease dropped, path gone" bash -c "$(declare -f d_ping); ! d_ping"
+req '{"op":"direct_configure","config":{"vm":"mnd-vm","enabled":false}}' | must
+check "direct: disabled, programs detached" test "$(dsjs "(d['entries'], d['attached'])")" = "([], [])"
+ip netns del mnd-a 2>/dev/null || true
+ip netns del mnd-b 2>/dev/null || true
 
 # Attribution: exec events carry workload{kind,name} from the cgroup path.
 ATTR_CG=/sys/fs/cgroup/mnsmoke-attr.service

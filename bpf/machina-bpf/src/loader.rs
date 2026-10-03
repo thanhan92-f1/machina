@@ -10,6 +10,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, bail, Context, Result};
 use aya::programs::{
+    fentry::FEntryLinkId, kprobe::KProbeLinkId, lsm::LsmLinkId, trace_point::TracePointLinkId, FEntry, Lsm,
     cgroup_device::CgroupDeviceLinkId, cgroup_skb::CgroupSkbLinkId, cgroup_sock_addr::CgroupSockAddrLinkId,
     sock_ops::SockOpsLinkId, tc::SchedClassifierLinkId, uprobe::{UProbeLinkId, UProbeScope}, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb,
     CgroupSkbAttachType, CgroupSockAddr, KProbe, SchedClassifier, SockOps, UProbe, TcAttachType, TracePoint, Xdp, XdpMode,
@@ -36,14 +37,38 @@ pub fn kernel_features() -> KernelFeatures {
     let lsm_bpf = std::fs::read_to_string("/sys/kernel/security/lsm")
         .map(|s| s.split(',').any(|l| l.trim() == "bpf"))
         .unwrap_or(false);
+    let btf = Path::new("/sys/kernel/btf/vmlinux").exists();
+    let fentry = btf
+        && KernelVersion::current()
+            .map(|v| v.code() >= KernelVersion::new(5, 5, 0).code())
+            .unwrap_or(false);
     KernelFeatures {
         kernel,
-        btf: Path::new("/sys/kernel/btf/vmlinux").exists(),
+        btf,
         tcx,
         lsm_bpf,
         tracefs: crate::tracefs::tracefs_root().map(|p| p.display().to_string()),
         cgroup2: Path::new("/sys/fs/cgroup/cgroup.controllers").exists(),
+        fentry,
+        sched_ext: Path::new("/sys/kernel/sched_ext").is_dir(),
+        sched_ext_state: machina_scx::kernel_state(),
+        xsk: xsk_supported(),
     }
+}
+
+/// AF_XDP socket creation probe (CONFIG_XDP_SOCKETS; needs CAP_NET_RAW).
+fn xsk_supported() -> bool {
+    const AF_XDP: libc::c_int = 44;
+    let fd = unsafe { libc::socket(AF_XDP, libc::SOCK_RAW | libc::SOCK_CLOEXEC, 0) };
+    if fd >= 0 {
+        unsafe { libc::close(fd) };
+        return true;
+    }
+    // The bpfd unit's RestrictAddressFamilies hides AF_XDP from bpfd itself;
+    // consumers open the sockets, so fall back to the kernel symbol table.
+    std::fs::read_to_string("/proc/kallsyms")
+        .map(|s| s.lines().any(|l| l.ends_with(" xsk_map_ops")))
+        .unwrap_or(false)
 }
 
 /// Raise RLIMIT_MEMLOCK for pre-5.11 kernels (memcg accounting makes it moot later).
@@ -91,6 +116,13 @@ struct TcLinks {
     egress: SchedClassifierLinkId,
 }
 
+enum TraceLink {
+    FEntry(FEntryLinkId),
+    KProbe(KProbeLinkId),
+    Tp(TracePointLinkId),
+    Lsm(LsmLinkId),
+}
+
 #[derive(Default)]
 struct CgroupLinks {
     sock: Vec<(String, CgroupSockAddrLinkId)>,
@@ -109,6 +141,9 @@ pub struct Datapath {
     tlsfp: Option<(String, CgroupSkbLinkId)>,
     /// libssl path → (program, link) per attached symbol.
     ssl: StdHashMap<String, Vec<(&'static str, UProbeLinkId)>>,
+    /// Opt-in tracing programs: key (`prog` or `prog@target`) → link.
+    traces: StdHashMap<String, (&'static str, TraceLink)>,
+    btf: Option<aya::Btf>,
     pub tracepoints: Vec<String>,
     pub notes: Vec<String>,
     tcx: bool,
@@ -140,6 +175,8 @@ impl Datapath {
             sockops: None,
             tlsfp: None,
             ssl: StdHashMap::new(),
+            traces: StdHashMap::new(),
+            btf: None,
             tracepoints: Vec::new(),
             notes: Vec::new(),
             tcx: kernel_features().tcx,
@@ -491,8 +528,9 @@ impl Datapath {
             None => {}
         }
         let p = self.xdp_program(prog)?;
-        let id = p
-            .attach(iface, XdpMode::default())
+        // Generic mode for netns tests: native XDP_TX on a veth needs NAPI on the peer.
+        let skb_only = std::env::var_os("MACHINA_BPF_XDP_SKB").is_some();
+        let id = (if skb_only { p.attach(iface, XdpMode::Skb) } else { p.attach(iface, XdpMode::default()) })
             .or_else(|_| p.attach(iface, XdpMode::Skb))
             .with_context(|| format!("attach {prog} to {iface}"))?;
         self.xdp.insert(iface.to_string(), (prog.to_string(), id));
@@ -588,8 +626,50 @@ impl Datapath {
         Ok(())
     }
 
+    /// cgroup_skb programs (ingress, egress) tracked under `<path>#<tag>`.
+    pub fn attach_cgroup_skb_tagged(&mut self, cg_path: &Path, tag: &str, ingress: &'static str, egress: &'static str) -> Result<()> {
+        let key = format!("{}#{tag}", cg_path.display());
+        if self.cgroups.contains_key(&key) {
+            return Ok(());
+        }
+        let mut links = CgroupLinks::default();
+        for (name, ty) in [(ingress, CgroupSkbAttachType::Ingress), (egress, CgroupSkbAttachType::Egress)] {
+            self.load_once(name, |p| Ok(<&mut CgroupSkb>::try_from(p)?.load()?))?;
+            let p: &mut CgroupSkb = self.ebpf.program_mut(name).expect("loaded").try_into()?;
+            let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
+            match p.attach(f, ty, CgroupAttachMode::default()) {
+                Ok(id) => links.skb.push((name.to_string(), id)),
+                Err(e) => {
+                    self.cgroups.insert(key.clone(), links);
+                    self.detach_cgroup_key(&key);
+                    return Err(anyhow!(e).context(format!("attach {name} to {}", cg_path.display())));
+                }
+            }
+        }
+        self.cgroups.insert(key, links);
+        Ok(())
+    }
+
+    /// Cgroup keys (path or `path#tag`) carrying a given tag.
+    pub fn cgroup_tagged(&self, tag: &str) -> Option<String> {
+        let suffix = format!("#{tag}");
+        self.cgroups.keys().find(|k| k.ends_with(&suffix)).map(|k| k.trim_end_matches(&suffix).to_string())
+    }
+
+    pub fn detach_cgroup_tag(&mut self, tag: &str) {
+        let suffix = format!("#{tag}");
+        let keys: Vec<String> = self.cgroups.keys().filter(|k| k.ends_with(&suffix)).cloned().collect();
+        for k in keys {
+            self.detach_cgroup_key(&k);
+        }
+    }
+
     pub fn detach_cgroup(&mut self, cg_path: &Path) {
-        let Some(links) = self.cgroups.remove(&cg_path.display().to_string()) else {
+        self.detach_cgroup_key(&cg_path.display().to_string());
+    }
+
+    fn detach_cgroup_key(&mut self, key: &str) {
+        let Some(links) = self.cgroups.remove(key) else {
             return;
         };
         for (name, id) in links.sock {
@@ -610,6 +690,115 @@ impl Datapath {
 
     pub fn cgroups(&self) -> Vec<String> {
         self.cgroups.keys().cloned().collect()
+    }
+
+    fn ensure_btf(&mut self) -> Result<()> {
+        if self.btf.is_none() {
+            self.btf = Some(aya::Btf::from_sys_fs().context("kernel BTF (/sys/kernel/btf/vmlinux)")?);
+        }
+        Ok(())
+    }
+
+    /// fentry program on a kernel function (keyed by program name).
+    pub fn attach_fentry(&mut self, prog: &'static str, func: &str) -> Result<()> {
+        if self.traces.contains_key(prog) {
+            return Ok(());
+        }
+        self.ensure_btf()?;
+        let btf = self.btf.as_ref().expect("btf");
+        let p: &mut FEntry = self
+            .ebpf
+            .program_mut(prog)
+            .ok_or_else(|| anyhow!("program {prog} missing"))?
+            .try_into()?;
+        if !self.loaded.contains(prog) {
+            p.load(func, btf).with_context(|| format!("verifier rejected {prog}"))?;
+            self.loaded.insert(prog.into());
+        }
+        let id = p.attach().with_context(|| format!("attach {prog} to {func}"))?;
+        self.traces.insert(prog.into(), (prog, TraceLink::FEntry(id)));
+        Ok(())
+    }
+
+    /// BPF-LSM program on a security hook (keyed by program name). Loads and
+    /// links even when `bpf` is not an active LSM; it then never runs.
+    pub fn attach_lsm(&mut self, prog: &'static str, hook: &str) -> Result<()> {
+        if self.traces.contains_key(prog) {
+            return Ok(());
+        }
+        self.ensure_btf()?;
+        let btf = self.btf.as_ref().expect("btf");
+        let p: &mut Lsm = self
+            .ebpf
+            .program_mut(prog)
+            .ok_or_else(|| anyhow!("program {prog} missing"))?
+            .try_into()?;
+        if !self.loaded.contains(prog) {
+            p.load(hook, btf).with_context(|| format!("verifier rejected {prog}"))?;
+            self.loaded.insert(prog.into());
+        }
+        let id = p.attach().with_context(|| format!("attach {prog} to lsm/{hook}"))?;
+        self.traces.insert(prog.into(), (prog, TraceLink::Lsm(id)));
+        Ok(())
+    }
+
+    /// kprobe or kretprobe (keyed `prog@func`).
+    pub fn attach_kprobe(&mut self, prog: &'static str, func: &str) -> Result<()> {
+        let key = format!("{prog}@{func}");
+        if self.traces.contains_key(&key) {
+            return Ok(());
+        }
+        self.load_once(prog, |p| Ok(<&mut KProbe>::try_from(p)?.load()?))?;
+        let p: &mut KProbe = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
+        let id = p.attach(func, 0).with_context(|| format!("attach {prog} to {func}"))?;
+        self.traces.insert(key, (prog, TraceLink::KProbe(id)));
+        Ok(())
+    }
+
+    /// Tracepoint (keyed by program name).
+    pub fn attach_tracepoint(&mut self, prog: &'static str, cat: &str, ev: &str) -> Result<()> {
+        if self.traces.contains_key(prog) {
+            return Ok(());
+        }
+        self.load_once(prog, |p| Ok(<&mut TracePoint>::try_from(p)?.load()?))?;
+        let p: &mut TracePoint = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
+        let id = p.attach(cat, ev).with_context(|| format!("attach {prog} to {cat}/{ev}"))?;
+        self.traces.insert(prog.into(), (prog, TraceLink::Tp(id)));
+        Ok(())
+    }
+
+    pub fn detach_trace(&mut self, key: &str) {
+        let Some((prog, link)) = self.traces.remove(key) else { return };
+        let Some(p) = self.ebpf.program_mut(prog) else { return };
+        let _ = match link {
+            TraceLink::FEntry(id) => <&mut FEntry>::try_from(p).map(|p| p.detach(id)),
+            TraceLink::KProbe(id) => <&mut KProbe>::try_from(p).map(|p| p.detach(id)),
+            TraceLink::Tp(id) => <&mut TracePoint>::try_from(p).map(|p| p.detach(id)),
+            TraceLink::Lsm(id) => <&mut Lsm>::try_from(p).map(|p| p.detach(id)),
+        };
+    }
+
+    /// Detach every trace link whose key starts with one of `progs`.
+    pub fn detach_traces(&mut self, progs: &[&str]) {
+        let keys: Vec<String> = self
+            .traces
+            .keys()
+            .filter(|k| progs.iter().any(|p| k.as_str() == *p || k.starts_with(&format!("{p}@"))))
+            .cloned()
+            .collect();
+        for k in keys {
+            self.detach_trace(&k);
+        }
+    }
+
+    pub fn trace_attached(&self, key: &str) -> bool {
+        self.traces.contains_key(key)
+    }
+
+    pub fn traces(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.traces.keys().cloned().collect();
+        v.sort();
+        v
     }
 
     /// Attach telemetry tracepoints and the capability kprobe. Failures are

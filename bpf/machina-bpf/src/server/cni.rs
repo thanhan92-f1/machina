@@ -68,7 +68,7 @@ pub(crate) fn cidr16(s: &str) -> Result<([u8; ADDR_LEN], u32)> {
     Ok(((addr & mask).to_be_bytes(), total))
 }
 
-fn fnv64(s: &str, seed: u64) -> u64 {
+pub(crate) fn fnv64(s: &str, seed: u64) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325 ^ seed;
     for b in s.bytes() {
         h ^= b as u64;

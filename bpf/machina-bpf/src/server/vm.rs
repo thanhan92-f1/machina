@@ -100,7 +100,7 @@ pub(crate) fn parse_dev_rule(s: &str) -> Result<QemuDevRule> {
     Ok(QemuDevRule { major, minor, dev_type: ty, access })
 }
 
-fn dev_rule_string(r: &QemuDevRule) -> String {
+pub(super) fn dev_rule_string(r: &QemuDevRule) -> String {
     let ty = if r.dev_type == DEVCG_DEV_BLOCK { 'b' } else { 'c' };
     let minor = if r.minor == DEV_MINOR_ANY { "*".to_string() } else { r.minor.to_string() };
     let mut acc = String::new();
@@ -134,7 +134,7 @@ pub(crate) fn parse_ports(specs: &[String]) -> Result<HashSet<u16>> {
 
 /// Char device numbers of the nodes QEMU needs (libvirt's default ACL plus
 /// vhost/tun/vfio), resolved on this host; absent nodes are skipped.
-fn default_dev_rules() -> Vec<QemuDevRule> {
+pub(super) fn default_dev_rules() -> Vec<QemuDevRule> {
     let mut out = Vec::new();
     for node in [
         "/dev/null", "/dev/zero", "/dev/full", "/dev/random", "/dev/urandom", "/dev/ptmx", "/dev/kvm",
@@ -165,7 +165,7 @@ fn char_major(name: &str) -> Option<u32> {
 }
 
 /// Running QEMU scopes: VM name → cgroup path relative to the cgroup root.
-fn qemu_scopes() -> BTreeMap<String, String> {
+pub(super) fn qemu_scopes() -> BTreeMap<String, String> {
     let mut out = BTreeMap::new();
     let Ok(rd) = std::fs::read_dir(Path::new(attribution::CGROUP_ROOT).join(MACHINE_SLICE)) else {
         return out;

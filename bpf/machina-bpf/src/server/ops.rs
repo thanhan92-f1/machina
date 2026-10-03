@@ -232,6 +232,7 @@ impl Engine {
         self.mode = mode;
         self.lease_lapsed = false;
         self.refresh_global()?;
+        self.direct_push_cfg()?;
         Ok(self.mode_state())
     }
 
@@ -243,7 +244,7 @@ impl Engine {
             lease_expires_at: active.then(|| self.lease_wall.map(|w| w.to_rfc3339())).flatten(),
             lease_remaining_secs: active.then(|| (self.lease_deadline_mono - now) / 1_000_000_000),
             lease_expired: self.lease_lapsed || (self.mode == Mode::Enforce && !active),
-            covers: ["policies", "shield", "vm_edge", "vm_sandbox", "node_isolation"]
+            covers: ["policies", "shield", "vm_edge", "vm_sandbox", "node_isolation", "direct"]
                 .map(String::from)
                 .to_vec(),
         }
@@ -259,6 +260,7 @@ impl Engine {
             self.lease_wall = None;
             self.lease_lapsed = true;
             self.refresh_global()?;
+            self.direct_push_cfg()?;
         }
         Ok(())
     }
@@ -356,6 +358,10 @@ impl Engine {
         self.vm_edge_refresh();
         self.sandbox_refresh();
         self.tls_refresh();
+        self.vmi_refresh();
+        if self.guard.config.enabled {
+            self.guard_refresh();
+        }
     }
 
     fn rescan_links(&mut self) {

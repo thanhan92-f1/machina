@@ -48,13 +48,22 @@ import ShieldTab from '../../components/bpf/ShieldTab'
 import TcpHealthTab from '../../components/bpf/TcpHealthTab'
 import TlsTab from '../../components/bpf/TlsTab'
 import NodeIsoTab from '../../components/bpf/NodeIsoTab'
+import NetChangesTab from '../../components/bpf/NetChangesTab'
+import L7SampleTab from '../../components/bpf/L7SampleTab'
+import VmRuntimeTab from '../../components/bpf/VmRuntimeTab'
+import VmmGuardTab from '../../components/bpf/VmmGuardTab'
+import DirectTab from '../../components/bpf/DirectTab'
+import QuicLbTab from '../../components/bpf/QuicLbTab'
+import AfxdpTab from '../../components/bpf/AfxdpTab'
+import SchedulerTab from '../../components/bpf/SchedulerTab'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses, statusPillClasses, statusToneClass } from '../../utils/semanticColors'
 
 const TABS = [
   'Overview', 'Flows', 'L7', 'Accounting', 'Live', 'DNS & processes', 'Captures', 'QoS & telemetry',
-  'Service LB', 'VM Edge', 'Shield', 'TCP Health', 'TLS / JA4', 'Node Isolation',
+  'Service LB', 'VM Edge', 'Shield', 'TCP Health', 'TLS / JA4', 'Node Isolation', 'Net changes',
+  'L7 sampling', 'VM runtime', 'VMM guard', 'Direct redirect', 'QUIC LB', 'AF_XDP', 'Scheduler',
 ] as const
 type Tab = (typeof TABS)[number]
 
@@ -343,6 +352,9 @@ export default function PlatformNativeBpf() {
                   ['TCX', status.features?.tcx],
                   ['BPF LSM', status.features?.lsm_bpf],
                   ['cgroup v2', status.features?.cgroup2],
+                  ['fentry', status.features?.fentry],
+                  ['sched_ext', status.features?.sched_ext],
+                  ['AF_XDP', status.features?.xsk],
                 ] as const
               ).map(([k, v]) => (
                 <li key={k} className={statusPillClasses(v ? 'ok' : 'warn')}>{k} {v ? 'yes' : 'no'}</li>
@@ -819,6 +831,14 @@ export default function PlatformNativeBpf() {
       {available && tab === 'TCP Health' && <TcpHealthTab />}
       {available && tab === 'TLS / JA4' && <TlsTab />}
       {available && tab === 'Node Isolation' && <NodeIsoTab />}
+      {available && tab === 'Net changes' && <NetChangesTab />}
+      {available && tab === 'L7 sampling' && <L7SampleTab />}
+      {available && tab === 'VM runtime' && <VmRuntimeTab />}
+      {available && tab === 'VMM guard' && <VmmGuardTab />}
+      {available && tab === 'Direct redirect' && <DirectTab />}
+      {available && tab === 'QUIC LB' && <QuicLbTab />}
+      {available && tab === 'AF_XDP' && <AfxdpTab />}
+      {available && tab === 'Scheduler' && <SchedulerTab />}
     </PlatformPageChrome>
   )
 }

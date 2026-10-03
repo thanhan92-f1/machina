@@ -60,6 +60,14 @@ struct Persisted {
     shield: Option<ShieldConfig>,
     #[serde(default)]
     tls: Option<TlsConfig>,
+    #[serde(default)]
+    rtnl: Option<RtnlConfig>,
+    #[serde(default)]
+    l7_sample: Option<L7SampleConfig>,
+    #[serde(default)]
+    vm_intel: Option<VmIntelConfig>,
+    #[serde(default)]
+    guard: Option<GuardConfig>,
 }
 
 struct Daemon {
@@ -102,6 +110,10 @@ impl Daemon {
             },
             shield: (eng.shield.config != ShieldConfig::default()).then(|| eng.shield.config.clone()),
             tls: (eng.tls.config != TlsConfig::default()).then(|| eng.tls.config.clone()),
+            rtnl: (eng.rtnl.config != RtnlConfig::default()).then(|| eng.rtnl.config.clone()),
+            l7_sample: (eng.l7s.config != L7SampleConfig::default()).then(|| eng.l7s.config.clone()),
+            vm_intel: (eng.vmi.config != VmIntelConfig::default()).then(|| eng.vmi.config.clone()),
+            guard: eng.guard_persisted(),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -190,10 +202,36 @@ impl Daemon {
                 tracing::warn!("restore shield: {e:#}");
             }
         }
+        if let Some(cfg) = p.rtnl {
+            if let Err(e) = eng.rtnl_configure(cfg) {
+                tracing::warn!("restore rtnl: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.vm_intel {
+            if let Err(e) = eng.vmi_configure(cfg) {
+                tracing::warn!("restore vm intel: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.guard {
+            if let Err(e) = eng.guard_configure(cfg) {
+                tracing::warn!("restore vmm guard: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.l7_sample {
+            if let Err(e) = eng.l7s_configure(cfg) {
+                tracing::warn!("restore l7 sampling: {e:#}");
+            }
+        }
     }
 
-    fn handle(&self, req: Request) -> Response {
-        match self.dispatch(req) {
+    fn handle(&self, req: Request, fd: Option<std::os::fd::OwnedFd>) -> Response {
+        let r = match req {
+            Request::AfxdpRegister { iface, queue } => {
+                lock(&self.engine).afxdp_register(&iface, queue, fd).map(|s| v(&s))
+            }
+            req => self.dispatch(req),
+        };
+        match r {
             Ok(v) => Response::ok(v),
             Err(e) => Response::err(format!("{e:#}")),
         }
@@ -403,7 +441,63 @@ impl Daemon {
                 let mut eng = lock(&self.engine);
                 eng.vm_edge_refresh();
                 eng.sandbox_refresh();
+                eng.vmi_refresh_now();
                 json!({ "refreshed": true })
+            }
+            Request::RtnlConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.rtnl_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::RtnlStatus => v(&lock(&self.engine).rtnl_status()),
+            Request::RtnlEvents { limit, iface } => {
+                let s = lock(&self.shared);
+                let out: Vec<&RtnlRecord> = s
+                    .rtnl
+                    .iter()
+                    .rev()
+                    .filter(|r| iface.is_none() || r.iface == iface)
+                    .take(lim(limit))
+                    .collect();
+                v(&out)
+            }
+            Request::L7SampleConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.l7s_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::L7SampleStatus => v(&lock(&self.engine).l7s_status()),
+            Request::VmIntelConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.vmi_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmIntelStatus => v(&lock(&self.engine).vmi_status()),
+            Request::VmIntelVm { name } => v(&lock(&self.engine).vmi_vm(&name)?),
+            Request::GuardConfigure { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.guard_configure(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::GuardStatus => v(&lock(&self.engine).guard_status()),
+            Request::DirectConfigure { config } => v(&lock(&self.engine).direct_configure(config)?),
+            Request::DirectStatus => v(&lock(&self.engine).direct_status()),
+            Request::QuicLbConfigure { config } => v(&lock(&self.engine).quiclb_configure(config)?),
+            Request::QuicLbStatus => v(&lock(&self.engine).quiclb_status()),
+            Request::AfxdpConfigure { config } => v(&lock(&self.engine).afxdp_configure(config)?),
+            Request::AfxdpRegister { .. } => return Err(anyhow!("afxdp_register needs an SCM_RIGHTS socket")),
+            Request::AfxdpUnregister { iface, queue } => v(&lock(&self.engine).afxdp_unregister(&iface, queue)?),
+            Request::AfxdpStatus => v(&lock(&self.engine).afxdp_status()),
+            Request::ScxConfigure { config } => v(&lock(&self.engine).scx_configure(config)?),
+            Request::ScxStatus => v(&lock(&self.engine).scx_status()),
+            Request::GuardEvents { limit } => {
+                let s = lock(&self.shared);
+                let out: Vec<&GuardRecord> = s.guard.iter().rev().take(lim(limit)).collect();
+                v(&out)
             }
             Request::Subscribe { .. } => return Err(anyhow!("subscribe is handled per connection")),
         })
@@ -414,35 +508,80 @@ fn v<T: Serialize + ?Sized>(x: &T) -> serde_json::Value {
     serde_json::to_value(x).unwrap_or(serde_json::Value::Null)
 }
 
-async fn write_line<T: Serialize>(w: &mut tokio::net::unix::OwnedWriteHalf, v: &T) -> Result<()> {
+async fn write_line<T: Serialize>(w: &mut UnixStream, v: &T) -> Result<()> {
     let mut b = serde_json::to_vec(v)?;
     b.push(b'\n');
     w.write_all(&b).await?;
     Ok(())
 }
 
-async fn serve_conn(d: Arc<Daemon>, stream: UnixStream) -> Result<()> {
-    let (r, mut w) = stream.into_split();
-    let mut lines = BufReader::new(r).lines();
-    while let Some(line) = lines.next_line().await? {
+/// One `recvmsg`: bytes plus any SCM_RIGHTS fds (queued in arrival order).
+fn recv_with_fds(fd: std::os::fd::RawFd, fds: &mut VecDeque<std::os::fd::OwnedFd>) -> std::io::Result<Vec<u8>> {
+    use std::os::fd::FromRawFd;
+    let mut buf = vec![0u8; 65536];
+    let mut cbuf = [0u64; 16];
+    let mut iov = libc::iovec { iov_base: buf.as_mut_ptr().cast(), iov_len: buf.len() };
+    let mut msg: libc::msghdr = unsafe { std::mem::zeroed() };
+    msg.msg_iov = &mut iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = cbuf.as_mut_ptr().cast();
+    msg.msg_controllen = std::mem::size_of_val(&cbuf) as _;
+    let n = unsafe { libc::recvmsg(fd, &mut msg, libc::MSG_CMSG_CLOEXEC | libc::MSG_DONTWAIT) };
+    if n < 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    let mut c = unsafe { libc::CMSG_FIRSTHDR(&msg) };
+    while !c.is_null() {
+        let h = unsafe { &*c };
+        if h.cmsg_level == libc::SOL_SOCKET && h.cmsg_type == libc::SCM_RIGHTS {
+            let data = unsafe { libc::CMSG_DATA(c) } as *const libc::c_int;
+            let count = (h.cmsg_len as usize - unsafe { libc::CMSG_LEN(0) } as usize) / std::mem::size_of::<libc::c_int>();
+            for i in 0..count {
+                fds.push_back(unsafe { std::os::fd::OwnedFd::from_raw_fd(std::ptr::read_unaligned(data.add(i))) });
+            }
+        }
+        c = unsafe { libc::CMSG_NXTHDR(&msg, c) };
+    }
+    buf.truncate(n as usize);
+    Ok(buf)
+}
+
+async fn serve_conn(d: Arc<Daemon>, mut stream: UnixStream) -> Result<()> {
+    use std::os::fd::AsRawFd;
+    let mut pending: Vec<u8> = Vec::new();
+    let mut fds: VecDeque<std::os::fd::OwnedFd> = VecDeque::new();
+    loop {
+        let Some(nl) = pending.iter().position(|b| *b == b'\n') else {
+            stream.readable().await?;
+            let raw = stream.as_raw_fd();
+            match stream.try_io(tokio::io::Interest::READABLE, || recv_with_fds(raw, &mut fds)) {
+                Ok(b) if b.is_empty() => return Ok(()),
+                Ok(b) => pending.extend_from_slice(&b),
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                Err(e) => return Err(e.into()),
+            }
+            continue;
+        };
+        let line: Vec<u8> = pending.drain(..=nl).collect();
+        let line = String::from_utf8_lossy(&line);
         if line.trim().is_empty() {
             continue;
         }
         let req: Request = match serde_json::from_str(&line) {
             Ok(r) => r,
             Err(e) => {
-                write_line(&mut w, &Response::err(format!("bad request: {e}"))).await?;
+                write_line(&mut stream, &Response::err(format!("bad request: {e}"))).await?;
                 continue;
             }
         };
         if let Request::Subscribe { topics } = req {
             let mut rx = d.bus.subscribe();
-            write_line(&mut w, &Response::ok(json!({ "subscribed": topics }))).await?;
+            write_line(&mut stream, &Response::ok(json!({ "subscribed": topics }))).await?;
             loop {
                 match rx.recv().await {
                     Ok(ev) => {
                         if topics.is_empty() || topics.contains(&ev.topic) {
-                            write_line(&mut w, &ev).await?;
+                            write_line(&mut stream, &ev).await?;
                         }
                     }
                     Err(broadcast::error::RecvError::Lagged(n)) => {
@@ -452,11 +591,11 @@ async fn serve_conn(d: Arc<Daemon>, stream: UnixStream) -> Result<()> {
                 }
             }
         }
+        let fd = matches!(req, Request::AfxdpRegister { .. }).then(|| fds.pop_front()).flatten();
         let d2 = d.clone();
-        let resp = tokio::task::spawn_blocking(move || d2.handle(req)).await?;
-        write_line(&mut w, &resp).await?;
+        let resp = tokio::task::spawn_blocking(move || d2.handle(req, fd)).await?;
+        write_line(&mut stream, &resp).await?;
     }
-    Ok(())
 }
 
 fn bind_socket(cfg: &Config) -> Result<UnixListener> {
@@ -499,6 +638,8 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
                 eng.drain_dns_blocks()?;
                 eng.expire_lease()?;
                 eng.nodeiso_expire()?;
+                eng.guard_expire()?;
+                eng.scx_tick();
                 eng.sweep_captures()?;
                 if n2.is_multiple_of(5) {
                     eng.rescan_ifaces();
@@ -547,6 +688,12 @@ pub async fn run(cfg: Config) -> Result<()> {
         spawn_reader(eng.dp.take_ringbuf("TLSFP_EVENTS")?, "tlsfp", move |x| on_tlsfp(&sh, &b, x));
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("SSL_EVENTS")?, "ssl", move |x| on_ssl(&sh, &b, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("RTNL_EVENTS")?, "rtnl", move |x| super::rtnl::on_rtnl(&sh, &b, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("L7S_EVENTS")?, "l7s", move |x| super::l7sample::on_l7s(&sh, &b, x));
+        let (sh, b) = (shared.clone(), bus.clone());
+        spawn_reader(eng.dp.take_ringbuf("GUARD_EVENTS")?, "guard", move |x| super::guard::on_guard(&sh, &b, x));
     }
 
     let d = Arc::new(Daemon {

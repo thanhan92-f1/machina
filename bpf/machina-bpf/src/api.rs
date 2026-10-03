@@ -160,6 +160,18 @@ pub struct KernelFeatures {
     pub lsm_bpf: bool,
     pub tracefs: Option<String>,
     pub cgroup2: bool,
+    /// fentry/fexit (BTF trampolines; kernel >= 5.5 with vmlinux BTF).
+    #[serde(default)]
+    pub fentry: bool,
+    /// sched_ext available (`/sys/kernel/sched_ext` exists).
+    #[serde(default)]
+    pub sched_ext: bool,
+    /// `/sys/kernel/sched_ext/state` (disabled / enabled / ...).
+    #[serde(default)]
+    pub sched_ext_state: Option<String>,
+    /// AF_XDP sockets can be created.
+    #[serde(default)]
+    pub xsk: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -974,6 +986,528 @@ pub struct NodeIsoStatus {
     pub stats: NodeIsoCounters,
 }
 
+/// Network change audit (kprobe on `rtnetlink_rcv_msg`; observe only).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RtnlConfig {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// Keep only requests issued from the host network namespace.
+    #[serde(default = "default_true")]
+    pub host_netns_only: bool,
+    /// Object kinds to record (`link`, `addr`, `route`, `neigh`, `rule`,
+    /// `qdisc`, `class`, `filter`); empty = all but `class`.
+    #[serde(default)]
+    pub kinds: Vec<String>,
+}
+
+impl Default for RtnlConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("rtnl defaults")
+    }
+}
+
+/// One state-changing rtnetlink request and the process that sent it.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RtnlRecord {
+    pub ts: String,
+    /// `link`, `addr`, `route`, `neigh`, `rule`, `qdisc`, `class`, `filter`.
+    pub kind: String,
+    /// `new`, `del` or `set`.
+    pub action: String,
+    /// NLM_F_CREATE was set (a create rather than a change).
+    pub create: bool,
+    pub ifindex: Option<u32>,
+    pub iface: Option<String>,
+    /// Routes: destination CIDR (`default` when none).
+    pub dst: Option<String>,
+    pub pid: u32,
+    pub tgid: u32,
+    pub uid: u32,
+    pub comm: String,
+    pub cmdline: Option<String>,
+    pub cgroup: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workload: Option<Workload>,
+    /// Requester's network namespace inode (unknown once the process exited).
+    pub netns: Option<u64>,
+    pub host_netns: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RtnlStatus {
+    pub config: RtnlConfig,
+    pub attached: bool,
+    pub events: u64,
+    pub dropped: u64,
+    pub stored: usize,
+    pub notes: Vec<String>,
+}
+
+/// One sampled service port.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct L7SamplePort {
+    pub port: u16,
+    /// `redis`, `postgres`, `mysql`, `kafka` or `http2` (gRPC).
+    pub protocol: String,
+}
+
+/// Sampled plaintext L7 on a cgroup's sockets (cgroup_skb; observe only).
+/// Records land in the L7 store with `protocol` set and only the
+/// operation name in `method` (gRPC method path in `path`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct L7SampleConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    /// Empty = the standard ports (6379, 5432, 3306, 9092, 50051).
+    #[serde(default)]
+    pub ports: Vec<L7SamplePort>,
+    /// One sample per flow and direction per this many milliseconds.
+    #[serde(default = "default_l7s_gap")]
+    pub flow_gap_ms: u64,
+    /// Host-wide samples per second.
+    #[serde(default = "default_l7s_rate")]
+    pub rate: u32,
+}
+
+fn default_l7s_gap() -> u64 {
+    250
+}
+
+fn default_l7s_rate() -> u32 {
+    200
+}
+
+impl Default for L7SampleConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("l7 sample defaults")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct L7SampleOp {
+    pub protocol: String,
+    pub op: String,
+    pub count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct L7SampleStatus {
+    pub config: L7SampleConfig,
+    /// Cgroup the samplers are attached to.
+    pub attached: Option<String>,
+    pub eligible: u64,
+    pub emitted: u64,
+    pub rate_limited: u64,
+    pub ringbuf_full: u64,
+    pub load_fail: u64,
+    /// Samples that didn't decode to an operation.
+    pub undecoded: u64,
+    /// Most frequent operations since enable.
+    pub top: Vec<L7SampleOp>,
+    pub notes: Vec<String>,
+}
+
+/// A non-libvirt VMM tracked as a VM (cgroup relative to /sys/fs/cgroup).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct VmIntelTarget {
+    pub name: String,
+    pub cgroup: String,
+}
+
+/// VM runtime intelligence. Observe only; `sched_switch` is a hot path, so
+/// this is off unless enabled.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct VmIntelConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    /// `flight` (KVM exits, vCPU run-queue latency, migrations, CPU
+    /// residency), `io` (block latency, vhost), `mem` (fault + reclaim
+    /// latency, first KVM entry), `topology` (per-CPU IRQ time). Empty = all.
+    #[serde(default)]
+    pub features: Vec<String>,
+    /// Extra VMMs tracked alongside libvirt's machine-qemu scopes.
+    #[serde(default)]
+    pub extra: Vec<VmIntelTarget>,
+}
+
+impl Default for VmIntelConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("vm intel defaults")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmIntelTracked {
+    pub name: String,
+    pub cgroup: String,
+    pub processes: usize,
+    pub threads: usize,
+    pub vcpus: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmIntelCpu {
+    pub cpu: u32,
+    pub irq_ns: u64,
+    pub softirq_ns: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmIntelStatus {
+    pub config: VmIntelConfig,
+    /// Attached hooks (`prog` or `prog@function`).
+    pub hooks: Vec<String>,
+    pub vms: Vec<VmIntelTracked>,
+    /// Per-CPU interrupt time (topology).
+    pub cpus: Vec<VmIntelCpu>,
+    pub notes: Vec<String>,
+}
+
+/// log2 latency histogram: bucket `le_ns` counts durations below it.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmIntelHist {
+    pub count: u64,
+    pub p50_ns: u64,
+    pub p99_ns: u64,
+    pub buckets: Vec<VmIntelBucket>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmIntelBucket {
+    pub le_ns: u64,
+    pub count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmIntelExit {
+    pub reason: u32,
+    pub name: String,
+    pub count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmIntelReport {
+    pub name: String,
+    pub exits: Vec<VmIntelExit>,
+    pub runq: VmIntelHist,
+    pub block: VmIntelHist,
+    pub fault: VmIntelHist,
+    pub reclaim: VmIntelHist,
+    pub vhost_work: u64,
+    pub vhost_kicks: u64,
+    pub migrations: u64,
+    /// vCPU run time per physical CPU.
+    pub residency: Vec<VmIntelResidency>,
+    /// QEMU process start → first KVM_RUN entry.
+    pub boot_to_first_entry_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmIntelResidency {
+    pub cpu: u32,
+    pub ns: u64,
+}
+
+fn default_guard_mode() -> String {
+    "audit".into()
+}
+
+/// VMM guard (BPF-LSM on QEMU cgroups). `audit` records violations;
+/// `enforce` denies them and needs `lease_secs` (it reverts to audit when
+/// the lease runs out and is never persisted).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GuardConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_guard_mode")]
+    pub mode: String,
+    #[serde(default)]
+    pub lease_secs: Option<u64>,
+    /// Only allowlisted binaries may be exec'd from a QEMU cgroup.
+    #[serde(default = "default_true")]
+    pub exec: bool,
+    /// No writable+executable mappings (W^X).
+    #[serde(default = "default_true")]
+    pub wx: bool,
+    /// Only allowlisted char devices may be opened.
+    #[serde(default = "default_true")]
+    pub devices: bool,
+    /// Extra executables (paths) on top of the QEMU binaries found here.
+    #[serde(default)]
+    pub allow_exec: Vec<String>,
+    /// Extra char devices (`c 10:229`, `c 240:*`) on top of QEMU's defaults.
+    #[serde(default)]
+    pub allow_devices: Vec<String>,
+    /// VMs to guard; empty = every running VM.
+    #[serde(default)]
+    pub vms: Vec<String>,
+    /// Non-libvirt VMMs by cgroup.
+    #[serde(default)]
+    pub extra: Vec<VmIntelTarget>,
+}
+
+impl Default for GuardConfig {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("guard defaults")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct GuardTarget {
+    pub name: String,
+    pub cgroup: String,
+    pub cgroups: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GuardStatus {
+    pub config: GuardConfig,
+    /// `bpf` is in /sys/kernel/security/lsm (hooks actually run).
+    pub lsm_active: bool,
+    pub lsm_list: String,
+    pub hooks: Vec<String>,
+    /// Denying right now (enforce with a live lease).
+    pub enforcing: bool,
+    pub lease_remaining_secs: Option<u64>,
+    pub lease_expired: bool,
+    pub guarded: Vec<GuardTarget>,
+    pub allowed_exec: Vec<String>,
+    pub allowed_devices: Vec<String>,
+    pub audited: u64,
+    pub denied: u64,
+    pub dropped: u64,
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GuardRecord {
+    pub ts: String,
+    /// `exec`, `mprotect` or `open`.
+    pub hook: String,
+    pub denied: bool,
+    pub vm: Option<String>,
+    pub tgid: u32,
+    pub pid: u32,
+    pub comm: String,
+    pub detail: String,
+}
+
+/// Bridge-less redirect for one VM between an outer device (pod veth or a
+/// dedicated NIC) and its tap. Redirects only while the enforcement lease is
+/// live; not persisted.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DirectConfig {
+    pub vm: String,
+    #[serde(default)]
+    pub outer_iface: String,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// Allow a physical NIC as the outer device.
+    #[serde(default)]
+    pub force: bool,
+    /// Tap (default: the VM's tap known to bpfd).
+    #[serde(default)]
+    pub tap: Option<String>,
+    /// Guest MAC (default: the tap MAC with libvirt's fe: → 52: prefix).
+    #[serde(default)]
+    pub mac: Option<String>,
+    /// Guest IPs, matched when the destination MAC isn't the guest's.
+    #[serde(default)]
+    pub ips: Vec<String>,
+    /// Also send the VM's frames straight out of the outer device.
+    #[serde(default = "default_true")]
+    pub reverse: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct DirectEntry {
+    pub vm: String,
+    pub outer_iface: String,
+    pub tap: String,
+    pub mac: String,
+    pub ips: Vec<String>,
+    pub reverse: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct DirectStatus {
+    pub entries: Vec<DirectEntry>,
+    /// `iface:program` links.
+    pub attached: Vec<String>,
+    /// Redirecting right now (enforcement lease live).
+    pub active: bool,
+    pub redirected_in: u64,
+    pub redirected_out: u64,
+    /// Frames passed through because the lease wasn't live.
+    pub idle: u64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum QuicLbMode {
+    /// Rewrite MACs and bounce out of the uplink; backends hold the VIP.
+    #[default]
+    Dsr,
+    /// IPv4-in-IPv4 to the backend (IPv4 VIPs only).
+    Ipip,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct QuicLbBackend {
+    pub addr: String,
+    /// Next-hop MAC (default: the uplink's IPv4 neighbour entry).
+    #[serde(default)]
+    pub mac: Option<String>,
+    /// Server id the backend encodes in its CIDs (default: derived from addr).
+    #[serde(default)]
+    pub server_id: Option<u16>,
+}
+
+fn default_cid_len() -> u8 {
+    8
+}
+
+/// One QUIC service on the uplink XDP dispatcher. `enabled: false` removes it.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct QuicLbConfig {
+    #[serde(default)]
+    pub iface: String,
+    pub vip: String,
+    pub port: u16,
+    #[serde(default)]
+    pub backends: Vec<QuicLbBackend>,
+    /// Length of server-issued short-header DCIDs (3..=20).
+    #[serde(default = "default_cid_len")]
+    pub cid_len: u8,
+    /// QUIC-LB config rotation id in the CID's top three bits (0..=6).
+    #[serde(default)]
+    pub config_id: u8,
+    #[serde(default)]
+    pub mode: QuicLbMode,
+    /// Outer IPIP source (default: the uplink's first IPv4 address).
+    #[serde(default)]
+    pub encap_src: Option<String>,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct QuicLbBackendStatus {
+    pub addr: String,
+    pub mac: String,
+    pub server_id: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct QuicLbServiceStatus {
+    pub vip: String,
+    pub port: u16,
+    pub mode: QuicLbMode,
+    pub cid_len: u8,
+    pub config_id: u8,
+    pub backends: Vec<QuicLbBackendStatus>,
+    /// Routed by the server id in the CID.
+    pub routed_cid: u64,
+    /// Routed by Maglev on the 5-tuple.
+    pub maglev: u64,
+    pub initial: u64,
+    pub unknown_sid: u64,
+    pub tx: u64,
+    pub errors: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct QuicLbStatus {
+    pub iface: Option<String>,
+    pub attached: bool,
+    pub services: Vec<QuicLbServiceStatus>,
+}
+
+/// Attach the AF_XDP program to a dedicated interface (never one carrying a
+/// default route or the uplink dispatcher).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct AfxdpConfig {
+    pub iface: String,
+    #[serde(default)]
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AfxdpQueue {
+    pub queue: u32,
+    /// Gate open (a socket was registered and not unregistered).
+    pub enabled: bool,
+    pub redirected: u64,
+    /// Frames passed to the stack because no socket was bound (consumer gone).
+    pub no_socket: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AfxdpStatus {
+    pub iface: Option<String>,
+    pub attached: bool,
+    pub queues: Vec<AfxdpQueue>,
+}
+
+/// A process standing in for a VM (tests, non-libvirt VMMs): its `CPU n/KVM`
+/// threads are scheduled.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ScxTarget {
+    pub name: String,
+    pub pid: u32,
+}
+
+/// VM-aware sched_ext scheduler. Only listed VMs' vCPU threads switch to
+/// SCHED_EXT, always under a lease; never persisted.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct ScxConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub lease_secs: Option<u64>,
+    /// libvirt VM names.
+    #[serde(default)]
+    pub vms: Vec<String>,
+    #[serde(default)]
+    pub extra: Vec<ScxTarget>,
+    /// Queue delay above which a dispatch counts as a latency violation.
+    #[serde(default)]
+    pub latency_target_us: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ScxVmStatus {
+    pub name: String,
+    pub vcpus: usize,
+    pub enqueues: u64,
+    pub dispatches: u64,
+    pub avg_queue_delay_us: f64,
+    pub max_queue_delay_us: f64,
+    pub runtime_ms: u64,
+    pub latency_violations: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ScxStatus {
+    /// Kernel has sched_ext.
+    pub supported: bool,
+    /// Helper binary in use (None = not found).
+    pub helper: Option<String>,
+    pub running: bool,
+    /// /sys/kernel/sched_ext/state.
+    pub kernel_state: String,
+    /// Name of the loaded scheduler, if any.
+    pub ops: Option<String>,
+    /// Tasks the kernel refused to put on SCHED_EXT since boot.
+    pub nr_rejected: u64,
+    pub lease_remaining_secs: Option<u64>,
+    pub lease_expired: bool,
+    /// Why the last run ended.
+    pub last_exit: Option<String>,
+    pub vms: Vec<ScxVmStatus>,
+    pub notes: Vec<String>,
+}
+
 /// Who a record belongs to: `vm`, `pod`, `container` or `service`.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Workload {
@@ -1145,6 +1679,61 @@ pub enum Request {
         #[serde(default)]
         limit: Option<usize>,
     },
+    RtnlConfigure {
+        config: RtnlConfig,
+    },
+    RtnlStatus,
+    RtnlEvents {
+        #[serde(default)]
+        limit: Option<usize>,
+        #[serde(default)]
+        iface: Option<String>,
+    },
+    L7SampleConfigure {
+        config: L7SampleConfig,
+    },
+    L7SampleStatus,
+    VmIntelConfigure {
+        config: VmIntelConfig,
+    },
+    VmIntelStatus,
+    VmIntelVm {
+        name: String,
+    },
+    GuardConfigure {
+        config: GuardConfig,
+    },
+    GuardStatus,
+    GuardEvents {
+        #[serde(default)]
+        limit: Option<usize>,
+    },
+    DirectConfigure {
+        config: DirectConfig,
+    },
+    DirectStatus,
+    QuicLbConfigure {
+        config: QuicLbConfig,
+    },
+    QuicLbStatus,
+    AfxdpConfigure {
+        config: AfxdpConfig,
+    },
+    /// Must carry the consumer's AF_XDP socket as SCM_RIGHTS ancillary data
+    /// on the same message; the socket must be bound to (iface, queue).
+    AfxdpRegister {
+        iface: String,
+        queue: u32,
+    },
+    AfxdpUnregister {
+        iface: String,
+        queue: u32,
+    },
+    AfxdpStatus,
+    ScxConfigure {
+        config: ScxConfig,
+    },
+    ScxStatus,
     /// Stream events (`net`, `dns`, `l7`, `proc`, `anomaly`) as JSON lines
     /// until the client disconnects.
     Subscribe {

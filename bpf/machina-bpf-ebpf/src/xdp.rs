@@ -25,7 +25,7 @@ pub static XDP_PROGS: ProgramArray = ProgramArray::with_max_entries(XDP_SLOTS, 0
 pub static XDP_CFG: Array<XdpCfg> = Array::with_max_entries(1, 0);
 
 #[inline(always)]
-fn ptr<T>(ctx: &XdpContext, off: usize) -> Option<*mut T> {
+pub(crate) fn ptr<T>(ctx: &XdpContext, off: usize) -> Option<*mut T> {
     let start = ctx.data();
     if start + off + core::mem::size_of::<T>() > ctx.data_end() {
         return None;
@@ -44,6 +44,9 @@ pub fn mn_xdp_uplink(ctx: XdpContext) -> u32 {
     }
     if flags & XDP_F_SHIELD != 0 && crate::shield::shield(&ctx) == xdp_action::XDP_DROP {
         return xdp_action::XDP_DROP;
+    }
+    if flags & XDP_F_QUICLB != 0 {
+        let _ = unsafe { XDP_PROGS.tail_call(&ctx, XDP_SLOT_QUICLB) };
     }
     if flags & XDP_F_NODEPORT != 0 {
         let _ = unsafe { XDP_PROGS.tail_call(&ctx, XDP_SLOT_NODEPORT) };
@@ -100,7 +103,7 @@ fn try_nodeport(ctx: &XdpContext) -> Option<()> {
 /// headers, TCP/UDP only. Fills addresses, ports and offsets of `t`.
 /// Inline: packet pointers cannot be passed to BPF subprograms.
 #[inline(always)]
-fn parse(ctx: &XdpContext, t: &mut Tuple) -> u32 {
+pub(crate) fn parse(ctx: &XdpContext, t: &mut Tuple) -> u32 {
     let Some(et) = ptr::<[u8; 2]>(ctx, 12) else { return 0 };
     let l4 = match u16::from_be_bytes(unsafe { *et }) {
         ETH_P_IP => {

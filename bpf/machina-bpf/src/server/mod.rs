@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use serde_json::json;
-use tokio::io::{unix::AsyncFd, AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{unix::AsyncFd, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
 use std::sync::{Mutex, MutexGuard};
 use tokio::sync::broadcast;
@@ -29,16 +29,24 @@ use crate::pcapng::PcapngWriter;
 use crate::policy::{self, proto_name, Prefix, Rule};
 use crate::{dns, fmt_addr};
 
+mod afxdp;
 mod cni;
+mod direct;
+mod quiclb;
+mod scx;
+mod guard;
+mod l7sample;
 mod listen;
 mod nodeiso;
 mod ops;
 mod readers;
+mod rtnl;
 mod shield;
 mod tcp;
 mod tls;
 mod uplink;
 mod vm;
+mod vmintel;
 
 pub use listen::{run, Config};
 
@@ -94,6 +102,12 @@ struct Shared {
     pods: HashMap<String, (String, String)>,
     /// CNI host veth → (namespace, name).
     pod_ifaces: HashMap<String, (String, String)>,
+    rtnl: VecDeque<RtnlRecord>,
+    rtnl_host_netns: Option<u64>,
+    l7s: l7sample::L7sCounts,
+    guard: VecDeque<GuardRecord>,
+    /// Guarded cgroup id → VM.
+    guard_cgroups: HashMap<u64, String>,
 }
 
 impl Shared {
@@ -201,6 +215,14 @@ struct Engine {
     shield: shield::ShieldRuntime,
     nodeiso: nodeiso::NodeIsoRuntime,
     tls: tls::TlsRuntime,
+    rtnl: rtnl::RtnlRuntime,
+    l7s: l7sample::L7sRuntime,
+    vmi: vmintel::VmiRuntime,
+    guard: guard::GuardRuntime,
+    direct: direct::DirectRuntime,
+    quiclb: quiclb::QuicLbRuntime,
+    afxdp: afxdp::AfxdpRuntime,
+    scx: scx::ScxRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -289,6 +311,14 @@ impl Engine {
             shield: shield::ShieldRuntime::default(),
             nodeiso: nodeiso::NodeIsoRuntime::default(),
             tls: tls::TlsRuntime::default(),
+            rtnl: rtnl::RtnlRuntime::default(),
+            l7s: l7sample::L7sRuntime::default(),
+            vmi: vmintel::VmiRuntime::default(),
+            guard: guard::GuardRuntime::default(),
+            direct: direct::DirectRuntime::default(),
+            quiclb: quiclb::QuicLbRuntime::default(),
+            afxdp: afxdp::AfxdpRuntime::default(),
+            scx: scx::ScxRuntime::default(),
         };
         eng.init()?;
         Ok(eng)
@@ -317,6 +347,9 @@ impl Engine {
             }
         }
         self.sync_sockops();
+        if let Err(e) = self.rtnl_configure(RtnlConfig::default()) {
+            self.dp.notes.push(format!("{e:#}"));
+        }
         Ok(())
     }
 

@@ -15,12 +15,16 @@
 pub mod anomaly;
 pub mod api;
 pub mod attribution;
+pub mod btf;
 pub mod client;
 pub mod dns;
 pub mod l7;
+pub mod l7sample;
 pub mod pcapng;
 pub mod policy;
+pub mod rtnl;
 pub mod tracefs;
+pub mod vmintel;
 
 #[cfg(target_os = "linux")]
 pub mod loader;

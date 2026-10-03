@@ -114,4 +114,43 @@ impl BpfdClient {
         });
         Ok(rx)
     }
+
+    /// Hand a bound AF_XDP socket to bpfd for (iface, queue) and open that
+    /// queue's gate. bpfd keeps no fd: closing `xsk` unregisters it.
+    pub fn register_xsk(&self, iface: &str, queue: u32, xsk: std::os::fd::BorrowedFd<'_>) -> Result<Value> {
+        use std::io::{BufRead, BufReader};
+        use std::os::fd::AsRawFd;
+        let s = std::os::unix::net::UnixStream::connect(&self.path)
+            .with_context(|| format!("connect {}", self.path.display()))?;
+        s.set_read_timeout(Some(self.timeout))?;
+        let mut line = serde_json::to_vec(&Request::AfxdpRegister { iface: iface.into(), queue })?;
+        line.push(b'\n');
+        let fd = xsk.as_raw_fd();
+        let space = unsafe { libc::CMSG_SPACE(std::mem::size_of::<libc::c_int>() as u32) } as usize;
+        let mut cbuf = vec![0u64; space.div_ceil(8)];
+        let mut iov = libc::iovec { iov_base: line.as_mut_ptr().cast(), iov_len: line.len() };
+        let mut msg: libc::msghdr = unsafe { std::mem::zeroed() };
+        msg.msg_iov = &mut iov;
+        msg.msg_iovlen = 1;
+        msg.msg_control = cbuf.as_mut_ptr().cast();
+        msg.msg_controllen = space as _;
+        unsafe {
+            let c = libc::CMSG_FIRSTHDR(&msg);
+            (*c).cmsg_level = libc::SOL_SOCKET;
+            (*c).cmsg_type = libc::SCM_RIGHTS;
+            (*c).cmsg_len = libc::CMSG_LEN(std::mem::size_of::<libc::c_int>() as u32) as _;
+            std::ptr::write_unaligned(libc::CMSG_DATA(c) as *mut libc::c_int, fd);
+        }
+        if unsafe { libc::sendmsg(s.as_raw_fd(), &msg, 0) } < 0 {
+            return Err(std::io::Error::last_os_error()).context("sendmsg to machina-bpfd");
+        }
+        let mut buf = String::new();
+        BufReader::new(&s).read_line(&mut buf)?;
+        let resp: Response = serde_json::from_str(&buf).context("invalid machina-bpfd response")?;
+        if resp.ok {
+            Ok(resp.data)
+        } else {
+            Err(anyhow!(resp.error.unwrap_or_else(|| "machina-bpfd error".into())))
+        }
+    }
 }

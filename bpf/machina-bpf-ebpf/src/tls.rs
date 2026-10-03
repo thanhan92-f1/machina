@@ -44,7 +44,7 @@ pub static SSL_EVENTS: RingBuf = RingBuf::with_byte_size(512 * 1024, 0);
 
 /// One sample from a host-wide bucket of `rate`/s (burst: one second).
 #[inline(always)]
-fn take(bucket: &Array<SampleBucket>, rate: u32) -> bool {
+pub fn take(bucket: &Array<SampleBucket>, rate: u32) -> bool {
     let Some(b) = bucket.get_ptr_mut(0) else { return false };
     let b = unsafe { &mut *b };
     let now = now_ns();

@@ -271,6 +271,14 @@ pub async fn native_dataplane(pool: &SqlitePool) -> Value {
             ("shield", Request::ShieldStatus),
             ("node_iso", Request::NodeIsoStatus),
             ("tls", Request::TlsStatus),
+            ("rtnl", Request::RtnlStatus),
+            ("l7_sample", Request::L7SampleStatus),
+            ("vm_intel", Request::VmIntelStatus),
+            ("guard", Request::GuardStatus),
+            ("direct", Request::DirectStatus),
+            ("quic_lb", Request::QuicLbStatus),
+            ("afxdp", Request::AfxdpStatus),
+            ("scx", Request::ScxStatus),
         ];
         let results = futures_util::future::join_all(reqs.iter().map(|(_, r)| call(h, r))).await;
         let mut o = serde_json::Map::new();
@@ -318,6 +326,50 @@ pub async fn tls_fingerprints(pool: &SqlitePool, limit: usize) -> Value {
         })).collect::<Vec<_>>(),
         "source": SOURCE,
     })
+}
+
+/// Newest-first records of one bpfd list request across the fleet.
+pub async fn fleet_records(pool: &SqlitePool, req: Request, limit: usize) -> Value {
+    let mut items = fan_out_items(pool, &req).await;
+    newest_first(&mut items);
+    let total = items.len();
+    items.truncate(limit);
+    json!({ "records": items, "total": total, "source": SOURCE })
+}
+
+/// Who changed links, addresses and routes on each host.
+pub async fn rtnl_events(pool: &SqlitePool, limit: usize) -> Value {
+    fleet_records(pool, Request::RtnlEvents { limit: Some(FLEET_LIMIT), iface: None }, limit).await
+}
+
+/// VMM guard violations (audited or denied) per host.
+pub async fn guard_events(pool: &SqlitePool, limit: usize) -> Value {
+    fleet_records(pool, Request::GuardEvents { limit: Some(FLEET_LIMIT) }, limit).await
+}
+
+/// VM runtime reports for every tracked VM on hosts with it enabled.
+pub async fn vm_intel(pool: &SqlitePool) -> Value {
+    let hosts = super::online_hosts(pool).await;
+    let per_host = futures_util::future::join_all(hosts.iter().map(|h| async move {
+        let Ok(st) = call(h, &Request::VmIntelStatus).await else { return Vec::new() };
+        let names: Vec<String> = st["vms"]
+            .as_array()
+            .map(|a| a.iter().filter_map(|v| v["name"].as_str().map(String::from)).collect())
+            .unwrap_or_default();
+        let reqs: Vec<Request> = names.into_iter().map(|name| Request::VmIntelVm { name }).collect();
+        let reports = futures_util::future::join_all(reqs.iter().map(|r| call(h, r))).await;
+        reports
+            .into_iter()
+            .flatten()
+            .map(|mut r| {
+                r["host_id"] = json!(h.id);
+                r["hostname"] = json!(h.hostname);
+                r
+            })
+            .collect()
+    }))
+    .await;
+    json!({ "vms": per_host.into_iter().flatten().collect::<Vec<Value>>(), "source": SOURCE })
 }
 
 /// ICMP error histogram (unreachable / time exceeded / too big …) per host.

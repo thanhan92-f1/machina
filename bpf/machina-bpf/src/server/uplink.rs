@@ -30,6 +30,9 @@ impl Engine {
         if bit == XDP_F_NODEPORT && on {
             self.dp.xdp_set_slot(XDP_SLOT_NODEPORT, "mn_xdp_nodeport")?;
         }
+        if bit == XDP_F_QUICLB && on {
+            self.dp.xdp_set_slot(XDP_SLOT_QUICLB, "mn_xdp_quiclb")?;
+        }
         self.dp.xdp_set_cfg(XdpCfg { flags, _pad: 0 })?;
         if flags == 0 {
             if self.dp.xdp_attached(iface) == Some("mn_xdp_uplink") {

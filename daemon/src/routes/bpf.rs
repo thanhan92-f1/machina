@@ -13,7 +13,10 @@ use axum::routing::{delete, get, put};
 use axum::{Json, Router};
 use base64::Engine as _;
 use futures_util::Stream;
-use machina_bpf::api::{Mode, NodeIsoConfig, Policy, Request, ShieldConfig, TelemetryConfig, TlsConfig, VmEdgeState, VmSandboxConfig};
+use machina_bpf::api::{
+    AfxdpConfig, DirectConfig, GuardConfig, L7SampleConfig, Mode, NodeIsoConfig, Policy, QuicLbConfig, Request, ScxConfig, RtnlConfig, ShieldConfig, TelemetryConfig, TlsConfig, VmEdgeState, VmIntelConfig,
+    VmSandboxConfig,
+};
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
 use serde::Deserialize;
@@ -22,7 +25,7 @@ use serde_json::{json, Value};
 use crate::auth::RequestActor;
 use crate::error::AppError;
 
-fn require_admin(actor: &RequestActor, what: &str) -> Result<(), AppError> {
+pub(super) fn require_admin(actor: &RequestActor, what: &str) -> Result<(), AppError> {
     if actor.role.is_admin() {
         Ok(())
     } else {
@@ -417,6 +420,120 @@ async fn cni_services() -> Result<Json<Value>, AppError> {
     bpfd(Request::CniServices).await
 }
 
+#[derive(Deserialize)]
+struct RtnlQuery {
+    limit: Option<usize>,
+    iface: Option<String>,
+}
+
+async fn rtnl_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::RtnlStatus).await
+}
+
+async fn rtnl_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<RtnlConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the network change audit")?;
+    bpfd(Request::RtnlConfigure { config }).await
+}
+
+async fn rtnl_events(Query(q): Query<RtnlQuery>) -> Result<Json<Value>, AppError> {
+    bpfd(Request::RtnlEvents { limit: q.limit, iface: q.iface }).await
+}
+
+async fn l7_sample_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::L7SampleStatus).await
+}
+
+async fn l7_sample_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<L7SampleConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing L7 sampling")?;
+    bpfd(Request::L7SampleConfigure { config }).await
+}
+
+async fn vm_intel_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::VmIntelStatus).await
+}
+
+async fn vm_intel_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<VmIntelConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing VM runtime intelligence")?;
+    bpfd(Request::VmIntelConfigure { config }).await
+}
+
+async fn vm_intel_vm(Path(name): Path<String>) -> Result<Json<Value>, AppError> {
+    bpfd(Request::VmIntelVm { name }).await
+}
+
+async fn guard_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::GuardStatus).await
+}
+
+async fn guard_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<GuardConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the VMM guard")?;
+    bpfd(Request::GuardConfigure { config }).await
+}
+
+async fn guard_events(Query(q): Query<LimitQuery>) -> Result<Json<Value>, AppError> {
+    bpfd(Request::GuardEvents { limit: q.limit }).await
+}
+
+async fn direct_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::DirectStatus).await
+}
+
+async fn direct_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<DirectConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing direct tap redirects")?;
+    bpfd(Request::DirectConfigure { config }).await
+}
+
+async fn quic_lb_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::QuicLbStatus).await
+}
+
+async fn quic_lb_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<QuicLbConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the QUIC load balancer")?;
+    bpfd(Request::QuicLbConfigure { config }).await
+}
+
+async fn afxdp_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::AfxdpStatus).await
+}
+
+async fn afxdp_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<AfxdpConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the AF_XDP fast path")?;
+    bpfd(Request::AfxdpConfigure { config }).await
+}
+
+async fn scx_status() -> Result<Json<Value>, AppError> {
+    bpfd(Request::ScxStatus).await
+}
+
+async fn scx_configure(
+    Extension(actor): Extension<RequestActor>,
+    Json(config): Json<ScxConfig>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing the sched_ext scheduler")?;
+    bpfd(Request::ScxConfigure { config }).await
+}
+
 /// After a VM lifecycle change, have bpfd re-follow VM taps and QEMU scopes
 /// now instead of on its next rescan. Best-effort: bpfd may not be running.
 pub fn notify_vm_lifecycle() {
@@ -455,6 +572,17 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/node-iso", get(node_iso_status).put(node_iso_configure))
         .route("/bpf/cni", get(cni_status))
         .route("/bpf/cni/services", get(cni_services))
+        .route("/bpf/rtnl", get(rtnl_status).put(rtnl_configure))
+        .route("/bpf/rtnl/events", get(rtnl_events))
+        .route("/bpf/l7-sample", get(l7_sample_status).put(l7_sample_configure))
+        .route("/bpf/vm-intel", get(vm_intel_status).put(vm_intel_configure))
+        .route("/bpf/vm-intel/vms/{name}", get(vm_intel_vm))
+        .route("/bpf/guard", get(guard_status).put(guard_configure))
+        .route("/bpf/guard/events", get(guard_events))
+        .route("/bpf/direct", get(direct_status).put(direct_configure))
+        .route("/bpf/quic-lb", get(quic_lb_status).put(quic_lb_configure))
+        .route("/bpf/afxdp", get(afxdp_status).put(afxdp_configure))
+        .route("/bpf/scx", get(scx_status).put(scx_configure))
         .route("/bpf/tls", get(tls_status).put(tls_configure))
         .route("/bpf/tls/fingerprints", get(tls_fingerprints))
         .route("/bpf/tls/ssl", get(ssl_events))

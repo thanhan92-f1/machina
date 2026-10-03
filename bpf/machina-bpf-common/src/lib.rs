@@ -609,16 +609,103 @@ pub struct NodeCfg {
 
 pub const XDP_SLOTS: u32 = 4;
 pub const XDP_SLOT_NODEPORT: u32 = 0;
+pub const XDP_SLOT_QUICLB: u32 = 1;
 
 pub const XDP_F_SHIELD: u32 = 1 << 0;
 pub const XDP_F_NODEPORT: u32 = 1 << 1;
 pub const XDP_F_NODEISO: u32 = 1 << 2;
+pub const XDP_F_QUICLB: u32 = 1 << 3;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct XdpCfg {
     pub flags: u32,
     pub _pad: u32,
+}
+
+// ---------------------------------------------------------------------------
+// QUIC connection-ID load balancer (uplink XDP tail call)
+// ---------------------------------------------------------------------------
+
+pub const QLB_MAX_SVCS: u32 = 64;
+pub const QLB_MAX_BACKENDS: u32 = 256;
+/// L2 direct server return: rewrite MACs, XDP_TX.
+pub const QLB_MODE_DSR: u8 = 0;
+/// IPv4-in-IPv4 toward the backend (IPv4 VIPs only).
+pub const QLB_MODE_IPIP: u8 = 1;
+
+/// QLB_SVCS key: VIP (v4-mapped or v6) + UDP port (network order).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct QlbSvcKey {
+    pub addr: [u8; ADDR_LEN],
+    pub port: [u8; 2],
+    pub _pad: [u8; 2],
+}
+
+/// CIDs whose first byte has `config_id` in its top three bits carry a
+/// 16-bit server id in bytes 1..3 (QUIC-LB plaintext layout).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct QlbSvc {
+    pub svc_id: u32,
+    pub backend_count: u32,
+    pub cid_len: u8,
+    pub mode: u8,
+    pub config_id: u8,
+    pub _pad: u8,
+    pub src_mac: [u8; 6],
+    pub _pad2: [u8; 2],
+    /// Outer source for IPIP.
+    pub encap_src: [u8; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct QlbBeKey {
+    pub svc_id: u32,
+    pub idx: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct QlbBackend {
+    pub addr: [u8; ADDR_LEN],
+    pub mac: [u8; 6],
+    pub _pad: [u8; 2],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct QlbSidKey {
+    pub svc_id: u32,
+    pub sid: u16,
+    pub _pad: u16,
+}
+
+/// QLB_STATS[svc_id * QLB_STAT_SLOTS + stat] (per-CPU u64).
+pub const QLB_STAT_CID: u32 = 0;
+pub const QLB_STAT_MAGLEV: u32 = 1;
+pub const QLB_STAT_UNKNOWN_SID: u32 = 2;
+pub const QLB_STAT_INITIAL: u32 = 3;
+pub const QLB_STAT_TX: u32 = 4;
+pub const QLB_STAT_ERR: u32 = 5;
+pub const QLB_STAT_SLOTS: u32 = 8;
+
+// ---------------------------------------------------------------------------
+// AF_XDP fast path (dedicated interface only)
+// ---------------------------------------------------------------------------
+
+pub const AFXDP_MAX_QUEUES: u32 = 64;
+/// AFXDP_STATS[queue * AFXDP_STAT_SLOTS + stat] (per-CPU u64).
+pub const AFXDP_STAT_REDIRECT: u32 = 0;
+/// Gate open but no socket bound to the queue: passed to the stack.
+pub const AFXDP_STAT_NOSOCK: u32 = 1;
+pub const AFXDP_STAT_SLOTS: u32 = 2;
+
+/// The server id a CID routes to, if it carries one for `config_id`.
+pub fn qlb_cid_sid(cid: &[u8; 3], config_id: u8) -> Option<u16> {
+    (cid[0] >> 5 == config_id).then(|| u16::from_be_bytes([cid[1], cid[2]]))
 }
 
 // ---------------------------------------------------------------------------
@@ -902,6 +989,298 @@ pub struct NetHitKey {
 }
 
 // ---------------------------------------------------------------------------
+// Network change audit (kprobe on rtnetlink_rcv_msg, observe only)
+// ---------------------------------------------------------------------------
+
+/// RTNL_CFG[0]. `type_mask` bit `n` records RTM type `16 + n`.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RtnlCfg {
+    pub enabled: u32,
+    /// Record only requests from this network namespace (inode); 0 = all.
+    pub netns: u32,
+    pub type_mask: u64,
+    /// Kernel layout from BTF: `sk_buff.sk`, `sock.__sk_common.skc_net.net`,
+    /// `net.ns.inum`. All zero = namespace unknown.
+    pub off_skb_sk: u32,
+    pub off_sk_net: u32,
+    pub off_net_inum: u32,
+    pub _pad: u32,
+}
+
+/// Link, address, route, neighbour, rule, qdisc and tc filter new/del/set.
+pub const RTNL_DEFAULT_MASK: u64 = rtnl_bits(&[16, 17, 19, 20, 21, 24, 25, 28, 29, 32, 33, 36, 37, 44, 45]);
+
+pub const fn rtnl_bits(types: &[u16]) -> u64 {
+    let mut m = 0u64;
+    let mut i = 0;
+    while i < types.len() {
+        let t = types[i];
+        if t >= 16 && t < 80 {
+            m |= 1 << (t - 16);
+        }
+        i += 1;
+    }
+    m
+}
+
+/// One state-changing rtnetlink request, as seen in the requesting task.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct RtnlEvent {
+    pub ts_ns: u64,
+    pub cgroup_id: u64,
+    pub tgid: u32,
+    pub pid: u32,
+    pub uid: u32,
+    pub nlmsg_type: u16,
+    pub nlmsg_flags: u16,
+    /// Interface the request names by index (0: by name or none).
+    pub ifindex: u32,
+    pub nlmsg_len: u32,
+    /// Routes: rtm_family / rtm_dst_len.
+    pub family: u8,
+    pub dst_len: u8,
+    pub _pad: u16,
+    /// Requester's network namespace inode (0 = unknown).
+    pub netns: u32,
+    pub comm: [u8; COMM_LEN],
+    /// Routes: RTA_DST (4 or 16 bytes), else zero.
+    pub dst: [u8; ADDR_LEN],
+    /// Link requests naming the device by IFLA_IFNAME.
+    pub ifname: [u8; 16],
+}
+
+/// RTNL_STATS (per-CPU) index.
+pub const RTNL_STAT_EVENTS: u32 = 0;
+pub const RTNL_STAT_DROPPED: u32 = 1;
+
+// ---------------------------------------------------------------------------
+// Sampled plaintext L7 (cgroup_skb, observe only)
+// ---------------------------------------------------------------------------
+
+pub const L7S_COPY: usize = 128;
+pub const L7S_REDIS: u8 = 1;
+pub const L7S_POSTGRES: u8 = 2;
+pub const L7S_MYSQL: u8 = 3;
+pub const L7S_KAFKA: u8 = 4;
+pub const L7S_HTTP2: u8 = 5;
+
+/// L7S_CFG[0]. One sample per flow+direction per `flow_gap_ns`, and at most
+/// `rate` samples/s host-wide.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct L7sCfg {
+    pub enabled: u32,
+    pub rate: u32,
+    pub flow_gap_ns: u64,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct L7sEvent {
+    pub ts_ns: u64,
+    pub cgroup_id: u64,
+    pub v6: u8,
+    pub ingress: u8,
+    /// L7S_* protocol id from L7S_PORTS.
+    pub proto: u8,
+    /// The destination port is the service port (a request).
+    pub to_server: u8,
+    pub sport: u16,
+    pub dport: u16,
+    pub src: [u8; ADDR_LEN],
+    pub dst: [u8; ADDR_LEN],
+    pub cap_len: u16,
+    pub _pad: u16,
+    /// Payload bytes in the segment.
+    pub len: u32,
+    pub data: [u8; L7S_COPY],
+}
+
+/// L7S_STATS (per-CPU) slots.
+pub const L7S_STAT_ELIGIBLE: u32 = 0;
+pub const L7S_STAT_EMITTED: u32 = 1;
+pub const L7S_STAT_RATE_LIMITED: u32 = 2;
+pub const L7S_STAT_RINGBUF_FULL: u32 = 3;
+pub const L7S_STAT_LOAD_FAIL: u32 = 4;
+pub const L7S_STAT_SLOTS: u32 = 8;
+
+// ---------------------------------------------------------------------------
+// VM runtime intelligence (observe only, opt-in)
+// ---------------------------------------------------------------------------
+
+/// VmiCfg.features bits.
+pub const VMI_F_FLIGHT: u32 = 1; // kvm exits, vCPU run-queue latency, migrations, residency
+pub const VMI_F_IO: u32 = 2; // block request latency, vhost kicks/work
+pub const VMI_F_MEM: u32 = 4; // page-fault + direct-reclaim latency, first KVM entry
+pub const VMI_F_TOPO: u32 = 8; // per-CPU hardirq/softirq time
+
+/// VMI_CFG[0]. Tracepoint field offsets come from tracefs formats.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmiCfg {
+    pub enabled: u32,
+    pub features: u32,
+    pub off_exit_reason: u32,
+    pub off_wakeup_pid: u32,
+    pub off_switch_prev_pid: u32,
+    pub off_switch_prev_state: u32,
+    pub off_switch_next_pid: u32,
+    pub off_migrate_pid: u32,
+    pub off_entry_vcpu: u32,
+    pub off_bio_dev: u32,
+    pub off_bio_sector: u32,
+    pub off_rqc_dev: u32,
+    pub off_rqc_sector: u32,
+    pub _pad: u32,
+}
+
+/// VMI_TIDS value. `vcpu` is u32::MAX for non-vCPU threads.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmiThread {
+    pub vm: u32,
+    pub vcpu: u32,
+}
+
+/// VMI_HIST key. `vm` 0 = host-wide (topology).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct VmiKey {
+    pub vm: u32,
+    pub kind: u16,
+    pub slot: u16,
+}
+
+/// In-flight block I/O (keyed by device and start sector): start time and
+/// owning VM.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct VmiBlk {
+    pub ts: u64,
+    pub vm: u32,
+    pub _pad: u32,
+}
+
+/// VmiKey.kind. Histogram kinds use `slot` = log2(ns) bucket and count
+/// events; RESIDENCY/IRQ/SOFTIRQ use `slot` = CPU and sum nanoseconds.
+pub mod vmi_kind {
+    pub const EXIT: u16 = 1; // slot = exit reason
+    pub const RUNQ: u16 = 2;
+    pub const BLK: u16 = 3;
+    pub const VHOST_WORK: u16 = 4; // slot 0, count
+    pub const VHOST_KICK: u16 = 5; // slot 0, count
+    pub const FAULT: u16 = 6;
+    pub const RECLAIM: u16 = 7;
+    pub const MIGRATE: u16 = 8; // slot 0, count
+    pub const RESIDENCY: u16 = 9;
+    pub const IRQ: u16 = 10;
+    pub const SOFTIRQ: u16 = 11;
+}
+
+/// VMI_TS key namespaces (`ns << 32 | tid`).
+pub const VMI_TS_RUNQ: u64 = 1;
+pub const VMI_TS_RUN: u64 = 2;
+pub const VMI_TS_FAULT: u64 = 3;
+pub const VMI_TS_RECLAIM: u64 = 4;
+
+/// log2 bucket of a nanosecond duration (bucket b covers [2^b, 2^(b+1))).
+#[inline(always)]
+pub fn log2_slot(ns: u64) -> u16 {
+    if ns == 0 {
+        0
+    } else {
+        (63 - ns.leading_zeros()) as u16
+    }
+}
+
+// ---------------------------------------------------------------------------
+// VMM guard (BPF-LSM; audit by default, enforce only under a lease)
+// ---------------------------------------------------------------------------
+
+/// GUARD_POLICIES value bits (per QEMU cgroup).
+pub const GUARD_EXEC: u32 = 1; // exec only allowlisted binaries
+pub const GUARD_WX: u32 = 2; // no writable+executable mappings
+pub const GUARD_DEV: u32 = 4; // open only allowlisted char devices
+
+/// GUARD_CFG[0]. Offsets come from kernel BTF.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct GuardCfg {
+    pub enabled: u32,
+    pub enforce: u32,
+    /// Monotonic ns; enforcement stops by itself past this.
+    pub lease_deadline_ns: u64,
+    pub off_bprm_file: u32,
+    pub off_file_inode: u32,
+    pub off_inode_ino: u32,
+    pub off_inode_sb: u32,
+    pub off_sb_dev: u32,
+    pub off_inode_mode: u32,
+    pub off_inode_rdev: u32,
+    pub off_vma_flags: u32,
+}
+
+/// GUARD_FILES key: an executable by (kernel dev_t, inode).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct GuardFileKey {
+    pub ino: u64,
+    pub dev: u32,
+    pub _pad: u32,
+}
+
+pub const GUARD_HOOK_EXEC: u8 = 1;
+pub const GUARD_HOOK_MPROTECT: u8 = 2;
+pub const GUARD_HOOK_OPEN: u8 = 3;
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct GuardEvent {
+    pub ts_ns: u64,
+    pub cgroup_id: u64,
+    pub tgid: u32,
+    pub pid: u32,
+    pub hook: u8,
+    /// 1 = denied, 0 = audited only.
+    pub denied: u8,
+    pub _pad: u16,
+    /// exec: dev; mprotect: prot; open: major.
+    pub a: u32,
+    /// exec: inode; mprotect: vm_flags; open: minor.
+    pub b: u64,
+    pub comm: [u8; 16],
+}
+
+pub const GUARD_STAT_AUDITED: u32 = 0;
+pub const GUARD_STAT_DENIED: u32 = 1;
+pub const GUARD_STAT_DROPPED: u32 = 2;
+
+// ---------------------------------------------------------------------------
+// Bridge-less direct redirect (outer device <-> VM tap; under the lease)
+// ---------------------------------------------------------------------------
+
+/// DIRECT_CFG[0]. Redirects only while `enabled` and before the deadline.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DirectCfg {
+    pub enabled: u32,
+    pub _pad: u32,
+    pub lease_deadline_ns: u64,
+}
+
+pub const DIRECT_STAT_IN: u32 = 0;
+pub const DIRECT_STAT_OUT: u32 = 1;
+pub const DIRECT_STAT_IDLE: u32 = 2;
+
+/// DIRECT_MAC key: a MAC address in the low 48 bits.
+#[inline(always)]
+pub fn mac_key(m: &[u8; 6]) -> u64 {
+    (m[0] as u64) << 40 | (m[1] as u64) << 32 | (m[2] as u64) << 24 | (m[3] as u64) << 16 | (m[4] as u64) << 8 | m[5] as u64
+}
+
+// ---------------------------------------------------------------------------
 // Helpers usable from both sides
 // ---------------------------------------------------------------------------
 
@@ -942,7 +1321,9 @@ mod pod {
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
         VmEdgeCfg, VmBucket, VmEdgeStats, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
         ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey,
-        SampleCfg, SampleBucket, SslReadArgs, NodeIsoCfg, NodeIsoStats
+        SampleCfg, SampleBucket, SslReadArgs, NodeIsoCfg, NodeIsoStats, RtnlCfg, L7sCfg,
+        VmiCfg, VmiThread, VmiKey, VmiBlk, GuardCfg, GuardFileKey, DirectCfg,
+        QlbSvcKey, QlbSvc, QlbBeKey, QlbBackend, QlbSidKey
     );
 }
 
@@ -994,6 +1375,32 @@ mod tests {
         assert_eq!(size_of::<RateCfg>(), 16);
         assert_eq!(size_of::<IfaceStats>(), 40);
         assert_eq!(size_of::<L7Event>(), 24 + 48 + L7_PAYLOAD_LEN);
+        assert_eq!(size_of::<RtnlCfg>(), 32);
+        assert_eq!(size_of::<RtnlEvent>(), 96);
+        assert_eq!(size_of::<L7sCfg>(), 16);
+        assert_eq!(size_of::<L7sEvent>(), 64 + L7S_COPY);
+        assert_eq!(size_of::<VmiCfg>(), 56);
+        assert_eq!(size_of::<VmiKey>(), 8);
+        assert_eq!(size_of::<VmiBlk>(), 16);
+        assert_eq!(size_of::<GuardCfg>(), 48);
+        assert_eq!(size_of::<GuardFileKey>(), 16);
+        assert_eq!(size_of::<GuardEvent>(), 56);
+        assert_eq!(size_of::<DirectCfg>(), 16);
+        assert_eq!(size_of::<QlbSvcKey>(), 20);
+        assert_eq!(size_of::<QlbSvc>(), 24);
+        assert_eq!(size_of::<QlbBackend>(), 24);
+        assert_eq!(size_of::<QlbSidKey>(), 8);
+        assert_eq!(qlb_cid_sid(&[0x1f, 0x12, 0x34], 0), Some(0x1234));
+        assert_eq!(qlb_cid_sid(&[0x3f, 0x12, 0x34], 1), Some(0x1234));
+        assert_eq!(qlb_cid_sid(&[0xe0, 0x12, 0x34], 0), None);
+        assert_eq!(mac_key(&[0x52, 0x54, 0, 0xaa, 0xbb, 0xcc]), 0x5254_00aa_bbcc);
+        assert_eq!((log2_slot(0), log2_slot(1), log2_slot(1023), log2_slot(1024)), (0, 0, 9, 10));
+    }
+
+    #[test]
+    fn rtnl_mask() {
+        assert_eq!(rtnl_bits(&[16, 17]), 0b11);
+        assert_eq!(RTNL_DEFAULT_MASK & rtnl_bits(&[18, 22, 26, 30]), 0, "GET types stay out");
     }
 
     #[test]

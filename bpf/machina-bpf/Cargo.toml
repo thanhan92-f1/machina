@@ -11,6 +11,7 @@ path = "src/bin/machina-bpfd.rs"
 
 [dependencies]
 machina-bpf-common = { path = "../machina-bpf-common", features = ["user"] }
+machina-scx = { path = "../machina-scx" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

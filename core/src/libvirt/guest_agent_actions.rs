@@ -389,6 +389,88 @@ fn guest_exec_command(
     Ok((code, decode("out-data"), decode("err-data")))
 }
 
+/// In-guest GuestKit agent methods the host may relay through `guestkitctl`
+/// (per-container eBPF network policy and LSM MAC).
+pub const GUESTKIT_RELAY_METHODS: &[&str] = &[
+    "guestkit.netpolicy.apply",
+    "guestkit.netpolicy.status",
+    "guestkit.lsm.apply",
+    "guestkit.lsm.status",
+];
+
+const GUESTKITCTL_PATHS: &[&str] = &[
+    "/usr/bin/guestkitctl",
+    "/usr/local/bin/guestkitctl",
+    "/usr/sbin/guestkitctl",
+    "/opt/guestkit/bin/guestkitctl",
+];
+
+/// `guestkitctl` argv for one relayed call.
+pub fn guestkitctl_args(method: &str, params: &serde_json::Value) -> Result<Vec<String>, LibvirtError> {
+    if !GUESTKIT_RELAY_METHODS.contains(&method) {
+        return Err(LibvirtError::Invalid(format!("guestkit method not relayable: {method}")));
+    }
+    if !params.is_object() {
+        return Err(LibvirtError::Invalid("guestkit params must be a JSON object".into()));
+    }
+    Ok(vec!["--json".into(), "call".into(), method.into(), "--params".into(), params.to_string()])
+}
+
+/// Result of `guestkitctl --json call`: JSON on stdout when it exits 0, an
+/// `Error: …` line on stderr otherwise.
+pub fn parse_guestkitctl_output(code: i32, out: &str, err: &str) -> Result<serde_json::Value, LibvirtError> {
+    if code == 0 {
+        return serde_json::from_str(out.trim())
+            .map_err(|e| LibvirtError::Operation(format!("guestkitctl returned non-JSON output: {e}")));
+    }
+    let msg = err.trim().strip_prefix("Error: ").unwrap_or(err.trim());
+    let msg = if msg.is_empty() { format!("guestkitctl exited with {code}") } else { msg.to_string() };
+    if msg.contains("disabled by local policy") {
+        return Err(LibvirtError::Forbidden(format!(
+            "{msg} (set `capabilities: {{ ebpf: true }}` in /etc/guestkit/agent-policy.yaml inside the guest)"
+        )));
+    }
+    if msg.contains("No such file") || (msg.contains("connect") && msg.contains("agent")) {
+        return Err(LibvirtError::Operation(format!("guestkitd is not reachable inside the guest: {msg}")));
+    }
+    Err(LibvirtError::Operation(msg))
+}
+
+/// Invoke a GuestKit agent method inside the guest: QGA guest-exec of
+/// `guestkitctl --json call <method> --params <json>` (the guest's own
+/// agent then applies its local policy, e.g. the `ebpf` capability toggle).
+pub fn guestkit_call(
+    vm_name: &str,
+    method: &str,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, LibvirtError> {
+    let args = guestkitctl_args(method, params)?;
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = (vm_name, args);
+        Err(LibvirtError::Operation("guest-exec requires Linux libvirt".into()))
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let mut found = None;
+        for p in GUESTKITCTL_PATHS {
+            let (code, _, _) = guest_exec_command(vm_name, "/bin/test", &["-x", p])?;
+            if code == 0 {
+                found = Some(*p);
+                break;
+            }
+        }
+        let bin = found.ok_or_else(|| {
+            LibvirtError::Operation(
+                "guestkitctl not found in the guest (install GuestKit tools: guestkitd + guestkitctl)".into(),
+            )
+        })?;
+        let argv: Vec<&str> = args.iter().map(String::as_str).collect();
+        let (code, out, err) = guest_exec_command(vm_name, bin, &argv)?;
+        parse_guestkitctl_output(code, &out, &err)
+    }
+}
+
 #[cfg(target_os = "linux")]
 fn guest_exec_systemctl(
     vm_name: &str,
@@ -1426,5 +1508,35 @@ pub fn run_guest_agent_action(
                 "unknown guest agent action: {other}"
             ))),
         }
+    }
+}
+
+#[cfg(test)]
+mod guestkit_relay_tests {
+    use super::*;
+
+    #[test]
+    fn only_policy_methods_are_relayed() {
+        let p = serde_json::json!({ "container": "web" });
+        let a = guestkitctl_args("guestkit.netpolicy.apply", &p).unwrap();
+        assert_eq!(a[..4], ["--json", "call", "guestkit.netpolicy.apply", "--params"]);
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&a[4]).unwrap(), p);
+        assert!(guestkitctl_args("guestkit.exec", &p).is_err());
+        assert!(guestkitctl_args("guestkit.fileWrite", &p).is_err());
+        assert!(guestkitctl_args("guestkit.lsm.status", &serde_json::json!([1])).is_err());
+    }
+
+    #[test]
+    fn parses_guestkitctl_results() {
+        let v = parse_guestkitctl_output(0, r#"{"available": true}"#, "").unwrap();
+        assert_eq!(v["available"], true);
+        assert!(parse_guestkitctl_output(0, "not json", "").is_err());
+        let e = parse_guestkitctl_output(1, "", "Error: agent RPC error -32005: Policy denied: ebpf disabled by local policy")
+            .unwrap_err();
+        assert!(matches!(e, LibvirtError::Forbidden(ref m) if m.contains("ebpf: true")));
+        let e = parse_guestkitctl_output(1, "", "Error: agent RPC error -32602: lease_secs must be 1..=3600").unwrap_err();
+        assert!(matches!(e, LibvirtError::Operation(ref m) if m.starts_with("agent RPC error -32602")));
+        let e = parse_guestkitctl_output(2, "", "").unwrap_err();
+        assert!(e.to_string().contains("exited with 2"));
     }
 }
