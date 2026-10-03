@@ -734,7 +734,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
         </MacGlassPanel>
       )}
       {!loading && tab === 'reports' && security && security.findings.length > 0 && (
-        <MacGlassPanel title="Machina Security Sentinel" subtitle={`Risk level: ${security.risk_level}`}>
+        <MacGlassPanel title="Machina Security Sentinel" subtitle={`Risk level: ${security.risk_level ?? 'unknown'}`}>
           <ul className="text-sm space-y-2 -mt-2">
             {security.findings.slice(0, 8).map((f) => (
               <li key={f.id} className="border-b border-white/[0.04] pb-2">

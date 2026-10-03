@@ -204,9 +204,9 @@ export default function PlatformBackups() {
       stats={
         fleet
           ? [
-              { label: 'Today', value: String(fleet.backups_completed_24h), tone: 'emerald' },
-              { label: 'Failed 24h', value: String(fleet.backups_failed_24h), tone: fleet.backups_failed_24h ? 'amber' : 'sky' },
-              { label: 'Snapshots', value: String(fleet.snapshots_total), tone: 'violet' },
+              { label: 'Today', value: String(fleet.backups_completed_24h ?? 0), tone: 'emerald' },
+              { label: 'Failed 24h', value: String(fleet.backups_failed_24h ?? 0), tone: fleet.backups_failed_24h ? 'amber' : 'sky' },
+              { label: 'Snapshots', value: String(fleet.snapshots_total ?? 0), tone: 'violet' },
               { label: 'Destinations', value: String(targets.length), tone: 'sky' },
             ]
           : undefined

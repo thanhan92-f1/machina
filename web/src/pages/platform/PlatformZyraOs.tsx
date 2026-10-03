@@ -133,7 +133,7 @@ export default function PlatformZyraOs() {
         ? `${summary.aggregate_vm_count} VMs · ${summary.reachable_peers}/${summary.peer_count} peers · $${summary.aggregate_monthly_usd.toFixed(0)}/mo`
         : null
       const localStr = local
-        ? `Local: ${local.vm_count} VMs · risk ${local.security_risk_level}`
+        ? `Local: ${local.vm_count ?? 0} VMs · risk ${local.security_risk_level ?? 'unknown'}`
         : null
       setFleetSummaryLine([summaryStr, localStr].filter(Boolean).join(' · ') || null)
     } catch (e: unknown) {
