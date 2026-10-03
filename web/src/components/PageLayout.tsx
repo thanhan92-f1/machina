@@ -92,8 +92,14 @@ export default function PageLayout({
         <header className="apple-page-header">
           <div className="min-w-0 flex-1 max-w-3xl">
             {eyebrow ? <p className="apple-eyebrow">{eyebrow}</p> : null}
-            {icon ? <div className="mb-3 text-[var(--text-muted)]">{icon}</div> : null}
-            <h1 className="page-title">{title}</h1>
+            {icon ? (
+              <div className="flex items-center gap-3">
+                <span className="shrink-0 text-[var(--text-muted)]" aria-hidden>{icon}</span>
+                <h1 className="page-title">{title}</h1>
+              </div>
+            ) : (
+              <h1 className="page-title">{title}</h1>
+            )}
             {subtitle ? <div className="page-lede">{subtitle}</div> : null}
           </div>
           {actions ? (
