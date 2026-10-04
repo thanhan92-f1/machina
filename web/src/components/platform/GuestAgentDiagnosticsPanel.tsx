@@ -593,7 +593,7 @@ export function GuestAgentHeaderPill({
   const kernel = report.guest_observability?.os_kernel
   const parts = [label, kernel, agentActive ? 'QGA' : report.install_state === 'channel_only' ? 'channel' : null].filter(Boolean)
   if (!parts.length) return null
-  const className = `${statusPillClasses(tone)} ${onClick ? 'cursor-pointer hover:opacity-90' : ''}`
+  const className = `${statusPillClasses(tone)} ${onClick ? 'cursor-pointer hover:opacity-90 max-lg:inline-flex max-lg:min-h-11 max-lg:items-center' : ''}`
   if (onClick) {
     return (
       <button type="button" className={className} title={`${report.summary} — open Guest health`} onClick={onClick}>
