@@ -36,6 +36,42 @@ pub(super) struct FqdnLearn {
     ifindex: u32,
 }
 
+/// Policy value for one compiled rule.
+fn rule_val(deny: bool, auth: u8, l7: bool) -> u32 {
+    if deny {
+        return VM_POLICY_DENY;
+    }
+    let mut v = VM_POLICY_ALLOW;
+    if l7 {
+        v |= VM_POLICY_L7;
+    }
+    if auth & crate::api::AUTH_REQUIRED != 0 {
+        v |= VM_POLICY_AUTH;
+    }
+    if auth & crate::api::AUTH_ALWAYS_FAIL != 0 {
+        v |= VM_POLICY_AUTH_FAIL;
+    }
+    v
+}
+
+/// Two rules on one key: deny wins, auth accumulates, L7 only if both.
+fn merge_val(a: u32, b: u32) -> u32 {
+    if (a | b) & VM_POLICY_DENY != 0 {
+        VM_POLICY_DENY
+    } else {
+        ((a | b) & !VM_POLICY_L7) | (a & b & VM_POLICY_L7)
+    }
+}
+
+const AUTH_TTL: Duration = Duration::from_secs(3600);
+
+struct AuthState {
+    mode: u8,
+    ok: bool,
+    note: String,
+    expires: Instant,
+}
+
 struct FqdnBinding {
     names: BTreeMap<String, Instant>,
     vm: String,
@@ -59,6 +95,11 @@ pub(super) struct VmEdgeRuntime {
     fqdn_cache: HashMap<[u8; ADDR_LEN], FqdnBinding>,
     /// Learned address → identity in force.
     fqdn_ids: HashMap<[u8; ADDR_LEN], u32>,
+    /// Identities that are subjects of L7 or authentication rules.
+    l7auth: HashSet<u32>,
+    auth_any: bool,
+    auth: HashMap<(u32, u32), AuthState>,
+    l7_rules: usize,
 }
 
 /// Queue the A/AAAA answers of a DNS reply whose names match a `toFQDNs`
@@ -116,7 +157,7 @@ pub(super) struct FlowIndex {
 }
 
 impl FlowIndex {
-    fn name(&self, id: u32) -> Option<&(String, BTreeMap<String, String>)> {
+    pub(super) fn name(&self, id: u32) -> Option<&(String, BTreeMap<String, String>)> {
         self.names.get(&id)
     }
 
@@ -139,7 +180,12 @@ fn tcp_flag_names(f: u8) -> String {
     out.join(",")
 }
 
-pub(super) fn on_vm_flow(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: &[u8]) {
+pub(super) fn on_vm_flow(
+    sh: &SharedState,
+    bus: &broadcast::Sender<StreamEvent>,
+    wake: &tokio::sync::Notify,
+    b: &[u8],
+) {
     if b.len() < std::mem::size_of::<VmFlowEvent>() {
         return;
     }
@@ -188,10 +234,21 @@ pub(super) fn on_vm_flow(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>,
             drop_reason: match ev.reason {
                 VMF_REASON_POLICY_DENY => Some("policy-deny".into()),
                 VMF_REASON_DEFAULT_DENY => Some("default-deny".into()),
+                VMF_REASON_AUTH_REQUIRED if ev.auth == 2 => Some("auth-test-always-fail".into()),
+                VMF_REASON_AUTH_REQUIRED => Some("auth-required".into()),
+                VMF_REASON_SPOOFED => Some("spoofed-source".into()),
                 _ => None,
             },
             policy,
+            ..Default::default()
         };
+        if ev.reason == VMF_REASON_AUTH_REQUIRED
+            && ev.auth == 1
+            && !s.vm_auth_queue.contains(&(ev.subject, ev.peer))
+        {
+            s.vm_auth_queue.push((ev.subject, ev.peer));
+            wake.notify_one();
+        }
         Shared::push_capped(&mut s.vm_flows, rec.clone(), VM_FLOW_STORE_CAP);
         rec
     };
@@ -255,6 +312,12 @@ fn edge_flag_names(f: u32) -> Vec<String> {
     }
     if f & VME_FQDN != 0 {
         v.push("fqdn".to_string());
+    }
+    if f & VME_L7_AUTH != 0 {
+        v.push("l7_auth".to_string());
+    }
+    if f & VME_SRC_GUARD != 0 {
+        v.push("source_guard".to_string());
     }
     v
 }
@@ -413,6 +476,13 @@ impl Engine {
         }
         let mut policy: HashMap<PolicyKey, u32> = HashMap::new();
         let mut deny: HashSet<(u32, bool)> = HashSet::new();
+        let mut l7auth: HashSet<u32> = state
+            .fqdn
+            .iter()
+            .filter(|r| r.l7.is_some())
+            .map(|r| r.subject_identity)
+            .collect();
+        let mut auth_any = false;
         for r in &state.policy {
             let subject = match r.subject_identity {
                 Some(id) => id,
@@ -428,9 +498,13 @@ impl Engine {
             if end - r.port >= crate::netpol::MAX_PORT_RANGE as u16 {
                 return Err(anyhow!("rule port range {}-{end} wider than {}", r.port, crate::netpol::MAX_PORT_RANGE));
             }
-            let val = if r.deny { VM_POLICY_DENY } else { VM_POLICY_ALLOW };
+            let val = rule_val(r.deny, r.auth, r.l7);
             if r.deny {
                 deny.insert((subject, r.egress));
+            }
+            if r.auth != 0 || r.l7 {
+                l7auth.insert(subject);
+                auth_any |= r.auth != 0;
             }
             for port in r.port..=end {
                 let k = PolicyKey {
@@ -441,9 +515,7 @@ impl Engine {
                     port: port.to_be_bytes(),
                 };
                 let e = policy.entry(k).or_insert(val);
-                if r.deny {
-                    *e = VM_POLICY_DENY;
-                }
+                *e = merge_val(*e, val);
                 let src = r.source.clone().unwrap_or_default();
                 let ie = index.rules.entry((subject, peer, r.egress, r.proto, port)).or_insert((r.deny, src.clone()));
                 if r.deny && !ie.0 {
@@ -469,6 +541,11 @@ impl Engine {
         self.vm_edge.base_index = index;
         self.vm_edge.cidrs = cidrs;
         self.vm_edge.deny = deny;
+        self.vm_edge.l7auth = l7auth;
+        self.vm_edge.auth_any = auth_any;
+        if !auth_any {
+            self.vm_edge.auth.clear();
+        }
         self.vm_edge.groups = groups;
         self.vm_edge.state = state;
         self.vm_edge_apply()?;
@@ -492,6 +569,7 @@ impl Engine {
         let mut policy = rt.base_policy.clone();
         let mut index = rt.base_index.clone();
         let mut fqdn_ids = HashMap::new();
+        let mut l7: Vec<VmEdgeL7Rule> = rt.state.l7.clone();
         let now = Instant::now();
         let mut learned: Vec<(&[u8; ADDR_LEN], &FqdnBinding)> = rt.fqdn_cache.iter().collect();
         learned.sort_by_key(|(a, _)| **a);
@@ -526,6 +604,16 @@ impl Engine {
                         .filter(|(k, _)| k.peer_identity == from)
                         .map(|(k, v)| (PolicyKey { peer_identity: id, ..*k }, *v)),
                 );
+                l7.extend(
+                    rt.state
+                        .l7
+                        .iter()
+                        .filter(|r| r.peer_identity == from)
+                        .map(|r| VmEdgeL7Rule {
+                            peer_identity: id,
+                            ..r.clone()
+                        }),
+                );
             }
             for r in &rules {
                 let end = if r.port_end > r.port { r.port_end } else { r.port };
@@ -537,7 +625,19 @@ impl Engine {
                         proto: r.proto,
                         port: port.to_be_bytes(),
                     };
-                    add.push((k, VM_POLICY_ALLOW));
+                    add.push((k, rule_val(false, 0, r.l7.is_some())));
+                }
+                if let Some(rules) = &r.l7 {
+                    l7.push(VmEdgeL7Rule {
+                        subject_identity: r.subject_identity,
+                        peer_identity: id,
+                        egress: true,
+                        proto: r.proto,
+                        port: r.port,
+                        port_end: r.port_end,
+                        rules: rules.clone(),
+                        source: r.source.clone(),
+                    });
                 }
             }
             if policy.len() + add.len() > VM_POLICY_CAP {
@@ -557,9 +657,7 @@ impl Engine {
             }
             for (k, v) in add {
                 let e = policy.entry(k).or_insert(v);
-                if v == VM_POLICY_DENY {
-                    *e = VM_POLICY_DENY;
-                }
+                *e = merge_val(*e, v);
             }
             for r in &rules {
                 let end = if r.port_end > r.port { r.port_end } else { r.port };
@@ -594,7 +692,11 @@ impl Engine {
         self.vm_edge.ips = ips;
         self.vm_edge.policy = policy;
         self.vm_edge.fqdn_ids = fqdn_ids;
-        lock(&self.shared).vm_flow_index = index;
+        self.vm_edge.l7_rules = l7.len();
+        let mut sh = lock(&self.shared);
+        sh.vm_flow_index = index;
+        sh.vm_l7_rules = Arc::new(l7);
+        sh.vm_l7_gen += 1;
         Ok(())
     }
 
@@ -733,6 +835,12 @@ impl Engine {
             if self.vm_edge.state.fqdn.iter().any(|r| r.subject_identity == identity) {
                 flags |= VME_FQDN;
             }
+            if self.vm_edge.l7auth.contains(&identity) {
+                flags |= VME_L7_AUTH;
+            }
+            if self.vm_edge.auth_any {
+                flags |= VME_SRC_GUARD;
+            }
             let cfg = VmEdgeCfg {
                 identity,
                 flags,
@@ -845,7 +953,133 @@ impl Engine {
             cilium: crate::netpol::cilium_present(),
             fqdn_rules: self.vm_edge.state.fqdn.len(),
             fqdn_cache: self.vm_edge.fqdn_ids.len(),
+            l7_rules: self.vm_edge.l7_rules,
+            auth_entries: self.vm_edge.auth.values().filter(|a| a.ok).count(),
         }
+    }
+
+    /// Authenticate identity pairs the datapath asked for. `required` holds
+    /// when the peer is a VM identity this edge state knows (a local VM or
+    /// a fleet VM the controller synced), which the source guard on every
+    /// tap keeps unforgeable; `test-always-fail` never authenticates.
+    pub(super) fn vm_auth_tick(&mut self) -> Result<()> {
+        let queue = std::mem::take(&mut lock(&self.shared).vm_auth_queue);
+        let now = Instant::now();
+        self.vm_edge.auth.retain(|_, a| a.expires > now);
+        if queue.is_empty() {
+            return Ok(());
+        }
+        let vm_ids: HashMap<u32, &str> = self
+            .vm_edge
+            .state
+            .vms
+            .iter()
+            .map(|v| (vm_ident(v), v.name.as_str()))
+            .collect();
+        let local: HashSet<&str> = self
+            .vm_edge
+            .taps
+            .values()
+            .map(|(_, v)| v.as_str())
+            .collect();
+        for (subject, peer) in queue {
+            if self
+                .vm_edge
+                .auth
+                .get(&(subject, peer))
+                .is_some_and(|a| a.ok)
+            {
+                continue;
+            }
+            let mode = self
+                .vm_edge
+                .state
+                .policy
+                .iter()
+                .filter(|r| {
+                    r.subject_identity == Some(subject)
+                        && r.peer_identity.is_some_and(|p| p == peer || p == 0)
+                })
+                .fold(0u8, |m, r| m | r.auth);
+            let (ok, note) = if mode & crate::api::AUTH_ALWAYS_FAIL != 0 {
+                (false, "test-always-fail".to_string())
+            } else if let Some(name) = vm_ids.get(&peer) {
+                if local.contains(name) {
+                    (true, format!("authenticated (local VM {name})"))
+                } else {
+                    (true, format!("authenticated (fleet VM {name})"))
+                }
+            } else if let Some(p) = self.vm_edge.state.peers.iter().find(|p| {
+                p.identity == peer && !p.cidr.contains('/') && peer >= 16 && peer & 0x8000_0000 == 0
+            }) {
+                (
+                    true,
+                    format!(
+                        "authenticated (fleet VM {})",
+                        if p.name.is_empty() { &p.cidr } else { &p.name }
+                    ),
+                )
+            } else {
+                (false, "peer is not a VM identity".to_string())
+            };
+            if ok {
+                let key = VmAuthKey {
+                    subject,
+                    peer,
+                    mode: 1,
+                    _pad: [0; 3],
+                };
+                self.dp.cni_hash_insert(
+                    "VM_AUTH",
+                    key,
+                    loader::monotonic_ns() + AUTH_TTL.as_nanos() as u64,
+                )?;
+            }
+            self.vm_edge.auth.insert(
+                (subject, peer),
+                AuthState {
+                    mode: mode.max(1),
+                    ok,
+                    note,
+                    expires: now + AUTH_TTL,
+                },
+            );
+        }
+        Ok(())
+    }
+
+    pub(super) fn vm_auth_table(&self) -> Vec<VmAuthEntry> {
+        let now = Instant::now();
+        let idx = lock(&self.shared).vm_flow_index.clone();
+        let name = |id: u32| {
+            idx.name(id)
+                .map_or_else(|| format!("identity:{id}"), |n| n.0.clone())
+        };
+        let mut out: Vec<VmAuthEntry> = self
+            .vm_edge
+            .auth
+            .iter()
+            .map(|((s, p), a)| VmAuthEntry {
+                subject: name(*s),
+                subject_identity: *s,
+                peer: name(*p),
+                peer_identity: *p,
+                mode: if a.mode & crate::api::AUTH_ALWAYS_FAIL != 0 {
+                    "test-always-fail"
+                } else {
+                    "required"
+                }
+                .into(),
+                state: a.note.clone(),
+                expires_in_secs: if a.ok {
+                    a.expires.saturating_duration_since(now).as_secs()
+                } else {
+                    0
+                },
+            })
+            .collect();
+        out.sort_by(|a, b| a.subject.cmp(&b.subject).then(a.peer.cmp(&b.peer)));
+        out
     }
 
     // ---- QEMU sandbox --------------------------------------------------------

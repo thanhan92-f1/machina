@@ -18,6 +18,7 @@ import {
   applyVmNetpol,
   deleteVmNetpol,
   getNetpolStatus,
+  listAuthTable,
   listFqdnCache,
   listNetpolEndpoints,
   listNetpolSelectors,
@@ -26,12 +27,14 @@ import {
   syncFleetNetpol,
   traceVmNetpol,
   validateVmNetpol,
+  type AuthEntry,
   type FqdnEntry,
   type NetpolEndpoint,
   type NetpolPreview,
   type NetpolScope,
   type NetpolSelector,
   type NetpolStatus,
+  type TraceQuery,
   type TraceResult,
   type TraceSide,
   type VmNetworkPolicy,
@@ -42,6 +45,16 @@ import { statusPillClasses, statusToneClass } from '../../utils/semanticColors'
 import { summarizeSpec } from '../../utils/netpolSummary'
 
 type Tab = 'policies' | 'editor' | 'tester' | 'endpoints' | 'flows'
+
+type L7Kind = 'none' | 'http' | 'tls' | 'dns' | 'kafka'
+
+const L7_KINDS: Array<{ value: L7Kind; label: string }> = [
+  { value: 'none', label: 'L4 only' },
+  { value: 'http', label: 'HTTP' },
+  { value: 'tls', label: 'TLS SNI' },
+  { value: 'dns', label: 'DNS' },
+  { value: 'kafka', label: 'Kafka' },
+]
 
 const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'policies', label: 'Policies' },
@@ -63,7 +76,9 @@ function PolicyView({ p }: { p: VmNetworkPolicy }) {
               <span className="font-mono">{v.subject}</span>
               {v.description ? <span className="text-[var(--text-muted)]"> — {v.description}</span> : null}
             </div>
-            {v.rules.length === 0 ? (
+            {v.groupCidrs ? (
+              <div className="font-mono">{v.groupCidrs.join(', ')}</div>
+            ) : v.rules.length === 0 ? (
               <div className="text-[var(--text-muted)]">No rules.</div>
             ) : (
               <ul className="space-y-1">
@@ -88,7 +103,7 @@ function PolicyView({ p }: { p: VmNetworkPolicy }) {
 }
 
 function SideCard({ title, s }: { title: string; s: TraceSide }) {
-  const tone = s.verdict === 'allowed' ? 'ok' : s.verdict === 'denied' || s.verdict === 'default-deny' ? 'error' : 'neutral'
+  const tone = s.verdict === 'allowed' ? 'ok' : ['denied', 'default-deny', 'l7-denied', 'auth-failed'].includes(s.verdict) ? 'error' : 'neutral'
   return (
     <div className="rounded-lg border border-white/[0.06] p-3 space-y-1 text-sm">
       <div className="text-xs text-[var(--text-muted)]">{title}</div>
@@ -96,6 +111,8 @@ function SideCard({ title, s }: { title: string; s: TraceSide }) {
       <span className={statusPillClasses(tone)}>{s.verdict}</span>
       {s.enforced && <span className="ml-2 text-xs text-[var(--text-muted)]">default-deny in this direction</span>}
       {s.rule && <div className="text-xs font-mono text-[var(--text-muted)] pt-1">↳ {s.rule}</div>}
+      {s.auth && <div className="text-xs text-[#64d2ff]">Mutual authentication: {s.auth}</div>}
+      {s.l7 && <div className="text-xs font-mono text-[#bf5af2]">L7: {s.l7}</div>}
     </div>
   )
 }
@@ -114,6 +131,7 @@ export default function PlatformVmNetworkPolicies() {
   const [endpoints, setEndpoints] = useState<NetpolEndpoint[]>([])
   const [selectors, setSelectors] = useState<NetpolSelector[]>([])
   const [fqdn, setFqdn] = useState<FqdnEntry[]>([])
+  const [auth, setAuth] = useState<AuthEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -124,17 +142,19 @@ export default function PlatformVmNetworkPolicies() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [tq, setTq] = useState({ from: '', to: '', protocol: 'tcp', port: '', icmp: '' })
+  const [l7, setL7] = useState({ kind: 'none' as L7Kind, method: 'GET', path: '/', host: '', header: '', name: '', apiKey: 'produce', topic: '' })
   const [trace, setTrace] = useState<TraceResult | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
     try {
-      const [l, st, ep, se, fq] = await Promise.all([
+      const [l, st, ep, se, fq, au] = await Promise.all([
         listVmNetpols(scope),
         getNetpolStatus(scope).catch(() => null),
         listNetpolEndpoints(scope).catch(() => []),
         listNetpolSelectors(scope).catch(() => []),
         listFqdnCache(scope).catch(() => []),
+        listAuthTable(scope).catch(() => []),
       ])
       setPolicies(l.items)
       setWarnings(l.warnings)
@@ -142,6 +162,7 @@ export default function PlatformVmNetworkPolicies() {
       setEndpoints(ep)
       setSelectors(se)
       setFqdn(fq)
+      setAuth(au)
     } catch (e: unknown) {
       setError(formatUserError(e))
     } finally {
@@ -198,16 +219,24 @@ export default function PlatformVmNetworkPolicies() {
   }
 
   const runTrace = async () => {
+    const q: TraceQuery = {
+      from: tq.from.trim(),
+      to: tq.to.trim(),
+      protocol: tq.protocol,
+      port: tq.port ? Number(tq.port) : undefined,
+      icmp_type: tq.protocol === 'icmp' && tq.icmp ? Number(tq.icmp) : undefined,
+    }
+    if (l7.kind === 'http') {
+      Object.assign(q, { http_method: l7.method, http_path: l7.path || '/', http_host: l7.host || undefined, http_headers: l7.header ? [l7.header] : undefined })
+    } else if (l7.kind === 'tls') {
+      q.server_name = l7.name
+    } else if (l7.kind === 'dns') {
+      q.dns_name = l7.name
+    } else if (l7.kind === 'kafka') {
+      Object.assign(q, { kafka_api_key: l7.apiKey, kafka_topic: l7.topic || undefined })
+    }
     try {
-      setTrace(
-        await traceVmNetpol(scope, {
-          from: tq.from.trim(),
-          to: tq.to.trim(),
-          protocol: tq.protocol,
-          port: tq.port ? Number(tq.port) : undefined,
-          icmp_type: tq.protocol === 'icmp' && tq.icmp ? Number(tq.icmp) : undefined,
-        }),
-      )
+      setTrace(await traceVmNetpol(scope, q))
     } catch (e: unknown) {
       setTrace(null)
       toast.error(formatUserError(e))
@@ -377,7 +406,7 @@ export default function PlatformVmNetworkPolicies() {
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <MacGlassPanel
             title="YAML"
-            subtitle="apiVersion cilium.io/v2 — multiple documents with ---. toFQDNs / L7 rules / toServices are accepted with a warning and not enforced yet."
+            subtitle="apiVersion cilium.io/v2 (CiliumCIDRGroup: v2alpha1) — multiple documents with ---. L7 (HTTP, Kafka, DNS, TLS SNI), toFQDNs, toGroups and authentication are enforced natively; toServices is accepted with a warning."
             action={
               <div className="flex gap-2">
                 <select
@@ -467,6 +496,44 @@ export default function PlatformVmNetworkPolicies() {
               <Field label="Port" htmlFor="tr-port">
                 <input id="tr-port" className="input text-sm w-24" placeholder="443" value={tq.port} onChange={(e) => setTq({ ...tq, port: e.target.value })} />
               </Field>
+            )}
+            <Field label="L7 request" htmlFor="tr-l7">
+              <select id="tr-l7" className="input text-sm" value={l7.kind} onChange={(e) => setL7({ ...l7, kind: e.target.value as L7Kind })}>
+                {L7_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+              </select>
+            </Field>
+            {l7.kind === 'http' && (
+              <>
+                <Field label="Method" htmlFor="tr-method">
+                  <select id="tr-method" className="input text-sm" value={l7.method} onChange={(e) => setL7({ ...l7, method: e.target.value })}>
+                    {['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].map((m) => <option key={m}>{m}</option>)}
+                  </select>
+                </Field>
+                <Field label="Path" htmlFor="tr-path">
+                  <input id="tr-path" className="input text-sm w-40 font-mono" value={l7.path} onChange={(e) => setL7({ ...l7, path: e.target.value })} />
+                </Field>
+                <Field label="Host" htmlFor="tr-host">
+                  <input id="tr-host" className="input text-sm w-36" value={l7.host} onChange={(e) => setL7({ ...l7, host: e.target.value })} />
+                </Field>
+                <Field label="Header" htmlFor="tr-header">
+                  <input id="tr-header" className="input text-sm w-40 font-mono" placeholder="X-Token: abc" value={l7.header} onChange={(e) => setL7({ ...l7, header: e.target.value })} />
+                </Field>
+              </>
+            )}
+            {(l7.kind === 'tls' || l7.kind === 'dns') && (
+              <Field label={l7.kind === 'tls' ? 'Server name (SNI)' : 'Query name'} htmlFor="tr-name">
+                <input id="tr-name" className="input text-sm w-48 font-mono" value={l7.name} onChange={(e) => setL7({ ...l7, name: e.target.value })} />
+              </Field>
+            )}
+            {l7.kind === 'kafka' && (
+              <>
+                <Field label="API key / role" htmlFor="tr-kkey">
+                  <input id="tr-kkey" className="input text-sm w-32 font-mono" value={l7.apiKey} onChange={(e) => setL7({ ...l7, apiKey: e.target.value })} />
+                </Field>
+                <Field label="Topic" htmlFor="tr-ktopic">
+                  <input id="tr-ktopic" className="input text-sm w-32 font-mono" value={l7.topic} onChange={(e) => setL7({ ...l7, topic: e.target.value })} />
+                </Field>
+              </>
             )}
             <button type="button" className="btn-primary text-sm" disabled={!tq.from || !tq.to} onClick={() => void runTrace()}>Trace</button>
             <datalist id="netpol-vms">{vmNames.map((n) => <option key={n} value={n} />)}</datalist>
@@ -564,6 +631,43 @@ export default function PlatformVmNetworkPolicies() {
                         {scope === 'fleet' && <td className="py-2 pr-2">{f.hostname ?? '—'}</td>}
                         <td className="py-2 pr-2">{f.expires_in_secs}s</td>
                         <td className="py-2 font-mono">{f.patterns.join(', ') || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TahoeTableWrap>
+            )}
+          </MacGlassPanel>
+          <MacGlassPanel
+            title="Mutual authentication"
+            subtitle="Identity pairs authenticated for authentication.mode rules (like cilium-dbg auth list). New flows on such rules wait for an entry; the source guard keeps VM identities unforgeable."
+          >
+            {auth.length === 0 ? (
+              <Empty>No authentication entries. They appear when a flow hits a rule with authentication.mode: required.</Empty>
+            ) : (
+              <TahoeTableWrap>
+                <table className="w-full text-xs" aria-label="Authentication table">
+                  <thead>
+                    <tr className={headRowCls}>
+                      <th scope="col" className={thCls}>Subject</th>
+                      <th scope="col" className={thCls}>Peer</th>
+                      <th scope="col" className={thCls}>Mode</th>
+                      {scope === 'fleet' && <th scope="col" className={thCls}>Host</th>}
+                      <th scope="col" className={thCls}>Expires</th>
+                      <th scope="col" className="py-2">State</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auth.map((a) => (
+                      <tr key={`${a.hostname ?? ''}|${a.subject_identity}|${a.peer_identity}`} className={rowCls}>
+                        <td className="py-2 pr-2 font-medium">{a.subject} <span className="text-[var(--text-muted)] font-mono">[{a.subject_identity}]</span></td>
+                        <td className="py-2 pr-2">{a.peer} <span className="text-[var(--text-muted)] font-mono">[{a.peer_identity}]</span></td>
+                        <td className="py-2 pr-2 font-mono">{a.mode}</td>
+                        {scope === 'fleet' && <td className="py-2 pr-2">{a.hostname ?? '—'}</td>}
+                        <td className="py-2 pr-2">{a.expires_in_secs > 0 ? `${a.expires_in_secs}s` : '—'}</td>
+                        <td className="py-2">
+                          <span className={statusPillClasses(a.state.startsWith('authenticated') ? 'ok' : 'error')}>{a.state}</span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

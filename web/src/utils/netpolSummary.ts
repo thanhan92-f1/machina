@@ -18,6 +18,8 @@ export interface SpecSummary {
   description?: string
   rules: RuleSummary[]
   defaultDeny: string[]
+  /** CiliumCIDRGroup documents. */
+  groupCidrs?: string[]
 }
 
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -41,6 +43,42 @@ export function selectorText(sel: unknown): string {
   return parts.length ? parts.join(', ') : 'all VMs'
 }
 
+function l7Text(rules: Obj): string {
+  const http = arr(rules.http).filter(isObj)
+  if (http.length) {
+    const reqs = http.map((h) => {
+      const parts = [String(h.method ?? 'any method'), String(h.path ?? '/*')]
+      if (h.host) parts.push(`host ${String(h.host)}`)
+      const hdrs = arr(h.headers).length + arr(h.headerMatches).length
+      if (hdrs) parts.push(`+${hdrs} header${hdrs > 1 ? 's' : ''}`)
+      return parts.join(' ')
+    })
+    return `HTTP ${reqs.join(' | ')}`
+  }
+  const kafka = arr(rules.kafka).filter(isObj)
+  if (kafka.length) {
+    return `Kafka ${kafka
+      .map((k) => [k.role ?? k.apiKey ?? 'any', k.topic ? `topic ${String(k.topic)}` : ''].filter(Boolean).join(' '))
+      .join(' | ')}`
+  }
+  const dns = arr(rules.dns).filter(isObj)
+  if (dns.length) return `DNS ${dns.map((d) => String(d.matchName ?? d.matchPattern ?? '?')).join(', ')}`
+  return `L7 ${Object.keys(rules).join('/')}`
+}
+
+function groupText(g: unknown): string {
+  if (!isObj(g)) return 'group ?'
+  const inner = isObj(g.aws) ? g.aws : isObj(g.machina) ? g.machina : g
+  const bits: string[] = []
+  for (const k of ['names', 'securityGroupsNames', 'securityGroupsIds'] as const) {
+    const v = arr(inner[k]).map(String)
+    if (v.length) bits.push(v.join(', '))
+  }
+  if (isObj(inner.labels)) bits.push(selectorText({ matchLabels: inner.labels }))
+  if (inner.region) bits.push(`region ${String(inner.region)}`)
+  return `group ${bits.join(' / ') || 'any'}`
+}
+
 function portsText(rule: Obj): string {
   const out: string[] = []
   for (const tp of arr(rule.toPorts)) {
@@ -52,7 +90,9 @@ function portsText(rule: Obj): string {
       const end = p.endPort ? `-${String(p.endPort)}` : ''
       out.push(port === '0' ? `any ${proto} port` : `${port}${end}/${proto}`)
     }
-    if (isObj(tp.rules)) out.push(`L7 ${Object.keys(tp.rules).join('/')} rules (not enforced yet)`)
+    if (isObj(tp.rules)) out.push(l7Text(tp.rules))
+    const sni = arr(tp.serverNames).map(String)
+    if (sni.length) out.push(`TLS SNI ${sni.join(', ')}`)
   }
   for (const ic of arr(rule.icmps)) {
     if (!isObj(ic)) continue
@@ -70,19 +110,24 @@ function peersText(rule: Obj, dir: 'from' | 'to'): string[] {
   for (const c of arr(rule[`${dir}CIDRSet`])) {
     if (!isObj(c)) continue
     const ex = arr(c.except).map(String)
-    out.push(`${String(c.cidr ?? c.cidrGroupRef ?? '?')}${ex.length ? ` except ${ex.join(', ')}` : ''}`)
+    const what = c.cidr ? String(c.cidr) : c.cidrGroupRef ? `group ${String(c.cidrGroupRef)}` : '?'
+    out.push(`${what}${ex.length ? ` except ${ex.join(', ')}` : ''}`)
   }
   for (const e of arr(rule[`${dir}Entities`])) out.push(`entity:${String(e)}`)
   for (const f of arr(rule.toFQDNs)) {
     if (dir === 'to' && isObj(f)) out.push(`fqdn:${String(f.matchName ?? f.matchPattern ?? '?')}`)
   }
   if (dir === 'to' && arr(rule.toServices).length) out.push('services (not enforced yet)')
-  if (dir === 'to' && arr(rule.toGroups).length) out.push('groups (not enforced yet)')
+  for (const g of arr(rule[`${dir}Groups`])) out.push(groupText(g))
   return out
 }
 
 export function summarizeSpec(spec: unknown): SpecSummary {
   const s = isObj(spec) ? spec : {}
+  if (Array.isArray(s.externalCIDRs)) {
+    const cidrs = s.externalCIDRs.map(String)
+    return { subject: `CIDR group of ${cidrs.length} prefix${cidrs.length === 1 ? '' : 'es'}`, rules: [], defaultDeny: [], groupCidrs: cidrs }
+  }
   const subject = isObj(s.nodeSelector) ? `hosts ${selectorText(s.nodeSelector)}` : selectorText(s.endpointSelector)
   const rules: RuleSummary[] = []
   const dd = isObj(s.enableDefaultDeny) ? s.enableDefaultDeny : {}
@@ -104,6 +149,8 @@ export function summarizeSpec(spec: unknown): SpecSummary {
       if (empty) text = deny ? 'nothing' : 'nothing (selects the VM so everything else is denied)'
       else text = `${dirWord} ${peers.length ? peers.join('; ') : 'any peer'}${ports ? ` on ${ports}` : ''}`
       if (requires.length) text += ` — peer must also match ${requires.join(' and ')}`
+      const auth = isObj(r.authentication) ? String(r.authentication.mode ?? '') : ''
+      if (auth && auth !== 'disabled') text += ` — mutual authentication ${auth}`
       rules.push({ direction, deny, allowNothing: empty && !deny, text })
     }
   }

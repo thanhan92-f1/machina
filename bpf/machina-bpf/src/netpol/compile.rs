@@ -26,9 +26,16 @@ use machina_bpf_common::{IDENTITY_HOST, IDENTITY_WORLD, V4_MAPPED_PREFIX_BITS};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{effective_labels, fqdn, icmp_type_num, reserved_entity, selector_matches, selector_string, VmNetworkPolicy};
+use super::l7::{self, L7Rules};
+use super::{
+    effective_labels, fqdn, icmp_type_num, reserved_entity, selector_matches, selector_string,
+    VmNetworkPolicy,
+};
 use super::{LABEL_PORT_PREFIX, UNSUPPORTED_ENTITIES};
-use crate::api::{VmEdgeFqdnRule, VmEdgePeer, VmEdgeRule, VmEdgeState, VmEdgeVm};
+use crate::api::{
+    VmEdgeFqdnRule, VmEdgeL7Rule, VmEdgePeer, VmEdgeRule, VmEdgeState, VmEdgeVm, AUTH_ALWAYS_FAIL,
+    AUTH_REQUIRED,
+};
 use crate::policy::{parse_prefix, Prefix};
 
 /// Other hypervisors (`remote-node`).
@@ -135,11 +142,21 @@ fn is_v4(p: &Prefix) -> bool {
     p.bits >= V4_MAPPED_PREFIX_BITS && p.addr[..10].iter().all(|b| *b == 0) && p.addr[10] == 0xff && p.addr[11] == 0xff
 }
 
+/// `l7`: index into [`Ctx::l7`] when the `toPorts` entry has L7 rules.
 #[derive(Debug, Clone, PartialEq)]
 enum PortSpec {
     /// proto 0 = any; port 0 = any; ICMP port = type + 1.
-    Num { proto: u8, port: u16, end: u16 },
-    Named { proto: u8, name: String },
+    Num {
+        proto: u8,
+        port: u16,
+        end: u16,
+        l7: Option<usize>,
+    },
+    Named {
+        proto: u8,
+        name: String,
+        l7: Option<usize>,
+    },
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -151,6 +168,8 @@ struct Key {
     port: u16,
     port_end: u16,
     deny: bool,
+    auth: u8,
+    l7: bool,
 }
 
 struct Vm<'a> {
@@ -165,6 +184,35 @@ struct Ctx<'a> {
     prefixes: BTreeMap<Prefix, u32>,
     warnings: Vec<String>,
     entries: BTreeMap<Key, String>,
+    groups: Vec<&'a VmNetworkPolicy>,
+    l7: Vec<L7Rules>,
+    l7_out: BTreeSet<VmEdgeL7Rule>,
+}
+
+/// CiliumCIDRGroups a `toGroups` / `fromGroups` entry selects (any provider:
+/// there is no cloud API on a hypervisor, groups are CiliumCIDRGroup objects).
+fn group_selected(entry: &Value, g: &VmNetworkPolicy) -> bool {
+    let Some(spec) = entry.get("aws").or_else(|| entry.get("machina")) else {
+        return false;
+    };
+    let strs = |k: &str| -> Vec<&str> { arr(spec, k).iter().filter_map(Value::as_str).collect() };
+    let names: Vec<&str> = [strs("names"), strs("securityGroupsNames")].concat();
+    let ids = strs("securityGroupsIds");
+    let id = g.annotations.get("machina.io/group-id").map(String::as_str);
+    let named = names.is_empty() && ids.is_empty()
+        || names.contains(&g.name.as_str())
+        || ids.iter().any(|i| *i == g.name || Some(*i) == id);
+    let labels_ok = spec
+        .get("labels")
+        .and_then(Value::as_object)
+        .is_none_or(|m| {
+            m.iter()
+                .all(|(k, v)| g.labels.get(k).map(String::as_str) == v.as_str())
+        });
+    let region_ok = spec["region"]
+        .as_str()
+        .is_none_or(|r| r.is_empty() || g.labels.get("machina.io/region").is_none_or(|x| x == r));
+    named && labels_ok && region_ok
 }
 
 struct Dir {
@@ -260,6 +308,41 @@ impl<'a> Ctx<'a> {
             if let Some(c) = set["cidr"].as_str() {
                 peers.extend(self.cidr_peers(c, arr(set, "except")));
             }
+            if let Some(g) = set["cidrGroupRef"].as_str() {
+                match self
+                    .groups
+                    .iter()
+                    .find(|p| p.name == g)
+                    .map(|p| p.group_cidrs())
+                {
+                    Some(cidrs) => {
+                        for c in cidrs {
+                            peers.extend(self.cidr_peers(&c, arr(set, "except")));
+                        }
+                    }
+                    None => self.warnings.push(format!(
+                        "{ctx}: CiliumCIDRGroup `{g}` does not exist; it matches nothing"
+                    )),
+                }
+            }
+        }
+        for entry in arr(rule, &key("Groups")) {
+            named = true;
+            let cidrs: Vec<String> = self
+                .groups
+                .iter()
+                .filter(|g| group_selected(entry, g))
+                .flat_map(|g| g.group_cidrs())
+                .collect();
+            if cidrs.is_empty() {
+                self.warnings.push(format!(
+                    "{ctx}: {} selects no CiliumCIDRGroup",
+                    key("Groups")
+                ));
+            }
+            for c in cidrs {
+                peers.extend(self.cidr_peers(&c, &[]));
+            }
         }
         for e in arr(rule, &key("Entities")).iter().filter_map(Value::as_str) {
             named = true;
@@ -268,7 +351,7 @@ impl<'a> Ctx<'a> {
         if d.egress && !arr(rule, "toFQDNs").is_empty() {
             named = true;
         }
-        let mut pending = vec![key("Groups"), key("Nodes")];
+        let mut pending = vec![key("Nodes")];
         if d.egress {
             pending.push("toServices".to_string());
         }
@@ -295,13 +378,31 @@ impl<'a> Ctx<'a> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn emit(&mut self, subject: u32, peers: &BTreeSet<u32>, ports: &[PortSpec], egress: bool, deny: bool, source: &str) {
+    fn emit(
+        &mut self,
+        subject: u32,
+        peers: &BTreeSet<u32>,
+        ports: &[PortSpec],
+        egress: bool,
+        deny: bool,
+        auth: u8,
+        source: &str,
+    ) {
         for &peer in peers {
             for p in ports {
+                let l7 = match p {
+                    PortSpec::Num { l7, .. } | PortSpec::Named { l7, .. } => *l7,
+                };
                 let nums: Vec<(u8, u16, u16)> = match p {
-                    PortSpec::Num { proto, port, end } => vec![(*proto, *port, *end)],
-                    PortSpec::Named { proto, name } => {
-                        let dest = if egress { (peer != 0).then_some(peer) } else { Some(subject) };
+                    PortSpec::Num {
+                        proto, port, end, ..
+                    } => vec![(*proto, *port, *end)],
+                    PortSpec::Named { proto, name, .. } => {
+                        let dest = if egress {
+                            (peer != 0).then_some(peer)
+                        } else {
+                            Some(subject)
+                        };
                         if dest.is_some_and(|d| self.vm_by_id(d).is_none()) {
                             self.warnings.push(format!("{source}: named port `{name}` towards a non-VM peer is skipped"));
                             continue;
@@ -316,16 +417,32 @@ impl<'a> Ctx<'a> {
                     }
                 };
                 for (proto, port, end) in nums {
+                    let port_end = if end > port { end } else { 0 };
+                    let l7 = l7.filter(|_| !deny);
                     let k = Key {
                         subject,
                         peer,
                         egress,
                         proto,
                         port,
-                        port_end: if end > port { end } else { 0 },
+                        port_end,
                         deny,
+                        auth: if deny { 0 } else { auth },
+                        l7: l7.is_some(),
                     };
                     self.entries.entry(k).or_insert_with(|| source.to_string());
+                    if let Some(i) = l7 {
+                        self.l7_out.insert(VmEdgeL7Rule {
+                            subject_identity: subject,
+                            peer_identity: peer,
+                            egress,
+                            proto,
+                            port,
+                            port_end,
+                            rules: self.l7[i].clone(),
+                            source: Some(source.to_string()),
+                        });
+                    }
                 }
             }
         }
@@ -343,17 +460,32 @@ fn protos(p: &str, port: u16) -> &'static [u8] {
 }
 
 /// `toPorts` + `icmps` of a rule; neither = every port of every protocol.
-fn rule_ports(rule: &Value) -> Vec<PortSpec> {
+/// L7 sections are appended to `l7s` and referenced by index.
+fn rule_ports(rule: &Value, l7s: &mut Vec<L7Rules>) -> Vec<PortSpec> {
     let to_ports = arr(rule, "toPorts");
     let icmps = arr(rule, "icmps");
     if to_ports.is_empty() && icmps.is_empty() {
-        return vec![PortSpec::Num { proto: 0, port: 0, end: 0 }];
+        return vec![PortSpec::Num {
+            proto: 0,
+            port: 0,
+            end: 0,
+            l7: None,
+        }];
     }
     let mut out = Vec::new();
     for tp in to_ports {
+        let l7 = l7::from_to_ports(tp).map(|r| {
+            l7s.push(r);
+            l7s.len() - 1
+        });
         let ports = arr(tp, "ports");
         if ports.is_empty() {
-            out.push(PortSpec::Num { proto: 0, port: 0, end: 0 });
+            out.push(PortSpec::Num {
+                proto: 0,
+                port: 0,
+                end: 0,
+                l7,
+            });
         }
         for p in ports {
             let proto = p["protocol"].as_str().unwrap_or("ANY");
@@ -366,7 +498,12 @@ fn rule_ports(rule: &Value) -> Vec<PortSpec> {
                 Ok(n) => {
                     let end = p["endPort"].as_u64().and_then(|e| u16::try_from(e).ok()).unwrap_or(0);
                     for pr in protos(proto, n) {
-                        out.push(PortSpec::Num { proto: *pr, port: n, end });
+                        out.push(PortSpec::Num {
+                            proto: *pr,
+                            port: n,
+                            end,
+                            l7,
+                        });
                     }
                 }
                 Err(_) => {
@@ -376,7 +513,11 @@ fn rule_ports(rule: &Value) -> Vec<PortSpec> {
                         "SCTP" => &[IPPROTO_SCTP],
                         _ => &[IPPROTO_TCP, IPPROTO_UDP, IPPROTO_SCTP],
                     };
-                    out.extend(list.iter().map(|pr| PortSpec::Named { proto: *pr, name: port.clone() }));
+                    out.extend(list.iter().map(|pr| PortSpec::Named {
+                        proto: *pr,
+                        name: port.clone(),
+                        l7,
+                    }));
                 }
             }
         }
@@ -385,7 +526,12 @@ fn rule_ports(rule: &Value) -> Vec<PortSpec> {
         for f in arr(ic, "fields") {
             let v6 = f["family"].as_str() == Some("IPv6");
             if let Some(t) = icmp_type_num(&f["type"], v6) {
-                out.push(PortSpec::Num { proto: if v6 { IPPROTO_ICMPV6 } else { IPPROTO_ICMP }, port: t as u16 + 1, end: 0 });
+                out.push(PortSpec::Num {
+                    proto: if v6 { IPPROTO_ICMPV6 } else { IPPROTO_ICMP },
+                    port: t as u16 + 1,
+                    end: 0,
+                    l7: None,
+                });
             }
         }
     }
@@ -400,6 +546,10 @@ fn collect_prefixes(policies: &[VmNetworkPolicy]) -> BTreeMap<Prefix, u32> {
         }
     };
     for p in policies {
+        if p.is_cidr_group() {
+            p.group_cidrs().iter().for_each(|c| add(c));
+            continue;
+        }
         for spec in &p.specs {
             for sec in ["ingress", "egress", "ingressDeny", "egressDeny"] {
                 for rule in arr(spec, sec) {
@@ -435,7 +585,15 @@ pub fn compile(inp: &Inputs) -> Compiled {
         let local = inp.host.is_none_or(|h| vm.host.as_deref() == Some(h));
         vms.push(Vm { vm, labels: effective_labels(vm), id, local });
     }
-    let mut cx = Ctx { vms, prefixes: collect_prefixes(inp.policies), warnings: Vec::new(), entries: BTreeMap::new() };
+    let mut cx = Ctx {
+        vms,
+        prefixes: collect_prefixes(inp.policies),
+        warnings: Vec::new(),
+        entries: BTreeMap::new(),
+        groups: inp.policies.iter().filter(|p| p.is_cidr_group()).collect(),
+        l7: Vec::new(),
+        l7_out: BTreeSet::new(),
+    };
 
     // Pass 1: subjects, default deny, requires, selector listings.
     let mut iso: BTreeMap<u32, (bool, bool)> = BTreeMap::new();
@@ -443,7 +601,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
     let mut selected_by: BTreeMap<u32, BTreeSet<String>> = BTreeMap::new();
     let mut selectors = Vec::new();
     let mut specs: Vec<(String, String, &Value, BTreeSet<u32>)> = Vec::new();
-    for p in inp.policies {
+    for p in inp.policies.iter().filter(|p| !p.is_cidr_group()) {
         for (sp, spec) in spec_paths(p) {
             let ctx = format!("{} {sp}", p.name);
             let Some(sel) = spec.get("endpointSelector") else {
@@ -513,10 +671,19 @@ pub fn compile(inp: &Inputs) -> Compiled {
                 for (ri, rule) in arr(spec, sec).iter().enumerate() {
                     let source = format!("{pname} {sp}.{sec}[{ri}]");
                     let (peers, _) = cx.rule_peers(rule, d, &source);
-                    let ports = rule_ports(rule);
+                    let ports = rule_ports(rule, &mut cx.l7);
+                    let auth = match rule["authentication"]["mode"].as_str() {
+                        Some("required") => AUTH_REQUIRED,
+                        Some("test-always-fail") => AUTH_ALWAYS_FAIL,
+                        _ => 0,
+                    };
                     for s in &local {
-                        let peers = if deny { peers.clone() } else { narrow(&cx, &requires, *s, d.egress, &peers) };
-                        cx.emit(*s, &peers, &ports, d.egress, deny, &source);
+                        let peers = if deny {
+                            peers.clone()
+                        } else {
+                            narrow(&cx, &requires, *s, d.egress, &peers)
+                        };
+                        cx.emit(*s, &peers, &ports, d.egress, deny, auth, &source);
                     }
                     let fq = fqdn::selectors(arr(rule, "toFQDNs"));
                     if d.egress && !deny && !fq.is_empty() {
@@ -526,8 +693,16 @@ pub fn compile(inp: &Inputs) -> Compiled {
                                 continue;
                             }
                             for p in &ports {
-                                let PortSpec::Num { proto, port, end } = p else {
-                                    cx.warnings.push(format!("{source}: named ports do not apply to toFQDNs"));
+                                let PortSpec::Num {
+                                    proto,
+                                    port,
+                                    end,
+                                    l7,
+                                } = p
+                                else {
+                                    cx.warnings.push(format!(
+                                        "{source}: named ports do not apply to toFQDNs"
+                                    ));
                                     continue;
                                 };
                                 for n in &fq {
@@ -538,6 +713,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
                                         port: *port,
                                         port_end: if end > port { *end } else { 0 },
                                         source: Some(source.clone()),
+                                        l7: l7.map(|i| cx.l7[i].clone()),
                                     });
                                 }
                             }
@@ -550,9 +726,22 @@ pub fn compile(inp: &Inputs) -> Compiled {
 
     // Deny wins: drop allow entries shadowed by an identical deny key.
     let denies: BTreeSet<Key> = cx.entries.keys().filter(|k| k.deny).copied().collect();
-    cx.entries.retain(|k, _| k.deny || !denies.contains(&Key { deny: true, ..*k }));
+    cx.entries.retain(|k, _| {
+        k.deny
+            || !denies.contains(&Key {
+                deny: true,
+                auth: 0,
+                l7: false,
+                ..*k
+            })
+    });
 
-    let mut state = VmEdgeState { flow_log: true, fqdn: fqdn.into_iter().collect(), ..Default::default() };
+    let mut state = VmEdgeState {
+        flow_log: true,
+        fqdn: fqdn.into_iter().collect(),
+        l7: std::mem::take(&mut cx.l7_out).into_iter().collect(),
+        ..Default::default()
+    };
     let mut endpoints = Vec::new();
     for v in &cx.vms {
         let (ing, eg) = iso.get(&v.id).copied().unwrap_or_default();
@@ -605,6 +794,8 @@ pub fn compile(inp: &Inputs) -> Compiled {
             subject_identity: Some(k.subject),
             peer_identity: Some(k.peer),
             source: Some(source.clone()),
+            auth: k.auth,
+            l7: k.l7,
             ..Default::default()
         });
     }

@@ -670,6 +670,50 @@ pub struct VmEdgeRule {
     /// `policy-name spec[0].ingress[1]`, for flow attribution.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
+    /// Allow only after the peer identity is authenticated
+    /// (`AUTH_REQUIRED`, or `AUTH_ALWAYS_FAIL` for `test-always-fail`).
+    #[serde(default, skip_serializing_if = "is_zero_u8")]
+    pub auth: u8,
+    /// L7 rules apply (see [`VmEdgeState::l7`]).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub l7: bool,
+}
+
+pub const AUTH_REQUIRED: u8 = 1;
+pub const AUTH_ALWAYS_FAIL: u8 = 2;
+
+fn is_zero_u8(v: &u8) -> bool {
+    *v == 0
+}
+
+/// L7 rules of one allow entry (same key as its [`VmEdgeRule`]).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VmEdgeL7Rule {
+    pub subject_identity: u32,
+    /// 0 = any peer.
+    pub peer_identity: u32,
+    pub egress: bool,
+    pub proto: u8,
+    pub port: u16,
+    #[serde(default, skip_serializing_if = "is_zero_u16")]
+    pub port_end: u16,
+    pub rules: crate::netpol::l7::L7Rules,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+}
+
+/// One authenticated (subject, peer) pair.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmAuthEntry {
+    pub subject: String,
+    pub subject_identity: u32,
+    pub peer: String,
+    pub peer_identity: u32,
+    /// `required` or `test-always-fail`.
+    pub mode: String,
+    /// `authenticated`, or why not.
+    pub state: String,
+    pub expires_in_secs: u64,
 }
 
 fn is_zero_u16(v: &u16) -> bool {
@@ -702,6 +746,8 @@ pub struct VmEdgeFqdnRule {
     pub port_end: u16,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub l7: Option<crate::netpol::l7::L7Rules>,
 }
 
 /// One learned name → address binding.
@@ -727,6 +773,8 @@ pub struct VmEdgeState {
     pub peers: Vec<VmEdgePeer>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fqdn: Vec<VmEdgeFqdnRule>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub l7: Vec<VmEdgeL7Rule>,
     /// Emit per-flow verdict events (`flow` topic) on every edge tap.
     #[serde(default)]
     pub flow_log: bool,
@@ -772,6 +820,12 @@ pub struct VmFlowRecord {
     pub drop_reason: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy: Option<String>,
+    /// `http`, `kafka`, `tls` or `dns` for L7 verdicts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub l7_type: Option<String>,
+    /// `GET example.com/api`, `kafka produce v7 topic=orders`, ...
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub l7: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -817,6 +871,11 @@ pub struct VmEdgeStatus {
     /// Learned name → address bindings in force.
     #[serde(default)]
     pub fqdn_cache: usize,
+    #[serde(default)]
+    pub l7_rules: usize,
+    /// Authenticated (subject, peer) pairs.
+    #[serde(default)]
+    pub auth_entries: usize,
 }
 
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
@@ -1770,6 +1829,8 @@ pub enum Request {
     VmEdgeStatus,
     /// `toFQDNs` bindings learned from DNS replies to VMs.
     VmFqdnCache,
+    /// Mutual-authentication table of the VM edge.
+    VmAuthTable,
     /// Recent VM edge verdicts, newest first.
     VmFlows {
         #[serde(default)]

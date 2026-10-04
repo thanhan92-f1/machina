@@ -36,6 +36,29 @@ describe('summarizeSpec', () => {
     expect(s.defaultDeny).toEqual([])
   })
 
+  it('describes L7, groups, authentication and CIDR groups', () => {
+    const s = summarizeSpec({
+      endpointSelector: { matchLabels: { app: 'api' } },
+      ingress: [
+        {
+          fromEndpoints: [{ matchLabels: { app: 'web' } }],
+          authentication: { mode: 'required' },
+          toPorts: [{ ports: [{ port: '80', protocol: 'TCP' }], rules: { http: [{ method: 'GET', path: '/v1/.*' }] } }],
+        },
+      ],
+      egress: [
+        { toGroups: [{ aws: { securityGroupsIds: ['sg-1'] } }], toPorts: [{ ports: [{ port: '443', protocol: 'TCP' }], serverNames: ['a.example.com'] }] },
+        { toCIDRSet: [{ cidrGroupRef: 'partners' }], toPorts: [{ ports: [{ port: '9092', protocol: 'TCP' }], rules: { kafka: [{ role: 'produce', topic: 'orders' }] } }] },
+      ],
+    })
+    expect(s.rules[0].text).toBe('from VMs app=web on 80/TCP, HTTP GET /v1/.* — mutual authentication required')
+    expect(s.rules[1].text).toBe('to group sg-1 on 443/TCP, TLS SNI a.example.com')
+    expect(s.rules[2].text).toBe('to group partners on 9092/TCP, Kafka produce topic orders')
+    const g = summarizeSpec({ externalCIDRs: ['198.51.100.0/24'] })
+    expect(g.groupCidrs).toEqual(['198.51.100.0/24'])
+    expect(g.subject).toBe('CIDR group of 1 prefix')
+  })
+
   it('renders match expressions', () => {
     expect(selectorText({ matchExpressions: [{ key: 'role', operator: 'In', values: ['a', 'b'] }, { key: 'x', operator: 'Exists' }] })).toBe(
       'role in (a, b), has x',

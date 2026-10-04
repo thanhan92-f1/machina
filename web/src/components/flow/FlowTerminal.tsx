@@ -125,6 +125,12 @@ export function FlowLine({ r, showHost }: { r: VmFlowRecord; showHost: boolean }
       {'  '}
       <span className="text-[#0a84ff]">{r.direction}</span>
       {r.policy ? <span className="text-[#98989d]">{'  ↳ '}{r.policy}</span> : null}
+      {r.l7 ? (
+        <span className="text-[#bf5af2]">
+          {'  ◆ '}
+          <span className="font-semibold">{r.l7_type ?? 'l7'}</span> {r.l7}
+        </span>
+      ) : null}
     </div>
   )
 }

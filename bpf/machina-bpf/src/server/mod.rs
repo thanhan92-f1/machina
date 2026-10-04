@@ -34,6 +34,7 @@ mod cni;
 mod direct;
 mod quiclb;
 mod scx;
+mod vml7;
 mod guard;
 mod l7sample;
 mod listen;
@@ -115,6 +116,11 @@ struct Shared {
     vm_fqdn_patterns: Vec<String>,
     /// DNS answers awaiting the engine.
     vm_fqdn_queue: Vec<vm::FqdnLearn>,
+    /// L7 rules in force (static plus learned `toFQDNs`), for the L7 reader.
+    vm_l7_rules: Arc<Vec<VmEdgeL7Rule>>,
+    vm_l7_gen: u64,
+    /// Identity pairs (subject, peer) waiting for authentication.
+    vm_auth_queue: Vec<(u32, u32)>,
 }
 
 impl Shared {

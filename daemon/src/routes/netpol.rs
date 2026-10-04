@@ -429,6 +429,14 @@ async fn fqdn_cache() -> Result<Json<Value>, AppError> {
     Ok(Json(json!({ "items": v })))
 }
 
+async fn auth_table() -> Result<Json<Value>, AppError> {
+    let v = BpfdClient::from_env()
+        .call(&Request::VmAuthTable)
+        .await
+        .map_err(|e| LibvirtError::Operation(format!("{e:#}")))?;
+    Ok(Json(json!({ "items": v })))
+}
+
 #[derive(Deserialize, Default)]
 struct FlowQuery {
     limit: Option<usize>,
@@ -541,6 +549,7 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/selectors", get(selectors))
         .route("/vm-network-policies/status", get(status))
         .route("/vm-network-policies/fqdn-cache", get(fqdn_cache))
+        .route("/vm-network-policies/auth", get(auth_table))
         .route("/vm-network-policies/{name}", get(get_one).delete(delete_one))
         .route("/flows", get(flows))
         .route("/flows/stream", get(flow_stream))

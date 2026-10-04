@@ -33,6 +33,11 @@ impl Datapath {
         Ok(RingBuf::try_from(m)?)
     }
 
+    pub fn take_hash<K: Pod, V: Pod>(&mut self, name: &str) -> Result<HashMap<MapData, K, V>> {
+        let m = self.ebpf.take_map(name).ok_or_else(|| anyhow!("map {name} missing"))?;
+        Ok(HashMap::try_from(m)?)
+    }
+
     // ---- config ----------------------------------------------------------
 
     pub fn set_global(&mut self, cfg: GlobalCfg) -> Result<()> {

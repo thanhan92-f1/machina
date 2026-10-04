@@ -91,8 +91,12 @@ export interface TraceSide {
   direction: string
   vm?: string | null
   enforced: boolean
-  verdict: 'allowed' | 'denied' | 'default-deny' | 'no-policy' | 'not-a-vm' | string
+  verdict: 'allowed' | 'denied' | 'default-deny' | 'l7-denied' | 'auth-failed' | 'no-policy' | 'not-a-vm' | string
   rule?: string | null
+  /** `required` / `test-always-fail`. */
+  auth?: string | null
+  /** L7 verdict for the request, or which L7 rules apply. */
+  l7?: string | null
 }
 
 export interface TraceResult {
@@ -112,6 +116,16 @@ export interface TraceQuery {
   protocol?: string
   port?: number
   icmp_type?: number
+  http_method?: string
+  http_path?: string
+  http_host?: string
+  http_headers?: string[]
+  server_name?: string
+  dns_name?: string
+  kafka_api_key?: string
+  kafka_topic?: string
+  kafka_client_id?: string
+  kafka_api_version?: number
 }
 
 export interface NetpolHostStatus {
@@ -144,6 +158,8 @@ export interface NetpolStatus {
     peers?: number
     fqdn_rules?: number
     fqdn_cache?: number
+    l7_rules?: number
+    auth_entries?: number
   } | null
   enforcement?: { mode?: string; lease_remaining_secs?: number | null } | null
   bpfd_available?: boolean
@@ -175,6 +191,9 @@ export interface VmFlowRecord {
   verdict: 'FORWARDED' | 'DROPPED' | 'AUDIT' | string
   drop_reason?: string | null
   policy?: string | null
+  /** `http`, `kafka`, `tls` or `dns` when bpfd parsed the request. */
+  l7_type?: string | null
+  l7?: string | null
 }
 
 export interface FlowFilter {
@@ -252,6 +271,22 @@ export interface FqdnEntry {
 
 export const listFqdnCache = async (scope: NetpolScope) =>
   (await readJsonItemsList<FqdnEntry>(`${netpolBase(scope)}${P}/fqdn-cache`)).items
+
+/** One mutual-authentication entry (identity pair). */
+export interface AuthEntry {
+  subject: string
+  subject_identity: number
+  peer: string
+  peer_identity: number
+  mode: 'required' | 'test-always-fail' | string
+  state: string
+  expires_in_secs: number
+  /** Controller only. */
+  hostname?: string
+}
+
+export const listAuthTable = async (scope: NetpolScope) =>
+  (await readJsonItemsList<AuthEntry>(`${netpolBase(scope)}${P}/auth`)).items
 
 export const listFlows = async (scope: NetpolScope, f: FlowFilter, limit = 500) =>
   (await readJsonItemsList<VmFlowRecord>(`${netpolBase(scope)}/flows${flowQuery(f, { limit })}`)).items
@@ -371,6 +406,154 @@ spec:
       toPorts:
         - ports:
             - port: "443"
+              protocol: TCP
+`,
+  },
+  {
+    id: 'l7-http',
+    label: 'L7: HTTP methods and paths',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: api-read-only
+spec:
+  description: Web VMs may only GET /api/v1/* and POST /login on the API VMs
+  endpointSelector:
+    matchLabels:
+      app: api
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: web
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+          rules:
+            http:
+              - method: GET
+                path: "/api/v1/.*"
+              - method: POST
+                path: /login
+                headers:
+                  - "X-Requested-With: machina"
+`,
+  },
+  {
+    id: 'l7-kafka',
+    label: 'L7: Kafka produce to one topic',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: orders-producer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: kafka
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: checkout
+      toPorts:
+        - ports:
+            - port: "9092"
+              protocol: TCP
+          rules:
+            kafka:
+              - role: produce
+                topic: orders
+`,
+  },
+  {
+    id: 'l7-dns-tls',
+    label: 'L7: DNS names + TLS SNI',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: egress-dns-sni
+spec:
+  description: Resolve only *.example.com; HTTPS only to api.example.com (by SNI)
+  endpointSelector:
+    matchLabels:
+      tier: frontend
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*.example.com"
+        - ports:
+            - port: "443"
+              protocol: TCP
+          serverNames:
+            - api.example.com
+`,
+  },
+  {
+    id: 'cidr-group',
+    label: 'CIDR group + toGroups',
+    yaml: `apiVersion: cilium.io/v2alpha1
+kind: CiliumCIDRGroup
+metadata:
+  name: partner-nets
+  labels:
+    tier: partner
+  annotations:
+    machina.io/group-id: sg-partners
+spec:
+  externalCIDRs:
+    - 198.51.100.0/24
+    - 2001:db8:100::/48
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: partners-https
+spec:
+  endpointSelector:
+    matchLabels:
+      app: gateway
+  egress:
+    - toGroups:
+        - aws:
+            securityGroupsIds: [sg-partners]
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    - toCIDRSet:
+        - cidrGroupRef: partner-nets
+      toPorts:
+        - ports:
+            - port: "22"
+              protocol: TCP
+`,
+  },
+  {
+    id: 'auth',
+    label: 'Mutual authentication',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: db-mutual-auth
+spec:
+  description: Only authenticated web VMs reach the database
+  endpointSelector:
+    matchLabels:
+      app: db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: web
+      authentication:
+        mode: required
+      toPorts:
+        - ports:
+            - port: "5432"
               protocol: TCP
 `,
   },

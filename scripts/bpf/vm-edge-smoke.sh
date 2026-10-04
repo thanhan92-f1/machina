@@ -27,6 +27,8 @@ cleanup() {
   [[ -n "${BPFD_PID:-}" ]] && kill "$BPFD_PID" 2>/dev/null && wait "$BPFD_PID" 2>/dev/null || true
   [[ -n "${HTTP_PID:-}" ]] && kill "$HTTP_PID" 2>/dev/null || true
   [[ -n "${DNS_PID:-}" ]] && kill "$DNS_PID" 2>/dev/null || true
+  for p in "${TLS_PID:-}" "${KAFKA_PID:-}" "${VMHTTP_PID:-}"; do [[ -n "$p" ]] && kill "$p" 2>/dev/null || true; done
+  pkill -f "http.server 18090" 2>/dev/null || true
   ip netns del "$NS" 2>/dev/null || true
   ip link del "$HOST_IF" 2>/dev/null || true
   [[ -d "$CG" ]] && rmdir "$CG" 2>/dev/null || true
@@ -79,6 +81,8 @@ enforce() { req '{"op":"set_mode","mode":"enforce","lease_secs":60}' | must; }
 observe() { req '{"op":"set_mode","mode":"observe"}' | must; }
 tap_stat() { jpath vm_edge_status "sum(t['stats']['$1'] for t in d['taps'])"; }
 gt() { [[ "$1" -gt "$2" ]]; }
+not() { ! "$@"; }
+auth_has() { req '{"op":"vm_auth_table"}' | grep -q "$1"; }
 
 ping_ok() { ip netns exec "$NS" ping -c1 -W1 "$HOST_IP" >/dev/null 2>&1; }
 ping_blocked() { ! ping_ok; }
@@ -249,6 +253,168 @@ check "fqdn enforce: world deny still wins for a learned address" bash -c "! ip 
 npf "$R_DNS" ""
 check "fqdn: removing the rule drops the binding" bash -c "! ip netns exec $NS curl -s -m2 -o /dev/null http://$HOST_IP:18080/"
 kill "$DNS_PID" 2>/dev/null || true
+
+# ---- L7 (native, bpfd-parsed) ----------------------------------------------
+# Requests on L7 ports are held in the kernel until bpfd decides; denied
+# HTTP gets a 403 from bpfd, other protocols a RST, DNS a REFUSED.
+
+echo allowed >"$WORK/allowed.txt"
+echo secret >"$WORK/secret.txt"
+HOSTPEER_W="{\"cidr\":\"$HOST_IP\",\"identity\":1,\"name\":\"host\"}"
+R_L7="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18080,\"l7\":true,\"source\":\"smoke spec.egress[5]\"}"
+L7_HTTP="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18080,\"rules\":{\"http\":[{\"method\":\"GET\",\"path\":\"/allowed.*\"}]},\"source\":\"smoke spec.egress[5]\"}"
+npl() { edge "{\"vms\":[$NPVM}],\"peers\":[$HOSTPEER_W],\"policy\":[$1],\"l7\":[$2],\"flow_log\":true,\"owner\":\"smoke\"}"; }
+code() { ip netns exec "$NS" curl -s -m6 -o /dev/null -w '%{http_code}' "$@" || true; }
+enforce
+npl "$R_L7" "$L7_HTTP"
+check "l7: status counts the rule, tap flagged" [ "$(jpath vm_edge_status "(d['l7_rules'], 'l7_auth' in d['taps'][0]['flags'])")" = "(1, True)" ]
+check "l7 enforce: GET /allowed.txt passes" [ "$(code "http://$HOST_IP:18080/allowed.txt")" = 200 ]
+check "l7 enforce: GET /secret.txt gets 403 from bpfd" [ "$(code "http://$HOST_IP:18080/secret.txt")" = 403 ]
+check "l7 enforce: POST is denied" [ "$(code -X POST -d x "http://$HOST_IP:18080/allowed.txt")" = 403 ]
+check "l7 enforce: keep-alive second request checked too" bash -c "ip netns exec $NS curl -s -m8 -o /dev/null -o /dev/null -w '%{http_code} ' http://$HOST_IP:18080/allowed.txt http://$HOST_IP:18080/secret.txt | grep -q '^200 403'"
+check "l7: DROPPED flow with the request" flow_has "f['verdict']=='DROPPED' and f.get('l7_type')=='http' and 'GET' in (f.get('l7') or '') and '/secret.txt' in f['l7'] and f.get('drop_reason')=='l7-deny'"
+check "l7: FORWARDED flow for the allowed request" flow_has "f['verdict']=='FORWARDED' and f.get('l7_type')=='http' and '/allowed.txt' in (f.get('l7') or '')"
+observe
+check "l7 observe: denied request still served" [ "$(code "http://$HOST_IP:18080/secret.txt")" = 200 ]
+check "l7 observe: AUDIT flow" flow_has "f['verdict']=='AUDIT' and f.get('l7_type')=='http'"
+
+# TLS serverNames: SNI of the ClientHello.
+openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=smoke -keyout "$WORK/k.pem" -out "$WORK/c.pem" -days 1 >/dev/null 2>&1
+openssl s_server -quiet -accept "$HOST_IP:18443" -www -cert "$WORK/c.pem" -key "$WORK/k.pem" >/dev/null 2>&1 &
+TLS_PID=$!
+R_TLS="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18443,\"l7\":true,\"source\":\"smoke spec.egress[6]\"}"
+L7_TLS="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18443,\"rules\":{\"server_names\":[\"ok.smoke.test\"]},\"source\":\"smoke spec.egress[6]\"}"
+tls() { ip netns exec "$NS" curl -sk -m6 -o /dev/null --resolve "$1:18443:$HOST_IP" "https://$1:18443/"; }
+sleep 0.5
+enforce
+npl "$R_TLS" "$L7_TLS"
+check "l7 tls: allowed SNI connects" tls ok.smoke.test
+check "l7 tls: other SNI reset" bash -c "! ip netns exec $NS curl -sk -m6 -o /dev/null --resolve bad.smoke.test:18443:$HOST_IP https://bad.smoke.test:18443/"
+check "l7 tls: flow names the SNI" flow_has "f.get('l7_type')=='tls' and 'bad.smoke.test' in (f.get('l7') or '') and f['verdict']=='DROPPED'"
+kill "$TLS_PID" 2>/dev/null || true
+
+# Kafka: a stub broker answers any request; produce to `orders` only.
+python3 - "$HOST_IP" >/dev/null 2>&1 <<'PY' &
+import socket, struct, sys, threading
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind((sys.argv[1], 19092)); s.listen(8)
+def serve(c):
+    try:
+        while True:
+            h = c.recv(4)
+            if len(h) < 4: return
+            n = struct.unpack(">i", h)[0]; b = b""
+            while len(b) < n:
+                x = c.recv(n - len(b))
+                if not x: return
+                b += x
+            c.sendall(struct.pack(">ii", 4, struct.unpack(">i", b[4:8])[0]))
+    except OSError:
+        pass
+while True:
+    c, _ = s.accept(); threading.Thread(target=serve, args=(c,), daemon=True).start()
+PY
+KAFKA_PID=$!
+produce() {
+  ip netns exec "$NS" python3 - "$HOST_IP" "$1" <<'PY'
+import socket, struct, sys
+def s16(x): return struct.pack(">h", len(x)) + x
+topic = sys.argv[2].encode()
+body = struct.pack(">hi", 1, 1000) + struct.pack(">i", 1) + s16(topic) + struct.pack(">i", 1) + struct.pack(">i", 0) + struct.pack(">i", 0)
+req = struct.pack(">hhi", 0, 0, 7) + s16(b"smoke") + body
+try:
+    c = socket.create_connection((sys.argv[1], 19092), timeout=6)
+    c.sendall(struct.pack(">i", len(req)) + req)
+    r = c.recv(8)
+except OSError:
+    sys.exit(1)
+sys.exit(0 if len(r) == 8 and struct.unpack(">ii", r)[1] == 7 else 1)
+PY
+}
+R_KAFKA="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":19092,\"l7\":true,\"source\":\"smoke spec.egress[7]\"}"
+L7_KAFKA="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":19092,\"rules\":{\"kafka\":[{\"role\":\"produce\",\"topic\":\"orders\"}]},\"source\":\"smoke spec.egress[7]\"}"
+sleep 0.5
+enforce
+npl "$R_KAFKA" "$L7_KAFKA"
+check "l7 kafka: produce to orders answered" produce orders
+check "l7 kafka: produce to payments reset" not produce payments
+check "l7 kafka: flow names the topic" flow_has "f.get('l7_type')=='kafka' and 'payments' in (f.get('l7') or '') and f['verdict']=='DROPPED'"
+kill "$KAFKA_PID" 2>/dev/null || true
+
+# DNS rules: bpfd forwards allowed queries and answers REFUSED otherwise.
+python3 - "$HOST_IP" >"$WORK/dns2.log" 2>&1 <<'PY' &
+import socket, struct, sys
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind((sys.argv[1], 53))
+ip = socket.inet_aton(sys.argv[1])
+while True:
+    q, a = s.recvfrom(512)
+    i = 12
+    while q[i]: i += q[i] + 1
+    end = i + 5
+    hdr = q[:2] + struct.pack(">HHHHH", 0x8180, 1, 1, 0, 0)
+    s.sendto(hdr + q[12:end] + b"\xc0\x0c" + struct.pack(">HHIH", 1, 1, 5, 4) + ip, a)
+PY
+DNS_PID=$!
+rcode() {
+  ip netns exec "$NS" python3 - "$HOST_IP" "$1" <<'PY'
+import socket, struct, sys
+q = struct.pack(">HHHHHH", 0x4d4f, 0x0100, 1, 0, 0, 0)
+q += b"".join(bytes([len(p)]) + p.encode() for p in sys.argv[2].split(".")) + b"\x00" + struct.pack(">HH", 1, 1)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.settimeout(3)
+s.sendto(q, (sys.argv[1], 53))
+try:
+    r = s.recv(512); print(r[3] & 15, struct.unpack(">H", r[6:8])[0])
+except socket.timeout:
+    print("timeout")
+PY
+}
+R_DNSL7="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":17,\"port\":53,\"l7\":true,\"source\":\"smoke spec.egress[8]\"}"
+L7_DNS="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":17,\"port\":53,\"rules\":{\"dns\":[\"*.smoke.test\"]},\"source\":\"smoke spec.egress[8]\"}"
+sleep 0.3
+enforce
+npl "$R_DNSL7" "$L7_DNS"
+check "l7 dns: allowed name forwarded by bpfd and answered" [ "$(rcode svc.smoke.test)" = "0 1" ]
+check "l7 dns: other name REFUSED" [ "$(rcode example.org)" = "5 0" ]
+check "l7 dns: flow names the query" flow_has "f.get('l7_type')=='dns' and 'example.org' in (f.get('l7') or '') and f['verdict']=='DROPPED'"
+kill "$DNS_PID" 2>/dev/null || true
+
+# ---- authentication + source guard -------------------------------------------
+# HOST_IP is a fleet VM peer (identity 5001) for `required`; the host
+# connects to a server inside the netns.
+
+SPOOF_IP=10.199.83.3
+(ip netns exec "$NS" python3 -m http.server 18090 --bind "$VM_IP" >/dev/null 2>&1) &
+VMHTTP_PID=$!
+AVM="{\"name\":\"$VM\",\"addresses\":[\"$VM_IP\"],\"taps\":[\"$HOST_IF\"],\"identity\":$VMID,\"isolate_ingress\":true"
+FLEETPEER="{\"cidr\":\"$HOST_IP\",\"identity\":5001,\"name\":\"fleet-peer\"},{\"cidr\":\"$SPOOF_IP\",\"identity\":5002,\"name\":\"other-vm\"}"
+R_AUTH="{\"subject_identity\":$VMID,\"peer_identity\":5001,\"egress\":false,\"proto\":6,\"port\":18090,\"auth\":1,\"source\":\"smoke spec.ingress[0]\"}"
+R_AFAIL="{\"subject_identity\":$VMID,\"peer_identity\":5001,\"egress\":false,\"proto\":6,\"port\":18090,\"auth\":2,\"source\":\"smoke spec.ingress[0]\"}"
+npa() { edge "{\"vms\":[$AVM}],\"peers\":[$FLEETPEER],\"policy\":[$1],\"flow_log\":true,\"owner\":\"smoke\"}"; }
+to_vm() { curl -s -m6 -o /dev/null "http://$VM_IP:18090/"; }
+sleep 0.5
+enforce
+npa "$R_AFAIL"
+check "auth: source guard on the tap" [ "$(jpath vm_edge_status "'source_guard' in d['taps'][0]['flags']")" = True ]
+check "auth enforce: test-always-fail blocks" bash -c "! curl -s -m3 -o /dev/null http://$VM_IP:18090/"
+check "auth: flow says auth-test-always-fail" flow_has "f.get('drop_reason')=='auth-test-always-fail' and f['verdict']=='DROPPED'"
+npa "$R_AUTH"
+check "auth enforce: required authenticates the fleet VM peer" to_vm
+check "auth: first SYN dropped as auth-required" flow_has "f.get('drop_reason')=='auth-required'"
+check "auth: table shows the pair" auth_has 'authenticated (fleet VM fleet-peer)'
+check "auth: status counts it" [ "$(jpath vm_edge_status "d['auth_entries']")" = 1 ]
+ip netns exec "$NS" ip addr add "$SPOOF_IP/32" dev "$PEER_IF"
+ip route add "$SPOOF_IP/32" dev "$HOST_IF"
+from_spoof() {
+  ip netns exec "$NS" python3 -c "import socket,sys; s=socket.socket(); s.settimeout(3); s.bind(('$SPOOF_IP',0)); s.connect(('$HOST_IP',18080))" 2>/dev/null
+}
+check "guard: own address still works" http_ok
+check "guard enforce: spoofed source (another identity) dropped" not from_spoof
+check "guard: flow says spoofed-source" flow_has "f.get('drop_reason')=='spoofed-source' and f['src']=='$SPOOF_IP'"
+observe
+check "guard observe: spoofed source only audited" from_spoof
+ip netns exec "$NS" ip addr del "$SPOOF_IP/32" dev "$PEER_IF"
+kill "$VMHTTP_PID" 2>/dev/null || true
 
 observe
 check "netpol observe: ingressDeny only audited" host_ping_vm

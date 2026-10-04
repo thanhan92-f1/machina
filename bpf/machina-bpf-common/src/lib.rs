@@ -889,10 +889,21 @@ pub const VME_DENY_OUT: u32 = 1 << 4;
 pub const VME_FLOW_LOG: u32 = 1 << 5;
 /// Copy UDP DNS replies towards the VM to DNS_EVENTS (`toFQDNs` learning).
 pub const VME_FQDN: u32 = 1 << 6;
+/// The VM is the subject of L7 or authentication rules.
+pub const VME_L7_AUTH: u32 = 1 << 7;
+/// Drop packets from the VM whose source address belongs to another identity.
+pub const VME_SRC_GUARD: u32 = 1 << 8;
 
-/// VM_POLICY values.
+/// VM_POLICY value bits. Any DENY hit wins; AUTH bits are OR-ed across the
+/// matching entries; L7 applies only when every matching entry carries it.
 pub const VM_POLICY_ALLOW: u32 = 1;
 pub const VM_POLICY_DENY: u32 = 2;
+/// Requests are parsed and checked by bpfd (VM_L7_EVENTS).
+pub const VM_POLICY_L7: u32 = 4;
+/// New flows need a live VM_AUTH entry (`authentication.mode: required`).
+pub const VM_POLICY_AUTH: u32 = 8;
+/// `authentication.mode: test-always-fail`.
+pub const VM_POLICY_AUTH_FAIL: u32 = 16;
 
 pub const VMF_FORWARDED: u8 = 0;
 pub const VMF_DROPPED: u8 = 1;
@@ -902,6 +913,8 @@ pub const VMF_AUDIT: u8 = 2;
 pub const VMF_REASON_NONE: u8 = 0;
 pub const VMF_REASON_POLICY_DENY: u8 = 1;
 pub const VMF_REASON_DEFAULT_DENY: u8 = 2;
+pub const VMF_REASON_AUTH_REQUIRED: u8 = 3;
+pub const VMF_REASON_SPOOFED: u8 = 4;
 
 /// One VM edge verdict (VM_FLOW_EVENTS): first packet of a flow, or a
 /// drop / audit (at most one per flow per second).
@@ -924,7 +937,75 @@ pub struct VmFlowEvent {
     pub tcp_flags: u8,
     /// ICMP type + 1 (0 = not ICMP).
     pub icmp: u8,
-    pub _pad: [u8; 6],
+    /// 1 = required, 2 = test-always-fail (VMF_REASON_AUTH_REQUIRED).
+    pub auth: u8,
+    pub _pad: [u8; 5],
+}
+
+/// Bytes of an L7 request copied to VM_L7_EVENTS.
+pub const VM_L7_CAP: usize = 4096;
+
+/// One request start on an L7 port (VM_L7_EVENTS). `held` = the segment was
+/// dropped and its retransmit waits for bpfd's verdict in VM_L7_FLOW.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct VmL7Event {
+    pub ts_ns: u64,
+    pub ifindex: u32,
+    pub subject: u32,
+    pub peer: u32,
+    /// TCP sequence / acknowledgement numbers of the segment (host order).
+    pub seq: u32,
+    pub ack: u32,
+    /// L4 payload length.
+    pub len: u32,
+    /// Bytes in `data`.
+    pub cap: u32,
+    /// Payload bytes that belong to the request already allowed.
+    pub skip: u32,
+    pub src: [u8; ADDR_LEN],
+    pub dst: [u8; ADDR_LEN],
+    pub sport: u16,
+    pub dport: u16,
+    pub proto: u8,
+    pub from_vm: u8,
+    pub held: u8,
+    pub v6: u8,
+    /// Destination then source MAC of the frame.
+    pub mac: [u8; 12],
+    pub _pad: u32,
+    pub data: [u8; VM_L7_CAP],
+}
+
+pub const L7S_NONE: u8 = 0;
+/// A request start was held; later segments drop until bpfd decides.
+pub const L7S_PENDING: u8 = 1;
+/// Denied: data segments drop (bpfd already answered the client).
+pub const L7S_DENIED: u8 = 2;
+/// Allowed for the rest of the connection (TLS, chunked bodies).
+pub const L7S_OPEN: u8 = 3;
+
+/// Per-flow L7 window (VM_L7_FLOW, key = conntrack FlowKey of the
+/// originator): segments inside `[allow_seq, pass_until)` pass.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmL7Flow {
+    pub allow_seq: u32,
+    pub pass_until: u32,
+    pub pending_seq: u32,
+    pub state: u8,
+    pub _pad: [u8; 3],
+}
+
+/// VM_AUTH key; value = expiry (monotonic ns).
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct VmAuthKey {
+    pub subject: u32,
+    pub peer: u32,
+    /// 1 = required.
+    pub mode: u8,
+    pub _pad: [u8; 3],
 }
 
 /// Per-tap VM edge config (VM_EDGE, key = tap ifindex). Rates are policed
@@ -1363,7 +1444,7 @@ mod pod {
         GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
         PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
         NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
-        VmEdgeCfg, VmBucket, VmEdgeStats, VmFlowEvent, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
+        VmEdgeCfg, VmBucket, VmEdgeStats, VmFlowEvent, VmL7Event, VmL7Flow, VmAuthKey, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
         ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey,
         SampleCfg, SampleBucket, SslReadArgs, NodeIsoCfg, NodeIsoStats, RtnlCfg, L7sCfg,
         VmiCfg, VmiThread, VmiKey, VmiBlk, GuardCfg, GuardFileKey, DirectCfg,
@@ -1401,6 +1482,9 @@ mod tests {
         assert_eq!(size_of::<VmBucket>(), 24);
         assert_eq!(size_of::<VmEdgeStats>(), 56);
         assert_eq!(size_of::<VmFlowEvent>(), 72);
+        assert_eq!(size_of::<VmL7Event>(), 96 + VM_L7_CAP);
+        assert_eq!(size_of::<VmL7Flow>(), 16);
+        assert_eq!(size_of::<VmAuthKey>(), 12);
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
         assert_eq!(size_of::<DevHitKey>(), 24);
         assert_eq!(size_of::<NetHitKey>(), 32);

@@ -21,8 +21,23 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
     learned names are listed by `machinactl netpol fqdn`, the UI
     *DNS names* table and `GET …/fqdn-cache`. The policy tester accepts DNS
     names.
-  - L7, services, groups and authentication are accepted with a warning and
-    are not enforced yet.
+  - L7 rules are enforced natively, without Envoy:
+    - covers HTTP (method, path, host, headers), Kafka (role or apiKey,
+      version, clientID, topic), TLS `serverNames` and DNS `matchName` /
+      `matchPattern`, including L7 on `toFQDNs` rules;
+    - the VM edge holds the first segment of each request, and bpfd parses
+      it and opens the flow, or answers with HTTP 403, a TCP reset or DNS
+      REFUSED;
+    - allowed DNS queries are forwarded from the host;
+    - flows carry the L7 request.
+  - `toGroups` / `fromGroups` and `cidrGroupRef` resolve `CiliumCIDRGroup`
+    objects.
+  - `authentication` (`required`, `test-always-fail`): new connections need
+    a bpfd-authenticated VM identity pair. A source guard drops VMs that
+    send as another VM's address. `machinactl netpol auth` and
+    `GET …/vm-network-policies/auth` list the authenticated pairs.
+  - `machinactl netpol test` and the UI tester take an L7 request.
+  - `toServices` is accepted with a warning and matches nothing.
 - **Labels.** Each VM has key/value labels, which policies select on. The
   daemon stores them in `vm-labels.json`. On the controller, migration 029
   adds a `vms.labels` column, seeded from `key=value` tags.

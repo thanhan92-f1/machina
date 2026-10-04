@@ -20,6 +20,7 @@
 mod compile;
 mod flow;
 pub mod fqdn;
+pub mod l7;
 mod trace;
 #[cfg(test)]
 mod tests;
@@ -68,9 +69,16 @@ pub fn cilium_present() -> Option<String> {
 
 pub const API_VERSION: &str = "machina.io/v1";
 pub const KIND: &str = "VmNetworkPolicy";
-const KINDS: [&str; 4] =
-    ["VmNetworkPolicy", "VmClusterwideNetworkPolicy", "CiliumNetworkPolicy", "CiliumClusterwideNetworkPolicy"];
-const API_VERSIONS: [&str; 2] = ["machina.io/v1", "cilium.io/v2"];
+const KINDS: [&str; 5] = [
+    "VmNetworkPolicy",
+    "VmClusterwideNetworkPolicy",
+    "CiliumNetworkPolicy",
+    "CiliumClusterwideNetworkPolicy",
+    CIDR_GROUP_KIND,
+];
+const API_VERSIONS: [&str; 3] = ["machina.io/v1", "cilium.io/v2", "cilium.io/v2alpha1"];
+/// `CiliumCIDRGroup`: named CIDR sets for `cidrGroupRef` and `toGroups` / `fromGroups`.
+pub const CIDR_GROUP_KIND: &str = "CiliumCIDRGroup";
 
 pub const LABEL_VM_NAME: &str = "machina.io/vm-name";
 pub const LABEL_HOST: &str = "machina.io/host";
@@ -137,7 +145,13 @@ impl Validation {
 impl VmNetworkPolicy {
     /// The policy as a document (`spec` when it has one rule, else `specs`).
     pub fn to_document(&self) -> Value {
-        let api = if self.kind.starts_with("Cilium") { "cilium.io/v2" } else { API_VERSION };
+        let api = if self.is_cidr_group() {
+            "cilium.io/v2alpha1"
+        } else if self.kind.starts_with("Cilium") {
+            "cilium.io/v2"
+        } else {
+            API_VERSION
+        };
         let mut meta = Map::new();
         meta.insert("name".into(), Value::String(self.name.clone()));
         if !self.labels.is_empty() {
@@ -159,6 +173,24 @@ impl VmNetworkPolicy {
 
     pub fn to_yaml(&self) -> String {
         serde_yaml::to_string(&self.to_document()).unwrap_or_default()
+    }
+
+    pub fn is_cidr_group(&self) -> bool {
+        self.kind == CIDR_GROUP_KIND
+    }
+
+    /// `spec.externalCIDRs` of a CiliumCIDRGroup.
+    pub fn group_cidrs(&self) -> Vec<String> {
+        self.specs
+            .iter()
+            .flat_map(|s| {
+                s.get("externalCIDRs")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default()
+            })
+            .filter_map(|c| c.as_str().map(String::from))
+            .collect()
     }
 
     pub fn description(&self) -> Option<String> {
@@ -272,7 +304,19 @@ pub fn from_value(d: &Value, path: &str, v: &mut Validation) -> Option<VmNetwork
             let off = usize::from(obj.get("spec").is_some_and(|s| !s.is_null()));
             format!("{path}.specs[{}]", i - off)
         };
-        validate_spec(s, &sp, v);
+        if kind == CIDR_GROUP_KIND {
+            if keys_only(s, &sp, &["externalCIDRs"], v) {
+                let cidrs = list(s, "externalCIDRs", &sp, v);
+                if cidrs.is_empty() {
+                    v.err(format!("{sp}.externalCIDRs"), "at least one CIDR");
+                }
+                for (j, c) in cidrs.iter().enumerate() {
+                    validate_cidr(c, &format!("{sp}.externalCIDRs[{j}]"), v);
+                }
+            }
+        } else {
+            validate_spec(s, &sp, v);
+        }
     }
     if v.errors.len() > before {
         return None;
@@ -421,7 +465,7 @@ pub(crate) fn icmp_type_num(t: &Value, v6: bool) -> Option<u8> {
     table.iter().find(|(n, _)| *n == s).map(|(_, t)| *t)
 }
 
-fn validate_ports(tp: &Value, path: &str, deny: bool, v: &mut Validation) {
+fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Validation) {
     let allowed: &[&str] = if deny {
         &["ports"]
     } else {
@@ -476,13 +520,34 @@ fn validate_ports(tp: &Value, path: &str, deny: bool, v: &mut Validation) {
         }
     }
     if !deny {
-        if tp.get("rules").is_some_and(|r| !r.is_null()) {
-            v.warn(format!("{path}.rules"), "L7 rules are not enforced natively yet; the rule enforces as L4");
+        for (p, m) in l7::validate(tp, egress) {
+            v.err(format!("{path}.{p}"), m);
         }
-        for k in ["terminatingTLS", "originatingTLS", "serverNames", "listener"] {
-            if tp.get(k).is_some_and(|r| !r.is_null()) {
-                v.warn(format!("{path}.{k}"), "not enforced natively yet");
+        let l7 = l7::from_to_ports(tp);
+        if l7.is_some() {
+            let tcp_only = l7.as_ref().is_some_and(|r| r.kind() != "dns");
+            for (i, p) in list(tp, "ports", path, v).iter().enumerate() {
+                if tcp_only && matches!(p["protocol"].as_str(), Some("UDP" | "SCTP")) {
+                    v.err(
+                        format!("{path}.ports[{i}].protocol"),
+                        "HTTP, Kafka and TLS rules need TCP ports",
+                    );
+                }
             }
+        }
+        for k in ["terminatingTLS", "originatingTLS"] {
+            if tp.get(k).is_some_and(|r| !r.is_null()) {
+                v.warn(
+                    format!("{path}.{k}"),
+                    "TLS interception is not supported natively; encrypted traffic is matched by serverNames only",
+                );
+            }
+        }
+        if tp.get("listener").is_some_and(|r| !r.is_null()) {
+            v.warn(
+                format!("{path}.listener"),
+                "Envoy listeners do not apply; the native L7 path is used",
+            );
         }
     }
 }
@@ -523,13 +588,18 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
         if !keys_only(set, &sp, &["cidr", "except", "cidrGroupRef"], v) {
             continue;
         }
-        if set.get("cidrGroupRef").is_some() {
-            v.warn(format!("{sp}.cidrGroupRef"), "CiliumCIDRGroup references are not supported; use cidr");
-        }
-        match set.get("cidr") {
-            Some(c) => validate_cidr(c, &format!("{sp}.cidr"), v),
-            None if set.get("cidrGroupRef").is_none() => v.err(format!("{sp}.cidr"), "required"),
-            None => {}
+        match (set.get("cidr"), set.get("cidrGroupRef")) {
+            (Some(_), Some(_)) => v.err(sp.clone(), "cidr and cidrGroupRef are mutually exclusive"),
+            (Some(c), None) => validate_cidr(c, &format!("{sp}.cidr"), v),
+            (None, Some(g)) => {
+                if g.as_str().is_none_or(|g| !valid_name(g)) {
+                    v.err(
+                        format!("{sp}.cidrGroupRef"),
+                        "expected a CiliumCIDRGroup name",
+                    );
+                }
+            }
+            (None, None) => v.err(format!("{sp}.cidr"), "required (or cidrGroupRef)"),
         }
         for (j, e) in list(set, "except", &sp, v).iter().enumerate() {
             validate_cidr(e, &format!("{sp}.except[{j}]"), v);
@@ -545,10 +615,67 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
             None => v.err(ep, "expected a string"),
         }
     }
-    for key in ["Groups", "Nodes"] {
-        let k = format!("{pre}{key}");
-        if !list(r, &k, path, v).is_empty() {
-            v.warn(format!("{path}.{k}"), "not enforced natively yet; matches nothing");
+    let k = format!("{pre}Nodes");
+    if !list(r, &k, path, v).is_empty() {
+        v.warn(
+            format!("{path}.{k}"),
+            "node selectors match nothing on the VM edge; use fromEntities remote-node",
+        );
+    }
+    let k = format!("{pre}Groups");
+    for (i, g) in list(r, &k, path, v).iter().enumerate() {
+        let gp = format!("{path}.{k}[{i}]");
+        if !keys_only(g, &gp, &["aws", "machina"], v) {
+            continue;
+        }
+        let Some((prov, spec)) = g.as_object().and_then(|m| m.iter().next()) else {
+            v.err(gp, "one provider (aws or machina) is required");
+            continue;
+        };
+        let sp = format!("{gp}.{prov}");
+        if !keys_only(
+            spec,
+            &sp,
+            &[
+                "labels",
+                "securityGroupsIds",
+                "securityGroupsNames",
+                "names",
+                "region",
+            ],
+            v,
+        ) {
+            continue;
+        }
+        let any = [
+            "labels",
+            "securityGroupsIds",
+            "securityGroupsNames",
+            "names",
+        ]
+        .iter()
+        .any(|f| {
+            spec.get(*f).is_some_and(|x| {
+                x.as_array().is_some_and(|a| !a.is_empty())
+                    || x.as_object().is_some_and(|o| !o.is_empty())
+            })
+        });
+        if !any {
+            v.err(sp.clone(), "name at least one group (names / securityGroupsNames / securityGroupsIds) or labels");
+        }
+        if spec.get("labels").is_some_and(|l| !l.is_object()) {
+            v.err(format!("{sp}.labels"), "expected a mapping");
+        }
+    }
+    if let Some(a) = r.get("authentication").filter(|a| !a.is_null()) {
+        if keys_only(a, &format!("{path}.authentication"), &["mode"], v) {
+            match a["mode"].as_str() {
+                Some("required" | "disabled" | "test-always-fail") => {}
+                _ => v.err(
+                    format!("{path}.authentication.mode"),
+                    "expected required, disabled or test-always-fail",
+                ),
+            }
         }
     }
     if egress {
@@ -577,11 +704,8 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
             }
         }
     }
-    if r.get("authentication").is_some_and(|a| !a.is_null()) {
-        v.warn(format!("{path}.authentication"), "mutual authentication is not enforced natively yet");
-    }
     for (i, tp) in list(r, "toPorts", path, v).iter().enumerate() {
-        validate_ports(tp, &format!("{path}.toPorts[{i}]"), deny, v);
+        validate_ports(tp, &format!("{path}.toPorts[{i}]"), egress, deny, v);
     }
     for (i, ic) in list(r, "icmps", path, v).iter().enumerate() {
         let ip = format!("{path}.icmps[{i}]");

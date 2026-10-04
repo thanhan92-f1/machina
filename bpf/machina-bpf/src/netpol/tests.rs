@@ -41,13 +41,19 @@ fn parse(y: &str) -> Vec<VmNetworkPolicy> {
 }
 
 fn trace_q(p: &[VmNetworkPolicy], from: &str, to: &str, proto: &str, port: u16) -> TraceResult {
-    trace(p, &fleet(), &["192.168.1.10".into()], &["192.168.1.11".into()], &TraceQuery {
-        from: from.into(),
-        to: to.into(),
-        protocol: proto.into(),
-        port,
-        icmp_type: None,
-    })
+    trace(
+        p,
+        &fleet(),
+        &["192.168.1.10".into()],
+        &["192.168.1.11".into()],
+        &TraceQuery {
+            from: from.into(),
+            to: to.into(),
+            protocol: proto.into(),
+            port,
+            ..Default::default()
+        },
+    )
     .unwrap()
 }
 
@@ -113,7 +119,12 @@ spec:
         assert!(paths.contains(&want), "missing {want} in {paths:?}");
     }
     assert!(!v.warnings.iter().any(|w| w.path.contains("toFQDNs")));
-    assert!(v.warnings.iter().any(|w| w.path.ends_with("toPorts[0].rules")));
+    assert!(
+        !v.warnings
+            .iter()
+            .any(|w| w.path.ends_with("toPorts[0].rules")),
+        "L7 on toFQDNs is enforced"
+    );
 }
 
 #[test]
@@ -255,4 +266,303 @@ spec:
     assert!(!trace_q(&p, "web-1", "cdn.example.net", "TCP", 443).allowed);
     assert!(!trace_q(&p, "web-1", "api.example.com", "TCP", 80).allowed);
     assert!(!trace_q(&p, "web-1", "203.0.113.5", "TCP", 443).allowed, "an address is not a name");
+}
+
+const GROUPS: &str = r#"
+apiVersion: cilium.io/v2alpha1
+kind: CiliumCIDRGroup
+metadata:
+  name: partner-nets
+  labels: {tier: partner, machina.io/region: eu}
+  annotations: {machina.io/group-id: sg-123}
+spec:
+  externalCIDRs: [198.51.100.0/24, "2001:db8::/64"]
+---
+apiVersion: machina.io/v1
+kind: VmNetworkPolicy
+metadata: {name: partners}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress:
+    - toGroups: [{aws: {securityGroupsIds: [sg-123]}}]
+      toPorts: [{ports: [{port: "443", protocol: TCP}]}]
+    - toCIDRSet: [{cidrGroupRef: partner-nets}]
+      toPorts: [{ports: [{port: "22", protocol: TCP}]}]
+    - toGroups: [{machina: {labels: {tier: partner}, region: us}}]
+      toPorts: [{ports: [{port: "25", protocol: TCP}]}]
+"#;
+
+#[test]
+fn cidr_groups_and_to_groups() {
+    let p = parse(GROUPS);
+    assert!(p[0].is_cidr_group());
+    assert_eq!(p[0].group_cidrs(), ["198.51.100.0/24", "2001:db8::/64"]);
+    assert!(p[0].to_yaml().contains("cilium.io/v2alpha1"));
+    assert!(
+        trace_q(&p, "web-1", "198.51.100.7", "TCP", 443).allowed,
+        "group id match"
+    );
+    assert!(
+        trace_q(&p, "web-1", "198.51.100.7", "TCP", 22).allowed,
+        "cidrGroupRef"
+    );
+    assert!(
+        !trace_q(&p, "web-1", "198.51.100.7", "TCP", 25).allowed,
+        "region us does not match eu"
+    );
+    assert!(!trace_q(&p, "web-1", "203.0.113.1", "TCP", 443).allowed);
+    let vms = fleet();
+    let c = compile(&Inputs {
+        policies: &p,
+        vms: &vms,
+        host: Some("h1"),
+        host_addresses: &[],
+        remote_node_addresses: &[],
+    });
+    assert!(c.state.peers.iter().any(|x| x.cidr == "198.51.100.0/24"));
+    assert!(
+        c.endpoints.iter().all(|e| e.name != "partner-nets"),
+        "a group selects no VMs"
+    );
+
+    let (_, v) = parse_documents(
+        "apiVersion: cilium.io/v2alpha1\nkind: CiliumCIDRGroup\nmetadata: {name: g}\nspec: {externalCIDRs: [nope]}\n",
+    );
+    assert!(
+        v.errors.iter().any(|e| e.path.contains("externalCIDRs[0]")),
+        "{:?}",
+        v.errors
+    );
+}
+
+#[test]
+fn authentication_modes() {
+    let p = parse(
+        r#"
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: auth}
+spec:
+  endpointSelector: {matchLabels: {app: db}}
+  ingress:
+    - fromEndpoints: [{matchLabels: {app: web}}]
+      authentication: {mode: required}
+    - fromEndpoints: [{matchLabels: {app: lb}}]
+      authentication: {mode: test-always-fail}
+"#,
+    );
+    let vms = fleet();
+    let c = compile(&Inputs {
+        policies: &p,
+        vms: &vms,
+        host: Some("h1"),
+        host_addresses: &[],
+        remote_node_addresses: &[],
+    });
+    let web1 = vm_identity("web-1");
+    let lb = vm_identity("lb-1");
+    assert!(c
+        .state
+        .policy
+        .iter()
+        .any(|r| r.peer_identity == Some(web1) && r.auth == crate::api::AUTH_REQUIRED));
+    assert!(c
+        .state
+        .policy
+        .iter()
+        .any(|r| r.peer_identity == Some(lb) && r.auth == crate::api::AUTH_ALWAYS_FAIL));
+    let t = trace_q(&p, "web-1", "db-1", "TCP", 5432);
+    assert!(
+        t.allowed && t.ingress.auth.as_deref() == Some("required"),
+        "{t:?}"
+    );
+    assert!(t.summary.contains("authenticated"));
+    let t = trace_q(&p, "lb-1", "db-1", "TCP", 5432);
+    assert!(!t.allowed && t.ingress.verdict == "auth-failed", "{t:?}");
+
+    let (_, v) = parse_documents(
+        "apiVersion: machina.io/v1\nkind: VmNetworkPolicy\nmetadata: {name: a}\nspec:\n  endpointSelector: {}\n  ingress: [{authentication: {mode: maybe}}]\n",
+    );
+    assert!(
+        v.errors
+            .iter()
+            .any(|e| e.path.ends_with("authentication.mode")),
+        "{:?}",
+        v.errors
+    );
+}
+
+const L7: &str = r#"
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: api}
+spec:
+  endpointSelector: {matchLabels: {app: db}}
+  ingress:
+    - fromEndpoints: [{matchLabels: {app: web}}]
+      toPorts:
+        - ports: [{port: "80", protocol: TCP}]
+          rules:
+            http:
+              - method: GET
+                path: "/v1/.*"
+              - method: POST
+                path: /login
+                headers: ["X-Token: abc"]
+        - ports: [{port: "9092", protocol: TCP}]
+          rules:
+            kafka: [{role: produce, topic: orders}]
+        - ports: [{port: "443", protocol: TCP}]
+          serverNames: [db.example.com]
+    - fromEndpoints: [{matchLabels: {app: lb}}]
+      toPorts: [{ports: [{port: "80", protocol: TCP}]}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: dns}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress:
+    - toEndpoints: [{}]
+    - toEntities: [world]
+      toPorts:
+        - ports: [{port: "53", protocol: ANY}]
+          rules: {dns: [{matchPattern: "*.example.com"}]}
+    - toFQDNs: [{matchName: api.example.com}]
+      toPorts:
+        - ports: [{port: "80", protocol: TCP}]
+          rules: {http: [{method: GET}]}
+"#;
+
+fn trace_l7(
+    p: &[VmNetworkPolicy],
+    from: &str,
+    to: &str,
+    proto: &str,
+    port: u16,
+    f: impl FnOnce(&mut TraceQuery),
+) -> TraceResult {
+    let mut q = TraceQuery {
+        from: from.into(),
+        to: to.into(),
+        protocol: proto.into(),
+        port,
+        ..Default::default()
+    };
+    f(&mut q);
+    trace(p, &fleet(), &[], &[], &q).unwrap()
+}
+
+#[test]
+fn l7_compile_and_trace() {
+    let p = parse(L7);
+    let vms = fleet();
+    let c = compile(&Inputs {
+        policies: &p,
+        vms: &vms,
+        host: Some("h1"),
+        host_addresses: &[],
+        remote_node_addresses: &[],
+    });
+    assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    let kinds: Vec<&str> = c.state.l7.iter().map(|r| r.rules.kind()).collect();
+    for k in ["http", "kafka", "tls", "dns"] {
+        assert!(kinds.contains(&k), "{k} missing in {kinds:?}");
+    }
+    assert!(c.state.policy.iter().any(|r| r.port == 80 && r.l7));
+    assert!(
+        c.state.policy.iter().any(|r| r.port == 80 && !r.l7),
+        "lb-1 gets plain L4 on 80"
+    );
+    assert!(c
+        .state
+        .fqdn
+        .iter()
+        .any(|r| r.l7.as_ref().is_some_and(|l| l.kind() == "http")));
+    assert!(
+        trace_l7(&p, "web-1", "203.0.113.9", "TCP", 80, |_| {})
+            .egress
+            .verdict
+            == "default-deny"
+    );
+
+    let t = trace_l7(&p, "web-1", "db-1", "TCP", 80, |_| {});
+    assert!(
+        t.allowed
+            && t.ingress
+                .l7
+                .as_deref()
+                .is_some_and(|s| s.starts_with("http rules apply")),
+        "{t:?}"
+    );
+    let get = |m: &str, path: &str| {
+        trace_l7(&p, "web-1", "db-1", "TCP", 80, |q| {
+            q.http_method = Some(m.into());
+            q.http_path = Some(path.into());
+        })
+    };
+    assert!(get("GET", "/v1/users").allowed);
+    let t = get("DELETE", "/v1/users");
+    assert!(!t.allowed && t.ingress.verdict == "l7-denied", "{t:?}");
+    assert!(!get("GET", "/v2").allowed, "path regex is anchored");
+    assert!(!get("POST", "/login").allowed, "header required");
+    assert!(
+        trace_l7(&p, "web-1", "db-1", "TCP", 80, |q| {
+            q.http_method = Some("POST".into());
+            q.http_path = Some("/login".into());
+            q.http_headers = vec!["x-token: abc".into()];
+        })
+        .allowed
+    );
+    assert!(
+        trace_l7(&p, "lb-1", "db-1", "TCP", 80, |q| q.http_method =
+            Some("DELETE".into()))
+        .allowed,
+        "no L7 for lb"
+    );
+
+    let kafka = |key: &str, topic: &str| {
+        trace_l7(&p, "web-1", "db-1", "TCP", 9092, |q| {
+            q.kafka_api_key = Some(key.into());
+            q.kafka_topic = Some(topic.into());
+        })
+        .allowed
+    };
+    assert!(kafka("produce", "orders"));
+    assert!(!kafka("produce", "payments"));
+    assert!(!kafka("fetch", "orders"));
+
+    let tls = |sni: &str| {
+        trace_l7(&p, "web-1", "db-1", "TCP", 443, |q| {
+            q.server_name = Some(sni.into())
+        })
+        .allowed
+    };
+    assert!(tls("db.example.com"));
+    assert!(!tls("evil.example.com"));
+
+    let dns = |n: &str| {
+        trace_l7(&p, "web-1", "1.1.1.1", "UDP", 53, |q| {
+            q.dns_name = Some(n.into())
+        })
+        .allowed
+    };
+    assert!(dns("api.example.com"));
+    assert!(!dns("example.org"));
+
+    let t = trace_l7(&p, "web-1", "db-1", "TCP", 80, |q| {
+        q.http_method = Some("GET".into())
+    });
+    assert!(
+        !t.allowed && t.egress.verdict == "allowed",
+        "path missing: GET / fails /v1/.*"
+    );
+    let fq = |m: &str| {
+        trace_l7(&p, "web-1", "api.example.com", "TCP", 80, |q| {
+            q.http_method = Some(m.into())
+        })
+        .allowed
+    };
+    assert!(fq("GET"));
+    assert!(!fq("PUT"));
 }

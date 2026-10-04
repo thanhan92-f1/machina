@@ -76,13 +76,17 @@ Usage: netpol <command> [options]
   delete NAME                    Delete a policy
   enable NAME | disable NAME     Toggle a policy (fleet only)
   test --from VM --to VM|IP|NAME [--port N] [--proto tcp|udp|sctp|icmp|any] [--icmp-type N]
-                                 Trace a connection through the policy set
-                                 (like `cilium policy trace`)
+       [--http-method M --path P --host H --header 'K: V'] [--sni NAME] [--dns-name NAME]
+       [--kafka-api-key produce|fetch|… --kafka-topic T --kafka-client-id C --kafka-api-version N]
+                                 Trace a connection (and an L7 request) through the
+                                 policy set (like `cilium policy trace`)
   selectors                      Selector → matched VMs (like `cilium policy selectors`)
   endpoints                      VMs with identity, labels and enforcement
   status                         Sync state, enforcement mode, Cilium presence
   fqdn                           toFQDNs names learned from DNS replies to VMs
                                  (like `cilium fqdn cache list`)
+  auth                           Mutual-authentication table (identity pairs,
+                                 like `cilium-dbg auth list`)
   sync                           Push compiled policy to every host now (fleet only)
 EOF
 }
@@ -157,7 +161,8 @@ np_netpol_apply() {
 }
 
 np_netpol_test() {
-    local from="" to="" port="" proto="tcp" icmp=""
+    local from="" to="" port="" proto="tcp" icmp="" l7='{}'
+    l7add() { l7=$(jq -c --arg k "$1" --arg v "$2" '. + {($k): $v}' <<<"$l7"); }
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --from|--src) from="$2"; shift 2 ;;
@@ -165,23 +170,36 @@ np_netpol_test() {
             --port|--dport) port="$2"; shift 2 ;;
             --proto|--protocol) proto="$2"; shift 2 ;;
             --icmp-type) icmp="$2"; proto="icmp"; shift 2 ;;
+            --http-method|--method) l7add http_method "$2"; shift 2 ;;
+            --path|--http-path) l7add http_path "$2"; shift 2 ;;
+            --host|--http-host) l7add http_host "$2"; shift 2 ;;
+            --header|--http-header) l7=$(jq -c --arg v "$2" '.http_headers += [$v]' <<<"$l7"); shift 2 ;;
+            --sni|--server-name) l7add server_name "$2"; shift 2 ;;
+            --dns-name|--query) l7add dns_name "$2"; shift 2 ;;
+            --kafka-api-key) l7add kafka_api_key "$2"; shift 2 ;;
+            --kafka-topic) l7add kafka_topic "$2"; shift 2 ;;
+            --kafka-client-id) l7add kafka_client_id "$2"; shift 2 ;;
+            --kafka-api-version) l7=$(jq -c --argjson v "$2" '. + {kafka_api_version: $v}' <<<"$l7"); shift 2 ;;
             *) np_die "unknown option: $1" ;;
         esac
     done
     [[ -n "$from" && -n "$to" ]] || np_die "usage: netpol test --from VM|IP --to VM|IP [--port N] [--proto tcp]"
     local q body
-    q=$(jq -n --arg f "$from" --arg t "$to" --arg p "$port" --arg pr "$proto" --arg i "$icmp" \
+    q=$(jq -n --arg f "$from" --arg t "$to" --arg p "$port" --arg pr "$proto" --arg i "$icmp" --argjson l7 "$l7" \
         '{from: $f, to: $t, protocol: $pr}
          + (if $p != "" then {port: ($p|tonumber)} else {} end)
-         + (if $i != "" then {icmp_type: ($i|tonumber)} else {} end)')
+         + (if $i != "" then {icmp_type: ($i|tonumber)} else {} end)
+         + $l7')
     body=$(np_api POST /vm-network-policies/trace -H 'Content-Type: application/json' -d "$q")
     jq -r '
       def ep(e): "\(e.vm // e.input) \u001b[90m(\(e.kind), identity \(e.identity))\u001b[0m";
       def side(s; n): "\u001b[1m\(n)\u001b[0m  \(s.vm // "-")  \(
           if s.verdict == "allowed" then "\u001b[32mallowed\u001b[0m"
-          elif s.verdict == "denied" or s.verdict == "default-deny" then "\u001b[31m\(s.verdict)\u001b[0m"
+          elif s.verdict == "denied" or s.verdict == "default-deny" or s.verdict == "l7-denied" or s.verdict == "auth-failed" then "\u001b[31m\(s.verdict)\u001b[0m"
           else "\u001b[90m\(s.verdict)\u001b[0m" end)\(if s.enforced then "  \u001b[90m[default-deny]\u001b[0m" else "" end)",
-        (if s.rule then "    ↳ \(s.rule)" else empty end);
+        (if s.rule then "    ↳ \(s.rule)" else empty end),
+        (if s.auth then "    \u001b[36m⚿ authentication: \(s.auth)\u001b[0m" else empty end),
+        (if s.l7 then "    \u001b[35m◆ L7: \(s.l7)\u001b[0m" else empty end);
       "Tracing \(ep(.from)) → \(ep(.to))  \(.protocol | ascii_upcase)\(if .port > 0 then "/\(.port)" else "" end)",
       "",
       side(.egress; "Egress  at source      "),
@@ -225,7 +243,7 @@ np_netpol_status() {
       (if .enforcement then "Enforcement:  \(.enforcement.mode // "observe")\(if .enforcement.lease_remaining_secs then " (lease \(.enforcement.lease_remaining_secs)s)" else "" end)" else empty end),
       (if has("hosts") then empty elif .cilium then "Cilium:       present (\(.cilium)) — Cilium enforces its own endpoints; Machina enforces libvirt VMs" else "Cilium:       absent — Machina eBPF enforces natively" end),
       (if .last_sync then "Last sync:    \(.last_sync.at // "-")  \(if .last_sync.skipped then "skipped: \(.last_sync.skipped)" elif .last_sync.ok then "ok (\(.last_sync.vms) VMs, \(.last_sync.rules) rules, \(.last_sync.peers) peers)" else "FAILED: \(.last_sync.error)" end)" else empty end),
-      (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)\(if (.edge.fqdn_rules // 0) > 0 then ", toFQDNs \(.edge.fqdn_rules) rule(s) / \(.edge.fqdn_cache // 0) learned address(es)" else "" end)" else empty end),
+      (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)\(if (.edge.fqdn_rules // 0) > 0 then ", toFQDNs \(.edge.fqdn_rules) rule(s) / \(.edge.fqdn_cache // 0) learned address(es)" else "" end)\(if (.edge.l7_rules // 0) > 0 then ", L7 \(.edge.l7_rules) rule(s)" else "" end)\(if (.edge.auth_entries // 0) > 0 then ", \(.edge.auth_entries) authenticated pair(s)" else "" end)" else empty end),
       ((.hosts // [])[] | "  host \(.hostname // .host_id)  \(
           if .reachable == false then "\u001b[90munreachable\u001b[0m"
           elif .ok == false then "\u001b[31m\(.error // "error")\u001b[0m"
@@ -241,6 +259,19 @@ np_netpol_fqdn() {
         jq -r '.items[] | [
             .name, .address, (if .identity == 0 then "-" else (.identity|tostring) end), (.vm // "-" | if . == "" then "-" else . end),
             (.hostname // "-"), "\(.expires_in_secs)s", ((.patterns // []) | join(","))
+          ] | @tsv' <<<"$body"
+    } | column -t -s $'\t'
+}
+
+np_netpol_auth() {
+    local body
+    body=$(np_api GET /vm-network-policies/auth)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    {
+        printf 'SUBJECT\tPEER\tMODE\tHOST\tEXPIRES\tSTATE\n'
+        jq -r '.items[] | [
+            "\(.subject) [\(.subject_identity)]", "\(.peer) [\(.peer_identity)]", .mode, (.hostname // "-"),
+            (if .expires_in_secs > 0 then "\(.expires_in_secs)s" else "-" end), .state
           ] | @tsv' <<<"$body"
     } | column -t -s $'\t'
 }
@@ -265,6 +296,7 @@ np_netpol_main() {
         endpoints|ep) np_netpol_endpoints ;;
         status) np_netpol_status ;;
         fqdn|fqdn-cache|dns) np_netpol_fqdn ;;
+        auth) np_netpol_auth ;;
         sync)
             [[ "$NP_FLEET" == 1 ]] || np_die "sync is a fleet (controller) feature; the daemon resyncs on every change and every 60s"
             np_api POST /vm-network-policies/sync | jq .
@@ -325,7 +357,7 @@ Usage: flow <command> [filters]
 
   observe [-f|--follow] [--last N]   Packet flows, Hubble style (colors on a TTY;
                                      NO_COLOR or --color never to disable)
-  top [--by pair|src|dst|port|policy|vm|drop] [--limit N]
+  top [--by pair|src|dst|port|policy|vm|drop|l7] [--limit N]
                                      Busiest flows over the recent window
   stats                              Verdict / protocol / direction / drop-reason
                                      breakdown with bar charts
@@ -333,7 +365,8 @@ Usage: flow <command> [filters]
 Filters:
   --vm NAME  --from-vm NAME  --to-vm NAME  --label k=v  --ip ADDR  --cidr PREFIX
   --port N  --protocol tcp|udp|icmp|sctp  --verdict FORWARDED,DROPPED,AUDIT
-  --drop-reason policy-deny|default-deny  --policy SUBSTR  --direction ingress|egress
+  --drop-reason policy-deny|default-deny|l7-deny|auth-required|spoofed-source
+  --policy SUBSTR  --direction ingress|egress
   --host NAME (fleet)  -o json|compact  --color always|never|auto
 EOF
 }
@@ -342,8 +375,9 @@ NP_FLOW_JQ_TSV='[
   .ts, (.host // ""), (.src_vm // ""), .src, (.src_port|tostring), (.src_identity|tostring),
   (.dst_vm // ""), .dst, (.dst_port|tostring), (.dst_identity|tostring), .proto,
   (if .icmp_type != null then "type=\(.icmp_type)" else (.tcp_flags // "") end),
-  .verdict, .direction, (.drop_reason // ""), (.policy // ""), (.bytes|tostring), (.iface // "")
-] | map(if . == "" then "-" else . end) | @tsv'
+  .verdict, .direction, (.drop_reason // ""), (.policy // ""), (.bytes|tostring), (.iface // ""),
+  (if .l7 then "\(.l7_type // "l7"): \(.l7)" else "" end)
+] | map(if . == "" then "-" else gsub("\t"; " ") end) | @tsv'
 
 # TSV (see NP_FLOW_JQ_TSV) → one colored line per flow.
 np_flow_render() {
@@ -375,6 +409,7 @@ np_flow_render() {
         if ($15 != "-") line = line col("31", " (" $15 ")")
         line = line "  " col("34", $14)
         if ($16 != "-") line = line "  " col("2;37", "↳ " $16)
+        if ($19 != "-" && $19 != "") line = line "  " col("1;35", "◆ " $19)
         print line
         fflush()
     }'
@@ -492,7 +527,8 @@ np_flow_top() {
         policy) key='(.policy // "(no policy)")' ;;
         vm) key='(.vm // "-")' ;;
         drop) key='(.drop_reason // "-")' ;;
-        *) np_die "--by must be pair|src|dst|port|policy|vm|drop" ;;
+        l7) key='(if .l7 then "\(.l7_type // "l7"): \(.l7)" else "(no L7)" end)' ;;
+        *) np_die "--by must be pair|src|dst|port|policy|vm|drop|l7" ;;
     esac
     np_color_on && printf '\033[1m● flow top --by %s\033[0m  \033[90m%s\033[0m\n' "$by" "$(jq '.items|length' <<<"$body") flows" \
         || echo "# flow top --by $by"

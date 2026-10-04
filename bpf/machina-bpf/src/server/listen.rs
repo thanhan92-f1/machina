@@ -400,6 +400,7 @@ impl Daemon {
             }
             Request::VmEdgeStatus => v(&lock(&self.engine).vm_edge_status()),
             Request::VmFqdnCache => v(&lock(&self.engine).vm_fqdn_cache()),
+            Request::VmAuthTable => v(&lock(&self.engine).vm_auth_table()),
             Request::VmFlows { limit, vm, verdict } => {
                 let s = lock(&self.shared);
                 let out: Vec<&VmFlowRecord> = s
@@ -654,6 +655,7 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
                 let mut eng = lock(&d2.engine);
                 eng.drain_dns_blocks()?;
                 eng.vm_fqdn_tick()?;
+                eng.vm_auth_tick()?;
                 eng.expire_lease()?;
                 eng.nodeiso_expire()?;
                 eng.guard_expire()?;
@@ -712,8 +714,11 @@ pub async fn run(cfg: Config) -> Result<()> {
         spawn_reader(eng.dp.take_ringbuf("L7S_EVENTS")?, "l7s", move |x| super::l7sample::on_l7s(&sh, &b, x));
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("GUARD_EVENTS")?, "guard", move |x| super::guard::on_guard(&sh, &b, x));
+        let (sh, b, w) = (shared.clone(), bus.clone(), wake.clone());
+        spawn_reader(eng.dp.take_ringbuf("VM_FLOW_EVENTS")?, "vmflow", move |x| super::vm::on_vm_flow(&sh, &b, &w, x));
         let (sh, b) = (shared.clone(), bus.clone());
-        spawn_reader(eng.dp.take_ringbuf("VM_FLOW_EVENTS")?, "vmflow", move |x| super::vm::on_vm_flow(&sh, &b, x));
+        let mut l7 = super::vml7::L7Worker::new(eng.dp.take_hash("VM_L7_FLOW")?);
+        spawn_reader(eng.dp.take_ringbuf("VM_L7_EVENTS")?, "vml7", move |x| l7.on_event(&sh, &b, x));
     }
 
     let d = Arc::new(Daemon {

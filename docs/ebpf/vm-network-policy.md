@@ -59,20 +59,25 @@ Validation is strict, and errors carry Cilium-style paths such as
 | `toPorts[].ports[]` | `port` (number or **named port**), `endPort` (ranges up to 256 ports), `protocol` `TCP` / `UDP` / `SCTP` / `ANY`. |
 | `icmps[].fields[]` | `type` as a number or Cilium name (`EchoRequest`, `DestinationUnreachable`, …), `family` `IPv4` / `IPv6`. |
 | `toFQDNs` | `matchName` (exact) and `matchPattern` (Cilium wildcards: `*` stays within one label, a lone `*` matches every name, a leading `**.` matches one or more labels). Allow rules only, as in Cilium; `toFQDNs` in `egressDeny` is rejected. See [DNS names](#dns-names-tofqdns). |
+| `toPorts[].rules` | `http` (`method`, `path` as anchored regexes, `host`, `headers`, `headerMatches` with `mismatch: LOG`), `kafka` (`role` or `apiKey`, `apiVersion`, `clientID`, `topic`), `dns` (`matchName` / `matchPattern`). Also on `toFQDNs` rules. See [L7 rules](#l7-rules). |
+| `toPorts[].serverNames` | TLS SNI names, matched on the ClientHello. |
+| `toGroups` / `fromGroups` | Select `CiliumCIDRGroup` objects (any provider key; there is no cloud API on a hypervisor). See [Groups](#cidr-groups-and-togroups). |
+| `cidrGroupRef` | In `toCIDRSet` / `fromCIDRSet`: the prefixes of a named `CiliumCIDRGroup`. |
+| `authentication.mode` | `required`, or `test-always-fail`. See [Authentication](#authentication). |
 | `enableDefaultDeny` | `ingress: false` / `egress: false` keeps a direction open even when the spec has rules for it (additive policies). |
 | `nodeSelector` (CCNP) | Accepted; host policies are not applied to VMs (warning). |
 
 Named ports come from VM labels: `machina.io/port.<name>=<number>` (for
 example `machina.io/port.http=8080`).
 
-### Accepted, not enforced yet
+### Accepted with a warning
 
-`toPorts[].rules` (HTTP / Kafka / DNS L7), `toPorts[].serverNames`,
-`originatingTLS` / `terminatingTLS`, `toServices`, `toGroups`,
-`authentication`. Policies containing them validate and apply with a warning
-that names the field; the L3/L4 parts of the rule are still enforced. These
-are the next phase and will be native too (an in-process L7 proxy), not
-delegated to Cilium or Envoy.
+- `toServices` matches nothing (there are no Kubernetes services).
+- `originatingTLS` / `terminatingTLS`: TLS is not intercepted, so encrypted
+  traffic is matched by `serverNames` only.
+- `listener` (Envoy) is ignored.
+- `headerMatches[].mismatch` other than `LOG` is rejected, because rewriting
+  headers needs a terminating proxy.
 
 ## DNS names (toFQDNs)
 
@@ -117,6 +122,123 @@ Things to know:
   **Endpoints → DNS names** table and `GET /vm-network-policies/fqdn-cache`
   list the learned names. `machinactl netpol test --to api.example.com`
   evaluates a name against `toFQDNs` rules.
+
+## L7 rules
+
+```yaml
+ingress:
+  - fromEndpoints: [{matchLabels: {app: web}}]
+    toPorts:
+      - ports: [{port: "80", protocol: TCP}]
+        rules:
+          http:
+            - method: GET
+              path: "/v1/.*"
+egress:
+  - toEndpoints: [{matchLabels: {app: kafka}}]
+    toPorts:
+      - ports: [{port: "9092", protocol: TCP}]
+        rules: {kafka: [{role: produce, topic: orders}]}
+  - toFQDNs: [{matchPattern: "*.example.com"}]
+    toPorts: [{ports: [{port: "443", protocol: TCP}], serverNames: [api.example.com]}]
+  - toEntities: [world]
+    toPorts:
+      - ports: [{port: "53", protocol: UDP}]
+        rules: {dns: [{matchPattern: "*.example.com"}]}
+```
+
+Enforced natively, without Envoy or a proxy in the data path:
+
+1. The L3/L4 match marks the rule entry L7. A connection is allowed as usual,
+   but the VM edge program copies the first payload segment of each request
+   (up to 4 KiB) to bpfd over the `VM_L7_EVENTS` ring buffer. UDP DNS on an
+   L7 port is copied the same way.
+2. With the enforcement lease, the edge drops that segment and marks the flow
+   pending. bpfd parses it (HTTP/1.x, including pipelined requests; Kafka
+   request headers and Produce/Fetch topics; the TLS ClientHello SNI; DNS
+   queries) and checks it against every L7 rule that applies to the pair.
+3. **Allowed:** bpfd opens a window in the flow's `VM_L7_FLOW` entry, and the
+   client's retransmit of the segment passes, along with the rest of that
+   request. The next request on a keep-alive connection is checked again.
+4. **Denied:** bpfd answers in place of the server: `HTTP/1.1 403 Access
+   denied` for HTTP, a TCP reset for Kafka and TLS, `REFUSED` for DNS. It
+   resets the server side too, and the flow stays closed.
+5. DNS queries that are allowed are forwarded by bpfd from the host, and the
+   answer is injected back into the tap, where `toFQDNs` learning sees it.
+
+Each decision is a flow record with the L7 type and request (for example
+`GET /v1/users`), shown with ◆ in `machinactl flow observe` and the UI
+terminal; `machinactl flow top --by l7` groups them. Without the lease, a
+denied request is an **AUDIT** flow and the traffic passes.
+
+Rules add up the way Cilium's do: a request is allowed if any L7 rule for the
+pair matches it. If a pair also has a plain L3/L4 allow for the same port,
+no L7 check applies.
+
+Limits:
+
+- Holding the first segment costs one TCP retransmission timeout (at least
+  200 ms) per checked request under enforcement.
+- Only the first 4 KiB of a request is seen. HTTP headers past that, and
+  chunked request bodies, are not parsed; the rest of such a request passes.
+- TLS is matched on SNI only. After the ClientHello the connection is open.
+- `rules.dns` covers DNS over UDP only.
+- For a denied egress connection, the reset to the server goes out through the
+  tap's bridge. A tap without a bridge leaves the server side to time out.
+
+## CIDR groups and toGroups
+
+```yaml
+apiVersion: cilium.io/v2alpha1
+kind: CiliumCIDRGroup
+metadata:
+  name: partner-nets
+  labels: {tier: partner, machina.io/region: eu}
+  annotations: {machina.io/group-id: sg-123}
+spec:
+  externalCIDRs: [198.51.100.0/24, "2001:db8::/64"]
+```
+
+Apply it like a policy. Its prefixes are then used by:
+
+- `toCIDRSet: [{cidrGroupRef: partner-nets}]` (and `fromCIDRSet`);
+- `toGroups` / `fromGroups`. Every provider key (`aws`, `machina`, …) is
+  read the same way: `names` and `securityGroupsNames` match the group name,
+  `securityGroupsIds` matches the `machina.io/group-id` annotation, `labels`
+  match group labels and `region` matches the `machina.io/region` label.
+
+A reference to a group that doesn't exist matches nothing and the dry run
+warns. Editing the group recompiles every policy that uses it.
+
+## Authentication
+
+```yaml
+ingress:
+  - fromEndpoints: [{matchLabels: {app: web}}]
+    authentication: {mode: required}
+```
+
+Cilium uses SPIFFE identities with mutual TLS. Machina authenticates against
+its own inventory instead:
+
+- The first packet of a new connection on a rule with `authentication` needs
+  an entry for the pair in the `VM_AUTH` map. Without one it is dropped with
+  reason `auth-required` (with the lease) or audited, and bpfd is asked to
+  authenticate the pair.
+- bpfd accepts a pair when the peer is a VM identity it knows on this host or
+  elsewhere in the fleet. The TCP retransmit after authentication passes.
+  Entries last an hour; after that, the next new connection triggers
+  authentication again.
+- `test-always-fail` never authenticates (reason `auth-test-always-fail`), as
+  in Cilium.
+- **Source guard.** While any authentication rule exists, every tap checks
+  that a packet from its VM carries a source address that bpfd maps to that
+  VM, or to no identity at all. A VM sending as another VM's address is
+  dropped as `spoofed-source`, so identities can't be borrowed.
+
+`machinactl netpol auth` and `GET /vm-network-policies/auth` list the
+authenticated pairs, and `machinactl netpol test` shows ⚿ on rules that need
+authentication.
 
 ## Semantics
 
@@ -194,8 +316,10 @@ Policies are persisted; the enforce mode and its lease never are.
 | `cilium endpoint list` | `machinactl netpol endpoints` |
 | `cilium status` | `machinactl netpol status` |
 | `cilium fqdn cache list` | `machinactl netpol fqdn` |
+| `cilium policy trace` with L7 | `machinactl netpol test … --http-method GET --path /v1/x` (also `--host`, `--header`, `--sni`, `--dns-name`, `--kafka-api-key`, `--kafka-topic`, `--kafka-client-id`, `--kafka-api-version`) |
+| `cilium-dbg bpf auth list` | `machinactl netpol auth` |
 | `hubble observe` | `machinactl flow observe [-f] [--vm X] [--verdict DROPPED] [--port 443] …` |
-| — | `machinactl flow top --by pair\|src\|dst\|port\|policy`, `machinactl flow stats` |
+| — | `machinactl flow top --by pair\|src\|dst\|port\|policy\|l7`, `machinactl flow stats` |
 
 Auth: `MACHINA_API_TOKEN`, or `MACHINA_USER` + `MACHINA_PASS`. With a user
 and password, the CLI keeps its session in `~/.machina/cli-session` (mode
@@ -210,8 +334,10 @@ audits are rate-limited to one per flow per second. Each flow carries:
 - source and destination VM name, address, port, identity and labels;
 - protocol, TCP flags or ICMP type, and size;
 - verdict `FORWARDED`, `DROPPED` or `AUDIT`, with the drop reason
-  (`policy-deny` or `default-deny`);
-- the policy rule that decided it.
+  (`policy-deny`, `default-deny`, `l7-deny`, `auth-required`,
+  `auth-test-always-fail` or `spoofed-source`);
+- the policy rule that decided it;
+- for L7 decisions, the request type and summary.
 
 bpfd keeps the last 5000 flows. The controller merges flows from every host
 and tags each one with its host.
@@ -241,5 +367,10 @@ a veth pair in a scratch netns and covers:
   blocking before the lookup, learning from the reply, allowing after it,
   ignoring NXDOMAIN and unmatched names, `world` deny still winning, and
   removing the rule.
+- L7: HTTP allow, 403 and keep-alive requests; TLS SNI with `openssl`; Kafka
+  Produce to an allowed and a denied topic; DNS forwarded and REFUSED; AUDIT
+  in observe mode.
+- Authentication: `test-always-fail`, `required` against a fleet peer, the
+  auth table, and the source guard with and without the lease.
 
 Compiler and tracer unit tests: `cargo test -p machina-bpf netpol`.
