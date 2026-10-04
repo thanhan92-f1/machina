@@ -13,6 +13,7 @@ use crate::state::AppState;
 use crate::tasks::enqueue::enqueue_task;
 
 pub fn spawn(state: AppState) {
+    super::backup_verifier::spawn(state.clone());
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(300));
         loop {

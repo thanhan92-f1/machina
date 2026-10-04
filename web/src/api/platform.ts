@@ -2513,6 +2513,10 @@ export interface BackupRecord {
   message?: string | null
   backup_path: string
   created_at: string
+  /** '' = never checked, 'ok' or 'failed' (the controller's backup verifier). */
+  verify_status?: '' | 'ok' | 'failed'
+  verified_at?: string | null
+  verify_message?: string | null
 }
 
 export const retryTask = (id: string) =>
@@ -2580,6 +2584,9 @@ export const getClusterLeadership = () =>
   platformFetch<{ controller_id: string; is_leader: boolean; holder_id: string; lease_until: string }>(
     '/api/v1/cluster/leadership',
   )
+
+export const verifyVmBackup = (vmId: string, backupId: string) =>
+  platformFetch<{ ok: boolean; message: string }>(`/api/v1/vms/${vmId}/backups/${backupId}/verify`, { method: 'POST' })
 
 export const restoreVmBackup = (vmId: string, backupId: string) =>
   platformFetch<{ task_id: string }>(`/api/v1/vms/${vmId}/backups/${backupId}/restore`, { method: 'POST' })

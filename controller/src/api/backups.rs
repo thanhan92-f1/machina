@@ -22,6 +22,10 @@ pub struct BackupRow {
     pub message: Option<String>,
     pub backup_path: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    /// "" (never checked), "ok" or "failed" — see engine/backup_verifier.rs.
+    pub verify_status: String,
+    pub verified_at: Option<String>,
+    pub verify_message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,7 +48,9 @@ pub async fn list_vm_backups(
     require_operator(&actor)?;
     let rows = sqlx::query_as::<_, BackupRow>(
         "SELECT id, vm_id, backup_type, status, message, COALESCE(backup_path, '') AS backup_path,
-                strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+                strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
+                verify_status,
+                strftime('%Y-%m-%dT%H:%M:%SZ', verified_at) AS verified_at, verify_message
          FROM backup_records WHERE vm_id = ? ORDER BY created_at DESC LIMIT 200",
     )
     .bind(vm_id)
@@ -153,6 +159,26 @@ fn default_retain() -> i64 {
 }
 fn default_enabled() -> bool {
     true
+}
+
+/// Re-check one stored backup now (the same check the scheduler runs).
+pub async fn verify_vm_backup(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path((vm_id, backup_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_operator(&actor)?;
+    let owns: Option<Uuid> = sqlx::query_scalar("SELECT vm_id FROM backup_records WHERE id = ?")
+        .bind(backup_id)
+        .fetch_optional(&state.pool)
+        .await?;
+    if owns != Some(vm_id) {
+        return Err(ApiError::not_found("backup not found for this machine"));
+    }
+    let (ok, message) = crate::engine::backup_verifier::verify_one(&state, backup_id, &actor.username)
+        .await
+        .map_err(|e| ApiError::bad_request(e.to_string()))?;
+    Ok(Json(serde_json::json!({ "ok": ok, "message": message })))
 }
 
 pub async fn list_backup_schedules(

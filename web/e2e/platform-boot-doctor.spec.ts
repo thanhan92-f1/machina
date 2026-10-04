@@ -80,3 +80,28 @@ test.describe('Migration copilot', () => {
     await expect(planner.locator('[data-wave="3"]').getByText(/Licensing: OEM Windows key/).first()).toBeVisible()
   })
 })
+
+test.describe('Backup verification', () => {
+  test('shows verified, failed and never-checked backups and can re-check one', async ({ page }) => {
+    await mockPlatformApi(page)
+    const rec = (id: string, over: object) => ({ id, vm_id: 'v1', backup_type: 'full', status: 'completed', backup_path: '/b/x.qcow2', created_at: '2026-10-01T00:00:00Z', verify_status: '', ...over })
+    await page.route('**/api/v1/vms/*/backups', (r) => r.request().method() === 'GET'
+      ? r.fulfill({ json: [
+          rec('b1', { message: 'backup complete (application-consistent, verified)', verify_status: 'ok', verified_at: new Date().toISOString() }),
+          rec('b2', { verify_status: 'failed', verify_message: 'vda.qcow2 failed its integrity check' }),
+          rec('b3', {}),
+        ] })
+      : r.continue())
+    const verifies: string[] = []
+    await page.route('**/backups/*/verify', (r) => { verifies.push(r.request().url()); return r.fulfill({ json: { ok: true, message: '1 image(s) intact' } }) })
+    await page.goto('/platform/vms/vm-1?tab=backup')
+    const chips = page.getByTestId('backup-health')
+    await expect(chips).toHaveCount(3, { timeout: 15_000 })
+    await expect(chips.nth(0)).toContainText('Verified')
+    await expect(chips.nth(0)).toContainText('application-consistent')
+    await expect(chips.nth(1)).toContainText('Failed its check')
+    await expect(chips.nth(2)).toContainText('Not verified yet')
+    await page.getByRole('button', { name: 'Verify now' }).first().click()
+    await expect.poll(() => verifies.length).toBe(1)
+  })
+})

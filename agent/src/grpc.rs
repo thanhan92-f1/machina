@@ -754,10 +754,10 @@ impl HostAgent for AgentService {
         })
         .await
         {
-            Ok(Ok(path)) => Ok(Response::new(BackupVmResponse {
+            Ok(Ok((path, consistency))) => Ok(Response::new(BackupVmResponse {
                 ok: true,
                 path,
-                message: "backup complete".into(),
+                message: format!("backup complete ({consistency}, verified)"),
             })),
             Ok(Err(e)) => Ok(Response::new(BackupVmResponse {
                 ok: false,
@@ -766,6 +766,54 @@ impl HostAgent for AgentService {
             })),
             Err(e) => Err(Status::internal(e.to_string())),
         }
+    }
+
+    async fn verify_backup(
+        &self,
+        request: Request<VerifyBackupRequest>,
+    ) -> Result<Response<VerifyBackupResponse>, Status> {
+        let path = request.into_inner().backup_path;
+        let backup_root = std::env::var("MACHINA_BACKUP_DIR")
+            .unwrap_or_else(|_| "/var/lib/machina/backups".into());
+        if !crate::backup::within_root(&path, &backup_root) {
+            return Ok(Response::new(VerifyBackupResponse {
+                ok: false,
+                message: format!("refused: backup path must be inside {backup_root}"),
+                images_checked: 0,
+            }));
+        }
+        let result = tokio::task::spawn_blocking(move || {
+            let images = crate::backup::images_in(std::path::Path::new(&path))?;
+            for img in &images {
+                let out = std::process::Command::new("qemu-img")
+                    .args(["check", "-f", "qcow2"])
+                    .arg(img)
+                    .output()
+                    .map_err(|e| format!("qemu-img check: {e}"))?;
+                if !crate::backup::check_accepts(out.status.code()) {
+                    return Err(format!(
+                        "{} failed its integrity check: {}",
+                        img.display(),
+                        String::from_utf8_lossy(&out.stderr).trim()
+                    ));
+                }
+            }
+            Ok::<usize, String>(images.len())
+        })
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+        Ok(Response::new(match result {
+            Ok(n) => VerifyBackupResponse {
+                ok: true,
+                message: format!("{n} image(s) intact"),
+                images_checked: n as i32,
+            },
+            Err(m) => VerifyBackupResponse {
+                ok: false,
+                message: m,
+                images_checked: 0,
+            },
+        }))
     }
 
     async fn delete_backup(
@@ -782,6 +830,19 @@ impl HostAgent for AgentService {
             Some("refused: backup_path must be an absolute path without '..'".to_string())
         } else if !std::path::Path::new(&path).starts_with(&backup_root) {
             Some(format!("refused: backup_path is not under {backup_root}"))
+        } else if std::path::Path::new(&path).is_dir() {
+            // A multi-disk backup is a directory. Only remove one that really is ours (has a manifest) and is
+            // strictly inside the backup root, never the root itself.
+            let p = std::path::Path::new(&path);
+            if p == std::path::Path::new(&backup_root) || !p.join(crate::backup::MANIFEST).is_file()
+            {
+                Some("refused: not a Machina multi-disk backup directory".to_string())
+            } else {
+                match std::fs::remove_dir_all(p) {
+                    Ok(()) => None,
+                    Err(e) => Some(format!("delete failed: {e}")),
+                }
+            }
         } else if !std::path::Path::new(&path).is_file() {
             // Already gone (or never a file) — treat as success so retention converges.
             None

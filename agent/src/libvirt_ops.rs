@@ -788,20 +788,58 @@ impl LibvirtCtx {
         let xml = dom
             .get_xml_desc(0)
             .map_err(|e| LibvirtError::Operation(e.to_string()))?;
-        let disks = count_data_disks(&xml);
-        if disks > 1 {
-            return Err(LibvirtError::Operation(format!(
-                "VM '{vm_name}' has {disks} data disks; multi-disk restore is not supported \
-                 (restoring only the first disk would leave the others stale). Refusing."
-            )));
-        }
-        // File-backed or Ceph/RBD — qemu-img writes both once given the right
-        // destination string. An RBD destination uses `-n` (skip create: the
-        // image already exists, it's the VM's current live disk) and `-O raw`
-        // (Ceph stores RBD images as raw block, not qcow2).
-        let target = resolve_disk_source(&xml).ok_or_else(|| {
-            LibvirtError::Operation(format!("no disk destination found for VM '{vm_name}'"))
-        })?;
+        // (source file, destination is RBD, destination qemu-img argument) for every disk to restore.
+        let jobs: Vec<(String, bool, String)> = if Path::new(backup_path).is_dir() {
+            let raw = std::fs::read_to_string(Path::new(backup_path).join(crate::backup::MANIFEST))
+                .map_err(|e| LibvirtError::Operation(format!("read backup manifest: {e}")))?;
+            let manifest: crate::backup::Manifest = serde_json::from_str(&raw)
+                .map_err(|e| LibvirtError::Operation(format!("bad backup manifest: {e}")))?;
+            if manifest
+                .disks
+                .iter()
+                .any(|d| !crate::backup::safe_member(&d.file))
+            {
+                return Err(LibvirtError::Invalid(
+                    "backup manifest names a file outside the backup directory".into(),
+                ));
+            }
+            let pairs =
+                crate::backup::pair_for_restore(&manifest, &crate::backup::data_disks(&xml))
+                    .map_err(LibvirtError::Operation)?;
+            pairs
+                .into_iter()
+                .map(|(file, d)| {
+                    (
+                        Path::new(backup_path)
+                            .join(file)
+                            .to_string_lossy()
+                            .to_string(),
+                        d.rbd,
+                        d.qemu_arg,
+                    )
+                })
+                .collect()
+        } else {
+            let disks = count_data_disks(&xml);
+            if disks > 1 {
+                return Err(LibvirtError::Operation(format!(
+                    "VM '{vm_name}' has {disks} data disks but this backup holds only one image; \
+                     refusing to restore (the other disks would be left stale)"
+                )));
+            }
+            // File-backed or Ceph/RBD — qemu-img writes both once given the right
+            // destination string. An RBD destination uses `-n` (skip create: the
+            // image already exists, it's the VM's current live disk) and `-O raw`
+            // (Ceph stores RBD images as raw block, not qcow2).
+            let target = resolve_disk_source(&xml).ok_or_else(|| {
+                LibvirtError::Operation(format!("no disk destination found for VM '{vm_name}'"))
+            })?;
+            vec![(
+                backup_path.to_string(),
+                matches!(target, DiskSource::Rbd(_)),
+                target.qemu_img_arg(),
+            )]
+        };
 
         let was_running = dom.is_active().unwrap_or(false);
         if was_running {
@@ -809,22 +847,23 @@ impl LibvirtCtx {
                 .map_err(|e| LibvirtError::Operation(format!("stop for restore: {e}")))?;
         }
         let result: Result<(), LibvirtError> = (|| {
-            let mut cmd = Command::new("qemu-img");
-            cmd.arg("convert");
-            match &target {
-                DiskSource::File(_) => {
+            for (from, rbd, to) in &jobs {
+                let mut cmd = Command::new("qemu-img");
+                cmd.arg("convert");
+                if *rbd {
+                    cmd.args(["-n", "-O", "raw"]);
+                } else {
                     cmd.args(["-O", "qcow2"]);
                 }
-                DiskSource::Rbd(_) => {
-                    cmd.args(["-n", "-O", "raw"]);
+                cmd.arg(from).arg(to);
+                let status = cmd
+                    .status()
+                    .map_err(|e| LibvirtError::Operation(format!("qemu-img restore: {e}")))?;
+                if !status.success() {
+                    return Err(LibvirtError::Operation(format!(
+                        "qemu-img restore failed for {to}"
+                    )));
                 }
-            }
-            cmd.arg(backup_path).arg(target.qemu_img_arg());
-            let status = cmd
-                .status()
-                .map_err(|e| LibvirtError::Operation(format!("qemu-img restore: {e}")))?;
-            if !status.success() {
-                return Err(LibvirtError::Operation("qemu-img restore failed".into()));
             }
             Ok(())
         })();
@@ -847,7 +886,14 @@ impl LibvirtCtx {
         result
     }
 
-    pub fn backup_vm_disk(&self, vm_name: &str, dest_path: &str) -> Result<String, LibvirtError> {
+    /// Back up every data disk of a VM. Returns the backup's path (a file for one disk, a directory for several) and how
+    /// consistent it is: "application-consistent" (guest filesystems frozen at the instant), "crash-consistent"
+    /// (point-in-time without the guest agent) or "offline" (the VM was stopped). See `crate::backup`.
+    pub fn backup_vm_disk(
+        &self,
+        vm_name: &str,
+        dest_path: &str,
+    ) -> Result<(String, &'static str), LibvirtError> {
         // SECURITY: `dest_path` is a request-controlled overwrite target on an
         // unauthenticated gRPC surface. Confine it to the agent's allowed storage
         // directories (rejecting `..` / escapes) so a caller cannot overwrite
@@ -860,43 +906,50 @@ impl LibvirtCtx {
         let xml = dom
             .get_xml_desc(0)
             .map_err(|e| LibvirtError::Operation(e.to_string()))?;
-        let disks = count_data_disks(&xml);
-        if disks > 1 {
+        let disks = crate::backup::data_disks(&xml);
+        if disks.is_empty() {
             return Err(LibvirtError::Operation(format!(
-                "VM '{vm_name}' has {disks} data disks; multi-disk backup is not supported \
-                 (backing up only the first disk would silently lose the others). Refusing."
+                "no data disk found for VM '{vm_name}'"
             )));
         }
-        // File-backed or Ceph/RBD — qemu-img reads both once given the right
-        // source string, so backing up a network-backed disk needs the same
-        // command with a different argument, not a different code path.
-        let source = resolve_disk_source(&xml).ok_or_else(|| {
-            LibvirtError::Operation(format!("no disk source found for VM '{vm_name}'"))
-        })?;
-        // `-U` / force-share: allow reading while QEMU holds the write lock (running
-        // guests and external-snapshot overlays). Without it convert fails with a
-        // opaque "qemu-img backup failed" on almost every live VM.
-        let output = Command::new("qemu-img")
-            .args([
-                "convert",
-                "-U",
-                "-O",
-                "qcow2",
-                &source.qemu_img_arg(),
-                dest_path,
-            ])
-            .output()
-            .map_err(|e| LibvirtError::Operation(format!("qemu-img convert: {e}")))?;
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            let detail = if stderr.is_empty() {
-                "qemu-img backup failed".into()
-            } else {
-                format!("qemu-img backup failed: {stderr}")
-            };
-            return Err(LibvirtError::Operation(detail));
+        let layout = crate::backup::Layout::for_disks(dest_path, disks.len());
+        if let crate::backup::Layout::Multi(dir) = &layout {
+            std::fs::create_dir_all(dir)
+                .map_err(|e| LibvirtError::Operation(format!("create {}: {e}", dir.display())))?;
         }
-        Ok(dest_path.to_string())
+        let active = dom.is_active().unwrap_or(false);
+        let outcome = if active {
+            backup_live(vm_name, &layout, &disks)
+        } else {
+            backup_offline(&layout, &disks).map(|_| "offline")
+        };
+        let consistency = match outcome.and_then(|c| verify_backup(&layout, &disks).map(|_| c)) {
+            Ok(c) => c,
+            Err(e) => {
+                // Never leave a partial or unverified backup behind looking like a good one.
+                remove_backup_artifacts(&layout);
+                return Err(e);
+            }
+        };
+        if let crate::backup::Layout::Multi(dir) = &layout {
+            let manifest = crate::backup::Manifest {
+                vm: vm_name.to_string(),
+                created_at: chrono_now(),
+                consistency: consistency.to_string(),
+                disks: disks
+                    .iter()
+                    .map(|d| crate::backup::ManifestDisk {
+                        target: d.target.clone(),
+                        file: format!("{}.qcow2", d.target),
+                    })
+                    .collect(),
+            };
+            let json = serde_json::to_string_pretty(&manifest)
+                .map_err(|e| LibvirtError::Operation(e.to_string()))?;
+            std::fs::write(dir.join(crate::backup::MANIFEST), json)
+                .map_err(|e| LibvirtError::Operation(format!("write manifest: {e}")))?;
+        }
+        Ok((layout.path().to_string_lossy().to_string(), consistency))
     }
 
     pub fn attach_disk(
@@ -1655,6 +1708,199 @@ fn create_request_from_vm(
         req.virtio_win_iso = virtio_win_iso;
     }
     Ok(req)
+}
+
+// ── Backups: live (point-in-time), offline, verification ────────────────────────
+
+/// Freezes the guest's filesystems through the guest agent and thaws them when dropped, whatever happens in between.
+struct FreezeGuard<'a> {
+    vm: &'a str,
+}
+
+impl<'a> FreezeGuard<'a> {
+    /// None when the guest agent does not answer (the backup is then crash-consistent, not application-consistent).
+    fn freeze(vm: &'a str) -> Option<Self> {
+        machina_core::libvirt::guest_agent::qemu_agent_command(
+            vm,
+            r#"{"execute":"guest-fsfreeze-freeze"}"#,
+        )?;
+        Some(Self { vm })
+    }
+}
+
+impl Drop for FreezeGuard<'_> {
+    fn drop(&mut self) {
+        // A guest left frozen is an outage, so try twice.
+        for _ in 0..2 {
+            if machina_core::libvirt::guest_agent::qemu_agent_command(
+                self.vm,
+                r#"{"execute":"guest-fsfreeze-thaw"}"#,
+            )
+            .is_some()
+            {
+                return;
+            }
+        }
+        tracing::error!(
+            vm = self.vm,
+            "guest-fsfreeze-thaw failed — thaw the guest manually"
+        );
+    }
+}
+
+fn chrono_now() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format!("unix:{secs}")
+}
+
+/// Point-in-time backup of a running VM through libvirt's `backup-begin` (push mode), all disks at one instant.
+fn backup_live(
+    vm: &str,
+    layout: &crate::backup::Layout,
+    disks: &[crate::backup::DataDisk],
+) -> Result<&'static str, LibvirtError> {
+    let xml_path = std::env::temp_dir().join(format!(
+        "machina-backup-{}-{}.xml",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    std::fs::write(&xml_path, crate::backup::backup_xml(layout, disks))
+        .map_err(|e| LibvirtError::Operation(format!("write backup xml: {e}")))?;
+    // A leftover target from an earlier attempt would be reused as-is by libvirt; start clean.
+    for d in disks {
+        let _ = std::fs::remove_file(layout.file_for(d));
+    }
+    // Freeze only around the instant of `backup-begin` (it returns once the point in time is fixed and the copy runs
+    // in the background), so the guest is paused for milliseconds, not for the length of the backup.
+    let guard = FreezeGuard::freeze(vm);
+    let consistency = if guard.is_some() {
+        "application-consistent"
+    } else {
+        "crash-consistent"
+    };
+    let begin = Command::new("virsh")
+        .args(["backup-begin", "--domain", vm, "--backupxml"])
+        .arg(&xml_path)
+        .output();
+    drop(guard);
+    let _ = std::fs::remove_file(&xml_path);
+    let begin = begin.map_err(|e| LibvirtError::Operation(format!("virsh backup-begin: {e}")))?;
+    if !begin.status.success() {
+        return Err(LibvirtError::Operation(format!(
+            "backup-begin failed: {}",
+            String::from_utf8_lossy(&begin.stderr).trim()
+        )));
+    }
+    wait_for_backup(vm)?;
+    Ok(consistency)
+}
+
+fn wait_for_backup(vm: &str) -> Result<(), LibvirtError> {
+    let limit = std::env::var("MACHINA_BACKUP_TIMEOUT_SECS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(6 * 3600);
+    let started = std::time::Instant::now();
+    loop {
+        let out = Command::new("virsh")
+            .args(["domjobinfo", vm])
+            .output()
+            .map_err(|e| LibvirtError::Operation(format!("virsh domjobinfo: {e}")))?;
+        if !out.status.success() {
+            return Err(LibvirtError::Operation(format!(
+                "lost track of the backup job: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            )));
+        }
+        if crate::backup::job_type(&String::from_utf8_lossy(&out.stdout)) == "none" {
+            break;
+        }
+        if started.elapsed().as_secs() > limit {
+            let _ = Command::new("virsh").args(["domjobabort", vm]).output();
+            return Err(LibvirtError::Operation(format!(
+                "backup did not finish within {limit}s and was aborted"
+            )));
+        }
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    }
+    let done = Command::new("virsh")
+        .args(["domjobinfo", vm, "--completed"])
+        .output()
+        .map_err(|e| LibvirtError::Operation(format!("virsh domjobinfo: {e}")))?;
+    let text = String::from_utf8_lossy(&done.stdout).to_string();
+    if crate::backup::job_type(&text) != "completed" {
+        return Err(LibvirtError::Operation(format!(
+            "backup job did not complete: {}",
+            text.trim()
+        )));
+    }
+    Ok(())
+}
+
+/// A stopped VM cannot change under us: convert each disk.
+fn backup_offline(
+    layout: &crate::backup::Layout,
+    disks: &[crate::backup::DataDisk],
+) -> Result<(), LibvirtError> {
+    for d in disks {
+        let out = layout.file_for(d);
+        let output = Command::new("qemu-img")
+            .args(["convert", "-U", "-O", "qcow2", &d.qemu_arg])
+            .arg(&out)
+            .output()
+            .map_err(|e| LibvirtError::Operation(format!("qemu-img convert: {e}")))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(LibvirtError::Operation(format!(
+                "qemu-img backup of {} failed: {stderr}",
+                d.target
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// `qemu-img check` every produced image: exit 0 (clean) or 3 (only leaked clusters) pass, anything else fails.
+fn verify_backup(
+    layout: &crate::backup::Layout,
+    disks: &[crate::backup::DataDisk],
+) -> Result<(), LibvirtError> {
+    for d in disks {
+        let f = layout.file_for(d);
+        let out = Command::new("qemu-img")
+            .args(["check", "-f", "qcow2"])
+            .arg(&f)
+            .output()
+            .map_err(|e| LibvirtError::Operation(format!("qemu-img check: {e}")))?;
+        match out.status.code() {
+            Some(0) | Some(3) => {}
+            _ => {
+                return Err(LibvirtError::Operation(format!(
+                    "backup of {} failed its integrity check: {}",
+                    d.target,
+                    String::from_utf8_lossy(&out.stderr).trim()
+                )))
+            }
+        }
+    }
+    Ok(())
+}
+
+fn remove_backup_artifacts(layout: &crate::backup::Layout) {
+    match layout {
+        crate::backup::Layout::Single(p) => {
+            let _ = std::fs::remove_file(p);
+        }
+        crate::backup::Layout::Multi(dir) => {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
 }
 
 #[cfg(test)]

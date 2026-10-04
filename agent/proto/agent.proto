@@ -30,6 +30,7 @@ service HostAgent {
   rpc RevertSnapshot(RevertSnapshotRequest) returns (RevertSnapshotResponse);
   rpc RestoreVmBackup(RestoreVmBackupRequest) returns (RestoreVmBackupResponse);
   rpc DeleteBackup(DeleteBackupRequest) returns (DeleteBackupResponse);
+  rpc VerifyBackup(VerifyBackupRequest) returns (VerifyBackupResponse);
   rpc CloneFromSnapshot(CloneFromSnapshotRequest) returns (CloneFromSnapshotResponse);
   rpc ProvisionStoragePool(ProvisionStoragePoolRequest) returns (ProvisionStoragePoolResponse);
   rpc ProvisionNetwork(ProvisionNetworkRequest) returns (ProvisionNetworkResponse);
@@ -421,6 +422,17 @@ message DeleteBackupRequest {
 message DeleteBackupResponse {
   bool ok = 1;
   string message = 2;
+}
+
+// Re-check a stored backup's images (qemu-img check) without touching any VM.
+message VerifyBackupRequest {
+  string backup_path = 1;
+}
+
+message VerifyBackupResponse {
+  bool ok = 1;
+  string message = 2;
+  int32 images_checked = 3;
 }
 
 message CloneFromSnapshotRequest {

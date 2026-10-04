@@ -514,6 +514,18 @@ pub async fn delete_backup(
         .into_inner())
 }
 
+pub async fn verify_backup(
+    client: &mut AgentClient,
+    backup_path: &str,
+) -> anyhow::Result<VerifyBackupResponse> {
+    Ok(client
+        .verify_backup(VerifyBackupRequest {
+            backup_path: backup_path.to_string(),
+        })
+        .await?
+        .into_inner())
+}
+
 pub async fn clone_from_snapshot(
     client: &mut AgentClient,
     vm_name: &str,

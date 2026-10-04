@@ -1313,6 +1313,10 @@ pub fn router(state: AppState) -> Router {
             delete(backups::delete_backup_schedule),
         )
         .route(
+            "/api/v1/vms/{id}/backups/{backup_id}/verify",
+            post(backups::verify_vm_backup),
+        )
+        .route(
             "/api/v1/vms/{id}/backups/{backup_id}/restore",
             post(backups::restore_vm_backup),
         )

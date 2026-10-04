@@ -34,6 +34,7 @@ import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
 import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
 import VmFixItList from '../../components/platform/fleet/VmFixItList'
 import BootDoctorCard from '../../components/platform/vmdetail/BootDoctorCard'
+import BackupHealthChip from '../../components/platform/BackupHealthChip'
 import GuestDriftCard from '../../components/platform/vmdetail/GuestDriftCard'
 import GuestAgentSetupDialog from '../../components/platform/fleet/GuestAgentSetupDialog'
 import { vmHealthScore } from '../../utils/vmHealthScore'
@@ -73,6 +74,7 @@ import {
   migratePrecheck,
   patchVm,
   restoreVmBackup,
+  verifyVmBackup,
   revertVmSnapshot,
   cloneVmSnapshot,
   getVmDomainXml,
@@ -2213,9 +2215,12 @@ export default function PlatformVmDetail() {
               <ul className="text-xs space-y-2">
                 {backups.map((b) => (
                   <li key={b.id} className="flex items-center justify-between gap-2 text-[var(--text-muted)]">
-                    <span>{b.backup_type} ({b.status})</span>
+                    <span className="min-w-0">{b.backup_type} ({b.status}){b.status === 'completed' ? <> · <BackupHealthChip backup={b} /></> : null}</span>
                     {b.status === 'completed' && (
-                      <button type="button" className="btn-secondary text-xs" onClick={() => void act('Restore queued', () => restoreVmBackup(id, b.id))}>Restore</button>
+                      <span className="flex shrink-0 gap-2">
+                        <button type="button" className="btn-secondary text-xs" onClick={() => void act('Backup re-checked', () => verifyVmBackup(id, b.id))}>Verify now</button>
+                        <button type="button" className="btn-secondary text-xs" onClick={() => void act('Restore queued', () => restoreVmBackup(id, b.id))}>Restore</button>
+                      </span>
                     )}
                   </li>
                 ))}
