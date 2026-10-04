@@ -13,8 +13,9 @@ machina-core = { path = "../core" }
 machina-spec = { path = "../spec" }
 machina-translate = { path = "../translate" }
 machina-bpf = { path = "../bpf/machina-bpf" }
-tonic = { version = "0.12", features = ["tls", "tls-roots"] }
-prost = "0.13"
+tonic = { version = "0.14", features = ["tls-ring", "tls-native-roots"] }
+tonic-prost = "0.14"
+prost = "0.14"
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
@@ -31,8 +32,8 @@ virt = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 jsonwebtoken = { version = "11", features = ["rust_crypto"] }
-tokio-tungstenite = "0.28"
+tokio-tungstenite = "0.30"
 http = { workspace = true }
 
 [build-dependencies]
-tonic-build = "0.12"
+tonic-prost-build = "0.14"

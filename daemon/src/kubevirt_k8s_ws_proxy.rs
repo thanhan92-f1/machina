@@ -159,17 +159,17 @@ async fn dial_kubevirt_upstream(
 
 fn axum_to_upstream(msg: Message) -> Option<UpMsg> {
     match msg {
-        Message::Text(t) => Some(UpMsg::Text(t.to_string())),
-        Message::Binary(b) => Some(UpMsg::Binary(b.to_vec())),
-        Message::Ping(p) => Some(UpMsg::Ping(p.to_vec())),
-        Message::Pong(p) => Some(UpMsg::Pong(p.to_vec())),
+        Message::Text(t) => Some(UpMsg::Text(t.as_str().into())),
+        Message::Binary(b) => Some(UpMsg::Binary(b)),
+        Message::Ping(p) => Some(UpMsg::Ping(p)),
+        Message::Pong(p) => Some(UpMsg::Pong(p)),
         Message::Close(_) => None,
     }
 }
 
 fn upstream_to_axum(msg: UpMsg) -> Option<Message> {
     match msg {
-        UpMsg::Text(t) => Some(Message::Text(t.into())),
+        UpMsg::Text(t) => Some(Message::Text(t.as_str().into())),
         UpMsg::Binary(b) => Some(Message::Binary(b.into())),
         UpMsg::Ping(p) => Some(Message::Ping(p.into())),
         UpMsg::Pong(p) => Some(Message::Pong(p.into())),

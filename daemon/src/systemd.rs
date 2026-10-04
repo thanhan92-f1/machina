@@ -17,7 +17,7 @@ pub fn notify_ready() {
     if std::env::var_os("NOTIFY_SOCKET").is_none() {
         return;
     }
-    match sd_notify::notify(false, &[NotifyState::Ready]) {
+    match sd_notify::notify(&[NotifyState::Ready]) {
         Ok(()) => debug!("sent systemd READY=1"),
         Err(e) => warn!("systemd READY=1 notify failed: {e}"),
     }
@@ -52,7 +52,7 @@ pub fn spawn_watchdog_pinger() {
         tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
         loop {
             tick.tick().await;
-            if let Err(e) = sd_notify::notify(false, &[NotifyState::Watchdog]) {
+            if let Err(e) = sd_notify::notify(&[NotifyState::Watchdog]) {
                 warn!("systemd WATCHDOG=1 notify failed: {e}");
                 break;
             }

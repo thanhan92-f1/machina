@@ -23,6 +23,7 @@ tokio = { workspace = true }
 tokio-util = { workspace = true }
 url = { workspace = true }
 prom-remote-api = { version = "0.3", default-features = false }
+# Held at 0.11: prom-remote-api 0.3 (Prometheus remote-write types) is built on prost 0.11 and the types must match.
 prost = "0.11"
 snap = { version = "1", default-features = false }
 jsonwebtoken = { version = "11", features = ["rust_crypto"] }

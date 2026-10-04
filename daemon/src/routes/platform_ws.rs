@@ -47,8 +47,8 @@ async fn relay_platform_ws(socket: WebSocket, upstream_path: String, token: Stri
     let c2u = tokio::spawn(async move {
         while let Some(Ok(msg)) = client_stream.next().await {
             let up = match msg {
-                Message::Binary(b) => TsMessage::Binary(b.to_vec()),
-                Message::Text(t) => TsMessage::Text(t.to_string()),
+                Message::Binary(b) => TsMessage::Binary(b),
+                Message::Text(t) => TsMessage::Text(t.as_str().into()),
                 Message::Close(_) => {
                     let _ = upstream_sink.send(TsMessage::Close(None)).await;
                     break;
@@ -65,7 +65,7 @@ async fn relay_platform_ws(socket: WebSocket, upstream_path: String, token: Stri
         while let Some(Ok(msg)) = upstream_stream.next().await {
             let down = match msg {
                 TsMessage::Binary(b) => Message::Binary(b.into()),
-                TsMessage::Text(t) => Message::Text(t.to_string().into()),
+                TsMessage::Text(t) => Message::Text(t.as_str().into()),
                 TsMessage::Close(_) => {
                     let _ = client_sink.send(Message::Close(None)).await;
                     break;
