@@ -189,6 +189,7 @@ export default function PlatformVmDetail() {
   const guestMigratePlanAction = searchParams.get('guestAction') === 'migrate-plan'
   const deepAction = searchParams.get('action')
   const [agentSetupOpen, setAgentSetupOpen] = useState(deepAction === 'agent')
+  const [bootDoctorEngaged, setBootDoctorEngaged] = useState(false)
   const [tier] = usePlatformDesktopTier()
   const { info } = usePlatformInfo()
   const { setContextVmId, setContextSummary, openCopilot } = useAi()
@@ -1178,8 +1179,8 @@ export default function PlatformVmDetail() {
             <GuestAgentSetupDialog open={agentSetupOpen} onClose={() => setAgentSetupOpen(false)} vm={vm} />
           )}
 
-          {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && (vm.observed_state !== 'running' || Boolean(vm.last_error) || deepAction === 'bootdoctor') && (
-            <BootDoctorCard vm={vm} onChanged={() => void load()} />
+          {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && (vm.observed_state !== 'running' || Boolean(vm.last_error) || deepAction === 'bootdoctor' || bootDoctorEngaged) && (
+            <BootDoctorCard vm={vm} onChanged={() => void load()} onEngaged={() => setBootDoctorEngaged(true)} />
           )}
 
           {tab === 'overview' && vm && health && (health.issues?.length ?? 0) > 0 && vm.observed_state === 'running' && (

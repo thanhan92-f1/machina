@@ -34,7 +34,7 @@ async function waitFor(check: () => Promise<boolean>, timeoutMs: number, everyMs
  * Boot Doctor: look inside a machine's disk (powered off), see what GuestKit would change, repair with a backup,
  * start it and check it comes up. Nothing is written until you press Repair.
  */
-export default function BootDoctorCard({ vm, onChanged }: { vm: PlatformVm; onChanged?: () => void }) {
+export default function BootDoctorCard({ vm, onChanged, onEngaged }: { vm: PlatformVm; onChanged?: () => void; onEngaged?: () => void }) {
   const [caps, setCaps] = useState<GuestkitCapabilities | null | undefined>(undefined)
   const [phase, setPhase] = useState<Phase>('idle')
   const [status, setStatus] = useState<string | null>(null)
@@ -62,6 +62,8 @@ export default function BootDoctorCard({ vm, onChanged }: { vm: PlatformVm; onCh
   }
 
   const guard = async (fn: () => Promise<void>) => {
+    // Tell the page to keep this card on screen even after the VM is running again.
+    onEngaged?.()
     setPhase('working')
     setError(null)
     try {
