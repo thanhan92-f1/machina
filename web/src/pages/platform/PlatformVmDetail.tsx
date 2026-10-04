@@ -34,6 +34,7 @@ import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
 import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
 import VmFixItList from '../../components/platform/fleet/VmFixItList'
 import BootDoctorCard from '../../components/platform/vmdetail/BootDoctorCard'
+import GuestAgentSetupDialog from '../../components/platform/fleet/GuestAgentSetupDialog'
 import { vmHealthScore } from '../../utils/vmHealthScore'
 import { useVmMetricSeries } from '../../hooks/useVmMetricSeries'
 import JsonInspector from '../../components/platform/JsonInspector'
@@ -186,6 +187,8 @@ export default function PlatformVmDetail() {
     }, { replace: true })
   }
   const guestMigratePlanAction = searchParams.get('guestAction') === 'migrate-plan'
+  const deepAction = searchParams.get('action')
+  const [agentSetupOpen, setAgentSetupOpen] = useState(deepAction === 'agent')
   const [tier] = usePlatformDesktopTier()
   const { info } = usePlatformInfo()
   const { setContextVmId, setContextSummary, openCopilot } = useAi()
@@ -1171,7 +1174,11 @@ export default function PlatformVmDetail() {
             />
           )}
 
-          {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && (vm.observed_state !== 'running' || Boolean(vm.last_error)) && (
+          {vm && (
+            <GuestAgentSetupDialog open={agentSetupOpen} onClose={() => setAgentSetupOpen(false)} vm={vm} />
+          )}
+
+          {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && (vm.observed_state !== 'running' || Boolean(vm.last_error) || deepAction === 'bootdoctor') && (
             <BootDoctorCard vm={vm} onChanged={() => void load()} />
           )}
 

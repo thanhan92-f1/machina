@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router'
-import { Search, Plus, Camera, Server, Play, Square, Power, Terminal, ArrowRight, Network, HardDrive, Clock, Star, Boxes, Upload, Pin, Keyboard, Info, Bell, ClipboardList, Activity, Settings, Monitor } from 'lucide-react'
+import { Search, Plus, Camera, Server, Play, Square, Power, Terminal, ArrowRight, Network, HardDrive, Clock, Star, Boxes, Upload, Pin, Keyboard, Info, Bell, ClipboardList, Activity, Settings, Monitor, Stethoscope, Plug } from 'lucide-react'
 import { navigateVmSshSession } from './vm/VmSshConnectDialog'
 import { listVMs, startVM, stopVM, shutdownVM, VmInfo } from '../api/vm'
 import { listPlatformHosts, listPlatformVms } from '../api/platform'
@@ -396,6 +396,22 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
         action: () => go(`/platform/vms/${pv.id}`),
         category: 'Fleet',
       })
+      items.push(
+        {
+          id: `platform-vm-bootdoctor-${pv.id}`,
+          icon: <Stethoscope className="w-4 h-4" />,
+          label: `${pv.name} — Boot Doctor (check & repair disk)`,
+          action: () => go(`/platform/vms/${pv.id}?action=bootdoctor`),
+          category: 'Fleet',
+        },
+        {
+          id: `platform-vm-agent-${pv.id}`,
+          icon: <Plug className="w-4 h-4" />,
+          label: `${pv.name} — Set up guest agent`,
+          action: () => go(`/platform/vms/${pv.id}?action=agent`),
+          category: 'Fleet',
+        },
+      )
       if (pv.observed_state === 'running') {
         items.push(
           {
