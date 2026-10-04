@@ -2,13 +2,22 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, History, ShieldCheck, Undo2 } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import ZyraInsightCard from '../../components/ai/ZyraInsightCard'
-import { executeZyraAction, getZyraApprovalHub, rejectZyraAction, type ZyraActionRow } from '../../api/ai'
+import {
+  executeZyraAction,
+  getZyraApprovalHub,
+  listZyraActionHistory,
+  rejectZyraAction,
+  undoZyraAction,
+  verifyZyraAction,
+  type ZyraActionHistoryRow,
+  type ZyraActionRow,
+} from '../../api/ai'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 
@@ -22,6 +31,8 @@ export default function PlatformZyraApprovals() {
   const [error, setError] = useState<string | null>(null)
   const [rejectTargetId, setRejectTargetId] = useState<string | null>(null)
   const [confirmExecute, setConfirmExecute] = useState<ZyraActionRow | null>(null)
+  const [history, setHistory] = useState<ZyraActionHistoryRow[]>([])
+  const [undoTarget, setUndoTarget] = useState<ZyraActionHistoryRow | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -31,6 +42,8 @@ export default function PlatformZyraApprovals() {
       setActions(hub.zyra_actions ?? [])
       setTotalPending(hub.total_pending)
       setFirewallPending(hub.firewall_pending)
+      // History is a nice-to-have: an older controller without the route must not break the queue.
+      setHistory(await listZyraActionHistory().catch(() => []))
     } catch (e: unknown) {
       setError(formatUserError(e))
       setActions([])
@@ -62,6 +75,33 @@ export default function PlatformZyraApprovals() {
     try {
       await rejectZyraAction(id)
       toast.success('Action rejected')
+      await load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const verify = async (id: string) => {
+    setBusy(id)
+    try {
+      const r = await verifyZyraAction(id)
+      toast.success(r.detail || `Check: ${r.status}`)
+      await load()
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const undo = async (id: string) => {
+    setUndoTarget(null)
+    setBusy(id)
+    try {
+      const r = await undoZyraAction(id)
+      toast.success(r.message ?? 'Undone')
       await load()
     } catch (e: unknown) {
       toast.error(formatUserError(e))
@@ -105,6 +145,44 @@ export default function PlatformZyraApprovals() {
         </div>
       </MacGlassPanel>
 
+      {history.length > 0 && (
+        <MacGlassPanel title="Recent actions" subtitle="What Zyra and your team executed — check it worked, or undo it when it is reversible">
+          <ul className="divide-y divide-[var(--apple-hairline)]" data-testid="zyra-action-history">
+            {history.map((h) => {
+              const v = h.verify?.status
+              return (
+                <li key={h.id} className="flex flex-wrap items-center gap-3 py-3">
+                  <History className="h-4 w-4 shrink-0 text-[var(--text-muted)]" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">{h.label}</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {h.status === 'failed' ? 'Failed' : h.undone_at ? 'Undone' : 'Executed'}
+                      {h.approved_by ? ` · approved by ${h.approved_by}` : ''}
+                      {h.executed_at ? ` · ${new Date(h.executed_at.replace(' ', 'T') + (h.executed_at.endsWith('Z') ? '' : 'Z')).toLocaleString()}` : ''}
+                    </p>
+                    {h.verify?.detail ? (
+                      <p className={`text-xs ${v === 'ok' ? 'text-emerald-600' : v === 'failed' ? 'text-red-500' : 'text-[var(--text-muted)]'}`}>
+                        {v === 'ok' ? '✓ ' : v === 'failed' ? '✕ ' : ''}{h.verify.detail}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {h.status === 'executed' && !h.undone_at ? (
+                      <button type="button" className="btn-secondary text-xs" disabled={busy === h.id} onClick={() => void verify(h.id)}>Check it worked</button>
+                    ) : null}
+                    {h.undoable ? (
+                      <button type="button" className="btn-secondary inline-flex items-center gap-1 text-xs" disabled={busy === h.id} onClick={() => setUndoTarget(h)}>
+                        <Undo2 className="h-3.5 w-3.5" /> Undo
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </MacGlassPanel>
+      )}
+
       {actions.length > 0 && (
         <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/80" />
@@ -119,6 +197,15 @@ export default function PlatformZyraApprovals() {
         variant="danger"
         onCancel={() => setRejectTargetId(null)}
         onConfirm={() => { if (rejectTargetId) void doReject(rejectTargetId) }}
+      />
+      <ConfirmDialog
+        open={undoTarget !== null}
+        title="Undo this action"
+        message={undoTarget ? `Undo "${undoTarget.label}"? This puts the machine back as it was before the action.` : ''}
+        confirmLabel="Undo"
+        variant="danger"
+        onCancel={() => setUndoTarget(null)}
+        onConfirm={() => { if (undoTarget) void undo(undoTarget.id) }}
       />
       <ConfirmDialog
         open={confirmExecute !== null}

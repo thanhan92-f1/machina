@@ -903,6 +903,28 @@ export const executeZyraAction = (id: string) =>
 export const rejectZyraAction = (id: string) =>
   platformFetch<{ rejected: boolean }>(`/api/v1/ai/actions/${encodeURIComponent(id)}/reject`, { method: 'POST' })
 
+/** An executed or failed AI action with its verification and undo state. */
+export interface ZyraActionHistoryRow {
+  id: string
+  action_type: string
+  label: string
+  status: string
+  requested_by: string
+  approved_by?: string | null
+  executed_at?: string | null
+  vm_id?: string | null
+  before_state: Record<string, unknown>
+  verify: { status?: 'ok' | 'pending' | 'failed' | 'unknown'; detail?: string; checked_at?: string }
+  undoable: boolean
+  undone_at?: string | null
+}
+
+export const listZyraActionHistory = () => platformFetch<ZyraActionHistoryRow[]>('/api/v1/ai/actions/history')
+export const verifyZyraAction = (id: string) =>
+  platformFetch<{ status: string; detail: string }>(`/api/v1/ai/actions/${encodeURIComponent(id)}/verify`, { method: 'POST' })
+export const undoZyraAction = (id: string) =>
+  platformFetch<{ message?: string }>(`/api/v1/ai/actions/${encodeURIComponent(id)}/undo`, { method: 'POST' })
+
 export const listAgentMarketplace = () => platformFetch<AgentPluginRow[]>('/api/v1/ai/marketplace/agents')
 export const installAgentMarketplace = (slug: string) =>
   platformFetch<AgentPluginRow>(`/api/v1/ai/marketplace/agents/${encodeURIComponent(slug)}/install`, { method: 'POST' })
