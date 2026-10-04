@@ -112,8 +112,10 @@ async fn platform_controller_proxy(
 
     let status = StatusCode::from_u16(resp.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
     let mut out_headers = HeaderMap::new();
-    if let Some(ct) = resp.headers().get(header::CONTENT_TYPE) {
-        out_headers.insert(header::CONTENT_TYPE, ct.clone());
+    for name in [header::CONTENT_TYPE, header::CONTENT_DISPOSITION] {
+        if let Some(v) = resp.headers().get(&name) {
+            out_headers.insert(name, v.clone());
+        }
     }
     let bytes = resp.bytes().await.map_err(|e| {
         AppError::from(LibvirtError::Internal(format!(
@@ -121,10 +123,12 @@ async fn platform_controller_proxy(
         )))
     })?;
 
-    Response::builder()
+    let mut out = Response::builder()
         .status(status)
         .body(Body::from(bytes))
-        .map_err(|e| AppError::from(LibvirtError::Internal(format!("response build: {e}"))))
+        .map_err(|e| AppError::from(LibvirtError::Internal(format!("response build: {e}"))))?;
+    out.headers_mut().extend(out_headers);
+    Ok(out)
 }
 
 pub fn platform_controller_routes() -> Router<LibvirtManager> {
