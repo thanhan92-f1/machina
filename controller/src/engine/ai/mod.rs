@@ -5,6 +5,7 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+pub mod action_audit;
 pub mod actions;
 pub mod agent_marketplace;
 pub mod agents;

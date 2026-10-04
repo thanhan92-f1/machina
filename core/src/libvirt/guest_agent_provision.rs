@@ -330,3 +330,32 @@ pub fn inject_agent_offline(
         output,
     })
 }
+
+/// Whether the GuestKit pieces Machina shells out to are present on this hypervisor.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct GuestkitStatus {
+    /// `guestkit` CLI found on PATH (needed for offline diagnose/repair/inject).
+    pub cli_found: bool,
+    pub cli_path: Option<String>,
+    /// Agent binary that gets injected into guests (`[libvirt].guestkit_agent_binary`).
+    pub agent_binary: String,
+    pub agent_binary_found: bool,
+}
+
+fn find_in_path(name: &str) -> Option<PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    std::env::split_paths(&path)
+        .map(|dir| dir.join(name))
+        .find(|candidate| candidate.is_file())
+}
+
+pub fn guestkit_status(cfg: Option<&LibvirtConfig>) -> GuestkitStatus {
+    let cli = find_in_path("guestkit");
+    let agent = resolve_guestkit_binary(cfg);
+    GuestkitStatus {
+        cli_found: cli.is_some(),
+        cli_path: cli.map(|p| p.display().to_string()),
+        agent_binary_found: agent.is_file(),
+        agent_binary: agent.display().to_string(),
+    }
+}

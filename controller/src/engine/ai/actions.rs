@@ -163,6 +163,9 @@ pub async fn approve_and_execute(
         ));
     }
 
+    // Remember what the machine looked like so the action can be verified and, if reversible, undone.
+    super::action_audit::record_before(state, &action).await;
+
     let result = match action.action_type.as_str() {
         "start_vm"
         | "create_backup"

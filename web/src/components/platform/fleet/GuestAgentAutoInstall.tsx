@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Check, Loader2, Wand2 } from 'lucide-react'
 import { getPlatformVm, runVmHealthCheck, vmPower, type PlatformVm } from '../../../api/platform'
-import { daemonManagesVm, injectGuestAgent, injectSupported } from '../../../api/guestAgentInstall'
+import { daemonManagesVm, guestkitCapabilities, injectGuestAgent, type GuestkitCapabilities } from '../../../api/guestAgentInstall'
 import { formatUserError } from '../../../utils/apiError'
 
 type StepState = 'todo' | 'active' | 'done' | 'skipped' | 'failed'
@@ -37,6 +37,7 @@ async function waitFor(check: () => Promise<boolean>, timeoutMs: number, everyMs
  */
 export default function GuestAgentAutoInstall({ vm, onFinished }: { vm: PlatformVm; onFinished?: () => void }) {
   const [available, setAvailable] = useState<boolean | null>(null)
+  const [caps, setCaps] = useState<GuestkitCapabilities | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [running, setRunning] = useState(false)
   const [steps, setSteps] = useState<Record<StepId, StepState>>({ shutdown: 'todo', inject: 'todo', start: 'todo', verify: 'todo' })
@@ -46,7 +47,7 @@ export default function GuestAgentAutoInstall({ vm, onFinished }: { vm: Platform
 
   useEffect(() => {
     let alive = true
-    void Promise.all([daemonManagesVm(vm.name), injectSupported(vm.name)]).then(([managed, supported]) => { if (alive) setAvailable(managed && supported) })
+    void Promise.all([daemonManagesVm(vm.name), guestkitCapabilities()]).then(([managed, c]) => { if (!alive) return; setCaps(c); setAvailable(managed && Boolean(c?.cli_found && c.agent_binary_found)) })
     return () => { alive = false }
   }, [vm.name])
 
@@ -115,7 +116,9 @@ export default function GuestAgentAutoInstall({ vm, onFinished }: { vm: Platform
   if (!available) {
     return (
       <p className="rounded-xl border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)]/40 px-3 py-2.5 text-xs text-[var(--text-muted)]">
-        Automatic install isn't available here — it needs the host that owns this VM to be the one you're connected to, with a current Machina daemon. Use one of the routes below.
+        {caps && (!caps.cli_found || !caps.agent_binary_found)
+          ? `Automatic install needs GuestKit on this hypervisor${!caps.cli_found ? ' (the guestkit command was not found)' : ` (agent binary not found at ${caps.agent_binary})`}. Install it, then this appears — or use one of the routes below.`
+          : "Automatic install isn't available here — it needs the host that owns this VM to be the one you're connected to, with a current Machina daemon. Use one of the routes below."}
       </p>
     )
   }

@@ -186,6 +186,15 @@ fn default_true() -> bool {
     true
 }
 
+/// Is GuestKit installed on this hypervisor? The UI checks this before offering offline repair or
+/// agent injection so nobody is shut down only to find the tool missing.
+async fn guest_repair_capabilities_handler() -> Json<serde_json::Value> {
+    let cfg = machina_core::MachinaConfig::load().libvirt;
+    Json(serde_json::json!(guest_agent_provision::guestkit_status(
+        Some(&cfg)
+    )))
+}
+
 /// Diagnose a powered-off VM's disk with GuestKit (`doctor --explain`).
 async fn diagnose_guest_handler(
     State(manager): State<LibvirtManager>,
@@ -1140,6 +1149,10 @@ pub fn advanced_routes() -> Router<LibvirtManager> {
             post(diagnose_guest_handler),
         )
         .route("/vms/{name}/guest-repair/apply", post(repair_guest_handler))
+        .route(
+            "/guest-repair/capabilities",
+            get(guest_repair_capabilities_handler),
+        )
         // CD-ROM
         .route("/vms/{name}/cdrom/insert", post(insert_cdrom_handler))
         .route(

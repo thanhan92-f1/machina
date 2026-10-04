@@ -539,6 +539,12 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/ai/actions/{id}/reject",
             post(ai::reject_zyra_action),
         )
+        .route("/api/v1/ai/actions/history", get(ai::zyra_action_history))
+        .route(
+            "/api/v1/ai/actions/{id}/verify",
+            post(ai::verify_zyra_action),
+        )
+        .route("/api/v1/ai/actions/{id}/undo", post(ai::undo_zyra_action))
         .route(
             "/api/v1/ai/marketplace/agents",
             get(ai::list_agent_marketplace),

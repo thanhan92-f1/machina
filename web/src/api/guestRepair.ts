@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { apiPost } from './client'
+import { guestkitCapabilities, type GuestkitCapabilities } from './guestAgentInstall'
 
 /** Result of an offline GuestKit diagnose/repair on a powered-off VM's disk (daemon on the VM's host). */
 export type GuestRepairReport = {
@@ -15,17 +16,10 @@ export type GuestRepairReport = {
   exit_ok: boolean
 }
 
-const base = (name: string) => `/api/v1/vms/${encodeURIComponent(name)}/guest-repair`
+export { guestkitCapabilities }
+export type { GuestkitCapabilities }
 
-/** True when this daemon knows the route (GET on a POST-only route answers 405; older daemons answer 404). */
-export const bootDoctorSupported = async (name: string): Promise<boolean> => {
-  try {
-    const res = await fetch(`${base(name)}/diagnose`, { credentials: 'same-origin' })
-    return res.status === 405
-  } catch {
-    return false
-  }
-}
+const base = (name: string) => `/api/v1/vms/${encodeURIComponent(name)}/guest-repair`
 
 export const diagnoseGuestDisk = (name: string) => apiPost<GuestRepairReport>(`${base(name)}/diagnose`, {})
 

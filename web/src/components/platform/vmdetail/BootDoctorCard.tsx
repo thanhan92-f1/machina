@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react'
 import { AlertTriangle, Check, Loader2, Stethoscope } from 'lucide-react'
 import { getPlatformVm, runVmHealthCheck, vmPower, type PlatformVm } from '../../../api/platform'
 import {
-  bootDoctorSupported,
+  guestkitCapabilities,
   diagnoseGuestDisk,
   repairGuestDisk,
   summariseDoctorOutput,
   type GuestRepairReport,
+  type GuestkitCapabilities,
 } from '../../../api/guestRepair'
 import { formatUserError } from '../../../utils/apiError'
 import { vmHealthScore } from '../../../utils/vmHealthScore'
@@ -33,7 +34,7 @@ async function waitFor(check: () => Promise<boolean>, timeoutMs: number, everyMs
  * start it and check it comes up. Nothing is written until you press Repair.
  */
 export default function BootDoctorCard({ vm, onChanged }: { vm: PlatformVm; onChanged?: () => void }) {
-  const [supported, setSupported] = useState<boolean | null>(null)
+  const [caps, setCaps] = useState<GuestkitCapabilities | null | undefined>(undefined)
   const [phase, setPhase] = useState<Phase>('idle')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -44,9 +45,9 @@ export default function BootDoctorCard({ vm, onChanged }: { vm: PlatformVm; onCh
 
   useEffect(() => {
     let alive = true
-    void bootDoctorSupported(vm.name).then((ok) => { if (alive) setSupported(ok) })
+    void guestkitCapabilities().then((c) => { if (alive) setCaps(c) })
     return () => { alive = false }
-  }, [vm.name])
+  }, [])
 
   // Make sure the VM is off before touching its disk. Never force-stops.
   const ensureOff = async (): Promise<boolean> => {
@@ -102,8 +103,16 @@ export default function BootDoctorCard({ vm, onChanged }: { vm: PlatformVm; onCh
     onChanged?.()
   })
 
-  if (supported === null) return null
-  if (!supported) return null
+  // Daemon too old to say (null) or still checking (undefined): stay out of the way.
+  if (!caps) return null
+  if (!caps.cli_found) {
+    return (
+      <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-fill-tertiary)]/40 p-4 text-xs text-[var(--text-secondary)]" data-testid="boot-doctor-missing-guestkit">
+        <p className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]"><Stethoscope className="h-4 w-4" /> Boot Doctor</p>
+        <p className="mt-1">Boot Doctor needs GuestKit on this hypervisor (the <code>guestkit</code> command was not found). Install GuestKit and this card turns on.</p>
+      </section>
+    )
+  }
 
   const d = diagnosis ? summariseDoctorOutput(diagnosis.output) : null
   const p = preview ? summariseDoctorOutput(preview.output) : null

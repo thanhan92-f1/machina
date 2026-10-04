@@ -16,17 +16,28 @@ export type AgentInjectReport = {
 export const daemonManagesVm = (name: string): Promise<boolean> =>
   apiGet<unknown>(`/api/v1/vms/${encodeURIComponent(name)}`).then(() => true, () => false)
 
-/**
- * True when this daemon knows the inject route (a GET on a POST-only route answers 405; an older daemon answers 404).
- * Checked before anything is shut down so an old daemon never leaves a VM powered off.
- */
-export const injectSupported = async (name: string): Promise<boolean> => {
+/** What GuestKit pieces this hypervisor has. `null` means the daemon is too old to say. */
+export type GuestkitCapabilities = {
+  cli_found: boolean
+  cli_path?: string | null
+  agent_binary: string
+  agent_binary_found: boolean
+}
+
+export const guestkitCapabilities = async (): Promise<GuestkitCapabilities | null> => {
   try {
-    const res = await fetch(`/api/v1/vms/${encodeURIComponent(name)}/guest-agent/inject`, { credentials: 'same-origin' })
-    return res.status === 405
+    const res = await fetch('/api/v1/guest-repair/capabilities', { credentials: 'same-origin' })
+    if (!res.ok) return null
+    return (await res.json()) as GuestkitCapabilities
   } catch {
-    return false
+    return null
   }
+}
+
+/** Checked before anything is shut down so a missing tool never leaves a VM powered off. */
+export const injectSupported = async (): Promise<boolean> => {
+  const c = await guestkitCapabilities()
+  return Boolean(c?.cli_found && c.agent_binary_found)
 }
 
 export const injectGuestAgent = (name: string, dryRun = false) =>

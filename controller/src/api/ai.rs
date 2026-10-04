@@ -1375,6 +1375,41 @@ pub async fn execute_zyra_action(
         .map(Json)
 }
 
+pub async fn zyra_action_history(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Vec<ai::action_audit::ActionHistoryRow>>, ApiError> {
+    require_operator(&actor)?;
+    ai::action_audit::history(&state, 50)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))
+        .map(Json)
+}
+
+pub async fn verify_zyra_action(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_operator(&actor)?;
+    ai::action_audit::verify(&state, id)
+        .await
+        .map_err(|e| ApiError::bad_request(e.to_string()))
+        .map(Json)
+}
+
+pub async fn undo_zyra_action(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_operator(&actor)?;
+    ai::action_audit::undo(&state, id, &actor)
+        .await
+        .map_err(|e| ApiError::bad_request(e.to_string()))
+        .map(Json)
+}
+
 pub async fn reject_zyra_action(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
