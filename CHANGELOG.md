@@ -14,8 +14,15 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
     `except`, entities, port ranges, named ports, ICMP types and
     `enableDefaultDeny`.
   - Validation errors carry Cilium-style paths.
-  - FQDN, L7, services, groups and authentication are accepted with a warning
-    and are not enforced yet.
+  - `toFQDNs` (`matchName` / `matchPattern` with Cilium wildcards) is
+    enforced natively. The VM edge snoops DNS replies on the tap. bpfd gives
+    each learned address its own identity, which inherits the rules of its
+    CIDR or of `world`, so denies still win, and adds the FQDN allows. The
+    learned names are listed by `machinactl netpol fqdn`, the UI
+    *DNS names* table and `GET …/fqdn-cache`. The policy tester accepts DNS
+    names.
+  - L7, services, groups and authentication are accepted with a warning and
+    are not enforced yet.
 - **Labels.** Each VM has key/value labels, which policies select on. The
   daemon stores them in `vm-labels.json`. On the controller, migration 029
   adds a `vms.labels` column, seeded from `key=value` tags.

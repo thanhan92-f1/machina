@@ -426,6 +426,11 @@ async fn fleet_flows(state: &AppState, f: &FlowFilter, per_host: usize) -> Vec<V
     out
 }
 
+/// `toFQDNs` bindings learned on every online host.
+pub async fn fqdn_cache(State(state): State<AppState>) -> Json<Value> {
+    Json(json!({ "items": bpf::fan_out_items(&state.pool, &Request::VmFqdnCache).await }))
+}
+
 pub async fn flows(State(state): State<AppState>, Query(q): Query<FlowQuery>) -> Json<Value> {
     let limit = q.limit.unwrap_or(200).min(5000);
     let mut items = fleet_flows(&state, &q.filter(), 5000).await;

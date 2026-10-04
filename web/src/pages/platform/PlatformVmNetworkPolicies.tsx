@@ -18,6 +18,7 @@ import {
   applyVmNetpol,
   deleteVmNetpol,
   getNetpolStatus,
+  listFqdnCache,
   listNetpolEndpoints,
   listNetpolSelectors,
   listVmNetpols,
@@ -25,6 +26,7 @@ import {
   syncFleetNetpol,
   traceVmNetpol,
   validateVmNetpol,
+  type FqdnEntry,
   type NetpolEndpoint,
   type NetpolPreview,
   type NetpolScope,
@@ -111,6 +113,7 @@ export default function PlatformVmNetworkPolicies() {
   const [status, setStatus] = useState<NetpolStatus | null>(null)
   const [endpoints, setEndpoints] = useState<NetpolEndpoint[]>([])
   const [selectors, setSelectors] = useState<NetpolSelector[]>([])
+  const [fqdn, setFqdn] = useState<FqdnEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -126,17 +129,19 @@ export default function PlatformVmNetworkPolicies() {
   const load = useCallback(async () => {
     setError(null)
     try {
-      const [l, st, ep, se] = await Promise.all([
+      const [l, st, ep, se, fq] = await Promise.all([
         listVmNetpols(scope),
         getNetpolStatus(scope).catch(() => null),
         listNetpolEndpoints(scope).catch(() => []),
         listNetpolSelectors(scope).catch(() => []),
+        listFqdnCache(scope).catch(() => []),
       ])
       setPolicies(l.items)
       setWarnings(l.warnings)
       setStatus(st)
       setEndpoints(ep)
       setSelectors(se)
+      setFqdn(fq)
     } catch (e: unknown) {
       setError(formatUserError(e))
     } finally {
@@ -446,7 +451,7 @@ export default function PlatformVmNetworkPolicies() {
             <Field label="From (VM or IP)" htmlFor="tr-from">
               <input id="tr-from" list="netpol-vms" className="input text-sm w-48" value={tq.from} onChange={(e) => setTq({ ...tq, from: e.target.value })} />
             </Field>
-            <Field label="To (VM or IP)" htmlFor="tr-to">
+            <Field label="To (VM, IP or DNS name)" htmlFor="tr-to">
               <input id="tr-to" list="netpol-vms" className="input text-sm w-48" value={tq.to} onChange={(e) => setTq({ ...tq, to: e.target.value })} />
             </Field>
             <Field label="Protocol" htmlFor="tr-proto">
@@ -527,6 +532,43 @@ export default function PlatformVmNetworkPolicies() {
                   </li>
                 ))}
               </ul>
+            )}
+          </MacGlassPanel>
+          <MacGlassPanel
+            title="DNS names (toFQDNs)"
+            subtitle="Addresses learned from DNS replies to VMs for names a toFQDNs rule selects (like cilium fqdn cache list). Allow DNS (UDP 53) in policy so lookups reach the resolver."
+          >
+            {fqdn.length === 0 ? (
+              <Empty>No names learned yet. They appear after a selected VM resolves a name a toFQDNs rule matches.</Empty>
+            ) : (
+              <TahoeTableWrap>
+                <table className="w-full text-xs" aria-label="Learned DNS names">
+                  <thead>
+                    <tr className={headRowCls}>
+                      <th scope="col" className={thCls}>Name</th>
+                      <th scope="col" className={thCls}>Address</th>
+                      <th scope="col" className={thCls}>Identity</th>
+                      <th scope="col" className={thCls}>VM</th>
+                      {scope === 'fleet' && <th scope="col" className={thCls}>Host</th>}
+                      <th scope="col" className={thCls}>Expires</th>
+                      <th scope="col" className="py-2">Patterns</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fqdn.map((f) => (
+                      <tr key={`${f.hostname ?? ''}|${f.name}|${f.address}`} className={rowCls}>
+                        <td className="py-2 pr-2 font-medium font-mono">{f.name}</td>
+                        <td className="py-2 pr-2 font-mono">{f.address}</td>
+                        <td className="py-2 pr-2 font-mono">{f.identity || '—'}</td>
+                        <td className="py-2 pr-2">{f.vm || '—'}</td>
+                        {scope === 'fleet' && <td className="py-2 pr-2">{f.hostname ?? '—'}</td>}
+                        <td className="py-2 pr-2">{f.expires_in_secs}s</td>
+                        <td className="py-2 font-mono">{f.patterns.join(', ') || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TahoeTableWrap>
             )}
           </MacGlassPanel>
         </>

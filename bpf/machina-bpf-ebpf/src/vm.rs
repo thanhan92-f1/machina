@@ -22,7 +22,8 @@ use aya_ebpf::{
 use machina_bpf_common::*;
 
 use crate::{
-    net::{TC_ACT_SHOT, TC_ACT_UNSPEC, enforce_active, now_ns},
+    maps::IFACE_CFG,
+    net::{TC_ACT_SHOT, TC_ACT_UNSPEC, emit_dns, enforce_active, now_ns},
     parse::*,
 };
 
@@ -288,11 +289,22 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     let isolated = flags & if from_vm { VME_ISOLATE_OUT } else { VME_ISOLATE_IN } != 0;
     let has_deny = flags & if from_vm { VME_DENY_OUT } else { VME_DENY_IN } != 0;
     let flow_log = flags & VME_FLOW_LOG != 0;
-    if !isolated && !has_deny && !flow_log {
+    let fqdn = flags & VME_FQDN != 0 && !from_vm;
+    if !isolated && !has_deny && !flow_log && !fqdn {
         return TC_ACT_UNSPEC;
     }
     let mut t = Tuple::zero();
     if parse_tc(ctx, &mut t) == 0 || is_control(&t) {
+        return TC_ACT_UNSPEC;
+    }
+    if fqdn
+        && t.proto == IPPROTO_UDP
+        && t.sport == 53
+        && !unsafe { IFACE_CFG.get(&ifindex) }.is_some_and(|c| c.flags & IF_DNS != 0)
+    {
+        emit_dns(ctx, &t, ifindex as u64);
+    }
+    if !isolated && !has_deny && !flow_log {
         return TC_ACT_UNSPEC;
     }
     let mut icmp: u8 = 0;

@@ -58,6 +58,7 @@ Validation is strict, and errors carry Cilium-style paths such as
 | `fromEntities` / `toEntities` | `all`, `world`, `world-ipv4`, `world-ipv6`, `unmanaged`, `host`, `remote-node`, `cluster` (alias `fleet`: every VM). `health`, `init`, `kube-apiserver` and `ingress` match nothing on a hypervisor (a warning says so). |
 | `toPorts[].ports[]` | `port` (number or **named port**), `endPort` (ranges up to 256 ports), `protocol` `TCP` / `UDP` / `SCTP` / `ANY`. |
 | `icmps[].fields[]` | `type` as a number or Cilium name (`EchoRequest`, `DestinationUnreachable`, …), `family` `IPv4` / `IPv6`. |
+| `toFQDNs` | `matchName` (exact) and `matchPattern` (Cilium wildcards: `*` stays within one label, a lone `*` matches every name, a leading `**.` matches one or more labels). Allow rules only, as in Cilium; `toFQDNs` in `egressDeny` is rejected. See [DNS names](#dns-names-tofqdns). |
 | `enableDefaultDeny` | `ingress: false` / `egress: false` keeps a direction open even when the spec has rules for it (additive policies). |
 | `nodeSelector` (CCNP) | Accepted; host policies are not applied to VMs (warning). |
 
@@ -66,12 +67,56 @@ example `machina.io/port.http=8080`).
 
 ### Accepted, not enforced yet
 
-`toFQDNs`, `toPorts[].rules` (HTTP / Kafka / DNS L7), `toPorts[].serverNames`,
+`toPorts[].rules` (HTTP / Kafka / DNS L7), `toPorts[].serverNames`,
 `originatingTLS` / `terminatingTLS`, `toServices`, `toGroups`,
 `authentication`. Policies containing them validate and apply with a warning
 that names the field; the L3/L4 parts of the rule are still enforced. These
-are the next phase and will be native too (a DNS-snooping FQDN map, and an
-in-process L7 proxy), not delegated to Cilium or Envoy.
+are the next phase and will be native too (an in-process L7 proxy), not
+delegated to Cilium or Envoy.
+
+## DNS names (toFQDNs)
+
+```yaml
+egress:
+  - toEntities: [world]
+    toPorts: [{ports: [{port: "53", protocol: UDP}]}]
+  - toFQDNs:
+      - matchName: github.com
+      - matchPattern: "*.githubusercontent.com"
+    toPorts: [{ports: [{port: "443", protocol: TCP}]}]
+```
+
+Enforced natively by snooping DNS, without a DNS proxy:
+
+1. The VM edge program on the tap of every VM with a `toFQDNs` rule copies
+   UDP DNS replies (source port 53) to bpfd. The copy goes to the
+   `DNS_EVENTS` ring buffer, the same one the host DNS log uses.
+2. bpfd parses each reply. If the query name or any name in its CNAME chain
+   matches a `toFQDNs` pattern, bpfd keeps the A/AAAA addresses. Each one is
+   held for the record TTL, but at least 10 minutes and at most a day,
+   because clients cache answers longer than the TTL says. The cache holds
+   up to 8192 addresses.
+3. A learned address that isn't a VM, the host or a policy CIDR gets its own
+   identity, as if it were a /128 CIDR peer. That identity first inherits
+   every rule of the identity the address had before: its longest policy
+   CIDR, or `world`. So `egressDeny` towards `world` or a CIDR still wins.
+   It then gets allow entries for each `toFQDNs` rule whose pattern matches
+   one of its names. Bindings are global, as in Cilium: any VM whose rule
+   selects the name may use the address, whichever VM looked it up.
+4. When the names expire or the rule goes away, the identity and its entries
+   are removed.
+
+Things to know:
+
+- Policy has to allow the lookup itself (UDP 53 to the resolver), as in the
+  example. Otherwise the reply never arrives and nothing is learned.
+- Learning is asynchronous. The first SYN sent right after the reply can
+  race it and be dropped; the TCP retransmit a second later goes through.
+- DNS over TCP, DoT and DoH aren't snooped.
+- `machinactl netpol fqdn` (like `cilium fqdn cache list`), the UI
+  **Endpoints → DNS names** table and `GET /vm-network-policies/fqdn-cache`
+  list the learned names. `machinactl netpol test --to api.example.com`
+  evaluates a name against `toFQDNs` rules.
 
 ## Semantics
 
@@ -148,6 +193,7 @@ Policies are persisted; the enforce mode and its lease never are.
 | `cilium policy selectors` | `machinactl netpol selectors` |
 | `cilium endpoint list` | `machinactl netpol endpoints` |
 | `cilium status` | `machinactl netpol status` |
+| `cilium fqdn cache list` | `machinactl netpol fqdn` |
 | `hubble observe` | `machinactl flow observe [-f] [--vm X] [--verdict DROPPED] [--port 443] …` |
 | — | `machinactl flow top --by pair\|src\|dst\|port\|policy`, `machinactl flow stats` |
 
@@ -190,6 +236,10 @@ a veth pair in a scratch netns and covers:
 - deny over allow;
 - CIDR longest-prefix match;
 - `ingressDeny` without isolation;
-- AUDIT, FORWARDED and DROPPED flow events with rule attribution.
+- AUDIT, FORWARDED and DROPPED flow events with rule attribution;
+- `toFQDNs`: a stub resolver on the host answers one name. The checks cover
+  blocking before the lookup, learning from the reply, allowing after it,
+  ignoring NXDOMAIN and unmatched names, `world` deny still winning, and
+  removing the rule.
 
 Compiler and tracer unit tests: `cargo test -p machina-bpf netpol`.

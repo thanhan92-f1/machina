@@ -153,6 +153,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/vm-network-policies/endpoints", get(vm_network_policies::endpoints))
         .route("/api/v1/vm-network-policies/selectors", get(vm_network_policies::selectors))
         .route("/api/v1/vm-network-policies/status", get(vm_network_policies::status))
+        .route("/api/v1/vm-network-policies/fqdn-cache", get(vm_network_policies::fqdn_cache))
         .route("/api/v1/vm-network-policies/sync", post(vm_network_policies::sync_now))
         .route(
             "/api/v1/vm-network-policies/{name}",

@@ -26,9 +26,9 @@ use machina_bpf_common::{IDENTITY_HOST, IDENTITY_WORLD, V4_MAPPED_PREFIX_BITS};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{effective_labels, icmp_type_num, reserved_entity, selector_matches, selector_string, VmNetworkPolicy};
+use super::{effective_labels, fqdn, icmp_type_num, reserved_entity, selector_matches, selector_string, VmNetworkPolicy};
 use super::{LABEL_PORT_PREFIX, UNSUPPORTED_ENTITIES};
-use crate::api::{VmEdgePeer, VmEdgeRule, VmEdgeState, VmEdgeVm};
+use crate::api::{VmEdgeFqdnRule, VmEdgePeer, VmEdgeRule, VmEdgeState, VmEdgeVm};
 use crate::policy::{parse_prefix, Prefix};
 
 /// Other hypervisors (`remote-node`).
@@ -110,7 +110,7 @@ pub fn vm_identity(name: &str) -> u32 {
     fnv32(&format!("vm|{name}")) % (0x7fff_0000 - 1024) + 1024
 }
 
-fn cidr_identity(p: &Prefix) -> u32 {
+pub fn cidr_identity(p: &Prefix) -> u32 {
     0x8000_0000 | (fnv32(&p.to_display()) & 0x7fff_ffff)
 }
 
@@ -265,9 +265,12 @@ impl<'a> Ctx<'a> {
             named = true;
             peers.extend(self.entity(e, ctx));
         }
+        if d.egress && !arr(rule, "toFQDNs").is_empty() {
+            named = true;
+        }
         let mut pending = vec![key("Groups"), key("Nodes")];
         if d.egress {
-            pending.extend(["toServices".to_string(), "toFQDNs".to_string()]);
+            pending.push("toServices".to_string());
         }
         for k in pending {
             if !arr(rule, &k).is_empty() {
@@ -499,6 +502,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
     }
 
     // Pass 2: entries for local subjects.
+    let mut fqdn: BTreeSet<VmEdgeFqdnRule> = BTreeSet::new();
     for (pname, sp, spec, subjects) in &specs {
         let local: Vec<u32> = subjects.iter().copied().filter(|s| cx.vm_by_id(*s).is_some_and(|v| v.local)).collect();
         if local.is_empty() {
@@ -514,6 +518,31 @@ pub fn compile(inp: &Inputs) -> Compiled {
                         let peers = if deny { peers.clone() } else { narrow(&cx, &requires, *s, d.egress, &peers) };
                         cx.emit(*s, &peers, &ports, d.egress, deny, &source);
                     }
+                    let fq = fqdn::selectors(arr(rule, "toFQDNs"));
+                    if d.egress && !deny && !fq.is_empty() {
+                        for s in &local {
+                            if requires.get(&(*s, true)).is_some_and(|r| !r.is_empty()) {
+                                cx.warnings.push(format!("{source}: toRequires excludes toFQDNs peers"));
+                                continue;
+                            }
+                            for p in &ports {
+                                let PortSpec::Num { proto, port, end } = p else {
+                                    cx.warnings.push(format!("{source}: named ports do not apply to toFQDNs"));
+                                    continue;
+                                };
+                                for n in &fq {
+                                    fqdn.insert(VmEdgeFqdnRule {
+                                        pattern: n.clone(),
+                                        subject_identity: *s,
+                                        proto: *proto,
+                                        port: *port,
+                                        port_end: if end > port { *end } else { 0 },
+                                        source: Some(source.clone()),
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -523,7 +552,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
     let denies: BTreeSet<Key> = cx.entries.keys().filter(|k| k.deny).copied().collect();
     cx.entries.retain(|k, _| k.deny || !denies.contains(&Key { deny: true, ..*k }));
 
-    let mut state = VmEdgeState { flow_log: true, ..Default::default() };
+    let mut state = VmEdgeState { flow_log: true, fqdn: fqdn.into_iter().collect(), ..Default::default() };
     let mut endpoints = Vec::new();
     for v in &cx.vms {
         let (ing, eg) = iso.get(&v.id).copied().unwrap_or_default();

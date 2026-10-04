@@ -121,7 +121,7 @@ cgroups (Linux host only):
 |---|---|---|
 | `scripts/bpf/netns-smoke.sh` (`make bpf-test`) | Policies, capture, QoS, rate limit, L7, accounting, DNS deny, shield, node isolation, direct redirect | 112 |
 | `scripts/bpf/cni-smoke.sh` (`make bpf-cni-test`) | CNI routing, NetworkPolicy, socket-LB and NodePort services | 40 |
-| `scripts/bpf/vm-edge-smoke.sh` | VM edge, VM network policy (identity rules, deny, ranges, ICMP, CIDR, flows), QEMU sandbox | 50 |
+| `scripts/bpf/vm-edge-smoke.sh` | VM edge, VM network policy (identity rules, deny, ranges, ICMP, CIDR, toFQDNs, flows), QEMU sandbox | 59 |
 | `scripts/bpf/vmintel-smoke.sh` | VM runtime intelligence | 14 |
 | `scripts/bpf/guard-smoke.sh` | VMM guard | 12 |
 | `scripts/bpf/quiclb-smoke.sh` | QUIC-LB | 18 |

@@ -212,6 +212,9 @@ pub(super) fn on_dns(
                 }
             }
         }
+        if msg.is_response && msg.rcode == 0 && vm::fqdn_learn(&mut s, &msg, rec.vm.as_deref(), ev.ifindex) {
+            queued = true;
+        }
         Shared::push_capped(&mut s.dns, rec.clone(), DNS_STORE_CAP);
         if let Some(a) = &anomaly {
             s.counters.anomalies += 1;

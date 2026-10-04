@@ -243,7 +243,7 @@ fn qos_inner(ctx: &TcContext, ifindex: u32, rate: u64, ingress: bool, now: u64, 
 
 /// `if_dir` packs ifindex (low 32 bits) and from_workload (bit 32).
 #[inline(never)]
-fn emit_dns(ctx: &TcContext, t: &Tuple, if_dir: u64) {
+pub(crate) fn emit_dns(ctx: &TcContext, t: &Tuple, if_dir: u64) {
     let ifindex = if_dir as u32;
     let from_workload = (if_dir >> 32) & 1 != 0;
     let now = now_ns();

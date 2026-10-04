@@ -94,8 +94,10 @@ spec:
       toPorts: [{ports: [{port: "80", endPort: 9000, protocol: TCP}]}]
       bogus: 1
   egress:
-    - toFQDNs: [{matchName: example.com}]
+    - toFQDNs: [{matchName: example.com}, {matchName: "*.bad"}]
       toPorts: [{ports: [{port: "443"}], rules: {http: [{method: GET}]}}]
+  egressDeny:
+    - toFQDNs: [{matchName: example.com}]
 "#,
     );
     let paths: Vec<&str> = v.errors.iter().map(|e| e.path.as_str()).collect();
@@ -105,10 +107,12 @@ spec:
         "document[0].spec.ingress[0].fromCIDR[0]",
         "document[0].spec.ingress[0].toPorts[0].ports[0].endPort",
         "document[0].spec.ingress[0].bogus",
+        "document[0].spec.egress[0].toFQDNs[1].matchName",
+        "document[0].spec.egressDeny[0].toFQDNs",
     ] {
         assert!(paths.contains(&want), "missing {want} in {paths:?}");
     }
-    assert!(v.warnings.iter().any(|w| w.path.ends_with("toFQDNs")));
+    assert!(!v.warnings.iter().any(|w| w.path.contains("toFQDNs")));
     assert!(v.warnings.iter().any(|w| w.path.ends_with("toPorts[0].rules")));
 }
 
@@ -215,4 +219,40 @@ spec:
     let sel = c.selectors.iter().find(|s| s.path == "spec.endpointSelector").unwrap();
     assert_eq!(sel.vms, ["lb-1"]);
     assert_eq!(sel.selector, "machina.io/vm-name=lb-1");
+}
+
+#[test]
+fn fqdn_rules_compile_and_trace() {
+    let p = parse(
+        r#"
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: dns-egress}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress:
+    - toEndpoints: [{matchLabels: {app: db}}]
+    - toEntities: [world]
+      toPorts: [{ports: [{port: "53", protocol: UDP}]}]
+    - toFQDNs: [{matchName: API.Example.com.}, {matchPattern: "**.cdn.example.net"}]
+      toPorts: [{ports: [{port: "443", protocol: TCP}]}]
+"#,
+    );
+    let vms = fleet();
+    let c = compile(&Inputs { policies: &p, vms: &vms, host: Some("h1"), host_addresses: &[], remote_node_addresses: &[] });
+    assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    let web1 = vm_identity("web-1");
+    let pats: Vec<&str> = c.state.fqdn.iter().map(|r| r.pattern.as_str()).collect();
+    assert_eq!(pats, ["**.cdn.example.net", "api.example.com"], "only the local web VM, normalized");
+    assert!(c.state.fqdn.iter().all(|r| r.subject_identity == web1 && r.proto == 6 && r.port == 443));
+    assert!(c.state.vms.iter().find(|v| v.name == "web-1").unwrap().isolate_egress);
+
+    let t = trace_q(&p, "web-1", "api.example.com", "TCP", 443);
+    assert!(t.allowed, "{}", t.summary);
+    assert_eq!(t.to.kind, "fqdn");
+    assert_eq!(t.egress.rule.as_deref(), Some("dns-egress spec.egress[2]"));
+    assert!(trace_q(&p, "web-2", "a.b.cdn.example.net", "TCP", 443).allowed);
+    assert!(!trace_q(&p, "web-1", "cdn.example.net", "TCP", 443).allowed);
+    assert!(!trace_q(&p, "web-1", "api.example.com", "TCP", 80).allowed);
+    assert!(!trace_q(&p, "web-1", "203.0.113.5", "TCP", 443).allowed, "an address is not a name");
 }

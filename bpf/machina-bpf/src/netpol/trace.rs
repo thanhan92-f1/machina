@@ -11,13 +11,13 @@ use machina_bpf_common::{IDENTITY_HOST, IDENTITY_WORLD};
 use serde::{Deserialize, Serialize};
 
 use super::compile::{compile, Inputs, NetpolVm, IDENTITY_REMOTE_NODE};
-use super::VmNetworkPolicy;
+use super::{fqdn, VmNetworkPolicy};
 use crate::api::VmEdgeState;
 use crate::policy::parse_prefix;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TraceQuery {
-    /// VM name, IP address, `world`, `host` or `remote-node`.
+    /// VM name, IP address, DNS name, `world`, `host` or `remote-node`.
     pub from: String,
     pub to: String,
     /// TCP (default), UDP, SCTP, ICMP, ICMPv6 or ANY.
@@ -36,7 +36,7 @@ pub struct TraceEndpoint {
     #[serde(default)]
     pub vm: Option<String>,
     pub identity: u32,
-    /// `vm`, `host`, `remote-node`, `cidr` or `world`.
+    /// `vm`, `host`, `remote-node`, `cidr`, `fqdn` or `world`.
     pub kind: String,
 }
 
@@ -119,7 +119,10 @@ fn resolve(input: &str, vms: &[NetpolVm], state: &VmEdgeState, compiled_ids: &Ha
         "remote-node" => return ep(None, IDENTITY_REMOTE_NODE, "remote-node"),
         _ => {}
     }
-    let Ok(addr) = parse_prefix(input) else { return ep(None, IDENTITY_WORLD, "world") };
+    let Ok(addr) = parse_prefix(input) else {
+        let kind = if fqdn::invalid(input, false).is_none() && input.contains('.') { "fqdn" } else { "world" };
+        return ep(None, IDENTITY_WORLD, kind);
+    };
     if let Some(vm) = vms.iter().find(|v| v.addresses.iter().any(|a| parse_prefix(a).ok() == Some(addr))) {
         return ep(Some(vm.name.clone()), compiled_ids.get(&vm.name).copied().unwrap_or(0), "vm");
     }
@@ -173,7 +176,20 @@ pub fn trace(
             return TraceSide { direction, verdict: "not-a-vm".into(), ..Default::default() };
         }
         let enforced = iso.get(&subject.identity).is_some_and(|(i, e)| if egress { *e } else { *i });
-        let (verdict, rule) = match table.eval(subject.identity, peer.identity, egress, proto, port) {
+        let mut hit = table.eval(subject.identity, peer.identity, egress, proto, port);
+        if egress && peer.kind == "fqdn" && !hit.as_ref().is_some_and(|h| h.0) {
+            let by_name = c.state.fqdn.iter().find(|r| {
+                let end = if r.port_end > r.port { r.port_end } else { r.port };
+                r.subject_identity == subject.identity
+                    && (r.proto == 0 || r.proto == proto)
+                    && (r.port == 0 || (r.port..=end).contains(&port))
+                    && fqdn::matches(&r.pattern, &peer.input)
+            });
+            if let Some(r) = by_name {
+                hit = Some((false, r.source.clone().unwrap_or_default()));
+            }
+        }
+        let (verdict, rule) = match hit {
             Some((true, src)) => ("denied", Some(src)),
             Some((false, src)) => ("allowed", Some(src)),
             None if enforced => ("default-deny", None),

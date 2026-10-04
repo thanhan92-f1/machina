@@ -26,6 +26,7 @@ FAIL=0
 cleanup() {
   [[ -n "${BPFD_PID:-}" ]] && kill "$BPFD_PID" 2>/dev/null && wait "$BPFD_PID" 2>/dev/null || true
   [[ -n "${HTTP_PID:-}" ]] && kill "$HTTP_PID" 2>/dev/null || true
+  [[ -n "${DNS_PID:-}" ]] && kill "$DNS_PID" 2>/dev/null || true
   ip netns del "$NS" 2>/dev/null || true
   ip link del "$HOST_IF" 2>/dev/null || true
   [[ -d "$CG" ]] && rmdir "$CG" 2>/dev/null || true
@@ -196,6 +197,58 @@ NPVM_OPEN="{\"name\":\"$VM\",\"addresses\":[\"$VM_IP\"],\"taps\":[\"$HOST_IF\"],
 np "$NPVM_OPEN" "$HOSTPEER" "{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":false,\"proto\":1,\"port\":0,\"deny\":true,\"source\":\"smoke spec.ingressDeny[0]\"}"
 check "netpol enforce: ingressDeny applies without isolation" bash -c "! ping -c1 -W1 $VM_IP >/dev/null 2>&1"
 check "netpol enforce: VM egress unaffected by ingress deny" http_ok
+
+# toFQDNs: a stub resolver on the host answers svc.smoke.test → HOST_IP. No
+# host peer, so HOST_IP starts as `world` and is learned as its own identity.
+python3 - "$HOST_IP" >"$WORK/dns.log" 2>&1 <<'PY' &
+import socket, struct, sys
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind((sys.argv[1], 53))
+ip = socket.inet_aton(sys.argv[1])
+while True:
+    q, a = s.recvfrom(512)
+    i, name = 12, []
+    while q[i]:
+        name.append(q[i + 1:i + 1 + q[i]].decode()); i += q[i] + 1
+    end = i + 5
+    ok = ".".join(name).lower() == "svc.smoke.test"
+    hdr = q[:2] + struct.pack(">HHHHH", 0x8180 if ok else 0x8183, 1, int(ok), 0, 0)
+    ans = (b"\xc0\x0c" + struct.pack(">HHIH", 1, 1, 5, 4) + ip) if ok else b""
+    s.sendto(hdr + q[12:end] + ans, a)
+PY
+DNS_PID=$!
+resolve() {
+  ip netns exec "$NS" python3 - "$HOST_IP" "$1" <<'PY'
+import socket, struct, sys
+q = struct.pack(">HHHHHH", 0x4d4e, 0x0100, 1, 0, 0, 0)
+q += b"".join(bytes([len(p)]) + p.encode() for p in sys.argv[2].split(".")) + b"\x00" + struct.pack(">HH", 1, 1)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.settimeout(2)
+s.sendto(q, (sys.argv[1], 53)); r = s.recv(512)
+sys.exit(0 if struct.unpack(">H", r[6:8])[0] > 0 else 1)
+PY
+}
+fqdn_has() { req '{"op":"vm_fqdn_cache"}' | python3 -c "import json,sys; d=json.load(sys.stdin).get('data') or []; sys.exit(0 if any($1 for e in d) else 1)"; }
+R_DNS="{\"subject_identity\":$VMID,\"peer_identity\":2,\"egress\":true,\"proto\":17,\"port\":53,\"source\":\"smoke spec.egress[3]\"}"
+F_SVC="{\"pattern\":\"svc.smoke.test\",\"subject_identity\":$VMID,\"proto\":6,\"port\":18080,\"source\":\"smoke spec.egress[4]\"}"
+npf() { edge "{\"vms\":[$NPVM}],\"policy\":[$1],\"fqdn\":[$2],\"flow_log\":true,\"owner\":\"smoke\"}"; }
+sleep 0.3
+npf "$R_DNS" "$F_SVC"
+check "fqdn: status counts the rule, tap snoops DNS" [ "$(jpath vm_edge_status "(d['fqdn_rules'], 'fqdn' in d['taps'][0]['flags'])")" = "(1, True)" ]
+check "fqdn enforce: blocked before the lookup" bash -c "! ip netns exec $NS curl -s -m2 -o /dev/null http://$HOST_IP:18080/"
+check "fqdn enforce: DNS to world allowed" resolve svc.smoke.test
+sleep 1.5
+check "fqdn: binding learned from the reply" fqdn_has "e['name']=='svc.smoke.test' and e['address']=='$HOST_IP' and e['identity']>=2**31 and e['vm']=='$VM'"
+check "fqdn enforce: allowed after the lookup" http_ok
+check "fqdn enforce: flow attributed to the toFQDNs rule" flow_has "f['verdict']=='FORWARDED' and f['dst_port']==18080 and f.get('policy')=='smoke spec.egress[4]'"
+resolve other.smoke.test || true
+sleep 1
+check "fqdn: unmatched / NXDOMAIN names learn nothing" [ "$(req '{"op":"vm_fqdn_cache"}' | python3 -c "import json,sys; print(len(json.load(sys.stdin).get('data') or []))")" = 1 ]
+R_WDENY="{\"subject_identity\":$VMID,\"peer_identity\":2,\"egress\":true,\"proto\":6,\"port\":18080,\"deny\":true,\"source\":\"smoke spec.egressDeny[1]\"}"
+npf "$R_DNS,$R_WDENY" "$F_SVC"
+check "fqdn enforce: world deny still wins for a learned address" bash -c "! ip netns exec $NS curl -s -m2 -o /dev/null http://$HOST_IP:18080/"
+npf "$R_DNS" ""
+check "fqdn: removing the rule drops the binding" bash -c "! ip netns exec $NS curl -s -m2 -o /dev/null http://$HOST_IP:18080/"
+kill "$DNS_PID" 2>/dev/null || true
 
 observe
 check "netpol observe: ingressDeny only audited" host_ping_vm

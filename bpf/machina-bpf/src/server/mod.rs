@@ -111,6 +111,10 @@ struct Shared {
     guard_cgroups: HashMap<u64, String>,
     vm_flow_index: vm::FlowIndex,
     vm_flows: VecDeque<VmFlowRecord>,
+    /// `toFQDNs` patterns of the VM edge state, for the DNS reader.
+    vm_fqdn_patterns: Vec<String>,
+    /// DNS answers awaiting the engine.
+    vm_fqdn_queue: Vec<vm::FqdnLearn>,
 }
 
 impl Shared {

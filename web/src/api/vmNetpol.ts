@@ -136,7 +136,15 @@ export interface NetpolStatus {
   managed_by: 'local' | 'controller' | string
   /** Daemon only. */
   last_sync?: NetpolSync | null
-  edge?: { owner: string; enforcing: boolean; flow_log: boolean; taps: unknown[]; peers?: number } | null
+  edge?: {
+    owner: string
+    enforcing: boolean
+    flow_log: boolean
+    taps: unknown[]
+    peers?: number
+    fqdn_rules?: number
+    fqdn_cache?: number
+  } | null
   enforcement?: { mode?: string; lease_remaining_secs?: number | null } | null
   bpfd_available?: boolean
   cilium?: string | null
@@ -229,6 +237,22 @@ export const getNetpolStatus = (scope: NetpolScope) => apiGet<NetpolStatus>(`${n
 
 export const syncFleetNetpol = () => apiPost<unknown>(`${netpolBase('fleet')}${P}/sync`)
 
+/** A `toFQDNs` name → address binding learned from a DNS reply to a VM. */
+export interface FqdnEntry {
+  name: string
+  address: string
+  /** 0 = not in force (no current rule matches). */
+  identity: number
+  vm: string
+  expires_in_secs: number
+  patterns: string[]
+  /** Controller only. */
+  hostname?: string
+}
+
+export const listFqdnCache = async (scope: NetpolScope) =>
+  (await readJsonItemsList<FqdnEntry>(`${netpolBase(scope)}${P}/fqdn-cache`)).items
+
 export const listFlows = async (scope: NetpolScope, f: FlowFilter, limit = 500) =>
   (await readJsonItemsList<VmFlowRecord>(`${netpolBase(scope)}/flows${flowQuery(f, { limit })}`)).items
 
@@ -317,6 +341,35 @@ spec:
         - ports:
             - port: "53"
               protocol: UDP
+            - port: "443"
+              protocol: TCP
+`,
+  },
+  {
+    id: 'egress-fqdn',
+    label: 'Egress: only named services (toFQDNs)',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: egress-fqdn
+spec:
+  description: Build VMs reach only GitHub and the package mirrors, by name
+  endpointSelector:
+    matchLabels:
+      role: build
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+    - toFQDNs:
+        - matchName: github.com
+        - matchPattern: "*.githubusercontent.com"
+        - matchPattern: "**.debian.org"
+      toPorts:
+        - ports:
             - port: "443"
               protocol: TCP
 `,

@@ -75,12 +75,14 @@ Usage: netpol <command> [options]
   get [NAME] [-o yaml|json|wide] List policies, or show one
   delete NAME                    Delete a policy
   enable NAME | disable NAME     Toggle a policy (fleet only)
-  test --from VM --to VM|IP [--port N] [--proto tcp|udp|sctp|icmp|any] [--icmp-type N]
+  test --from VM --to VM|IP|NAME [--port N] [--proto tcp|udp|sctp|icmp|any] [--icmp-type N]
                                  Trace a connection through the policy set
                                  (like `cilium policy trace`)
   selectors                      Selector → matched VMs (like `cilium policy selectors`)
   endpoints                      VMs with identity, labels and enforcement
   status                         Sync state, enforcement mode, Cilium presence
+  fqdn                           toFQDNs names learned from DNS replies to VMs
+                                 (like `cilium fqdn cache list`)
   sync                           Push compiled policy to every host now (fleet only)
 EOF
 }
@@ -223,11 +225,24 @@ np_netpol_status() {
       (if .enforcement then "Enforcement:  \(.enforcement.mode // "observe")\(if .enforcement.lease_remaining_secs then " (lease \(.enforcement.lease_remaining_secs)s)" else "" end)" else empty end),
       (if has("hosts") then empty elif .cilium then "Cilium:       present (\(.cilium)) — Cilium enforces its own endpoints; Machina enforces libvirt VMs" else "Cilium:       absent — Machina eBPF enforces natively" end),
       (if .last_sync then "Last sync:    \(.last_sync.at // "-")  \(if .last_sync.skipped then "skipped: \(.last_sync.skipped)" elif .last_sync.ok then "ok (\(.last_sync.vms) VMs, \(.last_sync.rules) rules, \(.last_sync.peers) peers)" else "FAILED: \(.last_sync.error)" end)" else empty end),
-      (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)" else empty end),
+      (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)\(if (.edge.fqdn_rules // 0) > 0 then ", toFQDNs \(.edge.fqdn_rules) rule(s) / \(.edge.fqdn_cache // 0) learned address(es)" else "" end)" else empty end),
       ((.hosts // [])[] | "  host \(.hostname // .host_id)  \(
           if .reachable == false then "\u001b[90munreachable\u001b[0m"
           elif .ok == false then "\u001b[31m\(.error // "error")\u001b[0m"
           elif .ok then "\u001b[32mok\u001b[0m" else "\u001b[90mnot synced\u001b[0m" end)  vms=\(.vms // 0) rules=\(.rules // 0) peers=\(.peers // 0) taps=\(.taps // 0) owner=\(.owner // "-")\(if .enforcing then " \u001b[1;31menforcing\u001b[0m" else " observe" end)\(if .cilium then " cilium=\(.cilium)" else "" end)  synced \(.synced_at // "-")")' <<<"$body" | np_strip
+}
+
+np_netpol_fqdn() {
+    local body
+    body=$(np_api GET /vm-network-policies/fqdn-cache)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    {
+        printf 'NAME\tADDRESS\tIDENTITY\tVM\tHOST\tTTL\tPATTERNS\n'
+        jq -r '.items[] | [
+            .name, .address, (if .identity == 0 then "-" else (.identity|tostring) end), (.vm // "-" | if . == "" then "-" else . end),
+            (.hostname // "-"), "\(.expires_in_secs)s", ((.patterns // []) | join(","))
+          ] | @tsv' <<<"$body"
+    } | column -t -s $'\t'
 }
 
 np_netpol_main() {
@@ -249,6 +264,7 @@ np_netpol_main() {
         selectors) np_netpol_selectors ;;
         endpoints|ep) np_netpol_endpoints ;;
         status) np_netpol_status ;;
+        fqdn|fqdn-cache|dns) np_netpol_fqdn ;;
         sync)
             [[ "$NP_FLEET" == 1 ]] || np_die "sync is a fleet (controller) feature; the daemon resyncs on every change and every 60s"
             np_api POST /vm-network-policies/sync | jq .

@@ -9,7 +9,8 @@
 //! running QEMU scope. Policy misses and sandbox violations only drop with
 //! the enforcement lease live; otherwise they are counted.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::net::IpAddr;
 use std::os::unix::fs::MetadataExt;
 
 use super::cni::addr16;
@@ -18,6 +19,27 @@ use super::*;
 const EDGE_IN: &str = "mn_vm_edge_in";
 const EDGE_OUT: &str = "mn_vm_edge_out";
 const MACHINE_SLICE: &str = "machine.slice";
+const VM_POLICY_CAP: usize = 131_072;
+
+/// Learned names live at least this long (Cilium's `tofqdns-min-ttl` idea:
+/// clients cache answers longer than the TTL says).
+const FQDN_MIN_TTL: Duration = Duration::from_secs(600);
+const FQDN_MAX_TTL: Duration = Duration::from_secs(86_400);
+const FQDN_CACHE_CAP: usize = 8192;
+
+/// One DNS answer address with the names that led to it (query + CNAMEs).
+pub(super) struct FqdnLearn {
+    names: Vec<String>,
+    addr: [u8; ADDR_LEN],
+    ttl: u32,
+    vm: String,
+    ifindex: u32,
+}
+
+struct FqdnBinding {
+    names: BTreeMap<String, Instant>,
+    vm: String,
+}
 
 #[derive(Default)]
 pub(super) struct VmEdgeRuntime {
@@ -25,10 +47,64 @@ pub(super) struct VmEdgeRuntime {
     groups: BTreeMap<String, u32>,
     /// tap name → (ifindex, vm)
     taps: HashMap<String, (u32, String)>,
-    ips: HashSet<[u8; ADDR_LEN]>,
+    ips: HashMap<[u8; ADDR_LEN], u32>,
     policy: HashMap<PolicyKey, u32>,
     /// Identities with deny entries: (identity, egress).
     deny: HashSet<(u32, bool)>,
+    /// From the last sync, before learned FQDN addresses are merged in.
+    base_ips: HashMap<[u8; ADDR_LEN], u32>,
+    base_policy: HashMap<PolicyKey, u32>,
+    base_index: FlowIndex,
+    cidrs: Vec<(Prefix, u32)>,
+    fqdn_cache: HashMap<[u8; ADDR_LEN], FqdnBinding>,
+    /// Learned address → identity in force.
+    fqdn_ids: HashMap<[u8; ADDR_LEN], u32>,
+}
+
+/// Queue the A/AAAA answers of a DNS reply whose names match a `toFQDNs`
+/// pattern; true when something was queued.
+pub(super) fn fqdn_learn(s: &mut Shared, msg: &crate::dns::DnsMessage, vm: Option<&str>, ifindex: u32) -> bool {
+    if s.vm_fqdn_patterns.is_empty() {
+        return false;
+    }
+    let mut names: Vec<String> = vec![crate::netpol::fqdn::normalize(&msg.qname)];
+    for a in &msg.answers {
+        let n = crate::netpol::fqdn::normalize(&a.name);
+        if !names.contains(&n) {
+            names.push(n);
+        }
+    }
+    if !names.iter().any(|n| s.vm_fqdn_patterns.iter().any(|p| crate::netpol::fqdn::matches(p, n))) {
+        return false;
+    }
+    let mut queued = false;
+    for a in msg.answers.iter().filter(|a| a.rtype == "A" || a.rtype == "AAAA") {
+        if let Ok(ip) = a.data.parse::<IpAddr>() {
+            s.vm_fqdn_queue.push(FqdnLearn {
+                names: names.clone(),
+                addr: policy::ip_to_addr(ip),
+                ttl: a.ttl,
+                vm: vm.unwrap_or_default().to_string(),
+                ifindex,
+            });
+            queued = true;
+        }
+    }
+    queued
+}
+
+fn prefix_has(p: &Prefix, addr: &[u8; ADDR_LEN]) -> bool {
+    (0..ADDR_LEN).all(|i| {
+        let start = i as u32 * 8;
+        if start >= p.bits {
+            true
+        } else if start + 8 > p.bits {
+            let m = 0xffu8 << (8 - (p.bits - start));
+            addr[i] & m == p.addr[i] & m
+        } else {
+            addr[i] == p.addr[i]
+        }
+    })
 }
 
 /// What the flow reader needs to label events: identity → name/labels and
@@ -176,6 +252,9 @@ fn edge_flag_names(f: u32) -> Vec<String> {
     }
     if f & VME_FLOW_LOG != 0 {
         v.push("flow_log".to_string());
+    }
+    if f & VME_FQDN != 0 {
+        v.push("fqdn".to_string());
     }
     v
 }
@@ -372,21 +451,135 @@ impl Engine {
                 }
             }
         }
-        if policy.len() > 131_072 {
-            return Err(anyhow!("{} VM policy entries exceed the map size (131072)", policy.len()));
+        if policy.len() > VM_POLICY_CAP {
+            return Err(anyhow!("{} VM policy entries exceed the map size ({VM_POLICY_CAP})", policy.len()));
         }
 
-        for k in self.vm_edge.ips.clone() {
-            if !ips.contains_key(&k) {
+        self.dp.addr_lpm_clear::<u32>("VM_CIDR_IDS")?;
+        for (p, id) in &cidrs {
+            self.dp.addr_lpm_insert("VM_CIDR_IDS", p.addr, p.bits, *id)?;
+        }
+        let patterns: Vec<String> = state.fqdn.iter().map(|r| r.pattern.clone()).collect::<BTreeSet<_>>().into_iter().collect();
+        if patterns.is_empty() {
+            self.vm_edge.fqdn_cache.clear();
+        }
+        lock(&self.shared).vm_fqdn_patterns = patterns;
+        self.vm_edge.base_ips = ips;
+        self.vm_edge.base_policy = policy;
+        self.vm_edge.base_index = index;
+        self.vm_edge.cidrs = cidrs;
+        self.vm_edge.deny = deny;
+        self.vm_edge.groups = groups;
+        self.vm_edge.state = state;
+        self.vm_edge_apply()?;
+        // Re-push every tap: limits or isolation may have changed.
+        for (tap, (idx, _)) in std::mem::take(&mut self.vm_edge.taps) {
+            self.vm_edge_unprogram(&tap, idx);
+        }
+        self.vm_edge_refresh();
+        Ok(self.vm_edge_status())
+    }
+
+    /// Base state from the last sync plus live `toFQDNs` bindings → maps.
+    ///
+    /// A learned address outside the exact map gets its own identity (as a
+    /// /128 CIDR peer) that inherits every rule of the identity it resolved
+    /// to before (longest CIDR or `world`), so deny entries keep winning,
+    /// plus allow entries of each matching `toFQDNs` rule.
+    fn vm_edge_apply(&mut self) -> Result<()> {
+        let rt = &self.vm_edge;
+        let mut ips = rt.base_ips.clone();
+        let mut policy = rt.base_policy.clone();
+        let mut index = rt.base_index.clone();
+        let mut fqdn_ids = HashMap::new();
+        let now = Instant::now();
+        let mut learned: Vec<(&[u8; ADDR_LEN], &FqdnBinding)> = rt.fqdn_cache.iter().collect();
+        learned.sort_by_key(|(a, _)| **a);
+        for (addr, b) in learned {
+            let names: Vec<&String> = b.names.iter().filter(|(_, exp)| **exp > now).map(|(n, _)| n).collect();
+            let rules: Vec<&VmEdgeFqdnRule> = rt
+                .state
+                .fqdn
+                .iter()
+                .filter(|r| names.iter().any(|n| crate::netpol::fqdn::matches(&r.pattern, n)))
+                .collect();
+            if rules.is_empty() {
+                continue;
+            }
+            let (id, inherit) = match rt.base_ips.get(addr) {
+                Some(id) => (*id, None),
+                None => {
+                    let from = rt
+                        .cidrs
+                        .iter()
+                        .filter(|(p, _)| prefix_has(p, addr))
+                        .max_by_key(|(p, _)| p.bits)
+                        .map_or(IDENTITY_WORLD, |(_, id)| *id);
+                    (crate::netpol::cidr_identity(&Prefix { addr: *addr, bits: 128 }), Some(from))
+                }
+            };
+            let mut add: Vec<(PolicyKey, u32)> = Vec::new();
+            if let Some(from) = inherit {
+                add.extend(
+                    rt.base_policy
+                        .iter()
+                        .filter(|(k, _)| k.peer_identity == from)
+                        .map(|(k, v)| (PolicyKey { peer_identity: id, ..*k }, *v)),
+                );
+            }
+            for r in &rules {
+                let end = if r.port_end > r.port { r.port_end } else { r.port };
+                for port in r.port..=end {
+                    let k = PolicyKey {
+                        subject_identity: r.subject_identity,
+                        peer_identity: id,
+                        direction: POLICY_EGRESS,
+                        proto: r.proto,
+                        port: port.to_be_bytes(),
+                    };
+                    add.push((k, VM_POLICY_ALLOW));
+                }
+            }
+            if policy.len() + add.len() > VM_POLICY_CAP {
+                tracing::warn!("vm edge: VM policy map full; {} not applied", fmt_addr(addr));
+                continue;
+            }
+            if let Some(from) = inherit {
+                ips.insert(*addr, id);
+                let copied: Vec<_> = index
+                    .rules
+                    .iter()
+                    .filter(|(k, _)| k.1 == from)
+                    .map(|(k, v)| ((k.0, id, k.2, k.3, k.4), v.clone()))
+                    .collect();
+                index.rules.extend(copied);
+                index.names.insert(id, (format!("fqdn:{}", names[0]), BTreeMap::new()));
+            }
+            for (k, v) in add {
+                let e = policy.entry(k).or_insert(v);
+                if v == VM_POLICY_DENY {
+                    *e = VM_POLICY_DENY;
+                }
+            }
+            for r in &rules {
+                let end = if r.port_end > r.port { r.port_end } else { r.port };
+                for port in r.port..=end {
+                    let src = r.source.clone().unwrap_or_default();
+                    index.rules.entry((r.subject_identity, id, true, r.proto, port)).or_insert((false, src));
+                }
+            }
+            fqdn_ids.insert(*addr, id);
+        }
+
+        for (k, id) in self.vm_edge.ips.clone() {
+            if ips.get(&k) != Some(&id) {
                 self.dp.cni_hash_remove::<[u8; ADDR_LEN], u32>("VM_IPS", &k);
             }
         }
         for (k, id) in &ips {
-            self.dp.cni_hash_insert("VM_IPS", *k, *id)?;
-        }
-        self.dp.addr_lpm_clear::<u32>("VM_CIDR_IDS")?;
-        for (p, id) in &cidrs {
-            self.dp.addr_lpm_insert("VM_CIDR_IDS", p.addr, p.bits, *id)?;
+            if self.vm_edge.ips.get(k) != Some(id) {
+                self.dp.cni_hash_insert("VM_IPS", *k, *id)?;
+            }
         }
         for k in self.vm_edge.policy.keys().copied().collect::<Vec<_>>() {
             if !policy.contains_key(&k) {
@@ -398,18 +591,90 @@ impl Engine {
                 self.dp.cni_hash_insert("VM_POLICY", *k, *v)?;
             }
         }
-        self.vm_edge.ips = ips.into_keys().collect();
+        self.vm_edge.ips = ips;
         self.vm_edge.policy = policy;
-        self.vm_edge.deny = deny;
-        self.vm_edge.groups = groups;
-        self.vm_edge.state = state;
+        self.vm_edge.fqdn_ids = fqdn_ids;
         lock(&self.shared).vm_flow_index = index;
-        // Re-push every tap: limits or isolation may have changed.
-        for (tap, (idx, _)) in std::mem::take(&mut self.vm_edge.taps) {
-            self.vm_edge_unprogram(&tap, idx);
+        Ok(())
+    }
+
+    /// Take queued DNS answers, expire old names, reapply on change.
+    pub(super) fn vm_fqdn_tick(&mut self) -> Result<()> {
+        let queue = std::mem::take(&mut lock(&self.shared).vm_fqdn_queue);
+        if queue.is_empty() && self.vm_edge.fqdn_cache.is_empty() {
+            return Ok(());
         }
-        self.vm_edge_refresh();
-        Ok(self.vm_edge_status())
+        let now = Instant::now();
+        let mut changed = false;
+        for l in queue {
+            let ttl = Duration::from_secs(l.ttl as u64).clamp(FQDN_MIN_TTL, FQDN_MAX_TTL);
+            let b = self.vm_edge.fqdn_cache.entry(l.addr).or_insert_with(|| FqdnBinding { names: BTreeMap::new(), vm: String::new() });
+            let tap_vm = self.vm_edge.taps.values().find(|(i, _)| *i == l.ifindex).map(|(_, v)| v.clone());
+            if let Some(vm) = tap_vm.or(Some(l.vm)).filter(|v| !v.is_empty()) {
+                b.vm = vm;
+            }
+            for n in l.names {
+                let exp = b.names.entry(n).or_insert(now);
+                if *exp <= now {
+                    changed = true;
+                }
+                *exp = (*exp).max(now + ttl);
+            }
+        }
+        for b in self.vm_edge.fqdn_cache.values_mut() {
+            let before = b.names.len();
+            b.names.retain(|_, exp| *exp > now);
+            changed |= b.names.len() != before;
+        }
+        self.vm_edge.fqdn_cache.retain(|_, b| !b.names.is_empty());
+        while self.vm_edge.fqdn_cache.len() > FQDN_CACHE_CAP {
+            let oldest = self
+                .vm_edge
+                .fqdn_cache
+                .iter()
+                .min_by_key(|(_, b)| b.names.values().max().copied())
+                .map(|(a, _)| *a);
+            match oldest {
+                Some(a) => {
+                    self.vm_edge.fqdn_cache.remove(&a);
+                    changed = true;
+                }
+                None => break,
+            }
+        }
+        if changed {
+            self.vm_edge_apply()?;
+        }
+        Ok(())
+    }
+
+    pub(super) fn vm_fqdn_cache(&self) -> Vec<VmFqdnEntry> {
+        let now = Instant::now();
+        let mut out = Vec::new();
+        for (addr, b) in &self.vm_edge.fqdn_cache {
+            for (name, exp) in &b.names {
+                let patterns: Vec<String> = self
+                    .vm_edge
+                    .state
+                    .fqdn
+                    .iter()
+                    .filter(|r| crate::netpol::fqdn::matches(&r.pattern, name))
+                    .map(|r| r.pattern.clone())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect();
+                out.push(VmFqdnEntry {
+                    name: name.clone(),
+                    address: fmt_addr(addr),
+                    identity: self.vm_edge.fqdn_ids.get(addr).copied().unwrap_or(0),
+                    vm: b.vm.clone(),
+                    expires_in_secs: exp.saturating_duration_since(now).as_secs(),
+                    patterns,
+                });
+            }
+        }
+        out.sort_by(|a, b| a.name.cmp(&b.name).then(a.address.cmp(&b.address)));
+        out
     }
 
     fn vm_edge_unprogram(&mut self, tap: &str, idx: u32) {
@@ -464,6 +729,9 @@ impl Engine {
             }
             if self.vm_edge.state.flow_log {
                 flags |= VME_FLOW_LOG;
+            }
+            if self.vm_edge.state.fqdn.iter().any(|r| r.subject_identity == identity) {
+                flags |= VME_FQDN;
             }
             let cfg = VmEdgeCfg {
                 identity,
@@ -575,6 +843,8 @@ impl Engine {
             peers: self.vm_edge.state.peers.len(),
             flow_log: self.vm_edge.state.flow_log,
             cilium: crate::netpol::cilium_present(),
+            fqdn_rules: self.vm_edge.state.fqdn.len(),
+            fqdn_cache: self.vm_edge.fqdn_ids.len(),
         }
     }
 

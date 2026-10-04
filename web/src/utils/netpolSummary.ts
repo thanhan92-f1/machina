@@ -74,7 +74,7 @@ function peersText(rule: Obj, dir: 'from' | 'to'): string[] {
   }
   for (const e of arr(rule[`${dir}Entities`])) out.push(`entity:${String(e)}`)
   for (const f of arr(rule.toFQDNs)) {
-    if (dir === 'to' && isObj(f)) out.push(`fqdn:${String(f.matchName ?? f.matchPattern ?? '?')} (not enforced yet)`)
+    if (dir === 'to' && isObj(f)) out.push(`fqdn:${String(f.matchName ?? f.matchPattern ?? '?')}`)
   }
   if (dir === 'to' && arr(rule.toServices).length) out.push('services (not enforced yet)')
   if (dir === 'to' && arr(rule.toGroups).length) out.push('groups (not enforced yet)')

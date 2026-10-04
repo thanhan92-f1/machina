@@ -688,6 +688,35 @@ pub struct VmEdgePeer {
     pub name: String,
 }
 
+/// Egress allow towards addresses a DNS reply to the subject resolved for a
+/// name matching `pattern` (normalized `toFQDNs` selector).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VmEdgeFqdnRule {
+    pub pattern: String,
+    pub subject_identity: u32,
+    #[serde(default)]
+    pub proto: u8,
+    #[serde(default)]
+    pub port: u16,
+    #[serde(default, skip_serializing_if = "is_zero_u16")]
+    pub port_end: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+}
+
+/// One learned name → address binding.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmFqdnEntry {
+    pub name: String,
+    pub address: String,
+    pub identity: u32,
+    /// VM whose DNS reply taught it.
+    pub vm: String,
+    pub expires_in_secs: u64,
+    /// `toFQDNs` patterns it satisfies.
+    pub patterns: Vec<String>,
+}
+
 /// Desired VM edge state; each `vm_edge_sync` replaces the previous one.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct VmEdgeState {
@@ -696,6 +725,8 @@ pub struct VmEdgeState {
     pub policy: Vec<VmEdgeRule>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub peers: Vec<VmEdgePeer>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fqdn: Vec<VmEdgeFqdnRule>,
     /// Emit per-flow verdict events (`flow` topic) on every edge tap.
     #[serde(default)]
     pub flow_log: bool,
@@ -781,6 +812,11 @@ pub struct VmEdgeStatus {
     /// Why Cilium looks present on this host (None = absent).
     #[serde(default)]
     pub cilium: Option<String>,
+    #[serde(default)]
+    pub fqdn_rules: usize,
+    /// Learned name → address bindings in force.
+    #[serde(default)]
+    pub fqdn_cache: usize,
 }
 
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
@@ -1732,6 +1768,8 @@ pub enum Request {
         state: VmEdgeState,
     },
     VmEdgeStatus,
+    /// `toFQDNs` bindings learned from DNS replies to VMs.
+    VmFqdnCache,
     /// Recent VM edge verdicts, newest first.
     VmFlows {
         #[serde(default)]

@@ -19,6 +19,7 @@
 
 mod compile;
 mod flow;
+pub mod fqdn;
 mod trace;
 #[cfg(test)]
 mod tests;
@@ -28,7 +29,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-pub use compile::{compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolVm, SelectorInfo, IDENTITY_REMOTE_NODE};
+pub use compile::{cidr_identity, compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolVm, SelectorInfo, IDENTITY_REMOTE_NODE};
 pub use flow::FlowFilter;
 pub use trace::{trace, TraceEndpoint, TraceQuery, TraceResult, TraceSide};
 
@@ -117,7 +118,7 @@ impl std::fmt::Display for Issue {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Validation {
     pub errors: Vec<Issue>,
-    /// Accepted but not enforced natively yet (FQDN, L7, ...).
+    /// Accepted but not enforced natively yet (L7, groups, ...).
     pub warnings: Vec<Issue>,
 }
 
@@ -494,7 +495,10 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
         .collect();
     allowed.extend(["toPorts", "icmps"].map(String::from));
     if egress {
-        allowed.extend(["toServices", "toFQDNs"].map(String::from));
+        allowed.push("toServices".into());
+    }
+    if egress && !deny {
+        allowed.push("toFQDNs".into());
     }
     if !deny {
         allowed.push("authentication".into());
@@ -548,9 +552,28 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
         }
     }
     if egress {
-        for k in ["toServices", "toFQDNs"] {
-            if !list(r, k, path, v).is_empty() {
-                v.warn(format!("{path}.{k}"), "not enforced natively yet; matches nothing (audited in observe mode)");
+        if !list(r, "toServices", path, v).is_empty() {
+            v.warn(format!("{path}.toServices"), "not enforced natively yet; matches nothing (audited in observe mode)");
+        }
+        for (i, s) in list(r, "toFQDNs", path, v).iter().enumerate() {
+            let sp = format!("{path}.toFQDNs[{i}]");
+            if !keys_only(s, &sp, &["matchName", "matchPattern"], v) {
+                continue;
+            }
+            match (s.get("matchName"), s.get("matchPattern")) {
+                (Some(_), Some(_)) | (None, None) => v.err(sp, "set exactly one of matchName / matchPattern"),
+                (Some(n), None) | (None, Some(n)) => {
+                    let pattern = s.get("matchPattern").is_some();
+                    let key = if pattern { "matchPattern" } else { "matchName" };
+                    match n.as_str() {
+                        Some(t) => {
+                            if let Some(why) = fqdn::invalid(t, pattern) {
+                                v.err(format!("{sp}.{key}"), why);
+                            }
+                        }
+                        None => v.err(format!("{sp}.{key}"), "expected a string"),
+                    }
+                }
             }
         }
     }

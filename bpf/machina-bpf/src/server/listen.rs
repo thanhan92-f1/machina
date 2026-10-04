@@ -399,6 +399,7 @@ impl Daemon {
                 v(&st)
             }
             Request::VmEdgeStatus => v(&lock(&self.engine).vm_edge_status()),
+            Request::VmFqdnCache => v(&lock(&self.engine).vm_fqdn_cache()),
             Request::VmFlows { limit, vm, verdict } => {
                 let s = lock(&self.shared);
                 let out: Vec<&VmFlowRecord> = s
@@ -652,6 +653,7 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
             let res = tokio::task::spawn_blocking(move || -> Result<()> {
                 let mut eng = lock(&d2.engine);
                 eng.drain_dns_blocks()?;
+                eng.vm_fqdn_tick()?;
                 eng.expire_lease()?;
                 eng.nodeiso_expire()?;
                 eng.guard_expire()?;

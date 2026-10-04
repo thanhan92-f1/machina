@@ -887,6 +887,8 @@ pub const VME_DENY_IN: u32 = 1 << 3;
 pub const VME_DENY_OUT: u32 = 1 << 4;
 /// Emit VM_FLOW_EVENTS for new flows and drops.
 pub const VME_FLOW_LOG: u32 = 1 << 5;
+/// Copy UDP DNS replies towards the VM to DNS_EVENTS (`toFQDNs` learning).
+pub const VME_FQDN: u32 = 1 << 6;
 
 /// VM_POLICY values.
 pub const VM_POLICY_ALLOW: u32 = 1;
