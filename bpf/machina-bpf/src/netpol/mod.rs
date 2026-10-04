@@ -24,6 +24,7 @@ pub mod jit;
 pub mod l7;
 pub mod l7stream;
 mod learn;
+pub mod nl;
 mod services;
 #[cfg(test)]
 mod tests;

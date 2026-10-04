@@ -160,6 +160,28 @@ pub async fn copilot_stream(
         return Sse::new(ReceiverStream::new(rx))
             .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
     }
+    if let Some(prompt) = machina_bpf::netpol::nl::policy_request(&body.message) {
+        let prompt: String = prompt
+            .chars()
+            .take(machina_bpf::netpol::nl::MAX_PROMPT)
+            .collect();
+        tokio::spawn(async move {
+            let d = crate::api::vm_network_policies::compose(&state, &prompt, false).await;
+            for chunk in ai::chunk_text(&machina_bpf::netpol::nl::chat_reply(&d), 48) {
+                let payload = serde_json::json!({ "type": "chunk", "text": chunk }).to_string();
+                let _ = tx.send(Ok(Event::default().data(payload))).await;
+            }
+            let done = serde_json::json!({
+                "type": "done",
+                "deterministic": d.source != "llm",
+                "context_summary": "VM network policy draft",
+            })
+            .to_string();
+            let _ = tx.send(Ok(Event::default().data(done))).await;
+        });
+        return Sse::new(ReceiverStream::new(rx))
+            .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
+    }
     let pool = state.pool.clone();
     let config = state.config.clone();
     let message = body.message;

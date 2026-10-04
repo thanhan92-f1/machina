@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-04 — Plain-English VM network policies
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#plain-english-policies).
+
+- **Drafts from sentences.** `machinactl netpol draft "only web servers can
+  reach the db on port 5432"` prints policy YAML.
+  - The draft is validated and replayed against the flow history; nothing
+    is applied.
+  - A built-in sentence parser handles *only … can reach*, *allow*, *block*
+    / *must not* and *isolate*. Endpoints can be VMs, labels, host, the
+    internet, CIDRs or domains, and ports can be service names.
+  - The parser reports what it cannot read instead of guessing.
+- **Zyvor.** On the controller, the configured LLM drafts first.
+  - Its YAML must validate and select only existing VMs; it gets one repair
+    round, otherwise the parser takes over.
+  - In Zyvor chat, messages starting with `/policy` or `policy:` return a
+    draft.
+- **Approval.** On the fleet, `--propose` (*Request approval* in the UI)
+  files a `vm_netpol.apply` action.
+  - A second admin approves it, and the requester's own approval is
+    refused.
+  - On approval the YAML is re-validated, applied and pushed to every host,
+    and recorded as `netpol.nl` events.
+- **UI.** The YAML editor tab starts with a *Describe in plain English*
+  box. It fills the editor, shows notes and the replay verdict, and lists
+  drafts waiting for approval.
+- **API.** `POST /api/v1/vm-network-policies/draft` on the daemon and the
+  controller. The controller also has `GET …/draft` and
+  `POST …/draft/propose`.
+
 ## 2026-10-04 — DNS threat feeds
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#dns-threat-feeds).

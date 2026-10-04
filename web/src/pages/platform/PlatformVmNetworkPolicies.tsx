@@ -20,6 +20,7 @@ import ServiceMap from '../../components/flow/ServiceMap'
 import QuarantinePanel from '../../components/flow/QuarantinePanel'
 import JitPanel from '../../components/flow/JitPanel'
 import ThreatFeedsPanel from '../../components/flow/ThreatFeedsPanel'
+import DraftPanel from '../../components/flow/DraftPanel'
 import {
   NETPOL_TEMPLATES,
   applyVmNetpol,
@@ -454,6 +455,18 @@ export default function PlatformVmNetworkPolicies() {
       )}
 
       {tab === 'editor' && (
+        <div className="space-y-4">
+        <DraftPanel
+          key={`draft-${scope}`}
+          scope={scope}
+          editorYaml={yaml}
+          onDraft={(d) => {
+            setYaml(d.yaml)
+            setPreview(d.preview)
+            setReplay(d.replay)
+          }}
+          onChanged={() => void load()}
+        />
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <MacGlassPanel
             title="YAML"
@@ -536,6 +549,7 @@ export default function PlatformVmNetworkPolicies() {
               </div>
             )}
           </MacGlassPanel>
+        </div>
         </div>
       )}
 

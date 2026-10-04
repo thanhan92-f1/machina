@@ -195,6 +195,20 @@ async function mockNetpol(page: Page) {
     }
     if (path === '/learn') return json(route, learned)
     if (path === '/replay') return json(route, replayResult)
+    if (path === '/draft' && method === 'POST') {
+      const prompt = String((req.postDataJSON() as { prompt?: string }).prompt ?? '')
+      if (!/web/.test(prompt)) {
+        return json(route, { error: 'could not draft a policy from that description: make it nice — not understood' }, 422)
+      }
+      return json(route, {
+        yaml: 'apiVersion: cilium.io/v2\nkind: CiliumNetworkPolicy\nmetadata:\n  name: nl-only-web-to-db\nspec:\n  description: only web can reach db\n',
+        source: 'rules',
+        notes: ['nl-only-web-to-db: only VMs app=web can reach VMs app=db on 5432/TCP'],
+        unparsed: [],
+        preview: { valid: true, errors: [], warnings: [], compile_warnings: [], policies: [], rules: 1, endpoints, selectors: [] },
+        replay: replayResult,
+      })
+    }
     if (path === '/endpoints') return json(route, { items: endpoints })
     if (path === '/selectors') return json(route, { items: [{ policy: 'db-from-web', path: 'spec.endpointSelector', selector: 'app=db', vms: ['db-1'] }] })
     if (path === '/fqdn-cache') return json(route, { items: [] })
@@ -329,6 +343,24 @@ test('VM network policies: learn, replay and open in editor', async ({ page }) =
   await expect(page.getByLabel('Policy YAML')).toHaveValue(/learned-db/)
   await page.getByRole('button', { name: 'Replay history' }).click()
   await expect(page.getByRole('table', { name: 'Would break' }).getByText('GET api/users/{id}')).toBeVisible()
+})
+
+test('VM network policies: draft from plain English, then apply', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  const m = await mockNetpol(page)
+  await page.goto(`${PAGE}?tab=editor`)
+  const box = page.getByLabel('Policy in plain English')
+  await box.fill('make it nice')
+  await page.getByRole('button', { name: 'Draft policy' }).click()
+  await expect(page.getByText(/not understood/).first()).toBeVisible({ timeout: 15_000 })
+  await box.fill('Only web servers can reach the db on port 5432')
+  await page.getByRole('button', { name: 'Draft policy' }).click()
+  await expect(page.getByLabel('Policy YAML')).toHaveValue(/nl-only-web-to-db/)
+  await expect(page.getByText(/only VMs app=web can reach VMs app=db/)).toBeVisible()
+  await expect(page.getByText(/Would break \d+ connection/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Request approval' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Apply', exact: true }).click()
+  await expect.poll(() => m.applied).toContain('nl-only-web-to-db')
 })
 
 test('VM network policies: alerts', async ({ page }) => {

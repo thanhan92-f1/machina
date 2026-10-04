@@ -20,6 +20,11 @@ test('live VM network policies page: status, dry-run validate, trace, flows', as
   await page.getByRole('button', { name: 'Validate & preview' }).click()
   await expect(page.getByText('Valid', { exact: true })).toBeVisible({ timeout: 20_000 })
   await expect(page.getByText(/selects no service/).first()).toBeVisible()
+  await page.getByLabel('Policy in plain English').fill('block everyone from reaching the internet')
+  await page.getByRole('button', { name: 'Draft policy' }).click()
+  await expect(page.getByLabel('Policy YAML')).toHaveValue(/nl-deny-/, { timeout: 30_000 })
+  await expect(page.getByText(/Drafted by the sentence parser/)).toBeVisible()
+  await expect(page.getByText(/Safe for|Would break/)).toBeVisible()
 
   await page.goto(`${live}${PAGE}?tab=tester`)
   await page.locator('#tr-from').fill('10.9.9.1')

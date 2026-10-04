@@ -93,6 +93,10 @@ Usage: netpol <command> [options]
                                  flow history (prints YAML; review, then apply -f)
   replay -f FILE|-               What the YAML would have done to every connection
                                  in the flow history (would break / newly allow)
+  draft "TEXT" [--rules] [--propose] [-o yaml|json]
+                                 Plain English → policy YAML, validated and replayed
+                                 against the flow history; nothing is applied
+                                 (netpol draft help)
   quarantines                    Quarantined VMs, time left and exceptions
                                  (quarantine with `vm quarantine VM`)
   jit [list|grant|approve|reject|revoke]
@@ -362,6 +366,7 @@ np_netpol_main() {
         observe) np_flow_main observe "$@" ;;
         learn) np_netpol_learn "$@" ;;
         replay) np_netpol_replay "$@" ;;
+        draft|nl) np_netpol_draft "$@" ;;
         ""|help|-h|--help) np_netpol_usage ;;
         *) np_die "unknown netpol command: $sub (try: netpol help)" ;;
     esac
@@ -596,6 +601,93 @@ np_netpol_jit() {
         help|-h|--help) np_jit_usage ;;
         *) np_die "unknown jit command: $sub (try: netpol jit help)" ;;
     esac
+}
+
+# ── plain-English drafts ──────────────────────────────────────────────────
+
+np_draft_usage() {
+    cat <<'EOF'
+Usage: netpol draft "TEXT" [--rules] [--propose] [-o yaml|json]
+       netpol draft pending | approve ID | reject ID      (fleet)
+
+Turns sentences into policy YAML and replays it against the flow history.
+Nothing is applied: the YAML goes to stdout, notes and the replay summary
+to stderr. Understood sentences:
+  only web servers can reach the db on port 5432
+  allow web-1 to reach db-1 on ssh and 8080/tcp
+  block db-1 from reaching the internet
+  web-2 can reach github.com on https
+  db-1 must not reach 10.0.0.0/8 on dns
+  isolate app=db
+Endpoints are VM names, key=value labels, label values (web servers →
+app=web), host, the internet, CIDRs and domains. With --fleet, Zyvor's LLM
+drafts when one is configured (--rules skips it), and --propose files the
+draft in Approvals for another admin. On a single host, review the YAML and
+run `netpol apply -f`.
+EOF
+}
+
+np_netpol_draft() {
+    case "${1:-}" in
+        ""|help|-h|--help) np_draft_usage; return ;;
+        pending|approve|reject)
+            [[ "$NP_FLEET" == 1 ]] || np_die "approvals are a fleet (controller) feature; on a single host run netpol apply -f"
+            ;;
+    esac
+    case "${1:-}" in
+        pending)
+            local body
+            body=$(np_api GET /vm-network-policies/draft)
+            if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+            if [[ "$(jq '.pending | length' <<<"$body")" == 0 ]]; then echo "(no drafts waiting for approval)" >&2; return; fi
+            {
+                printf 'ID\tREQUEST\tBY\tSINCE\n'
+                jq -r '.pending[] | [.id, .label, .requested_by, .created_at] | @tsv' <<<"$body"
+            } | column -t -s $'\t'
+            return
+            ;;
+        approve|reject)
+            local sub="$1" id="${2:?usage: netpol draft $1 ID}" verb=execute done=approved
+            [[ "$sub" == reject ]] && verb=reject done=rejected
+            np_api POST "/ai/actions/$(np_uri "$id")/$verb" -H 'Content-Type: application/json' -d '{}' >/dev/null
+            echo "draft $id $done"
+            return
+            ;;
+    esac
+    local words=() out=yaml rules=false propose=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --rules) rules=true; shift ;;
+            --propose) propose=true; shift ;;
+            -o|--output) out="$2"; shift 2 ;;
+            -*) np_die "unknown option: $1" ;;
+            *) words+=("$1"); shift ;;
+        esac
+    done
+    [[ ${#words[@]} -gt 0 ]] || { np_draft_usage >&2; exit 1; }
+    if $propose && [[ "$NP_FLEET" != 1 ]]; then
+        np_die "--propose needs --fleet; on a single host review the YAML and run netpol apply -f"
+    fi
+    local prompt="${words[*]}" body
+    body=$(np_api POST /vm-network-policies/draft -H 'Content-Type: application/json' \
+        -d "$(jq -n --arg p "$prompt" --argjson r "$rules" '{prompt: $p, rules_only: $r}')")
+    if [[ "$out" == json ]]; then jq . <<<"$body"; else
+        jq -r '
+          "# drafted by \(if .source == "llm" then "Zyvor" else "the sentence parser" end)",
+          (.notes[] | "# \(.)"),
+          (.unparsed[] | "# not used: \(.)"),
+          ((.preview.errors // [])[] | "# error: \(.message // .)"),
+          ((.preview.warnings // [])[] | "# warning: \(.message // .)"),
+          (.replay | "# replay: \(.evaluated) connections, \(.would_break | length) would break, \(.would_allow | length) newly allowed"),
+          (.replay.would_break[:10][] | "#   would break: \(.src) → \(.dst) \(.proto | ascii_downcase)/\(.port) (\(.flows) flows)")' <<<"$body" >&2
+        jq -r '.yaml' <<<"$body"
+    fi
+    if $propose; then
+        local pend
+        pend=$(np_api POST /vm-network-policies/draft/propose -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg y "$(jq -r .yaml <<<"$body")" --arg p "$prompt" '{yaml: $y, prompt: $p}')")
+        jq -r '"requested: \(.pending.label)\n  waiting for another admin: netpol draft approve \(.pending.id)  (or Approvals in the UI)"' <<<"$pend" >&2
+    fi
 }
 
 # ── DNS threat feeds ──────────────────────────────────────────────────────

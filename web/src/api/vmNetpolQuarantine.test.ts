@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   THREAT_FEED_NAME,
   describeAllow,
   describeJit,
+  draftVmNetpol,
   formatRemaining,
   groupQuarantines,
   splitDomains,
@@ -54,5 +55,31 @@ describe('quarantine helpers', () => {
     expect(threatDomainCount({ name: 'a', source: '', block: true, domain_count: 7 })).toBe(7)
     expect(THREAT_FEED_NAME.test('url-haus_1.0')).toBe(true)
     expect(THREAT_FEED_NAME.test('bad name')).toBe(false)
+  })
+})
+
+describe('plain-English drafts', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('sends rules_only to the controller only and surfaces why nothing was drafted', async () => {
+    const calls: Array<{ url: string; body: unknown }> = []
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init.body)) })
+      if (calls.length === 3) {
+        return new Response(JSON.stringify({ error: 'could not draft a policy from that description: make it nice — not understood' }), {
+          status: 422,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ yaml: 'a', source: 'rules', notes: [], unparsed: [] }), {
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+    await draftVmNetpol('host', 'isolate db-1')
+    await draftVmNetpol('fleet', 'isolate db-1', true)
+    expect(calls[0]).toEqual({ url: '/api/v1/vm-network-policies/draft', body: { prompt: 'isolate db-1' } })
+    expect(calls[1].url).toMatch(/platform\/controller\/api\/v1\/vm-network-policies\/draft$/)
+    expect(calls[1].body).toEqual({ prompt: 'isolate db-1', rules_only: true })
+    await expect(draftVmNetpol('host', 'make it nice')).rejects.toThrow(/not understood/)
   })
 })

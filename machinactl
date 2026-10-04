@@ -1042,6 +1042,7 @@ cmd_help() {
     echo "  flow edges [--vm X] | flow alerts  7-day history (who talks to whom) / scan + sweep alerts"
     echo "  netpol learn [--vm X]              Least-privilege policy YAML from the flow history"
     echo "  netpol replay -f FILE              What a draft would break over the last 7 days"
+    echo "  netpol draft \"TEXT\" [--propose]    Plain English → policy YAML (dry-run, approval)"
     echo ""
     echo "🚀 Quick start:"
     echo "  ./machinactl deploy          # Does everything in one command"

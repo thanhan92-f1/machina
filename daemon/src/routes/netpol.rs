@@ -23,7 +23,7 @@ use machina_bpf::api::{
     Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry, VmQuarantineBody, VmThreatStatus,
 };
 use machina_bpf::netpol::{
-    self, jit, threat, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs,
+    self, jit, nl, threat, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs,
     TraceQuery, VmNetworkPolicy,
 };
 use machina_bpf::BpfdClient;
@@ -971,18 +971,28 @@ async fn replay(
     if !v.ok() {
         return Ok(bad_request("invalid policy", &v));
     }
+    let limit = b.limit.unwrap_or(5000).min(20_000);
+    Ok(Json(replay_draft(&m, parsed, limit).await?).into_response())
+}
+
+/// Replay recorded flows against the stored policies with `parsed` added
+/// or replacing same-named ones.
+async fn replay_draft(
+    m: &LibvirtManager,
+    parsed: Vec<VmNetworkPolicy>,
+    limit: usize,
+) -> Result<Value, AppError> {
     let current = load_store().policies;
     let mut draft = current.clone();
     draft.retain(|p| !parsed.iter().any(|n| n.name == p.name));
     draft.extend(parsed);
     let edges = history(None).await?;
-    let inv = cached_inventory(&m).await;
+    let inv = cached_inventory(m).await;
     let hosts = tokio::task::spawn_blocking(host_addresses)
         .await
         .unwrap_or_default();
     let svcs = services(&draft).await;
     let fqdn = fqdn_names().await;
-    let limit = b.limit.unwrap_or(5000).min(20_000);
     let r = tokio::task::spawn_blocking(move || {
         netpol::replay(
             &edges,
@@ -1000,7 +1010,56 @@ async fn replay(
     })
     .await
     .map_err(|e| LibvirtError::Operation(format!("replay: {e}")))?;
-    Ok(Json(serde_json::to_value(r).unwrap_or_default()).into_response())
+    Ok(serde_json::to_value(r).unwrap_or_default())
+}
+
+#[derive(Deserialize)]
+struct DraftBody {
+    prompt: String,
+}
+
+/// Draft policies from plain English with the sentence parser (the LLM
+/// lives in the controller), then validate and replay them.
+async fn draft(
+    State(m): State<LibvirtManager>,
+    Json(b): Json<DraftBody>,
+) -> Result<Response, AppError> {
+    let prompt = b.prompt.trim();
+    if prompt.is_empty() || prompt.chars().count() > nl::MAX_PROMPT {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("describe the policy in 1–{} characters", nl::MAX_PROMPT) })),
+        )
+            .into_response());
+    }
+    let inv = cached_inventory(&m).await;
+    let d = nl::draft_rules(prompt, &inv);
+    if d.policies.is_empty() {
+        return Ok((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            Json(json!({
+                "error": format!(
+                    "could not draft a policy from that description: {}",
+                    d.unparsed.iter().chain(&d.notes).cloned().collect::<Vec<_>>().join("; ")
+                ),
+                "unparsed": d.unparsed,
+                "notes": d.notes,
+            })),
+        )
+            .into_response());
+    }
+    let (parsed, v) = netpol::parse_documents(&d.yaml);
+    let pv = preview(&m, &parsed, &v).await;
+    let rp = replay_draft(&m, parsed, 5000).await?;
+    Ok(Json(json!({
+        "yaml": d.yaml,
+        "source": d.source,
+        "notes": d.notes,
+        "unparsed": d.unparsed,
+        "preview": pv,
+        "replay": rp,
+    }))
+    .into_response())
 }
 
 async fn get_labels(Path(name): Path<String>) -> Json<Value> {
@@ -1046,6 +1105,7 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/auth", get(auth_table))
         .route("/vm-network-policies/learn", post(learn))
         .route("/vm-network-policies/replay", post(replay))
+        .route("/vm-network-policies/draft", post(draft))
         .route("/vm-network-policies/quarantines", get(quarantines))
         .route("/vm-network-policies/jit", get(jit_list).post(jit_grant))
         .route("/vm-network-policies/threat-feeds", get(threat_feeds))

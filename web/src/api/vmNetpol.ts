@@ -397,6 +397,47 @@ export interface ReplayResult {
 export const replayVmNetpol = (scope: NetpolScope, yaml: string) =>
   apiPost<ReplayResult>(`${netpolBase(scope)}${P}/replay`, { yaml })
 
+export interface NetpolDraft {
+  yaml: string
+  /** `rules` (the sentence parser) or `llm` (Zyvor). */
+  source: 'rules' | 'llm'
+  notes: string[]
+  unparsed: string[]
+  preview: NetpolPreview
+  replay: ReplayResult
+}
+
+export interface DraftPending {
+  id: string
+  label: string
+  requested_by: string
+  created_at: string
+  object_ref: { yaml: string; prompt?: string; policies?: string[] }
+}
+
+export const DRAFT_EXAMPLES = [
+  'Only web servers can reach the db on port 5432',
+  'Allow web-1 to reach db-1 on ssh',
+  'Block db-1 from reaching the internet',
+  'web-1 can reach github.com on https',
+  'Isolate app=db',
+]
+
+/** Host: the sentence parser. Fleet: Zyvor's LLM when configured, else the parser. */
+export const draftVmNetpol = (scope: NetpolScope, prompt: string, rulesOnly = false) =>
+  apiPost<NetpolDraft>(
+    `${netpolBase(scope)}${P}/draft`,
+    scope === 'fleet' ? { prompt, rules_only: rulesOnly } : { prompt },
+  )
+
+export const proposeVmNetpol = (yaml: string, prompt: string) =>
+  apiPost<{ pending: DraftPending }>(`${netpolBase('fleet')}${P}/draft/propose`, { yaml, prompt })
+
+export async function listDraftPending(): Promise<DraftPending[]> {
+  const r = await apiGet<{ pending?: DraftPending[] }>(`${netpolBase('fleet')}${P}/draft`)
+  return r.pending ?? []
+}
+
 export interface VmQuarantineAllow {
   direction: 'ingress' | 'egress'
   /** `host`, `world`, `any` or a VM name. */

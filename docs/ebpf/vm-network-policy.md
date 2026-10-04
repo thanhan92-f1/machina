@@ -786,6 +786,89 @@ API, the same on the daemon and the controller:
 - `POST /api/v1/vm-network-policies/threat-feeds/{name}/refresh` (admin);
 - `DELETE /api/v1/vm-network-policies/threat-feeds/{name}` (admin).
 
+## Plain-English policies
+
+Describe a policy in sentences and get ordinary policy YAML back. A draft
+is validated and replayed against the flow history, and nothing is applied
+until someone applies it (on one host) or a second admin approves it (on
+the fleet).
+
+```bash
+machinactl netpol draft "only web servers can reach the db on port 5432"
+machinactl netpol draft "block db-1 from reaching the internet; isolate app=cache" > draft.yaml
+machinactl --fleet netpol draft "web-1 can reach github.com on https" --propose
+machinactl --fleet netpol draft pending        # drafts waiting for approval
+machinactl --fleet netpol draft approve ID     # another admin; reject ID turns it down
+```
+
+The YAML goes to stdout. Notes, unused sentences, validation messages and
+the replay summary go to stderr as `#` lines.
+
+Who drafts:
+
+- The daemon, and the controller with `--rules`, use a built-in sentence
+  parser. It is deterministic and never guesses: a sentence it cannot read,
+  or an endpoint that matches nothing in the inventory, is reported instead
+  of turned into a rule.
+- The controller asks Zyvor's LLM first when one is configured (Settings →
+  AI). The reply must be valid policy YAML that selects only existing VMs.
+  An invalid reply gets one repair round; after that, or when the LLM
+  declines or is not configured, the sentence parser drafts instead and
+  the note says why.
+
+Sentences the parser understands (several per request, separated by new
+lines, `;` or full stops):
+
+| Sentence | Policy |
+|----------|--------|
+| `only A can reach B [on PORTS]`, `B can only be reached by A` | Ingress rule on B: isolates B to A (and the ports). |
+| `allow A to reach B [on PORTS]`, `A can reach B`, `allow traffic from A to B` | Additive allow with `enableDefaultDeny: false`; nothing is isolated. |
+| `block A from reaching B`, `A must not reach B`, `deny traffic from A to B` | `ingressDeny` on B, or `egressDeny` on A for the internet, CIDRs and domains. |
+| `isolate A` | `ingress: [{}]` and `egress: [{}]`: A talks to nothing. |
+
+- **Endpoints:** a VM name, a `key=value` label, a label value (`web
+  servers` → `app=web`; `app`, `role`, `tier`, `service` and `component` are
+  tried first), `host`, `the internet` / `world`, `everyone`, a CIDR or IP,
+  or a domain.
+- **Internet, CIDR and domain targets:** these become egress rules on the
+  source.
+- **Domains:** a domain target becomes `toFQDNs` plus the DNS rule it needs.
+- **Ports:** numbers, `N/udp` (or `udp N`), or service names
+  (`ssh`, `http`, `https`, `dns`, `postgres`, `mysql`, `redis`, `mongo`,
+  `rdp`, `smtp`, `ntp`, `kafka`).
+
+Drafted policies are named `nl-<verb>-<from>-to-<to>`, carry the sentence
+as `spec.description`, and are labelled `machina.io/source: plain-english`.
+
+Approval on the fleet:
+
+- `--propose` (or *Request approval* in the UI) files a `vm_netpol.apply`
+  action holding the YAML and the original request.
+- Another admin approves it in Approvals, in the editor's draft panel or
+  with `netpol draft approve ID`. The requester's own approval is refused.
+- On approval the YAML is validated again, applied and pushed to every
+  host. Requests and approvals are recorded as `netpol.nl` events.
+
+Zyvor chat: a message that starts with `/policy`, `policy:`, `netpol:` or
+`draft a network policy:` is answered with a draft (the same pipeline)
+instead of a general reply. The answer links back to the editor to replay
+and request approval.
+
+In the UI, the *YAML editor* tab starts with a *Describe in plain English*
+box. *Draft policy* fills the editor and shows the notes, the validation
+result and how many recorded connections the draft would break.
+
+API:
+
+- `POST /api/v1/vm-network-policies/draft` with `{prompt}`, plus
+  `rules_only` on the controller. It returns `{yaml, source, notes,
+  unparsed, preview, replay}`, or 422 with the reasons when nothing could
+  be drafted. This needs the operator role.
+- Controller only:
+  - `POST /api/v1/vm-network-policies/draft/propose` with `{yaml, prompt}`
+    returns `{pending}`.
+  - `GET /api/v1/vm-network-policies/draft` lists the pending drafts.
+
 ## Test
 
 `scripts/bpf/vm-edge-smoke.sh` has a *VM network policy* section. It runs on

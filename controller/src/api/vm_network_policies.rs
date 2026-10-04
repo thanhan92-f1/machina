@@ -20,7 +20,7 @@ use machina_bpf::api::{
 };
 use machina_bpf::netpol::jit::{self, JitRequest};
 use machina_bpf::netpol::{
-    self, FlowFilter, LearnOptions, ReplayInputs, TraceQuery, VmNetworkPolicy,
+    self, nl, FlowFilter, LearnOptions, NetpolVm, ReplayInputs, TraceQuery, VmNetworkPolicy,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -921,13 +921,23 @@ pub async fn replay(
         )
             .into_response());
     }
+    let limit = b.limit.unwrap_or(5000).min(20_000);
+    Ok(Json(replay_draft(&state, parsed, limit).await?).into_response())
+}
+
+/// Replay recorded flows against the current policies with `parsed` added
+/// or replacing same-named ones.
+async fn replay_draft(
+    state: &AppState,
+    parsed: Vec<VmNetworkPolicy>,
+    limit: usize,
+) -> Result<Value, ApiError> {
     let fleet = Fleet::load(&state.pool).await;
     let mut draft = fleet.policies.clone();
     draft.retain(|p| !parsed.iter().any(|n| n.name == p.name));
     draft.extend(parsed);
-    let edges = fleet_edges(&state, None).await;
-    let fqdn = fqdn_names(&state).await;
-    let limit = b.limit.unwrap_or(5000).min(20_000);
+    let edges = fleet_edges(state, None).await;
+    let fqdn = fqdn_names(state).await;
     let r = tokio::task::spawn_blocking(move || {
         let hosts = fleet.all_host_addresses();
         netpol::replay(
@@ -946,7 +956,211 @@ pub async fn replay(
     })
     .await
     .map_err(|e| ApiError::internal(format!("replay: {e}")))?;
-    Ok(Json(serde_json::to_value(r).unwrap_or_default()).into_response())
+    Ok(serde_json::to_value(r).unwrap_or_default())
+}
+
+pub const APPLY_ACTION: &str = "vm_netpol.apply";
+
+#[derive(Deserialize)]
+pub struct DraftBody {
+    prompt: String,
+    /// Skip the LLM and use the built-in sentence parser.
+    #[serde(default)]
+    rules_only: bool,
+}
+
+/// Ask the configured LLM for a draft, with one repair round. Returns the
+/// draft or why there is none (`None, None` when no LLM is configured).
+async fn llm_draft(
+    state: &AppState,
+    prompt: &str,
+    vms: &[NetpolVm],
+    existing: &[String],
+) -> (Option<nl::Draft>, Option<String>) {
+    let system = nl::llm_system_prompt(vms, existing);
+    let Ok(Some(reply)) =
+        crate::engine::ai::llm::complete_simple(&state.pool, &system, prompt).await
+    else {
+        return (None, None);
+    };
+    if let Some(why) = nl::llm_declined(&reply) {
+        return (None, Some(format!("Zyvor declined: {why}")));
+    }
+    let yaml = nl::extract_yaml(&reply);
+    let errors = match nl::accept_llm(&yaml, vms) {
+        Ok(d) => return (Some(d), None),
+        Err(e) => e,
+    };
+    let repair = nl::llm_repair_prompt(prompt, &yaml, &errors);
+    let errors = match crate::engine::ai::llm::complete_simple(&state.pool, &system, &repair).await
+    {
+        Ok(Some(r)) => match nl::accept_llm(&nl::extract_yaml(&r), vms) {
+            Ok(d) => return (Some(d), None),
+            Err(e) => e,
+        },
+        _ => errors,
+    };
+    (
+        None,
+        Some(format!("Zyvor's draft was rejected: {}", errors.join("; "))),
+    )
+}
+
+/// Draft policies from plain English: Zyvor's LLM when configured, the
+/// sentence parser otherwise or when the LLM draft is unusable.
+pub(crate) async fn compose(state: &AppState, prompt: &str, rules_only: bool) -> nl::Draft {
+    let fleet = Fleet::load(&state.pool).await;
+    let existing: Vec<String> = fleet.policies.iter().map(|p| p.name.clone()).collect();
+    let (llm, why) = if rules_only {
+        (None, None)
+    } else {
+        llm_draft(state, prompt, &fleet.vms, &existing).await
+    };
+    let mut d = llm.unwrap_or_else(|| nl::draft_rules(prompt, &fleet.vms));
+    d.notes.extend(why);
+    d
+}
+
+/// Draft policies from plain English, then validate and replay them. Nothing
+/// is applied.
+pub async fn draft(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Json(b): Json<DraftBody>,
+) -> Result<Response, ApiError> {
+    require_operator(&actor)?;
+    let prompt = b.prompt.trim();
+    if prompt.is_empty() {
+        return Err(ApiError::bad_request(
+            "describe the policy in plain English",
+        ));
+    }
+    if prompt.chars().count() > nl::MAX_PROMPT {
+        return Err(ApiError::bad_request(format!(
+            "keep the description under {} characters",
+            nl::MAX_PROMPT
+        )));
+    }
+    let d = compose(&state, prompt, b.rules_only).await;
+    if d.policies.is_empty() {
+        return Ok((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            Json(json!({
+                "error": format!(
+                    "could not draft a policy from that description: {}",
+                    d.unparsed.iter().chain(&d.notes).cloned().collect::<Vec<_>>().join("; ")
+                ),
+                "unparsed": d.unparsed,
+                "notes": d.notes,
+            })),
+        )
+            .into_response());
+    }
+    let (parsed, v) = netpol::parse_documents(&d.yaml);
+    let pv = preview(&state, &parsed, &v).await;
+    let rp = replay_draft(&state, parsed, 5000).await?;
+    Ok(Json(json!({
+        "yaml": d.yaml,
+        "source": d.source,
+        "notes": d.notes,
+        "unparsed": d.unparsed,
+        "preview": pv,
+        "replay": rp,
+    }))
+    .into_response())
+}
+
+#[derive(Deserialize)]
+pub struct ProposeBody {
+    yaml: String,
+    #[serde(default)]
+    prompt: String,
+}
+
+/// Ask a second admin to apply a drafted policy.
+pub async fn draft_propose(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Json(b): Json<ProposeBody>,
+) -> Result<Response, ApiError> {
+    require_operator(&actor)?;
+    let (parsed, v) = netpol::parse_documents(&b.yaml);
+    if !v.ok() || parsed.is_empty() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "invalid policy", "errors": v.errors, "warnings": v.warnings })),
+        )
+            .into_response());
+    }
+    let names: Vec<String> = parsed.iter().map(|p| p.name.clone()).collect();
+    let prompt: String = b.prompt.trim().chars().take(nl::MAX_PROMPT).collect();
+    let body = crate::engine::ai::actions::CreateActionBody {
+        action_type: APPLY_ACTION.into(),
+        label: format!("Apply network policy {}", names.join(", ")),
+        review: format!(
+            "{} asks to apply {} VM network {}{}.\n\n{}",
+            actor.username,
+            names.len(),
+            if names.len() == 1 {
+                "policy"
+            } else {
+                "policies"
+            },
+            if prompt.is_empty() {
+                String::new()
+            } else {
+                format!(" written from “{prompt}”")
+            },
+            nl::to_yaml(&parsed)
+        ),
+        risk: "Changes which VMs can talk to each other".into(),
+        object_ref: json!({ "yaml": b.yaml, "prompt": prompt, "policies": names }),
+        source: "netpol".into(),
+    };
+    let action = crate::engine::ai::actions::create_action(&state.pool, &body, &actor.username)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    state.emit_event(
+        "netpol.nl",
+        format!("{} asked to apply {}", actor.username, names.join(", ")),
+    );
+    Ok(Json(json!({ "pending": action })).into_response())
+}
+
+/// Drafts waiting for approval.
+pub async fn draft_pending(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+    let pending: Vec<_> = crate::engine::ai::actions::list_pending(&state.pool)
+        .await?
+        .into_iter()
+        .filter(|a| a.action_type == APPLY_ACTION)
+        .collect();
+    Ok(Json(json!({ "pending": pending })))
+}
+
+/// Apply an approved `vm_netpol.apply` action.
+pub(crate) async fn apply_approved(
+    state: &AppState,
+    object_ref: &Value,
+    by: &str,
+) -> Result<Value, ApiError> {
+    let (parsed, v) = netpol::parse_documents(object_ref["yaml"].as_str().unwrap_or_default());
+    if !v.ok() || parsed.is_empty() {
+        let errors: Vec<String> = v.errors.iter().map(|i| i.to_string()).collect();
+        return Err(ApiError::bad_request(format!(
+            "the drafted policy is no longer valid: {}",
+            errors.join("; ")
+        )));
+    }
+    for p in &parsed {
+        vm_netpol::upsert(&state.pool, p, by).await?;
+    }
+    let names: Vec<String> = parsed.iter().map(|p| p.name.clone()).collect();
+    state.emit_event(
+        "netpol.nl",
+        format!("{by} approved and applied {}", names.join(", ")),
+    );
+    let sync = vm_netpol::reconcile(&state.pool, false).await;
+    Ok(json!({ "applied": names, "sync": sync }))
 }
 
 /// `toFQDNs` bindings learned on every online host.

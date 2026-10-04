@@ -150,11 +150,21 @@ pub async fn approve_and_execute(
     if action.status != "pending" {
         return Err(anyhow::anyhow!("Action already {}", action.status));
     }
-    if action.action_type == crate::api::vm_network_policies::JIT_ACTION {
+    let two_person = [
+        (
+            crate::api::vm_network_policies::JIT_ACTION,
+            "temporary access",
+        ),
+        (
+            crate::api::vm_network_policies::APPLY_ACTION,
+            "a drafted network policy",
+        ),
+    ];
+    if let Some((_, what)) = two_person.iter().find(|(t, _)| *t == action.action_type) {
         crate::auth::require_admin(actor).map_err(|e| anyhow::anyhow!(e.message))?;
         if actor.username == action.requested_by {
             return Err(anyhow::anyhow!(
-                "temporary access needs a second person: you requested it"
+                "{what} needs a second person: you requested it"
             ));
         }
     }
@@ -334,6 +344,15 @@ pub async fn approve_and_execute(
                 }
                 Err(e) => Err(anyhow::anyhow!("temporary access object_ref: {e}")),
             }
+        }
+        crate::api::vm_network_policies::APPLY_ACTION => {
+            crate::api::vm_network_policies::apply_approved(
+                state,
+                &action.object_ref,
+                &actor.username,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))
         }
         "vm.shutdown_agent" => {
             let vm_id = action

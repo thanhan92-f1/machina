@@ -253,6 +253,14 @@ pub fn router(state: AppState) -> Router {
             post(vm_network_policies::replay),
         )
         .route(
+            "/api/v1/vm-network-policies/draft",
+            get(vm_network_policies::draft_pending).post(vm_network_policies::draft),
+        )
+        .route(
+            "/api/v1/vm-network-policies/draft/propose",
+            post(vm_network_policies::draft_propose),
+        )
+        .route(
             "/api/v1/flows/edges",
             get(vm_network_policies::flow_edges).delete(vm_network_policies::flow_edges_reset),
         )
