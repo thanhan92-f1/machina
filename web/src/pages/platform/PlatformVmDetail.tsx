@@ -33,6 +33,7 @@ import VmUsageBars from '../../components/platform/VmUsageBars'
 import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
 import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
 import VmFixItList from '../../components/platform/fleet/VmFixItList'
+import BootDoctorCard from '../../components/platform/vmdetail/BootDoctorCard'
 import { vmHealthScore } from '../../utils/vmHealthScore'
 import { useVmMetricSeries } from '../../hooks/useVmMetricSeries'
 import JsonInspector from '../../components/platform/JsonInspector'
@@ -1168,6 +1169,10 @@ export default function PlatformVmDetail() {
               healthScore={vmHealthScore(health) ?? (doctor ? vmHealthScore({ score_numeric: Number(doctor.score_numeric) }) : null)}
               running={vm.observed_state === 'running'}
             />
+          )}
+
+          {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && (vm.observed_state !== 'running' || Boolean(vm.last_error)) && (
+            <BootDoctorCard vm={vm} onChanged={() => void load()} />
           )}
 
           {tab === 'overview' && vm && health && (health.issues?.length ?? 0) > 0 && vm.observed_state === 'running' && (

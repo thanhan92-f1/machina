@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use machina_core::libvirt::guest_agent::GuestIpAddress;
 use machina_core::libvirt::{
     boot, capabilities, cdrom, domain, domain_job, emulator, extras, filesystem, guest_agent,
-    guest_agent_provision, guest_health, host_cpu, hostdev_pci, migrate, net_xml, network,
-    node_device, numa_tune, nwfilter, save_restore, secret, storage,
+    guest_agent_provision, guest_health, guest_repair, host_cpu, hostdev_pci, migrate, net_xml,
+    network, node_device, numa_tune, nwfilter, save_restore, secret, storage,
 };
 use machina_core::{LibvirtError, LibvirtManager};
 
@@ -165,6 +165,56 @@ async fn inject_guest_agent_handler(
     let dry_run = req.dry_run;
     let report = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         guest_agent_provision::inject_agent_offline(conn, &name2, Some(&libvirt_cfg), dry_run)
+    })
+    .await?;
+    Ok(Json(serde_json::json!(report)))
+}
+
+// ── Boot Doctor: offline guest repair ───────────────────────────────
+
+#[derive(serde::Deserialize, Default)]
+struct GuestRepairRequest {
+    /// Preview the repair without writing.
+    #[serde(default)]
+    dry_run: bool,
+    /// Back the disk up first (default on; ignored for dry runs).
+    #[serde(default = "default_true")]
+    backup: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// Diagnose a powered-off VM's disk with GuestKit (`doctor --explain`).
+async fn diagnose_guest_handler(
+    State(manager): State<LibvirtManager>,
+    Extension(actor): Extension<RequestActor>,
+    Query(conn_q): Query<ConnQuery>,
+    Path(name): Path<String>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    require_write(&actor, "vms:write")?;
+    let name2 = name.clone();
+    let report = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        guest_repair::diagnose_offline(conn, &name2)
+    })
+    .await?;
+    Ok(Json(serde_json::json!(report)))
+}
+
+/// Repair a powered-off VM's boot problems with GuestKit (`repair --fix boot`), with a dry-run preview.
+async fn repair_guest_handler(
+    State(manager): State<LibvirtManager>,
+    Extension(actor): Extension<RequestActor>,
+    Query(conn_q): Query<ConnQuery>,
+    Path(name): Path<String>,
+    Json(req): Json<GuestRepairRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    require_write(&actor, "vms:write")?;
+    let name2 = name.clone();
+    let (dry_run, backup) = (req.dry_run, req.backup);
+    let report = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        guest_repair::repair_offline(conn, &name2, dry_run, backup)
     })
     .await?;
     Ok(Json(serde_json::json!(report)))
@@ -1085,6 +1135,11 @@ pub fn advanced_routes() -> Router<LibvirtManager> {
             "/vms/{name}/guest-agent/inject",
             post(inject_guest_agent_handler),
         )
+        .route(
+            "/vms/{name}/guest-repair/diagnose",
+            post(diagnose_guest_handler),
+        )
+        .route("/vms/{name}/guest-repair/apply", post(repair_guest_handler))
         // CD-ROM
         .route("/vms/{name}/cdrom/insert", post(insert_cdrom_handler))
         .route(
