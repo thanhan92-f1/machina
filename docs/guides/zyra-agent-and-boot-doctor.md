@@ -54,14 +54,49 @@ Older controllers lack them; the UI hides the section rather than erroring.
 Zyra approvals → **Ask Zyra to take care of something**. `POST /api/v1/ai/agent/run {prompt}` runs a bounded
 tool-calling loop (max 6 steps) over your configured provider (Anthropic, or OpenAI-compatible incl. Ollama).
 
-- **Read tools:** `list_vms`, `list_hosts`, `recent_events`.
-- **Write tool:** `propose_action` (`start_vm`, `enable_ha`, `create_backup`, `install_guest_tools`). It only
+- **Read tools:** `list_vms`, `list_hosts`, `recent_events`, `find_idle_vms` (idle ≥ 24 h: CPU average < 5%, never > 25%, with monthly cost), `plan_environment` (machines, sizing, storage, monthly cost for a described environment).
+- **Write tool:** `propose_action` (`start_vm`, `stop_vm`, `enable_ha`, `create_backup`, `install_guest_tools`, `create_environment`). It only
   **queues** an item in the approval queue with risk "Review required" (so autopilot never auto-runs it) and source
   `zyra-agent`. Nothing changes until a person approves it, and execution is audited like any other action.
 - Tool output is wrapped as untrusted data, so text inside a VM name or event cannot give the model instructions.
 
 Turn it on: Settings → AI Providers, add a provider and key. Until then the endpoint answers
 "Zyra AI is turned off". Set `MACHINA_API_KEY_MASTER_KEY` to encrypt stored keys.
+
+### Describe it, get it
+Ask for an environment in plain words ("staging for 10 developers"). Zyra plans it (read-only) and queues a
+`create_environment` proposal showing machine count and monthly cost. Only an **administrator** approving it creates
+the machines (same path as `POST /api/v1/ai/intent/environment/execute`, placed by the scheduler, built by the task bus).
+GPU environments are not supported by this action.
+
+### FinOps that acts
+`stop_vm` is only proposed for machines the idle detector agrees are idle, and the saving shown to the approver is
+computed on the server, not by the model. It is a clean guest shutdown and **Undo** starts the machine again.
+Idle detection needs at least a day of samples (below).
+
+## Trust ladder (Zyra approvals → "What Zyra may do on its own")
+
+Each class starts at **Ask me**. After 5 approvals in a row (a rejection or failure resets the streak) Zyra offers
+**Automatic**; it never switches it on itself. Only `create_backup`, `enable_ha`, `install_guest_tools` and `start_vm`
+can be automatic. Stop, environment creation, network policy and temporary access always need a person. Automatic
+classes run only when AI mode is `autopilot`, at most `max_per_run` (default 3) per scheduled run, through the normal
+approve path (audited, verifiable, undoable).
+`GET /api/v1/ai/trust`, `PUT /api/v1/ai/trust/{action_type}` `{level: ask|auto, max_per_run}` (admin).
+
+## Machina as an MCP server
+
+`POST /api/v1/mcp` (JSON-RPC 2.0, streamable-HTTP transport with JSON responses; `initialize`, `ping`, `tools/list`,
+`tools/call`). Same tools and same rules as the built-in agent: reads are live, the only write is a proposal queued for
+human approval. Authenticate like any controller call (bearer token, operator role or above), e.g. in Claude Code:
+`claude mcp add --transport http machina https://HOST:5092/api/v1/platform/controller/api/v1/mcp --header "Authorization: Bearer <token>"`.
+
+## Forecasting
+
+A leader-only recorder stores VM memory/CPU and storage-pool fill every 5 minutes (`metric_samples`, pruned at 14 days).
+`/api/v1/ai/sre/forecast` fits a straight line to recent samples and reports when the metric reaches 95%, with a
+confidence from the fit quality and amount of history. With under 12 samples or 1 hour of history, a flat or falling
+trend, a poor fit, or a crossing more than 30 days out, there is **no forecast** (only a plain "at N% now" for
+machines already above 90%). It never invents a time.
 
 ## Tests
 
