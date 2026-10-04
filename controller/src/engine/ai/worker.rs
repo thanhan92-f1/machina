@@ -10,6 +10,7 @@ use crate::auth::AuthUser;
 use crate::state::AppState;
 
 pub fn spawn(state: AppState) {
+    super::forecast::spawn(state.clone());
     tokio::spawn(async move {
         loop {
             if !state.leader.is_leader() {

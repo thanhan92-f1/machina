@@ -5,6 +5,8 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use super::forecast as trend;
+
 #[derive(Debug, Serialize)]
 pub struct ResourceExhaustionForecast {
     pub vm_id: String,
@@ -34,31 +36,41 @@ pub async fn forecast(pool: &SqlitePool) -> anyhow::Result<SreForecastReport> {
     .await
     .unwrap_or_default();
 
-    let pool_ratio: f64 = sqlx::query_scalar(
-        "SELECT COALESCE(MAX(used_gib * 1.0 / NULLIF(capacity_gib, 0)), 0.0) FROM storage_pools WHERE capacity_gib > 0",
-    )
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or(0.0);
-
     let mut forecasts = Vec::new();
     for (vid, name, mem_alloc, mem_used, cpu) in rows {
         if mem_alloc > 0 {
             let ratio = mem_used as f64 / mem_alloc as f64;
-            if ratio >= 0.85 {
-                let hours = estimate_hours_to_full(ratio);
+            let samples = trend::series(pool, &vid.to_string(), "mem_ratio", 72)
+                .await
+                .unwrap_or_default();
+            if let Some(c) = trend::time_to_threshold(&samples, 0.95) {
+                forecasts.push(ResourceExhaustionForecast {
+                    vm_id: vid.to_string(),
+                    vm_name: name.clone(),
+                    resource: "memory".into(),
+                    severity: severity_for_hours(c.hours).into(),
+                    message: format!(
+                        "VM {name} memory is at {:.0}% and growing about {:.0} points a day — full in {} at this rate",
+                        ratio * 100.0,
+                        c.per_day * 100.0,
+                        trend::humanize_hours(c.hours)
+                    ),
+                    hours_until_critical: Some(c.hours),
+                    confidence: c.confidence,
+                });
+            } else if ratio >= 0.9 {
+                // No usable trend yet (or it is flat): say what is true now, with no invented time.
                 forecasts.push(ResourceExhaustionForecast {
                     vm_id: vid.to_string(),
                     vm_name: name.clone(),
                     resource: "memory".into(),
                     severity: if ratio >= 0.95 { "critical" } else { "high" }.into(),
                     message: format!(
-                        "VM {name} memory at {:.0}% — may exhaust allocated RAM within ~{:.0}h at current trend",
-                        ratio * 100.0,
-                        hours
+                        "VM {name} memory is at {:.0}% of what it was given",
+                        ratio * 100.0
                     ),
-                    hours_until_critical: Some(hours),
-                    confidence: 0.68,
+                    hours_until_critical: None,
+                    confidence: 0.5,
                 });
             }
         }
@@ -75,19 +87,45 @@ pub async fn forecast(pool: &SqlitePool) -> anyhow::Result<SreForecastReport> {
         }
     }
 
-    if pool_ratio >= 0.9 {
-        forecasts.push(ResourceExhaustionForecast {
-            vm_id: "cluster".into(),
-            vm_name: "(cluster)".into(),
-            resource: "storage".into(),
-            severity: "critical".into(),
-            message: format!(
-                "Storage pool >{:.0}% full — VM IO failures likely",
-                pool_ratio * 100.0
-            ),
-            hours_until_critical: Some(6.0),
-            confidence: 0.75,
-        });
+    let pools: Vec<(Uuid, String, f64)> = sqlx::query_as(
+        "SELECT id, name, used_gib * 1.0 / capacity_gib FROM storage_pools WHERE capacity_gib > 0",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    for (pid, pname, ratio) in pools {
+        let samples = trend::series(pool, &format!("pool:{pid}"), "pool_used_ratio", 7 * 24)
+            .await
+            .unwrap_or_default();
+        if let Some(c) = trend::time_to_threshold(&samples, 0.95) {
+            forecasts.push(ResourceExhaustionForecast {
+                vm_id: "cluster".into(),
+                vm_name: format!("(pool {pname})"),
+                resource: "storage".into(),
+                severity: severity_for_hours(c.hours).into(),
+                message: format!(
+                    "Storage pool {pname} is {:.0}% full and filling about {:.1} points a day — full in {}",
+                    ratio * 100.0,
+                    c.per_day * 100.0,
+                    trend::humanize_hours(c.hours)
+                ),
+                hours_until_critical: Some(c.hours),
+                confidence: c.confidence,
+            });
+        } else if ratio >= 0.9 {
+            forecasts.push(ResourceExhaustionForecast {
+                vm_id: "cluster".into(),
+                vm_name: format!("(pool {pname})"),
+                resource: "storage".into(),
+                severity: "critical".into(),
+                message: format!(
+                    "Storage pool {pname} is {:.0}% full — VM IO failures are likely if it fills",
+                    ratio * 100.0
+                ),
+                hours_until_critical: None,
+                confidence: 0.75,
+            });
+        }
     }
 
     // Rank by severity numerically, not by string: lexicographically "high" >
@@ -117,7 +155,25 @@ pub async fn forecast(pool: &SqlitePool) -> anyhow::Result<SreForecastReport> {
     Ok(SreForecastReport { forecasts })
 }
 
-fn estimate_hours_to_full(ratio: f64) -> f64 {
-    let remaining = (1.0 - ratio).max(0.01);
-    (remaining * 48.0).clamp(1.0, 168.0)
+/// Under a day is critical, under three days high, otherwise medium.
+fn severity_for_hours(h: f64) -> &'static str {
+    if h < 24.0 {
+        "critical"
+    } else if h < 72.0 {
+        "high"
+    } else {
+        "medium"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::severity_for_hours;
+
+    #[test]
+    fn severity_follows_time_left() {
+        assert_eq!(severity_for_hours(3.0), "critical");
+        assert_eq!(severity_for_hours(40.0), "high");
+        assert_eq!(severity_for_hours(200.0), "medium");
+    }
 }
