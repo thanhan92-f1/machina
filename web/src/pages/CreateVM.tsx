@@ -690,7 +690,7 @@ export default function CreateVMPage() {
   return (
     <PageLayout
       eyebrow="Hypervisor"
-      className="max-w-4xl mx-auto pb-8"
+      className="max-w-6xl mx-auto pb-8"
       contentClassName="space-y-8"
       title="Create new guest VM"
       subtitle={

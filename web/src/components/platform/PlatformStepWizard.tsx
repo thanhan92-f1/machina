@@ -37,7 +37,7 @@ export default function PlatformStepWizard({
   busy = false,
   finishLabel = 'Finish',
   nextLabel = 'Next',
-  maxWidthClass = 'max-w-2xl',
+  maxWidthClass = 'max-w-4xl',
   embedded = false,
   children,
   onFinish,
@@ -58,7 +58,7 @@ export default function PlatformStepWizard({
 
   const panel = (
       <div
-        className={`w-full ${maxWidthClass} ${embedded ? '' : 'max-h-[min(90vh,720px)]'} flex flex-col rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-2xl overflow-hidden`}
+        className={`w-full ${maxWidthClass} ${embedded ? '' : 'max-h-[90dvh]'} flex flex-col rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-2xl overflow-hidden`}
         role={embedded ? undefined : 'dialog'}
         aria-modal={embedded ? undefined : true}
         aria-labelledby={embedded ? undefined : titleId}

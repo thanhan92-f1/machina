@@ -280,7 +280,7 @@ export default function KataContainersPage() {
   return (
     <PageLayout
       eyebrow="Kubernetes"
-      className="max-w-4xl"
+      className=""
       contentClassName="space-y-8"
       title="Kata Containers on Kubernetes"
       subtitle={

@@ -321,7 +321,7 @@ export default function SimpleCreateVmWizard({ open, onClose, onCreate, initial 
               </Link>
             </p>
           )}
-          <div className="grid gap-2 sm:grid-cols-2 pr-1">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 pr-1">
             {filteredOs.map((flavor) => {
               const selected = os === flavor.id
               return (
