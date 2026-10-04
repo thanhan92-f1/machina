@@ -99,7 +99,10 @@ pub async fn install_plugin(pool: &SqlitePool, slug: &str) -> anyhow::Result<Plu
     })
 }
 
-pub async fn uninstall_plugin(pool: &SqlitePool, slug: &str) -> anyhow::Result<PluginInstallResult> {
+pub async fn uninstall_plugin(
+    pool: &SqlitePool,
+    slug: &str,
+) -> anyhow::Result<PluginInstallResult> {
     let slug = slug.trim();
     let row: PluginRow = sqlx::query_as(
         "SELECT id, slug, name, category, description, version, author, featured, installed

@@ -77,23 +77,24 @@ async fn evaluate_rule(state: &AppState, rule: &Rule) -> anyhow::Result<Vec<(Str
                             THEN (m.memory_used_mib * 100.0 / v.memory_mib) ELSE 0 END AS mem_percent
                 FROM vms v JOIN vm_metrics m ON m.vm_id = v.id
                 WHERE v.lifecycle_phase NOT IN ('retired', 'deleting')";
-    let rows: Vec<(String, f64, f64)> =
-        if !rule.scope_project.is_empty() && !rule.scope_tag.is_empty() {
-            sqlx::query_as(&format!(
+    let rows: Vec<(String, f64, f64)> = if !rule.scope_project.is_empty()
+        && !rule.scope_tag.is_empty()
+    {
+        sqlx::query_as(&format!(
                 "{base} AND v.project = ? AND EXISTS (SELECT 1 FROM json_each(COALESCE(v.tags,'[]')) WHERE value = ?)"
             ))
             .bind(&rule.scope_project)
             .bind(&rule.scope_tag)
             .fetch_all(&state.pool)
             .await?
-        } else if !rule.scope_project.is_empty() {
-            sqlx::query_as(&format!("{base} AND v.project = ?"))
-                .bind(&rule.scope_project)
-                .fetch_all(&state.pool)
-                .await?
-        } else {
-            sqlx::query_as(base).fetch_all(&state.pool).await?
-        };
+    } else if !rule.scope_project.is_empty() {
+        sqlx::query_as(&format!("{base} AND v.project = ?"))
+            .bind(&rule.scope_project)
+            .fetch_all(&state.pool)
+            .await?
+    } else {
+        sqlx::query_as(base).fetch_all(&state.pool).await?
+    };
 
     let mut out = Vec::new();
     for (name, cpu_percent, mem_percent) in rows {

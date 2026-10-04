@@ -25,8 +25,15 @@ pub fn invalid(sel: &str, pattern: bool) -> Option<&'static str> {
     if s.len() > 253 {
         return Some("longer than 253 characters");
     }
-    let body = if pattern { s.strip_prefix("**.").unwrap_or(&s) } else { &s };
-    if !body.bytes().all(|c| dns_char(c) || c == b'.' || (pattern && c == b'*')) {
+    let body = if pattern {
+        s.strip_prefix("**.").unwrap_or(&s)
+    } else {
+        &s
+    };
+    if !body
+        .bytes()
+        .all(|c| dns_char(c) || c == b'.' || (pattern && c == b'*'))
+    {
         return Some(if pattern {
             "only letters, digits, `-`, `_`, `.` and `*` are allowed"
         } else {
@@ -78,7 +85,11 @@ pub fn matches(pattern: &str, name: &str) -> bool {
 /// Selectors of one `toFQDNs` list, normalized; `matchName` stays literal.
 pub fn selectors(list: &[Value]) -> Vec<String> {
     list.iter()
-        .filter_map(|s| s.get("matchName").or_else(|| s.get("matchPattern")).and_then(Value::as_str))
+        .filter_map(|s| {
+            s.get("matchName")
+                .or_else(|| s.get("matchPattern"))
+                .and_then(Value::as_str)
+        })
         .map(normalize)
         .filter(|s| !s.is_empty())
         .collect()

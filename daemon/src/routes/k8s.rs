@@ -588,7 +588,11 @@ fn truncate_error_snippet(text: &str) -> String {
     while end > 0 && !t.is_char_boundary(end) {
         end -= 1;
     }
-    format!("{}… ({} more bytes, see daemon logs)", &t[..end], t.len() - end)
+    format!(
+        "{}… ({} more bytes, see daemon logs)",
+        &t[..end],
+        t.len() - end
+    )
 }
 
 async fn run_kubectl_json_timeout(
@@ -3396,10 +3400,7 @@ async fn k8s_kubevirt_vm_spec(
     }
     let mut domain = serde_json::Map::new();
     if let Some(cores) = body.vcpus.filter(|&c| c > 0) {
-        domain.insert(
-            "cpu".into(),
-            serde_json::json!({ "cores": cores }),
-        );
+        domain.insert("cpu".into(), serde_json::json!({ "cores": cores }));
     }
     if let Some(mib) = body.memory_mib.filter(|&m| m > 0) {
         // Reject absurd sizes and use saturating arithmetic so the MiB→GiB
@@ -3772,7 +3773,8 @@ fn validate_k3s_install_env_value(s: &str, label: &str, max: usize) -> Result<()
                 if let Some(v) = value {
                     let value_ok = !v.is_empty()
                         && v.chars().all(|c| {
-                            c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '/' | ',' | ':' | '=')
+                            c.is_ascii_alphanumeric()
+                                || matches!(c, '.' | '_' | '-' | '/' | ',' | ':' | '=')
                         });
                     if !value_ok {
                         return Err(LibvirtError::Invalid(format!(
@@ -3969,7 +3971,10 @@ async fn k8s_k3s_install(
                 res.exit_code, res.command
             )
         } else {
-            warn!("k3s install script failed ({}): {}", res.command, res.stderr);
+            warn!(
+                "k3s install script failed ({}): {}",
+                res.command, res.stderr
+            );
             sanitize_kubectl_stderr(&res.stderr)
         };
         return Err(LibvirtError::Operation(msg).into());
@@ -4026,7 +4031,10 @@ async fn k8s_k3s_uninstall(
                 res.exit_code, res.command
             )
         } else {
-            warn!("k3s uninstall script failed ({}): {}", res.command, res.stderr);
+            warn!(
+                "k3s uninstall script failed ({}): {}",
+                res.command, res.stderr
+            );
             sanitize_kubectl_stderr(&res.stderr)
         };
         return Err(LibvirtError::Operation(msg).into());
@@ -4118,8 +4126,7 @@ async fn k8s_cluster_bootstrap(
         "full" | "k3s" | "cni" | "cilium" | "metrics" | "kubevirt_cdi" => {}
         _ => {
             return Err(LibvirtError::Invalid(
-                "phase must be \"full\", \"k3s\", \"cni\", \"metrics\", or \"kubevirt_cdi\""
-                    .into(),
+                "phase must be \"full\", \"k3s\", \"cni\", \"metrics\", or \"kubevirt_cdi\"".into(),
             )
             .into())
         }
@@ -4395,8 +4402,14 @@ mod bootstrap_cni_tests {
     #[test]
     fn cni_defaults_to_k3s_networking() {
         assert_eq!(parse_bootstrap_cni(None).unwrap(), CniChoice::Default);
-        assert_eq!(parse_bootstrap_cni(Some("default")).unwrap(), CniChoice::Default);
-        assert_eq!(parse_bootstrap_cni(Some("machina")).unwrap(), CniChoice::Machina);
+        assert_eq!(
+            parse_bootstrap_cni(Some("default")).unwrap(),
+            CniChoice::Default
+        );
+        assert_eq!(
+            parse_bootstrap_cni(Some("machina")).unwrap(),
+            CniChoice::Machina
+        );
         assert!(parse_bootstrap_cni(Some("flannel; rm -rf /")).is_err());
     }
 }

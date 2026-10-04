@@ -133,7 +133,15 @@ fn vgpu_slices_from_tags(tags: &[String]) -> i32 {
 }
 
 pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetGpuOverview> {
-    let host_rows: Vec<(Uuid, String, String, String, String, i32, sqlx::types::Json<Vec<String>>)> = sqlx::query_as(
+    let host_rows: Vec<(
+        Uuid,
+        String,
+        String,
+        String,
+        String,
+        i32,
+        sqlx::types::Json<Vec<String>>,
+    )> = sqlx::query_as(
         "SELECT id, hostname, state, COALESCE(site, ''), COALESCE(rack, ''), vm_count,
                 COALESCE(tags, '[]') AS tags
          FROM hosts ORDER BY hostname",

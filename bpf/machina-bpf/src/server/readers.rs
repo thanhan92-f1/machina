@@ -192,7 +192,10 @@ pub(super) fn on_dns(
                 .iter()
                 .filter(|(_, (suffix, _))| {
                     policy::dns_suffix_match(&msg.qname, suffix)
-                        || msg.answers.iter().any(|a| policy::dns_suffix_match(&a.name, suffix))
+                        || msg
+                            .answers
+                            .iter()
+                            .any(|a| policy::dns_suffix_match(&a.name, suffix))
                 })
                 .map(|(num, (_, scope))| (*num, *scope))
                 .collect();
@@ -212,7 +215,10 @@ pub(super) fn on_dns(
                 }
             }
         }
-        if msg.is_response && msg.rcode == 0 && vm::fqdn_learn(&mut s, &msg, rec.vm.as_deref(), ev.ifindex) {
+        if msg.is_response
+            && msg.rcode == 0
+            && vm::fqdn_learn(&mut s, &msg, rec.vm.as_deref(), ev.ifindex)
+        {
             queued = true;
         }
         Shared::push_capped(&mut s.dns, rec.clone(), DNS_STORE_CAP);
@@ -232,16 +238,30 @@ pub(super) fn on_dns(
 }
 
 /// Build an [`L7Record`] from a kernel event. `None` for unrecognised payloads.
-pub(super) fn l7_record(ev: &L7Event, iface: Option<String>, vm: Option<String>) -> Option<L7Record> {
+pub(super) fn l7_record(
+    ev: &L7Event,
+    iface: Option<String>,
+    vm: Option<String>,
+) -> Option<L7Record> {
     let n = (ev.payload_len as usize).min(L7_PAYLOAD_LEN);
     let parsed = crate::l7::classify(&ev.payload[..n])?;
     let k = ev.key;
     // The client sent this payload: workload-side for outbound, remote for inbound.
     let outbound = ev.dir == DIR_FROM_WORKLOAD;
     let (client, client_port, server, server_port) = if outbound {
-        (fmt_addr(&k.local), k.local_port, fmt_addr(&k.remote), k.remote_port)
+        (
+            fmt_addr(&k.local),
+            k.local_port,
+            fmt_addr(&k.remote),
+            k.remote_port,
+        )
     } else {
-        (fmt_addr(&k.remote), k.remote_port, fmt_addr(&k.local), k.local_port)
+        (
+            fmt_addr(&k.remote),
+            k.remote_port,
+            fmt_addr(&k.local),
+            k.local_port,
+        )
     };
     let mut rec = L7Record {
         ts: mono_to_rfc3339(ev.ts_ns),
@@ -409,7 +429,8 @@ pub(super) fn on_capture(sh: &SharedState, b: &[u8]) {
     if c.writer.packets() as usize >= c.info.max_packets {
         return;
     }
-    c.writer.push(mono_to_epoch_us(ev.ts_ns), ev.pkt_len, &ev.data[..n]);
+    c.writer
+        .push(mono_to_epoch_us(ev.ts_ns), ev.pkt_len, &ev.data[..n]);
     c.info.packets = c.writer.packets();
     c.info.bytes = c.writer.bytes();
     s.counters.capture_packets += 1;
@@ -420,7 +441,9 @@ pub(super) fn tls_fingerprint(data: &[u8]) -> Option<TlsFingerprint> {
     let h = crate::l7::parse_hello(data)?;
     let (ja3, ja3_hash) = crate::l7::ja3(&h);
     let ja4 = crate::l7::ja4(&h);
-    let version = crate::l7::parse_client_hello(data).map(|t| t.version).unwrap_or_default();
+    let version = crate::l7::parse_client_hello(data)
+        .map(|t| t.version)
+        .unwrap_or_default();
     Some(TlsFingerprint {
         truncated: !h.complete,
         sni: h.sni,
@@ -466,7 +489,12 @@ pub(super) fn ssl_record(ev: &SslEvent) -> SslRecord {
         ts: mono_to_rfc3339(ev.ts_ns),
         pid: (ev.pid_tgid >> 32) as u32,
         comm: cstr(&ev.comm),
-        direction: if ev.dir == SSL_DIR_WRITE { "write" } else { "read" }.into(),
+        direction: if ev.dir == SSL_DIR_WRITE {
+            "write"
+        } else {
+            "read"
+        }
+        .into(),
         bytes: ev.len,
         protocol: "other".into(),
         ..SslRecord::default()
@@ -478,7 +506,10 @@ pub(super) fn ssl_record(ev: &SslEvent) -> SslRecord {
         rec.host = h.host;
     } else if let Some(rest) = data.strip_prefix(b"HTTP/1.") {
         rec.protocol = "http1".into();
-        rec.status = rest.get(2..5).and_then(|c| std::str::from_utf8(c).ok()).and_then(|c| c.parse().ok());
+        rec.status = rest
+            .get(2..5)
+            .and_then(|c| std::str::from_utf8(c).ok())
+            .and_then(|c| c.parse().ok());
     } else if data.starts_with(b"PRI * HTTP/2.0") {
         rec.protocol = "http2".into();
     }

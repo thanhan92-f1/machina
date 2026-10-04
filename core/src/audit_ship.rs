@@ -34,16 +34,8 @@ fn syslog_line(line: &str) {
     use std::ffi::CString;
     let msg = CString::new(line.chars().take(900).collect::<String>()).unwrap_or_default();
     unsafe {
-        libc::openlog(
-            c"machina".as_ptr(),
-            libc::LOG_PID,
-            libc::LOG_AUTHPRIV,
-        );
-        libc::syslog(
-            libc::LOG_INFO,
-            c"%s".as_ptr(),
-            msg.as_ptr(),
-        );
+        libc::openlog(c"machina".as_ptr(), libc::LOG_PID, libc::LOG_AUTHPRIV);
+        libc::syslog(libc::LOG_INFO, c"%s".as_ptr(), msg.as_ptr());
         libc::closelog();
     }
 }

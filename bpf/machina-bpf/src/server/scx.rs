@@ -53,15 +53,25 @@ impl Drop for ScxRuntime {
 }
 
 fn sysfs(name: &str) -> Option<String> {
-    std::fs::read_to_string(format!("{SYSFS}/{name}")).ok().map(|s| s.trim().to_string())
+    std::fs::read_to_string(format!("{SYSFS}/{name}"))
+        .ok()
+        .map(|s| s.trim().to_string())
 }
 
 fn helper_path() -> Option<PathBuf> {
     if let Some(p) = std::env::var_os("MACHINA_SCX_BIN") {
         return Some(PathBuf::from(p));
     }
-    let beside = std::env::current_exe().ok().and_then(|e| e.parent().map(|d| d.join("machina-scx")));
-    beside.into_iter().chain(["/usr/local/bin/machina-scx".into(), "/usr/bin/machina-scx".into()]).find(|p| p.exists())
+    let beside = std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(|d| d.join("machina-scx")));
+    beside
+        .into_iter()
+        .chain([
+            "/usr/local/bin/machina-scx".into(),
+            "/usr/bin/machina-scx".into(),
+        ])
+        .find(|p| p.exists())
 }
 
 /// `sched_setattr(tid, policy)` keeping the thread's nice value.
@@ -79,7 +89,11 @@ fn set_policy(tid: u32, policy: u32) -> std::io::Result<()> {
     }
     unsafe { *libc::__errno_location() = 0 };
     let nice = unsafe { libc::getpriority(libc::PRIO_PROCESS, tid) };
-    let nice = if nice == -1 && std::io::Error::last_os_error().raw_os_error().unwrap_or(0) != 0 { 0 } else { nice };
+    let nice = if nice == -1 && std::io::Error::last_os_error().raw_os_error().unwrap_or(0) != 0 {
+        0
+    } else {
+        nice
+    };
     let attr = SchedAttr {
         size: std::mem::size_of::<SchedAttr>() as u32,
         policy,
@@ -90,17 +104,31 @@ fn set_policy(tid: u32, policy: u32) -> std::io::Result<()> {
         deadline: 0,
         period: 0,
     };
-    let rc = unsafe { libc::syscall(libc::SYS_sched_setattr, tid as libc::pid_t, &attr as *const SchedAttr, 0u32) };
-    if rc == 0 { Ok(()) } else { Err(std::io::Error::last_os_error()) }
+    let rc = unsafe {
+        libc::syscall(
+            libc::SYS_sched_setattr,
+            tid as libc::pid_t,
+            &attr as *const SchedAttr,
+            0u32,
+        )
+    };
+    if rc == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
 }
 
 /// vCPU threads (`CPU n/KVM`) of a process.
 fn vcpu_threads(pid: u32) -> Vec<(u32, u32)> {
-    let Ok(rd) = std::fs::read_dir(format!("/proc/{pid}/task")) else { return Vec::new() };
+    let Ok(rd) = std::fs::read_dir(format!("/proc/{pid}/task")) else {
+        return Vec::new();
+    };
     rd.flatten()
         .filter_map(|e| e.file_name().to_str()?.parse::<u32>().ok())
         .filter(|tid| {
-            let comm = std::fs::read_to_string(format!("/proc/{pid}/task/{tid}/comm")).unwrap_or_default();
+            let comm =
+                std::fs::read_to_string(format!("/proc/{pid}/task/{tid}/comm")).unwrap_or_default();
             vmintel::vcpu_index(&comm).is_some()
         })
         .map(|tid| (tid, pid))
@@ -108,7 +136,9 @@ fn vcpu_threads(pid: u32) -> Vec<(u32, u32)> {
 }
 
 pub(super) fn validate(c: &ScxConfig) -> Result<u64> {
-    let secs = c.lease_secs.ok_or_else(|| anyhow!("sched_ext needs `lease_secs` (1..={SCX_MAX_LEASE})"))?;
+    let secs = c
+        .lease_secs
+        .ok_or_else(|| anyhow!("sched_ext needs `lease_secs` (1..={SCX_MAX_LEASE})"))?;
     if !(1..=SCX_MAX_LEASE).contains(&secs) {
         return Err(anyhow!("lease_secs must be 1..={SCX_MAX_LEASE}"));
     }
@@ -127,15 +157,20 @@ impl Engine {
         }
         let secs = validate(&c)?;
         if sysfs("state").is_none() {
-            return Err(anyhow!("this kernel has no sched_ext (CONFIG_SCHED_CLASS_EXT)"));
+            return Err(anyhow!(
+                "this kernel has no sched_ext (CONFIG_SCHED_CLASS_EXT)"
+            ));
         }
-        let helper = helper_path().ok_or_else(|| anyhow!("machina-scx helper not found; set MACHINA_SCX_BIN"))?;
+        let helper = helper_path()
+            .ok_or_else(|| anyhow!("machina-scx helper not found; set MACHINA_SCX_BIN"))?;
 
         // Resolve vCPU threads before touching the scheduler.
         let scopes = vm::qemu_scopes();
         let mut targets: Vec<(String, Vec<(u32, u32)>)> = Vec::new();
         for name in &c.vms {
-            let rel = scopes.get(name).ok_or_else(|| anyhow!("VM {name} is not running"))?;
+            let rel = scopes
+                .get(name)
+                .ok_or_else(|| anyhow!("VM {name} is not running"))?;
             let threads: Vec<(u32, u32)> = super::vmintel::discover(rel)
                 .threads
                 .into_iter()
@@ -181,11 +216,16 @@ impl Engine {
             .spawn()
             .with_context(|| format!("spawn {}", helper.display()))?;
         let shared = Arc::new(Mutex::new(Shared::default()));
-        let stdout = child.stdout.take().ok_or_else(|| anyhow!("helper stdout"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| anyhow!("helper stdout"))?;
         let sh = shared.clone();
         std::thread::spawn(move || {
             for line in BufReader::new(stdout).lines().map_while(|l| l.ok()) {
-                let Ok(out) = serde_json::from_str::<Output>(&line) else { continue };
+                let Ok(out) = serde_json::from_str::<Output>(&line) else {
+                    continue;
+                };
                 let mut s = sh.lock().unwrap_or_else(|e| e.into_inner());
                 match out {
                     Output::Ready { .. } => s.ready = Some(Ok(())),
@@ -203,7 +243,12 @@ impl Engine {
         });
         let start = Instant::now();
         let ready = loop {
-            if let Some(r) = shared.lock().unwrap_or_else(|e| e.into_inner()).ready.clone() {
+            if let Some(r) = shared
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .ready
+                .clone()
+            {
                 break r;
             }
             if let Ok(Some(st)) = child.try_wait() {
@@ -220,7 +265,9 @@ impl Engine {
             return Err(anyhow!("machina-scx: {e}"));
         }
         let mut stdin = child.stdin.take().ok_or_else(|| anyhow!("helper stdin"))?;
-        let mut line = serde_json::to_vec(&ScxCmd::Profiles { profiles: profiles.clone() })?;
+        let mut line = serde_json::to_vec(&ScxCmd::Profiles {
+            profiles: profiles.clone(),
+        })?;
         line.push(b'\n');
         stdin.write_all(&line)?;
         stdin.flush()?;
@@ -236,7 +283,12 @@ impl Engine {
                 }
             }
         }
-        tracing::warn!(vcpus = tids.len(), failed, secs, "sched_ext scheduler running");
+        tracing::warn!(
+            vcpus = tids.len(),
+            failed,
+            secs,
+            "sched_ext scheduler running"
+        );
         self.scx = ScxRuntime {
             config: c,
             child: Some(child),
@@ -254,7 +306,9 @@ impl Engine {
     /// Threads back to CFS first, then close the helper's stdin (it unloads
     /// the scheduler and exits); kill it if it lingers.
     fn scx_stop(&mut self, why: &str) {
-        let Some(mut child) = self.scx.child.take() else { return };
+        let Some(mut child) = self.scx.child.take() else {
+            return;
+        };
         for (tid, _) in std::mem::take(&mut self.scx.tids) {
             let _ = set_policy(tid, SCHED_OTHER);
         }
@@ -284,8 +338,17 @@ impl Engine {
             self.scx.lapsed = true;
             return;
         }
-        let exited = self.scx.child.as_mut().and_then(|c| c.try_wait().ok().flatten());
-        let kind = self.scx.shared.lock().unwrap_or_else(|e| e.into_inner()).exit_kind;
+        let exited = self
+            .scx
+            .child
+            .as_mut()
+            .and_then(|c| c.try_wait().ok().flatten());
+        let kind = self
+            .scx
+            .shared
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .exit_kind;
         if let Some(st) = exited {
             self.scx_stop(&format!("helper exited ({st}); kernel exit kind {kind}"));
         } else if kind != 0 {
@@ -296,7 +359,13 @@ impl Engine {
     pub(super) fn scx_status(&mut self) -> ScxStatus {
         let now = loader::monotonic_ns();
         let running = self.scx.child.is_some();
-        let stats = self.scx.shared.lock().unwrap_or_else(|e| e.into_inner()).stats.clone();
+        let stats = self
+            .scx
+            .shared
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .stats
+            .clone();
         let vms = self
             .scx
             .names
@@ -330,7 +399,9 @@ impl Engine {
             running,
             kernel_state: sysfs("state").unwrap_or_else(|| "unsupported".into()),
             ops: sysfs("root/ops"),
-            nr_rejected: sysfs("nr_rejected").and_then(|v| v.parse().ok()).unwrap_or(0),
+            nr_rejected: sysfs("nr_rejected")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
             lease_remaining_secs: (running && now < self.scx.deadline_mono)
                 .then(|| (self.scx.deadline_mono - now) / 1_000_000_000),
             lease_expired: self.scx.lapsed,
@@ -347,7 +418,11 @@ mod tests {
 
     #[test]
     fn scx_needs_a_lease_and_targets() {
-        let mut c = ScxConfig { enabled: true, vms: vec!["a".into()], ..Default::default() };
+        let mut c = ScxConfig {
+            enabled: true,
+            vms: vec!["a".into()],
+            ..Default::default()
+        };
         assert!(validate(&c).is_err());
         c.lease_secs = Some(0);
         assert!(validate(&c).is_err());

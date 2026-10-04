@@ -24,11 +24,10 @@ pub async fn analyze(pool: &SqlitePool) -> anyhow::Result<CostAnalysis> {
     let vm_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM vms")
         .fetch_one(pool)
         .await?;
-    let totals: (i64, i64) = sqlx::query_as(
-        "SELECT COALESCE(SUM(vcpus), 0), COALESCE(SUM(memory_mib), 0) FROM vms",
-    )
-    .fetch_one(pool)
-    .await?;
+    let totals: (i64, i64) =
+        sqlx::query_as("SELECT COALESCE(SUM(vcpus), 0), COALESCE(SUM(memory_mib), 0) FROM vms")
+            .fetch_one(pool)
+            .await?;
     let memory_gib = totals.1 as f64 / 1024.0;
     let hourly = totals.0 as f64 * rates.0 + memory_gib * rates.1;
     let estimated_monthly_usd = hourly * 730.0;

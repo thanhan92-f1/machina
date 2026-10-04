@@ -17,7 +17,9 @@ use machina_core::libvirt::automation;
 use machina_core::libvirt::extras::get_host_stats;
 use machina_core::libvirt::node;
 use machina_core::obs_counters;
-use machina_core::{LibvirtManager, MachinaConfig, VmBlockDeviceMetrics, VmInfo, VmMetrics, VmNetDeviceMetrics};
+use machina_core::{
+    LibvirtManager, MachinaConfig, VmBlockDeviceMetrics, VmInfo, VmMetrics, VmNetDeviceMetrics,
+};
 
 use crate::daemon_stats::DaemonStats;
 use crate::http_metrics::HttpMetrics;

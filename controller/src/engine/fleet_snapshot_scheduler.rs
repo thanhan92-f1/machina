@@ -51,10 +51,12 @@ async fn tick(state: &AppState) -> anyhow::Result<()> {
             tracing::warn!("fleet snapshot scheduler: schedule {sched_id} enqueue failed: {e:#}");
             continue;
         }
-        sqlx::query("UPDATE fleet_snapshot_schedules SET last_run_at = datetime('now') WHERE id = ?")
-            .bind(sched_id)
-            .execute(&state.pool)
-            .await?;
+        sqlx::query(
+            "UPDATE fleet_snapshot_schedules SET last_run_at = datetime('now') WHERE id = ?",
+        )
+        .bind(sched_id)
+        .execute(&state.pool)
+        .await?;
     }
     Ok(())
 }
@@ -136,7 +138,10 @@ async fn enqueue_snapshots_for_schedule(
             // Log and keep going: aborting here would skip the remaining VMs in this
             // schedule *and* (via the caller) leave last_run_at stale, causing the whole
             // schedule — including VMs already enqueued above — to be retried next tick.
-            tracing::warn!("fleet snapshot scheduler: enqueue vm.snapshot for {vm_id}: {}", e.message);
+            tracing::warn!(
+                "fleet snapshot scheduler: enqueue vm.snapshot for {vm_id}: {}",
+                e.message
+            );
         }
     }
     Ok(())

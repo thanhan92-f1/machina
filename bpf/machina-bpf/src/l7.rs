@@ -40,7 +40,11 @@ pub fn classify(b: &[u8]) -> Option<L7> {
         return Some(L7::Http(h));
     }
     if b.starts_with(b"SSH-") {
-        let end = b.iter().position(|c| *c == b'\r' || *c == b'\n').unwrap_or(b.len()).min(128);
+        let end = b
+            .iter()
+            .position(|c| *c == b'\r' || *c == b'\n')
+            .unwrap_or(b.len())
+            .min(128);
         return Some(L7::Ssh {
             banner: String::from_utf8_lossy(&b[..end]).into_owned(),
         });
@@ -127,7 +131,11 @@ pub fn parse_hello(b: &[u8]) -> Option<Hello> {
     }
     let hs_len = r.u24()?;
     let hs_end = r.p + hs_len;
-    let mut out = Hello { legacy_version: r.u16()?, complete: hs_end <= b.len(), ..Hello::default() };
+    let mut out = Hello {
+        legacy_version: r.u16()?,
+        complete: hs_end <= b.len(),
+        ..Hello::default()
+    };
     r.skip(32)?; // random
     let sid = r.u8()? as usize;
     r.skip(sid)?;
@@ -159,7 +167,9 @@ pub fn parse_hello(b: &[u8]) -> Option<Hello> {
                 // server_name list → first host_name entry
                 let _list = e.u16();
                 while let (Some(kind), Some(n)) = (e.u8(), e.u16()) {
-                    let Some(name) = e.take(n as usize) else { break };
+                    let Some(name) = e.take(n as usize) else {
+                        break;
+                    };
                     if kind == 0 {
                         if let Ok(s) = std::str::from_utf8(name) {
                             if !s.is_empty() && s.bytes().all(|c| c.is_ascii_graphic()) {
@@ -202,9 +212,18 @@ pub fn parse_hello(b: &[u8]) -> Option<Hello> {
 /// Extensions may be cut off by the snap length: whatever was readable is kept.
 pub fn parse_client_hello(b: &[u8]) -> Option<Tls> {
     let h = parse_hello(b)?;
-    let best = h.supported_versions.iter().copied().filter(|v| !is_grease(*v)).max();
+    let best = h
+        .supported_versions
+        .iter()
+        .copied()
+        .filter(|v| !is_grease(*v))
+        .max();
     let v = best.unwrap_or(h.legacy_version);
-    Some(Tls { sni: h.sni, alpn: h.alpn, version: tls_version((v >> 8) as u8, v as u8) })
+    Some(Tls {
+        sni: h.sni,
+        alpn: h.alpn,
+        version: tls_version((v >> 8) as u8, v as u8),
+    })
 }
 
 fn join<T: ToString>(v: impl Iterator<Item = T>, sep: &str) -> String {
@@ -240,7 +259,12 @@ fn sha12(s: &str) -> String {
 
 /// JA4 (TLS over TCP): `t{ver}{d|i}{ciphers:02}{exts:02}{alpn}_{sha(ciphers)}_{sha(exts_sigalgs)}`.
 pub fn ja4(h: &Hello) -> String {
-    let best = h.supported_versions.iter().copied().filter(|v| !is_grease(*v)).max();
+    let best = h
+        .supported_versions
+        .iter()
+        .copied()
+        .filter(|v| !is_grease(*v))
+        .max();
     let ver = match best.unwrap_or(h.legacy_version) {
         0x0304 => "13",
         0x0303 => "12",
@@ -249,8 +273,18 @@ pub fn ja4(h: &Hello) -> String {
         0x0300 => "s3",
         _ => "00",
     };
-    let ciphers: Vec<u16> = h.ciphers.iter().copied().filter(|v| !is_grease(*v)).collect();
-    let exts: Vec<u16> = h.extensions.iter().copied().filter(|v| !is_grease(*v)).collect();
+    let ciphers: Vec<u16> = h
+        .ciphers
+        .iter()
+        .copied()
+        .filter(|v| !is_grease(*v))
+        .collect();
+    let exts: Vec<u16> = h
+        .extensions
+        .iter()
+        .copied()
+        .filter(|v| !is_grease(*v))
+        .collect();
     let alpn = match h.alpn.first().map(|a| a.as_bytes()) {
         Some([]) | None => "00".to_string(),
         Some(a) => {
@@ -271,8 +305,11 @@ pub fn ja4(h: &Hello) -> String {
     );
     let mut cs: Vec<String> = ciphers.iter().map(|c| format!("{c:04x}")).collect();
     cs.sort();
-    let mut es: Vec<String> =
-        exts.iter().filter(|e| **e != 0x0000 && **e != 0x0010).map(|e| format!("{e:04x}")).collect();
+    let mut es: Vec<String> = exts
+        .iter()
+        .filter(|e| **e != 0x0000 && **e != 0x0010)
+        .map(|e| format!("{e:04x}"))
+        .collect();
     es.sort();
     let mut c_in = es.join(",");
     let sigs: Vec<String> = h.sig_algs.iter().map(|s| format!("{s:04x}")).collect();
@@ -310,7 +347,9 @@ pub fn parse_http(b: &[u8]) -> Option<Http> {
         if l.is_empty() {
             break;
         }
-        let Some((k, v)) = l.split_once(':') else { continue };
+        let Some((k, v)) = l.split_once(':') else {
+            continue;
+        };
         let v = v.trim().chars().take(256).collect::<String>();
         match k.trim().to_ascii_lowercase().as_str() {
             "host" => out.host = Some(v),
@@ -406,7 +445,10 @@ mod tests {
 
     #[test]
     fn http_request() {
-        let h = parse_http(b"GET /index.html?q=1 HTTP/1.1\r\nHost: Example.com\r\nUser-Agent: curl/8\r\n\r\n").unwrap();
+        let h = parse_http(
+            b"GET /index.html?q=1 HTTP/1.1\r\nHost: Example.com\r\nUser-Agent: curl/8\r\n\r\n",
+        )
+        .unwrap();
         assert_eq!(h.method, "GET");
         assert_eq!(h.path, "/index.html?q=1");
         assert_eq!(h.version, "HTTP/1.1");
@@ -420,7 +462,9 @@ mod tests {
     fn ssh_banner() {
         assert_eq!(
             classify(b"SSH-2.0-OpenSSH_9.6\r\n"),
-            Some(L7::Ssh { banner: "SSH-2.0-OpenSSH_9.6".into() })
+            Some(L7::Ssh {
+                banner: "SSH-2.0-OpenSSH_9.6".into()
+            })
         );
         assert_eq!(classify(b"\x00\x01binary"), None);
     }

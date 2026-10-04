@@ -42,7 +42,11 @@ pub struct NlOpsPlan {
     pub reply: String,
 }
 
-pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyhow::Result<NlOpsPlan> {
+pub async fn execute(
+    pool: &SqlitePool,
+    req: &NlOpsRequest,
+    actor: &str,
+) -> anyhow::Result<NlOpsPlan> {
     let q = req.query.trim();
     let ql = q.to_lowercase();
 
@@ -58,12 +62,16 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
     // "create_volume" has a real executor calling api::volumes::create_volume.
     if ql.contains("create") && (ql.contains("volume") || ql.contains("disk")) {
         let size_gib = extract_size_gib(&ql).unwrap_or(10);
-        let name = extract_named(&ql).unwrap_or_else(|| format!("vol-{}", &Uuid::new_v4().to_string()[..8]));
-        let object_ref = serde_json::json!({ "name": name, "size_gib": size_gib, "volume_class": "silver" });
+        let name = extract_named(&ql)
+            .unwrap_or_else(|| format!("vol-{}", &Uuid::new_v4().to_string()[..8]));
+        let object_ref =
+            serde_json::json!({ "name": name, "size_gib": size_gib, "volume_class": "silver" });
         let step = NlOpsStep {
             label: format!("Create {size_gib}GiB volume '{name}'"),
             action_type: "create_volume".into(),
-            review: format!("Provision a {size_gib}GiB volume named '{name}' (Atlas-backed if enabled)"),
+            review: format!(
+                "Provision a {size_gib}GiB volume named '{name}' (Atlas-backed if enabled)"
+            ),
             risk: "low".into(),
         };
         let mut action_ids = Vec::new();
@@ -91,14 +99,19 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
             dry_run: req.dry_run,
             approval_required: true,
             action_ids,
-            reply: format!("Prepared a {size_gib}GiB volume named '{name}' — approve in Zyra queue."),
+            reply: format!(
+                "Prepared a {size_gib}GiB volume named '{name}' — approve in Zyra queue."
+            ),
         });
     }
 
     // Create a security group — "create_security_group_allow" also has a real
     // executor (api::networking::{create_security_group, create_security_group_rule}).
-    if ql.contains("security group") || (ql.contains("create") && ql.contains("firewall") && ql.contains("allow")) {
-        let name = extract_named(&ql).unwrap_or_else(|| format!("sg-{}", &Uuid::new_v4().to_string()[..8]));
+    if ql.contains("security group")
+        || (ql.contains("create") && ql.contains("firewall") && ql.contains("allow"))
+    {
+        let name = extract_named(&ql)
+            .unwrap_or_else(|| format!("sg-{}", &Uuid::new_v4().to_string()[..8]));
         let (protocol, port) = extract_service(&ql).unwrap_or(("tcp", 22));
         let object_ref = serde_json::json!({ "name": name, "protocol": protocol, "port": port });
         let step = NlOpsStep {
@@ -197,7 +210,10 @@ pub async fn execute(pool: &SqlitePool, req: &NlOpsRequest, actor: &str) -> anyh
     if ql.contains("migrate") && ql.contains("from") {
         let host_hint = extract_host_hint(&ql);
         let vms: Vec<(Uuid, String)> = if let Some(h) = &host_hint {
-            let escaped = h.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+            let escaped = h
+                .replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_");
             sqlx::query_as(
                 "SELECT v.id, v.name FROM vms v JOIN hosts h ON h.id = v.host_id
                  WHERE h.hostname LIKE ? ESCAPE '\\'",
@@ -433,7 +449,9 @@ fn extract_size_gib(ql: &str) -> Option<i64> {
         }
         let suffix = &word[trimmed.len()..];
         let is_size_unit = matches!(suffix, "gb" | "gib" | "g")
-            || words.get(i + 1).is_some_and(|next| matches!(*next, "gb" | "gib" | "g" | "gigs" | "gigabytes"));
+            || words
+                .get(i + 1)
+                .is_some_and(|next| matches!(*next, "gb" | "gib" | "g" | "gigs" | "gigabytes"));
         if is_size_unit {
             if let Ok(n) = trimmed.parse::<i64>() {
                 if n > 0 {
@@ -467,7 +485,10 @@ fn extract_service(ql: &str) -> Option<(&'static str, i32)> {
     if let Some(idx) = ql.find("port ") {
         let rest = &ql[idx + 5..];
         if let Some(word) = rest.split_whitespace().next() {
-            if let Ok(n) = word.trim_matches(|c: char| !c.is_ascii_digit()).parse::<i32>() {
+            if let Ok(n) = word
+                .trim_matches(|c: char| !c.is_ascii_digit())
+                .parse::<i32>()
+            {
                 return Some(("tcp", n));
             }
         }

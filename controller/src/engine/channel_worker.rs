@@ -131,9 +131,10 @@ async fn deliver_email(to: &str, subject: &str, body: &str) -> anyhow::Result<()
         .body(body.to_string())?;
 
     let mut builder = AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&host)?.port(port);
-    if let (Ok(user), Ok(pass)) =
-        (std::env::var("MACHINA_SMTP_USER"), std::env::var("MACHINA_SMTP_PASS"))
-    {
+    if let (Ok(user), Ok(pass)) = (
+        std::env::var("MACHINA_SMTP_USER"),
+        std::env::var("MACHINA_SMTP_PASS"),
+    ) {
         if !user.is_empty() {
             builder = builder.credentials(Credentials::new(user, pass));
         }

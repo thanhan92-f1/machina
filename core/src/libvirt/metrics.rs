@@ -42,7 +42,11 @@ fn compute_memory_mb(
     // RSS includes QEMU process overhead (device emulation, page tables) beyond the guest's
     // balloon size, so the RSS fallback can report more "used" than the VM's total memory.
     // Clamp to total so used_mb and pct never contradict each other in the UI.
-    let used_mb = if total_mb > 0 { used_mb.min(total_mb) } else { used_mb };
+    let used_mb = if total_mb > 0 {
+        used_mb.min(total_mb)
+    } else {
+        used_mb
+    };
     let pct = if total_mb > 0 {
         (used_mb as f64 / total_mb as f64 * 100.0).min(100.0)
     } else {

@@ -188,11 +188,13 @@ pub async fn patch_alert(
             .await?;
     }
     if let Some(assignee) = &body.assigned_to {
-        sqlx::query("UPDATE soc_alerts SET assigned_to = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(assignee)
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "UPDATE soc_alerts SET assigned_to = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(assignee)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
     tx.commit().await?;
     fetch_alert(&state.pool, id).await
@@ -328,13 +330,11 @@ pub async fn delete_rule(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     require_admin(&actor)?;
-    let deleted = sqlx::query(
-        "DELETE FROM soc_detection_rules WHERE id = ? AND builtin = FALSE",
-    )
-    .bind(id)
-    .execute(&state.pool)
-    .await?
-    .rows_affected();
+    let deleted = sqlx::query("DELETE FROM soc_detection_rules WHERE id = ? AND builtin = FALSE")
+        .bind(id)
+        .execute(&state.pool)
+        .await?
+        .rows_affected();
     if deleted == 0 {
         return Err(ApiError::not_found("rule not found or is built-in"));
     }
@@ -716,32 +716,40 @@ pub async fn patch_playbook(
     require_admin(&actor)?;
     let mut tx = state.pool.begin().await?;
     if let Some(desc) = &body.description {
-        sqlx::query("UPDATE soc_playbooks SET description = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(desc)
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "UPDATE soc_playbooks SET description = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(desc)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
     if let Some(enabled) = body.enabled {
-        sqlx::query("UPDATE soc_playbooks SET enabled = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(enabled)
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "UPDATE soc_playbooks SET enabled = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(enabled)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
     if let Some(trigger) = &body.trigger_json {
-        sqlx::query("UPDATE soc_playbooks SET trigger_json = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(trigger)
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "UPDATE soc_playbooks SET trigger_json = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(trigger)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
     if let Some(steps) = &body.steps_json {
-        sqlx::query("UPDATE soc_playbooks SET steps_json = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(steps)
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "UPDATE soc_playbooks SET steps_json = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(steps)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
     tx.commit().await?;
     fetch_playbook(&state.pool, id).await

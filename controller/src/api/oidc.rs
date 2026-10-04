@@ -73,9 +73,7 @@ pub async fn patch_oidc_settings(
     }
     if let Some(v) = &body.issuer {
         if !v.is_empty() && !v.starts_with("https://") {
-            return Err(ApiError::bad_request(
-                "OIDC issuer must use HTTPS",
-            ));
+            return Err(ApiError::bad_request("OIDC issuer must use HTTPS"));
         }
         sqlx::query("UPDATE clusters SET oidc_issuer = ?")
             .bind(v)

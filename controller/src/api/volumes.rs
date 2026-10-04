@@ -86,12 +86,16 @@ pub(crate) async fn wait_for_task_timeout(
         match row {
             Some((status, _)) if status == "completed" => return Ok(()),
             Some((status, message)) if status == "failed" => {
-                return Err(ApiError::internal(message.unwrap_or_else(|| "task failed".into())));
+                return Err(ApiError::internal(
+                    message.unwrap_or_else(|| "task failed".into()),
+                ));
             }
             _ => tokio::time::sleep(Duration::from_millis(500)).await,
         }
     }
-    Err(ApiError::internal("timed out waiting for disk operation to complete"))
+    Err(ApiError::internal(
+        "timed out waiting for disk operation to complete",
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -177,7 +181,10 @@ pub async fn create_volume(
         create_volume_local(&state, actor, id, body.size_gib, &body.volume_class).await
     };
     if let Err(e) = result {
-        sqlx::query("UPDATE volumes SET status = 'error' WHERE id = ?").bind(id).execute(&state.pool).await?;
+        sqlx::query("UPDATE volumes SET status = 'error' WHERE id = ?")
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
         return Err(e);
     }
 
@@ -196,8 +203,13 @@ async fn create_volume_atlas(
     volume_class: &str,
 ) -> Result<(), ApiError> {
     let cfg = &state.config;
-    let client = atlas_bridge::require_client(cfg).map_err(|e| ApiError::internal(e.to_string()))?;
-    let policy = if volume_class == "silver" { cfg.atlas_default_policy.as_str() } else { volume_class };
+    let client =
+        atlas_bridge::require_client(cfg).map_err(|e| ApiError::internal(e.to_string()))?;
+    let policy = if volume_class == "silver" {
+        cfg.atlas_default_policy.as_str()
+    } else {
+        volume_class
+    };
     let owner = AtlasOwner {
         product: "machina".into(),
         resource_type: "volume".into(),
@@ -205,7 +217,15 @@ async fn create_volume_atlas(
         role: "data".into(),
     };
     let job = client
-        .create_volume(&cfg.atlas_tenant_id, &atlas_safe_name(name), size_gib.max(1) * 1024 * 1024 * 1024, policy, Some(&owner), None, None)
+        .create_volume(
+            &cfg.atlas_tenant_id,
+            &atlas_safe_name(name),
+            size_gib.max(1) * 1024 * 1024 * 1024,
+            policy,
+            Some(&owner),
+            None,
+            None,
+        )
         .await
         .map_err(|e| ApiError::internal(format!("Atlas volume create failed: {e}")))?;
     let atlas_volume_id = job
@@ -225,12 +245,23 @@ async fn create_volume_atlas(
 /// Atlas uses the volume name as the Kubernetes PVC name (RFC 1123 label) — mirrors
 /// `engine::atlas_vm::dns_safe`, duplicated locally since that helper is private.
 fn atlas_safe_name(s: &str) -> String {
-    let lowered: String = s.chars().map(|c| {
-        let c = c.to_ascii_lowercase();
-        if c.is_ascii_alphanumeric() || c == '-' { c } else { '-' }
-    }).collect();
+    let lowered: String = s
+        .chars()
+        .map(|c| {
+            let c = c.to_ascii_lowercase();
+            if c.is_ascii_alphanumeric() || c == '-' {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect();
     let trimmed = lowered.trim_matches('-');
-    if trimmed.is_empty() { "vol".to_string() } else { trimmed.chars().take(63).collect() }
+    if trimmed.is_empty() {
+        "vol".to_string()
+    } else {
+        trimmed.chars().take(63).collect()
+    }
 }
 
 async fn create_volume_local(
@@ -240,10 +271,11 @@ async fn create_volume_local(
     size_gib: i64,
     volume_class: &str,
 ) -> Result<(), ApiError> {
-    let pool_row: Option<Uuid> = sqlx::query_scalar("SELECT id FROM storage_pools WHERE storage_class = ? LIMIT 1")
-        .bind(volume_class)
-        .fetch_optional(&state.pool)
-        .await?;
+    let pool_row: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM storage_pools WHERE storage_class = ? LIMIT 1")
+            .bind(volume_class)
+            .fetch_optional(&state.pool)
+            .await?;
     let pool_id = match pool_row {
         Some(p) => p,
         None => sqlx::query_scalar("SELECT id FROM storage_pools LIMIT 1")
@@ -251,7 +283,11 @@ async fn create_volume_local(
             .await?
             .ok_or_else(|| ApiError::bad_request("no storage pool configured"))?,
     };
-    sqlx::query("UPDATE volumes SET storage_pool_id = ? WHERE id = ?").bind(pool_id).bind(id).execute(&state.pool).await?;
+    sqlx::query("UPDATE volumes SET storage_pool_id = ? WHERE id = ?")
+        .bind(pool_id)
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
 
     let vol_file_name = format!("vol-{id}");
     let agent_result = storage::create_storage_pool_volume(
@@ -259,11 +295,23 @@ async fn create_volume_local(
         Extension(actor),
         Path(pool_id),
         Query(StoragePoolHostQuery { host_id: None }),
-        Json(CreateStorageVolumeBody { name: vol_file_name, capacity_gb: size_gib.max(1) as u64, format: "qcow2".into() }),
+        Json(CreateStorageVolumeBody {
+            name: vol_file_name,
+            capacity_gb: size_gib.max(1) as u64,
+            format: "qcow2".into(),
+        }),
     )
     .await?;
-    let path = agent_result.0.get("path").and_then(|v| v.as_str()).map(str::to_string);
-    sqlx::query("UPDATE volumes SET status = 'available', path = ? WHERE id = ?").bind(path).bind(id).execute(&state.pool).await?;
+    let path = agent_result
+        .0
+        .get("path")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
+    sqlx::query("UPDATE volumes SET status = 'available', path = ? WHERE id = ?")
+        .bind(path)
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(())
 }
 
@@ -273,21 +321,28 @@ pub async fn delete_volume(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    let row: Option<(Option<Uuid>, Option<String>, Option<Uuid>)> =
-        sqlx::query_as("SELECT attached_vm_id, atlas_volume_id, storage_pool_id FROM volumes WHERE id = ?")
-            .bind(id)
-            .fetch_optional(&state.pool)
-            .await?;
+    let row: Option<(Option<Uuid>, Option<String>, Option<Uuid>)> = sqlx::query_as(
+        "SELECT attached_vm_id, atlas_volume_id, storage_pool_id FROM volumes WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?;
     let Some((attached, atlas_volume_id, pool_id)) = row else {
         return Err(ApiError::not_found("volume not found"));
     };
     if attached.is_some() {
-        return Err(ApiError::bad_request("volume is still attached — detach it first"));
+        return Err(ApiError::bad_request(
+            "volume is still attached — detach it first",
+        ));
     }
 
     if let Some(atlas_id) = atlas_volume_id {
-        let client = atlas_bridge::require_client(&state.config).map_err(|e| ApiError::internal(e.to_string()))?;
-        client.delete_volume(&atlas_id).await.map_err(|e| ApiError::internal(format!("Atlas volume delete failed: {e}")))?;
+        let client = atlas_bridge::require_client(&state.config)
+            .map_err(|e| ApiError::internal(e.to_string()))?;
+        client
+            .delete_volume(&atlas_id)
+            .await
+            .map_err(|e| ApiError::internal(format!("Atlas volume delete failed: {e}")))?;
     } else if let Some(pool_id) = pool_id {
         let vol_file_name = format!("vol-{id}");
         let _ = storage::delete_storage_pool_volume(
@@ -299,7 +354,10 @@ pub async fn delete_volume(
         .await;
     }
 
-    sqlx::query("DELETE FROM volumes WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM volumes WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }
 
@@ -318,7 +376,9 @@ async fn resolve_atlas_rbd_source(
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
     }
-    Err(ApiError::internal("Atlas volume has no backend-native id yet — try again shortly"))
+    Err(ApiError::internal(
+        "Atlas volume has no backend-native id yet — try again shortly",
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -348,7 +408,8 @@ pub async fn attach_volume(
         return Err(ApiError::not_found("volume not found"));
     };
     let disk_source = if let Some(atlas_id) = &atlas_volume_id {
-        let client = atlas_bridge::require_client(&state.config).map_err(|e| ApiError::internal(e.to_string()))?;
+        let client = atlas_bridge::require_client(&state.config)
+            .map_err(|e| ApiError::internal(e.to_string()))?;
         resolve_atlas_rbd_source(&client, &state.config, atlas_id).await?
     } else {
         path.ok_or_else(|| ApiError::internal("volume has no backing path"))?
@@ -362,7 +423,11 @@ pub async fn attach_volume(
         state.clone(),
         actor,
         body.vm_id,
-        vms::AttachDiskBody { disk_path: disk_source, target_dev: body.target_dev.clone(), size_gib: None },
+        vms::AttachDiskBody {
+            disk_path: disk_source,
+            target_dev: body.target_dev.clone(),
+            size_gib: None,
+        },
     )
     .await?;
     wait_for_task(&state.pool, &task.0.task_id).await?;
@@ -396,7 +461,12 @@ pub async fn detach_volume(
         return Err(ApiError::not_found("volume not found"));
     };
     if let (Some(vm_id), Some(target_dev)) = (vm_id, target_dev) {
-        let task = vms::detach_vm_disk(State(state.clone()), Extension(actor), Path((vm_id, target_dev))).await?;
+        let task = vms::detach_vm_disk(
+            State(state.clone()),
+            Extension(actor),
+            Path((vm_id, target_dev)),
+        )
+        .await?;
         wait_for_task(&state.pool, &task.0.task_id).await?;
     }
     sqlx::query("UPDATE volumes SET status = 'available', attached_vm_id = NULL, attached_device = NULL WHERE id = ?")
@@ -425,16 +495,18 @@ pub async fn extend_volume(
     if body.new_size_gib < 1 {
         return Err(ApiError::bad_request("new_size_gib must be at least 1"));
     }
-    let row: Option<(Option<Uuid>, Option<String>, Option<String>)> =
-        sqlx::query_as("SELECT attached_vm_id, attached_device, atlas_volume_id FROM volumes WHERE id = ?")
-            .bind(id)
-            .fetch_optional(&state.pool)
-            .await?;
+    let row: Option<(Option<Uuid>, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT attached_vm_id, attached_device, atlas_volume_id FROM volumes WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?;
     let Some((attached_vm_id, attached_device, atlas_volume_id)) = row else {
         return Err(ApiError::not_found("volume not found"));
     };
     if let Some(atlas_id) = &atlas_volume_id {
-        let client = atlas_bridge::require_client(&state.config).map_err(|e| ApiError::internal(e.to_string()))?;
+        let client = atlas_bridge::require_client(&state.config)
+            .map_err(|e| ApiError::internal(e.to_string()))?;
         client
             .expand_volume(atlas_id, body.new_size_gib.max(1) * 1024 * 1024 * 1024)
             .await
@@ -445,12 +517,18 @@ pub async fn extend_volume(
             State(state.clone()),
             Extension(actor),
             Path((vm_id, target_dev)),
-            Json(vms::ResizeVmDiskBody { size_gb: body.new_size_gib.max(1) as u64 }),
+            Json(vms::ResizeVmDiskBody {
+                size_gb: body.new_size_gib.max(1) as u64,
+            }),
         )
         .await?;
         wait_for_task(&state.pool, &task.0.task_id).await?;
     }
-    sqlx::query("UPDATE volumes SET size_gib = ? WHERE id = ?").bind(body.new_size_gib).bind(id).execute(&state.pool).await?;
+    sqlx::query("UPDATE volumes SET size_gib = ? WHERE id = ?")
+        .bind(body.new_size_gib)
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     let row = sqlx::query_as::<_, VolumeRow>(&format!("{VOLUME_SELECT} WHERE id = ?"))
         .bind(id)
         .fetch_one(&state.pool)
@@ -523,32 +601,46 @@ pub async fn create_volume_snapshot(
     Json(body): Json<CreateSnapshotBody>,
 ) -> Result<Json<VolumeSnapshotRow>, ApiError> {
     require_operator(&actor)?;
-    let atlas_volume_id: Option<String> = sqlx::query_scalar("SELECT atlas_volume_id FROM volumes WHERE id = ?")
-        .bind(volume_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .flatten();
-    let atlas_volume_id = atlas_volume_id
-        .ok_or_else(|| ApiError::bad_request("snapshots require an Atlas-backed volume (ATLAS_ENABLED=1)"))?;
+    let atlas_volume_id: Option<String> =
+        sqlx::query_scalar("SELECT atlas_volume_id FROM volumes WHERE id = ?")
+            .bind(volume_id)
+            .fetch_optional(&state.pool)
+            .await?
+            .flatten();
+    let atlas_volume_id = atlas_volume_id.ok_or_else(|| {
+        ApiError::bad_request("snapshots require an Atlas-backed volume (ATLAS_ENABLED=1)")
+    })?;
 
-    let client = atlas_bridge::require_client(&state.config).map_err(|e| ApiError::internal(e.to_string()))?;
+    let client = atlas_bridge::require_client(&state.config)
+        .map_err(|e| ApiError::internal(e.to_string()))?;
     let job = client
         .snapshot_volume(&atlas_volume_id, Some(&body.name))
         .await
         .map_err(|e| ApiError::internal(format!("Atlas snapshot failed: {e}")))?;
     // `resource` (not `result`) carries the created object's id, matching
     // AtlasJob::resource_volume_id/resource_backup_id's convention.
-    let atlas_snapshot_id = job.resource.get("snapshot_id").and_then(|v| v.as_str()).map(str::to_string);
+    let atlas_snapshot_id = job
+        .resource
+        .get("snapshot_id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
 
     let id = Uuid::new_v4();
-    sqlx::query("INSERT INTO volume_snapshots (id, volume_id, name, atlas_snapshot_id) VALUES (?, ?, ?, ?)")
-        .bind(id)
-        .bind(volume_id)
-        .bind(&body.name)
-        .bind(&atlas_snapshot_id)
-        .execute(&state.pool)
-        .await?;
-    Ok(Json(VolumeSnapshotRow { id, volume_id, name: body.name, status: "available".into() }))
+    sqlx::query(
+        "INSERT INTO volume_snapshots (id, volume_id, name, atlas_snapshot_id) VALUES (?, ?, ?, ?)",
+    )
+    .bind(id)
+    .bind(volume_id)
+    .bind(&body.name)
+    .bind(&atlas_snapshot_id)
+    .execute(&state.pool)
+    .await?;
+    Ok(Json(VolumeSnapshotRow {
+        id,
+        volume_id,
+        name: body.name,
+        status: "available".into(),
+    }))
 }
 
 pub async fn delete_volume_snapshot(
@@ -557,15 +649,20 @@ pub async fn delete_volume_snapshot(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    let atlas_snapshot_id: Option<String> = sqlx::query_scalar("SELECT atlas_snapshot_id FROM volume_snapshots WHERE id = ?")
-        .bind(id)
-        .fetch_optional(&state.pool)
-        .await?
-        .flatten();
+    let atlas_snapshot_id: Option<String> =
+        sqlx::query_scalar("SELECT atlas_snapshot_id FROM volume_snapshots WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&state.pool)
+            .await?
+            .flatten();
     if let Some(snap_id) = atlas_snapshot_id {
-        let client = atlas_bridge::require_client(&state.config).map_err(|e| ApiError::internal(e.to_string()))?;
+        let client = atlas_bridge::require_client(&state.config)
+            .map_err(|e| ApiError::internal(e.to_string()))?;
         let _ = client.delete_snapshot(&snap_id, false).await;
     }
-    sqlx::query("DELETE FROM volume_snapshots WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM volume_snapshots WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }

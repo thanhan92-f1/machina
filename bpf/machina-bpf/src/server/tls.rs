@@ -37,7 +37,9 @@ pub(super) struct TlsRuntime {
 fn comm_key(s: &str) -> Result<[u8; 16]> {
     let b = s.as_bytes();
     if b.is_empty() || b.len() > 15 {
-        return Err(anyhow!("ssl_comms entry `{s}` must be 1..=15 bytes (the kernel comm length)"));
+        return Err(anyhow!(
+            "ssl_comms entry `{s}` must be 1..=15 bytes (the kernel comm length)"
+        ));
     }
     let mut k = [0u8; 16];
     k[..b.len()].copy_from_slice(b);
@@ -63,11 +65,20 @@ fn libssl_targets() -> Vec<(String, (u64, u64))> {
     for p in SYSTEM_LIBSSL {
         add(p.to_string());
     }
-    let Ok(rd) = std::fs::read_dir("/proc") else { return out };
+    let Ok(rd) = std::fs::read_dir("/proc") else {
+        return out;
+    };
     for e in rd.flatten() {
         let name = e.file_name();
-        let Some(pid) = name.to_str().filter(|s| s.bytes().all(|c| c.is_ascii_digit())) else { continue };
-        let Ok(maps) = std::fs::read_to_string(format!("/proc/{pid}/maps")) else { continue };
+        let Some(pid) = name
+            .to_str()
+            .filter(|s| s.bytes().all(|c| c.is_ascii_digit()))
+        else {
+            continue;
+        };
+        let Ok(maps) = std::fs::read_to_string(format!("/proc/{pid}/maps")) else {
+            continue;
+        };
         let mut libs: HashSet<&str> = HashSet::new();
         for line in maps.lines() {
             if let Some(path) = line.split_whitespace().nth(5) {
@@ -92,7 +103,10 @@ fn libssl_targets() -> Vec<(String, (u64, u64))> {
 
 impl Engine {
     pub(super) fn tls_configure(&mut self, config: TlsConfig) -> Result<TlsStatus> {
-        for (name, v) in [("fingerprint_rate", config.fingerprint_rate), ("ssl_rate", config.ssl_rate)] {
+        for (name, v) in [
+            ("fingerprint_rate", config.fingerprint_rate),
+            ("ssl_rate", config.ssl_rate),
+        ] {
             if !(1..=MAX_RATE).contains(&v) {
                 return Err(anyhow!("{name} must be 1..={MAX_RATE} per second"));
             }
@@ -100,11 +114,20 @@ impl Engine {
         if config.ssl_comms.len() > MAX_COMMS {
             return Err(anyhow!("at most {MAX_COMMS} ssl_comms"));
         }
-        let comms: HashSet<[u8; 16]> = config.ssl_comms.iter().map(|c| comm_key(c)).collect::<Result<_>>()?;
+        let comms: HashSet<[u8; 16]> = config
+            .ssl_comms
+            .iter()
+            .map(|c| comm_key(c))
+            .collect::<Result<_>>()?;
         self.dp.array_set(
             "TLSFP_CFG",
             0,
-            SampleCfg { enabled: config.fingerprints as u32, rate: config.fingerprint_rate, all: 0, _pad: 0 },
+            SampleCfg {
+                enabled: config.fingerprints as u32,
+                rate: config.fingerprint_rate,
+                all: 0,
+                _pad: 0,
+            },
         )?;
         for k in self.tls.comms.clone() {
             if !comms.contains(&k) {
@@ -181,7 +204,13 @@ impl Engine {
 
     pub(super) fn tls_status(&mut self) -> TlsStatus {
         let c = lock(&self.shared).counters.clone();
-        let mut notes = self.dp.notes.iter().filter(|n| n.contains("tls") || n.contains("ssl")).cloned().collect::<Vec<_>>();
+        let mut notes = self
+            .dp
+            .notes
+            .iter()
+            .filter(|n| n.contains("tls") || n.contains("ssl"))
+            .cloned()
+            .collect::<Vec<_>>();
         notes.extend(self.tls.notes.iter().cloned());
         TlsStatus {
             config: self.tls.config.clone(),
@@ -195,7 +224,11 @@ impl Engine {
 }
 
 pub(super) fn recent<T: Clone>(q: &VecDeque<T>, limit: Option<usize>) -> Vec<T> {
-    q.iter().rev().take(limit.unwrap_or(DEFAULT_LIMIT)).cloned().collect()
+    q.iter()
+        .rev()
+        .take(limit.unwrap_or(DEFAULT_LIMIT))
+        .cloned()
+        .collect()
 }
 
 #[cfg(test)]

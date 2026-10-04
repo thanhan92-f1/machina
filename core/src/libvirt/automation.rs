@@ -359,10 +359,7 @@ pub fn create_api_token_scoped(
         // The raw token is returned to the immediate caller only (e.g. the
         // `POST /tokens` HTTP response) — this is the one and only time it is
         // ever available; it is never written to api-tokens.json.
-        Ok(ApiToken {
-            token,
-            ..stored
-        })
+        Ok(ApiToken { token, ..stored })
     })
 }
 

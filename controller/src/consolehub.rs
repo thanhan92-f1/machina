@@ -166,7 +166,6 @@ impl ConsoleSessionStore {
         let mut map = self.inner.write().await;
         map.remove(&id).map(|s| s.ws_token)
     }
-
 }
 
 impl Default for ConsoleSessionStore {
@@ -638,7 +637,9 @@ async fn check_console_rbac(
                 "read-only role cannot open interactive (RDP or serial) consoles",
             )
             .with_code("console_rbac")
-            .with_remediation("Request operator access, or use the read-only noVNC/serial viewer."));
+            .with_remediation(
+                "Request operator access, or use the read-only noVNC/serial viewer.",
+            ));
         }
     }
     Ok(())
@@ -1232,11 +1233,10 @@ pub async fn end_session(
     if is_admin {
         return Err(ApiError::not_found("console session not found"));
     }
-    let exists: Option<i64> =
-        sqlx::query_scalar("SELECT 1 FROM console_sessions WHERE id = ?")
-            .bind(session_id)
-            .fetch_optional(&state.pool)
-            .await?;
+    let exists: Option<i64> = sqlx::query_scalar("SELECT 1 FROM console_sessions WHERE id = ?")
+        .bind(session_id)
+        .fetch_optional(&state.pool)
+        .await?;
     if exists.is_some() {
         Err(ApiError::forbidden(
             "cannot end a console session owned by another user",
@@ -1440,7 +1440,9 @@ pub async fn consolehub_explain(
         }
         "fix_network" => {
             lines.push("Check guest NIC, cloud-init network config, and host/CNI routes.".into());
-            lines.push("Use **Network** lens or a native eBPF capture for packet-level detail.".into());
+            lines.push(
+                "Use **Network** lens or a native eBPF capture for packet-level detail.".into(),
+            );
         }
         _ => {
             lines.push(

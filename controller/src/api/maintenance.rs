@@ -101,12 +101,15 @@ pub async fn delete_schedule(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_admin(&actor)?;
-    let deleted = sqlx::query("DELETE FROM maintenance_schedules WHERE id = ? AND status = 'pending'")
-        .bind(id)
-        .execute(&state.pool)
-        .await?;
+    let deleted =
+        sqlx::query("DELETE FROM maintenance_schedules WHERE id = ? AND status = 'pending'")
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
     if deleted.rows_affected() == 0 {
-        return Err(ApiError::not_found("schedule not found or already running/completed"));
+        return Err(ApiError::not_found(
+            "schedule not found or already running/completed",
+        ));
     }
     Ok(Json(serde_json::json!({ "deleted": true })))
 }

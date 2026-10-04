@@ -112,7 +112,8 @@ pub fn merge_firewall_migration(
 ) -> MigrationAdvisorReport {
     if dependencies.is_empty() {
         report.firewall_migration_summary = Some(
-            "No observed firewall port dependencies — verify with native eBPF flows before cutover".into(),
+            "No observed firewall port dependencies — verify with native eBPF flows before cutover"
+                .into(),
         );
         return report;
     }

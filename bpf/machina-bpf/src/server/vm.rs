@@ -104,7 +104,12 @@ pub(super) struct VmEdgeRuntime {
 
 /// Queue the A/AAAA answers of a DNS reply whose names match a `toFQDNs`
 /// pattern; true when something was queued.
-pub(super) fn fqdn_learn(s: &mut Shared, msg: &crate::dns::DnsMessage, vm: Option<&str>, ifindex: u32) -> bool {
+pub(super) fn fqdn_learn(
+    s: &mut Shared,
+    msg: &crate::dns::DnsMessage,
+    vm: Option<&str>,
+    ifindex: u32,
+) -> bool {
     if s.vm_fqdn_patterns.is_empty() {
         return false;
     }
@@ -115,11 +120,19 @@ pub(super) fn fqdn_learn(s: &mut Shared, msg: &crate::dns::DnsMessage, vm: Optio
             names.push(n);
         }
     }
-    if !names.iter().any(|n| s.vm_fqdn_patterns.iter().any(|p| crate::netpol::fqdn::matches(p, n))) {
+    if !names.iter().any(|n| {
+        s.vm_fqdn_patterns
+            .iter()
+            .any(|p| crate::netpol::fqdn::matches(p, n))
+    }) {
         return false;
     }
     let mut queued = false;
-    for a in msg.answers.iter().filter(|a| a.rtype == "A" || a.rtype == "AAAA") {
+    for a in msg
+        .answers
+        .iter()
+        .filter(|a| a.rtype == "A" || a.rtype == "AAAA")
+    {
         if let Ok(ip) = a.data.parse::<IpAddr>() {
             s.vm_fqdn_queue.push(FqdnLearn {
                 names: names.clone(),
@@ -162,17 +175,44 @@ impl FlowIndex {
     }
 
     /// Same lookup order as the kernel; any deny match wins.
-    fn attribute(&self, subject: u32, peer: u32, egress: bool, proto: u8, port: u16) -> Option<String> {
-        let combos = [(peer, proto, port), (peer, proto, 0), (0, proto, port), (0, proto, 0), (peer, 0, 0), (0, 0, 0)];
-        let hits: Vec<&(bool, String)> =
-            combos.iter().filter_map(|(pe, pr, po)| self.rules.get(&(subject, *pe, egress, *pr, *po))).collect();
-        hits.iter().find(|h| h.0).or_else(|| hits.first()).map(|h| h.1.clone()).filter(|s| !s.is_empty())
+    fn attribute(
+        &self,
+        subject: u32,
+        peer: u32,
+        egress: bool,
+        proto: u8,
+        port: u16,
+    ) -> Option<String> {
+        let combos = [
+            (peer, proto, port),
+            (peer, proto, 0),
+            (0, proto, port),
+            (0, proto, 0),
+            (peer, 0, 0),
+            (0, 0, 0),
+        ];
+        let hits: Vec<&(bool, String)> = combos
+            .iter()
+            .filter_map(|(pe, pr, po)| self.rules.get(&(subject, *pe, egress, *pr, *po)))
+            .collect();
+        hits.iter()
+            .find(|h| h.0)
+            .or_else(|| hits.first())
+            .map(|h| h.1.clone())
+            .filter(|s| !s.is_empty())
     }
 }
 
 fn tcp_flag_names(f: u8) -> String {
     let mut out = Vec::new();
-    for (bit, n) in [(0x02, "SYN"), (0x10, "ACK"), (0x01, "FIN"), (0x04, "RST"), (0x08, "PSH"), (0x20, "URG")] {
+    for (bit, n) in [
+        (0x02, "SYN"),
+        (0x10, "ACK"),
+        (0x01, "FIN"),
+        (0x04, "RST"),
+        (0x08, "PSH"),
+        (0x20, "URG"),
+    ] {
         if f & bit != 0 {
             out.push(n);
         }
@@ -197,11 +237,25 @@ pub(super) fn on_vm_flow(
         let egress = ev.from_vm != 0;
         let subject = idx.name(ev.subject).cloned();
         let peer = idx.name(ev.peer).cloned();
-        let port = if ev.icmp != 0 { ev.icmp as u16 } else { ev.dport };
+        let port = if ev.icmp != 0 {
+            ev.icmp as u16
+        } else {
+            ev.dport
+        };
         let policy = idx.attribute(ev.subject, ev.peer, egress, ev.proto, port);
-        let vm = tap_vm.or_else(|| subject.as_ref().map(|s| s.0.clone())).unwrap_or_default();
-        let (src_side, dst_side) = if egress { (subject, peer) } else { (peer, subject) };
-        let (src_id, dst_id) = if egress { (ev.subject, ev.peer) } else { (ev.peer, ev.subject) };
+        let vm = tap_vm
+            .or_else(|| subject.as_ref().map(|s| s.0.clone()))
+            .unwrap_or_default();
+        let (src_side, dst_side) = if egress {
+            (subject, peer)
+        } else {
+            (peer, subject)
+        };
+        let (src_id, dst_id) = if egress {
+            (ev.subject, ev.peer)
+        } else {
+            (ev.peer, ev.subject)
+        };
         let rec = VmFlowRecord {
             ts: mono_to_rfc3339(ev.ts_ns),
             host: None,
@@ -222,7 +276,11 @@ pub(super) fn on_vm_flow(
                 132 => "sctp".into(),
                 p => proto_name(p).into(),
             },
-            tcp_flags: if ev.proto == policy::IPPROTO_TCP { tcp_flag_names(ev.tcp_flags) } else { String::new() },
+            tcp_flags: if ev.proto == policy::IPPROTO_TCP {
+                tcp_flag_names(ev.tcp_flags)
+            } else {
+                String::new()
+            },
             icmp_type: (ev.icmp != 0).then(|| ev.icmp - 1),
             bytes: ev.len,
             verdict: match ev.verdict {
@@ -275,11 +333,17 @@ fn group_identity(name: &str) -> u32 {
         h ^= b as u32;
         h = h.wrapping_mul(0x0100_0193);
     }
-    if h < 16 { h + 16 } else { h }
+    if h < 16 {
+        h + 16
+    } else {
+        h
+    }
 }
 
 fn vm_group(vm: &VmEdgeVm) -> String {
-    vm.group.clone().unwrap_or_else(|| format!("vm:{}", vm.name))
+    vm.group
+        .clone()
+        .unwrap_or_else(|| format!("vm:{}", vm.name))
 }
 
 fn vm_ident(vm: &VmEdgeVm) -> u32 {
@@ -334,8 +398,15 @@ pub(crate) fn parse_dev_rule(s: &str) -> Result<QemuDevRule> {
         .next()
         .and_then(|mm| mm.split_once(':'))
         .ok_or_else(|| anyhow!("device rule `{s}`: expected MAJOR:MINOR"))?;
-    let major: u32 = maj.parse().map_err(|_| anyhow!("device rule `{s}`: bad major"))?;
-    let minor = if min == "*" { DEV_MINOR_ANY } else { min.parse().map_err(|_| anyhow!("device rule `{s}`: bad minor"))? };
+    let major: u32 = maj
+        .parse()
+        .map_err(|_| anyhow!("device rule `{s}`: bad major"))?;
+    let minor = if min == "*" {
+        DEV_MINOR_ANY
+    } else {
+        min.parse()
+            .map_err(|_| anyhow!("device rule `{s}`: bad minor"))?
+    };
     let mut access = 0;
     for c in it.next().unwrap_or("rwm").chars() {
         access |= match c {
@@ -345,14 +416,31 @@ pub(crate) fn parse_dev_rule(s: &str) -> Result<QemuDevRule> {
             _ => return Err(anyhow!("device rule `{s}`: access is a subset of rwm")),
         };
     }
-    Ok(QemuDevRule { major, minor, dev_type: ty, access })
+    Ok(QemuDevRule {
+        major,
+        minor,
+        dev_type: ty,
+        access,
+    })
 }
 
 pub(super) fn dev_rule_string(r: &QemuDevRule) -> String {
-    let ty = if r.dev_type == DEVCG_DEV_BLOCK { 'b' } else { 'c' };
-    let minor = if r.minor == DEV_MINOR_ANY { "*".to_string() } else { r.minor.to_string() };
+    let ty = if r.dev_type == DEVCG_DEV_BLOCK {
+        'b'
+    } else {
+        'c'
+    };
+    let minor = if r.minor == DEV_MINOR_ANY {
+        "*".to_string()
+    } else {
+        r.minor.to_string()
+    };
     let mut acc = String::new();
-    for (bit, c) in [(DEVCG_ACC_READ, 'r'), (DEVCG_ACC_WRITE, 'w'), (DEVCG_ACC_MKNOD, 'm')] {
+    for (bit, c) in [
+        (DEVCG_ACC_READ, 'r'),
+        (DEVCG_ACC_WRITE, 'w'),
+        (DEVCG_ACC_MKNOD, 'm'),
+    ] {
         if r.access & bit != 0 {
             acc.push(c);
         }
@@ -385,20 +473,46 @@ pub(crate) fn parse_ports(specs: &[String]) -> Result<HashSet<u16>> {
 pub(super) fn default_dev_rules() -> Vec<QemuDevRule> {
     let mut out = Vec::new();
     for node in [
-        "/dev/null", "/dev/zero", "/dev/full", "/dev/random", "/dev/urandom", "/dev/ptmx", "/dev/kvm",
-        "/dev/vhost-net", "/dev/vhost-vsock", "/dev/net/tun", "/dev/vfio/vfio", "/dev/sev", "/dev/userfaultfd",
+        "/dev/null",
+        "/dev/zero",
+        "/dev/full",
+        "/dev/random",
+        "/dev/urandom",
+        "/dev/ptmx",
+        "/dev/kvm",
+        "/dev/vhost-net",
+        "/dev/vhost-vsock",
+        "/dev/net/tun",
+        "/dev/vfio/vfio",
+        "/dev/sev",
+        "/dev/userfaultfd",
     ] {
         if let Ok(m) = std::fs::metadata(node) {
             let rdev = m.rdev();
             let major = (((rdev >> 32) & 0xffff_f000) | ((rdev >> 8) & 0xfff)) as u32;
             let minor = (((rdev >> 12) & 0xffff_ff00) | (rdev & 0xff)) as u32;
-            out.push(QemuDevRule { major, minor, dev_type: DEVCG_DEV_CHAR, access: DEVCG_ACC_READ | DEVCG_ACC_WRITE });
+            out.push(QemuDevRule {
+                major,
+                minor,
+                dev_type: DEVCG_DEV_CHAR,
+                access: DEVCG_ACC_READ | DEVCG_ACC_WRITE,
+            });
         }
     }
     // Pseudo-terminals (serial consoles) and VFIO group nodes.
-    out.push(QemuDevRule { major: 136, minor: DEV_MINOR_ANY, dev_type: DEVCG_DEV_CHAR, access: DEVCG_ACC_READ | DEVCG_ACC_WRITE });
+    out.push(QemuDevRule {
+        major: 136,
+        minor: DEV_MINOR_ANY,
+        dev_type: DEVCG_DEV_CHAR,
+        access: DEVCG_ACC_READ | DEVCG_ACC_WRITE,
+    });
     if let Some(m) = char_major("vfio") {
-        out.push(QemuDevRule { major: m, minor: DEV_MINOR_ANY, dev_type: DEVCG_DEV_CHAR, access: DEVCG_ACC_READ | DEVCG_ACC_WRITE });
+        out.push(QemuDevRule {
+            major: m,
+            minor: DEV_MINOR_ANY,
+            dev_type: DEVCG_DEV_CHAR,
+            access: DEVCG_ACC_READ | DEVCG_ACC_WRITE,
+        });
     }
     out
 }
@@ -442,18 +556,28 @@ impl Engine {
         let mut names = HashSet::new();
         for vm in &state.vms {
             if vm.name.is_empty() || !names.insert(vm.name.as_str()) {
-                return Err(anyhow!("vm_edge_sync: VM names must be unique and non-empty"));
+                return Err(anyhow!(
+                    "vm_edge_sync: VM names must be unique and non-empty"
+                ));
             }
         }
         let mut groups: BTreeMap<String, u32> = BTreeMap::new();
         let mut ips: HashMap<[u8; ADDR_LEN], u32> = HashMap::new();
         let mut index = FlowIndex::default();
-        for (id, n) in [(IDENTITY_HOST, "host"), (IDENTITY_WORLD, "world"), (crate::netpol::IDENTITY_REMOTE_NODE, "remote-node")] {
+        for (id, n) in [
+            (IDENTITY_HOST, "host"),
+            (IDENTITY_WORLD, "world"),
+            (crate::netpol::IDENTITY_REMOTE_NODE, "remote-node"),
+        ] {
             index.names.insert(id, (n.to_string(), BTreeMap::new()));
         }
         for vm in &state.vms {
             let id = vm_ident(vm);
-            groups.insert(vm.identity.map_or_else(|| vm_group(vm), |_| format!("vm:{}", vm.name)), id);
+            groups.insert(
+                vm.identity
+                    .map_or_else(|| vm_group(vm), |_| format!("vm:{}", vm.name)),
+                id,
+            );
             if let Some(g) = &vm.group {
                 groups.entry(g.clone()).or_insert(id);
             }
@@ -465,13 +589,17 @@ impl Engine {
         let mut cidrs: Vec<(Prefix, u32)> = Vec::new();
         for p in &state.peers {
             if p.cidr.contains('/') {
-                let pre = policy::parse_prefix(&p.cidr).map_err(|e| anyhow!("peer {}: {e}", p.cidr))?;
+                let pre =
+                    policy::parse_prefix(&p.cidr).map_err(|e| anyhow!("peer {}: {e}", p.cidr))?;
                 cidrs.push((pre, p.identity));
             } else {
                 ips.entry(addr16(&p.cidr)?).or_insert(p.identity);
             }
             if !p.name.is_empty() {
-                index.names.entry(p.identity).or_insert_with(|| (p.name.clone(), BTreeMap::new()));
+                index
+                    .names
+                    .entry(p.identity)
+                    .or_insert_with(|| (p.name.clone(), BTreeMap::new()));
             }
         }
         let mut policy: HashMap<PolicyKey, u32> = HashMap::new();
@@ -486,17 +614,29 @@ impl Engine {
         for r in &state.policy {
             let subject = match r.subject_identity {
                 Some(id) => id,
-                None => *groups.get(&r.group).ok_or_else(|| anyhow!("rule for unknown group `{}`", r.group))?,
+                None => *groups
+                    .get(&r.group)
+                    .ok_or_else(|| anyhow!("rule for unknown group `{}`", r.group))?,
             };
             let peer = match (r.peer_identity, r.peer.as_deref()) {
                 (Some(id), _) => id,
                 (None, None | Some("") | Some("any")) => 0,
                 (None, Some("world")) => IDENTITY_WORLD,
-                (None, Some(p)) => *groups.get(p).ok_or_else(|| anyhow!("rule peer `{p}` is not a group"))?,
+                (None, Some(p)) => *groups
+                    .get(p)
+                    .ok_or_else(|| anyhow!("rule peer `{p}` is not a group"))?,
             };
-            let end = if r.port_end > r.port { r.port_end } else { r.port };
+            let end = if r.port_end > r.port {
+                r.port_end
+            } else {
+                r.port
+            };
             if end - r.port >= crate::netpol::MAX_PORT_RANGE as u16 {
-                return Err(anyhow!("rule port range {}-{end} wider than {}", r.port, crate::netpol::MAX_PORT_RANGE));
+                return Err(anyhow!(
+                    "rule port range {}-{end} wider than {}",
+                    r.port,
+                    crate::netpol::MAX_PORT_RANGE
+                ));
             }
             let val = rule_val(r.deny, r.auth, r.l7);
             if r.deny {
@@ -510,28 +650,45 @@ impl Engine {
                 let k = PolicyKey {
                     subject_identity: subject,
                     peer_identity: peer,
-                    direction: if r.egress { POLICY_EGRESS } else { POLICY_INGRESS },
+                    direction: if r.egress {
+                        POLICY_EGRESS
+                    } else {
+                        POLICY_INGRESS
+                    },
                     proto: r.proto,
                     port: port.to_be_bytes(),
                 };
                 let e = policy.entry(k).or_insert(val);
                 *e = merge_val(*e, val);
                 let src = r.source.clone().unwrap_or_default();
-                let ie = index.rules.entry((subject, peer, r.egress, r.proto, port)).or_insert((r.deny, src.clone()));
+                let ie = index
+                    .rules
+                    .entry((subject, peer, r.egress, r.proto, port))
+                    .or_insert((r.deny, src.clone()));
                 if r.deny && !ie.0 {
                     *ie = (true, src);
                 }
             }
         }
         if policy.len() > VM_POLICY_CAP {
-            return Err(anyhow!("{} VM policy entries exceed the map size ({VM_POLICY_CAP})", policy.len()));
+            return Err(anyhow!(
+                "{} VM policy entries exceed the map size ({VM_POLICY_CAP})",
+                policy.len()
+            ));
         }
 
         self.dp.addr_lpm_clear::<u32>("VM_CIDR_IDS")?;
         for (p, id) in &cidrs {
-            self.dp.addr_lpm_insert("VM_CIDR_IDS", p.addr, p.bits, *id)?;
+            self.dp
+                .addr_lpm_insert("VM_CIDR_IDS", p.addr, p.bits, *id)?;
         }
-        let patterns: Vec<String> = state.fqdn.iter().map(|r| r.pattern.clone()).collect::<BTreeSet<_>>().into_iter().collect();
+        let patterns: Vec<String> = state
+            .fqdn
+            .iter()
+            .map(|r| r.pattern.clone())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
         if patterns.is_empty() {
             self.vm_edge.fqdn_cache.clear();
         }
@@ -574,12 +731,21 @@ impl Engine {
         let mut learned: Vec<(&[u8; ADDR_LEN], &FqdnBinding)> = rt.fqdn_cache.iter().collect();
         learned.sort_by_key(|(a, _)| **a);
         for (addr, b) in learned {
-            let names: Vec<&String> = b.names.iter().filter(|(_, exp)| **exp > now).map(|(n, _)| n).collect();
+            let names: Vec<&String> = b
+                .names
+                .iter()
+                .filter(|(_, exp)| **exp > now)
+                .map(|(n, _)| n)
+                .collect();
             let rules: Vec<&VmEdgeFqdnRule> = rt
                 .state
                 .fqdn
                 .iter()
-                .filter(|r| names.iter().any(|n| crate::netpol::fqdn::matches(&r.pattern, n)))
+                .filter(|r| {
+                    names
+                        .iter()
+                        .any(|n| crate::netpol::fqdn::matches(&r.pattern, n))
+                })
                 .collect();
             if rules.is_empty() {
                 continue;
@@ -593,7 +759,13 @@ impl Engine {
                         .filter(|(p, _)| prefix_has(p, addr))
                         .max_by_key(|(p, _)| p.bits)
                         .map_or(IDENTITY_WORLD, |(_, id)| *id);
-                    (crate::netpol::cidr_identity(&Prefix { addr: *addr, bits: 128 }), Some(from))
+                    (
+                        crate::netpol::cidr_identity(&Prefix {
+                            addr: *addr,
+                            bits: 128,
+                        }),
+                        Some(from),
+                    )
                 }
             };
             let mut add: Vec<(PolicyKey, u32)> = Vec::new();
@@ -602,7 +774,15 @@ impl Engine {
                     rt.base_policy
                         .iter()
                         .filter(|(k, _)| k.peer_identity == from)
-                        .map(|(k, v)| (PolicyKey { peer_identity: id, ..*k }, *v)),
+                        .map(|(k, v)| {
+                            (
+                                PolicyKey {
+                                    peer_identity: id,
+                                    ..*k
+                                },
+                                *v,
+                            )
+                        }),
                 );
                 l7.extend(
                     rt.state
@@ -616,7 +796,11 @@ impl Engine {
                 );
             }
             for r in &rules {
-                let end = if r.port_end > r.port { r.port_end } else { r.port };
+                let end = if r.port_end > r.port {
+                    r.port_end
+                } else {
+                    r.port
+                };
                 for port in r.port..=end {
                     let k = PolicyKey {
                         subject_identity: r.subject_identity,
@@ -641,7 +825,10 @@ impl Engine {
                 }
             }
             if policy.len() + add.len() > VM_POLICY_CAP {
-                tracing::warn!("vm edge: VM policy map full; {} not applied", fmt_addr(addr));
+                tracing::warn!(
+                    "vm edge: VM policy map full; {} not applied",
+                    fmt_addr(addr)
+                );
                 continue;
             }
             if let Some(from) = inherit {
@@ -653,17 +840,26 @@ impl Engine {
                     .map(|(k, v)| ((k.0, id, k.2, k.3, k.4), v.clone()))
                     .collect();
                 index.rules.extend(copied);
-                index.names.insert(id, (format!("fqdn:{}", names[0]), BTreeMap::new()));
+                index
+                    .names
+                    .insert(id, (format!("fqdn:{}", names[0]), BTreeMap::new()));
             }
             for (k, v) in add {
                 let e = policy.entry(k).or_insert(v);
                 *e = merge_val(*e, v);
             }
             for r in &rules {
-                let end = if r.port_end > r.port { r.port_end } else { r.port };
+                let end = if r.port_end > r.port {
+                    r.port_end
+                } else {
+                    r.port
+                };
                 for port in r.port..=end {
                     let src = r.source.clone().unwrap_or_default();
-                    index.rules.entry((r.subject_identity, id, true, r.proto, port)).or_insert((false, src));
+                    index
+                        .rules
+                        .entry((r.subject_identity, id, true, r.proto, port))
+                        .or_insert((false, src));
                 }
             }
             fqdn_ids.insert(*addr, id);
@@ -710,8 +906,20 @@ impl Engine {
         let mut changed = false;
         for l in queue {
             let ttl = Duration::from_secs(l.ttl as u64).clamp(FQDN_MIN_TTL, FQDN_MAX_TTL);
-            let b = self.vm_edge.fqdn_cache.entry(l.addr).or_insert_with(|| FqdnBinding { names: BTreeMap::new(), vm: String::new() });
-            let tap_vm = self.vm_edge.taps.values().find(|(i, _)| *i == l.ifindex).map(|(_, v)| v.clone());
+            let b = self
+                .vm_edge
+                .fqdn_cache
+                .entry(l.addr)
+                .or_insert_with(|| FqdnBinding {
+                    names: BTreeMap::new(),
+                    vm: String::new(),
+                });
+            let tap_vm = self
+                .vm_edge
+                .taps
+                .values()
+                .find(|(i, _)| *i == l.ifindex)
+                .map(|(_, v)| v.clone());
             if let Some(vm) = tap_vm.or(Some(l.vm)).filter(|v| !v.is_empty()) {
                 b.vm = vm;
             }
@@ -786,7 +994,8 @@ impl Engine {
         for k in [idx << 1, (idx << 1) | 1] {
             self.dp.cni_hash_remove::<u32, VmBucket>("VM_BUCKETS", &k);
         }
-        self.dp.percpu_remove::<u32, VmEdgeStats>("VM_EDGE_STATS", &idx);
+        self.dp
+            .percpu_remove::<u32, VmEdgeStats>("VM_EDGE_STATS", &idx);
     }
 
     /// Program taps of VMs in the edge state; drop taps that went away.
@@ -794,7 +1003,13 @@ impl Engine {
         if self.vm_edge.state.vms.is_empty() && self.vm_edge.taps.is_empty() {
             return;
         }
-        let by_name: HashMap<&str, &VmEdgeVm> = self.vm_edge.state.vms.iter().map(|v| (v.name.as_str(), v)).collect();
+        let by_name: HashMap<&str, &VmEdgeVm> = self
+            .vm_edge
+            .state
+            .vms
+            .iter()
+            .map(|v| (v.name.as_str(), v))
+            .collect();
         let mut taps: Vec<(String, &VmEdgeVm)> = Vec::new();
         if self.vm_edge.state.vms.iter().any(|v| v.taps.is_empty()) {
             for (tap, info) in attribution::scan_libvirt() {
@@ -832,7 +1047,13 @@ impl Engine {
             if self.vm_edge.state.flow_log {
                 flags |= VME_FLOW_LOG;
             }
-            if self.vm_edge.state.fqdn.iter().any(|r| r.subject_identity == identity) {
+            if self
+                .vm_edge
+                .state
+                .fqdn
+                .iter()
+                .any(|r| r.subject_identity == identity)
+            {
                 flags |= VME_FQDN;
             }
             if self.vm_edge.l7auth.contains(&identity) {
@@ -864,7 +1085,8 @@ impl Engine {
             } else {
                 self.dp.forget_tc(&tap);
                 self.dp.cni_hash_remove::<u32, VmEdgeCfg>("VM_EDGE", &idx);
-                self.dp.percpu_remove::<u32, VmEdgeStats>("VM_EDGE_STATS", &idx);
+                self.dp
+                    .percpu_remove::<u32, VmEdgeStats>("VM_EDGE_STATS", &idx);
             }
             self.vm_edge.taps.remove(&tap);
         }
@@ -872,7 +1094,9 @@ impl Engine {
             if self.vm_edge.taps.contains_key(&tap) {
                 continue;
             }
-            let Some(idx) = if_nametoindex(&tap) else { continue };
+            let Some(idx) = if_nametoindex(&tap) else {
+                continue;
+            };
             let res = self
                 .dp
                 .cni_hash_insert("VM_EDGE", idx, cfg)
@@ -905,8 +1129,12 @@ impl Engine {
             .unwrap_or_default()
             .into_iter()
             .collect();
-        let cfgs: HashMap<u32, VmEdgeCfg> =
-            self.dp.hash_entries::<u32, VmEdgeCfg>("VM_EDGE").unwrap_or_default().into_iter().collect();
+        let cfgs: HashMap<u32, VmEdgeCfg> = self
+            .dp
+            .hash_entries::<u32, VmEdgeCfg>("VM_EDGE")
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
         let mut taps: Vec<VmEdgeTap> = self
             .vm_edge
             .taps
@@ -932,7 +1160,12 @@ impl Engine {
             })
             .collect();
         taps.sort_by(|a, b| a.iface.cmp(&b.iface));
-        let covered: HashSet<&str> = self.vm_edge.taps.values().map(|(_, v)| v.as_str()).collect();
+        let covered: HashSet<&str> = self
+            .vm_edge
+            .taps
+            .values()
+            .map(|(_, v)| v.as_str())
+            .collect();
         VmEdgeStatus {
             vms: self.vm_edge.state.vms.len(),
             rules: self.vm_edge.policy.len(),
@@ -1084,7 +1317,10 @@ impl Engine {
 
     // ---- QEMU sandbox --------------------------------------------------------
 
-    pub(super) fn vm_sandbox_configure(&mut self, config: VmSandboxConfig) -> Result<VmSandboxStatus> {
+    pub(super) fn vm_sandbox_configure(
+        &mut self,
+        config: VmSandboxConfig,
+    ) -> Result<VmSandboxStatus> {
         let enforce = match config.mode.as_str() {
             "observe" => false,
             "enforce" => true,
@@ -1095,10 +1331,17 @@ impl Engine {
             rules.push(parse_dev_rule(s)?);
         }
         if rules.len() > QEMU_DEV_RULES {
-            return Err(anyhow!("at most {QEMU_DEV_RULES} device rules (have {})", rules.len()));
+            return Err(anyhow!(
+                "at most {QEMU_DEV_RULES} device rules (have {})",
+                rules.len()
+            ));
         }
         let ports = parse_ports(&config.egress_ports)?;
-        let mut cfg = QemuSandboxCfg { n: rules.len() as u32, flags: if enforce { SANDBOX_ENFORCE } else { 0 }, ..Default::default() };
+        let mut cfg = QemuSandboxCfg {
+            n: rules.len() as u32,
+            flags: if enforce { SANDBOX_ENFORCE } else { 0 },
+            ..Default::default()
+        };
         cfg.rules[..rules.len()].copy_from_slice(&rules);
         self.dp.array_set("QEMU_SANDBOX", 0, cfg)?;
         for p in self.sandbox.ports.clone() {
@@ -1126,21 +1369,32 @@ impl Engine {
         Ok(())
     }
 
-    pub(super) fn vm_sandbox_attach(&mut self, vm: &str, cgroup: Option<&str>) -> Result<VmSandboxStatus> {
+    pub(super) fn vm_sandbox_attach(
+        &mut self,
+        vm: &str,
+        cgroup: Option<&str>,
+    ) -> Result<VmSandboxStatus> {
         self.ensure_sandbox_config()?;
         let rel = match cgroup {
             Some(c) => c.trim_matches('/').to_string(),
-            None => qemu_scopes().remove(vm).ok_or_else(|| anyhow!("no running machine-qemu scope for VM {vm}"))?,
+            None => qemu_scopes()
+                .remove(vm)
+                .ok_or_else(|| anyhow!("no running machine-qemu scope for VM {vm}"))?,
         };
         if rel.split('/').any(|s| s == "..") {
-            return Err(anyhow!("cgroup path must stay under {}", attribution::CGROUP_ROOT));
+            return Err(anyhow!(
+                "cgroup path must stay under {}",
+                attribution::CGROUP_ROOT
+            ));
         }
         if let Some(old) = self.sandbox.attached.get(vm).cloned() {
             if old != rel {
-                self.dp.detach_sandbox(&format!("{}/{old}", attribution::CGROUP_ROOT));
+                self.dp
+                    .detach_sandbox(&format!("{}/{old}", attribution::CGROUP_ROOT));
             }
         }
-        self.dp.attach_sandbox(&Path::new(attribution::CGROUP_ROOT).join(&rel))?;
+        self.dp
+            .attach_sandbox(&Path::new(attribution::CGROUP_ROOT).join(&rel))?;
         self.sandbox.attached.insert(vm.to_string(), rel);
         self.sandbox.pinned.insert(vm.to_string());
         Ok(self.vm_sandbox_status())
@@ -1150,7 +1404,8 @@ impl Engine {
         self.sandbox.pinned.remove(vm);
         match self.sandbox.attached.remove(vm) {
             Some(rel) => {
-                self.dp.detach_sandbox(&format!("{}/{rel}", attribution::CGROUP_ROOT));
+                self.dp
+                    .detach_sandbox(&format!("{}/{rel}", attribution::CGROUP_ROOT));
                 true
             }
             None => false,
@@ -1160,7 +1415,10 @@ impl Engine {
     /// Forget scopes that went away; with `auto` (or for pinned VMs that
     /// restarted) sandbox running QEMU scopes.
     pub(super) fn sandbox_refresh(&mut self) {
-        if !self.sandbox.config.auto && self.sandbox.attached.is_empty() && self.sandbox.pinned.is_empty() {
+        if !self.sandbox.config.auto
+            && self.sandbox.attached.is_empty()
+            && self.sandbox.pinned.is_empty()
+        {
             return;
         }
         let root = Path::new(attribution::CGROUP_ROOT);
@@ -1172,14 +1430,17 @@ impl Engine {
             .map(|(v, r)| (v.clone(), r.clone()))
             .collect();
         for (vm, rel) in gone {
-            self.dp.forget_sandbox(&format!("{}/{rel}", attribution::CGROUP_ROOT));
+            self.dp
+                .forget_sandbox(&format!("{}/{rel}", attribution::CGROUP_ROOT));
             self.sandbox.attached.remove(&vm);
         }
         if self.ensure_sandbox_config().is_err() {
             return;
         }
         for (vm, rel) in qemu_scopes() {
-            if self.sandbox.attached.contains_key(&vm) || !(self.sandbox.config.auto || self.sandbox.pinned.contains(&vm)) {
+            if self.sandbox.attached.contains_key(&vm)
+                || !(self.sandbox.config.auto || self.sandbox.pinned.contains(&vm))
+            {
                 continue;
             }
             match self.dp.attach_sandbox(&root.join(&rel)) {
@@ -1198,20 +1459,38 @@ impl Engine {
     }
 
     pub(super) fn vm_sandbox_status(&mut self) -> VmSandboxStatus {
-        let dev = self.dp.hash_entries::<DevHitKey, u64>("QEMU_DEV_HITS").unwrap_or_default();
-        let net = self.dp.hash_entries::<NetHitKey, u64>("QEMU_NET_HITS").unwrap_or_default();
+        let dev = self
+            .dp
+            .hash_entries::<DevHitKey, u64>("QEMU_DEV_HITS")
+            .unwrap_or_default();
+        let net = self
+            .dp
+            .hash_entries::<NetHitKey, u64>("QEMU_NET_HITS")
+            .unwrap_or_default();
         let mut sh = lock(&self.shared);
         let mut who = |id: u64| -> (Option<String>, Option<String>) {
             let path = sh.cgroups.lookup(id);
-            let vm = path.as_deref().and_then(|p| attribution::classify_cgroup(p).vm);
+            let vm = path
+                .as_deref()
+                .and_then(|p| attribution::classify_cgroup(p).vm);
             (vm, path)
         };
         let mut device_hits: Vec<SandboxHit> = dev
             .into_iter()
             .map(|(k, count)| {
                 let (vm, cgroup) = who(k.cgroup);
-                let r = QemuDevRule { major: k.major, minor: k.minor, dev_type: k.dev_type as u32, access: k.access as u32 };
-                SandboxHit { vm, cgroup, target: dev_rule_string(&r), count }
+                let r = QemuDevRule {
+                    major: k.major,
+                    minor: k.minor,
+                    dev_type: k.dev_type as u32,
+                    access: k.access as u32,
+                };
+                SandboxHit {
+                    vm,
+                    cgroup,
+                    target: dev_rule_string(&r),
+                    count,
+                }
             })
             .collect();
         let mut egress_hits: Vec<SandboxHit> = net
@@ -1225,7 +1504,12 @@ impl Engine {
                 } else {
                     format!("{} {addr}:{port}", proto_name(k.proto))
                 };
-                SandboxHit { vm, cgroup, target, count }
+                SandboxHit {
+                    vm,
+                    cgroup,
+                    target,
+                    count,
+                }
             })
             .collect();
         drop(sh);
@@ -1250,7 +1534,10 @@ mod tests {
     #[test]
     fn device_rules_round_trip() {
         let r = parse_dev_rule("c 10:232 rw").unwrap();
-        assert_eq!((r.major, r.minor, r.dev_type, r.access), (10, 232, DEVCG_DEV_CHAR, DEVCG_ACC_READ | DEVCG_ACC_WRITE));
+        assert_eq!(
+            (r.major, r.minor, r.dev_type, r.access),
+            (10, 232, DEVCG_DEV_CHAR, DEVCG_ACC_READ | DEVCG_ACC_WRITE)
+        );
         assert_eq!(dev_rule_string(&r), "c 10:232 rw");
         let r = parse_dev_rule("b 8:*").unwrap();
         assert_eq!(r.minor, DEV_MINOR_ANY);

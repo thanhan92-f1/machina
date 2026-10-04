@@ -258,9 +258,8 @@ mod tests {
 
     #[test]
     fn invalid_input_from_agent_maps_to_400() {
-        let e = ApiError::from_upstream(
-            "Invalid input: address must be CIDR (e.g. 192.168.122.50/24)",
-        );
+        let e =
+            ApiError::from_upstream("Invalid input: address must be CIDR (e.g. 192.168.122.50/24)");
         assert_eq!(e.status, StatusCode::BAD_REQUEST);
         assert_eq!(e.error_code.as_deref(), Some("invalid_request"));
     }

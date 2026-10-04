@@ -50,10 +50,12 @@ async fn tick_triggers(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Res
         {
             tracing::error!(incident = %incident, "runbook scheduler: auto-triggered runbook failed: {e:#}");
         }
-        sqlx::query("UPDATE ops_runbook_catalog SET last_triggered_at = datetime('now') WHERE incident = ?")
-            .bind(&incident)
-            .execute(pool)
-            .await?;
+        sqlx::query(
+            "UPDATE ops_runbook_catalog SET last_triggered_at = datetime('now') WHERE incident = ?",
+        )
+        .bind(&incident)
+        .execute(pool)
+        .await?;
         tracing::info!("auto-triggered runbook {incident} ({trigger})");
     }
     Ok(())

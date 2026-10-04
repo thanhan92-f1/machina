@@ -50,7 +50,12 @@ impl BpfdClient {
     async fn connect(&self) -> Result<UnixStream> {
         tokio::time::timeout(Duration::from_secs(3), UnixStream::connect(&self.path))
             .await
-            .map_err(|_| anyhow!("timed out connecting to machina-bpfd at {}", self.path.display()))?
+            .map_err(|_| {
+                anyhow!(
+                    "timed out connecting to machina-bpfd at {}",
+                    self.path.display()
+                )
+            })?
             .with_context(|| {
                 format!(
                     "machina-bpfd not reachable at {} (is machina-bpfd.service running?)",
@@ -72,11 +77,14 @@ impl BpfdClient {
             if buf.is_empty() {
                 return Err(anyhow!("machina-bpfd closed the connection"));
             }
-            let resp: Response = serde_json::from_str(&buf).context("invalid machina-bpfd response")?;
+            let resp: Response =
+                serde_json::from_str(&buf).context("invalid machina-bpfd response")?;
             if resp.ok {
                 Ok(resp.data)
             } else {
-                Err(anyhow!(resp.error.unwrap_or_else(|| "machina-bpfd error".into())))
+                Err(anyhow!(resp
+                    .error
+                    .unwrap_or_else(|| "machina-bpfd error".into())))
             }
         };
         tokio::time::timeout(self.timeout, fut)
@@ -117,18 +125,29 @@ impl BpfdClient {
 
     /// Hand a bound AF_XDP socket to bpfd for (iface, queue) and open that
     /// queue's gate. bpfd keeps no fd: closing `xsk` unregisters it.
-    pub fn register_xsk(&self, iface: &str, queue: u32, xsk: std::os::fd::BorrowedFd<'_>) -> Result<Value> {
+    pub fn register_xsk(
+        &self,
+        iface: &str,
+        queue: u32,
+        xsk: std::os::fd::BorrowedFd<'_>,
+    ) -> Result<Value> {
         use std::io::{BufRead, BufReader};
         use std::os::fd::AsRawFd;
         let s = std::os::unix::net::UnixStream::connect(&self.path)
             .with_context(|| format!("connect {}", self.path.display()))?;
         s.set_read_timeout(Some(self.timeout))?;
-        let mut line = serde_json::to_vec(&Request::AfxdpRegister { iface: iface.into(), queue })?;
+        let mut line = serde_json::to_vec(&Request::AfxdpRegister {
+            iface: iface.into(),
+            queue,
+        })?;
         line.push(b'\n');
         let fd = xsk.as_raw_fd();
         let space = unsafe { libc::CMSG_SPACE(std::mem::size_of::<libc::c_int>() as u32) } as usize;
         let mut cbuf = vec![0u64; space.div_ceil(8)];
-        let mut iov = libc::iovec { iov_base: line.as_mut_ptr().cast(), iov_len: line.len() };
+        let mut iov = libc::iovec {
+            iov_base: line.as_mut_ptr().cast(),
+            iov_len: line.len(),
+        };
         let mut msg: libc::msghdr = unsafe { std::mem::zeroed() };
         msg.msg_iov = &mut iov;
         msg.msg_iovlen = 1;
@@ -150,7 +169,9 @@ impl BpfdClient {
         if resp.ok {
             Ok(resp.data)
         } else {
-            Err(anyhow!(resp.error.unwrap_or_else(|| "machina-bpfd error".into())))
+            Err(anyhow!(resp
+                .error
+                .unwrap_or_else(|| "machina-bpfd error".into())))
         }
     }
 }

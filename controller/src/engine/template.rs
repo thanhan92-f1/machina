@@ -12,7 +12,10 @@ pub fn parse_template_ref(template_ref: &str) -> (String, String) {
     }
 }
 
-pub async fn resolve_template_disk(pool: &SqlitePool, template_ref: &str) -> anyhow::Result<String> {
+pub async fn resolve_template_disk(
+    pool: &SqlitePool,
+    template_ref: &str,
+) -> anyhow::Result<String> {
     let (name, version) = if let Some((n, v)) = template_ref.split_once('@') {
         (n.to_string(), Some(v.to_string()))
     } else {
@@ -48,13 +51,11 @@ pub async fn resolve_template_firewall_profile(
         (template_ref.to_string(), None)
     };
     let profile: Option<String> = if let Some(ver) = version {
-        sqlx::query_scalar(
-            "SELECT firewall_profile FROM templates WHERE name = ? AND version = ?",
-        )
-        .bind(&name)
-        .bind(&ver)
-        .fetch_optional(pool)
-        .await?
+        sqlx::query_scalar("SELECT firewall_profile FROM templates WHERE name = ? AND version = ?")
+            .bind(&name)
+            .bind(&ver)
+            .fetch_optional(pool)
+            .await?
     } else {
         sqlx::query_scalar(
             "SELECT firewall_profile FROM templates WHERE name = ? ORDER BY created_at DESC LIMIT 1",

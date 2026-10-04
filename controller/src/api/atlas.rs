@@ -340,7 +340,11 @@ pub async fn atlas_restore_snapshot(
 ) -> Result<Json<atlas_bridge::AtlasJob>, ApiError> {
     require_operator(&actor)?;
     client(&state)?
-        .restore_snapshot(&snapshot_id, body.name.as_deref(), body.namespace.as_deref())
+        .restore_snapshot(
+            &snapshot_id,
+            body.name.as_deref(),
+            body.namespace.as_deref(),
+        )
         .await
         .map_err(atlas_error)
         .map(Json)
@@ -445,9 +449,7 @@ pub async fn atlas_backup_volume(
         .clone()
         .or_else(|| state.config.atlas_backup_bucket_id.clone())
         .ok_or_else(|| {
-            ApiError::bad_request(
-                "no bucket_id given and ATLAS_BACKUP_BUCKET_ID is not configured",
-            )
+            ApiError::bad_request("no bucket_id given and ATLAS_BACKUP_BUCKET_ID is not configured")
         })?;
     client(&state)?
         .backup_volume(&body.volume_id, &bucket_id, &body.mode, body.keep)
@@ -604,8 +606,14 @@ pub async fn atlas_backup_vm(
     Json(body): Json<VmBackupBody>,
 ) -> Result<Json<Vec<atlas_bridge::AtlasJob>>, ApiError> {
     require_operator(&actor)?;
-    atlas_vm::backup_vm(&state, vm_id, body.bucket_id.as_deref(), &body.mode, body.keep)
-        .await
-        .map_err(atlas_error)
-        .map(Json)
+    atlas_vm::backup_vm(
+        &state,
+        vm_id,
+        body.bucket_id.as_deref(),
+        &body.mode,
+        body.keep,
+    )
+    .await
+    .map_err(atlas_error)
+    .map(Json)
 }

@@ -62,7 +62,14 @@ async fn netpolicy_status(
     Path(name): Path<String>,
     Query(q): Query<TargetQuery>,
 ) -> Result<Json<Value>, AppError> {
-    relay(manager, &actor, name, "guestkit.netpolicy.status", q.params()).await
+    relay(
+        manager,
+        &actor,
+        name,
+        "guestkit.netpolicy.status",
+        q.params(),
+    )
+    .await
 }
 
 async fn netpolicy_apply(
@@ -96,7 +103,10 @@ async fn lsm_apply(
 
 pub fn guest_policy_routes() -> Router<LibvirtManager> {
     Router::new()
-        .route("/vms/{name}/guest-policy", get(netpolicy_status).put(netpolicy_apply))
+        .route(
+            "/vms/{name}/guest-policy",
+            get(netpolicy_status).put(netpolicy_apply),
+        )
         .route("/vms/{name}/guest-lsm", get(lsm_status).put(lsm_apply))
 }
 
@@ -107,7 +117,10 @@ mod tests {
     #[test]
     fn target_query_params() {
         assert_eq!(TargetQuery::default().params(), json!({}));
-        let q = TargetQuery { container: Some("web".into()), cgroup: Some(String::new()) };
+        let q = TargetQuery {
+            container: Some("web".into()),
+            cgroup: Some(String::new()),
+        };
         assert_eq!(q.params(), json!({ "container": "web" }));
     }
 }

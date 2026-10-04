@@ -161,8 +161,7 @@ pub async fn list_temporary_rules(
                 // create_temporary_rule), so this can never honestly claim
                 // `enforced: true`.
                 enforced: false,
-                note: "Recorded for audit only — no host firewall change was made."
-                    .to_string(),
+                note: "Recorded for audit only — no host firewall change was made.".to_string(),
             },
         )
         .collect())

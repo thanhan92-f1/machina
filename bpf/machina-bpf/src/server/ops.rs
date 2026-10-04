@@ -35,17 +35,23 @@ impl Engine {
         for r in rules {
             match r {
                 Rule::DenyCidr(p) => self.dp.deny_insert(scope, p, num)?,
-                Rule::Allow { proto, port, prefix } => {
-                    self.dp.allow_insert(scope, *proto, *port, prefix, num)?
-                }
+                Rule::Allow {
+                    proto,
+                    port,
+                    prefix,
+                } => self.dp.allow_insert(scope, *proto, *port, prefix, num)?,
                 Rule::DenyPort { proto, port } => self.dp.port_insert(scope, *proto, *port, num)?,
                 Rule::ExecDeny { hash, .. } => self.dp.exec_insert(*hash, num)?,
                 Rule::CapDeny { cap } => self.dp.cap_insert(scope, *cap, num)?,
                 Rule::FileDeny { .. } => {}
                 Rule::DnsDeny { suffix } => {
-                    lock(&self.shared).dns_denies.insert(num, (suffix.clone(), scope));
+                    lock(&self.shared)
+                        .dns_denies
+                        .insert(num, (suffix.clone(), scope));
                 }
-                Rule::ConnRate { per_sec, burst } => self.dp.rate_set(scope, *per_sec, *burst, num)?,
+                Rule::ConnRate { per_sec, burst } => {
+                    self.dp.rate_set(scope, *per_sec, *burst, num)?
+                }
             }
         }
         Ok(())
@@ -59,9 +65,11 @@ impl Engine {
                 return None;
             }
             c.rules.iter().find_map(|r| match r {
-                Rule::ConnRate { per_sec, burst } => {
-                    Some((*per_sec, *burst, self.policy_nums.get(&c.policy.id).copied().unwrap_or(0)))
-                }
+                Rule::ConnRate { per_sec, burst } => Some((
+                    *per_sec,
+                    *burst,
+                    self.policy_nums.get(&c.policy.id).copied().unwrap_or(0),
+                )),
                 _ => None,
             })
         });
@@ -77,9 +85,11 @@ impl Engine {
         for r in rules {
             match r {
                 Rule::DenyCidr(p) => self.dp.deny_remove(scope, p),
-                Rule::Allow { proto, port, prefix } => {
-                    self.dp.allow_remove(scope, *proto, *port, prefix)
-                }
+                Rule::Allow {
+                    proto,
+                    port,
+                    prefix,
+                } => self.dp.allow_remove(scope, *proto, *port, prefix),
                 Rule::DenyPort { proto, port } => self.dp.port_remove(scope, *proto, *port),
                 Rule::ExecDeny { hash, .. } => self.dp.exec_remove(*hash),
                 Rule::CapDeny { cap } => self.dp.cap_remove(scope, *cap),
@@ -109,14 +119,18 @@ impl Engine {
         self.policies.values().any(|c| {
             c.policy.enabled
                 && c.scope_id == scope
-                && c.rules.iter().any(|r| matches!(r, Rule::DenyCidr(x) if x == p))
+                && c.rules
+                    .iter()
+                    .any(|r| matches!(r, Rule::DenyCidr(x) if x == p))
         })
     }
 
     fn after_policy_change(&mut self) -> Result<()> {
         self.push_file_watch()?;
         self.refresh_global()?;
-        let scopes: Vec<u32> = std::iter::once(0).chain(self.scopes.values().map(|s| s.id)).collect();
+        let scopes: Vec<u32> = std::iter::once(0)
+            .chain(self.scopes.values().map(|s| s.id))
+            .collect();
         for s in scopes {
             self.refresh_scope_flags(s)?;
         }
@@ -196,7 +210,9 @@ impl Engine {
         }
         let mut changed = false;
         for (scope, prefix, num) in queue {
-            if self.dns_blocked.len() >= DNS_BLOCK_CAP || self.dns_blocked.contains_key(&(scope, prefix)) {
+            if self.dns_blocked.len() >= DNS_BLOCK_CAP
+                || self.dns_blocked.contains_key(&(scope, prefix))
+            {
                 continue;
             }
             self.dp.deny_insert(scope, &prefix, num)?;
@@ -204,7 +220,9 @@ impl Engine {
             changed = true;
         }
         if changed {
-            let scopes: Vec<u32> = std::iter::once(0).chain(self.scopes.values().map(|s| s.id)).collect();
+            let scopes: Vec<u32> = std::iter::once(0)
+                .chain(self.scopes.values().map(|s| s.id))
+                .collect();
             for s in scopes {
                 self.refresh_scope_flags(s)?;
             }
@@ -241,12 +259,21 @@ impl Engine {
         let active = self.mode == Mode::Enforce && now < self.lease_deadline_mono;
         ModeState {
             mode: if active { Mode::Enforce } else { Mode::Observe },
-            lease_expires_at: active.then(|| self.lease_wall.map(|w| w.to_rfc3339())).flatten(),
+            lease_expires_at: active
+                .then(|| self.lease_wall.map(|w| w.to_rfc3339()))
+                .flatten(),
             lease_remaining_secs: active.then(|| (self.lease_deadline_mono - now) / 1_000_000_000),
             lease_expired: self.lease_lapsed || (self.mode == Mode::Enforce && !active),
-            covers: ["policies", "shield", "vm_edge", "vm_sandbox", "node_isolation", "direct"]
-                .map(String::from)
-                .to_vec(),
+            covers: [
+                "policies",
+                "shield",
+                "vm_edge",
+                "vm_sandbox",
+                "node_isolation",
+                "direct",
+            ]
+            .map(String::from)
+            .to_vec(),
         }
     }
 
@@ -290,7 +317,12 @@ impl Engine {
         out
     }
 
-    pub(super) fn attach_interface(&mut self, name: &str, guest_side: bool, xdp: bool) -> Result<()> {
+    pub(super) fn attach_interface(
+        &mut self,
+        name: &str,
+        guest_side: bool,
+        xdp: bool,
+    ) -> Result<()> {
         let vms = attribution::scan_libvirt();
         let vm = vms.get(name);
         self.add_iface(
@@ -386,7 +418,11 @@ impl Engine {
             .filter(|n| !known.contains(n))
             .filter(|n| {
                 self.explicit.contains_key(n)
-                    || self.telemetry.iface_patterns.iter().any(|p| policy::glob_match(p, n))
+                    || self
+                        .telemetry
+                        .iface_patterns
+                        .iter()
+                        .any(|p| policy::glob_match(p, n))
             })
             .collect();
         if fresh.is_empty() {
@@ -397,7 +433,13 @@ impl Engine {
             let (guest_side, xdp) = self.explicit.get(&name).copied().unwrap_or((true, false));
             let vm = vms.get(&name);
             let vm_name = vm.map(|v| v.vm.clone());
-            if let Err(e) = self.add_iface(&name, guest_side, xdp, vm_name.clone(), vm.and_then(|v| v.mac.clone())) {
+            if let Err(e) = self.add_iface(
+                &name,
+                guest_side,
+                xdp,
+                vm_name.clone(),
+                vm.and_then(|v| v.mac.clone()),
+            ) {
                 tracing::debug!("attach {name}: {e:#}");
                 continue;
             }
@@ -439,7 +481,9 @@ impl Engine {
                 }
                 Some(FlowRecord {
                     workload: sh.iface_workload(k.ifindex),
-                    iface: r.map(|r| r.name.clone()).unwrap_or_else(|| format!("if{}", k.ifindex)),
+                    iface: r
+                        .map(|r| r.name.clone())
+                        .unwrap_or_else(|| format!("if{}", k.ifindex)),
                     ifindex: k.ifindex,
                     vm: r.and_then(|r| r.vm.clone()),
                     proto: proto_name(k.proto).to_string(),
@@ -447,7 +491,12 @@ impl Engine {
                     local_port: k.local_port,
                     remote: fmt_addr(&k.remote),
                     remote_port: k.remote_port,
-                    origin: if v.origin == ORIGIN_LOCAL { "local" } else { "remote" }.into(),
+                    origin: if v.origin == ORIGIN_LOCAL {
+                        "local"
+                    } else {
+                        "remote"
+                    }
+                    .into(),
                     tx_pkts: v.tx_pkts,
                     tx_bytes: v.tx_bytes,
                     rx_pkts: v.rx_pkts,
@@ -527,7 +576,10 @@ impl Engine {
             ifaces.insert(ep.host_iface.clone(), pod);
         }
         let mut pods = attribution::pod_log_index(Path::new(attribution::KUBELET_POD_LOGS));
-        pods.extend(attribution::pod_index(Path::new(attribution::CGROUP_ROOT), &sandboxes));
+        pods.extend(attribution::pod_index(
+            Path::new(attribution::CGROUP_ROOT),
+            &sandboxes,
+        ));
         let mut sh = lock(&self.shared);
         sh.pods = pods;
         sh.pod_ifaces = ifaces;
@@ -553,8 +605,14 @@ impl Engine {
                 let ctx = Ctx { vm, iface };
                 let local = fmt_addr(&k.local);
                 let remote = fmt_addr(&k.remote);
-                let fk = format!("{}|{}|{}:{}|{}:{}", k.ifindex, k.proto, local, k.local_port, remote, k.remote_port);
-                if let Some(a) = sh.detector.on_flow_bytes(wall, &ctx, &fk, &local, &remote, v.tx_bytes) {
+                let fk = format!(
+                    "{}|{}|{}:{}|{}:{}",
+                    k.ifindex, k.proto, local, k.local_port, remote, k.remote_port
+                );
+                if let Some(a) = sh
+                    .detector
+                    .on_flow_bytes(wall, &ctx, &fk, &local, &remote, v.tx_bytes)
+                {
                     anomalies.push(a);
                 }
             }
@@ -584,7 +642,10 @@ impl Engine {
             };
             let key = acct_key(r);
             let before = self.acct_offset.get(&idx).copied().unwrap_or_default();
-            self.acct_base.entry(key.clone()).or_default().add_delta(&s, &before);
+            self.acct_base
+                .entry(key.clone())
+                .or_default()
+                .add_delta(&s, &before);
             self.acct_offset.insert(idx, s);
             self.acct_since.entry(key).or_insert_with(|| now.clone());
         }
@@ -669,7 +730,9 @@ impl Engine {
             .map(|(i, _)| *i)
             .ok_or_else(|| anyhow!("interface {iface} is not attached"))?;
         let dur = duration_secs.unwrap_or(30).clamp(1, 600);
-        let snap = snaplen.unwrap_or(CAPTURE_SNAPLEN as u32).clamp(64, CAPTURE_SNAPLEN as u32);
+        let snap = snaplen
+            .unwrap_or(CAPTURE_SNAPLEN as u32)
+            .clamp(64, CAPTURE_SNAPLEN as u32);
         let sample = sample.unwrap_or(1).max(1);
         let maxp = max_packets.unwrap_or(10_000).clamp(1, 200_000);
         self.capture_seq += 1;
@@ -689,7 +752,11 @@ impl Engine {
         };
         {
             let mut sh = lock(&self.shared);
-            if sh.captures.values().any(|c| c.ifindex == idx && !c.info.done) {
+            if sh
+                .captures
+                .values()
+                .any(|c| c.ifindex == idx && !c.info.done)
+            {
                 return Err(anyhow!("a capture is already running on {iface}"));
             }
             sh.captures.insert(
@@ -727,7 +794,9 @@ impl Engine {
             let expired: Vec<String> = sh
                 .captures
                 .iter()
-                .filter(|(_, c)| c.info.done && now.duration_since(c.deadline) > Duration::from_secs(3600))
+                .filter(|(_, c)| {
+                    c.info.done && now.duration_since(c.deadline) > Duration::from_secs(3600)
+                })
                 .map(|(k, _)| k.clone())
                 .collect();
             for k in expired {

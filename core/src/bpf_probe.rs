@@ -107,10 +107,15 @@ pub fn probe_bpf_summary() -> BpfProbeSummary {
 
         let mut notes = Vec::new();
         if !btf {
-            notes.push("kernel BTF (/sys/kernel/btf/vmlinux) missing — process telemetry is limited".into());
+            notes.push(
+                "kernel BTF (/sys/kernel/btf/vmlinux) missing — process telemetry is limited"
+                    .into(),
+            );
         }
         if !tcx {
-            notes.push(format!("kernel {kernel} predates TCX (6.6); tc hooks use clsact"));
+            notes.push(format!(
+                "kernel {kernel} predates TCX (6.6); tc hooks use clsact"
+            ));
         }
         if !bpfd_present {
             notes.push(format!("machina-bpfd not running ({bpfd_socket} absent)"));
@@ -133,9 +138,11 @@ pub fn probe_bpf_summary() -> BpfProbeSummary {
         if let Some(bpftool) = find_bpftool() {
             s.program_count = count_prog_lines(&bpftool, &["prog", "show"]);
             s.map_count = count_prog_lines(&bpftool, &["map", "show"]);
-            s.cgroup_program_count = count_prog_lines(&bpftool, &["prog", "show", "type", "cgroup_skb"])
-                + count_prog_lines(&bpftool, &["prog", "show", "type", "cgroup_sock_addr"]);
-            s.tracepoint_count = count_prog_lines(&bpftool, &["prog", "show", "type", "tracepoint"]);
+            s.cgroup_program_count =
+                count_prog_lines(&bpftool, &["prog", "show", "type", "cgroup_skb"])
+                    + count_prog_lines(&bpftool, &["prog", "show", "type", "cgroup_sock_addr"]);
+            s.tracepoint_count =
+                count_prog_lines(&bpftool, &["prog", "show", "type", "tracepoint"]);
             if s.program_count == 0 {
                 s.notes
                     .push("bpftool listed no programs (needs CAP_SYS_ADMIN)".into());

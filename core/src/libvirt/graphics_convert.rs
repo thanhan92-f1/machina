@@ -171,9 +171,7 @@ pub fn virt_xml_convert_spice_to_vnc(
 
     let xml = dump_domain_xml(libvirt_uri, vm_name)?;
     if !domain_has_spice_graphics(&xml) {
-        return Ok(
-            "No SPICE graphics present; domain already uses VNC or has no display".into(),
-        );
+        return Ok("No SPICE graphics present; domain already uses VNC or has no display".into());
     }
 
     let remove_msg = run_virt_xml(
@@ -246,13 +244,7 @@ mod tests {
         );
         assert_eq!(
             argv,
-            vec![
-                "-c",
-                "qemu:///system",
-                "vm1",
-                "--edit",
-                "--convert-to-vnc",
-            ]
+            vec!["-c", "qemu:///system", "vm1", "--edit", "--convert-to-vnc",]
         );
     }
 

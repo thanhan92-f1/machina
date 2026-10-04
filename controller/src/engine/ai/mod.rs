@@ -8,9 +8,9 @@ use uuid::Uuid;
 pub mod actions;
 pub mod agent_marketplace;
 pub mod agents;
-pub mod crypto;
 pub mod autonomous;
 pub mod context;
+pub mod crypto;
 pub mod enterprise_zyra;
 pub mod fleet_guest_query;
 pub mod guest_insights;
@@ -476,7 +476,9 @@ pub mod zyra_summary;
 /// a chat message containing `%` or `_` silently widens the match (e.g. `_`
 /// matches any single character) and can select an unintended VM.
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 fn parse_reach_query(message: &str) -> Option<(String, String, Option<i32>)> {

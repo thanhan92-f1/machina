@@ -141,7 +141,10 @@ async fn enqueue_backups_for_schedule(
             // Log and keep going: aborting here would skip the remaining VMs in this
             // schedule *and* (via the caller) leave last_run_at stale, causing the whole
             // schedule — including VMs already enqueued above — to be retried next tick.
-            tracing::warn!("fleet backup scheduler: enqueue vm.backup for {vm_id}: {}", e.message);
+            tracing::warn!(
+                "fleet backup scheduler: enqueue vm.backup for {vm_id}: {}",
+                e.message
+            );
         }
     }
     Ok(())

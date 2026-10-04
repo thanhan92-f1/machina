@@ -6,6 +6,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use axum::http::{header, HeaderValue};
 use clap::Parser;
 use machina_controller::api;
 use machina_controller::config::ControllerConfig;
@@ -16,7 +17,6 @@ use machina_controller::state::AppState;
 use machina_controller::sync;
 use machina_controller::tasks::bus::{FanoutTaskBus, InMemoryTaskBus, NatsTaskBus};
 use machina_controller::tasks::{nats_subscriber, worker, TaskMessage};
-use axum::http::{header, HeaderValue};
 use tower_http::cors::CorsLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
@@ -119,7 +119,10 @@ async fn main() -> anyhow::Result<()> {
         .await
         {
             Ok(rows) if !rows.is_empty() => {
-                info!("reaping {} orphaned in-flight task(s) at startup", rows.len());
+                info!(
+                    "reaping {} orphaned in-flight task(s) at startup",
+                    rows.len()
+                );
                 for (task_id, operation, payload) in rows {
                     let msg = TaskMessage {
                         task_id,

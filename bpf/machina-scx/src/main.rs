@@ -14,7 +14,9 @@ fn main() {
 #[cfg(feature = "scx")]
 fn main() {
     if let Err(e) = scx::run() {
-        let out = machina_scx::Output::Error { error: format!("{e:#}") };
+        let out = machina_scx::Output::Error {
+            error: format!("{e:#}"),
+        };
         println!("{}", serde_json::to_string(&out).unwrap_or_default());
         std::process::exit(1);
     }
@@ -61,14 +63,25 @@ mod scx {
 
     pub fn run() -> Result<()> {
         match kernel_state().as_deref() {
-            None => return Err(anyhow!("kernel has no sched_ext ({} missing)", machina_scx::STATE_PATH)),
+            None => {
+                return Err(anyhow!(
+                    "kernel has no sched_ext ({} missing)",
+                    machina_scx::STATE_PATH
+                ))
+            }
             Some("disabled") => {}
             Some(s) => return Err(anyhow!("another sched_ext scheduler is active (state {s})")),
         }
         let mut obj = MaybeUninit::uninit();
-        let open = ScxMachinaSkelBuilder::default().open(&mut obj).context("open scx_machina")?;
+        let open = ScxMachinaSkelBuilder::default()
+            .open(&mut obj)
+            .context("open scx_machina")?;
         let mut skel = open.load().context("load scx_machina")?;
-        let _link = skel.maps.machina_scx_ops.attach_struct_ops().context("attach machina_scx_ops")?;
+        let _link = skel
+            .maps
+            .machina_scx_ops
+            .attach_struct_ops()
+            .context("attach machina_scx_ops")?;
         emit(&Output::Ready { ready: true });
 
         let (tx, rx) = mpsc::channel::<Option<String>>();
@@ -92,10 +105,16 @@ mod scx {
         loop {
             match rx.recv_timeout(Duration::from_millis(200)) {
                 Ok(None) | Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
-                Ok(Some(line)) if !line.trim().is_empty() => match serde_json::from_str::<Command>(&line) {
-                    Ok(Command::Profiles { profiles }) => apply(&skel, &profiles, &mut tids, &mut vms)?,
-                    Err(e) => emit(&Output::Error { error: format!("bad command: {e}") }),
-                },
+                Ok(Some(line)) if !line.trim().is_empty() => {
+                    match serde_json::from_str::<Command>(&line) {
+                        Ok(Command::Profiles { profiles }) => {
+                            apply(&skel, &profiles, &mut tids, &mut vms)?
+                        }
+                        Err(e) => emit(&Output::Error {
+                            error: format!("bad command: {e}"),
+                        }),
+                    }
+                }
                 _ => {}
             }
             let exit_kind = skel
@@ -107,8 +126,14 @@ mod scx {
             if last.elapsed() >= Duration::from_secs(1) || exit_kind != 0 {
                 let mut stats = Vec::new();
                 for vm in &vms {
-                    if let Some(v) = skel.maps.scx_vm_stats.lookup(&vm.to_ne_bytes(), MapFlags::ANY)? {
-                        let f = |i: usize| u64::from_ne_bytes(v[i * 8..i * 8 + 8].try_into().unwrap_or_default());
+                    if let Some(v) = skel
+                        .maps
+                        .scx_vm_stats
+                        .lookup(&vm.to_ne_bytes(), MapFlags::ANY)?
+                    {
+                        let f = |i: usize| {
+                            u64::from_ne_bytes(v[i * 8..i * 8 + 8].try_into().unwrap_or_default())
+                        };
                         stats.push((
                             *vm,
                             VmStats {
@@ -133,7 +158,12 @@ mod scx {
         }
     }
 
-    fn apply(skel: &ScxMachinaSkel, profiles: &[Profile], tids: &mut HashSet<u32>, vms: &mut HashSet<u64>) -> Result<()> {
+    fn apply(
+        skel: &ScxMachinaSkel,
+        profiles: &[Profile],
+        tids: &mut HashSet<u32>,
+        vms: &mut HashSet<u64>,
+    ) -> Result<()> {
         let want: HashSet<u32> = profiles.iter().map(|p| p.tid).collect();
         for tid in tids.difference(&want) {
             let _ = skel.maps.scx_task_profiles.delete(&tid.to_ne_bytes());
@@ -146,9 +176,14 @@ mod scx {
                 slice_ns: p.slice_ns,
                 latency_target_ns: p.latency_target_ns,
             };
-            skel.maps.scx_task_profiles.update(&p.tid.to_ne_bytes(), bytes(&raw), MapFlags::ANY)?;
+            skel.maps
+                .scx_task_profiles
+                .update(&p.tid.to_ne_bytes(), bytes(&raw), MapFlags::ANY)?;
             if vms.insert(p.vm) {
-                skel.maps.scx_vm_stats.update(&p.vm.to_ne_bytes(), bytes(&[0u64; 8]), MapFlags::NO_EXIST).ok();
+                skel.maps
+                    .scx_vm_stats
+                    .update(&p.vm.to_ne_bytes(), bytes(&[0u64; 8]), MapFlags::NO_EXIST)
+                    .ok();
             }
         }
         *tids = want;

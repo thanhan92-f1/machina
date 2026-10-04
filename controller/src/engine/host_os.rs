@@ -336,11 +336,12 @@ pub async fn vm_guest_health(
         None
     };
     if !gh.guest_ip.is_empty() {
-        if let Err(e) = sqlx::query("UPDATE vms SET guest_ip = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(&gh.guest_ip)
-            .bind(vm_id)
-            .execute(pool)
-            .await
+        if let Err(e) =
+            sqlx::query("UPDATE vms SET guest_ip = ?, updated_at = datetime('now') WHERE id = ?")
+                .bind(&gh.guest_ip)
+                .bind(vm_id)
+                .execute(pool)
+                .await
         {
             tracing::warn!(vm_id = %vm_id, "host_os: failed to persist guest_ip: {e:#}");
         }
@@ -441,7 +442,8 @@ pub async fn vm_guest_services(
             .ok_or_else(|| anyhow::anyhow!("vm not found"))?;
         let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
         let mut client = agent_client::connect(&addr).await?;
-        if let Ok(val) = agent_client::guest_agent_action(&mut client, &row.0, "list_services").await
+        if let Ok(val) =
+            agent_client::guest_agent_action(&mut client, &row.0, "list_services").await
         {
             if let Some(arr) = val.get("services").and_then(|s| s.as_array()) {
                 for item in arr {
@@ -520,14 +522,13 @@ pub async fn vm_guest_network_get(
     let (_, addr) = resolve_agent_addr(pool, cfg, row.1).await?;
     let mut client = agent_client::connect(&addr).await?;
     let val = agent_client::guest_agent_action(&mut client, &row.0, "get_network").await?;
-    Ok(val
-        .get("network")
-        .cloned()
-        .unwrap_or_else(|| serde_json::json!({
+    Ok(val.get("network").cloned().unwrap_or_else(|| {
+        serde_json::json!({
             "interfaces": [],
             "routes": [],
             "default_gateway": null
-        })))
+        })
+    }))
 }
 
 pub async fn vm_guest_network_apply(

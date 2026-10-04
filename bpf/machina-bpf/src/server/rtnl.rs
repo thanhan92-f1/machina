@@ -39,7 +39,11 @@ fn ifname(idx: u32) -> Option<String> {
     if p.is_null() {
         return None;
     }
-    Some(unsafe { std::ffi::CStr::from_ptr(p) }.to_string_lossy().into_owned())
+    Some(
+        unsafe { std::ffi::CStr::from_ptr(p) }
+            .to_string_lossy()
+            .into_owned(),
+    )
 }
 
 impl Engine {
@@ -58,7 +62,9 @@ impl Engine {
         }
         let offs = *self.rtnl.offsets.get_or_insert_with(layout);
         if offs.is_none() {
-            self.rtnl.note = Some("kernel BTF lacks the netns layout: requests from every namespace are kept".into());
+            self.rtnl.note = Some(
+                "kernel BTF lacks the netns layout: requests from every namespace are kept".into(),
+            );
         }
         let (sk, net, inum) = offs.unwrap_or_default();
         let host = self_netns().unwrap_or(0) as u32;
@@ -129,7 +135,9 @@ pub(super) fn on_rtnl(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b:
             create: ev.nlmsg_flags & rtnl::NLM_F_CREATE != 0,
             ifindex: (ev.ifindex != 0).then_some(ev.ifindex),
             iface,
-            dst: (kind == "route").then(|| rtnl::route_dst(ev.family, &ev.dst, ev.dst_len)).flatten(),
+            dst: (kind == "route")
+                .then(|| rtnl::route_dst(ev.family, &ev.dst, ev.dst_len))
+                .flatten(),
             pid: ev.pid,
             tgid: ev.tgid,
             uid: ev.uid,

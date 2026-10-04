@@ -246,7 +246,9 @@ pub async fn fips_matrix(pool: &SqlitePool) -> anyhow::Result<FipsMatrix> {
     })
 }
 
-pub async fn tenant_isolation_overview(pool: &SqlitePool) -> anyhow::Result<TenantIsolationOverview> {
+pub async fn tenant_isolation_overview(
+    pool: &SqlitePool,
+) -> anyhow::Result<TenantIsolationOverview> {
     let vm_counts: Vec<(String, i64)> = sqlx::query_as(
         "SELECT COALESCE(NULLIF(project, ''), 'default') AS name, COUNT(*)
          FROM vms GROUP BY 1 ORDER BY 1",

@@ -47,7 +47,10 @@ fn default_hours() -> i32 {
     4
 }
 
-pub async fn analyze(pool: &SqlitePool, q: &AnalyzeIncidentQuery) -> anyhow::Result<IncidentAnalysis> {
+pub async fn analyze(
+    pool: &SqlitePool,
+    q: &AnalyzeIncidentQuery,
+) -> anyhow::Result<IncidentAnalysis> {
     analyze_with_symptoms(pool, q, &[]).await
 }
 

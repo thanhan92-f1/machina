@@ -20,13 +20,19 @@ impl Engine {
     pub(super) fn xdp_uplink_set(&mut self, iface: &str, bit: u32, on: bool) -> Result<()> {
         if let Some(cur) = self.uplink.iface.clone() {
             if cur != iface && self.uplink.flags != 0 {
-                return Err(anyhow!("uplink XDP already runs on {cur}; one uplink per host"));
+                return Err(anyhow!(
+                    "uplink XDP already runs on {cur}; one uplink per host"
+                ));
             }
         }
         if if_nametoindex(iface).is_none() {
             return Err(anyhow!("interface {iface} not found"));
         }
-        let flags = if on { self.uplink.flags | bit } else { self.uplink.flags & !bit };
+        let flags = if on {
+            self.uplink.flags | bit
+        } else {
+            self.uplink.flags & !bit
+        };
         if bit == XDP_F_NODEPORT && on {
             self.dp.xdp_set_slot(XDP_SLOT_NODEPORT, "mn_xdp_nodeport")?;
         }
@@ -42,7 +48,9 @@ impl Engine {
             match self.dp.xdp_attached(iface) {
                 Some("mn_xdp_uplink") => {}
                 Some(other) => {
-                    return Err(anyhow!("{iface} already has XDP program {other}; detach it first"));
+                    return Err(anyhow!(
+                        "{iface} already has XDP program {other}; detach it first"
+                    ));
                 }
                 None => self.dp.attach_xdp_prog(iface, "mn_xdp_uplink")?,
             }

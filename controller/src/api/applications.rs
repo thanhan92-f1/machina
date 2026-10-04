@@ -123,10 +123,11 @@ pub async fn delete_application(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let mut tx = state.pool.begin().await?;
-    let existed: Option<String> = sqlx::query_scalar("SELECT name FROM application_groups WHERE id = ?")
-        .bind(id)
-        .fetch_optional(&mut *tx)
-        .await?;
+    let existed: Option<String> =
+        sqlx::query_scalar("SELECT name FROM application_groups WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
     let Some(name) = existed else {
         return Err(ApiError::not_found("application not found"));
     };
@@ -139,7 +140,10 @@ pub async fn delete_application(
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
-    state.emit_event("application.delete", format!("Deleted application group {name}"));
+    state.emit_event(
+        "application.delete",
+        format!("Deleted application group {name}"),
+    );
     Ok(Json(serde_json::json!({ "deleted": true, "id": id })))
 }
 

@@ -33,11 +33,13 @@ pub(super) fn validate(c: &NodeIsoConfig) -> Result<Option<u64>> {
     if c.iface.is_empty() {
         return Err(anyhow!("node isolation needs `iface` (the uplink)"));
     }
-    let secs = c
-        .lease_secs
-        .ok_or_else(|| anyhow!("node isolation needs `lease_secs` ({NODEISO_MIN_LEASE}..={NODEISO_MAX_LEASE})"))?;
+    let secs = c.lease_secs.ok_or_else(|| {
+        anyhow!("node isolation needs `lease_secs` ({NODEISO_MIN_LEASE}..={NODEISO_MAX_LEASE})")
+    })?;
     if !(NODEISO_MIN_LEASE..=NODEISO_MAX_LEASE).contains(&secs) {
-        return Err(anyhow!("lease_secs must be {NODEISO_MIN_LEASE}..={NODEISO_MAX_LEASE}"));
+        return Err(anyhow!(
+            "lease_secs must be {NODEISO_MIN_LEASE}..={NODEISO_MAX_LEASE}"
+        ));
     }
     if c.allow_tcp.len() + c.allow_udp.len() > MAX_PORTS {
         return Err(anyhow!("at most {MAX_PORTS} allowlisted ports"));
@@ -49,7 +51,9 @@ pub(super) fn validate(c: &NodeIsoConfig) -> Result<Option<u64>> {
         return Err(anyhow!("at most {MAX_EXEMPT} exempt CIDRs"));
     }
     if !c.dry_run && !c.allow_tcp.contains(&22) && c.exempt.is_empty() {
-        return Err(anyhow!("refusing to isolate without SSH (22) or an exempt CIDR; you would lock yourself out"));
+        return Err(anyhow!(
+            "refusing to isolate without SSH (22) or an exempt CIDR; you would lock yourself out"
+        ));
     }
     Ok(Some(secs))
 }
@@ -77,14 +81,17 @@ impl Engine {
 
         self.dp.hash_clear::<u32, u8>("NODEISO_PORTS");
         for p in &config.allow_tcp {
-            self.dp.cni_hash_insert("NODEISO_PORTS", nodeiso_port_key(6, *p), 1u8)?;
+            self.dp
+                .cni_hash_insert("NODEISO_PORTS", nodeiso_port_key(6, *p), 1u8)?;
         }
         for p in &config.allow_udp {
-            self.dp.cni_hash_insert("NODEISO_PORTS", nodeiso_port_key(17, *p), 1u8)?;
+            self.dp
+                .cni_hash_insert("NODEISO_PORTS", nodeiso_port_key(17, *p), 1u8)?;
         }
         self.dp.addr_lpm_clear::<u8>("NODEISO_EXEMPT")?;
         for p in &exempt {
-            self.dp.addr_lpm_insert("NODEISO_EXEMPT", p.addr, p.bits, 1u8)?;
+            self.dp
+                .addr_lpm_insert("NODEISO_EXEMPT", p.addr, p.bits, 1u8)?;
         }
         let deadline = loader::monotonic_ns() + secs * 1_000_000_000;
         self.dp.array_set(
@@ -145,13 +152,17 @@ impl Engine {
     pub(super) fn nodeiso_status(&mut self) -> NodeIsoStatus {
         let s: NodeIsoStats = self
             .dp
-            .percpu_array_sum("NODEISO_STATS", 0, |a: &mut NodeIsoStats, b: &NodeIsoStats| {
-                a.checked += b.checked;
-                a.passed += b.passed;
-                a.dropped_in += b.dropped_in;
-                a.dropped_out += b.dropped_out;
-                a.would_drop += b.would_drop;
-            })
+            .percpu_array_sum(
+                "NODEISO_STATS",
+                0,
+                |a: &mut NodeIsoStats, b: &NodeIsoStats| {
+                    a.checked += b.checked;
+                    a.passed += b.passed;
+                    a.dropped_in += b.dropped_in;
+                    a.dropped_out += b.dropped_out;
+                    a.would_drop += b.would_drop;
+                },
+            )
             .unwrap_or_default();
         let now = loader::monotonic_ns();
         let live = self.nodeiso.attached.is_some() && now < self.nodeiso.deadline_mono;
@@ -159,7 +170,9 @@ impl Engine {
             config: self.nodeiso.config.clone(),
             attached: self.nodeiso.attached.clone(),
             isolating: live && !self.nodeiso.config.dry_run,
-            lease_expires_at: live.then(|| self.nodeiso.lease_wall.map(|w| w.to_rfc3339())).flatten(),
+            lease_expires_at: live
+                .then(|| self.nodeiso.lease_wall.map(|w| w.to_rfc3339()))
+                .flatten(),
             lease_remaining_secs: live.then(|| (self.nodeiso.deadline_mono - now) / 1_000_000_000),
             lease_expired: self.nodeiso.lapsed,
             stats: NodeIsoCounters {
@@ -178,13 +191,20 @@ mod tests {
     use super::*;
 
     fn on(lease: Option<u64>) -> NodeIsoConfig {
-        NodeIsoConfig { enabled: true, iface: "eth0".into(), lease_secs: lease, ..NodeIsoConfig::default() }
+        NodeIsoConfig {
+            enabled: true,
+            iface: "eth0".into(),
+            lease_secs: lease,
+            ..NodeIsoConfig::default()
+        }
     }
 
     #[test]
     fn nodeiso_needs_a_short_lease_and_ssh() {
         let d = NodeIsoConfig::default();
-        assert!(!d.enabled && d.allow_icmp && d.allow_tcp.contains(&22) && d.allow_tcp.contains(&6443));
+        assert!(
+            !d.enabled && d.allow_icmp && d.allow_tcp.contains(&22) && d.allow_tcp.contains(&6443)
+        );
         assert_eq!(validate(&d).unwrap(), None);
         assert!(validate(&on(None)).is_err());
         assert!(validate(&on(Some(5))).is_err());

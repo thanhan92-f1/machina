@@ -207,7 +207,11 @@ pub fn eject_cdrom(conn: &Connect, name: &str, target: &str) -> Result<(), Libvi
 /// `eject_cdrom` only blanks the media and leaves the device behind, so a
 /// mistakenly-added drive could previously only be removed with `virsh
 /// detach-disk` on the hypervisor.
-pub fn detach_cdrom(conn: &Connect, name: &str, target: &str) -> Result<DetachOutcome, LibvirtError> {
+pub fn detach_cdrom(
+    conn: &Connect,
+    name: &str,
+    target: &str,
+) -> Result<DetachOutcome, LibvirtError> {
     let domain = lookup_domain(conn, name)?;
     let vm_xml = super::domain::domain_xml_live_and_config(&domain);
     let (has_cdrom, existing_bus) = find_cdrom_device(&vm_xml, target);
@@ -447,7 +451,10 @@ mod tests {
         assert_eq!(pick_free_cdrom_target(empty, "ide").unwrap(), "hda");
         assert_eq!(pick_free_cdrom_target(empty, "virtio").unwrap(), "vda");
         // The NIC's <target dev='vnet3'/> must not be mistaken for a disk target.
-        assert_eq!(pick_free_cdrom_target(WINDOWS_SATA_VM, "virtio").unwrap(), "vda");
+        assert_eq!(
+            pick_free_cdrom_target(WINDOWS_SATA_VM, "virtio").unwrap(),
+            "vda"
+        );
     }
 
     #[test]

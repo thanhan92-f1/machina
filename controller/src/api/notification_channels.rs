@@ -67,7 +67,11 @@ fn validate_channel(kind: &str, target: &str) -> Result<(), ApiError> {
                 return Err(ApiError::bad_request("target must be an email address"));
             }
         }
-        _ => return Err(ApiError::bad_request("kind must be slack, email, or webhook")),
+        _ => {
+            return Err(ApiError::bad_request(
+                "kind must be slack, email, or webhook",
+            ))
+        }
     }
     Ok(())
 }

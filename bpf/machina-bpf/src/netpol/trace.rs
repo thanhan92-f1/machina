@@ -170,8 +170,14 @@ impl Table {
         let mut map = HashMap::new();
         let mut flags: HashMap<Key, (u8, bool)> = HashMap::new();
         for r in &state.policy {
-            let (Some(s), Some(p)) = (r.subject_identity, r.peer_identity) else { continue };
-            let end = if r.port_end > r.port { r.port_end } else { r.port };
+            let (Some(s), Some(p)) = (r.subject_identity, r.peer_identity) else {
+                continue;
+            };
+            let end = if r.port_end > r.port {
+                r.port_end
+            } else {
+                r.port
+            };
             for port in r.port..=end {
                 let k = (s, p, r.egress, r.proto, port);
                 let e = map
@@ -277,15 +283,29 @@ fn resolve(
         _ => {}
     }
     let Ok(addr) = parse_prefix(input) else {
-        let kind = if fqdn::invalid(input, false).is_none() && input.contains('.') { "fqdn" } else { "world" };
+        let kind = if fqdn::invalid(input, false).is_none() && input.contains('.') {
+            "fqdn"
+        } else {
+            "world"
+        };
         return ep(None, IDENTITY_WORLD, kind);
     };
-    if let Some(vm) = vms.iter().find(|v| v.addresses.iter().any(|a| parse_prefix(a).ok() == Some(addr))) {
-        return ep(Some(vm.name.clone()), compiled_ids.get(&vm.name).copied().unwrap_or(0), "vm");
+    if let Some(vm) = vms.iter().find(|v| {
+        v.addresses
+            .iter()
+            .any(|a| parse_prefix(a).ok() == Some(addr))
+    }) {
+        return ep(
+            Some(vm.name.clone()),
+            compiled_ids.get(&vm.name).copied().unwrap_or(0),
+            "vm",
+        );
     }
     let mut best: Option<(u32, u32)> = None;
     for p in &state.peers {
-        let Ok(pp) = parse_prefix(&p.cidr) else { continue };
+        let Ok(pp) = parse_prefix(&p.cidr) else {
+            continue;
+        };
         let inside = addr.bits >= pp.bits && {
             let mut a = addr.addr;
             for (i, b) in a.iter_mut().enumerate() {
@@ -319,20 +339,43 @@ pub fn trace(
     q: &TraceQuery,
 ) -> Result<TraceResult, String> {
     let proto = proto_num(&q.protocol)?;
-    let port = if proto == 1 || proto == 58 { q.icmp_type.map_or(0, |t| t as u16 + 1) } else { q.port };
-    let c = compile(&Inputs { policies, vms, host: None, host_addresses, remote_node_addresses });
-    let ids: HashMap<String, u32> = c.endpoints.iter().map(|e| (e.name.clone(), e.identity)).collect();
-    let iso: HashMap<u32, (bool, bool)> =
-        c.endpoints.iter().map(|e| (e.identity, (e.ingress_enforced, e.egress_enforced))).collect();
+    let port = if proto == 1 || proto == 58 {
+        q.icmp_type.map_or(0, |t| t as u16 + 1)
+    } else {
+        q.port
+    };
+    let c = compile(&Inputs {
+        policies,
+        vms,
+        host: None,
+        host_addresses,
+        remote_node_addresses,
+    });
+    let ids: HashMap<String, u32> = c
+        .endpoints
+        .iter()
+        .map(|e| (e.name.clone(), e.identity))
+        .collect();
+    let iso: HashMap<u32, (bool, bool)> = c
+        .endpoints
+        .iter()
+        .map(|e| (e.identity, (e.ingress_enforced, e.egress_enforced)))
+        .collect();
     let from = resolve(&q.from, vms, &c.state, &ids);
     let to = resolve(&q.to, vms, &c.state, &ids);
     let table = Table::new(&c.state);
     let side = |subject: &TraceEndpoint, peer: &TraceEndpoint, egress: bool| -> TraceSide {
         let direction = if egress { "egress" } else { "ingress" }.to_string();
         if subject.kind != "vm" {
-            return TraceSide { direction, verdict: "not-a-vm".into(), ..Default::default() };
+            return TraceSide {
+                direction,
+                verdict: "not-a-vm".into(),
+                ..Default::default()
+            };
         }
-        let enforced = iso.get(&subject.identity).is_some_and(|(i, e)| if egress { *e } else { *i });
+        let enforced = iso
+            .get(&subject.identity)
+            .is_some_and(|(i, e)| if egress { *e } else { *i });
         let mut hit = table.eval(subject.identity, peer.identity, egress, proto, port);
         let mut rules = l7_rules(
             &c.state,
@@ -447,14 +490,21 @@ pub fn trace(
             format!("ALLOWED ({})", notes.join(", "))
         }
     } else {
-        let reasons: Vec<String> = [why(&egress), why(&ingress)].into_iter().filter(|s| !s.is_empty()).collect();
+        let reasons: Vec<String> = [why(&egress), why(&ingress)]
+            .into_iter()
+            .filter(|s| !s.is_empty())
+            .collect();
         format!("DENIED: {}", reasons.join("; "))
     };
     Ok(TraceResult {
         allowed,
         from,
         to,
-        protocol: if q.protocol.is_empty() { "TCP".into() } else { q.protocol.to_ascii_uppercase() },
+        protocol: if q.protocol.is_empty() {
+            "TCP".into()
+        } else {
+            q.protocol.to_ascii_uppercase()
+        },
         port: q.port,
         egress,
         ingress,

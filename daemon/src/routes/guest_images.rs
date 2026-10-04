@@ -121,10 +121,13 @@ async fn os_detect_handler(
 
     let mut cmd = Command::new("osinfo-detect");
     cmd.args(["--type=tree", &url]);
-    let out = timeout(Duration::from_secs(EXTERNAL_FETCH_TIMEOUT_SECS), cmd.output())
-        .await
-        .map_err(|_| AppError::from(LibvirtError::Operation("osinfo-detect timed out".into())))?
-        .map_err(|e| AppError::from(LibvirtError::Operation(format!("osinfo-detect: {e}"))))?;
+    let out = timeout(
+        Duration::from_secs(EXTERNAL_FETCH_TIMEOUT_SECS),
+        cmd.output(),
+    )
+    .await
+    .map_err(|_| AppError::from(LibvirtError::Operation("osinfo-detect timed out".into())))?
+    .map_err(|e| AppError::from(LibvirtError::Operation(format!("osinfo-detect: {e}"))))?;
 
     Ok(Json(json!({
         "exit_code": out.status.code(),
@@ -154,10 +157,13 @@ async fn rhel_image_url_handler(
         &format!("Authorization: Bearer {}", body.access_token),
         &api,
     ]);
-    let out = timeout(Duration::from_secs(EXTERNAL_FETCH_TIMEOUT_SECS), cmd.output())
-        .await
-        .map_err(|_| AppError::from(LibvirtError::Operation("curl timed out".into())))?
-        .map_err(|e| AppError::from(LibvirtError::Operation(format!("curl: {e}"))))?;
+    let out = timeout(
+        Duration::from_secs(EXTERNAL_FETCH_TIMEOUT_SECS),
+        cmd.output(),
+    )
+    .await
+    .map_err(|_| AppError::from(LibvirtError::Operation("curl timed out".into())))?
+    .map_err(|e| AppError::from(LibvirtError::Operation(format!("curl: {e}"))))?;
 
     if !out.status.success() {
         // The command line (and thus stderr, which curl can echo back) carries the

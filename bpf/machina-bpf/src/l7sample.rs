@@ -43,18 +43,33 @@ pub struct Decoded {
 }
 
 fn op(s: impl Into<String>) -> Option<Decoded> {
-    Some(Decoded { op: s.into(), detail: None })
+    Some(Decoded {
+        op: s.into(),
+        detail: None,
+    })
 }
 
 /// Leading SQL keyword, uppercased ("SELECT", "INSERT", ...).
 fn sql_verb(b: &[u8]) -> Option<String> {
-    let s = b.iter().position(|c| !c.is_ascii_whitespace() && *c != b'(')?;
-    let w: String = b[s..].iter().take_while(|c| c.is_ascii_alphabetic()).take(16).map(|c| c.to_ascii_uppercase() as char).collect();
+    let s = b
+        .iter()
+        .position(|c| !c.is_ascii_whitespace() && *c != b'(')?;
+    let w: String = b[s..]
+        .iter()
+        .take_while(|c| c.is_ascii_alphabetic())
+        .take(16)
+        .map(|c| c.to_ascii_uppercase() as char)
+        .collect();
     (!w.is_empty()).then_some(w)
 }
 
 fn word(b: &[u8]) -> Option<String> {
-    let w: String = b.iter().take_while(|c| c.is_ascii_alphanumeric() || **c == b'.').take(24).map(|c| c.to_ascii_uppercase() as char).collect();
+    let w: String = b
+        .iter()
+        .take_while(|c| c.is_ascii_alphanumeric() || **c == b'.')
+        .take(24)
+        .map(|c| c.to_ascii_uppercase() as char)
+        .collect();
     (!w.is_empty()).then_some(w)
 }
 
@@ -87,7 +102,12 @@ fn redis(to_server: bool, d: &[u8]) -> Option<Decoded> {
         return word(it.next()?).map(|op| Decoded { op, detail: None });
     }
     let w = word(d)?;
-    w.chars().all(|c| c.is_ascii_alphabetic()).then_some(Decoded { op: w, detail: None })
+    w.chars()
+        .all(|c| c.is_ascii_alphabetic())
+        .then_some(Decoded {
+            op: w,
+            detail: None,
+        })
 }
 
 fn be32(d: &[u8], at: usize) -> Option<u32> {
@@ -162,13 +182,44 @@ fn mysql(to_server: bool, d: &[u8]) -> Option<Decoded> {
 }
 
 const KAFKA_APIS: &[&str] = &[
-    "Produce", "Fetch", "ListOffsets", "Metadata", "LeaderAndIsr", "StopReplica", "UpdateMetadata",
-    "ControlledShutdown", "OffsetCommit", "OffsetFetch", "FindCoordinator", "JoinGroup", "Heartbeat",
-    "LeaveGroup", "SyncGroup", "DescribeGroups", "ListGroups", "SaslHandshake", "ApiVersions",
-    "CreateTopics", "DeleteTopics", "DeleteRecords", "InitProducerId", "OffsetForLeaderEpoch",
-    "AddPartitionsToTxn", "AddOffsetsToTxn", "EndTxn", "WriteTxnMarkers", "TxnOffsetCommit",
-    "DescribeAcls", "CreateAcls", "DeleteAcls", "DescribeConfigs", "AlterConfigs",
-    "AlterReplicaLogDirs", "DescribeLogDirs", "SaslAuthenticate", "CreatePartitions",
+    "Produce",
+    "Fetch",
+    "ListOffsets",
+    "Metadata",
+    "LeaderAndIsr",
+    "StopReplica",
+    "UpdateMetadata",
+    "ControlledShutdown",
+    "OffsetCommit",
+    "OffsetFetch",
+    "FindCoordinator",
+    "JoinGroup",
+    "Heartbeat",
+    "LeaveGroup",
+    "SyncGroup",
+    "DescribeGroups",
+    "ListGroups",
+    "SaslHandshake",
+    "ApiVersions",
+    "CreateTopics",
+    "DeleteTopics",
+    "DeleteRecords",
+    "InitProducerId",
+    "OffsetForLeaderEpoch",
+    "AddPartitionsToTxn",
+    "AddOffsetsToTxn",
+    "EndTxn",
+    "WriteTxnMarkers",
+    "TxnOffsetCommit",
+    "DescribeAcls",
+    "CreateAcls",
+    "DeleteAcls",
+    "DescribeConfigs",
+    "AlterConfigs",
+    "AlterReplicaLogDirs",
+    "DescribeLogDirs",
+    "SaslAuthenticate",
+    "CreatePartitions",
 ];
 
 fn kafka(to_server: bool, d: &[u8]) -> Option<Decoded> {
@@ -215,11 +266,17 @@ fn http2(d: &[u8]) -> Option<Decoded> {
             if flags & 0x20 != 0 {
                 block = block.get(5..)?;
             }
-            return Some(Decoded { op: "HEADERS".into(), detail: hpack_path(block) });
+            return Some(Decoded {
+                op: "HEADERS".into(),
+                detail: hpack_path(block),
+            });
         }
         off += 9 + len;
     }
-    preface.then(|| Decoded { op: "PREFACE".into(), detail: None })
+    preface.then(|| Decoded {
+        op: "PREFACE".into(),
+        detail: None,
+    })
 }
 
 /// `:path` from a literal header field with indexed name 4 (`:path`) and a
@@ -252,9 +309,20 @@ mod tests {
 
     #[test]
     fn redis_commands() {
-        assert_eq!(d(L7S_REDIS, true, b"*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\r\n").as_deref(), Some("SET"));
+        assert_eq!(
+            d(
+                L7S_REDIS,
+                true,
+                b"*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\r\n"
+            )
+            .as_deref(),
+            Some("SET")
+        );
         assert_eq!(d(L7S_REDIS, true, b"PING\r\n").as_deref(), Some("PING"));
-        assert_eq!(d(L7S_REDIS, false, b"-ERR wrong\r\n").as_deref(), Some("ERROR"));
+        assert_eq!(
+            d(L7S_REDIS, false, b"-ERR wrong\r\n").as_deref(),
+            Some("ERROR")
+        );
         assert_eq!(d(L7S_REDIS, false, b"+OK\r\n").as_deref(), Some("REPLY"));
     }
 
@@ -266,7 +334,10 @@ mod tests {
         let mut p = vec![b'P', 0, 0, 0, 20, b's', b'1', 0];
         p.extend_from_slice(b"INSERT INTO t VALUES($1)\0");
         assert_eq!(d(L7S_POSTGRES, true, &p).as_deref(), Some("PARSE INSERT"));
-        assert_eq!(d(L7S_POSTGRES, true, &[0, 0, 0, 8, 4, 0xd2, 0x16, 0x2f]).as_deref(), Some("SSL_REQUEST"));
+        assert_eq!(
+            d(L7S_POSTGRES, true, &[0, 0, 0, 8, 4, 0xd2, 0x16, 0x2f]).as_deref(),
+            Some("SSL_REQUEST")
+        );
         let mut c = vec![b'C', 0, 0, 0, 13];
         c.extend_from_slice(b"UPDATE 3\0");
         assert_eq!(d(L7S_POSTGRES, false, &c).as_deref(), Some("UPDATE"));
@@ -277,14 +348,26 @@ mod tests {
         let mut q = vec![15, 0, 0, 0, 0x03];
         q.extend_from_slice(b"delete from t");
         assert_eq!(d(L7S_MYSQL, true, &q).as_deref(), Some("DELETE"));
-        assert_eq!(d(L7S_MYSQL, true, &[1, 0, 0, 0, 0x0e]).as_deref(), Some("PING"));
-        assert_eq!(d(L7S_MYSQL, false, &[7, 0, 0, 1, 0xff, 0x15, 0x04]).as_deref(), Some("ERROR"));
+        assert_eq!(
+            d(L7S_MYSQL, true, &[1, 0, 0, 0, 0x0e]).as_deref(),
+            Some("PING")
+        );
+        assert_eq!(
+            d(L7S_MYSQL, false, &[7, 0, 0, 1, 0xff, 0x15, 0x04]).as_deref(),
+            Some("ERROR")
+        );
     }
 
     #[test]
     fn kafka_api() {
-        assert_eq!(d(L7S_KAFKA, true, &[0, 0, 0, 20, 0, 3, 0, 9]).as_deref(), Some("Metadata"));
-        assert_eq!(d(L7S_KAFKA, true, &[0, 0, 0, 20, 0, 18, 0, 3]).as_deref(), Some("ApiVersions"));
+        assert_eq!(
+            d(L7S_KAFKA, true, &[0, 0, 0, 20, 0, 3, 0, 9]).as_deref(),
+            Some("Metadata")
+        );
+        assert_eq!(
+            d(L7S_KAFKA, true, &[0, 0, 0, 20, 0, 18, 0, 3]).as_deref(),
+            Some("ApiVersions")
+        );
         assert_eq!(d(L7S_KAFKA, false, &[0, 0, 0, 20, 0, 18, 0, 3]), None);
     }
 

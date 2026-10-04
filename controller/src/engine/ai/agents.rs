@@ -259,7 +259,11 @@ pub async fn chat(
     })
 }
 
-pub async fn save_preference(pool: &SqlitePool, user_id: &str, agent_id: &str) -> anyhow::Result<()> {
+pub async fn save_preference(
+    pool: &SqlitePool,
+    user_id: &str,
+    agent_id: &str,
+) -> anyhow::Result<()> {
     sqlx::query(
         "INSERT INTO ai_user_preferences (user_id, default_agent, updated_at)
          VALUES (?, ?, datetime('now'))

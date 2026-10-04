@@ -21,16 +21,19 @@ mod compile;
 mod flow;
 pub mod fqdn;
 pub mod l7;
-mod trace;
 #[cfg(test)]
 mod tests;
+mod trace;
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-pub use compile::{cidr_identity, compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolVm, SelectorInfo, IDENTITY_REMOTE_NODE};
+pub use compile::{
+    cidr_identity, compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolVm, SelectorInfo,
+    IDENTITY_REMOTE_NODE,
+};
 pub use flow::FlowFilter;
 pub use trace::{trace, TraceEndpoint, TraceQuery, TraceResult, TraceSide};
 
@@ -38,7 +41,9 @@ pub use trace::{trace, TraceEndpoint, TraceQuery, TraceResult, TraceSide};
 /// cilium-agent). libvirt taps are never Cilium endpoints, so the VM edge
 /// stays Machina's either way; this is reported for KubeVirt delegation.
 fn cni_config_name(name: &str) -> bool {
-    [".conf", ".conflist", ".json"].iter().any(|ext| name.ends_with(ext))
+    [".conf", ".conflist", ".json"]
+        .iter()
+        .any(|ext| name.ends_with(ext))
 }
 
 pub fn cilium_present() -> Option<String> {
@@ -132,10 +137,16 @@ pub struct Validation {
 
 impl Validation {
     fn err(&mut self, path: impl Into<String>, msg: impl Into<String>) {
-        self.errors.push(Issue { path: path.into(), message: msg.into() });
+        self.errors.push(Issue {
+            path: path.into(),
+            message: msg.into(),
+        });
     }
     fn warn(&mut self, path: impl Into<String>, msg: impl Into<String>) {
-        self.warnings.push(Issue { path: path.into(), message: msg.into() });
+        self.warnings.push(Issue {
+            path: path.into(),
+            message: msg.into(),
+        });
     }
     pub fn ok(&self) -> bool {
         self.errors.is_empty()
@@ -155,10 +166,16 @@ impl VmNetworkPolicy {
         let mut meta = Map::new();
         meta.insert("name".into(), Value::String(self.name.clone()));
         if !self.labels.is_empty() {
-            meta.insert("labels".into(), serde_json::to_value(&self.labels).unwrap_or_default());
+            meta.insert(
+                "labels".into(),
+                serde_json::to_value(&self.labels).unwrap_or_default(),
+            );
         }
         if !self.annotations.is_empty() {
-            meta.insert("annotations".into(), serde_json::to_value(&self.annotations).unwrap_or_default());
+            meta.insert(
+                "annotations".into(),
+                serde_json::to_value(&self.annotations).unwrap_or_default(),
+            );
         }
         let mut doc = Map::new();
         doc.insert("apiVersion".into(), Value::String(api.into()));
@@ -194,7 +211,9 @@ impl VmNetworkPolicy {
     }
 
     pub fn description(&self) -> Option<String> {
-        self.specs.iter().find_map(|s| s["description"].as_str().map(String::from))
+        self.specs
+            .iter()
+            .find_map(|s| s["description"].as_str().map(String::from))
     }
 }
 
@@ -209,7 +228,10 @@ pub fn parse_documents(text: &str) -> (Vec<VmNetworkPolicy>, Validation) {
             Ok(serde_yaml::Value::Null) => {}
             Ok(y) => match serde_json::to_value(y) {
                 Ok(j) => docs.push((i, j)),
-                Err(e) => v.err(format!("document[{i}]"), format!("not representable as JSON: {e}")),
+                Err(e) => v.err(
+                    format!("document[{i}]"),
+                    format!("not representable as JSON: {e}"),
+                ),
             },
             Err(e) => v.err(format!("document[{i}]"), format!("invalid YAML: {e}")),
         }
@@ -217,9 +239,21 @@ pub fn parse_documents(text: &str) -> (Vec<VmNetworkPolicy>, Validation) {
     let mut flat = Vec::new();
     for (i, d) in docs {
         match d {
-            Value::Array(items) => flat.extend(items.into_iter().enumerate().map(|(j, x)| (format!("document[{i}][{j}]"), x))),
+            Value::Array(items) => flat.extend(
+                items
+                    .into_iter()
+                    .enumerate()
+                    .map(|(j, x)| (format!("document[{i}][{j}]"), x)),
+            ),
             Value::Object(ref m) if m.get("kind").and_then(Value::as_str) == Some("List") => {
-                for (j, x) in m.get("items").and_then(Value::as_array).cloned().unwrap_or_default().into_iter().enumerate() {
+                for (j, x) in m
+                    .get("items")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .enumerate()
+                {
                     flat.push((format!("document[{i}].items[{j}]"), x));
                 }
             }
@@ -230,7 +264,10 @@ pub fn parse_documents(text: &str) -> (Vec<VmNetworkPolicy>, Validation) {
     for (path, d) in flat {
         if let Some(p) = from_value(&d, &path, &mut v) {
             if !names.insert(p.name.clone()) {
-                v.err(format!("{path}.metadata.name"), format!("duplicate policy `{}` in input", p.name));
+                v.err(
+                    format!("{path}.metadata.name"),
+                    format!("duplicate policy `{}` in input", p.name),
+                );
                 continue;
             }
             out.push(p);
@@ -245,14 +282,19 @@ pub fn parse_documents(text: &str) -> (Vec<VmNetworkPolicy>, Validation) {
 fn valid_name(n: &str) -> bool {
     !n.is_empty()
         && n.len() <= 253
-        && n.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'.')
+        && n.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'.')
         && n.as_bytes()[0].is_ascii_alphanumeric()
         && n.as_bytes()[n.len() - 1].is_ascii_alphanumeric()
 }
 
 fn string_map(v: &Value) -> BTreeMap<String, String> {
     v.as_object()
-        .map(|m| m.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect())
+        .map(|m| {
+            m.iter()
+                .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -265,24 +307,39 @@ pub fn from_value(d: &Value, path: &str, v: &mut Validation) -> Option<VmNetwork
     let before = v.errors.len();
     let api = obj.get("apiVersion").and_then(Value::as_str).unwrap_or("");
     if !API_VERSIONS.contains(&api) {
-        v.err(format!("{path}.apiVersion"), format!("`{api}`: expected one of {}", API_VERSIONS.join(", ")));
+        v.err(
+            format!("{path}.apiVersion"),
+            format!("`{api}`: expected one of {}", API_VERSIONS.join(", ")),
+        );
     }
     let kind = obj.get("kind").and_then(Value::as_str).unwrap_or("");
     if !KINDS.contains(&kind) {
-        v.err(format!("{path}.kind"), format!("`{kind}`: expected one of {}", KINDS.join(", ")));
+        v.err(
+            format!("{path}.kind"),
+            format!("`{kind}`: expected one of {}", KINDS.join(", ")),
+        );
     }
     for k in obj.keys() {
-        if !matches!(k.as_str(), "apiVersion" | "kind" | "metadata" | "spec" | "specs" | "status") {
+        if !matches!(
+            k.as_str(),
+            "apiVersion" | "kind" | "metadata" | "spec" | "specs" | "status"
+        ) {
             v.err(format!("{path}.{k}"), "unknown field");
         }
     }
     let meta = &obj.get("metadata").cloned().unwrap_or(Value::Null);
     let name = meta["name"].as_str().unwrap_or("");
     if !valid_name(name) {
-        v.err(format!("{path}.metadata.name"), "required: lowercase letters, digits, `-` and `.` (max 253)");
+        v.err(
+            format!("{path}.metadata.name"),
+            "required: lowercase letters, digits, `-` and `.` (max 253)",
+        );
     }
     if meta.get("namespace").is_some() {
-        v.warn(format!("{path}.metadata.namespace"), "ignored: VM policies are fleet-wide");
+        v.warn(
+            format!("{path}.metadata.namespace"),
+            "ignored: VM policies are fleet-wide",
+        );
     }
     let mut specs = Vec::new();
     if let Some(s) = obj.get("spec").filter(|s| !s.is_null()) {
@@ -325,7 +382,13 @@ pub fn from_value(d: &Value, path: &str, v: &mut Validation) -> Option<VmNetwork
     if kind.starts_with("Cilium") {
         annotations.insert("machina.io/source-kind".into(), kind.into());
     }
-    Some(VmNetworkPolicy { name: name.into(), kind: kind.into(), labels: string_map(&meta["labels"]), annotations, specs })
+    Some(VmNetworkPolicy {
+        name: name.into(),
+        kind: kind.into(),
+        labels: string_map(&meta["labels"]),
+        annotations,
+        specs,
+    })
 }
 
 /// Validate one policy already in storage form (API JSON bodies).
@@ -336,8 +399,19 @@ pub fn validate_policy(p: &VmNetworkPolicy) -> Validation {
 }
 
 const ENTITIES: [&str; 13] = [
-    "all", "world", "world-ipv4", "world-ipv6", "unmanaged", "host", "remote-node", "cluster", "fleet", "health",
-    "init", "kube-apiserver", "ingress",
+    "all",
+    "world",
+    "world-ipv4",
+    "world-ipv6",
+    "unmanaged",
+    "host",
+    "remote-node",
+    "cluster",
+    "fleet",
+    "health",
+    "init",
+    "kube-apiserver",
+    "ingress",
 ];
 pub(crate) const UNSUPPORTED_ENTITIES: [&str; 4] = ["health", "init", "kube-apiserver", "ingress"];
 
@@ -374,7 +448,10 @@ pub(crate) fn validate_selector(sel: &Value, path: &str, v: &mut Validation) {
             Some(m) => {
                 for (k, x) in m {
                     if !x.is_string() {
-                        v.err(format!("{path}.matchLabels.{k}"), "label values are strings");
+                        v.err(
+                            format!("{path}.matchLabels.{k}"),
+                            "label values are strings",
+                        );
                     }
                 }
             }
@@ -392,10 +469,18 @@ pub(crate) fn validate_selector(sel: &Value, path: &str, v: &mut Validation) {
         let op = e["operator"].as_str().unwrap_or("");
         let n = e["values"].as_array().map_or(0, Vec::len);
         match op {
-            "In" | "NotIn" if n == 0 => v.err(format!("{p}.values"), format!("{op} needs at least one value")),
-            "Exists" | "DoesNotExist" if n > 0 => v.err(format!("{p}.values"), format!("{op} takes no values")),
+            "In" | "NotIn" if n == 0 => v.err(
+                format!("{p}.values"),
+                format!("{op} needs at least one value"),
+            ),
+            "Exists" | "DoesNotExist" if n > 0 => {
+                v.err(format!("{p}.values"), format!("{op} takes no values"))
+            }
             "In" | "NotIn" | "Exists" | "DoesNotExist" => {}
-            _ => v.err(format!("{p}.operator"), format!("`{op}`: expected In, NotIn, Exists or DoesNotExist")),
+            _ => v.err(
+                format!("{p}.operator"),
+                format!("`{op}`: expected In, NotIn, Exists or DoesNotExist"),
+            ),
         }
     }
 }
@@ -469,7 +554,14 @@ fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Vali
     let allowed: &[&str] = if deny {
         &["ports"]
     } else {
-        &["ports", "rules", "terminatingTLS", "originatingTLS", "serverNames", "listener"]
+        &[
+            "ports",
+            "rules",
+            "terminatingTLS",
+            "originatingTLS",
+            "serverNames",
+            "listener",
+        ]
     };
     if !keys_only(tp, path, allowed, v) {
         return;
@@ -481,7 +573,10 @@ fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Vali
         }
         let proto = p["protocol"].as_str().unwrap_or("ANY");
         if !matches!(proto, "TCP" | "UDP" | "SCTP" | "ANY") {
-            v.err(format!("{pp}.protocol"), format!("`{proto}`: expected TCP, UDP, SCTP or ANY"));
+            v.err(
+                format!("{pp}.protocol"),
+                format!("`{proto}`: expected TCP, UDP, SCTP or ANY"),
+            );
         }
         let port = match &p["port"] {
             Value::Null => "0".to_string(),
@@ -497,13 +592,17 @@ fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Vali
             Ok(n) => {
                 if let Some(end) = p.get("endPort").filter(|e| !e.is_null()) {
                     match end.as_u64() {
-                        Some(_) if n == 0 => v.err(format!("{pp}.endPort"), "endPort needs a start port"),
-                        Some(e) if (e as u32) < n || e > 65535 => {
-                            v.err(format!("{pp}.endPort"), format!("must be between {n} and 65535"))
+                        Some(_) if n == 0 => {
+                            v.err(format!("{pp}.endPort"), "endPort needs a start port")
                         }
-                        Some(e) if e as u32 - n >= MAX_PORT_RANGE => {
-                            v.err(format!("{pp}.endPort"), format!("range wider than {MAX_PORT_RANGE} ports"))
-                        }
+                        Some(e) if (e as u32) < n || e > 65535 => v.err(
+                            format!("{pp}.endPort"),
+                            format!("must be between {n} and 65535"),
+                        ),
+                        Some(e) if e as u32 - n >= MAX_PORT_RANGE => v.err(
+                            format!("{pp}.endPort"),
+                            format!("range wider than {MAX_PORT_RANGE} ports"),
+                        ),
                         Some(_) => {}
                         None => v.err(format!("{pp}.endPort"), "expected a number"),
                     }
@@ -512,9 +611,14 @@ fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Vali
             Err(_) => {
                 let ok = !port.is_empty()
                     && port.len() <= 15
-                    && port.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+                    && port
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
                 if !ok {
-                    v.err(format!("{pp}.port"), format!("`{port}` is neither a number nor a port name"));
+                    v.err(
+                        format!("{pp}.port"),
+                        format!("`{port}` is neither a number nor a port name"),
+                    );
                 }
             }
         }
@@ -554,10 +658,18 @@ fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Vali
 
 fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Validation) {
     let pre = if egress { "to" } else { "from" };
-    let mut allowed: Vec<String> = ["Endpoints", "Requires", "CIDR", "CIDRSet", "Entities", "Groups", "Nodes"]
-        .iter()
-        .map(|s| format!("{pre}{s}"))
-        .collect();
+    let mut allowed: Vec<String> = [
+        "Endpoints",
+        "Requires",
+        "CIDR",
+        "CIDRSet",
+        "Entities",
+        "Groups",
+        "Nodes",
+    ]
+    .iter()
+    .map(|s| format!("{pre}{s}"))
+    .collect();
     allowed.extend(["toPorts", "icmps"].map(String::from));
     if egress {
         allowed.push("toServices".into());
@@ -609,7 +721,10 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
     for (i, e) in list(r, &k, path, v).iter().enumerate() {
         let ep = format!("{path}.{k}[{i}]");
         match e.as_str() {
-            Some(s) if UNSUPPORTED_ENTITIES.contains(&s) => v.warn(ep, format!("entity `{s}` has no VM equivalent; it matches nothing")),
+            Some(s) if UNSUPPORTED_ENTITIES.contains(&s) => v.warn(
+                ep,
+                format!("entity `{s}` has no VM equivalent; it matches nothing"),
+            ),
             Some(s) if ENTITIES.contains(&s) => {}
             Some(s) => v.err(ep, format!("unknown entity `{s}`")),
             None => v.err(ep, "expected a string"),
@@ -680,7 +795,10 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
     }
     if egress {
         if !list(r, "toServices", path, v).is_empty() {
-            v.warn(format!("{path}.toServices"), "not enforced natively yet; matches nothing (audited in observe mode)");
+            v.warn(
+                format!("{path}.toServices"),
+                "not enforced natively yet; matches nothing (audited in observe mode)",
+            );
         }
         for (i, s) in list(r, "toFQDNs", path, v).iter().enumerate() {
             let sp = format!("{path}.toFQDNs[{i}]");
@@ -688,7 +806,9 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
                 continue;
             }
             match (s.get("matchName"), s.get("matchPattern")) {
-                (Some(_), Some(_)) | (None, None) => v.err(sp, "set exactly one of matchName / matchPattern"),
+                (Some(_), Some(_)) | (None, None) => {
+                    v.err(sp, "set exactly one of matchName / matchPattern")
+                }
                 (Some(n), None) | (None, Some(n)) => {
                     let pattern = s.get("matchPattern").is_some();
                     let key = if pattern { "matchPattern" } else { "matchName" };
@@ -719,7 +839,10 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
             }
             let fam = f["family"].as_str().unwrap_or("IPv4");
             if !matches!(fam, "IPv4" | "IPv6") {
-                v.err(format!("{fp}.family"), format!("`{fam}`: expected IPv4 or IPv6"));
+                v.err(
+                    format!("{fp}.family"),
+                    format!("`{fam}`: expected IPv4 or IPv6"),
+                );
             }
             if icmp_type_num(&f["type"], fam == "IPv6").is_none() {
                 v.err(format!("{fp}.type"), "unknown ICMP type");
@@ -730,33 +853,57 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
 
 fn validate_spec(s: &Value, path: &str, v: &mut Validation) {
     let allowed = [
-        "endpointSelector", "nodeSelector", "ingress", "egress", "ingressDeny", "egressDeny", "enableDefaultDeny",
-        "description", "labels",
+        "endpointSelector",
+        "nodeSelector",
+        "ingress",
+        "egress",
+        "ingressDeny",
+        "egressDeny",
+        "enableDefaultDeny",
+        "description",
+        "labels",
     ];
     if !keys_only(s, path, &allowed, v) {
         return;
     }
     match (s.get("endpointSelector"), s.get("nodeSelector")) {
-        (Some(_), Some(_)) => v.err(path, "endpointSelector and nodeSelector are mutually exclusive"),
+        (Some(_), Some(_)) => v.err(
+            path,
+            "endpointSelector and nodeSelector are mutually exclusive",
+        ),
         (None, None) => v.err(format!("{path}.endpointSelector"), "required"),
         (Some(sel), None) => validate_selector(sel, &format!("{path}.endpointSelector"), v),
         (None, Some(sel)) => {
             validate_selector(sel, &format!("{path}.nodeSelector"), v);
-            v.warn(format!("{path}.nodeSelector"), "host policies are not enforced on the VM edge");
+            v.warn(
+                format!("{path}.nodeSelector"),
+                "host policies are not enforced on the VM edge",
+            );
         }
     }
     if let Some(dd) = s.get("enableDefaultDeny") {
-        if keys_only(dd, &format!("{path}.enableDefaultDeny"), &["ingress", "egress"], v) {
+        if keys_only(
+            dd,
+            &format!("{path}.enableDefaultDeny"),
+            &["ingress", "egress"],
+            v,
+        ) {
             for k in ["ingress", "egress"] {
                 if dd.get(k).is_some_and(|x| !x.is_boolean()) {
-                    v.err(format!("{path}.enableDefaultDeny.{k}"), "expected true or false");
+                    v.err(
+                        format!("{path}.enableDefaultDeny.{k}"),
+                        "expected true or false",
+                    );
                 }
             }
         }
     }
-    for (key, egress, deny) in
-        [("ingress", false, false), ("egress", true, false), ("ingressDeny", false, true), ("egressDeny", true, true)]
-    {
+    for (key, egress, deny) in [
+        ("ingress", false, false),
+        ("egress", true, false),
+        ("ingressDeny", false, true),
+        ("egressDeny", true, true),
+    ] {
         for (i, r) in list(s, key, path, v).iter().enumerate() {
             validate_rule(r, &format!("{path}.{key}[{i}]"), egress, deny, v);
         }
@@ -778,7 +925,10 @@ pub fn effective_labels(vm: &NetpolVm) -> BTreeMap<String, String> {
 }
 
 fn strip_source(k: &str) -> &str {
-    ["k8s:", "any:", "machina:"].iter().find_map(|p| k.strip_prefix(p)).unwrap_or(k)
+    ["k8s:", "any:", "machina:"]
+        .iter()
+        .find_map(|p| k.strip_prefix(p))
+        .unwrap_or(k)
 }
 
 /// Kubernetes/Cilium label selector; `k8s:`/`any:`/`machina:` key prefixes
@@ -791,9 +941,17 @@ pub fn selector_matches(sel: &Value, labels: &BTreeMap<String, String>) -> bool 
             }
         }
     }
-    for e in sel.get("matchExpressions").and_then(Value::as_array).into_iter().flatten() {
+    for e in sel
+        .get("matchExpressions")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
         let key = strip_source(e["key"].as_str().unwrap_or(""));
-        let values: Vec<&str> = e["values"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+        let values: Vec<&str> = e["values"]
+            .as_array()
+            .map(|a| a.iter().filter_map(Value::as_str).collect())
+            .unwrap_or_default();
         let have = labels.get(key).map(String::as_str);
         let ok = match e["operator"].as_str().unwrap_or("") {
             "In" => have.is_some_and(|h| values.contains(&h)),
@@ -813,7 +971,8 @@ pub fn selector_matches(sel: &Value, labels: &BTreeMap<String, String>) -> bool 
 /// an entity instead of VMs.
 pub(crate) fn reserved_entity(sel: &Value) -> Option<String> {
     let ml = sel.get("matchLabels")?.as_object()?;
-    ml.keys().find_map(|k| k.strip_prefix("reserved:").map(String::from))
+    ml.keys()
+        .find_map(|k| k.strip_prefix("reserved:").map(String::from))
 }
 
 /// `app=web,env in (prod)` style text for a selector.
@@ -824,9 +983,17 @@ pub fn selector_string(sel: &Value) -> String {
             parts.push(format!("{k}={}", v.as_str().unwrap_or("")));
         }
     }
-    for e in sel.get("matchExpressions").and_then(Value::as_array).into_iter().flatten() {
+    for e in sel
+        .get("matchExpressions")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
         let key = e["key"].as_str().unwrap_or("");
-        let vals: Vec<&str> = e["values"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+        let vals: Vec<&str> = e["values"]
+            .as_array()
+            .map(|a| a.iter().filter_map(Value::as_str).collect())
+            .unwrap_or_default();
         parts.push(match e["operator"].as_str().unwrap_or("") {
             "In" => format!("{key} in ({})", vals.join(",")),
             "NotIn" => format!("{key} notin ({})", vals.join(",")),

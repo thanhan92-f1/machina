@@ -117,7 +117,9 @@ pub struct SimilarIncidentsResult {
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 pub async fn similar(

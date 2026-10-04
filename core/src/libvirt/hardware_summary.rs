@@ -105,16 +105,16 @@ fn parse_cpu_mode(xml: &str) -> (String, Option<String>) {
         .match_indices("<cpu")
         .find_map(|(i, _)| {
             let slice = &xml[i..];
-            if slice.starts_with("<cpu ") || slice.starts_with("<cpu>") || slice.starts_with("<cpu\n") {
+            if slice.starts_with("<cpu ")
+                || slice.starts_with("<cpu>")
+                || slice.starts_with("<cpu\n")
+            {
                 Some(
                     slice
                         .find("</cpu>")
                         .map(|e| &slice[..e + 6])
                         .unwrap_or_else(|| {
-                            slice
-                                .find("/>")
-                                .map(|e| &slice[..e + 2])
-                                .unwrap_or(slice)
+                            slice.find("/>").map(|e| &slice[..e + 2]).unwrap_or(slice)
                         }),
                 )
             } else {
@@ -123,8 +123,8 @@ fn parse_cpu_mode(xml: &str) -> (String, Option<String>) {
         })
         .unwrap_or("");
     let mode = extract_attr(block, "cpu", "mode").unwrap_or_else(|| "custom".into());
-    let model = extract_attr(block, "model", "fallback")
-        .or_else(|| extract_attr(block, "cpu", "model"));
+    let model =
+        extract_attr(block, "model", "fallback").or_else(|| extract_attr(block, "cpu", "model"));
     (mode, model)
 }
 
@@ -247,14 +247,12 @@ fn virtio_disk_bus(details: &crate::state::VmDetails) -> String {
         })
         .filter(|b| !b.is_empty())
         .collect();
-    let uniq: Vec<String> = buses
-        .into_iter()
-        .fold(Vec::new(), |mut acc, b| {
-            if !acc.contains(&b) {
-                acc.push(b);
-            }
-            acc
-        });
+    let uniq: Vec<String> = buses.into_iter().fold(Vec::new(), |mut acc, b| {
+        if !acc.contains(&b) {
+            acc.push(b);
+        }
+        acc
+    });
     if uniq.is_empty() {
         "virtio".into()
     } else {
@@ -289,7 +287,10 @@ fn nic_summary(details: &crate::state::VmDetails) -> String {
         .join("; ")
 }
 
-pub fn get_hardware_summary(conn: &Connect, name: &str) -> Result<VmHardwareSummaryReport, LibvirtError> {
+pub fn get_hardware_summary(
+    conn: &Connect,
+    name: &str,
+) -> Result<VmHardwareSummaryReport, LibvirtError> {
     let details = get_vm_details(conn, name)?;
     let topology = get_cpu_memory_topology(conn, name).ok();
     let pending = get_pending_config(conn, name).ok();
@@ -379,7 +380,10 @@ pub fn get_hardware_summary(conn: &Connect, name: &str) -> Result<VmHardwareSumm
         hostdev_badges.push("advanced".into());
     }
 
-    let vfio = topology.as_ref().map(|t| t.has_vfio_hostdev).unwrap_or_else(|| has_vfio_hostdev(&config_xml));
+    let vfio = topology
+        .as_ref()
+        .map(|t| t.has_vfio_hostdev)
+        .unwrap_or_else(|| has_vfio_hostdev(&config_xml));
     let needs_shutdown = pending.as_ref().is_some_and(|p| p.needs_shutdown);
     let migration_value = if vfio {
         "warning · VFIO passthrough"
@@ -489,12 +493,20 @@ fn build_windows_readiness(
     let items = vec![
         WindowsReadinessItem {
             label: "TPM 2.0".into(),
-            status: if tpm2 { "Enabled".into() } else { "Missing".into() },
+            status: if tpm2 {
+                "Enabled".into()
+            } else {
+                "Missing".into()
+            },
             ok: tpm2,
         },
         WindowsReadinessItem {
             label: "UEFI".into(),
-            status: if uefi_ok { "Enabled".into() } else { "Missing".into() },
+            status: if uefi_ok {
+                "Enabled".into()
+            } else {
+                "Missing".into()
+            },
             ok: uefi_ok,
         },
         WindowsReadinessItem {
@@ -519,7 +531,11 @@ fn build_windows_readiness(
         },
         WindowsReadinessItem {
             label: "Guest agent".into(),
-            status: if agent_ok { "Running".into() } else { "Missing".into() },
+            status: if agent_ok {
+                "Running".into()
+            } else {
+                "Missing".into()
+            },
             ok: agent_ok,
         },
         WindowsReadinessItem {
@@ -579,9 +595,10 @@ fn caps_machine_types(xml: &str) -> Vec<String> {
         if let Some(name) = extract_attr(&block, "machine", "name") {
             let canonical = extract_attr(&block, "machine", "canonical").unwrap_or_default();
             if (canonical.eq_ignore_ascii_case("yes") || machines.is_empty())
-                && !machines.contains(&name) {
-                    machines.push(name);
-                }
+                && !machines.contains(&name)
+            {
+                machines.push(name);
+            }
         }
     }
     machines
@@ -606,7 +623,10 @@ pub fn get_domain_capabilities_report(
     })
 }
 
-pub fn check_hardware_compat(conn: &Connect, name: &str) -> Result<HardwareCompatReport, LibvirtError> {
+pub fn check_hardware_compat(
+    conn: &Connect,
+    name: &str,
+) -> Result<HardwareCompatReport, LibvirtError> {
     let details = get_vm_details(conn, name)?;
     let domain = lookup_domain(conn, name)?;
     let xml = domain
@@ -661,7 +681,8 @@ pub fn check_hardware_compat(conn: &Connect, name: &str) -> Result<HardwareCompa
         issues.push(CompatIssue {
             severity: "warn".into(),
             category: "tpm".into(),
-            message: "TPM is configured but host domain capabilities do not advertise TPM support".into(),
+            message: "TPM is configured but host domain capabilities do not advertise TPM support"
+                .into(),
             badges: vec!["host_support_required".into()],
         });
     }

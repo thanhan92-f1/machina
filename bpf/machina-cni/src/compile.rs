@@ -21,7 +21,9 @@ mod cilium;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use machina_bpf::api::{CniBackend, CniIdentity, CniPolicyEntry, CniService, CniState, CNI_STATE_VERSION};
+use machina_bpf::api::{
+    CniBackend, CniIdentity, CniPolicyEntry, CniService, CniState, CNI_STATE_VERSION,
+};
 use serde_json::Value;
 
 pub const IPPROTO_TCP: u8 = 6;
@@ -93,7 +95,12 @@ pub fn pods(items: &[Value]) -> Vec<Pod> {
     items
         .iter()
         .filter(|p| p["spec"]["hostNetwork"] != true)
-        .filter(|p| !matches!(str_at(p, &["status", "phase"]), Some("Succeeded" | "Failed")))
+        .filter(|p| {
+            !matches!(
+                str_at(p, &["status", "phase"]),
+                Some("Succeeded" | "Failed")
+            )
+        })
         .filter_map(|p| {
             let mut ips: Vec<String> = p["status"]["podIPs"]
                 .as_array()
@@ -105,7 +112,9 @@ pub fn pods(items: &[Value]) -> Vec<Pod> {
                 ips.push(str_at(p, &["status", "podIP"])?.to_string());
             }
             Some(Pod {
-                namespace: str_at(p, &["metadata", "namespace"]).unwrap_or("default").to_string(),
+                namespace: str_at(p, &["metadata", "namespace"])
+                    .unwrap_or("default")
+                    .to_string(),
                 ips,
                 labels: labels_of(p),
                 named_ports: named_ports_of(p),
@@ -118,10 +127,12 @@ fn named_ports_of(p: &Value) -> BTreeMap<(String, u8), u16> {
     let mut out = BTreeMap::new();
     for c in p["spec"]["containers"].as_array().into_iter().flatten() {
         for port in c["ports"].as_array().into_iter().flatten() {
-            let (Some(name), Some(num)) = (port["name"].as_str(), port["containerPort"].as_u64()) else {
+            let (Some(name), Some(num)) = (port["name"].as_str(), port["containerPort"].as_u64())
+            else {
                 continue;
             };
-            if let (Some(proto), Ok(n)) = (proto_num(port["protocol"].as_str()), u16::try_from(num)) {
+            if let (Some(proto), Ok(n)) = (proto_num(port["protocol"].as_str()), u16::try_from(num))
+            {
                 out.insert((name.to_string(), proto), n);
             }
         }
@@ -180,7 +191,11 @@ enum RulePort {
 
 /// `ports` of a policy rule.
 fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<RulePort> {
-    let Some(ports) = rule.get("ports").and_then(|p| p.as_array()).filter(|p| !p.is_empty()) else {
+    let Some(ports) = rule
+        .get("ports")
+        .and_then(|p| p.as_array())
+        .filter(|p| !p.is_empty())
+    else {
         return vec![RulePort::Num(0, 0)];
     };
     let mut out = Vec::new();
@@ -195,10 +210,16 @@ fn rule_ports(rule: &Value, warnings: &mut Vec<String>, ctx: &str) -> Vec<RulePo
                 let start = n.as_u64().unwrap_or(0) as u32;
                 let end = p["endPort"].as_u64().map(|e| e as u32).unwrap_or(start);
                 if end < start || end - start >= MAX_PORT_RANGE {
-                    warnings.push(format!("{ctx}: port range {start}-{end} too wide (max {MAX_PORT_RANGE})"));
+                    warnings.push(format!(
+                        "{ctx}: port range {start}-{end} too wide (max {MAX_PORT_RANGE})"
+                    ));
                     continue;
                 }
-                out.extend((start..=end).filter(|x| *x > 0 && *x <= 65535).map(|x| RulePort::Num(proto, x as u16)));
+                out.extend(
+                    (start..=end)
+                        .filter(|x| *x > 0 && *x <= 65535)
+                        .map(|x| RulePort::Num(proto, x as u16)),
+                );
             }
             Value::String(s) => out.push(RulePort::Named(proto, s.clone())),
             _ => {}
@@ -224,7 +245,8 @@ impl World<'_> {
 
     fn ns_labels(&self, ns: &str) -> BTreeMap<String, String> {
         let mut l = self.ns_labels.get(ns).cloned().unwrap_or_default();
-        l.entry("kubernetes.io/metadata.name".into()).or_insert_with(|| ns.to_string());
+        l.entry("kubernetes.io/metadata.name".into())
+            .or_insert_with(|| ns.to_string());
         l
     }
 
@@ -264,14 +286,25 @@ impl World<'_> {
                         RulePort::Named(proto, pname) => {
                             let dst = if egress { *peer } else { *s };
                             if dst & 0x8000_0000 != 0 {
-                                warnings.push(format!("{name}: named port `{pname}` cannot apply to an ipBlock peer"));
+                                warnings.push(format!(
+                                    "{name}: named port `{pname}` cannot apply to an ipBlock peer"
+                                ));
                                 continue;
                             }
-                            self.resolve_named(dst, pname, *proto).into_iter().map(|n| (*proto, n)).collect()
+                            self.resolve_named(dst, pname, *proto)
+                                .into_iter()
+                                .map(|n| (*proto, n))
+                                .collect()
                         }
                     };
                     for (proto, port) in resolved {
-                        policy.insert(CniPolicyEntry { subject: *s, peer: *peer, egress, proto, port });
+                        policy.insert(CniPolicyEntry {
+                            subject: *s,
+                            peer: *peer,
+                            egress,
+                            proto,
+                            port,
+                        });
                     }
                 }
             }
@@ -314,7 +347,10 @@ pub fn compile(inp: &Inputs) -> Compiled {
         let ns = str_at(np, &["metadata", "namespace"]).unwrap_or("default");
         let name = format!("{ns}/{}", str_at(np, &["metadata", "name"]).unwrap_or("?"));
         let spec = &np["spec"];
-        let subject_sel = spec.get("podSelector").cloned().unwrap_or(Value::Object(Default::default()));
+        let subject_sel = spec
+            .get("podSelector")
+            .cloned()
+            .unwrap_or(Value::Object(Default::default()));
         let subjects: BTreeSet<u32> = inp
             .pods
             .iter()
@@ -322,7 +358,10 @@ pub fn compile(inp: &Inputs) -> Compiled {
             .map(|p| pod_identity(&p.namespace, &p.labels))
             .collect();
         let types: Vec<String> = match spec["policyTypes"].as_array() {
-            Some(t) => t.iter().filter_map(|x| x.as_str().map(String::from)).collect(),
+            Some(t) => t
+                .iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect(),
             None => {
                 let mut t = vec!["Ingress".to_string()];
                 if spec.get("egress").is_some() {
@@ -331,7 +370,9 @@ pub fn compile(inp: &Inputs) -> Compiled {
                 t
             }
         };
-        for (dir, peers_key, rules_key) in [("Ingress", "from", "ingress"), ("Egress", "to", "egress")] {
+        for (dir, peers_key, rules_key) in
+            [("Ingress", "from", "ingress"), ("Egress", "to", "egress")]
+        {
             if !types.iter().any(|t| t == dir) {
                 continue;
             }
@@ -346,18 +387,32 @@ pub fn compile(inp: &Inputs) -> Compiled {
             for rule in spec[rules_key].as_array().into_iter().flatten() {
                 let ports = rule_ports(rule, &mut warnings, &name);
                 let mut peers: BTreeSet<u32> = BTreeSet::new();
-                match rule.get(peers_key).and_then(|p| p.as_array()).filter(|p| !p.is_empty()) {
+                match rule
+                    .get(peers_key)
+                    .and_then(|p| p.as_array())
+                    .filter(|p| !p.is_empty())
+                {
                     None => {
                         peers.insert(0);
                     }
                     Some(list) => {
                         for peer in list {
                             if let Some(block) = peer.get("ipBlock") {
-                                let Some(cidr) = block["cidr"].as_str() else { continue };
-                                if block.get("except").and_then(|e| e.as_array()).is_some_and(|e| !e.is_empty()) {
-                                    warnings.push(format!("{name}: ipBlock except not supported ({cidr})"));
+                                let Some(cidr) = block["cidr"].as_str() else {
+                                    continue;
+                                };
+                                if block
+                                    .get("except")
+                                    .and_then(|e| e.as_array())
+                                    .is_some_and(|e| !e.is_empty())
+                                {
+                                    warnings.push(format!(
+                                        "{name}: ipBlock except not supported ({cidr})"
+                                    ));
                                 }
-                                let id = *cidrs.entry(cidr.to_string()).or_insert_with(|| cidr_identity(cidr));
+                                let id = *cidrs
+                                    .entry(cidr.to_string())
+                                    .or_insert_with(|| cidr_identity(cidr));
                                 peers.insert(id);
                             } else {
                                 peers.extend(world.peer_identities(ns, peer));
@@ -365,7 +420,15 @@ pub fn compile(inp: &Inputs) -> Compiled {
                         }
                     }
                 }
-                world.emit(&mut policy, &mut warnings, &name, &subjects, &peers, &ports, egress);
+                world.emit(
+                    &mut policy,
+                    &mut warnings,
+                    &name,
+                    &subjects,
+                    &peers,
+                    &ports,
+                    egress,
+                );
             }
         }
     }
@@ -389,8 +452,14 @@ pub fn compile(inp: &Inputs) -> Compiled {
         .iter()
         .flat_map(|p| {
             let id = pod_identity(&p.namespace, &p.labels);
-            let (ingress_isolated, egress_isolated) = (ingress_iso.contains(&id), egress_iso.contains(&id));
-            p.ips.iter().map(move |ip| CniIdentity { ip: ip.clone(), identity: id, ingress_isolated, egress_isolated })
+            let (ingress_isolated, egress_isolated) =
+                (ingress_iso.contains(&id), egress_iso.contains(&id));
+            p.ips.iter().map(move |ip| CniIdentity {
+                ip: ip.clone(),
+                identity: id,
+                ingress_isolated,
+                egress_isolated,
+            })
         })
         .collect();
     identities.sort();
@@ -409,12 +478,20 @@ pub fn compile(inp: &Inputs) -> Compiled {
 }
 
 /// Ready IPv4/IPv6 endpoints of a service, by service port name → (ip, port, node).
-fn slice_backends(inp: &Inputs, ns: &str, svc: &str) -> BTreeMap<String, Vec<(String, u16, String)>> {
+fn slice_backends(
+    inp: &Inputs,
+    ns: &str,
+    svc: &str,
+) -> BTreeMap<String, Vec<(String, u16, String)>> {
     let mut out: BTreeMap<String, Vec<(String, u16, String)>> = BTreeMap::new();
     for s in inp.endpoint_slices {
         if str_at(s, &["metadata", "namespace"]) != Some(ns)
-            || s.pointer("/metadata/labels/kubernetes.io~1service-name").and_then(|v| v.as_str()) != Some(svc)
-            || s["addressType"].as_str().is_some_and(|t| t != "IPv4" && t != "IPv6")
+            || s.pointer("/metadata/labels/kubernetes.io~1service-name")
+                .and_then(|v| v.as_str())
+                != Some(svc)
+            || s["addressType"]
+                .as_str()
+                .is_some_and(|t| t != "IPv4" && t != "IPv6")
         {
             continue;
         }
@@ -422,16 +499,30 @@ fn slice_backends(inp: &Inputs, ns: &str, svc: &str) -> BTreeMap<String, Vec<(St
             .as_array()
             .into_iter()
             .flatten()
-            .filter_map(|p| Some((p["name"].as_str().unwrap_or("").to_string(), p["port"].as_u64()? as u16)))
+            .filter_map(|p| {
+                Some((
+                    p["name"].as_str().unwrap_or("").to_string(),
+                    p["port"].as_u64()? as u16,
+                ))
+            })
             .collect();
         for ep in s["endpoints"].as_array().into_iter().flatten() {
             if ep.pointer("/conditions/ready") == Some(&Value::Bool(false)) {
                 continue;
             }
             let node = ep["nodeName"].as_str().unwrap_or("").to_string();
-            for addr in ep["addresses"].as_array().into_iter().flatten().filter_map(|a| a.as_str()) {
+            for addr in ep["addresses"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|a| a.as_str())
+            {
                 for (pname, port) in &ports {
-                    out.entry(pname.clone()).or_default().push((addr.to_string(), *port, node.clone()));
+                    out.entry(pname.clone()).or_default().push((
+                        addr.to_string(),
+                        *port,
+                        node.clone(),
+                    ));
                 }
             }
         }
@@ -450,7 +541,11 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
             continue;
         }
         let mut frontends: BTreeSet<String> = BTreeSet::new();
-        let cluster_ips = spec["clusterIPs"].as_array().into_iter().flatten().filter_map(|v| v.as_str());
+        let cluster_ips = spec["clusterIPs"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|v| v.as_str());
         for ip in cluster_ips.chain(spec["clusterIP"].as_str()) {
             if !ip.is_empty() && ip != "None" {
                 frontends.insert(ip.to_string());
@@ -463,10 +558,20 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
                 .unwrap_or(10_800)
         });
         let etp_local = spec["externalTrafficPolicy"].as_str() == Some("Local");
-        for ip in spec["externalIPs"].as_array().into_iter().flatten().filter_map(|v| v.as_str()) {
+        for ip in spec["externalIPs"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|v| v.as_str())
+        {
             frontends.insert(ip.to_string());
         }
-        for ing in svc.pointer("/status/loadBalancer/ingress").and_then(|v| v.as_array()).into_iter().flatten() {
+        for ing in svc
+            .pointer("/status/loadBalancer/ingress")
+            .and_then(|v| v.as_array())
+            .into_iter()
+            .flatten()
+        {
             if let Some(ip) = ing["ip"].as_str() {
                 frontends.insert(ip.to_string());
             }
@@ -474,12 +579,20 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
         let backends = slice_backends(inp, ns, name);
         for p in spec["ports"].as_array().into_iter().flatten() {
             let Some(proto) = proto_num(p["protocol"].as_str()) else {
-                warnings.push(format!("service {ns}/{name}: protocol {} not supported", p["protocol"]));
+                warnings.push(format!(
+                    "service {ns}/{name}: protocol {} not supported",
+                    p["protocol"]
+                ));
                 continue;
             };
-            let Some(port) = p["port"].as_u64() else { continue };
+            let Some(port) = p["port"].as_u64() else {
+                continue;
+            };
             let pname = p["name"].as_str().unwrap_or("");
-            let all: Vec<&(String, u16, String)> = backends.get(pname).map(|v| v.iter().collect()).unwrap_or_default();
+            let all: Vec<&(String, u16, String)> = backends
+                .get(pname)
+                .map(|v| v.iter().collect())
+                .unwrap_or_default();
             // Backends of one family; NodePorts also mark remote-node backends.
             let pick = |v6: bool, nodeport: bool| -> Vec<CniBackend> {
                 let mut be: Vec<CniBackend> = all
@@ -493,7 +606,13 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
                             port: *port,
                             remote,
                             node: remote
-                                .then(|| inp.node_ips.get(node)?.iter().find(|ip| ip.contains(':') == v6).cloned())
+                                .then(|| {
+                                    inp.node_ips
+                                        .get(node)?
+                                        .iter()
+                                        .find(|ip| ip.contains(':') == v6)
+                                        .cloned()
+                                })
                                 .flatten(),
                         }
                     })
@@ -513,11 +632,18 @@ fn services(inp: &Inputs, warnings: &mut Vec<String>) -> Vec<CniService> {
                     affinity_secs,
                 });
             }
-            if let Some(np) = p["nodePort"].as_u64().filter(|_| ty == "NodePort" || ty == "LoadBalancer") {
-                let families = spec["ipFamilies"].as_array().map(|f| f.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>());
+            if let Some(np) = p["nodePort"]
+                .as_u64()
+                .filter(|_| ty == "NodePort" || ty == "LoadBalancer")
+            {
+                let families = spec["ipFamilies"]
+                    .as_array()
+                    .map(|f| f.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>());
                 for (v6, fe) in [(false, "0.0.0.0"), (true, "::")] {
                     let fam = if v6 { "IPv6" } else { "IPv4" };
-                    if families.as_ref().is_some_and(|f| !f.contains(&fam)) || (families.is_none() && v6) {
+                    if families.as_ref().is_some_and(|f| !f.contains(&fam))
+                        || (families.is_none() && v6)
+                    {
                         continue;
                     }
                     out.push(CniService {
@@ -542,8 +668,10 @@ mod tests {
     use serde_json::json;
 
     fn pod(ns: &str, name: &str, ip: &str, labels: &[(&str, &str)]) -> Value {
-        let l: serde_json::Map<String, Value> =
-            labels.iter().map(|(k, v)| (k.to_string(), Value::String(v.to_string()))).collect();
+        let l: serde_json::Map<String, Value> = labels
+            .iter()
+            .map(|(k, v)| (k.to_string(), Value::String(v.to_string())))
+            .collect();
         json!({
             "metadata": { "namespace": ns, "name": name, "labels": l },
             "spec": { "nodeName": "n1" },
@@ -553,23 +681,40 @@ mod tests {
 
     #[test]
     fn selectors() {
-        let l: BTreeMap<String, String> = [("app".into(), "web".into()), ("tier".into(), "fe".into())].into();
+        let l: BTreeMap<String, String> =
+            [("app".into(), "web".into()), ("tier".into(), "fe".into())].into();
         assert!(selector_matches(&json!({}), &l));
-        assert!(selector_matches(&json!({"matchLabels": {"app": "web"}}), &l));
-        assert!(!selector_matches(&json!({"matchLabels": {"app": "db"}}), &l));
+        assert!(selector_matches(
+            &json!({"matchLabels": {"app": "web"}}),
+            &l
+        ));
+        assert!(!selector_matches(
+            &json!({"matchLabels": {"app": "db"}}),
+            &l
+        ));
         assert!(selector_matches(
             &json!({"matchExpressions": [{"key": "tier", "operator": "In", "values": ["fe", "be"]}]}),
             &l
         ));
-        assert!(!selector_matches(&json!({"matchExpressions": [{"key": "tier", "operator": "NotIn", "values": ["fe"]}]}), &l));
-        assert!(selector_matches(&json!({"matchExpressions": [{"key": "x", "operator": "DoesNotExist"}]}), &l));
-        assert!(!selector_matches(&json!({"matchExpressions": [{"key": "x", "operator": "Exists"}]}), &l));
+        assert!(!selector_matches(
+            &json!({"matchExpressions": [{"key": "tier", "operator": "NotIn", "values": ["fe"]}]}),
+            &l
+        ));
+        assert!(selector_matches(
+            &json!({"matchExpressions": [{"key": "x", "operator": "DoesNotExist"}]}),
+            &l
+        ));
+        assert!(!selector_matches(
+            &json!({"matchExpressions": [{"key": "x", "operator": "Exists"}]}),
+            &l
+        ));
     }
 
     #[test]
     fn policy_compiles_to_identity_pairs() {
         let mut db_pod = pod("prod", "db-1", "10.42.0.6", &[("app", "db")]);
-        db_pod["spec"]["containers"] = json!([{"ports": [{"name": "metrics", "containerPort": 9187}]}]);
+        db_pod["spec"]["containers"] =
+            json!([{"ports": [{"name": "metrics", "containerPort": 9187}]}]);
         let items = vec![
             pod("prod", "web-1", "10.42.0.5", &[("app", "web")]),
             db_pod,
@@ -605,19 +750,46 @@ mod tests {
         let tool = pod_identity("dev", &pods[2].labels);
         let block = cidr_identity("192.168.0.0/16");
         let st = &c.state;
-        assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: web, egress: false, proto: IPPROTO_TCP, port: 5432 }));
+        assert!(st.policy.contains(&CniPolicyEntry {
+            subject: db,
+            peer: web,
+            egress: false,
+            proto: IPPROTO_TCP,
+            port: 5432
+        }));
         for port in [53, 54] {
-            assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: tool, egress: false, proto: IPPROTO_UDP, port }));
-            assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer: block, egress: false, proto: IPPROTO_UDP, port }));
+            assert!(st.policy.contains(&CniPolicyEntry {
+                subject: db,
+                peer: tool,
+                egress: false,
+                proto: IPPROTO_UDP,
+                port
+            }));
+            assert!(st.policy.contains(&CniPolicyEntry {
+                subject: db,
+                peer: block,
+                egress: false,
+                proto: IPPROTO_UDP,
+                port
+            }));
         }
         for peer in [tool, block] {
-            assert!(st.policy.contains(&CniPolicyEntry { subject: db, peer, egress: false, proto: IPPROTO_TCP, port: 9187 }));
+            assert!(st.policy.contains(&CniPolicyEntry {
+                subject: db,
+                peer,
+                egress: false,
+                proto: IPPROTO_TCP,
+                port: 9187
+            }));
         }
         assert_eq!(st.policy.len(), 7);
         assert_eq!(st.cidrs, vec![("192.168.0.0/16".to_string(), block)]);
         assert!(c.warnings.is_empty(), "{:?}", c.warnings);
-        let iso: Vec<(&str, bool, bool)> =
-            st.identities.iter().map(|i| (i.ip.as_str(), i.ingress_isolated, i.egress_isolated)).collect();
+        let iso: Vec<(&str, bool, bool)> = st
+            .identities
+            .iter()
+            .map(|i| (i.ip.as_str(), i.ingress_isolated, i.egress_isolated))
+            .collect();
         assert!(iso.contains(&("10.42.0.6", true, false)));
         assert!(iso.contains(&("10.42.0.5", false, false)));
         assert!(block & 0x8000_0000 != 0 && db & 0x8000_0000 == 0);
@@ -640,13 +812,29 @@ mod tests {
                     {"to": [{"ipBlock": {"cidr": "10.0.0.0/8"}}], "ports": [{"port": "http"}]}
                 ]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node_ips: &BTreeMap::new(), node: "n1" });
+        let c = compile(&Inputs {
+            pods: &pods,
+            namespaces: &[],
+            policies: &policies,
+            services: &[],
+            endpoint_slices: &[],
+            cilium_policies: &[],
+            node_ips: &BTreeMap::new(),
+            node: "n1",
+        });
         let api = pod_identity("a", &pods[0].labels);
         let cli = pod_identity("a", &pods[1].labels);
-        let got: BTreeSet<(u32, u8, u16)> =
-            c.state.policy.iter().map(|p| (p.peer, p.proto, p.port)).collect();
+        let got: BTreeSet<(u32, u8, u16)> = c
+            .state
+            .policy
+            .iter()
+            .map(|p| (p.peer, p.proto, p.port))
+            .collect();
         assert!(c.state.policy.iter().all(|p| p.subject == cli && p.egress));
-        assert_eq!(got, [(api, IPPROTO_TCP, 8080), (api, IPPROTO_UDP, 5353)].into());
+        assert_eq!(
+            got,
+            [(api, IPPROTO_TCP, 8080), (api, IPPROTO_UDP, 5353)].into()
+        );
         assert!(c.warnings.iter().any(|w| w.contains("ipBlock peer")));
     }
 
@@ -658,9 +846,27 @@ mod tests {
             "metadata": {"namespace": "a", "name": "lockdown"},
             "spec": {"podSelector": {}, "policyTypes": ["Ingress", "Egress"], "ingress": [{}]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node_ips: &BTreeMap::new(), node: "n1" });
+        let c = compile(&Inputs {
+            pods: &pods,
+            namespaces: &[],
+            policies: &policies,
+            services: &[],
+            endpoint_slices: &[],
+            cilium_policies: &[],
+            node_ips: &BTreeMap::new(),
+            node: "n1",
+        });
         let id = pod_identity("a", &pods[0].labels);
-        assert_eq!(c.state.policy, vec![CniPolicyEntry { subject: id, peer: 0, egress: false, proto: 0, port: 0 }]);
+        assert_eq!(
+            c.state.policy,
+            vec![CniPolicyEntry {
+                subject: id,
+                peer: 0,
+                egress: false,
+                proto: 0,
+                port: 0
+            }]
+        );
         assert!(c.state.identities[0].ingress_isolated && c.state.identities[0].egress_isolated);
     }
 
@@ -681,19 +887,47 @@ mod tests {
                 {"addresses": ["10.42.1.6"], "nodeName": "n2", "conditions": {"ready": false}}
             ]
         })];
-        let node_ips: BTreeMap<String, Vec<String>> =
-            [("n2".to_string(), vec!["192.0.2.2".to_string(), "2001:db8::2".to_string()])].into();
-        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &services, endpoint_slices: &slices, cilium_policies: &[], node_ips: &node_ips, node: "n1" });
+        let node_ips: BTreeMap<String, Vec<String>> = [(
+            "n2".to_string(),
+            vec!["192.0.2.2".to_string(), "2001:db8::2".to_string()],
+        )]
+        .into();
+        let c = compile(&Inputs {
+            pods: &[],
+            namespaces: &[],
+            policies: &[],
+            services: &services,
+            endpoint_slices: &slices,
+            cilium_policies: &[],
+            node_ips: &node_ips,
+            node: "n1",
+        });
         let s = &c.state.services;
         assert_eq!(s.len(), 2);
         let np = s.iter().find(|x| x.addr == "0.0.0.0").unwrap();
         assert_eq!(np.port, 30080);
-        let local = CniBackend { addr: "10.42.0.5".into(), port: 8080, ..Default::default() };
-        let remote = CniBackend { addr: "10.42.1.5".into(), port: 8080, remote: true, node: Some("192.0.2.2".into()) };
-        assert_eq!(np.backends, vec![local.clone(), remote], "eTP=Cluster: remote backends via their node");
+        let local = CniBackend {
+            addr: "10.42.0.5".into(),
+            port: 8080,
+            ..Default::default()
+        };
+        let remote = CniBackend {
+            addr: "10.42.1.5".into(),
+            port: 8080,
+            remote: true,
+            node: Some("192.0.2.2".into()),
+        };
+        assert_eq!(
+            np.backends,
+            vec![local.clone(), remote],
+            "eTP=Cluster: remote backends via their node"
+        );
         let cip = s.iter().find(|x| x.addr == "10.43.0.10").unwrap();
         assert_eq!(cip.backends.len(), 2, "not-ready endpoints are excluded");
-        assert!(cip.backends.iter().all(|b| !b.remote), "ClusterIP backends are plain (socket LB)");
+        assert!(
+            cip.backends.iter().all(|b| !b.remote),
+            "ClusterIP backends are plain (socket LB)"
+        );
         assert_eq!(cip.affinity_secs, None);
 
         // eTP=Local, ClientIP affinity, dual-stack.
@@ -710,13 +944,32 @@ mod tests {
             "ports": [{"name": "http", "port": 8080}],
             "endpoints": [{"addresses": ["fd42::5"], "nodeName": "n1"}]
         }));
-        let c = compile(&Inputs { pods: &[], namespaces: &[], policies: &[], services: &[svc], endpoint_slices: &slices6, cilium_policies: &[], node_ips: &node_ips, node: "n1" });
+        let c = compile(&Inputs {
+            pods: &[],
+            namespaces: &[],
+            policies: &[],
+            services: &[svc],
+            endpoint_slices: &slices6,
+            cilium_policies: &[],
+            node_ips: &node_ips,
+            node: "n1",
+        });
         let s = &c.state.services;
         assert_eq!(s.len(), 4, "{s:?}");
         assert!(s.iter().all(|x| x.affinity_secs == Some(60)));
-        assert_eq!(s.iter().find(|x| x.addr == "0.0.0.0").unwrap().backends, vec![local]);
+        assert_eq!(
+            s.iter().find(|x| x.addr == "0.0.0.0").unwrap().backends,
+            vec![local]
+        );
         let np6 = s.iter().find(|x| x.addr == "::").unwrap();
-        assert_eq!(np6.backends, vec![CniBackend { addr: "fd42::5".into(), port: 8080, ..Default::default() }]);
+        assert_eq!(
+            np6.backends,
+            vec![CniBackend {
+                addr: "fd42::5".into(),
+                port: 8080,
+                ..Default::default()
+            }]
+        );
         let cip6 = s.iter().find(|x| x.addr == "fd43::10").unwrap();
         assert_eq!(cip6.backends.len(), 1, "v6 frontend only gets v6 backends");
     }
@@ -732,10 +985,25 @@ mod tests {
             "spec": {"podSelector": {}, "policyTypes": ["Egress"],
                      "egress": [{"to": [{"ipBlock": {"cidr": "2001:db8::/32"}}]}]}
         })];
-        let c = compile(&Inputs { pods: &pods, namespaces: &[], policies: &policies, services: &[], endpoint_slices: &[], cilium_policies: &[], node_ips: &BTreeMap::new(), node: "n1" });
+        let c = compile(&Inputs {
+            pods: &pods,
+            namespaces: &[],
+            policies: &policies,
+            services: &[],
+            endpoint_slices: &[],
+            cilium_policies: &[],
+            node_ips: &BTreeMap::new(),
+            node: "n1",
+        });
         assert_eq!(c.state.identities.len(), 2);
-        assert_eq!(c.state.identities[0].identity, c.state.identities[1].identity);
-        assert_eq!(c.state.cidrs, vec![("2001:db8::/32".to_string(), cidr_identity("2001:db8::/32"))]);
+        assert_eq!(
+            c.state.identities[0].identity,
+            c.state.identities[1].identity
+        );
+        assert_eq!(
+            c.state.cidrs,
+            vec![("2001:db8::/32".to_string(), cidr_identity("2001:db8::/32"))]
+        );
         assert_eq!(c.state.version, CNI_STATE_VERSION);
     }
 }

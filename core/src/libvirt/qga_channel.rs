@@ -36,12 +36,15 @@ pub struct ChannelOutcome {
 /// comment) — `ensure_guest_agent_channel` then silently no-ops on a channel
 /// that doesn't actually work, instead of adding a real one.
 pub fn has_guest_agent_channel(vm_xml: &str) -> bool {
-    crate::xml::split_blocks(vm_xml, "channel").iter().any(|block| {
-        let channel_type = crate::xml::extract_attr(block, "channel", "type").unwrap_or_default();
-        let target_type = crate::xml::extract_attr(block, "target", "type").unwrap_or_default();
-        let target_name = crate::xml::extract_attr(block, "target", "name").unwrap_or_default();
-        channel_type == "unix" && target_type == "virtio" && target_name == QGA_CHANNEL_NAME
-    })
+    crate::xml::split_blocks(vm_xml, "channel")
+        .iter()
+        .any(|block| {
+            let channel_type =
+                crate::xml::extract_attr(block, "channel", "type").unwrap_or_default();
+            let target_type = crate::xml::extract_attr(block, "target", "type").unwrap_or_default();
+            let target_name = crate::xml::extract_attr(block, "target", "name").unwrap_or_default();
+            channel_type == "unix" && target_type == "virtio" && target_name == QGA_CHANNEL_NAME
+        })
 }
 
 fn has_virtio_serial_controller(vm_xml: &str) -> bool {
@@ -176,7 +179,8 @@ mod staged_device_tests {
         // running guest, so the live XML lacked it and the next call tried to
         // add it again — libvirt answered "controller index='0' already exists".
         let live = "<domain><devices><disk device='disk'/></devices></domain>";
-        let inactive = "<domain><devices><controller type='virtio-serial' index='0'/></devices></domain>";
+        let inactive =
+            "<domain><devices><controller type='virtio-serial' index='0'/></devices></domain>";
         assert!(!has_virtio_serial_controller(live));
         let combined = format!("{live}\n{inactive}");
         assert!(has_virtio_serial_controller(&combined));

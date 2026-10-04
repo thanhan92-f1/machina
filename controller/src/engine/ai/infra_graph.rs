@@ -301,11 +301,10 @@ pub async fn build(pool: &SqlitePool, scope: &GraphScope) -> anyhow::Result<Infr
             let Ok(host_id) = Uuid::parse_str(&n.id) else {
                 continue;
             };
-            if let Ok(st) =
-                sqlx::query_scalar::<_, String>("SELECT state FROM hosts WHERE id = ?")
-                    .bind(host_id)
-                    .fetch_optional(pool)
-                    .await
+            if let Ok(st) = sqlx::query_scalar::<_, String>("SELECT state FROM hosts WHERE id = ?")
+                .bind(host_id)
+                .fetch_optional(pool)
+                .await
             {
                 n.state = st;
                 n.health_score = Some(if n.state.as_deref() == Some("online") {
@@ -538,20 +537,21 @@ async fn firewall_path_blocker(
         Err(e) => {
             return Some(PathBlocker {
                 kind: "firewall_unknown".into(),
-                message: format!(
-                    "Zeus firewall status could not be verified for this host: {e}"
-                ),
-                remediation:
-                    "Firewall reachability is unconfirmed — retry once the firewall \
+                message: format!("Zeus firewall status could not be verified for this host: {e}"),
+                remediation: "Firewall reachability is unconfirmed — retry once the firewall \
                      inventory backend is reachable before treating the path as open."
-                        .into(),
+                    .into(),
             });
         }
     };
     let profile = detail.target.profile.as_deref().unwrap_or("Balanced");
     let rules = profile_rules(profile);
     let matrix = simulate_connectivity(&detail.inventory, &rules);
-    let probe_port = if port > 0 && port <= 65535 { port as u16 } else { 5432 };
+    let probe_port = if port > 0 && port <= 65535 {
+        port as u16
+    } else {
+        5432
+    };
     if let Some(block) = matrix.blocks.iter().find(|c| c.port == probe_port) {
         return Some(PathBlocker {
             kind: "firewall_deny".into(),
@@ -581,12 +581,11 @@ async fn resolve_vm(
     // an unescaped `LIKE` bind treats `_`/`%` as wildcards — so `web_01` would resolve
     // to an arbitrary `webX01`/`web-01`, and `%` would resolve to "some VM". Path
     // analysis run against the wrong VM is silently misleading.
-    let row: Option<(Uuid, String, Option<Uuid>, String)> = sqlx::query_as(
-        "SELECT id, name, host_id, observed_state FROM vms WHERE name = ? LIMIT 1",
-    )
-    .bind(name)
-    .fetch_optional(pool)
-    .await?;
+    let row: Option<(Uuid, String, Option<Uuid>, String)> =
+        sqlx::query_as("SELECT id, name, host_id, observed_state FROM vms WHERE name = ? LIMIT 1")
+            .bind(name)
+            .fetch_optional(pool)
+            .await?;
     Ok(row)
 }
 
@@ -636,11 +635,10 @@ pub async fn explain_path(
         });
     }
     if let Some(h) = a_host {
-        let host_state: Option<String> =
-            sqlx::query_scalar("SELECT state FROM hosts WHERE id = ?")
-                .bind(h)
-                .fetch_optional(pool)
-                .await?;
+        let host_state: Option<String> = sqlx::query_scalar("SELECT state FROM hosts WHERE id = ?")
+            .bind(h)
+            .fetch_optional(pool)
+            .await?;
         hops.push(format!("host {h}"));
         if host_state.as_deref() != Some("online") {
             blockers.push(PathBlocker {
@@ -717,8 +715,8 @@ pub async fn explain_path(
         blockers.push(PathBlocker {
             kind: "firewall_unknown".into(),
             message: "Destination host is unknown — firewall reachability not evaluated.".into(),
-            remediation: "Ensure the destination VM is mapped to a host before trusting this result."
-                .into(),
+            remediation:
+                "Ensure the destination VM is mapped to a host before trusting this result.".into(),
         });
     }
 
@@ -833,7 +831,12 @@ pub async fn query(pool: &SqlitePool, req: &GraphQueryRequest) -> anyhow::Result
     }
 
     if hits.is_empty() {
-        let escaped = req.query.trim().replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+        let escaped = req
+            .query
+            .trim()
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
         let rows: Vec<(Uuid, String, String)> = sqlx::query_as(
             "SELECT id, name, observed_state FROM vms WHERE name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 20",
         )
@@ -857,7 +860,11 @@ pub async fn query(pool: &SqlitePool, req: &GraphQueryRequest) -> anyhow::Result
     })
 }
 
-pub async fn explain_object(pool: &SqlitePool, kind: &str, id: &str) -> anyhow::Result<ObjectExplain> {
+pub async fn explain_object(
+    pool: &SqlitePool,
+    kind: &str,
+    id: &str,
+) -> anyhow::Result<ObjectExplain> {
     match kind {
         "vm" => {
             let row: Option<(String, Option<String>, i64, i32, String, Option<String>)> =
@@ -913,12 +920,10 @@ pub async fn explain_object(pool: &SqlitePool, kind: &str, id: &str) -> anyhow::
                 .fetch_optional(pool)
                 .await?
             } else {
-                sqlx::query_as(
-                    "SELECT hostname, state, vm_count FROM hosts WHERE hostname = ?",
-                )
-                .bind(id)
-                .fetch_optional(pool)
-                .await?
+                sqlx::query_as("SELECT hostname, state, vm_count FROM hosts WHERE hostname = ?")
+                    .bind(id)
+                    .fetch_optional(pool)
+                    .await?
             };
             let Some((name, state, vms)) = row else {
                 anyhow::bail!("Host not found");

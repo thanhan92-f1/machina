@@ -405,7 +405,8 @@ fn foreign_cni_configs(dirs: &[&Path]) -> Vec<PathBuf> {
         };
         for e in entries.flatten() {
             let name = e.file_name().to_string_lossy().into_owned();
-            let is_cfg = name.ends_with(".conf") || name.ends_with(".conflist") || name.ends_with(".json");
+            let is_cfg =
+                name.ends_with(".conf") || name.ends_with(".conflist") || name.ends_with(".json");
             if is_cfg && name != MACHINA_CONFLIST && e.path().is_file() {
                 found.push(e.path());
             }
@@ -419,7 +420,12 @@ fn takeover_enabled(env_file: &str) -> bool {
     env_file.lines().any(|l| {
         let l = l.trim();
         l.strip_prefix("MACHINA_CNI_TAKEOVER=")
-            .map(|v| matches!(v.trim_matches(['"', '\'']).to_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+            .map(|v| {
+                matches!(
+                    v.trim_matches(['"', '\'']).to_lowercase().as_str(),
+                    "1" | "true" | "yes" | "on"
+                )
+            })
             .unwrap_or(false)
     })
 }
@@ -437,8 +443,13 @@ async fn phase_cni(stdout_log: &mut String, stderr_log: &mut String) -> Result<(
     let dirs: Vec<&Path> = CNI_CONF_DIRS.iter().map(Path::new).collect();
     let foreign = foreign_cni_configs(&dirs);
     if !foreign.is_empty() {
-        let takeover = std::fs::read_to_string(MACHINA_CNI_ENV_FILE).is_ok_and(|s| takeover_enabled(&s));
-        let list = foreign.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", ");
+        let takeover =
+            std::fs::read_to_string(MACHINA_CNI_ENV_FILE).is_ok_and(|s| takeover_enabled(&s));
+        let list = foreign
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
         if !takeover {
             return Err(LibvirtError::Operation(format!(
                 "another CNI is already configured ({list}); machina-cni will not replace it. \
@@ -446,7 +457,11 @@ async fn phase_cni(stdout_log: &mut String, stderr_log: &mut String) -> Result<(
                  MACHINA_CNI_TAKEOVER=1 in {MACHINA_CNI_ENV_FILE} to take over deliberately"
             )));
         }
-        append_section(stdout_log, "cni_takeover", &format!("MACHINA_CNI_TAKEOVER=1: replacing {list}"));
+        append_section(
+            stdout_log,
+            "cni_takeover",
+            &format!("MACHINA_CNI_TAKEOVER=1: replacing {list}"),
+        );
     }
     let no_env: Vec<(String, String)> = vec![];
     run_sh(
@@ -471,7 +486,10 @@ async fn phase_cni(stdout_log: &mut String, stderr_log: &mut String) -> Result<(
 }
 
 /// Wait until every node is Ready (the CNI, default or machina, is up).
-async fn phase_wait_nodes(stdout_log: &mut String, stderr_log: &mut String) -> Result<(), LibvirtError> {
+async fn phase_wait_nodes(
+    stdout_log: &mut String,
+    stderr_log: &mut String,
+) -> Result<(), LibvirtError> {
     let kube_env = kubeconfig_env_pairs();
     let kubectl = kubectl_bin();
     wait_until_kubectl_nodes(&kubectl, &kube_env, stdout_log).await?;
@@ -504,7 +522,13 @@ async fn phase_wait_nodes(stdout_log: &mut String, stderr_log: &mut String) -> R
     run_cmd_argv(
         "kubectl_get_pods_A",
         &kubectl,
-        &["get".into(), "pods".into(), "-A".into(), "-o".into(), "wide".into()],
+        &[
+            "get".into(),
+            "pods".into(),
+            "-A".into(),
+            "-o".into(),
+            "wide".into(),
+        ],
         &kube_env,
         TIMEOUT_KUBECTL_SECS,
         stdout_log,
@@ -894,7 +918,9 @@ pub async fn run_cluster_bootstrap(
             "full" => {
                 phase_k3s(&server_ip, params.cni, &mut stdout_log, &mut stderr_log).await?;
                 match params.cni {
-                    CniChoice::Default => phase_wait_nodes(&mut stdout_log, &mut stderr_log).await?,
+                    CniChoice::Default => {
+                        phase_wait_nodes(&mut stdout_log, &mut stderr_log).await?
+                    }
                     CniChoice::Machina => phase_cni(&mut stdout_log, &mut stderr_log).await?,
                 }
                 phase_metrics(

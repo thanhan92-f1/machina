@@ -97,9 +97,7 @@ pub struct AtlasJob {
 impl AtlasJob {
     /// The job id regardless of which field Atlas populated.
     pub fn job_id(&self) -> Option<&str> {
-        self.job_id_field
-            .as_deref()
-            .or(self.id.as_deref())
+        self.job_id_field.as_deref().or(self.id.as_deref())
     }
 
     /// The `volume_id` from a create/clone/restore job's `resource` block, if any.
@@ -222,11 +220,7 @@ impl AtlasClient {
         Ok(serde_json::from_value(v)?)
     }
 
-    async fn post(
-        &self,
-        path: &str,
-        body: serde_json::Value,
-    ) -> anyhow::Result<serde_json::Value> {
+    async fn post(&self, path: &str, body: serde_json::Value) -> anyhow::Result<serde_json::Value> {
         let resp = self
             .auth(self.http.post(self.url(path)).json(&body))
             .send()
@@ -312,7 +306,8 @@ impl AtlasClient {
     }
 
     pub async fn get_volume(&self, volume_id: &str) -> anyhow::Result<AtlasVolume> {
-        self.get_as(&format!("/volumes/{}", Self::seg(volume_id))).await
+        self.get_as(&format!("/volumes/{}", Self::seg(volume_id)))
+            .await
     }
 
     /// Volumes owned by a given product (+ optional resource id).
@@ -370,7 +365,8 @@ impl AtlasClient {
     }
 
     pub async fn delete_volume(&self, volume_id: &str) -> anyhow::Result<serde_json::Value> {
-        self.delete(&format!("/volumes/{}", Self::seg(volume_id))).await
+        self.delete(&format!("/volumes/{}", Self::seg(volume_id)))
+            .await
     }
 
     pub async fn expand_volume(
@@ -399,7 +395,10 @@ impl AtlasClient {
             body["name"] = serde_json::json!(n);
         }
         let v = self
-            .post(&format!("/volumes/{}/snapshots", Self::seg(volume_id)), body)
+            .post(
+                &format!("/volumes/{}/snapshots", Self::seg(volume_id)),
+                body,
+            )
             .await?;
         Ok(serde_json::from_value(v)?)
     }
@@ -419,7 +418,10 @@ impl AtlasClient {
             body["namespace"] = serde_json::json!(ns);
         }
         let v = self
-            .post(&format!("/snapshots/{}/clone", Self::seg(snapshot_id)), body)
+            .post(
+                &format!("/snapshots/{}/clone", Self::seg(snapshot_id)),
+                body,
+            )
             .await?;
         Ok(serde_json::from_value(v)?)
     }
@@ -438,7 +440,10 @@ impl AtlasClient {
             body["namespace"] = serde_json::json!(ns);
         }
         let v = self
-            .post(&format!("/snapshots/{}/restore", Self::seg(snapshot_id)), body)
+            .post(
+                &format!("/snapshots/{}/restore", Self::seg(snapshot_id)),
+                body,
+            )
             .await?;
         Ok(serde_json::from_value(v)?)
     }
@@ -523,7 +528,8 @@ impl AtlasClient {
     }
 
     pub async fn delete_backup(&self, backup_id: &str) -> anyhow::Result<serde_json::Value> {
-        self.delete(&format!("/backups/{}", Self::seg(backup_id))).await
+        self.delete(&format!("/backups/{}", Self::seg(backup_id)))
+            .await
     }
 
     // ---- Jobs -------------------------------------------------------------
@@ -539,11 +545,7 @@ impl AtlasClient {
     /// Poll a job until it reaches a terminal state or the deadline elapses.
     /// Returns the last observed job. Used by VM orchestration that needs the
     /// created `volume_id` before continuing (create → attach).
-    pub async fn wait_for_job(
-        &self,
-        job_id: &str,
-        max_wait: Duration,
-    ) -> anyhow::Result<AtlasJob> {
+    pub async fn wait_for_job(&self, job_id: &str, max_wait: Duration) -> anyhow::Result<AtlasJob> {
         let start = std::time::Instant::now();
         let mut last = self.get_job(job_id).await?;
         while !last.is_terminal() {
@@ -595,7 +597,9 @@ pub async fn status(cfg: &ControllerConfig) -> AtlasStatus {
     let (reachable, version) = match client.version().await {
         Ok(v) => (
             true,
-            v.get("version").and_then(|x| x.as_str()).map(str::to_string),
+            v.get("version")
+                .and_then(|x| x.as_str())
+                .map(str::to_string),
         ),
         Err(_) => (false, None),
     };

@@ -25,7 +25,8 @@ pub trait Engine: Send + Sync {
     async fn remove_container(&self, id: &str, force: bool) -> Result<(), VesselError>;
 
     fn stats_stream(&self, id: &str) -> BoxStream<'static, StatsItem>;
-    fn logs_stream(&self, id: &str, follow: bool, tail: Option<u64>) -> BoxStream<'static, LogItem>;
+    fn logs_stream(&self, id: &str, follow: bool, tail: Option<u64>)
+        -> BoxStream<'static, LogItem>;
 
     async fn list_pods(&self) -> Result<Vec<PodSummary>, VesselError>;
     async fn create_pod(&self, req: CreatePodRequest) -> Result<CreatePodResponse, VesselError>;

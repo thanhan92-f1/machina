@@ -42,7 +42,9 @@ fn prefixes(what: &str, v: &[String]) -> Result<Vec<crate::policy::Prefix>> {
     if v.len() > MAX_ENTRIES {
         return Err(anyhow!("at most {MAX_ENTRIES} {what} entries"));
     }
-    v.iter().map(|s| parse_prefix(s).map_err(|e| anyhow!("{what} `{s}`: {e}"))).collect()
+    v.iter()
+        .map(|s| parse_prefix(s).map_err(|e| anyhow!("{what} `{s}`: {e}")))
+        .collect()
 }
 
 impl Engine {
@@ -70,9 +72,15 @@ impl Engine {
         if config.protected.len() > MAX_ENTRIES {
             return Err(anyhow!("at most {MAX_ENTRIES} protected addresses"));
         }
-        let protected: HashSet<[u8; ADDR_LEN]> = config.protected.iter().map(|a| addr16(a)).collect::<Result<_>>()?;
+        let protected: HashSet<[u8; ADDR_LEN]> = config
+            .protected
+            .iter()
+            .map(|a| addr16(a))
+            .collect::<Result<_>>()?;
         if mode != SHIELD_OFF && !config.protect_all && protected.is_empty() {
-            return Err(anyhow!("nothing to protect: set `protected` addresses or `protect_all`"));
+            return Err(anyhow!(
+                "nothing to protect: set `protected` addresses or `protect_all`"
+            ));
         }
         let allow = prefixes("allow", &config.allow)?;
         let deny = prefixes("deny", &config.deny)?;
@@ -89,14 +97,20 @@ impl Engine {
             ShieldCfg {
                 mode,
                 protect_all: config.protect_all as u32,
-                pps: [config.syn_pps, config.udp_pps, config.icmp_pps, config.other_pps],
+                pps: [
+                    config.syn_pps,
+                    config.udp_pps,
+                    config.icmp_pps,
+                    config.other_pps,
+                ],
                 burst_secs: config.burst_secs,
                 _pad: 0,
             },
         )?;
         for k in self.shield.protected.clone() {
             if !protected.contains(&k) {
-                self.dp.cni_hash_remove::<[u8; ADDR_LEN], u8>("SHIELD_PROTECTED", &k);
+                self.dp
+                    .cni_hash_remove::<[u8; ADDR_LEN], u8>("SHIELD_PROTECTED", &k);
             }
         }
         for k in &protected {
@@ -105,10 +119,12 @@ impl Engine {
         self.dp.addr_lpm_clear::<u8>("SHIELD_ALLOW")?;
         self.dp.addr_lpm_clear::<u8>("SHIELD_DENY")?;
         for p in &allow {
-            self.dp.addr_lpm_insert("SHIELD_ALLOW", p.addr, p.bits, 1u8)?;
+            self.dp
+                .addr_lpm_insert("SHIELD_ALLOW", p.addr, p.bits, 1u8)?;
         }
         for p in &deny {
-            self.dp.addr_lpm_insert("SHIELD_DENY", p.addr, p.bits, 1u8)?;
+            self.dp
+                .addr_lpm_insert("SHIELD_DENY", p.addr, p.bits, 1u8)?;
         }
         self.shield.protected = protected;
 
@@ -135,12 +151,19 @@ impl Engine {
                 }
             })
             .unwrap_or_default();
-        let entries = self.dp.hash_entries::<ShieldSrcKey, ShieldSrcState>("SHIELD_SOURCES").unwrap_or_default();
+        let entries = self
+            .dp
+            .hash_entries::<ShieldSrcKey, ShieldSrcState>("SHIELD_SOURCES")
+            .unwrap_or_default();
         let tracked_sources = entries.len();
         let mut sources: Vec<ShieldSource> = entries
             .into_iter()
             .filter(|(_, v)| v.hits > 0)
-            .map(|(k, v)| ShieldSource { addr: fmt_addr(&k.addr), class: class_name(k.class).into(), hits: v.hits })
+            .map(|(k, v)| ShieldSource {
+                addr: fmt_addr(&k.addr),
+                class: class_name(k.class).into(),
+                hits: v.hits,
+            })
             .collect();
         sources.sort_by_key(|s| std::cmp::Reverse(s.hits));
         sources.truncate(TOP_SOURCES);
@@ -175,7 +198,10 @@ mod tests {
     #[test]
     fn shield_defaults_and_modes() {
         let c = ShieldConfig::default();
-        assert_eq!((c.mode.as_str(), c.syn_pps, c.icmp_pps, c.burst_secs), ("off", 1000, 100, 2));
+        assert_eq!(
+            (c.mode.as_str(), c.syn_pps, c.icmp_pps, c.burst_secs),
+            ("off", 1000, 100, 2)
+        );
         assert_eq!(shield_mode("enforce").unwrap(), SHIELD_ENFORCE);
         assert!(shield_mode("drop").is_err());
         assert_eq!(class_name(SHIELD_CLASS_SYN), "syn");

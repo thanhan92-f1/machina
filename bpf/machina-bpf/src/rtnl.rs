@@ -61,7 +61,10 @@ pub fn route_dst(family: u8, dst: &[u8; 16], dst_len: u8) -> Option<String> {
         return Some("default".into());
     }
     match family {
-        AF_INET => Some(format!("{}/{dst_len}", std::net::Ipv4Addr::new(dst[0], dst[1], dst[2], dst[3]))),
+        AF_INET => Some(format!(
+            "{}/{dst_len}",
+            std::net::Ipv4Addr::new(dst[0], dst[1], dst[2], dst[3])
+        )),
         AF_INET6 => Some(format!("{}/{dst_len}", std::net::Ipv6Addr::from(*dst))),
         _ => None,
     }
@@ -89,7 +92,10 @@ mod tests {
     fn masks() {
         assert_eq!(kinds_mask(&["link".into()]).unwrap(), 0b1011);
         assert!(kinds_mask(&["bogus".into()]).is_err());
-        assert_eq!(kinds_mask(&[]).unwrap(), machina_bpf_common::RTNL_DEFAULT_MASK);
+        assert_eq!(
+            kinds_mask(&[]).unwrap(),
+            machina_bpf_common::RTNL_DEFAULT_MASK
+        );
     }
 
     #[test]

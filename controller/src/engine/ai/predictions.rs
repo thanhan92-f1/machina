@@ -129,7 +129,9 @@ pub async fn unified(pool: &SqlitePool) -> anyhow::Result<PredictionsReport> {
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 /// Open ai_incidents for high/critical predictions within 72h horizon (deduped by resource).

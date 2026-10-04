@@ -56,15 +56,13 @@ pub struct MachinaConfig {
 }
 
 /// OpenTelemetry Protocol (HTTP) export and host audit integration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ObservabilityConfig {
     #[serde(default)]
     pub otlp: OtlpExportConfig,
     #[serde(default)]
     pub linux_audit: LinuxAuditConfig,
 }
-
 
 /// Push metrics (and optional audit logs) to an OTLP/HTTP collector (e.g. Grafana Alloy, otelcol).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -494,9 +492,7 @@ impl Default for VesselConfig {
     }
 }
 
-
-#[derive(Debug, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct TlsConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -505,7 +501,6 @@ pub struct TlsConfig {
     #[serde(default)]
     pub key_path: String,
 }
-
 
 impl TlsConfig {
     /// Mirrors the `tls_enabled` gate in `daemon/src/main.rs` that decides between
@@ -535,7 +530,6 @@ pub enum RunAsUserMode {
     #[serde(alias = "setuid_helper")]
     SetuidHelper,
 }
-
 
 /// Per-session UNIX impersonation for allow-listed host commands (OS user lifecycle today).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -685,8 +679,7 @@ pub struct FleetPeer {
     pub insecure_tls: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FleetConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -699,7 +692,6 @@ pub struct FleetConfig {
     #[serde(default)]
     pub peers: Vec<FleetPeer>,
 }
-
 
 impl FleetConfig {
     pub fn is_enabled(&self) -> bool {
@@ -858,7 +850,6 @@ pub enum OidcDefaultRole {
     #[default]
     ReadOnly,
 }
-
 
 fn default_saml_name_id_format() -> String {
     "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress".to_string()

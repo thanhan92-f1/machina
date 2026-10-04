@@ -124,7 +124,11 @@ pub fn attach_disk(
     Ok(())
 }
 
-pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<DetachOutcome, LibvirtError> {
+pub fn detach_disk(
+    conn: &Connect,
+    vm_name: &str,
+    target: &str,
+) -> Result<DetachOutcome, LibvirtError> {
     let domain = lookup_domain(conn, vm_name)?;
 
     // `detach_device_flags` matches the supplied XML against the domain's actual
@@ -175,7 +179,8 @@ pub fn detach_disk(conn: &Connect, vm_name: &str, target: &str) -> Result<Detach
 
 /// Does `<target dev='{target}' .../>` (either quote style) appear anywhere in `xml`?
 pub(crate) fn target_dev_present(xml: &str, target: &str) -> bool {
-    xml.contains(&format!("target dev='{target}'")) || xml.contains(&format!("target dev=\"{target}\""))
+    xml.contains(&format!("target dev='{target}'"))
+        || xml.contains(&format!("target dev=\"{target}\""))
 }
 
 /// Resize a block device attached to a VM (in GB).
@@ -232,7 +237,9 @@ fn attach_spare_pcie_root_port(domain: &Domain, flags: u32) -> Result<(), Libvir
     let xml = "<controller type='pci' model='pcie-root-port'/>";
     domain
         .attach_device_flags(xml, flags)
-        .map_err(LibvirtError::map_op("Failed to add PCIe root port for hotplug"))?;
+        .map_err(LibvirtError::map_op(
+            "Failed to add PCIe root port for hotplug",
+        ))?;
     Ok(())
 }
 
@@ -277,14 +284,20 @@ pub fn attach_interface(
                     .map_err(LibvirtError::map_op("Failed to attach network interface"))?;
                 Ok(())
             } else {
-                Err(LibvirtError::map_op("Failed to attach network interface")(e))
+                Err(LibvirtError::map_op("Failed to attach network interface")(
+                    e,
+                ))
             }
         }
     }
 }
 
 /// Detach a network interface from a VM by MAC address.
-pub fn detach_interface(conn: &Connect, vm_name: &str, mac: &str) -> Result<DetachOutcome, LibvirtError> {
+pub fn detach_interface(
+    conn: &Connect,
+    vm_name: &str,
+    mac: &str,
+) -> Result<DetachOutcome, LibvirtError> {
     // Validate MAC address format (xx:xx:xx:xx:xx:xx)
     let parts: Vec<&str> = mac.split(':').collect();
     if parts.len() != 6
@@ -309,11 +322,13 @@ pub fn detach_interface(conn: &Connect, vm_name: &str, mac: &str) -> Result<Deta
     // <alias>/<address> against the config side (which has neither) fails with "device not
     // found ... matching MAC address '...' and alias 'netN'" even though the interface is
     // right there. A minimal, source/model-only XML matches on both sides.
-    let domain_xml = domain
-        .get_xml_desc(0)
-        .map_err(LibvirtError::map_op("Failed to get domain XML for NIC detach"))?;
+    let domain_xml = domain.get_xml_desc(0).map_err(LibvirtError::map_op(
+        "Failed to get domain XML for NIC detach",
+    ))?;
     let iface_block = extract_interface_xml_by_mac(&domain_xml, mac).ok_or_else(|| {
-        LibvirtError::NotFound(format!("Interface with MAC '{mac}' not found in domain XML"))
+        LibvirtError::NotFound(format!(
+            "Interface with MAC '{mac}' not found in domain XML"
+        ))
     })?;
     let network = extract_attr(&iface_block, "source", "network").ok_or_else(|| {
         LibvirtError::Operation(format!(

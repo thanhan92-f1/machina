@@ -200,7 +200,8 @@ pub async fn create_vm(
     // only be something the operator typed themselves, not a legitimate
     // server-resolved value — reject it outright rather than merely checking
     // it's a well-formed UUID (see `validate_operator_submission` doc comment).
-    body.vm.validate_operator_submission()
+    body.vm
+        .validate_operator_submission()
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     let cluster_id: Uuid = sqlx::query_scalar("SELECT id FROM clusters LIMIT 1")
@@ -209,7 +210,10 @@ pub async fn create_vm(
         .ok_or_else(|| ApiError::bad_request("no cluster configured — add a host first"))?;
 
     let vcpus = body.vm.total_vcpus() as i32;
-    let memory_mib = body.vm.memory_mib().map_err(|e| ApiError::bad_request(e.to_string()))? as i64;
+    let memory_mib = body
+        .vm
+        .memory_mib()
+        .map_err(|e| ApiError::bad_request(e.to_string()))? as i64;
     let mut storage_gib: i64 = 0;
     for vol in &body.vm.spec.storage {
         storage_gib += machina_spec::parse_size_gib(&vol.size)
@@ -247,7 +251,8 @@ pub async fn create_vm(
     };
 
     let vm_id = Uuid::new_v4();
-    let spec_json = serde_json::to_value(&body.vm).map_err(|e| ApiError::internal(e.to_string()))?;
+    let spec_json =
+        serde_json::to_value(&body.vm).map_err(|e| ApiError::internal(e.to_string()))?;
 
     let mut tx = state.pool.begin().await?;
 
@@ -552,8 +557,7 @@ pub async fn create_from_template(
         });
     }
     if let Ok(Some(profile)) =
-        crate::engine::template::resolve_template_firewall_profile(&state.pool, &template_ref)
-            .await
+        crate::engine::template::resolve_template_firewall_profile(&state.pool, &template_ref).await
     {
         if let Some(net) = vm.spec.network.first_mut() {
             net.firewall_profile = Some(profile);
@@ -602,7 +606,9 @@ pub async fn create_from_iso(
         return Err(ApiError::bad_request("iso_path is required"));
     }
     if !iso_path.contains(':') && !iso_path.starts_with('/') {
-        return Err(ApiError::bad_request("iso_path must be an absolute path on the hypervisor"));
+        return Err(ApiError::bad_request(
+            "iso_path must be an absolute path on the hypervisor",
+        ));
     }
     let approved: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM content_images WHERE path = ? AND status = 'available'",
@@ -770,7 +776,11 @@ pub async fn create_from_virt_install(
     if let Some(v) = body.os_variant.as_deref().filter(|s| !s.trim().is_empty()) {
         labels.insert("os_variant".into(), v.trim().to_string());
     }
-    if let Some(loc) = body.virt_install_location.as_deref().filter(|s| !s.trim().is_empty()) {
+    if let Some(loc) = body
+        .virt_install_location
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+    {
         labels.insert("virt_install_location".into(), loc.trim().to_string());
     }
     if has_pxe {
@@ -800,7 +810,11 @@ pub async fn create_from_virt_install(
     if define_only {
         labels.insert("virt_install_define_only".into(), "true".into());
     }
-    if let Some(disk) = body.existing_disk.as_deref().filter(|s| !s.trim().is_empty()) {
+    if let Some(disk) = body
+        .existing_disk
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+    {
         labels.insert("existing_disk".into(), disk.trim().to_string());
     }
     if let Some(pool) = body
@@ -822,7 +836,10 @@ pub async fn create_from_virt_install(
         .as_deref()
         .filter(|s| !s.trim().is_empty())
     {
-        labels.insert("virt_install_disk_backing_store".into(), backing.trim().to_string());
+        labels.insert(
+            "virt_install_disk_backing_store".into(),
+            backing.trim().to_string(),
+        );
     }
     if let Some(iso) = body.install_iso.as_deref().filter(|s| !s.trim().is_empty()) {
         labels.insert("install_iso".into(), iso.trim().to_string());
@@ -833,13 +850,25 @@ pub async fn create_from_virt_install(
     if body.virt_install_unattended == Some(true) {
         labels.insert("virt_install_unattended".into(), "true".into());
     }
-    if let Some(pw) = body.virt_install_admin_password.as_deref().filter(|s| !s.is_empty()) {
+    if let Some(pw) = body
+        .virt_install_admin_password
+        .as_deref()
+        .filter(|s| !s.is_empty())
+    {
         labels.insert("virt_install_admin_password".into(), pw.to_string());
     }
-    if let Some(u) = body.virt_install_user_login.as_deref().filter(|s| !s.is_empty()) {
+    if let Some(u) = body
+        .virt_install_user_login
+        .as_deref()
+        .filter(|s| !s.is_empty())
+    {
         labels.insert("virt_install_user_login".into(), u.to_string());
     }
-    if let Some(pw) = body.virt_install_user_password.as_deref().filter(|s| !s.is_empty()) {
+    if let Some(pw) = body
+        .virt_install_user_password
+        .as_deref()
+        .filter(|s| !s.is_empty())
+    {
         labels.insert("virt_install_user_password".into(), pw.to_string());
     }
 
@@ -989,7 +1018,9 @@ pub async fn install_vm(
         return Err(ApiError::bad_request("Install applies to libvirt VMs only"));
     }
     if meta.2 != "stopped" && meta.2 != "shut off" && meta.2 != "shutoff" {
-        return Err(ApiError::bad_request("Shut off the VM before starting installation"));
+        return Err(ApiError::bad_request(
+            "Shut off the VM before starting installation",
+        ));
     }
     let host_id = meta
         .0
@@ -1034,9 +1065,10 @@ pub async fn get_vm_domain_xml(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -1046,7 +1078,10 @@ pub async fn get_vm_domain_xml(
     Ok(Json(serde_json::json!({ "xml": xml })))
 }
 
-pub(crate) async fn delete_vm_inventory_row(pool: &sqlx::SqlitePool, vm_id: Uuid) -> Result<String, ApiError> {
+pub(crate) async fn delete_vm_inventory_row(
+    pool: &sqlx::SqlitePool,
+    vm_id: Uuid,
+) -> Result<String, ApiError> {
     let name: Option<String> = sqlx::query_scalar("DELETE FROM vms WHERE id = ? RETURNING name")
         .bind(vm_id)
         .fetch_optional(pool)
@@ -1073,12 +1108,11 @@ pub async fn delete_vm(
         ));
     }
 
-    let meta: (Option<Uuid>, String) = sqlx::query_as(
-        "SELECT host_id, observed_state FROM vms WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await?;
+    let meta: (Option<Uuid>, String) =
+        sqlx::query_as("SELECT host_id, observed_state FROM vms WHERE id = ?")
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await?;
 
     if meta.1 == "missing" {
         let name = delete_vm_inventory_row(&state.pool, id).await?;
@@ -1418,7 +1452,10 @@ pub async fn patch_vm(
             if trimmed.is_empty() {
                 map.remove("description");
             } else {
-                map.insert("description".into(), serde_json::Value::String(trimmed.into()));
+                map.insert(
+                    "description".into(),
+                    serde_json::Value::String(trimmed.into()),
+                );
             }
         } else {
             spec["metadata"]["labels"] = serde_json::json!({ "description": desc.trim() });
@@ -1467,10 +1504,7 @@ pub async fn list_vm_disks(
     }
 }
 
-async fn live_vm_disks_fallback(
-    state: &AppState,
-    id: Uuid,
-) -> Result<Vec<VmDiskRow>, ApiError> {
+async fn live_vm_disks_fallback(state: &AppState, id: Uuid) -> Result<Vec<VmDiskRow>, ApiError> {
     let row: (String, Option<Uuid>, String) = sqlx::query_as(
         "SELECT name, host_id, COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
     )
@@ -1503,11 +1537,7 @@ async fn live_vm_disks_fallback(
                 .map(|b| (b / (1024 * 1024 * 1024)) as i64)
                 .unwrap_or(0);
             let name = if d.target.is_empty() {
-                d.source
-                    .rsplit('/')
-                    .next()
-                    .unwrap_or("disk")
-                    .to_string()
+                d.source.rsplit('/').next().unwrap_or("disk").to_string()
             } else {
                 d.target.clone()
             };
@@ -1618,12 +1648,11 @@ pub async fn adopt_vm(
     if managed {
         return Err(ApiError::bad_request("VM is already managed"));
     }
-    let source: String = sqlx::query_scalar(
-        "SELECT COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await?;
+    let source: String =
+        sqlx::query_scalar("SELECT COALESCE(inventory_source, 'libvirt') FROM vms WHERE id = ?")
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await?;
     let desired = if source == "kubevirt" {
         if observed == "running" {
             "running"
@@ -1666,7 +1695,10 @@ pub async fn adopt_vm(
         serde_json::json!({}),
     )
     .await?;
-    state.emit_event("vm.adopt", format!("VM {id} adopted into platform inventory"));
+    state.emit_event(
+        "vm.adopt",
+        format!("VM {id} adopted into platform inventory"),
+    );
     get_vm(State(state), Path(id)).await
 }
 
@@ -1680,11 +1712,9 @@ pub async fn prune_missing_vms(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<PruneMissingResponse>, ApiError> {
     crate::auth::require_admin(&actor)?;
-    let result = sqlx::query(
-        "DELETE FROM vms WHERE observed_state = 'missing' RETURNING id",
-    )
-    .execute(&state.pool)
-    .await?;
+    let result = sqlx::query("DELETE FROM vms WHERE observed_state = 'missing' RETURNING id")
+        .execute(&state.pool)
+        .await?;
     let deleted = result.rows_affected();
     if deleted > 0 {
         state.emit_event(
@@ -1845,9 +1875,10 @@ pub async fn get_vm_libvirt_details(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -1875,9 +1906,10 @@ pub async fn get_vm_hardware_summary(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -1912,9 +1944,10 @@ pub async fn get_vm_hardware_compat(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -1949,9 +1982,10 @@ pub async fn get_vm_domain_caps(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -1986,9 +2020,10 @@ pub async fn get_vm_pending_config(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -2060,13 +2095,10 @@ pub async fn batch_vm_parity_summary(
             continue;
         };
         let summary = async {
-            let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(
-                &state.pool,
-                &state.config,
-                host_id,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
+            let (_, agent_addr) =
+                crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+                    .await
+                    .map_err(|e| e.to_string())?;
             let mut client = crate::agent_client::connect(&agent_addr)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -2135,13 +2167,10 @@ pub async fn batch_vm_guest_ips(
             continue;
         };
         let ip = async {
-            let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(
-                &state.pool,
-                &state.config,
-                host_id,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
+            let (_, agent_addr) =
+                crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+                    .await
+                    .map_err(|e| e.to_string())?;
             let mut client = crate::agent_client::connect(&agent_addr)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -2192,9 +2221,10 @@ pub async fn get_vm_viewer_vv(
     let host_id = row
         .1
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -2251,9 +2281,10 @@ pub async fn get_vm_qemu_logs(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -2285,8 +2316,7 @@ pub async fn rename_platform_vm(
     if new_name.is_empty() {
         return Err(ApiError::bad_request("new_name is required"));
     }
-    machina_spec::validate_name(&new_name)
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
+    machina_spec::validate_name(&new_name).map_err(|e| ApiError::bad_request(e.to_string()))?;
     let row: (String, Option<Uuid>, String, String) = sqlx::query_as(
         "SELECT name, host_id, COALESCE(inventory_source, 'libvirt'), observed_state FROM vms WHERE id = ?",
     )
@@ -2309,9 +2339,10 @@ pub async fn rename_platform_vm(
         .bind(id)
         .execute(&state.pool)
         .await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -2332,7 +2363,9 @@ pub async fn rename_platform_vm(
         return Err(ApiError::internal(e.to_string()));
     }
     state.emit_event("vm.rename", format!("VM renamed to {new_name}"));
-    Ok(Json(serde_json::json!({ "status": "ok", "new_name": new_name })))
+    Ok(Json(
+        serde_json::json!({ "status": "ok", "new_name": new_name }),
+    ))
 }
 
 pub async fn inject_vm_nmi(
@@ -2342,15 +2375,21 @@ pub async fn inject_vm_nmi(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    crate::agent_client::vm_libvirt_invoke(&mut client, &name, "domain.nmi", &serde_json::json!({}))
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    crate::agent_client::vm_libvirt_invoke(
+        &mut client,
+        &name,
+        "domain.nmi",
+        &serde_json::json!({}),
+    )
+    .await
+    .map_err(|e| ApiError::internal(e.to_string()))?;
     state.emit_event("vm.nmi", format!("NMI injected into VM {name}"));
     Ok(Json(serde_json::json!({ "status": "nmi_injected" })))
 }
@@ -2370,15 +2409,7 @@ async fn enqueue_vm_host_task(
         .bind(vm_id)
         .fetch_one(&state.pool)
         .await?;
-    let task_id = enqueue_task(
-        state,
-        operation,
-        payload,
-        Some("vm"),
-        Some(vm_id),
-        host_id,
-    )
-    .await?;
+    let task_id = enqueue_task(state, operation, payload, Some("vm"), Some(vm_id), host_id).await?;
     Ok(Json(TaskResponse {
         task_id: task_id.to_string(),
         status: "pending".into(),
@@ -2552,7 +2583,6 @@ pub async fn set_vm_memory(
     .await
 }
 
-
 #[derive(Debug, Deserialize)]
 pub struct PublishTemplateFromVmBody {
     pub template_name: String,
@@ -2591,7 +2621,9 @@ pub async fn publish_vm_template(
     .fetch_one(&state.pool)
     .await?;
     if row.2 == "kubevirt" {
-        return Err(ApiError::bad_request("Templates require libvirt-managed VMs"));
+        return Err(ApiError::bad_request(
+            "Templates require libvirt-managed VMs",
+        ));
     }
     let host_id = row
         .1
@@ -2609,12 +2641,11 @@ pub async fn publish_vm_template(
     let source_disk = machina_core::libvirt::template_apply::primary_disk_path_from_xml(&xml)
         .and_then(|p| p.to_str().map(|s| s.to_string()))
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| ApiError::bad_request("Could not resolve VM root disk path from domain XML"))?;
+        .ok_or_else(|| {
+            ApiError::bad_request("Could not resolve VM root disk path from domain XML")
+        })?;
 
-    let daemon_json = format!(
-        "/var/lib/machina/templates/{}.json",
-        body.template_name
-    );
+    let daemon_json = format!("/var/lib/machina/templates/{}.json", body.template_name);
     let approval = if body.marketplace {
         "pending"
     } else {
@@ -2675,12 +2706,11 @@ pub async fn retire_vm(
     Json(body): Json<RetireVmBody>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     crate::auth::require_operator(&actor)?;
-    let row: (String, Option<Uuid>, String) = sqlx::query_as(
-        "SELECT name, host_id, observed_state FROM vms WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&state.pool)
-    .await?;
+    let row: (String, Option<Uuid>, String) =
+        sqlx::query_as("SELECT name, host_id, observed_state FROM vms WHERE id = ?")
+            .bind(id)
+            .fetch_one(&state.pool)
+            .await?;
     sqlx::query(
         "UPDATE vms SET lifecycle_phase = ?, desired_state = 'stopped',
          tags = CASE WHEN tags IS NULL THEN '[\"retired\"]' ELSE json_insert(tags, '$[#]', 'retired') END

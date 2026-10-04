@@ -181,8 +181,11 @@ pub async fn complete_login(
 
 // require_https: true — the controller has always required an HTTPS issuer,
 // preserved as-is (the daemon's own discovery fetch does not require this).
-async fn fetch_discovery(issuer: &str) -> anyhow::Result<machina_core::oidc::OidcDiscoveryDocument> {
-    let client = machina_core::oidc::oidc_http_client().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+async fn fetch_discovery(
+    issuer: &str,
+) -> anyhow::Result<machina_core::oidc::OidcDiscoveryDocument> {
+    let client =
+        machina_core::oidc::oidc_http_client().map_err(|e| anyhow::anyhow!(e.to_string()))?;
     machina_core::oidc::fetch_discovery(&client, issuer, true)
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))

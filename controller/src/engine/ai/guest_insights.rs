@@ -235,7 +235,6 @@ fn extract_json(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     #[test]
     fn deterministic_flags_drift() {

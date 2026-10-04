@@ -60,14 +60,18 @@ static INVENTORY: Mutex<Vec<NetpolVm>> = Mutex::new(Vec::new());
 static MANAGER: OnceLock<LibvirtManager> = OnceLock::new();
 
 fn load_store() -> Store {
-    std::fs::read_to_string(STORE).ok().and_then(|d| serde_json::from_str(&d).ok()).unwrap_or_default()
+    std::fs::read_to_string(STORE)
+        .ok()
+        .and_then(|d| serde_json::from_str(&d).ok())
+        .unwrap_or_default()
 }
 
 fn save_store(s: &Store) -> Result<(), LibvirtError> {
     if let Some(dir) = std::path::Path::new(STORE).parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    let data = serde_json::to_string_pretty(s).map_err(LibvirtError::map_op("serialize policies"))?;
+    let data =
+        serde_json::to_string_pretty(s).map_err(LibvirtError::map_op("serialize policies"))?;
     let tmp = format!("{STORE}.tmp");
     std::fs::write(&tmp, data).map_err(LibvirtError::map_op("write policies"))?;
     std::fs::rename(&tmp, STORE).map_err(LibvirtError::map_op("write policies"))?;
@@ -76,7 +80,12 @@ fn save_store(s: &Store) -> Result<(), LibvirtError> {
 
 /// Global unicast addresses of this host (`host` entity).
 fn host_addresses() -> Vec<String> {
-    let Ok(out) = std::process::Command::new("ip").args(["-j", "addr", "show"]).output() else { return Vec::new() };
+    let Ok(out) = std::process::Command::new("ip")
+        .args(["-j", "addr", "show"])
+        .output()
+    else {
+        return Vec::new();
+    };
     let v: Value = serde_json::from_slice(&out.stdout).unwrap_or_default();
     let mut addrs = Vec::new();
     for link in v.as_array().into_iter().flatten() {
@@ -98,7 +107,9 @@ fn host_addresses() -> Vec<String> {
 
 fn usable_addr(a: &str) -> bool {
     match a.parse::<std::net::IpAddr>() {
-        Ok(std::net::IpAddr::V4(v4)) => !v4.is_loopback() && !v4.is_link_local() && !v4.is_unspecified(),
+        Ok(std::net::IpAddr::V4(v4)) => {
+            !v4.is_loopback() && !v4.is_link_local() && !v4.is_unspecified()
+        }
         Ok(std::net::IpAddr::V6(v6)) => !v6.is_loopback() && (v6.segments()[0] & 0xffc0) != 0xfe80,
         Err(_) => false,
     }
@@ -112,7 +123,9 @@ fn inventory(m: &LibvirtManager) -> Vec<NetpolVm> {
         .map(|vm| {
             let mut addresses: Vec<String> = Vec::new();
             if vm.state == "running" {
-                if let Ok(rows) = m.with_conn(|c| machina_core::libvirt::guest_agent::get_guest_interfaces(c, &vm.name)) {
+                if let Ok(rows) = m.with_conn(|c| {
+                    machina_core::libvirt::guest_agent::get_guest_interfaces(c, &vm.name)
+                }) {
                     addresses.extend(rows.into_iter().map(|r| r.address));
                 }
                 addresses.extend(vm.guest_ip.clone());
@@ -120,14 +133,21 @@ fn inventory(m: &LibvirtManager) -> Vec<NetpolVm> {
             addresses.retain(|a| usable_addr(a));
             addresses.sort();
             addresses.dedup();
-            NetpolVm { labels: labels.get(&vm.name).cloned().unwrap_or_default(), name: vm.name, addresses, ..Default::default() }
+            NetpolVm {
+                labels: labels.get(&vm.name).cloned().unwrap_or_default(),
+                name: vm.name,
+                addresses,
+                ..Default::default()
+            }
         })
         .collect()
 }
 
 async fn refresh_inventory(m: &LibvirtManager) -> Vec<NetpolVm> {
     let m = m.clone();
-    let inv = tokio::task::spawn_blocking(move || inventory(&m)).await.unwrap_or_default();
+    let inv = tokio::task::spawn_blocking(move || inventory(&m))
+        .await
+        .unwrap_or_default();
     *INVENTORY.lock().unwrap_or_else(|e| e.into_inner()) = inv.clone();
     inv
 }
@@ -142,7 +162,10 @@ async fn cached_inventory(m: &LibvirtManager) -> Vec<NetpolVm> {
 }
 
 async fn edge_status() -> Option<VmEdgeStatus> {
-    let v = BpfdClient::from_env().call(&Request::VmEdgeStatus).await.ok()?;
+    let v = BpfdClient::from_env()
+        .call(&Request::VmEdgeStatus)
+        .await
+        .ok()?;
     serde_json::from_value(v).ok()
 }
 
@@ -150,16 +173,22 @@ async fn edge_status() -> Option<VmEdgeStatus> {
 async fn sync(m: &LibvirtManager) -> SyncReport {
     let _g = STORE_LOCK.lock().await;
     let mut store = load_store();
-    let mut rep = SyncReport { at: Some(chrono::Utc::now().to_rfc3339()), ..Default::default() };
+    let mut rep = SyncReport {
+        at: Some(chrono::Utc::now().to_rfc3339()),
+        ..Default::default()
+    };
     if store.policies.is_empty() && !store.synced {
         rep.ok = true;
         rep.skipped = Some("no policies".into());
     } else if edge_status().await.is_some_and(|s| s.owner == "controller") {
         rep.ok = true;
-        rep.skipped = Some("the controller manages this host's VM edge; local policies are inactive".into());
+        rep.skipped =
+            Some("the controller manages this host's VM edge; local policies are inactive".into());
     } else {
         let inv = refresh_inventory(m).await;
-        let hosts = tokio::task::spawn_blocking(host_addresses).await.unwrap_or_default();
+        let hosts = tokio::task::spawn_blocking(host_addresses)
+            .await
+            .unwrap_or_default();
         let c = netpol::compile(&Inputs {
             policies: &store.policies,
             vms: &inv,
@@ -168,7 +197,11 @@ async fn sync(m: &LibvirtManager) -> SyncReport {
             remote_node_addresses: &[],
         });
         let mut state = c.state;
-        state.owner = if store.policies.is_empty() { String::new() } else { OWNER.into() };
+        state.owner = if store.policies.is_empty() {
+            String::new()
+        } else {
+            OWNER.into()
+        };
         if store.policies.is_empty() {
             state.flow_log = false;
         }
@@ -176,7 +209,10 @@ async fn sync(m: &LibvirtManager) -> SyncReport {
         rep.rules = state.policy.len();
         rep.peers = state.peers.len();
         rep.warnings = c.warnings;
-        match BpfdClient::from_env().call(&Request::VmEdgeSync { state }).await {
+        match BpfdClient::from_env()
+            .call(&Request::VmEdgeSync { state })
+            .await
+        {
             Ok(_) => {
                 rep.ok = true;
                 store.synced = !store.policies.is_empty();
@@ -216,7 +252,11 @@ pub fn trigger_resync() {
 }
 
 fn bad_request(msg: &str, v: &netpol::Validation) -> Response {
-    (StatusCode::BAD_REQUEST, Json(json!({ "error": msg, "errors": v.errors, "warnings": v.warnings }))).into_response()
+    (
+        StatusCode::BAD_REQUEST,
+        Json(json!({ "error": msg, "errors": v.errors, "warnings": v.warnings })),
+    )
+        .into_response()
 }
 
 /// Body: raw YAML/JSON policy text, or `{"yaml": "..."}`.
@@ -255,15 +295,27 @@ fn selected_map(c: &netpol::Compiled) -> BTreeMap<String, Vec<String>> {
 
 async fn compile_cached(m: &LibvirtManager, policies: &[VmNetworkPolicy]) -> netpol::Compiled {
     let inv = cached_inventory(m).await;
-    let hosts = tokio::task::spawn_blocking(host_addresses).await.unwrap_or_default();
-    netpol::compile(&Inputs { policies, vms: &inv, host: None, host_addresses: &hosts, remote_node_addresses: &[] })
+    let hosts = tokio::task::spawn_blocking(host_addresses)
+        .await
+        .unwrap_or_default();
+    netpol::compile(&Inputs {
+        policies,
+        vms: &inv,
+        host: None,
+        host_addresses: &hosts,
+        remote_node_addresses: &[],
+    })
 }
 
 async fn list(State(m): State<LibvirtManager>) -> Result<Json<Value>, AppError> {
     let store = load_store();
     let c = compile_cached(&m, &store.policies).await;
     let sel = selected_map(&c);
-    let items: Vec<Value> = store.policies.iter().map(|p| policy_json(p, sel.get(&p.name))).collect();
+    let items: Vec<Value> = store
+        .policies
+        .iter()
+        .map(|p| policy_json(p, sel.get(&p.name)))
+        .collect();
     Ok(Json(json!({ "items": items, "warnings": c.warnings })))
 }
 
@@ -381,10 +433,15 @@ async fn delete_one(
     Ok(Json(json!({ "deleted": name, "sync": rep })))
 }
 
-async fn trace(State(m): State<LibvirtManager>, Json(q): Json<TraceQuery>) -> Result<Json<Value>, AppError> {
+async fn trace(
+    State(m): State<LibvirtManager>,
+    Json(q): Json<TraceQuery>,
+) -> Result<Json<Value>, AppError> {
     let store = load_store();
     let inv = cached_inventory(&m).await;
-    let hosts = tokio::task::spawn_blocking(host_addresses).await.unwrap_or_default();
+    let hosts = tokio::task::spawn_blocking(host_addresses)
+        .await
+        .unwrap_or_default();
     let r = netpol::trace(&store.policies, &inv, &hosts, &[], &q).map_err(LibvirtError::Invalid)?;
     Ok(Json(serde_json::to_value(r).unwrap_or_default()))
 }
@@ -402,9 +459,11 @@ async fn selectors(State(m): State<LibvirtManager>) -> Json<Value> {
 async fn status() -> Json<Value> {
     let last = LAST.lock().unwrap_or_else(|e| e.into_inner()).clone();
     let edge = edge_status().await;
-    let mode = BpfdClient::from_env().call(&Request::Status).await.ok().map(|s| {
-        json!({ "mode": s["mode"], "lease_remaining_secs": s["lease_remaining_secs"] })
-    });
+    let mode = BpfdClient::from_env()
+        .call(&Request::Status)
+        .await
+        .ok()
+        .map(|s| json!({ "mode": s["mode"], "lease_remaining_secs": s["lease_remaining_secs"] }));
     let store = load_store();
     let managed_by = match edge.as_ref().map(|e| e.owner.as_str()) {
         Some("controller") => "controller",
@@ -479,11 +538,19 @@ impl FlowQuery {
 
 async fn recent_flows(f: &FlowFilter, limit: usize) -> Result<Vec<VmFlowRecord>, AppError> {
     let v = BpfdClient::from_env()
-        .call(&Request::VmFlows { limit: Some(5000), vm: None, verdict: None })
+        .call(&Request::VmFlows {
+            limit: Some(5000),
+            vm: None,
+            verdict: None,
+        })
         .await
         .map_err(|e| LibvirtError::Operation(format!("{e:#}")))?;
     let all: Vec<VmFlowRecord> = serde_json::from_value(v).unwrap_or_default();
-    Ok(all.into_iter().filter(|r| f.matches(r)).take(limit).collect())
+    Ok(all
+        .into_iter()
+        .filter(|r| f.matches(r))
+        .take(limit)
+        .collect())
 }
 
 async fn flows(Query(q): Query<FlowQuery>) -> Result<Json<Value>, AppError> {
@@ -491,7 +558,9 @@ async fn flows(Query(q): Query<FlowQuery>) -> Result<Json<Value>, AppError> {
     Ok(Json(json!({ "items": items })))
 }
 
-async fn flow_stream(Query(q): Query<FlowQuery>) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, AppError> {
+async fn flow_stream(
+    Query(q): Query<FlowQuery>,
+) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, AppError> {
     let f = q.filter();
     let mut backfill = match q.last.filter(|n| *n > 0) {
         Some(n) => recent_flows(&f, n.min(5000)).await.unwrap_or_default(),
@@ -502,12 +571,22 @@ async fn flow_stream(Query(q): Query<FlowQuery>) -> Result<Sse<impl Stream<Item 
         .subscribe(&["flow"])
         .await
         .map_err(|e| LibvirtError::Operation(format!("{e:#}")))?;
-    let ev = |r: &VmFlowRecord| Event::default().event("flow").data(serde_json::to_string(r).unwrap_or_default());
+    let ev = |r: &VmFlowRecord| {
+        Event::default()
+            .event("flow")
+            .data(serde_json::to_string(r).unwrap_or_default())
+    };
     let head = futures_util::stream::iter(backfill.iter().map(ev).map(Ok).collect::<Vec<_>>());
-    let live = futures_util::StreamExt::filter_map(tokio_stream::wrappers::ReceiverStream::new(rx), move |e| {
-        let out = serde_json::from_value::<VmFlowRecord>(e.event).ok().filter(|r| f.matches(r)).map(|r| Ok(ev(&r)));
-        std::future::ready(out)
-    });
+    let live = futures_util::StreamExt::filter_map(
+        tokio_stream::wrappers::ReceiverStream::new(rx),
+        move |e| {
+            let out = serde_json::from_value::<VmFlowRecord>(e.event)
+                .ok()
+                .filter(|r| f.matches(r))
+                .map(|r| Ok(ev(&r)));
+            std::future::ready(out)
+        },
+    );
     Ok(Sse::new(futures_util::StreamExt::chain(head, live)).keep_alive(KeepAlive::default()))
 }
 
@@ -537,7 +616,9 @@ async fn put_labels(
         }
     }
     trigger_resync();
-    Ok(Json(json!({ "status": "ok", "name": name, "labels": b.labels })))
+    Ok(Json(
+        json!({ "status": "ok", "name": name, "labels": b.labels }),
+    ))
 }
 
 pub fn netpol_routes() -> Router<LibvirtManager> {
@@ -550,7 +631,10 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/status", get(status))
         .route("/vm-network-policies/fqdn-cache", get(fqdn_cache))
         .route("/vm-network-policies/auth", get(auth_table))
-        .route("/vm-network-policies/{name}", get(get_one).delete(delete_one))
+        .route(
+            "/vm-network-policies/{name}",
+            get(get_one).delete(delete_one),
+        )
         .route("/flows", get(flows))
         .route("/flows/stream", get(flow_stream))
         .route("/vms/{name}/labels", get(get_labels).put(put_labels))

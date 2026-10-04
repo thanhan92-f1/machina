@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-
 #[derive(Debug, Deserialize)]
 pub struct TroubleshootRequest {
     pub vm_id: Option<Uuid>,
@@ -44,7 +43,9 @@ pub struct DiagnosisReport {
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 async fn resolve_vm(
@@ -77,7 +78,10 @@ async fn resolve_vm(
     anyhow::bail!("vm_id or vm_name required")
 }
 
-pub async fn diagnose(pool: &SqlitePool, req: &TroubleshootRequest) -> anyhow::Result<DiagnosisReport> {
+pub async fn diagnose(
+    pool: &SqlitePool,
+    req: &TroubleshootRequest,
+) -> anyhow::Result<DiagnosisReport> {
     let (vid, vname, host_id, mem_alloc, vcpus, state) =
         resolve_vm(pool, req.vm_id, req.vm_name.as_deref()).await?;
     let symptom = req.symptom.to_lowercase();
@@ -86,11 +90,10 @@ pub async fn diagnose(pool: &SqlitePool, req: &TroubleshootRequest) -> anyhow::R
     let mut actions = Vec::new();
 
     // CPU
-    let cpu: Option<f64> =
-        sqlx::query_scalar("SELECT cpu_percent FROM vm_metrics WHERE vm_id = ?")
-            .bind(vid)
-            .fetch_optional(pool)
-            .await?;
+    let cpu: Option<f64> = sqlx::query_scalar("SELECT cpu_percent FROM vm_metrics WHERE vm_id = ?")
+        .bind(vid)
+        .fetch_optional(pool)
+        .await?;
     let cpu_status = match cpu {
         Some(c) if c >= 90.0 => "critical",
         Some(c) if c >= 70.0 => "warn",

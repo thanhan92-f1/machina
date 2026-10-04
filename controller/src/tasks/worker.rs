@@ -333,7 +333,9 @@ async fn vm_power(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
             .fetch_optional(&state.pool)
             .await?
             .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let prior_observed_state = row.2;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
@@ -382,7 +384,9 @@ async fn vm_install(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
             .fetch_optional(&state.pool)
             .await?
             .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.2.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .2
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let vm: machina_spec::VirtualMachine = serde_json::from_str(&row.1)?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
@@ -589,8 +593,10 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
             // note we saw it (so reconcile won't mark it missing) but don't steal the VM
             // back or clobber its state. The dest host always matches current_host, so
             // legitimate (including cold-migrated shutoff) VMs are unaffected.
-            let domain_active =
-                matches!(vm.state.as_str(), "running" | "blocked" | "paused" | "pmsuspended");
+            let domain_active = matches!(
+                vm.state.as_str(),
+                "running" | "blocked" | "paused" | "pmsuspended"
+            );
             let is_migration_leftover =
                 matches!(current_host, Some(h) if h != host_id) && !domain_active;
             if is_migration_leftover {
@@ -678,8 +684,13 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
     if seen_names.is_empty() {
         tracing::warn!(%host_id, "libvirt inventory returned no VMs — skipping prune/mark-missing this tick");
     } else {
-        crate::engine::vm_inventory::reconcile_libvirt_host(state, host_id, cluster_id, &seen_names)
-            .await?;
+        crate::engine::vm_inventory::reconcile_libvirt_host(
+            state,
+            host_id,
+            cluster_id,
+            &seen_names,
+        )
+        .await?;
     }
 
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
@@ -703,7 +714,8 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
     {
         tracing::warn!(%host_id, "firewall posture sync during inventory: {e:#}");
     }
-    match crate::engine::bpf::policies::sync_hosts(&state.pool, Some(&[host_id.to_string()])).await {
+    match crate::engine::bpf::policies::sync_hosts(&state.pool, Some(&[host_id.to_string()])).await
+    {
         Ok(r) if r.iter().any(|x| x["ok"] != true) => {
             let bpfd_absent = r.iter().filter(|x| x["ok"] != true).all(|x| {
                 x["error"]
@@ -773,13 +785,14 @@ async fn vm_migrate(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
         anyhow::bail!("migration pre-check failed: {msg}");
     }
 
-    let row: (String, Option<Uuid>) =
-        sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
-            .bind(vm_id)
-            .fetch_optional(&state.pool)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let source_host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let row: (String, Option<Uuid>) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
+        .bind(vm_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
+    let source_host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
 
     let dest_uri: String =
         sqlx::query_scalar("SELECT COALESCE(NULLIF(libvirt_uri, ''), ?) FROM hosts WHERE id = ?")
@@ -857,7 +870,9 @@ async fn vm_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
     .fetch_optional(&state.pool)
     .await?
     .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
 
     // Insert the DB record first so a hypervisor clone success always has a matching row.
     // The row starts with a placeholder uuid that is updated once the hypervisor responds.
@@ -1263,12 +1278,14 @@ async fn update_task_progress(
     progress: i16,
     message: &str,
 ) -> anyhow::Result<()> {
-    sqlx::query("UPDATE tasks SET progress = ?, message = ?, updated_at = datetime('now') WHERE id = ?")
-        .bind(progress)
-        .bind(message)
-        .bind(id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "UPDATE tasks SET progress = ?, message = ?, updated_at = datetime('now') WHERE id = ?",
+    )
+    .bind(progress)
+    .bind(message)
+    .bind(id)
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
@@ -1304,22 +1321,26 @@ async fn vm_snapshot(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> 
                 None => job,
             };
             if job.state == "failed" {
-                sqlx::query("UPDATE snapshot_records SET status = 'failed', message = ? WHERE id = ?")
-                    .bind(job.error.as_deref().unwrap_or("Atlas snapshot failed"))
-                    .bind(record_id)
-                    .execute(&state.pool)
-                    .await?;
+                sqlx::query(
+                    "UPDATE snapshot_records SET status = 'failed', message = ? WHERE id = ?",
+                )
+                .bind(job.error.as_deref().unwrap_or("Atlas snapshot failed"))
+                .bind(record_id)
+                .execute(&state.pool)
+                .await?;
                 anyhow::bail!(
                     "Atlas snapshot failed: {}",
                     job.error.as_deref().unwrap_or("unknown error")
                 );
             }
             if !job.is_terminal() {
-                sqlx::query("UPDATE snapshot_records SET status = 'failed', message = ? WHERE id = ?")
-                    .bind("Atlas snapshot did not finish within the wait budget")
-                    .bind(record_id)
-                    .execute(&state.pool)
-                    .await?;
+                sqlx::query(
+                    "UPDATE snapshot_records SET status = 'failed', message = ? WHERE id = ?",
+                )
+                .bind("Atlas snapshot did not finish within the wait budget")
+                .bind(record_id)
+                .execute(&state.pool)
+                .await?;
                 anyhow::bail!(
                     "Atlas snapshot job {} did not reach a terminal state in time",
                     job.job_id().unwrap_or("?")
@@ -1450,7 +1471,9 @@ async fn vm_snapshot_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Resu
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
     match agent_client::delete_snapshot(&mut client, &row.0, &snap_name).await {
@@ -1486,19 +1509,17 @@ async fn vm_backup(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 
     // Clear sticky last_error from a prior failed backup so the VM detail banner
     // doesn't keep showing the old failure while this retry is in flight.
-    vm_lifecycle::set_vm_phase_clear_error(
-        &state.pool,
-        vm_id,
-        vm_lifecycle::PHASE_BACKING_UP,
-    )
-    .await?;
+    vm_lifecycle::set_vm_phase_clear_error(&state.pool, vm_id, vm_lifecycle::PHASE_BACKING_UP)
+        .await?;
 
     let row: (String, Option<Uuid>) = sqlx::query_as("SELECT name, host_id FROM vms WHERE id = ?")
         .bind(vm_id)
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let backup_type: String =
         sqlx::query_scalar("SELECT backup_type FROM backup_records WHERE id = ?")
             .bind(record_id)
@@ -1532,22 +1553,26 @@ async fn vm_backup(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
                 None => job,
             };
             if job.state == "failed" {
-                sqlx::query("UPDATE backup_records SET status = 'failed', message = ? WHERE id = ?")
-                    .bind(job.error.as_deref().unwrap_or("Atlas backup failed"))
-                    .bind(record_id)
-                    .execute(&state.pool)
-                    .await?;
+                sqlx::query(
+                    "UPDATE backup_records SET status = 'failed', message = ? WHERE id = ?",
+                )
+                .bind(job.error.as_deref().unwrap_or("Atlas backup failed"))
+                .bind(record_id)
+                .execute(&state.pool)
+                .await?;
                 anyhow::bail!(
                     "Atlas backup failed: {}",
                     job.error.as_deref().unwrap_or("unknown error")
                 );
             }
             if !job.is_terminal() {
-                sqlx::query("UPDATE backup_records SET status = 'failed', message = ? WHERE id = ?")
-                    .bind("Atlas backup did not finish within the wait budget")
-                    .bind(record_id)
-                    .execute(&state.pool)
-                    .await?;
+                sqlx::query(
+                    "UPDATE backup_records SET status = 'failed', message = ? WHERE id = ?",
+                )
+                .bind("Atlas backup did not finish within the wait budget")
+                .bind(record_id)
+                .execute(&state.pool)
+                .await?;
                 anyhow::bail!(
                     "Atlas backup job {} did not reach a terminal state in time",
                     job.job_id().unwrap_or("?")
@@ -1558,7 +1583,10 @@ async fn vm_backup(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
         let job_ids: Vec<&str> = terminal.iter().filter_map(|j| j.job_id()).collect();
         // Persist the Atlas backup id(s) (not the job id) so restore can target
         // them; comma-joined when a VM has multiple Atlas volumes.
-        let backup_ids: Vec<String> = terminal.iter().filter_map(|j| j.resource_backup_id()).collect();
+        let backup_ids: Vec<String> = terminal
+            .iter()
+            .filter_map(|j| j.resource_backup_id())
+            .collect();
         let stored = backup_ids.join(",");
         sqlx::query(
             "UPDATE backup_records SET status = 'completed', message = ?, backup_path = ? WHERE id = ?",
@@ -1679,7 +1707,9 @@ async fn vm_backup(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
                                     String::from_utf8_lossy(&out.stderr)
                                 );
                             }
-                            Ok(Err(e)) => tracing::warn!("aws cli not available for S3 upload: {e}"),
+                            Ok(Err(e)) => {
+                                tracing::warn!("aws cli not available for S3 upload: {e}")
+                            }
                             Err(e) => tracing::warn!("S3 upload task panicked: {e}"),
                         }
                     }
@@ -1715,7 +1745,9 @@ async fn vm_snapshot_revert(state: &AppState, msg: &TaskMessage) -> anyhow::Resu
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
     let resp = agent_client::revert_snapshot(&mut client, &row.0, &snap_name).await?;
@@ -1755,7 +1787,9 @@ async fn vm_snapshot_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Resul
     .fetch_optional(&state.pool)
     .await?
     .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let new_disk_path = disk_path_for(&state.config, &new_name);
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
@@ -1810,7 +1844,9 @@ async fn vm_snapshot_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Resul
                     .bind(vm_id)
                     .fetch_optional(&state.pool)
                     .await?
-                    .ok_or_else(|| anyhow::anyhow!("vm {} disappeared before migration could start", vm_id))?;
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("vm {} disappeared before migration could start", vm_id)
+                    })?;
             let use_live = live_migrate && source_running == "running";
             if use_live {
                 vm_lifecycle::set_vm_phase(&state.pool, new_id, vm_lifecycle::PHASE_STARTING)
@@ -2008,7 +2044,9 @@ async fn vm_backup_restore(state: &AppState, msg: &TaskMessage) -> anyhow::Resul
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
 
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
@@ -2369,7 +2407,13 @@ async fn host_enforcement_apply(state: &AppState, msg: &TaskMessage) -> anyhow::
         .and_then(|v| v.as_str())
         .filter(|s| !s.is_empty())
         .ok_or_else(|| anyhow::anyhow!("host_id missing or empty"))?;
-    update_task_progress(&state.pool, msg.task_id, 30, "reconciling native eBPF policies").await?;
+    update_task_progress(
+        &state.pool,
+        msg.task_id,
+        30,
+        "reconciling native eBPF policies",
+    )
+    .await?;
     let results =
         crate::engine::bpf::policies::sync_hosts(&state.pool, Some(&[host_id.to_string()])).await?;
     let Some(r) = results.first() else {
@@ -2550,7 +2594,9 @@ async fn vm_disk_attach(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
     agent_client::attach_disk(&mut client, &row.0, &disk_path, &target_dev).await?;
@@ -2565,8 +2611,7 @@ async fn vm_host_row(pool: &SqlitePool, vm_id: Uuid) -> anyhow::Result<(String, 
             .bind(vm_id)
             .fetch_optional(pool)
             .await?;
-    let (name, host_id_opt) =
-        row.ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
+    let (name, host_id_opt) = row.ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
     let host_id = host_id_opt.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     Ok((name, host_id))
 }
@@ -2735,7 +2780,9 @@ async fn vm_guest_tools_install(state: &AppState, msg: &TaskMessage) -> anyhow::
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
-    let host_id = row.1.ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
+    let host_id = row
+        .1
+        .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let agent_addr = host_agent_addr(&state.pool, host_id).await?;
     let mut client = agent_client::connect(&agent_addr).await?;
     agent_client::install_guest_tools(&mut client, &row.0).await?;
@@ -2784,7 +2831,10 @@ async fn run_incremental_backup(
             match rebase_result {
                 Ok(Err(e)) => tracing::warn!("qemu-img rebase unavailable: {e}"),
                 Ok(Ok(out)) if !out.status.success() => {
-                    tracing::warn!("qemu-img rebase failed: {}", String::from_utf8_lossy(&out.stderr));
+                    tracing::warn!(
+                        "qemu-img rebase failed: {}",
+                        String::from_utf8_lossy(&out.stderr)
+                    );
                 }
                 Err(e) => tracing::warn!("qemu-img rebase task panicked: {e}"),
                 _ => {}
@@ -2842,7 +2892,9 @@ mod scheduler_tests {
         assert!(s.on_arrival(b1.clone()).is_some());
 
         // When A's first task finishes, the queued A task dispatches next (FIFO).
-        let next = s.on_complete("vm_id:A").expect("queued A task should dispatch");
+        let next = s
+            .on_complete("vm_id:A")
+            .expect("queued A task should dispatch");
         assert_eq!(next.task_id, a2.task_id);
         // A still active (running a2); completing again idles it.
         assert!(s.on_complete("vm_id:A").is_none());
@@ -2863,7 +2915,9 @@ mod scheduler_tests {
         assert!(is_transient_connect_error(
             "connect to agent: transport error: tcp connect error: Connection refused (os error 111)"
         ));
-        assert!(is_transient_connect_error("error trying to connect: dns error"));
+        assert!(is_transient_connect_error(
+            "error trying to connect: dns error"
+        ));
         assert!(is_transient_connect_error("Network is unreachable"));
         // App-level / ambiguous failures → do NOT retry (op may have run).
         assert!(!is_transient_connect_error(

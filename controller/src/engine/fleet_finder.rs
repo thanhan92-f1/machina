@@ -54,10 +54,11 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetFinderOverview> 
     let discovered: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM vms WHERE managed = FALSE")
         .fetch_one(pool)
         .await?;
-    let untagged: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM vms WHERE tags IS NULL OR tags = '[]' OR tags = ''")
-            .fetch_one(pool)
-            .await?;
+    let untagged: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM vms WHERE tags IS NULL OR tags = '[]' OR tags = ''",
+    )
+    .fetch_one(pool)
+    .await?;
     let high_cpu: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM vms v JOIN vm_metrics m ON m.vm_id = v.id WHERE m.cpu_percent > 85",
     )

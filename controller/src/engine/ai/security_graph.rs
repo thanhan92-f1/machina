@@ -158,7 +158,10 @@ pub async fn build_graph(pool: &SqlitePool) -> anyhow::Result<SecurityGraph> {
     Ok(SecurityGraph { nodes, edges })
 }
 
-pub async fn attack_path(pool: &SqlitePool, q: &AttackPathQuery) -> anyhow::Result<AttackPathResult> {
+pub async fn attack_path(
+    pool: &SqlitePool,
+    q: &AttackPathQuery,
+) -> anyhow::Result<AttackPathResult> {
     let graph = build_graph(pool).await?;
     let target_id: Option<Uuid> = if let Ok(u) = Uuid::parse_str(&q.target_vm) {
         Some(u)

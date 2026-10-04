@@ -125,12 +125,16 @@ pub async fn link_host_firewall_profile(
             .bind(baremetal_id)
             .fetch_one(pool)
             .await?;
-    sqlx::query("UPDATE hosts SET baremetal_origin_id = ?, notes = COALESCE(notes, '') || ? WHERE id = ?")
-        .bind(baremetal_id)
-        .bind(format!("\n[zeus] metal profile {profile} (policy stub until agent apply)"))
-        .bind(host_id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "UPDATE hosts SET baremetal_origin_id = ?, notes = COALESCE(notes, '') || ? WHERE id = ?",
+    )
+    .bind(baremetal_id)
+    .bind(format!(
+        "\n[zeus] metal profile {profile} (policy stub until agent apply)"
+    ))
+    .bind(host_id)
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
@@ -240,7 +244,10 @@ pub struct BaremetalProvisionPlan {
     pub summary: String,
 }
 
-pub async fn provision_preview(pool: &SqlitePool, id: Uuid) -> anyhow::Result<BaremetalProvisionPlan> {
+pub async fn provision_preview(
+    pool: &SqlitePool,
+    id: Uuid,
+) -> anyhow::Result<BaremetalProvisionPlan> {
     let row: BaremetalServer = sqlx::query_as(
         "SELECT id, hostname, bmc_address, bmc_type, state, cpu_cores, memory_mib,
                 firewall_profile, firewall_enabled, bmc_vlan, pxe_vlan, created_at

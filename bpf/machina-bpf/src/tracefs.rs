@@ -38,7 +38,11 @@ pub fn parse_format(text: &str) -> HashMap<String, Field> {
         let Some(name) = decl.split_whitespace().last() else {
             continue;
         };
-        let name = name.split('[').next().unwrap_or(name).trim_start_matches('*');
+        let name = name
+            .split('[')
+            .next()
+            .unwrap_or(name)
+            .trim_start_matches('*');
         if let (Some(offset), Some(size)) = (offset, size) {
             out.insert(name.to_string(), Field { offset, size });
         }
@@ -90,10 +94,30 @@ fn read_event(root: &Path, category: &str, name: &str) -> Option<String> {
 
 /// (TP_OFF index, category, event, field)
 const OFFSETS: &[(u32, &str, &str, &str)] = &[
-    (tp::EXEC_FILENAME_LOC, "sched", "sched_process_exec", "filename"),
-    (tp::FORK_PARENT_PID, "sched", "sched_process_fork", "parent_pid"),
-    (tp::FORK_CHILD_PID, "sched", "sched_process_fork", "child_pid"),
-    (tp::OPENAT_FILENAME, "syscalls", "sys_enter_openat", "filename"),
+    (
+        tp::EXEC_FILENAME_LOC,
+        "sched",
+        "sched_process_exec",
+        "filename",
+    ),
+    (
+        tp::FORK_PARENT_PID,
+        "sched",
+        "sched_process_fork",
+        "parent_pid",
+    ),
+    (
+        tp::FORK_CHILD_PID,
+        "sched",
+        "sched_process_fork",
+        "child_pid",
+    ),
+    (
+        tp::OPENAT_FILENAME,
+        "syscalls",
+        "sys_enter_openat",
+        "filename",
+    ),
     (tp::OPENAT_FLAGS, "syscalls", "sys_enter_openat", "flags"),
     (tp::ISS_OLDSTATE, "sock", "inet_sock_set_state", "oldstate"),
     (tp::ISS_NEWSTATE, "sock", "inet_sock_set_state", "newstate"),
@@ -104,9 +128,19 @@ const OFFSETS: &[(u32, &str, &str, &str)] = &[
     (tp::ISS_SADDR_V6, "sock", "inet_sock_set_state", "saddr_v6"),
     (tp::ISS_DADDR_V6, "sock", "inet_sock_set_state", "daddr_v6"),
     (tp::KFREE_REASON, "skb", "kfree_skb", "reason"),
-    (tp::RETRANS_SADDR_V6, "tcp", "tcp_retransmit_skb", "saddr_v6"),
+    (
+        tp::RETRANS_SADDR_V6,
+        "tcp",
+        "tcp_retransmit_skb",
+        "saddr_v6",
+    ),
     (tp::SEND_RST_SADDR_V6, "tcp", "tcp_send_reset", "saddr_v6"),
-    (tp::RECV_RST_SADDR_V6, "tcp", "tcp_receive_reset", "saddr_v6"),
+    (
+        tp::RECV_RST_SADDR_V6,
+        "tcp",
+        "tcp_receive_reset",
+        "saddr_v6",
+    ),
 ];
 
 /// Tracepoints attached by machina-bpfd: (program, category, event).
@@ -129,7 +163,11 @@ pub fn resolve_offsets(root: &Path) -> Vec<u32> {
     for (idx, cat, ev, field) in OFFSETS {
         let fields = cache
             .entry((cat.to_string(), ev.to_string()))
-            .or_insert_with(|| read_event(root, cat, ev).map(|t| parse_format(&t)).unwrap_or_default());
+            .or_insert_with(|| {
+                read_event(root, cat, ev)
+                    .map(|t| parse_format(&t))
+                    .unwrap_or_default()
+            });
         if let Some(f) = fields.get(*field) {
             out[*idx as usize] = f.offset;
         }

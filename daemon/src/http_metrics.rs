@@ -252,8 +252,15 @@ fn is_dynamic_segment(parent: Option<&str>, seg: &str) -> bool {
     matches!(
         parent,
         Some(
-            "vms" | "templates" | "snapshots" | "jobs" | "events" | "clusters" | "namespaces"
-                | "nodes" | "pods",
+            "vms"
+                | "templates"
+                | "snapshots"
+                | "jobs"
+                | "events"
+                | "clusters"
+                | "namespaces"
+                | "nodes"
+                | "pods",
         )
     )
 }

@@ -14,8 +14,9 @@ use axum::{Json, Router};
 use base64::Engine as _;
 use futures_util::Stream;
 use machina_bpf::api::{
-    AfxdpConfig, DirectConfig, GuardConfig, L7SampleConfig, Mode, NodeIsoConfig, Policy, QuicLbConfig, Request, ScxConfig, RtnlConfig, ShieldConfig, TelemetryConfig, TlsConfig, VmEdgeState, VmIntelConfig,
-    VmSandboxConfig,
+    AfxdpConfig, DirectConfig, GuardConfig, L7SampleConfig, Mode, NodeIsoConfig, Policy,
+    QuicLbConfig, Request, RtnlConfig, ScxConfig, ShieldConfig, TelemetryConfig, TlsConfig,
+    VmEdgeState, VmIntelConfig, VmSandboxConfig,
 };
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
@@ -162,11 +163,19 @@ async fn reset_accounting(
 }
 
 async fn flows(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
-    bpfd(Request::Flows { limit: q.limit, vm: q.vm }).await
+    bpfd(Request::Flows {
+        limit: q.limit,
+        vm: q.vm,
+    })
+    .await
 }
 
 async fn events(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
-    bpfd(Request::Events { limit: q.limit, kind: q.kind }).await
+    bpfd(Request::Events {
+        limit: q.limit,
+        kind: q.kind,
+    })
+    .await
 }
 
 async fn dns(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
@@ -174,7 +183,11 @@ async fn dns(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
 }
 
 async fn processes(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
-    bpfd(Request::ProcEvents { limit: q.limit, kind: q.kind }).await
+    bpfd(Request::ProcEvents {
+        limit: q.limit,
+        kind: q.kind,
+    })
+    .await
 }
 
 async fn anomalies(Query(q): Query<ListQuery>) -> Result<Json<Value>, AppError> {
@@ -300,11 +313,10 @@ async fn stream(
         .subscribe(&refs)
         .await
         .map_err(|e| LibvirtError::Operation(format!("{e:#}")))?;
-    let events = futures_util::StreamExt::map(tokio_stream::wrappers::ReceiverStream::new(rx), |ev| {
-        Ok(Event::default()
-            .event(ev.topic)
-            .data(ev.event.to_string()))
-    });
+    let events =
+        futures_util::StreamExt::map(tokio_stream::wrappers::ReceiverStream::new(rx), |ev| {
+            Ok(Event::default().event(ev.topic).data(ev.event.to_string()))
+        });
     Ok(Sse::new(events).keep_alive(KeepAlive::default()))
 }
 
@@ -439,7 +451,11 @@ async fn rtnl_configure(
 }
 
 async fn rtnl_events(Query(q): Query<RtnlQuery>) -> Result<Json<Value>, AppError> {
-    bpfd(Request::RtnlEvents { limit: q.limit, iface: q.iface }).await
+    bpfd(Request::RtnlEvents {
+        limit: q.limit,
+        iface: q.iface,
+    })
+    .await
 }
 
 async fn l7_sample_status() -> Result<Json<Value>, AppError> {
@@ -551,14 +567,20 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/policies", get(list_policies).post(apply_policy))
         .route("/bpf/policies/{id}", delete(remove_policy))
         .route("/bpf/mode", put(set_mode))
-        .route("/bpf/interfaces", get(list_interfaces).post(attach_interface))
+        .route(
+            "/bpf/interfaces",
+            get(list_interfaces).post(attach_interface),
+        )
         .route("/bpf/interfaces/{name}", delete(detach_interface))
         .route("/bpf/flows", get(flows))
         .route("/bpf/events", get(events))
         .route("/bpf/dns", get(dns))
         .route("/bpf/l7", get(l7))
         .route("/bpf/accounting", get(accounting))
-        .route("/bpf/accounting/reset", axum::routing::post(reset_accounting))
+        .route(
+            "/bpf/accounting/reset",
+            axum::routing::post(reset_accounting),
+        )
         .route("/bpf/processes", get(processes))
         .route("/bpf/anomalies", get(anomalies))
         .route("/bpf/health", get(net_health))
@@ -570,13 +592,22 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/vm-edge", get(vm_edge_status).put(vm_edge_sync))
         .route("/bpf/shield", get(shield_status).put(shield_configure))
         .route("/bpf/icmp-errors", get(icmp_errors))
-        .route("/bpf/node-iso", get(node_iso_status).put(node_iso_configure))
+        .route(
+            "/bpf/node-iso",
+            get(node_iso_status).put(node_iso_configure),
+        )
         .route("/bpf/cni", get(cni_status))
         .route("/bpf/cni/services", get(cni_services))
         .route("/bpf/rtnl", get(rtnl_status).put(rtnl_configure))
         .route("/bpf/rtnl/events", get(rtnl_events))
-        .route("/bpf/l7-sample", get(l7_sample_status).put(l7_sample_configure))
-        .route("/bpf/vm-intel", get(vm_intel_status).put(vm_intel_configure))
+        .route(
+            "/bpf/l7-sample",
+            get(l7_sample_status).put(l7_sample_configure),
+        )
+        .route(
+            "/bpf/vm-intel",
+            get(vm_intel_status).put(vm_intel_configure),
+        )
         .route("/bpf/vm-intel/vms/{name}", get(vm_intel_vm))
         .route("/bpf/guard", get(guard_status).put(guard_configure))
         .route("/bpf/guard/events", get(guard_events))
@@ -587,7 +618,10 @@ pub fn bpf_routes() -> Router<LibvirtManager> {
         .route("/bpf/tls", get(tls_status).put(tls_configure))
         .route("/bpf/tls/fingerprints", get(tls_fingerprints))
         .route("/bpf/tls/ssl", get(ssl_events))
-        .route("/bpf/vm-sandbox", get(vm_sandbox_status).put(vm_sandbox_configure))
+        .route(
+            "/bpf/vm-sandbox",
+            get(vm_sandbox_status).put(vm_sandbox_configure),
+        )
         .route(
             "/bpf/vm-sandbox/{vm}",
             axum::routing::post(vm_sandbox_attach).delete(vm_sandbox_detach),

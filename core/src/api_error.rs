@@ -128,7 +128,11 @@ pub fn format_http_error_body(status: u16, status_text: &str, text: &str) -> Str
         // 200 doesn't land on a char boundary (this text comes from an external
         // HTTP response body, so it's not guaranteed to be ASCII); truncate on a
         // char boundary instead, same as `truncate_plain` above.
-        let end = raw.char_indices().nth(200).map(|(i, _)| i).unwrap_or(raw.len());
+        let end = raw
+            .char_indices()
+            .nth(200)
+            .map(|(i, _)| i)
+            .unwrap_or(raw.len());
         return format!("Request failed ({status_label}): {}…", &raw[..end]);
     }
     format!("Request failed ({status_label}): {raw}")

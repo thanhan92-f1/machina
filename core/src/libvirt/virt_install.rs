@@ -263,7 +263,11 @@ pub fn create_vm_virt_install(
         // Boot `vcpus` but allow hot-adding up to a higher maximum (online CPU hotplug).
         // Without maxvcpus > vcpus, libvirt rejects any live vCPU increase. Matches the
         // headroom applied in the native libvirt-XML backend (see create.rs::vcpu_max_for).
-        format!("{},maxvcpus={}", req.vcpus, super::create::vcpu_max_for(req.vcpus)),
+        format!(
+            "{},maxvcpus={}",
+            req.vcpus,
+            super::create::vcpu_max_for(req.vcpus)
+        ),
     ];
 
     if req.virt_install_path_in_use_check_off

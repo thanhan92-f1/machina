@@ -28,9 +28,9 @@ fn map_vessel(err: VesselError) -> AppError {
     };
     match &err {
         VesselError::NotFound(_) => AppError::from(LibvirtError::NotFound(msg)),
-        VesselError::Unsupported(_) => AppError::from(LibvirtError::Operation(format!(
-            "[{code}] {msg}"
-        ))),
+        VesselError::Unsupported(_) => {
+            AppError::from(LibvirtError::Operation(format!("[{code}] {msg}")))
+        }
         VesselError::Connection(_) => AppError::from(LibvirtError::Operation(format!(
             "[vessel_unavailable] {msg}"
         ))),
@@ -195,12 +195,7 @@ async fn create_container(
     require_write(&actor, "vessel")?;
     let client = require_client(&handle).await?;
     let created = client.create_container(req).await.map_err(map_vessel)?;
-    emit(
-        &bus,
-        "vessel.container.created",
-        &created.name,
-        "ok",
-    );
+    emit(&bus, "vessel.container.created", &created.name, "ok");
     Ok(Json(json!(created)))
 }
 
@@ -390,13 +385,13 @@ pub fn vessel_routes() -> Router<LibvirtManager> {
         .route("/vessel/status", get(vessel_status))
         .route("/vessel/reconnect", post(vessel_reconnect))
         .route("/vessel/windows-dockur", post(run_windows_dockur))
-        .route("/vessel/containers", get(list_containers).post(create_container))
+        .route(
+            "/vessel/containers",
+            get(list_containers).post(create_container),
+        )
         .route("/vessel/containers/{id}/start", post(start_container))
         .route("/vessel/containers/{id}/stop", post(stop_container))
-        .route(
-            "/vessel/containers/{id}/restart",
-            post(restart_container),
-        )
+        .route("/vessel/containers/{id}/restart", post(restart_container))
         .route("/vessel/containers/{id}", delete(remove_container))
         .route("/vessel/pods", get(list_pods).post(create_pod))
         .route("/vessel/pods/{id}/start", post(start_pod))
@@ -425,7 +420,9 @@ async fn vessel_stats_session(socket: WebSocket, handle: VesselHandle, id: Strin
         Err(e) => {
             let _ = sink
                 .send(Message::Text(
-                    json!({"error": e.message, "error_code": "vessel_unavailable"}).to_string().into(),
+                    json!({"error": e.message, "error_code": "vessel_unavailable"})
+                        .to_string()
+                        .into(),
                 ))
                 .await;
             return;
@@ -495,7 +492,9 @@ async fn vessel_logs_session(socket: WebSocket, handle: VesselHandle, id: String
         Err(e) => {
             let _ = sink
                 .send(Message::Text(
-                    json!({"error": e.message, "error_code": "vessel_unavailable"}).to_string().into(),
+                    json!({"error": e.message, "error_code": "vessel_unavailable"})
+                        .to_string()
+                        .into(),
                 ))
                 .await;
             return;

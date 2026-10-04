@@ -33,8 +33,7 @@ pub async fn sync_inventory(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     let message = outcome.reason.unwrap_or_else(|| {
-        "KubeVirt VMs reconciled with platform inventory (VMware/Proxmox remain import-only)"
-            .into()
+        "KubeVirt VMs reconciled with platform inventory (VMware/Proxmox remain import-only)".into()
     });
     Ok(Json(KubeVirtSyncResponse {
         synced: outcome.synced,

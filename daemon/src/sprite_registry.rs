@@ -656,15 +656,7 @@ mod tests {
     fn register_reports_firecracker_backend_kind() {
         let reg = SpriteRegistry::new();
         let handle = reg
-            .register(
-                "fc-kind".into(),
-                fc_backend(1),
-                300,
-                Some(3),
-                false,
-                1,
-                512,
-            )
+            .register("fc-kind".into(), fc_backend(1), 300, Some(3), false, 1, 512)
             .unwrap();
         assert_eq!(handle.backend, SpriteBackend::Firecracker);
     }
@@ -704,15 +696,7 @@ mod tests {
         let reg = SpriteRegistry::new();
         let backend = chv_backend(4242);
         let handle = reg
-            .register(
-                "chv1".into(),
-                backend.clone(),
-                300,
-                Some(7),
-                false,
-                1,
-                512,
-            )
+            .register("chv1".into(), backend.clone(), 300, Some(7), false, 1, 512)
             .unwrap();
         assert_eq!(reg.get(&handle.sprite_id).unwrap().vsock_cid, Some(7));
         assert_eq!(
@@ -931,9 +915,7 @@ mod tests {
             .register("z1".into(), chv_backend(1), 300, Some(3), false, 1, 512)
             .unwrap();
 
-        let resized = reg
-            .update_sizing(&handle.sprite_id, Some(4), None)
-            .unwrap();
+        let resized = reg.update_sizing(&handle.sprite_id, Some(4), None).unwrap();
         assert_eq!(resized.vcpus, 4);
         assert_eq!(resized.memory_mb, 512);
 

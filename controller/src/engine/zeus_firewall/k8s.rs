@@ -30,7 +30,11 @@ pub async fn compile_plan(
     namespace: &str,
     profile: &str,
 ) -> anyhow::Result<(Vec<machina_core::K8sPolicyManifest>, Vec<String>)> {
-    Ok(compile_k8s_policies(namespace, profile, &cfg.firewall_zones)?)
+    Ok(compile_k8s_policies(
+        namespace,
+        profile,
+        &cfg.firewall_zones,
+    )?)
 }
 
 pub async fn apply_plan(

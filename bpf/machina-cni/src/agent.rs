@@ -84,7 +84,8 @@ pub fn foreign_cni_configs(conf_dirs: &[String]) -> Vec<String> {
         };
         for e in entries.flatten() {
             let name = e.file_name().to_string_lossy().into_owned();
-            let is_cfg = name.ends_with(".conf") || name.ends_with(".conflist") || name.ends_with(".json");
+            let is_cfg =
+                name.ends_with(".conf") || name.ends_with(".conflist") || name.ends_with(".json");
             if is_cfg && name != MACHINA_CONFLIST && e.path().is_file() {
                 found.push(e.path().display().to_string());
             }
@@ -98,10 +99,15 @@ fn truthy(v: &str) -> bool {
     matches!(v.to_lowercase().as_str(), "1" | "true" | "yes" | "on")
 }
 
-const CILIUM_RESOURCES: &str = "ciliumnetworkpolicies.cilium.io,ciliumclusterwidenetworkpolicies.cilium.io";
+const CILIUM_RESOURCES: &str =
+    "ciliumnetworkpolicies.cilium.io,ciliumclusterwidenetworkpolicies.cilium.io";
 
 fn list(v: String) -> Vec<String> {
-    v.split(',').map(str::trim).filter(|s| !s.is_empty()).map(String::from).collect()
+    v.split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect()
 }
 
 /// The first dir is always used; the rest only when their parent exists.
@@ -143,9 +149,17 @@ fn install_plugin(bin_dirs: &[String]) {
 
 impl Config {
     pub fn from_env() -> Self {
-        let env = |k: &str, d: &str| std::env::var(k).ok().filter(|v| !v.is_empty()).unwrap_or_else(|| d.to_string());
+        let env = |k: &str, d: &str| {
+            std::env::var(k)
+                .ok()
+                .filter(|v| !v.is_empty())
+                .unwrap_or_else(|| d.to_string())
+        };
         // kubelet registers the node under the lowercased hostname.
-        let host = std::fs::read_to_string("/proc/sys/kernel/hostname").unwrap_or_default().trim().to_lowercase();
+        let host = std::fs::read_to_string("/proc/sys/kernel/hostname")
+            .unwrap_or_default()
+            .trim()
+            .to_lowercase();
         Self {
             node: env("NODE_NAME", &host),
             kubectl: env("MACHINA_CNI_KUBECTL", "kubectl"),
@@ -159,7 +173,12 @@ impl Config {
                 "/opt/cni/bin,/var/lib/rancher/k3s/data/current/bin",
             )),
             mtu: env("MACHINA_CNI_MTU", "1500").parse().unwrap_or(1500),
-            interval: Duration::from_secs(env("MACHINA_CNI_INTERVAL_SECS", "3").parse().unwrap_or(3).max(1)),
+            interval: Duration::from_secs(
+                env("MACHINA_CNI_INTERVAL_SECS", "3")
+                    .parse()
+                    .unwrap_or(3)
+                    .max(1),
+            ),
             cilium_policies: truthy(&env("MACHINA_CNI_CILIUM_POLICIES", "0")),
             cluster_cidr6: Some(env("MACHINA_CNI_CLUSTER_CIDR6", "")).filter(|v| !v.is_empty()),
             lb_mode: Some(env("MACHINA_CNI_LB_MODE", "")).filter(|v| !v.is_empty()),
@@ -175,7 +194,11 @@ fn kubectl(cfg: &Config, args: &[&str]) -> Result<Value> {
         .output()
         .with_context(|| format!("run {}", cfg.kubectl))?;
     if !out.status.success() {
-        bail!("kubectl {}: {}", args.join(" "), String::from_utf8_lossy(&out.stderr).trim());
+        bail!(
+            "kubectl {}: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
     }
     Ok(serde_json::from_slice(&out.stdout)?)
 }
@@ -185,9 +208,16 @@ fn items(v: &Value) -> Vec<Value> {
 }
 
 fn run_cmd(prog: &str, args: &[&str]) -> Result<String> {
-    let out = Command::new(prog).args(args).output().with_context(|| format!("run {prog}"))?;
+    let out = Command::new(prog)
+        .args(args)
+        .output()
+        .with_context(|| format!("run {prog}"))?;
     if !out.status.success() {
-        bail!("{prog} {}: {}", args.join(" "), String::from_utf8_lossy(&out.stderr).trim());
+        bail!(
+            "{prog} {}: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
     }
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
@@ -203,12 +233,21 @@ fn internal_ips(node: &Value) -> Vec<String> {
 }
 
 fn internal_ip(node: &Value, v6: bool) -> Option<String> {
-    internal_ips(node).into_iter().find(|s| s.contains(':') == v6)
+    internal_ips(node)
+        .into_iter()
+        .find(|s| s.contains(':') == v6)
 }
 
 fn pod_cidr(node: &Value, v6: bool) -> Option<String> {
-    let cidrs = node["spec"]["podCIDRs"].as_array().into_iter().flatten().filter_map(|c| c.as_str());
-    cidrs.chain(node["spec"]["podCIDR"].as_str()).find(|c| c.contains(':') == v6).map(String::from)
+    let cidrs = node["spec"]["podCIDRs"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|c| c.as_str());
+    cidrs
+        .chain(node["spec"]["podCIDR"].as_str())
+        .find(|c| c.contains(':') == v6)
+        .map(String::from)
 }
 
 /// Interface that holds `addr` (the uplink used for NodePort DNAT).
@@ -216,8 +255,12 @@ fn iface_with_addr(addr: &str) -> Option<String> {
     let out = run_cmd("ip", &["-j", "addr", "show"]).ok()?;
     let v: Value = serde_json::from_str(&out).ok()?;
     v.as_array()?.iter().find_map(|l| {
-        let has = l["addr_info"].as_array()?.iter().any(|a| a["local"].as_str() == Some(addr));
-        has.then(|| l["ifname"].as_str().map(String::from)).flatten()
+        let has = l["addr_info"]
+            .as_array()?
+            .iter()
+            .any(|a| a["local"].as_str() == Some(addr));
+        has.then(|| l["ifname"].as_str().map(String::from))
+            .flatten()
     })
 }
 
@@ -260,7 +303,19 @@ fn sync_routes(want: &BTreeSet<(String, String)>, v6: bool) -> Result<()> {
         }
     }
     for (cidr, gw) in want {
-        if let Err(e) = run_cmd("ip", &[fam, "route", "replace", cidr, "via", gw, "proto", ROUTE_PROTO]) {
+        if let Err(e) = run_cmd(
+            "ip",
+            &[
+                fam,
+                "route",
+                "replace",
+                cidr,
+                "via",
+                gw,
+                "proto",
+                ROUTE_PROTO,
+            ],
+        ) {
             tracing::warn!("route {cidr} via {gw}: {e:#}");
         }
     }
@@ -269,10 +324,15 @@ fn sync_routes(want: &BTreeSet<(String, String)>, v6: bool) -> Result<()> {
 
 pub fn nft_rules(cluster_cidr: &str, cluster_cidr6: Option<&str>) -> String {
     let mut nat = format!("    ip saddr {cluster_cidr} ip daddr != {cluster_cidr} masquerade\n");
-    let mut fwd = format!("    ip saddr {cluster_cidr} accept\n    ip daddr {cluster_cidr} accept\n");
+    let mut fwd =
+        format!("    ip saddr {cluster_cidr} accept\n    ip daddr {cluster_cidr} accept\n");
     if let Some(c6) = cluster_cidr6 {
-        nat.push_str(&format!("    ip6 saddr {c6} ip6 daddr != {c6} masquerade\n"));
-        fwd.push_str(&format!("    ip6 saddr {c6} accept\n    ip6 daddr {c6} accept\n"));
+        nat.push_str(&format!(
+            "    ip6 saddr {c6} ip6 daddr != {c6} masquerade\n"
+        ));
+        fwd.push_str(&format!(
+            "    ip6 saddr {c6} accept\n    ip6 daddr {c6} accept\n"
+        ));
     }
     format!(
         "table inet {NFT_TABLE} {{\n  chain postrouting {{\n    type nat hook postrouting priority srcnat; policy accept;\n\
@@ -291,7 +351,9 @@ pub fn sysctl_override() -> String {
 
 /// Pin the veth sysctls on existing pod veths (new ones get the sysctl.d override).
 fn pin_veth_sysctls() {
-    let Ok(dir) = std::fs::read_dir("/proc/sys/net/ipv4/conf") else { return };
+    let Ok(dir) = std::fs::read_dir("/proc/sys/net/ipv4/conf") else {
+        return;
+    };
     for e in dir.flatten() {
         let name = e.file_name().to_string_lossy().into_owned();
         if !name.starts_with("mc") {
@@ -299,7 +361,10 @@ fn pin_veth_sysctls() {
         }
         for (k, v) in VETH_SYSCTLS {
             let path = e.path().join(k);
-            if std::fs::read_to_string(&path).map(|c| c.trim() != *v).unwrap_or(false) {
+            if std::fs::read_to_string(&path)
+                .map(|c| c.trim() != *v)
+                .unwrap_or(false)
+            {
                 let _ = std::fs::write(&path, v);
             }
         }
@@ -356,7 +421,15 @@ pub async fn run(cfg: Config) -> Result<()> {
     let mut tick = tokio::time::interval(cfg.interval);
     loop {
         tick.tick().await;
-        if let Err(e) = reconcile(&cfg, &bpfd, &mut setup, &mut last_pushed, &mut last_warnings).await {
+        if let Err(e) = reconcile(
+            &cfg,
+            &bpfd,
+            &mut setup,
+            &mut last_pushed,
+            &mut last_warnings,
+        )
+        .await
+        {
             tracing::warn!("reconcile: {e:#}");
         }
     }
@@ -372,15 +445,26 @@ async fn reconcile(
     let list = tokio::task::block_in_place(|| {
         kubectl(
             cfg,
-            &["get", "nodes,namespaces,pods,networkpolicies,services,endpointslices", "-A", "-o", "json"],
+            &[
+                "get",
+                "nodes,namespaces,pods,networkpolicies,services,endpointslices",
+                "-A",
+                "-o",
+                "json",
+            ],
         )
     })?;
     let mut cilium_warning = None;
     let cilium_policies = if cfg.cilium_policies {
-        match tokio::task::block_in_place(|| kubectl(cfg, &["get", CILIUM_RESOURCES, "-A", "-o", "json"])) {
+        match tokio::task::block_in_place(|| {
+            kubectl(cfg, &["get", CILIUM_RESOURCES, "-A", "-o", "json"])
+        }) {
             Ok(v) => items(&v),
             Err(e) if format!("{e:#}").contains("doesn't have a resource type") => {
-                cilium_warning = Some("MACHINA_CNI_CILIUM_POLICIES is set but the cilium.io CRDs are not installed".into());
+                cilium_warning = Some(
+                    "MACHINA_CNI_CILIUM_POLICIES is set but the cilium.io CRDs are not installed"
+                        .into(),
+                );
                 Vec::new()
             }
             Err(e) => return Err(e.context("list Cilium policies")),
@@ -389,7 +473,8 @@ async fn reconcile(
         Vec::new()
     };
     let all = items(&list);
-    let of_kind = |k: &str| -> Vec<Value> { all.iter().filter(|i| i["kind"] == k).cloned().collect() };
+    let of_kind =
+        |k: &str| -> Vec<Value> { all.iter().filter(|i| i["kind"] == k).cloned().collect() };
     let nodes = of_kind("Node");
     let me = nodes
         .iter()
@@ -399,21 +484,33 @@ async fn reconcile(
     // Node bring-up: CNI config, bpfd node config, masquerade.
     let dual = cfg.cluster_cidr6.is_some();
     let want = NodeSetup {
-        pod_cidr: pod_cidr(me, false).ok_or_else(|| anyhow!("node {} has no podCIDR yet", cfg.node))?,
+        pod_cidr: pod_cidr(me, false)
+            .ok_or_else(|| anyhow!("node {} has no podCIDR yet", cfg.node))?,
         pod_cidr6: if dual {
-            Some(pod_cidr(me, true).ok_or_else(|| anyhow!("node {} has no IPv6 podCIDR yet", cfg.node))?)
+            Some(
+                pod_cidr(me, true)
+                    .ok_or_else(|| anyhow!("node {} has no IPv6 podCIDR yet", cfg.node))?,
+            )
         } else {
             None
         },
-        node_addr: internal_ip(me, false).ok_or_else(|| anyhow!("node {} has no InternalIP", cfg.node))?,
+        node_addr: internal_ip(me, false)
+            .ok_or_else(|| anyhow!("node {} has no InternalIP", cfg.node))?,
         node_addr6: internal_ip(me, true).filter(|_| dual),
     };
     if setup.as_ref() != Some(&want) {
         install_plugin(&cfg.bin_dirs);
         for dir in usable_dirs(&cfg.conf_dirs) {
             let path = format!("{dir}/{MACHINA_CONFLIST}");
-            if write_if_changed(&path, &conflist(&want.pod_cidr, want.pod_cidr6.as_deref(), cfg.mtu))? {
-                tracing::info!("wrote {path} (podCIDR {} {:?})", want.pod_cidr, want.pod_cidr6);
+            if write_if_changed(
+                &path,
+                &conflist(&want.pod_cidr, want.pod_cidr6.as_deref(), cfg.mtu),
+            )? {
+                tracing::info!(
+                    "wrote {path} (podCIDR {} {:?})",
+                    want.pod_cidr,
+                    want.pod_cidr6
+                );
             }
         }
         ensure_masquerade(&cfg.cluster_cidr, cfg.cluster_cidr6.as_deref())?;
@@ -428,16 +525,23 @@ async fn reconcile(
             lb_mode: cfg.lb_mode.clone(),
             xdp: cfg.xdp,
         };
-        bpfd.call(&Request::CniConfigure { config }).await.context("machina-bpfd cni_configure")?;
+        bpfd.call(&Request::CniConfigure { config })
+            .await
+            .context("machina-bpfd cni_configure")?;
         tracing::info!(node_addr = %want.node_addr, node_addr6 = ?want.node_addr6, uplink = ?uplink,
             lb_mode = ?cfg.lb_mode, xdp = cfg.xdp, "node datapath configured");
         *setup = Some(want);
     }
 
-    let others: Vec<&Value> = nodes.iter().filter(|n| n["metadata"]["name"].as_str() != Some(cfg.node.as_str())).collect();
+    let others: Vec<&Value> = nodes
+        .iter()
+        .filter(|n| n["metadata"]["name"].as_str() != Some(cfg.node.as_str()))
+        .collect();
     for v6 in [false, true].into_iter().filter(|v6| !v6 || dual) {
-        let routes: BTreeSet<(String, String)> =
-            others.iter().filter_map(|n| Some((pod_cidr(n, v6)?, internal_ip(n, v6)?))).collect();
+        let routes: BTreeSet<(String, String)> = others
+            .iter()
+            .filter_map(|n| Some((pod_cidr(n, v6)?, internal_ip(n, v6)?)))
+            .collect();
         tokio::task::block_in_place(|| sync_routes(&routes, v6))?;
     }
     pin_veth_sysctls();
@@ -469,9 +573,11 @@ async fn reconcile(
         None => true,
     };
     if due {
-        bpfd.call(&Request::CniSync { state: compiled.state.clone() })
-            .await
-            .context("machina-bpfd cni_sync")?;
+        bpfd.call(&Request::CniSync {
+            state: compiled.state.clone(),
+        })
+        .await
+        .context("machina-bpfd cni_sync")?;
         tracing::debug!(
             identities = compiled.state.identities.len(),
             policy = compiled.state.policy.len(),
@@ -492,7 +598,10 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().join("net.d");
         std::fs::create_dir_all(&dir).unwrap();
-        let dirs = vec![dir.display().to_string(), "/nonexistent/parent/net.d".to_string()];
+        let dirs = vec![
+            dir.display().to_string(),
+            "/nonexistent/parent/net.d".to_string(),
+        ];
         assert!(foreign_cni_configs(&dirs).is_empty());
         std::fs::write(dir.join(MACHINA_CONFLIST), "{}").unwrap();
         std::fs::write(dir.join("notes.txt"), "").unwrap();
@@ -502,7 +611,9 @@ mod tests {
         let found = foreign_cni_configs(&dirs);
         assert_eq!(found.len(), 2);
         assert!(found[0].ends_with("10-flannel.conflist"));
-        assert!(ForeignCni(found).to_string().contains("MACHINA_CNI_TAKEOVER=1"));
+        assert!(ForeignCni(found)
+            .to_string()
+            .contains("MACHINA_CNI_TAKEOVER=1"));
     }
 
     #[test]
@@ -523,7 +634,8 @@ mod tests {
         assert_eq!(c["plugins"][0]["type"], "machina-cni");
         assert_eq!(c["plugins"][0]["subnet"], "10.42.0.0/24");
         assert!(c["plugins"][0].get("subnet6").is_none());
-        let c: Value = serde_json::from_str(&conflist("10.42.0.0/24", Some("fd42:0:0:1::/64"), 1450)).unwrap();
+        let c: Value =
+            serde_json::from_str(&conflist("10.42.0.0/24", Some("fd42:0:0:1::/64"), 1450)).unwrap();
         assert_eq!(c["plugins"][0]["subnet6"], "fd42:0:0:1::/64");
         let nft = nft_rules("10.42.0.0/16", None);
         assert!(nft.starts_with("table inet "));

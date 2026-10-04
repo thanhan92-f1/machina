@@ -25,8 +25,7 @@ pub fn validate_migrate_uri(uri: &str) -> Result<(), LibvirtError> {
             ALLOWED_URI_SCHEMES.join(", ")
         )));
     }
-    if uri.contains([';', '|', '&', '$', '`', '\n'])
-    {
+    if uri.contains([';', '|', '&', '$', '`', '\n']) {
         return Err(LibvirtError::Invalid(
             "Migration URI contains invalid characters".into(),
         ));

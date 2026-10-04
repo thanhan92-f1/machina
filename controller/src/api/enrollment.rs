@@ -35,9 +35,7 @@ pub async fn create_enrollment_token(
     let ttl = if req.ttl_hours <= 0 {
         24
     } else if req.ttl_hours > MAX_TTL_HOURS {
-        return Err(ApiError::bad_request(
-            "ttl_hours must be <= 720 (30 days)",
-        ));
+        return Err(ApiError::bad_request("ttl_hours must be <= 720 (30 days)"));
     } else {
         req.ttl_hours
     };
@@ -48,14 +46,12 @@ pub async fn create_enrollment_token(
         .await?
         .ok_or_else(|| ApiError::internal("no cluster configured"))?;
 
-    sqlx::query(
-        "INSERT INTO enrollment_tokens (token, cluster_id, expires_at) VALUES (?, ?, ?)",
-    )
-    .bind(&token)
-    .bind(cluster_id)
-    .bind(expires)
-    .execute(&state.pool)
-    .await?;
+    sqlx::query("INSERT INTO enrollment_tokens (token, cluster_id, expires_at) VALUES (?, ?, ?)")
+        .bind(&token)
+        .bind(cluster_id)
+        .bind(expires)
+        .execute(&state.pool)
+        .await?;
 
     // Use the configured public URL (MACHINA_PUBLIC_URL) for the join command —
     // `state.config.host` is the bind address, which is typically 0.0.0.0 and thus

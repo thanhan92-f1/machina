@@ -76,10 +76,8 @@ async fn list_vms(
     Extension(actor): Extension<RequestActor>,
 ) -> Result<Json<Vec<VmInfo>>, AppError> {
     if crate::conn_query::impersonation_prefers_session_only(&actor) {
-        let conn_q = crate::conn_query::apply_impersonation_session_default(
-            &actor,
-            ConnQuery::default(),
-        );
+        let conn_q =
+            crate::conn_query::apply_impersonation_session_default(&actor, ConnQuery::default());
         let vms = spawn_libvirt_actor(manager, Some(&actor), conn_q, |conn| {
             machina_core::libvirt::domain::list_vms(conn)
         })
@@ -353,7 +351,10 @@ async fn start_vm(
     // mutating handler in this file so both role and token scope are enforced.
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::start_vm(conn, &name2)).await?;
+    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        domain::start_vm(conn, &name2)
+    })
+    .await?;
     log_audit("start", &name, "ok");
     vm_events::emit_vm_started(&name);
     super::bpf::notify_vm_lifecycle();
@@ -368,7 +369,10 @@ async fn stop_vm(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::stop_vm(conn, &name2)).await?;
+    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        domain::stop_vm(conn, &name2)
+    })
+    .await?;
     log_audit("stop", &name, "ok");
     vm_events::emit_vm_stopped(&name);
     super::bpf::notify_vm_lifecycle();
@@ -400,7 +404,10 @@ async fn reboot_vm(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::reboot_vm(conn, &name2)).await?;
+    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        domain::reboot_vm(conn, &name2)
+    })
+    .await?;
     vm_events::emit_vm_reboot(&name);
     Ok(ok_json("rebooting", &name))
 }
@@ -413,7 +420,10 @@ async fn pause_vm(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::pause_vm(conn, &name2)).await?;
+    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        domain::pause_vm(conn, &name2)
+    })
+    .await?;
     vm_events::emit_vm_paused(&name);
     Ok(ok_json("paused", &name))
 }
@@ -426,7 +436,10 @@ async fn resume_vm(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     let name2 = name.clone();
-    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| domain::resume_vm(conn, &name2)).await?;
+    spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        domain::resume_vm(conn, &name2)
+    })
+    .await?;
     vm_events::emit_vm_resumed(&name);
     Ok(ok_json("resumed", &name))
 }
@@ -1147,15 +1160,13 @@ async fn detach_interface_handler(
         device::detach_interface(conn, &name2, &mac2)
     })
     .await?;
-    Ok(Json(
-        serde_json::json!({
-            "status": "detached",
-            "name": name,
-            "mac": mac,
-            "live_removed": outcome.live_removed,
-            "requires_restart": !outcome.live_removed,
-        }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "detached",
+        "name": name,
+        "mac": mac,
+        "live_removed": outcome.live_removed,
+        "requires_restart": !outcome.live_removed,
+    })))
 }
 
 // ── VM Tags ────────────────────────────────────────────────────────
@@ -1223,7 +1234,10 @@ async fn get_cputune_handler(
     State(manager): State<LibvirtManager>,
 ) -> Result<Json<CpuTuneInfo>, AppError> {
     let name2 = name.clone();
-    let result = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |c| resize::get_cputune(c, &name2)).await?;
+    let result = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |c| {
+        resize::get_cputune(c, &name2)
+    })
+    .await?;
     Ok(Json(result))
 }
 
@@ -1234,7 +1248,10 @@ async fn get_memtune_handler(
     State(manager): State<LibvirtManager>,
 ) -> Result<Json<MemTuneInfo>, AppError> {
     let name2 = name.clone();
-    let result = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |c| resize::get_memtune(c, &name2)).await?;
+    let result = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |c| {
+        resize::get_memtune(c, &name2)
+    })
+    .await?;
     Ok(Json(result))
 }
 

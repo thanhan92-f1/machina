@@ -22,7 +22,10 @@ pub struct HostValidationReport {
     pub checks: Vec<ValidationCheck>,
 }
 
-pub async fn validate_host(pool: &SqlitePool, host_id: Uuid) -> anyhow::Result<HostValidationReport> {
+pub async fn validate_host(
+    pool: &SqlitePool,
+    host_id: Uuid,
+) -> anyhow::Result<HostValidationReport> {
     let mut checks = Vec::new();
 
     let row: Option<(String, String, String)> =

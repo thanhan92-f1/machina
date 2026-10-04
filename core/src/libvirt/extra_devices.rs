@@ -55,9 +55,7 @@ pub fn detach_tpm(conn: &Connect, vm_name: &str) -> Result<DetachOutcome, Libvir
 
     let is_running = domain.is_active().unwrap_or(false);
     let live_removed = if is_running {
-        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| {
-            !tpm_present(live_xml)
-        })
+        wait_until_absent_from_live(&domain, DETACH_LIVE_WAIT, |live_xml| !tpm_present(live_xml))
     } else {
         true
     };

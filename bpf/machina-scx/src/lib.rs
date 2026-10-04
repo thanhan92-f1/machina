@@ -53,14 +53,23 @@ pub struct VmStats {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum Output {
-    Ready { ready: bool },
-    Error { error: String },
+    Ready {
+        ready: bool,
+    },
+    Error {
+        error: String,
+    },
     /// (vm key, stats); a list because untagged enums cannot take integer map keys.
-    Stats { stats: Vec<(u64, VmStats)>, exit_kind: u64 },
+    Stats {
+        stats: Vec<(u64, VmStats)>,
+        exit_kind: u64,
+    },
 }
 
 pub fn kernel_state() -> Option<String> {
-    std::fs::read_to_string(STATE_PATH).ok().map(|s| s.trim().to_string())
+    std::fs::read_to_string(STATE_PATH)
+        .ok()
+        .map(|s| s.trim().to_string())
 }
 
 #[cfg(test)]
@@ -69,15 +78,36 @@ mod tests {
 
     #[test]
     fn protocol_roundtrip() {
-        let c: Command = serde_json::from_str(r#"{"op":"profiles","profiles":[{"tid":5,"tgid":4,"vm":1}]}"#).unwrap();
+        let c: Command =
+            serde_json::from_str(r#"{"op":"profiles","profiles":[{"tid":5,"tgid":4,"vm":1}]}"#)
+                .unwrap();
         let Command::Profiles { profiles } = c;
         assert_eq!(profiles[0].weight, 100);
         assert_eq!(profiles[0].slice_ns, 1_000_000);
         let o: Output = serde_json::from_str(r#"{"ready":true}"#).unwrap();
         assert_eq!(o, Output::Ready { ready: true });
-        let stats = vec![(3, VmStats { enqueues: 9, ..Default::default() })];
-        let s = serde_json::to_string(&Output::Stats { stats: stats.clone(), exit_kind: 0 }).unwrap();
-        assert_eq!(serde_json::from_str::<Output>(&s).unwrap(), Output::Stats { stats, exit_kind: 0 });
-        assert!(matches!(serde_json::from_str::<Output>(r#"{"error":"x"}"#).unwrap(), Output::Error { .. }));
+        let stats = vec![(
+            3,
+            VmStats {
+                enqueues: 9,
+                ..Default::default()
+            },
+        )];
+        let s = serde_json::to_string(&Output::Stats {
+            stats: stats.clone(),
+            exit_kind: 0,
+        })
+        .unwrap();
+        assert_eq!(
+            serde_json::from_str::<Output>(&s).unwrap(),
+            Output::Stats {
+                stats,
+                exit_kind: 0
+            }
+        );
+        assert!(matches!(
+            serde_json::from_str::<Output>(r#"{"error":"x"}"#).unwrap(),
+            Output::Error { .. }
+        ));
     }
 }

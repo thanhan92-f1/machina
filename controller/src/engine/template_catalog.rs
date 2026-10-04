@@ -426,15 +426,20 @@ const RETIRED_TEMPLATE_NAMES: &[&str] = &[
 /// Remove marketplace rows that are no longer in the bundled catalog (e.g. fedora-40).
 pub async fn prune_stale_marketplace_templates(pool: &SqlitePool) -> anyhow::Result<u64> {
     let retired_json = serde_json::to_string(RETIRED_TEMPLATE_NAMES).unwrap_or_default();
-    let retired = sqlx::query("DELETE FROM templates WHERE name IN (SELECT value FROM json_each(?))")
-        .bind(retired_json)
-        .execute(pool)
-        .await?
-        .rows_affected();
+    let retired =
+        sqlx::query("DELETE FROM templates WHERE name IN (SELECT value FROM json_each(?))")
+            .bind(retired_json)
+            .execute(pool)
+            .await?
+            .rows_affected();
 
     let catalog_json = serde_json::to_string(
-        &CATALOG.iter().map(|t| serde_json::json!({"name": t.name, "version": t.version})).collect::<Vec<_>>()
-    ).unwrap_or_else(|_| "[]".into());
+        &CATALOG
+            .iter()
+            .map(|t| serde_json::json!({"name": t.name, "version": t.version}))
+            .collect::<Vec<_>>(),
+    )
+    .unwrap_or_else(|_| "[]".into());
     let result = sqlx::query(
         "DELETE FROM templates
          WHERE marketplace = TRUE

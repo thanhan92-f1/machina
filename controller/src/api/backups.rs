@@ -178,7 +178,9 @@ pub async fn create_backup_schedule(
 ) -> Result<Json<BackupScheduleRow>, ApiError> {
     require_operator(&actor)?;
     if body.name.trim().is_empty() || body.name.len() > 128 {
-        return Err(ApiError::bad_request("schedule name must be 1–128 characters"));
+        return Err(ApiError::bad_request(
+            "schedule name must be 1–128 characters",
+        ));
     }
     if body.interval_hours < 1 || body.interval_hours > 24 * 30 {
         return Err(ApiError::bad_request("interval_hours must be 1–720"));

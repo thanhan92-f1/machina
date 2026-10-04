@@ -208,7 +208,8 @@ pub async fn create_stack(
         .await?;
 
     let id = Uuid::new_v4();
-    let template_json = serde_json::to_value(&body.template).map_err(|e| ApiError::internal(e.to_string()))?;
+    let template_json =
+        serde_json::to_value(&body.template).map_err(|e| ApiError::internal(e.to_string()))?;
     sqlx::query(
         "INSERT INTO stacks (id, project_id, name, template_json, status) VALUES (?, ?, ?, ?, 'creating')",
     )
@@ -262,11 +263,19 @@ async fn build_stack(
         let group = networking::create_security_group(
             State(state.clone()),
             Extension(actor.clone()),
-            Json(CreateSecurityGroupBody { name: sg.name.clone(), description: String::new(), project_id: Some(project_id) }),
+            Json(CreateSecurityGroupBody {
+                name: sg.name.clone(),
+                description: String::new(),
+                project_id: Some(project_id),
+            }),
         )
         .await
         .map_err(|e| (created.clone(), e))?;
-        created.push(StackResourceRef { kind: "security_group".into(), id: group.0.id, name: sg.name.clone() });
+        created.push(StackResourceRef {
+            kind: "security_group".into(),
+            id: group.0.id,
+            name: sg.name.clone(),
+        });
 
         for rule in &sg.rules {
             let _ = networking::create_security_group_rule(
@@ -300,7 +309,11 @@ async fn build_stack(
         )
         .await
         .map_err(|e| (created.clone(), e))?;
-        created.push(StackResourceRef { kind: "volume".into(), id: row.0.id, name: vol.name.clone() });
+        created.push(StackResourceRef {
+            kind: "volume".into(),
+            id: row.0.id,
+            name: vol.name.clone(),
+        });
         volume_ids.insert(vol.name.clone(), row.0.id);
     }
 
@@ -317,7 +330,14 @@ async fn build_stack(
         let task = vms::create_vm(
             State(state.clone()),
             Extension(actor.clone()),
-            Json(CreateVmBody { vm, host_id: None, tags: vec!["stack".into()], desired_state: "running".into(), atlas_root_disk: false, atlas_policy: None }),
+            Json(CreateVmBody {
+                vm,
+                host_id: None,
+                tags: vec!["stack".into()],
+                desired_state: "running".into(),
+                atlas_root_disk: false,
+                atlas_policy: None,
+            }),
         )
         .await
         .map_err(|e| (created.clone(), e))?;
@@ -333,7 +353,11 @@ async fn build_stack(
         // the VM may still exist on the host and must be in `created` so `delete_stack`
         // (and the operator-visible partial-failure resource list) can find and remove
         // it — losing this entry here would leak the VM.
-        created.push(StackResourceRef { kind: "vm".into(), id: vm_id, name: vm_spec.name.clone() });
+        created.push(StackResourceRef {
+            kind: "vm".into(),
+            id: vm_id,
+            name: vm_spec.name.clone(),
+        });
         // VM provisioning (define + start via libvirt) runs well past the 20s default
         // used elsewhere in this file — give it a generous ceiling before giving up.
         volumes::wait_for_task_timeout(&state.pool, &task.0.task_id, Duration::from_secs(180))
@@ -341,15 +365,23 @@ async fn build_stack(
             .map_err(|e| (created.clone(), e))?;
 
         for vol_name in &vm_spec.attach_volumes {
-            let vol_id = *volume_ids
-                .get(vol_name)
-                .ok_or_else(|| (created.clone(), ApiError::bad_request(format!("attach_volumes references unknown volume '{vol_name}'"))))?;
+            let vol_id = *volume_ids.get(vol_name).ok_or_else(|| {
+                (
+                    created.clone(),
+                    ApiError::bad_request(format!(
+                        "attach_volumes references unknown volume '{vol_name}'"
+                    )),
+                )
+            })?;
             attach_count += 1;
             let _ = volumes::attach_volume(
                 State(state.clone()),
                 Extension(actor.clone()),
                 Path(vol_id),
-                Json(AttachVolumeBody { vm_id, target_dev: default_target_dev_for(attach_count) }),
+                Json(AttachVolumeBody {
+                    vm_id,
+                    target_dev: default_target_dev_for(attach_count),
+                }),
             )
             .await
             .map_err(|e| (created.clone(), e))?;
@@ -399,19 +431,32 @@ pub async fn delete_stack(
             // requires attached_vm_id to already be NULL via the FK's ON DELETE SET
             // NULL) races the still-pending VM deletion and fails with "still attached"
             // even though the VM is in the process of being removed.
-            "vm" => match vms::delete_vm(State(state.clone()), Extension(actor.clone()), Path(res.id), None).await {
+            "vm" => match vms::delete_vm(
+                State(state.clone()),
+                Extension(actor.clone()),
+                Path(res.id),
+                None,
+            )
+            .await
+            {
                 Ok(task) => volumes::wait_for_task(&state.pool, &task.0.task_id).await,
                 Err(e) => Err(e),
             },
-            "volume" => volumes::delete_volume(State(state.clone()), Extension(actor.clone()), Path(res.id))
-                .await
-                .map(|_| ()),
-            "security_group" => {
-                networking::delete_security_group(State(state.clone()), Extension(actor.clone()), Path(res.id))
+            "volume" => {
+                volumes::delete_volume(State(state.clone()), Extension(actor.clone()), Path(res.id))
                     .await
                     .map(|_| ())
             }
-            other => Err(ApiError::internal(format!("unknown stack resource kind '{other}'"))),
+            "security_group" => networking::delete_security_group(
+                State(state.clone()),
+                Extension(actor.clone()),
+                Path(res.id),
+            )
+            .await
+            .map(|_| ()),
+            other => Err(ApiError::internal(format!(
+                "unknown stack resource kind '{other}'"
+            ))),
         };
         if let Err(e) = result {
             errors.push(format!("{} '{}': {}", res.kind, res.name, e.message));
@@ -419,7 +464,10 @@ pub async fn delete_stack(
     }
 
     if errors.is_empty() {
-        sqlx::query("DELETE FROM stacks WHERE id = ?").bind(id).execute(&state.pool).await?;
+        sqlx::query("DELETE FROM stacks WHERE id = ?")
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
         Ok(Json(serde_json::json!({ "deleted": true })))
     } else {
         sqlx::query("UPDATE stacks SET status = 'delete_failed', last_error = ? WHERE id = ?")
@@ -427,6 +475,10 @@ pub async fn delete_stack(
             .bind(id)
             .execute(&state.pool)
             .await?;
-        Err(ApiError::internal(format!("stack teardown had {} failure(s): {}", errors.len(), errors.join("; "))))
+        Err(ApiError::internal(format!(
+            "stack teardown had {} failure(s): {}",
+            errors.len(),
+            errors.join("; ")
+        )))
     }
 }

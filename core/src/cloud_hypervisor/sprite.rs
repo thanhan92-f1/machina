@@ -428,9 +428,8 @@ pub async fn snapshot_sprite_chv(
         .join("snapshot");
     // ch-remote writes into this directory itself; it must exist first
     // (confirmed: `snapshot` doesn't create the destination's parent).
-    fs::create_dir_all(&snapshot_dir).map_err(|e| {
-        LibvirtError::Operation(format!("failed to create snapshot dir: {e}"))
-    })?;
+    fs::create_dir_all(&snapshot_dir)
+        .map_err(|e| LibvirtError::Operation(format!("failed to create snapshot dir: {e}")))?;
     let url = format!("file://{}", snapshot_dir.display());
     ch_remote(api_socket, &["snapshot", &url]).await?;
     Ok(ChvSnapshotResult { snapshot_dir })
@@ -516,9 +515,9 @@ pub async fn restore_sprite_chv(
             }
             LibvirtError::Operation(format!("failed to spawn cloud-hypervisor for restore: {e}"))
         })?;
-    let pid = child.id().ok_or_else(|| {
-        LibvirtError::Internal("cloud-hypervisor spawned without a pid".into())
-    })?;
+    let pid = child
+        .id()
+        .ok_or_else(|| LibvirtError::Internal("cloud-hypervisor spawned without a pid".into()))?;
 
     let deadline = Instant::now() + BOOT_READY_TIMEOUT;
     loop {

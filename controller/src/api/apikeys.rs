@@ -62,10 +62,14 @@ pub async fn create_api_key(
 ) -> Result<Json<CreateApiKeyResponse>, ApiError> {
     require_admin(&actor)?;
     if body.name.is_empty() || body.name.len() > 128 {
-        return Err(ApiError::bad_request("api key name must be 1–128 characters"));
+        return Err(ApiError::bad_request(
+            "api key name must be 1–128 characters",
+        ));
     }
     if !matches!(body.role.as_str(), "admin" | "operator" | "viewer") {
-        return Err(ApiError::bad_request("role must be admin, operator, or viewer"));
+        return Err(ApiError::bad_request(
+            "role must be admin, operator, or viewer",
+        ));
     }
     let id = Uuid::new_v4();
     let token = format!("machina_{}", Uuid::new_v4());
@@ -159,10 +163,11 @@ pub async fn authenticate_api_key(
             .fetch_optional(pool)
             .await?;
     if let Some((name, role)) = row {
-        let _ = sqlx::query("UPDATE api_keys SET last_used_at = datetime('now') WHERE key_hash = ?")
-            .bind(&hash)
-            .execute(pool)
-            .await;
+        let _ =
+            sqlx::query("UPDATE api_keys SET last_used_at = datetime('now') WHERE key_hash = ?")
+                .bind(&hash)
+                .execute(pool)
+                .await;
         Ok(Some(AuthUser {
             username: format!("apikey:{name}"),
             role,

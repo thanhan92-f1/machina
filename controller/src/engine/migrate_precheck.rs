@@ -201,7 +201,9 @@ pub async fn run_migrate_precheck(
                 Err(e) => {
                     checks.push(fail(
                         "cpu_compat",
-                        &format!("Could not read source host CPU model to verify compatibility: {e}"),
+                        &format!(
+                            "Could not read source host CPU model to verify compatibility: {e}"
+                        ),
                         "Verify the source host record in cluster inventory and retry",
                     ));
                 }
@@ -237,7 +239,9 @@ pub async fn run_migrate_precheck(
                         Err(e) => {
                             checks.push(fail(
                                 "source_agent_precheck",
-                                &format!("Source host agent could not run its migration pre-check: {e}"),
+                                &format!(
+                                    "Source host agent could not run its migration pre-check: {e}"
+                                ),
                                 "Check machina-agent logs on the source host and retry",
                             ));
                         }

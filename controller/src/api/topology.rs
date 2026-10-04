@@ -97,7 +97,13 @@ pub(crate) async fn build_topology(
         });
     }
 
-    let vms: Vec<(Uuid, String, Option<Uuid>, String, sqlx::types::Json<Vec<String>>)> = if let Some(vid) = vm_filter {
+    let vms: Vec<(
+        Uuid,
+        String,
+        Option<Uuid>,
+        String,
+        sqlx::types::Json<Vec<String>>,
+    )> = if let Some(vid) = vm_filter {
         sqlx::query_as(
             "SELECT id, name, host_id, observed_state, COALESCE(tags, '[]') FROM vms WHERE id = ?",
         )

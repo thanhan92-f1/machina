@@ -98,8 +98,7 @@ impl LibvirtCtx {
                 }
             }
             if running {
-                if let Ok(m) = machina_core::libvirt::metrics::get_vm_metrics(&self.conn, &v.name)
-                {
+                if let Ok(m) = machina_core::libvirt::metrics::get_vm_metrics(&self.conn, &v.name) {
                     entry.memory_used_mib = m.memory_used_mb;
                     entry.disk_read_iops = m.disk_rd_ops;
                     entry.disk_write_iops = m.disk_wr_ops;
@@ -370,7 +369,10 @@ impl LibvirtCtx {
                 "MACHINA_FENCE_COMMAND not configured".into(),
             ));
         }
-        if !hostname.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '.') {
+        if !hostname
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '.')
+        {
             return Err(LibvirtError::Operation(format!(
                 "invalid hostname for fence: {hostname}"
             )));
@@ -563,7 +565,11 @@ impl LibvirtCtx {
         machina_core::libvirt::resize::set_memory(&self.conn, name, memory_mb).map(|_| ())
     }
 
-    pub fn resolve_vnc_from_xml(&self, name: &str, xml: &str) -> Result<(String, u16), LibvirtError> {
+    pub fn resolve_vnc_from_xml(
+        &self,
+        name: &str,
+        xml: &str,
+    ) -> Result<(String, u16), LibvirtError> {
         machina_core::libvirt::vnc::resolve_vnc_tcp_xml(&self.conn, name, xml)
     }
 
@@ -769,10 +775,7 @@ impl LibvirtCtx {
         // SECURITY: `backup_path` is a request-controlled read source on an
         // unauthenticated gRPC surface. Confine it to the agent's allowed storage
         // directories so a caller cannot read arbitrary host files into a VM disk.
-        machina_core::libvirt::storage::assert_backup_source_within_pools(
-            &self.conn,
-            backup_path,
-        )?;
+        machina_core::libvirt::storage::assert_backup_source_within_pools(&self.conn, backup_path)?;
         let dom = Domain::lookup_by_name(&self.conn, vm_name)
             .map_err(|e| LibvirtError::NotFound(format!("VM '{vm_name}': {e}")))?;
 
@@ -872,7 +875,14 @@ impl LibvirtCtx {
         // guests and external-snapshot overlays). Without it convert fails with a
         // opaque "qemu-img backup failed" on almost every live VM.
         let output = Command::new("qemu-img")
-            .args(["convert", "-U", "-O", "qcow2", &source.qemu_img_arg(), dest_path])
+            .args([
+                "convert",
+                "-U",
+                "-O",
+                "qcow2",
+                &source.qemu_img_arg(),
+                dest_path,
+            ])
             .output()
             .map_err(|e| LibvirtError::Operation(format!("qemu-img convert: {e}")))?;
         if !output.status.success() {
@@ -974,9 +984,9 @@ impl LibvirtCtx {
             .as_ref()
             .map(|g| g.ip_addresses.as_slice())
             .unwrap_or_default();
-        let host_observed = ipv4_addrs
-            .iter()
-            .find(|ip| ip.ip_type == "ipv4" && !ip.address.starts_with("127.") && ip.source != "agent");
+        let host_observed = ipv4_addrs.iter().find(|ip| {
+            ip.ip_type == "ipv4" && !ip.address.starts_with("127.") && ip.source != "agent"
+        });
         let guest_ip = host_observed
             .or_else(|| {
                 ipv4_addrs
@@ -1055,7 +1065,8 @@ impl LibvirtCtx {
         // Use the shared ensure path so a missing virtio-serial controller is
         // added (config-only + restart required) instead of failing hotplug with
         // "no virtio-serial controllers are available".
-        let outcome = machina_core::libvirt::qga_channel::ensure_guest_agent_channel(&self.conn, name)?;
+        let outcome =
+            machina_core::libvirt::qga_channel::ensure_guest_agent_channel(&self.conn, name)?;
         if outcome.requires_restart {
             tracing::info!(
                 vm = %name,
@@ -1074,11 +1085,18 @@ impl LibvirtCtx {
 /// copy alongside the existing file-attach path.
 fn attach_device_xml(vm_name: &str, xml: &str, running: bool) -> Result<(), LibvirtError> {
     use std::process::Command;
-    let tmp_path = std::env::temp_dir().join(format!("machina-disk-attach-{}.xml", uuid::Uuid::new_v4()));
+    let tmp_path =
+        std::env::temp_dir().join(format!("machina-disk-attach-{}.xml", uuid::Uuid::new_v4()));
     std::fs::write(&tmp_path, xml.as_bytes())
         .map_err(|e| LibvirtError::Operation(format!("write disk XML: {e}")))?;
     let tmp_path_str = tmp_path.to_string_lossy().into_owned();
-    let mut args = vec!["attach-device", vm_name, tmp_path_str.as_str(), "--config", "--persistent"];
+    let mut args = vec![
+        "attach-device",
+        vm_name,
+        tmp_path_str.as_str(),
+        "--config",
+        "--persistent",
+    ];
     if running {
         args.push("--live");
     }
@@ -1176,15 +1194,19 @@ fn extract_disk_path(xml: &str) -> Option<String> {
 /// The `pool/image` name of the first network-backed (`type='network'`, e.g.
 /// Ceph/RBD) data disk in a domain XML, if any.
 fn extract_rbd_source(xml: &str) -> Option<String> {
-    machina_core::xml::split_blocks(xml, "disk").into_iter().find_map(|block| {
-        if machina_core::xml::extract_attr(&block, "disk", "device").as_deref() != Some("disk") {
-            return None;
-        }
-        if machina_core::xml::extract_attr(&block, "disk", "type").as_deref() != Some("network") {
-            return None;
-        }
-        machina_core::xml::extract_attr(&block, "source", "name")
-    })
+    machina_core::xml::split_blocks(xml, "disk")
+        .into_iter()
+        .find_map(|block| {
+            if machina_core::xml::extract_attr(&block, "disk", "device").as_deref() != Some("disk")
+            {
+                return None;
+            }
+            if machina_core::xml::extract_attr(&block, "disk", "type").as_deref() != Some("network")
+            {
+                return None;
+            }
+            machina_core::xml::extract_attr(&block, "source", "name")
+        })
 }
 
 /// Where a VM's (single, data) disk actually lives — a local file, or a
@@ -1644,7 +1666,10 @@ mod cpu_parse_tests {
                    <model fallback='allow'>Skylake-Client-IBRS</model>\
                    </cpu>\
                    <devices><tpm model='tpm-crb'/><memballoon model='virtio'/></devices></domain>";
-        assert_eq!(parse_domain_cpu(xml).as_deref(), Some("Skylake-Client-IBRS"));
+        assert_eq!(
+            parse_domain_cpu(xml).as_deref(),
+            Some("Skylake-Client-IBRS")
+        );
     }
 
     #[test]
@@ -1748,7 +1773,10 @@ mod cpu_percent_tests {
     #[test]
     fn first_sample_has_nothing_to_diff_against() {
         let mut samples = HashMap::new();
-        assert_eq!(sample_cpu_percent(&mut samples, "vm1", 1_000_000_000, 2), 0.0);
+        assert_eq!(
+            sample_cpu_percent(&mut samples, "vm1", 1_000_000_000, 2),
+            0.0
+        );
         assert!(samples.contains_key("vm1"));
     }
 
@@ -1777,7 +1805,10 @@ mod cpu_percent_tests {
         // Can happen across a VM restart/migration where cpu_time_ns resets.
         let mut samples = HashMap::new();
         let now = Instant::now();
-        samples.insert("vm1".to_string(), (5_000_000_000u64, now - Duration::from_secs(1)));
+        samples.insert(
+            "vm1".to_string(),
+            (5_000_000_000u64, now - Duration::from_secs(1)),
+        );
         let pct = sample_cpu_percent(&mut samples, "vm1", 1_000_000_000, 2);
         assert_eq!(pct, 0.0);
     }

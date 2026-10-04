@@ -149,7 +149,11 @@ async fn evaluate(state: &AppState, t: &WatchTarget) -> anyhow::Result<()> {
         .await?
         .unwrap_or(true),
     };
-    let restarts_in_window = if window_expired { 0 } else { t.restarts_this_hour };
+    let restarts_in_window = if window_expired {
+        0
+    } else {
+        t.restarts_this_hour
+    };
     if restarts_in_window >= t.max_restarts_per_hour {
         tracing::warn!(vm = %t.name, "watchdog: per-hour restart cap reached ({}), not resetting", t.max_restarts_per_hour);
         return Ok(());
@@ -216,7 +220,10 @@ async fn evaluate(state: &AppState, t: &WatchTarget) -> anyhow::Result<()> {
     .await;
     state.emit_event(
         "vm.watchdog.reset",
-        format!("Watchdog reset hung VM '{}' ({}/{} this hour)", t.name, new_count, t.max_restarts_per_hour),
+        format!(
+            "Watchdog reset hung VM '{}' ({}/{} this hour)",
+            t.name, new_count, t.max_restarts_per_hour
+        ),
     );
     tracing::warn!(vm = %t.name, "watchdog: hard-reset hung guest ({}/{} this hour)", new_count, t.max_restarts_per_hour);
     Ok(())
@@ -232,7 +239,9 @@ async fn clear_unhealthy(state: &AppState, vm_id: Uuid) -> anyhow::Result<()> {
 
 /// True if the guest agent responds. A connect/RPC failure is treated as unreachable.
 async fn probe_guest_reachable(state: &AppState, t: &WatchTarget) -> bool {
-    let Some(host_id) = t.host_id else { return false };
+    let Some(host_id) = t.host_id else {
+        return false;
+    };
     let Ok(addr) = host_agent_addr(&state.pool, host_id).await else {
         return false;
     };

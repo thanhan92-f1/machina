@@ -106,7 +106,10 @@ pub struct SpriteBootResult {
 /// transiently define+start it in one libvirt call (`Domain::create_xml`,
 /// not persistent — no `virsh undefine` needed on teardown beyond what
 /// `delete_vm_with_options` already does for a running domain).
-pub fn boot_sprite(conn: &Connect, req: &SpriteBootRequest) -> Result<SpriteBootResult, LibvirtError> {
+pub fn boot_sprite(
+    conn: &Connect,
+    req: &SpriteBootRequest,
+) -> Result<SpriteBootResult, LibvirtError> {
     let dest = find_disk_path(conn, req.domain_name)?;
     let dest_path = Path::new(&dest);
     if dest_path.exists() {
@@ -234,13 +237,22 @@ mod tests {
         // outcome is asserted; the contents aren't test-environment-stable.
         let names = list_golden_images().expect("missing dir must not be an error");
         for name in &names {
-            assert!(!name.contains('/'), "golden image name should be bare: {name}");
+            assert!(
+                !name.contains('/'),
+                "golden image name should be bare: {name}"
+            );
         }
     }
 
     #[test]
     fn generated_xml_has_no_network_or_graphics_devices_by_default() {
-        let xml = generate_sprite_domain_xml("sprite-abc", "/var/lib/libvirt/images/sprite-abc.qcow2", 1, 512, false);
+        let xml = generate_sprite_domain_xml(
+            "sprite-abc",
+            "/var/lib/libvirt/images/sprite-abc.qcow2",
+            1,
+            512,
+            false,
+        );
         assert!(!xml.contains("<interface"));
         assert!(!xml.contains("<graphics"));
         assert!(!xml.contains("<video"));
@@ -251,7 +263,13 @@ mod tests {
 
     #[test]
     fn generated_xml_adds_default_network_interface_when_egress_requested() {
-        let xml = generate_sprite_domain_xml("sprite-abc", "/var/lib/libvirt/images/sprite-abc.qcow2", 1, 512, true);
+        let xml = generate_sprite_domain_xml(
+            "sprite-abc",
+            "/var/lib/libvirt/images/sprite-abc.qcow2",
+            1,
+            512,
+            true,
+        );
         assert!(xml.contains("<interface type='network'>"));
         assert!(xml.contains("<source network='default'/>"));
         // vsock stays present regardless — network_egress adds a NIC, it

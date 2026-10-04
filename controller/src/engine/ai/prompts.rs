@@ -142,10 +142,11 @@ async fn can_modify(pool: &SqlitePool, id: Uuid, actor: &str, role: &str) -> any
     if role == "admin" {
         return Ok(true);
     }
-    let owner_id: Option<String> = sqlx::query_scalar("SELECT owner_id FROM ai_prompts WHERE id = ?")
-        .bind(id)
-        .fetch_optional(pool)
-        .await?;
+    let owner_id: Option<String> =
+        sqlx::query_scalar("SELECT owner_id FROM ai_prompts WHERE id = ?")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
     Ok(owner_id.as_deref() == Some(actor))
 }
 
@@ -182,11 +183,13 @@ pub async fn patch_prompt(
             .await?;
     }
     if let Some(v) = &body.agent_id {
-        sqlx::query("UPDATE ai_prompts SET agent_id = ?, updated_at = datetime('now') WHERE id = ?")
-            .bind(v)
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "UPDATE ai_prompts SET agent_id = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(v)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
     tx.commit().await?;
     get_prompt(pool, id)

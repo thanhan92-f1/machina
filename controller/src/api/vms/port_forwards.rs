@@ -33,14 +33,12 @@ fn validate_vm_port_forward_fields(
     vm_port: u16,
 ) -> Result<(), ApiError> {
     use machina_core::libvirt::host_network::{
-        validate_port_forward_host_port, validate_port_forward_protocol, validate_port_forward_vm_port,
+        validate_port_forward_host_port, validate_port_forward_protocol,
+        validate_port_forward_vm_port,
     };
-    validate_port_forward_protocol(protocol)
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
-    validate_port_forward_host_port(host_port)
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
-    validate_port_forward_vm_port(vm_port)
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
+    validate_port_forward_protocol(protocol).map_err(|e| ApiError::bad_request(e.to_string()))?;
+    validate_port_forward_host_port(host_port).map_err(|e| ApiError::bad_request(e.to_string()))?;
+    validate_port_forward_vm_port(vm_port).map_err(|e| ApiError::bad_request(e.to_string()))?;
     Ok(())
 }
 
@@ -80,10 +78,7 @@ pub async fn list_vm_port_forwards(
     let rules = crate::agent_client::list_port_forwards(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    let filtered: Vec<_> = rules
-        .into_iter()
-        .filter(|r| r.vm_ip == guest_ip)
-        .collect();
+    let filtered: Vec<_> = rules.into_iter().filter(|r| r.vm_ip == guest_ip).collect();
     Ok(Json(filtered))
 }
 

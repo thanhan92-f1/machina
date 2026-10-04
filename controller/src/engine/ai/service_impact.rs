@@ -21,7 +21,9 @@ pub struct ServiceImpactResult {
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 pub async fn simulate(
@@ -31,11 +33,12 @@ pub async fn simulate(
     let name = q.service.trim();
     let pattern = format!("%{}%", escape_like(name));
 
-    let group_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT id FROM application_groups WHERE name LIKE ? ESCAPE '\\' LIMIT 1")
-            .bind(&pattern)
-            .fetch_optional(pool)
-            .await?;
+    let group_id: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT id FROM application_groups WHERE name LIKE ? ESCAPE '\\' LIMIT 1",
+    )
+    .bind(&pattern)
+    .fetch_optional(pool)
+    .await?;
 
     let mut affected_vms = Vec::new();
     let mut affected_hosts = Vec::new();

@@ -258,7 +258,10 @@ async fn network_name(pool: &sqlx::SqlitePool, id: Uuid) -> Result<String, ApiEr
         .ok_or_else(|| ApiError::bad_request("network not found"))
 }
 
-async fn resolve_online_host(pool: &sqlx::SqlitePool, host_id: Option<Uuid>) -> Result<Uuid, ApiError> {
+async fn resolve_online_host(
+    pool: &sqlx::SqlitePool,
+    host_id: Option<Uuid>,
+) -> Result<Uuid, ApiError> {
     if let Some(h) = host_id {
         return Ok(h);
     }

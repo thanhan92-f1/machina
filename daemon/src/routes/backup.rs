@@ -111,10 +111,10 @@ fn validate_backup_id(id: &str) -> Result<(), AppError> {
     // the archive member name (same flag-injection class as
     // validate_login_username/validate_service_name/validate_package_token).
     if id.starts_with('-') {
-        return Err(
-            machina_core::LibvirtError::Invalid("Backup id must not start with '-'".to_string())
-                .into(),
-        );
+        return Err(machina_core::LibvirtError::Invalid(
+            "Backup id must not start with '-'".to_string(),
+        )
+        .into());
     }
     Ok(())
 }
@@ -267,10 +267,9 @@ fn parse_backup_meta(dir: &std::path::Path, dir_name: &str) -> serde_json::Value
                     "vm_count" => vm_count = value.parse().unwrap_or(0),
                     "net_count" => net_count = value.parse().unwrap_or(0),
                     "with_disks" => with_disks = value == "true" || value == "1",
-                    "nfs_target"
-                        if !value.is_empty() => {
-                            nfs_target = value.to_string();
-                        }
+                    "nfs_target" if !value.is_empty() => {
+                        nfs_target = value.to_string();
+                    }
                     _ => {}
                 }
             }

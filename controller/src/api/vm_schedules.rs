@@ -67,7 +67,9 @@ pub async fn create_vm_schedule(
     require_operator(&actor)?;
 
     if !VALID_ACTIONS.contains(&body.action.as_str()) {
-        return Err(ApiError::bad_request("action must be start, shutdown, stop, or snapshot"));
+        return Err(ApiError::bad_request(
+            "action must be start, shutdown, stop, or snapshot",
+        ));
     }
     if body.interval_minutes < 1 {
         return Err(ApiError::bad_request("interval_minutes must be >= 1"));

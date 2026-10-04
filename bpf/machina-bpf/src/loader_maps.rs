@@ -14,27 +14,42 @@ use crate::policy::Prefix;
 
 impl Datapath {
     fn hash<K: Pod, V: Pod>(&mut self, name: &str) -> Result<HashMap<&mut MapData, K, V>> {
-        let m = self.ebpf.map_mut(name).ok_or_else(|| anyhow!("map {name} missing"))?;
+        let m = self
+            .ebpf
+            .map_mut(name)
+            .ok_or_else(|| anyhow!("map {name} missing"))?;
         Ok(HashMap::try_from(m)?)
     }
 
     fn lpm<K: Pod, V: Pod>(&mut self, name: &str) -> Result<LpmTrie<&mut MapData, K, V>> {
-        let m = self.ebpf.map_mut(name).ok_or_else(|| anyhow!("map {name} missing"))?;
+        let m = self
+            .ebpf
+            .map_mut(name)
+            .ok_or_else(|| anyhow!("map {name} missing"))?;
         Ok(LpmTrie::try_from(m)?)
     }
 
     fn array<V: Pod>(&mut self, name: &str) -> Result<Array<&mut MapData, V>> {
-        let m = self.ebpf.map_mut(name).ok_or_else(|| anyhow!("map {name} missing"))?;
+        let m = self
+            .ebpf
+            .map_mut(name)
+            .ok_or_else(|| anyhow!("map {name} missing"))?;
         Ok(Array::try_from(m)?)
     }
 
     pub fn take_ringbuf(&mut self, name: &str) -> Result<RingBuf<MapData>> {
-        let m = self.ebpf.take_map(name).ok_or_else(|| anyhow!("map {name} missing"))?;
+        let m = self
+            .ebpf
+            .take_map(name)
+            .ok_or_else(|| anyhow!("map {name} missing"))?;
         Ok(RingBuf::try_from(m)?)
     }
 
     pub fn take_hash<K: Pod, V: Pod>(&mut self, name: &str) -> Result<HashMap<MapData, K, V>> {
-        let m = self.ebpf.take_map(name).ok_or_else(|| anyhow!("map {name} missing"))?;
+        let m = self
+            .ebpf
+            .take_map(name)
+            .ok_or_else(|| anyhow!("map {name} missing"))?;
         Ok(HashMap::try_from(m)?)
     }
 
@@ -58,7 +73,8 @@ impl Datapath {
     }
 
     pub fn set_iface_cfg(&mut self, ifindex: u32, cfg: IfaceCfg) -> Result<()> {
-        self.hash::<u32, IfaceCfg>("IFACE_CFG")?.insert(ifindex, cfg, 0)?;
+        self.hash::<u32, IfaceCfg>("IFACE_CFG")?
+            .insert(ifindex, cfg, 0)?;
         Ok(())
     }
 
@@ -99,7 +115,10 @@ impl Datapath {
 
     /// Per-interface counters summed across CPUs.
     pub fn iface_stats(&mut self) -> Result<Vec<(u32, IfaceStats)>> {
-        let m = self.ebpf.map_mut("IFACE_STATS").ok_or_else(|| anyhow!("map IFACE_STATS missing"))?;
+        let m = self
+            .ebpf
+            .map_mut("IFACE_STATS")
+            .ok_or_else(|| anyhow!("map IFACE_STATS missing"))?;
         let m: PerCpuHashMap<&mut MapData, u32, IfaceStats> = PerCpuHashMap::try_from(m)?;
         Ok(m.iter()
             .filter_map(|r| r.ok())
@@ -126,7 +145,8 @@ impl Datapath {
     }
 
     pub fn set_cgroup_scope(&mut self, cgroup_id: u64, scope: u32) -> Result<()> {
-        self.hash::<u64, u32>("CGROUP_SCOPE")?.insert(cgroup_id, scope, 0)?;
+        self.hash::<u64, u32>("CGROUP_SCOPE")?
+            .insert(cgroup_id, scope, 0)?;
         Ok(())
     }
 
@@ -137,7 +157,8 @@ impl Datapath {
     }
 
     pub fn set_scope_flags(&mut self, scope: u32, flags: u32) -> Result<()> {
-        self.hash::<u32, u32>("SCOPE_FLAGS")?.insert(scope, flags, 0)?;
+        self.hash::<u32, u32>("SCOPE_FLAGS")?
+            .insert(scope, flags, 0)?;
         Ok(())
     }
 
@@ -182,13 +203,23 @@ impl Datapath {
         )
     }
 
-    pub fn allow_insert(&mut self, scope: u32, proto: u8, port: u16, p: &Prefix, policy: u32) -> Result<()> {
+    pub fn allow_insert(
+        &mut self,
+        scope: u32,
+        proto: u8,
+        port: u16,
+        p: &Prefix,
+        policy: u32,
+    ) -> Result<()> {
         let v = RuleVal {
             policy_id: policy,
             flags: 0,
         };
-        self.lpm::<AllowKey, RuleVal>("ALLOW_LPM")?
-            .insert(&Self::allow_key(scope, proto, port, p), v, 0)?;
+        self.lpm::<AllowKey, RuleVal>("ALLOW_LPM")?.insert(
+            &Self::allow_key(scope, proto, port, p),
+            v,
+            0,
+        )?;
         Ok(())
     }
 
@@ -229,7 +260,8 @@ impl Datapath {
     }
 
     pub fn exec_insert(&mut self, hash: u64, policy: u32) -> Result<()> {
-        self.hash::<u64, u32>("EXEC_DENY")?.insert(hash, policy, 0)?;
+        self.hash::<u64, u32>("EXEC_DENY")?
+            .insert(hash, policy, 0)?;
         Ok(())
     }
 
@@ -310,8 +342,12 @@ impl Datapath {
     /// Point a dispatcher tail-call slot at an XDP program (loading it).
     pub fn xdp_set_slot(&mut self, slot: u32, prog: &str) -> Result<()> {
         let fd = self.xdp_program(prog)?.fd()?.try_clone()?;
-        let map = self.ebpf.map_mut("XDP_PROGS").ok_or_else(|| anyhow!("map XDP_PROGS missing"))?;
-        let mut arr: aya::maps::ProgramArray<&mut MapData> = aya::maps::ProgramArray::try_from(map)?;
+        let map = self
+            .ebpf
+            .map_mut("XDP_PROGS")
+            .ok_or_else(|| anyhow!("map XDP_PROGS missing"))?;
+        let mut arr: aya::maps::ProgramArray<&mut MapData> =
+            aya::maps::ProgramArray::try_from(map)?;
         arr.set(slot, &fd, 0)?;
         Ok(())
     }
@@ -320,7 +356,10 @@ impl Datapath {
 
     /// The map takes its own socket reference; the caller may close `fd`.
     pub fn xsk_set(&mut self, queue: u32, fd: impl std::os::fd::AsRawFd) -> Result<()> {
-        let map = self.ebpf.map_mut("AFXDP_XSKS").ok_or_else(|| anyhow!("map AFXDP_XSKS missing"))?;
+        let map = self
+            .ebpf
+            .map_mut("AFXDP_XSKS")
+            .ok_or_else(|| anyhow!("map AFXDP_XSKS missing"))?;
         let mut m: aya::maps::XskMap<&mut MapData> = aya::maps::XskMap::try_from(map)?;
         m.set(queue, fd, 0)?;
         Ok(())
@@ -369,8 +408,15 @@ impl Datapath {
     }
 
     /// Per-CPU hash entries folded with `add`.
-    pub fn percpu_sum<K: Pod, V: Pod + Default>(&mut self, map: &str, add: impl Fn(&mut V, &V)) -> Result<Vec<(K, V)>> {
-        let m = self.ebpf.map_mut(map).ok_or_else(|| anyhow!("map {map} missing"))?;
+    pub fn percpu_sum<K: Pod, V: Pod + Default>(
+        &mut self,
+        map: &str,
+        add: impl Fn(&mut V, &V),
+    ) -> Result<Vec<(K, V)>> {
+        let m = self
+            .ebpf
+            .map_mut(map)
+            .ok_or_else(|| anyhow!("map {map} missing"))?;
         let m: PerCpuHashMap<&mut MapData, K, V> = PerCpuHashMap::try_from(m)?;
         Ok(m.iter()
             .filter_map(|r| r.ok())
@@ -403,8 +449,15 @@ impl Datapath {
     }
 
     /// Insert into an LPM trie keyed by a 16-byte (IPv4-mapped) address.
-    pub fn addr_lpm_insert<V: Pod>(&mut self, map: &str, addr: [u8; ADDR_LEN], bits: u32, v: V) -> Result<()> {
-        self.lpm::<[u8; ADDR_LEN], V>(map)?.insert(&Key::new(bits, addr), v, 0)?;
+    pub fn addr_lpm_insert<V: Pod>(
+        &mut self,
+        map: &str,
+        addr: [u8; ADDR_LEN],
+        bits: u32,
+        v: V,
+    ) -> Result<()> {
+        self.lpm::<[u8; ADDR_LEN], V>(map)?
+            .insert(&Key::new(bits, addr), v, 0)?;
         Ok(())
     }
 
@@ -418,8 +471,16 @@ impl Datapath {
     }
 
     /// One per-CPU array slot folded with `add`.
-    pub fn percpu_array_sum<V: Pod + Default>(&mut self, map: &str, index: u32, add: impl Fn(&mut V, &V)) -> Result<V> {
-        let m = self.ebpf.map_mut(map).ok_or_else(|| anyhow!("map {map} missing"))?;
+    pub fn percpu_array_sum<V: Pod + Default>(
+        &mut self,
+        map: &str,
+        index: u32,
+        add: impl Fn(&mut V, &V),
+    ) -> Result<V> {
+        let m = self
+            .ebpf
+            .map_mut(map)
+            .ok_or_else(|| anyhow!("map {map} missing"))?;
         let m: aya::maps::PerCpuArray<&mut MapData, V> = aya::maps::PerCpuArray::try_from(m)?;
         let mut s = V::default();
         for c in m.get(&index, 0)?.iter() {

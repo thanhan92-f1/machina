@@ -116,7 +116,10 @@ pub fn get_memtune(conn: &Connect, name: &str) -> Result<MemTuneInfo, LibvirtErr
 /// True when the domain is in a state where a live change applies (running/blocked/
 /// paused/pmsuspended). Used to decide hotplug (LIVE) vs boot-time (CONFIG) changes.
 fn domain_is_live(domain: &Domain) -> bool {
-    matches!(domain.get_info().map(|i| i.state).unwrap_or(5), 1 | 2 | 3 | 7)
+    matches!(
+        domain.get_info().map(|i| i.state).unwrap_or(5),
+        1 | 2 | 3 | 7
+    )
 }
 
 pub fn set_vcpus(conn: &Connect, name: &str, vcpus: u32) -> Result<(), LibvirtError> {
@@ -129,7 +132,9 @@ pub fn set_vcpus(conn: &Connect, name: &str, vcpus: u32) -> Result<(), LibvirtEr
     // raising the persistent max via define_xml + CONFIG-only so it still applies on next
     // boot rather than failing the whole operation.
     if domain_is_live(&domain)
-        && domain.set_vcpus_flags(vcpus, AFFECT_LIVE_AND_CONFIG).is_ok()
+        && domain
+            .set_vcpus_flags(vcpus, AFFECT_LIVE_AND_CONFIG)
+            .is_ok()
     {
         return Ok(());
     }
@@ -143,11 +148,7 @@ pub fn set_vcpus(conn: &Connect, name: &str, vcpus: u32) -> Result<(), LibvirtEr
 
 /// Raise inactive-domain max vCPUs when `vcpus` exceeds the current maximum.
 /// Live hotplug still cannot exceed the max that was active at guest start — that needs a reboot.
-fn ensure_persistent_vcpu_max(
-    conn: &Connect,
-    name: &str,
-    vcpus: u32,
-) -> Result<(), LibvirtError> {
+fn ensure_persistent_vcpu_max(conn: &Connect, name: &str, vcpus: u32) -> Result<(), LibvirtError> {
     use virt::sys::VIR_DOMAIN_XML_INACTIVE;
 
     let domain = lookup_domain(conn, name)?;
@@ -167,7 +168,11 @@ fn ensure_persistent_vcpu_max(
     Ok(())
 }
 
-pub fn set_memory(conn: &Connect, name: &str, memory_mb: u64) -> Result<MemoryApplyOutcome, LibvirtError> {
+pub fn set_memory(
+    conn: &Connect,
+    name: &str,
+    memory_mb: u64,
+) -> Result<MemoryApplyOutcome, LibvirtError> {
     crate::validate::validate_memory_mb(memory_mb)?;
 
     let domain = lookup_domain(conn, name)?;
@@ -287,7 +292,11 @@ pub fn set_cpu_scheduler_partial(
     Ok(())
 }
 
-pub fn set_memory_balloon(conn: &Connect, name: &str, memory_mb: u64) -> Result<MemoryApplyOutcome, LibvirtError> {
+pub fn set_memory_balloon(
+    conn: &Connect,
+    name: &str,
+    memory_mb: u64,
+) -> Result<MemoryApplyOutcome, LibvirtError> {
     crate::validate::validate_memory_mb(memory_mb)?;
     let domain = lookup_domain(conn, name)?;
     let kb = memory_mb * 1024;

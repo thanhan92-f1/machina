@@ -920,7 +920,8 @@ pub fn route_spotlight(query: &str, online_hosts: i64, vm_hits: Vec<SearchHit>) 
         || ql.contains("evacuate")
         || (ql.contains("migrate") && ql.contains("host"))
     {
-        if let Some(host_hint) = extract_after(&ql, "host ").or_else(|| extract_after(&ql, "down ")) {
+        if let Some(host_hint) = extract_after(&ql, "host ").or_else(|| extract_after(&ql, "down "))
+        {
             let action = if ql.contains("evacuate") || ql.contains("migrate") {
                 "migrate"
             } else {

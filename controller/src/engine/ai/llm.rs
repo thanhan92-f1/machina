@@ -151,8 +151,7 @@ fn openai_base(resolved: &ResolvedProvider) -> String {
         let base = resolved.base_url.trim().trim_end_matches('/');
         return format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
-            base,
-            resolved.deployment_name
+            base, resolved.deployment_name
         );
     }
     if !resolved.base_url.trim().is_empty() {
@@ -169,7 +168,11 @@ fn openai_base(resolved: &ResolvedProvider) -> String {
         "ollama" => "http://127.0.0.1:11434/v1/chat/completions".into(),
         "vllm" => {
             let base = resolved.base_url.trim().trim_end_matches('/');
-            let base = if base.is_empty() { "http://127.0.0.1:8000" } else { base };
+            let base = if base.is_empty() {
+                "http://127.0.0.1:8000"
+            } else {
+                base
+            };
             format!("{base}/v1/chat/completions")
         }
         _ => "https://api.openai.com/v1/chat/completions".into(),
@@ -260,7 +263,11 @@ async fn anthropic_complete(
     let v: serde_json::Value = resp.json().await?;
     let text = v["content"][0]["text"].as_str().map(String::from);
     if text.is_none() {
-        tracing::warn!(provider = "anthropic", "unexpected Anthropic response shape: {}", v);
+        tracing::warn!(
+            provider = "anthropic",
+            "unexpected Anthropic response shape: {}",
+            v
+        );
     }
     Ok(text)
 }
@@ -304,7 +311,11 @@ async fn google_complete(
         .as_str()
         .map(String::from);
     if text.is_none() {
-        tracing::warn!(provider = "google", "unexpected Google response shape (safety block or empty parts?): {}", v);
+        tracing::warn!(
+            provider = "google",
+            "unexpected Google response shape (safety block or empty parts?): {}",
+            v
+        );
     }
     Ok(text)
 }

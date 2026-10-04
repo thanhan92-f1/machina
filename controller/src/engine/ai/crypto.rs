@@ -12,9 +12,9 @@
 
 use std::sync::OnceLock;
 
-use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::OsRng;
+use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Nonce};
 
 const ENC_PREFIX: &str = "enc:";
@@ -46,8 +46,8 @@ fn master_key() -> Option<&'static [u8; 32]> {
 
 /// Encrypt `plaintext` with AES-256-GCM. Returns `enc:<b64(nonce||ct)>`.
 fn encrypt(key: &[u8; 32], plaintext: &str) -> anyhow::Result<String> {
-    let cipher = Aes256Gcm::new_from_slice(key)
-        .map_err(|e| anyhow::anyhow!("aes-gcm key init: {e}"))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(key).map_err(|e| anyhow::anyhow!("aes-gcm key init: {e}"))?;
     let mut nonce_bytes = [0u8; 12];
     OsRng.fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
@@ -57,7 +57,10 @@ fn encrypt(key: &[u8; 32], plaintext: &str) -> anyhow::Result<String> {
     let mut blob = nonce_bytes.to_vec();
     blob.extend_from_slice(&ciphertext);
     use base64::Engine as _;
-    Ok(format!("{ENC_PREFIX}{}", base64::engine::general_purpose::STANDARD.encode(&blob)))
+    Ok(format!(
+        "{ENC_PREFIX}{}",
+        base64::engine::general_purpose::STANDARD.encode(&blob)
+    ))
 }
 
 fn decrypt(key: &[u8; 32], stored: &str) -> anyhow::Result<String> {
@@ -72,12 +75,12 @@ fn decrypt(key: &[u8; 32], stored: &str) -> anyhow::Result<String> {
         anyhow::bail!("encrypted blob too short (need ≥28 bytes: 12 nonce + 16 GCM tag)");
     }
     let (nonce_bytes, ciphertext) = blob.split_at(12);
-    let cipher = Aes256Gcm::new_from_slice(key)
-        .map_err(|e| anyhow::anyhow!("aes-gcm key init: {e}"))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(key).map_err(|e| anyhow::anyhow!("aes-gcm key init: {e}"))?;
     let nonce = Nonce::from_slice(nonce_bytes);
-    let plaintext_bytes = cipher
-        .decrypt(nonce, ciphertext)
-        .map_err(|_| anyhow::anyhow!("API key decryption failed — wrong MACHINA_API_KEY_MASTER_KEY?"))?;
+    let plaintext_bytes = cipher.decrypt(nonce, ciphertext).map_err(|_| {
+        anyhow::anyhow!("API key decryption failed — wrong MACHINA_API_KEY_MASTER_KEY?")
+    })?;
     String::from_utf8(plaintext_bytes).map_err(|e| anyhow::anyhow!("utf8: {e}"))
 }
 
@@ -92,8 +95,9 @@ pub fn store_api_key(plaintext: &str) -> anyhow::Result<String> {
 /// Retrieve an API key from storage. Decrypts `enc:` values; passes through plaintext.
 pub fn load_api_key(stored: &str) -> anyhow::Result<String> {
     if stored.starts_with(ENC_PREFIX) {
-        let k = master_key()
-            .ok_or_else(|| anyhow::anyhow!("API key is encrypted but MACHINA_API_KEY_MASTER_KEY is not configured"))?;
+        let k = master_key().ok_or_else(|| {
+            anyhow::anyhow!("API key is encrypted but MACHINA_API_KEY_MASTER_KEY is not configured")
+        })?;
         decrypt(k, stored)
     } else {
         Ok(stored.to_owned())

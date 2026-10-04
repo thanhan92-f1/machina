@@ -153,7 +153,10 @@ fn drs_candidate(
     if rec.score < DRS_MIN_SCORE {
         return None;
     }
-    let (vm_id, dest_id) = match (Uuid::parse_str(&rec.vm_id), Uuid::parse_str(&rec.to_host_id)) {
+    let (vm_id, dest_id) = match (
+        Uuid::parse_str(&rec.vm_id),
+        Uuid::parse_str(&rec.to_host_id),
+    ) {
         (Ok(v), Ok(d)) => (v, d),
         _ => {
             tracing::warn!(vm_id = %rec.vm_id, "DRS: malformed UUID in recommendation, skipping");
@@ -356,9 +359,16 @@ pub async fn fence_host(state: &AppState, host_id: Uuid) -> anyhow::Result<bool>
             // Fallback: the operator-configured shell fence, executed by the host's
             // own agent. Only succeeds if that agent is still reachable.
             let shell_cmd = std::env::var("MACHINA_FENCE_COMMAND").unwrap_or_default();
-            let result =
-                fence_via_agent(&agent_addr, &hostname, &method, &ipmi_addr, &ipmi_user, &ipmi_pass, &shell_cmd)
-                    .await;
+            let result = fence_via_agent(
+                &agent_addr,
+                &hostname,
+                &method,
+                &ipmi_addr,
+                &ipmi_user,
+                &ipmi_pass,
+                &shell_cmd,
+            )
+            .await;
             ("fence", shell_cmd, result)
         };
 
@@ -391,13 +401,19 @@ pub async fn fence_host(state: &AppState, host_id: Uuid) -> anyhow::Result<bool>
 }
 
 /// Power off a host via its BMC, executed from the controller (not the host).
-async fn fence_ipmi_from_controller(address: &str, user: &str, pass: &str) -> anyhow::Result<String> {
+async fn fence_ipmi_from_controller(
+    address: &str,
+    user: &str,
+    pass: &str,
+) -> anyhow::Result<String> {
     if address.is_empty() || user.is_empty() {
         anyhow::bail!("IPMI address and username are required for controller-side fencing");
     }
     // Password via IPMI_PASSWORD env (`-E`), never on argv where `ps`/proc would leak it.
     let out = tokio::process::Command::new("ipmitool")
-        .args(["-I", "lanplus", "-H", address, "-U", user, "-E", "power", "off"])
+        .args([
+            "-I", "lanplus", "-H", address, "-U", user, "-E", "power", "off",
+        ])
         .env("IPMI_PASSWORD", pass)
         .output()
         .await
@@ -407,7 +423,10 @@ async fn fence_ipmi_from_controller(address: &str, user: &str, pass: &str) -> an
     if out.status.success() {
         Ok(format!("IPMI power off {address} (from controller)"))
     } else {
-        anyhow::bail!("ipmitool failed: {}", String::from_utf8_lossy(&out.stderr).trim());
+        anyhow::bail!(
+            "ipmitool failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
     }
 }
 
@@ -433,7 +452,13 @@ async fn fence_via_agent(
         )
     })??;
     let resp = agent_client::fence_host(
-        &mut client, hostname, method, ipmi_addr, ipmi_user, ipmi_pass, shell_cmd,
+        &mut client,
+        hostname,
+        method,
+        ipmi_addr,
+        ipmi_user,
+        ipmi_pass,
+        shell_cmd,
     )
     .await?;
     if resp.ok {
@@ -494,7 +519,9 @@ mod drs_decision_tests {
         assert_eq!(first, Some((vm_a, dest)));
         targeted.insert(dest);
 
-        assert!(drs_candidate(&rec(&vm_b.to_string(), &dest.to_string(), 60.0), &targeted).is_none());
+        assert!(
+            drs_candidate(&rec(&vm_b.to_string(), &dest.to_string(), 60.0), &targeted).is_none()
+        );
         // A different destination is still allowed.
         let other = Uuid::from_u128(4);
         assert_eq!(

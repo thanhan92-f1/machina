@@ -74,7 +74,8 @@ pub async fn compute_recommendations(
     // "best" and all get recommended onto it — collectively overcommitting a host
     // that only had room for one of them. Each accepted recommendation updates the
     // destination's tally before the next VM is considered.
-    let mut committed: std::collections::HashMap<Uuid, (i64, i32)> = std::collections::HashMap::new();
+    let mut committed: std::collections::HashMap<Uuid, (i64, i32)> =
+        std::collections::HashMap::new();
 
     for (vm_id, vm_name, host_id, memory_mib, vm_tags) in vms {
         let Some(source) = hosts.iter().find(|h| h.id == host_id) else {
@@ -361,7 +362,9 @@ async fn host_anti_affinity_map(
     let mut map: std::collections::HashMap<Uuid, std::collections::HashSet<String>> =
         std::collections::HashMap::new();
     for (host_id, tags) in rows {
-        map.entry(host_id).or_default().extend(anti_affinity_tags(&tags));
+        map.entry(host_id)
+            .or_default()
+            .extend(anti_affinity_tags(&tags));
     }
     Ok(map)
 }
@@ -418,13 +421,11 @@ mod tests {
         .execute(&state.pool)
         .await
         .unwrap();
-        sqlx::query(
-            "UPDATE hosts SET memory_total_mib = 4096, memory_used_mib = 512 WHERE id = ?",
-        )
-        .bind(roomy)
-        .execute(&state.pool)
-        .await
-        .unwrap();
+        sqlx::query("UPDATE hosts SET memory_total_mib = 4096, memory_used_mib = 512 WHERE id = ?")
+            .bind(roomy)
+            .execute(&state.pool)
+            .await
+            .unwrap();
 
         // A 2 GiB VM cannot fit on `full` (0 MiB free) and must land on `roomy`.
         let picked = pick_host_for_vm(&state.pool, &[], 2048).await.unwrap();

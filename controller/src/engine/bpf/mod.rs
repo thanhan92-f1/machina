@@ -51,12 +51,11 @@ fn local_host() -> HostRef {
 /// Registered hosts (all states). Falls back to the local bpfd socket when
 /// no host is registered and the socket exists.
 pub async fn hosts(pool: &SqlitePool) -> Vec<HostRef> {
-    let rows: Vec<(Uuid, String, String, String)> = sqlx::query_as(
-        "SELECT id, hostname, agent_grpc_addr, state FROM hosts ORDER BY hostname",
-    )
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let rows: Vec<(Uuid, String, String, String)> =
+        sqlx::query_as("SELECT id, hostname, agent_grpc_addr, state FROM hosts ORDER BY hostname")
+            .fetch_all(pool)
+            .await
+            .unwrap_or_default();
     let mut out: Vec<HostRef> = rows
         .into_iter()
         .map(|(id, hostname, addr, state)| HostRef {
@@ -131,10 +130,11 @@ pub async fn host_statuses(pool: &SqlitePool) -> Vec<HostBpfStatus> {
         .await
         .into_iter()
         .map(|(h, res)| {
-            let (status, error) = match res.and_then(|v| Ok(serde_json::from_value::<BpfStatus>(v)?)) {
-                Ok(s) => (Some(s), None),
-                Err(e) => (None, Some(format!("{e:#}"))),
-            };
+            let (status, error) =
+                match res.and_then(|v| Ok(serde_json::from_value::<BpfStatus>(v)?)) {
+                    Ok(s) => (Some(s), None),
+                    Err(e) => (None, Some(format!("{e:#}"))),
+                };
             HostBpfStatus {
                 host_id: h.id,
                 hostname: h.hostname,

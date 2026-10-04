@@ -92,7 +92,9 @@ pub async fn sync_policies(policies_json: &str, owned_prefix: &str) -> anyhow::R
     let mut removed = Vec::new();
     for p in current.iter().filter(|p| p.id.starts_with(owned_prefix)) {
         if !wanted.contains(p.id.as_str()) {
-            client.call(&Request::RemovePolicy { id: p.id.clone() }).await?;
+            client
+                .call(&Request::RemovePolicy { id: p.id.clone() })
+                .await?;
             removed.push(p.id.clone());
         }
     }

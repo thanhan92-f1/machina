@@ -48,7 +48,9 @@ pub struct FlowFilter {
 }
 
 fn in_prefix(addr: &str, cidr: &str) -> bool {
-    let (Ok(a), Ok(p)) = (parse_prefix(addr), parse_prefix(cidr)) else { return false };
+    let (Ok(a), Ok(p)) = (parse_prefix(addr), parse_prefix(cidr)) else {
+        return false;
+    };
     if a.bits < p.bits {
         return false;
     }
@@ -66,7 +68,9 @@ fn in_prefix(addr: &str, cidr: &str) -> bool {
 
 impl FlowFilter {
     pub fn matches(&self, f: &VmFlowRecord) -> bool {
-        let eq = |want: &Option<String>, have: Option<&str>| want.as_deref().is_none_or(|w| have == Some(w));
+        let eq = |want: &Option<String>, have: Option<&str>| {
+            want.as_deref().is_none_or(|w| have == Some(w))
+        };
         if let Some(v) = self.vm.as_deref() {
             if f.vm != v && f.src_vm.as_deref() != Some(v) && f.dst_vm.as_deref() != Some(v) {
                 return false;
@@ -105,7 +109,10 @@ impl FlowFilter {
             }
         }
         if let Some(v) = self.verdict.as_deref().filter(|v| !v.is_empty()) {
-            if !v.split(',').any(|x| x.trim().eq_ignore_ascii_case(&f.verdict)) {
+            if !v
+                .split(',')
+                .any(|x| x.trim().eq_ignore_ascii_case(&f.verdict))
+            {
                 return false;
             }
         }
@@ -153,13 +160,38 @@ mod tests {
         };
         f.src_labels.insert("app".into(), "web".into());
         let ok = |x: FlowFilter| x.matches(&f);
-        assert!(ok(FlowFilter { vm: Some("web-1".into()), ..Default::default() }));
-        assert!(ok(FlowFilter { label: Some("app=web".into()), ..Default::default() }));
-        assert!(ok(FlowFilter { cidr: Some("203.0.113.0/24".into()), ..Default::default() }));
-        assert!(ok(FlowFilter { verdict: Some("audit,dropped".into()), ..Default::default() }));
-        assert!(ok(FlowFilter { policy: Some("egress".into()), port: Some(443), ..Default::default() }));
-        assert!(!ok(FlowFilter { verdict: Some("FORWARDED".into()), ..Default::default() }));
-        assert!(!ok(FlowFilter { to_vm: Some("db".into()), ..Default::default() }));
-        assert!(!ok(FlowFilter { cidr: Some("10.9.0.0/16".into()), ..Default::default() }));
+        assert!(ok(FlowFilter {
+            vm: Some("web-1".into()),
+            ..Default::default()
+        }));
+        assert!(ok(FlowFilter {
+            label: Some("app=web".into()),
+            ..Default::default()
+        }));
+        assert!(ok(FlowFilter {
+            cidr: Some("203.0.113.0/24".into()),
+            ..Default::default()
+        }));
+        assert!(ok(FlowFilter {
+            verdict: Some("audit,dropped".into()),
+            ..Default::default()
+        }));
+        assert!(ok(FlowFilter {
+            policy: Some("egress".into()),
+            port: Some(443),
+            ..Default::default()
+        }));
+        assert!(!ok(FlowFilter {
+            verdict: Some("FORWARDED".into()),
+            ..Default::default()
+        }));
+        assert!(!ok(FlowFilter {
+            to_vm: Some("db".into()),
+            ..Default::default()
+        }));
+        assert!(!ok(FlowFilter {
+            cidr: Some("10.9.0.0/16".into()),
+            ..Default::default()
+        }));
     }
 }

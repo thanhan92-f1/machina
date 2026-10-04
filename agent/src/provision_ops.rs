@@ -150,9 +150,7 @@ pub fn provision_storage_pool(pool_name: &str, backend: &str, path: &str) -> any
             }
             // create_dir_all runs as root — require an absolute path with no `..`
             // so a relative/traversal path can't create dirs outside the target.
-            if !std::path::Path::new(path).is_absolute()
-                || path.split('/').any(|c| c == "..")
-            {
+            if !std::path::Path::new(path).is_absolute() || path.split('/').any(|c| c == "..") {
                 anyhow::bail!("directory pool path must be an absolute path without '..'");
             }
             std::fs::create_dir_all(path)?;
@@ -236,7 +234,13 @@ pub fn provision_network(
     // "../../etc/foo" would otherwise write/unlink an arbitrary host path as root).
     let file_safe_name: String = network_name
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.') { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.') {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     if file_safe_name.is_empty() || file_safe_name == "." || file_safe_name == ".." {
         anyhow::bail!("invalid network name");

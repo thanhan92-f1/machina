@@ -36,33 +36,32 @@ fn default_category() -> String {
 pub async fn sync_templates_from_git(pool: &SqlitePool, dir: &Path) -> anyhow::Result<usize> {
     let dir = dir.to_path_buf();
     // File scanning is blocking — run it off the async executor.
-    let manifests: Vec<(String, GitTemplateManifest)> =
-        tokio::task::spawn_blocking(move || {
-            if !dir.is_dir() {
-                anyhow::bail!("templates git dir not found: {}", dir.display());
+    let manifests: Vec<(String, GitTemplateManifest)> = tokio::task::spawn_blocking(move || {
+        if !dir.is_dir() {
+            anyhow::bail!("templates git dir not found: {}", dir.display());
+        }
+        let mut out = Vec::new();
+        for entry in std::fs::read_dir(&dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
             }
-            let mut out = Vec::new();
-            for entry in std::fs::read_dir(&dir)? {
-                let entry = entry?;
-                let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                    continue;
-                }
-                let raw = std::fs::read_to_string(&path)?;
-                let m: GitTemplateManifest = serde_json::from_str(&raw)?;
-                let git_ref = if m.git_ref.is_empty() {
-                    path.file_name()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("")
-                        .to_string()
-                } else {
-                    m.git_ref.clone()
-                };
-                out.push((git_ref, m));
-            }
-            Ok(out)
-        })
-        .await??;
+            let raw = std::fs::read_to_string(&path)?;
+            let m: GitTemplateManifest = serde_json::from_str(&raw)?;
+            let git_ref = if m.git_ref.is_empty() {
+                path.file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string()
+            } else {
+                m.git_ref.clone()
+            };
+            out.push((git_ref, m));
+        }
+        Ok(out)
+    })
+    .await??;
 
     let mut synced = 0usize;
     for (git_ref, m) in manifests {

@@ -1094,10 +1094,13 @@ fn delete_iptables_matching_lines(
             list_args.extend_from_slice(&["-t", t]);
         }
         list_args.extend_from_slice(&["-L", chain, "-n", "--line-numbers", "-v"]);
-        let output = Command::new(&iptables)
-            .args(&list_args)
-            .output()
-            .map_err(LibvirtError::map_op("Failed to list iptables rules for delete"))?;
+        let output =
+            Command::new(&iptables)
+                .args(&list_args)
+                .output()
+                .map_err(LibvirtError::map_op(
+                    "Failed to list iptables rules for delete",
+                ))?;
         if !output.status.success() {
             return Err(LibvirtError::Operation(format!(
                 "iptables -L {chain} failed: {}",
@@ -1157,7 +1160,11 @@ pub struct LbMember {
 /// Per-LB chain names, derived from the LB id so multiple LBs never collide. Kept short
 /// (iptables chain names cap at 28 usable chars) by taking the first 12 hex characters.
 fn lb_chain_names(lb_id: &str) -> (String, String) {
-    let short: String = lb_id.chars().filter(|c| c.is_ascii_hexdigit()).take(12).collect();
+    let short: String = lb_id
+        .chars()
+        .filter(|c| c.is_ascii_hexdigit())
+        .take(12)
+        .collect();
     (format!("MCLB-{short}"), format!("MCLBF-{short}"))
 }
 
@@ -1171,7 +1178,9 @@ fn iptables_ok(args: &[&str]) -> bool {
 
 fn ensure_lb_chain(table: &str, chain: &str) {
     if !iptables_ok(&["-t", table, "-L", chain, "-n"]) {
-        let _ = Command::new(find_bin("iptables")).args(["-t", table, "-N", chain]).output();
+        let _ = Command::new(find_bin("iptables"))
+            .args(["-t", table, "-N", chain])
+            .output();
     }
 }
 
@@ -1188,10 +1197,15 @@ pub fn set_load_balancer_rules(
     validate_port_forward_host_port(host_port)?;
     for m in members {
         if m.vm_ip.parse::<std::net::Ipv4Addr>().is_err() {
-            return Err(LibvirtError::Invalid(format!("Invalid member IP: {}", m.vm_ip)));
+            return Err(LibvirtError::Invalid(format!(
+                "Invalid member IP: {}",
+                m.vm_ip
+            )));
         }
         if m.port == 0 {
-            return Err(LibvirtError::Invalid("member port must be non-zero".to_string()));
+            return Err(LibvirtError::Invalid(
+                "member port must be non-zero".to_string(),
+            ));
         }
     }
 
@@ -1202,33 +1216,81 @@ pub fn set_load_balancer_rules(
     let comment = format!("machina-lb-{lb_id}");
 
     if !iptables_ok(&[
-        "-t", "nat", "-C", "PREROUTING", "-p", protocol, "--dport", &host_port.to_string(),
-        "-m", "comment", "--comment", &comment, "-j", &nat_chain,
+        "-t",
+        "nat",
+        "-C",
+        "PREROUTING",
+        "-p",
+        protocol,
+        "--dport",
+        &host_port.to_string(),
+        "-m",
+        "comment",
+        "--comment",
+        &comment,
+        "-j",
+        &nat_chain,
     ]) {
         run_cmd(
             "iptables",
             &[
-                "-t", "nat", "-A", "PREROUTING", "-p", protocol, "--dport", &host_port.to_string(),
-                "-m", "comment", "--comment", &comment, "-j", &nat_chain,
+                "-t",
+                "nat",
+                "-A",
+                "PREROUTING",
+                "-p",
+                protocol,
+                "--dport",
+                &host_port.to_string(),
+                "-m",
+                "comment",
+                "--comment",
+                &comment,
+                "-j",
+                &nat_chain,
             ],
             "Failed to add load balancer jump rule",
         )?;
     }
     if !iptables_ok(&[
-        "-t", "filter", "-C", "FORWARD", "-p", protocol, "-m", "comment", "--comment", &comment,
-        "-j", &fwd_chain,
+        "-t",
+        "filter",
+        "-C",
+        "FORWARD",
+        "-p",
+        protocol,
+        "-m",
+        "comment",
+        "--comment",
+        &comment,
+        "-j",
+        &fwd_chain,
     ]) {
         run_cmd(
             "iptables",
             &[
-                "-t", "filter", "-A", "FORWARD", "-p", protocol, "-m", "comment", "--comment", &comment,
-                "-j", &fwd_chain,
+                "-t",
+                "filter",
+                "-A",
+                "FORWARD",
+                "-p",
+                protocol,
+                "-m",
+                "comment",
+                "--comment",
+                &comment,
+                "-j",
+                &fwd_chain,
             ],
             "Failed to add load balancer forward jump rule",
         )?;
     }
 
-    run_cmd("iptables", &["-t", "nat", "-F", &nat_chain], "Failed to flush load balancer chain")?;
+    run_cmd(
+        "iptables",
+        &["-t", "nat", "-F", &nat_chain],
+        "Failed to flush load balancer chain",
+    )?;
     run_cmd(
         "iptables",
         &["-t", "filter", "-F", &fwd_chain],
@@ -1247,8 +1309,16 @@ pub fn set_load_balancer_rules(
             run_cmd(
                 "iptables",
                 &[
-                    "-t", "nat", "-A", &nat_chain, "-p", protocol, "-j", "DNAT",
-                    "--to-destination", &dest,
+                    "-t",
+                    "nat",
+                    "-A",
+                    &nat_chain,
+                    "-p",
+                    protocol,
+                    "-j",
+                    "DNAT",
+                    "--to-destination",
+                    &dest,
                 ],
                 "Failed to add load balancer backend rule",
             )?;
@@ -1257,9 +1327,22 @@ pub fn set_load_balancer_rules(
             run_cmd(
                 "iptables",
                 &[
-                    "-t", "nat", "-A", &nat_chain, "-p", protocol, "-m", "statistic",
-                    "--mode", "random", "--probability", &probability, "-j", "DNAT",
-                    "--to-destination", &dest,
+                    "-t",
+                    "nat",
+                    "-A",
+                    &nat_chain,
+                    "-p",
+                    protocol,
+                    "-m",
+                    "statistic",
+                    "--mode",
+                    "random",
+                    "--probability",
+                    &probability,
+                    "-j",
+                    "DNAT",
+                    "--to-destination",
+                    &dest,
                 ],
                 "Failed to add load balancer backend rule",
             )?;
@@ -1269,8 +1352,18 @@ pub fn set_load_balancer_rules(
         run_cmd(
             "iptables",
             &[
-                "-t", "filter", "-A", &fwd_chain, "-p", protocol, "-d", &m.vm_ip, "--dport",
-                &m.port.to_string(), "-j", "ACCEPT",
+                "-t",
+                "filter",
+                "-A",
+                &fwd_chain,
+                "-p",
+                protocol,
+                "-d",
+                &m.vm_ip,
+                "--dport",
+                &m.port.to_string(),
+                "-j",
+                "ACCEPT",
             ],
             "Failed to add load balancer forward-accept rule",
         )?;
@@ -1287,20 +1380,46 @@ pub fn delete_load_balancer_rules(lb_id: &str, protocol: &str, host_port: u16) {
 
     let _ = Command::new(find_bin("iptables"))
         .args([
-            "-t", "nat", "-D", "PREROUTING", "-p", protocol, "--dport", &host_port.to_string(),
-            "-m", "comment", "--comment", &comment, "-j", &nat_chain,
+            "-t",
+            "nat",
+            "-D",
+            "PREROUTING",
+            "-p",
+            protocol,
+            "--dport",
+            &host_port.to_string(),
+            "-m",
+            "comment",
+            "--comment",
+            &comment,
+            "-j",
+            &nat_chain,
         ])
         .output();
     let _ = Command::new(find_bin("iptables"))
         .args([
-            "-t", "filter", "-D", "FORWARD", "-p", protocol, "-m", "comment", "--comment", &comment,
-            "-j", &fwd_chain,
+            "-t",
+            "filter",
+            "-D",
+            "FORWARD",
+            "-p",
+            protocol,
+            "-m",
+            "comment",
+            "--comment",
+            &comment,
+            "-j",
+            &fwd_chain,
         ])
         .output();
 
     for (table, chain) in [("nat", nat_chain.as_str()), ("filter", fwd_chain.as_str())] {
-        let _ = Command::new(find_bin("iptables")).args(["-t", table, "-F", chain]).output();
-        let _ = Command::new(find_bin("iptables")).args(["-t", table, "-X", chain]).output();
+        let _ = Command::new(find_bin("iptables"))
+            .args(["-t", table, "-F", chain])
+            .output();
+        let _ = Command::new(find_bin("iptables"))
+            .args(["-t", table, "-X", chain])
+            .output();
     }
 }
 
@@ -1587,9 +1706,7 @@ fn extract_dnat_target(line: &str) -> Option<(String, u16)> {
 fn extract_comment(line: &str, prefix: &str) -> Option<String> {
     let pos = line.find(prefix)?;
     let rest = &line[pos + prefix.len()..];
-    let end = rest
-        .find(['*', '/'])
-        .unwrap_or(rest.len());
+    let end = rest.find(['*', '/']).unwrap_or(rest.len());
     Some(rest[..end].trim().to_string())
 }
 

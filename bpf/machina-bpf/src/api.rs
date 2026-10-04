@@ -499,7 +499,9 @@ pub struct CniEndpoint {
 
 /// One allowed (subject, peer, direction, proto, port) tuple; peer 0 = any,
 /// proto 0 = any, port 0 = any.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash, PartialOrd, Ord,
+)]
 pub struct CniPolicyEntry {
     pub subject: u32,
     pub peer: u32,
@@ -906,7 +908,12 @@ fn default_qemu_ports() -> Vec<String> {
 
 impl Default for VmSandboxConfig {
     fn default() -> Self {
-        Self { mode: default_observe(), auto: false, extra_devices: Vec::new(), egress_ports: default_qemu_ports() }
+        Self {
+            mode: default_observe(),
+            auto: false,
+            extra_devices: Vec::new(),
+            egress_ports: default_qemu_ports(),
+        }
     }
 }
 
@@ -2006,7 +2013,8 @@ mod tests {
     #[test]
     fn scope_defaults_to_host() {
         let p: Policy =
-            serde_json::from_str(r#"{"id":"x","kind":"deny_process","match":"/usr/bin/nc"}"#).unwrap();
+            serde_json::from_str(r#"{"id":"x","kind":"deny_process","match":"/usr/bin/nc"}"#)
+                .unwrap();
         assert_eq!(p.scope, Scope::Host);
         assert_eq!(p.scope.label(), "host");
     }

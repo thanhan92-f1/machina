@@ -71,8 +71,9 @@ pub async fn fetch_inventory_rows(
     // credential. A short-lived platform JWT — the same mechanism used for
     // controller-issued deep links into the daemon UI — satisfies that guard
     // without weakening it for anyone else.
-    let token = crate::jwt::issue_token(jwt_secret, "controller-internal-sync", "operator", 60, None)
-        .map_err(|e| anyhow::anyhow!("failed to mint internal service token: {e:#}"))?;
+    let token =
+        crate::jwt::issue_token(jwt_secret, "controller-internal-sync", "operator", 60, None)
+            .map_err(|e| anyhow::anyhow!("failed to mint internal service token: {e:#}"))?;
 
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(45))
@@ -93,12 +94,22 @@ pub async fn fetch_inventory_rows(
     // the URL as configured if that can't even connect (e.g. a genuinely
     // plaintext daemon), so this works either way without new config.
     let resp = if configured_is_https {
-        client.get(&configured_url).bearer_auth(&token).send().await?
+        client
+            .get(&configured_url)
+            .bearer_auth(&token)
+            .send()
+            .await?
     } else {
         let https_url = format!("https://{host_port}{path}");
         match client.get(&https_url).bearer_auth(&token).send().await {
             Ok(r) => r,
-            Err(_) => client.get(&configured_url).bearer_auth(&token).send().await?,
+            Err(_) => {
+                client
+                    .get(&configured_url)
+                    .bearer_auth(&token)
+                    .send()
+                    .await?
+            }
         }
     };
 
@@ -123,16 +134,17 @@ pub async fn sync_cluster(
     state: &AppState,
     cluster_id: Uuid,
 ) -> anyhow::Result<KubevirtSyncOutcome> {
-    let summary = match fetch_inventory_rows(&state.config.daemon_base_url, &state.config.jwt_secret).await {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::warn!("kubevirt inventory fetch failed (keeping DB rows): {e:#}");
-            return Ok(KubevirtSyncOutcome {
-                synced: false,
-                reason: Some(format!("kubevirt inventory fetch failed: {e:#}")),
-            });
-        }
-    };
+    let summary =
+        match fetch_inventory_rows(&state.config.daemon_base_url, &state.config.jwt_secret).await {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!("kubevirt inventory fetch failed (keeping DB rows): {e:#}");
+                return Ok(KubevirtSyncOutcome {
+                    synced: false,
+                    reason: Some(format!("kubevirt inventory fetch failed: {e:#}")),
+                });
+            }
+        };
 
     if !summary.kubevirt_available {
         tracing::debug!(

@@ -20,12 +20,17 @@ mod scx {
         let out = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR"));
         // sched_ext has no stable ABI: compile against the build host's kernel BTF
         // (or MACHINA_SCX_BTF for the target kernel's).
-        let btf = std::env::var("MACHINA_SCX_BTF").unwrap_or_else(|_| "/sys/kernel/btf/vmlinux".into());
+        let btf =
+            std::env::var("MACHINA_SCX_BTF").unwrap_or_else(|_| "/sys/kernel/btf/vmlinux".into());
         let dump = Command::new("bpftool")
             .args(["btf", "dump", "file", &btf, "format", "c"])
             .output()
             .expect("bpftool is required to build machina-scx (feature scx)");
-        assert!(dump.status.success(), "bpftool btf dump {btf}: {}", String::from_utf8_lossy(&dump.stderr));
+        assert!(
+            dump.status.success(),
+            "bpftool btf dump {btf}: {}",
+            String::from_utf8_lossy(&dump.stderr)
+        );
         std::fs::write(out.join("vmlinux.h"), dump.stdout).expect("write vmlinux.h");
         let arch = match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
             Ok("x86_64") => "x86",
@@ -35,7 +40,8 @@ mod scx {
             Ok("powerpc64") => "powerpc",
             other => panic!("unsupported sched_ext target architecture {other:?}"),
         };
-        let include = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("manifest dir")).join("include");
+        let include = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("manifest dir"))
+            .join("include");
         libbpf_cargo::SkeletonBuilder::new()
             .source(SRC)
             .clang_args([

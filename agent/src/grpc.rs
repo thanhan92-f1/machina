@@ -88,8 +88,8 @@ async fn fetch_local_sprites() -> anyhow::Result<Vec<SpriteSummary>> {
     // Same env var + default as the controller's own `daemon_base_url`
     // (`controller/src/config.rs`) — both point at this host's co-located
     // daemon.
-    let base = std::env::var("MACHINA_DAEMON_URL")
-        .unwrap_or_else(|_| "http://127.0.0.1:5092".to_string());
+    let base =
+        std::env::var("MACHINA_DAEMON_URL").unwrap_or_else(|_| "http://127.0.0.1:5092".to_string());
     let base = base.trim_end_matches('/');
     let path = "/api/v1/sprites";
 
@@ -110,12 +110,22 @@ async fn fetch_local_sprites() -> anyhow::Result<Vec<SpriteSummary>> {
         None => (base.strip_prefix("http://").unwrap_or(base), false),
     };
     let resp = if configured_is_https {
-        client.get(&configured_url).bearer_auth(&token).send().await?
+        client
+            .get(&configured_url)
+            .bearer_auth(&token)
+            .send()
+            .await?
     } else {
         let https_url = format!("https://{host_port}{path}");
         match client.get(&https_url).bearer_auth(&token).send().await {
             Ok(r) => r,
-            Err(_) => client.get(&configured_url).bearer_auth(&token).send().await?,
+            Err(_) => {
+                client
+                    .get(&configured_url)
+                    .bearer_auth(&token)
+                    .send()
+                    .await?
+            }
         }
     };
 
@@ -785,7 +795,10 @@ impl HostAgent for AgentService {
                 ok: true,
                 message: "deleted".into(),
             })),
-            Some(m) => Ok(Response::new(DeleteBackupResponse { ok: false, message: m })),
+            Some(m) => Ok(Response::new(DeleteBackupResponse {
+                ok: false,
+                message: m,
+            })),
         }
     }
 
@@ -1766,18 +1779,20 @@ impl HostAgent for AgentService {
         request: Request<BpfCallRequest>,
     ) -> Result<Response<BpfCallResponse>, Status> {
         let req = request.into_inner();
-        Ok(Response::new(match crate::bpf_ops::call(&req.request_json).await {
-            Ok(data) => BpfCallResponse {
-                ok: true,
-                data_json: data.to_string(),
-                error: String::new(),
+        Ok(Response::new(
+            match crate::bpf_ops::call(&req.request_json).await {
+                Ok(data) => BpfCallResponse {
+                    ok: true,
+                    data_json: data.to_string(),
+                    error: String::new(),
+                },
+                Err(e) => BpfCallResponse {
+                    ok: false,
+                    data_json: String::new(),
+                    error: format!("{e:#}"),
+                },
             },
-            Err(e) => BpfCallResponse {
-                ok: false,
-                data_json: String::new(),
-                error: format!("{e:#}"),
-            },
-        }))
+        ))
     }
 
     type BpfSubscribeStream = std::pin::Pin<
@@ -1806,7 +1821,9 @@ impl HostAgent for AgentService {
                 }
             }
         });
-        Ok(Response::new(Box::pin(tokio_stream::wrappers::ReceiverStream::new(out))))
+        Ok(Response::new(Box::pin(
+            tokio_stream::wrappers::ReceiverStream::new(out),
+        )))
     }
 
     async fn bpf_sync_policies(

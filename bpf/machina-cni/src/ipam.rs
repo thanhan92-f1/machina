@@ -23,7 +23,9 @@ pub struct Subnet {
 
 impl Subnet {
     pub fn parse(s: &str) -> Result<Self> {
-        let (a, l) = s.split_once('/').ok_or_else(|| anyhow!("subnet `{s}` needs a prefix length"))?;
+        let (a, l) = s
+            .split_once('/')
+            .ok_or_else(|| anyhow!("subnet `{s}` needs a prefix length"))?;
         let ip: IpAddr = a.parse().map_err(|_| anyhow!("invalid subnet `{s}`"))?;
         let bits: u32 = l.parse().map_err(|_| anyhow!("invalid prefix in `{s}`"))?;
         let (v6, width, ok) = match ip {
@@ -31,18 +33,28 @@ impl Subnet {
             IpAddr::V6(_) => (true, 128, (48..=120).contains(&bits)),
         };
         if !ok {
-            return Err(anyhow!("unsupported prefix in `{s}` (IPv4 8..30, IPv6 48..120)"));
+            return Err(anyhow!(
+                "unsupported prefix in `{s}` (IPv4 8..30, IPv6 48..120)"
+            ));
         }
         let raw = match ip {
             IpAddr::V4(a) => u32::from(a) as u128,
             IpAddr::V6(a) => u128::from(a),
         };
         let mask = (u128::MAX >> (128 - width)) & !(u128::MAX >> (128 - width + bits));
-        Ok(Self { net: raw & mask, bits, v6 })
+        Ok(Self {
+            net: raw & mask,
+            bits,
+            v6,
+        })
     }
 
     fn width(&self) -> u32 {
-        if self.v6 { 128 } else { 32 }
+        if self.v6 {
+            128
+        } else {
+            32
+        }
     }
 
     fn addr(&self, raw: u128) -> IpAddr {
@@ -57,7 +69,11 @@ impl Subnet {
     /// broadcast; IPv6 skips `::0`/`::1` and is capped at [`MAX_V6_HOSTS`].
     pub fn host_count(&self) -> u128 {
         let size = 1u128 << (self.width() - self.bits);
-        if self.v6 { (size - 2).min(MAX_V6_HOSTS) } else { size - 3 }
+        if self.v6 {
+            (size - 2).min(MAX_V6_HOSTS)
+        } else {
+            size - 3
+        }
     }
 
     pub fn host(&self, i: u128) -> IpAddr {
@@ -75,7 +91,8 @@ impl Subnet {
             IpAddr::V6(a) if self.v6 => u128::from(a),
             _ => return None,
         };
-        raw.checked_sub(self.net + 2).filter(|i| *i < self.host_count())
+        raw.checked_sub(self.net + 2)
+            .filter(|i| *i < self.host_count())
     }
 
     #[cfg(test)]
@@ -89,7 +106,11 @@ impl Subnet {
     }
 
     pub fn dir_name(&self) -> String {
-        format!("{}-{}", self.addr(self.net).to_string().replace(':', "_"), self.bits)
+        format!(
+            "{}-{}",
+            self.addr(self.net).to_string().replace(':', "_"),
+            self.bits
+        )
     }
 }
 
@@ -130,9 +151,14 @@ impl Ipam {
         }
         // Start after the most recent allocation so freed IPs are not reused at once.
         let last_path = self.dir.join("last");
-        let last: Option<IpAddr> = std::fs::read_to_string(&last_path).ok().and_then(|s| s.trim().parse().ok());
+        let last: Option<IpAddr> = std::fs::read_to_string(&last_path)
+            .ok()
+            .and_then(|s| s.trim().parse().ok());
         let n = self.subnet.host_count();
-        let start = last.and_then(|l| self.subnet.index_of(l)).map(|p| p + 1).unwrap_or(0);
+        let start = last
+            .and_then(|l| self.subnet.index_of(l))
+            .map(|p| p + 1)
+            .unwrap_or(0);
         for i in 0..n {
             let ip = self.subnet.host((start + i) % n);
             let path = self.dir.join(file_name(ip));
@@ -146,7 +172,11 @@ impl Ipam {
                 Err(e) => return Err(e).with_context(|| format!("reserve {}", path.display())),
             }
         }
-        Err(anyhow!("no free addresses in {}/{}", self.subnet.addr(self.subnet.net), self.subnet.bits))
+        Err(anyhow!(
+            "no free addresses in {}/{}",
+            self.subnet.addr(self.subnet.net),
+            self.subnet.bits
+        ))
     }
 
     /// Release this container's address. Missing allocations are not an error.
@@ -194,7 +224,11 @@ mod tests {
         let ipam = Ipam::new(tmp.path(), Subnet::parse("10.42.0.0/29").unwrap()).unwrap();
         let a = ipam.allocate("c1", "eth0").unwrap();
         assert_eq!(a, v4(10, 42, 0, 2));
-        assert_eq!(ipam.allocate("c1", "eth0").unwrap(), a, "retry returns the same IP");
+        assert_eq!(
+            ipam.allocate("c1", "eth0").unwrap(),
+            a,
+            "retry returns the same IP"
+        );
         let b = ipam.allocate("c2", "eth0").unwrap();
         assert_ne!(a, b);
         assert_eq!(ipam.release("c1", "eth0"), Some(a));
@@ -213,7 +247,10 @@ mod tests {
         let a = ipam.allocate("c1", "eth0").unwrap();
         assert_eq!(a, "fd42::2".parse::<IpAddr>().unwrap());
         assert_eq!(ipam.find("c1", "eth0"), Some(a));
-        assert_eq!(ipam.allocate("c2", "eth0").unwrap(), "fd42::3".parse::<IpAddr>().unwrap());
+        assert_eq!(
+            ipam.allocate("c2", "eth0").unwrap(),
+            "fd42::3".parse::<IpAddr>().unwrap()
+        );
         assert_eq!(ipam.release("c1", "eth0"), Some(a));
     }
 }

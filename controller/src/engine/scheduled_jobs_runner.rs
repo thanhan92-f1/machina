@@ -48,7 +48,9 @@ async fn tick(state: &AppState) -> anyhow::Result<()> {
 
     for (job_id, name, operation, payload, target_host_id) in rows {
         if !is_allowed_operation(&operation) {
-            tracing::warn!("scheduled job '{name}' has non-whitelisted operation '{operation}' — skipping");
+            tracing::warn!(
+                "scheduled job '{name}' has non-whitelisted operation '{operation}' — skipping"
+            );
             continue;
         }
         if let Err(e) = run_job(state, &operation, &payload, target_host_id).await {
@@ -75,9 +77,11 @@ async fn run_job(
     // Resolve target hosts: a specific host, or all hosts for host-scoped ops.
     let host_ids: Vec<Uuid> = match target_host_id {
         Some(h) => vec![h],
-        None => sqlx::query_scalar("SELECT id FROM hosts ORDER BY hostname LIMIT 500")
-            .fetch_all(&state.pool)
-            .await?,
+        None => {
+            sqlx::query_scalar("SELECT id FROM hosts ORDER BY hostname LIMIT 500")
+                .fetch_all(&state.pool)
+                .await?
+        }
     };
 
     for host_id in host_ids {
@@ -85,9 +89,16 @@ async fn run_job(
         if let Some(obj) = p.as_object_mut() {
             obj.insert("host_id".into(), serde_json::json!(host_id.to_string()));
         }
-        enqueue_task(state, operation, p, Some("host"), Some(host_id), Some(host_id))
-            .await
-            .map_err(|e| anyhow::anyhow!("enqueue {operation}: {}", e.message))?;
+        enqueue_task(
+            state,
+            operation,
+            p,
+            Some("host"),
+            Some(host_id),
+            Some(host_id),
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!("enqueue {operation}: {}", e.message))?;
     }
     Ok(())
 }

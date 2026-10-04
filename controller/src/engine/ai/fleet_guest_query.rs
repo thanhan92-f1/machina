@@ -133,10 +133,15 @@ fn deterministic_summary(query: &str, matched: usize, scanned: usize) -> Summary
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
-async fn resolve_vm_ids(pool: &SqlitePool, req: &FleetGuestQueryRequest) -> anyhow::Result<Vec<Uuid>> {
+async fn resolve_vm_ids(
+    pool: &SqlitePool,
+    req: &FleetGuestQueryRequest,
+) -> anyhow::Result<Vec<Uuid>> {
     if !req.vm_ids.is_empty() {
         return Ok(req.vm_ids.clone());
     }

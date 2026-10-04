@@ -144,14 +144,12 @@ pub fn inject_ssh_key_offline(
         disk_path: disk_path.to_string(),
         operation: "inject-ssh-key".into(),
         applied: vec![format!("authorized_keys for {user}")],
-        notes: vec![
-            stdout
-                .lines()
-                .find(|l| l.contains('✓') || l.contains("injected"))
-                .unwrap_or("SSH public key injected")
-                .trim()
-                .to_string(),
-        ],
+        notes: vec![stdout
+            .lines()
+            .find(|l| l.contains('✓') || l.contains("injected"))
+            .unwrap_or("SSH public key injected")
+            .trim()
+            .to_string()],
     })
 }
 
@@ -179,9 +177,7 @@ pub fn reset_password_offline(
         disk_path: disk_path.to_string(),
         operation: "reset-password".into(),
         applied: vec![format!("/etc/shadow entry for {user}")],
-        notes: vec![
-            "Password hash updated offline — start the VM to use the new password.".into(),
-        ],
+        notes: vec!["Password hash updated offline — start the VM to use the new password.".into()],
     })
 }
 
@@ -240,9 +236,7 @@ mod tests {
     #[test]
     fn rejects_relative_and_missing_disk() {
         assert!(enable_ssh_offline("relative.qcow2", "guestkit").is_err());
-        assert!(
-            enable_ssh_offline("/nonexistent/linux-does-not-exist.qcow2", "guestkit").is_err()
-        );
+        assert!(enable_ssh_offline("/nonexistent/linux-does-not-exist.qcow2", "guestkit").is_err());
         assert!(inject_ssh_key_offline(
             "/nonexistent/x.qcow2",
             "guestkit",

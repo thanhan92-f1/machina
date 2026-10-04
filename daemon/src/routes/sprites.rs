@@ -310,9 +310,7 @@ fn not_running(id: &str) -> AppError {
 }
 
 fn not_found(id: &str) -> AppError {
-    AppError::from(LibvirtError::NotFound(format!(
-        "sprite '{id}' not found"
-    )))
+    AppError::from(LibvirtError::NotFound(format!("sprite '{id}' not found")))
 }
 
 fn libvirt_not_supported() -> AppError {
@@ -519,10 +517,7 @@ async fn restore_sprite(
             "sprite '{id}' is not suspended"
         ))));
     };
-    let network_egress = registry
-        .get(&id)
-        .map(|h| h.network_egress)
-        .unwrap_or(false);
+    let network_egress = registry.get(&id).map(|h| h.network_egress).unwrap_or(false);
 
     let new_backend = match artifacts {
         SpriteSnapshotArtifacts::CloudHypervisor {

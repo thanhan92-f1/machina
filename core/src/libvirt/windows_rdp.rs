@@ -32,8 +32,7 @@ const TS_VALUE: &str = "fDenyTSConnections";
 
 /// Network Level Authentication — left on, but the value must exist for the
 /// service to start cleanly on some images.
-const NLA_KEY: &str =
-    r"HKLM\SYSTEM\ControlSet001\Control\Terminal Server\WinStations\RDP-Tcp";
+const NLA_KEY: &str = r"HKLM\SYSTEM\ControlSet001\Control\Terminal Server\WinStations\RDP-Tcp";
 
 /// Windows Firewall rule store. Enabling the Terminal Server service is not
 /// enough on its own: the inbound RDP rule ships `Active=FALSE`, so the firewall
@@ -267,12 +266,13 @@ fn apply_rdp_via_guestkit(
 ) -> Result<Option<String>, LibvirtError> {
     let generated = chrono::Utc::now().to_rfc3339();
     let plan = build_rdp_enable_plan(disk_path, &generated, firewall_edits);
-    let plan_file = std::env::temp_dir().join(format!(
-        "machina-rdp-plan-{}.json",
-        std::process::id()
-    ));
-    std::fs::write(&plan_file, serde_json::to_vec_pretty(&plan).unwrap_or_default())
-        .map_err(|e| LibvirtError::Operation(format!("cannot write fix plan: {e}")))?;
+    let plan_file =
+        std::env::temp_dir().join(format!("machina-rdp-plan-{}.json", std::process::id()));
+    std::fs::write(
+        &plan_file,
+        serde_json::to_vec_pretty(&plan).unwrap_or_default(),
+    )
+    .map_err(|e| LibvirtError::Operation(format!("cannot write fix plan: {e}")))?;
 
     let bin = guestkit_binary(guestkit_bin);
     let out = Command::new(&bin)
@@ -307,7 +307,8 @@ fn apply_rdp_via_guestkit(
         ));
     }
 
-    if stdout.contains("--features registry-write") || stderr.contains("--features registry-write") {
+    if stdout.contains("--features registry-write") || stderr.contains("--features registry-write")
+    {
         return Err(LibvirtError::Operation(
             "guestkit on this host was built without offline registry writes \
              (rebuild with --features registry-write)"

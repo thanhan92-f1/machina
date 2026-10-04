@@ -5,8 +5,12 @@ use machina_bpf_common::{VMI_F_FLIGHT, VMI_F_IO, VMI_F_MEM, VMI_F_TOPO};
 
 use crate::api::{VmIntelBucket, VmIntelHist};
 
-pub const FEATURES: &[(&str, u32)] =
-    &[("flight", VMI_F_FLIGHT), ("io", VMI_F_IO), ("mem", VMI_F_MEM), ("topology", VMI_F_TOPO)];
+pub const FEATURES: &[(&str, u32)] = &[
+    ("flight", VMI_F_FLIGHT),
+    ("io", VMI_F_IO),
+    ("mem", VMI_F_MEM),
+    ("topology", VMI_F_TOPO),
+];
 
 pub fn features_mask(names: &[String]) -> Result<u32, String> {
     if names.is_empty() {
@@ -49,7 +53,13 @@ pub fn hist(slots: &[(u16, u64)]) -> VmIntelHist {
         count,
         p50_ns: if count > 0 { pct(0.5) } else { 0 },
         p99_ns: if count > 0 { pct(0.99) } else { 0 },
-        buckets: v.iter().map(|(s, c)| VmIntelBucket { le_ns: le(*s), count: *c }).collect(),
+        buckets: v
+            .iter()
+            .map(|(s, c)| VmIntelBucket {
+                le_ns: le(*s),
+                count: *c,
+            })
+            .collect(),
     }
 }
 
@@ -77,7 +87,10 @@ mod tests {
     #[test]
     fn masks() {
         assert_eq!(features_mask(&[]).unwrap(), 15);
-        assert_eq!(features_mask(&["flight".into(), "MEM".into()]).unwrap(), VMI_F_FLIGHT | VMI_F_MEM);
+        assert_eq!(
+            features_mask(&["flight".into(), "MEM".into()]).unwrap(),
+            VMI_F_FLIGHT | VMI_F_MEM
+        );
         assert!(features_mask(&["bogus".into()]).is_err());
     }
 

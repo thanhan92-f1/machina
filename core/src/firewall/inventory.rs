@@ -25,18 +25,15 @@ pub fn gather_firewall_inventory(hostname: &str) -> Result<FirewallInventory, Li
         None
     };
     if posture.profile.is_none() {
-        posture.profile = score
-            .score
-            .checked_sub(0)
-            .map(|_| {
-                if score.score >= 80 {
-                    "ProductionServer".into()
-                } else if score.score >= 60 {
-                    "Public".into()
-                } else {
-                    "DevelopmentVm".into()
-                }
-            });
+        posture.profile = score.score.checked_sub(0).map(|_| {
+            if score.score >= 80 {
+                "ProductionServer".into()
+            } else if score.score >= 60 {
+                "Public".into()
+            } else {
+                "DevelopmentVm".into()
+            }
+        });
     }
     Ok(FirewallInventory {
         hostname: hostname.to_string(),

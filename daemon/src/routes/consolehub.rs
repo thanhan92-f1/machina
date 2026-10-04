@@ -195,71 +195,79 @@ async fn build_plan(
 ) -> Result<ConsoleHubPlan, AppError> {
     let name2 = vm_name.to_string();
     let conn_str = conn_q.connection.clone().unwrap_or_default();
-    let (_vnc_host, vnc_port, console_type, serial_available, guest_ip, guest_ip_host_observed, os_hint) =
-        spawn_libvirt_actor(manager.clone(), Some(actor), conn_q, move |conn| {
-            let xml = machina_core::libvirt::domain::get_vm_xml(conn, &name2).unwrap_or_default();
-            let has_spice = machina_core::libvirt::graphics_convert::domain_has_spice_graphics(&xml);
-            let (vnc_host, vnc_port) = vnc::resolve_vnc_tcp_xml(conn, &name2, &xml).unwrap_or(("".into(), 0));
-            let console_type = if vnc_port > 0 {
-                "vnc".to_string()
-            } else if has_spice {
-                "spice".to_string()
-            } else {
-                "unknown".to_string()
-            };
-            let serial_available = machina_core::xml::extract_attr(&xml, "console", "tty")
-                .filter(|s| !s.is_empty())
-                .or_else(|| {
-                    for block in machina_core::xml::split_blocks(&xml, "console") {
-                        if let Some(p) = machina_core::xml::extract_attr(&block, "source", "path") {
-                            if !p.is_empty() {
-                                return Some(p);
-                            }
+    let (
+        _vnc_host,
+        vnc_port,
+        console_type,
+        serial_available,
+        guest_ip,
+        guest_ip_host_observed,
+        os_hint,
+    ) = spawn_libvirt_actor(manager.clone(), Some(actor), conn_q, move |conn| {
+        let xml = machina_core::libvirt::domain::get_vm_xml(conn, &name2).unwrap_or_default();
+        let has_spice = machina_core::libvirt::graphics_convert::domain_has_spice_graphics(&xml);
+        let (vnc_host, vnc_port) =
+            vnc::resolve_vnc_tcp_xml(conn, &name2, &xml).unwrap_or(("".into(), 0));
+        let console_type = if vnc_port > 0 {
+            "vnc".to_string()
+        } else if has_spice {
+            "spice".to_string()
+        } else {
+            "unknown".to_string()
+        };
+        let serial_available = machina_core::xml::extract_attr(&xml, "console", "tty")
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                for block in machina_core::xml::split_blocks(&xml, "console") {
+                    if let Some(p) = machina_core::xml::extract_attr(&block, "source", "path") {
+                        if !p.is_empty() {
+                            return Some(p);
                         }
                     }
-                    None
-                })
-                .is_some();
-            let mut guest_ip = String::new();
-            let mut guest_ip_host_observed = false;
-            let mut os_hint = machina_core::guest_os::detect_os_hint(&xml, &name2);
-            if let Ok(health) = guest_health::gather_guest_health(conn, &name2) {
-                if let Some(guest) = &health.guest {
-                    // Prefer a host-observed address (DHCP lease or kernel ARP
-                    // table) over one the guest agent self-reports: `guest_ip`
-                    // is what `rdp_reachable` below dials over the network, and
-                    // trusting a guest-controlled value there lets a malicious
-                    // guest make the host probe arbitrary addresses and read
-                    // back whether a port is open — a port-scan oracle.
-                    let host_observed = guest.ip_addresses.iter().find(|a| {
-                        a.ip_type == "ipv4" && !a.address.starts_with("127.") && a.source != "agent"
-                    });
-                    guest_ip = host_observed
-                        .or_else(|| {
-                            guest
-                                .ip_addresses
-                                .iter()
-                                .find(|a| a.ip_type == "ipv4" && !a.address.starts_with("127."))
-                        })
-                        .map(|a| a.address.clone())
-                        .unwrap_or_default();
-                    guest_ip_host_observed = host_observed.is_some();
                 }
-                if let Some(ref pretty) = health.os_pretty_name {
-                    os_hint = machina_core::guest_os::refine_os_hint(&os_hint, pretty);
-                }
+                None
+            })
+            .is_some();
+        let mut guest_ip = String::new();
+        let mut guest_ip_host_observed = false;
+        let mut os_hint = machina_core::guest_os::detect_os_hint(&xml, &name2);
+        if let Ok(health) = guest_health::gather_guest_health(conn, &name2) {
+            if let Some(guest) = &health.guest {
+                // Prefer a host-observed address (DHCP lease or kernel ARP
+                // table) over one the guest agent self-reports: `guest_ip`
+                // is what `rdp_reachable` below dials over the network, and
+                // trusting a guest-controlled value there lets a malicious
+                // guest make the host probe arbitrary addresses and read
+                // back whether a port is open — a port-scan oracle.
+                let host_observed = guest.ip_addresses.iter().find(|a| {
+                    a.ip_type == "ipv4" && !a.address.starts_with("127.") && a.source != "agent"
+                });
+                guest_ip = host_observed
+                    .or_else(|| {
+                        guest
+                            .ip_addresses
+                            .iter()
+                            .find(|a| a.ip_type == "ipv4" && !a.address.starts_with("127."))
+                    })
+                    .map(|a| a.address.clone())
+                    .unwrap_or_default();
+                guest_ip_host_observed = host_observed.is_some();
             }
-            Ok((
-                vnc_host,
-                vnc_port,
-                console_type,
-                serial_available,
-                guest_ip,
-                guest_ip_host_observed,
-                os_hint,
-            ))
-        })
-        .await?;
+            if let Some(ref pretty) = health.os_pretty_name {
+                os_hint = machina_core::guest_os::refine_os_hint(&os_hint, pretty);
+            }
+        }
+        Ok((
+            vnc_host,
+            vnc_port,
+            console_type,
+            serial_available,
+            guest_ip,
+            guest_ip_host_observed,
+            os_hint,
+        ))
+    })
+    .await?;
 
     // Serial is always the last resort — only when no graphical display and no SSH/RDP alternative.
     let recommended = if console_type == "spice" {
@@ -398,10 +406,12 @@ async fn create_session(
     // (Guacamole was removed), so the caller has no other signal the session is
     // unusable until they try to actually use it.
     if !plan.protocols.iter().any(|p| p == &protocol) {
-        return Err(AppError::from(machina_core::LibvirtError::Invalid(format!(
-            "protocol '{protocol}' is not available for this VM (available: {})",
-            plan.protocols.join(", ")
-        ))));
+        return Err(AppError::from(machina_core::LibvirtError::Invalid(
+            format!(
+                "protocol '{protocol}' is not available for this VM (available: {})",
+                plan.protocols.join(", ")
+            ),
+        )));
     }
 
     let ttl = Duration::from_secs(

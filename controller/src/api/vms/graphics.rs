@@ -19,9 +19,10 @@ pub async fn convert_vm_spice_to_vnc(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -88,9 +89,10 @@ pub async fn add_vm_graphics(
              VNC/SPICE console on the network",
         ));
     }
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -107,7 +109,10 @@ pub async fn add_vm_graphics(
     .map_err(|e| ApiError::internal(e.to_string()))?;
     state.emit_event(
         "vm.graphics",
-        format!("Added {} graphics for VM {name} (listen={listen})", body.graphics_type.trim()),
+        format!(
+            "Added {} graphics for VM {name} (listen={listen})",
+            body.graphics_type.trim()
+        ),
     );
     Ok(Json(result))
 }
@@ -120,9 +125,10 @@ pub async fn remove_vm_graphics(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     let (name, host_id) = crate::api::vm_row::vm_agent_row_libvirt(&state, id).await?;
-    let (_, agent_addr) = crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let (_, agent_addr) =
+        crate::engine::host_os::resolve_agent_addr(&state.pool, &state.config, host_id)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let mut client = crate::agent_client::connect(&agent_addr)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
@@ -136,7 +142,10 @@ pub async fn remove_vm_graphics(
     .map_err(|e| ApiError::internal(e.to_string()))?;
     state.emit_event(
         "vm.graphics",
-        format!("Removed {} graphics from VM {name}", body.graphics_type.trim()),
+        format!(
+            "Removed {} graphics from VM {name}",
+            body.graphics_type.trim()
+        ),
     );
     Ok(Json(result))
 }

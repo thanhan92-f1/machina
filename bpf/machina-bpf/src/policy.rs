@@ -43,15 +43,34 @@ impl Prefix {
 pub enum Rule {
     DenyCidr(Prefix),
     /// `proto` 0 = any, `port` 0 = any.
-    Allow { proto: u8, port: u16, prefix: Prefix },
-    DenyPort { proto: u8, port: u16 },
-    ExecDeny { path: String, hash: u64 },
-    FileDeny { prefix: String },
-    CapDeny { cap: u32 },
+    Allow {
+        proto: u8,
+        port: u16,
+        prefix: Prefix,
+    },
+    DenyPort {
+        proto: u8,
+        port: u16,
+    },
+    ExecDeny {
+        path: String,
+        hash: u64,
+    },
+    FileDeny {
+        prefix: String,
+    },
+    CapDeny {
+        cap: u32,
+    },
     /// Resolved answers for names under this suffix are added to the deny trie.
-    DnsDeny { suffix: String },
+    DnsDeny {
+        suffix: String,
+    },
     /// New workload-initiated connections per second (token bucket per interface).
-    ConnRate { per_sec: u32, burst: u32 },
+    ConnRate {
+        per_sec: u32,
+        burst: u32,
+    },
 }
 
 pub const MAX_CONN_RATE: u32 = 1_000_000;
@@ -140,7 +159,11 @@ pub fn parse_prefix(s: &str) -> Result<Prefix, String> {
             .ok_or_else(|| format!("invalid prefix length `/{l}`"))?,
         None => max,
     };
-    let bits = if ip.is_ipv4() { V4_MAPPED_PREFIX_BITS + len } else { len };
+    let bits = if ip.is_ipv4() {
+        V4_MAPPED_PREFIX_BITS + len
+    } else {
+        len
+    };
     Ok(Prefix {
         addr: mask(ip_to_addr(ip), bits),
         bits,
@@ -270,7 +293,11 @@ pub fn parse_cap(s: &str) -> Result<u32, String> {
         }
     }
     let up = t.to_ascii_uppercase();
-    let name = if up.starts_with("CAP_") { up } else { format!("CAP_{up}") };
+    let name = if up.starts_with("CAP_") {
+        up
+    } else {
+        format!("CAP_{up}")
+    };
     CAPABILITIES
         .iter()
         .position(|c| *c == name)
@@ -332,7 +359,10 @@ pub fn compile(kind: &str, match_value: &str) -> Result<Vec<Rule>, String> {
         }
         "deny_cap" => Ok(vec![Rule::CapDeny { cap: parse_cap(m)? }]),
         "deny_dns" => {
-            let suffix = m.trim_start_matches("*.").trim_start_matches('.').trim_end_matches('.');
+            let suffix = m
+                .trim_start_matches("*.")
+                .trim_start_matches('.')
+                .trim_end_matches('.');
             if suffix.is_empty() || suffix.contains(' ') {
                 return Err("deny_dns requires a domain such as `*.example.com`".into());
             }
@@ -381,7 +411,10 @@ mod tests {
         assert_eq!(p.bits, 104);
         assert_eq!(&p.addr[12..], &[10, 0, 0, 0]);
         assert_eq!(p.to_display(), "10.0.0.0/8");
-        assert_eq!(parse_prefix("203.0.113.5").unwrap().to_display(), "203.0.113.5");
+        assert_eq!(
+            parse_prefix("203.0.113.5").unwrap().to_display(),
+            "203.0.113.5"
+        );
         let v6 = parse_prefix("2001:db8::1/32").unwrap();
         assert_eq!(v6.bits, 32);
         assert_eq!(v6.to_display(), "2001:db8::/32");
@@ -402,7 +435,11 @@ mod tests {
             }]
         );
         match &compile("allow_port", "10.0.0.0/8:443/tcp").unwrap()[0] {
-            Rule::Allow { proto, port, prefix } => {
+            Rule::Allow {
+                proto,
+                port,
+                prefix,
+            } => {
                 assert_eq!((*proto, *port), (IPPROTO_TCP, 443));
                 assert_eq!(prefix.to_display(), "10.0.0.0/8");
             }
@@ -425,23 +462,39 @@ mod tests {
     fn other_kinds() {
         assert_eq!(
             compile("deny_port", "4444/tcp").unwrap(),
-            vec![Rule::DenyPort { proto: IPPROTO_TCP, port: 4444 }]
+            vec![Rule::DenyPort {
+                proto: IPPROTO_TCP,
+                port: 4444
+            }]
         );
         assert_eq!(
             compile("deny_port", "53").unwrap(),
             vec![Rule::DenyPort { proto: 0, port: 53 }]
         );
         assert!(compile("deny_process", "nc").is_err());
-        assert!(matches!(&compile("deny_process", "/usr/bin/nc").unwrap()[0], Rule::ExecDeny { .. }));
+        assert!(matches!(
+            &compile("deny_process", "/usr/bin/nc").unwrap()[0],
+            Rule::ExecDeny { .. }
+        ));
         assert_eq!(
             compile("deny_file", "/etc/shadow*").unwrap(),
-            vec![Rule::FileDeny { prefix: "/etc/shadow".into() }]
+            vec![Rule::FileDeny {
+                prefix: "/etc/shadow".into()
+            }]
         );
-        assert_eq!(compile("deny_cap", "CAP_NET_RAW").unwrap(), vec![Rule::CapDeny { cap: 13 }]);
-        assert_eq!(compile("deny_cap", "sys_admin").unwrap(), vec![Rule::CapDeny { cap: 21 }]);
+        assert_eq!(
+            compile("deny_cap", "CAP_NET_RAW").unwrap(),
+            vec![Rule::CapDeny { cap: 13 }]
+        );
+        assert_eq!(
+            compile("deny_cap", "sys_admin").unwrap(),
+            vec![Rule::CapDeny { cap: 21 }]
+        );
         assert_eq!(
             compile("deny_dns", "*.XYZ").unwrap(),
-            vec![Rule::DnsDeny { suffix: "xyz".into() }]
+            vec![Rule::DnsDeny {
+                suffix: "xyz".into()
+            }]
         );
         assert!(compile("deny_namespace", "kube-system").is_err());
         assert_eq!(compile("deny_ip", "1.2.3.4, 10.0.0.0/8").unwrap().len(), 2);
@@ -451,21 +504,39 @@ mod tests {
     fn rate_limits() {
         assert_eq!(
             compile("rate_limit", "100/s").unwrap(),
-            vec![Rule::ConnRate { per_sec: 100, burst: 100 }]
+            vec![Rule::ConnRate {
+                per_sec: 100,
+                burst: 100
+            }]
         );
         assert_eq!(
             compile("rate_limit", "90/m").unwrap(),
-            vec![Rule::ConnRate { per_sec: 2, burst: 2 }]
+            vec![Rule::ConnRate {
+                per_sec: 2,
+                burst: 2
+            }]
         );
         assert_eq!(
             compile("rate_limit", "50/s burst 200").unwrap(),
-            vec![Rule::ConnRate { per_sec: 50, burst: 200 }]
+            vec![Rule::ConnRate {
+                per_sec: 50,
+                burst: 200
+            }]
         );
         assert_eq!(
             compile("rate_limit", "50/s,burst=10").unwrap(),
-            vec![Rule::ConnRate { per_sec: 50, burst: 10 }]
+            vec![Rule::ConnRate {
+                per_sec: 50,
+                burst: 10
+            }]
         );
-        assert_eq!(compile("rate_limit", "20").unwrap(), vec![Rule::ConnRate { per_sec: 20, burst: 20 }]);
+        assert_eq!(
+            compile("rate_limit", "20").unwrap(),
+            vec![Rule::ConnRate {
+                per_sec: 20,
+                burst: 20
+            }]
+        );
         assert!(compile("rate_limit", "0/s").is_err());
         assert!(compile("rate_limit", "5/h").is_err());
         assert!(compile("rate_limit", "5000000/s").is_err());

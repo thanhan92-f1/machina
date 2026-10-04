@@ -262,7 +262,13 @@ mod tests {
 
     #[test]
     fn rejects_internal_ipv4_addresses() {
-        for ip in ["127.0.0.1", "169.254.169.254", "10.0.0.5", "192.168.1.1", "0.0.0.0"] {
+        for ip in [
+            "127.0.0.1",
+            "169.254.169.254",
+            "10.0.0.5",
+            "192.168.1.1",
+            "0.0.0.0",
+        ] {
             let addr: std::net::IpAddr = ip.parse().unwrap();
             assert!(is_internal_ip(&addr), "{ip} should be treated as internal");
         }

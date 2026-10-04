@@ -103,9 +103,7 @@ pub async fn create_app(manager: LibvirtManager, config: MachinaConfig) -> Route
         .layer(Extension(vessel_handle))
         .with_state(manager);
 
-    let mut router = Router::new()
-        .nest("/api/v1", api)
-        .nest("/ws/v1", ws);
+    let mut router = Router::new().nest("/api/v1", api).nest("/ws/v1", ws);
 
     if let Some(novnc_dir) = find_novnc() {
         tracing::info!("Serving noVNC from {}", novnc_dir.display());

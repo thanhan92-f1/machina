@@ -39,15 +39,25 @@ pub async fn list_pending(pool: &SqlitePool) -> anyhow::Result<Vec<ZyraActionRow
 }
 
 pub async fn list_by_status(pool: &SqlitePool, status: &str) -> anyhow::Result<Vec<ZyraActionRow>> {
-    let rows: Vec<(Uuid, String, String, String, String, String, serde_json::Value, String, String, DateTime<Utc>)> =
-        sqlx::query_as(
-            "SELECT id, source, action_type, label, review, risk, object_ref, status, requested_by,
+    let rows: Vec<(
+        Uuid,
+        String,
+        String,
+        String,
+        String,
+        String,
+        serde_json::Value,
+        String,
+        String,
+        DateTime<Utc>,
+    )> = sqlx::query_as(
+        "SELECT id, source, action_type, label, review, risk, object_ref, status, requested_by,
                     strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
              FROM ai_actions WHERE status = ? ORDER BY created_at DESC LIMIT 100",
-        )
-        .bind(status)
-        .fetch_all(pool)
-        .await?;
+    )
+    .bind(status)
+    .fetch_all(pool)
+    .await?;
     Ok(rows.into_iter().map(map_row).collect())
 }
 
@@ -107,15 +117,25 @@ pub async fn create_action(
 }
 
 pub async fn get_action(pool: &SqlitePool, id: Uuid) -> anyhow::Result<Option<ZyraActionRow>> {
-    let row: Option<(Uuid, String, String, String, String, String, serde_json::Value, String, String, DateTime<Utc>)> =
-        sqlx::query_as(
-            "SELECT id, source, action_type, label, review, risk, object_ref, status, requested_by,
+    let row: Option<(
+        Uuid,
+        String,
+        String,
+        String,
+        String,
+        String,
+        serde_json::Value,
+        String,
+        String,
+        DateTime<Utc>,
+    )> = sqlx::query_as(
+        "SELECT id, source, action_type, label, review, risk, object_ref, status, requested_by,
                     strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
              FROM ai_actions WHERE id = ?",
-        )
-        .bind(id)
-        .fetch_optional(pool)
-        .await?;
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
     Ok(row.map(map_row))
 }
 
@@ -138,7 +158,9 @@ pub async fn approve_and_execute(
     .execute(&state.pool)
     .await?;
     if updated.rows_affected() == 0 {
-        return Err(anyhow::anyhow!("Action already approved or executed by another request"));
+        return Err(anyhow::anyhow!(
+            "Action already approved or executed by another request"
+        ));
     }
 
     let result = match action.action_type.as_str() {

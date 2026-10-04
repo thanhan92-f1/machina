@@ -27,7 +27,17 @@ pub struct StoredPolicy {
     pub created_at: String,
 }
 
-type Row = (String, String, String, String, bool, String, String, String, String);
+type Row = (
+    String,
+    String,
+    String,
+    String,
+    bool,
+    String,
+    String,
+    String,
+    String,
+);
 
 fn from_row(r: Row) -> StoredPolicy {
     StoredPolicy {
@@ -71,10 +81,11 @@ pub async fn list(pool: &SqlitePool) -> anyhow::Result<Vec<StoredPolicy>> {
 }
 
 pub async fn get(pool: &SqlitePool, id: &str) -> anyhow::Result<Option<StoredPolicy>> {
-    let row: Option<Row> = sqlx::query_as(&format!("SELECT {COLUMNS} FROM bpf_policies WHERE id = ?"))
-        .bind(id)
-        .fetch_optional(pool)
-        .await?;
+    let row: Option<Row> =
+        sqlx::query_as(&format!("SELECT {COLUMNS} FROM bpf_policies WHERE id = ?"))
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
     Ok(row.map(from_row))
 }
 
@@ -130,11 +141,15 @@ async fn sync_one(host: &HostRef, desired: &[Policy]) -> anyhow::Result<Value> {
         let current: Vec<Policy> = client.call_as(&Request::ListPolicies).await?;
         for p in current.iter().filter(|p| p.id.starts_with(OWNED_PREFIX)) {
             if !desired.iter().any(|d| d.id == p.id) {
-                client.call(&Request::RemovePolicy { id: p.id.clone() }).await?;
+                client
+                    .call(&Request::RemovePolicy { id: p.id.clone() })
+                    .await?;
             }
         }
         for p in desired {
-            client.call(&Request::ApplyPolicy { policy: p.clone() }).await?;
+            client
+                .call(&Request::ApplyPolicy { policy: p.clone() })
+                .await?;
         }
         return Ok(json!({ "applied": desired.len() }));
     }
@@ -205,12 +220,19 @@ async fn set_mode(
 pub async fn enforcement_status(pool: &SqlitePool) -> Value {
     let policies = list(pool).await.unwrap_or_default();
     let statuses = super::host_statuses(pool).await;
-    let mut applied: Vec<String> = policies.iter().flat_map(|p| p.applied_hosts.clone()).collect();
+    let mut applied: Vec<String> = policies
+        .iter()
+        .flat_map(|p| p.applied_hosts.clone())
+        .collect();
     applied.sort();
     applied.dedup();
     let enforcing: Vec<&super::HostBpfStatus> = statuses
         .iter()
-        .filter(|s| s.status.as_ref().is_some_and(|st| st.mode.mode == Mode::Enforce))
+        .filter(|s| {
+            s.status
+                .as_ref()
+                .is_some_and(|st| st.mode.mode == Mode::Enforce)
+        })
         .collect();
     let blocked: u64 = statuses
         .iter()
@@ -263,7 +285,13 @@ pub async fn enforcement_policies(pool: &SqlitePool) -> Value {
 }
 
 pub async fn create_enforcement_policy(pool: &SqlitePool, body: &Value) -> Value {
-    let s = |k: &str, d: &str| body.get(k).and_then(|v| v.as_str()).unwrap_or(d).trim().to_string();
+    let s = |k: &str, d: &str| {
+        body.get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or(d)
+            .trim()
+            .to_string()
+    };
     let name = s("name", "policy");
     let kind = s("kind", "");
     let match_value = s("match", "");
@@ -271,12 +299,19 @@ pub async fn create_enforcement_policy(pool: &SqlitePool, body: &Value) -> Value
     let host_ids: Vec<String> = body
         .get("host_ids")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|h| h.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|h| h.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
     if scope == "fleet" && host_ids.len() == 1 {
         scope = format!("host:{}", host_ids[0]);
     }
-    let enabled = body.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+    let enabled = body
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
     if let Err(e) = validate(&kind, &match_value, &scope) {
         return json!({ "ok": false, "error": e, "api_mode": "native" });
     }
@@ -322,7 +357,13 @@ pub async fn apply_enforcement_policy(
     };
     let only = (!host_ids.is_empty()).then_some(host_ids);
     let sync = sync_hosts(pool, only).await.unwrap_or_default();
-    let modes = set_mode(pool, host_ids, Mode::Enforce, Some(cfg.bpf_enforce_lease_secs)).await;
+    let modes = set_mode(
+        pool,
+        host_ids,
+        Mode::Enforce,
+        Some(cfg.bpf_enforce_lease_secs),
+    )
+    .await;
     let enforced: Vec<String> = modes
         .iter()
         .filter(|m| m["ok"] == true)
@@ -334,11 +375,13 @@ pub async fn apply_enforcement_policy(
             applied.push(h.clone());
         }
     }
-    let _ = sqlx::query("UPDATE bpf_policies SET applied_hosts = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-        .bind(serde_json::to_string(&applied).unwrap_or_else(|_| "[]".into()))
-        .bind(policy_id)
-        .execute(pool)
-        .await;
+    let _ = sqlx::query(
+        "UPDATE bpf_policies SET applied_hosts = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    )
+    .bind(serde_json::to_string(&applied).unwrap_or_else(|_| "[]".into()))
+    .bind(policy_id)
+    .execute(pool)
+    .await;
     let ok = !enforced.is_empty() && ok_count(&sync) == sync.len();
     json!({
         "ok": ok,

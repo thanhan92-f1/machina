@@ -92,16 +92,26 @@ impl IntoResponse for AppError {
             LibvirtError::NotFound(msg) => (StatusCode::NOT_FOUND, "not_found", msg.clone()),
             LibvirtError::Invalid(msg) => (StatusCode::BAD_REQUEST, "invalid_request", msg.clone()),
             LibvirtError::Forbidden(msg) => (StatusCode::FORBIDDEN, "forbidden", msg.clone()),
-            LibvirtError::Connection(msg) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "libvirt_connection", msg.clone())
-            }
+            LibvirtError::Connection(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "libvirt_connection",
+                msg.clone(),
+            ),
             LibvirtError::Operation(msg) => match classify_operation_error(msg) {
                 Some((status, code)) => (status, code, msg.clone()),
-                None => (StatusCode::INTERNAL_SERVER_ERROR, "operation_failed", msg.clone()),
+                None => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "operation_failed",
+                    msg.clone(),
+                ),
             },
             LibvirtError::Internal(msg) => match classify_operation_error(msg) {
                 Some((status, code)) => (status, code, msg.clone()),
-                None => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error", msg.clone()),
+                None => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    msg.clone(),
+                ),
             },
         };
 

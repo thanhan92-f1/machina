@@ -37,19 +37,26 @@ fn arp_mac(ip: &str, iface: &str) -> Option<[u8; 6]> {
     let t = std::fs::read_to_string("/proc/net/arp").ok()?;
     t.lines().skip(1).find_map(|l| {
         let f: Vec<&str> = l.split_whitespace().collect();
-        (f.len() >= 6 && f[0] == ip && f[5] == iface && f[2] != "0x0").then(|| parse_mac(f[3]).ok()).flatten()
+        (f.len() >= 6 && f[0] == ip && f[5] == iface && f[2] != "0x0")
+            .then(|| parse_mac(f[3]).ok())
+            .flatten()
     })
 }
 
 fn iface_ipv4(iface: &str) -> Option<std::net::Ipv4Addr> {
-    let out = std::process::Command::new("ip").args(["-4", "-o", "addr", "show", "dev", iface]).output().ok()?;
+    let out = std::process::Command::new("ip")
+        .args(["-4", "-o", "addr", "show", "dev", iface])
+        .output()
+        .ok()?;
     let s = String::from_utf8_lossy(&out.stdout);
     let w = s.split_whitespace().skip_while(|w| *w != "inet").nth(1)?;
     w.split('/').next()?.parse().ok()
 }
 
 fn canon(ip: &str) -> Result<IpAddr> {
-    ip.trim().parse().map_err(|_| anyhow!("invalid IP address `{ip}`"))
+    ip.trim()
+        .parse()
+        .map_err(|_| anyhow!("invalid IP address `{ip}`"))
 }
 
 pub(crate) fn validate(c: &QuicLbConfig) -> Result<()> {
@@ -75,7 +82,9 @@ pub(crate) fn validate(c: &QuicLbConfig) -> Result<()> {
     for b in &c.backends {
         let a = canon(&b.addr)?.to_string();
         if !sids.insert(b.server_id.unwrap_or_else(|| default_server_id(&a))) {
-            return Err(anyhow!("server id collision at backend {a}; set server_id explicitly"));
+            return Err(anyhow!(
+                "server id collision at backend {a}; set server_id explicitly"
+            ));
         }
     }
     Ok(())
@@ -87,7 +96,9 @@ impl Engine {
         for (i, v) in out.iter_mut().enumerate() {
             *v = self
                 .dp
-                .percpu_array_sum::<u64>("QLB_STATS", id * QLB_STAT_SLOTS + i as u32, |a, b| *a += *b)
+                .percpu_array_sum::<u64>("QLB_STATS", id * QLB_STAT_SLOTS + i as u32, |a, b| {
+                    *a += *b
+                })
                 .unwrap_or(0);
         }
         out
@@ -95,19 +106,33 @@ impl Engine {
 
     fn quiclb_clear(&mut self, id: u32, n: usize, sids: &[u16]) {
         for idx in 0..n as u32 {
-            self.dp.cni_hash_remove::<QlbBeKey, QlbBackend>("QLB_BACKENDS", &QlbBeKey { svc_id: id, idx });
+            self.dp.cni_hash_remove::<QlbBeKey, QlbBackend>(
+                "QLB_BACKENDS",
+                &QlbBeKey { svc_id: id, idx },
+            );
         }
         for sid in sids {
-            self.dp.cni_hash_remove::<QlbSidKey, u32>("QLB_SID", &QlbSidKey { svc_id: id, sid: *sid, _pad: 0 });
+            self.dp.cni_hash_remove::<QlbSidKey, u32>(
+                "QLB_SID",
+                &QlbSidKey {
+                    svc_id: id,
+                    sid: *sid,
+                    _pad: 0,
+                },
+            );
         }
         for slot in 0..MAGLEV_M {
-            self.dp.cni_hash_remove::<MaglevKey, u32>("QLB_MAGLEV", &MaglevKey { svc_id: id, slot });
+            self.dp
+                .cni_hash_remove::<MaglevKey, u32>("QLB_MAGLEV", &MaglevKey { svc_id: id, slot });
         }
     }
 
     fn quiclb_remove(&mut self, name: &(String, u16)) -> Result<()> {
-        let Some(s) = self.quiclb.svcs.remove(name) else { return Ok(()) };
-        self.dp.cni_hash_remove::<QlbSvcKey, QlbSvc>("QLB_SVCS", &s.key);
+        let Some(s) = self.quiclb.svcs.remove(name) else {
+            return Ok(());
+        };
+        self.dp
+            .cni_hash_remove::<QlbSvcKey, QlbSvc>("QLB_SVCS", &s.key);
         let sids: Vec<u16> = s.backends.iter().map(|b| b.server_id).collect();
         self.quiclb_clear(s.id, s.backends.len(), &sids);
         if self.quiclb.svcs.is_empty() {
@@ -129,13 +154,18 @@ impl Engine {
         }
         validate(&c)?;
         let iface = if c.iface.is_empty() {
-            self.quiclb.iface.clone().ok_or_else(|| anyhow!("iface (the uplink) is required"))?
+            self.quiclb
+                .iface
+                .clone()
+                .ok_or_else(|| anyhow!("iface (the uplink) is required"))?
         } else {
             c.iface.clone()
         };
         if let Some(cur) = &self.quiclb.iface {
             if *cur != iface && !self.quiclb.svcs.is_empty() {
-                return Err(anyhow!("QUIC LB already runs on {cur}; one uplink per host"));
+                return Err(anyhow!(
+                    "QUIC LB already runs on {cur}; one uplink per host"
+                ));
             }
         }
         if if_nametoindex(&iface).is_none() {
@@ -148,7 +178,9 @@ impl Engine {
                     IpAddr::V4(a) => a.octets(),
                     IpAddr::V6(_) => return Err(anyhow!("encap_src must be IPv4")),
                 },
-                None => iface_ipv4(&iface).ok_or_else(|| anyhow!("{iface} has no IPv4 address; pass encap_src"))?.octets(),
+                None => iface_ipv4(&iface)
+                    .ok_or_else(|| anyhow!("{iface} has no IPv4 address; pass encap_src"))?
+                    .octets(),
             },
             QuicLbMode::Dsr => [0; 4],
         };
@@ -162,9 +194,19 @@ impl Engine {
                     anyhow!("no neighbour entry for {a} on {iface}; reach it once or pass mac")
                 })?,
             };
-            let sid = b.server_id.unwrap_or_else(|| default_server_id(&a.to_string()));
-            entries.push(QlbBackend { addr: addr16(&a.to_string())?, mac, _pad: [0; 2] });
-            backends.push(QuicLbBackendStatus { addr: a.to_string(), mac: fmt_mac(&mac), server_id: sid });
+            let sid = b
+                .server_id
+                .unwrap_or_else(|| default_server_id(&a.to_string()));
+            entries.push(QlbBackend {
+                addr: addr16(&a.to_string())?,
+                mac,
+                _pad: [0; 2],
+            });
+            backends.push(QuicLbBackendStatus {
+                addr: a.to_string(),
+                mac: fmt_mac(&mac),
+                server_id: sid,
+            });
         }
         let id = match self.quiclb.svcs.get(&name) {
             Some(s) => s.id,
@@ -178,16 +220,42 @@ impl Engine {
             self.quiclb_clear(id, n, &sids);
         }
         for (idx, (e, b)) in entries.iter().zip(&backends).enumerate() {
-            self.dp.cni_hash_insert("QLB_BACKENDS", QlbBeKey { svc_id: id, idx: idx as u32 }, *e)?;
-            self.dp.cni_hash_insert("QLB_SID", QlbSidKey { svc_id: id, sid: b.server_id, _pad: 0 }, idx as u32)?;
+            self.dp.cni_hash_insert(
+                "QLB_BACKENDS",
+                QlbBeKey {
+                    svc_id: id,
+                    idx: idx as u32,
+                },
+                *e,
+            )?;
+            self.dp.cni_hash_insert(
+                "QLB_SID",
+                QlbSidKey {
+                    svc_id: id,
+                    sid: b.server_id,
+                    _pad: 0,
+                },
+                idx as u32,
+            )?;
         }
         if backends.len() >= 2 {
             let names: Vec<String> = backends.iter().map(|b| b.addr.clone()).collect();
             for (slot, idx) in maglev_table(&names, MAGLEV_M).iter().enumerate() {
-                self.dp.cni_hash_insert("QLB_MAGLEV", MaglevKey { svc_id: id, slot: slot as u32 }, *idx)?;
+                self.dp.cni_hash_insert(
+                    "QLB_MAGLEV",
+                    MaglevKey {
+                        svc_id: id,
+                        slot: slot as u32,
+                    },
+                    *idx,
+                )?;
             }
         }
-        let key = QlbSvcKey { addr: addr16(&name.0)?, port: c.port.to_be_bytes(), _pad: [0; 2] };
+        let key = QlbSvcKey {
+            addr: addr16(&name.0)?,
+            port: c.port.to_be_bytes(),
+            _pad: [0; 2],
+        };
         self.dp.cni_hash_insert(
             "QLB_SVCS",
             key,
@@ -195,7 +263,11 @@ impl Engine {
                 svc_id: id,
                 backend_count: backends.len() as u32,
                 cid_len: c.cid_len,
-                mode: if c.mode == QuicLbMode::Ipip { QLB_MODE_IPIP } else { QLB_MODE_DSR },
+                mode: if c.mode == QuicLbMode::Ipip {
+                    QLB_MODE_IPIP
+                } else {
+                    QLB_MODE_DSR
+                },
                 config_id: c.config_id,
                 _pad: 0,
                 src_mac,
@@ -207,7 +279,19 @@ impl Engine {
             Some(s) => s.base,
             None => self.quiclb_counters(id),
         };
-        self.quiclb.svcs.insert(name.clone(), Svc { id, key, cfg: QuicLbConfig { iface: iface.clone(), ..c }, backends, base });
+        self.quiclb.svcs.insert(
+            name.clone(),
+            Svc {
+                id,
+                key,
+                cfg: QuicLbConfig {
+                    iface: iface.clone(),
+                    ..c
+                },
+                backends,
+                base,
+            },
+        );
         self.quiclb.iface = Some(iface.clone());
         if let Err(e) = self.xdp_uplink_set(&iface, XDP_F_QUICLB, true) {
             self.quiclb_remove(&name)?;
@@ -217,14 +301,20 @@ impl Engine {
     }
 
     pub(super) fn quiclb_status(&mut self) -> QuicLbStatus {
-        let list: Vec<(u32, [u64; STATS], QuicLbConfig, Vec<QuicLbBackendStatus>)> =
-            self.quiclb.svcs.values().map(|s| (s.id, s.base, s.cfg.clone(), s.backends.clone())).collect();
+        let list: Vec<(u32, [u64; STATS], QuicLbConfig, Vec<QuicLbBackendStatus>)> = self
+            .quiclb
+            .svcs
+            .values()
+            .map(|s| (s.id, s.base, s.cfg.clone(), s.backends.clone()))
+            .collect();
         let mut services = Vec::with_capacity(list.len());
         for (id, base, cfg, backends) in list {
             let now = self.quiclb_counters(id);
             let d = |i: u32| now[i as usize].saturating_sub(base[i as usize]);
             services.push(QuicLbServiceStatus {
-                vip: canon(&cfg.vip).map(|a| a.to_string()).unwrap_or(cfg.vip.clone()),
+                vip: canon(&cfg.vip)
+                    .map(|a| a.to_string())
+                    .unwrap_or(cfg.vip.clone()),
                 port: cfg.port,
                 mode: cfg.mode,
                 cid_len: cfg.cid_len,
@@ -239,9 +329,14 @@ impl Engine {
             });
         }
         let attached = self.quiclb.iface.as_deref().is_some_and(|i| {
-            self.dp.xdp_attached(i) == Some("mn_xdp_uplink") && self.uplink.flags & XDP_F_QUICLB != 0
+            self.dp.xdp_attached(i) == Some("mn_xdp_uplink")
+                && self.uplink.flags & XDP_F_QUICLB != 0
         });
-        QuicLbStatus { iface: self.quiclb.iface.clone(), attached, services }
+        QuicLbStatus {
+            iface: self.quiclb.iface.clone(),
+            attached,
+            services,
+        }
     }
 }
 
@@ -254,7 +349,13 @@ mod tests {
             iface: "eth0".into(),
             vip: "10.0.0.10".into(),
             port: 443,
-            backends: backends.iter().map(|a| QuicLbBackend { addr: (*a).into(), ..Default::default() }).collect(),
+            backends: backends
+                .iter()
+                .map(|a| QuicLbBackend {
+                    addr: (*a).into(),
+                    ..Default::default()
+                })
+                .collect(),
             cid_len: 8,
             config_id: 0,
             mode: QuicLbMode::Dsr,

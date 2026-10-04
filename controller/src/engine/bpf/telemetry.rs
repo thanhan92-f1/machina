@@ -80,7 +80,13 @@ async fn proc_events(pool: &SqlitePool, kind: Option<&str>) -> Vec<Value> {
 // ---------------------------------------------------------------------------
 
 pub async fn anomalies(pool: &SqlitePool) -> Value {
-    let mut items = fan_out_items(pool, &Request::Anomalies { limit: Some(FLEET_LIMIT) }).await;
+    let mut items = fan_out_items(
+        pool,
+        &Request::Anomalies {
+            limit: Some(FLEET_LIMIT),
+        },
+    )
+    .await;
     newest_first(&mut items);
     for a in items.iter_mut() {
         if let Some(o) = a.as_object_mut() {
@@ -105,7 +111,10 @@ fn severity_weight(s: &str) -> f64 {
 /// 100 = calm. Each recent anomaly / kill subtracts by severity.
 pub async fn fleet_threat_summary(pool: &SqlitePool) -> Value {
     let anomalies = within_hours(
-        anomalies(pool).await["anomalies"].as_array().cloned().unwrap_or_default(),
+        anomalies(pool).await["anomalies"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default(),
         24,
     );
     let killed: Vec<Value> = within_hours(proc_events(pool, None).await, 24)
@@ -129,7 +138,10 @@ pub async fn fleet_threat_summary(pool: &SqlitePool) -> Value {
         })
         .collect();
     critical.extend(killed.iter().take(20).map(|p| {
-        let what = p["path"].as_str().or(p["comm"].as_str()).unwrap_or("process");
+        let what = p["path"]
+            .as_str()
+            .or(p["comm"].as_str())
+            .unwrap_or("process");
         json!({
             "kind": format!("{}_denied", str_of(p, "kind")),
             "title": "Runtime policy block",
@@ -152,7 +164,14 @@ pub async fn fleet_threat_summary(pool: &SqlitePool) -> Value {
 // ---------------------------------------------------------------------------
 
 pub async fn flows(pool: &SqlitePool, limit: usize) -> Value {
-    let mut items = fan_out_items(pool, &Request::Flows { limit: Some(FLEET_LIMIT), vm: None }).await;
+    let mut items = fan_out_items(
+        pool,
+        &Request::Flows {
+            limit: Some(FLEET_LIMIT),
+            vm: None,
+        },
+    )
+    .await;
     items.sort_by_key(|f| std::cmp::Reverse(u64_of(f, "tx_bytes") + u64_of(f, "rx_bytes")));
     let total = items.len();
     items.truncate(limit);
@@ -167,7 +186,14 @@ fn talker_key(f: &Value) -> String {
 }
 
 pub async fn flow_stats(pool: &SqlitePool) -> Value {
-    let all = fan_out_items(pool, &Request::Flows { limit: Some(FLEET_LIMIT), vm: None }).await;
+    let all = fan_out_items(
+        pool,
+        &Request::Flows {
+            limit: Some(FLEET_LIMIT),
+            vm: None,
+        },
+    )
+    .await;
     stats_of(&all)
 }
 
@@ -219,7 +245,9 @@ pub async fn l7(pool: &SqlitePool, limit: usize, protocol: Option<&str>) -> Valu
     let mut by_proto: BTreeMap<String, u64> = BTreeMap::new();
     let mut hosts: HashMap<String, (u64, BTreeSet<String>)> = HashMap::new();
     for r in &items {
-        *by_proto.entry(str_of(r, "protocol").to_string()).or_default() += 1;
+        *by_proto
+            .entry(str_of(r, "protocol").to_string())
+            .or_default() += 1;
         if let Some(h) = r["host"].as_str() {
             let e = hosts.entry(h.to_string()).or_default();
             e.0 += 1;
@@ -290,7 +318,10 @@ pub async fn native_dataplane(pool: &SqlitePool) -> Value {
         Value::Object(o)
     }))
     .await;
-    let isolating: Vec<&Value> = per_host.iter().filter(|h| h["node_iso"]["isolating"] == true).collect();
+    let isolating: Vec<&Value> = per_host
+        .iter()
+        .filter(|h| h["node_iso"]["isolating"] == true)
+        .collect();
     json!({
         "hosts": per_host,
         "isolating_hosts": isolating.len(),
@@ -301,7 +332,13 @@ pub async fn native_dataplane(pool: &SqlitePool) -> Value {
 /// JA3/JA4 ClientHello fingerprints across the fleet, plus the most common
 /// JA4s with the SNIs and workloads that sent them.
 pub async fn tls_fingerprints(pool: &SqlitePool, limit: usize) -> Value {
-    let mut items = fan_out_items(pool, &Request::TlsFingerprints { limit: Some(FLEET_LIMIT) }).await;
+    let mut items = fan_out_items(
+        pool,
+        &Request::TlsFingerprints {
+            limit: Some(FLEET_LIMIT),
+        },
+    )
+    .await;
     newest_first(&mut items);
     let mut by_ja4: HashMap<String, (u64, BTreeSet<String>, BTreeSet<String>)> = HashMap::new();
     for f in &items {
@@ -339,24 +376,48 @@ pub async fn fleet_records(pool: &SqlitePool, req: Request, limit: usize) -> Val
 
 /// Who changed links, addresses and routes on each host.
 pub async fn rtnl_events(pool: &SqlitePool, limit: usize) -> Value {
-    fleet_records(pool, Request::RtnlEvents { limit: Some(FLEET_LIMIT), iface: None }, limit).await
+    fleet_records(
+        pool,
+        Request::RtnlEvents {
+            limit: Some(FLEET_LIMIT),
+            iface: None,
+        },
+        limit,
+    )
+    .await
 }
 
 /// VMM guard violations (audited or denied) per host.
 pub async fn guard_events(pool: &SqlitePool, limit: usize) -> Value {
-    fleet_records(pool, Request::GuardEvents { limit: Some(FLEET_LIMIT) }, limit).await
+    fleet_records(
+        pool,
+        Request::GuardEvents {
+            limit: Some(FLEET_LIMIT),
+        },
+        limit,
+    )
+    .await
 }
 
 /// VM runtime reports for every tracked VM on hosts with it enabled.
 pub async fn vm_intel(pool: &SqlitePool) -> Value {
     let hosts = super::online_hosts(pool).await;
     let per_host = futures_util::future::join_all(hosts.iter().map(|h| async move {
-        let Ok(st) = call(h, &Request::VmIntelStatus).await else { return Vec::new() };
+        let Ok(st) = call(h, &Request::VmIntelStatus).await else {
+            return Vec::new();
+        };
         let names: Vec<String> = st["vms"]
             .as_array()
-            .map(|a| a.iter().filter_map(|v| v["name"].as_str().map(String::from)).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v["name"].as_str().map(String::from))
+                    .collect()
+            })
             .unwrap_or_default();
-        let reqs: Vec<Request> = names.into_iter().map(|name| Request::VmIntelVm { name }).collect();
+        let reqs: Vec<Request> = names
+            .into_iter()
+            .map(|name| Request::VmIntelVm { name })
+            .collect();
         let reports = futures_util::future::join_all(reqs.iter().map(|r| call(h, r))).await;
         reports
             .into_iter()
@@ -382,7 +443,14 @@ pub async fn icmp_errors(pool: &SqlitePool) -> Value {
 /// Workload → peer service map plus threats / timeline, in the shape the
 /// Network Canvas renders.
 pub async fn network_pulse(pool: &SqlitePool) -> Value {
-    let all = fan_out_items(pool, &Request::Flows { limit: Some(FLEET_LIMIT), vm: None }).await;
+    let all = fan_out_items(
+        pool,
+        &Request::Flows {
+            limit: Some(FLEET_LIMIT),
+            vm: None,
+        },
+    )
+    .await;
     // node key → (node json, flows out, flows in, denied)
     let mut nodes: BTreeMap<String, (Value, u64, u64, u64)> = BTreeMap::new();
     // (src key, dst key) → (bytes, flows, denied, ports)
@@ -394,9 +462,14 @@ pub async fn network_pulse(pool: &SqlitePool) -> Value {
         let dst = str_of(f, "remote").to_string();
         let dkey = format!("external/{dst}");
         let denied = u64::from(str_of(f, "verdict") == "deny");
-        let s = nodes
-            .entry(skey.clone())
-            .or_insert_with(|| (json!({ "name": src, "namespace": ns, "host_id": f["host_id"] }), 0, 0, 0));
+        let s = nodes.entry(skey.clone()).or_insert_with(|| {
+            (
+                json!({ "name": src, "namespace": ns, "host_id": f["host_id"] }),
+                0,
+                0,
+                0,
+            )
+        });
         s.1 += 1;
         s.3 += denied;
         let d = nodes
@@ -438,10 +511,7 @@ pub async fn network_pulse(pool: &SqlitePool) -> Value {
         })
         .collect();
     let stats = stats_of(&all);
-    let talkers: Vec<Value> = stats["top_talkers"]
-        .as_array()
-        .cloned()
-        .unwrap_or_default();
+    let talkers: Vec<Value> = stats["top_talkers"].as_array().cloned().unwrap_or_default();
     let threats = fleet_threat_summary(pool).await;
     json!({
         "enabled": true,
@@ -476,7 +546,11 @@ fn proc_event_summary(p: &Value) -> String {
             p["daddr"].as_str().unwrap_or("?"),
             p["dport"]
         ),
-        "cap_denied" => format!("{} denied capability {}", str_of(p, "comm"), str_of(p, "capability")),
+        "cap_denied" => format!(
+            "{} denied capability {}",
+            str_of(p, "comm"),
+            str_of(p, "capability")
+        ),
         k => format!("{k} {who}"),
     }
 }
@@ -499,7 +573,11 @@ fn timeline_of(procs: Vec<Value>, net: Vec<Value>, anomalies: Vec<Value>) -> Vec
     for n in net.into_iter().filter(|n| str_of(n, "verdict") == "deny") {
         let summary = format!(
             "denied {} {}:{} → {}:{}",
-            str_of(&n, "proto"), str_of(&n, "local"), n["local_port"], str_of(&n, "remote"), n["remote_port"]
+            str_of(&n, "proto"),
+            str_of(&n, "local"),
+            n["local_port"],
+            str_of(&n, "remote"),
+            n["remote_port"]
         );
         out.push(json!({
             "ts": n["ts"], "kind": "network.deny", "type": "deny", "summary": summary,
@@ -520,8 +598,19 @@ fn timeline_of(procs: Vec<Value>, net: Vec<Value>, anomalies: Vec<Value>) -> Vec
 pub async fn fleet_timeline(pool: &SqlitePool, hours: u32) -> Value {
     let (procs, net, anoms) = tokio::join!(
         proc_events(pool, None),
-        fan_out_items(pool, &Request::Events { limit: Some(FLEET_LIMIT), kind: None }),
-        fan_out_items(pool, &Request::Anomalies { limit: Some(FLEET_LIMIT) }),
+        fan_out_items(
+            pool,
+            &Request::Events {
+                limit: Some(FLEET_LIMIT),
+                kind: None
+            }
+        ),
+        fan_out_items(
+            pool,
+            &Request::Anomalies {
+                limit: Some(FLEET_LIMIT)
+            }
+        ),
     );
     let mut events = within_hours(timeline_of(procs, net, anoms), hours);
     events.truncate(FLEET_LIMIT);
@@ -550,7 +639,9 @@ fn process_graph(execs: &[Value]) -> Value {
         let src = str_of(e, "source").to_string();
         if !known.contains(&src) {
             let pid: u64 = src.parse().unwrap_or(0);
-            nodes.entry(pid).or_insert_with(|| json!({ "id": src, "pid": pid, "label": format!("pid {pid}") }));
+            nodes
+                .entry(pid)
+                .or_insert_with(|| json!({ "id": src, "pid": pid, "label": format!("pid {pid}") }));
         }
     }
     json!({ "nodes": nodes.into_values().collect::<Vec<_>>(), "edges": edges })
@@ -563,7 +654,10 @@ pub async fn host_resource(pool: &SqlitePool, host_id: &str, resource: &str, hou
         return json!({ "error": "host not found", "host_id": host_id });
     };
     let lim = Some(FLEET_LIMIT);
-    let procs = |kind: &str| Request::ProcEvents { limit: lim, kind: Some(kind.into()) };
+    let procs = |kind: &str| Request::ProcEvents {
+        limit: lim,
+        kind: Some(kind.into()),
+    };
     let body = match resource {
         "summary" => {
             let status = call(&h, &Request::Status).await;
@@ -575,16 +669,36 @@ pub async fn host_resource(pool: &SqlitePool, host_id: &str, resource: &str, hou
                 "recent_anomalies": anomalies,
             })
         }
-        "processes" => json!({ "processes": within_hours(host_items(&h, &procs("exec")).await, hours) }),
+        "processes" => {
+            json!({ "processes": within_hours(host_items(&h, &procs("exec")).await, hours) })
+        }
         "connections" => {
-            let flows = host_items(&h, &Request::Flows { limit: lim, vm: None }).await;
+            let flows = host_items(
+                &h,
+                &Request::Flows {
+                    limit: lim,
+                    vm: None,
+                },
+            )
+            .await;
             let connects = within_hours(host_items(&h, &procs("connect")).await, hours);
             json!({ "connections": flows, "connects": connects })
         }
-        "dns" => json!({ "queries": within_hours(host_items(&h, &Request::Dns { limit: lim }).await, hours) }),
-        "files" => json!({ "files": within_hours(host_items(&h, &procs("file_open")).await, hours) }),
+        "dns" => {
+            json!({ "queries": within_hours(host_items(&h, &Request::Dns { limit: lim }).await, hours) })
+        }
+        "files" => {
+            json!({ "files": within_hours(host_items(&h, &procs("file_open")).await, hours) })
+        }
         "ports" => {
-            let flows = host_items(&h, &Request::Flows { limit: lim, vm: None }).await;
+            let flows = host_items(
+                &h,
+                &Request::Flows {
+                    limit: lim,
+                    vm: None,
+                },
+            )
+            .await;
             let mut ports: BTreeMap<(String, u64), (HashSet<String>, u64)> = BTreeMap::new();
             for f in flows.iter().filter(|f| str_of(f, "origin") == "remote") {
                 let e = ports
@@ -599,7 +713,15 @@ pub async fn host_resource(pool: &SqlitePool, host_id: &str, resource: &str, hou
         }
         "containers" => {
             let mut by: BTreeMap<String, (u64, String)> = BTreeMap::new();
-            for p in host_items(&h, &Request::ProcEvents { limit: lim, kind: None }).await {
+            for p in host_items(
+                &h,
+                &Request::ProcEvents {
+                    limit: lim,
+                    kind: None,
+                },
+            )
+            .await
+            {
                 if let Some(c) = p["container"].as_str() {
                     let e = by.entry(c.to_string()).or_default();
                     e.0 += 1;
@@ -614,11 +736,21 @@ pub async fn host_resource(pool: &SqlitePool, host_id: &str, resource: &str, hou
         }
         "timeline" => {
             let (rp, rn, ra) = (
-                Request::ProcEvents { limit: lim, kind: None },
-                Request::Events { limit: lim, kind: None },
+                Request::ProcEvents {
+                    limit: lim,
+                    kind: None,
+                },
+                Request::Events {
+                    limit: lim,
+                    kind: None,
+                },
                 Request::Anomalies { limit: lim },
             );
-            let (p, n, a) = tokio::join!(host_items(&h, &rp), host_items(&h, &rn), host_items(&h, &ra));
+            let (p, n, a) = tokio::join!(
+                host_items(&h, &rp),
+                host_items(&h, &rn),
+                host_items(&h, &ra)
+            );
             json!({ "events": within_hours(timeline_of(p, n, a), hours) })
         }
         "process-graph" | "process_graph" => process_graph(&host_items(&h, &procs("exec")).await),
@@ -726,9 +858,14 @@ pub async fn asset_inventory(pool: &SqlitePool) -> Value {
             .unwrap_or_default();
         for i in s.status.iter().flat_map(|st| st.interfaces.iter()) {
             if let Some(vm) = &i.vm {
-                if let Some(a) = vms.entry(vm.clone())
-                    .or_insert_with(|| json!({ "name": vm, "host_id": s.host_id, "taps": [] }))["taps"]
-                    .as_array_mut() { a.push(json!(i.name)) }
+                if let Some(a) = vms
+                    .entry(vm.clone())
+                    .or_insert_with(|| json!({ "name": vm, "host_id": s.host_id, "taps": [] }))
+                    ["taps"]
+                    .as_array_mut()
+                {
+                    a.push(json!(i.name))
+                }
             }
         }
         hosts.push(json!({
@@ -738,7 +875,11 @@ pub async fn asset_inventory(pool: &SqlitePool) -> Value {
     }
     let containers: BTreeMap<String, Value> = procs
         .iter()
-        .filter_map(|p| p["container"].as_str().map(|c| (c.to_string(), json!({ "id": c, "host_id": p["host_id"] }))))
+        .filter_map(|p| {
+            p["container"]
+                .as_str()
+                .map(|c| (c.to_string(), json!({ "id": c, "host_id": p["host_id"] })))
+        })
         .collect();
     json!({
         "hosts": hosts,
@@ -750,7 +891,10 @@ pub async fn asset_inventory(pool: &SqlitePool) -> Value {
 
 /// Anomalies sharing a workload or remote peer, grouped.
 pub async fn correlations(pool: &SqlitePool) -> Value {
-    let items = anomalies(pool).await["anomalies"].as_array().cloned().unwrap_or_default();
+    let items = anomalies(pool).await["anomalies"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     let mut groups: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     for a in items {
         let key = a["vm"]
@@ -763,7 +907,12 @@ pub async fn correlations(pool: &SqlitePool) -> Value {
     let correlations: Vec<Value> = groups
         .into_iter()
         .filter(|(_, v)| {
-            v.iter().map(|a| str_of(a, "kind")).collect::<HashSet<_>>().len() > 1 || v.len() >= 3
+            v.iter()
+                .map(|a| str_of(a, "kind"))
+                .collect::<HashSet<_>>()
+                .len()
+                > 1
+                || v.len() >= 3
         })
         .map(|(key, v)| {
             let kinds: Vec<String> = v
@@ -795,9 +944,25 @@ pub async fn correlations(pool: &SqlitePool) -> Value {
 async fn all_events(pool: &SqlitePool) -> Vec<Value> {
     let (p, n, d, a) = tokio::join!(
         proc_events(pool, None),
-        fan_out_items(pool, &Request::Events { limit: Some(FLEET_LIMIT), kind: None }),
-        fan_out_items(pool, &Request::Dns { limit: Some(FLEET_LIMIT) }),
-        fan_out_items(pool, &Request::Anomalies { limit: Some(FLEET_LIMIT) }),
+        fan_out_items(
+            pool,
+            &Request::Events {
+                limit: Some(FLEET_LIMIT),
+                kind: None
+            }
+        ),
+        fan_out_items(
+            pool,
+            &Request::Dns {
+                limit: Some(FLEET_LIMIT)
+            }
+        ),
+        fan_out_items(
+            pool,
+            &Request::Anomalies {
+                limit: Some(FLEET_LIMIT)
+            }
+        ),
     );
     let tag = |mut v: Value, t: &str| {
         if let Some(o) = v.as_object_mut() {
@@ -839,14 +1004,46 @@ pub async fn search(pool: &SqlitePool, query: &str, host_id: Option<&str>, limit
 }
 
 const HUNTS: &[(&str, &str, &str)] = &[
-    ("blocked-activity", "Blocked by runtime policy", "Processes killed / denied and connections dropped by native enforcement"),
-    ("suspicious-exec", "Suspicious exec", "Executions out of /tmp, /dev/shm or hidden paths, and anomaly-flagged execs"),
-    ("shell-spawn", "Interactive shells", "sh / bash / zsh / dash executions"),
-    ("sensitive-files", "Sensitive file access", "Opens of watched credential and config files"),
-    ("capability-denials", "Capability denials", "Capability use denied by deny_cap policies"),
-    ("port-scans", "Port and host scans", "Scan and sweep anomalies from the flow detector"),
-    ("dns-anomalies", "DNS anomalies", "DGA-like, tunnelling and NXDOMAIN-burst DNS anomalies"),
-    ("beaconing", "Beaconing / exfil", "Periodic outbound and large transfer anomalies"),
+    (
+        "blocked-activity",
+        "Blocked by runtime policy",
+        "Processes killed / denied and connections dropped by native enforcement",
+    ),
+    (
+        "suspicious-exec",
+        "Suspicious exec",
+        "Executions out of /tmp, /dev/shm or hidden paths, and anomaly-flagged execs",
+    ),
+    (
+        "shell-spawn",
+        "Interactive shells",
+        "sh / bash / zsh / dash executions",
+    ),
+    (
+        "sensitive-files",
+        "Sensitive file access",
+        "Opens of watched credential and config files",
+    ),
+    (
+        "capability-denials",
+        "Capability denials",
+        "Capability use denied by deny_cap policies",
+    ),
+    (
+        "port-scans",
+        "Port and host scans",
+        "Scan and sweep anomalies from the flow detector",
+    ),
+    (
+        "dns-anomalies",
+        "DNS anomalies",
+        "DGA-like, tunnelling and NXDOMAIN-burst DNS anomalies",
+    ),
+    (
+        "beaconing",
+        "Beaconing / exfil",
+        "Periodic outbound and large transfer anomalies",
+    ),
 ];
 
 pub fn hunt_queries() -> Value {
@@ -861,21 +1058,33 @@ fn hunt_hit(id: &str, v: &Value) -> bool {
     let ty = str_of(v, "event_type");
     let path = v["path"].as_str().unwrap_or("");
     match id {
-        "blocked-activity" => v["killed"] == true || v["denied"] == true || str_of(v, "verdict") == "deny",
+        "blocked-activity" => {
+            v["killed"] == true || v["denied"] == true || str_of(v, "verdict") == "deny"
+        }
         "suspicious-exec" => {
-            (ty == "process" && kind == "exec"
-                && (path.starts_with("/tmp/") || path.starts_with("/dev/shm/") || path.contains("/.")))
+            (ty == "process"
+                && kind == "exec"
+                && (path.starts_with("/tmp/")
+                    || path.starts_with("/dev/shm/")
+                    || path.contains("/.")))
                 || (ty == "anomaly" && kind.contains("exec"))
         }
         "shell-spawn" => {
-            ty == "process" && kind == "exec"
-                && matches!(path.rsplit('/').next().unwrap_or(""), "sh" | "bash" | "zsh" | "dash" | "ash")
+            ty == "process"
+                && kind == "exec"
+                && matches!(
+                    path.rsplit('/').next().unwrap_or(""),
+                    "sh" | "bash" | "zsh" | "dash" | "ash"
+                )
         }
         "sensitive-files" => ty == "process" && kind == "file_open",
         "capability-denials" => kind == "cap_denied",
         "port-scans" => ty == "anomaly" && (kind.contains("scan") || kind.contains("sweep")),
         "dns-anomalies" => ty == "anomaly" && kind.starts_with("dns"),
-        "beaconing" => ty == "anomaly" && (kind.contains("beacon") || kind.contains("exfil") || kind.contains("transfer")),
+        "beaconing" => {
+            ty == "anomaly"
+                && (kind.contains("beacon") || kind.contains("exfil") || kind.contains("transfer"))
+        }
         _ => false,
     }
 }
@@ -902,14 +1111,24 @@ pub async fn run_hunt(pool: &SqlitePool, query_id: &str, host_id: Option<&str>) 
 /// host id) over the last `hours`.
 pub async fn target_activity(pool: &SqlitePool, target: &str, hours: u32) -> Value {
     let events = within_hours(
-        fan_out_items(pool, &Request::Events { limit: Some(FLEET_LIMIT), kind: None }).await,
+        fan_out_items(
+            pool,
+            &Request::Events {
+                limit: Some(FLEET_LIMIT),
+                kind: None,
+            },
+        )
+        .await,
         hours,
     );
     let hits: Vec<Value> = events
         .into_iter()
         .filter(|e| str_of(e, "vm") == target || str_of(e, "host_id") == target)
         .collect();
-    let denied = hits.iter().filter(|e| str_of(e, "verdict") == "deny").count();
+    let denied = hits
+        .iter()
+        .filter(|e| str_of(e, "verdict") == "deny")
+        .count();
     json!({
         "target": target, "hours": hours, "events": hits, "denied": denied,
         "allowed": hits.len() - denied, "source": SOURCE,
@@ -921,9 +1140,14 @@ pub async fn target_activity(pool: &SqlitePool, target: &str, hours: u32) -> Val
 pub async fn capture_target(pool: &SqlitePool, target: &str) -> Value {
     let mut started = Vec::new();
     for (h, res) in super::fan_out(pool, &Request::ListInterfaces).await {
-        let Ok(Value::Array(ifaces)) = res else { continue };
+        let Ok(Value::Array(ifaces)) = res else {
+            continue;
+        };
         let whole_host = h.id == target;
-        for i in ifaces.iter().filter(|i| whole_host || str_of(i, "vm") == target) {
+        for i in ifaces
+            .iter()
+            .filter(|i| whole_host || str_of(i, "vm") == target)
+        {
             let req = Request::CaptureStart {
                 iface: str_of(i, "name").to_string(),
                 duration_secs: Some(60),

@@ -33,11 +33,19 @@ pub(crate) fn parse_mac(s: &str) -> Result<[u8; 6]> {
 }
 
 pub(super) fn fmt_mac(m: &[u8; 6]) -> String {
-    m.iter().map(|b| format!("{b:02x}")).collect::<Vec<_>>().join(":")
+    m.iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<Vec<_>>()
+        .join(":")
 }
 
 pub(super) fn link_mac(iface: &str) -> Option<[u8; 6]> {
-    parse_mac(std::fs::read_to_string(format!("/sys/class/net/{iface}/address")).ok()?.trim()).ok()
+    parse_mac(
+        std::fs::read_to_string(format!("/sys/class/net/{iface}/address"))
+            .ok()?
+            .trim(),
+    )
+    .ok()
 }
 
 /// A NIC backed by a bus device (not veth/tap/bridge/dummy).
@@ -60,14 +68,22 @@ impl Engine {
     }
 
     fn direct_remove(&mut self, vm: &str) {
-        let Some((e, mac, ips, tap_idx)) = self.direct.entries.remove(vm) else { return };
+        let Some((e, mac, ips, tap_idx)) = self.direct.entries.remove(vm) else {
+            return;
+        };
         self.dp.cni_hash_remove::<u64, u32>("DIRECT_MAC", &mac);
         for ip in &ips {
-            self.dp.cni_hash_remove::<[u8; ADDR_LEN], u32>("DIRECT_IP", ip);
+            self.dp
+                .cni_hash_remove::<[u8; ADDR_LEN], u32>("DIRECT_IP", ip);
         }
         self.dp.cni_hash_remove::<u32, u32>("DIRECT_OUT", &tap_idx);
         self.dp.detach_tc_one(&e.tap, OUT);
-        if !self.direct.entries.values().any(|(o, ..)| o.outer_iface == e.outer_iface) {
+        if !self
+            .direct
+            .entries
+            .values()
+            .any(|(o, ..)| o.outer_iface == e.outer_iface)
+        {
             self.dp.detach_tc_one(&e.outer_iface, IN);
         }
     }
@@ -81,7 +97,8 @@ impl Engine {
             self.direct_push_cfg()?;
             return Ok(self.direct_status());
         }
-        let outer_idx = if_nametoindex(&c.outer_iface).ok_or_else(|| anyhow!("outer interface `{}` not found", c.outer_iface))?;
+        let outer_idx = if_nametoindex(&c.outer_iface)
+            .ok_or_else(|| anyhow!("outer interface `{}` not found", c.outer_iface))?;
         if is_physical(&c.outer_iface) && !c.force {
             return Err(anyhow!(
                 "`{}` is a physical NIC; redirecting its traffic can cut the host off. Pass force=true to use it",
@@ -104,7 +121,8 @@ impl Engine {
         let mac = match &c.mac {
             Some(m) => parse_mac(m)?,
             None => {
-                let mut m = link_mac(&tap).ok_or_else(|| anyhow!("cannot read MAC of {tap}; pass mac"))?;
+                let mut m =
+                    link_mac(&tap).ok_or_else(|| anyhow!("cannot read MAC of {tap}; pass mac"))?;
                 if m[0] == 0xfe {
                     m[0] = 0x52;
                 }
@@ -114,7 +132,8 @@ impl Engine {
         let ips: Vec<[u8; ADDR_LEN]> = c.ips.iter().map(|s| addr16(s)).collect::<Result<_>>()?;
 
         self.direct_remove(&c.vm);
-        self.dp.cni_hash_insert("DIRECT_MAC", mac_key(&mac), tap_idx)?;
+        self.dp
+            .cni_hash_insert("DIRECT_MAC", mac_key(&mac), tap_idx)?;
         for ip in &ips {
             self.dp.cni_hash_insert("DIRECT_IP", *ip, tap_idx)?;
         }
@@ -129,10 +148,19 @@ impl Engine {
             ips: c.ips.clone(),
             reverse: c.reverse,
         };
-        self.direct.entries.insert(c.vm.clone(), (entry, mac_key(&mac), ips, tap_idx));
-        let attach = self.dp.attach_tc_one(&c.outer_iface, IN, true).and_then(|_| {
-            if c.reverse { self.dp.attach_tc_one(&tap, OUT, true) } else { Ok(()) }
-        });
+        self.direct
+            .entries
+            .insert(c.vm.clone(), (entry, mac_key(&mac), ips, tap_idx));
+        let attach = self
+            .dp
+            .attach_tc_one(&c.outer_iface, IN, true)
+            .and_then(|_| {
+                if c.reverse {
+                    self.dp.attach_tc_one(&tap, OUT, true)
+                } else {
+                    Ok(())
+                }
+            });
         if let Err(e) = attach {
             self.direct_remove(&c.vm);
             self.direct_push_cfg()?;
@@ -143,8 +171,16 @@ impl Engine {
     }
 
     pub(super) fn direct_status(&mut self) -> DirectStatus {
-        let mut sum = |i| self.dp.percpu_array_sum::<u64>("DIRECT_STATS", i, |a, b| *a += *b).unwrap_or(0);
-        let (redirected_in, redirected_out, idle) = (sum(DIRECT_STAT_IN), sum(DIRECT_STAT_OUT), sum(DIRECT_STAT_IDLE));
+        let mut sum = |i| {
+            self.dp
+                .percpu_array_sum::<u64>("DIRECT_STATS", i, |a, b| *a += *b)
+                .unwrap_or(0)
+        };
+        let (redirected_in, redirected_out, idle) = (
+            sum(DIRECT_STAT_IN),
+            sum(DIRECT_STAT_OUT),
+            sum(DIRECT_STAT_IDLE),
+        );
         let mut attached = Vec::new();
         for (e, ..) in self.direct.entries.values() {
             for (iface, prog) in [(&e.outer_iface, IN), (&e.tap, OUT)] {
@@ -155,7 +191,12 @@ impl Engine {
             }
         }
         DirectStatus {
-            entries: self.direct.entries.values().map(|(e, ..)| e.clone()).collect(),
+            entries: self
+                .direct
+                .entries
+                .values()
+                .map(|(e, ..)| e.clone())
+                .collect(),
             attached,
             active: self.lease_live() && !self.direct.entries.is_empty(),
             redirected_in,

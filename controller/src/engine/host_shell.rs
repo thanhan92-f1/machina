@@ -24,7 +24,15 @@ fn validate_ssh_address(address: &str) -> anyhow::Result<()> {
     }
     // Reject anything that starts with '-' (would be interpreted as an SSH option)
     // or contains shell metacharacters / whitespace.
-    if a.starts_with('-') || a.contains(|c: char| c.is_whitespace() || matches!(c, ';' | '&' | '|' | '$' | '`' | '(' | ')' | '<' | '>' | '"' | '\'')) {
+    if a.starts_with('-')
+        || a.contains(|c: char| {
+            c.is_whitespace()
+                || matches!(
+                    c,
+                    ';' | '&' | '|' | '$' | '`' | '(' | ')' | '<' | '>' | '"' | '\''
+                )
+        })
+    {
         anyhow::bail!("invalid host address '{a}' — must be a plain hostname or IP");
     }
     Ok(())

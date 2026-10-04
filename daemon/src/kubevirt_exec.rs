@@ -131,4 +131,3 @@ pub async fn virtctl_start_vm(
     let stderr = String::from_utf8_lossy(&out.stderr).to_string();
     Ok((code, stdout, stderr))
 }
-

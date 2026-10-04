@@ -14,9 +14,9 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use serde_json::json;
+use std::sync::{Mutex, MutexGuard};
 use tokio::io::{unix::AsyncFd, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
-use std::sync::{Mutex, MutexGuard};
 use tokio::sync::broadcast;
 
 use machina_bpf_common::*;
@@ -32,22 +32,22 @@ use crate::{dns, fmt_addr};
 mod afxdp;
 mod cni;
 mod direct;
-mod quiclb;
-mod scx;
-mod vml7;
 mod guard;
 mod l7sample;
 mod listen;
 mod nodeiso;
 mod ops;
+mod quiclb;
 mod readers;
 mod rtnl;
+mod scx;
 mod shield;
 mod tcp;
 mod tls;
 mod uplink;
 mod vm;
 mod vmintel;
+mod vml7;
 
 pub use listen::{run, Config};
 
@@ -59,7 +59,12 @@ const TLS_STORE_CAP: usize = 2000;
 const SSL_STORE_CAP: usize = 2000;
 const ANOMALY_STORE_CAP: usize = 1000;
 const VM_FLOW_STORE_CAP: usize = 5000;
-const SOCK_PROGS: &[&str] = &["mn_cg_connect4", "mn_cg_connect6", "mn_cg_sendmsg4", "mn_cg_sendmsg6"];
+const SOCK_PROGS: &[&str] = &[
+    "mn_cg_connect4",
+    "mn_cg_connect6",
+    "mn_cg_sendmsg4",
+    "mn_cg_sendmsg6",
+];
 
 // ---------------------------------------------------------------------------
 // Shared state (read by ring-buffer readers, engine and request handlers)
@@ -136,11 +141,17 @@ impl Shared {
     fn iface_workload(&self, ifindex: u32) -> Option<Workload> {
         let m = self.ifaces.get(&ifindex)?;
         if let Some(vm) = &m.vm {
-            return Some(Workload { kind: "vm".into(), ns: None, name: vm.clone() });
+            return Some(Workload {
+                kind: "vm".into(),
+                ns: None,
+                name: vm.clone(),
+            });
         }
-        self.pod_ifaces
-            .get(&m.name)
-            .map(|(ns, name)| Workload { kind: "pod".into(), ns: Some(ns.clone()), name: name.clone() })
+        self.pod_ifaces.get(&m.name).map(|(ns, name)| Workload {
+            kind: "pod".into(),
+            ns: Some(ns.clone()),
+            name: name.clone(),
+        })
     }
 
     fn cgroup_workload(&self, path: &str) -> Option<Workload> {
@@ -354,7 +365,9 @@ impl Engine {
         if self.features.cgroup2 {
             let root = Path::new(attribution::CGROUP_ROOT);
             if let Err(e) = self.dp.attach_cgroup(root, SOCK_PROGS, false) {
-                self.dp.notes.push(format!("host cgroup enforcement unavailable: {e:#}"));
+                self.dp
+                    .notes
+                    .push(format!("host cgroup enforcement unavailable: {e:#}"));
             } else if let Some(id) = attribution::cgroup_id(root) {
                 let _ = self.dp.set_cgroup_scope(id, 0);
             }
@@ -458,8 +471,7 @@ impl Engine {
     }
 
     fn scope_of_iface(&self, r: &IfaceRuntime) -> u32 {
-        r.vm
-            .as_ref()
+        r.vm.as_ref()
             .and_then(|vm| self.scopes.get(&format!("vm:{vm}")))
             .map(|s| s.id)
             .unwrap_or(0)
@@ -490,7 +502,9 @@ impl Engine {
         self.dp.attach_tc(name)?;
         if xdp {
             if let Err(e) = self.dp.attach_xdp(name) {
-                self.dp.notes.push(format!("XDP attach to {name} failed: {e:#}"));
+                self.dp
+                    .notes
+                    .push(format!("XDP attach to {name} failed: {e:#}"));
             }
         }
         self.ifaces.insert(
@@ -507,7 +521,13 @@ impl Engine {
         );
         {
             let mut sh = lock(&self.shared);
-            sh.ifaces.insert(idx, IfaceMeta { name: name.to_string(), vm });
+            sh.ifaces.insert(
+                idx,
+                IfaceMeta {
+                    name: name.to_string(),
+                    vm,
+                },
+            );
         }
         self.program_iface(idx)?;
         Ok(())
@@ -565,7 +585,11 @@ impl Engine {
         }
         {
             let sh = lock(&self.shared);
-            if sh.captures.values().any(|c| c.ifindex == idx && !c.info.done) {
+            if sh
+                .captures
+                .values()
+                .any(|c| c.ifindex == idx && !c.info.done)
+            {
                 flags |= IF_CAPTURE;
             }
         }
@@ -593,7 +617,9 @@ impl Engine {
 
     fn refresh_scope_flags(&mut self, scope_id: u32) -> Result<()> {
         let mut f = 0;
-        if self.scope_has(scope_id, &["deny_ip", "deny_port"]) || self.dns_blocked.keys().any(|(s, _)| *s == scope_id) {
+        if self.scope_has(scope_id, &["deny_ip", "deny_port"])
+            || self.dns_blocked.keys().any(|(s, _)| *s == scope_id)
+        {
             f |= IF_DENY;
         }
         // Scope 0 is bound at the cgroup root: an allowlist there would

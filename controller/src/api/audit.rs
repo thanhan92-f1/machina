@@ -43,7 +43,9 @@ pub async fn list_audit_logs(
     require_admin(&actor)?;
     let limit = q.limit.clamp(1, 500);
     fn escape_like(s: &str) -> String {
-        s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+        s.replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_")
     }
     let rows = match (&q.action, &q.actor) {
         (Some(action), Some(actor_filter)) if !action.is_empty() && !actor_filter.is_empty() => {

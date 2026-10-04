@@ -18,10 +18,7 @@ pub struct AgentAuth {
 }
 
 impl tonic::service::Interceptor for AgentAuth {
-    fn call(
-        &mut self,
-        mut req: tonic::Request<()>,
-    ) -> Result<tonic::Request<()>, tonic::Status> {
+    fn call(&mut self, mut req: tonic::Request<()>) -> Result<tonic::Request<()>, tonic::Status> {
         if let Some(t) = &self.token {
             if let Ok(val) = format!("Bearer {t}").parse() {
                 req.metadata_mut().insert("authorization", val);
@@ -65,11 +62,7 @@ pub async fn connect(addr: &str) -> anyhow::Result<AgentClient> {
         format!("http://{normalized}")
     };
 
-    let cached = channel_cache()
-        .lock()
-        .unwrap()
-        .get(&endpoint_url)
-        .cloned();
+    let cached = channel_cache().lock().unwrap().get(&endpoint_url).cloned();
     let channel = match cached {
         Some(ch) => ch,
         None => {
@@ -161,10 +154,12 @@ pub async fn list_sprites(client: &mut AgentClient) -> anyhow::Result<ListSprite
     read_rpc("list_sprites", client.list_sprites(ListSpritesRequest {})).await
 }
 
-pub async fn list_networks(
-    client: &mut AgentClient,
-) -> anyhow::Result<ListNetworksResponse> {
-    read_rpc("list_networks", client.list_networks(ListNetworksRequest {})).await
+pub async fn list_networks(client: &mut AgentClient) -> anyhow::Result<ListNetworksResponse> {
+    read_rpc(
+        "list_networks",
+        client.list_networks(ListNetworksRequest {}),
+    )
+    .await
 }
 
 pub async fn list_storage_pools(
@@ -233,10 +228,7 @@ pub async fn guest_agent_action(
     serde_json::from_str(&resp.result_json).map_err(|e| anyhow::anyhow!("guest action JSON: {e}"))
 }
 
-pub async fn get_domain_xml(
-    client: &mut AgentClient,
-    vm_name: &str,
-) -> anyhow::Result<String> {
+pub async fn get_domain_xml(client: &mut AgentClient, vm_name: &str) -> anyhow::Result<String> {
     Ok(timed(
         "get_domain_xml",
         client.get_domain_xml(GetDomainXmlRequest {
@@ -369,9 +361,7 @@ pub async fn maintenance(
         .into_inner())
 }
 
-pub async fn get_host_info(
-    client: &mut AgentClient,
-) -> anyhow::Result<GetHostInfoResponse> {
+pub async fn get_host_info(client: &mut AgentClient) -> anyhow::Result<GetHostInfoResponse> {
     read_rpc("get_host_info", client.get_host_info(GetHostInfoRequest {})).await
 }
 
@@ -685,11 +675,7 @@ pub async fn set_autostart(
     vm_op_response(resp.ok, &resp.message)
 }
 
-pub async fn set_vcpus(
-    client: &mut AgentClient,
-    vm_name: &str,
-    count: u32,
-) -> anyhow::Result<()> {
+pub async fn set_vcpus(client: &mut AgentClient, vm_name: &str, count: u32) -> anyhow::Result<()> {
     let resp = client
         .set_vcpus(SetVcpusRequest {
             vm_name: vm_name.to_string(),
@@ -906,10 +892,7 @@ pub async fn get_guest_observability(
     Ok(v)
 }
 
-pub async fn install_guest_tools(
-    client: &mut AgentClient,
-    vm_name: &str,
-) -> anyhow::Result<()> {
+pub async fn install_guest_tools(client: &mut AgentClient, vm_name: &str) -> anyhow::Result<()> {
     let resp = client
         .install_guest_tools(InstallGuestToolsRequest {
             vm_name: vm_name.to_string(),
@@ -1356,8 +1339,10 @@ pub async fn delete_load_balancer(
     }
 }
 
-pub async fn list_host_gpus(
-    client: &mut AgentClient,
-) -> anyhow::Result<ListHostGpusResponse> {
-    read_rpc("list_host_gpus", client.list_host_gpus(ListHostGpusRequest {})).await
+pub async fn list_host_gpus(client: &mut AgentClient) -> anyhow::Result<ListHostGpusResponse> {
+    read_rpc(
+        "list_host_gpus",
+        client.list_host_gpus(ListHostGpusRequest {}),
+    )
+    .await
 }

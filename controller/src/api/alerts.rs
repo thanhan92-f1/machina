@@ -92,13 +92,17 @@ pub async fn create_alert_rule(
         return Err(ApiError::bad_request("rule name must be 1–128 characters"));
     }
     if !matches!(body.metric.as_str(), "cpu_percent" | "mem_percent") {
-        return Err(ApiError::bad_request("metric must be cpu_percent or mem_percent"));
+        return Err(ApiError::bad_request(
+            "metric must be cpu_percent or mem_percent",
+        ));
     }
     if !matches!(body.comparator.as_str(), "gt" | "lt") {
         return Err(ApiError::bad_request("comparator must be gt or lt"));
     }
     if !matches!(body.severity.as_str(), "info" | "warning" | "critical") {
-        return Err(ApiError::bad_request("severity must be info, warning, or critical"));
+        return Err(ApiError::bad_request(
+            "severity must be info, warning, or critical",
+        ));
     }
     if !body.threshold.is_finite() {
         return Err(ApiError::bad_request("threshold must be a finite number"));

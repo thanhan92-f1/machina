@@ -192,7 +192,10 @@ pub async fn ensure_default_sites(pool: &SqlitePool) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn overview(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Result<MultisiteOverview> {
+pub async fn overview(
+    pool: &SqlitePool,
+    cfg: &ControllerConfig,
+) -> anyhow::Result<MultisiteOverview> {
     ensure_default_sites(pool).await?;
     let ov = firewall_overview(pool, cfg).await?;
     let rows: Vec<(
@@ -639,7 +642,10 @@ pub async fn cross_site_connectivity(
     })
 }
 
-pub async fn federated_siem_tag(pool: &SqlitePool, hours: u32) -> anyhow::Result<serde_json::Value> {
+pub async fn federated_siem_tag(
+    pool: &SqlitePool,
+    hours: u32,
+) -> anyhow::Result<serde_json::Value> {
     let sites: Vec<String> = sqlx::query_scalar("SELECT name FROM firewall_sites ORDER BY name")
         .fetch_all(pool)
         .await?;
@@ -651,7 +657,10 @@ pub async fn federated_siem_tag(pool: &SqlitePool, hours: u32) -> anyhow::Result
     }))
 }
 
-pub async fn merge_timeline(pool: &SqlitePool, limit: i64) -> anyhow::Result<Vec<serde_json::Value>> {
+pub async fn merge_timeline(
+    pool: &SqlitePool,
+    limit: i64,
+) -> anyhow::Result<Vec<serde_json::Value>> {
     // Clamp the client-supplied limit: SQLite treats a negative LIMIT as "no limit",
     // so an unclamped value (e.g. -1) would return the entire timeline unbounded.
     let limit = limit.clamp(1, 500);

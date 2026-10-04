@@ -92,9 +92,18 @@ pub fn format_notification(event_kind: &str, payload: &serde_json::Value) -> (St
     let subject = format!("[machina] {event_kind}");
     let body = if let Some(rule) = payload.get("rule").and_then(|v| v.as_str()) {
         let metric = payload.get("metric").and_then(|v| v.as_str()).unwrap_or("");
-        let cmp = payload.get("comparator").and_then(|v| v.as_str()).unwrap_or("");
-        let threshold = payload.get("threshold").map(|v| v.to_string()).unwrap_or_default();
-        let count = payload.get("count").map(|v| v.to_string()).unwrap_or_default();
+        let cmp = payload
+            .get("comparator")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let threshold = payload
+            .get("threshold")
+            .map(|v| v.to_string())
+            .unwrap_or_default();
+        let count = payload
+            .get("count")
+            .map(|v| v.to_string())
+            .unwrap_or_default();
         format!("Alert '{rule}' fired: {count} VM(s) with {metric} {cmp} {threshold}")
     } else if let Some(m) = payload
         .get("message")
@@ -173,7 +182,10 @@ mod tests {
                 .fetch_one(&pool)
                 .await
                 .unwrap();
-        assert_eq!(matched, 1, "matching channel must get a delivery (UUID-decode regression)");
+        assert_eq!(
+            matched, 1,
+            "matching channel must get a delivery (UUID-decode regression)"
+        );
         assert_eq!(skipped, 0, "non-matching channel must be skipped");
     }
 }

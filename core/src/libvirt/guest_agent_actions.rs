@@ -150,11 +150,8 @@ pub fn sync_guest_time_to_host(conn: &Connect, name: &str) -> Result<GuestTimeIn
         #[cfg(target_os = "linux")]
         {
             let secs = now.as_secs();
-            let (code, _out, err) = guest_exec_command(
-                name,
-                "/bin/date",
-                &["-u", "-s", &format!("@{secs}")],
-            )?;
+            let (code, _out, err) =
+                guest_exec_command(name, "/bin/date", &["-u", "-s", &format!("@{secs}")])?;
             if code != 0 {
                 return Err(LibvirtError::Operation(format!(
                     "guest set_time failed ({e}); date -s fallback failed: {err}"
@@ -262,7 +259,9 @@ pub fn run_guest_fstrim(vm_name: &str) -> Result<Vec<GuestFstrimResult>, Libvirt
 pub fn validate_guest_service_unit(unit: &str) -> Result<String, LibvirtError> {
     let u = unit.trim();
     if u.is_empty() || u.len() > 128 {
-        return Err(LibvirtError::Invalid("invalid guest service unit name".into()));
+        return Err(LibvirtError::Invalid(
+            "invalid guest service unit name".into(),
+        ));
     }
     if !u
         .chars()
@@ -320,7 +319,9 @@ fn guest_exec_command(
         return Err(LibvirtError::Invalid("invalid VM name".into()));
     }
     if path.is_empty() || !path.starts_with('/') {
-        return Err(LibvirtError::Invalid("guest-exec path must be absolute".into()));
+        return Err(LibvirtError::Invalid(
+            "guest-exec path must be absolute".into(),
+        ));
     }
     let exec_json = serde_json::json!({
         "execute": "guest-exec",
@@ -406,32 +407,56 @@ const GUESTKITCTL_PATHS: &[&str] = &[
 ];
 
 /// `guestkitctl` argv for one relayed call.
-pub fn guestkitctl_args(method: &str, params: &serde_json::Value) -> Result<Vec<String>, LibvirtError> {
+pub fn guestkitctl_args(
+    method: &str,
+    params: &serde_json::Value,
+) -> Result<Vec<String>, LibvirtError> {
     if !GUESTKIT_RELAY_METHODS.contains(&method) {
-        return Err(LibvirtError::Invalid(format!("guestkit method not relayable: {method}")));
+        return Err(LibvirtError::Invalid(format!(
+            "guestkit method not relayable: {method}"
+        )));
     }
     if !params.is_object() {
-        return Err(LibvirtError::Invalid("guestkit params must be a JSON object".into()));
+        return Err(LibvirtError::Invalid(
+            "guestkit params must be a JSON object".into(),
+        ));
     }
-    Ok(vec!["--json".into(), "call".into(), method.into(), "--params".into(), params.to_string()])
+    Ok(vec![
+        "--json".into(),
+        "call".into(),
+        method.into(),
+        "--params".into(),
+        params.to_string(),
+    ])
 }
 
 /// Result of `guestkitctl --json call`: JSON on stdout when it exits 0, an
 /// `Error: …` line on stderr otherwise.
-pub fn parse_guestkitctl_output(code: i32, out: &str, err: &str) -> Result<serde_json::Value, LibvirtError> {
+pub fn parse_guestkitctl_output(
+    code: i32,
+    out: &str,
+    err: &str,
+) -> Result<serde_json::Value, LibvirtError> {
     if code == 0 {
-        return serde_json::from_str(out.trim())
-            .map_err(|e| LibvirtError::Operation(format!("guestkitctl returned non-JSON output: {e}")));
+        return serde_json::from_str(out.trim()).map_err(|e| {
+            LibvirtError::Operation(format!("guestkitctl returned non-JSON output: {e}"))
+        });
     }
     let msg = err.trim().strip_prefix("Error: ").unwrap_or(err.trim());
-    let msg = if msg.is_empty() { format!("guestkitctl exited with {code}") } else { msg.to_string() };
+    let msg = if msg.is_empty() {
+        format!("guestkitctl exited with {code}")
+    } else {
+        msg.to_string()
+    };
     if msg.contains("disabled by local policy") {
         return Err(LibvirtError::Forbidden(format!(
             "{msg} (set `capabilities: {{ ebpf: true }}` in /etc/guestkit/agent-policy.yaml inside the guest)"
         )));
     }
     if msg.contains("No such file") || (msg.contains("connect") && msg.contains("agent")) {
-        return Err(LibvirtError::Operation(format!("guestkitd is not reachable inside the guest: {msg}")));
+        return Err(LibvirtError::Operation(format!(
+            "guestkitd is not reachable inside the guest: {msg}"
+        )));
     }
     Err(LibvirtError::Operation(msg))
 }
@@ -448,7 +473,9 @@ pub fn guestkit_call(
     #[cfg(not(target_os = "linux"))]
     {
         let _ = (vm_name, args);
-        Err(LibvirtError::Operation("guest-exec requires Linux libvirt".into()))
+        Err(LibvirtError::Operation(
+            "guest-exec requires Linux libvirt".into(),
+        ))
     }
     #[cfg(target_os = "linux")]
     {
@@ -472,12 +499,9 @@ pub fn guestkit_call(
 }
 
 #[cfg(target_os = "linux")]
-fn guest_exec_systemctl(
-    vm_name: &str,
-    args: &[&str],
-) -> Result<(i32, String), LibvirtError> {
-    let systemctl = guest_find_bin(vm_name, &["systemctl"])
-        .unwrap_or_else(|| "/usr/bin/systemctl".into());
+fn guest_exec_systemctl(vm_name: &str, args: &[&str]) -> Result<(i32, String), LibvirtError> {
+    let systemctl =
+        guest_find_bin(vm_name, &["systemctl"]).unwrap_or_else(|| "/usr/bin/systemctl".into());
     let (code, out, _err) = guest_exec_command(vm_name, &systemctl, args)?;
     Ok((code, out))
 }
@@ -500,9 +524,9 @@ fn validate_iface(iface: &str) -> Result<String, LibvirtError> {
 fn validate_cidr(cidr: &str) -> Result<String, LibvirtError> {
     let c = cidr.trim();
     // Minimal: a.b.c.d/nn
-    let (ip, prefix) = c
-        .split_once('/')
-        .ok_or_else(|| LibvirtError::Invalid("address must be CIDR (e.g. 192.168.122.50/24)".into()))?;
+    let (ip, prefix) = c.split_once('/').ok_or_else(|| {
+        LibvirtError::Invalid("address must be CIDR (e.g. 192.168.122.50/24)".into())
+    })?;
     let pref: u8 = prefix
         .parse()
         .map_err(|_| LibvirtError::Invalid("invalid CIDR prefix".into()))?;
@@ -510,9 +534,7 @@ fn validate_cidr(cidr: &str) -> Result<String, LibvirtError> {
         return Err(LibvirtError::Invalid("CIDR prefix must be 0-32".into()));
     }
     let parts: Vec<_> = ip.split('.').collect();
-    if parts.len() != 4
-        || parts.iter().any(|p| p.parse::<u8>().is_err())
-    {
+    if parts.len() != 4 || parts.iter().any(|p| p.parse::<u8>().is_err()) {
         return Err(LibvirtError::Invalid("invalid IPv4 address".into()));
     }
     Ok(format!("{ip}/{pref}"))
@@ -550,7 +572,9 @@ fn validate_dns_list(dns: &[String]) -> Result<Vec<String>, LibvirtError> {
     Ok(out)
 }
 
-fn validate_static_routes(routes: &[GuestStaticRoute]) -> Result<Vec<(String, String)>, LibvirtError> {
+fn validate_static_routes(
+    routes: &[GuestStaticRoute],
+) -> Result<Vec<(String, String)>, LibvirtError> {
     let mut out = Vec::new();
     for r in routes {
         let to = validate_route_dest(&r.to)?;
@@ -560,7 +584,9 @@ fn validate_static_routes(routes: &[GuestStaticRoute]) -> Result<Vec<(String, St
         }
         out.push((to, via));
         if out.len() > 16 {
-            return Err(LibvirtError::Invalid("too many static routes (max 16)".into()));
+            return Err(LibvirtError::Invalid(
+                "too many static routes (max 16)".into(),
+            ));
         }
     }
     Ok(out)
@@ -681,8 +707,11 @@ if active wicked || active wickedd || has wicked; then echo WICKED; exit 0; fi
 if has ip; then echo IP; exit 0; fi
 echo IP
 "#;
-    let (code, out, _err) = guest_exec_command(vm_name, "/bin/sh", &["-c", probe])
-        .unwrap_or((1, String::new(), String::new()));
+    let (code, out, _err) = guest_exec_command(vm_name, "/bin/sh", &["-c", probe]).unwrap_or((
+        1,
+        String::new(),
+        String::new(),
+    ));
     let tag = if code == 0 {
         out.lines().next().unwrap_or("IP").trim()
     } else {
@@ -697,10 +726,7 @@ echo IP
             GuestNetBackend::SystemdNetworkd,
             "systemd-networkd is active".into(),
         ),
-        "NETPLAN" => (
-            GuestNetBackend::Netplan,
-            "netplan detected".into(),
-        ),
+        "NETPLAN" => (GuestNetBackend::Netplan, "netplan detected".into()),
         "WICKED" => (
             GuestNetBackend::Wicked,
             "wicked network service detected".into(),
@@ -751,9 +777,8 @@ fn apply_via_networkmanager(
     dns: &[String],
     routes: &[(String, String)],
 ) -> Result<String, LibvirtError> {
-    let nmcli = guest_find_bin(vm_name, &["nmcli"]).ok_or_else(|| {
-        LibvirtError::Operation("nmcli not found in guest".into())
-    })?;
+    let nmcli = guest_find_bin(vm_name, &["nmcli"])
+        .ok_or_else(|| LibvirtError::Operation("nmcli not found in guest".into()))?;
     // Resolve active connection for this device.
     let (code, out, err) = guest_exec_command(
         vm_name,
@@ -761,7 +786,9 @@ fn apply_via_networkmanager(
         &["-t", "-f", "NAME,DEVICE", "connection", "show", "--active"],
     )?;
     if code != 0 {
-        return Err(LibvirtError::Operation(format!("nmcli con show failed: {err}")));
+        return Err(LibvirtError::Operation(format!(
+            "nmcli con show failed: {err}"
+        )));
     }
     let mut con = out
         .lines()
@@ -897,9 +924,8 @@ fn apply_via_netplan(
     dns: &[String],
     routes: &[(String, String)],
 ) -> Result<String, LibvirtError> {
-    let netplan = guest_find_bin(vm_name, &["netplan"]).ok_or_else(|| {
-        LibvirtError::Operation("netplan not found in guest".into())
-    })?;
+    let netplan = guest_find_bin(vm_name, &["netplan"])
+        .ok_or_else(|| LibvirtError::Operation("netplan not found in guest".into()))?;
     let mut routes_yaml = String::new();
     if gw.is_some() || !routes.is_empty() {
         routes_yaml.push_str("      routes:\n");
@@ -924,9 +950,7 @@ fn apply_via_netplan(
     );
     let yaml_esc = yaml.replace('\'', "'\\''");
     let path = "/etc/netplan/99-machina-guest.yaml";
-    let script = format!(
-        "printf '%s' '{yaml_esc}' > '{path}' && '{netplan}' apply",
-    );
+    let script = format!("printf '%s' '{yaml_esc}' > '{path}' && '{netplan}' apply",);
     let (c, out, err) = guest_exec_command(vm_name, "/bin/sh", &["-c", &script])?;
     if c != 0 {
         return Err(LibvirtError::Operation(format!(
@@ -950,14 +974,16 @@ fn apply_via_wicked(
     let (ip_part, prefix) = cidr
         .split_once('/')
         .ok_or_else(|| LibvirtError::Invalid("bad cidr".into()))?;
-    let mut ifcfg = format!(
-        "BOOTPROTO='static'\nSTARTMODE='auto'\nIPADDR='{ip_part}'\nPREFIXLEN='{prefix}'\n"
-    );
+    let mut ifcfg =
+        format!("BOOTPROTO='static'\nSTARTMODE='auto'\nIPADDR='{ip_part}'\nPREFIXLEN='{prefix}'\n");
     if let Some(g) = gw {
         ifcfg.push_str(&format!("DEFAULT_ROUTE='yes'\nGATEWAY='{g}'\n"));
     }
     if !dns.is_empty() {
-        ifcfg.push_str(&format!("NETCONFIG_DNS_STATIC_SERVERS='{}'\n", dns.join(" ")));
+        ifcfg.push_str(&format!(
+            "NETCONFIG_DNS_STATIC_SERVERS='{}'\n",
+            dns.join(" ")
+        ));
     }
     let ifcfg_esc = ifcfg.replace('\'', "'\\''");
     let path = format!("/etc/sysconfig/network/ifcfg-{iface}");
@@ -995,8 +1021,7 @@ fn apply_via_iproute2(
             )));
         }
     }
-    let (code, _out, err) =
-        guest_exec_command(vm_name, &ip, &["addr", "add", cidr, "dev", iface])?;
+    let (code, _out, err) = guest_exec_command(vm_name, &ip, &["addr", "add", cidr, "dev", iface])?;
     if code != 0 && !(code == 2 && !replace) {
         return Err(LibvirtError::Operation(format!(
             "ip addr add {cidr} dev {iface} failed (exit {code}): {err}"
@@ -1063,7 +1088,10 @@ pub fn get_guest_network_config(vm_name: &str) -> Result<GuestNetworkConfig, Lib
                     let mut addresses = Vec::new();
                     if let Some(ips) = iface.get("ip-addresses").and_then(|a| a.as_array()) {
                         for ip in ips {
-                            let typ = ip.get("ip-address-type").and_then(|t| t.as_str()).unwrap_or("");
+                            let typ = ip
+                                .get("ip-address-type")
+                                .and_then(|t| t.as_str())
+                                .unwrap_or("");
                             let addr = ip.get("ip-address").and_then(|a| a.as_str()).unwrap_or("");
                             let prefix = ip.get("prefix").and_then(|p| p.as_u64()).unwrap_or(0);
                             if typ == "ipv4" && !addr.is_empty() {
@@ -1071,7 +1099,11 @@ pub fn get_guest_network_config(vm_name: &str) -> Result<GuestNetworkConfig, Lib
                             }
                         }
                     }
-                    interfaces.push(GuestNetworkInterface { name, mac, addresses });
+                    interfaces.push(GuestNetworkInterface {
+                        name,
+                        mac,
+                        addresses,
+                    });
                 }
             }
         }
@@ -1101,9 +1133,7 @@ pub fn get_guest_network_config(vm_name: &str) -> Result<GuestNetworkConfig, Lib
         }
         let mut routes = Vec::new();
         let mut default_gateway = None;
-        if let Ok((0, route_out, _)) =
-            guest_exec_command(vm_name, &ip, &["-4", "route", "show"])
-        {
+        if let Ok((0, route_out, _)) = guest_exec_command(vm_name, &ip, &["-4", "route", "show"]) {
             for line in route_out.lines() {
                 let l = line.trim();
                 if l.is_empty() {
@@ -1170,7 +1200,11 @@ pub fn apply_guest_network_config(
 
         // If the preferred stack failed, fall through to iproute2 so the op still works.
         if used.is_err() && backend != GuestNetBackend::Iproute2 {
-            let primary_err = used.as_ref().err().map(|e| e.to_string()).unwrap_or_default();
+            let primary_err = used
+                .as_ref()
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
             used = apply_via_iproute2(vm_name, &iface, &cidr, gw_ref, req.replace, &dns, &routes)
                 .map(|s| format!("{s} (fallback after {}: {primary_err})", backend.as_str()));
         }
@@ -1196,9 +1230,7 @@ pub fn apply_guest_network_config(
             ok: true,
             message: format!(
                 "{iface} → {cidr}{} via {how}{extras} · {detect_detail}",
-                gw.as_ref()
-                    .map(|g| format!(" gw {g}"))
-                    .unwrap_or_default()
+                gw.as_ref().map(|g| format!(" gw {g}")).unwrap_or_default()
             ),
             time: None,
             fs_freeze: None,
@@ -1304,9 +1336,7 @@ pub fn list_guest_service_units(vm_name: &str) -> Vec<GuestServiceUnit> {
             } else {
                 format!("{unit}.service")
             };
-            CONTROLLABLE
-                .iter()
-                .any(|c| c.eq_ignore_ascii_case(&full))
+            CONTROLLABLE.iter().any(|c| c.eq_ignore_ascii_case(&full))
         }
 
         let mut by_name: std::collections::BTreeMap<String, GuestServiceUnit> =
@@ -1330,10 +1360,9 @@ pub fn list_guest_service_units(vm_name: &str) -> Vec<GuestServiceUnit> {
                     continue;
                 }
                 // Skip template instances with weird chars beyond our validator charset except @.
-                if unit
-                    .chars()
-                    .any(|c| !(c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '@'))
-                {
+                if unit.chars().any(|c| {
+                    !(c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '@')
+                }) {
                     continue;
                 }
                 let name = unit_base(unit);
@@ -1419,9 +1448,8 @@ pub fn run_guest_agent_action(
             return run_guest_service_action(name, rest, "restart");
         }
         if let Some(rest) = trimmed.strip_prefix("network_apply:") {
-            let req: GuestNetworkApplyRequest = serde_json::from_str(rest).map_err(|e| {
-                LibvirtError::Invalid(format!("network_apply JSON: {e}"))
-            })?;
+            let req: GuestNetworkApplyRequest = serde_json::from_str(rest)
+                .map_err(|e| LibvirtError::Invalid(format!("network_apply JSON: {e}")))?;
             return apply_guest_network_config(name, &req);
         }
         match trimmed.to_ascii_lowercase().as_str() {
@@ -1519,7 +1547,10 @@ mod guestkit_relay_tests {
     fn only_policy_methods_are_relayed() {
         let p = serde_json::json!({ "container": "web" });
         let a = guestkitctl_args("guestkit.netpolicy.apply", &p).unwrap();
-        assert_eq!(a[..4], ["--json", "call", "guestkit.netpolicy.apply", "--params"]);
+        assert_eq!(
+            a[..4],
+            ["--json", "call", "guestkit.netpolicy.apply", "--params"]
+        );
         assert_eq!(serde_json::from_str::<serde_json::Value>(&a[4]).unwrap(), p);
         assert!(guestkitctl_args("guestkit.exec", &p).is_err());
         assert!(guestkitctl_args("guestkit.fileWrite", &p).is_err());
@@ -1531,11 +1562,22 @@ mod guestkit_relay_tests {
         let v = parse_guestkitctl_output(0, r#"{"available": true}"#, "").unwrap();
         assert_eq!(v["available"], true);
         assert!(parse_guestkitctl_output(0, "not json", "").is_err());
-        let e = parse_guestkitctl_output(1, "", "Error: agent RPC error -32005: Policy denied: ebpf disabled by local policy")
-            .unwrap_err();
+        let e = parse_guestkitctl_output(
+            1,
+            "",
+            "Error: agent RPC error -32005: Policy denied: ebpf disabled by local policy",
+        )
+        .unwrap_err();
         assert!(matches!(e, LibvirtError::Forbidden(ref m) if m.contains("ebpf: true")));
-        let e = parse_guestkitctl_output(1, "", "Error: agent RPC error -32602: lease_secs must be 1..=3600").unwrap_err();
-        assert!(matches!(e, LibvirtError::Operation(ref m) if m.starts_with("agent RPC error -32602")));
+        let e = parse_guestkitctl_output(
+            1,
+            "",
+            "Error: agent RPC error -32602: lease_secs must be 1..=3600",
+        )
+        .unwrap_err();
+        assert!(
+            matches!(e, LibvirtError::Operation(ref m) if m.starts_with("agent RPC error -32602"))
+        );
         let e = parse_guestkitctl_output(2, "", "").unwrap_err();
         assert!(e.to_string().contains("exited with 2"));
     }

@@ -97,7 +97,9 @@ async fn platform_controller_proxy(
         .await
         .map_err(|e| AppError::from(LibvirtError::Internal(format!("read body: {e}"))))?;
 
-    let mut rb = CONTROLLER_HTTP_CLIENT.request(method, &url).headers(headers);
+    let mut rb = CONTROLLER_HTTP_CLIENT
+        .request(method, &url)
+        .headers(headers);
     if !body_bytes.is_empty() {
         rb = rb.body(body_bytes);
     }

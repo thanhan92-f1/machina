@@ -26,8 +26,8 @@ mod server;
 mod sprite_registry;
 mod systemd;
 mod terminal;
-mod virt_image_validate;
 mod vessel_handle;
+mod virt_image_validate;
 mod vm_events;
 
 use clap::Parser;
@@ -231,9 +231,12 @@ async fn main() -> anyhow::Result<()> {
         systemd::spawn_watchdog_pinger();
         // ConnectInfo<SocketAddr> is required by auth::auth_rate_limit_middleware
         // (rate-limits /auth/login, /auth/oidc/login, /auth/oidc/callback by client IP).
-        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(shutdown_signal())
-            .await?;
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
     }
 
     info!("Shutting down");

@@ -109,7 +109,9 @@ pub fn rbd_disk_xml(source: &str, target_dev: &str, disk_boot: &str) -> Option<S
                 "mon" | "mons" | "hosts" => {
                     for h in v.split(',').map(str::trim).filter(|h| !h.is_empty()) {
                         let (host, port) = match h.rsplit_once(':') {
-                            Some((hh, pp)) if !pp.is_empty() && pp.bytes().all(|b| b.is_ascii_digit()) => {
+                            Some((hh, pp))
+                                if !pp.is_empty() && pp.bytes().all(|b| b.is_ascii_digit()) =>
+                            {
                                 (hh, pp)
                             }
                             _ => (h, "6789"),
@@ -137,7 +139,11 @@ pub fn rbd_disk_xml(source: &str, target_dev: &str, disk_boot: &str) -> Option<S
     } else {
         let mut s = String::from("\n");
         for (h, p) in &mons {
-            s.push_str(&format!("        <host name='{}' port='{}'/>\n", esc(h), esc(p)));
+            s.push_str(&format!(
+                "        <host name='{}' port='{}'/>\n",
+                esc(h),
+                esc(p)
+            ));
         }
         s.push_str("      ");
         s
@@ -305,7 +311,11 @@ pub fn domain_xml_from_spec(
     let install_iso_xml = install_iso
         .map(|iso| {
             let iso_esc = esc(iso);
-            let cdrom_boot = if is_uefi { "\n      <boot order='1'/>" } else { "" };
+            let cdrom_boot = if is_uefi {
+                "\n      <boot order='1'/>"
+            } else {
+                ""
+            };
             // SATA, not IDE: every domain here is machine='q35', and q35 has no
             // IDE controller — libvirt rejects the whole definition with
             // "IDE controllers are unsupported for this QEMU binary or machine
@@ -400,8 +410,14 @@ mod tests {
     #[test]
     fn generates_domain_xml() {
         let vm = VirtualMachine::new("demo", "1Gi");
-        let xml =
-            domain_xml_from_spec(&vm, "/var/lib/libvirt/images/demo.qcow2", "qcow2", None, None).unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/demo.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         assert!(xml.contains("<name>demo</name>"));
         assert!(xml.contains("source network='default'"));
         assert!(xml.contains("type='qcow2'"));
@@ -418,12 +434,20 @@ mod tests {
         // until one of those is wired to the same value. See
         // `domain_xml_from_spec`'s doc comment.
         let vm = VirtualMachine::new("pwdemo", "1Gi");
-        let xml =
-            domain_xml_from_spec(&vm, "/var/lib/libvirt/images/pwdemo.qcow2", "qcow2", None, None)
-                .unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/pwdemo.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         assert!(xml.contains("type='vnc'"));
         assert!(xml.contains("type='spice'"));
-        assert!(!xml.contains("passwd="), "default must not set a libvirt-native console password");
+        assert!(
+            !xml.contains("passwd="),
+            "default must not set a libvirt-native console password"
+        );
     }
 
     #[test]
@@ -459,8 +483,14 @@ mod tests {
             "rbd:rbd-nvme-prod/csi-vol-abc?mon=10.0.0.1:6789,10.0.0.2:6789&auth=machina&secret=1a2b3c4d-5e6f-7890-abcd-ef1234567890"
                 .into(),
         );
-        let xml =
-            domain_xml_from_spec(&vm, "/var/lib/libvirt/images/cephvm.qcow2", "qcow2", None, None).unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/cephvm.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         assert!(xml.contains("<disk type='network' device='disk'>"));
         assert!(xml.contains("protocol='rbd' name='rbd-nvme-prod/csi-vol-abc'"));
         assert!(xml.contains("<host name='10.0.0.1' port='6789'/>"));
@@ -485,8 +515,14 @@ mod tests {
     fn non_rbd_source_falls_back_to_file_disk() {
         let mut vm = VirtualMachine::new("filevm", "2Gi");
         vm.spec.storage[0].source = Some("/some/other/path.qcow2".into());
-        let xml = domain_xml_from_spec(&vm, "/var/lib/libvirt/images/filevm.qcow2", "qcow2", None, None)
-            .unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/filevm.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         assert!(xml.contains("<disk type='file' device='disk'>"));
         assert!(xml.contains("source file='/var/lib/libvirt/images/filevm.qcow2'"));
         // (the NIC is always `<interface type='network'>`; assert no network *disk*)
@@ -522,10 +558,19 @@ mod tests {
             "install_iso".into(),
             "/var/lib/libvirt/images/win.iso".into(),
         )]));
-        let xml =
-            domain_xml_from_spec(&vm, "/var/lib/libvirt/images/winst.qcow2", "qcow2", None, None).unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/winst.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         // No os/boot elements at all in the UEFI path.
-        assert!(!xml.contains("<boot dev="), "UEFI must not emit <os><boot dev>");
+        assert!(
+            !xml.contains("<boot dev="),
+            "UEFI must not emit <os><boot dev>"
+        );
         // cdrom boots first (order 1), installed disk second (order 2).
         assert!(xml.contains("<boot order='1'/>"));
         assert!(xml.contains("<boot order='2'/>"));
@@ -542,8 +587,14 @@ mod tests {
             "install_iso".into(),
             "/var/lib/libvirt/images/ubuntu.iso".into(),
         )]));
-        let xml = domain_xml_from_spec(&vm, "/var/lib/libvirt/images/isovm.qcow2", "qcow2", None, None)
-            .unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/isovm.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         assert!(xml.contains("machine='q35'"));
         assert!(!xml.contains("bus='ide'"), "q35 cannot take an IDE CD-ROM");
         assert!(xml.contains("<target dev='sda' bus='sata'/>"));
@@ -578,8 +629,14 @@ mod tests {
             "secure_boot".into(),
             "true".into(),
         )]));
-        let xml = domain_xml_from_spec(&vm, "/var/lib/libvirt/images/win11.qcow2", "qcow2", None, None)
-            .unwrap();
+        let xml = domain_xml_from_spec(
+            &vm,
+            "/var/lib/libvirt/images/win11.qcow2",
+            "qcow2",
+            None,
+            None,
+        )
+        .unwrap();
         assert!(xml.contains("secure='yes'"));
         assert!(xml.contains("OVMF_CODE.secboot.fd"));
         assert!(xml.contains("OVMF_VARS.secboot.fd"));
@@ -591,8 +648,8 @@ mod tests {
     fn uefi_without_secure_boot_keeps_plain_loader_and_no_smm() {
         let mut vm = VirtualMachine::new("plainuefi", "4Gi");
         vm.spec.firmware = "uefi".into();
-        let xml =
-            domain_xml_from_spec(&vm, "/var/lib/libvirt/images/p.qcow2", "qcow2", None, None).unwrap();
+        let xml = domain_xml_from_spec(&vm, "/var/lib/libvirt/images/p.qcow2", "qcow2", None, None)
+            .unwrap();
         assert!(xml.contains("pflash"));
         assert!(!xml.contains("secure='yes'"));
         assert!(!xml.contains("secboot"));
@@ -609,8 +666,8 @@ mod tests {
             "secure_boot".into(),
             "true".into(),
         )]));
-        let xml =
-            domain_xml_from_spec(&vm, "/var/lib/libvirt/images/b.qcow2", "qcow2", None, None).unwrap();
+        let xml = domain_xml_from_spec(&vm, "/var/lib/libvirt/images/b.qcow2", "qcow2", None, None)
+            .unwrap();
         assert!(!xml.contains("secure='yes'"));
         assert!(!xml.contains("<smm"));
         assert!(!xml.contains("pflash"));

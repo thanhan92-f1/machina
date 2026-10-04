@@ -323,7 +323,10 @@ impl VirtualMachine {
 /// at the one call site that sees a spec before Atlas resolution
 /// (`controller/src/api/vms/mod.rs`).
 fn validate_storage_source(source: &str) -> Result<(), SpecError> {
-    let Some(rest) = source.strip_prefix("rbd://").or_else(|| source.strip_prefix("rbd:")) else {
+    let Some(rest) = source
+        .strip_prefix("rbd://")
+        .or_else(|| source.strip_prefix("rbd:"))
+    else {
         return Ok(());
     };
     let Some((_, query)) = rest.split_once('?') else {
@@ -351,7 +354,10 @@ fn validate_storage_source(source: &str) -> Result<(), SpecError> {
 /// written by the server itself (Atlas resolution) strictly after this check
 /// runs.
 fn reject_inline_ceph_auth(source: &str) -> Result<(), SpecError> {
-    let Some(rest) = source.strip_prefix("rbd://").or_else(|| source.strip_prefix("rbd:")) else {
+    let Some(rest) = source
+        .strip_prefix("rbd://")
+        .or_else(|| source.strip_prefix("rbd:"))
+    else {
         return Ok(());
     };
     let Some((_, query)) = rest.split_once('?') else {
@@ -624,7 +630,7 @@ mod tests {
         assert!(parse_memory_mib("0Gi").is_err());
         assert!(parse_memory_mib("18446744073709551615Mi").is_err()); // u64::MAX Mi > cap
         assert!(parse_memory_mib("99999999Gi").is_err()); // > 64 TiB
-        // Sane values still parse.
+                                                          // Sane values still parse.
         assert_eq!(parse_memory_mib("1.5Gi").unwrap(), 1536);
     }
 
@@ -646,9 +652,8 @@ mod tests {
     #[test]
     fn validate_accepts_wellformed_rbd_secret_uuid() {
         let mut vm = VirtualMachine::new("cephvm", "2Gi");
-        vm.spec.storage[0].source = Some(
-            "rbd:pool/img?auth=machina&secret=1a2b3c4d-5e6f-7890-abcd-ef1234567890".into(),
-        );
+        vm.spec.storage[0].source =
+            Some("rbd:pool/img?auth=machina&secret=1a2b3c4d-5e6f-7890-abcd-ef1234567890".into());
         assert!(vm.validate().is_ok());
     }
 

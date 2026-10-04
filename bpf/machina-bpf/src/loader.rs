@@ -10,10 +10,19 @@ use std::path::Path;
 
 use anyhow::{anyhow, bail, Context, Result};
 use aya::programs::{
-    fentry::FEntryLinkId, kprobe::KProbeLinkId, lsm::LsmLinkId, trace_point::TracePointLinkId, FEntry, Lsm,
-    cgroup_device::CgroupDeviceLinkId, cgroup_skb::CgroupSkbLinkId, cgroup_sock_addr::CgroupSockAddrLinkId,
-    sock_ops::SockOpsLinkId, tc::SchedClassifierLinkId, uprobe::{UProbeLinkId, UProbeScope}, xdp::XdpLinkId, CgroupAttachMode, CgroupDevice, CgroupSkb,
-    CgroupSkbAttachType, CgroupSockAddr, KProbe, SchedClassifier, SockOps, UProbe, TcAttachType, TracePoint, Xdp, XdpMode,
+    cgroup_device::CgroupDeviceLinkId,
+    cgroup_skb::CgroupSkbLinkId,
+    cgroup_sock_addr::CgroupSockAddrLinkId,
+    fentry::FEntryLinkId,
+    kprobe::KProbeLinkId,
+    lsm::LsmLinkId,
+    sock_ops::SockOpsLinkId,
+    tc::SchedClassifierLinkId,
+    trace_point::TracePointLinkId,
+    uprobe::{UProbeLinkId, UProbeScope},
+    xdp::XdpLinkId,
+    CgroupAttachMode, CgroupDevice, CgroupSkb, CgroupSkbAttachType, CgroupSockAddr, FEntry, KProbe,
+    Lsm, SchedClassifier, SockOps, TcAttachType, TracePoint, UProbe, Xdp, XdpMode,
 };
 use aya::util::KernelVersion;
 use aya::{Ebpf, EbpfLoader, VerifierLogLevel};
@@ -191,7 +200,8 @@ impl Datapath {
             .ok_or_else(|| anyhow!("program {name} missing"))?
             .try_into()?;
         if first {
-            p.load().with_context(|| format!("verifier rejected {name}"))?;
+            p.load()
+                .with_context(|| format!("verifier rejected {name}"))?;
             self.loaded.insert(name.to_string());
         }
         Ok(p)
@@ -222,7 +232,13 @@ impl Datapath {
         };
         self.tc.insert(
             iface.to_string(),
-            (format!("{ingress}|{egress}"), TcLinks { ingress: i, egress: e }),
+            (
+                format!("{ingress}|{egress}"),
+                TcLinks {
+                    ingress: i,
+                    egress: e,
+                },
+            ),
         );
         Ok(())
     }
@@ -236,7 +252,9 @@ impl Datapath {
         let Some((names, links)) = self.tc.remove(iface) else {
             return;
         };
-        let (ing, eg) = names.split_once('|').unwrap_or(("mn_tc_ingress", "mn_tc_egress"));
+        let (ing, eg) = names
+            .split_once('|')
+            .unwrap_or(("mn_tc_ingress", "mn_tc_egress"));
         let (ing, eg) = (ing.to_string(), eg.to_string());
         if let Ok(p) = self.classifier(&ing) {
             let _ = p.detach(links.ingress);
@@ -284,13 +302,17 @@ impl Datapath {
             self.loaded.insert("mn_sockops".into());
         }
         let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
-        let id = p.attach(f, CgroupAttachMode::default()).context("attach mn_sockops")?;
+        let id = p
+            .attach(f, CgroupAttachMode::default())
+            .context("attach mn_sockops")?;
         self.sockops = Some((key, id));
         Ok(())
     }
 
     pub fn detach_sockops(&mut self) {
-        let Some((_, id)) = self.sockops.take() else { return };
+        let Some((_, id)) = self.sockops.take() else {
+            return;
+        };
         if let Some(p) = self.ebpf.program_mut("mn_sockops") {
             if let Ok(p) = <&mut SockOps>::try_from(p) {
                 let _ = p.detach(id);
@@ -302,11 +324,18 @@ impl Datapath {
         self.sockops.as_ref().map(|(k, _)| k.as_str())
     }
 
-    fn load_once(&mut self, name: &'static str, load: impl FnOnce(&mut aya::programs::Program) -> Result<()>) -> Result<()> {
+    fn load_once(
+        &mut self,
+        name: &'static str,
+        load: impl FnOnce(&mut aya::programs::Program) -> Result<()>,
+    ) -> Result<()> {
         if self.loaded.contains(name) {
             return Ok(());
         }
-        let p = self.ebpf.program_mut(name).ok_or_else(|| anyhow!("program {name} missing"))?;
+        let p = self
+            .ebpf
+            .program_mut(name)
+            .ok_or_else(|| anyhow!("program {name} missing"))?;
         load(p).with_context(|| format!("verifier rejected {name}"))?;
         self.loaded.insert(name.into());
         Ok(())
@@ -320,15 +349,23 @@ impl Datapath {
         }
         self.detach_tlsfp();
         self.load_once("mn_tlsfp", |p| Ok(<&mut CgroupSkb>::try_from(p)?.load()?))?;
-        let p: &mut CgroupSkb = self.ebpf.program_mut("mn_tlsfp").expect("loaded").try_into()?;
+        let p: &mut CgroupSkb = self
+            .ebpf
+            .program_mut("mn_tlsfp")
+            .expect("loaded")
+            .try_into()?;
         let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
-        let id = p.attach(f, CgroupSkbAttachType::Egress, CgroupAttachMode::default()).context("attach mn_tlsfp")?;
+        let id = p
+            .attach(f, CgroupSkbAttachType::Egress, CgroupAttachMode::default())
+            .context("attach mn_tlsfp")?;
         self.tlsfp = Some((key, id));
         Ok(())
     }
 
     pub fn detach_tlsfp(&mut self) {
-        let Some((_, id)) = self.tlsfp.take() else { return };
+        let Some((_, id)) = self.tlsfp.take() else {
+            return;
+        };
         if let Some(p) = self.ebpf.program_mut("mn_tlsfp") {
             if let Ok(p) = <&mut CgroupSkb>::try_from(p) {
                 let _ = p.detach(id);
@@ -358,10 +395,12 @@ impl Datapath {
         let mut links = Vec::new();
         let mut errs = Vec::new();
         for (prog, sym) in PLAN {
-            let res = self.load_once(prog, |p| Ok(<&mut UProbe>::try_from(p)?.load()?)).and_then(|_| {
-                let p: &mut UProbe = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
-                Ok(p.attach(sym, lib, UProbeScope::AllProcesses)?)
-            });
+            let res = self
+                .load_once(prog, |p| Ok(<&mut UProbe>::try_from(p)?.load()?))
+                .and_then(|_| {
+                    let p: &mut UProbe = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
+                    Ok(p.attach(sym, lib, UProbeScope::AllProcesses)?)
+                });
             match res {
                 Ok(id) => links.push((prog, id)),
                 Err(e) => errs.push(format!("{prog}@{sym}: {e:#}")),
@@ -375,7 +414,9 @@ impl Datapath {
     }
 
     pub fn detach_ssl(&mut self, lib: &str) {
-        let Some(links) = self.ssl.remove(lib) else { return };
+        let Some(links) = self.ssl.remove(lib) else {
+            return;
+        };
         for (prog, id) in links {
             if let Some(p) = self.ebpf.program_mut(prog) {
                 if let Ok(p) = <&mut UProbe>::try_from(p) {
@@ -410,7 +451,9 @@ impl Datapath {
             self.loaded.insert("mn_qemu_device".into());
         }
         let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
-        let dev_id = dev.attach(f, CgroupAttachMode::default()).context("attach mn_qemu_device")?;
+        let dev_id = dev
+            .attach(f, CgroupAttachMode::default())
+            .context("attach mn_qemu_device")?;
 
         let first = !self.loaded.contains("mn_qemu_egress");
         let skb: &mut CgroupSkb = self
@@ -475,7 +518,11 @@ impl Datapath {
             return Ok(());
         }
         self.ensure_clsact(iface);
-        let dir = if ingress { TcAttachType::Ingress } else { TcAttachType::Egress };
+        let dir = if ingress {
+            TcAttachType::Ingress
+        } else {
+            TcAttachType::Egress
+        };
         let id = self
             .classifier(prog)?
             .attach(iface, dir)
@@ -492,10 +539,18 @@ impl Datapath {
             return Ok(());
         }
         self.ensure_clsact(iface);
-        let dir = if ingress { TcAttachType::Ingress } else { TcAttachType::Egress };
+        let dir = if ingress {
+            TcAttachType::Ingress
+        } else {
+            TcAttachType::Egress
+        };
         let id = self
             .classifier(prog)?
-            .attach_with_options(iface, dir, aya::programs::tc::TcAttachOptions::TcxOrder(aya::programs::LinkOrder::first()))
+            .attach_with_options(
+                iface,
+                dir,
+                aya::programs::tc::TcAttachOptions::TcxOrder(aya::programs::LinkOrder::first()),
+            )
             .with_context(|| format!("attach {prog} first on {iface}"))?;
         self.uplink.insert(key, (prog.to_string(), id));
         Ok(())
@@ -513,7 +568,8 @@ impl Datapath {
             .ok_or_else(|| anyhow!("program {name} missing"))?
             .try_into()?;
         if first {
-            p.load().with_context(|| format!("verifier rejected {name}"))?;
+            p.load()
+                .with_context(|| format!("verifier rejected {name}"))?;
             self.loaded.insert(name.to_string());
         }
         Ok(p)
@@ -530,9 +586,13 @@ impl Datapath {
         let p = self.xdp_program(prog)?;
         // Generic mode for netns tests: native XDP_TX on a veth needs NAPI on the peer.
         let skb_only = std::env::var_os("MACHINA_BPF_XDP_SKB").is_some();
-        let id = (if skb_only { p.attach(iface, XdpMode::Skb) } else { p.attach(iface, XdpMode::default()) })
-            .or_else(|_| p.attach(iface, XdpMode::Skb))
-            .with_context(|| format!("attach {prog} to {iface}"))?;
+        let id = (if skb_only {
+            p.attach(iface, XdpMode::Skb)
+        } else {
+            p.attach(iface, XdpMode::default())
+        })
+        .or_else(|_| p.attach(iface, XdpMode::Skb))
+        .with_context(|| format!("attach {prog} to {iface}"))?;
         self.xdp.insert(iface.to_string(), (prog.to_string(), id));
         Ok(())
     }
@@ -566,7 +626,8 @@ impl Datapath {
                 .ok_or_else(|| anyhow!("program {name} missing"))?
                 .try_into()?;
             if first {
-                p.load().with_context(|| format!("verifier rejected {name}"))?;
+                p.load()
+                    .with_context(|| format!("verifier rejected {name}"))?;
                 self.loaded.insert(name.to_string());
             }
             let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
@@ -585,7 +646,8 @@ impl Datapath {
                     .ok_or_else(|| anyhow!("program {name} missing"))?
                     .try_into()?;
                 if first {
-                    p.load().with_context(|| format!("verifier rejected {name}"))?;
+                    p.load()
+                        .with_context(|| format!("verifier rejected {name}"))?;
                     self.loaded.insert(name.to_string());
                 }
                 let f = File::open(cg_path)?;
@@ -601,7 +663,12 @@ impl Datapath {
     /// tracked under `<path>#<tag>`. The default mode uses a bpf_link, which
     /// the kernel always attaches multi-mode; passing `AllowMultiple` sets
     /// BPF_F_ALLOW_MULTI on link_create and fails with EINVAL.
-    pub fn attach_cgroup_tagged(&mut self, cg_path: &Path, tag: &str, sock_progs: &[&str]) -> Result<()> {
+    pub fn attach_cgroup_tagged(
+        &mut self,
+        cg_path: &Path,
+        tag: &str,
+        sock_progs: &[&str],
+    ) -> Result<()> {
         let key = format!("{}#{tag}", cg_path.display());
         if self.cgroups.contains_key(&key) {
             return Ok(());
@@ -615,7 +682,8 @@ impl Datapath {
                 .ok_or_else(|| anyhow!("program {name} missing"))?
                 .try_into()?;
             if first {
-                p.load().with_context(|| format!("verifier rejected {name}"))?;
+                p.load()
+                    .with_context(|| format!("verifier rejected {name}"))?;
                 self.loaded.insert(name.to_string());
             }
             let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
@@ -627,13 +695,22 @@ impl Datapath {
     }
 
     /// cgroup_skb programs (ingress, egress) tracked under `<path>#<tag>`.
-    pub fn attach_cgroup_skb_tagged(&mut self, cg_path: &Path, tag: &str, ingress: &'static str, egress: &'static str) -> Result<()> {
+    pub fn attach_cgroup_skb_tagged(
+        &mut self,
+        cg_path: &Path,
+        tag: &str,
+        ingress: &'static str,
+        egress: &'static str,
+    ) -> Result<()> {
         let key = format!("{}#{tag}", cg_path.display());
         if self.cgroups.contains_key(&key) {
             return Ok(());
         }
         let mut links = CgroupLinks::default();
-        for (name, ty) in [(ingress, CgroupSkbAttachType::Ingress), (egress, CgroupSkbAttachType::Egress)] {
+        for (name, ty) in [
+            (ingress, CgroupSkbAttachType::Ingress),
+            (egress, CgroupSkbAttachType::Egress),
+        ] {
             self.load_once(name, |p| Ok(<&mut CgroupSkb>::try_from(p)?.load()?))?;
             let p: &mut CgroupSkb = self.ebpf.program_mut(name).expect("loaded").try_into()?;
             let f = File::open(cg_path).with_context(|| format!("open {}", cg_path.display()))?;
@@ -642,7 +719,9 @@ impl Datapath {
                 Err(e) => {
                     self.cgroups.insert(key.clone(), links);
                     self.detach_cgroup_key(&key);
-                    return Err(anyhow!(e).context(format!("attach {name} to {}", cg_path.display())));
+                    return Err(
+                        anyhow!(e).context(format!("attach {name} to {}", cg_path.display()))
+                    );
                 }
             }
         }
@@ -653,12 +732,20 @@ impl Datapath {
     /// Cgroup keys (path or `path#tag`) carrying a given tag.
     pub fn cgroup_tagged(&self, tag: &str) -> Option<String> {
         let suffix = format!("#{tag}");
-        self.cgroups.keys().find(|k| k.ends_with(&suffix)).map(|k| k.trim_end_matches(&suffix).to_string())
+        self.cgroups
+            .keys()
+            .find(|k| k.ends_with(&suffix))
+            .map(|k| k.trim_end_matches(&suffix).to_string())
     }
 
     pub fn detach_cgroup_tag(&mut self, tag: &str) {
         let suffix = format!("#{tag}");
-        let keys: Vec<String> = self.cgroups.keys().filter(|k| k.ends_with(&suffix)).cloned().collect();
+        let keys: Vec<String> = self
+            .cgroups
+            .keys()
+            .filter(|k| k.ends_with(&suffix))
+            .cloned()
+            .collect();
         for k in keys {
             self.detach_cgroup_key(&k);
         }
@@ -694,7 +781,8 @@ impl Datapath {
 
     fn ensure_btf(&mut self) -> Result<()> {
         if self.btf.is_none() {
-            self.btf = Some(aya::Btf::from_sys_fs().context("kernel BTF (/sys/kernel/btf/vmlinux)")?);
+            self.btf =
+                Some(aya::Btf::from_sys_fs().context("kernel BTF (/sys/kernel/btf/vmlinux)")?);
         }
         Ok(())
     }
@@ -712,11 +800,15 @@ impl Datapath {
             .ok_or_else(|| anyhow!("program {prog} missing"))?
             .try_into()?;
         if !self.loaded.contains(prog) {
-            p.load(func, btf).with_context(|| format!("verifier rejected {prog}"))?;
+            p.load(func, btf)
+                .with_context(|| format!("verifier rejected {prog}"))?;
             self.loaded.insert(prog.into());
         }
-        let id = p.attach().with_context(|| format!("attach {prog} to {func}"))?;
-        self.traces.insert(prog.into(), (prog, TraceLink::FEntry(id)));
+        let id = p
+            .attach()
+            .with_context(|| format!("attach {prog} to {func}"))?;
+        self.traces
+            .insert(prog.into(), (prog, TraceLink::FEntry(id)));
         Ok(())
     }
 
@@ -734,10 +826,13 @@ impl Datapath {
             .ok_or_else(|| anyhow!("program {prog} missing"))?
             .try_into()?;
         if !self.loaded.contains(prog) {
-            p.load(hook, btf).with_context(|| format!("verifier rejected {prog}"))?;
+            p.load(hook, btf)
+                .with_context(|| format!("verifier rejected {prog}"))?;
             self.loaded.insert(prog.into());
         }
-        let id = p.attach().with_context(|| format!("attach {prog} to lsm/{hook}"))?;
+        let id = p
+            .attach()
+            .with_context(|| format!("attach {prog} to lsm/{hook}"))?;
         self.traces.insert(prog.into(), (prog, TraceLink::Lsm(id)));
         Ok(())
     }
@@ -750,7 +845,9 @@ impl Datapath {
         }
         self.load_once(prog, |p| Ok(<&mut KProbe>::try_from(p)?.load()?))?;
         let p: &mut KProbe = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
-        let id = p.attach(func, 0).with_context(|| format!("attach {prog} to {func}"))?;
+        let id = p
+            .attach(func, 0)
+            .with_context(|| format!("attach {prog} to {func}"))?;
         self.traces.insert(key, (prog, TraceLink::KProbe(id)));
         Ok(())
     }
@@ -762,14 +859,20 @@ impl Datapath {
         }
         self.load_once(prog, |p| Ok(<&mut TracePoint>::try_from(p)?.load()?))?;
         let p: &mut TracePoint = self.ebpf.program_mut(prog).expect("loaded").try_into()?;
-        let id = p.attach(cat, ev).with_context(|| format!("attach {prog} to {cat}/{ev}"))?;
+        let id = p
+            .attach(cat, ev)
+            .with_context(|| format!("attach {prog} to {cat}/{ev}"))?;
         self.traces.insert(prog.into(), (prog, TraceLink::Tp(id)));
         Ok(())
     }
 
     pub fn detach_trace(&mut self, key: &str) {
-        let Some((prog, link)) = self.traces.remove(key) else { return };
-        let Some(p) = self.ebpf.program_mut(prog) else { return };
+        let Some((prog, link)) = self.traces.remove(key) else {
+            return;
+        };
+        let Some(p) = self.ebpf.program_mut(prog) else {
+            return;
+        };
         let _ = match link {
             TraceLink::FEntry(id) => <&mut FEntry>::try_from(p).map(|p| p.detach(id)),
             TraceLink::KProbe(id) => <&mut KProbe>::try_from(p).map(|p| p.detach(id)),
@@ -783,7 +886,11 @@ impl Datapath {
         let keys: Vec<String> = self
             .traces
             .keys()
-            .filter(|k| progs.iter().any(|p| k.as_str() == *p || k.starts_with(&format!("{p}@"))))
+            .filter(|k| {
+                progs
+                    .iter()
+                    .any(|p| k.as_str() == *p || k.starts_with(&format!("{p}@")))
+            })
             .cloned()
             .collect();
         for k in keys {
@@ -817,7 +924,9 @@ impl Datapath {
             })();
             match res {
                 Ok(()) => self.tracepoints.push(format!("{cat}/{ev}")),
-                Err(e) => self.notes.push(format!("tracepoint {cat}/{ev} unavailable: {e:#}")),
+                Err(e) => self
+                    .notes
+                    .push(format!("tracepoint {cat}/{ev} unavailable: {e:#}")),
             }
         }
         let res: Result<()> = (|| {
@@ -832,7 +941,9 @@ impl Datapath {
         })();
         match res {
             Ok(()) => self.tracepoints.push("kprobe/cap_capable".into()),
-            Err(e) => self.notes.push(format!("kprobe cap_capable unavailable (deny_cap disabled): {e:#}")),
+            Err(e) => self.notes.push(format!(
+                "kprobe cap_capable unavailable (deny_cap disabled): {e:#}"
+            )),
         }
     }
 }

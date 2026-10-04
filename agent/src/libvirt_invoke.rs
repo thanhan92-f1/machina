@@ -41,8 +41,7 @@ pub fn vm_query(
             Ok(serde_json::to_value(info).unwrap_or(Value::Null))
         }
         "parity.summary" => {
-            let pending =
-                machina_core::libvirt::pending_config::get_pending_config(conn, vm_name)?;
+            let pending = machina_core::libvirt::pending_config::get_pending_config(conn, vm_name)?;
             let d = domain::lookup_domain(conn, vm_name)?;
             let xml = d
                 .get_xml_desc(0)
@@ -88,30 +87,45 @@ pub fn vm_query(
             }))
         }
         "hardware.summary" => {
-            let summary = machina_core::libvirt::hardware_summary::get_hardware_summary(conn, vm_name)?;
+            let summary =
+                machina_core::libvirt::hardware_summary::get_hardware_summary(conn, vm_name)?;
             Ok(serde_json::to_value(summary).unwrap_or(Value::Null))
         }
         "hardware.compat" => {
-            let report = machina_core::libvirt::hardware_summary::check_hardware_compat(conn, vm_name)?;
+            let report =
+                machina_core::libvirt::hardware_summary::check_hardware_compat(conn, vm_name)?;
             Ok(serde_json::to_value(report).unwrap_or(Value::Null))
         }
         "domain.caps" => {
             let arch = payload.get("arch").and_then(|v| v.as_str());
             let machine = payload.get("machine").and_then(|v| v.as_str());
             let xml = machina_core::libvirt::hardware_summary::get_domain_capabilities_xml(
-                conn, None, arch, machine, Some("kvm"),
+                conn,
+                None,
+                arch,
+                machine,
+                Some("kvm"),
             )?;
             Ok(serde_json::json!({ "xml": xml }))
         }
         "domain.caps.report" => {
-            let arch = payload.get("arch").and_then(|v| v.as_str()).filter(|a| !a.is_empty());
+            let arch = payload
+                .get("arch")
+                .and_then(|v| v.as_str())
+                .filter(|a| !a.is_empty());
             let details = domain::get_vm_details(conn, vm_name).ok();
-            let arch = arch.or(details.as_ref().map(|d| d.arch.as_str()).filter(|a| !a.is_empty()));
-            let report =
-                machina_core::libvirt::hardware_summary::get_domain_capabilities_report(conn, arch)?;
+            let arch = arch.or(details
+                .as_ref()
+                .map(|d| d.arch.as_str())
+                .filter(|a| !a.is_empty()));
+            let report = machina_core::libvirt::hardware_summary::get_domain_capabilities_report(
+                conn, arch,
+            )?;
             Ok(serde_json::to_value(report).unwrap_or(Value::Null))
         }
-        other => Err(LibvirtError::Invalid(format!("unknown vm query action: {other}"))),
+        other => Err(LibvirtError::Invalid(format!(
+            "unknown vm query action: {other}"
+        ))),
     }
 }
 
@@ -195,7 +209,9 @@ pub fn vm_invoke(
         "live.memory" => {
             let memory_mb = payload_u64(payload, "memory_mb");
             let outcome = extras::live_set_memory(conn, vm_name, memory_mb)?;
-            Ok(serde_json::json!({ "status": "ok", "memory_mb": memory_mb, "live_applied": outcome.live_applied }))
+            Ok(
+                serde_json::json!({ "status": "ok", "memory_mb": memory_mb, "live_applied": outcome.live_applied }),
+            )
         }
         "usb.attach" => {
             let vendor_id = payload_str(payload, "vendor_id")?;
@@ -233,23 +249,34 @@ pub fn vm_invoke(
         }
         "tpm.detach" => {
             let outcome = machina_core::libvirt::extra_devices::detach_tpm(conn, vm_name)?;
-            Ok(serde_json::json!({ "status": "ok", "tpm": "detached", "live_removed": outcome.live_removed }))
+            Ok(
+                serde_json::json!({ "status": "ok", "tpm": "detached", "live_removed": outcome.live_removed }),
+            )
         }
         "vsock.attach" => {
-            let cid = payload.get("cid").and_then(|v| v.as_u64()).map(|n| n as u32);
+            let cid = payload
+                .get("cid")
+                .and_then(|v| v.as_u64())
+                .map(|n| n as u32);
             machina_core::libvirt::extra_devices::attach_vsock(conn, vm_name, cid)?;
             Ok(serde_json::json!({ "status": "ok", "vsock": "attached" }))
         }
         "vsock.detach" => {
             let outcome = machina_core::libvirt::extra_devices::detach_vsock(conn, vm_name)?;
-            Ok(serde_json::json!({ "status": "ok", "vsock": "detached", "live_removed": outcome.live_removed }))
+            Ok(
+                serde_json::json!({ "status": "ok", "vsock": "detached", "live_removed": outcome.live_removed }),
+            )
         }
         "virtiofs.add" => {
             let source_dir = payload_str(payload, "source_dir")?;
             let mount_tag = payload_str(payload, "mount_tag")?;
             let xattr = payload_bool(payload, "xattr");
             machina_core::libvirt::filesystem::add_virtiofs_share(
-                conn, vm_name, &source_dir, &mount_tag, xattr,
+                conn,
+                vm_name,
+                &source_dir,
+                &mount_tag,
+                xattr,
             )?;
             Ok(serde_json::json!({ "status": "ok" }))
         }
@@ -363,18 +390,20 @@ pub fn vm_invoke(
             let sockets = payload_u32(payload, "sockets")?;
             let cores = payload_u32(payload, "cores")?;
             let threads = payload_u32(payload, "threads")?;
-            machina_core::libvirt::cpu_memory::set_cpu_topology(conn, vm_name, sockets, cores, threads)?;
-            Ok(serde_json::json!({ "status": "ok", "sockets": sockets, "cores": cores, "threads": threads }))
+            machina_core::libvirt::cpu_memory::set_cpu_topology(
+                conn, vm_name, sockets, cores, threads,
+            )?;
+            Ok(
+                serde_json::json!({ "status": "ok", "sockets": sockets, "cores": cores, "threads": threads }),
+            )
         }
-        other => Err(LibvirtError::Invalid(format!("unknown vm invoke action: {other}"))),
+        other => Err(LibvirtError::Invalid(format!(
+            "unknown vm invoke action: {other}"
+        ))),
     }
 }
 
-pub fn host_query(
-    conn: &Connect,
-    action: &str,
-    payload: &Value,
-) -> Result<Value, LibvirtError> {
+pub fn host_query(conn: &Connect, action: &str, payload: &Value) -> Result<Value, LibvirtError> {
     match action {
         "browse.isos" => {
             let res = extras::list_iso_files(conn)?;
@@ -462,15 +491,13 @@ pub fn host_query(
             let inv = machina_core::host_cockpit::system_inventory()?;
             Ok(serde_json::to_value(inv).unwrap_or(Value::Null))
         }
-        other => Err(LibvirtError::Invalid(format!("unknown host query action: {other}"))),
+        other => Err(LibvirtError::Invalid(format!(
+            "unknown host query action: {other}"
+        ))),
     }
 }
 
-pub fn host_invoke(
-    conn: &Connect,
-    action: &str,
-    payload: &Value,
-) -> Result<Value, LibvirtError> {
+pub fn host_invoke(conn: &Connect, action: &str, payload: &Value) -> Result<Value, LibvirtError> {
     use machina_core::libvirt::{network, storage};
     match action {
         "storage.pool.start" => {
@@ -544,7 +571,10 @@ pub fn host_invoke(
             Ok(serde_json::json!({ "status": "deleted", "name": name }))
         }
         "cockpit.firewalld.add_service" => {
-            let zone = payload.get("zone").and_then(|v| v.as_str()).unwrap_or("public");
+            let zone = payload
+                .get("zone")
+                .and_then(|v| v.as_str())
+                .unwrap_or("public");
             let service = payload_str(payload, "service")?;
             let msg = machina_core::host_cockpit::firewalld_add_service(zone, &service)?;
             Ok(serde_json::json!({ "status": "ok", "message": msg }))
@@ -575,7 +605,10 @@ pub fn host_invoke(
         }
         "cockpit.nm.create_team" => {
             let name = payload_str(payload, "name")?;
-            let runner = payload.get("runner").and_then(|v| v.as_str()).unwrap_or("loadbalance");
+            let runner = payload
+                .get("runner")
+                .and_then(|v| v.as_str())
+                .unwrap_or("loadbalance");
             let ifaces: Vec<String> = payload
                 .get("interfaces")
                 .and_then(|v| v.as_array())
@@ -597,17 +630,26 @@ pub fn host_invoke(
         }
         "cockpit.nm.create_wifi" => {
             let ssid = payload_str(payload, "ssid")?;
-            let password = payload.get("password").and_then(|v| v.as_str()).unwrap_or("");
+            let password = payload
+                .get("password")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let msg = machina_core::host_cockpit::nm_create_wifi(&ssid, password)?;
             Ok(serde_json::json!({ "status": "ok", "message": msg }))
         }
         "cockpit.nm.create_wireguard" => {
             let name = payload_str(payload, "name")?;
             let address = payload_str(payload, "address")?;
-            let private_key = payload.get("private_key").and_then(|v| v.as_str()).unwrap_or("");
+            let private_key = payload
+                .get("private_key")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let peer_public_key = payload_str(payload, "peer_public_key")?;
             let endpoint = payload_str(payload, "endpoint")?;
-            let allowed_ips = payload.get("allowed_ips").and_then(|v| v.as_str()).unwrap_or("0.0.0.0/0");
+            let allowed_ips = payload
+                .get("allowed_ips")
+                .and_then(|v| v.as_str())
+                .unwrap_or("0.0.0.0/0");
             let msg = machina_core::host_cockpit::nm_create_wireguard(
                 &name,
                 &address,
@@ -687,7 +729,9 @@ pub fn host_invoke(
             };
             Ok(serde_json::json!({ "status": "ok", "message": message, "result": res }))
         }
-        other => Err(LibvirtError::Invalid(format!("unknown host invoke action: {other}"))),
+        other => Err(LibvirtError::Invalid(format!(
+            "unknown host invoke action: {other}"
+        ))),
     }
 }
 

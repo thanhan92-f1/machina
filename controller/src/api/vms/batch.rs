@@ -62,21 +62,16 @@ pub async fn batch_vm_power(
     require_operator(&actor)?;
     check_batch_size(&body.vm_ids)?;
     let action = body.action.as_str();
-    if !matches!(action, "start" | "stop" | "shutdown" | "reboot" | "pause" | "resume") {
+    if !matches!(
+        action,
+        "start" | "stop" | "shutdown" | "reboot" | "pause" | "resume"
+    ) {
         return Err(ApiError::bad_request("invalid batch power action"));
     }
     let operation = format!("vm.{action}");
     let mut results = Vec::with_capacity(body.vm_ids.len());
     for vm_id in body.vm_ids {
-        match power_action(
-            &state,
-            vm_id,
-            action,
-            &operation,
-            body.mode.clone(),
-        )
-        .await
-        {
+        match power_action(&state, vm_id, action, &operation, body.mode.clone()).await {
             Ok(Json(task)) => results.push(BatchVmPowerItem {
                 vm_id: vm_id.to_string(),
                 task_id: Some(task.task_id),
@@ -218,12 +213,11 @@ pub async fn batch_vm_delete(
     }
     let mut results = Vec::with_capacity(body.vm_ids.len());
     for vm_id in body.vm_ids {
-        let row: Option<(Option<Uuid>, String)> = sqlx::query_as(
-            "SELECT host_id, observed_state FROM vms WHERE id = ?",
-        )
-        .bind(vm_id)
-        .fetch_optional(&state.pool)
-        .await?;
+        let row: Option<(Option<Uuid>, String)> =
+            sqlx::query_as("SELECT host_id, observed_state FROM vms WHERE id = ?")
+                .bind(vm_id)
+                .fetch_optional(&state.pool)
+                .await?;
         let Some((host_id, observed_state)) = row else {
             results.push(BatchVmPowerItem {
                 vm_id: vm_id.to_string(),

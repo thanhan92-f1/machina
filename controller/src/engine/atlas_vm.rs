@@ -56,10 +56,7 @@ fn dns_safe(s: &str) -> String {
     }
 }
 
-pub async fn list_vm_volumes(
-    pool: &SqlitePool,
-    vm_id: Uuid,
-) -> anyhow::Result<Vec<VmAtlasVolume>> {
+pub async fn list_vm_volumes(pool: &SqlitePool, vm_id: Uuid) -> anyhow::Result<Vec<VmAtlasVolume>> {
     let rows = sqlx::query_as::<_, VmAtlasVolume>(
         "SELECT id, vm_id, volume_id, role, size_bytes, policy, backend_native_id, state, created_at \
          FROM vm_atlas_volumes WHERE vm_id = ? ORDER BY created_at",
@@ -278,7 +275,11 @@ pub fn rbd_source(cfg: &ControllerConfig, backend_native_id: &str) -> String {
     if let Some(u) = cfg.atlas_rbd_auth_user.as_deref().filter(|s| !s.is_empty()) {
         q.push(format!("auth={u}"));
     }
-    if let Some(s) = cfg.atlas_rbd_secret_uuid.as_deref().filter(|s| !s.is_empty()) {
+    if let Some(s) = cfg
+        .atlas_rbd_secret_uuid
+        .as_deref()
+        .filter(|s| !s.is_empty())
+    {
         q.push(format!("secret={s}"));
     }
     if q.is_empty() {

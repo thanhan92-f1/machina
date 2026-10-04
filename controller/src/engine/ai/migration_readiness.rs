@@ -75,8 +75,7 @@ pub async fn generate(
         let placeholders = std::iter::repeat_n("?", vm_ids.len())
             .collect::<Vec<_>>()
             .join(",");
-        let sql =
-            format!("SELECT id, name, observed_state FROM vms WHERE id IN ({placeholders})");
+        let sql = format!("SELECT id, name, observed_state FROM vms WHERE id IN ({placeholders})");
         let mut q = sqlx::query_as::<_, (Uuid, String, String)>(&sql);
         for id in &vm_ids {
             q = q.bind(id);

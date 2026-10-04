@@ -35,7 +35,9 @@ pub async fn get_cluster(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<ClusterSummary>, ApiError> {
     let include_settings = require_operator(&actor).is_ok();
-    Ok(Json(build_cluster_summary(&state.pool, include_settings).await?))
+    Ok(Json(
+        build_cluster_summary(&state.pool, include_settings).await?,
+    ))
 }
 
 #[derive(Debug, serde::Serialize)]

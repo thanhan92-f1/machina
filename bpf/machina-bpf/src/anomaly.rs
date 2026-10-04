@@ -102,7 +102,11 @@ impl Detector {
 
     fn window(q: &mut VecDeque<(f64, u16)>, now: f64, port: u16) -> usize {
         q.push_back((now, port));
-        while q.front().map(|(t, _)| now - t > SCAN_WINDOW_SECS).unwrap_or(false) {
+        while q
+            .front()
+            .map(|(t, _)| now - t > SCAN_WINDOW_SECS)
+            .unwrap_or(false)
+        {
             q.pop_front();
         }
         while q.len() > 4096 {
@@ -137,7 +141,9 @@ impl Detector {
                     format!("scan:{local}:{remote}"),
                     "port_scan",
                     "high",
-                    format!("{local} probed {distinct} ports on {remote} within {SCAN_WINDOW_SECS}s"),
+                    format!(
+                        "{local} probed {distinct} ports on {remote} within {SCAN_WINDOW_SECS}s"
+                    ),
                     ctx,
                     Some(local),
                     Some(remote),
@@ -155,14 +161,19 @@ impl Detector {
                     ts.pop_front();
                 }
                 if ts.len() >= BEACON_MIN_SAMPLES {
-                    let iv: Vec<f64> =
-                        ts.iter().zip(ts.iter().skip(1)).map(|(a, b)| b - a).collect();
+                    let iv: Vec<f64> = ts
+                        .iter()
+                        .zip(ts.iter().skip(1))
+                        .map(|(a, b)| b - a)
+                        .collect();
                     let mean = iv.iter().sum::<f64>() / iv.len() as f64;
-                    let var =
-                        iv.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / iv.len() as f64;
+                    let var = iv.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / iv.len() as f64;
                     let cv = if mean > 0.0 { var.sqrt() / mean } else { 1.0 };
-                    ((10.0..=3600.0).contains(&mean) && cv < BEACON_MAX_CV)
-                        .then_some((mean, cv, ts.len()))
+                    ((10.0..=3600.0).contains(&mean) && cv < BEACON_MAX_CV).then_some((
+                        mean,
+                        cv,
+                        ts.len(),
+                    ))
                 } else {
                     None
                 }
@@ -214,7 +225,9 @@ impl Detector {
                     format!("inscan:{remote}:{local}"),
                     "inbound_scan",
                     "medium",
-                    format!("{remote} probed {distinct} ports on {local} within {SCAN_WINDOW_SECS}s"),
+                    format!(
+                        "{remote} probed {distinct} ports on {local} within {SCAN_WINDOW_SECS}s"
+                    ),
                     ctx,
                     Some(local),
                     Some(remote),
@@ -265,19 +278,32 @@ impl Detector {
         self.volume.retain(|_, (t, _)| now - *t < 600.0);
         self.beacons
             .retain(|_, q| q.back().map(|t| now - t < 7200.0).unwrap_or(false));
-        self.outbound_ports
-            .retain(|_, q| q.back().map(|(t, _)| now - t < SCAN_WINDOW_SECS).unwrap_or(false));
-        self.inbound_ports
-            .retain(|_, q| q.back().map(|(t, _)| now - t < SCAN_WINDOW_SECS).unwrap_or(false));
-        self.denies
-            .retain(|_, q| q.back().map(|t| now - t < SCAN_WINDOW_SECS).unwrap_or(false));
+        self.outbound_ports.retain(|_, q| {
+            q.back()
+                .map(|(t, _)| now - t < SCAN_WINDOW_SECS)
+                .unwrap_or(false)
+        });
+        self.inbound_ports.retain(|_, q| {
+            q.back()
+                .map(|(t, _)| now - t < SCAN_WINDOW_SECS)
+                .unwrap_or(false)
+        });
+        self.denies.retain(|_, q| {
+            q.back()
+                .map(|t| now - t < SCAN_WINDOW_SECS)
+                .unwrap_or(false)
+        });
         self.cooldown.retain(|_, t| now - *t < ALERT_COOLDOWN_SECS);
     }
 
     pub fn on_deny(&mut self, now: f64, ctx: &Ctx, local: &str, remote: &str) -> Option<Anomaly> {
         let q = self.denies.entry(local.into()).or_default();
         q.push_back(now);
-        while q.front().map(|t| now - t > SCAN_WINDOW_SECS).unwrap_or(false) {
+        while q
+            .front()
+            .map(|t| now - t > SCAN_WINDOW_SECS)
+            .unwrap_or(false)
+        {
             q.pop_front();
         }
         let n = q.len();
@@ -297,7 +323,14 @@ impl Detector {
         )
     }
 
-    pub fn on_exec(&mut self, now: f64, ctx: &Ctx, path: &str, comm: &str, pid: u32) -> Option<Anomaly> {
+    pub fn on_exec(
+        &mut self,
+        now: f64,
+        ctx: &Ctx,
+        path: &str,
+        comm: &str,
+        pid: u32,
+    ) -> Option<Anomaly> {
         let suspicious_dir = ["/tmp/", "/dev/shm/", "/var/tmp/", "/run/user/"]
             .iter()
             .any(|p| path.starts_with(p));
@@ -307,7 +340,10 @@ impl Detector {
         );
         let hypervisor_parent = comm.starts_with("qemu") || comm.starts_with("libvirt");
         let (kind_sev, why) = if suspicious_dir {
-            ("high", format!("executed {path} from a world-writable directory"))
+            (
+                "high",
+                format!("executed {path} from a world-writable directory"),
+            )
         } else if shell && hypervisor_parent {
             ("critical", format!("{comm} spawned a shell ({path})"))
         } else {
@@ -326,7 +362,13 @@ impl Detector {
         )
     }
 
-    pub fn on_dns_query(&mut self, now: f64, ctx: &Ctx, client: &str, qname: &str) -> Option<Anomaly> {
+    pub fn on_dns_query(
+        &mut self,
+        now: f64,
+        ctx: &Ctx,
+        client: &str,
+        qname: &str,
+    ) -> Option<Anomaly> {
         let first = qname.split('.').next().unwrap_or("");
         let long = first.len() > 50 || qname.len() > 180;
         let high_entropy = first.len() >= 24 && entropy(first) > 4.0;
@@ -358,7 +400,16 @@ mod tests {
         let c = Ctx::default();
         let mut hits = 0;
         for p in 0..80u16 {
-            hits += d.on_flow_open(100.0 + p as f64 * 0.1, &c, "10.0.0.5", "10.0.0.9", 1000 + p, 40000, true)
+            hits += d
+                .on_flow_open(
+                    100.0 + p as f64 * 0.1,
+                    &c,
+                    "10.0.0.5",
+                    "10.0.0.9",
+                    1000 + p,
+                    40000,
+                    true,
+                )
                 .iter()
                 .filter(|a| a.kind == "port_scan")
                 .count();
@@ -372,7 +423,15 @@ mod tests {
         let c = Ctx::default();
         let mut found = false;
         for i in 0..8 {
-            let a = d.on_flow_open(1000.0 + i as f64 * 60.0, &c, "10.0.0.5", "203.0.113.7", 443, 5000, true);
+            let a = d.on_flow_open(
+                1000.0 + i as f64 * 60.0,
+                &c,
+                "10.0.0.5",
+                "203.0.113.7",
+                443,
+                5000,
+                true,
+            );
             found |= a.iter().any(|a| a.kind == "beaconing");
         }
         assert!(found);
@@ -402,8 +461,12 @@ mod tests {
         let mut d = Detector::new();
         let c = Ctx::default();
         assert!(d.on_flow_bytes(0.0, &c, "k", "a", "b", 0).is_none());
-        assert!(d.on_flow_bytes(60.0, &c, "k", "a", "b", 10 * 1024 * 1024).is_none());
-        assert!(d.on_flow_bytes(120.0, &c, "k", "a", "b", 2 * 1024 * 1024 * 1024).is_some());
+        assert!(d
+            .on_flow_bytes(60.0, &c, "k", "a", "b", 10 * 1024 * 1024)
+            .is_none());
+        assert!(d
+            .on_flow_bytes(120.0, &c, "k", "a", "b", 2 * 1024 * 1024 * 1024)
+            .is_some());
 
         let mut hit = None;
         for i in 0..DENY_BURST {
@@ -412,12 +475,19 @@ mod tests {
         assert!(hit.is_some());
 
         assert!(d.on_exec(0.0, &c, "/tmp/x", "bash", 1).is_some());
-        assert!(d.on_exec(0.0, &c, "/bin/sh", "qemu-system-x86", 1).is_some());
+        assert!(d
+            .on_exec(0.0, &c, "/bin/sh", "qemu-system-x86", 1)
+            .is_some());
         assert!(d.on_exec(0.0, &c, "/usr/bin/ls", "bash", 1).is_none());
 
         assert!(d.on_dns_query(0.0, &c, "a", "www.example.com").is_none());
         assert!(d
-            .on_dns_query(0.0, &c, "a", "aGVsbG8gd29ybGQgdGhpcyBpcyBleGZpbHRyYXRpb24.t.evil.io")
+            .on_dns_query(
+                0.0,
+                &c,
+                "a",
+                "aGVsbG8gd29ybGQgdGhpcyBpcyBleGZpbHRyYXRpb24.t.evil.io"
+            )
             .is_some());
     }
 }

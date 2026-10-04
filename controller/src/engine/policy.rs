@@ -161,7 +161,9 @@ pub async fn upsert_project_quota(
     Ok(())
 }
 
-pub async fn list_policy_rules(pool: &SqlitePool) -> anyhow::Result<Vec<(Uuid, String, bool, Value)>> {
+pub async fn list_policy_rules(
+    pool: &SqlitePool,
+) -> anyhow::Result<Vec<(Uuid, String, bool, Value)>> {
     Ok(
         sqlx::query_as("SELECT id, name, enabled, rule_json FROM policy_rules ORDER BY name")
             .fetch_all(pool)

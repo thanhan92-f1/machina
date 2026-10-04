@@ -155,8 +155,7 @@ impl Default for ControllerConfig {
                 .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
                 // Secure by default — set ATLAS_INSECURE_TLS=1 for a self-signed gateway.
                 .unwrap_or(false),
-            atlas_tenant_id: std::env::var("ATLAS_TENANT_ID")
-                .unwrap_or_else(|_| "machina".into()),
+            atlas_tenant_id: std::env::var("ATLAS_TENANT_ID").unwrap_or_else(|_| "machina".into()),
             atlas_default_policy: std::env::var("ATLAS_DEFAULT_POLICY")
                 .unwrap_or_else(|_| "general".into()),
             atlas_backup_bucket_id: std::env::var("ATLAS_BACKUP_BUCKET_ID")
@@ -247,7 +246,10 @@ impl std::fmt::Debug for ControllerConfig {
             )
             .field("consolehub_recording_dir", &self.consolehub_recording_dir)
             .field("consolehub_require_oidc", &self.consolehub_require_oidc)
-            .field("firewall_zones", &self.firewall_zones.keys().collect::<Vec<_>>())
+            .field(
+                "firewall_zones",
+                &self.firewall_zones.keys().collect::<Vec<_>>(),
+            )
             .finish()
     }
 }

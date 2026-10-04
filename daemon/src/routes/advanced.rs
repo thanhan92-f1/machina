@@ -15,7 +15,7 @@ use machina_core::libvirt::{
 };
 use machina_core::{LibvirtError, LibvirtManager};
 
-use crate::auth::{require_write, require_usb_pci, RequestActor};
+use crate::auth::{require_usb_pci, require_write, RequestActor};
 use crate::conn_query::{spawn_libvirt_actor, ConnQuery};
 use crate::error::{AppError, Xml};
 

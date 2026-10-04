@@ -139,8 +139,8 @@ pub(crate) fn calculate_cpu_percent(stats: &ContainerStatsResponse) -> f64 {
         .and_then(|u| u.total_usage)
         .unwrap_or(0) as f64;
     let cpu_delta = total - pre_total;
-    let system_delta = cpu.system_cpu_usage.unwrap_or(0) as f64
-        - precpu.system_cpu_usage.unwrap_or(0) as f64;
+    let system_delta =
+        cpu.system_cpu_usage.unwrap_or(0) as f64 - precpu.system_cpu_usage.unwrap_or(0) as f64;
     let online = cpu.online_cpus.unwrap_or(1).max(1) as f64;
     if system_delta > 0.0 && cpu_delta > 0.0 {
         (cpu_delta / system_delta) * online * 100.0
@@ -292,12 +292,12 @@ impl Engine for BollardEngine {
         let name = req.name.trim();
         let image = req.image.trim();
         if name.is_empty() || image.is_empty() {
-            return Err(VesselError::Api("container name and image are required".into()));
+            return Err(VesselError::Api(
+                "container name and image are required".into(),
+            ));
         }
 
-        let options = CreateContainerOptionsBuilder::default()
-            .name(name)
-            .build();
+        let options = CreateContainerOptionsBuilder::default().name(name).build();
 
         let mut body = ContainerCreateBody {
             image: Some(image.to_string()),
@@ -314,7 +314,9 @@ impl Engine for BollardEngine {
             .map_err(map_api)?;
         let id = resp.id;
         if id.is_empty() {
-            return Err(VesselError::Api("engine returned empty container id".into()));
+            return Err(VesselError::Api(
+                "engine returned empty container id".into(),
+            ));
         }
 
         if req.start {
@@ -331,17 +333,11 @@ impl Engine for BollardEngine {
     }
 
     async fn start_container(&self, id: &str) -> Result<(), VesselError> {
-        self.docker
-            .start_container(id, None)
-            .await
-            .map_err(map_api)
+        self.docker.start_container(id, None).await.map_err(map_api)
     }
 
     async fn stop_container(&self, id: &str) -> Result<(), VesselError> {
-        self.docker
-            .stop_container(id, None)
-            .await
-            .map_err(map_api)
+        self.docker.stop_container(id, None).await.map_err(map_api)
     }
 
     async fn restart_container(&self, id: &str) -> Result<(), VesselError> {
@@ -352,7 +348,9 @@ impl Engine for BollardEngine {
     }
 
     async fn remove_container(&self, id: &str, force: bool) -> Result<(), VesselError> {
-        let options = RemoveContainerOptionsBuilder::default().force(force).build();
+        let options = RemoveContainerOptionsBuilder::default()
+            .force(force)
+            .build();
         self.docker
             .remove_container(id, Some(options))
             .await
@@ -373,7 +371,12 @@ impl Engine for BollardEngine {
             .boxed()
     }
 
-    fn logs_stream(&self, id: &str, follow: bool, tail: Option<u64>) -> BoxStream<'static, LogItem> {
+    fn logs_stream(
+        &self,
+        id: &str,
+        follow: bool,
+        tail: Option<u64>,
+    ) -> BoxStream<'static, LogItem> {
         let mut builder = LogsOptionsBuilder::default()
             .follow(follow)
             .stdout(true)
@@ -412,9 +415,10 @@ impl Engine for BollardEngine {
     }
 
     async fn list_pods(&self) -> Result<Vec<PodSummary>, VesselError> {
-        let libpod = self.libpod.as_ref().ok_or_else(|| {
-            VesselError::Unsupported("Pod listing requires Podman".into())
-        })?;
+        let libpod = self
+            .libpod
+            .as_ref()
+            .ok_or_else(|| VesselError::Unsupported("Pod listing requires Podman".into()))?;
         let items: Vec<LibpodPodListItem> = libpod.get_json("/libpod/pods/json").await?;
         Ok(items
             .into_iter()
@@ -450,9 +454,10 @@ impl Engine for BollardEngine {
     }
 
     async fn create_pod(&self, req: CreatePodRequest) -> Result<CreatePodResponse, VesselError> {
-        let libpod = self.libpod.as_ref().ok_or_else(|| {
-            VesselError::Unsupported("Pod create requires Podman".into())
-        })?;
+        let libpod = self
+            .libpod
+            .as_ref()
+            .ok_or_else(|| VesselError::Unsupported("Pod create requires Podman".into()))?;
         if req.name.trim().is_empty() {
             return Err(VesselError::Api("pod name is required".into()));
         }
@@ -468,25 +473,28 @@ impl Engine for BollardEngine {
     }
 
     async fn start_pod(&self, id: &str) -> Result<(), VesselError> {
-        let libpod = self.libpod.as_ref().ok_or_else(|| {
-            VesselError::Unsupported("Pod start requires Podman".into())
-        })?;
+        let libpod = self
+            .libpod
+            .as_ref()
+            .ok_or_else(|| VesselError::Unsupported("Pod start requires Podman".into()))?;
         let path = format!("/libpod/pods/{}/start", urlencoding_path(id));
         libpod.post_empty(&path).await
     }
 
     async fn stop_pod(&self, id: &str) -> Result<(), VesselError> {
-        let libpod = self.libpod.as_ref().ok_or_else(|| {
-            VesselError::Unsupported("Pod stop requires Podman".into())
-        })?;
+        let libpod = self
+            .libpod
+            .as_ref()
+            .ok_or_else(|| VesselError::Unsupported("Pod stop requires Podman".into()))?;
         let path = format!("/libpod/pods/{}/stop", urlencoding_path(id));
         libpod.post_empty(&path).await
     }
 
     async fn remove_pod(&self, id: &str, force: bool) -> Result<(), VesselError> {
-        let libpod = self.libpod.as_ref().ok_or_else(|| {
-            VesselError::Unsupported("Pod remove requires Podman".into())
-        })?;
+        let libpod = self
+            .libpod
+            .as_ref()
+            .ok_or_else(|| VesselError::Unsupported("Pod remove requires Podman".into()))?;
         let path = if force {
             format!("/libpod/pods/{}?force=true", urlencoding_path(id))
         } else {
@@ -502,7 +510,10 @@ impl Engine for BollardEngine {
 }
 
 fn urlencoding_path(id: &str) -> String {
-    id.split('/').map(urlencoding_encode).collect::<Vec<_>>().join("/")
+    id.split('/')
+        .map(urlencoding_encode)
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 fn urlencoding_encode(s: &str) -> String {

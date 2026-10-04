@@ -1134,7 +1134,8 @@ pub struct RtnlCfg {
 }
 
 /// Link, address, route, neighbour, rule, qdisc and tc filter new/del/set.
-pub const RTNL_DEFAULT_MASK: u64 = rtnl_bits(&[16, 17, 19, 20, 21, 24, 25, 28, 29, 32, 33, 36, 37, 44, 45]);
+pub const RTNL_DEFAULT_MASK: u64 =
+    rtnl_bits(&[16, 17, 19, 20, 21, 24, 25, 28, 29, 32, 33, 36, 37, 44, 45]);
 
 pub const fn rtnl_bits(types: &[u16]) -> u64 {
     let mut m = 0u64;
@@ -1402,7 +1403,12 @@ pub const DIRECT_STAT_IDLE: u32 = 2;
 /// DIRECT_MAC key: a MAC address in the low 48 bits.
 #[inline(always)]
 pub fn mac_key(m: &[u8; 6]) -> u64 {
-    (m[0] as u64) << 40 | (m[1] as u64) << 32 | (m[2] as u64) << 24 | (m[3] as u64) << 16 | (m[4] as u64) << 8 | m[5] as u64
+    (m[0] as u64) << 40
+        | (m[1] as u64) << 32
+        | (m[2] as u64) << 24
+        | (m[3] as u64) << 16
+        | (m[4] as u64) << 8
+        | m[5] as u64
 }
 
 // ---------------------------------------------------------------------------
@@ -1441,14 +1447,73 @@ mod pod {
         ($($t:ty),*) => { $(unsafe impl aya::Pod for $t {})* };
     }
     pod!(
-        GlobalCfg, IfaceCfg, DenyKey, AllowKey, RuleVal, FlowKey, FlowVal, NetEvent, FileWatch,
-        PortKey, CapKey, HealthKey, QosState, Endpoint, PolicyKey, SvcKey, SvcVal, BackendKey, Backend, RevNatKey,
-        NatCtKey, NatCtVal, NodeCfg, RateCfg, IfaceStats, MaglevKey, AffinityKey, AffinityVal, XdpCfg,
-        VmEdgeCfg, VmBucket, VmEdgeStats, VmFlowEvent, VmL7Event, VmL7Flow, VmAuthKey, QemuDevRule, QemuSandboxCfg, DevHitKey, NetHitKey,
-        ShieldCfg, ShieldSrcKey, ShieldSrcState, ShieldStats, ConnKey, ConnStats, TcpPressure, IcmpErrKey,
-        SampleCfg, SampleBucket, SslReadArgs, NodeIsoCfg, NodeIsoStats, RtnlCfg, L7sCfg,
-        VmiCfg, VmiThread, VmiKey, VmiBlk, GuardCfg, GuardFileKey, DirectCfg,
-        QlbSvcKey, QlbSvc, QlbBeKey, QlbBackend, QlbSidKey
+        GlobalCfg,
+        IfaceCfg,
+        DenyKey,
+        AllowKey,
+        RuleVal,
+        FlowKey,
+        FlowVal,
+        NetEvent,
+        FileWatch,
+        PortKey,
+        CapKey,
+        HealthKey,
+        QosState,
+        Endpoint,
+        PolicyKey,
+        SvcKey,
+        SvcVal,
+        BackendKey,
+        Backend,
+        RevNatKey,
+        NatCtKey,
+        NatCtVal,
+        NodeCfg,
+        RateCfg,
+        IfaceStats,
+        MaglevKey,
+        AffinityKey,
+        AffinityVal,
+        XdpCfg,
+        VmEdgeCfg,
+        VmBucket,
+        VmEdgeStats,
+        VmFlowEvent,
+        VmL7Event,
+        VmL7Flow,
+        VmAuthKey,
+        QemuDevRule,
+        QemuSandboxCfg,
+        DevHitKey,
+        NetHitKey,
+        ShieldCfg,
+        ShieldSrcKey,
+        ShieldSrcState,
+        ShieldStats,
+        ConnKey,
+        ConnStats,
+        TcpPressure,
+        IcmpErrKey,
+        SampleCfg,
+        SampleBucket,
+        SslReadArgs,
+        NodeIsoCfg,
+        NodeIsoStats,
+        RtnlCfg,
+        L7sCfg,
+        VmiCfg,
+        VmiThread,
+        VmiKey,
+        VmiBlk,
+        GuardCfg,
+        GuardFileKey,
+        DirectCfg,
+        QlbSvcKey,
+        QlbSvc,
+        QlbBeKey,
+        QlbBackend,
+        QlbSidKey
     );
 }
 
@@ -1522,14 +1587,24 @@ mod tests {
         assert_eq!(qlb_cid_sid(&[0x1f, 0x12, 0x34], 0), Some(0x1234));
         assert_eq!(qlb_cid_sid(&[0x3f, 0x12, 0x34], 1), Some(0x1234));
         assert_eq!(qlb_cid_sid(&[0xe0, 0x12, 0x34], 0), None);
-        assert_eq!(mac_key(&[0x52, 0x54, 0, 0xaa, 0xbb, 0xcc]), 0x5254_00aa_bbcc);
-        assert_eq!((log2_slot(0), log2_slot(1), log2_slot(1023), log2_slot(1024)), (0, 0, 9, 10));
+        assert_eq!(
+            mac_key(&[0x52, 0x54, 0, 0xaa, 0xbb, 0xcc]),
+            0x5254_00aa_bbcc
+        );
+        assert_eq!(
+            (log2_slot(0), log2_slot(1), log2_slot(1023), log2_slot(1024)),
+            (0, 0, 9, 10)
+        );
     }
 
     #[test]
     fn rtnl_mask() {
         assert_eq!(rtnl_bits(&[16, 17]), 0b11);
-        assert_eq!(RTNL_DEFAULT_MASK & rtnl_bits(&[18, 22, 26, 30]), 0, "GET types stay out");
+        assert_eq!(
+            RTNL_DEFAULT_MASK & rtnl_bits(&[18, 22, 26, 30]),
+            0,
+            "GET types stay out"
+        );
     }
 
     #[test]

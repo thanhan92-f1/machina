@@ -22,7 +22,9 @@ pub struct KnowledgeDiagnosis {
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 pub async fn diagnose(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeDiagnosis> {

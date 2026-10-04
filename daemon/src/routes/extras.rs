@@ -155,10 +155,7 @@ async fn upload_iso(
                     q.filename
                 ))
             } else {
-                LibvirtError::Operation(format!(
-                    "cannot open {}: {e}",
-                    staging_path.display()
-                ))
+                LibvirtError::Operation(format!("cannot open {}: {e}", staging_path.display()))
             })
         })?;
 
@@ -236,7 +233,12 @@ async fn upload_iso(
     // it's re-checked immediately beforehand.
     if !q.overwrite && final_path.exists() {
         let _ = tokio::fs::remove_file(&staging_path).await;
-        log_audit_with_actor(&actor, "iso.upload", &q.filename, "failed: raced by another upload");
+        log_audit_with_actor(
+            &actor,
+            "iso.upload",
+            &q.filename,
+            "failed: raced by another upload",
+        );
         return Err(AppError::from(LibvirtError::Invalid(format!(
             "{} was created by another request — not overwriting",
             q.filename
@@ -256,8 +258,8 @@ async fn upload_iso(
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = tokio::fs::set_permissions(&final_path, std::fs::Permissions::from_mode(0o644))
-            .await;
+        let _ =
+            tokio::fs::set_permissions(&final_path, std::fs::Permissions::from_mode(0o644)).await;
     }
 
     log_audit_with_actor(
@@ -464,7 +466,10 @@ async fn download_iso(
             if t > max_bytes {
                 return fail(
                     &jobs,
-                    format!("remote file is {} GiB; limit is {max_gib} GiB", t / (1024 * 1024 * 1024)),
+                    format!(
+                        "remote file is {} GiB; limit is {max_gib} GiB",
+                        t / (1024 * 1024 * 1024)
+                    ),
                 );
             }
             jobs.set_download_total(job_id, Some(t));
@@ -490,7 +495,12 @@ async fn download_iso(
                     format!("a download to {} is already in progress", final_display),
                 );
             }
-            Err(e) => return fail(&jobs, format!("cannot open {}: {e}", staging_path.display())),
+            Err(e) => {
+                return fail(
+                    &jobs,
+                    format!("cannot open {}: {e}", staging_path.display()),
+                )
+            }
         };
 
         // Re-checked periodically below, not just once up front: a chunked
@@ -518,8 +528,7 @@ async fn download_iso(
                 // Budget for the rest of the transfer up to the hard cap, since
                 // the true remaining size is unknown for a chunked response.
                 let remaining_budget = max_bytes.saturating_sub(written);
-                if let Err(e) = machina_core::iso_upload::check_free_space(&dir, remaining_budget)
-                {
+                if let Err(e) = machina_core::iso_upload::check_free_space(&dir, remaining_budget) {
                     let _ = tokio::fs::remove_file(&staging_path).await;
                     return fail(&jobs, e.to_string());
                 }
@@ -573,7 +582,10 @@ async fn download_iso(
         }
 
         jobs.update_download_progress(job_id, written);
-        jobs.append_log(job_id, &format!("saved {} ({written} bytes)", final_path.display()));
+        jobs.append_log(
+            job_id,
+            &format!("saved {} ({written} bytes)", final_path.display()),
+        );
         // Overwriting swaps the directory entry, but a running guest with this
         // exact path already mounted as CD-ROM keeps its old file descriptor —
         // it won't see the new bytes until the drive is ejected and reinserted.
@@ -805,8 +817,8 @@ async fn install_guest_agent(
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let _ = tokio::fs::set_permissions(&iso_path, std::fs::Permissions::from_mode(0o644))
-                .await;
+            let _ =
+                tokio::fs::set_permissions(&iso_path, std::fs::Permissions::from_mode(0o644)).await;
         }
         downloaded = true;
     }
@@ -837,8 +849,8 @@ async fn install_guest_agent(
     )
     .await?;
 
-    let needs_restart =
-        cdrom_outcome.requires_restart || channel_outcome.as_ref().is_some_and(|c| c.requires_restart);
+    let needs_restart = cdrom_outcome.requires_restart
+        || channel_outcome.as_ref().is_some_and(|c| c.requires_restart);
 
     log_audit_with_actor(&actor, "guest-agent.install-media", &name, "success");
 
@@ -1101,11 +1113,7 @@ async fn linux_set_hostname(
     let disk = linux_offline_disk(manager, &actor, conn_q, &name).await?;
     let hostname = req.hostname;
     let outcome = tokio::task::spawn_blocking(move || {
-        machina_core::libvirt::linux_guestkit::set_hostname_offline(
-            &disk,
-            &guestkit_bin,
-            &hostname,
-        )
+        machina_core::libvirt::linux_guestkit::set_hostname_offline(&disk, &guestkit_bin, &hostname)
     })
     .await
     .map_err(|e| AppError::from(LibvirtError::Internal(format!("task failed: {e}"))))??;
@@ -2221,13 +2229,20 @@ async fn vfio_status_handler(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_usb_pci(&actor)?;
     // Normalize addr: "0000:01:00.0" -> "0000:01:00.0"
-    let addr_clean: String = addr.chars().filter(|c| c.is_alphanumeric() || *c == ':' || *c == '.').collect();
+    let addr_clean: String = addr
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == ':' || *c == '.')
+        .collect();
     let driver_link = std::path::Path::new("/sys/bus/pci/devices")
         .join(&addr_clean)
         .join("driver");
     let (driver, vfio_bound) = match std::fs::read_link(&driver_link) {
         Ok(target) => {
-            let name = target.file_name().and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
+            let name = target
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown")
+                .to_string();
             let is_vfio = name == "vfio-pci";
             (name, is_vfio)
         }
@@ -2711,8 +2726,14 @@ pub fn extras_routes() -> Router<LibvirtManager> {
         )
         .route("/vms/{name}/windows/enable-rdp", post(enable_windows_rdp))
         .route("/vms/{name}/linux/enable-ssh", post(enable_linux_ssh))
-        .route("/vms/{name}/linux/inject-ssh-key", post(linux_inject_ssh_key))
-        .route("/vms/{name}/linux/reset-password", post(linux_reset_password))
+        .route(
+            "/vms/{name}/linux/inject-ssh-key",
+            post(linux_inject_ssh_key),
+        )
+        .route(
+            "/vms/{name}/linux/reset-password",
+            post(linux_reset_password),
+        )
         .route("/vms/{name}/linux/fix-fstab", post(linux_fix_fstab))
         .route("/vms/{name}/linux/set-hostname", post(linux_set_hostname))
         .route("/browse/dir", get(browse_directory_handler))

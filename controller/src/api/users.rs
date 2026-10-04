@@ -59,11 +59,9 @@ fn validate_username(username: &str) -> Result<String, ApiError> {
 
 fn validate_password(password: &str) -> Result<(), ApiError> {
     if password.trim().is_empty() {
-        return Err(
-            ApiError::bad_request("password must not be blank")
-                .with_code("invalid_request")
-                .with_remediation("Choose a non-blank password for platform login."),
-        );
+        return Err(ApiError::bad_request("password must not be blank")
+            .with_code("invalid_request")
+            .with_remediation("Choose a non-blank password for platform login."));
     }
     if password.chars().count() < 8 {
         return Err(
@@ -114,8 +112,7 @@ pub async fn create_user(
     validate_password(&body.password)?;
     let role = validate_role(&body.role)?;
     let id = Uuid::new_v4();
-    let hash = bcrypt::hash(&body.password, 12)
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let hash = bcrypt::hash(&body.password, 12).map_err(|e| ApiError::internal(e.to_string()))?;
     sqlx::query("INSERT INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)")
         .bind(id)
         .bind(&username)
@@ -198,11 +195,9 @@ pub async fn prune_invalid_users(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<PruneInvalidUsersResponse>, ApiError> {
     require_admin(&actor)?;
-    let result = sqlx::query(
-        "DELETE FROM users WHERE username IS NULL OR TRIM(username) = ''",
-    )
-    .execute(&state.pool)
-    .await?;
+    let result = sqlx::query("DELETE FROM users WHERE username IS NULL OR TRIM(username) = ''")
+        .execute(&state.pool)
+        .await?;
     Ok(Json(PruneInvalidUsersResponse {
         deleted: result.rows_affected(),
     }))

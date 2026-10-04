@@ -86,7 +86,10 @@ impl VesselClient {
         self.engine.list_pods().await
     }
 
-    pub async fn create_pod(&self, req: CreatePodRequest) -> Result<CreatePodResponse, VesselError> {
+    pub async fn create_pod(
+        &self,
+        req: CreatePodRequest,
+    ) -> Result<CreatePodResponse, VesselError> {
         self.engine.create_pod(req).await
     }
 

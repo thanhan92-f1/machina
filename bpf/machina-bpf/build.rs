@@ -28,7 +28,9 @@ fn find_tool(name: &str) -> Option<PathBuf> {
 }
 
 fn stage_empty(dst: &Path, why: &str) {
-    println!("cargo:warning=machina-bpf: eBPF programs not built ({why}); datapath will be unavailable");
+    println!(
+        "cargo:warning=machina-bpf: eBPF programs not built ({why}); datapath will be unavailable"
+    );
     fs::write(dst, b"").expect("write empty bpf object");
 }
 
@@ -52,7 +54,10 @@ fn toolchain_dir(toolchain: &str, arch: &str) -> Option<PathBuf> {
     let home = env::var_os("RUSTUP_HOME")
         .map(PathBuf::from)
         .or_else(|| env::var_os("HOME").map(|h| Path::new(&h).join(".rustup")))?;
-    Some(home.join("toolchains").join(format!("{toolchain}-{arch}-unknown-linux-gnu")))
+    Some(
+        home.join("toolchains")
+            .join(format!("{toolchain}-{arch}-unknown-linux-gnu")),
+    )
 }
 
 fn main() {
@@ -62,10 +67,18 @@ fn main() {
     let ebpf_dir = manifest.join("../machina-bpf-ebpf");
     let common_dir = manifest.join("../machina-bpf-common");
 
-    for v in ["MACHINA_BPF_OBJ", "MACHINA_BPF_SKIP", "MACHINA_BPF_TOOLCHAIN"] {
+    for v in [
+        "MACHINA_BPF_OBJ",
+        "MACHINA_BPF_SKIP",
+        "MACHINA_BPF_TOOLCHAIN",
+    ] {
         println!("cargo:rerun-if-env-changed={v}");
     }
-    for d in [ebpf_dir.join("src"), ebpf_dir.join("Cargo.toml"), common_dir.join("src")] {
+    for d in [
+        ebpf_dir.join("src"),
+        ebpf_dir.join("Cargo.toml"),
+        common_dir.join("src"),
+    ] {
         println!("cargo:rerun-if-changed={}", d.display());
     }
 
@@ -77,7 +90,10 @@ fn main() {
         fs::copy(&obj, &dst).expect("copy MACHINA_BPF_OBJ");
         return;
     }
-    if matches!(env::var("MACHINA_BPF_SKIP").as_deref(), Ok("1") | Ok("true")) {
+    if matches!(
+        env::var("MACHINA_BPF_SKIP").as_deref(),
+        Ok("1") | Ok("true")
+    ) {
         stage_empty(&dst, "MACHINA_BPF_SKIP set");
         return;
     }
@@ -126,14 +142,19 @@ fn main() {
     ] {
         cmd.env_remove(k);
     }
-    let output = cmd.output().expect("spawn rustup cargo build for machina-bpf-ebpf");
+    let output = cmd
+        .output()
+        .expect("spawn rustup cargo build for machina-bpf-ebpf");
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         if stderr.contains("toolchain") && stderr.contains("not installed") {
             if let Some(dir) = toolchain_dir(&toolchain, &arch) {
                 println!("cargo:rerun-if-changed={}", dir.display());
             }
-            stage_empty(&dst, &format!("rustup toolchain `{toolchain}` not installed; run `make bpf-deps`"));
+            stage_empty(
+                &dst,
+                &format!("rustup toolchain `{toolchain}` not installed; run `make bpf-deps`"),
+            );
             return;
         }
         panic!("machina-bpf-ebpf build failed:\n{stderr}");

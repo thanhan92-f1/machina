@@ -61,7 +61,11 @@ pub fn oidc_http_client() -> Result<reqwest::Client, OidcError> {
 }
 
 fn origin_of(url: &str) -> String {
-    url.trim_end_matches('/').split('/').take(3).collect::<Vec<_>>().join("/")
+    url.trim_end_matches('/')
+        .split('/')
+        .take(3)
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Validate an already-fetched discovery document body against the issuer it was
@@ -138,7 +142,10 @@ pub async fn fetch_discovery(
     if !res.status().is_success() {
         return Err(OidcError::DiscoveryFetch(format!("HTTP {}", res.status())));
     }
-    let body = res.text().await.map_err(|e| OidcError::DiscoveryFetch(e.to_string()))?;
+    let body = res
+        .text()
+        .await
+        .map_err(|e| OidcError::DiscoveryFetch(e.to_string()))?;
     validate_discovery_document(&body, issuer_url, require_https)
 }
 
@@ -151,7 +158,9 @@ pub async fn fetch_jwks(client: &reqwest::Client, jwks_uri: &str) -> Result<JwkS
     if !res.status().is_success() {
         return Err(OidcError::JwksFetch(format!("HTTP {}", res.status())));
     }
-    res.json::<JwkSet>().await.map_err(|e| OidcError::JwksDecode(e.to_string()))
+    res.json::<JwkSet>()
+        .await
+        .map_err(|e| OidcError::JwksDecode(e.to_string()))
 }
 
 /// Signing algorithms it is safe to accept for a JWK of this key type, derived from
@@ -225,8 +234,8 @@ pub fn validate_id_token(
     audience: &str,
     expected_nonce: Option<&str>,
 ) -> Result<OidcClaims, OidcError> {
-    let header =
-        decode_header(id_token).map_err(|e| OidcError::TokenInvalid(format!("decode header: {e}")))?;
+    let header = decode_header(id_token)
+        .map_err(|e| OidcError::TokenInvalid(format!("decode header: {e}")))?;
     let kid = header
         .kid
         .ok_or_else(|| OidcError::TokenInvalid("id_token is missing key id".into()))?;
@@ -312,11 +321,21 @@ pub enum RoleTier {
     NoMatch,
 }
 
-pub fn resolve_role_tier(groups: &[String], admin_groups: &[String], operator_groups: &[String]) -> RoleTier {
-    if groups.iter().any(|g| admin_groups.iter().any(|want| want == g)) {
+pub fn resolve_role_tier(
+    groups: &[String],
+    admin_groups: &[String],
+    operator_groups: &[String],
+) -> RoleTier {
+    if groups
+        .iter()
+        .any(|g| admin_groups.iter().any(|want| want == g))
+    {
         return RoleTier::Admin;
     }
-    if groups.iter().any(|g| operator_groups.iter().any(|want| want == g)) {
+    if groups
+        .iter()
+        .any(|g| operator_groups.iter().any(|want| want == g))
+    {
         return RoleTier::Operator;
     }
     RoleTier::NoMatch
@@ -424,36 +443,51 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
     fn valid_token_round_trips() {
         let jwks = jwks_with_kid("kid-1");
         let token = sign_token("kid-1", base_claims(serde_json::json!({})));
-        let claims = validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).unwrap();
+        let claims =
+            validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).unwrap();
         assert_eq!(claims.sub, "user-123");
     }
 
     #[test]
     fn wrong_audience_rejected() {
         let jwks = jwks_with_kid("kid-1");
-        let token = sign_token("kid-1", base_claims(serde_json::json!({"aud": "someone-else"})));
-        assert!(validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err());
+        let token = sign_token(
+            "kid-1",
+            base_claims(serde_json::json!({"aud": "someone-else"})),
+        );
+        assert!(
+            validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err()
+        );
     }
 
     #[test]
     fn wrong_issuer_rejected() {
         let jwks = jwks_with_kid("kid-1");
-        let token = sign_token("kid-1", base_claims(serde_json::json!({"iss": "https://evil.example.com"})));
-        assert!(validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err());
+        let token = sign_token(
+            "kid-1",
+            base_claims(serde_json::json!({"iss": "https://evil.example.com"})),
+        );
+        assert!(
+            validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err()
+        );
     }
 
     #[test]
     fn expired_token_rejected() {
         let jwks = jwks_with_kid("kid-1");
         let token = sign_token("kid-1", base_claims(serde_json::json!({"exp": 1})));
-        assert!(validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err());
+        assert!(
+            validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err()
+        );
     }
 
     #[test]
     fn nonce_mismatch_rejected() {
         let jwks = jwks_with_kid("kid-1");
         let token = sign_token("kid-1", base_claims(serde_json::json!({})));
-        assert!(validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("different-nonce")).is_err());
+        assert!(
+            validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("different-nonce")).is_err()
+        );
     }
 
     #[test]
@@ -467,7 +501,9 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
     fn unknown_kid_rejected() {
         let jwks = jwks_with_kid("kid-1");
         let token = sign_token("kid-other", base_claims(serde_json::json!({})));
-        assert!(validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err());
+        assert!(
+            validate_id_token(&token, &jwks, ISSUER, AUDIENCE, Some("expected-nonce")).is_err()
+        );
     }
 
     #[test]
@@ -557,21 +593,33 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
     #[test]
     fn resolve_role_tier_admin_wins_over_operator() {
         let groups = vec!["machina-admins".to_string(), "machina-ops".to_string()];
-        let tier = resolve_role_tier(&groups, &["machina-admins".to_string()], &["machina-ops".to_string()]);
+        let tier = resolve_role_tier(
+            &groups,
+            &["machina-admins".to_string()],
+            &["machina-ops".to_string()],
+        );
         assert_eq!(tier, RoleTier::Admin);
     }
 
     #[test]
     fn resolve_role_tier_operator_when_no_admin_match() {
         let groups = vec!["machina-ops".to_string()];
-        let tier = resolve_role_tier(&groups, &["machina-admins".to_string()], &["machina-ops".to_string()]);
+        let tier = resolve_role_tier(
+            &groups,
+            &["machina-admins".to_string()],
+            &["machina-ops".to_string()],
+        );
         assert_eq!(tier, RoleTier::Operator);
     }
 
     #[test]
     fn resolve_role_tier_no_match() {
         let groups = vec!["some-other-group".to_string()];
-        let tier = resolve_role_tier(&groups, &["machina-admins".to_string()], &["machina-ops".to_string()]);
+        let tier = resolve_role_tier(
+            &groups,
+            &["machina-admins".to_string()],
+            &["machina-ops".to_string()],
+        );
         assert_eq!(tier, RoleTier::NoMatch);
     }
 
@@ -580,7 +628,10 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
         let v = serde_json::json!("hello");
         assert_eq!(claim_string(Some(&v)), Some("hello".to_string()));
         let arr = serde_json::json!(["a", "b", 1]);
-        assert_eq!(claim_strings(Some(&arr)), vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(
+            claim_strings(Some(&arr)),
+            vec!["a".to_string(), "b".to_string()]
+        );
         assert_eq!(claim_string(None), None);
         assert!(claim_strings(None).is_empty());
     }
@@ -600,7 +651,9 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
             "jwks_uri": format!("{issuer}/certs"),
         });
         wiremock::Mock::given(wiremock::matchers::method("GET"))
-            .and(wiremock::matchers::path("/.well-known/openid-configuration"))
+            .and(wiremock::matchers::path(
+                "/.well-known/openid-configuration",
+            ))
             .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(&body))
             .mount(&server)
             .await;
@@ -614,13 +667,17 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
     async fn fetch_discovery_propagates_http_error_status() {
         let server = wiremock::MockServer::start().await;
         wiremock::Mock::given(wiremock::matchers::method("GET"))
-            .and(wiremock::matchers::path("/.well-known/openid-configuration"))
+            .and(wiremock::matchers::path(
+                "/.well-known/openid-configuration",
+            ))
             .respond_with(wiremock::ResponseTemplate::new(500))
             .mount(&server)
             .await;
 
         let client = oidc_http_client().unwrap();
-        assert!(fetch_discovery(&client, &server.uri(), false).await.is_err());
+        assert!(fetch_discovery(&client, &server.uri(), false)
+            .await
+            .is_err());
     }
 
     #[tokio::test]
@@ -636,7 +693,9 @@ Pd7Jjl0b0utJgQ+XgFYY4EvvJr0eFWGnDte2uFeeL8bV6A1nUsgo
             .await;
 
         let client = oidc_http_client().unwrap();
-        let jwks = fetch_jwks(&client, &format!("{}/certs", server.uri())).await.unwrap();
+        let jwks = fetch_jwks(&client, &format!("{}/certs", server.uri()))
+            .await
+            .unwrap();
         assert_eq!(jwks.keys.len(), 1);
     }
 }

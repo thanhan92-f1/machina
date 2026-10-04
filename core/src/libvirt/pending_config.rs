@@ -149,7 +149,11 @@ fn memory_kib(xml: &str) -> u64 {
 }
 
 fn disk_fingerprint(d: &DiskInfo) -> String {
-    let source = if d.source == "unknown" { "" } else { d.source.as_str() };
+    let source = if d.source == "unknown" {
+        ""
+    } else {
+        d.source.as_str()
+    };
     // Empty CD-ROMs often differ only by whether libvirt wrote `type='raw'` on
     // the live vs persistent driver element — not a real needs-shutdown change.
     let driver = if d.device == "cdrom" && source.is_empty() {

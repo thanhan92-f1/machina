@@ -121,7 +121,12 @@ pub async fn vnc_ws_proxy(
     Path(vm_id): Path<Uuid>,
     Query(q): Query<WsTokenQuery>,
 ) -> impl IntoResponse {
-    let Some(grant) = state.ws_tokens.validate(&q.token).await.filter(|g| g.vm_id == vm_id) else {
+    let Some(grant) = state
+        .ws_tokens
+        .validate(&q.token)
+        .await
+        .filter(|g| g.vm_id == vm_id)
+    else {
         return (axum::http::StatusCode::UNAUTHORIZED, "invalid token").into_response();
     };
     let read_only = grant.read_only;
@@ -139,7 +144,12 @@ pub async fn serial_ws_proxy(
     Path(vm_id): Path<Uuid>,
     Query(q): Query<WsTokenQuery>,
 ) -> impl IntoResponse {
-    let Some(grant) = state.ws_tokens.validate(&q.token).await.filter(|g| g.vm_id == vm_id) else {
+    let Some(grant) = state
+        .ws_tokens
+        .validate(&q.token)
+        .await
+        .filter(|g| g.vm_id == vm_id)
+    else {
         return (axum::http::StatusCode::UNAUTHORIZED, "invalid token").into_response();
     };
     // A serial console is inherently interactive input; a read-only/viewer grant
@@ -207,7 +217,9 @@ async fn proxy_to_agent_vnc(socket: WebSocket, state: AppState, vm_id: Uuid, rea
             let up = match msg {
                 // Read-only grant: drop client input frames (keyboard/mouse/
                 // clipboard) so a viewer can watch but not drive the guest.
-                Message::Binary(b) if !read_only => TsMessage::Binary(bytes::Bytes::from(b.to_vec())),
+                Message::Binary(b) if !read_only => {
+                    TsMessage::Binary(bytes::Bytes::from(b.to_vec()))
+                }
                 Message::Text(t) if !read_only => TsMessage::Text(t.to_string().into()),
                 Message::Close(_) => {
                     let _ = agent_sink.send(TsMessage::Close(None)).await;
@@ -357,7 +369,9 @@ async fn proxy_to_daemon_kubevirt(
     let c2d = tokio::spawn(async move {
         while let Some(Ok(msg)) = client_stream.next().await {
             let up = match msg {
-                Message::Binary(b) if !read_only => TsMessage::Binary(bytes::Bytes::from(b.to_vec())),
+                Message::Binary(b) if !read_only => {
+                    TsMessage::Binary(bytes::Bytes::from(b.to_vec()))
+                }
                 Message::Text(t) if !read_only => TsMessage::Text(t.to_string().into()),
                 Message::Close(_) => {
                     let _ = daemon_sink.send(TsMessage::Close(None)).await;
@@ -427,7 +441,9 @@ async fn proxy_to_agent_serial(socket: WebSocket, state: AppState, vm_id: Uuid, 
             let up = match msg {
                 // Read-only grant: drop client input frames (keyboard/mouse/
                 // clipboard) so a viewer can watch but not drive the guest.
-                Message::Binary(b) if !read_only => TsMessage::Binary(bytes::Bytes::from(b.to_vec())),
+                Message::Binary(b) if !read_only => {
+                    TsMessage::Binary(bytes::Bytes::from(b.to_vec()))
+                }
                 Message::Text(t) if !read_only => TsMessage::Text(t.to_string().into()),
                 Message::Close(_) => {
                     let _ = agent_sink.send(TsMessage::Close(None)).await;
@@ -493,7 +509,12 @@ pub async fn spice_ws_proxy(
     Path(vm_id): Path<Uuid>,
     Query(q): Query<WsTokenQuery>,
 ) -> impl IntoResponse {
-    let Some(grant) = state.ws_tokens.validate(&q.token).await.filter(|g| g.vm_id == vm_id) else {
+    let Some(grant) = state
+        .ws_tokens
+        .validate(&q.token)
+        .await
+        .filter(|g| g.vm_id == vm_id)
+    else {
         return (axum::http::StatusCode::UNAUTHORIZED, "invalid token").into_response();
     };
     let read_only = grant.read_only;
@@ -531,7 +552,9 @@ async fn proxy_to_agent_spice(socket: WebSocket, state: AppState, vm_id: Uuid, r
             let up = match msg {
                 // Read-only grant: drop client input frames (keyboard/mouse/
                 // clipboard) so a viewer can watch but not drive the guest.
-                Message::Binary(b) if !read_only => TsMessage::Binary(bytes::Bytes::from(b.to_vec())),
+                Message::Binary(b) if !read_only => {
+                    TsMessage::Binary(bytes::Bytes::from(b.to_vec()))
+                }
                 Message::Text(t) if !read_only => TsMessage::Text(t.to_string().into()),
                 Message::Close(_) => {
                     let _ = agent_sink.send(TsMessage::Close(None)).await;

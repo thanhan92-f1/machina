@@ -57,7 +57,9 @@ pub async fn fleet_timeline(
     Query(q): Query<HostQuery>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    Ok(Json(zeus_security::fleet_timeline(&state.pool, q.hours.unwrap_or(24)).await))
+    Ok(Json(
+        zeus_security::fleet_timeline(&state.pool, q.hours.unwrap_or(24)).await,
+    ))
 }
 
 pub async fn sync_alerts(
@@ -94,7 +96,9 @@ pub async fn fleet_l7(
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
     let limit = q.limit.unwrap_or(500).clamp(1, 5000);
-    Ok(Json(telemetry::l7(&state.pool, limit, q.protocol.as_deref()).await))
+    Ok(Json(
+        telemetry::l7(&state.pool, limit, q.protocol.as_deref()).await,
+    ))
 }
 
 pub async fn fleet_accounting(
@@ -191,7 +195,9 @@ pub async fn host_summary(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    Ok(Json(zeus_security::host_summary(&state.pool, &id.to_string()).await))
+    Ok(Json(
+        zeus_security::host_summary(&state.pool, &id.to_string()).await,
+    ))
 }
 
 pub async fn host_processes(
@@ -274,7 +280,8 @@ pub async fn host_process_graph(
     Query(q): Query<ProcessGraphQuery>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    let mut graph = zeus_security::host_resource(&state.pool, &id.to_string(), "process-graph", 0).await;
+    let mut graph =
+        zeus_security::host_resource(&state.pool, &id.to_string(), "process-graph", 0).await;
     if let Some(pid) = q.pid {
         graph["focus_pid"] = json!(pid);
     }
@@ -295,7 +302,13 @@ pub async fn search(
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
     Ok(Json(
-        telemetry::search(&state.pool, &body.query, body.host_id.as_deref(), body.limit.unwrap_or(200)).await,
+        telemetry::search(
+            &state.pool,
+            &body.query,
+            body.host_id.as_deref(),
+            body.limit.unwrap_or(200),
+        )
+        .await,
     ))
 }
 
@@ -324,7 +337,9 @@ pub async fn run_hunt_query(
     Query(q): Query<HuntRunQuery>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    Ok(Json(telemetry::run_hunt(&state.pool, &query_id, q.host_id.as_deref()).await))
+    Ok(Json(
+        telemetry::run_hunt(&state.pool, &query_id, q.host_id.as_deref()).await,
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -357,8 +372,13 @@ pub async fn attack_reconstruct(
     Json(body): Json<AttackReconstructBody>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    let timeline =
-        zeus_security::host_resource(&state.pool, &body.host_id, "timeline", body.hours.unwrap_or(24)).await;
+    let timeline = zeus_security::host_resource(
+        &state.pool,
+        &body.host_id,
+        "timeline",
+        body.hours.unwrap_or(24),
+    )
+    .await;
     ai_security::attack_reconstruct(&state.pool, &timeline)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))
@@ -377,9 +397,13 @@ pub async fn nl_search(
     Json(body): Json<NlSearchBody>,
 ) -> Result<Json<Value>, ApiError> {
     require_operator(&actor)?;
-    let (translated, llm_powered) = ai_security::translate_nl_search_async(&state.pool, &body.query).await;
+    let (translated, llm_powered) =
+        ai_security::translate_nl_search_async(&state.pool, &body.query).await;
     let results = telemetry::search(&state.pool, &translated, body.host_id.as_deref(), 200).await;
-    let hits = results.get("hit_count").and_then(|v| v.as_u64()).unwrap_or(0);
+    let hits = results
+        .get("hit_count")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
     Ok(Json(json!({
         "original_query": body.query,
         "search_query": translated,
@@ -445,7 +469,10 @@ pub struct CreateEnforcementPolicyBody {
 /// can't mistake a rejected policy for an applied one.
 fn native_result(native: Value, summary: String) -> Result<Json<Value>, ApiError> {
     if native.get("ok").and_then(|v| v.as_bool()) == Some(false) && native.get("error").is_some() {
-        let msg = native["error"].as_str().unwrap_or("enforcement request rejected").to_string();
+        let msg = native["error"]
+            .as_str()
+            .unwrap_or("enforcement request rejected")
+            .to_string();
         return Err(ApiError::bad_request(msg).with_code("enforcement_rejected"));
     }
     Ok(Json(json!({ "native": native, "summary": summary })))
@@ -483,7 +510,9 @@ pub async fn apply_enforcement_policy(
     Json(body): Json<ApplyEnforcementBody>,
 ) -> Result<Json<Value>, ApiError> {
     require_admin(&actor)?;
-    let res = policies::apply_enforcement_policy(&state.pool, &state.config, &policy_id, &body.host_ids).await;
+    let res =
+        policies::apply_enforcement_policy(&state.pool, &state.config, &policy_id, &body.host_ids)
+            .await;
     let summary = res["summary"].as_str().unwrap_or("").to_string();
     native_result(res, summary)
 }
@@ -539,7 +568,9 @@ pub async fn attach_enforcement(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<Value>, ApiError> {
     require_admin(&actor)?;
-    Ok(Json(policies::attach_enforcement(&state.pool, &state.config).await))
+    Ok(Json(
+        policies::attach_enforcement(&state.pool, &state.config).await,
+    ))
 }
 
 pub async fn sync_enforcement(
@@ -565,10 +596,11 @@ pub async fn fleet_sensors(
     require_operator(&actor)?;
     let native = telemetry::sensors(&state.pool).await;
     let sensors = native["sensors"].as_array().cloned().unwrap_or_default();
-    let hosts: Vec<(Uuid, String, String)> = sqlx::query_as("SELECT id, hostname, state FROM hosts ORDER BY hostname")
-        .fetch_all(&state.pool)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let hosts: Vec<(Uuid, String, String)> =
+        sqlx::query_as("SELECT id, hostname, state FROM hosts ORDER BY hostname")
+            .fetch_all(&state.pool)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     let matrix: Vec<Value> = hosts
         .iter()
         .map(|(id, hostname, host_state)| {
@@ -613,8 +645,12 @@ pub async fn host_fabric_status(
         })));
     };
     match bpf::call(&host, &machina_bpf::api::Request::Status).await {
-        Ok(status) => Ok(Json(json!({ "host_id": id, "agent_reachable": true, "fabric": status }))),
-        Err(e) => Ok(Json(json!({ "host_id": id, "agent_reachable": false, "message": format!("{e:#}") }))),
+        Ok(status) => Ok(Json(
+            json!({ "host_id": id, "agent_reachable": true, "fabric": status }),
+        )),
+        Err(e) => Ok(Json(
+            json!({ "host_id": id, "agent_reachable": false, "message": format!("{e:#}") }),
+        )),
     }
 }
 
@@ -628,7 +664,9 @@ pub async fn host_bpf_call(
 ) -> Result<Json<Value>, ApiError> {
     require_admin(&actor)?;
     if matches!(req, machina_bpf::api::Request::Subscribe { .. }) {
-        return Err(ApiError::bad_request("subscribe is not supported over this endpoint"));
+        return Err(ApiError::bad_request(
+            "subscribe is not supported over this endpoint",
+        ));
     }
     let host = bpf::host(&state.pool, &id)
         .await

@@ -70,16 +70,14 @@ pub struct HostDetailRow {
     pub rack_u: Option<i32>,
 }
 
-const HOST_LIST_SQL: &str =
-    "SELECT id, hostname, address, state, maintenance_mode,
+const HOST_LIST_SQL: &str = "SELECT id, hostname, address, state, maintenance_mode,
          COALESCE(schedulable, 1) AS schedulable, agent_grpc_addr, vm_count,
          cpu_percent, memory_used_mib, memory_total_mib, fenced,
          COALESCE(validation_status, 'pending') AS validation_status,
          last_heartbeat_at,
          COALESCE(site, '') AS site, COALESCE(rack, '') AS rack, rack_u FROM hosts";
 
-const HOST_DETAIL_SQL: &str =
-    "SELECT id, hostname, address, state, maintenance_mode,
+const HOST_DETAIL_SQL: &str = "SELECT id, hostname, address, state, maintenance_mode,
          COALESCE(schedulable, 1) AS schedulable, agent_grpc_addr,
          COALESCE(agent_console_addr, '127.0.0.1:50052') AS agent_console_addr,
          COALESCE(libvirt_uri, 'qemu:///system') AS libvirt_uri,
@@ -111,9 +109,10 @@ pub async fn list_hosts(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<Vec<HostRow>>, ApiError> {
     require_operator(&actor)?;
-    let rows = sqlx::query_as::<_, HostRow>(&format!("{HOST_LIST_SQL} ORDER BY hostname LIMIT 500"))
-        .fetch_all(&state.pool)
-        .await?;
+    let rows =
+        sqlx::query_as::<_, HostRow>(&format!("{HOST_LIST_SQL} ORDER BY hostname LIMIT 500"))
+            .fetch_all(&state.pool)
+            .await?;
     Ok(Json(rows.into_iter().map(apply_stale_host_state).collect()))
 }
 
@@ -439,12 +438,11 @@ pub async fn join_host(
 }
 
 async fn link_baremetal_firewall_on_join(pool: &sqlx::SqlitePool, host_id: Uuid, hostname: &str) {
-    if let Ok(Some(metal_id)) = sqlx::query_scalar::<_, Uuid>(
-        "SELECT id FROM baremetal_servers WHERE hostname = ? LIMIT 1",
-    )
-    .bind(hostname)
-    .fetch_optional(pool)
-    .await
+    if let Ok(Some(metal_id)) =
+        sqlx::query_scalar::<_, Uuid>("SELECT id FROM baremetal_servers WHERE hostname = ? LIMIT 1")
+            .bind(hostname)
+            .fetch_optional(pool)
+            .await
     {
         let _ = crate::engine::baremetal::link_host_firewall_profile(pool, metal_id, host_id).await;
     }
@@ -517,11 +515,19 @@ pub async fn cordon_host(
         return Err(ApiError::not_found("host not found"));
     }
     state.emit_event(
-        if req.cordon { "host.cordon" } else { "host.uncordon" },
+        if req.cordon {
+            "host.cordon"
+        } else {
+            "host.uncordon"
+        },
         format!(
             "Host {} {}",
             id,
-            if req.cordon { "cordoned (unschedulable)" } else { "uncordoned (schedulable)" }
+            if req.cordon {
+                "cordoned (unschedulable)"
+            } else {
+                "uncordoned (schedulable)"
+            }
         ),
     );
     Ok(Json(serde_json::json!({
@@ -821,7 +827,9 @@ pub async fn delete_host(
             format!("Evicted host and pruned {pruned} orphaned VM record(s) from inventory"),
         );
     }
-    Ok(Json(serde_json::json!({ "deleted": true, "vms_pruned": pruned })))
+    Ok(Json(
+        serde_json::json!({ "deleted": true, "vms_pruned": pruned }),
+    ))
 }
 
 pub async fn host_lldp(

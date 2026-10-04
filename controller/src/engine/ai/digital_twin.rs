@@ -212,7 +212,10 @@ pub async fn build_graph(pool: &SqlitePool) -> anyhow::Result<DigitalTwinGraph> 
     })
 }
 
-pub async fn analyze_impact(pool: &SqlitePool, req: &ImpactRequest) -> anyhow::Result<ImpactAnalysis> {
+pub async fn analyze_impact(
+    pool: &SqlitePool,
+    req: &ImpactRequest,
+) -> anyhow::Result<ImpactAnalysis> {
     let action = req.action.to_lowercase();
     let kind = req.target_kind.to_lowercase();
 
@@ -254,7 +257,10 @@ pub async fn analyze_impact(pool: &SqlitePool, req: &ImpactRequest) -> anyhow::R
     }
 }
 
-async fn storage_shutdown_impact(pool: &SqlitePool, target: &str) -> anyhow::Result<ImpactAnalysis> {
+async fn storage_shutdown_impact(
+    pool: &SqlitePool,
+    target: &str,
+) -> anyhow::Result<ImpactAnalysis> {
     let pool_id = resolve_storage(pool, target).await?;
     let (name, capacity_gib, used_gib): (String, i64, i64) =
         sqlx::query_as("SELECT name, capacity_gib, used_gib FROM storage_pools WHERE id = ?")
@@ -315,11 +321,12 @@ async fn resolve_storage(pool: &SqlitePool, target: &str) -> anyhow::Result<Uuid
 
 async fn host_shutdown_impact(pool: &SqlitePool, target: &str) -> anyhow::Result<ImpactAnalysis> {
     let host_id = resolve_host(pool, target).await?;
-    let vms: Vec<(Uuid, String, String)> =
-        sqlx::query_as("SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT 500")
-            .bind(host_id)
-            .fetch_all(pool)
-            .await?;
+    let vms: Vec<(Uuid, String, String)> = sqlx::query_as(
+        "SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT 500",
+    )
+    .bind(host_id)
+    .fetch_all(pool)
+    .await?;
 
     let vm_names: Vec<String> = vms.iter().map(|(_, n, _)| n.clone()).collect();
     let running: Vec<_> = vms.iter().filter(|(_, _, st)| st == "running").collect();
@@ -446,11 +453,12 @@ async fn host_migrate_impact(pool: &SqlitePool, target: &str) -> anyhow::Result<
         .fetch_one(pool)
         .await?;
 
-    let vms: Vec<(Uuid, String, String)> =
-        sqlx::query_as("SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT 500")
-            .bind(host_id)
-            .fetch_all(pool)
-            .await?;
+    let vms: Vec<(Uuid, String, String)> = sqlx::query_as(
+        "SELECT id, name, observed_state FROM vms WHERE host_id = ? ORDER BY name LIMIT 500",
+    )
+    .bind(host_id)
+    .fetch_all(pool)
+    .await?;
 
     let running: Vec<_> = vms.iter().filter(|(_, _, st)| st == "running").collect();
     let vm_names: Vec<String> = vms.iter().map(|(_, n, _)| n.clone()).collect();
@@ -756,18 +764,17 @@ pub async fn simulate_batch(
             a if a.contains("shutdown") || a.contains("failure") => 300,
             _ => 60,
         };
-        let storage_unavailable_gib = if scenario.target_kind == "storage"
-            || !impact.storage_risks.is_empty()
-        {
-            let used: i64 =
-                sqlx::query_scalar("SELECT COALESCE(SUM(used_gib), 0) FROM storage_pools")
-                    .fetch_one(pool)
-                    .await
-                    .unwrap_or(0);
-            Some(used)
-        } else {
-            None
-        };
+        let storage_unavailable_gib =
+            if scenario.target_kind == "storage" || !impact.storage_risks.is_empty() {
+                let used: i64 =
+                    sqlx::query_scalar("SELECT COALESCE(SUM(used_gib), 0) FROM storage_pools")
+                        .fetch_one(pool)
+                        .await
+                        .unwrap_or(0);
+                Some(used)
+            } else {
+                None
+            };
         results.push(SimulatedImpact {
             impact,
             estimated_downtime_sec,

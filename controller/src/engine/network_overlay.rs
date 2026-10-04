@@ -223,7 +223,11 @@ pub async fn create_segment(
     fetch_segment(pool, id).await
 }
 
-pub async fn bind_network(pool: &SqlitePool, network_id: Uuid, segment_id: Uuid) -> anyhow::Result<()> {
+pub async fn bind_network(
+    pool: &SqlitePool,
+    network_id: Uuid,
+    segment_id: Uuid,
+) -> anyhow::Result<()> {
     let exists: Option<Uuid> = sqlx::query_scalar("SELECT id FROM network_segments WHERE id = ?")
         .bind(segment_id)
         .fetch_optional(pool)
@@ -580,7 +584,9 @@ pub async fn refresh_lldp_cache(pool: &SqlitePool, max_age_secs: i64) -> anyhow:
     Ok(refreshed)
 }
 
-pub async fn lldp_topology_from_cache(pool: &SqlitePool) -> anyhow::Result<LldpTopologyContribution> {
+pub async fn lldp_topology_from_cache(
+    pool: &SqlitePool,
+) -> anyhow::Result<LldpTopologyContribution> {
     let _ = refresh_lldp_cache(pool, 300).await;
 
     let rows: Vec<(Uuid, String, String, serde_json::Value, String)> = sqlx::query_as(

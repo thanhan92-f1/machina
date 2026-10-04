@@ -48,14 +48,22 @@ pub fn parse_domain_xml(xml: &str) -> HashMap<String, VmIface> {
     let mut rest = dom;
     while let Some(i) = rest.find("<interface") {
         let block_start = &rest[i..];
-        let end = block_start.find("</interface>").unwrap_or(block_start.len());
+        let end = block_start
+            .find("</interface>")
+            .unwrap_or(block_start.len());
         let block = &block_start[..end];
-        let target = block
-            .find("<target")
-            .and_then(|t| attr(&block[t..block[t..].find('>').map(|e| t + e).unwrap_or(block.len())], "dev"));
-        let mac = block
-            .find("<mac")
-            .and_then(|t| attr(&block[t..block[t..].find('>').map(|e| t + e).unwrap_or(block.len())], "address"));
+        let target = block.find("<target").and_then(|t| {
+            attr(
+                &block[t..block[t..].find('>').map(|e| t + e).unwrap_or(block.len())],
+                "dev",
+            )
+        });
+        let mac = block.find("<mac").and_then(|t| {
+            attr(
+                &block[t..block[t..].find('>').map(|e| t + e).unwrap_or(block.len())],
+                "address",
+            )
+        });
         if let Some(dev) = target {
             out.insert(
                 dev,
@@ -143,9 +151,15 @@ pub fn pod_uid(path: &str) -> Option<String> {
     }
     path.split('/').find_map(|seg| {
         let s = seg.trim_end_matches(".slice");
-        let uid = s.rsplit_once("-pod").map(|(_, u)| u).or_else(|| s.strip_prefix("pod"))?;
-        (uid.len() >= 32 && uid.bytes().all(|b| b.is_ascii_hexdigit() || b == b'_' || b == b'-'))
-            .then(|| uid.replace('_', "-"))
+        let uid = s
+            .rsplit_once("-pod")
+            .map(|(_, u)| u)
+            .or_else(|| s.strip_prefix("pod"))?;
+        (uid.len() >= 32
+            && uid
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() || b == b'_' || b == b'-'))
+        .then(|| uid.replace('_', "-"))
     })
 }
 
@@ -163,7 +177,10 @@ fn container_seg(seg: &str) -> Option<&str> {
 
 /// Pod UID → (namespace, name): find each pod's sandbox container
 /// (`sandboxes`: CNI container id → pod) under the kubepods trees of `root`.
-pub fn pod_index(root: &Path, sandboxes: &HashMap<String, (String, String)>) -> HashMap<String, (String, String)> {
+pub fn pod_index(
+    root: &Path,
+    sandboxes: &HashMap<String, (String, String)>,
+) -> HashMap<String, (String, String)> {
     let mut out = HashMap::new();
     if sandboxes.is_empty() {
         return out;
@@ -177,7 +194,10 @@ pub fn pod_index(root: &Path, sandboxes: &HashMap<String, (String, String)>) -> 
         .map(|e| (e.path(), 0))
         .collect();
     while let Some((dir, depth)) = stack.pop() {
-        let name = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let name = dir
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
         if let Some(id) = container_seg(&name) {
             if let (Some(pod), Some(uid)) = (sandboxes.get(id), pod_uid(&dir.to_string_lossy())) {
                 out.insert(uid, pod.clone());
@@ -211,19 +231,31 @@ pub fn pod_log_index(dir: &Path) -> HashMap<String, (String, String)> {
             let n = e.file_name().to_string_lossy().into_owned();
             let mut it = n.splitn(3, '_');
             let (ns, name, uid) = (it.next()?, it.next()?, it.next()?);
-            (uid.len() >= 32 && !ns.is_empty() && !name.is_empty()).then(|| (uid.to_string(), (ns.to_string(), name.to_string())))
+            (uid.len() >= 32 && !ns.is_empty() && !name.is_empty())
+                .then(|| (uid.to_string(), (ns.to_string(), name.to_string())))
         })
         .collect()
 }
 
 /// Workload for a cgroup path; `pods` is [`pod_index`]. Pods whose UID is not
 /// indexed (no machina-cni endpoint) are named by UID.
-pub fn cgroup_workload(path: &str, pods: &HashMap<String, (String, String)>) -> Option<crate::api::Workload> {
+pub fn cgroup_workload(
+    path: &str,
+    pods: &HashMap<String, (String, String)>,
+) -> Option<crate::api::Workload> {
     use crate::api::Workload;
     if let Some(uid) = pod_uid(path) {
         return Some(match pods.get(&uid) {
-            Some((ns, name)) => Workload { kind: "pod".into(), ns: Some(ns.clone()), name: name.clone() },
-            None => Workload { kind: "pod".into(), ns: None, name: uid },
+            Some((ns, name)) => Workload {
+                kind: "pod".into(),
+                ns: Some(ns.clone()),
+                name: name.clone(),
+            },
+            None => Workload {
+                kind: "pod".into(),
+                ns: None,
+                name: uid,
+            },
         });
     }
     let c = classify_cgroup(path);
@@ -234,18 +266,25 @@ pub fn cgroup_workload(path: &str, pods: &HashMap<String, (String, String)>) -> 
     } else {
         ("service", c.unit?)
     };
-    Some(Workload { kind: kind.into(), ns: None, name })
+    Some(Workload {
+        kind: kind.into(),
+        ns: None,
+        name,
+    })
 }
 
 /// cgroup v2 path of a live process (relative to the cgroup root).
 pub fn pid_cgroup(pid: u32) -> Option<String> {
     let cg = std::fs::read_to_string(format!("/proc/{pid}/cgroup")).ok()?;
-    cg.lines().find_map(|l| l.strip_prefix("0::")).map(|p| p.trim_start_matches('/').to_string())
+    cg.lines()
+        .find_map(|l| l.strip_prefix("0::"))
+        .map(|p| p.trim_start_matches('/').to_string())
 }
 
 /// `ns/name` → (ns, name).
 pub fn split_pod(pod: &str) -> Option<(String, String)> {
-    pod.split_once('/').map(|(n, p)| (n.to_string(), p.to_string()))
+    pod.split_once('/')
+        .map(|(n, p)| (n.to_string(), p.to_string()))
 }
 
 /// cgroup v2 id (== inode of the cgroup directory) → relative path cache.
@@ -352,7 +391,9 @@ mod tests {
 
     #[test]
     fn cgroups() {
-        let c = classify_cgroup("machine.slice/machine-qemu\\x2d3\\x2dweb\\x2d01.scope/libvirt/emulator");
+        let c = classify_cgroup(
+            "machine.slice/machine-qemu\\x2d3\\x2dweb\\x2d01.scope/libvirt/emulator",
+        );
         assert_eq!(c.vm.as_deref(), Some("web-01"));
         let c = classify_cgroup("system.slice/machina\\x2ddaemon.service");
         assert_eq!(c.unit.as_deref(), Some("machina-daemon.service"));
@@ -366,19 +407,41 @@ mod tests {
     #[test]
     fn pod_uids_and_workloads() {
         let p = format!("kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-pod{UID}.slice/cri-containerd-{SANDBOX}.scope");
-        assert_eq!(pod_uid(&p).as_deref(), Some("0f4a2b1c-1111-2222-3333-444455556666"));
-        assert_eq!(pod_uid("kubepods/burstable/pod0f4a2b1c-1111-2222-3333-444455556666/abc").as_deref(), Some("0f4a2b1c-1111-2222-3333-444455556666"));
+        assert_eq!(
+            pod_uid(&p).as_deref(),
+            Some("0f4a2b1c-1111-2222-3333-444455556666")
+        );
+        assert_eq!(
+            pod_uid("kubepods/burstable/pod0f4a2b1c-1111-2222-3333-444455556666/abc").as_deref(),
+            Some("0f4a2b1c-1111-2222-3333-444455556666")
+        );
         assert_eq!(pod_uid("system.slice/podman.service"), None);
 
         let mut pods = HashMap::new();
-        assert_eq!(cgroup_workload(&p, &pods).unwrap().name, "0f4a2b1c-1111-2222-3333-444455556666");
-        pods.insert("0f4a2b1c-1111-2222-3333-444455556666".to_string(), ("prod".to_string(), "web-0".to_string()));
+        assert_eq!(
+            cgroup_workload(&p, &pods).unwrap().name,
+            "0f4a2b1c-1111-2222-3333-444455556666"
+        );
+        pods.insert(
+            "0f4a2b1c-1111-2222-3333-444455556666".to_string(),
+            ("prod".to_string(), "web-0".to_string()),
+        );
         let w = cgroup_workload(&p, &pods).unwrap();
-        assert_eq!((w.kind.as_str(), w.ns.as_deref(), w.name.as_str()), ("pod", Some("prod"), "web-0"));
-        let w = cgroup_workload("machine.slice/machine-qemu\\x2d3\\x2dweb.scope/libvirt/emulator", &pods).unwrap();
+        assert_eq!(
+            (w.kind.as_str(), w.ns.as_deref(), w.name.as_str()),
+            ("pod", Some("prod"), "web-0")
+        );
+        let w = cgroup_workload(
+            "machine.slice/machine-qemu\\x2d3\\x2dweb.scope/libvirt/emulator",
+            &pods,
+        )
+        .unwrap();
         assert_eq!((w.kind.as_str(), w.name.as_str()), ("vm", "web"));
         let w = cgroup_workload("system.slice/sshd.service", &pods).unwrap();
-        assert_eq!((w.kind.as_str(), w.name.as_str()), ("service", "sshd.service"));
+        assert_eq!(
+            (w.kind.as_str(), w.name.as_str()),
+            ("service", "sshd.service")
+        );
         assert!(cgroup_workload("user.slice", &pods).is_none());
         assert_eq!(split_pod("ns/n"), Some(("ns".into(), "n".into())));
     }
@@ -386,21 +449,36 @@ mod tests {
     #[test]
     fn pod_index_joins_sandbox_scopes() {
         let root = std::env::temp_dir().join(format!("mnpodidx-{}", std::process::id()));
-        let pod_dir = root.join(format!("kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod{UID}.slice"));
+        let pod_dir = root.join(format!(
+            "kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod{UID}.slice"
+        ));
         std::fs::create_dir_all(pod_dir.join(format!("cri-containerd-{SANDBOX}.scope"))).unwrap();
-        std::fs::create_dir_all(pod_dir.join(format!("cri-containerd-{}.scope", "b".repeat(64)))).unwrap();
-        let sandboxes = HashMap::from([(SANDBOX.to_string(), ("prod".to_string(), "web-0".to_string()))]);
+        std::fs::create_dir_all(pod_dir.join(format!("cri-containerd-{}.scope", "b".repeat(64))))
+            .unwrap();
+        let sandboxes = HashMap::from([(
+            SANDBOX.to_string(),
+            ("prod".to_string(), "web-0".to_string()),
+        )]);
         let idx = pod_index(&root, &sandboxes);
         std::fs::remove_dir_all(&root).ok();
-        assert_eq!(idx.get("0f4a2b1c-1111-2222-3333-444455556666"), Some(&("prod".to_string(), "web-0".to_string())));
+        assert_eq!(
+            idx.get("0f4a2b1c-1111-2222-3333-444455556666"),
+            Some(&("prod".to_string(), "web-0".to_string()))
+        );
         assert_eq!(idx.len(), 1);
 
         let logs = std::env::temp_dir().join(format!("mnpodlogs-{}", std::process::id()));
-        std::fs::create_dir_all(logs.join("kube-system_coredns-5d8_0f4a2b1c-1111-2222-3333-444455556666")).unwrap();
+        std::fs::create_dir_all(
+            logs.join("kube-system_coredns-5d8_0f4a2b1c-1111-2222-3333-444455556666"),
+        )
+        .unwrap();
         std::fs::create_dir_all(logs.join("junk")).unwrap();
         let idx = pod_log_index(&logs);
         std::fs::remove_dir_all(&logs).ok();
-        assert_eq!(idx.get("0f4a2b1c-1111-2222-3333-444455556666"), Some(&("kube-system".to_string(), "coredns-5d8".to_string())));
+        assert_eq!(
+            idx.get("0f4a2b1c-1111-2222-3333-444455556666"),
+            Some(&("kube-system".to_string(), "coredns-5d8".to_string()))
+        );
         assert_eq!(idx.len(), 1);
     }
 }

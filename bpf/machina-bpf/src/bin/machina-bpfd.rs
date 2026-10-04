@@ -15,7 +15,11 @@ struct Args {
     #[arg(long, env = "MACHINA_BPFD_SOCK", default_value = machina_bpf::api::DEFAULT_SOCKET)]
     socket: PathBuf,
     /// Directory for persisted policy/telemetry state.
-    #[arg(long, env = "MACHINA_BPFD_STATE_DIR", default_value = "/var/lib/machina/bpf")]
+    #[arg(
+        long,
+        env = "MACHINA_BPFD_STATE_DIR",
+        default_value = "/var/lib/machina/bpf"
+    )]
     state_dir: PathBuf,
     /// Group granted access to the socket (mode 0660).
     #[arg(long, env = "MACHINA_BPFD_SOCKET_GROUP", default_value = "machina")]
@@ -30,8 +34,7 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
     let args = Args::parse();

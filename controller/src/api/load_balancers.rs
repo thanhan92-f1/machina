@@ -140,7 +140,10 @@ pub async fn delete_load_balancer(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
     crate::engine::load_balancer::teardown(&state.pool, &state.config, id).await;
-    sqlx::query("DELETE FROM load_balancers WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM load_balancers WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }
 
@@ -218,7 +221,10 @@ pub async fn add_lb_member(
     .await
     .map_err(|e| {
         if e.to_string().contains("UNIQUE") {
-            ApiError::conflict("that VM/port is already a member", "remove it first, or use a different port")
+            ApiError::conflict(
+                "that VM/port is already a member",
+                "remove it first, or use a different port",
+            )
         } else {
             ApiError::from(e)
         }

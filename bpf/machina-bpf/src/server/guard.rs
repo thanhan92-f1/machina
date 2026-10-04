@@ -9,8 +9,11 @@ use std::os::unix::fs::MetadataExt;
 
 use super::*;
 
-const HOOKS: &[(&str, &str)] =
-    &[("mn_guard_exec", "bprm_check_security"), ("mn_guard_mprotect", "file_mprotect"), ("mn_guard_open", "file_open")];
+const HOOKS: &[(&str, &str)] = &[
+    ("mn_guard_exec", "bprm_check_security"),
+    ("mn_guard_mprotect", "file_mprotect"),
+    ("mn_guard_open", "file_open"),
+];
 const MAX_LEASE_SECS: u64 = 3600;
 pub(super) const GUARD_STORE_CAP: usize = 2000;
 const LSM_LIST: &str = "/sys/kernel/security/lsm";
@@ -41,7 +44,9 @@ pub(super) struct GuardRuntime {
 }
 
 pub(super) fn lsm_list() -> String {
-    std::fs::read_to_string(LSM_LIST).map(|s| s.trim().to_string()).unwrap_or_default()
+    std::fs::read_to_string(LSM_LIST)
+        .map(|s| s.trim().to_string())
+        .unwrap_or_default()
 }
 
 pub(super) fn lsm_active() -> bool {
@@ -64,23 +69,36 @@ fn layout() -> Option<[u32; 8]> {
 
 /// Kernel-internal dev_t (MKDEV: major << 20 | minor) of a stat st_dev.
 fn kdev(st_dev: u64) -> u32 {
-    let (ma, mi) = (libc::major(st_dev as libc::dev_t), libc::minor(st_dev as libc::dev_t));
+    let (ma, mi) = (
+        libc::major(st_dev as libc::dev_t),
+        libc::minor(st_dev as libc::dev_t),
+    );
     (ma << 20) | (mi & 0xfffff)
 }
 
 fn file_key(path: &str) -> Option<GuardFileKey> {
     let m = std::fs::metadata(path).ok()?;
-    m.is_file().then(|| GuardFileKey { ino: m.ino(), dev: kdev(m.dev()), _pad: 0 })
+    m.is_file().then(|| GuardFileKey {
+        ino: m.ino(),
+        dev: kdev(m.dev()),
+        _pad: 0,
+    })
 }
 
 fn cgroup_ids(rel: &str) -> Vec<u64> {
     let mut out = Vec::new();
     let mut stack = vec![Path::new(attribution::CGROUP_ROOT).join(rel)];
     while let Some(dir) = stack.pop() {
-        let Ok(md) = std::fs::metadata(&dir) else { continue };
+        let Ok(md) = std::fs::metadata(&dir) else {
+            continue;
+        };
         out.push(md.ino());
         if let Ok(rd) = std::fs::read_dir(&dir) {
-            stack.extend(rd.flatten().filter(|e| e.file_type().is_ok_and(|t| t.is_dir())).map(|e| e.path()));
+            stack.extend(
+                rd.flatten()
+                    .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+                    .map(|e| e.path()),
+            );
         }
     }
     out
@@ -117,9 +135,13 @@ impl Engine {
                 return Err(anyhow!("enforce needs enabled"));
             }
             if !active {
-                return Err(anyhow!("lsm_inactive: refusing to arm enforcement while `bpf` is not an active LSM"));
+                return Err(anyhow!(
+                    "lsm_inactive: refusing to arm enforcement while `bpf` is not an active LSM"
+                ));
             }
-            let s = cfg.lease_secs.ok_or_else(|| anyhow!("enforce needs lease_secs (1..={MAX_LEASE_SECS})"))?;
+            let s = cfg
+                .lease_secs
+                .ok_or_else(|| anyhow!("enforce needs lease_secs (1..={MAX_LEASE_SECS})"))?;
             if !(1..=MAX_LEASE_SECS).contains(&s) {
                 return Err(anyhow!("lease_secs must be 1..={MAX_LEASE_SECS}"));
             }
@@ -128,32 +150,58 @@ impl Engine {
             None
         };
         let mut devices = Vec::new();
-        for r in super::vm::default_dev_rules().into_iter().filter(|r| r.dev_type == DEVCG_DEV_CHAR) {
-            devices.push((super::vm::dev_rule_string(&r), (r.major as u64) << 32 | r.minor as u64));
+        for r in super::vm::default_dev_rules()
+            .into_iter()
+            .filter(|r| r.dev_type == DEVCG_DEV_CHAR)
+        {
+            devices.push((
+                super::vm::dev_rule_string(&r),
+                (r.major as u64) << 32 | r.minor as u64,
+            ));
         }
         for s in &cfg.allow_devices {
             let r = super::vm::parse_dev_rule(s)?;
             if r.dev_type != DEVCG_DEV_CHAR {
-                return Err(anyhow!("allow_devices `{s}`: only char devices are policed"));
+                return Err(anyhow!(
+                    "allow_devices `{s}`: only char devices are policed"
+                ));
             }
-            devices.push((super::vm::dev_rule_string(&r), (r.major as u64) << 32 | r.minor as u64));
+            devices.push((
+                super::vm::dev_rule_string(&r),
+                (r.major as u64) << 32 | r.minor as u64,
+            ));
         }
         let mut files = Vec::new();
-        for p in QEMU_BINARIES.iter().map(|s| s.to_string()).chain(cfg.allow_exec.iter().cloned()) {
+        for p in QEMU_BINARIES
+            .iter()
+            .map(|s| s.to_string())
+            .chain(cfg.allow_exec.iter().cloned())
+        {
             match file_key(&p) {
                 Some(k) => files.push((p, k)),
-                None if cfg.allow_exec.contains(&p) => return Err(anyhow!("allow_exec `{p}`: not a file")),
+                None if cfg.allow_exec.contains(&p) => {
+                    return Err(anyhow!("allow_exec `{p}`: not a file"))
+                }
                 None => {}
             }
         }
         for t in &cfg.extra {
-            if t.name.is_empty() || t.cgroup.contains("..") || !Path::new(attribution::CGROUP_ROOT).join(&t.cgroup).is_dir() {
-                return Err(anyhow!("extra target `{}`: cgroup `{}` not found", t.name, t.cgroup));
+            if t.name.is_empty()
+                || t.cgroup.contains("..")
+                || !Path::new(attribution::CGROUP_ROOT).join(&t.cgroup).is_dir()
+            {
+                return Err(anyhow!(
+                    "extra target `{}`: cgroup `{}` not found",
+                    t.name,
+                    t.cgroup
+                ));
             }
         }
         let offs = *self.guard.offsets.get_or_insert_with(layout);
         let Some(o) = offs else {
-            return Err(anyhow!("kernel BTF lacks the inode/file layout the guard needs"));
+            return Err(anyhow!(
+                "kernel BTF lacks the inode/file layout the guard needs"
+            ));
         };
 
         self.guard.notes.clear();
@@ -214,12 +262,17 @@ impl Engine {
         let c = self.guard.config.clone();
         let mut targets: BTreeMap<String, String> = BTreeMap::new();
         if c.enabled {
-            targets = super::vm::qemu_scopes().into_iter().filter(|(vm, _)| c.vms.is_empty() || c.vms.contains(vm)).collect();
+            targets = super::vm::qemu_scopes()
+                .into_iter()
+                .filter(|(vm, _)| c.vms.is_empty() || c.vms.contains(vm))
+                .collect();
             for t in &c.extra {
                 targets.insert(t.name.clone(), t.cgroup.clone());
             }
         }
-        let flags = (c.exec as u32 * GUARD_EXEC) | (c.wx as u32 * GUARD_WX) | (c.devices as u32 * GUARD_DEV);
+        let flags = (c.exec as u32 * GUARD_EXEC)
+            | (c.wx as u32 * GUARD_WX)
+            | (c.devices as u32 * GUARD_DEV);
         let mut want: HashMap<u64, String> = HashMap::new();
         let mut out = BTreeMap::new();
         for (name, rel) in targets {
@@ -227,7 +280,14 @@ impl Engine {
             for id in &ids {
                 want.insert(*id, name.clone());
             }
-            out.insert(name.clone(), GuardTarget { name, cgroup: rel, cgroups: ids.len() });
+            out.insert(
+                name.clone(),
+                GuardTarget {
+                    name,
+                    cgroup: rel,
+                    cgroups: ids.len(),
+                },
+            );
         }
         for id in self.guard.in_policies.clone() {
             if !want.contains_key(&id) {
@@ -236,7 +296,11 @@ impl Engine {
             }
         }
         for id in want.keys() {
-            if self.dp.cni_hash_insert("GUARD_POLICIES", *id, flags).is_ok() {
+            if self
+                .dp
+                .cni_hash_insert("GUARD_POLICIES", *id, flags)
+                .is_ok()
+            {
                 self.guard.in_policies.insert(*id);
             }
         }
@@ -246,7 +310,8 @@ impl Engine {
 
     /// Lease ran out: back to audit (the kernel already stopped denying).
     pub(super) fn guard_expire(&mut self) -> Result<()> {
-        if self.guard.config.mode != "enforce" || loader::monotonic_ns() < self.guard.deadline_mono {
+        if self.guard.config.mode != "enforce" || loader::monotonic_ns() < self.guard.deadline_mono
+        {
             return Ok(());
         }
         let mut cfg = self.guard.config.clone();
@@ -259,18 +324,32 @@ impl Engine {
     }
 
     pub(super) fn guard_status(&mut self) -> GuardStatus {
-        let mut sum = |i| self.dp.percpu_array_sum::<u64>("GUARD_STATS", i, |a, b| *a += *b).unwrap_or(0);
-        let (audited, denied, dropped) = (sum(GUARD_STAT_AUDITED), sum(GUARD_STAT_DENIED), sum(GUARD_STAT_DROPPED));
+        let mut sum = |i| {
+            self.dp
+                .percpu_array_sum::<u64>("GUARD_STATS", i, |a, b| *a += *b)
+                .unwrap_or(0)
+        };
+        let (audited, denied, dropped) = (
+            sum(GUARD_STAT_AUDITED),
+            sum(GUARD_STAT_DENIED),
+            sum(GUARD_STAT_DROPPED),
+        );
         let now = loader::monotonic_ns();
-        let enforcing = self.guard.config.mode == "enforce" && now < self.guard.deadline_mono && lsm_active();
-        let hooks = HOOKS.iter().filter(|(p, _)| self.dp.trace_attached(p)).map(|(p, h)| format!("{p}@{h}")).collect();
+        let enforcing =
+            self.guard.config.mode == "enforce" && now < self.guard.deadline_mono && lsm_active();
+        let hooks = HOOKS
+            .iter()
+            .filter(|(p, _)| self.dp.trace_attached(p))
+            .map(|(p, h)| format!("{p}@{h}"))
+            .collect();
         GuardStatus {
             config: self.guard.config.clone(),
             lsm_active: lsm_active(),
             lsm_list: lsm_list(),
             hooks,
             enforcing,
-            lease_remaining_secs: (self.guard.config.mode == "enforce" && now < self.guard.deadline_mono)
+            lease_remaining_secs: (self.guard.config.mode == "enforce"
+                && now < self.guard.deadline_mono)
                 .then(|| (self.guard.deadline_mono - now) / 1_000_000_000),
             lease_expired: self.guard.lease_expired,
             guarded: self.guard.targets.values().cloned().collect(),
@@ -299,11 +378,32 @@ pub(super) fn on_guard(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b
     let ev: GuardEvent = unsafe { std::ptr::read_unaligned(b.as_ptr() as *const GuardEvent) };
     let n = ev.comm.iter().position(|c| *c == 0).unwrap_or(16);
     let (hook, detail) = match ev.hook {
-        GUARD_HOOK_EXEC => ("exec", format!("binary not allowlisted (dev {}:{}, inode {})", ev.a >> 20, ev.a & 0xfffff, ev.b)),
-        GUARD_HOOK_MPROTECT => ("mprotect", format!("writable+executable mapping (prot {:#x}, vm_flags {:#x})", ev.a, ev.b)),
+        GUARD_HOOK_EXEC => (
+            "exec",
+            format!(
+                "binary not allowlisted (dev {}:{}, inode {})",
+                ev.a >> 20,
+                ev.a & 0xfffff,
+                ev.b
+            ),
+        ),
+        GUARD_HOOK_MPROTECT => (
+            "mprotect",
+            format!(
+                "writable+executable mapping (prot {:#x}, vm_flags {:#x})",
+                ev.a, ev.b
+            ),
+        ),
         _ => (
             "open",
-            format!("char device {}:{}{}", ev.a, ev.b, char_name(ev.a).map(|n| format!(" ({n})")).unwrap_or_default()),
+            format!(
+                "char device {}:{}{}",
+                ev.a,
+                ev.b,
+                char_name(ev.a)
+                    .map(|n| format!(" ({n})"))
+                    .unwrap_or_default()
+            ),
         ),
     };
     let rec = {

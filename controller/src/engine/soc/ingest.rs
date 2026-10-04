@@ -8,7 +8,10 @@ use uuid::Uuid;
 
 use crate::config::ControllerConfig;
 
-pub async fn ingest_recent(pool: &SqlitePool, _cfg: &ControllerConfig) -> anyhow::Result<IngestStats> {
+pub async fn ingest_recent(
+    pool: &SqlitePool,
+    _cfg: &ControllerConfig,
+) -> anyhow::Result<IngestStats> {
     let mut stats = IngestStats::default();
     stats.firewall += ingest_firewall_timeline(pool).await?;
     stats.audit += ingest_audit_logs(pool).await?;
@@ -34,7 +37,11 @@ async fn watermark(pool: &SqlitePool, source: &str) -> anyhow::Result<DateTime<U
     Ok(ts.unwrap_or_else(|| Utc::now() - chrono::Duration::days(7)))
 }
 
-async fn advance_watermark(pool: &SqlitePool, source: &str, ts: DateTime<Utc>) -> anyhow::Result<()> {
+async fn advance_watermark(
+    pool: &SqlitePool,
+    source: &str,
+    ts: DateTime<Utc>,
+) -> anyhow::Result<()> {
     sqlx::query(
         "UPDATE soc_ingest_watermarks SET last_at = CASE WHEN last_at > ? THEN last_at ELSE ? END WHERE source = ?",
     )
@@ -338,7 +345,11 @@ async fn ingest_bpf_anomalies(pool: &SqlitePool) -> anyhow::Result<usize> {
         let dedupe = format!(
             "bpf:{}:{}",
             a.get("host_id").and_then(|v| v.as_str()).unwrap_or(""),
-            if anomaly_id.is_empty() { kind } else { anomaly_id }
+            if anomaly_id.is_empty() {
+                kind
+            } else {
+                anomaly_id
+            }
         );
         let ecs = json!({
             "@timestamp": ts.to_rfc3339(),

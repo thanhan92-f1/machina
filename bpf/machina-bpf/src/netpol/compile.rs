@@ -139,7 +139,10 @@ fn contains(outer: &Prefix, inner: &Prefix) -> bool {
 }
 
 fn is_v4(p: &Prefix) -> bool {
-    p.bits >= V4_MAPPED_PREFIX_BITS && p.addr[..10].iter().all(|b| *b == 0) && p.addr[10] == 0xff && p.addr[11] == 0xff
+    p.bits >= V4_MAPPED_PREFIX_BITS
+        && p.addr[..10].iter().all(|b| *b == 0)
+        && p.addr[10] == 0xff
+        && p.addr[11] == 0xff
 }
 
 /// `l7`: index into [`Ctx::l7`] when the `toPorts` entry has L7 rules.
@@ -223,17 +226,39 @@ struct Dir {
 }
 
 const DIRS: [Dir; 2] = [
-    Dir { egress: false, allow: "ingress", deny: "ingressDeny", pre: "from" },
-    Dir { egress: true, allow: "egress", deny: "egressDeny", pre: "to" },
+    Dir {
+        egress: false,
+        allow: "ingress",
+        deny: "ingressDeny",
+        pre: "from",
+    },
+    Dir {
+        egress: true,
+        allow: "egress",
+        deny: "egressDeny",
+        pre: "to",
+    },
 ];
 
 fn arr<'a>(v: &'a Value, k: &str) -> &'a [Value] {
-    v.get(k).and_then(Value::as_array).map(Vec::as_slice).unwrap_or(&[])
+    v.get(k)
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or(&[])
 }
 
 fn spec_paths(p: &VmNetworkPolicy) -> impl Iterator<Item = (String, &Value)> {
     let one = p.specs.len() == 1;
-    p.specs.iter().enumerate().map(move |(i, s)| (if one { "spec".to_string() } else { format!("specs[{i}]") }, s))
+    p.specs.iter().enumerate().map(move |(i, s)| {
+        (
+            if one {
+                "spec".to_string()
+            } else {
+                format!("specs[{i}]")
+            },
+            s,
+        )
+    })
 }
 
 impl<'a> Ctx<'a> {
@@ -246,12 +271,21 @@ impl<'a> Ctx<'a> {
     }
 
     fn select(&self, sel: &Value) -> BTreeSet<u32> {
-        self.vms.iter().filter(|v| selector_matches(sel, &v.labels)).map(|v| v.id).collect()
+        self.vms
+            .iter()
+            .filter(|v| selector_matches(sel, &v.labels))
+            .map(|v| v.id)
+            .collect()
     }
 
     fn world(&self, family: Option<bool>) -> BTreeSet<u32> {
         let mut s: BTreeSet<u32> = [IDENTITY_WORLD].into();
-        s.extend(self.prefixes.iter().filter(|(p, _)| family.is_none_or(|v4| is_v4(p) == v4)).map(|(_, id)| *id));
+        s.extend(
+            self.prefixes
+                .iter()
+                .filter(|(p, _)| family.is_none_or(|v4| is_v4(p) == v4))
+                .map(|(_, id)| *id),
+        );
         s
     }
 
@@ -270,7 +304,9 @@ impl<'a> Ctx<'a> {
             }
             other => {
                 if UNSUPPORTED_ENTITIES.contains(&other) {
-                    self.warnings.push(format!("{ctx}: entity `{other}` matches nothing on the VM edge"));
+                    self.warnings.push(format!(
+                        "{ctx}: entity `{other}` matches nothing on the VM edge"
+                    ));
                 }
                 BTreeSet::new()
             }
@@ -278,8 +314,14 @@ impl<'a> Ctx<'a> {
     }
 
     fn cidr_peers(&self, cidr: &str, except: &[Value]) -> BTreeSet<u32> {
-        let Ok(q) = parse_prefix(cidr) else { return BTreeSet::new() };
-        let ex: Vec<Prefix> = except.iter().filter_map(Value::as_str).filter_map(|e| parse_prefix(e).ok()).collect();
+        let Ok(q) = parse_prefix(cidr) else {
+            return BTreeSet::new();
+        };
+        let ex: Vec<Prefix> = except
+            .iter()
+            .filter_map(Value::as_str)
+            .filter_map(|e| parse_prefix(e).ok())
+            .collect();
         self.prefixes
             .iter()
             .filter(|(p, _)| contains(&q, p) && !ex.iter().any(|e| contains(e, p)))
@@ -358,7 +400,9 @@ impl<'a> Ctx<'a> {
         for k in pending {
             if !arr(rule, &k).is_empty() {
                 named = true;
-                self.warnings.push(format!("{ctx}: {k} is not enforced natively yet; it matches nothing"));
+                self.warnings.push(format!(
+                    "{ctx}: {k} is not enforced natively yet; it matches nothing"
+                ));
             }
         }
         if !named && (!arr(rule, "toPorts").is_empty() || !arr(rule, "icmps").is_empty()) {
@@ -404,7 +448,9 @@ impl<'a> Ctx<'a> {
                             Some(subject)
                         };
                         if dest.is_some_and(|d| self.vm_by_id(d).is_none()) {
-                            self.warnings.push(format!("{source}: named port `{name}` towards a non-VM peer is skipped"));
+                            self.warnings.push(format!(
+                                "{source}: named port `{name}` towards a non-VM peer is skipped"
+                            ));
                             continue;
                         }
                         let found = self.named_port(dest, name);
@@ -496,7 +542,10 @@ fn rule_ports(rule: &Value, l7s: &mut Vec<L7Rules>) -> Vec<PortSpec> {
             };
             match port.parse::<u16>() {
                 Ok(n) => {
-                    let end = p["endPort"].as_u64().and_then(|e| u16::try_from(e).ok()).unwrap_or(0);
+                    let end = p["endPort"]
+                        .as_u64()
+                        .and_then(|e| u16::try_from(e).ok())
+                        .unwrap_or(0);
                     for pr in protos(proto, n) {
                         out.push(PortSpec::Num {
                             proto: *pr,
@@ -554,14 +603,20 @@ fn collect_prefixes(policies: &[VmNetworkPolicy]) -> BTreeMap<Prefix, u32> {
             for sec in ["ingress", "egress", "ingressDeny", "egressDeny"] {
                 for rule in arr(spec, sec) {
                     for k in ["fromCIDR", "toCIDR"] {
-                        arr(rule, k).iter().filter_map(Value::as_str).for_each(&mut add);
+                        arr(rule, k)
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .for_each(&mut add);
                     }
                     for k in ["fromCIDRSet", "toCIDRSet"] {
                         for set in arr(rule, k) {
                             if let Some(c) = set["cidr"].as_str() {
                                 add(c);
                             }
-                            arr(set, "except").iter().filter_map(Value::as_str).for_each(&mut add);
+                            arr(set, "except")
+                                .iter()
+                                .filter_map(Value::as_str)
+                                .for_each(&mut add);
                         }
                     }
                 }
@@ -583,7 +638,12 @@ pub fn compile(inp: &Inputs) -> Compiled {
             id = if id + 1 >= 0x7fff_0000 { 1024 } else { id + 1 };
         }
         let local = inp.host.is_none_or(|h| vm.host.as_deref() == Some(h));
-        vms.push(Vm { vm, labels: effective_labels(vm), id, local });
+        vms.push(Vm {
+            vm,
+            labels: effective_labels(vm),
+            id,
+            local,
+        });
     }
     let mut cx = Ctx {
         vms,
@@ -605,11 +665,15 @@ pub fn compile(inp: &Inputs) -> Compiled {
         for (sp, spec) in spec_paths(p) {
             let ctx = format!("{} {sp}", p.name);
             let Some(sel) = spec.get("endpointSelector") else {
-                cx.warnings.push(format!("{ctx}: nodeSelector (host policy) is not enforced on the VM edge"));
+                cx.warnings.push(format!(
+                    "{ctx}: nodeSelector (host policy) is not enforced on the VM edge"
+                ));
                 continue;
             };
             if reserved_entity(sel).is_some() {
-                cx.warnings.push(format!("{ctx}: endpointSelector on reserved: labels selects no VM"));
+                cx.warnings.push(format!(
+                    "{ctx}: endpointSelector on reserved: labels selects no VM"
+                ));
                 continue;
             }
             let subjects = cx.select(sel);
@@ -623,7 +687,8 @@ pub fn compile(inp: &Inputs) -> Compiled {
                 selected_by.entry(*s).or_default().insert(p.name.clone());
             }
             for d in &DIRS {
-                let section = spec.get(d.allow).is_some_and(|x| !x.is_null()) || spec.get(d.deny).is_some_and(|x| !x.is_null());
+                let section = spec.get(d.allow).is_some_and(|x| !x.is_null())
+                    || spec.get(d.deny).is_some_and(|x| !x.is_null());
                 if section && spec["enableDefaultDeny"][d.allow].as_bool() != Some(false) {
                     for s in &subjects {
                         let e = iso.entry(*s).or_default();
@@ -637,7 +702,10 @@ pub fn compile(inp: &Inputs) -> Compiled {
                 for (ri, rule) in arr(spec, d.allow).iter().enumerate() {
                     let req = arr(rule, &format!("{}Requires", d.pre));
                     for s in &subjects {
-                        requires.entry((*s, d.egress)).or_default().extend(req.iter().cloned());
+                        requires
+                            .entry((*s, d.egress))
+                            .or_default()
+                            .extend(req.iter().cloned());
                     }
                     for (si, sel) in arr(rule, &format!("{}Endpoints", d.pre)).iter().enumerate() {
                         let ids = cx.select(sel);
@@ -651,7 +719,8 @@ pub fn compile(inp: &Inputs) -> Compiled {
                 }
                 for rule in arr(spec, d.deny) {
                     if !arr(rule, &format!("{}Requires", d.pre)).is_empty() {
-                        cx.warnings.push(format!("{ctx}: {}Requires in {} is ignored", d.pre, d.deny));
+                        cx.warnings
+                            .push(format!("{ctx}: {}Requires in {} is ignored", d.pre, d.deny));
                     }
                 }
             }
@@ -662,7 +731,11 @@ pub fn compile(inp: &Inputs) -> Compiled {
     // Pass 2: entries for local subjects.
     let mut fqdn: BTreeSet<VmEdgeFqdnRule> = BTreeSet::new();
     for (pname, sp, spec, subjects) in &specs {
-        let local: Vec<u32> = subjects.iter().copied().filter(|s| cx.vm_by_id(*s).is_some_and(|v| v.local)).collect();
+        let local: Vec<u32> = subjects
+            .iter()
+            .copied()
+            .filter(|s| cx.vm_by_id(*s).is_some_and(|v| v.local))
+            .collect();
         if local.is_empty() {
             continue;
         }
@@ -689,7 +762,8 @@ pub fn compile(inp: &Inputs) -> Compiled {
                     if d.egress && !deny && !fq.is_empty() {
                         for s in &local {
                             if requires.get(&(*s, true)).is_some_and(|r| !r.is_empty()) {
-                                cx.warnings.push(format!("{source}: toRequires excludes toFQDNs peers"));
+                                cx.warnings
+                                    .push(format!("{source}: toRequires excludes toFQDNs peers"));
                                 continue;
                             }
                             for p in &ports {
@@ -753,7 +827,10 @@ pub fn compile(inp: &Inputs) -> Compiled {
             addresses: v.vm.addresses.clone(),
             ingress_enforced: ing,
             egress_enforced: eg,
-            policies: selected_by.get(&v.id).map(|s| s.iter().cloned().collect()).unwrap_or_default(),
+            policies: selected_by
+                .get(&v.id)
+                .map(|s| s.iter().cloned().collect())
+                .unwrap_or_default(),
         });
         if v.local {
             state.vms.push(VmEdgeVm {
@@ -767,22 +844,38 @@ pub fn compile(inp: &Inputs) -> Compiled {
             });
         } else {
             for a in &v.vm.addresses {
-                state.peers.push(VmEdgePeer { cidr: a.clone(), identity: v.id, name: v.vm.name.clone() });
+                state.peers.push(VmEdgePeer {
+                    cidr: a.clone(),
+                    identity: v.id,
+                    name: v.vm.name.clone(),
+                });
             }
         }
     }
     for a in inp.host_addresses {
-        state.peers.push(VmEdgePeer { cidr: a.clone(), identity: IDENTITY_HOST, name: "host".into() });
+        state.peers.push(VmEdgePeer {
+            cidr: a.clone(),
+            identity: IDENTITY_HOST,
+            name: "host".into(),
+        });
     }
     for a in inp.remote_node_addresses {
-        state.peers.push(VmEdgePeer { cidr: a.clone(), identity: IDENTITY_REMOTE_NODE, name: "remote-node".into() });
+        state.peers.push(VmEdgePeer {
+            cidr: a.clone(),
+            identity: IDENTITY_REMOTE_NODE,
+            name: "remote-node".into(),
+        });
     }
     for (p, id) in &cx.prefixes {
         let mut c = p.to_display();
         if !c.contains('/') {
             c.push_str(if is_v4(p) { "/32" } else { "/128" });
         }
-        state.peers.push(VmEdgePeer { cidr: c.clone(), identity: *id, name: c });
+        state.peers.push(VmEdgePeer {
+            cidr: c.clone(),
+            identity: *id,
+            name: c,
+        });
     }
     for (k, source) in &cx.entries {
         state.policy.push(VmEdgeRule {
@@ -801,11 +894,20 @@ pub fn compile(inp: &Inputs) -> Compiled {
     }
     let mut seen = BTreeSet::new();
     cx.warnings.retain(|w| seen.insert(w.clone()));
-    Compiled { state, warnings: cx.warnings, endpoints, selectors }
+    Compiled {
+        state,
+        warnings: cx.warnings,
+        endpoints,
+        selectors,
+    }
 }
 
 fn names(cx: &Ctx, ids: &BTreeSet<u32>) -> Vec<String> {
-    cx.vms.iter().filter(|v| ids.contains(&v.id)).map(|v| v.vm.name.clone()).collect()
+    cx.vms
+        .iter()
+        .filter(|v| ids.contains(&v.id))
+        .map(|v| v.vm.name.clone())
+        .collect()
 }
 
 /// Apply `from/toRequires` of `subject`: only VMs carrying every required
@@ -824,5 +926,9 @@ fn narrow(
     if peers.contains(&0) {
         return cx.vms.iter().filter(|v| ok(v)).map(|v| v.id).collect();
     }
-    peers.iter().copied().filter(|p| cx.vm_by_id(*p).is_some_and(ok)).collect()
+    peers
+        .iter()
+        .copied()
+        .filter(|p| cx.vm_by_id(*p).is_some_and(ok))
+        .collect()
 }

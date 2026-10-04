@@ -143,9 +143,17 @@ mod tests {
         // At exactly lease_until we must NOT still claim leadership — a challenger
         // could acquire now. And we step down a guard-window early.
         assert!(!holds_lease(true, lease_until, lease_until));
-        assert!(!holds_lease(true, lease_until - DEMOTE_GUARD_SECS, lease_until));
+        assert!(!holds_lease(
+            true,
+            lease_until - DEMOTE_GUARD_SECS,
+            lease_until
+        ));
         // A moment before the guard boundary we're still leader.
-        assert!(holds_lease(true, lease_until - DEMOTE_GUARD_SECS - 1, lease_until));
+        assert!(holds_lease(
+            true,
+            lease_until - DEMOTE_GUARD_SECS - 1,
+            lease_until
+        ));
     }
 
     #[test]

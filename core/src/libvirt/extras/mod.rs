@@ -703,23 +703,34 @@ pub fn tags_as_labels(tags: &[String]) -> std::collections::BTreeMap<String, Str
 
 /// Label keys: optional `prefix/` + name (alphanumerics, `-`, `_`, `.`), values
 /// up to 63 of the same characters (Kubernetes label syntax).
-pub fn validate_labels(labels: &std::collections::BTreeMap<String, String>) -> Result<(), LibvirtError> {
+pub fn validate_labels(
+    labels: &std::collections::BTreeMap<String, String>,
+) -> Result<(), LibvirtError> {
     let part = |s: &str, max: usize| {
         !s.is_empty()
             && s.len() <= max
-            && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'.')
+            && s.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'.')
     };
     for (k, v) in labels {
         let name = match k.split_once('/') {
             Some((prefix, name)) if part(prefix, 253) => name,
-            Some(_) => return Err(LibvirtError::Invalid(format!("label key `{k}`: bad prefix"))),
+            Some(_) => {
+                return Err(LibvirtError::Invalid(format!(
+                    "label key `{k}`: bad prefix"
+                )))
+            }
             None => k.as_str(),
         };
         if !part(name, 63) {
-            return Err(LibvirtError::Invalid(format!("label key `{k}` is not a valid label name")));
+            return Err(LibvirtError::Invalid(format!(
+                "label key `{k}` is not a valid label name"
+            )));
         }
         if !v.is_empty() && !part(v, 63) {
-            return Err(LibvirtError::Invalid(format!("label `{k}`: value `{v}` is not a valid label value")));
+            return Err(LibvirtError::Invalid(format!(
+                "label `{k}`: value `{v}` is not a valid label value"
+            )));
         }
     }
     Ok(())
@@ -730,7 +741,10 @@ pub fn get_vm_labels(vm_name: &str) -> std::collections::BTreeMap<String, String
 }
 
 /// Replace a VM's labels (empty = remove).
-pub fn set_vm_labels(vm_name: &str, labels: std::collections::BTreeMap<String, String>) -> Result<(), LibvirtError> {
+pub fn set_vm_labels(
+    vm_name: &str,
+    labels: std::collections::BTreeMap<String, String>,
+) -> Result<(), LibvirtError> {
     validate_labels(&labels)?;
     with_json_lock(|| {
         let mut map: LabelMap = std::fs::read_to_string(LABELS_FILE)
@@ -742,7 +756,9 @@ pub fn set_vm_labels(vm_name: &str, labels: std::collections::BTreeMap<String, S
         } else {
             map.insert(vm_name.to_string(), labels);
         }
-        let dir = Path::new(LABELS_FILE).parent().unwrap_or(Path::new("/var/lib/machina"));
+        let dir = Path::new(LABELS_FILE)
+            .parent()
+            .unwrap_or(Path::new("/var/lib/machina"));
         let _ = std::fs::create_dir_all(dir);
         let data = serde_json::to_string_pretty(&map)
             .map_err(|e| LibvirtError::Operation(format!("Failed to serialize labels: {e}")))?;
@@ -1320,16 +1336,21 @@ pub fn register_dockur_windows_golden(
     let _ = std::fs::create_dir_all(images_dir);
     let stable = images_dir.join(format!("{guest}.qcow2"));
     std::fs::copy(artifact_qcow2, &stable).map_err(|e| {
-        LibvirtError::Operation(format!(
-            "copy golden to {}: {e}",
-            stable.display()
-        ))
+        LibvirtError::Operation(format!("copy golden to {}: {e}", stable.display()))
     })?;
 
     let (label, os_variant, disk_gb) = match guest {
         "win10" => ("Windows 10 (dockur Golden Forge)", "win10", 64u64),
-        "windows-server-2022" => ("Windows Server 2022 (dockur Golden Forge)", "win2k22", 80u64),
-        "windows-server-2025" => ("Windows Server 2025 (dockur Golden Forge)", "win2k25", 80u64),
+        "windows-server-2022" => (
+            "Windows Server 2022 (dockur Golden Forge)",
+            "win2k22",
+            80u64,
+        ),
+        "windows-server-2025" => (
+            "Windows Server 2025 (dockur Golden Forge)",
+            "win2k25",
+            80u64,
+        ),
         _ => ("Windows 11 (dockur Golden Forge)", "win11", 64u64),
     };
     let tmpl = crate::VmTemplate {
@@ -1627,9 +1648,7 @@ fn fill_enabled_states(services: &mut [SystemdService]) {
         if let Ok(output) = Command::new("systemctl").args(&args).output() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for (i, line) in stdout.lines().enumerate() {
-                let global_idx = names
-                    .iter()
-                    .position(|n| chunk.get(i) == Some(n));
+                let global_idx = names.iter().position(|n| chunk.get(i) == Some(n));
                 if let Some(idx) = global_idx {
                     services[idx].enabled = line.trim().to_string();
                 }
@@ -2631,4 +2650,3 @@ pub fn host_reboot() -> Result<(), LibvirtError> {
     }
     Ok(())
 }
-

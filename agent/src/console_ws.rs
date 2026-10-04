@@ -342,9 +342,7 @@ async fn handle_spice(socket: WebSocket, name: String, libvirt: Arc<Mutex<Libvir
                 .map_err(|e| machina_core::LibvirtError::Internal(e.to_string()))?;
             let xml = ctx.get_domain_xml(&name)?;
             machina_core::libvirt::spice::resolve_spice_endpoint(&name, &xml).ok_or_else(|| {
-                machina_core::LibvirtError::Operation(format!(
-                    "no SPICE endpoint for VM '{name}'"
-                ))
+                machina_core::LibvirtError::Operation(format!("no SPICE endpoint for VM '{name}'"))
             })
         }),
     )

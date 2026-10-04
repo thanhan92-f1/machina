@@ -120,9 +120,10 @@ pub fn segment_micro_seg_grade(
         score -= 15;
     }
     if SegmentTier::parse(tier) == Some(SegmentTier::Tier0)
-        && EastWestDefault::parse(east_west) != EastWestDefault::Deny {
-            score -= 20;
-        }
+        && EastWestDefault::parse(east_west) != EastWestDefault::Deny
+    {
+        score -= 20;
+    }
     if firewall_profile.is_none() || firewall_profile == Some("") {
         score -= 10;
     }

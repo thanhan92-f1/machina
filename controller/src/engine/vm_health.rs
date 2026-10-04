@@ -57,7 +57,14 @@ fn issue(
 }
 
 pub async fn run_vm_health_check(pool: &SqlitePool, vm_id: Uuid) -> anyhow::Result<VmHealthReport> {
-    let row: Option<(String, Option<Uuid>, String, String, bool, sqlx::types::Json<Vec<String>>)> = sqlx::query_as(
+    let row: Option<(
+        String,
+        Option<Uuid>,
+        String,
+        String,
+        bool,
+        sqlx::types::Json<Vec<String>>,
+    )> = sqlx::query_as(
         "SELECT name, host_id, observed_state, COALESCE(guest_tools_status, 'unknown'),
                 COALESCE(managed, TRUE), COALESCE(tags, '[]')
          FROM vms WHERE id = ?",

@@ -3,7 +3,8 @@
 
 use machina_core::{
     builtin_profiles, gather_firewall_inventory, FirewallBackend, FirewallInventory,
-    FirewallPlanRequest, FirewallPlanResult, FirewallPosture, FirewallScore, OpenPort, StealthLevel,
+    FirewallPlanRequest, FirewallPlanResult, FirewallPosture, FirewallScore, OpenPort,
+    StealthLevel,
 };
 use serde::Serialize;
 use sqlx::SqlitePool;
@@ -43,7 +44,10 @@ pub struct FirewallTargetDetail {
     pub inventory: FirewallInventory,
 }
 
-pub async fn overview(pool: &SqlitePool, cfg: &ControllerConfig) -> anyhow::Result<FirewallOverview> {
+pub async fn overview(
+    pool: &SqlitePool,
+    cfg: &ControllerConfig,
+) -> anyhow::Result<FirewallOverview> {
     let hosts: Vec<(Uuid, String, String, String)> = sqlx::query_as(
         "SELECT id, hostname, COALESCE(agent_grpc_addr, ''), state FROM hosts ORDER BY hostname",
     )
@@ -233,9 +237,10 @@ pub async fn plan_target(
                 .fetch_one(pool)
                 .await?
                 == 0
-                && super::metal::load_row(pool, id).await.is_ok() {
-                    return super::metal::plan_metal(pool, id, req).await;
-                }
+                && super::metal::load_row(pool, id).await.is_ok()
+            {
+                return super::metal::plan_metal(pool, id, req).await;
+            }
         }
     }
     let hostname = resolve_hostname(pool, cfg, target_id).await?;
@@ -260,9 +265,10 @@ pub async fn apply_target(
                 .fetch_one(pool)
                 .await?
                 == 0
-                && super::metal::load_row(pool, id).await.is_ok() {
-                    return super::metal::apply_metal(pool, id, req, actor).await;
-                }
+                && super::metal::load_row(pool, id).await.is_ok()
+            {
+                return super::metal::apply_metal(pool, id, req, actor).await;
+            }
         }
     }
     let mut apply_req = req;

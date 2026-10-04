@@ -98,7 +98,9 @@ pub fn clone_vm_with_disk(
         for (i, (target, src)) in disks.iter().enumerate() {
             if !Path::new(src).is_file() {
                 cleanup(&created);
-                return Err(LibvirtError::Operation(format!("source disk not found: {src}")));
+                return Err(LibvirtError::Operation(format!(
+                    "source disk not found: {src}"
+                )));
             }
             let dest = if i == 0 {
                 primary_dest.clone()
@@ -108,7 +110,12 @@ pub fn clone_vm_with_disk(
                 } else {
                     target.clone()
                 };
-                format!("{}/{}-{}.qcow2", dest_dir.trim_end_matches('/'), new_name, suffix)
+                format!(
+                    "{}/{}-{}.qcow2",
+                    dest_dir.trim_end_matches('/'),
+                    new_name,
+                    suffix
+                )
             };
             if Path::new(&dest).exists() {
                 cleanup(&created);
@@ -184,15 +191,17 @@ fn file_backed_disks_from_xml(xml: &str) -> Vec<(String, String)> {
 /// data disk in a domain XML, if any. Cdrom/floppy devices are excluded, same as
 /// [`file_backed_disks_from_xml`].
 fn first_network_backed_disk_target(xml: &str) -> Option<String> {
-    crate::xml::split_blocks(xml, "disk").into_iter().find_map(|block| {
-        if crate::xml::extract_attr(&block, "disk", "device").as_deref() != Some("disk") {
-            return None;
-        }
-        if crate::xml::extract_attr(&block, "disk", "type").as_deref() != Some("network") {
-            return None;
-        }
-        Some(crate::xml::extract_attr(&block, "target", "dev").unwrap_or_default())
-    })
+    crate::xml::split_blocks(xml, "disk")
+        .into_iter()
+        .find_map(|block| {
+            if crate::xml::extract_attr(&block, "disk", "device").as_deref() != Some("disk") {
+                return None;
+            }
+            if crate::xml::extract_attr(&block, "disk", "type").as_deref() != Some("network") {
+                return None;
+            }
+            Some(crate::xml::extract_attr(&block, "target", "dev").unwrap_or_default())
+        })
 }
 
 fn define_cloned_domain(
@@ -225,7 +234,10 @@ fn repoint_disks(xml: &str, disk_map: &[(String, String)]) -> String {
             .and_then(|old| disk_map.iter().find(|(o, _)| o == old));
         if let Some((_, new)) = mapped {
             let indent: String = line.chars().take_while(|c| c.is_whitespace()).collect();
-            out.push_str(&format!("{indent}<source file='{}'/>\n", crate::xml::escape(new)));
+            out.push_str(&format!(
+                "{indent}<source file='{}'/>\n",
+                crate::xml::escape(new)
+            ));
         } else {
             out.push_str(line);
             out.push('\n');
@@ -338,7 +350,13 @@ mod tests {
         // silently invisible to disk_map/repoint_disks — the clone and source
         // would end up pointing at the same Ceph image.
         let disks = file_backed_disks_from_xml(MIXED_DISK_VM);
-        assert_eq!(disks, vec![("vda".to_string(), "/var/lib/libvirt/images/vm.qcow2".to_string())]);
+        assert_eq!(
+            disks,
+            vec![(
+                "vda".to_string(),
+                "/var/lib/libvirt/images/vm.qcow2".to_string()
+            )]
+        );
     }
 
     #[test]

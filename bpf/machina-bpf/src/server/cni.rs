@@ -36,7 +36,11 @@ pub(super) struct CniRuntime {
 
 /// Any IP literal → the datapath's 16-byte form (IPv4-mapped for v4).
 pub(crate) fn addr16(s: &str) -> Result<[u8; ADDR_LEN]> {
-    match s.trim().parse::<IpAddr>().map_err(|_| anyhow!("invalid IP address `{s}`"))? {
+    match s
+        .trim()
+        .parse::<IpAddr>()
+        .map_err(|_| anyhow!("invalid IP address `{s}`"))?
+    {
         IpAddr::V4(a) => Ok(v4_mapped(a.octets())),
         IpAddr::V6(a) => Ok(a.octets()),
     }
@@ -55,16 +59,26 @@ fn mac(s: &str) -> Result<[u8; 6]> {
 /// 128-bit space; IPv4 prefixes are offset by 96).
 pub(crate) fn cidr16(s: &str) -> Result<([u8; ADDR_LEN], u32)> {
     let (a, l) = s.split_once('/').unwrap_or((s, ""));
-    let ip: IpAddr = a.trim().parse().map_err(|_| anyhow!("invalid CIDR `{s}`"))?;
+    let ip: IpAddr = a
+        .trim()
+        .parse()
+        .map_err(|_| anyhow!("invalid CIDR `{s}`"))?;
     let (max, offset) = if ip.is_ipv4() { (32, 96) } else { (128, 0) };
     let bits: u32 = if l.is_empty() {
         max
     } else {
-        l.parse().ok().filter(|b| *b <= max).ok_or_else(|| anyhow!("invalid prefix in `{s}`"))?
+        l.parse()
+            .ok()
+            .filter(|b| *b <= max)
+            .ok_or_else(|| anyhow!("invalid prefix in `{s}`"))?
     };
     let total = bits + offset;
     let addr = u128::from_be_bytes(addr16(a)?);
-    let mask = if total == 0 { 0 } else { u128::MAX << (128 - total) };
+    let mask = if total == 0 {
+        0
+    } else {
+        u128::MAX << (128 - total)
+    };
     Ok(((addr & mask).to_be_bytes(), total))
 }
 
@@ -88,7 +102,12 @@ pub(crate) fn maglev_table(backends: &[String], m: u32) -> Vec<u32> {
     }
     let perm: Vec<(usize, usize)> = backends
         .iter()
-        .map(|b| ((fnv64(b, 0) % m as u64) as usize, (fnv64(b, 0x5bd1_e995) % (m as u64 - 1)) as usize + 1))
+        .map(|b| {
+            (
+                (fnv64(b, 0) % m as u64) as usize,
+                (fnv64(b, 0x5bd1_e995) % (m as u64 - 1)) as usize + 1,
+            )
+        })
         .collect();
     let mut next = vec![0usize; n];
     let mut table = vec![u32::MAX; m];
@@ -151,7 +170,9 @@ impl Engine {
         if self.features.cgroup2 {
             let root = Path::new(attribution::CGROUP_ROOT);
             if let Err(e) = self.dp.attach_cgroup_tagged(root, "cni", CNI_SOCK_PROGS) {
-                self.dp.notes.push(format!("socket load balancing unavailable: {e:#}"));
+                self.dp
+                    .notes
+                    .push(format!("socket load balancing unavailable: {e:#}"));
             }
         }
         self.cni.config = Some(cfg);
@@ -160,7 +181,8 @@ impl Engine {
 
     pub(super) fn cni_add_endpoint(&mut self, ep: CniEndpoint) -> Result<()> {
         let ip = addr16(&ep.ip)?;
-        let idx = if_nametoindex(&ep.host_iface).ok_or_else(|| anyhow!("interface {} not found", ep.host_iface))?;
+        let idx = if_nametoindex(&ep.host_iface)
+            .ok_or_else(|| anyhow!("interface {} not found", ep.host_iface))?;
         let (identity, flags) = self.cni_meta_for(&ep.ip);
         self.dp.cni_hash_insert(
             "CNI_ENDPOINTS",
@@ -175,7 +197,8 @@ impl Engine {
                 _pad2: 0,
             },
         )?;
-        self.dp.attach_tc_pair(&ep.host_iface, "mn_cni_from_pod", "mn_cni_to_pod")?;
+        self.dp
+            .attach_tc_pair(&ep.host_iface, "mn_cni_from_pod", "mn_cni_to_pod")?;
         self.cni.endpoints.insert(ep.ip.clone(), ep);
         Ok(())
     }
@@ -185,10 +208,16 @@ impl Engine {
             return Ok(false);
         };
         if let Ok(a) = addr16(ip) {
-            self.dp.cni_hash_remove::<[u8; ADDR_LEN], Endpoint>("CNI_ENDPOINTS", &a);
+            self.dp
+                .cni_hash_remove::<[u8; ADDR_LEN], Endpoint>("CNI_ENDPOINTS", &a);
         }
         // A dual-stack pod has one endpoint per family on the same veth.
-        if self.cni.endpoints.values().any(|e| e.host_iface == ep.host_iface) {
+        if self
+            .cni
+            .endpoints
+            .values()
+            .any(|e| e.host_iface == ep.host_iface)
+        {
             return Ok(true);
         }
         if if_nametoindex(&ep.host_iface).is_some() {
@@ -227,11 +256,18 @@ impl Engine {
             ));
         }
         // Identities (cluster-wide pod IP → identity).
-        let want: HashMap<[u8; ADDR_LEN], u32> =
-            st.identities.iter().filter_map(|i| addr16(&i.ip).ok().map(|a| (a, i.identity))).collect();
-        for k in self.dp.cni_hash_keys::<[u8; ADDR_LEN], u32>("CNI_IDENTITIES")? {
+        let want: HashMap<[u8; ADDR_LEN], u32> = st
+            .identities
+            .iter()
+            .filter_map(|i| addr16(&i.ip).ok().map(|a| (a, i.identity)))
+            .collect();
+        for k in self
+            .dp
+            .cni_hash_keys::<[u8; ADDR_LEN], u32>("CNI_IDENTITIES")?
+        {
             if !want.contains_key(&k) {
-                self.dp.cni_hash_remove::<[u8; ADDR_LEN], u32>("CNI_IDENTITIES", &k);
+                self.dp
+                    .cni_hash_remove::<[u8; ADDR_LEN], u32>("CNI_IDENTITIES", &k);
             }
         }
         for (a, id) in &want {
@@ -252,7 +288,11 @@ impl Engine {
             .map(|p| PolicyKey {
                 subject_identity: p.subject,
                 peer_identity: p.peer,
-                direction: if p.egress { POLICY_EGRESS } else { POLICY_INGRESS },
+                direction: if p.egress {
+                    POLICY_EGRESS
+                } else {
+                    POLICY_INGRESS
+                },
                 proto: p.proto,
                 port: p.port.to_be_bytes(),
             })
@@ -287,13 +327,20 @@ impl Engine {
         let mut want_np: HashSet<SvcKey> = HashSet::new();
         for s in services {
             let addr = addr16(&s.addr)?;
-            let key = SvcKey { addr, port: s.port.to_be_bytes(), proto: s.proto, _pad: 0 };
+            let key = SvcKey {
+                addr,
+                port: s.port.to_be_bytes(),
+                proto: s.proto,
+                _pad: 0,
+            };
             let id = match self.cni.svc_ids.get(&(s.addr.clone(), s.port, s.proto)) {
                 Some(id) => *id,
                 None => {
                     self.cni.next_svc += 1;
                     let id = self.cni.next_svc;
-                    self.cni.svc_ids.insert((s.addr.clone(), s.port, s.proto), id);
+                    self.cni
+                        .svc_ids
+                        .insert((s.addr.clone(), s.port, s.proto), id);
                     id
                 }
             };
@@ -305,7 +352,11 @@ impl Engine {
             let mut backends = Vec::new();
             for b in list {
                 let Ok(a) = addr16(&b.addr) else { continue };
-                let node = b.node.as_deref().and_then(|n| addr16(n).ok()).unwrap_or([0; ADDR_LEN]);
+                let node = b
+                    .node
+                    .as_deref()
+                    .and_then(|n| addr16(n).ok())
+                    .unwrap_or([0; ADDR_LEN]);
                 names.push(format!("{}:{}", b.addr, b.port));
                 backends.push(Backend {
                     addr: a,
@@ -317,13 +368,24 @@ impl Engine {
             }
             // Backends first so a frontend never points at missing indexes.
             for (i, b) in backends.iter().enumerate() {
-                self.dp.cni_hash_insert("CNI_BACKENDS", BackendKey { svc_id: id, index: i as u32 }, *b)?;
+                self.dp.cni_hash_insert(
+                    "CNI_BACKENDS",
+                    BackendKey {
+                        svc_id: id,
+                        index: i as u32,
+                    },
+                    *b,
+                )?;
             }
             self.cni_sync_maglev(id, &names)?;
             let val = SvcVal {
                 svc_id: id,
                 backend_count: backends.len() as u32,
-                flags: if s.affinity_secs.is_some() { SVC_F_AFFINITY } else { 0 },
+                flags: if s.affinity_secs.is_some() {
+                    SVC_F_AFFINITY
+                } else {
+                    0
+                },
                 affinity_secs: s.affinity_secs.unwrap_or(0),
             };
             if addr == v4_mapped([0; 4]) || addr == [0; ADDR_LEN] {
@@ -333,9 +395,19 @@ impl Engine {
                 self.dp.cni_hash_insert("CNI_SERVICES", key, val)?;
                 want_svc.insert(key);
             }
-            let old = self.cni.svc_backends.insert(id, backends.len() as u32).unwrap_or(0);
+            let old = self
+                .cni
+                .svc_backends
+                .insert(id, backends.len() as u32)
+                .unwrap_or(0);
             for i in backends.len() as u32..old {
-                self.dp.cni_hash_remove::<BackendKey, Backend>("CNI_BACKENDS", &BackendKey { svc_id: id, index: i });
+                self.dp.cni_hash_remove::<BackendKey, Backend>(
+                    "CNI_BACKENDS",
+                    &BackendKey {
+                        svc_id: id,
+                        index: i,
+                    },
+                );
             }
         }
         for (map, want) in [("CNI_SERVICES", &want_svc), ("CNI_NODEPORTS", &want_np)] {
@@ -345,11 +417,23 @@ impl Engine {
                 }
             }
         }
-        let stale: Vec<u32> = self.cni.svc_backends.keys().filter(|id| !live.contains(id)).copied().collect();
+        let stale: Vec<u32> = self
+            .cni
+            .svc_backends
+            .keys()
+            .filter(|id| !live.contains(id))
+            .copied()
+            .collect();
         for id in stale {
             let n = self.cni.svc_backends.remove(&id).unwrap_or(0);
             for i in 0..n {
-                self.dp.cni_hash_remove::<BackendKey, Backend>("CNI_BACKENDS", &BackendKey { svc_id: id, index: i });
+                self.dp.cni_hash_remove::<BackendKey, Backend>(
+                    "CNI_BACKENDS",
+                    &BackendKey {
+                        svc_id: id,
+                        index: i,
+                    },
+                );
             }
             self.cni_sync_maglev(id, &[])?;
         }
@@ -360,17 +444,31 @@ impl Engine {
     /// Write only the Maglev slots that changed; services with fewer than two
     /// backends have no table.
     fn cni_sync_maglev(&mut self, id: u32, names: &[String]) -> Result<()> {
-        let want = if names.len() >= 2 { maglev_table(names, MAGLEV_M) } else { Vec::new() };
+        let want = if names.len() >= 2 {
+            maglev_table(names, MAGLEV_M)
+        } else {
+            Vec::new()
+        };
         let old = self.cni.maglev.remove(&id).unwrap_or_default();
         if want.is_empty() {
             for slot in 0..old.len() as u32 {
-                self.dp.cni_hash_remove::<MaglevKey, u32>("CNI_MAGLEV", &MaglevKey { svc_id: id, slot });
+                self.dp.cni_hash_remove::<MaglevKey, u32>(
+                    "CNI_MAGLEV",
+                    &MaglevKey { svc_id: id, slot },
+                );
             }
             return Ok(());
         }
         for (slot, idx) in want.iter().enumerate() {
             if old.get(slot) != Some(idx) {
-                self.dp.cni_hash_insert("CNI_MAGLEV", MaglevKey { svc_id: id, slot: slot as u32 }, *idx)?;
+                self.dp.cni_hash_insert(
+                    "CNI_MAGLEV",
+                    MaglevKey {
+                        svc_id: id,
+                        slot: slot as u32,
+                    },
+                    *idx,
+                )?;
             }
         }
         self.cni.maglev.insert(id, want);
@@ -400,7 +498,11 @@ impl Engine {
 
     pub(super) fn cni_services(&mut self) -> Vec<CniServiceStatus> {
         let mut pins: HashMap<u32, usize> = HashMap::new();
-        for (k, _) in self.dp.hash_entries::<AffinityKey, AffinityVal>("CNI_AFFINITY").unwrap_or_default() {
+        for (k, _) in self
+            .dp
+            .hash_entries::<AffinityKey, AffinityVal>("CNI_AFFINITY")
+            .unwrap_or_default()
+        {
             *pins.entry(k.svc_id).or_default() += 1;
         }
         self.cni
@@ -408,7 +510,11 @@ impl Engine {
             .services
             .iter()
             .map(|s| {
-                let id = self.cni.svc_ids.get(&(s.addr.clone(), s.port, s.proto)).copied();
+                let id = self
+                    .cni
+                    .svc_ids
+                    .get(&(s.addr.clone(), s.port, s.proto))
+                    .copied();
                 CniServiceStatus {
                     service: s.clone(),
                     maglev: id.is_some_and(|i| self.cni.maglev.contains_key(&i)),
@@ -425,16 +531,31 @@ mod tests {
 
     #[test]
     fn parsers() {
-        assert_eq!(cidr16("10.1.2.3/8").unwrap(), (v4_mapped([10, 0, 0, 0]), 104));
-        assert_eq!(cidr16("192.168.1.7").unwrap(), (v4_mapped([192, 168, 1, 7]), 128));
+        assert_eq!(
+            cidr16("10.1.2.3/8").unwrap(),
+            (v4_mapped([10, 0, 0, 0]), 104)
+        );
+        assert_eq!(
+            cidr16("192.168.1.7").unwrap(),
+            (v4_mapped([192, 168, 1, 7]), 128)
+        );
         assert_eq!(cidr16("0.0.0.0/0").unwrap(), (v4_mapped([0, 0, 0, 0]), 96));
         assert!(cidr16("10.0.0.0/40").is_err());
         let (a, bits) = cidr16("fd00:1:2:3::9/64").unwrap();
         assert_eq!(bits, 64);
-        assert_eq!(a, "fd00:1:2:3::".parse::<std::net::Ipv6Addr>().unwrap().octets());
+        assert_eq!(
+            a,
+            "fd00:1:2:3::"
+                .parse::<std::net::Ipv6Addr>()
+                .unwrap()
+                .octets()
+        );
         assert_eq!(addr16("::").unwrap(), [0; ADDR_LEN]);
         assert_eq!(addr16("0.0.0.0").unwrap(), v4_mapped([0; 4]));
-        assert_eq!(mac("aa:bb:cc:00:11:22").unwrap(), [0xaa, 0xbb, 0xcc, 0, 0x11, 0x22]);
+        assert_eq!(
+            mac("aa:bb:cc:00:11:22").unwrap(),
+            [0xaa, 0xbb, 0xcc, 0, 0x11, 0x22]
+        );
         assert!(mac("aa:bb").is_err());
     }
 
@@ -463,7 +584,10 @@ mod tests {
                 *a != &3 && before != after
             })
             .count();
-        assert!(moved < (MAGLEV_M as usize) / 10, "{moved} slots of surviving backends moved");
+        assert!(
+            moved < (MAGLEV_M as usize) / 10,
+            "{moved} slots of surviving backends moved"
+        );
         assert_eq!(maglev_table(&names, MAGLEV_M), t, "deterministic");
     }
 }

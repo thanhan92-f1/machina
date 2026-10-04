@@ -89,9 +89,10 @@ async fn run_scheduled_batch(state: &AppState) {
                 result.executed_count,
                 result.skipped_count
             );
-            if let Err(e) = sqlx::query("UPDATE clusters SET ai_autopilot_last_run = datetime('now')")
-                .execute(&state.pool)
-                .await
+            if let Err(e) =
+                sqlx::query("UPDATE clusters SET ai_autopilot_last_run = datetime('now')")
+                    .execute(&state.pool)
+                    .await
             {
                 tracing::warn!("ai autopilot last_run update: {e:#}");
             }

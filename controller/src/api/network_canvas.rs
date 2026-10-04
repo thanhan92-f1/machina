@@ -27,7 +27,11 @@ fn copy_text_field(obj: &mut serde_json::Map<String, Value>, from: &str, to: &st
     if obj.contains_key(to) {
         return;
     }
-    if let Some(v) = obj.get(from).and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+    if let Some(v) = obj
+        .get(from)
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+    {
         obj.insert(to.to_string(), Value::String(v.to_string()));
     }
 }
@@ -77,7 +81,11 @@ fn service_map_node_name(value: &Value) -> Option<String> {
         .map(str::to_string)
 }
 
-fn resolve_service_map_node_key(nodes: &[Value], workload: &str, namespace: Option<&str>) -> String {
+fn resolve_service_map_node_key(
+    nodes: &[Value],
+    workload: &str,
+    namespace: Option<&str>,
+) -> String {
     if let Some(ns) = namespace.filter(|s| !s.is_empty()) {
         let qualified = format!("{ns}/{workload}");
         if nodes.iter().any(|n| {
@@ -116,19 +124,12 @@ fn normalize_service_map_edges(service_map: &mut Value) {
             continue;
         };
         if let Some(source) = edge_obj.get("source").and_then(|v| v.as_str()) {
-            let ns = edge_obj
-                .get("source_namespace")
-                .and_then(|v| v.as_str());
+            let ns = edge_obj.get("source_namespace").and_then(|v| v.as_str());
             let key = resolve_service_map_node_key(&nodes, source, ns);
             edge_obj.insert("source_key".to_string(), Value::String(key));
         }
-        if let Some(target) = edge_obj
-            .get("target")
-            .and_then(|v| v.as_str())
-        {
-            let ns = edge_obj
-                .get("target_namespace")
-                .and_then(|v| v.as_str());
+        if let Some(target) = edge_obj.get("target").and_then(|v| v.as_str()) {
+            let ns = edge_obj.get("target_namespace").and_then(|v| v.as_str());
             let key = resolve_service_map_node_key(&nodes, target, ns);
             edge_obj.insert("target_key".to_string(), Value::String(key));
         }
@@ -199,10 +200,7 @@ mod tests {
     fn normalizes_production_anomaly_description() {
         let mut raw = json!({"anomalies":[{"description":"pod scan","severity":"high"}]});
         raw = normalize_anomalies(raw);
-        assert_eq!(
-            raw["anomalies"][0]["summary"].as_str(),
-            Some("pod scan")
-        );
+        assert_eq!(raw["anomalies"][0]["summary"].as_str(), Some("pod scan"));
     }
 
     #[test]

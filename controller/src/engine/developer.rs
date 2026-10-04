@@ -82,19 +82,19 @@ pub async fn export_vm_bundle(
 ) -> anyhow::Result<VmExportBundle> {
     // Inventory rows may have empty/`{}` spec_json (imported/libvirt-synced VMs).
     // Fall back to columnar vcpus/memory/project so IaC export still works.
-    let row: (String, Option<String>, i32, i64, serde_json::Value) = sqlx::query_as(
-        "SELECT name, project, vcpus, memory_mib, spec_json FROM vms WHERE id = ?",
-    )
-    .bind(vm_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
+    let row: (String, Option<String>, i32, i64, serde_json::Value) =
+        sqlx::query_as("SELECT name, project, vcpus, memory_mib, spec_json FROM vms WHERE id = ?")
+            .bind(vm_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("vm {} not found", vm_id))?;
     let (name, project_col, vcpus_col, memory_col, spec_val) = row;
 
-    let (vcpus, memory_mib, project, cloud_init) =
-        match serde_json::from_value::<VirtualMachine>(spec_val) {
-            Ok(vm) => {
-                let cloud_init = vm
+    let (vcpus, memory_mib, project, cloud_init) = match serde_json::from_value::<VirtualMachine>(
+        spec_val,
+    ) {
+        Ok(vm) => {
+            let cloud_init = vm
                     .spec
                     .cloud_init
                     .as_ref()
@@ -106,22 +106,22 @@ pub async fn export_vm_bundle(
                         )
                     })
                     .unwrap_or_else(|| "#cloud-config\n# (no cloud-init in spec)\n".into());
-                (
-                    vm.total_vcpus(),
-                    vm.memory_mib().unwrap_or(memory_col as u64),
-                    vm.metadata
-                        .project
-                        .unwrap_or_else(|| project_col.unwrap_or_else(|| "default".into())),
-                    cloud_init,
-                )
-            }
-            Err(_) => (
-                vcpus_col.max(1) as u32,
-                memory_col.max(128) as u64,
-                project_col.unwrap_or_else(|| "default".into()),
-                "#cloud-config\n# (no cloud-init in spec)\n".into(),
-            ),
-        };
+            (
+                vm.total_vcpus(),
+                vm.memory_mib().unwrap_or(memory_col as u64),
+                vm.metadata
+                    .project
+                    .unwrap_or_else(|| project_col.unwrap_or_else(|| "default".into())),
+                cloud_init,
+            )
+        }
+        Err(_) => (
+            vcpus_col.max(1) as u32,
+            memory_col.max(128) as u64,
+            project_col.unwrap_or_else(|| "default".into()),
+            "#cloud-config\n# (no cloud-init in spec)\n".into(),
+        ),
+    };
 
     let mut client = crate::agent_client::connect(agent_addr).await?;
     let domain_xml = crate::agent_client::get_domain_xml(&mut client, &name).await?;

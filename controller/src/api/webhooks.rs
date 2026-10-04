@@ -60,7 +60,11 @@ pub(crate) fn validate_webhook_url(url: &str) -> Result<(), ApiError> {
     // (decimal 2130706433, hex 0x7f000001, short 127.1, IPv6, IPv4-mapped) can't
     // slip a private/loopback target past a string-prefix check. url::Url already
     // canonicalizes bracketed IPv6; try to parse the host as an IpAddr.
-    if let Ok(ip) = host.trim_start_matches('[').trim_end_matches(']').parse::<std::net::IpAddr>() {
+    if let Ok(ip) = host
+        .trim_start_matches('[')
+        .trim_end_matches(']')
+        .parse::<std::net::IpAddr>()
+    {
         let blocked = match ip {
             std::net::IpAddr::V4(v4) => {
                 v4.is_loopback()

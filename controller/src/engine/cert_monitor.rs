@@ -74,9 +74,14 @@ async fn tick(state: &AppState) -> anyhow::Result<()> {
         let severity = if days <= 7 { "critical" } else { "warning" };
         let kind = format!("cert.expiring.{severity}");
         let msg = if days < 0 {
-            format!("TLS certificate {path} EXPIRED {} days ago (notAfter {not_after})", -days)
+            format!(
+                "TLS certificate {path} EXPIRED {} days ago (notAfter {not_after})",
+                -days
+            )
         } else {
-            format!("TLS certificate {path} expires in {days} days (notAfter {not_after}) — rotate it")
+            format!(
+                "TLS certificate {path} expires in {days} days (notAfter {not_after}) — rotate it"
+            )
         };
         crate::engine::webhooks::dispatch_webhooks(
             &state.pool,

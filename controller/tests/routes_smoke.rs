@@ -13,8 +13,7 @@ use http::{Request, StatusCode};
 use machina_controller::{
     api,
     config::ControllerConfig,
-    db,
-    leader,
+    db, leader,
     state::AppState,
     tasks::{bus::InMemoryTaskBus, TaskBus},
 };
@@ -48,10 +47,7 @@ async fn build_app_with_pool() -> (axum::Router, sqlx::SqlitePool) {
 }
 
 async fn get(app: &axum::Router, path: &str) -> StatusCode {
-    let req = Request::builder()
-        .uri(path)
-        .body(Body::empty())
-        .unwrap();
+    let req = Request::builder().uri(path).body(Body::empty()).unwrap();
     app.clone().oneshot(req).await.unwrap().status()
 }
 
@@ -68,7 +64,9 @@ async fn post_json(app: &axum::Router, path: &str, body: &str) -> (StatusCode, s
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     let status = resp.status();
-    let bytes = axum::body::to_bytes(resp.into_body(), 1 << 20).await.unwrap_or_default();
+    let bytes = axum::body::to_bytes(resp.into_body(), 1 << 20)
+        .await
+        .unwrap_or_default();
     let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null);
     (status, json)
 }
@@ -88,12 +86,27 @@ async fn migrate_creates_all_tables() {
     db::migrate(&pool).await.expect("migrate must succeed");
 
     let tables = [
-        "clusters", "users", "hosts", "vms", "tasks", "events",
-        "firewall_sites", "firewall_site_policies",
-        "soc_detection_rules", "soc_alerts", "slo_policies",
-        "ai_providers", "ai_prompts", "ai_actions", "ai_memory_entries",
-        "storage_pools", "networks", "network_segments",
-        "air_gap_bundles", "fips_crypto_profiles", "tenant_isolation_policies",
+        "clusters",
+        "users",
+        "hosts",
+        "vms",
+        "tasks",
+        "events",
+        "firewall_sites",
+        "firewall_site_policies",
+        "soc_detection_rules",
+        "soc_alerts",
+        "slo_policies",
+        "ai_providers",
+        "ai_prompts",
+        "ai_actions",
+        "ai_memory_entries",
+        "storage_pools",
+        "networks",
+        "network_segments",
+        "air_gap_bundles",
+        "fips_crypto_profiles",
+        "tenant_isolation_policies",
         "vm_schedules",
         "fleet_snapshot_schedules",
         "maintenance_schedules",
@@ -111,25 +124,33 @@ async fn migrate_creates_all_tables() {
 async fn bootstrap_creates_default_rows() {
     let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
     db::migrate(&pool).await.unwrap();
-    db::ensure_bootstrap(&pool, "admin", "s3cret").await.unwrap();
+    db::ensure_bootstrap(&pool, "admin", "s3cret")
+        .await
+        .unwrap();
 
     let clusters: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM clusters")
-        .fetch_one(&pool).await.unwrap();
+        .fetch_one(&pool)
+        .await
+        .unwrap();
     assert_eq!(clusters, 1, "should have exactly 1 default cluster");
 
     let users: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
-        .fetch_one(&pool).await.unwrap();
+        .fetch_one(&pool)
+        .await
+        .unwrap();
     assert_eq!(users, 1, "should have exactly 1 admin user");
 
     let hosts: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM hosts")
-        .fetch_one(&pool).await.unwrap();
+        .fetch_one(&pool)
+        .await
+        .unwrap();
     assert_eq!(hosts, 1, "should have exactly 1 default localhost host");
 
     // Verify UUID PKs are 16-byte BLOBs, not text strings.
-    let bad_ids: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM clusters WHERE length(id) != 16",
-    )
-    .fetch_one(&pool).await.unwrap();
+    let bad_ids: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM clusters WHERE length(id) != 16")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
     assert_eq!(bad_ids, 0, "cluster id must be a 16-byte UUID blob");
 }
 
@@ -191,9 +212,7 @@ async fn smoke_get_routes() {
 async fn smoke_post_routes() {
     let app = build_app().await;
 
-    let routes: &[(&str, &str)] = &[
-        ("/api/v1/ai/copilot/chat", r#"{"message":"hi"}"#),
-    ];
+    let routes: &[(&str, &str)] = &[("/api/v1/ai/copilot/chat", r#"{"message":"hi"}"#)];
 
     let mut failures = Vec::new();
     for (path, body) in routes {
@@ -216,14 +235,12 @@ async fn smoke_post_routes() {
 
 async fn seed_vm(pool: &sqlx::SqlitePool) -> uuid::Uuid {
     let vm_id = uuid::Uuid::new_v4();
-    sqlx::query(
-        "INSERT INTO vms (id, name, spec_json) VALUES (?, ?, '{}')",
-    )
-    .bind(vm_id)
-    .bind("smoke-vm")
-    .execute(pool)
-    .await
-    .expect("seed vm");
+    sqlx::query("INSERT INTO vms (id, name, spec_json) VALUES (?, ?, '{}')")
+        .bind(vm_id)
+        .bind("smoke-vm")
+        .execute(pool)
+        .await
+        .expect("seed vm");
     vm_id
 }
 
@@ -245,7 +262,11 @@ async fn vm_schedules_invalid_action_returns_400() {
         r#"{"action":"delete","interval_minutes":1440}"#,
     )
     .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST, "invalid action should return 400; body={body}");
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "invalid action should return 400; body={body}"
+    );
 }
 
 #[tokio::test]
@@ -260,8 +281,15 @@ async fn vm_schedules_create_and_delete_roundtrip() {
         r#"{"action":"snapshot","interval_minutes":1440,"retention":3}"#,
     )
     .await;
-    assert_eq!(status, StatusCode::OK, "create schedule should return 200; body={body}");
-    let sched_id = body["id"].as_str().expect("response must have id field").to_string();
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "create schedule should return 200; body={body}"
+    );
+    let sched_id = body["id"]
+        .as_str()
+        .expect("response must have id field")
+        .to_string();
 
     // List — should now contain the schedule
     let list_status = get(&app, &format!("/api/v1/vms/{vm_id}/schedules")).await;
@@ -273,7 +301,11 @@ async fn vm_schedules_create_and_delete_roundtrip() {
 
     // Delete again — not found
     let del_again = delete(&app, &format!("/api/v1/vms/{vm_id}/schedules/{sched_id}")).await;
-    assert_eq!(del_again, StatusCode::NOT_FOUND, "second delete should return 404");
+    assert_eq!(
+        del_again,
+        StatusCode::NOT_FOUND,
+        "second delete should return 404"
+    );
 }
 
 #[tokio::test]
@@ -286,5 +318,9 @@ async fn vm_schedules_missing_vm_returns_404() {
         r#"{"action":"start","interval_minutes":60}"#,
     )
     .await;
-    assert_eq!(status, StatusCode::NOT_FOUND, "unknown VM should return 404");
+    assert_eq!(
+        status,
+        StatusCode::NOT_FOUND,
+        "unknown VM should return 404"
+    );
 }

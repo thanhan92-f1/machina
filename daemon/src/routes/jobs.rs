@@ -271,8 +271,7 @@ async fn post_packer_golden_build_job(
             cmd.env("MACHINA_SKIP_PACKER_INSTALL_DEPS", "1");
         }
 
-        let mut child = match cmd.spawn()
-        {
+        let mut child = match cmd.spawn() {
             Ok(c) => c,
             Err(e) => {
                 jobs_bg.fail(id, &format!("spawn packer script: {e}"));
@@ -336,8 +335,7 @@ async fn post_packer_golden_build_job(
             let mut target = artifact.to_string_lossy().to_string();
             if packer_guest_is_windows_dockur(&guest_bg) {
                 match machina_core::libvirt::extras::register_dockur_windows_golden(
-                    &guest_bg,
-                    &artifact,
+                    &guest_bg, &artifact,
                 ) {
                     Ok(stable) => {
                         jobs_bg.append_log(

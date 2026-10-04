@@ -121,9 +121,11 @@ pub fn parse(b: &[u8]) -> Option<DnsMessage> {
         let Some((name, next)) = read_name(b, off) else {
             break;
         };
-        let (Some(rtype), Some(ttl), Some(rdlen)) =
-            (read_u16(b, next), read_u32(b, next + 4), read_u16(b, next + 8))
-        else {
+        let (Some(rtype), Some(ttl), Some(rdlen)) = (
+            read_u16(b, next),
+            read_u32(b, next + 4),
+            read_u16(b, next + 8),
+        ) else {
             break;
         };
         let rd_off = next + 10;

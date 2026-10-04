@@ -29,16 +29,26 @@ fn main() {
                         .unwrap_or_else(|_| "info".into()),
                 )
                 .init();
-            let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build();
-            let res = rt.map_err(anyhow::Error::from).and_then(|rt| rt.block_on(agent::run(agent::Config::from_env())));
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build();
+            let res = rt
+                .map_err(anyhow::Error::from)
+                .and_then(|rt| rt.block_on(agent::run(agent::Config::from_env())));
             if let Err(e) = res {
                 eprintln!("machina-cni agent: {e:#}");
                 // EX_CONFIG: the unit's RestartPreventExitStatus stops the restart loop.
-                let code = if e.downcast_ref::<agent::ForeignCni>().is_some() { 78 } else { 1 };
+                let code = if e.downcast_ref::<agent::ForeignCni>().is_some() {
+                    78
+                } else {
+                    1
+                };
                 std::process::exit(code);
             }
         }
-        Some("version") | Some("--version") => println!("machina-cni {}", env!("CARGO_PKG_VERSION")),
+        Some("version") | Some("--version") => {
+            println!("machina-cni {}", env!("CARGO_PKG_VERSION"))
+        }
         _ => {
             eprintln!(
                 "usage: machina-cni agent        run the node reconciler\n       \

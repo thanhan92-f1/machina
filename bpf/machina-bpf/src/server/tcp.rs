@@ -118,12 +118,19 @@ impl Engine {
             .map(|(k, count)| {
                 let r = self.ifaces.get(&k.ifindex);
                 IcmpError {
-                    iface: r.map(|r| r.name.clone()).unwrap_or_else(|| format!("if{}", k.ifindex)),
+                    iface: r
+                        .map(|r| r.name.clone())
+                        .unwrap_or_else(|| format!("if{}", k.ifindex)),
                     vm: r.and_then(|r| r.vm.clone()),
                     kind: icmp_kind(k.kind).into(),
                     code: k.code,
                     family: if k.v6 != 0 { "ipv6" } else { "ipv4" }.into(),
-                    direction: if k.from_workload != 0 { "from_workload" } else { "to_workload" }.into(),
+                    direction: if k.from_workload != 0 {
+                        "from_workload"
+                    } else {
+                        "to_workload"
+                    }
+                    .into(),
                     count,
                 }
             })

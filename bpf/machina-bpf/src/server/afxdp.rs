@@ -77,10 +77,16 @@ impl Engine {
             return Err(anyhow!("interface {} not found", c.iface));
         }
         if has_default_route(&c.iface) {
-            return Err(anyhow!("{} carries a default route; AF_XDP needs a dedicated interface", c.iface));
+            return Err(anyhow!(
+                "{} carries a default route; AF_XDP needs a dedicated interface",
+                c.iface
+            ));
         }
         if self.uplink.iface.as_deref() == Some(c.iface.as_str()) && self.uplink.flags != 0 {
-            return Err(anyhow!("{} runs the uplink XDP dispatcher; AF_XDP needs a dedicated interface", c.iface));
+            return Err(anyhow!(
+                "{} runs the uplink XDP dispatcher; AF_XDP needs a dedicated interface",
+                c.iface
+            ));
         }
         match self.dp.xdp_attached(&c.iface) {
             None => {}
@@ -94,8 +100,15 @@ impl Engine {
         Ok(self.afxdp_status())
     }
 
-    pub(super) fn afxdp_register(&mut self, iface: &str, queue: u32, fd: Option<OwnedFd>) -> Result<AfxdpStatus> {
-        let fd = fd.ok_or_else(|| anyhow!("no socket attached; send the AF_XDP fd as SCM_RIGHTS with this request"))?;
+    pub(super) fn afxdp_register(
+        &mut self,
+        iface: &str,
+        queue: u32,
+        fd: Option<OwnedFd>,
+    ) -> Result<AfxdpStatus> {
+        let fd = fd.ok_or_else(|| {
+            anyhow!("no socket attached; send the AF_XDP fd as SCM_RIGHTS with this request")
+        })?;
         if self.afxdp.iface.as_deref() != Some(iface) {
             return Err(anyhow!("AF_XDP is not enabled on {iface}"));
         }
@@ -128,11 +141,28 @@ impl Engine {
         let mut out = Vec::with_capacity(queues.len());
         for q in queues {
             let mut s = |i| {
-                self.dp.percpu_array_sum::<u64>("AFXDP_STATS", q * AFXDP_STAT_SLOTS + i, |a, b| *a += *b).unwrap_or(0)
+                self.dp
+                    .percpu_array_sum::<u64>("AFXDP_STATS", q * AFXDP_STAT_SLOTS + i, |a, b| {
+                        *a += *b
+                    })
+                    .unwrap_or(0)
             };
-            out.push(AfxdpQueue { queue: q, enabled: true, redirected: s(AFXDP_STAT_REDIRECT), no_socket: s(AFXDP_STAT_NOSOCK) });
+            out.push(AfxdpQueue {
+                queue: q,
+                enabled: true,
+                redirected: s(AFXDP_STAT_REDIRECT),
+                no_socket: s(AFXDP_STAT_NOSOCK),
+            });
         }
-        let attached = self.afxdp.iface.as_deref().is_some_and(|i| self.dp.xdp_attached(i) == Some(PROG));
-        AfxdpStatus { iface: self.afxdp.iface.clone(), attached, queues: out }
+        let attached = self
+            .afxdp
+            .iface
+            .as_deref()
+            .is_some_and(|i| self.dp.xdp_attached(i) == Some(PROG));
+        AfxdpStatus {
+            iface: self.afxdp.iface.clone(),
+            attached,
+            queues: out,
+        }
     }
 }

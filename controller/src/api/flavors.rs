@@ -39,9 +39,10 @@ pub async fn list_flavors(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<Vec<FlavorRow>>, ApiError> {
     require_operator(&actor)?;
-    let rows = sqlx::query_as::<_, FlavorRow>(&format!("{FLAVOR_SELECT} ORDER BY memory_mib, vcpus"))
-        .fetch_all(&state.pool)
-        .await?;
+    let rows =
+        sqlx::query_as::<_, FlavorRow>(&format!("{FLAVOR_SELECT} ORDER BY memory_mib, vcpus"))
+            .fetch_all(&state.pool)
+            .await?;
     Ok(Json(rows))
 }
 
@@ -124,6 +125,9 @@ pub async fn delete_flavor(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_admin(&actor)?;
-    sqlx::query("DELETE FROM flavors WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM flavors WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }

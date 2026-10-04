@@ -151,7 +151,11 @@ mod pressure_tests {
         let p = parse_pressure(sample);
         assert!((p.some - 0.49).abs() < 1e-9, "some avg10 = {}", p.some);
         assert!((p.full - 0.10).abs() < 1e-9, "full avg10 = {}", p.full);
-        assert!((p.total - 22668891778.0).abs() < 1.0, "some total = {}", p.total);
+        assert!(
+            (p.total - 22668891778.0).abs() < 1.0,
+            "some total = {}",
+            p.total
+        );
     }
 
     #[test]

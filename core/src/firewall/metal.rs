@@ -65,7 +65,6 @@ pub fn gather_metal_inventory(server: &MetalServerInput) -> FirewallInventory {
         last_changed: None,
     };
 
-    
     FirewallInventory {
         hostname: server.hostname.clone(),
         posture: posture.clone(),
@@ -315,7 +314,11 @@ mod bmc_tests {
     #[test]
     fn private_ranges_are_not_public() {
         for a in [
-            "10.0.0.5", "192.168.1.10", "172.16.0.1", "172.31.255.254", "127.0.0.1",
+            "10.0.0.5",
+            "192.168.1.10",
+            "172.16.0.1",
+            "172.31.255.254",
+            "127.0.0.1",
             "169.254.1.1",
         ] {
             assert!(!is_public_bmc(a), "{a} should be private");
@@ -325,7 +328,14 @@ mod bmc_tests {
     #[test]
     fn public_ipv4_is_public() {
         // The old dead `!contains('.')` clause misclassified all of these as private.
-        for a in ["8.8.8.8", "1.2.3.4", "52.10.20.30", "203.0.113.5", "172.15.0.1", "172.32.0.1"] {
+        for a in [
+            "8.8.8.8",
+            "1.2.3.4",
+            "52.10.20.30",
+            "203.0.113.5",
+            "172.15.0.1",
+            "172.32.0.1",
+        ] {
             assert!(is_public_bmc(a), "{a} should be public");
         }
     }

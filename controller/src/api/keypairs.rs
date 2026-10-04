@@ -68,10 +68,9 @@ pub struct CreateKeypairBody {
 /// ASCII line, so two equivalent keys with different comments/whitespace fingerprint
 /// identically.
 fn ssh_fingerprint(public_key: &str) -> Result<String, ApiError> {
-    let blob_b64 = public_key
-        .split_whitespace()
-        .nth(1)
-        .ok_or_else(|| ApiError::bad_request("public_key must be in 'type base64 [comment]' format"))?;
+    let blob_b64 = public_key.split_whitespace().nth(1).ok_or_else(|| {
+        ApiError::bad_request("public_key must be in 'type base64 [comment]' format")
+    })?;
     let blob = base64::engine::general_purpose::STANDARD
         .decode(blob_b64)
         .map_err(|e| ApiError::bad_request(format!("invalid base64 in public_key: {e}")))?;
@@ -117,6 +116,9 @@ pub async fn delete_keypair(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    sqlx::query("DELETE FROM keypairs WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM keypairs WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }

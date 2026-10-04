@@ -83,24 +83,27 @@ pub async fn ensure_bootstrap(
     // write, as this used to do, skipped set_vm_error/ha.recover's host_id
     // revert/webhook dispatch entirely, leaving that state stranded forever
     // since nothing else ever transitions a 'running' row.
-    let reap_rows: Vec<(Uuid, String, serde_json::Value)> =
-        if let Some(id) = std::env::var("MACHINA_CONTROLLER_ID").ok().filter(|s| !s.is_empty()) {
-            sqlx::query_as(
-                "SELECT id, operation, payload FROM tasks \
+    let reap_rows: Vec<(Uuid, String, serde_json::Value)> = if let Some(id) =
+        std::env::var("MACHINA_CONTROLLER_ID")
+            .ok()
+            .filter(|s| !s.is_empty())
+    {
+        sqlx::query_as(
+            "SELECT id, operation, payload FROM tasks \
                  WHERE status = 'running' AND (claimed_by = ? OR claimed_by IS NULL)",
-            )
-            .bind(id)
-            .fetch_all(pool)
-            .await?
-        } else {
-            sqlx::query_as(
-                "SELECT id, operation, payload FROM tasks \
+        )
+        .bind(id)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, operation, payload FROM tasks \
                  WHERE status = 'running' \
                    AND (claimed_by IS NULL OR updated_at < datetime('now', '-60 minutes'))",
-            )
-            .fetch_all(pool)
-            .await?
-        };
+        )
+        .fetch_all(pool)
+        .await?
+    };
     if !reap_rows.is_empty() {
         tracing::warn!(
             "reaping {} task(s) left in 'running' state after restart",
@@ -163,10 +166,9 @@ pub async fn ensure_bootstrap(
         .fetch_one(pool)
         .await?;
     if host_count == 0 {
-        let cluster_id: Uuid =
-            sqlx::query_scalar::<_, Uuid>("SELECT id FROM clusters LIMIT 1")
-                .fetch_one(pool)
-                .await?;
+        let cluster_id: Uuid = sqlx::query_scalar::<_, Uuid>("SELECT id FROM clusters LIMIT 1")
+            .fetch_one(pool)
+            .await?;
         sqlx::query(
             "INSERT OR IGNORE INTO hosts (id, cluster_id, hostname, address, state, agent_grpc_addr)
              VALUES (?, ?, ?, ?, ?, ?)",

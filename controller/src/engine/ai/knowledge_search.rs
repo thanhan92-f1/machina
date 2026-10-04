@@ -22,7 +22,9 @@ pub struct KnowledgeSearchResult {
 }
 
 fn escape_like(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    s.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 pub async fn search(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeSearchResult> {
@@ -55,11 +57,12 @@ pub async fn search(pool: &SqlitePool, query: &str) -> anyhow::Result<KnowledgeS
         });
     }
 
-    let hosts: Vec<(uuid::Uuid, String, String)> =
-        sqlx::query_as("SELECT id, hostname, state FROM hosts WHERE hostname LIKE ? ESCAPE '\\' LIMIT 8")
-            .bind(&pattern)
-            .fetch_all(pool)
-            .await?;
+    let hosts: Vec<(uuid::Uuid, String, String)> = sqlx::query_as(
+        "SELECT id, hostname, state FROM hosts WHERE hostname LIKE ? ESCAPE '\\' LIMIT 8",
+    )
+    .bind(&pattern)
+    .fetch_all(pool)
+    .await?;
     for (id, name, state) in hosts {
         hits.push(KnowledgeHit {
             kind: "host".into(),

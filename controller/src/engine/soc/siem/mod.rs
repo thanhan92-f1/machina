@@ -20,7 +20,10 @@ pub struct IntegrationRow {
     pub config_json: Value,
 }
 
-pub async fn forward_all_integrations(pool: &SqlitePool, controller_id: &str) -> anyhow::Result<usize> {
+pub async fn forward_all_integrations(
+    pool: &SqlitePool,
+    controller_id: &str,
+) -> anyhow::Result<usize> {
     let rows: Vec<IntegrationRow> = sqlx::query_as(
         "SELECT id, integration_type, name, enabled, config_json FROM soc_integrations WHERE enabled = TRUE",
     )
@@ -109,11 +112,13 @@ pub(crate) async fn integration_ok(pool: &SqlitePool, id: Uuid) -> anyhow::Resul
 }
 
 pub(crate) async fn integration_err(pool: &SqlitePool, id: Uuid, err: &str) -> anyhow::Result<()> {
-    sqlx::query("UPDATE soc_integrations SET last_error = ?, updated_at = datetime('now') WHERE id = ?")
-        .bind(err.chars().take(2000).collect::<String>())
-        .bind(id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "UPDATE soc_integrations SET last_error = ?, updated_at = datetime('now') WHERE id = ?",
+    )
+    .bind(err.chars().take(2000).collect::<String>())
+    .bind(id)
+    .execute(pool)
+    .await?;
     Ok(())
 }
 

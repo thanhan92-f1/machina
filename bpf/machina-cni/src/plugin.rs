@@ -71,7 +71,11 @@ impl Args {
             netns: get("CNI_NETNS"),
             ifname: {
                 let i = get("CNI_IFNAME");
-                if i.is_empty() { "eth0".into() } else { i }
+                if i.is_empty() {
+                    "eth0".into()
+                } else {
+                    i
+                }
             },
             pod: match pod {
                 (Some(ns), Some(n)) => Some(format!("{ns}/{n}")),
@@ -136,7 +140,10 @@ pub fn run() -> i32 {
         Err(e) => return emit_error("1.0.0", 4, &format!("{e:#}")),
     };
     if args.command == "VERSION" {
-        println!("{}", json!({ "cniVersion": "1.0.0", "supportedVersions": SUPPORTED }));
+        println!(
+            "{}",
+            json!({ "cniVersion": "1.0.0", "supportedVersions": SUPPORTED })
+        );
         return 0;
     }
     let mut stdin = String::new();
@@ -178,7 +185,9 @@ fn host_prefix(ip: IpAddr) -> String {
 }
 
 fn bpfd(req: Request) -> Result<()> {
-    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
     rt.block_on(machina_bpf::BpfdClient::from_env().call(&req))?;
     Ok(())
 }
@@ -229,7 +238,11 @@ fn add(conf: &NetConf, a: &Args) -> Result<Value> {
     let mut ips = Vec::new();
     let mut routes = Vec::new();
     for addr in &addrs {
-        let (gw, dst) = if addr.is_ipv6() { (GATEWAY6, "::/0") } else { (GATEWAY, "0.0.0.0/0") };
+        let (gw, dst) = if addr.is_ipv6() {
+            (GATEWAY6, "::/0")
+        } else {
+            (GATEWAY, "0.0.0.0/0")
+        };
         ips.push(json!({ "address": host_prefix(*addr), "gateway": gw, "interface": 1 }));
         routes.push(json!({ "dst": dst, "gw": gw }));
     }
@@ -253,18 +266,22 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addrs: &[IpAddr]) -> Result<(Stri
         ns_ip(
             &a.netns,
             &[
-                "link", "add", &a.ifname, "mtu", &mtu, "type", "veth", "peer", "name", host, "address", HOST_MAC, "mtu",
-                &mtu, "netns", "1",
+                "link", "add", &a.ifname, "mtu", &mtu, "type", "veth", "peer", "name", host,
+                "address", HOST_MAC, "mtu", &mtu, "netns", "1",
             ],
         )?;
     }
     ip(&["link", "set", host, "address", HOST_MAC])?;
-    let host_mac = link_mac(&ip(&["-j", "link", "show", host])?).ok_or_else(|| anyhow!("no MAC on {host}"))?;
+    let host_mac =
+        link_mac(&ip(&["-j", "link", "show", host])?).ok_or_else(|| anyhow!("no MAC on {host}"))?;
     ns_ip(&a.netns, &["link", "set", "lo", "up"])?;
     for addr in addrs {
         let cidr = host_prefix(*addr);
         if addr.is_ipv6() {
-            ns_ip(&a.netns, &["-6", "addr", "replace", &cidr, "dev", &a.ifname, "nodad"])?;
+            ns_ip(
+                &a.netns,
+                &["-6", "addr", "replace", &cidr, "dev", &a.ifname, "nodad"],
+            )?;
         } else {
             ns_ip(&a.netns, &["addr", "replace", &cidr, "dev", &a.ifname])?;
         }
@@ -272,17 +289,53 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addrs: &[IpAddr]) -> Result<(Stri
     ns_ip(&a.netns, &["link", "set", &a.ifname, "up"])?;
     for addr in addrs {
         if addr.is_ipv6() {
-            ns_ip(&a.netns, &["-6", "route", "replace", "default", "via", GATEWAY6, "dev", &a.ifname])?;
             ns_ip(
                 &a.netns,
-                &["-6", "neigh", "replace", GATEWAY6, "lladdr", &host_mac, "dev", &a.ifname, "nud", "permanent"],
+                &[
+                    "-6", "route", "replace", "default", "via", GATEWAY6, "dev", &a.ifname,
+                ],
+            )?;
+            ns_ip(
+                &a.netns,
+                &[
+                    "-6",
+                    "neigh",
+                    "replace",
+                    GATEWAY6,
+                    "lladdr",
+                    &host_mac,
+                    "dev",
+                    &a.ifname,
+                    "nud",
+                    "permanent",
+                ],
             )?;
         } else {
-            ns_ip(&a.netns, &["route", "replace", GATEWAY, "dev", &a.ifname, "scope", "link"])?;
-            ns_ip(&a.netns, &["route", "replace", "default", "via", GATEWAY, "dev", &a.ifname])?;
             ns_ip(
                 &a.netns,
-                &["neigh", "replace", GATEWAY, "lladdr", &host_mac, "dev", &a.ifname, "nud", "permanent"],
+                &[
+                    "route", "replace", GATEWAY, "dev", &a.ifname, "scope", "link",
+                ],
+            )?;
+            ns_ip(
+                &a.netns,
+                &[
+                    "route", "replace", "default", "via", GATEWAY, "dev", &a.ifname,
+                ],
+            )?;
+            ns_ip(
+                &a.netns,
+                &[
+                    "neigh",
+                    "replace",
+                    GATEWAY,
+                    "lladdr",
+                    &host_mac,
+                    "dev",
+                    &a.ifname,
+                    "nud",
+                    "permanent",
+                ],
             )?;
         }
     }
@@ -294,12 +347,22 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addrs: &[IpAddr]) -> Result<(Stri
     // global IPv6 address still sources pod-bound traffic from an address
     // the pod can reach (otherwise another link's link-local is picked).
     if addrs.iter().any(IpAddr::is_ipv6) {
-        ip(&["-6", "addr", "replace", &format!("{GATEWAY6}/64"), "dev", host, "nodad"])?;
+        ip(&[
+            "-6",
+            "addr",
+            "replace",
+            &format!("{GATEWAY6}/64"),
+            "dev",
+            host,
+            "nodad",
+        ])?;
     }
     for addr in addrs {
         let cidr = host_prefix(*addr);
         let fam = if addr.is_ipv6() { "-6" } else { "-4" };
-        ip(&[fam, "route", "replace", &cidr, "dev", host, "proto", "static"])?;
+        ip(&[
+            fam, "route", "replace", &cidr, "dev", host, "proto", "static",
+        ])?;
     }
     let _ = std::fs::write(format!("/proc/sys/net/ipv4/conf/{host}/rp_filter"), "0");
     let _ = std::fs::write(format!("/proc/sys/net/ipv4/conf/{host}/accept_local"), "1");
@@ -309,9 +372,13 @@ fn plumb(conf: &NetConf, a: &Args, host: &str, addrs: &[IpAddr]) -> Result<(Stri
 fn del(conf: &NetConf, a: &Args) -> Result<()> {
     let host = host_veth(&a.container_id, &a.ifname);
     for ipam in ipams(conf).unwrap_or_default() {
-        let Some(addr) = ipam.release(&a.container_id, &a.ifname) else { continue };
+        let Some(addr) = ipam.release(&a.container_id, &a.ifname) else {
+            continue;
+        };
         let _ = ip(&["route", "del", &host_prefix(addr), "dev", &host]);
-        if let Err(e) = bpfd(Request::CniDelEndpoint { ip: addr.to_string() }) {
+        if let Err(e) = bpfd(Request::CniDelEndpoint {
+            ip: addr.to_string(),
+        }) {
             eprintln!("machina-cni: machina-bpfd unregister failed: {e:#}");
         }
     }
@@ -322,7 +389,9 @@ fn del(conf: &NetConf, a: &Args) -> Result<()> {
 
 fn check(a: &Args) -> Result<()> {
     let host = host_veth(&a.container_id, &a.ifname);
-    ip(&["link", "show", &host]).map(|_| ()).context("host veth missing")
+    ip(&["link", "show", &host])
+        .map(|_| ())
+        .context("host veth missing")
 }
 
 #[cfg(test)]
@@ -331,7 +400,10 @@ mod tests {
 
     #[test]
     fn veth_names_fit_ifnamsiz() {
-        let n = host_veth("4f1c0b5e9a7d6c3b2a1908f7e6d5c4b3a291807f6e5d4c3b2a19081726354453", "eth0");
+        let n = host_veth(
+            "4f1c0b5e9a7d6c3b2a1908f7e6d5c4b3a291807f6e5d4c3b2a19081726354453",
+            "eth0",
+        );
         assert!(n.len() <= 15, "{n}");
         assert!(n.starts_with("mc"));
         assert_ne!(n, host_veth("other", "eth0"));

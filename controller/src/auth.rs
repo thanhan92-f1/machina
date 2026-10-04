@@ -40,8 +40,7 @@ pub fn require_operator(user: &AuthUser) -> Result<(), crate::api::ApiError> {
 // Fixed, valid bcrypt hash with no known corresponding plaintext used by this
 // codebase. It exists purely to give `authenticate` something to hash against
 // for unknown usernames — see the comment below.
-const DUMMY_BCRYPT_HASH: &str =
-    "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+const DUMMY_BCRYPT_HASH: &str = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
 pub async fn authenticate(
     pool: &sqlx::SqlitePool,
@@ -68,8 +67,7 @@ pub async fn authenticate(
     // on the blocking pool so it doesn't stall an async runtime worker thread —
     // otherwise a burst of Basic-auth requests could starve the executor.
     let password = password.to_string();
-    let verified =
-        tokio::task::spawn_blocking(move || bcrypt::verify(&password, &hash)).await??;
+    let verified = tokio::task::spawn_blocking(move || bcrypt::verify(&password, &hash)).await??;
     match (verified, role) {
         (true, Some(role)) => Ok(Some(AuthUser {
             username: username.to_string(),
@@ -169,7 +167,17 @@ pub async fn login(
             remediation: None,
             object_ref: None,
         })?;
-    let token = crate::jwt::issue_token(&state.config.jwt_secret, &user.username, &user.role, 86400, Some("local"))
-        .map_err(|e| crate::api::ApiError::internal(e.to_string()))?;
-    Ok(Json(LoginResponse { token, username: user.username, role: user.role }))
+    let token = crate::jwt::issue_token(
+        &state.config.jwt_secret,
+        &user.username,
+        &user.role,
+        86400,
+        Some("local"),
+    )
+    .map_err(|e| crate::api::ApiError::internal(e.to_string()))?;
+    Ok(Json(LoginResponse {
+        token,
+        username: user.username,
+        role: user.role,
+    }))
 }

@@ -201,7 +201,10 @@ pub fn create_vm(
                     &format!("Define failed — removed the freshly generated cloud-init seed {p}"),
                 ),
                 Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
-                    tracing::warn!("VM '{}': define failed and could not remove the cloud-init seed {p}: {e}", req.name);
+                    tracing::warn!(
+                        "VM '{}': define failed and could not remove the cloud-init seed {p}: {e}",
+                        req.name
+                    );
                 }
                 Err(_) => {}
             }
@@ -238,12 +241,11 @@ fn create_vm_libvirt_xml(
     let gt = if gt.is_empty() { "vnc" } else { gt };
     crate::validate::validate_graphics_type(gt)?;
 
-    if firmware == "uefi"
-        && find_ovmf_code().is_none() {
-            return Err(LibvirtError::Operation(
+    if firmware == "uefi" && find_ovmf_code().is_none() {
+        return Err(LibvirtError::Operation(
                 "UEFI firmware (OVMF) not found. Install edk2-ovmf (Fedora/RHEL) or ovmf (Debian/Ubuntu).".to_string()
             ));
-        }
+    }
 
     let resolved_iso: Option<std::path::PathBuf> = if !req.iso.is_empty() {
         let iso_path = std::path::Path::new(&req.iso);

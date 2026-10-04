@@ -180,7 +180,11 @@ pub async fn execute_stack(
         let tags: Vec<String> = vec!["gpu".into(), "mission-stack".into()];
         let tags_json = serde_json::to_string(&tags).unwrap_or_else(|_| "[]".into());
 
-        let mut tx = state.pool.begin().await.map_err(|e| ApiError::internal(e.to_string()))?;
+        let mut tx = state
+            .pool
+            .begin()
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
         sqlx::query(
             "INSERT INTO vms (id, cluster_id, host_id, name, project, spec_json, desired_state, lifecycle_phase, vcpus, memory_mib, tags)
              VALUES (?, ?, ?, ?, 'mission-stack', ?, 'running', 'creating', 16, 65536, ?)",
@@ -203,7 +207,9 @@ pub async fn execute_stack(
         .execute(&mut *tx)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-        tx.commit().await.map_err(|e| ApiError::internal(e.to_string()))?;
+        tx.commit()
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
 
         let task_id = enqueue_task(
             state,

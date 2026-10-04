@@ -131,10 +131,13 @@ pub async fn execute(
                         .await?;
                 let backup_id = Uuid::new_v4();
                 let task_id = Uuid::new_v4();
-                let payload =
-                    serde_json::json!({ "vm_id": vm_id.to_string(), "backup_id": backup_id.to_string() });
+                let payload = serde_json::json!({ "vm_id": vm_id.to_string(), "backup_id": backup_id.to_string() });
                 {
-                    let mut tx = state.pool.begin().await.map_err(|e| ApiError::internal(e.to_string()))?;
+                    let mut tx = state
+                        .pool
+                        .begin()
+                        .await
+                        .map_err(|e| ApiError::internal(e.to_string()))?;
                     sqlx::query(
                         "INSERT INTO backup_records (id, vm_id, backup_type, status) VALUES (?, ?, 'full', 'pending')",
                     )
@@ -154,7 +157,9 @@ pub async fn execute(
                     .execute(&mut *tx)
                     .await
                     .map_err(|e| ApiError::internal(e.to_string()))?;
-                    tx.commit().await.map_err(|e| ApiError::internal(e.to_string()))?;
+                    tx.commit()
+                        .await
+                        .map_err(|e| ApiError::internal(e.to_string()))?;
                 }
                 let msg = TaskMessage {
                     task_id,
@@ -178,10 +183,13 @@ pub async fn execute(
                 .await?;
             let backup_id = Uuid::new_v4();
             let task_id = Uuid::new_v4();
-            let payload =
-                serde_json::json!({ "vm_id": vm_id.to_string(), "backup_id": backup_id.to_string() });
+            let payload = serde_json::json!({ "vm_id": vm_id.to_string(), "backup_id": backup_id.to_string() });
             {
-                let mut tx = state.pool.begin().await.map_err(|e| ApiError::internal(e.to_string()))?;
+                let mut tx = state
+                    .pool
+                    .begin()
+                    .await
+                    .map_err(|e| ApiError::internal(e.to_string()))?;
                 sqlx::query(
                     "INSERT INTO backup_records (id, vm_id, backup_type, status) VALUES (?, ?, 'full', 'pending')",
                 )
@@ -201,7 +209,9 @@ pub async fn execute(
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| ApiError::internal(e.to_string()))?;
-                tx.commit().await.map_err(|e| ApiError::internal(e.to_string()))?;
+                tx.commit()
+                    .await
+                    .map_err(|e| ApiError::internal(e.to_string()))?;
             }
             let msg = TaskMessage {
                 task_id,
@@ -376,11 +386,7 @@ pub async fn run_safe_batch(
     let cap = max_actions.clamp(1, 10);
     let all = proposal.actions;
     let skipped_count = all.iter().filter(|a| !is_auto_safe(a)).count();
-    let safe: Vec<ProposedAction> = all
-        .into_iter()
-        .filter(is_auto_safe)
-        .take(cap)
-        .collect();
+    let safe: Vec<ProposedAction> = all.into_iter().filter(is_auto_safe).take(cap).collect();
 
     let mut results = Vec::new();
     for action in safe {
@@ -421,7 +427,10 @@ pub struct AutopilotHistoryEntry {
     pub detail: serde_json::Value,
 }
 
-pub async fn list_history(pool: &SqlitePool, limit: i64) -> anyhow::Result<Vec<AutopilotHistoryEntry>> {
+pub async fn list_history(
+    pool: &SqlitePool,
+    limit: i64,
+) -> anyhow::Result<Vec<AutopilotHistoryEntry>> {
     let cap = limit.clamp(1, 100);
     let rows = sqlx::query_as::<_, AutopilotHistoryEntry>(
         "SELECT id, actor, action, created_at, COALESCE(detail, '{}') AS detail

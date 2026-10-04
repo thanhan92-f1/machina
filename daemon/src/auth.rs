@@ -227,7 +227,9 @@ impl SessionStore {
     pub fn list_browser_sessions(&self, current_public_id: Option<&str>) -> Vec<SessionListEntry> {
         let mut sessions = self.sessions.write().unwrap_or_else(|e| e.into_inner());
         sessions.retain(|_, data| data.created_at.elapsed().as_secs() < SESSION_TTL_SECS);
-        let mut out: Vec<SessionListEntry> = sessions.values().map(|data| {
+        let mut out: Vec<SessionListEntry> = sessions
+            .values()
+            .map(|data| {
                 let age = data.created_at.elapsed().as_secs();
                 SessionListEntry {
                     session_id: data.public_id.clone(),
@@ -301,7 +303,9 @@ impl SessionStore {
         let state_bytes: [u8; 32] = rng.gen();
         let state = hex::encode(state_bytes);
         let mut states = self.oidc_states.lock().unwrap_or_else(|e| e.into_inner());
-        states.retain(|_, data| data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS);
+        states.retain(|_, data| {
+            data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS
+        });
         states.insert(
             state.clone(),
             machina_core::oidc::OidcStateEntry {
@@ -314,7 +318,9 @@ impl SessionStore {
 
     pub fn take_oidc_state(&self, state: &str) -> Option<String> {
         let mut states = self.oidc_states.lock().unwrap_or_else(|e| e.into_inner());
-        states.retain(|_, data| data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS);
+        states.retain(|_, data| {
+            data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS
+        });
         states.remove(state).and_then(|data| {
             if data.created_at.elapsed().as_secs() < machina_core::oidc::OIDC_STATE_TTL_SECS {
                 Some(data.nonce)
@@ -563,13 +569,21 @@ struct OidcTokenResponse {
 fn oidc_error_to_app_error(e: machina_core::oidc::OidcError) -> AppError {
     use machina_core::oidc::OidcError as E;
     match e {
-        E::DiscoveryInvalid(msg) | E::TokenInvalid(msg) => AppError::from(LibvirtError::Forbidden(msg)),
-        E::DiscoveryFetch(msg) => AppError::from(LibvirtError::Operation(format!("Fetch OIDC discovery: {msg}"))),
-        E::DiscoveryDecode(msg) => {
-            AppError::from(LibvirtError::Operation(format!("Decode OIDC discovery document: {msg}")))
+        E::DiscoveryInvalid(msg) | E::TokenInvalid(msg) => {
+            AppError::from(LibvirtError::Forbidden(msg))
         }
-        E::JwksFetch(msg) => AppError::from(LibvirtError::Operation(format!("Fetch OIDC JWKS: {msg}"))),
-        E::JwksDecode(msg) => AppError::from(LibvirtError::Operation(format!("Decode OIDC JWKS: {msg}"))),
+        E::DiscoveryFetch(msg) => AppError::from(LibvirtError::Operation(format!(
+            "Fetch OIDC discovery: {msg}"
+        ))),
+        E::DiscoveryDecode(msg) => AppError::from(LibvirtError::Operation(format!(
+            "Decode OIDC discovery document: {msg}"
+        ))),
+        E::JwksFetch(msg) => {
+            AppError::from(LibvirtError::Operation(format!("Fetch OIDC JWKS: {msg}")))
+        }
+        E::JwksDecode(msg) => {
+            AppError::from(LibvirtError::Operation(format!("Decode OIDC JWKS: {msg}")))
+        }
     }
 }
 
@@ -580,7 +594,9 @@ fn oidc_http_client() -> Result<reqwest::Client, AppError> {
 /// `require_https: false` — this daemon has never enforced an HTTPS-only issuer
 /// (needed for internal/test IdPs), unlike the controller's OIDC flow which does.
 /// Preserved as-is rather than silently tightened as part of sharing this code.
-async fn fetch_oidc_discovery(cfg: &OidcConfig) -> Result<machina_core::oidc::OidcDiscoveryDocument, AppError> {
+async fn fetch_oidc_discovery(
+    cfg: &OidcConfig,
+) -> Result<machina_core::oidc::OidcDiscoveryDocument, AppError> {
     let client = oidc_http_client()?;
     machina_core::oidc::fetch_discovery(&client, &cfg.issuer_url, false)
         .await
@@ -589,7 +605,9 @@ async fn fetch_oidc_discovery(cfg: &OidcConfig) -> Result<machina_core::oidc::Oi
 
 async fn fetch_oidc_jwks(url: &str) -> Result<JwkSet, AppError> {
     let client = oidc_http_client()?;
-    machina_core::oidc::fetch_jwks(&client, url).await.map_err(oidc_error_to_app_error)
+    machina_core::oidc::fetch_jwks(&client, url)
+        .await
+        .map_err(oidc_error_to_app_error)
 }
 
 fn resolve_effective_linux_user(
@@ -768,7 +786,11 @@ pub async fn auth_middleware(
     let path = req.uri().path();
 
     // Public endpoints (paths after nest stripping of /api/v1 or /ws/v1)
-    if path == "/health" || path == "/license" || path == "/openapi.json" || path.starts_with("/auth/") {
+    if path == "/health"
+        || path == "/license"
+        || path == "/openapi.json"
+        || path.starts_with("/auth/")
+    {
         return next.run(req).await;
     }
 
@@ -844,7 +866,10 @@ pub async fn ws_auth_middleware(
     // Platform VNC/serial use controller-issued tokens; machina-controller validates them.
     // The WS routes are nested at /ws/v1, so the full path is /ws/v1/platform/vnc/... or
     // /ws/v1/platform/serial/... — match either prefix to accommodate future re-nesting.
-    if path.contains("/platform/vnc/") || path.contains("/platform/serial/") || path.contains("/platform/spice/") {
+    if path.contains("/platform/vnc/")
+        || path.contains("/platform/serial/")
+        || path.contains("/platform/spice/")
+    {
         return next.run(req).await;
     }
 

@@ -41,7 +41,10 @@ fn reconcile_action(desired: &str, observed: &str) -> Option<&'static str> {
     if desired == "running" && observed == "paused" {
         Some("resume")
     } else if desired == "running"
-        && !matches!(observed, "running" | "blocked" | "pmsuspended" | "shutting down")
+        && !matches!(
+            observed,
+            "running" | "blocked" | "pmsuspended" | "shutting down"
+        )
     {
         Some("start")
     } else if desired == "stopped"

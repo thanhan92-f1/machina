@@ -91,13 +91,15 @@ pub async fn create_security_group(
         None => default_project_id(&state.pool).await?,
     };
     let id = Uuid::new_v4();
-    sqlx::query("INSERT INTO security_groups (id, project_id, name, description) VALUES (?, ?, ?, ?)")
-        .bind(id)
-        .bind(project_id)
-        .bind(&body.name)
-        .bind(&body.description)
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO security_groups (id, project_id, name, description) VALUES (?, ?, ?, ?)",
+    )
+    .bind(id)
+    .bind(project_id)
+    .bind(&body.name)
+    .bind(&body.description)
+    .execute(&state.pool)
+    .await?;
     Ok(Json(SecurityGroupRow {
         id,
         project_id: Some(project_id),
@@ -113,7 +115,10 @@ pub async fn delete_security_group(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    sqlx::query("DELETE FROM security_groups WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM security_groups WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }
 
@@ -206,7 +211,10 @@ pub async fn delete_security_group_rule(
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    sqlx::query("DELETE FROM security_group_rules WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM security_group_rules WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }
 
@@ -305,7 +313,10 @@ pub async fn create_port(
             State(state.clone()),
             Extension(actor.clone()),
             Path(vm_id),
-            Json(vms::AttachNicBody { network: network_name.clone(), model: "virtio".into() }),
+            Json(vms::AttachNicBody {
+                network: network_name.clone(),
+                model: "virtio".into(),
+            }),
         )
         .await?;
         crate::api::volumes::wait_for_task(&state.pool, &task.0.task_id).await?;
@@ -317,7 +328,12 @@ pub async fn create_port(
         // key off instead — narrowing this needs a deeper agent-side change, not
         // something to paper over here.
         let nics = vms::list_vm_nics(State(state.clone()), Path(vm_id)).await?;
-        mac_address = nics.0.iter().rev().find(|n| n.network == network_name).map(|n| n.mac_address.clone());
+        mac_address = nics
+            .0
+            .iter()
+            .rev()
+            .find(|n| n.network == network_name)
+            .map(|n| n.mac_address.clone());
         status = "ACTIVE";
     }
 
@@ -361,9 +377,13 @@ pub async fn delete_port(
         return Err(ApiError::not_found("port not found"));
     };
     if let (Some(vm_id), Some(mac)) = (vm_id, mac_address) {
-        let task = vms::detach_vm_nic(State(state.clone()), Extension(actor), Path((vm_id, mac))).await?;
+        let task =
+            vms::detach_vm_nic(State(state.clone()), Extension(actor), Path((vm_id, mac))).await?;
         crate::api::volumes::wait_for_task(&state.pool, &task.0.task_id).await?;
     }
-    sqlx::query("DELETE FROM ports WHERE id = ?").bind(id).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM ports WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
     Ok(Json(serde_json::json!({ "deleted": true })))
 }

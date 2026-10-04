@@ -28,7 +28,13 @@ pub struct FleetShortcutsOverview {
 }
 
 pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetShortcutsOverview> {
-    let rows: Vec<(Uuid, String, String, serde_json::Value, sqlx::types::Json<Vec<Uuid>>)> = sqlx::query_as(
+    let rows: Vec<(
+        Uuid,
+        String,
+        String,
+        serde_json::Value,
+        sqlx::types::Json<Vec<Uuid>>,
+    )> = sqlx::query_as(
         "SELECT id, name, description, actions, vm_ids FROM blueprints ORDER BY name",
     )
     .fetch_all(pool)

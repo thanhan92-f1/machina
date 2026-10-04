@@ -23,22 +23,82 @@ enum Hook {
 
 const HOOKS: &[(u32, &str, Hook)] = &[
     (VMI_F_FLIGHT, "mn_vmi_kvm_exit", Hook::Tp("kvm", "kvm_exit")),
-    (VMI_F_FLIGHT, "mn_vmi_wakeup", Hook::Tp("sched", "sched_wakeup")),
-    (VMI_F_FLIGHT, "mn_vmi_switch", Hook::Tp("sched", "sched_switch")),
-    (VMI_F_FLIGHT, "mn_vmi_migrate", Hook::Tp("sched", "sched_migrate_task")),
-    (VMI_F_IO, "mn_vmi_blk_start", Hook::Tp("block", "block_bio_queue")),
-    (VMI_F_IO, "mn_vmi_blk_done", Hook::Tp("block", "block_rq_complete")),
-    (VMI_F_IO, "mn_vmi_vhost_work", Hook::Kp(&["vhost_vq_work_queue", "vhost_work_queue"])),
-    (VMI_F_IO, "mn_vmi_vhost_kick", Hook::Kp(&["vhost_poll_wakeup"])),
-    (VMI_F_FLIGHT | VMI_F_MEM, "mn_vmi_kvm_entry", Hook::Tp("kvm", "kvm_entry")),
+    (
+        VMI_F_FLIGHT,
+        "mn_vmi_wakeup",
+        Hook::Tp("sched", "sched_wakeup"),
+    ),
+    (
+        VMI_F_FLIGHT,
+        "mn_vmi_switch",
+        Hook::Tp("sched", "sched_switch"),
+    ),
+    (
+        VMI_F_FLIGHT,
+        "mn_vmi_migrate",
+        Hook::Tp("sched", "sched_migrate_task"),
+    ),
+    (
+        VMI_F_IO,
+        "mn_vmi_blk_start",
+        Hook::Tp("block", "block_bio_queue"),
+    ),
+    (
+        VMI_F_IO,
+        "mn_vmi_blk_done",
+        Hook::Tp("block", "block_rq_complete"),
+    ),
+    (
+        VMI_F_IO,
+        "mn_vmi_vhost_work",
+        Hook::Kp(&["vhost_vq_work_queue", "vhost_work_queue"]),
+    ),
+    (
+        VMI_F_IO,
+        "mn_vmi_vhost_kick",
+        Hook::Kp(&["vhost_poll_wakeup"]),
+    ),
+    (
+        VMI_F_FLIGHT | VMI_F_MEM,
+        "mn_vmi_kvm_entry",
+        Hook::Tp("kvm", "kvm_entry"),
+    ),
     (VMI_F_MEM, "mn_vmi_fault", Hook::Kp(&["handle_mm_fault"])),
-    (VMI_F_MEM, "mn_vmi_fault_ret", Hook::Kp(&["handle_mm_fault"])),
-    (VMI_F_MEM, "mn_vmi_reclaim_begin", Hook::Tp("vmscan", "mm_vmscan_direct_reclaim_begin")),
-    (VMI_F_MEM, "mn_vmi_reclaim_end", Hook::Tp("vmscan", "mm_vmscan_direct_reclaim_end")),
-    (VMI_F_TOPO, "mn_vmi_irq_entry", Hook::Tp("irq", "irq_handler_entry")),
-    (VMI_F_TOPO, "mn_vmi_irq_exit", Hook::Tp("irq", "irq_handler_exit")),
-    (VMI_F_TOPO, "mn_vmi_softirq_entry", Hook::Tp("irq", "softirq_entry")),
-    (VMI_F_TOPO, "mn_vmi_softirq_exit", Hook::Tp("irq", "softirq_exit")),
+    (
+        VMI_F_MEM,
+        "mn_vmi_fault_ret",
+        Hook::Kp(&["handle_mm_fault"]),
+    ),
+    (
+        VMI_F_MEM,
+        "mn_vmi_reclaim_begin",
+        Hook::Tp("vmscan", "mm_vmscan_direct_reclaim_begin"),
+    ),
+    (
+        VMI_F_MEM,
+        "mn_vmi_reclaim_end",
+        Hook::Tp("vmscan", "mm_vmscan_direct_reclaim_end"),
+    ),
+    (
+        VMI_F_TOPO,
+        "mn_vmi_irq_entry",
+        Hook::Tp("irq", "irq_handler_entry"),
+    ),
+    (
+        VMI_F_TOPO,
+        "mn_vmi_irq_exit",
+        Hook::Tp("irq", "irq_handler_exit"),
+    ),
+    (
+        VMI_F_TOPO,
+        "mn_vmi_softirq_entry",
+        Hook::Tp("irq", "softirq_entry"),
+    ),
+    (
+        VMI_F_TOPO,
+        "mn_vmi_softirq_exit",
+        Hook::Tp("irq", "softirq_exit"),
+    ),
 ];
 
 #[derive(Default)]
@@ -73,15 +133,22 @@ fn read_ids(path: &Path) -> Vec<u32> {
 
 fn tgid_of(tid: u32) -> Option<u32> {
     let s = std::fs::read_to_string(format!("/proc/{tid}/status")).ok()?;
-    s.lines().find_map(|l| l.strip_prefix("Tgid:")).and_then(|v| v.trim().parse().ok())
+    s.lines()
+        .find_map(|l| l.strip_prefix("Tgid:"))
+        .and_then(|v| v.trim().parse().ok())
 }
 
 /// Walk a cgroup subtree: cgroup ids (directory inodes) and every thread.
 pub(super) fn discover(rel: &str) -> Found {
-    let mut f = Found { cgroup: rel.to_string(), ..Default::default() };
+    let mut f = Found {
+        cgroup: rel.to_string(),
+        ..Default::default()
+    };
     let mut stack = vec![Path::new(attribution::CGROUP_ROOT).join(rel)];
     while let Some(dir) = stack.pop() {
-        let Ok(md) = std::fs::metadata(&dir) else { continue };
+        let Ok(md) = std::fs::metadata(&dir) else {
+            continue;
+        };
         f.cgroup_ids.push(md.ino());
         for tid in read_ids(&dir.join("cgroup.threads")) {
             let Some(tgid) = tgid_of(tid) else { continue };
@@ -90,7 +157,11 @@ pub(super) fn discover(rel: &str) -> Found {
             f.threads.push((tid, tgid, vmintel::vcpu_index(&comm)));
         }
         if let Ok(rd) = std::fs::read_dir(&dir) {
-            stack.extend(rd.flatten().filter(|e| e.file_type().is_ok_and(|t| t.is_dir())).map(|e| e.path()));
+            stack.extend(
+                rd.flatten()
+                    .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+                    .map(|e| e.path()),
+            );
         }
     }
     f
@@ -98,9 +169,19 @@ pub(super) fn discover(rel: &str) -> Found {
 
 fn tp_offsets(root: Option<&Path>) -> (VmiCfg, HashMap<u32, String>) {
     let mut c = VmiCfg::default();
-    let Some(root) = root else { return (c, HashMap::new()) };
-    let read = |cat: &str, ev: &str| std::fs::read_to_string(root.join("events").join(cat).join(ev).join("format")).unwrap_or_default();
-    let off = |text: &str, f: &str| tracefs::parse_format(text).get(f).map(|x| x.offset).unwrap_or(0);
+    let Some(root) = root else {
+        return (c, HashMap::new());
+    };
+    let read = |cat: &str, ev: &str| {
+        std::fs::read_to_string(root.join("events").join(cat).join(ev).join("format"))
+            .unwrap_or_default()
+    };
+    let off = |text: &str, f: &str| {
+        tracefs::parse_format(text)
+            .get(f)
+            .map(|x| x.offset)
+            .unwrap_or(0)
+    };
     let exit = read("kvm", "kvm_exit");
     c.off_exit_reason = off(&exit, "exit_reason");
     c.off_wakeup_pid = off(&read("sched", "sched_wakeup"), "pid");
@@ -133,8 +214,15 @@ impl Engine {
             return Err(anyhow!("at most {MAX_EXTRA} extra targets"));
         }
         for t in &cfg.extra {
-            if t.name.is_empty() || t.cgroup.contains("..") || !Path::new(attribution::CGROUP_ROOT).join(&t.cgroup).is_dir() {
-                return Err(anyhow!("extra target `{}`: cgroup `{}` not found under /sys/fs/cgroup", t.name, t.cgroup));
+            if t.name.is_empty()
+                || t.cgroup.contains("..")
+                || !Path::new(attribution::CGROUP_ROOT).join(&t.cgroup).is_dir()
+            {
+                return Err(anyhow!(
+                    "extra target `{}`: cgroup `{}` not found under /sys/fs/cgroup",
+                    t.name,
+                    t.cgroup
+                ));
             }
         }
         let was = self.vmi.config.enabled;
@@ -178,7 +266,10 @@ impl Engine {
     }
 
     fn vmi_clear_stats(&mut self) {
-        let keys = self.dp.percpu_sum::<VmiKey, u64>("VMI_HIST", |a, b| *a += *b).unwrap_or_default();
+        let keys = self
+            .dp
+            .percpu_sum::<VmiKey, u64>("VMI_HIST", |a, b| *a += *b)
+            .unwrap_or_default();
         for (k, _) in keys {
             self.dp.percpu_remove::<VmiKey, u64>("VMI_HIST", &k);
         }
@@ -189,7 +280,11 @@ impl Engine {
         if !self.vmi.config.enabled && self.vmi.tracked.is_empty() {
             return;
         }
-        if self.vmi.last_refresh.is_some_and(|t| t.elapsed() < REFRESH_EVERY) {
+        if self
+            .vmi
+            .last_refresh
+            .is_some_and(|t| t.elapsed() < REFRESH_EVERY)
+        {
             return;
         }
         self.vmi_refresh_now();
@@ -198,15 +293,23 @@ impl Engine {
     /// Re-discover tracked VMs and sync the tracking maps (emptied when off).
     pub(super) fn vmi_refresh_now(&mut self) {
         self.vmi.last_refresh = Some(Instant::now());
-        let mut targets: BTreeMap<String, String> =
-            if self.vmi.config.enabled { super::vm::qemu_scopes() } else { BTreeMap::new() };
+        let mut targets: BTreeMap<String, String> = if self.vmi.config.enabled {
+            super::vm::qemu_scopes()
+        } else {
+            BTreeMap::new()
+        };
         if self.vmi.config.enabled {
             for t in &self.vmi.config.extra {
                 targets.insert(t.name.clone(), t.cgroup.clone());
             }
         }
         // vCPU threads learned in the kernel on kvm_entry (unnamed threads).
-        let learned: HashMap<u32, VmiThread> = self.dp.hash_entries::<u32, VmiThread>("VMI_TIDS").unwrap_or_default().into_iter().collect();
+        let learned: HashMap<u32, VmiThread> = self
+            .dp
+            .hash_entries::<u32, VmiThread>("VMI_TIDS")
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
         self.vmi.in_tids.extend(learned.keys().copied());
         let (mut tgids, mut tids, mut cgs) = (HashMap::new(), HashMap::new(), HashMap::new());
         let mut tracked = BTreeMap::new();
@@ -221,7 +324,10 @@ impl Engine {
             };
             let mut f = discover(&rel);
             for t in f.threads.iter_mut().filter(|t| t.2.is_none()) {
-                if let Some(l) = learned.get(&t.0).filter(|l| l.vm == key && l.vcpu != u32::MAX) {
+                if let Some(l) = learned
+                    .get(&t.0)
+                    .filter(|l| l.vm == key && l.vcpu != u32::MAX)
+                {
                     t.2 = Some(l.vcpu);
                 }
             }
@@ -232,10 +338,21 @@ impl Engine {
                 tgids.insert(*t, key);
             }
             for (tid, _, vcpu) in &f.threads {
-                tids.insert(*tid, VmiThread { vm: key, vcpu: vcpu.unwrap_or(u32::MAX) });
+                tids.insert(
+                    *tid,
+                    VmiThread {
+                        vm: key,
+                        vcpu: vcpu.unwrap_or(u32::MAX),
+                    },
+                );
             }
             // Main process = the tgid owning the vCPU threads (else any).
-            let main = f.threads.iter().find(|t| t.2.is_some()).map(|t| t.1).or_else(|| f.tgids.iter().min().copied());
+            let main = f
+                .threads
+                .iter()
+                .find(|t| t.2.is_some())
+                .map(|t| t.1)
+                .or_else(|| f.tgids.iter().min().copied());
             if let Some(start) = main
                 .and_then(|p| std::fs::read_to_string(format!("/proc/{p}/stat")).ok())
                 .and_then(|s| vmintel::stat_starttime(&s))
@@ -260,10 +377,16 @@ impl Engine {
     }
 
     pub(super) fn vmi_status(&mut self) -> VmIntelStatus {
-        let hist = self.dp.percpu_sum::<VmiKey, u64>("VMI_HIST", |a, b| *a += *b).unwrap_or_default();
+        let hist = self
+            .dp
+            .percpu_sum::<VmiKey, u64>("VMI_HIST", |a, b| *a += *b)
+            .unwrap_or_default();
         let mut cpus: BTreeMap<u32, VmIntelCpu> = BTreeMap::new();
         for (k, v) in hist.iter().filter(|(k, _)| k.vm == 0) {
-            let e = cpus.entry(k.slot as u32).or_insert_with(|| VmIntelCpu { cpu: k.slot as u32, ..Default::default() });
+            let e = cpus.entry(k.slot as u32).or_insert_with(|| VmIntelCpu {
+                cpu: k.slot as u32,
+                ..Default::default()
+            });
             match k.kind {
                 vmi_kind::IRQ => e.irq_ns += v,
                 vmi_kind::SOFTIRQ => e.softirq_ns += v,
@@ -273,7 +396,16 @@ impl Engine {
         let prefixes: Vec<&str> = HOOKS.iter().map(|(_, p, _)| *p).collect();
         VmIntelStatus {
             config: self.vmi.config.clone(),
-            hooks: self.dp.traces().into_iter().filter(|t| prefixes.iter().any(|p| t == p || t.starts_with(&format!("{p}@")))).collect(),
+            hooks: self
+                .dp
+                .traces()
+                .into_iter()
+                .filter(|t| {
+                    prefixes
+                        .iter()
+                        .any(|p| t == p || t.starts_with(&format!("{p}@")))
+                })
+                .collect(),
             vms: self.vmi.tracked.values().cloned().collect(),
             cpus: cpus.into_values().collect(),
             notes: self.vmi.notes.clone(),
@@ -281,21 +413,36 @@ impl Engine {
     }
 
     pub(super) fn vmi_vm(&mut self, name: &str) -> Result<VmIntelReport> {
-        let key = *self.vmi.keys.get(name).ok_or_else(|| anyhow!("VM {name} is not tracked (is VM runtime intelligence enabled?)"))?;
-        let hist = self.dp.percpu_sum::<VmiKey, u64>("VMI_HIST", |a, b| *a += *b)?;
+        let key = *self.vmi.keys.get(name).ok_or_else(|| {
+            anyhow!("VM {name} is not tracked (is VM runtime intelligence enabled?)")
+        })?;
+        let hist = self
+            .dp
+            .percpu_sum::<VmiKey, u64>("VMI_HIST", |a, b| *a += *b)?;
         let mut slots: HashMap<u16, Vec<(u16, u64)>> = HashMap::new();
-        let mut r = VmIntelReport { name: name.to_string(), ..Default::default() };
+        let mut r = VmIntelReport {
+            name: name.to_string(),
+            ..Default::default()
+        };
         for (k, v) in hist.into_iter().filter(|(k, _)| k.vm == key) {
             match k.kind {
                 vmi_kind::EXIT => r.exits.push(VmIntelExit {
                     reason: k.slot as u32,
-                    name: self.vmi.exit_names.get(&(k.slot as u32)).cloned().unwrap_or_else(|| format!("reason {}", k.slot)),
+                    name: self
+                        .vmi
+                        .exit_names
+                        .get(&(k.slot as u32))
+                        .cloned()
+                        .unwrap_or_else(|| format!("reason {}", k.slot)),
                     count: v,
                 }),
                 vmi_kind::VHOST_WORK => r.vhost_work += v,
                 vmi_kind::VHOST_KICK => r.vhost_kicks += v,
                 vmi_kind::MIGRATE => r.migrations += v,
-                vmi_kind::RESIDENCY => r.residency.push(VmIntelResidency { cpu: k.slot as u32, ns: v }),
+                vmi_kind::RESIDENCY => r.residency.push(VmIntelResidency {
+                    cpu: k.slot as u32,
+                    ns: v,
+                }),
                 kind => slots.entry(kind).or_default().push((k.slot, v)),
             }
         }
@@ -306,7 +453,12 @@ impl Engine {
         r.block = h(vmi_kind::BLK);
         r.fault = h(vmi_kind::FAULT);
         r.reclaim = h(vmi_kind::RECLAIM);
-        let boot: HashMap<u32, u64> = self.dp.hash_entries::<u32, u64>("VMI_BOOT").unwrap_or_default().into_iter().collect();
+        let boot: HashMap<u32, u64> = self
+            .dp
+            .hash_entries::<u32, u64>("VMI_BOOT")
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
         let tck = unsafe { libc::sysconf(libc::_SC_CLK_TCK) }.max(0) as u64;
         r.boot_to_first_entry_ms = boot
             .get(&key)
@@ -317,7 +469,12 @@ impl Engine {
 }
 
 /// Make a tracking map hold exactly `want`.
-fn sync<K: Pod + Eq + std::hash::Hash, V: Pod>(dp: &mut Datapath, map: &str, have: &mut HashSet<K>, want: &HashMap<K, V>) {
+fn sync<K: Pod + Eq + std::hash::Hash, V: Pod>(
+    dp: &mut Datapath,
+    map: &str,
+    have: &mut HashSet<K>,
+    want: &HashMap<K, V>,
+) {
     for k in have.iter().filter(|k| !want.contains_key(k)) {
         dp.cni_hash_remove::<K, V>(map, k);
     }

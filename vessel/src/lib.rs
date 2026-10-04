@@ -25,7 +25,10 @@ mod connect_smoke {
         match crate::VesselClient::connect_local(None).await {
             Ok(c) => {
                 let info = c.host_info().await.expect("host_info");
-                eprintln!("connected engine={:?} version={}", info.engine, info.version);
+                eprintln!(
+                    "connected engine={:?} version={}",
+                    info.engine, info.version
+                );
                 let list = c.list_containers(true).await.expect("list");
                 eprintln!("containers={}", list.len());
                 if c.capabilities().pods {

@@ -31,13 +31,20 @@ fn resolve_ports(cfg: &L7SampleConfig) -> Result<Vec<(u16, u8)>> {
         return Err(anyhow!("at most {MAX_PORTS} ports"));
     }
     if cfg.ports.is_empty() {
-        return Ok(l7sample::DEFAULT_PORTS.iter().map(|(p, n)| (*p, l7sample::proto_id(n).expect("known"))).collect());
+        return Ok(l7sample::DEFAULT_PORTS
+            .iter()
+            .map(|(p, n)| (*p, l7sample::proto_id(n).expect("known")))
+            .collect());
     }
     cfg.ports
         .iter()
         .map(|p| {
-            let id = l7sample::proto_id(&p.protocol)
-                .ok_or_else(|| anyhow!("port {}: protocol must be redis, postgres, mysql, kafka or http2", p.port))?;
+            let id = l7sample::proto_id(&p.protocol).ok_or_else(|| {
+                anyhow!(
+                    "port {}: protocol must be redis, postgres, mysql, kafka or http2",
+                    p.port
+                )
+            })?;
             if p.port == 0 {
                 return Err(anyhow!("port 0 is not a service port"));
             }
@@ -64,7 +71,11 @@ impl Engine {
         self.dp.array_set(
             "L7S_CFG",
             0,
-            L7sCfg { enabled: cfg.enabled as u32, rate: cfg.rate, flow_gap_ns: cfg.flow_gap_ms.saturating_mul(1_000_000) },
+            L7sCfg {
+                enabled: cfg.enabled as u32,
+                rate: cfg.rate,
+                flow_gap_ns: cfg.flow_gap_ms.saturating_mul(1_000_000),
+            },
         )?;
         self.l7s.note = None;
         if cfg.enabled && !self.l7s.config.enabled {
@@ -74,10 +85,17 @@ impl Engine {
             let cg = std::env::var_os("MACHINA_BPF_L7S_CGROUP")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from(attribution::CGROUP_ROOT));
-            if self.dp.cgroup_tagged(TAG).is_some_and(|c| Path::new(&c) != cg) {
+            if self
+                .dp
+                .cgroup_tagged(TAG)
+                .is_some_and(|c| Path::new(&c) != cg)
+            {
                 self.dp.detach_cgroup_tag(TAG);
             }
-            if let Err(e) = self.dp.attach_cgroup_skb_tagged(&cg, TAG, "mn_l7s_ingress", "mn_l7s_egress") {
+            if let Err(e) =
+                self.dp
+                    .attach_cgroup_skb_tagged(&cg, TAG, "mn_l7s_ingress", "mn_l7s_egress")
+            {
                 let n = format!("l7 sampling unavailable: {e:#}");
                 self.l7s.note = Some(n.clone());
                 self.l7s.config = cfg;
@@ -91,7 +109,11 @@ impl Engine {
     }
 
     pub(super) fn l7s_status(&mut self) -> L7SampleStatus {
-        let mut sum = |i| self.dp.percpu_array_sum::<u64>("L7S_STATS", i, |a, b| *a += *b).unwrap_or(0);
+        let mut sum = |i| {
+            self.dp
+                .percpu_array_sum::<u64>("L7S_STATS", i, |a, b| *a += *b)
+                .unwrap_or(0)
+        };
         let (eligible, emitted, rate_limited, ringbuf_full, load_fail) = (
             sum(L7S_STAT_ELIGIBLE),
             sum(L7S_STAT_EMITTED),
@@ -105,7 +127,11 @@ impl Engine {
                 .l7s
                 .ops
                 .iter()
-                .map(|((protocol, op), n)| L7SampleOp { protocol: protocol.clone(), op: op.clone(), count: *n })
+                .map(|((protocol, op), n)| L7SampleOp {
+                    protocol: protocol.clone(),
+                    op: op.clone(),
+                    count: *n,
+                })
                 .collect();
             top.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.op.cmp(&b.op)));
             top.truncate(TOP_OPS);
@@ -141,7 +167,10 @@ pub(super) fn on_l7s(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: 
             s.l7s.undecoded += 1;
             return;
         };
-        *s.l7s.ops.entry((protocol.clone(), d.op.clone())).or_default() += 1;
+        *s.l7s
+            .ops
+            .entry((protocol.clone(), d.op.clone()))
+            .or_default() += 1;
         // Client is whichever side owns the ephemeral port.
         let (client, cport, server, sport) = if to_server {
             (fmt_addr(&ev.src), ev.sport, fmt_addr(&ev.dst), ev.dport)
@@ -160,7 +189,11 @@ pub(super) fn on_l7s(sh: &SharedState, bus: &broadcast::Sender<StreamEvent>, b: 
             client_port: cport,
             server,
             server_port: sport,
-            method: Some(if to_server { d.op } else { format!("reply {}", d.op) }),
+            method: Some(if to_server {
+                d.op
+            } else {
+                format!("reply {}", d.op)
+            }),
             path: d.detail,
             ..L7Record::default()
         };
@@ -178,10 +211,25 @@ mod tests {
     fn ports_default_and_validate() {
         let c = L7SampleConfig::default();
         assert!(!c.enabled);
-        assert_eq!(resolve_ports(&c).unwrap().len(), l7sample::DEFAULT_PORTS.len());
-        let bad = L7SampleConfig { ports: vec![L7SamplePort { port: 1, protocol: "smtp".into() }], ..c.clone() };
+        assert_eq!(
+            resolve_ports(&c).unwrap().len(),
+            l7sample::DEFAULT_PORTS.len()
+        );
+        let bad = L7SampleConfig {
+            ports: vec![L7SamplePort {
+                port: 1,
+                protocol: "smtp".into(),
+            }],
+            ..c.clone()
+        };
         assert!(resolve_ports(&bad).is_err());
-        let ok = L7SampleConfig { ports: vec![L7SamplePort { port: 6380, protocol: "Redis".into() }], ..c };
+        let ok = L7SampleConfig {
+            ports: vec![L7SamplePort {
+                port: 6380,
+                protocol: "Redis".into(),
+            }],
+            ..c
+        };
         assert_eq!(resolve_ports(&ok).unwrap(), vec![(6380, L7S_REDIS)]);
     }
 }

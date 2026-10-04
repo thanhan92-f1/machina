@@ -96,9 +96,8 @@ pub fn detach_pci_hostdev(
 
     // Same async-completion caveat as disk/NIC detach: VFIO hot-unplug also needs the
     // guest to release the device before it actually leaves the live domain.
-    let source_addr = format!(
-        "domain='0x{pci_domain}' bus='0x{bus}' slot='0x{slot}' function='0x{function}'"
-    );
+    let source_addr =
+        format!("domain='0x{pci_domain}' bus='0x{bus}' slot='0x{slot}' function='0x{function}'");
     let is_running = dom.is_active().unwrap_or(false);
     let live_removed = if is_running {
         wait_until_absent_from_live(&dom, DETACH_LIVE_WAIT, |live_xml| {

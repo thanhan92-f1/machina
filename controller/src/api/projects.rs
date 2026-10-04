@@ -94,7 +94,12 @@ pub async fn create_project(
         .bind(&body.description)
         .execute(&state.pool)
         .await?;
-    Ok(Json(ProjectRegistryRow { id, name: body.name, description: body.description, enabled: true }))
+    Ok(Json(ProjectRegistryRow {
+        id,
+        name: body.name,
+        description: body.description,
+        enabled: true,
+    }))
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -142,7 +147,9 @@ pub async fn add_project_member(
 ) -> Result<Json<ProjectMemberRow>, ApiError> {
     require_admin(&actor)?;
     if !matches!(body.role.as_str(), "admin" | "operator" | "viewer") {
-        return Err(ApiError::bad_request("role must be admin, operator, or viewer"));
+        return Err(ApiError::bad_request(
+            "role must be admin, operator, or viewer",
+        ));
     }
     sqlx::query(
         "INSERT OR IGNORE INTO project_role_assignments (id, user_id, project_id, role) VALUES (?, ?, ?, ?)",
@@ -157,7 +164,11 @@ pub async fn add_project_member(
         .bind(body.user_id)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(ProjectMemberRow { user_id: body.user_id, username, role: body.role }))
+    Ok(Json(ProjectMemberRow {
+        user_id: body.user_id,
+        username,
+        role: body.role,
+    }))
 }
 
 pub async fn remove_project_member(

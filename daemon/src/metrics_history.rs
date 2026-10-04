@@ -18,7 +18,6 @@ use tokio_util::sync::CancellationToken;
 
 use crate::obs_reload::observability_reload_generation;
 
-
 #[derive(Clone)]
 pub struct MetricsHistoryStore {
     inner: Arc<Mutex<VecDeque<MetricsHistoryPoint>>>,

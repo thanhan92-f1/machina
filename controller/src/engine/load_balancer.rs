@@ -26,13 +26,16 @@ struct LoadBalancerRow {
 /// resulting status. Returns the failure so the caller can decide whether to surface it
 /// (e.g. reject the mutation that triggered this) or just let the row show `status=error`.
 pub async fn apply(pool: &SqlitePool, cfg: &ControllerConfig, lb_id: Uuid) -> anyhow::Result<()> {
-    let (host_id, protocol, listener_port): (Uuid, String, i64) = sqlx::query_as(
-        "SELECT host_id, protocol, listener_port FROM load_balancers WHERE id = ?",
-    )
-    .bind(lb_id)
-    .fetch_one(pool)
-    .await?;
-    let lb = LoadBalancerRow { host_id, protocol, listener_port };
+    let (host_id, protocol, listener_port): (Uuid, String, i64) =
+        sqlx::query_as("SELECT host_id, protocol, listener_port FROM load_balancers WHERE id = ?")
+            .bind(lb_id)
+            .fetch_one(pool)
+            .await?;
+    let lb = LoadBalancerRow {
+        host_id,
+        protocol,
+        listener_port,
+    };
 
     let members: Vec<(String, i64, i64)> = sqlx::query_as(
         "SELECT v.guest_ip, m.port, m.weight
@@ -72,17 +75,21 @@ pub async fn apply(pool: &SqlitePool, cfg: &ControllerConfig, lb_id: Uuid) -> an
 
     match &result {
         Ok(()) => {
-            sqlx::query("UPDATE load_balancers SET status = 'active', status_message = '' WHERE id = ?")
-                .bind(lb_id)
-                .execute(pool)
-                .await?;
+            sqlx::query(
+                "UPDATE load_balancers SET status = 'active', status_message = '' WHERE id = ?",
+            )
+            .bind(lb_id)
+            .execute(pool)
+            .await?;
         }
         Err(e) => {
-            sqlx::query("UPDATE load_balancers SET status = 'error', status_message = ? WHERE id = ?")
-                .bind(e.to_string())
-                .bind(lb_id)
-                .execute(pool)
-                .await?;
+            sqlx::query(
+                "UPDATE load_balancers SET status = 'error', status_message = ? WHERE id = ?",
+            )
+            .bind(e.to_string())
+            .bind(lb_id)
+            .execute(pool)
+            .await?;
         }
     }
     result
@@ -92,14 +99,19 @@ pub async fn apply(pool: &SqlitePool, cfg: &ControllerConfig, lb_id: Uuid) -> an
 /// Best-effort by design (mirrors `host_network::delete_load_balancer_rules`) -- an
 /// unreachable host shouldn't block deleting the DB row.
 pub async fn teardown(pool: &SqlitePool, cfg: &ControllerConfig, lb_id: Uuid) {
-    let row: Result<(Uuid, String, i64), _> = sqlx::query_as(
-        "SELECT host_id, protocol, listener_port FROM load_balancers WHERE id = ?",
-    )
-    .bind(lb_id)
-    .fetch_one(pool)
-    .await;
-    let Ok((host_id, protocol, listener_port)) = row else { return };
-    let lb = LoadBalancerRow { host_id, protocol, listener_port };
+    let row: Result<(Uuid, String, i64), _> =
+        sqlx::query_as("SELECT host_id, protocol, listener_port FROM load_balancers WHERE id = ?")
+            .bind(lb_id)
+            .fetch_one(pool)
+            .await;
+    let Ok((host_id, protocol, listener_port)) = row else {
+        return;
+    };
+    let lb = LoadBalancerRow {
+        host_id,
+        protocol,
+        listener_port,
+    };
     let Ok((_, agent_addr)) = resolve_agent_addr(pool, cfg, lb.host_id).await else {
         return;
     };

@@ -56,7 +56,9 @@ pub async fn spotlight(
     // substring scans plus NL parsers over the query, so an unbounded body is an
     // asymmetric CPU cost. 32 KiB is far beyond any real spotlight query.
     if body.query.len() > 32_768 {
-        return Err(ApiError::bad_request("spotlight query too long (max 32768 bytes)"));
+        return Err(ApiError::bad_request(
+            "spotlight query too long (max 32768 bytes)",
+        ));
     }
     let online: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM hosts WHERE state = 'online'")
         .fetch_one(&state.pool)
@@ -146,16 +148,17 @@ pub async fn copilot_stream(
     let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, Infallible>>(64);
     if require_operator(&actor).is_err() {
         let (tx1, rx1) = tokio::sync::mpsc::channel::<Result<Event, Infallible>>(1);
-        let _ = tx1.try_send(Ok(Event::default().data(
-            serde_json::json!({"type":"error","message":"Forbidden"}).to_string()
-        )));
-        return Sse::new(ReceiverStream::new(rx1)).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
+        let _ = tx1.try_send(Ok(Event::default()
+            .data(serde_json::json!({"type":"error","message":"Forbidden"}).to_string())));
+        return Sse::new(ReceiverStream::new(rx1))
+            .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
     }
     if body.message.len() > 32_768 {
         let _ = tx.try_send(Ok(Event::default().data(
-            serde_json::json!({"type":"error","message":"message too long"}).to_string()
+            serde_json::json!({"type":"error","message":"message too long"}).to_string(),
         )));
-        return Sse::new(ReceiverStream::new(rx)).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
+        return Sse::new(ReceiverStream::new(rx))
+            .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)));
     }
     let pool = state.pool.clone();
     let config = state.config.clone();
