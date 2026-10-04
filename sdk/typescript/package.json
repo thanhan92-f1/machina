@@ -5,11 +5,14 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^7.0.2"
   }
 }
