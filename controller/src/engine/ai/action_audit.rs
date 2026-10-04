@@ -54,6 +54,15 @@ pub fn undo_kind(action_type: &str, before: &serde_json::Value) -> Option<&'stat
         {
             Some("shutdown_vm")
         }
+        // Only undo "stop" when the machine was running before the action.
+        "stop_vm"
+            if before
+                .get("observed_state")
+                .and_then(|v| v.as_str())
+                .is_some_and(|st| st == "running") =>
+        {
+            Some("start_vm")
+        }
         _ => None,
     }
 }
@@ -175,6 +184,23 @@ async fn check(state: &AppState, action: &ZyraActionRow) -> (&'static str, Strin
                 Some(other) => (
                     "pending",
                     format!("The machine is {other}; it may still be starting."),
+                ),
+                None => ("unknown", "The machine was not found.".into()),
+            }
+        }
+        "stop_vm" => {
+            let s: Option<String> =
+                sqlx::query_scalar("SELECT observed_state FROM vms WHERE id = ?")
+                    .bind(vm_id)
+                    .fetch_optional(&state.pool)
+                    .await
+                    .ok()
+                    .flatten();
+            match s.as_deref() {
+                Some(st) if is_off(st) => ("ok", "The machine is stopped.".into()),
+                Some(other) => (
+                    "pending",
+                    format!("The machine is {other}; it may still be shutting down."),
                 ),
                 None => ("unknown", "The machine was not found.".into()),
             }
@@ -302,6 +328,27 @@ pub async fn undo(
             .await?;
             "High availability turned off again.".to_string()
         }
+        "start_vm" => {
+            let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+                .bind(vm_id)
+                .fetch_optional(&state.pool)
+                .await?
+                .flatten();
+            if host_id.is_none() {
+                return Err(anyhow::anyhow!("VM not found or has no assigned host"));
+            }
+            crate::tasks::enqueue::enqueue_task(
+                state,
+                "vm.start",
+                serde_json::json!({ "vm_id": vm_id.to_string() }),
+                Some("vm"),
+                Some(vm_id),
+                host_id,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?;
+            "Start queued to put the machine back as it was.".to_string()
+        }
         "shutdown_vm" => {
             let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
                 .bind(vm_id)
@@ -349,6 +396,14 @@ pub async fn undo(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn stop_vm_is_undoable_only_when_it_was_running_before() {
+        let running = serde_json::json!({"observed_state": "running"});
+        let off = serde_json::json!({"observed_state": "shutoff"});
+        assert_eq!(undo_kind("stop_vm", &running), Some("start_vm"));
+        assert_eq!(undo_kind("stop_vm", &off), None);
+    }
+
     use super::*;
 
     #[test]

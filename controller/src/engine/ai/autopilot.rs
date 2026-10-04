@@ -306,6 +306,26 @@ pub async fn execute(
             task_ids.push(tid.to_string());
             "Start queued".into()
         }
+        // A clean guest shutdown (never a power-off). Reversible: undo starts it again.
+        "stop_vm" => {
+            let vm_id = parse_vm_id(&body.object_ref)?;
+            let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+                .bind(vm_id)
+                .fetch_optional(&state.pool)
+                .await?
+                .flatten();
+            let tid = crate::tasks::enqueue::enqueue_task(
+                state,
+                "vm.power",
+                serde_json::json!({ "vm_id": vm_id.to_string(), "action": "shutdown" }),
+                Some("vm"),
+                Some(vm_id),
+                host_id,
+            )
+            .await?;
+            task_ids.push(tid.to_string());
+            "Shutdown queued".into()
+        }
         "sync_hosts" => {
             let hosts: Vec<Uuid> =
                 sqlx::query_scalar("SELECT id FROM hosts WHERE state = 'online'")

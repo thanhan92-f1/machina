@@ -132,6 +132,11 @@ fn tool_specs() -> Vec<(&'static str, &'static str, Value)> {
             }),
         ),
         (
+            "find_idle_vms",
+            "Running machines that have been idle for at least a day (CPU average under 5%, never above 25%) with what each costs per month. Read-only.",
+            json!({"type": "object", "properties": {"limit": {"type": "integer", "description": "Maximum rows (default 10, max 25)"}}}),
+        ),
+        (
             "plan_environment",
             "Work out what a described environment would need (machines, CPU, memory, storage, network, backup) and its monthly cost. Read-only: creates nothing.",
             json!({
@@ -146,7 +151,7 @@ fn tool_specs() -> Vec<(&'static str, &'static str, Value)> {
             json!({
                 "type": "object",
                 "properties": {
-                    "action": {"type": "string", "enum": ["start_vm", "enable_ha", "create_backup", "install_guest_tools", "create_environment"]},
+                    "action": {"type": "string", "enum": ["start_vm", "stop_vm", "enable_ha", "create_backup", "install_guest_tools", "create_environment"]},
                     "vm": {"type": "string", "description": "Machine name or id (not used for create_environment)"},
                     "description": {"type": "string", "description": "For create_environment: what to build"},
                     "reason": {"type": "string", "description": "Why this change helps, in one sentence"}
@@ -282,6 +287,16 @@ async fn exec_tool(
                     .collect();
                 Ok(json!({ "events": items }).to_string())
             }
+            "find_idle_vms" => {
+                let limit = arg_limit(&call.args, 10, 25);
+                let idle = super::idle::find(&state.pool, limit as usize).await?;
+                Ok(json!({
+                    "idle": idle,
+                    "total_monthly_usd": (idle.iter().map(|v| v.monthly_usd).sum::<f64>() * 100.0).round() / 100.0,
+                    "note": if idle.is_empty() { "No machine has been idle long enough, or there is not a full day of samples yet." } else { "" }
+                })
+                .to_string())
+            }
             "plan_environment" => {
                 let query = arg_str(&call.args, "description");
                 if query.trim().is_empty() {
@@ -333,14 +348,30 @@ async fn exec_tool(
                 let action = arg_str(&call.args, "action");
                 if !matches!(
                     action.as_str(),
-                    "start_vm" | "enable_ha" | "create_backup" | "install_guest_tools"
+                    "start_vm" | "stop_vm" | "enable_ha" | "create_backup" | "install_guest_tools"
                 ) {
                     anyhow::bail!("unsupported action '{action}'");
                 }
                 let reason = arg_str(&call.args, "reason");
                 let (vm_id, vm_name) = resolve_vm(&state.pool, &arg_str(&call.args, "vm")).await?;
+                // Stopping is only proposed for machines the idle detector agrees about, so the model cannot talk
+                // its way into stopping a busy machine; the saving shown to the approver is computed here.
+                let mut savings_note = String::new();
+                if action == "stop_vm" {
+                    let idle = super::idle::find(&state.pool, 200).await?;
+                    let Some(v) = idle.iter().find(|v| v.vm_id == vm_id.to_string()) else {
+                        anyhow::bail!(
+                            "{vm_name} is not idle (or has under a day of samples), so it will not be proposed for stopping"
+                        );
+                    };
+                    savings_note = format!(
+                        "Idle for {:.0}h (CPU avg {:.1}%, peak {:.1}%) — stopping saves about ${:.2}/month. ",
+                        v.hours_observed, v.avg_cpu_percent, v.peak_cpu_percent, v.monthly_usd
+                    );
+                }
                 let label = match action.as_str() {
                     "start_vm" => format!("Start {vm_name}"),
+                    "stop_vm" => format!("Stop idle machine {vm_name}"),
                     "enable_ha" => format!("Enable high availability on {vm_name}"),
                     "create_backup" => format!("Back up {vm_name}"),
                     _ => format!("Install the guest agent on {vm_name}"),
@@ -350,7 +381,7 @@ async fn exec_tool(
                     &CreateActionBody {
                         action_type: action.clone(),
                         label,
-                        review: truncate(&reason, 400),
+                        review: truncate(&format!("{savings_note}{reason}"), 400),
                         // Never "Low": agent proposals must always wait for a human, even in autopilot mode.
                         risk: "Review required".into(),
                         object_ref: json!({ "vm_id": vm_id.to_string() }),

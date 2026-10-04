@@ -186,6 +186,7 @@ pub async fn approve_and_execute(
 
     let result = match action.action_type.as_str() {
         "start_vm"
+        | "stop_vm"
         | "create_backup"
         | "enable_ha"
         | "install_guest_tools"

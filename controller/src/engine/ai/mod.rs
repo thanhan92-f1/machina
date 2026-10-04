@@ -9,6 +9,7 @@ pub mod action_audit;
 pub mod actions;
 pub mod agent_loop;
 pub mod forecast;
+pub mod idle;
 pub mod trust;
 pub mod agent_marketplace;
 pub mod agents;

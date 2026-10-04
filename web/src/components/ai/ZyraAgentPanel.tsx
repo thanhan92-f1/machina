@@ -16,6 +16,7 @@ const TOOL_LABELS: Record<string, string> = {
   list_vms: 'Looked at machines',
   list_hosts: 'Looked at hosts',
   recent_events: 'Read recent events',
+  find_idle_vms: 'Looked for idle machines',
   plan_environment: 'Planned an environment',
   propose_action: 'Queued a proposal',
 }
