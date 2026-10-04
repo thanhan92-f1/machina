@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 mod ai;
+mod mcp;
 pub mod alerts;
 pub mod apikeys;
 mod applications;
@@ -584,6 +585,9 @@ pub fn router(state: AppState) -> Router {
             post(ai::reject_zyra_action),
         )
         .route("/api/v1/ai/actions/history", get(ai::zyra_action_history))
+        .route("/api/v1/mcp", post(mcp::mcp_post))
+        .route("/api/v1/ai/trust", get(ai::zyra_trust_list))
+        .route("/api/v1/ai/trust/{action_type}", put(ai::zyra_trust_set))
         .route("/api/v1/ai/agent/run", post(ai::run_zyra_agent))
         .route(
             "/api/v1/ai/actions/{id}/verify",

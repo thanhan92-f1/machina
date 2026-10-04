@@ -41,4 +41,27 @@ test.describe('Zyra agent panel', () => {
     await panel.getByText('Is anything unhealthy right now?').click()
     await expect(panel.getByRole('alert')).toContainText('turned off')
   })
+
+  test('trust ladder offers automatic after a streak and saves the change', async ({ page }) => {
+    const rows = [
+      { action_type: 'create_backup', level: 'ask', max_per_run: 3, approved_streak: 6, total_approved: 6, total_rejected: 0, offer: true },
+      { action_type: 'start_vm', level: 'ask', max_per_run: 3, approved_streak: 0, total_approved: 0, total_rejected: 0, offer: false },
+    ]
+    const puts: string[] = []
+    await page.route('**/ai/trust**', async (route) => {
+      if (route.request().method() === 'PUT') {
+        puts.push(`${route.request().url().split('/').pop()} ${route.request().postData()}`)
+        rows[0] = { ...rows[0], level: 'auto', offer: false }
+      }
+      await route.fulfill({ json: rows })
+    })
+    await page.goto('/platform/zyra/approvals')
+    const ladder = page.getByTestId('zyra-trust-ladder')
+    await expect(ladder).toBeVisible({ timeout: 15_000 })
+    await expect(ladder.getByText(/approved this 6 times in a row/)).toBeVisible()
+    await ladder.locator('[data-trust="create_backup"]').getByRole('button', { name: 'Automatic' }).click()
+    await expect(ladder.locator('[data-trust="create_backup"]')).toHaveAttribute('data-level', 'auto')
+    expect(puts[0]).toContain('create_backup')
+    expect(puts[0]).toContain('"level":"auto"')
+  })
 })

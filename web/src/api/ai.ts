@@ -941,6 +941,25 @@ export const verifyZyraAction = (id: string) =>
 export const undoZyraAction = (id: string) =>
   platformFetch<{ message?: string }>(`/api/v1/ai/actions/${encodeURIComponent(id)}/undo`, { method: 'POST' })
 
+/** Trust ladder: per action class, ask a person every time or let autopilot run queued proposals itself. */
+export interface ZyraTrustClass {
+  action_type: string
+  level: 'ask' | 'auto'
+  max_per_run: number
+  approved_streak: number
+  total_approved: number
+  total_rejected: number
+  /** Zyra suggests making this automatic (a long run of approvals). */
+  offer: boolean
+}
+
+export const listZyraTrust = () => platformFetch<ZyraTrustClass[]>('/api/v1/ai/trust')
+export const setZyraTrust = (actionType: string, level: 'ask' | 'auto', maxPerRun?: number) =>
+  platformFetch<ZyraTrustClass[]>(`/api/v1/ai/trust/${encodeURIComponent(actionType)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ level, max_per_run: maxPerRun }),
+  })
+
 export const listAgentMarketplace = () => platformFetch<AgentPluginRow[]>('/api/v1/ai/marketplace/agents')
 export const installAgentMarketplace = (slug: string) =>
   platformFetch<AgentPluginRow>(`/api/v1/ai/marketplace/agents/${encodeURIComponent(slug)}/install`, { method: 'POST' })

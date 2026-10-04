@@ -1822,3 +1822,46 @@ pub async fn memory_changes_before(
         .map_err(|e| ApiError::internal(e.to_string()))
         .map(Json)
 }
+
+pub async fn zyra_trust_list(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Vec<ai::trust::TrustClass>>, ApiError> {
+    require_operator(&actor)?;
+    ai::trust::classes(&state.pool)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))
+        .map(Json)
+}
+
+#[derive(Deserialize)]
+pub struct TrustBody {
+    pub level: String,
+    #[serde(default)]
+    pub max_per_run: Option<i64>,
+}
+
+pub async fn zyra_trust_set(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    axum::extract::Path(action_type): axum::extract::Path<String>,
+    Json(body): Json<TrustBody>,
+) -> Result<Json<Vec<ai::trust::TrustClass>>, ApiError> {
+    crate::auth::require_admin(&actor)?;
+    ai::trust::set_rule(&state.pool, &actor.username, &action_type, &body.level, body.max_per_run)
+        .await
+        .map_err(|e| ApiError::bad_request(e.to_string()))?;
+    crate::tasks::enqueue::write_audit(
+        &state,
+        &actor.username,
+        "ai.trust.set",
+        "ai",
+        None,
+        serde_json::json!({ "action_type": action_type, "level": body.level, "max_per_run": body.max_per_run }),
+    )
+    .await?;
+    ai::trust::classes(&state.pool)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))
+        .map(Json)
+}

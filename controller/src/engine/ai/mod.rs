@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub mod action_audit;
 pub mod actions;
 pub mod agent_loop;
+pub mod trust;
 pub mod agent_marketplace;
 pub mod agents;
 pub mod autonomous;

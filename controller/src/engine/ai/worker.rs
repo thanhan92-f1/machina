@@ -82,6 +82,12 @@ async fn run_scheduled_batch(state: &AppState) {
         .await
         .unwrap_or(5);
 
+    match super::trust::run_trusted_pending(state).await {
+        Ok(n) if n > 0 => tracing::info!("ai trust ladder: auto-ran {n} queued proposal(s)"),
+        Ok(_) => {}
+        Err(e) => tracing::warn!("ai trust ladder run failed: {e:#}"),
+    }
+
     match super::autopilot::run_safe_batch(state, &actor, None, max_actions).await {
         Ok(result) => {
             tracing::info!(

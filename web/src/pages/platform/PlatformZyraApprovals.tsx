@@ -9,6 +9,7 @@ import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import ZyraInsightCard from '../../components/ai/ZyraInsightCard'
 import ZyraAgentPanel from '../../components/ai/ZyraAgentPanel'
+import ZyraTrustLadder from '../../components/ai/ZyraTrustLadder'
 import {
   executeZyraAction,
   getZyraApprovalHub,
@@ -148,6 +149,8 @@ export default function PlatformZyraApprovals() {
           ))}
         </div>
       </MacGlassPanel>
+
+      <ZyraTrustLadder />
 
       {history.length > 0 && (
         <MacGlassPanel title="Recent actions" subtitle="What Zyra and your team executed — check it worked, or undo it when it is reversible">
