@@ -283,5 +283,71 @@ observe
 check "observe again: port 8080 open" is 200 :8080/ok
 check "observe again: GET /secret 200" is 200 /secret
 
+echo "== flow history, learn, replay, detection =="
+edges() { "$M" flow edges --vm "$1" -o json 2>/dev/null; }
+edge_has() {
+    local vm=$1 filter=$2
+    for _ in 1 2 3 4 5; do
+        edges "$vm" | jq -e "[.items[] | select($filter)] | length > 0" >/dev/null && return
+        sleep 2
+    done
+    edges "$vm" | jq -c '.items[] | select(.port < 2000 or .port > 2030)
+        | {s: (.src_vm // .src), d: (.dst_vm // .dst), p: .port, dir: .direction, v: .verdict, l7: [.l7[]? | "\(.request) ×\(.count)"]}' \
+        | head -12 | sed 's/^/      /' >&3
+    return 1
+}
+check "history: client → server :80 with GET /ok" edge_has np-server \
+    '.src_vm == "np-client" and .dst_vm == "np-server" and .port == 80 and any(.l7[]?; .request | test("^GET .*/ok$"))'
+check "history: denied 8080 edge kept" edge_has np-server '.port == 8080 and .verdict == "DROPPED"'
+check "history: proxied 443 has status and latency" edge_has np-client \
+    '.port == 443 and any(.l7[]?; (.status["2xx"] // 0) > 0 and .latency_n > 0)'
+"$M" netpol learn --vm np-server > "$W/learned.yaml" 2> "$W/learned.err"
+check "learn: policy for np-server" grep -q "app: np-server" "$W/learned.yaml"
+grep -q "app: np-server" "$W/learned.yaml" || sed 's/^/      /' "$W/learned.err" "$W/learned.yaml"
+learned_80() { grep -q 'app: np-client' "$W/learned.yaml" && grep -qE "port: ['\"]?80['\"]?$" "$W/learned.yaml"; }
+check "learn: admits np-client on 80" learned_80
+check "learn: learned YAML validates" "$M" netpol validate -f "$W/learned.yaml"
+"$M" netpol replay -f "$W/learned.yaml" > "$W/replay.out" 2>&1
+check "replay: learned policy breaks nothing observed" grep -q "Safe:" "$W/replay.out"
+grep -q "Safe:" "$W/replay.out" || sed 's/^/      /' "$W/replay.out"
+cat > "$W/narrow.yaml" <<'Y'
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: np-realvm-proxy
+specs:
+  - endpointSelector:
+      matchLabels: {app: np-client}
+    egress:
+      - toEndpoints: [{matchLabels: {app: np-server}}]
+        toPorts: [{ports: [{port: "8443", protocol: TCP}]}]
+  - endpointSelector:
+      matchLabels: {app: np-server}
+    ingress:
+      - fromEndpoints: [{matchLabels: {app: np-client}}]
+        toPorts: [{ports: [{port: "8443", protocol: TCP}]}]
+Y
+"$M" netpol replay -f "$W/narrow.yaml" > "$W/narrow.out" 2>&1
+narrow_breaks_443() { grep -q "Would break" "$W/narrow.out" && grep -q "np-server tcp/443" "$W/narrow.out"; }
+check "replay: dropping 443 from np-realvm-proxy would break client → server :443" narrow_breaks_443
+narrow_breaks_443 || sed 's/^/      /' "$W/narrow.out"
+cssh "for p in \$(seq 2000 2030); do timeout 1 bash -c '</dev/tcp/$SIP/'\$p 2>/dev/null; done; true"
+alert_has() {
+    for _ in 1 2 3 4 5; do
+        "$M" flow alerts 2>/dev/null | grep -q "$1" && return
+        sleep 2
+    done
+    return 1
+}
+check "detect: port scan from np-client" alert_has port_scan
+persisted() {
+    for _ in $(seq 40); do
+        sudo -n test -s /var/lib/machina/bpf/flow-history.json && return
+        sleep 2
+    done
+    return 1
+}
+check "history persisted to disk" persisted
+
 echo "passed=$P failed=$F"
 [[ $F -eq 0 ]]

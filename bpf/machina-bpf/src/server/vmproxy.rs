@@ -23,7 +23,7 @@ use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use aya::maps::{HashMap as BpfHash, MapData};
@@ -36,7 +36,7 @@ use tokio::time::timeout;
 
 use machina_bpf_common::{FlowKey, VmProxyFlow, ADDR_LEN, VM_PROXY_UP_MAGIC};
 
-use super::{lock, publish, Shared, SharedState, VM_FLOW_STORE_CAP};
+use super::{lock, publish_vm_flow, SharedState};
 use crate::api::{StreamEvent, VmEdgeL7Rule, VmFlowRecord};
 use crate::authca::provider;
 use crate::loader::{mono_to_rfc3339, monotonic_ns};
@@ -456,8 +456,8 @@ struct Conn<'a> {
 }
 
 impl Conn<'_> {
-    fn record(&self, allowed: bool, kind: &str, summary: String) {
-        let rec = {
+    fn record(&self, allowed: bool, kind: &str, summary: String) -> VmFlowRecord {
+        let (rec, alerts) = {
             let mut s = lock(&self.inner.shared);
             let (iface, tap_vm) = s.iface(self.flow.ifindex);
             let idx = &s.vm_flow_index;
@@ -489,10 +489,11 @@ impl Conn<'_> {
                 l7: Some(summary),
                 ..Default::default()
             };
-            Shared::push_capped(&mut s.vm_flows, rec.clone(), VM_FLOW_STORE_CAP);
-            rec
+            let alerts = s.record_vm_flow(&rec);
+            (rec, alerts)
         };
-        publish(&self.inner.bus, "flow", &rec);
+        publish_vm_flow(&self.inner.bus, &rec, alerts);
+        rec
     }
 
     async fn connect(&self, pol: &Policy, name: Option<&str>) -> Result<BoxIo> {
@@ -663,16 +664,84 @@ async fn forward_chunked(
     }
 }
 
-async fn copy_responses(mut r: ReadHalf<BoxIo>, w: Arc<tokio::sync::Mutex<WriteHalf<BoxIo>>>) {
-    let mut b = vec![0u8; 16384];
-    loop {
-        let n = match r.read(&mut b).await {
-            Ok(0) | Err(_) => break,
-            Ok(n) => n,
-        };
-        if w.lock().await.write_all(&b[..n]).await.is_err() {
-            return;
+/// Requests forwarded upstream, oldest first: start, HEAD, flow record.
+type Pending = Arc<Mutex<std::collections::VecDeque<(Instant, bool, VmFlowRecord)>>>;
+
+fn header_value<'a>(head: &'a str, name: &str) -> Option<&'a str> {
+    head.split("\r\n").skip(1).find_map(|l| {
+        let (n, v) = l.split_once(':')?;
+        n.trim().eq_ignore_ascii_case(name).then(|| v.trim())
+    })
+}
+
+fn response_status(head: &str) -> Option<u16> {
+    let line = head.split("\r\n").next()?;
+    let mut it = line.split_whitespace();
+    it.next().filter(|v| v.starts_with("HTTP/1."))?;
+    it.next()?.parse().ok()
+}
+
+/// Relay responses, framing each one so its status and latency reach the
+/// flow history.
+async fn copy_responses(
+    mut r: ReadHalf<BoxIo>,
+    w: Arc<tokio::sync::Mutex<WriteHalf<BoxIo>>>,
+    pending: Pending,
+    shared: SharedState,
+) {
+    let mut buf = Vec::with_capacity(8192);
+    let res: Result<()> = async {
+        loop {
+            let Some(end) = read_until(&mut r, &mut buf, b"\r\n\r\n", HEAD_MAX).await? else {
+                return Ok(());
+            };
+            let head_len = end + 4;
+            let head = String::from_utf8_lossy(&buf[..end]).into_owned();
+            let mut out = w.lock().await;
+            let Some(status) = response_status(&head) else {
+                out.write_all(&buf).await?;
+                buf.clear();
+                tokio::io::copy(&mut r, &mut *out).await?;
+                return Ok(());
+            };
+            out.write_all(&buf[..head_len]).await?;
+            buf.drain(..head_len);
+            if (100..200).contains(&status) && status != 101 {
+                continue;
+            }
+            let req = lock(&pending).pop_front();
+            let is_head = req.as_ref().is_some_and(|p| p.1);
+            if let Some((start, _, rec)) = req {
+                let ms = start.elapsed().as_millis() as u64;
+                lock(&shared).flow_hist.observe_response(&rec, status, ms);
+            }
+            if status == 101 {
+                out.write_all(&buf).await?;
+                buf.clear();
+                tokio::io::copy(&mut r, &mut *out).await?;
+                return Ok(());
+            }
+            if is_head || status == 204 || status == 304 {
+                continue;
+            }
+            let chunked = header_value(&head, "transfer-encoding")
+                .is_some_and(|v| v.to_ascii_lowercase().contains("chunked"));
+            let len = header_value(&head, "content-length").and_then(|v| v.parse::<usize>().ok());
+            if chunked {
+                forward_chunked(&mut r, &mut out, &mut buf).await?;
+            } else if let Some(n) = len {
+                forward_exact(&mut r, &mut out, &mut buf, n).await?;
+            } else {
+                out.write_all(&buf).await?;
+                buf.clear();
+                tokio::io::copy(&mut r, &mut *out).await?;
+                return Ok(());
+            }
         }
+    }
+    .await;
+    if let Err(e) = res {
+        tracing::debug!("proxy response relay: {e:#}");
     }
     let _ = w.lock().await.shutdown().await;
 }
@@ -703,6 +772,7 @@ async fn http_loop(c: &Conn<'_>, pol: &Policy, io: BoxIo, sni: Option<String>) -
     let mut buf = Vec::with_capacity(8192);
     let mut up: Option<WriteHalf<BoxIo>> = None;
     let mut responses = None;
+    let pending: Pending = Arc::default();
     let tag = if pol.terminating.is_some() {
         " (tls intercepted)"
     } else {
@@ -729,7 +799,7 @@ async fn http_loop(c: &Conn<'_>, pol: &Policy, io: BoxIo, sni: Option<String>) -
         if !v.allowed {
             line.push_str(" [denied]");
         }
-        c.record(v.allowed, "http", line);
+        let rec = c.record(v.allowed, "http", line);
         if !v.allowed {
             let mut w = cw.lock().await;
             let _ = w.write_all(DENIED).await;
@@ -742,7 +812,12 @@ async fn http_loop(c: &Conn<'_>, pol: &Policy, io: BoxIo, sni: Option<String>) -
                 Ok(u) => {
                     let (ur, uw) = tokio::io::split(u);
                     up = Some(uw);
-                    responses = Some(tokio::spawn(copy_responses(ur, cw.clone())));
+                    responses = Some(tokio::spawn(copy_responses(
+                        ur,
+                        cw.clone(),
+                        pending.clone(),
+                        c.inner.shared.clone(),
+                    )));
                 }
                 Err(e) => {
                     c.record(false, "http", format!("{} upstream: {e:#}", summary(&req)));
@@ -754,6 +829,7 @@ async fn http_loop(c: &Conn<'_>, pol: &Policy, io: BoxIo, sni: Option<String>) -
         let Some(uw) = up.as_mut() else { break };
         let head = std::str::from_utf8(&buf[..end]).unwrap_or_default();
         let head = l7::rewrite_head(head, &v.edits);
+        lock(&pending).push_back((Instant::now(), req.method == "HEAD", rec));
         uw.write_all(head.as_bytes()).await?;
         uw.write_all(b"\r\n\r\n").await?;
         buf.drain(..head_len);
@@ -781,6 +857,14 @@ async fn http_loop(c: &Conn<'_>, pol: &Policy, io: BoxIo, sni: Option<String>) -
 mod tests {
     use super::*;
     use machina_bpf_common::VM_PROXY_SLOT;
+
+    #[test]
+    fn response_heads() {
+        let h = "HTTP/1.1 503 Service Unavailable\r\nContent-Length: 12\r\nX: y";
+        assert_eq!(response_status(h), Some(503));
+        assert_eq!(header_value(h, "content-length"), Some("12"));
+        assert_eq!(response_status("SSH-2.0-x"), None);
+    }
 
     #[test]
     fn keys_hosts_and_secrets() {

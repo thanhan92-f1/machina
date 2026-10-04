@@ -857,6 +857,85 @@ pub struct VmFlowRecord {
     pub l7: Option<String>,
 }
 
+/// Flows folded by (source, destination, direction, protocol, port, verdict,
+/// reason, policy): the history behind learn mode, replay and the service map.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmFlowEdge {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+    /// VM name, else the address.
+    pub src: String,
+    pub dst: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub src_vm: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dst_vm: Option<String>,
+    /// Non-VM identity of the source: `host`, `world`, `remote-node` or a CIDR.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub src_entity: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dst_entity: Option<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub src_labels: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub dst_labels: BTreeMap<String, String>,
+    pub direction: String,
+    pub proto: String,
+    /// Destination port; the ICMP type for ICMP.
+    pub port: u16,
+    pub verdict: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drop_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policy: Option<String>,
+    pub count: u64,
+    pub bytes: u64,
+    pub first_seen: String,
+    pub last_seen: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub l7: Vec<VmFlowL7Stat>,
+}
+
+/// One normalised L7 request on an edge (`GET api/users/{id}`).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmFlowL7Stat {
+    pub kind: String,
+    pub request: String,
+    pub count: u64,
+    #[serde(default)]
+    pub denied: u64,
+    /// Response classes (`2xx`, `4xx`, ...); proxied HTTP only.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub status: BTreeMap<String, u64>,
+    #[serde(default)]
+    pub latency_n: u64,
+    #[serde(default)]
+    pub latency_ms_total: u64,
+    #[serde(default)]
+    pub latency_ms_max: u64,
+}
+
+/// Lateral-movement / scan detection (`alert` topic).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmFlowAlert {
+    pub ts: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+    /// `port_scan`, `host_sweep`, `deny_burst`, `new_peer`, `threat_domain`,
+    /// `new_domain`.
+    pub kind: String,
+    /// `low`, `medium`, `high`.
+    pub severity: String,
+    pub src: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub src_vm: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dst: Option<String>,
+    pub detail: String,
+    #[serde(default)]
+    pub count: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct VmEdgeTap {
     pub vm: String,
@@ -1894,6 +1973,17 @@ pub enum Request {
         vm: Option<String>,
         #[serde(default)]
         verdict: Option<String>,
+    },
+    /// Flow history edges (persisted, 7 days).
+    VmFlowEdges {
+        #[serde(default)]
+        vm: Option<String>,
+    },
+    VmFlowEdgesReset {},
+    /// Recent detection alerts, newest first.
+    VmFlowAlerts {
+        #[serde(default)]
+        limit: Option<usize>,
     },
     VmSandboxConfigure {
         config: VmSandboxConfig,

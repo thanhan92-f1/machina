@@ -71,7 +71,7 @@ mod topology;
 mod upgrade;
 mod users;
 mod vm_libvirt;
-mod vm_network_policies;
+pub(crate) mod vm_network_policies;
 mod vm_row;
 mod vm_schedules;
 mod vms;
@@ -215,6 +215,22 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/vm-network-policies/sync",
             post(vm_network_policies::sync_now),
+        )
+        .route(
+            "/api/v1/vm-network-policies/learn",
+            post(vm_network_policies::learn),
+        )
+        .route(
+            "/api/v1/vm-network-policies/replay",
+            post(vm_network_policies::replay),
+        )
+        .route(
+            "/api/v1/flows/edges",
+            get(vm_network_policies::flow_edges).delete(vm_network_policies::flow_edges_reset),
+        )
+        .route(
+            "/api/v1/flows/alerts",
+            get(vm_network_policies::flow_alerts),
         )
         .route(
             "/api/v1/vm-network-policies/{name}",

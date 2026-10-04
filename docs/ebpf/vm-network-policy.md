@@ -483,6 +483,10 @@ Policies are persisted; the enforce mode and its lease never are.
 | `cilium-dbg bpf auth list` | `machinactl netpol auth` |
 | `hubble observe` | `machinactl flow observe [-f] [--vm X] [--verdict DROPPED] [--port 443] …` |
 | — | `machinactl flow top --by pair\|src\|dst\|port\|policy\|l7`, `machinactl flow stats` |
+| Hubble UI service map | `machinactl flow edges [--vm X] [-o json]`, UI **Service map** tab |
+| `cilium policy` audit mode, then hand-written rules | `machinactl netpol learn [--vm X] [--group-by app]` — generates policies from the flow history |
+| — | `machinactl netpol replay -f draft.yaml` — what the draft would have done to the last 7 days of traffic |
+| — | `machinactl flow alerts` — port scans, host sweeps, deny bursts, new peers |
 
 Auth: `MACHINA_API_TOKEN`, or `MACHINA_USER` + `MACHINA_PASS`. With a user
 and password, the CLI keeps its session in `~/.machina/cli-session` (mode
@@ -514,6 +518,85 @@ terminal prompt: `vm`, `from_vm`, `to_vm`, `label` (`k=v`), `ip`, `cidr`,
 pass `--color never` to turn that off. `-o json` prints one record per line.
 The UI **Flows** tab is a black macOS-style terminal that takes the same flags
 at its prompt; Ctrl-C pauses it and Ctrl-L clears it.
+
+## Flow history, service map, learn, replay and alerts
+
+bpfd folds every flow into a 7-day **history** of edges: source, destination,
+direction, protocol, port, verdict, drop reason and policy, with counts,
+bytes, and first and last seen. It is saved to
+`/var/lib/machina/bpf/flow-history.json` every minute and on shutdown, and
+capped at 20 000 edges. VMs appear by name. The host, other nodes, the
+internet and CIDR peers appear by address, with `src_entity` / `dst_entity`
+set to `host`, `remote-node`, `world` or the CIDR. Each edge also keeps up to
+32 L7 requests, normalised so that `GET api/users/42?x=1` and
+`GET api/users/7` count as `GET api/users/{id}`. For each request it keeps:
+
+- the count and how many were denied;
+- for requests that go through the bpfd proxy (TLS interception or header
+  rewrites), the response status class (`2xx`, `4xx`, `5xx`) and the average
+  and maximum latency.
+
+API: `GET /api/v1/flows/edges[?vm=X]`, `DELETE /api/v1/flows/edges` (admin,
+clears it), `GET /api/v1/flows/alerts[?limit=N]`. The controller serves the
+same routes, merged across hosts and tagged with the host.
+
+**Service map.** The UI *Service map* tab draws the history: clients on the
+left, servers to their right, the host and external addresses on the far
+right. Link colours: green for forwarded, dashed amber for traffic a policy
+would drop (observe mode), red for dropped. Pick a link, on the graph or in
+the list under it, to see its ports, verdicts, matching policies and L7
+metrics.
+
+**Learn.** `POST /api/v1/vm-network-policies/learn` (UI *Learn* tab,
+`machinactl netpol learn`) writes least-privilege policies from the history.
+Run in observe mode for a while first, so the history covers normal traffic.
+
+- VMs are grouped by a label (`group_by`, default `app`); a VM without it is
+  pinned by `machina.io/vm-name`.
+- Peers become `toEndpoints` / `fromEndpoints` for VMs and
+  `toEntities: [host]` / `[remote-node]` for the host and other nodes.
+  External addresses become `toFQDNs` when the `toFQDNs` cache knows their
+  name, and a `/32` or `/128` `toCIDR` otherwise.
+- With `l7` on (the default), HTTP methods and paths (`{id}` becomes
+  `[^/]+`), DNS names and TLS server names are written as L7 rules.
+- Port 53 gets a DNS `matchPattern: "*"` rule when the policy uses
+  `toFQDNs`, so lookups keep working.
+- Edges the datapath dropped are skipped, as are those with fewer than
+  `min_count` flows. `lock_unobserved` writes default deny (`[{}]`) for a
+  direction with no observed traffic.
+
+The output is YAML to review, not applied: learn also records whatever an
+attacker did while it was watching, such as a port scan.
+
+**Replay.** `POST /api/v1/vm-network-policies/replay` with `{yaml}` (the
+*Replay history* button in the editor, `machinactl netpol replay -f`) takes
+the stored policies, replaces those with the same names and adds the new
+ones. It then traces every distinct connection and L7 request in the history
+against both the current set and the draft, and reports:
+
+- `would_break`: allowed now, denied by the draft;
+- `would_allow`: denied now, allowed by the draft;
+- `not_evaluated`: connections whose endpoints no longer resolve, such as
+  deleted VMs.
+
+`machinactl netpol replay` exits non-zero when something would break, so it
+can gate CI. Policies are additive, as in Cilium: a new policy can only take
+traffic away from a VM it newly isolates. To narrow what a VM already allows,
+replay a changed version of the policy that allows it, under the same name.
+
+**Alerts.** The history also watches a 60-second window per source, counting
+each connection once, at the client:
+
+| Alert | Trigger | Severity |
+|---|---|---|
+| `port_scan` | 20+ ports on one destination | high |
+| `host_sweep` | 20+ destinations on one port | high |
+| `deny_burst` | 50+ denied or audited flows | medium |
+| `new_peer` | a VM pair talking for the first time, once the history is a day old | low |
+
+The same alert is suppressed for 10 minutes, and the last 1000 alerts are
+kept. bpfd logs each alert. The leader controller turns new ones into
+`netpol.alert` events every 30 s, so they reach webhooks and SIEM export.
 
 ## Test
 
@@ -552,7 +635,18 @@ and secret. It checks the `REPLACE` / `DELETE` / `ADD` rewrites as the
 server receives them, a 403 for a path outside the rule, the policy
 certificate on the client, the client identity at the server (the host is
 refused on 443), and `originatingTLS` from a plain-HTTP client to a TLS
-server. On exit it returns the edge to observe and deletes the VMs, the
+server. Back in observe mode it then checks the flow history, using the
+traffic the earlier phases generated:
+
+- the client → server `GET /ok` edge, the dropped 8080 edge, and status and
+  latency on the proxied 443 traffic;
+- that `netpol learn` writes a valid policy for the server which replays
+  without breaking anything;
+- that a narrowed proxy policy is reported as breaking 443;
+- that a port scan from the client raises `port_scan`;
+- that the history is saved to disk.
+
+On exit it returns the edge to observe and deletes the VMs, the
 policies, the secret and the image.
 It enforces on every tap with policy state, so run it only on a disposable
 host. The password is read from stdin:

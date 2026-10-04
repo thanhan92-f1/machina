@@ -32,6 +32,7 @@ use crate::{dns, fmt_addr};
 mod afxdp;
 mod cni;
 mod direct;
+mod flowhist;
 mod guard;
 mod l7sample;
 mod listen;
@@ -119,6 +120,7 @@ struct Shared {
     guard_cgroups: HashMap<u64, String>,
     vm_flow_index: vm::FlowIndex,
     vm_flows: VecDeque<VmFlowRecord>,
+    flow_hist: flowhist::FlowHistory,
     /// `toFQDNs` patterns of the VM edge state, for the DNS reader.
     vm_fqdn_patterns: Vec<String>,
     /// DNS answers awaiting the engine.
@@ -167,6 +169,25 @@ impl Shared {
         while q.len() > cap {
             q.pop_front();
         }
+    }
+
+    /// Store a VM edge record, fold it into the history; returns raised alerts.
+    fn record_vm_flow(&mut self, rec: &VmFlowRecord) -> Vec<VmFlowAlert> {
+        let alerts = self.flow_hist.observe(rec);
+        Self::push_capped(&mut self.vm_flows, rec.clone(), VM_FLOW_STORE_CAP);
+        alerts
+    }
+}
+
+fn publish_vm_flow(
+    bus: &broadcast::Sender<StreamEvent>,
+    rec: &VmFlowRecord,
+    alerts: Vec<VmFlowAlert>,
+) {
+    publish(bus, "flow", rec);
+    for a in alerts {
+        tracing::warn!(kind = %a.kind, src = %a.src, "{}", a.detail);
+        publish(bus, "alert", &a);
     }
 }
 

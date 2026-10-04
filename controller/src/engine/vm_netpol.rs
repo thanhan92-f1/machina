@@ -435,6 +435,7 @@ pub fn spawn(state: AppState) {
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(TICK_SECS));
         let mut n: u32 = 0;
+        let mut alerts_seen: Option<String> = None;
         loop {
             interval.tick().await;
             if !state.leader.is_leader() {
@@ -446,8 +447,33 @@ pub fn spawn(state: AppState) {
                     tracing::warn!(host = %r.hostname, "vm network policy sync: {e}");
                 }
             }
+            forward_alerts(&state, &mut alerts_seen).await;
         }
     });
+}
+
+/// Detection alerts newer than `seen` become events (and so webhooks / SIEM).
+/// The first pass only records where the hosts are.
+async fn forward_alerts(state: &AppState, seen: &mut Option<String>) {
+    let alerts = crate::api::vm_network_policies::fleet_alerts(state, 200).await;
+    let newest = alerts.first().map(|a| a.ts.clone());
+    if let Some(last) = seen.as_ref() {
+        for a in alerts.iter().rev().filter(|a| a.ts > *last) {
+            state.emit_event(
+                "netpol.alert",
+                format!(
+                    "[{}] {} on {}: {}",
+                    a.severity,
+                    a.kind,
+                    a.host.as_deref().unwrap_or("?"),
+                    a.detail
+                ),
+            );
+        }
+    }
+    if newest.is_some() || seen.is_none() {
+        *seen = Some(newest.unwrap_or_default());
+    }
 }
 
 #[cfg(test)]

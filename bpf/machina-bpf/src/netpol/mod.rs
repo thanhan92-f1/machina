@@ -22,6 +22,7 @@ mod flow;
 pub mod fqdn;
 pub mod l7;
 pub mod l7stream;
+mod learn;
 mod services;
 #[cfg(test)]
 mod tests;
@@ -65,6 +66,10 @@ pub fn uses_services(policies: &[VmNetworkPolicy]) -> bool {
     })
 }
 pub use flow::FlowFilter;
+pub use learn::{
+    learn, replay, LearnOptions, LearnResult, LearnedPolicy, ReplayChange, ReplayInputs,
+    ReplayResult,
+};
 pub use trace::{trace, TraceEndpoint, TraceQuery, TraceResult, TraceSide};
 
 /// Cilium on this host (`cilium_host` link, CNI config or a running

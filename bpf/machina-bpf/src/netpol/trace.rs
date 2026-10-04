@@ -339,33 +339,76 @@ pub fn trace(
     remote_node_addresses: &[String],
     q: &TraceQuery,
 ) -> Result<TraceResult, String> {
+    Tracer::new(
+        policies,
+        vms,
+        services,
+        host_addresses,
+        remote_node_addresses,
+    )
+    .trace(q)
+}
+
+/// The fleet compiled once, for tracing many connections.
+pub struct Tracer {
+    vms: Vec<NetpolVm>,
+    state: VmEdgeState,
+    ids: HashMap<String, u32>,
+    iso: HashMap<u32, (bool, bool)>,
+    table: Table,
+}
+
+impl Tracer {
+    pub fn new(
+        policies: &[VmNetworkPolicy],
+        vms: &[NetpolVm],
+        services: &[NetpolService],
+        host_addresses: &[String],
+        remote_node_addresses: &[String],
+    ) -> Self {
+        let c = compile(&Inputs {
+            policies,
+            vms,
+            services,
+            host: None,
+            host_addresses,
+            remote_node_addresses,
+        });
+        let ids = c
+            .endpoints
+            .iter()
+            .map(|e| (e.name.clone(), e.identity))
+            .collect();
+        let iso = c
+            .endpoints
+            .iter()
+            .map(|e| (e.identity, (e.ingress_enforced, e.egress_enforced)))
+            .collect();
+        let table = Table::new(&c.state);
+        Tracer {
+            vms: vms.to_vec(),
+            state: c.state,
+            ids,
+            iso,
+            table,
+        }
+    }
+
+    pub fn trace(&self, q: &TraceQuery) -> Result<TraceResult, String> {
+        trace_with(self, q)
+    }
+}
+
+fn trace_with(t: &Tracer, q: &TraceQuery) -> Result<TraceResult, String> {
     let proto = proto_num(&q.protocol)?;
     let port = if proto == 1 || proto == 58 {
         q.icmp_type.map_or(0, |t| t as u16 + 1)
     } else {
         q.port
     };
-    let c = compile(&Inputs {
-        policies,
-        vms,
-        services,
-        host: None,
-        host_addresses,
-        remote_node_addresses,
-    });
-    let ids: HashMap<String, u32> = c
-        .endpoints
-        .iter()
-        .map(|e| (e.name.clone(), e.identity))
-        .collect();
-    let iso: HashMap<u32, (bool, bool)> = c
-        .endpoints
-        .iter()
-        .map(|e| (e.identity, (e.ingress_enforced, e.egress_enforced)))
-        .collect();
-    let from = resolve(&q.from, vms, &c.state, &ids);
-    let to = resolve(&q.to, vms, &c.state, &ids);
-    let table = Table::new(&c.state);
+    let (c_state, ids, iso, table) = (&t.state, &t.ids, &t.iso, &t.table);
+    let from = resolve(&q.from, &t.vms, c_state, ids);
+    let to = resolve(&q.to, &t.vms, c_state, ids);
     let side = |subject: &TraceEndpoint, peer: &TraceEndpoint, egress: bool| -> TraceSide {
         let direction = if egress { "egress" } else { "ingress" }.to_string();
         if subject.kind != "vm" {
@@ -380,7 +423,7 @@ pub fn trace(
             .is_some_and(|(i, e)| if egress { *e } else { *i });
         let mut hit = table.eval(subject.identity, peer.identity, egress, proto, port);
         let mut rules = l7_rules(
-            &c.state,
+            c_state,
             subject.identity,
             peer.identity,
             egress,
@@ -388,8 +431,7 @@ pub fn trace(
             port,
         );
         if egress && peer.kind == "fqdn" && !hit.as_ref().is_some_and(|h| h.deny) {
-            let by_name: Vec<_> = c
-                .state
+            let by_name: Vec<_> = c_state
                 .fqdn
                 .iter()
                 .filter(|r| {

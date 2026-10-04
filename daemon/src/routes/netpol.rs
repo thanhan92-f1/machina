@@ -19,9 +19,10 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use futures_util::Stream;
-use machina_bpf::api::{Request, VmEdgeStatus, VmFlowRecord};
+use machina_bpf::api::{Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry};
 use machina_bpf::netpol::{
-    self, FlowFilter, Inputs, NetpolService, NetpolVm, TraceQuery, VmNetworkPolicy,
+    self, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs, TraceQuery,
+    VmNetworkPolicy,
 };
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
@@ -616,6 +617,121 @@ async fn flow_stream(
     Ok(Sse::new(futures_util::StreamExt::chain(head, live)).keep_alive(KeepAlive::default()))
 }
 
+async fn bpfd_call(req: &Request) -> Result<Value, AppError> {
+    BpfdClient::from_env()
+        .call(req)
+        .await
+        .map_err(|e| LibvirtError::Operation(format!("{e:#}")).into())
+}
+
+#[derive(Deserialize, Default)]
+struct EdgeQuery {
+    vm: Option<String>,
+    limit: Option<usize>,
+}
+
+async fn history(vm: Option<String>) -> Result<Vec<VmFlowEdge>, AppError> {
+    let v = bpfd_call(&Request::VmFlowEdges { vm }).await?;
+    Ok(serde_json::from_value(v).unwrap_or_default())
+}
+
+async fn flow_edges(Query(q): Query<EdgeQuery>) -> Result<Json<Value>, AppError> {
+    let items = history(q.vm.filter(|v| !v.is_empty())).await?;
+    Ok(Json(json!({ "items": items })))
+}
+
+async fn flow_edges_reset(
+    Extension(actor): Extension<RequestActor>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Clearing the flow history")?;
+    bpfd_call(&Request::VmFlowEdgesReset {}).await?;
+    Ok(Json(json!({ "ok": true })))
+}
+
+async fn flow_alerts(Query(q): Query<EdgeQuery>) -> Result<Json<Value>, AppError> {
+    let v = bpfd_call(&Request::VmFlowAlerts {
+        limit: Some(q.limit.unwrap_or(200).min(1000)),
+    })
+    .await?;
+    Ok(Json(json!({ "items": v })))
+}
+
+/// Address → DNS names from the `toFQDNs` cache.
+async fn fqdn_names() -> BTreeMap<String, Vec<String>> {
+    let entries: Vec<VmFqdnEntry> = match bpfd_call(&Request::VmFqdnCache).await {
+        Ok(v) => serde_json::from_value(v).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    };
+    let mut m: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for e in entries {
+        let names = m.entry(e.address).or_default();
+        if !names.contains(&e.name) {
+            names.push(e.name);
+        }
+    }
+    m
+}
+
+async fn learn(
+    State(m): State<LibvirtManager>,
+    Json(mut o): Json<LearnOptions>,
+) -> Result<Json<Value>, AppError> {
+    let edges = history(None).await?;
+    let inv = cached_inventory(&m).await;
+    o.fqdn.extend(fqdn_names().await);
+    let r = tokio::task::spawn_blocking(move || netpol::learn(&edges, &inv, &o))
+        .await
+        .map_err(|e| LibvirtError::Operation(format!("learn: {e}")))?;
+    Ok(Json(serde_json::to_value(r).unwrap_or_default()))
+}
+
+#[derive(Deserialize)]
+struct ReplayBody {
+    yaml: String,
+    #[serde(default)]
+    limit: Option<usize>,
+}
+
+async fn replay(
+    State(m): State<LibvirtManager>,
+    Json(b): Json<ReplayBody>,
+) -> Result<Response, AppError> {
+    let (parsed, v) = netpol::parse_documents(&b.yaml);
+    if !v.ok() {
+        return Ok(bad_request("invalid policy", &v));
+    }
+    let current = load_store().policies;
+    let mut draft = current.clone();
+    draft.retain(|p| !parsed.iter().any(|n| n.name == p.name));
+    draft.extend(parsed);
+    let edges = history(None).await?;
+    let inv = cached_inventory(&m).await;
+    let hosts = tokio::task::spawn_blocking(host_addresses)
+        .await
+        .unwrap_or_default();
+    let svcs = services(&draft).await;
+    let fqdn = fqdn_names().await;
+    let limit = b.limit.unwrap_or(5000).min(20_000);
+    let r = tokio::task::spawn_blocking(move || {
+        netpol::replay(
+            &edges,
+            &current,
+            &draft,
+            &ReplayInputs {
+                vms: &inv,
+                services: &svcs,
+                host_addresses: &hosts,
+                remote_node_addresses: &[],
+                fqdn: &fqdn,
+                limit,
+            },
+        )
+    })
+    .await
+    .map_err(|e| LibvirtError::Operation(format!("replay: {e}")))?;
+    Ok(Json(serde_json::to_value(r).unwrap_or_default()).into_response())
+}
+
 async fn get_labels(Path(name): Path<String>) -> Json<Value> {
     let labels = machina_core::libvirt::extras::get_vm_labels(&name);
     Json(json!({ "name": name, "labels": labels }))
@@ -657,11 +773,15 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/status", get(status))
         .route("/vm-network-policies/fqdn-cache", get(fqdn_cache))
         .route("/vm-network-policies/auth", get(auth_table))
+        .route("/vm-network-policies/learn", post(learn))
+        .route("/vm-network-policies/replay", post(replay))
         .route(
             "/vm-network-policies/{name}",
             get(get_one).delete(delete_one),
         )
         .route("/flows", get(flows))
         .route("/flows/stream", get(flow_stream))
+        .route("/flows/edges", get(flow_edges).delete(flow_edges_reset))
+        .route("/flows/alerts", get(flow_alerts))
         .route("/vms/{name}/labels", get(get_labels).put(put_labels))
 }

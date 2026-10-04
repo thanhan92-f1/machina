@@ -15,8 +15,10 @@ use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use futures_util::stream::Stream;
-use machina_bpf::api::{Request, VmEdgeStatus, VmFlowRecord};
-use machina_bpf::netpol::{self, FlowFilter, TraceQuery, VmNetworkPolicy};
+use machina_bpf::api::{Request, VmEdgeStatus, VmFlowAlert, VmFlowEdge, VmFlowRecord};
+use machina_bpf::netpol::{
+    self, FlowFilter, LearnOptions, ReplayInputs, TraceQuery, VmNetworkPolicy,
+};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -425,6 +427,144 @@ async fn fleet_flows(state: &AppState, f: &FlowFilter, per_host: usize) -> Vec<V
     }
     out.sort_by(|a, b| b.ts.cmp(&a.ts));
     out
+}
+
+#[derive(Deserialize, Default)]
+pub struct EdgeQuery {
+    vm: Option<String>,
+    host: Option<String>,
+    limit: Option<usize>,
+}
+
+/// Flow history edges from every online host, each tagged with its host.
+pub async fn fleet_edges(state: &AppState, vm: Option<String>) -> Vec<VmFlowEdge> {
+    let req = Request::VmFlowEdges { vm };
+    let mut out = Vec::new();
+    for (h, res) in bpf::fan_out(&state.pool, &req).await {
+        let Ok(v) = res else { continue };
+        let edges: Vec<VmFlowEdge> = serde_json::from_value(v).unwrap_or_default();
+        out.extend(edges.into_iter().map(|mut e| {
+            e.host = Some(h.hostname.clone());
+            e
+        }));
+    }
+    out.sort_by(|a, b| b.last_seen.cmp(&a.last_seen));
+    out
+}
+
+pub async fn flow_edges(State(state): State<AppState>, Query(q): Query<EdgeQuery>) -> Json<Value> {
+    let mut items = fleet_edges(&state, q.vm.filter(|v| !v.is_empty())).await;
+    if let Some(h) = q.host.filter(|h| !h.is_empty()) {
+        items.retain(|e| e.host.as_deref() == Some(h.as_str()));
+    }
+    Json(json!({ "items": items }))
+}
+
+pub async fn flow_edges_reset(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    let res = bpf::fan_out(&state.pool, &Request::VmFlowEdgesReset {}).await;
+    let ok = res.iter().filter(|(_, r)| r.is_ok()).count();
+    Ok(Json(json!({ "ok": true, "hosts": ok })))
+}
+
+pub async fn fleet_alerts(state: &AppState, limit: usize) -> Vec<VmFlowAlert> {
+    let req = Request::VmFlowAlerts { limit: Some(limit) };
+    let mut out = Vec::new();
+    for (h, res) in bpf::fan_out(&state.pool, &req).await {
+        let Ok(v) = res else { continue };
+        let alerts: Vec<VmFlowAlert> = serde_json::from_value(v).unwrap_or_default();
+        out.extend(alerts.into_iter().map(|mut a| {
+            a.host = Some(h.hostname.clone());
+            a
+        }));
+    }
+    out.sort_by(|a, b| b.ts.cmp(&a.ts));
+    out
+}
+
+pub async fn flow_alerts(State(state): State<AppState>, Query(q): Query<EdgeQuery>) -> Json<Value> {
+    let limit = q.limit.unwrap_or(200).min(1000);
+    let mut items = fleet_alerts(&state, limit).await;
+    items.truncate(limit);
+    Json(json!({ "items": items }))
+}
+
+/// Address → DNS names from every host's `toFQDNs` cache.
+async fn fqdn_names(state: &AppState) -> BTreeMap<String, Vec<String>> {
+    let mut m: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for v in bpf::fan_out_items(&state.pool, &Request::VmFqdnCache).await {
+        let (Some(addr), Some(name)) = (v["address"].as_str(), v["name"].as_str()) else {
+            continue;
+        };
+        let names = m.entry(addr.to_string()).or_default();
+        if !names.iter().any(|n| n == name) {
+            names.push(name.to_string());
+        }
+    }
+    m
+}
+
+pub async fn learn(
+    State(state): State<AppState>,
+    Json(mut o): Json<LearnOptions>,
+) -> Result<Json<Value>, ApiError> {
+    let edges = fleet_edges(&state, None).await;
+    let fleet = Fleet::load(&state.pool).await;
+    o.fqdn.extend(fqdn_names(&state).await);
+    let r = tokio::task::spawn_blocking(move || netpol::learn(&edges, &fleet.vms, &o))
+        .await
+        .map_err(|e| ApiError::internal(format!("learn: {e}")))?;
+    Ok(Json(serde_json::to_value(r).unwrap_or_default()))
+}
+
+#[derive(Deserialize)]
+pub struct ReplayBody {
+    yaml: String,
+    #[serde(default)]
+    limit: Option<usize>,
+}
+
+pub async fn replay(
+    State(state): State<AppState>,
+    Json(b): Json<ReplayBody>,
+) -> Result<Response, ApiError> {
+    let (parsed, v) = netpol::parse_documents(&b.yaml);
+    if !v.ok() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "invalid policy", "errors": v.errors, "warnings": v.warnings })),
+        )
+            .into_response());
+    }
+    let fleet = Fleet::load(&state.pool).await;
+    let mut draft = fleet.policies.clone();
+    draft.retain(|p| !parsed.iter().any(|n| n.name == p.name));
+    draft.extend(parsed);
+    let edges = fleet_edges(&state, None).await;
+    let fqdn = fqdn_names(&state).await;
+    let limit = b.limit.unwrap_or(5000).min(20_000);
+    let r = tokio::task::spawn_blocking(move || {
+        let hosts = fleet.all_host_addresses();
+        netpol::replay(
+            &edges,
+            &fleet.policies,
+            &draft,
+            &ReplayInputs {
+                vms: &fleet.vms,
+                services: &fleet.services,
+                host_addresses: &hosts,
+                remote_node_addresses: &[],
+                fqdn: &fqdn,
+                limit,
+            },
+        )
+    })
+    .await
+    .map_err(|e| ApiError::internal(format!("replay: {e}")))?;
+    Ok(Json(serde_json::to_value(r).unwrap_or_default()).into_response())
 }
 
 /// `toFQDNs` bindings learned on every online host.

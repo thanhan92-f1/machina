@@ -1079,7 +1079,7 @@ impl L7Worker {
         summary: String,
         source: Option<String>,
     ) {
-        let rec = {
+        let (rec, alerts) = {
             let mut s = lock(sh);
             let (iface, tap_vm) = s.iface(h.ifindex);
             let idx = &s.vm_flow_index;
@@ -1130,10 +1130,10 @@ impl L7Worker {
                 l7: Some(summary),
                 ..Default::default()
             };
-            Shared::push_capped(&mut s.vm_flows, rec.clone(), VM_FLOW_STORE_CAP);
-            rec
+            let alerts = s.record_vm_flow(&rec);
+            (rec, alerts)
         };
-        publish(bus, "flow", &rec);
+        publish_vm_flow(bus, &rec, alerts);
     }
 }
 

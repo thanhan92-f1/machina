@@ -13,6 +13,10 @@ import { MacGlassPanel, MacSegmentedControl, MacToggle } from '../../components/
 import { TahoeTableWrap } from '../../components/platform/tahoe/TahoeListKit'
 import { Empty, Field, Metrics, headRowCls, rowCls, thCls } from '../../components/bpf/shared'
 import FlowTerminal from '../../components/flow/FlowTerminal'
+import FlowAlerts from '../../components/flow/FlowAlerts'
+import LearnPanel from '../../components/flow/LearnPanel'
+import ReplaySummary from '../../components/flow/ReplaySummary'
+import ServiceMap from '../../components/flow/ServiceMap'
 import {
   NETPOL_TEMPLATES,
   applyVmNetpol,
@@ -23,6 +27,7 @@ import {
   listNetpolEndpoints,
   listNetpolSelectors,
   listVmNetpols,
+  replayVmNetpol,
   setVmNetpolEnabled,
   syncFleetNetpol,
   traceVmNetpol,
@@ -34,6 +39,7 @@ import {
   type NetpolScope,
   type NetpolSelector,
   type NetpolStatus,
+  type ReplayResult,
   type TraceQuery,
   type TraceResult,
   type TraceSide,
@@ -44,7 +50,7 @@ import { formatUserError } from '../../utils/apiError'
 import { statusPillClasses, statusToneClass } from '../../utils/semanticColors'
 import { summarizeSpec } from '../../utils/netpolSummary'
 
-type Tab = 'policies' | 'editor' | 'tester' | 'endpoints' | 'flows'
+type Tab = 'policies' | 'editor' | 'tester' | 'endpoints' | 'flows' | 'map' | 'learn' | 'alerts'
 
 type L7Kind = 'none' | 'http' | 'tls' | 'dns' | 'kafka'
 
@@ -62,6 +68,9 @@ const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'tester', label: 'Policy tester' },
   { value: 'endpoints', label: 'Endpoints' },
   { value: 'flows', label: 'Flows' },
+  { value: 'map', label: 'Service map' },
+  { value: 'learn', label: 'Learn' },
+  { value: 'alerts', label: 'Alerts' },
 ]
 
 function PolicyView({ p }: { p: VmNetworkPolicy }) {
@@ -138,6 +147,7 @@ export default function PlatformVmNetworkPolicies() {
 
   const [yaml, setYaml] = useState(NETPOL_TEMPLATES[0].yaml)
   const [preview, setPreview] = useState<NetpolPreview | null>(null)
+  const [replay, setReplay] = useState<ReplayResult | null>(null)
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -181,6 +191,23 @@ export default function PlatformVmNetworkPolicies() {
     } finally {
       setBusy(false)
     }
+  }
+
+  const runReplay = async () => {
+    setBusy(true)
+    try {
+      setReplay(await replayVmNetpol(scope, yaml))
+    } catch (e: unknown) {
+      toast.error(formatUserError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const editYaml = (y: string) => {
+    setYaml(y)
+    setPreview(null)
+    setReplay(null)
   }
 
   const apply = async () => {
@@ -321,7 +348,7 @@ export default function PlatformVmNetworkPolicies() {
           action={
             <div className="flex gap-2">
               <button type="button" className="btn-secondary text-xs" onClick={() => fileRef.current?.click()}>Import YAML</button>
-              <button type="button" className="btn-primary text-xs" onClick={() => { setYaml(NETPOL_TEMPLATES[0].yaml); setPreview(null); setTab('editor') }}>
+              <button type="button" className="btn-primary text-xs" onClick={() => { editYaml(NETPOL_TEMPLATES[0].yaml); setTab('editor') }}>
                 New policy
               </button>
             </div>
@@ -350,7 +377,7 @@ export default function PlatformVmNetworkPolicies() {
                       fleet={scope === 'fleet'}
                       open={expanded === p.name}
                       onToggleOpen={() => setExpanded(expanded === p.name ? null : p.name)}
-                      onEdit={() => { setYaml(p.yaml); setPreview(null); setTab('editor') }}
+                      onEdit={() => { editYaml(p.yaml); setTab('editor') }}
                       onDelete={() => void remove(p.name)}
                       onEnabled={(v) => void toggle(p, v)}
                     />
@@ -415,7 +442,7 @@ export default function PlatformVmNetworkPolicies() {
                   value=""
                   onChange={(e) => {
                     const t = NETPOL_TEMPLATES.find((x) => x.id === e.target.value)
-                    if (t) { setYaml(t.yaml); setPreview(null) }
+                    if (t) editYaml(t.yaml)
                   }}
                 >
                   <option value="">Templates…</option>
@@ -430,14 +457,28 @@ export default function PlatformVmNetworkPolicies() {
               className="input w-full h-[460px] font-mono text-xs leading-relaxed bg-[#0b0b0d] text-[#e5e5ea]"
               spellCheck={false}
               value={yaml}
-              onChange={(e) => { setYaml(e.target.value); setPreview(null) }}
+              onChange={(e) => editYaml(e.target.value)}
             />
             <div className="flex gap-2 mt-3">
               <button type="button" className="btn-secondary text-sm" disabled={busy} onClick={() => void validate()}>Validate &amp; preview</button>
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                disabled={busy}
+                title="Evaluate every connection from the last 7 days against this YAML"
+                onClick={() => void runReplay()}
+              >
+                Replay history
+              </button>
               <button type="button" className="btn-primary text-sm" disabled={busy || (preview !== null && !preview.valid)} onClick={() => void apply()}>Apply</button>
             </div>
           </MacGlassPanel>
           <MacGlassPanel title="Preview" subtitle="Dry run against the current VM inventory — nothing is changed.">
+            {replay && (
+              <div className="mb-4 pb-4 border-b border-white/[0.06]">
+                <ReplaySummary r={replay} />
+              </div>
+            )}
             {!preview ? (
               <Empty>Validate to see which VMs each policy selects and how many datapath rules it compiles to.</Empty>
             ) : (
@@ -679,6 +720,11 @@ export default function PlatformVmNetworkPolicies() {
       )}
 
       {tab === 'flows' && <FlowTerminal key={scope} scope={scope} />}
+      {tab === 'map' && <ServiceMap key={scope} scope={scope} />}
+      {tab === 'learn' && (
+        <LearnPanel key={scope} scope={scope} vmNames={vmNames} onOpenInEditor={(y) => { editYaml(y); setTab('editor') }} />
+      )}
+      {tab === 'alerts' && <FlowAlerts key={scope} scope={scope} />}
 
       <input ref={fileRef} type="file" accept=".yaml,.yml,.json" className="hidden" onChange={(e) => void importFile(e.target.files?.[0])} />
     </PlatformPageChrome>

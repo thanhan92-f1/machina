@@ -296,7 +296,7 @@ pub(super) fn on_vm_flow(
         return;
     }
     let ev = unsafe { std::ptr::read_unaligned(b.as_ptr() as *const VmFlowEvent) };
-    let rec = {
+    let (rec, alerts) = {
         let mut s = lock(sh);
         let (iface, tap_vm) = s.iface(ev.ifindex);
         let idx = &s.vm_flow_index;
@@ -373,10 +373,10 @@ pub(super) fn on_vm_flow(
             s.vm_auth_queue.push((ev.subject, ev.peer));
             wake.notify_one();
         }
-        Shared::push_capped(&mut s.vm_flows, rec.clone(), VM_FLOW_STORE_CAP);
-        rec
+        let alerts = s.record_vm_flow(&rec);
+        (rec, alerts)
     };
-    publish(bus, "flow", &rec);
+    publish_vm_flow(bus, &rec, alerts);
 }
 
 #[derive(Default)]

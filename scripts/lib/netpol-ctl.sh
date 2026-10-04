@@ -88,7 +88,52 @@ Usage: netpol <command> [options]
   auth                           Mutual-authentication table (identity pairs,
                                  like `cilium-dbg auth list`)
   sync                           Push compiled policy to every host now (fleet only)
+  learn [--vm VM] [--group-by LABEL] [--min N] [--no-l7] [--lock-unobserved] [-o yaml|json]
+                                 Generate least-privilege policies from the 7-day
+                                 flow history (prints YAML; review, then apply -f)
+  replay -f FILE|-               What the YAML would have done to every connection
+                                 in the flow history (would break / newly allow)
 EOF
+}
+
+np_netpol_learn() {
+    local out="yaml" body req='{}'
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --vm) req=$(jq -c --arg v "$2" '. + {vm: $v}' <<<"$req"); shift 2 ;;
+            --group-by) req=$(jq -c --arg v "$2" '. + {group_by: $v}' <<<"$req"); shift 2 ;;
+            --min|--min-count) req=$(jq -c --argjson v "$2" '. + {min_count: $v}' <<<"$req"); shift 2 ;;
+            --no-l7) req=$(jq -c '. + {l7: false}' <<<"$req"); shift ;;
+            --lock-unobserved) req=$(jq -c '. + {lock_unobserved: true}' <<<"$req"); shift ;;
+            -o|--output) out="$2"; shift 2 ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    body=$(np_api POST /vm-network-policies/learn -H 'Content-Type: application/json' -d "$req")
+    if [[ "$out" == json ]]; then jq . <<<"$body"; return; fi
+    jq -r '"# learned \(.policies | length) policies from \(.edges_used) flow edges (\(.edges_skipped) skipped)",
+        (.notes[] | "# note: \(.)")' <<<"$body" >&2
+    jq -r '.yaml' <<<"$body"
+}
+
+np_netpol_replay() {
+    local file="" text body
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -f|--filename) file="$2"; shift 2 ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    text=$(np_read_file "$file")
+    body=$(np_api POST /vm-network-policies/replay -H 'Content-Type: application/json' -d "$(jq -n --arg y "$text" '{yaml: $y}')")
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r '
+      def row(c; tone): "  \(tone)\(c.src) → \(c.dst) \(c.proto | ascii_downcase)/\(c.port)\u001b[0m\(if c.request then "  \u001b[35m\(c.request)\u001b[0m" else "" end)  \u001b[90m\(c.flows) flows, \(c.before) → \(c.after), last \(c.last_seen)\u001b[0m";
+      "Replayed \(.evaluated) connections: \(.unchanged) unchanged, \(.would_break | length) would break, \(.would_allow | length) newly allowed\(if (.not_evaluated // 0) > 0 then ", \(.not_evaluated) skipped (endpoints no longer resolvable)" else "" end)",
+      (if (.would_break | length) > 0 then "\n\u001b[1;31mWould break (\(.flows_breaking) flows)\u001b[0m", (.would_break[] | row(.; "\u001b[31m")) else empty end),
+      (if (.would_allow | length) > 0 then "\n\u001b[1;33mWould newly allow\u001b[0m", (.would_allow[] | row(.; "\u001b[33m")) else empty end),
+      (if (.would_break | length) == 0 then "\n\u001b[1;32mSafe: no observed connection would be blocked\u001b[0m" else empty end)' <<<"$body" | np_strip
+    [[ "$(jq '.would_break | length' <<<"$body")" == 0 ]]
 }
 
 np_netpol_get() {
@@ -304,6 +349,8 @@ np_netpol_main() {
             np_api POST /vm-network-policies/sync | jq .
             ;;
         observe) np_flow_main observe "$@" ;;
+        learn) np_netpol_learn "$@" ;;
+        replay) np_netpol_replay "$@" ;;
         ""|help|-h|--help) np_netpol_usage ;;
         *) np_die "unknown netpol command: $sub (try: netpol help)" ;;
     esac
@@ -363,6 +410,10 @@ Usage: flow <command> [filters]
                                      Busiest flows over the recent window
   stats                              Verdict / protocol / direction / drop-reason
                                      breakdown with bar charts
+  edges [--vm NAME] [-o json]        7-day history: who talks to whom, per port and
+                                     verdict, with L7 rate / status / latency
+  alerts [--limit N]                 Port scans, host sweeps, deny bursts, new peers
+  reset                              Clear the flow history (admin)
 
 Filters:
   --vm NAME  --from-vm NAME  --to-vm NAME  --label k=v  --ip ADDR  --cidr PREFIX
@@ -436,9 +487,55 @@ np_flow_banner() {
     printf '\n\033[90m%s\033[0m\n' "TIME          SOURCE → DESTINATION                         PROTO  VERDICT  DIR  POLICY"
 }
 
+np_flow_edges() {
+    local vm="" out="" body
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --vm) vm="$2"; shift 2 ;;
+            -o|--output) out="$2"; shift 2 ;;
+            --color) NP_COLOR="$2"; shift 2 ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    body=$(np_api GET "/flows/edges${vm:+?vm=$(np_uri "$vm")}")
+    if [[ "$out" == json ]]; then jq . <<<"$body"; return; fi
+    {
+        printf 'SOURCE\tDESTINATION\tPORT\tDIR\tVERDICT\tFLOWS\tPOLICY\tLAST SEEN\tL7\n'
+        jq -r '.items | sort_by(-.count)[] | [
+            (.src_vm // .src), (.dst_vm // .dst), "\(.port)/\(.proto | ascii_downcase)", .direction,
+            (.verdict + (if .drop_reason then "(\(.drop_reason))" else "" end)), (.count | tostring),
+            (.policy // "-"), .last_seen,
+            ((.l7 // [])[:3] | map("\(.request) ×\(.count)\(if .latency_n > 0 then " \(.latency_ms_total / .latency_n | floor)ms" else "" end)\(if (.status["5xx"] // 0) > 0 then " 5xx=\(.status["5xx"])" else "" end)") | join("; ") | if . == "" then "-" else . end)
+          ] | @tsv' <<<"$body"
+    } | column -t -s $'\t' | awk -v c="$(np_color_on && echo 1)" '
+        NR == 1 { print c ? "\033[90m" $0 "\033[0m" : $0; next }
+        /DROPPED/ { print c ? "\033[31m" $0 "\033[0m" : $0; next }
+        /AUDIT/ { print c ? "\033[33m" $0 "\033[0m" : $0; next }
+        { print }'
+}
+
+np_flow_alerts() {
+    local limit=100 body
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --limit|-n) limit="$2"; shift 2 ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    body=$(np_api GET "/flows/alerts?limit=${limit}")
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r '.items[] | "\(.ts)  \(if .severity == "high" then "\u001b[1;31m" elif .severity == "medium" then "\u001b[33m" else "\u001b[36m" end)\(.severity | ascii_upcase)\u001b[0m  \u001b[1m\(.kind)\u001b[0m  \(.src_vm // .src)\(if .host then "  \u001b[35m[\(.host)]\u001b[0m" else "" end)  \(.detail)"' <<<"$body" | np_strip
+    [[ "$(jq '.items | length' <<<"$body")" != 0 ]] || echo "(no alerts)" >&2
+}
+
 np_flow_main() {
     np_need
     local sub="${1:-observe}"
+    case "$sub" in
+        edges|history) shift; np_flow_edges "$@"; return ;;
+        alerts) shift; np_flow_alerts "$@"; return ;;
+        reset) np_api DELETE /flows/edges >/dev/null; echo "flow history cleared"; return ;;
+    esac
     case "$sub" in -*) sub=observe ;; *) shift || true ;; esac
     local follow=0 last=50 out="" by="pair" limit=15
     local vm="" from_vm="" to_vm="" label="" ip="" cidr="" port="" protocol="" verdict="" drop="" policy="" direction="" host=""

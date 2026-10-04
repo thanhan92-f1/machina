@@ -54,9 +54,49 @@ const flow = {
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
+const recent = new Date(Date.now() - 60_000).toISOString().replace(/\.\d+Z$/, 'Z')
+
+const edges = [
+  {
+    src: 'web-1', dst: 'db-1', src_vm: 'web-1', dst_vm: 'db-1', direction: 'egress', proto: 'TCP', port: 5432,
+    verdict: 'FORWARDED', count: 120, bytes: 7200, first_seen: recent, last_seen: recent, policy: 'db-from-web',
+    l7: [{ kind: 'http', request: 'GET api/users/{id}', count: 40, denied: 2, status: { '2xx': 35, '5xx': 3 }, latency_n: 38, latency_ms_total: 760, latency_ms_max: 95 }],
+  },
+  {
+    src: 'web-1', dst: 'db-1', src_vm: 'web-1', dst_vm: 'db-1', direction: 'egress', proto: 'TCP', port: 22,
+    verdict: 'DROPPED', drop_reason: 'default-deny', count: 4, bytes: 240, first_seen: recent, last_seen: recent,
+  },
+  {
+    src: 'web-1', dst: '10.0.0.1', src_vm: 'web-1', dst_entity: 'host', direction: 'egress', proto: 'UDP', port: 53,
+    verdict: 'FORWARDED', count: 9, bytes: 540, first_seen: recent, last_seen: recent,
+  },
+]
+
+const alerts = [
+  { ts: recent, kind: 'port_scan', severity: 'high', src: 'web-1', src_vm: 'web-1', dst: 'db-1', detail: 'web-1 probed 31 ports on db-1 within a minute', count: 31 },
+]
+
+const learned = {
+  yaml: 'apiVersion: cilium.io/v2\nkind: CiliumNetworkPolicy\nmetadata:\n  name: learned-db\nspec:\n  endpointSelector:\n    matchLabels: {app: db}\n',
+  policies: [{ name: 'learned-db', vms: ['db-1'], ingress_rules: 1, egress_rules: 0 }],
+  edges_used: 3,
+  edges_skipped: 1,
+  notes: [],
+}
+
+const replayResult = {
+  evaluated: 3,
+  unchanged: 2,
+  would_break: [{ src: 'web-1', dst: 'db-1', proto: 'TCP', port: 5432, request: 'GET api/users/{id}', flows: 40, last_seen: recent, before: 'ALLOWED', after: 'DENIED: default deny at ingress of db-1' }],
+  would_allow: [],
+  flows_breaking: 40,
+}
+
 async function mockNetpol(page: Page) {
   const policies = [dbPolicy]
   const applied: string[] = []
+  await page.route('**/flows/edges**', (route) => json(route, { items: edges }))
+  await page.route('**/flows/alerts**', (route) => json(route, { items: alerts }))
   await page.route('**/flows/stream**', (route) =>
     route.fulfill({
       status: 200,
@@ -128,6 +168,8 @@ async function mockNetpol(page: Page) {
         cilium: null,
       })
     }
+    if (path === '/learn') return json(route, learned)
+    if (path === '/replay') return json(route, replayResult)
     if (path === '/endpoints') return json(route, { items: endpoints })
     if (path === '/selectors') return json(route, { items: [{ policy: 'db-from-web', path: 'spec.endpointSelector', selector: 'app=db', vms: ['db-1'] }] })
     if (path === '/fqdn-cache') return json(route, { items: [] })
@@ -203,6 +245,44 @@ test('VM network policies: flow terminal streams a dropped flow', async ({ page 
   await expect(term.getByText(/machinactl flow observe --follow/)).toBeVisible()
   await expect(term.getByText(/DROPPED/).first()).toBeVisible({ timeout: 10_000 })
   await expect(term.getByText(/web-1/).first()).toBeVisible()
+})
+
+test('VM network policies: service map with L7 metrics', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?tab=map`)
+  const map = page.getByRole('img', { name: 'Service map' })
+  await expect(map).toBeVisible({ timeout: 15_000 })
+  await expect(map.getByText('host · 10.0.0.1')).toBeVisible()
+  await page.getByRole('button', { name: /web-1 → db-1/ }).click()
+  const l7 = page.getByRole('table', { name: 'L7 metrics' })
+  await expect(l7.getByText('GET api/users/{id}')).toBeVisible()
+  await expect(l7.getByText('20 ms')).toBeVisible()
+  await expect(l7.getByText('8% 5xx')).toBeVisible()
+  await page.getByLabel('Denied only').check()
+  await expect(page.getByText(/1 links/)).toBeVisible()
+})
+
+test('VM network policies: learn, replay and open in editor', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?tab=learn`)
+  await page.getByRole('button', { name: 'Generate' }).click()
+  await expect(page.getByText('learned-db', { exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/1 observed connection\(s\) \(40 flows\) would be blocked/)).toBeVisible()
+  await page.getByRole('button', { name: 'Open in editor' }).click()
+  await expect(page.getByLabel('Policy YAML')).toHaveValue(/learned-db/)
+  await page.getByRole('button', { name: 'Replay history' }).click()
+  await expect(page.getByRole('table', { name: 'Would break' }).getByText('GET api/users/{id}')).toBeVisible()
+})
+
+test('VM network policies: alerts', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?tab=alerts`)
+  const t = page.getByRole('table', { name: 'Flow alerts' })
+  await expect(t.getByText('Port scan')).toBeVisible({ timeout: 15_000 })
+  await expect(t.getByText(/probed 31 ports/)).toBeVisible()
 })
 
 test('VM network policies: delete asks for confirmation', async ({ page }) => {

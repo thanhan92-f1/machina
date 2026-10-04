@@ -32,6 +32,14 @@ test('live VM network policies page: status, dry-run validate, trace, flows', as
   const term = page.getByLabel('Packet flow terminal')
   await expect(term.getByText(/connected — streaming flows/)).toBeVisible({ timeout: 20_000 })
 
+  await page.goto(`${live}${PAGE}?tab=map`)
+  await expect(page.getByText(/endpoints · \d+ links|No flows in this window/)).toBeVisible({ timeout: 20_000 })
+  await page.goto(`${live}${PAGE}?tab=learn`)
+  await page.getByRole('button', { name: 'Generate' }).click()
+  await expect(page.getByText(/policies from \d+ flow edges/)).toBeVisible({ timeout: 20_000 })
+  await page.goto(`${live}${PAGE}?tab=alerts`)
+  await expect(page.getByRole('table', { name: 'Flow alerts' }).or(page.getByText(/No alerts/))).toBeVisible({ timeout: 20_000 })
+
   for (const scope of ['fleet']) {
     await page.goto(`${live}${PAGE}?tab=policies&scope=${scope}`)
     await expect(page.getByText(/Managed by/)).toBeVisible({ timeout: 20_000 })

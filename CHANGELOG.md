@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-04 — Flow history, service map, learn, replay and alerts
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#flow-history-service-map-learn-replay-and-alerts).
+
+- **Flow history.** bpfd keeps 7 days of VM flow edges, and saves them
+  across restarts, with normalised L7 requests per edge. Proxied HTTP adds
+  the response status class and latency. The host, other nodes and the
+  internet appear by address, tagged with their entity.
+- **Service map.** A new UI tab draws who talks to whom, coloured by verdict.
+  Pick a link for its ports, policies and L7 rate, errors and latency.
+- **Learn.** `netpol learn` and the *Learn* tab write least-privilege
+  CiliumNetworkPolicy YAML from observed traffic. It uses VM selectors,
+  `toEntities` for the host, `toFQDNs` or `/32` for external addresses, and
+  HTTP, DNS and SNI rules.
+- **Replay.** `netpol replay -f` and the editor's *Replay history* button
+  show what a draft would have broken or newly allowed over the last 7
+  days. The CLI exits non-zero if anything would break.
+- **Alerts.** Port-scan, host-sweep, deny-burst and new-peer detection on
+  each host. The controller sends new alerts out as `netpol.alert` events
+  (webhooks, SIEM).
+- New API routes on both the daemon and the controller: `GET`/`DELETE
+  /api/v1/flows/edges`, `GET /api/v1/flows/alerts`, `POST
+  …/vm-network-policies/learn` and `…/replay`. New CLI commands: `flow
+  edges`, `flow alerts`, `flow reset`.
+
 ## 2026-10-04 — Stale VM inventory
 
 - **Inventory pruning.** A host that reports no VMs on three consecutive

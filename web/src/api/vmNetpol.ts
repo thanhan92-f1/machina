@@ -294,6 +294,109 @@ export const listFlows = async (scope: NetpolScope, f: FlowFilter, limit = 500) 
 export const flowStreamUrl = (scope: NetpolScope, f: FlowFilter, last = 100) =>
   `${netpolBase(scope)}/flows/stream${flowQuery(f, { last })}`
 
+/** One normalised L7 request on a flow edge. */
+export interface VmFlowL7Stat {
+  kind: string
+  request: string
+  count: number
+  denied: number
+  /** `2xx` / `4xx` / `5xx` counts — proxied HTTP only. */
+  status?: Record<string, number>
+  latency_n: number
+  latency_ms_total: number
+  latency_ms_max: number
+}
+
+/** Flows folded by source, destination, direction, port and verdict (7-day history). */
+export interface VmFlowEdge {
+  host?: string | null
+  src: string
+  dst: string
+  src_vm?: string | null
+  dst_vm?: string | null
+  /** `host`, `world`, `remote-node` or a CIDR when the side is not a VM. */
+  src_entity?: string | null
+  dst_entity?: string | null
+  src_labels?: Record<string, string>
+  dst_labels?: Record<string, string>
+  direction: string
+  proto: string
+  port: number
+  verdict: string
+  drop_reason?: string | null
+  policy?: string | null
+  count: number
+  bytes: number
+  first_seen: string
+  last_seen: string
+  l7?: VmFlowL7Stat[]
+}
+
+export interface VmFlowAlert {
+  ts: string
+  host?: string | null
+  kind: 'port_scan' | 'host_sweep' | 'deny_burst' | 'new_peer' | 'threat_domain' | 'new_domain' | string
+  severity: 'low' | 'medium' | 'high' | string
+  src: string
+  src_vm?: string | null
+  dst?: string | null
+  detail: string
+  count: number
+}
+
+export const listFlowEdges = async (scope: NetpolScope, vm?: string) =>
+  (await readJsonItemsList<VmFlowEdge>(`${netpolBase(scope)}/flows/edges${flowQuery({ vm })}`)).items
+
+export const resetFlowEdges = (scope: NetpolScope) => apiDelete(`${netpolBase(scope)}/flows/edges`)
+
+export const listFlowAlerts = async (scope: NetpolScope, limit = 200) =>
+  (await readJsonItemsList<VmFlowAlert>(`${netpolBase(scope)}/flows/alerts${flowQuery({}, { limit })}`)).items
+
+export interface LearnOptions {
+  vm?: string
+  selector?: Record<string, string>
+  group_by?: string
+  min_count?: number
+  l7?: boolean
+  lock_unobserved?: boolean
+}
+
+export interface LearnResult {
+  yaml: string
+  policies: Array<{ name: string; vms: string[]; ingress_rules: number; egress_rules: number }>
+  edges_used: number
+  edges_skipped: number
+  notes: string[]
+}
+
+export const learnVmNetpol = (scope: NetpolScope, o: LearnOptions) =>
+  apiPost<LearnResult>(`${netpolBase(scope)}${P}/learn`, o)
+
+export interface ReplayChange {
+  src: string
+  dst: string
+  proto: string
+  port: number
+  request?: string | null
+  flows: number
+  last_seen: string
+  before: string
+  after: string
+}
+
+export interface ReplayResult {
+  evaluated: number
+  unchanged: number
+  /** Endpoints the tracer could not resolve, e.g. VMs deleted since. */
+  not_evaluated?: number
+  would_break: ReplayChange[]
+  would_allow: ReplayChange[]
+  flows_breaking: number
+}
+
+export const replayVmNetpol = (scope: NetpolScope, yaml: string) =>
+  apiPost<ReplayResult>(`${netpolBase(scope)}${P}/replay`, { yaml })
+
 /** Daemon: VM name. Controller: VM id. */
 export async function getVmLabels(scope: NetpolScope, vm: string): Promise<Record<string, string>> {
   const r = await apiGet<{ labels?: Record<string, string> }>(`${netpolBase(scope)}/vms/${encodeURIComponent(vm)}/labels`)

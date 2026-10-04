@@ -472,6 +472,19 @@ impl Daemon {
                     .collect();
                 v(&out)
             }
+            Request::VmFlowEdges { vm } => v(&lock(&self.shared).flow_hist.edges(vm.as_deref())),
+            Request::VmFlowEdgesReset {} => {
+                let mut s = lock(&self.shared);
+                s.flow_hist.reset();
+                s.flow_hist.save();
+                json!({ "ok": true })
+            }
+            Request::VmFlowAlerts { limit } => {
+                let s = lock(&self.shared);
+                let out: Vec<&VmFlowAlert> =
+                    s.flow_hist.alerts.iter().rev().take(lim(limit)).collect();
+                v(&out)
+            }
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;
@@ -750,6 +763,7 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
                 if n2.is_multiple_of(60) {
                     eng.fold_accounting()?;
                     d2.save(&eng);
+                    lock(&d2.shared).flow_hist.save();
                 }
                 Ok(())
             })
@@ -768,6 +782,9 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
 pub async fn run(cfg: Config) -> Result<()> {
     std::fs::create_dir_all(&cfg.state_dir).ok();
     let shared: SharedState = Arc::new(Mutex::new(Shared::default()));
+    lock(&shared)
+        .flow_hist
+        .load(&cfg.state_dir.join("flow-history.json"));
     let (bus, _) = broadcast::channel(4096);
     let wake = Arc::new(Notify::new());
 
@@ -874,6 +891,7 @@ pub async fn run(cfg: Config) -> Result<()> {
             _ = tokio::signal::ctrl_c() => break,
         }
     }
+    lock(&d.shared).flow_hist.save();
     tracing::info!("machina-bpfd stopping; detaching programs");
     let _ = std::fs::remove_file(&cfg.socket);
     Ok(())
