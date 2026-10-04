@@ -73,9 +73,17 @@ export async function resolveLiveAuthMode(page: Page, baseUrl: string): Promise<
   return 'pam'
 }
 
+const USERNAME = '#login-username, #username'
+const PASSWORD = '#login-password, #password'
+
 export async function fillMachinaLoginForm(page: Page, user: string, pass: string) {
-  await page.locator('#login-username').fill(user)
-  await page.locator('#login-password').fill(pass)
+  const username = page.locator(USERNAME)
+  if (await username.isVisible().catch(() => false)) await username.fill(user)
+  const password = page.locator(PASSWORD)
+  if (!(await password.isVisible().catch(() => false))) {
+    await page.getByRole('button', { name: 'Continue' }).click()
+  }
+  await password.fill(pass)
 }
 
 export async function submitMachinaLogin(page: Page) {
@@ -85,7 +93,7 @@ export async function submitMachinaLogin(page: Page) {
 }
 
 export async function isMachinaLoginVisible(page: Page) {
-  return page.locator('#login-username').isVisible().catch(() => false)
+  return page.locator(USERNAME).isVisible().catch(() => false)
 }
 
 async function hasValidSession(page: Page, baseUrl: string): Promise<boolean> {
@@ -137,7 +145,7 @@ export async function ensureLoggedIn(
 
   const target = entryPath === '/' ? '/platform' : entryPath
   await page.goto(`${baseUrl}${target}`, { waitUntil: 'domcontentloaded', timeout: 180_000 })
-  await page.locator('#login-username').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {})
+  await page.locator(USERNAME).waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {})
 }
 
 /** Password login starting at `/login`; expects redirect to dashboard (`/`). */
@@ -155,10 +163,10 @@ export async function loginAtMachinaLoginPage(page: Page, baseUrl: string) {
     )
   }
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded' })
-  await page.locator('#login-username').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator(`${USERNAME}, ${PASSWORD}`).first().waitFor({ state: 'visible', timeout: 15_000 })
   await fillMachinaLoginForm(page, creds.user, creds.pass)
   await submitMachinaLogin(page)
-  await page.waitForURL((url) => url.pathname === '/', { timeout: 30_000 })
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30_000 })
 }
 
 export async function logoutIfAuthenticated(page: Page, baseUrl: string) {

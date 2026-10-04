@@ -1,0 +1,40 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+import { test, expect } from '@playwright/test'
+import { ensureLoggedIn, liveCredentials } from './helpers/liveAuth'
+
+/** Read-only against a running daemon: validate is a dry run, trace changes nothing. */
+const live = process.env.PLAYWRIGHT_LIVE_URL?.replace(/\/$/, '')
+test.skip(!live || !liveCredentials(), 'Set PLAYWRIGHT_LIVE_URL, PLAYWRIGHT_LIVE_USER and PLAYWRIGHT_LIVE_PASS')
+
+const PAGE = '/platform/zyra/security/network-policies'
+
+test('live VM network policies page: status, dry-run validate, trace, flows', async ({ page }) => {
+  await ensureLoggedIn(page, live!, PAGE)
+  await expect(page.getByRole('heading', { name: 'VM Network Policies' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText(/Absent · native|Present/)).toBeVisible()
+
+  await page.goto(`${live}${PAGE}?tab=editor`)
+  await page.getByLabel('Template').selectOption('services')
+  await page.getByRole('button', { name: 'Validate & preview' }).click()
+  await expect(page.getByText('Valid', { exact: true })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText(/selects no service/).first()).toBeVisible()
+
+  await page.goto(`${live}${PAGE}?tab=tester`)
+  await page.locator('#tr-from').fill('10.9.9.1')
+  await page.locator('#tr-to').fill('10.9.9.2')
+  await page.locator('#tr-port').fill('80')
+  await page.getByRole('button', { name: 'Trace' }).click()
+  await expect(page.getByText(/^(ALLOWED|DENIED)/)).toBeVisible({ timeout: 20_000 })
+
+  await page.goto(`${live}${PAGE}?tab=flows`)
+  const term = page.getByLabel('Packet flow terminal')
+  await expect(term.getByText(/connected — streaming flows/)).toBeVisible({ timeout: 20_000 })
+
+  for (const scope of ['fleet']) {
+    await page.goto(`${live}${PAGE}?tab=policies&scope=${scope}`)
+    await expect(page.getByText(/Managed by/)).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('alert')).toHaveCount(0)
+  }
+})

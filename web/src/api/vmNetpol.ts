@@ -494,6 +494,34 @@ spec:
 `,
   },
   {
+    id: 'services',
+    label: 'Egress to services (toServices)',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: web-to-services
+spec:
+  description: Web VMs reach the shop load balancer and the data-tier services
+  endpointSelector:
+    matchLabels:
+      app: web
+  egress:
+    - toServices:
+        - k8sService:
+            serviceName: shop-lb
+            namespace: shop
+    - toServices:
+        - k8sServiceSelector:
+            selector:
+              matchLabels:
+                tier: data
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+`,
+  },
+  {
     id: 'cidr-group',
     label: 'CIDR group + toGroups',
     yaml: `apiVersion: cilium.io/v2alpha1
