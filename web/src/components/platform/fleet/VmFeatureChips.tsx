@@ -6,7 +6,7 @@ import type { ConsoleHubPlan, PlatformVm } from '../../../api/platform'
 import { statusPillClasses } from '../../../utils/semanticColors'
 
 type Tone = 'ok' | 'info' | 'warn' | 'neutral'
-type Chip = { key: string; label: string; tone: Tone; icon: typeof Cpu; title?: string }
+type Chip = { key: string; label: string; tone: Tone; icon: typeof Cpu; title?: string; actionable?: boolean }
 
 /** "not_installed" -> "Guest agent not installed"; unknown states fall back to the raw value, spaced. */
 function guestAgentLabel(status: string): string {
@@ -22,7 +22,7 @@ export function vmFeatures(vm: PlatformVm, plan: ConsoleHubPlan | null): Chip[] 
   const tools = (vm.guest_tools_status ?? '').toLowerCase()
   if (tools) {
     const ok = tools.includes('ok') || tools.includes('run') || tools.includes('active') || tools.includes('ready')
-    chips.push({ key: 'qga', label: ok ? 'Guest agent' : guestAgentLabel(tools), tone: ok ? 'ok' : 'warn', icon: Bot })
+    chips.push({ key: 'qga', label: ok ? 'Guest agent' : guestAgentLabel(tools), tone: ok ? 'ok' : 'warn', icon: Bot, actionable: !ok, title: ok ? undefined : 'Click for setup options' })
   }
   if (vm.ha_enabled) chips.push({ key: 'ha', label: 'High availability', tone: 'info', icon: ShieldCheck })
   if (plan?.ssh_user && vm.guest_ip) chips.push({ key: 'ssh', label: `SSH · ${plan.ssh_user}`, tone: 'ok', icon: Terminal })
@@ -35,17 +35,29 @@ export function vmFeatures(vm: PlatformVm, plan: ConsoleHubPlan | null): Chip[] 
   return chips
 }
 
-export default function VmFeatureChips({ vm, plan }: { vm: PlatformVm; plan: ConsoleHubPlan | null }) {
+export default function VmFeatureChips({ vm, plan, onAgentSetup }: { vm: PlatformVm; plan: ConsoleHubPlan | null; onAgentSetup?: () => void }) {
   const chips = vmFeatures(vm, plan)
   if (chips.length === 0) return null
   return (
     <div className="flex flex-wrap gap-1.5" data-testid="vm-feature-chips">
-      {chips.map(({ key, label, tone, icon: Icon, title }) => (
-        <span key={key} title={title ?? label} className={`inline-flex items-center gap-1 text-[11px] font-medium ${statusPillClasses(tone)}`}>
-          <Icon className="w-3 h-3" aria-hidden />
-          {label}
-        </span>
-      ))}
+      {chips.map(({ key, label, tone, icon: Icon, title, actionable }) => {
+        const cls = `inline-flex items-center gap-1 text-[11px] font-medium ${statusPillClasses(tone)}`
+        const inner = (
+          <>
+            <Icon className="w-3 h-3" aria-hidden />
+            {label}
+          </>
+        )
+        return actionable && onAgentSetup ? (
+          <button key={key} type="button" title={title ?? label} className={`${cls} cursor-pointer hover:brightness-95`} onClick={onAgentSetup}>
+            {inner}
+          </button>
+        ) : (
+          <span key={key} title={title ?? label} className={cls}>
+            {inner}
+          </span>
+        )
+      })}
     </div>
   )
 }

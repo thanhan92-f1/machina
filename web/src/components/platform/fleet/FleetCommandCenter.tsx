@@ -22,6 +22,7 @@ import { useVmMetricSeries } from '../../../hooks/useVmMetricSeries'
 import VmHealthRing from './VmHealthRing'
 import { vmHealthScore } from '../../../utils/vmHealthScore'
 import VmFeatureChips from './VmFeatureChips'
+import GuestAgentSetupDialog from './GuestAgentSetupDialog'
 import VmStatusBadge from '../../VmStatusBadge'
 import { formatVmMemoryGiB } from '../../../utils/vmVisual'
 import { useToastContext } from '../../../contexts/ToastContext'
@@ -49,6 +50,7 @@ export default function FleetCommandCenter({
   const [healthScore, setHealthScore] = useState<number | null>(null)
   const [healthLoading, setHealthLoading] = useState(false)
   const [plan, setPlan] = useState<ConsoleHubPlan | null>(null)
+  const [agentSetupOpen, setAgentSetupOpen] = useState(false)
   const vmRunning = selectedVm?.observed_state === 'running'
   const metricSeries = useVmMetricSeries(selectedVm?.id, Boolean(vmRunning) && selectedVm?.inventory_source !== 'kubevirt', null)
 
@@ -155,7 +157,7 @@ export default function FleetCommandCenter({
         ))}
       </div>
 
-      <VmFeatureChips vm={selectedVm} plan={plan} />
+      <VmFeatureChips vm={selectedVm} plan={plan} onAgentSetup={() => setAgentSetupOpen(true)} />
     </div>
   )
 
@@ -209,6 +211,11 @@ export default function FleetCommandCenter({
             }}
           >
             <Copy className="w-3.5 h-3.5" /> Copy IP
+          </button>
+        )}
+        {running && !/^(ok|running|active|ready|installed)/i.test(selectedVm.guest_tools_status ?? '') && (
+          <button type="button" className="btn-secondary text-xs py-1.5 px-3" onClick={() => setAgentSetupOpen(true)}>
+            Set up guest agent
           </button>
         )}
         {selectedVm.managed === false && (
@@ -274,6 +281,13 @@ export default function FleetCommandCenter({
           {controls}
         </div>
       </div>
+      <GuestAgentSetupDialog
+        open={agentSetupOpen}
+        onClose={() => setAgentSetupOpen(false)}
+        vm={selectedVm}
+        osHint={plan?.os_hint}
+        sshUser={plan?.ssh_user}
+      />
     </DetailPanel>
   )
 }

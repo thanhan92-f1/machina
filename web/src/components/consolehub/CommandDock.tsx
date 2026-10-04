@@ -54,7 +54,7 @@ export default function CommandDock({
     <div
       className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/80 bg-white/90 shadow-lg shadow-black/30 backdrop-blur-2xl text-slate-900">
+      <div data-nl-dock className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/80 bg-white/90 shadow-lg shadow-black/30 backdrop-blur-2xl text-slate-900">
         <button type="button" className={btn} onClick={() => vp.setMode('fit')}>Fit</button>
         <button type="button" className={btn} onClick={() => vp.setMode('fill')}>Fill</button>
         <button type="button" className={btn} onClick={() => vp.setMode('native')}>Native</button>
