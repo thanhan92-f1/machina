@@ -35,14 +35,21 @@ pub use trace::{trace, TraceEndpoint, TraceQuery, TraceResult, TraceSide};
 /// Cilium on this host (`cilium_host` link, CNI config or a running
 /// cilium-agent). libvirt taps are never Cilium endpoints, so the VM edge
 /// stays Machina's either way; this is reported for KubeVirt delegation.
+fn cni_config_name(name: &str) -> bool {
+    [".conf", ".conflist", ".json"].iter().any(|ext| name.ends_with(ext))
+}
+
 pub fn cilium_present() -> Option<String> {
     if std::path::Path::new("/sys/class/net/cilium_host").exists() {
         return Some("cilium_host interface".into());
     }
     if let Ok(rd) = std::fs::read_dir("/etc/cni/net.d") {
         for e in rd.flatten() {
-            if e.file_name().to_string_lossy().contains("cilium") {
-                return Some(format!("/etc/cni/net.d/{}", e.file_name().to_string_lossy()));
+            let name = e.file_name().to_string_lossy().into_owned();
+            // Only files the CNI runtime loads; Cilium renames configs it
+            // displaces to `*.cilium_bak`, which outlive an uninstall.
+            if name.contains("cilium") && cni_config_name(&name) {
+                return Some(format!("/etc/cni/net.d/{name}"));
             }
         }
     }

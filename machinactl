@@ -930,12 +930,24 @@ np_setup() {
     if [[ -n "${MACHINA_API_TOKEN:-}" ]]; then
         NP_AUTH=(-H "Authorization: Bearer ${MACHINA_API_TOKEN}")
     elif [[ -n "${MACHINA_USER:-}" && -n "${MACHINA_PASS:-}" ]]; then
-        NP_JAR=$(mktemp)
-        trap 'rm -f "$NP_JAR"' EXIT
-        # Password over stdin so it never shows up in argv.
-        MACHINA_USER="$MACHINA_USER" MACHINA_PASS="$MACHINA_PASS" jq -n '{username: env.MACHINA_USER, password: env.MACHINA_PASS}' |
-            curl -sk -c "$NP_JAR" -o /dev/null -X POST "$API_URL/api/$API_VERSION/auth/login" \
-                -H 'Content-Type: application/json' --data-binary @- || true
+        # Reuse one session across invocations: /auth/login is rate limited.
+        NP_JAR="${MACHINA_COOKIE_JAR:-$HOME/.machina/cli-session}"
+        mkdir -p "$(dirname "$NP_JAR")"
+        local code
+        code=$(curl -sk -b "$NP_JAR" -o /dev/null -w '%{http_code}' "$API_URL/api/$API_VERSION/auth/session" 2>/dev/null) || code=000
+        if [[ "$code" != 200 ]]; then
+            (umask 077 && : >"$NP_JAR")
+            # Password over stdin so it never shows up in argv.
+            code=$(MACHINA_USER="$MACHINA_USER" MACHINA_PASS="$MACHINA_PASS" jq -n '{username: env.MACHINA_USER, password: env.MACHINA_PASS}' |
+                curl -sk -c "$NP_JAR" -o /dev/null -w '%{http_code}' -X POST "$API_URL/api/$API_VERSION/auth/login" \
+                    -H 'Content-Type: application/json' --data-binary @-) || code=000
+            if [[ "$code" != 200 ]]; then
+                local hint=""
+                [[ "$code" == 429 ]] && hint=", rate limited — wait a minute"
+                err "login as $MACHINA_USER failed (HTTP $code$hint)"
+                exit 1
+            fi
+        fi
         NP_AUTH=(-b "$NP_JAR")
     fi
 }
@@ -1020,6 +1032,7 @@ cmd_help() {
     echo "🌍 Environment:"
     echo "  MACHINA_URL    API URL (default: https://127.0.0.1:5092; self-signed — use curl -k from scripts)"
     echo "  MACHINA_API_TOKEN, or MACHINA_USER + MACHINA_PASS   Auth for netpol / flow / vm label"
+    echo "  MACHINA_COOKIE_JAR   Session cache for the above (default ~/.machina/cli-session)"
     echo "  NO_COLOR       Disable colors in flow output"
     echo ""
 }

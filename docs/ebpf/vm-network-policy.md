@@ -151,6 +151,11 @@ Policies are persisted; the enforce mode and its lease never are.
 | `hubble observe` | `machinactl flow observe [-f] [--vm X] [--verdict DROPPED] [--port 443] …` |
 | — | `machinactl flow top --by pair\|src\|dst\|port\|policy`, `machinactl flow stats` |
 
+Auth: `MACHINA_API_TOKEN`, or `MACHINA_USER` + `MACHINA_PASS`. With a user
+and password, the CLI keeps its session in `~/.machina/cli-session` (mode
+0600; override with `MACHINA_COOKIE_JAR`) and logs in again only when that
+session expires, because `/auth/login` is rate limited.
+
 ## Flows
 
 Every new connection on a policy-managed tap emits a flow event; drops and

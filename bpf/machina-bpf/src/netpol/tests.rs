@@ -7,6 +7,14 @@ use machina_bpf_common::IDENTITY_WORLD;
 
 use super::*;
 
+#[test]
+fn cilium_backup_configs_are_not_cilium() {
+    assert!(cni_config_name("05-cilium.conflist"));
+    assert!(cni_config_name("05-cilium.conf"));
+    assert!(!cni_config_name("00-multus.conf.cilium_bak"));
+    assert!(!cni_config_name("05-cilium.conflist.bak"));
+}
+
 fn vm(name: &str, host: &str, ip: &str, labels: &[(&str, &str)]) -> NetpolVm {
     NetpolVm {
         name: name.into(),
