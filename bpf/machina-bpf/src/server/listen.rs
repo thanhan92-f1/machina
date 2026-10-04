@@ -68,6 +68,9 @@ struct Persisted {
     vm_intel: Option<VmIntelConfig>,
     #[serde(default)]
     guard: Option<GuardConfig>,
+    /// Re-held for the time they have left (wall clock `until`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    vm_quarantines: Vec<VmQuarantine>,
 }
 
 struct Daemon {
@@ -122,6 +125,7 @@ impl Daemon {
                 .then(|| eng.l7s.config.clone()),
             vm_intel: (eng.vmi.config != VmIntelConfig::default()).then(|| eng.vmi.config.clone()),
             guard: eng.guard_persisted(),
+            vm_quarantines: eng.vm_quarantines(),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -199,6 +203,12 @@ impl Daemon {
             eng.sandbox.config = cfg;
         }
         eng.sandbox.pinned = p.vm_sandbox_pinned.into_iter().collect();
+        for q in p.vm_quarantines {
+            let vm = q.vm.clone();
+            if let Err(e) = eng.quarantine_restore(q) {
+                tracing::warn!("restore quarantine of {vm}: {e:#}");
+            }
+        }
         if let Some(st) = p.vm_edge {
             if let Err(e) = eng.vm_edge_sync(st) {
                 tracing::warn!("restore vm edge: {e:#}");
@@ -485,6 +495,25 @@ impl Daemon {
                     s.flow_hist.alerts.iter().rev().take(lim(limit)).collect();
                 v(&out)
             }
+            Request::VmQuarantine {
+                vm,
+                secs,
+                allow,
+                reason,
+                by,
+            } => {
+                let mut eng = lock(&self.engine);
+                let q = eng.vm_quarantine(&vm, secs, allow, reason, by)?;
+                self.save(&eng);
+                v(&q)
+            }
+            Request::VmQuarantineRelease { vm } => {
+                let mut eng = lock(&self.engine);
+                let released = eng.vm_quarantine_release(&vm)?;
+                self.save(&eng);
+                json!({ "released": released, "vm": vm })
+            }
+            Request::VmQuarantines => v(&lock(&self.engine).vm_quarantines()),
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;

@@ -93,6 +93,8 @@ Usage: netpol <command> [options]
                                  flow history (prints YAML; review, then apply -f)
   replay -f FILE|-               What the YAML would have done to every connection
                                  in the flow history (would break / newly allow)
+  quarantines                    Quarantined VMs, time left and exceptions
+                                 (quarantine with `vm quarantine VM`)
 EOF
 }
 
@@ -344,6 +346,7 @@ np_netpol_main() {
         status) np_netpol_status ;;
         fqdn|fqdn-cache|dns) np_netpol_fqdn ;;
         auth) np_netpol_auth ;;
+        quarantines|quarantine|q) np_netpol_quarantines ;;
         sync)
             [[ "$NP_FLEET" == 1 ]] || np_die "sync is a fleet (controller) feature; the daemon resyncs on every change and every 60s"
             np_api POST /vm-network-policies/sync | jq .
@@ -396,6 +399,106 @@ np_label_main() {
     np_api PUT "/vms/$(np_uri "$ref")/labels" -H 'Content-Type: application/json' -d "{\"labels\":$cur}" \
         | jq -r '.labels // {} | to_entries[] | "\(.key)=\(.value)"'
     echo "vm/$vm labeled" >&2
+}
+
+# ── VM quarantine ─────────────────────────────────────────────────────────
+
+# 90s, 15m, 4h, 1d or plain seconds → seconds.
+np_duration() {
+    local d=$1
+    case "$d" in
+        *s) echo "${d%s}" ;;
+        *m) echo $(( ${d%m} * 60 )) ;;
+        *h) echo $(( ${d%h} * 3600 )) ;;
+        *d) echo $(( ${d%d} * 86400 )) ;;
+        *[!0-9]*|"") np_die "bad duration: $d (e.g. 15m, 1h, 24h)" ;;
+        *) echo "$d" ;;
+    esac
+}
+
+np_quarantine_usage() {
+    cat <<'EOF'
+Usage: vm quarantine VM [--for 1h] [--allow-host-ssh] [--allow DIR:PEER[:PROTO[/PORT]]] [--reason TEXT] [--host H]
+       vm release VM [--host H]
+
+Cuts every flow of the VM — open connections too, in observe mode too — for
+--for (default 1h, max 24h). The kernel lifts it at the deadline.
+  --allow ingress:host:tcp/22   an exception; PEER is host, world, any or a VM
+  --allow-host-ssh              same as --allow ingress:host:tcp/22
+  --host H                      fleet: only this host (default: every host, so
+                                the quarantine follows the VM if it migrates)
+EOF
+}
+
+np_quarantine_main() {
+    np_need
+    local vm="${1:-}"
+    [[ -n "$vm" && "$vm" != -* ]] || { np_quarantine_usage >&2; exit 1; }
+    shift
+    local secs=3600 host="" req
+    req=$(jq -nc --argjson s "$secs" '{secs: $s, allow: []}')
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --for|--duration) secs=$(np_duration "$2"); req=$(jq -c --argjson s "$secs" '.secs = $s' <<<"$req"); shift 2 ;;
+            --allow-host-ssh) req=$(jq -c '.allow_host_ssh = true' <<<"$req"); shift ;;
+            --allow)
+                local dir peer rest proto="" port=0
+                IFS=: read -r dir peer rest <<<"$2"
+                [[ -n "$dir" && -n "$peer" ]] || np_die "--allow DIR:PEER[:PROTO[/PORT]], e.g. ingress:host:tcp/22"
+                if [[ -n "$rest" ]]; then proto=${rest%%/*}; [[ "$rest" == */* ]] && port=${rest#*/}; fi
+                req=$(jq -c --arg d "$dir" --arg p "$peer" --arg pr "$proto" --argjson po "$port" \
+                    '.allow += [{direction: $d, peer: $p, proto: $pr, port: $po}]' <<<"$req")
+                shift 2 ;;
+            --reason) req=$(jq -c --arg r "$2" '.reason = $r' <<<"$req"); shift 2 ;;
+            --host) host="$2"; shift 2 ;;
+            -h|--help) np_quarantine_usage; return ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    local body
+    body=$(np_api POST "/vms/$(np_uri "$vm")/quarantine${host:+?host=$(np_uri "$host")}" -H 'Content-Type: application/json' -d "$req")
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r --arg vm "$vm" '
+        (if .hosts then .hosts else [.] end) as $h
+        | "vm/\($vm) quarantined until \($h[0].until)",
+          ($h[] | select((.taps // []) | length > 0) | "  on \(.hostname // "this host"): \(.taps | join(", "))"),
+          (if ($h | map(.taps // [] | length) | add) == 0 then "  (not running — applies when it starts)" else empty end),
+          ((.errors // [])[] | "  \(.hostname): \(.error)")' <<<"$body"
+}
+
+np_release_main() {
+    np_need
+    local vm="${1:-}" host=""
+    [[ -n "$vm" && "$vm" != -* ]] || { np_quarantine_usage >&2; exit 1; }
+    shift
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --host) host="$2"; shift 2 ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    local body
+    body=$(np_api DELETE "/vms/$(np_uri "$vm")/quarantine${host:+?host=$(np_uri "$host")}")
+    if [[ "$(jq -r '.released' <<<"$body")" == true ]]; then
+        echo "vm/$vm released"
+    else
+        echo "vm/$vm was not quarantined"
+    fi
+}
+
+np_netpol_quarantines() {
+    local body
+    body=$(np_api GET /vm-network-policies/quarantines)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    [[ "$(jq '.items | length' <<<"$body")" != 0 ]] || { echo "(no VM is quarantined)" >&2; return; }
+    {
+        printf 'VM\tHOST\tLEFT\tUNTIL\tTAPS\tEXCEPTIONS\tREASON\tBY\n'
+        jq -r '.items[] | [
+            .vm, (.hostname // "-"), "\(.remaining_secs)s", .until, ((.taps // []) | join(",") | if . == "" then "-" else . end),
+            ((.allow // []) | map("\(.direction) \(.peer) \(if .proto == "" then "any" else .proto end)\(if .port > 0 then "/\(.port)" else "" end)") | join("; ") | if . == "" then "-" else . end),
+            (.reason // "" | if . == "" then "-" else . end), (.by // "" | if . == "" then "-" else . end)
+          ] | @tsv' <<<"$body"
+    } | column -t -s $'\t'
 }
 
 # ── flows ─────────────────────────────────────────────────────────────────

@@ -387,6 +387,7 @@ impl Engine {
     /// ones; then follow VMs for the VM edge and the QEMU sandbox.
     pub(super) fn rescan_ifaces(&mut self) {
         self.rescan_links();
+        self.quarantine_expire();
         self.vm_edge_refresh();
         self.sandbox_refresh();
         self.tls_refresh();

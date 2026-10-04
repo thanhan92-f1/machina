@@ -19,7 +19,9 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use futures_util::Stream;
-use machina_bpf::api::{Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry};
+use machina_bpf::api::{
+    Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry, VmQuarantineBody,
+};
 use machina_bpf::netpol::{
     self, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs, TraceQuery,
     VmNetworkPolicy,
@@ -656,6 +658,33 @@ async fn flow_alerts(Query(q): Query<EdgeQuery>) -> Result<Json<Value>, AppError
     Ok(Json(json!({ "items": v })))
 }
 
+async fn quarantine(
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+    Json(b): Json<VmQuarantineBody>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Quarantining a VM")?;
+    let reason = b.reason.clone();
+    let v = bpfd_call(&b.into_request(name.clone(), actor.username.clone())).await?;
+    tracing::warn!(actor = %actor.username, vm = %name, %reason, "VM quarantined");
+    Ok(Json(v))
+}
+
+async fn quarantine_release(
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Releasing a VM quarantine")?;
+    let v = bpfd_call(&Request::VmQuarantineRelease { vm: name.clone() }).await?;
+    tracing::warn!(actor = %actor.username, vm = %name, "VM quarantine released");
+    Ok(Json(v))
+}
+
+async fn quarantines() -> Result<Json<Value>, AppError> {
+    let v = bpfd_call(&Request::VmQuarantines).await?;
+    Ok(Json(json!({ "items": v })))
+}
+
 /// Address → DNS names from the `toFQDNs` cache.
 async fn fqdn_names() -> BTreeMap<String, Vec<String>> {
     let entries: Vec<VmFqdnEntry> = match bpfd_call(&Request::VmFqdnCache).await {
@@ -775,6 +804,11 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/auth", get(auth_table))
         .route("/vm-network-policies/learn", post(learn))
         .route("/vm-network-policies/replay", post(replay))
+        .route("/vm-network-policies/quarantines", get(quarantines))
+        .route(
+            "/vms/{name}/quarantine",
+            post(quarantine).delete(quarantine_release),
+        )
         .route(
             "/vm-network-policies/{name}",
             get(get_one).delete(delete_one),

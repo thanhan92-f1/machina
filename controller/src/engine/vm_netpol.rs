@@ -469,10 +469,55 @@ async fn forward_alerts(state: &AppState, seen: &mut Option<String>) {
                     a.detail
                 ),
             );
+            propose_quarantine(state, a).await;
         }
     }
     if newest.is_some() || seen.is_none() {
         *seen = Some(newest.unwrap_or_default());
+    }
+}
+
+/// A high-severity scan from a VM becomes a pending `vm.quarantine` action
+/// (one per VM at a time); nothing happens until someone approves it.
+async fn propose_quarantine(state: &AppState, a: &machina_bpf::api::VmFlowAlert) {
+    let Some(vm) = a.src_vm.as_deref() else {
+        return;
+    };
+    if a.severity != "high" || !matches!(a.kind.as_str(), "port_scan" | "host_sweep") {
+        return;
+    }
+    let pending: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM ai_actions WHERE status = 'pending' AND action_type = 'vm.quarantine' AND json_extract(object_ref, '$.vm') = ?",
+    )
+    .bind(vm)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(1);
+    if pending > 0 {
+        return;
+    }
+    let host = a.host.clone().unwrap_or_default();
+    let body = crate::engine::ai::actions::CreateActionBody {
+        action_type: "vm.quarantine".into(),
+        label: format!("Quarantine {vm} for 1 hour"),
+        review: format!(
+            "{} from {vm} on {host}: {}. Cuts every flow of the VM, including open ones, except SSH from its host; lifts itself after an hour.",
+            a.kind, a.detail
+        ),
+        risk: "Disconnects the VM".into(),
+        object_ref: serde_json::json!({
+            "vm": vm,
+            "host": a.host,
+            "secs": 3600,
+            "allow_host_ssh": true,
+            "reason": format!("{}: {}", a.kind, a.detail),
+        }),
+        source: "netpol".into(),
+    };
+    if let Err(e) =
+        crate::engine::ai::actions::create_action(&state.pool, &body, "netpol-detector").await
+    {
+        tracing::warn!("quarantine proposal for {vm}: {e:#}");
     }
 }
 
@@ -526,5 +571,35 @@ mod tests {
             .map(|e| (e.address.as_str(), e.port, e.proto))
             .collect();
         assert_eq!(eps, [("192.0.2.10", 8080, 6), ("10.0.0.5", 80, 6)]);
+    }
+
+    #[tokio::test]
+    async fn scans_propose_one_quarantine() {
+        let (state, _rx) = test_state().await;
+        let alert = |kind: &str, severity: &str| machina_bpf::api::VmFlowAlert {
+            kind: kind.into(),
+            severity: severity.into(),
+            src: "10.0.0.9".into(),
+            src_vm: Some("np-bad".into()),
+            host: Some("hv1".into()),
+            detail: "probed 25 ports".into(),
+            ..Default::default()
+        };
+        propose_quarantine(&state, &alert("new_peer", "low")).await;
+        propose_quarantine(&state, &alert("port_scan", "high")).await;
+        propose_quarantine(&state, &alert("host_sweep", "high")).await;
+        let pending = crate::engine::ai::actions::list_pending(&state.pool)
+            .await
+            .unwrap();
+        let q: Vec<_> = pending
+            .iter()
+            .filter(|a| a.action_type == "vm.quarantine")
+            .collect();
+        assert_eq!(q.len(), 1);
+        assert_eq!(q[0].object_ref["vm"], "np-bad");
+        assert_eq!(q[0].object_ref["allow_host_ssh"], true);
+        let body: machina_bpf::api::VmQuarantineBody =
+            serde_json::from_value(q[0].object_ref.clone()).unwrap();
+        assert_eq!(body.secs, Some(3600));
     }
 }

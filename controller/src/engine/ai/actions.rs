@@ -286,6 +286,32 @@ pub async fn approve_and_execute(
                 "rule": rule.0
             }))
         }
+        "vm.quarantine" => {
+            let vm = action
+                .object_ref
+                .get("vm")
+                .and_then(|v| v.as_str())
+                .filter(|v| !v.is_empty())
+                .ok_or_else(|| anyhow::anyhow!("vm missing in object_ref"))?
+                .to_string();
+            let host = action
+                .object_ref
+                .get("host")
+                .and_then(|v| v.as_str())
+                .map(str::to_string);
+            let body: machina_bpf::api::VmQuarantineBody =
+                serde_json::from_value(action.object_ref.clone())
+                    .map_err(|e| anyhow::anyhow!("quarantine object_ref: {e}"))?;
+            crate::api::vm_network_policies::quarantine_vm(
+                state,
+                &vm,
+                host,
+                body,
+                &actor.username,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))
+        }
         "vm.shutdown_agent" => {
             let vm_id = action
                 .object_ref

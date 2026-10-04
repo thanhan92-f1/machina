@@ -15,7 +15,9 @@ use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use futures_util::stream::Stream;
-use machina_bpf::api::{Request, VmEdgeStatus, VmFlowAlert, VmFlowEdge, VmFlowRecord};
+use machina_bpf::api::{
+    Request, VmEdgeStatus, VmFlowAlert, VmFlowEdge, VmFlowRecord, VmQuarantineBody,
+};
 use machina_bpf::netpol::{
     self, FlowFilter, LearnOptions, ReplayInputs, TraceQuery, VmNetworkPolicy,
 };
@@ -490,6 +492,126 @@ pub async fn flow_alerts(State(state): State<AppState>, Query(q): Query<EdgeQuer
     let mut items = fleet_alerts(&state, limit).await;
     items.truncate(limit);
     Json(json!({ "items": items }))
+}
+
+#[derive(Deserialize, Default)]
+pub struct HostQuery {
+    host: Option<String>,
+}
+
+/// Online hosts matching `host` (id or hostname); all of them by default,
+/// so a quarantine follows the VM wherever it runs or migrates.
+async fn target_hosts(state: &AppState, host: Option<String>) -> Vec<bpf::HostRef> {
+    let hosts = bpf::online_hosts(&state.pool).await;
+    match host.filter(|h| !h.is_empty()) {
+        Some(h) => hosts
+            .into_iter()
+            .filter(|x| x.id == h || x.hostname == h)
+            .collect(),
+        None => hosts,
+    }
+}
+
+/// `req` on the target hosts; per-host results, error unless one succeeded.
+async fn on_hosts(
+    state: &AppState,
+    host: Option<String>,
+    req: &Request,
+) -> Result<(Vec<Value>, Vec<Value>), ApiError> {
+    let hosts = target_hosts(state, host).await;
+    if hosts.is_empty() {
+        return Err(ApiError::not_found("no online host matches"));
+    }
+    let results = futures_util::future::join_all(hosts.iter().map(|h| bpf::call(h, req))).await;
+    let (mut ok, mut errors) = (Vec::new(), Vec::new());
+    for (h, r) in hosts.iter().zip(results) {
+        match r {
+            Ok(mut v) => {
+                if let Some(o) = v.as_object_mut() {
+                    o.insert("host_id".into(), json!(h.id));
+                    o.insert("hostname".into(), json!(h.hostname));
+                }
+                ok.push(v);
+            }
+            Err(e) => errors.push(json!({ "hostname": h.hostname, "error": format!("{e:#}") })),
+        }
+    }
+    if ok.is_empty() {
+        let first = errors
+            .first()
+            .and_then(|e| e["error"].as_str())
+            .unwrap_or("failed")
+            .to_string();
+        return Err(ApiError::bad_request(first));
+    }
+    Ok((ok, errors))
+}
+
+/// Quarantine `vm` on the target hosts (also the `vm.quarantine` action).
+pub(crate) async fn quarantine_vm(
+    state: &AppState,
+    vm: &str,
+    host: Option<String>,
+    b: VmQuarantineBody,
+    by: &str,
+) -> Result<Value, ApiError> {
+    let reason = b.reason.clone();
+    let req = b.into_request(vm.to_string(), by.to_string());
+    let (hosts, errors) = on_hosts(state, host, &req).await?;
+    let secs = match &req {
+        Request::VmQuarantine { secs, .. } => *secs,
+        _ => 0,
+    };
+    state.emit_event(
+        "netpol.quarantine",
+        format!(
+            "{by} quarantined {vm} for {secs}s{}",
+            if reason.is_empty() {
+                String::new()
+            } else {
+                format!(": {reason}")
+            }
+        ),
+    );
+    Ok(json!({ "vm": vm, "hosts": hosts, "errors": errors }))
+}
+
+pub async fn quarantine(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(name): Path<String>,
+    Query(q): Query<HostQuery>,
+    Json(b): Json<VmQuarantineBody>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    Ok(Json(
+        quarantine_vm(&state, &name, q.host, b, &actor.username).await?,
+    ))
+}
+
+pub async fn quarantine_release(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(name): Path<String>,
+    Query(q): Query<HostQuery>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    let req = Request::VmQuarantineRelease { vm: name.clone() };
+    let (hosts, errors) = on_hosts(&state, q.host, &req).await?;
+    let released = hosts.iter().any(|h| h["released"].as_bool() == Some(true));
+    if released {
+        state.emit_event(
+            "netpol.quarantine",
+            format!("{} released the quarantine of {name}", actor.username),
+        );
+    }
+    Ok(Json(
+        json!({ "vm": name, "released": released, "hosts": hosts, "errors": errors }),
+    ))
+}
+
+pub async fn quarantines(State(state): State<AppState>) -> Json<Value> {
+    Json(json!({ "items": bpf::fan_out_items(&state.pool, &Request::VmQuarantines).await }))
 }
 
 /// Address → DNS names from every host's `toFQDNs` cache.

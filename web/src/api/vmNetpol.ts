@@ -397,6 +397,80 @@ export interface ReplayResult {
 export const replayVmNetpol = (scope: NetpolScope, yaml: string) =>
   apiPost<ReplayResult>(`${netpolBase(scope)}${P}/replay`, { yaml })
 
+export interface VmQuarantineAllow {
+  direction: 'ingress' | 'egress'
+  /** `host`, `world`, `any` or a VM name. */
+  peer: string
+  proto?: string
+  port?: number
+}
+
+export interface VmQuarantine {
+  vm: string
+  since: string
+  until: string
+  remaining_secs: number
+  allow: VmQuarantineAllow[]
+  reason?: string
+  by?: string
+  /** Empty: the VM is not running on that host. */
+  taps: string[]
+  hostname?: string
+}
+
+export interface QuarantineOptions {
+  secs: number
+  allow_host_ssh?: boolean
+  allow?: VmQuarantineAllow[]
+  reason?: string
+}
+
+export const QUARANTINE_DURATIONS: Array<{ secs: number; label: string }> = [
+  { secs: 900, label: '15 minutes' },
+  { secs: 3600, label: '1 hour' },
+  { secs: 4 * 3600, label: '4 hours' },
+  { secs: 24 * 3600, label: '24 hours' },
+]
+
+export const listQuarantines = async (scope: NetpolScope) =>
+  (await readJsonItemsList<VmQuarantine>(`${netpolBase(scope)}${P}/quarantines`)).items
+
+/** Quarantines are keyed by VM name on both the daemon and the controller. */
+export const quarantineVm = (scope: NetpolScope, vm: string, o: QuarantineOptions) =>
+  apiPost<unknown>(`${netpolBase(scope)}/vms/${encodeURIComponent(vm)}/quarantine`, o)
+
+export const releaseQuarantine = (scope: NetpolScope, vm: string) =>
+  apiDelete(`${netpolBase(scope)}/vms/${encodeURIComponent(vm)}/quarantine`)
+
+/** One row per VM: a fleet quarantine is held by every host; `hosts` are those running it. */
+export function groupQuarantines(items: VmQuarantine[]): Array<VmQuarantine & { hosts: string[] }> {
+  const by = new Map<string, VmQuarantine & { hosts: string[] }>()
+  for (const q of items) {
+    const g = by.get(q.vm) ?? { ...q, taps: [], hosts: [] }
+    if (q.taps.length > 0) {
+      g.taps = [...g.taps, ...q.taps]
+      if (q.hostname) g.hosts.push(q.hostname)
+    }
+    if (q.remaining_secs > g.remaining_secs) Object.assign(g, { remaining_secs: q.remaining_secs, until: q.until })
+    by.set(q.vm, g)
+  }
+  return [...by.values()].sort((a, b) => a.vm.localeCompare(b.vm))
+}
+
+export function describeAllow(a: VmQuarantineAllow): string {
+  const proto = a.proto || 'any'
+  return `${a.direction} ${a.peer} ${proto}${a.port ? `/${a.port}` : ''}`
+}
+
+export function formatRemaining(secs: number): string {
+  if (secs <= 0) return 'expiring'
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  if (h > 0) return `${h}h ${m}m left`
+  if (m > 0) return `${m}m left`
+  return `${secs}s left`
+}
+
 /** Daemon: VM name. Controller: VM id. */
 export async function getVmLabels(scope: NetpolScope, vm: string): Promise<Record<string, string>> {
   const r = await apiGet<{ labels?: Record<string, string> }>(`${netpolBase(scope)}/vms/${encodeURIComponent(vm)}/labels`)

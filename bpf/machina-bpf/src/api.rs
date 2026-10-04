@@ -990,6 +990,83 @@ pub struct VmEdgeStatus {
     /// off while proxy rules exist; empty without proxy rules.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub proxy: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub quarantines: Vec<VmQuarantine>,
+}
+
+/// One exception while a VM is quarantined. `peer`: `host` (this host's
+/// addresses), `world`, `any`, or a VM in the synced edge state.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmQuarantineAllow {
+    /// `ingress` (towards the VM) or `egress`.
+    pub direction: String,
+    pub peer: String,
+    /// `tcp`, `udp`, `sctp`, `icmp`, `icmpv6`, or empty for any.
+    #[serde(default)]
+    pub proto: String,
+    /// 0 = any.
+    #[serde(default)]
+    pub port: u16,
+}
+
+/// A quarantined VM: every flow on its taps is dropped, enforcement lease
+/// or not, except the allowlist; flows already open are cut too. The
+/// kernel lifts it at `until` even if bpfd is gone.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmQuarantine {
+    pub vm: String,
+    /// RFC 3339.
+    pub since: String,
+    pub until: String,
+    #[serde(default)]
+    pub remaining_secs: u64,
+    #[serde(default)]
+    pub allow: Vec<VmQuarantineAllow>,
+    #[serde(default)]
+    pub reason: String,
+    #[serde(default)]
+    pub by: String,
+    /// Taps carrying it now (empty: VM not running here).
+    #[serde(default)]
+    pub taps: Vec<String>,
+}
+
+pub const QUARANTINE_MAX_SECS: u64 = 86_400;
+pub const QUARANTINE_DEFAULT_SECS: u64 = 3600;
+
+/// Body of the daemon / controller quarantine endpoints.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmQuarantineBody {
+    #[serde(default)]
+    pub secs: Option<u64>,
+    #[serde(default)]
+    pub allow: Vec<VmQuarantineAllow>,
+    /// Shorthand for an `ingress` `host` `tcp/22` exception.
+    #[serde(default)]
+    pub allow_host_ssh: bool,
+    #[serde(default)]
+    pub reason: String,
+}
+
+impl VmQuarantineBody {
+    pub fn into_request(self, vm: String, by: String) -> Request {
+        let mut allow = self.allow;
+        if self.allow_host_ssh {
+            allow.push(VmQuarantineAllow {
+                direction: "ingress".into(),
+                peer: "host".into(),
+                proto: "tcp".into(),
+                port: 22,
+            });
+        }
+        Request::VmQuarantine {
+            vm,
+            secs: self.secs.unwrap_or(QUARANTINE_DEFAULT_SECS),
+            allow,
+            reason: self.reason,
+            by,
+        }
+    }
 }
 
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
@@ -1985,6 +2062,22 @@ pub enum Request {
         #[serde(default)]
         limit: Option<usize>,
     },
+    /// Quarantine a VM for `secs` (1 .. QUARANTINE_MAX_SECS); replaces an
+    /// existing quarantine of the same VM.
+    VmQuarantine {
+        vm: String,
+        secs: u64,
+        #[serde(default)]
+        allow: Vec<VmQuarantineAllow>,
+        #[serde(default)]
+        reason: String,
+        #[serde(default)]
+        by: String,
+    },
+    VmQuarantineRelease {
+        vm: String,
+    },
+    VmQuarantines,
     VmSandboxConfigure {
         config: VmSandboxConfig,
     },

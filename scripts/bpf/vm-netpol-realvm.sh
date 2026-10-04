@@ -53,6 +53,7 @@ observe() { bpfd '{"op":"set_mode","mode":"observe"}' >/dev/null; }
 
 cleanup() {
     observe
+    for v in "${VMS[@]}"; do "$M" vm release "$v" >/dev/null 2>&1; done
     "$M" netpol delete np-realvm >/dev/null 2>&1
     "$M" netpol delete np-realvm-proxy >/dev/null 2>&1
     sudo -n rm -rf "$SECRET_DIR"
@@ -348,6 +349,53 @@ persisted() {
     return 1
 }
 check "history persisted to disk" persisted
+
+echo "== quarantine =="
+# An established client → server SSH session that ticks twice a second.
+scp -q -i "$W/key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR "$W/key" "np@$CIP:/tmp/k"
+cssh "rm -f /tmp/ticks; setsid nohup ssh -i /tmp/k -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=1 -o ServerAliveCountMax=600 np@$SIP 'while :; do echo t; sleep 0.5; done' > /tmp/ticks 2>/dev/null < /dev/null & disown"
+ticks() { cssh "wc -l < /tmp/ticks" 2>/dev/null; }
+growing() { local a b; a=$(ticks); sleep 2; b=$(ticks); [[ -n "$a" && "$b" -gt "$a" ]]; }
+check "quarantine: long-lived client → server session is flowing" growing
+check "quarantine np-server for 10m (host SSH allowed)" "$M" vm quarantine np-server --for 10m --allow-host-ssh --reason "realvm test"
+check "quarantine: listed with time left" bash -c "'$M' netpol quarantines | grep -q 'np-server.*ingress host tcp/22'"
+check "quarantine: open session cut" bash -c "! { a=\$(ssh -i '$W/key' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR np@$CIP 'wc -l < /tmp/ticks'); sleep 3; b=\$(ssh -i '$W/key' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR np@$CIP 'wc -l < /tmp/ticks'); [ \"\$b\" -gt \"\$a\" ]; }"
+check "quarantine: new client → server :80 dropped (observe mode)" is 000 /ok
+check "quarantine: host → server :80 dropped" bash -c "! curl -fs -m 3 -o /dev/null http://$SIP/ok"
+check "quarantine: host SSH exception works" sssh true
+check "quarantine: server egress cut" bash -c "! ssh -i '$W/key' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR np@$SIP 'ping -c1 -W2 192.168.122.1'"
+check "quarantine: client unaffected" cssh "ping -c1 -W2 192.168.122.1"
+check "quarantine: DROPPED flows say quarantine" flow_has quarantine --verdict DROPPED
+check "release" "$M" vm release np-server
+check "released: client → server :80 back" is 200 /ok
+check "released: nothing listed" bash -c "! '$M' netpol quarantines 2>/dev/null | grep -q np-server"
+
+check "quarantine np-server for 6s" "$M" vm quarantine np-server --for 6s
+check "short quarantine: :80 dropped" is 000 /ok
+sleep 7
+check "short quarantine lifted by the kernel at the deadline" is 200 /ok
+gone() { for _ in $(seq 15); do "$M" netpol quarantines 2>/dev/null | grep -q np-server || return 0; sleep 1; done; return 1; }
+check "short quarantine forgotten by bpfd" gone
+
+check "quarantine np-server for 10m before a bpfd restart" "$M" vm quarantine np-server --for 10m --allow-host-ssh
+check "restart machina-bpfd" sudo -n systemctl restart machina-bpfd
+for _ in $(seq 20); do bpfd '{"op":"vm_quarantines"}' 2>/dev/null | grep -q np-server && break; sleep 1; done
+check "restart: quarantine restored" bash -c "'$M' netpol quarantines | grep -q np-server"
+held() { for _ in $(seq 10); do is 000 /ok && return; sleep 1; done; return 1; }
+check "restart: still dropping" held
+check "release after restart" "$M" vm release np-server
+back() { for _ in $(seq 10); do is 200 /ok && return; sleep 1; done; return 1; }
+check "restart: traffic back after release" back
+
+# A VM with no policy at all: its taps are programmed for the quarantine only.
+"$M" netpol delete np-realvm >/dev/null 2>&1
+"$M" netpol delete np-realvm-proxy >/dev/null 2>&1
+check "no policies: client reaches the gateway" cssh "ping -c1 -W2 192.168.122.1"
+check "quarantine np-client with no policy" "$M" vm quarantine np-client --for 5m --allow-host-ssh
+check "no policies: client egress cut" bash -c "! ssh -i '$W/key' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR np@$CIP 'ping -c1 -W2 192.168.122.1'"
+check "no policies: host SSH exception works" cssh true
+check "release np-client" "$M" vm release np-client
+check "no policies: client egress back" cssh "ping -c1 -W2 192.168.122.1"
 
 echo "passed=$P failed=$F"
 [[ $F -eq 0 ]]

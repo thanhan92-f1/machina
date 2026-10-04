@@ -22,6 +22,9 @@
 //! transparent listener; a policy route on VM_PROXY_MAGIC delivers them
 //! locally. The proxy's upstream packets carry the client identity in their
 //! mark (VM_PROXY_UP_MAGIC | VM_PROXY_SRC slot).
+//! A quarantined tap (`quarantine_until_ns` ahead of now) passes only
+//! POLICY_QUARANTINE allowlist entries, whatever the mode, until the
+//! deadline passes; nothing in userspace has to lift it.
 //!
 //! `mn_qemu_device` (cgroup device) and `mn_qemu_egress` (cgroup_skb egress)
 //! sandbox the QEMU process in its machine scope: a device-node allowlist
@@ -81,6 +84,11 @@ pub static VM_FLOW_SEEN: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries
 /// Conntrack: FlowKey (ifindex 0, local = originator) → last seen.
 #[map]
 pub static VM_CT: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries(131072, 0);
+
+/// Quarantine conntrack, per tap (ifindex set): flows admitted before the
+/// quarantine are not in it, so they are cut.
+#[map]
+pub static VM_QCT: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries(16384, 0);
 
 #[map]
 pub static VM_L7_EVENTS: RingBuf = RingBuf::with_byte_size(1 << 24, 0);
@@ -477,6 +485,45 @@ fn vm_proxy(ctx: &TcContext, t: &Tuple, m: &FlowMeta) -> i32 {
 const TCP_SYN: u8 = 0x02;
 const TCP_ACK: u8 = 0x10;
 
+/// Quarantined tap: only allowlist entries pass, always dropping the rest.
+/// `side` = from_vm | ICMP type + 1 << 8 (BPF calls take five arguments).
+#[inline(never)]
+fn vm_quarantine(t: &Tuple, ifindex: u32, identity: u32, side: u32, len: u64) -> i32 {
+    let from_vm = side & 1 != 0;
+    let icmp = (side >> 8) as u8;
+    // One key, reversed then forward: the caller's frame leaves little stack.
+    let mut k = ct_key(t, true);
+    k.ifindex = ifindex;
+    if VM_QCT.get_ptr(&k).is_some() {
+        return TC_ACT_UNSPEC;
+    }
+    let port = if icmp != 0 { icmp as u16 } else { t.dport };
+    let (peer_addr, dir) = if from_vm { (&t.dst, POLICY_EGRESS) } else { (&t.src, POLICY_INGRESS) };
+    let peer = peer_identity(peer_addr);
+    let v = vm_policy_verdict(identity, peer, dir | POLICY_QUARANTINE, t.proto, port);
+    if v != 0 && v & VM_POLICY_DENY == 0 {
+        k = ct_key(t, false);
+        k.ifindex = ifindex;
+        let now = now_ns();
+        let _ = VM_QCT.insert(&k, &now, 0);
+        return TC_ACT_UNSPEC;
+    }
+    count(ifindex, from_vm, len, 1);
+    let m = FlowMeta {
+        ifindex,
+        subject: identity,
+        peer,
+        len: len as u32,
+        from_vm: from_vm as u8,
+        verdict: VMF_DROPPED,
+        reason: VMF_REASON_QUARANTINE,
+        icmp,
+        auth: 0,
+    };
+    flow_event(t, &m);
+    TC_ACT_SHOT
+}
+
 #[inline(always)]
 fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     let ifindex = unsafe { (*ctx.skb.skb).ifindex };
@@ -487,6 +534,7 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     let from_vm = (flags & VME_GUEST_SIDE != 0) == ingress;
     let len = ctx.len() as u64;
     let now = now_ns();
+    let quarantined = cfg.quarantine_until_ns > now;
 
     let bps = if from_vm { out_bps } else { in_bps };
     if (bps | pps as u64) != 0 && !police((ifindex << 1) | from_vm as u32, bps, pps as u64, len, now) {
@@ -500,7 +548,7 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     let flow_log = flags & VME_FLOW_LOG != 0;
     let fqdn = flags & VME_FQDN != 0 && !from_vm;
     let ext = flags & (VME_L7_AUTH | VME_SRC_GUARD) != 0;
-    if !isolated && !has_deny && !flow_log && !fqdn && !ext {
+    if !isolated && !has_deny && !flow_log && !fqdn && !ext && !quarantined {
         return TC_ACT_UNSPEC;
     }
     let mut t = Tuple::zero();
@@ -517,7 +565,7 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
             emit_dns(ctx, &t, ifindex as u64 | tcp << 33);
         }
     }
-    if !isolated && !has_deny && !flow_log && !ext {
+    if !isolated && !has_deny && !flow_log && !ext && !quarantined {
         return TC_ACT_UNSPEC;
     }
     if from_vm && flags & VME_SRC_GUARD != 0 {
@@ -565,6 +613,9 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
                 }
             }
         }
+    }
+    if quarantined {
+        return vm_quarantine(&t, ifindex, identity, from_vm as u32 | (icmp as u32) << 8, len);
     }
     if VM_CT.get_ptr(&ct_key(&t, true)).is_some() {
         return TC_ACT_UNSPEC;

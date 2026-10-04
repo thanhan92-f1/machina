@@ -181,6 +181,14 @@ pub fn router(state: AppState) -> Router {
             get(vm_network_policies::get_labels).put(vm_network_policies::put_labels),
         )
         .route(
+            "/api/v1/vms/{id}/quarantine",
+            post(vm_network_policies::quarantine).delete(vm_network_policies::quarantine_release),
+        )
+        .route(
+            "/api/v1/vm-network-policies/quarantines",
+            get(vm_network_policies::quarantines),
+        )
+        .route(
             "/api/v1/vm-network-policies",
             get(vm_network_policies::list).post(vm_network_policies::apply),
         )

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-04 — VM quarantine
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#quarantine).
+
+- **Quarantine.** `machinactl vm quarantine VM --for 1h` cuts every flow of
+  a VM for a fixed time, up to 24 hours. That includes connections already
+  open, in both directions, and it applies in observe mode too. Exceptions
+  are optional: `--allow-host-ssh`, or `--allow ingress:host:tcp/22`.
+  `vm release` lifts it early and `netpol quarantines` lists active ones.
+- **Lifts itself.** The deadline lives in the datapath, so the quarantine
+  ends on time even if bpfd or the daemon is down. bpfd also holds it again
+  after a restart for the time left. VMs without any policy can be
+  quarantined too.
+- **UI.** The *Endpoints* tab has a Quarantine panel (duration, reason, host
+  SSH) with a list and Release buttons, and a Quarantine button per VM.
+  Alert rows have a Quarantine button for the source VM.
+- **Fleet and Zyvor.** On the controller, a quarantine applies on every
+  host, so it follows the VM through migrations. Each quarantine and
+  release is recorded as a `netpol.quarantine` event. A high-severity port
+  scan or host sweep proposes a `vm.quarantine` action in Approvals, which
+  runs only once approved.
+- New API routes on both the daemon and the controller: `POST`/`DELETE
+  /api/v1/vms/{name}/quarantine` and `GET
+  /api/v1/vm-network-policies/quarantines`.
+
 ## 2026-10-04 — Flow history, service map, learn, replay and alerts
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#flow-history-service-map-learn-replay-and-alerts).

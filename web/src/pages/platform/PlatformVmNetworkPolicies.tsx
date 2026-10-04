@@ -17,15 +17,18 @@ import FlowAlerts from '../../components/flow/FlowAlerts'
 import LearnPanel from '../../components/flow/LearnPanel'
 import ReplaySummary from '../../components/flow/ReplaySummary'
 import ServiceMap from '../../components/flow/ServiceMap'
+import QuarantinePanel from '../../components/flow/QuarantinePanel'
 import {
   NETPOL_TEMPLATES,
   applyVmNetpol,
   deleteVmNetpol,
+  formatRemaining,
   getNetpolStatus,
   listAuthTable,
   listFqdnCache,
   listNetpolEndpoints,
   listNetpolSelectors,
+  listQuarantines,
   listVmNetpols,
   replayVmNetpol,
   setVmNetpolEnabled,
@@ -44,6 +47,7 @@ import {
   type TraceResult,
   type TraceSide,
   type VmNetworkPolicy,
+  type VmQuarantine,
 } from '../../api/vmNetpol'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
@@ -141,6 +145,8 @@ export default function PlatformVmNetworkPolicies() {
   const [selectors, setSelectors] = useState<NetpolSelector[]>([])
   const [fqdn, setFqdn] = useState<FqdnEntry[]>([])
   const [auth, setAuth] = useState<AuthEntry[]>([])
+  const [quarantines, setQuarantines] = useState<VmQuarantine[]>([])
+  const [quarantineVm, setQuarantineVm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -158,13 +164,14 @@ export default function PlatformVmNetworkPolicies() {
   const load = useCallback(async () => {
     setError(null)
     try {
-      const [l, st, ep, se, fq, au] = await Promise.all([
+      const [l, st, ep, se, fq, au, qu] = await Promise.all([
         listVmNetpols(scope),
         getNetpolStatus(scope).catch(() => null),
         listNetpolEndpoints(scope).catch(() => []),
         listNetpolSelectors(scope).catch(() => []),
         listFqdnCache(scope).catch(() => []),
         listAuthTable(scope).catch(() => []),
+        listQuarantines(scope).catch(() => []),
       ])
       setPolicies(l.items)
       setWarnings(l.warnings)
@@ -173,6 +180,7 @@ export default function PlatformVmNetworkPolicies() {
       setSelectors(se)
       setFqdn(fq)
       setAuth(au)
+      setQuarantines(qu)
     } catch (e: unknown) {
       setError(formatUserError(e))
     } finally {
@@ -278,6 +286,16 @@ export default function PlatformVmNetworkPolicies() {
   }
 
   const vmNames = useMemo(() => endpoints.map((e) => e.name).sort(), [endpoints])
+  const quarantineLeft = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const q of quarantines) m.set(q.vm, Math.max(m.get(q.vm) ?? 0, q.remaining_secs))
+    return m
+  }, [quarantines])
+  const startQuarantine = (vm: string) => {
+    setQuarantineVm(vm)
+    setTab('endpoints')
+    window.setTimeout(() => document.getElementById('q-vm')?.focus(), 50)
+  }
   const enforcement = status?.enforcement?.mode ?? (status?.hosts?.some((h) => h.enforcing) ? 'enforce' : 'observe')
   const cilium = status?.cilium ?? status?.hosts?.find((h) => h.cilium)?.cilium ?? null
   const lastSync = status?.last_sync
@@ -593,6 +611,14 @@ export default function PlatformVmNetworkPolicies() {
 
       {tab === 'endpoints' && (
         <>
+          <QuarantinePanel
+            scope={scope}
+            vmNames={vmNames}
+            vm={quarantineVm}
+            setVm={setQuarantineVm}
+            items={quarantines}
+            onChanged={() => void load()}
+          />
           <MacGlassPanel title="Endpoints" subtitle="VMs with their policy identity, labels and per-direction enforcement (like cilium endpoint list).">
             {endpoints.length === 0 ? (
               <Empty>No VMs found.</Empty>
@@ -608,7 +634,8 @@ export default function PlatformVmNetworkPolicies() {
                       <th scope="col" className={thCls}>Egress</th>
                       <th scope="col" className={thCls}>Addresses</th>
                       <th scope="col" className={thCls}>Labels</th>
-                      <th scope="col" className="py-2">Policies</th>
+                      <th scope="col" className={thCls}>Policies</th>
+                      <th scope="col" className="py-2"><span className="sr-only">Quarantine</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -621,7 +648,16 @@ export default function PlatformVmNetworkPolicies() {
                         <td className="py-2 pr-2"><span className={statusPillClasses(e.egress_enforced ? 'warn' : 'neutral')}>{e.egress_enforced ? 'enforced' : 'allow all'}</span></td>
                         <td className="py-2 pr-2 font-mono">{e.addresses.join(', ') || '—'}</td>
                         <td className="py-2 pr-2 font-mono">{Object.entries(e.labels).map(([k, v]) => `${k}=${v}`).join(' ') || '—'}</td>
-                        <td className="py-2">{e.policies.join(', ') || '—'}</td>
+                        <td className="py-2 pr-2">{e.policies.join(', ') || '—'}</td>
+                        <td className="py-2 text-right whitespace-nowrap">
+                          {quarantineLeft.has(e.name) ? (
+                            <span className={statusPillClasses('error')}>quarantined · {formatRemaining(quarantineLeft.get(e.name) ?? 0)}</span>
+                          ) : (
+                            <button type="button" className="btn-secondary text-xs" aria-label={`Quarantine ${e.name}`} onClick={() => startQuarantine(e.name)}>
+                              Quarantine
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -724,7 +760,7 @@ export default function PlatformVmNetworkPolicies() {
       {tab === 'learn' && (
         <LearnPanel key={scope} scope={scope} vmNames={vmNames} onOpenInEditor={(y) => { editYaml(y); setTab('editor') }} />
       )}
-      {tab === 'alerts' && <FlowAlerts key={scope} scope={scope} />}
+      {tab === 'alerts' && <FlowAlerts key={scope} scope={scope} onQuarantine={startQuarantine} />}
 
       <input ref={fileRef} type="file" accept=".yaml,.yml,.json" className="hidden" onChange={(e) => void importFile(e.target.files?.[0])} />
     </PlatformPageChrome>

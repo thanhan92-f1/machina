@@ -33,6 +33,7 @@
 #   netpol          VM network policies (CiliumNetworkPolicy schema)
 #   flow            Packet flows (observe / top / stats)
 #   vm label        Show or edit VM labels
+#   vm quarantine   Cut a VM off the network for a fixed time (vm release lifts it)
 #   help            Show this help
 #
 # Web UI sign-in uses PAM (Linux accounts on this host), not a separate machina password.
@@ -969,7 +970,13 @@ cmd_vm() {
     shift || true
     case "$sub" in
         label|labels) np_run np_label_main "$@" ;;
-        *) echo "Usage: machinactl vm label VM [key=value ...] [key- ...] [--fleet]"; exit 1 ;;
+        quarantine|isolate) np_run np_quarantine_main "$@" ;;
+        release|unquarantine) np_run np_release_main "$@" ;;
+        *)
+            echo "Usage: machinactl vm label VM [key=value ...] [key- ...] [--fleet]"
+            echo "       machinactl vm quarantine VM [--for 1h] [--allow-host-ssh] [--reason TEXT] [--fleet]"
+            echo "       machinactl vm release VM [--fleet]"
+            exit 1 ;;
     esac
 }
 
@@ -1026,6 +1033,8 @@ cmd_help() {
     echo "  netpol auth                        Mutual-authentication table (authentication.mode)"
     echo "  netpol test … --http-method GET --path /x | --sni NAME | --dns-name NAME | --kafka-topic T"
     echo "  vm label VM k=v [k-]               Show or edit VM labels"
+    echo "  vm quarantine VM [--for 1h]        Cut every flow of a VM until the deadline"
+    echo "  vm release VM | netpol quarantines Lift a quarantine / list quarantined VMs"
     echo "  flow observe [-f] [filters]        Colorful packet flows (like hubble observe)"
     echo "  flow top [--by pair|src|dst|port|policy|l7] | flow stats"
     echo "  flow edges [--vm X] | flow alerts  7-day history (who talks to whom) / scan + sweep alerts"

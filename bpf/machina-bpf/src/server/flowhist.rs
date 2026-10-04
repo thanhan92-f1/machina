@@ -407,6 +407,10 @@ impl FlowHistory {
         if r.direction != "egress" && src_vm.is_some() {
             return vec![];
         }
+        // Already contained: its drops would only re-alert on it.
+        if r.drop_reason.as_deref() == Some("quarantine") {
+            return vec![];
+        }
         let now = Instant::now();
         let denied = r.verdict == "DROPPED" || r.drop_reason.is_some();
         let w = self.windows.entry(key.0.clone()).or_default();

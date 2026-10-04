@@ -16,6 +16,8 @@ use std::os::unix::fs::MetadataExt;
 use super::cni::addr16;
 use super::*;
 
+mod quarantine;
+
 const EDGE_IN: &str = "mn_vm_edge_in";
 const EDGE_OUT: &str = "mn_vm_edge_out";
 /// Veth pair held L7 frames are reinjected through: bpfd sends on the
@@ -166,6 +168,7 @@ pub(super) struct VmEdgeRuntime {
     auth_any: bool,
     auth: HashMap<(u32, u32), AuthState>,
     l7_rules: usize,
+    quarantines: BTreeMap<String, quarantine::Held>,
 }
 
 /// Queue the A/AAAA answers of a DNS reply whose names match a `toFQDNs`
@@ -361,6 +364,7 @@ pub(super) fn on_vm_flow(
                 VMF_REASON_AUTH_REQUIRED if ev.auth == 2 => Some("auth-test-always-fail".into()),
                 VMF_REASON_AUTH_REQUIRED => Some("auth-required".into()),
                 VMF_REASON_SPOOFED => Some("spoofed-source".into()),
+                VMF_REASON_QUARANTINE => Some("quarantine".into()),
                 _ => None,
             },
             policy,
@@ -930,6 +934,7 @@ impl Engine {
             }
             fqdn_ids.insert(*addr, id);
         }
+        rt.quarantine_entries(&mut ips, &mut policy, &mut index);
 
         let mut want_proxy = false;
         for r in l7.iter().filter(|r| r.egress && r.rules.needs_proxy()) {
@@ -1157,18 +1162,34 @@ impl Engine {
 
     /// Program taps of VMs in the edge state; drop taps that went away.
     pub(super) fn vm_edge_refresh(&mut self) {
-        if self.vm_edge.state.vms.is_empty() && self.vm_edge.taps.is_empty() {
+        if self.vm_edge.state.vms.is_empty()
+            && self.vm_edge.taps.is_empty()
+            && self.vm_edge.quarantines.is_empty()
+        {
             return;
         }
+        let quarantined_only: Vec<VmEdgeVm> = self
+            .vm_edge
+            .quarantines
+            .keys()
+            .filter(|n| !self.vm_edge.state.vms.iter().any(|v| &v.name == *n))
+            .map(|n| VmEdgeVm {
+                name: n.clone(),
+                identity: Some(crate::netpol::vm_identity(n)),
+                ..Default::default()
+            })
+            .collect();
         let by_name: HashMap<&str, &VmEdgeVm> = self
             .vm_edge
             .state
             .vms
             .iter()
+            .chain(&quarantined_only)
             .map(|v| (v.name.as_str(), v))
             .collect();
         let mut taps: Vec<(String, &VmEdgeVm)> = Vec::new();
-        if self.vm_edge.state.vms.iter().any(|v| v.taps.is_empty()) {
+        if !quarantined_only.is_empty() || self.vm_edge.state.vms.iter().any(|v| v.taps.is_empty())
+        {
             for (tap, info) in attribution::scan_libvirt() {
                 if let Some(vm) = by_name.get(info.vm.as_str()).filter(|v| v.taps.is_empty()) {
                     taps.push((tap, vm));
@@ -1226,6 +1247,7 @@ impl Engine {
                 in_bps: mbps_to_bytes(vm.ingress_mbps),
                 pps: vm.pps,
                 _pad: 0,
+                quarantine_until_ns: self.vm_edge.quarantine_until(&vm.name),
             };
             want.insert(tap, (vm.name.clone(), cfg));
         }
@@ -1347,6 +1369,7 @@ impl Engine {
             auth_entries: self.vm_edge.auth.values().filter(|a| a.ok).count(),
             auth_cert: self.vmauth.cert_info(),
             proxy: self.vm_edge.proxy_note.clone(),
+            quarantines: self.vm_quarantines(),
         }
     }
 

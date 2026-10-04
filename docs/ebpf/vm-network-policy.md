@@ -487,6 +487,7 @@ Policies are persisted; the enforce mode and its lease never are.
 | `cilium policy` audit mode, then hand-written rules | `machinactl netpol learn [--vm X] [--group-by app]` — generates policies from the flow history |
 | — | `machinactl netpol replay -f draft.yaml` — what the draft would have done to the last 7 days of traffic |
 | — | `machinactl flow alerts` — port scans, host sweeps, deny bursts, new peers |
+| — | `machinactl vm quarantine VM [--for 1h] [--allow-host-ssh]`, `vm release VM`, `netpol quarantines` |
 
 Auth: `MACHINA_API_TOKEN`, or `MACHINA_USER` + `MACHINA_PASS`. With a user
 and password, the CLI keeps its session in `~/.machina/cli-session` (mode
@@ -502,7 +503,7 @@ audits are rate-limited to one per flow per second. Each flow carries:
 - protocol, TCP flags or ICMP type, and size;
 - verdict `FORWARDED`, `DROPPED` or `AUDIT`, with the drop reason
   (`policy-deny`, `default-deny`, `l7-deny`, `auth-required`,
-  `auth-test-always-fail` or `spoofed-source`);
+  `auth-test-always-fail`, `spoofed-source` or `quarantine`);
 - the policy rule that decided it;
 - for L7 decisions, the request type and summary.
 
@@ -597,6 +598,66 @@ each connection once, at the client:
 The same alert is suppressed for 10 minutes, and the last 1000 alerts are
 kept. bpfd logs each alert. The leader controller turns new ones into
 `netpol.alert` events every 30 s, so they reach webhooks and SIEM export.
+A fleet `port_scan` or `host_sweep` from a VM also creates a pending
+`vm.quarantine` action in Approvals (at most one pending per VM): one hour,
+SSH from its host allowed. Nothing happens until someone approves it.
+
+## Quarantine
+
+Quarantine cuts a VM off the network for a fixed time, from 1 second to 24
+hours (default 1 hour). Every flow on its taps is dropped:
+
+- in both directions;
+- including connections that were already open;
+- whatever the enforcement mode, so no lease is needed.
+
+The only exceptions are the allowlist you give and DHCP / IPv6 neighbour
+discovery, which always pass.
+
+```bash
+machinactl vm quarantine web-1 --for 1h --allow-host-ssh --reason "port scan"
+machinactl vm quarantine web-1 --for 15m --allow ingress:host:tcp/22 --allow egress:world:udp/53
+machinactl netpol quarantines        # VM, time left, taps, exceptions, reason, who
+machinactl vm release web-1
+```
+
+Add `--fleet` to go through the controller. A fleet quarantine is held on
+every online host, so it follows the VM if it migrates; `--host H` limits it
+to one host. In the UI, the *Endpoints* tab has a Quarantine panel and a
+Quarantine button per VM, and each alert has a button for its source VM.
+
+An exception is `DIRECTION:PEER[:PROTO[/PORT]]`:
+
+- `DIRECTION`: `ingress` (towards the VM) or `egress`.
+- `PEER`: `host` (this host's global addresses), `world`, `any`, or a VM in
+  the synced policy state.
+- `PROTO`: `tcp`, `udp`, `sctp`, `icmp`, `icmpv6`, or empty for any. ICMP
+  exceptions allow every ICMP type.
+
+How it works:
+
+- bpfd writes the deadline (monotonic clock) into each tap's `VM_EDGE`
+  entry and the exceptions into `VM_POLICY` with a quarantine direction bit.
+  The datapath stops applying the quarantine at the deadline by itself, even
+  if bpfd or the daemon is down.
+- Open connections are cut because a quarantined tap uses its own per-tap
+  conntrack (`VM_QCT`) instead of the shared one.
+- A VM with no policy has its taps programmed for the quarantine alone.
+- bpfd saves quarantines with their wall-clock end, and after a restart
+  holds them again for the time left.
+- Dropped flows carry the reason `quarantine` and are not counted by the
+  detectors.
+
+API, the same on the daemon and the controller:
+
+- `POST /api/v1/vms/{name}/quarantine` with `{secs, allow_host_ssh, allow:
+  [{direction, peer, proto, port}], reason}` (admin);
+- `DELETE /api/v1/vms/{name}/quarantine` (admin);
+- `GET /api/v1/vm-network-policies/quarantines`.
+
+The controller also takes `?host=`. It records each quarantine and release
+as a `netpol.quarantine` event. The `vm.quarantine` Zyvor action takes the
+same body plus `vm` and `host` in its `object_ref`.
 
 ## Test
 
@@ -646,8 +707,19 @@ traffic the earlier phases generated:
 - that a port scan from the client raises `port_scan`;
 - that the history is saved to disk.
 
-On exit it returns the edge to observe and deletes the VMs, the
-policies, the secret and the image.
+Then it quarantines the server, still in observe mode, and checks:
+
+- that an SSH session from the client, open before the quarantine, stops;
+- that new connections fail in both directions, while SSH from the host
+  still works and the client is unaffected;
+- that the drops carry the reason `quarantine`;
+- that releasing restores traffic;
+- that a 6-second quarantine lifts itself;
+- that a quarantine survives a bpfd restart;
+- that a VM with no policy at all can be quarantined.
+
+On exit it returns the edge to observe, releases any quarantine, and
+deletes the VMs, the policies, the secret and the image.
 It enforces on every tap with policy state, so run it only on a disposable
 host. The password is read from stdin:
 

@@ -39,6 +39,8 @@ test('live VM network policies page: status, dry-run validate, trace, flows', as
   await expect(page.getByText(/policies from \d+ flow edges/)).toBeVisible({ timeout: 20_000 })
   await page.goto(`${live}${PAGE}?tab=alerts`)
   await expect(page.getByRole('table', { name: 'Flow alerts' }).or(page.getByText(/No alerts/))).toBeVisible({ timeout: 20_000 })
+  await page.goto(`${live}${PAGE}?tab=endpoints`)
+  await expect(page.getByRole('table', { name: 'Quarantined VMs' }).or(page.getByText('No VM is quarantined.'))).toBeVisible({ timeout: 20_000 })
 
   for (const scope of ['fleet']) {
     await page.goto(`${live}${PAGE}?tab=policies&scope=${scope}`)

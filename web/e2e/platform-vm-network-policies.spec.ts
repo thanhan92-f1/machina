@@ -95,6 +95,29 @@ const replayResult = {
 async function mockNetpol(page: Page) {
   const policies = [dbPolicy]
   const applied: string[] = []
+  const quarantines: Array<Record<string, unknown>> = []
+  await page.route('**/vms/*/quarantine', (route) => {
+    const req = route.request()
+    const vm = decodeURIComponent(new URL(req.url()).pathname.split('/').slice(-2)[0])
+    if (req.method() === 'DELETE') {
+      const i = quarantines.findIndex((q) => q.vm === vm)
+      if (i >= 0) quarantines.splice(i, 1)
+      return json(route, { released: i >= 0, vm })
+    }
+    const b = req.postDataJSON() as { secs: number; allow_host_ssh?: boolean; reason?: string }
+    const q = {
+      vm,
+      since: recent,
+      until: recent,
+      remaining_secs: b.secs,
+      allow: b.allow_host_ssh ? [{ direction: 'ingress', peer: 'host', proto: 'tcp', port: 22 }] : [],
+      reason: b.reason ?? '',
+      by: 'sus',
+      taps: ['vnet0'],
+    }
+    quarantines.push(q)
+    return json(route, q)
+  })
   await page.route('**/flows/edges**', (route) => json(route, { items: edges }))
   await page.route('**/flows/alerts**', (route) => json(route, { items: alerts }))
   await page.route('**/flows/stream**', (route) =>
@@ -174,6 +197,7 @@ async function mockNetpol(page: Page) {
     if (path === '/selectors') return json(route, { items: [{ policy: 'db-from-web', path: 'spec.endpointSelector', selector: 'app=db', vms: ['db-1'] }] })
     if (path === '/fqdn-cache') return json(route, { items: [] })
     if (path === '/auth') return json(route, { items: [] })
+    if (path === '/quarantines') return json(route, { items: quarantines })
     if (method === 'DELETE') {
       const name = decodeURIComponent(path.slice(1))
       policies.splice(policies.findIndex((p) => p.name === name), 1)
@@ -283,6 +307,31 @@ test('VM network policies: alerts', async ({ page }) => {
   const t = page.getByRole('table', { name: 'Flow alerts' })
   await expect(t.getByText('Port scan')).toBeVisible({ timeout: 15_000 })
   await expect(t.getByText(/probed 31 ports/)).toBeVisible()
+})
+
+test('VM network policies: quarantine from an alert, then release', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?tab=alerts`)
+  const t = page.getByRole('table', { name: 'Flow alerts' })
+  await t.getByRole('button', { name: 'Quarantine web-1' }).click({ timeout: 15_000 })
+  await expect(page.getByLabel('VM', { exact: true })).toHaveValue('web-1')
+  await page.getByLabel('For').selectOption('900')
+  await page.getByLabel('Reason').fill('port scan')
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('button', { name: 'Quarantine', exact: true }).click()
+  await expect(page.getByText('web-1 quarantined for 15 minutes')).toBeVisible()
+  const q = page.getByRole('table', { name: 'Quarantined VMs' })
+  await expect(q.getByText('15m left')).toBeVisible()
+  await expect(q.getByText('ingress host tcp/22')).toBeVisible()
+  await expect(q.getByText('port scan')).toBeVisible()
+  const ep = page.getByRole('table', { name: 'Policy endpoints' })
+  await expect(ep.getByText('quarantined · 15m left')).toBeVisible()
+  await expect(ep.getByRole('button', { name: 'Quarantine db-1' })).toBeVisible()
+  page.once('dialog', (d) => void d.accept())
+  await q.getByRole('button', { name: 'Release' }).click()
+  await expect(page.getByText('Released web-1')).toBeVisible()
+  await expect(page.getByText('No VM is quarantined.')).toBeVisible()
 })
 
 test('VM network policies: delete asks for confirmation', async ({ page }) => {

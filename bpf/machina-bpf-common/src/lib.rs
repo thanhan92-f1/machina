@@ -477,6 +477,8 @@ pub struct PolicyKey {
 
 pub const POLICY_INGRESS: u8 = 0;
 pub const POLICY_EGRESS: u8 = 1;
+/// OR-ed into the direction of VM quarantine allowlist entries (VM_POLICY).
+pub const POLICY_QUARANTINE: u8 = 2;
 
 /// ClusterIP / NodePort service frontend (CNI_SERVICES / CNI_NODEPORTS).
 /// NodePorts use the unspecified address of their family
@@ -921,6 +923,7 @@ pub const VMF_REASON_POLICY_DENY: u8 = 1;
 pub const VMF_REASON_DEFAULT_DENY: u8 = 2;
 pub const VMF_REASON_AUTH_REQUIRED: u8 = 3;
 pub const VMF_REASON_SPOOFED: u8 = 4;
+pub const VMF_REASON_QUARANTINE: u8 = 5;
 
 /// One VM edge verdict (VM_FLOW_EVENTS): first packet of a flow, or a
 /// drop / audit (at most one per flow per second).
@@ -1083,6 +1086,9 @@ pub struct VmEdgeCfg {
     /// Packets/s, each direction.
     pub pps: u32,
     pub _pad: u32,
+    /// Quarantined until this monotonic time: only `POLICY_QUARANTINE`
+    /// allowlist entries pass, whatever the enforcement mode.
+    pub quarantine_until_ns: u64,
 }
 
 /// Token bucket state (VM_BUCKETS, key = ifindex << 1 | from_vm).
@@ -1606,7 +1612,7 @@ mod tests {
         assert_eq!(size_of::<AffinityKey>(), 20);
         assert_eq!(size_of::<AffinityVal>(), 16);
         assert_eq!(size_of::<NodeCfg>(), 40);
-        assert_eq!(size_of::<VmEdgeCfg>(), 32);
+        assert_eq!(size_of::<VmEdgeCfg>(), 40);
         assert_eq!(size_of::<VmBucket>(), 24);
         assert_eq!(size_of::<VmEdgeStats>(), 56);
         assert_eq!(size_of::<VmFlowEvent>(), 72);
