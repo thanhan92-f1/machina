@@ -260,7 +260,7 @@ export default function PlatformHosts() {
     >
       {viewMode === 'icons' && visibleHosts.length > 0 && (
         <div className="flex flex-col gap-4 w-full" data-testid="host-fleet-panels">
-          <div className="grid gap-3 sm:grid-cols-2 w-full nl-stagger">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 w-full nl-stagger">
             {hostList.shown.map((h) => (
               <HostFleetCard
                 key={h.id}
@@ -271,7 +271,7 @@ export default function PlatformHosts() {
               />
             ))}
           </div>
-          <HostCommandCenter host={selected} linux={selected ? linuxByHost[selected.id] : undefined} />
+          {selected ? <HostCommandCenter host={selected} linux={linuxByHost[selected.id]} /> : null}
         </div>
       )}
       {hostList.showToggle && (
@@ -289,7 +289,7 @@ export default function PlatformHosts() {
           { label: 'Platform', onClick: () => navigate('/platform') },
           { label: filterOffline ? 'Offline hosts' : 'Hosts' },
         ]}
-        listContent={listContent}
+        listContent={viewMode === 'icons' ? null : listContent}
         columnsContent={columnsContent}
         inspector={inspector}
         isEmpty={visibleHosts.length === 0 && !error}

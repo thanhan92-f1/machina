@@ -195,7 +195,7 @@ export default function PlatformBackups() {
 
   return (
     <PlatformStandardView
-      className="space-y-6 max-w-3xl"
+      className="space-y-6"
       title="Backups"
       description="Fleet backup timeline, S3/MinIO destinations, and scheduled snapshots."
       icon={Archive}
@@ -228,7 +228,7 @@ export default function PlatformBackups() {
       />
 
       {tab === 'destinations' && (
-        <div className="space-y-4">
+        <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
           <MacGlassPanel title="Backup destinations" subtitle="Register NFS, S3, or local targets for fleet backups.">
             <div className="grid gap-3 md:grid-cols-3 mb-4">
               <input className="input text-sm" aria-label="Backup destination name" placeholder="Name" value={targetName} onChange={(e) => setTargetName(e.target.value)} />
@@ -267,9 +267,9 @@ export default function PlatformBackups() {
       )}
 
       {tab === 'schedules' && (
-        <div className="space-y-4">
+        <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
           <MacGlassPanel title="New backup schedule" subtitle="Recurring fleet backups by project or tag, with retention.">
-            <div className="grid gap-3 md:grid-cols-2 max-w-2xl">
+            <div className="grid gap-3 md:grid-cols-2">
               <input className="input text-sm" aria-label="Schedule name" placeholder="Name" value={schedName} onChange={(e) => setSchedName(e.target.value)} />
               <input className="input text-sm" aria-label="Project" placeholder="Project (optional)" value={schedProject} onChange={(e) => setSchedProject(e.target.value)} />
               <input className="input text-sm" aria-label="Tag filter" placeholder="Tag filter (optional)" value={schedTag} onChange={(e) => setSchedTag(e.target.value)} />

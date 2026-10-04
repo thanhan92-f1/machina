@@ -4,7 +4,7 @@
 import { Link } from 'react-router'
 import { Monitor, Server, Wrench } from 'lucide-react'
 import type { FleetLinuxHostItem, PlatformHost } from '../../../api/platform'
-import { statusPillClasses } from '../../../utils/semanticColors'
+import { statusPillClasses, utilizationBarClass } from '../../../utils/semanticColors'
 import { DetailPanel, MetricList, type MetricItem } from '../DetailPanel'
 
 type Props = {
@@ -23,7 +23,7 @@ export default function HostFleetCard({ host, linux, selected, onSelect }: Props
 
   return (
     <article
-      className={`mc-host-fleet-card rounded-2xl border p-4 transition cursor-pointer ${
+      className={`mc-host-fleet-card rounded-2xl border p-5 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-20px_rgba(0,113,227,0.45)] ${
         selected ? 'border-[var(--accent)]/40 bg-[var(--accent)]/5' : 'border-white/[0.08] bg-[var(--apple-surface)] hover:bg-white/[0.02]'
       }`}
       onClick={onSelect}
@@ -32,7 +32,7 @@ export default function HostFleetCard({ host, linux, selected, onSelect }: Props
       <header className="flex items-start justify-between gap-2 mb-3">
         <div>
           <h2 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
-            <Server className="w-4 h-4 text-[var(--link)]" />
+            <span className="grid place-items-center w-8 h-8 rounded-xl text-white shadow-sm" style={{ background: 'linear-gradient(145deg,#0a84ff,#5e5ce6)' }}><Server className="w-4 h-4" /></span>
             {host.hostname}
           </h2>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">Libvirt host · {linux?.status ?? 'Linux ok'}</p>
@@ -41,17 +41,35 @@ export default function HostFleetCard({ host, linux, selected, onSelect }: Props
           {!online ? host.state : linuxPressure ? 'Under pressure' : 'Healthy'}
         </span>
       </header>
-      <dl className="grid grid-cols-2 gap-2 text-xs text-[var(--text-muted)] mb-3">
-        <div><dt className="text-[var(--text-faint)]">VMs</dt><dd className="text-[var(--text-primary)]">{host.vm_count}</dd></div>
-        <div><dt className="text-[var(--text-faint)]">CPU</dt><dd className="text-[var(--text-primary)]">{Math.round(host.cpu_percent ?? 0)}%</dd></div>
-        <div><dt className="text-[var(--text-faint)]">Memory</dt><dd className="text-[var(--text-primary)]">{memPct != null ? `${memPct}%` : '—'}</dd></div>
-        <div><dt className="text-[var(--text-faint)]">Network</dt><dd className="text-emerald-600/80">OK</dd></div>
-      </dl>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4 text-xs">
+        <div>
+          <p className="text-[var(--text-muted)]">VMs</p>
+          <p className="mt-0.5 text-2xl font-semibold tracking-tight text-[var(--text-primary)] tabular-nums">{host.vm_count}</p>
+        </div>
+        <div>
+          <p className="text-[var(--text-muted)]">Network</p>
+          <p className="mt-0.5 text-sm font-semibold text-emerald-600 pt-1.5">OK</p>
+        </div>
+        <Meter label="CPU" pct={Math.round(host.cpu_percent ?? 0)} />
+        <Meter label="Memory" pct={memPct} />
+      </div>
       <footer className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
         <Link to={`/platform/hosts/${host.id}`} className="btn-secondary text-xs">Open host</Link>
         <Link to={`/platform/vms?lens=topology&host=${encodeURIComponent(host.id)}`} className="btn-secondary text-xs inline-flex items-center gap-1"><Monitor className="w-3 h-3" /> Machines</Link>
       </footer>
     </article>
+  )
+}
+
+function Meter({ label, pct }: { label: string; pct: number | null }) {
+  const v = pct == null ? 0 : Math.max(0, Math.min(100, pct))
+  return (
+    <div>
+      <p className="flex justify-between text-[var(--text-muted)]"><span>{label}</span><span className="text-[var(--text-primary)] tabular-nums">{pct != null ? `${pct}%` : '—'}</span></p>
+      <div className="mt-1.5 h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-700 ${utilizationBarClass(v, { warn: 75, error: 90 })}`} style={{ width: `${v}%` }} />
+      </div>
+    </div>
   )
 }
 
