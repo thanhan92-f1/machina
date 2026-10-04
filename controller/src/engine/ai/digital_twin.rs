@@ -651,8 +651,7 @@ async fn switch_isolate_impact(pool: &SqlitePool, target: &str) -> anyhow::Resul
     let vms: Vec<String> = if rows.is_empty() {
         vec![]
     } else {
-        let placeholders = std::iter::repeat("?")
-            .take(rows.len())
+        let placeholders = std::iter::repeat_n("?", rows.len())
             .collect::<Vec<_>>()
             .join(",");
         let sql = format!(

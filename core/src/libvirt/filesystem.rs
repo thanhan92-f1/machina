@@ -11,17 +11,12 @@ use crate::LibvirtError;
 
 fn find_virtiofsd() -> Option<&'static str> {
     // Common paths across distros
-    for p in [
+    [
         "/usr/libexec/virtiofsd",
         "/usr/lib/qemu/virtiofsd",
         "/usr/lib64/qemu/virtiofsd",
         "/usr/bin/virtiofsd",
-    ] {
-        if Path::new(p).is_file() {
-            return Some(p);
-        }
-    }
-    None
+    ].into_iter().find(|&p| Path::new(p).is_file()).map(|v| v as _)
 }
 
 fn ensure_memory_backing_shared(vm_xml: &str) -> String {

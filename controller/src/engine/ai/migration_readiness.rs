@@ -72,8 +72,7 @@ pub async fn generate(
     let meta: Vec<(Uuid, String, String)> = if vm_ids.is_empty() {
         Vec::new()
     } else {
-        let placeholders = std::iter::repeat("?")
-            .take(vm_ids.len())
+        let placeholders = std::iter::repeat_n("?", vm_ids.len())
             .collect::<Vec<_>>()
             .join(",");
         let sql =

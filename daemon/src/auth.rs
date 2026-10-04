@@ -227,9 +227,7 @@ impl SessionStore {
     pub fn list_browser_sessions(&self, current_public_id: Option<&str>) -> Vec<SessionListEntry> {
         let mut sessions = self.sessions.write().unwrap_or_else(|e| e.into_inner());
         sessions.retain(|_, data| data.created_at.elapsed().as_secs() < SESSION_TTL_SECS);
-        let mut out: Vec<SessionListEntry> = sessions
-            .iter()
-            .map(|(_, data)| {
+        let mut out: Vec<SessionListEntry> = sessions.values().map(|data| {
                 let age = data.created_at.elapsed().as_secs();
                 SessionListEntry {
                     session_id: data.public_id.clone(),
@@ -241,7 +239,7 @@ impl SessionStore {
                 }
             })
             .collect();
-        out.sort_by(|a, b| a.age_secs.cmp(&b.age_secs));
+        out.sort_by_key(|a| a.age_secs);
         out
     }
 

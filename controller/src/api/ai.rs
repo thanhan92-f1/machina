@@ -340,7 +340,6 @@ pub async fn network_explain(
 
 #[derive(Debug, Deserialize)]
 pub struct MigrationAdvisorQuery {
-    pub provider: Option<String>,
     pub vm: String,
     pub os: Option<String>,
     pub disk_path: Option<String>,
@@ -507,14 +506,14 @@ pub async fn compliance_export_pdf(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     let bytes = ai::compliance::report_to_pdf(&report);
-    Ok(axum::response::Response::builder()
+    axum::response::Response::builder()
         .header(http::header::CONTENT_TYPE, "application/pdf")
         .header(
             http::header::CONTENT_DISPOSITION,
             "attachment; filename=\"machina-compliance-report.pdf\"",
         )
         .body(axum::body::Body::from(bytes))
-        .map_err(|e| ApiError::internal(e.to_string()))?)
+        .map_err(|e| ApiError::internal(e.to_string()))
 }
 
 #[derive(Debug, Deserialize)]
@@ -597,14 +596,14 @@ pub async fn capacity_export_csv(
     let csv = ai::capacity::export_csv(&state.pool)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(axum::response::Response::builder()
+    axum::response::Response::builder()
         .header(http::header::CONTENT_TYPE, "text/csv; charset=utf-8")
         .header(
             http::header::CONTENT_DISPOSITION,
             "attachment; filename=\"machina-capacity-planner.csv\"",
         )
         .body(axum::body::Body::from(csv))
-        .map_err(|e| ApiError::internal(e.to_string()))?)
+        .map_err(|e| ApiError::internal(e.to_string()))
 }
 
 pub async fn cost_export_csv(
@@ -615,14 +614,14 @@ pub async fn cost_export_csv(
     let csv = ai::cost::export_csv(&state.pool)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(axum::response::Response::builder()
+    axum::response::Response::builder()
         .header(http::header::CONTENT_TYPE, "text/csv; charset=utf-8")
         .header(
             http::header::CONTENT_DISPOSITION,
             "attachment; filename=\"machina-cost-guardian.csv\"",
         )
         .body(axum::body::Body::from(csv))
-        .map_err(|e| ApiError::internal(e.to_string()))?)
+        .map_err(|e| ApiError::internal(e.to_string()))
 }
 
 pub async fn fleet_summary(
@@ -976,14 +975,14 @@ pub async fn cost_attribution_export_csv(
     let csv = ai::cost_attribution::export_csv(&state.pool)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(axum::response::Response::builder()
+    axum::response::Response::builder()
         .header(http::header::CONTENT_TYPE, "text/csv; charset=utf-8")
         .header(
             http::header::CONTENT_DISPOSITION,
             "attachment; filename=\"machina-cost-attribution.csv\"",
         )
         .body(axum::body::Body::from(csv))
-        .map_err(|e| ApiError::internal(e.to_string()))?)
+        .map_err(|e| ApiError::internal(e.to_string()))
 }
 
 #[derive(Debug, Deserialize)]

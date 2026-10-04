@@ -45,55 +45,6 @@ pub fn checksum_inventory(inv: &FirewallInventory) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::drift_relevant_inventory;
-    use serde_json::json;
-
-    #[test]
-    fn ignores_runtime_observability_fields_for_drift() {
-        let base = json!({
-            "hostname": "host-a",
-            "posture": {"enabled": true, "last_changed": "before", "status_line": "old"},
-            "rules": [{"chain": "input"}],
-            "services": [{"port": 22}],
-            "profiles_available": ["server"],
-            "open_ports": [{"port": 22}],
-            "activity": {"accepted": 1},
-            "score": {"value": 90}
-        });
-        let changed_runtime = json!({
-            "hostname": "renamed-host",
-            "posture": {"enabled": true, "last_changed": "after", "status_line": "new"},
-            "rules": [{"chain": "input"}],
-            "services": [{"port": 443}],
-            "profiles_available": ["server"],
-            "open_ports": [{"port": 22}, {"port": 443}],
-            "activity": {"accepted": 999},
-            "score": {"value": 80}
-        });
-
-        assert_eq!(
-            drift_relevant_inventory(base),
-            drift_relevant_inventory(changed_runtime)
-        );
-    }
-
-    #[test]
-    fn preserves_policy_fields_for_drift() {
-        let expected = drift_relevant_inventory(json!({
-            "posture": {"enabled": true},
-            "rules": [{"chain": "input"}]
-        }));
-        let changed = drift_relevant_inventory(json!({
-            "posture": {"enabled": true},
-            "rules": [{"chain": "forward"}]
-        }));
-
-        assert_ne!(expected, changed);
-    }
-}
-
 pub async fn save_snapshot(
     pool: &SqlitePool,
     target_kind: &str,
@@ -173,4 +124,53 @@ pub async fn detect_drift(
         actual: format!("{actual_rules} rules (checksum {current_sum})"),
         summary: "Firewall changed outside Zeus OS".into(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::drift_relevant_inventory;
+    use serde_json::json;
+
+    #[test]
+    fn ignores_runtime_observability_fields_for_drift() {
+        let base = json!({
+            "hostname": "host-a",
+            "posture": {"enabled": true, "last_changed": "before", "status_line": "old"},
+            "rules": [{"chain": "input"}],
+            "services": [{"port": 22}],
+            "profiles_available": ["server"],
+            "open_ports": [{"port": 22}],
+            "activity": {"accepted": 1},
+            "score": {"value": 90}
+        });
+        let changed_runtime = json!({
+            "hostname": "renamed-host",
+            "posture": {"enabled": true, "last_changed": "after", "status_line": "new"},
+            "rules": [{"chain": "input"}],
+            "services": [{"port": 443}],
+            "profiles_available": ["server"],
+            "open_ports": [{"port": 22}, {"port": 443}],
+            "activity": {"accepted": 999},
+            "score": {"value": 80}
+        });
+
+        assert_eq!(
+            drift_relevant_inventory(base),
+            drift_relevant_inventory(changed_runtime)
+        );
+    }
+
+    #[test]
+    fn preserves_policy_fields_for_drift() {
+        let expected = drift_relevant_inventory(json!({
+            "posture": {"enabled": true},
+            "rules": [{"chain": "input"}]
+        }));
+        let changed = drift_relevant_inventory(json!({
+            "posture": {"enabled": true},
+            "rules": [{"chain": "forward"}]
+        }));
+
+        assert_ne!(expected, changed);
+    }
 }

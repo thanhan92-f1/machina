@@ -169,6 +169,12 @@ impl ConsoleSessionStore {
 
 }
 
+impl Default for ConsoleSessionStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn api_routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/vms/{id}/consolehub/plan", get(consolehub_plan))
@@ -1315,7 +1321,7 @@ pub async fn get_session_replay(
     let bytes = tokio::fs::read(path)
         .await
         .map_err(|e| ApiError::internal(format!("read replay: {e}")))?;
-    Ok(Response::builder()
+    Response::builder()
         .status(StatusCode::OK)
         .header(
             axum::http::header::CONTENT_TYPE,
@@ -1327,7 +1333,7 @@ pub async fn get_session_replay(
                 .unwrap_or_else(|_| HeaderValue::from_static("inline")),
         )
         .body(Body::from(bytes))
-        .map_err(|e| ApiError::internal(format!("build response: {e}")))?)
+        .map_err(|e| ApiError::internal(format!("build response: {e}")))
 }
 
 #[derive(Debug, Deserialize)]

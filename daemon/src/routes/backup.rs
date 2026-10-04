@@ -267,11 +267,10 @@ fn parse_backup_meta(dir: &std::path::Path, dir_name: &str) -> serde_json::Value
                     "vm_count" => vm_count = value.parse().unwrap_or(0),
                     "net_count" => net_count = value.parse().unwrap_or(0),
                     "with_disks" => with_disks = value == "true" || value == "1",
-                    "nfs_target" => {
-                        if !value.is_empty() {
+                    "nfs_target"
+                        if !value.is_empty() => {
                             nfs_target = value.to_string();
                         }
-                    }
                     _ => {}
                 }
             }

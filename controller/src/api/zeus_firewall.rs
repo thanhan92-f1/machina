@@ -704,14 +704,14 @@ pub async fn compliance_export_pdf(
         zeus_firewall::compliance_pdf::export_compliance_pdf(&state.pool, &state.config, &kind)
             .await
             .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(axum::response::Response::builder()
+    axum::response::Response::builder()
         .header("Content-Type", "application/pdf")
         .header(
             "Content-Disposition",
             format!("attachment; filename=\"zeus-firewall-{kind}.pdf\""),
         )
         .body(axum::body::Body::from(bytes))
-        .map_err(|e| ApiError::internal(e.to_string()))?)
+        .map_err(|e| ApiError::internal(e.to_string()))
 }
 
 pub async fn anomalies(
@@ -793,14 +793,14 @@ pub async fn finops_exposure_export_csv(
     let csv = zeus_firewall::finops::export_csv(&state.pool, &state.config)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
-    Ok(axum::response::Response::builder()
+    axum::response::Response::builder()
         .header(http::header::CONTENT_TYPE, "text/csv; charset=utf-8")
         .header(
             http::header::CONTENT_DISPOSITION,
             "attachment; filename=\"zeus-firewall-exposure-cost.csv\"",
         )
         .body(axum::body::Body::from(csv))
-        .map_err(|e| ApiError::internal(e.to_string()))?)
+        .map_err(|e| ApiError::internal(e.to_string()))
 }
 
 pub async fn multisite_overview(

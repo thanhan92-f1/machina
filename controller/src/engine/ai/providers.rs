@@ -73,6 +73,7 @@ fn default_context_window() -> i32 {
     128_000
 }
 
+#[allow(clippy::too_many_arguments)]
 fn row_from_db(
     id: Uuid,
     name: String,

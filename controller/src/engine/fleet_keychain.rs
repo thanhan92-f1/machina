@@ -47,7 +47,7 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetKeychainOverview
             status: "exported".into(),
             summary: format!(
                 "{} · {} KB",
-                &b.checksum.chars().take(18).collect::<String>(),
+                b.checksum.chars().take(18).collect::<String>(),
                 b.size_bytes / 1024
             ),
         });

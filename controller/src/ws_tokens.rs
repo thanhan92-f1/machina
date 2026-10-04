@@ -85,3 +85,9 @@ impl WsTokenStore {
         map.remove(token);
     }
 }
+
+impl Default for WsTokenStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -37,7 +37,6 @@ struct RouteKey {
     route: String,
 }
 
-#[derive(Default)]
 struct RouteStats {
     buckets: Vec<u64>,
     sum_sec: f64,
@@ -45,14 +44,18 @@ struct RouteStats {
     status_counts: HashMap<u16, u64>,
 }
 
-impl RouteStats {
-    fn new() -> Self {
+impl Default for RouteStats {
+    fn default() -> Self {
         Self {
             buckets: vec![0; HISTOGRAM_BUCKETS_SEC.len()],
-            ..Default::default()
+            sum_sec: 0.0,
+            count: 0,
+            status_counts: HashMap::new(),
         }
     }
+}
 
+impl RouteStats {
     fn observe(&mut self, duration: Duration, status: u16) {
         let sec = duration.as_secs_f64();
         for (i, bound) in HISTOGRAM_BUCKETS_SEC.iter().enumerate() {
@@ -113,7 +116,7 @@ impl HttpMetrics {
         }
         guard
             .entry(key.clone())
-            .or_insert_with(RouteStats::new)
+            .or_default()
             .observe(duration, status);
         let mut traces = self.traces.lock().unwrap_or_else(|e| e.into_inner());
         traces.push_back(HttpTraceSpan {
@@ -180,7 +183,7 @@ impl HttpMetrics {
         );
         out.push_str("# TYPE machina_http_requests_total counter\n");
         for key in keys {
-            let stats = &guard[&key];
+            let stats = &guard[key];
             let mut statuses: Vec<_> = stats.status_counts.iter().collect();
             statuses.sort_by_key(|(code, _)| **code);
             for (status, count) in statuses {
@@ -246,13 +249,13 @@ fn is_dynamic_segment(parent: Option<&str>, seg: &str) -> bool {
     if seg.len() > 80 {
         return true;
     }
-    match parent {
+    matches!(
+        parent,
         Some(
             "vms" | "templates" | "snapshots" | "jobs" | "events" | "clusters" | "namespaces"
-            | "nodes" | "pods",
-        ) => true,
-        _ => false,
-    }
+                | "nodes" | "pods",
+        )
+    )
 }
 
 fn is_uuid_like(s: &str) -> bool {

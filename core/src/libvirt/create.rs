@@ -238,13 +238,12 @@ fn create_vm_libvirt_xml(
     let gt = if gt.is_empty() { "vnc" } else { gt };
     crate::validate::validate_graphics_type(gt)?;
 
-    if firmware == "uefi" {
-        if find_ovmf_code().is_none() {
+    if firmware == "uefi"
+        && find_ovmf_code().is_none() {
             return Err(LibvirtError::Operation(
                 "UEFI firmware (OVMF) not found. Install edk2-ovmf (Fedora/RHEL) or ovmf (Debian/Ubuntu).".to_string()
             ));
         }
-    }
 
     let resolved_iso: Option<std::path::PathBuf> = if !req.iso.is_empty() {
         let iso_path = std::path::Path::new(&req.iso);
@@ -580,6 +579,7 @@ fn rbd_disk_xml_from_path(disk_path: &str, disk_boot_order: &str) -> Option<Stri
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_domain_xml(
     req: &CreateVmRequest,
     disk_path: &str,

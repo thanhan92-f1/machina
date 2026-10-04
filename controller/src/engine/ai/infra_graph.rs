@@ -1052,7 +1052,7 @@ pub async fn timeline_replay(
             resource: None,
         });
     }
-    entries.sort_by(|a, b| a.at.cmp(&b.at));
+    entries.sort_by_key(|a| a.at);
     let graph_changes: Vec<String> = entries
         .iter()
         .filter(|e| {

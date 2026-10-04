@@ -300,14 +300,7 @@ pub fn create_snapshot(
             let mode = spec
                 .map(|s| normalize_mode(&s.snapshot))
                 .filter(|s| !s.is_empty())
-                .unwrap_or_else(|| {
-                    // Default: snapshot all disks with requested storage mode when disk-only, else leave unspecified
-                    if disk_only {
-                        storage_mode.clone()
-                    } else {
-                        storage_mode.clone()
-                    }
-                });
+                .unwrap_or_else(|| storage_mode.clone());
 
             let mode = if mode == "yes" {
                 "external".to_string()
@@ -445,7 +438,7 @@ pub fn delete_snapshot(conn: &Connect, vm_name: &str, snap_name: &str) -> Result
     let snap = DomainSnapshot::lookup_by_name(&domain, snap_name, 0)
         .map_err(|e| LibvirtError::NotFound(format!("Snapshot '{snap_name}' not found: {e}")))?;
 
-    let mut flags: u32 = 0;
+    let flags: u32 = 0;
     // Libvirt may attempt block-commit when deleting external snapshots, which often fails on active domains
     // with "write lock" errors. Cockpit typically avoids destructive/merging deletes on running guests.
     if domain.is_active().unwrap_or(false) {

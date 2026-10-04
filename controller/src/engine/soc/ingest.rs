@@ -46,6 +46,7 @@ async fn advance_watermark(pool: &SqlitePool, source: &str, ts: DateTime<Utc>) -
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn insert_event(
     pool: &SqlitePool,
     occurred_at: DateTime<Utc>,
@@ -208,7 +209,7 @@ async fn ingest_audit_logs(pool: &SqlitePool) -> anyhow::Result<usize> {
             "iam",
             &severity,
             None,
-            resource_type.as_deref().and_then(|_| resource_id),
+            resource_type.as_deref().and(resource_id),
             Some(&actor),
             &format!("{actor} {action}"),
             ecs,
@@ -281,7 +282,7 @@ async fn ingest_platform_events(pool: &SqlitePool) -> anyhow::Result<usize> {
             "operations",
             severity,
             None,
-            resource_type.as_deref().and_then(|_| resource_id),
+            resource_type.as_deref().and(resource_id),
             None,
             &message,
             ecs,

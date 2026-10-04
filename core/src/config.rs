@@ -57,6 +57,7 @@ pub struct MachinaConfig {
 
 /// OpenTelemetry Protocol (HTTP) export and host audit integration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ObservabilityConfig {
     #[serde(default)]
     pub otlp: OtlpExportConfig,
@@ -64,14 +65,6 @@ pub struct ObservabilityConfig {
     pub linux_audit: LinuxAuditConfig,
 }
 
-impl Default for ObservabilityConfig {
-    fn default() -> Self {
-        Self {
-            otlp: OtlpExportConfig::default(),
-            linux_audit: LinuxAuditConfig::default(),
-        }
-    }
-}
 
 /// Push metrics (and optional audit logs) to an OTLP/HTTP collector (e.g. Grafana Alloy, otelcol).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -503,6 +496,7 @@ impl Default for VesselConfig {
 
 
 #[derive(Debug, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct TlsConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -512,15 +506,6 @@ pub struct TlsConfig {
     pub key_path: String,
 }
 
-impl Default for TlsConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            cert_path: String::new(),
-            key_path: String::new(),
-        }
-    }
-}
 
 impl TlsConfig {
     /// Mirrors the `tls_enabled` gate in `daemon/src/main.rs` that decides between
@@ -537,8 +522,10 @@ impl TlsConfig {
 /// Execute allow-listed host commands as the OIDC-mapped local user (`docs/oidc-run-as-user.md`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum RunAsUserMode {
     #[serde(alias = "disabled")]
+    #[default]
     Disabled,
     /// Run allow-listed host commands as `effective_linux_user` via `sudo -n -u <user> -- …`.
     #[serde(alias = "sudo")]
@@ -549,11 +536,6 @@ pub enum RunAsUserMode {
     SetuidHelper,
 }
 
-impl Default for RunAsUserMode {
-    fn default() -> Self {
-        Self::Disabled
-    }
-}
 
 /// Per-session UNIX impersonation for allow-listed host commands (OS user lifecycle today).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -704,6 +686,7 @@ pub struct FleetPeer {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct FleetConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -717,16 +700,6 @@ pub struct FleetConfig {
     pub peers: Vec<FleetPeer>,
 }
 
-impl Default for FleetConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            standby_peer: String::new(),
-            primary_peer: String::new(),
-            peers: Vec::new(),
-        }
-    }
-}
 
 impl FleetConfig {
     pub fn is_enabled(&self) -> bool {
@@ -878,17 +851,14 @@ impl Default for OidcConfig {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum OidcDefaultRole {
     Admin,
     Operator,
+    #[default]
     ReadOnly,
 }
 
-impl Default for OidcDefaultRole {
-    fn default() -> Self {
-        Self::ReadOnly
-    }
-}
 
 fn default_saml_name_id_format() -> String {
     "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress".to_string()
@@ -1431,18 +1401,22 @@ mod tests {
 
     #[test]
     fn run_as_user_polkit_active() {
-        let mut r = RunAsUserConfig::default();
-        r.enabled = true;
-        r.mode = RunAsUserMode::Polkit;
+        let r = RunAsUserConfig {
+            enabled: true,
+            mode: RunAsUserMode::Polkit,
+            ..Default::default()
+        };
         assert!(r.polkit_impersonation_active());
         assert!(r.impersonation_active());
     }
 
     #[test]
     fn run_as_user_setuid_active() {
-        let mut r = RunAsUserConfig::default();
-        r.enabled = true;
-        r.mode = RunAsUserMode::SetuidHelper;
+        let r = RunAsUserConfig {
+            enabled: true,
+            mode: RunAsUserMode::SetuidHelper,
+            ..Default::default()
+        };
         assert!(r.setuid_helper_impersonation_active());
         assert!(r.impersonation_active());
         assert!(!r.setuid_helper_path.is_empty());

@@ -142,17 +142,15 @@ pub async fn approve_and_execute(
     }
 
     let result = match action.action_type.as_str() {
-        t if matches!(
-            t,
-            "start_vm"
-                | "create_backup"
-                | "enable_ha"
-                | "install_guest_tools"
-                | "adopt_vm"
-                | "bulk_backup"
-                | "bulk_ha"
-                | "sync_hosts"
-        ) =>
+        "start_vm"
+        | "create_backup"
+        | "enable_ha"
+        | "install_guest_tools"
+        | "adopt_vm"
+        | "bulk_backup"
+        | "bulk_ha"
+        | "sync_hosts"
+        =>
         {
             let body = super::autopilot::ExecuteBody {
                 action_type: action.action_type.clone(),

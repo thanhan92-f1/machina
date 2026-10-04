@@ -92,7 +92,7 @@ pub async fn create_vm_backup(
         host_id,
     )
     .await
-    .map_err(|e| {
+    .inspect_err(|_e| {
         let pool = state.pool.clone();
         tokio::spawn(async move {
             let _ = sqlx::query("DELETE FROM backup_records WHERE id = ?")
@@ -100,7 +100,6 @@ pub async fn create_vm_backup(
                 .execute(&pool)
                 .await;
         });
-        e
     })?;
 
     Ok(Json(TaskResponse {

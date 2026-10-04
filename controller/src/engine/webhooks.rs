@@ -75,7 +75,7 @@ pub async fn dispatch_channels(pool: &SqlitePool, event_kind: &str, payload: &se
              VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(Uuid::new_v4())
-        .bind(&channel_id)
+        .bind(channel_id)
         .bind(&kind)
         .bind(&target)
         .bind(&subject)

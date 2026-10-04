@@ -75,7 +75,6 @@ const CDI_RELEASES_LATEST_API: &str =
     "https://api.github.com/repos/kubevirt/containerized-data-importer/releases/latest";
 
 const TIMEOUT_K3S_INSTALL_SECS: u64 = 900;
-const TIMEOUT_SHELL_LONG_SECS: u64 = 1800;
 const TIMEOUT_KUBECTL_SECS: u64 = 600;
 /// `kubectl wait … --timeout=10m`
 const TIMEOUT_KUBECTL_WAIT_SECS: u64 = 660;

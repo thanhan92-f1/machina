@@ -93,7 +93,6 @@ pub async fn doctor_disk(
     let path = resolve_image_path(image_path)?;
     let path_for_result = path.display().to_string();
     let target_enum = BootTarget::parse(target);
-    let explain = explain;
     let boot_report = tokio::task::spawn_blocking(move || {
         let (evidence, boot) = collect_assurance_data(&path, target_enum, false)?;
         let root = if explain {

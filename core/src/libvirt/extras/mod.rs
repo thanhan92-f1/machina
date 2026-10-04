@@ -1357,7 +1357,7 @@ pub fn list_saved_templates() -> Vec<crate::VmTemplate> {
         Err(_) => return templates,
     };
     for entry in dir.flatten() {
-        if entry.path().extension().map_or(false, |e| e == "json") {
+        if entry.path().extension().is_some_and(|e| e == "json") {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 if let Ok(tmpl) = serde_json::from_str::<crate::VmTemplate>(&content) {
                     templates.push(tmpl);
@@ -1629,7 +1629,7 @@ fn fill_enabled_states(services: &mut [SystemdService]) {
             for (i, line) in stdout.lines().enumerate() {
                 let global_idx = names
                     .iter()
-                    .position(|n| chunk.get(i).map_or(false, |c| n == c));
+                    .position(|n| chunk.get(i) == Some(n));
                 if let Some(idx) = global_idx {
                     services[idx].enabled = line.trim().to_string();
                 }
@@ -1774,6 +1774,7 @@ pub fn get_journal_boots() -> Result<Vec<JournalBootEntry>, LibvirtError> {
 }
 
 /// Get journal logs from journalctl.
+#[allow(clippy::too_many_arguments)]
 pub fn get_journal_logs(
     lines: u32,
     priority: Option<&str>,
@@ -1799,7 +1800,7 @@ pub fn get_journal_logs(
         if !valid.contains(&p) {
             return Err(LibvirtError::Invalid(format!("Invalid priority: {p}")));
         }
-        priority_owned = format!("-p");
+        priority_owned = "-p".to_string();
         args.push(&priority_owned);
         args.push(p);
     }
@@ -1813,7 +1814,7 @@ pub fn get_journal_logs(
             }) {
                 return Err(LibvirtError::Invalid("Invalid unit name".to_string()));
             }
-            unit_owned = format!("-u");
+            unit_owned = "-u".to_string();
             args.push(&unit_owned);
             args.push(u);
         }
@@ -2001,7 +2002,7 @@ fn format_epoch_timestamp(secs: u64) -> String {
 }
 
 fn is_leap_year(y: u64) -> bool {
-    (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
+    (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400)
 }
 
 // ── Hostname / Timezone / System Info ────────────────────────────

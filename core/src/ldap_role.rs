@@ -32,9 +32,11 @@ mod tests {
 
     #[test]
     fn admin_group_wins_over_operator() {
-        let mut cfg = LdapConfig::default();
-        cfg.admin_group_substrings = vec!["machina-admins".into()];
-        cfg.operator_group_substrings = vec!["machina-ops".into()];
+        let cfg = LdapConfig {
+            admin_group_substrings: vec!["machina-admins".into()],
+            operator_group_substrings: vec!["machina-ops".into()],
+            ..Default::default()
+        };
         let role = role_from_ldap_groups(
             &cfg,
             &["CN=machina-admins,OU=Groups,DC=example,DC=com".into()],

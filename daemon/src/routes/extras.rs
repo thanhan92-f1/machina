@@ -2141,7 +2141,7 @@ async fn get_audit_log(
         });
     }
     if let Some(lim) = q.limit {
-        let lim = lim.max(1).min(10_000);
+        let lim = lim.clamp(1, 10_000);
         if events.len() > lim {
             events.truncate(lim);
         }
@@ -2358,7 +2358,7 @@ async fn get_hardware_inventory_history_handler(
     State(_manager): State<LibvirtManager>,
     Query(q): Query<InventoryHistoryQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let limit = q.limit.unwrap_or(80).min(5000).max(1);
+    let limit = q.limit.unwrap_or(80).clamp(1, 5000);
     let entries = load_inventory_history_entries(limit)?;
     Ok(Json(serde_json::json!({
         "path": inventory_history_jsonl_path().display().to_string(),

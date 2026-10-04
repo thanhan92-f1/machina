@@ -226,8 +226,8 @@ const AFFECT_LIVE_AND_CONFIG: virDomainModificationImpact =
 fn memtune_affect_flag(state: u32) -> u32 {
     match state {
         // Live guest: tune the running domain (same as qemu docs for memory tuning).
-        1 | 2 | 3 | 7 => virt::sys::VIR_DOMAIN_AFFECT_LIVE as u32, // running, blocked, paused, pmsuspended
-        _ => virt::sys::VIR_DOMAIN_AFFECT_CONFIG as u32,
+        1 | 2 | 3 | 7 => virt::sys::VIR_DOMAIN_AFFECT_LIVE, // running, blocked, paused, pmsuspended
+        _ => virt::sys::VIR_DOMAIN_AFFECT_CONFIG,
     }
 }
 

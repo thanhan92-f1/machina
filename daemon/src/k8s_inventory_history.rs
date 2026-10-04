@@ -80,7 +80,7 @@ pub fn load_k8s_cluster_inventory_history(limit: usize) -> Result<Vec<Value>, Li
         Ok(c) => c,
         Err(_) => return Ok(Vec::new()),
     };
-    let lim = limit.max(1).min(500);
+    let lim = limit.clamp(1, 500);
     let out: Vec<Value> = data
         .lines()
         .filter(|l| !l.trim().is_empty())

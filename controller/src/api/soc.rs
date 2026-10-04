@@ -974,8 +974,7 @@ async fn build_alert_detail(pool: &SqlitePool, id: Uuid) -> Result<Json<SocAlert
     let linked_events = if event_ids.is_empty() {
         vec![]
     } else {
-        let placeholders = std::iter::repeat("?")
-            .take(event_ids.len())
+        let placeholders = std::iter::repeat_n("?", event_ids.len())
             .collect::<Vec<_>>()
             .join(",");
         let sql = format!(

@@ -114,7 +114,7 @@ pub async fn compute_recommendations(
                 dest_mem_pct,
                 dest.vm_count + committed_count,
             );
-            score += tag_affinity_score(&*vm_tags, &*dest.tags);
+            score += tag_affinity_score(&vm_tags, &dest.tags);
             if score <= 0.0 {
                 continue;
             }
@@ -293,7 +293,7 @@ pub async fn pick_host_for_vm(
         if score <= 0.0 {
             continue;
         }
-        score += tag_affinity_score(vm_tags, &*h.tags);
+        score += tag_affinity_score(vm_tags, &h.tags);
         if best_any.map(|(_, s)| score > s).unwrap_or(true) {
             best_any = Some((h.id, score));
         }
@@ -396,9 +396,10 @@ mod tests {
     #[test]
     fn hysteresis_blocks_marginal_moves_allows_clear_wins() {
         // dest only 10 better than source (< margin) -> no move.
-        assert!(30.0f32 - 20.0 < DRS_HYSTERESIS_MARGIN);
+        let source = std::hint::black_box(20.0f32);
+        assert!(30.0 - source < DRS_HYSTERESIS_MARGIN);
         // dest 40 better -> move.
-        assert!(60.0f32 - 20.0 >= DRS_HYSTERESIS_MARGIN);
+        assert!(60.0 - source >= DRS_HYSTERESIS_MARGIN);
     }
 
     // Overcommit regression: `pick_host_for_vm` used to take `memory_mib` but

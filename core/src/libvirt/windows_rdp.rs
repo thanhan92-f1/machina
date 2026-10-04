@@ -111,6 +111,7 @@ pub struct RdpEnableOutcome {
     pub notes: Vec<String>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn registry_edit_op(
     id: &str,
     key: &str,

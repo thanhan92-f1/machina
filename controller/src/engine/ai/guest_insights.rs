@@ -235,7 +235,7 @@ fn extract_json(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::guest_context::{GuestFsRow, GuestUserRow};
+    
 
     #[test]
     fn deterministic_flags_drift() {

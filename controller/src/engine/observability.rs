@@ -243,7 +243,7 @@ pub fn spawn_trace_writer(pool: SqlitePool) {
             // Same rationale as the old counter: a rolling buffer doesn't need
             // to sit at exactly 5000 rows every second, so prune only every
             // 20th flush (~20s) rather than on every one.
-            if flush_count % 20 == 0 {
+            if flush_count.is_multiple_of(20) {
                 let _ = sqlx::query(
                     "DELETE FROM api_trace_spans WHERE id NOT IN (
                         SELECT id FROM api_trace_spans ORDER BY recorded_at DESC LIMIT 5000

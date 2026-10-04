@@ -65,7 +65,8 @@ pub fn gather_metal_inventory(server: &MetalServerInput) -> FirewallInventory {
         last_changed: None,
     };
 
-    let inv = FirewallInventory {
+    
+    FirewallInventory {
         hostname: server.hostname.clone(),
         posture: posture.clone(),
         rules: rules.clone(),
@@ -83,8 +84,7 @@ pub fn gather_metal_inventory(server: &MetalServerInput) -> FirewallInventory {
             .collect(),
         nftables_summary: None,
         activity: None,
-    };
-    inv
+    }
 }
 
 pub fn scan_ipmi_exposure(bmc_address: &str, bmc_type: &str) -> MetalExposureScan {

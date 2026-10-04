@@ -270,7 +270,7 @@ pub async fn list_missing_template_images(
     Extension(actor): Extension<AuthUser>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     require_operator(&actor)?;
-    let _ = crate::engine::template_catalog::ensure_default_templates(&state.pool)
+    crate::engine::template_catalog::ensure_default_templates(&state.pool)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?;
     let missing = crate::engine::template_readiness::list_missing_marketplace_images(&state.pool)

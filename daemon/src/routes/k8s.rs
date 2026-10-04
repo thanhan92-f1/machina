@@ -2206,7 +2206,7 @@ async fn k8s_cluster_inventory(
     let mutating_webhooks = summarize_webhooks(&mwc_res);
     let addon_daemonsets = ds_res
         .as_ref()
-        .map(|j| scan_addon_daemonsets(j))
+        .map(scan_addon_daemonsets)
         .unwrap_or_default();
     let gpu_allocatable_cluster_totals = rollup_gpu_allocatable(&nodes);
 
@@ -2287,7 +2287,7 @@ async fn k8s_cluster_inventory_history(
     Query(q): Query<K8sClusterInventoryHistoryQuery>,
 ) -> Result<Json<Value>, AppError> {
     require_browser_session_for_host_insight(&actor)?;
-    let lim = q.limit.unwrap_or(20).min(100).max(1);
+    let lim = q.limit.unwrap_or(20).clamp(1, 100);
     let entries = crate::k8s_inventory_history::load_k8s_cluster_inventory_history(lim)
         .map_err(AppError::from)?;
     Ok(Json(serde_json::json!({

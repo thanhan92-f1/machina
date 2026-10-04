@@ -50,7 +50,7 @@ pub fn write_sidecars(output: &Path, template_id: &str) -> Result<()> {
         .file_name()
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
-    fs::write(&sha_path, format!("{}  {fname}\n", &sum))
+    fs::write(&sha_path, format!("{}  {fname}\n", sum))
         .with_context(|| format!("write {}", sha_path.display()))?;
 
     let info = BuildInfo {

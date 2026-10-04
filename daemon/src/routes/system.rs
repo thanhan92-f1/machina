@@ -114,7 +114,7 @@ async fn create_os_user(
         &req.username,
         &req.password,
         req.add_to_libvirt_group,
-        exec_as.map(|(c, u)| (c, u)),
+        exec_as,
     )?;
     info!(
         "OS user '{}' created via machina by session user '{}' (effective linux user '{}', libvirt group: {})",
@@ -158,7 +158,7 @@ async fn delete_os_user(
         .run_as_user
         .impersonation_active()
         .then_some((&cfg.auth.run_as_user, effective_user));
-    system_accounts::delete_local_user(&username, exec_as.map(|(c, u)| (c, u)))?;
+    system_accounts::delete_local_user(&username, exec_as)?;
     info!(
         "OS user '{}' removed via machina by session user '{}' (effective linux user '{}')",
         username, actor.username, effective_user,

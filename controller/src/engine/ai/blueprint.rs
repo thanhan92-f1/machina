@@ -26,11 +26,10 @@ pub fn generate_from_nl(prompt: &str) -> GeneratedBlueprint {
     if pl.contains("ha") || pl.contains("database") || pl.contains("db") {
         notes.push_str("Enable HA on database tier VMs. ");
     }
-    if pl.contains("backup") || pl.contains("daily") {
-        if !actions.contains(&"backup".to_string()) {
+    if (pl.contains("backup") || pl.contains("daily"))
+        && !actions.contains(&"backup".to_string()) {
             actions.push("backup".into());
         }
-    }
 
     let name = if pl.contains("ha") {
         "ha-stack".into()

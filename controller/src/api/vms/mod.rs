@@ -419,7 +419,7 @@ pub async fn create_vm(
         Some(host_id),
     )
     .await
-    .map_err(|e| {
+    .inspect_err(|_e| {
         // Compensate: delete the zombie VM row so the name is free to retry.
         let pool = state.pool.clone();
         tokio::spawn(async move {
@@ -432,7 +432,6 @@ pub async fn create_vm(
                 .execute(&pool)
                 .await;
         });
-        e
     })?;
 
     sqlx::query(
@@ -932,7 +931,7 @@ pub async fn reboot_vm(
     body: Option<Json<VmPowerBody>>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
-    let mode = body.map(|b| b.0.mode).flatten();
+    let mode = body.and_then(|b| b.0.mode);
     power_action(&state, id, "reboot", "vm.reboot", mode).await
 }
 
@@ -943,7 +942,7 @@ pub async fn shutdown_vm(
     body: Option<Json<VmPowerBody>>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
-    let mode = body.map(|b| b.0.mode).flatten();
+    let mode = body.and_then(|b| b.0.mode);
     power_action(&state, id, "shutdown", "vm.shutdown", mode).await
 }
 
@@ -1772,7 +1771,7 @@ pub async fn attach_vm_disk(
 /// caller input.
 pub(crate) async fn attach_vm_disk_trusted(
     state: AppState,
-    actor: AuthUser,
+    _actor: AuthUser,
     id: Uuid,
     body: AttachDiskBody,
 ) -> Result<Json<TaskResponse>, ApiError> {
@@ -1810,7 +1809,7 @@ pub(crate) async fn attach_vm_disk_trusted(
         host_id,
     )
     .await
-    .map_err(|e| {
+    .inspect_err(|_e| {
         if let Some(did) = disk_id {
             let pool = state.pool.clone();
             tokio::spawn(async move {
@@ -1820,7 +1819,6 @@ pub(crate) async fn attach_vm_disk_trusted(
                     .await;
             });
         }
-        e
     })?;
     Ok(Json(TaskResponse {
         task_id: task_id.to_string(),
@@ -2153,24 +2151,21 @@ pub async fn batch_vm_guest_ips(
             Ok::<_, String>(details)
         }
         .await;
-        match ip {
-            Ok(details) => {
-                let nic_ip = details
-                    .interfaces
-                    .iter()
-                    .find_map(|i| i.ip.clone())
-                    .filter(|s| !s.is_empty());
-                let guest_ip = details
-                    .guest_ip
-                    .filter(|s| !s.is_empty())
-                    .or(nic_ip.clone());
-                items.insert(
-                    vm_id.to_string(),
-                    serde_json::to_value(BatchGuestIpItem { guest_ip, nic_ip })
-                        .unwrap_or(serde_json::Value::Null),
-                );
-            }
-            Err(_) => {}
+        if let Ok(details) = ip {
+            let nic_ip = details
+                .interfaces
+                .iter()
+                .find_map(|i| i.ip.clone())
+                .filter(|s| !s.is_empty());
+            let guest_ip = details
+                .guest_ip
+                .filter(|s| !s.is_empty())
+                .or(nic_ip.clone());
+            items.insert(
+                vm_id.to_string(),
+                serde_json::to_value(BatchGuestIpItem { guest_ip, nic_ip })
+                    .unwrap_or(serde_json::Value::Null),
+            );
         }
     }
     Ok(Json(serde_json::json!({ "items": items })))
@@ -2732,7 +2727,7 @@ pub async fn retire_vm(
             row.1,
         )
         .await
-        .map_err(|e| {
+        .inspect_err(|_e| {
             let pool = state.pool.clone();
             tokio::spawn(async move {
                 let _ = sqlx::query("DELETE FROM backup_records WHERE id = ?")
@@ -2740,7 +2735,6 @@ pub async fn retire_vm(
                     .execute(&pool)
                     .await;
             });
-            e
         })?;
     }
     state.emit_event("vm.retire", format!("VM {} marked retired", row.0));
@@ -2783,7 +2777,7 @@ pub async fn export_vm_disk(
         host_id,
     )
     .await
-    .map_err(|e| {
+    .inspect_err(|_e| {
         let pool = state.pool.clone();
         tokio::spawn(async move {
             let _ = sqlx::query("DELETE FROM backup_records WHERE id = ?")
@@ -2791,7 +2785,6 @@ pub async fn export_vm_disk(
                 .execute(&pool)
                 .await;
         });
-        e
     })?;
     Ok(Json(TaskResponse {
         task_id: task_id.to_string(),

@@ -150,7 +150,7 @@ pub async fn complete_login(
     } else {
         format!(
             "oidc-{}",
-            &token.access_token.chars().take(8).collect::<String>()
+            token.access_token.chars().take(8).collect::<String>()
         )
     };
 

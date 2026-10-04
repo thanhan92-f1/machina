@@ -127,7 +127,7 @@ pub fn block_job_info(
     let info = unsafe { info.assume_init() };
     Ok(Some(BlockJobInfo {
         job_type: info.type_,
-        bandwidth: info.bandwidth as u64,
+        bandwidth: info.bandwidth,
         cur: info.cur,
         end: info.end,
     }))

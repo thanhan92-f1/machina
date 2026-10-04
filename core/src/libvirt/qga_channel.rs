@@ -83,7 +83,7 @@ pub fn ensure_guest_agent_channel(
     let mut must_restart = false;
     if !has_virtio_serial_controller(&vm_xml) {
         let controller_xml = "<controller type='virtio-serial' index='0'/>";
-        let flags = if is_running { config_only } else { config_only };
+        let flags = config_only;
         domain
             .attach_device_flags(controller_xml, flags)
             .map_err(|e| {

@@ -117,7 +117,7 @@ pub async fn summarize(pool: &SqlitePool) -> anyhow::Result<ZyraOsSummary> {
             exposure_waste_usd
         ));
     }
-    if sre.forecasts.len() > 0 {
+    if !sre.forecasts.is_empty() {
         highlights.push(format!("{} SRE forecast(s)", sre.forecasts.len()));
     }
     if highlights.is_empty() {

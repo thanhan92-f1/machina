@@ -93,12 +93,12 @@ pub fn insert_cdrom(
             .update_device_flags(&xml, flags)
             .map_err(|e| LibvirtError::Operation(format!("Failed to update CD-ROM: {e}")))?;
         let live = flags & virt::sys::VIR_DOMAIN_AFFECT_LIVE != 0;
-        return Ok(CdromInsertOutcome {
+        Ok(CdromInsertOutcome {
             target: target.to_string(),
             bus,
             live,
             requires_restart: false,
-        });
+        })
     } else {
         // No cdrom exists — attach new device. Detect bus type from VM.
         let bus = detect_best_bus(&vm_xml);
@@ -141,25 +141,25 @@ pub fn insert_cdrom(
                     requires_restart: true,
                 });
             }
-            return Ok(CdromInsertOutcome {
+            Ok(CdromInsertOutcome {
                 target: target.to_string(),
                 bus: bus.to_string(),
                 live: true,
                 requires_restart: false,
-            });
+            })
         } else {
             // For shutoff VMs — insert cdrom into XML definition
             let new_xml = insert_cdrom_into_xml(&vm_xml, &xml);
             virt::domain::Domain::define_xml(conn_ref, &new_xml).map_err(|e| {
                 LibvirtError::Operation(format!("Failed to define VM with CD-ROM: {e}"))
             })?;
-            return Ok(CdromInsertOutcome {
+            Ok(CdromInsertOutcome {
                 target: target.to_string(),
                 bus: bus.to_string(),
                 // A stopped guest sees the media the moment it starts.
                 live: false,
                 requires_restart: false,
-            });
+            })
         }
     }
 }

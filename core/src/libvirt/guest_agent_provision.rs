@@ -75,7 +75,7 @@ pub fn append_desktop_graphical_cloud_config(user_data: &mut String, login_user:
         login_user.trim()
     };
     let cmds = [
-        format!("  - mkdir -p /etc/gdm3"),
+        "  - mkdir -p /etc/gdm3".to_string(),
         format!(
             "  - printf '%s\\n' '[daemon]' 'AutomaticLogin={user}' 'AutomaticLoginEnable=true' > /etc/gdm3/custom.conf"
         ),

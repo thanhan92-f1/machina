@@ -411,6 +411,38 @@ async fn fence_ipmi_from_controller(address: &str, user: &str, pass: &str) -> an
     }
 }
 
+/// Best-effort fence via the host's own agent (only works if the agent is reachable).
+async fn fence_via_agent(
+    agent_addr: &str,
+    hostname: &str,
+    method: &str,
+    ipmi_addr: &str,
+    ipmi_user: &str,
+    ipmi_pass: &str,
+    shell_cmd: &str,
+) -> anyhow::Result<String> {
+    let mut client = tokio::time::timeout(
+        std::time::Duration::from_secs(8),
+        agent_client::connect(agent_addr),
+    )
+    .await
+    .map_err(|_| {
+        anyhow::anyhow!(
+            "agent on {agent_addr} unreachable; configure IPMI/BMC fencing (fence_method='ipmi' + \
+             ipmi_address) so an unresponsive host can be isolated from the controller"
+        )
+    })??;
+    let resp = agent_client::fence_host(
+        &mut client, hostname, method, ipmi_addr, ipmi_user, ipmi_pass, shell_cmd,
+    )
+    .await?;
+    if resp.ok {
+        Ok(resp.message)
+    } else {
+        anyhow::bail!("agent fence reported failure: {}", resp.message);
+    }
+}
+
 #[cfg(test)]
 mod drs_decision_tests {
     use super::{drs_candidate, drs_migrate_payload, DRS_MIN_SCORE};
@@ -484,37 +516,5 @@ mod drs_decision_tests {
         assert_eq!(payload["drs"], serde_json::json!(true));
         assert_eq!(payload["vm_id"], serde_json::json!(vm));
         assert_eq!(payload["dest_host_id"], serde_json::json!(dest));
-    }
-}
-
-/// Best-effort fence via the host's own agent (only works if the agent is reachable).
-async fn fence_via_agent(
-    agent_addr: &str,
-    hostname: &str,
-    method: &str,
-    ipmi_addr: &str,
-    ipmi_user: &str,
-    ipmi_pass: &str,
-    shell_cmd: &str,
-) -> anyhow::Result<String> {
-    let mut client = tokio::time::timeout(
-        std::time::Duration::from_secs(8),
-        agent_client::connect(agent_addr),
-    )
-    .await
-    .map_err(|_| {
-        anyhow::anyhow!(
-            "agent on {agent_addr} unreachable; configure IPMI/BMC fencing (fence_method='ipmi' + \
-             ipmi_address) so an unresponsive host can be isolated from the controller"
-        )
-    })??;
-    let resp = agent_client::fence_host(
-        &mut client, hostname, method, ipmi_addr, ipmi_user, ipmi_pass, shell_cmd,
-    )
-    .await?;
-    if resp.ok {
-        Ok(resp.message)
-    } else {
-        anyhow::bail!("agent fence reported failure: {}", resp.message);
     }
 }

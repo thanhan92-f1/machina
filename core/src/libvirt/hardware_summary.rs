@@ -578,11 +578,10 @@ fn caps_machine_types(xml: &str) -> Vec<String> {
     for block in crate::xml::split_blocks(xml, "machine") {
         if let Some(name) = extract_attr(&block, "machine", "name") {
             let canonical = extract_attr(&block, "machine", "canonical").unwrap_or_default();
-            if canonical.eq_ignore_ascii_case("yes") || machines.is_empty() {
-                if !machines.contains(&name) {
+            if (canonical.eq_ignore_ascii_case("yes") || machines.is_empty())
+                && !machines.contains(&name) {
                     machines.push(name);
                 }
-            }
         }
     }
     machines

@@ -300,16 +300,13 @@ fn create_bridge_ip(req: &CreateBridgeRequest) -> Result<(), LibvirtError> {
 pub fn delete_bridge(name: &str) -> Result<(), LibvirtError> {
     crate::validate::validate_name(name)?;
 
-    match detect_network_backend() {
-        "netplan" => {
-            // Remove netplan config and apply
-            let config_path = format!("/etc/netplan/90-machina-{name}.yaml");
-            let _ = std::fs::remove_file(&config_path);
-            let netplan_bin = find_bin("netplan");
-            run_cmd(&netplan_bin, &["apply"], "Failed to apply netplan")?;
-            return Ok(());
-        }
-        _ => {}
+    if detect_network_backend() == "netplan" {
+        // Remove netplan config and apply
+        let config_path = format!("/etc/netplan/90-machina-{name}.yaml");
+        let _ = std::fs::remove_file(&config_path);
+        let netplan_bin = find_bin("netplan");
+        run_cmd(&netplan_bin, &["apply"], "Failed to apply netplan")?;
+        return Ok(());
     }
 
     if Command::new(find_bin("nmcli"))
@@ -1591,7 +1588,7 @@ fn extract_comment(line: &str, prefix: &str) -> Option<String> {
     let pos = line.find(prefix)?;
     let rest = &line[pos + prefix.len()..];
     let end = rest
-        .find(|c: char| c == '*' || c == '/')
+        .find(['*', '/'])
         .unwrap_or(rest.len());
     Some(rest[..end].trim().to_string())
 }

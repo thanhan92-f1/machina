@@ -84,9 +84,9 @@ pub fn plan_environment(query: &str, vcpu_rate: f64, gib_rate: f64) -> Environme
     };
 
     let vm_count = if gpu_required {
-        (developers / 4).max(2).min(16)
+        (developers / 4).clamp(2, 16)
     } else {
-        developers.max(1).min(40)
+        developers.clamp(1, 40)
     };
 
     let total_vcpus = vm_count * vcpus;

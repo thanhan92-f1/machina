@@ -891,7 +891,7 @@ async fn vm_clone(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
                 .bind(new_id)
                 .execute(&state.pool)
                 .await;
-            return Err(e.into());
+            return Err(e);
         }
     };
 

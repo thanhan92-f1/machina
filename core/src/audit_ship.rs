@@ -35,13 +35,13 @@ fn syslog_line(line: &str) {
     let msg = CString::new(line.chars().take(900).collect::<String>()).unwrap_or_default();
     unsafe {
         libc::openlog(
-            b"machina\0".as_ptr() as *const libc::c_char,
+            c"machina".as_ptr(),
             libc::LOG_PID,
             libc::LOG_AUTHPRIV,
         );
         libc::syslog(
             libc::LOG_INFO,
-            b"%s\0".as_ptr() as *const libc::c_char,
+            c"%s".as_ptr(),
             msg.as_ptr(),
         );
         libc::closelog();

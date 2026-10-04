@@ -74,7 +74,7 @@ pub async fn run_ssh_terminal(ws: WebSocket, session: PendingSession) {
         cmd.arg("-p");
         cmd.arg(session.ssh_port.to_string());
     }
-    cmd.arg(&format!("{}@{}", session.ssh_user, session.host));
+    cmd.arg(format!("{}@{}", session.ssh_user, session.host));
 
     let mut child = match pair.slave.spawn_command(cmd) {
         Ok(c) => c,

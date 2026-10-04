@@ -87,7 +87,7 @@ fn redis(to_server: bool, d: &[u8]) -> Option<Decoded> {
         return word(it.next()?).map(|op| Decoded { op, detail: None });
     }
     let w = word(d)?;
-    w.chars().all(|c| c.is_ascii_alphabetic()).then(|| Decoded { op: w, detail: None })
+    w.chars().all(|c| c.is_ascii_alphabetic()).then_some(Decoded { op: w, detail: None })
 }
 
 fn be32(d: &[u8], at: usize) -> Option<u32> {

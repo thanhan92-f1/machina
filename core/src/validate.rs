@@ -350,13 +350,12 @@ pub fn validate_create_vm_virt_install_extensions(
         validate_virt_install_field(pxe_net, "virt_install_pxe_network")?;
     }
     let loc = req.virt_install_location.trim();
-    if !loc.is_empty() {
-        if loc.len() > 4096 || loc.contains('\n') || loc.contains('\r') {
+    if !loc.is_empty()
+        && (loc.len() > 4096 || loc.contains('\n') || loc.contains('\r')) {
             return Err(LibvirtError::Invalid(
                 "virt_install_location: invalid or too long".into(),
             ));
         }
-    }
     let ios = req.virt_install_install_os.trim();
     if !ios.is_empty() {
         validate_virt_install_field(ios, "virt_install_install_os")?;
@@ -398,14 +397,13 @@ pub fn validate_create_vm_virt_install_extensions(
         }
     }
 
-    if req.virt_install_pxe {
-        if !req.iso.trim().is_empty() || !loc.is_empty() || !ios.is_empty() {
+    if req.virt_install_pxe
+        && (!req.iso.trim().is_empty() || !loc.is_empty() || !ios.is_empty()) {
             return Err(LibvirtError::Invalid(
                 "virt_install_pxe cannot be combined with iso, virt_install_location, or virt_install_install_os"
                     .into(),
             ));
         }
-    }
 
     if !loc.is_empty() && !req.iso.trim().is_empty() {
         return Err(LibvirtError::Invalid(
@@ -420,13 +418,12 @@ pub fn validate_create_vm_virt_install_extensions(
         ));
     }
 
-    if !pool.is_empty() {
-        if !req.existing_disk.trim().is_empty() || !backing.is_empty() {
+    if !pool.is_empty()
+        && (!req.existing_disk.trim().is_empty() || !backing.is_empty()) {
             return Err(LibvirtError::Invalid(
                 "root_disk_storage_pool/volume cannot be combined with existing_disk or virt_install_disk_backing_store".into(),
             ));
         }
-    }
     if !backing.is_empty() && !req.existing_disk.trim().is_empty() {
         return Err(LibvirtError::Invalid(
             "Use either existing_disk or virt_install_disk_backing_store, not both".into(),
@@ -644,9 +641,11 @@ mod tests {
 
     #[test]
     fn test_validate_create_vm_disk_image_builders_mutex() {
-        let mut req = CreateVmRequest::default();
-        req.virt_builder_os = "fedora-44".into();
-        req.mkosi_workspace = "/tmp/w".into();
+        let mut req = CreateVmRequest {
+            virt_builder_os: "fedora-44".into(),
+            mkosi_workspace: "/tmp/w".into(),
+            ..Default::default()
+        };
         assert!(validate_create_vm_disk_image_builders(&req).is_err());
         req.mkosi_workspace = String::new();
         assert!(validate_create_vm_disk_image_builders(&req).is_ok());

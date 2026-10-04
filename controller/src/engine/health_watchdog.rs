@@ -124,7 +124,7 @@ async fn evaluate(state: &AppState, t: &WatchTarget) -> anyhow::Result<()> {
     }
 
     // Cooldown gate: don't reset again within cooldown_secs of the last reset.
-    if let Some(_) = t.last_restart_at {
+    if t.last_restart_at.is_some() {
         let cooling: bool = sqlx::query_scalar(
             "SELECT last_restart_at > datetime('now', printf('-%d seconds', ?)) FROM vm_watchdog WHERE vm_id = ?",
         )

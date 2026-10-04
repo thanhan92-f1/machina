@@ -233,11 +233,9 @@ pub async fn plan_target(
                 .fetch_one(pool)
                 .await?
                 == 0
-            {
-                if super::metal::load_row(pool, id).await.is_ok() {
+                && super::metal::load_row(pool, id).await.is_ok() {
                     return super::metal::plan_metal(pool, id, req).await;
                 }
-            }
         }
     }
     let hostname = resolve_hostname(pool, cfg, target_id).await?;
@@ -262,11 +260,9 @@ pub async fn apply_target(
                 .fetch_one(pool)
                 .await?
                 == 0
-            {
-                if super::metal::load_row(pool, id).await.is_ok() {
+                && super::metal::load_row(pool, id).await.is_ok() {
                     return super::metal::apply_metal(pool, id, req, actor).await;
                 }
-            }
         }
     }
     let mut apply_req = req;

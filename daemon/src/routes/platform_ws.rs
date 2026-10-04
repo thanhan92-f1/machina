@@ -48,7 +48,7 @@ async fn relay_platform_ws(socket: WebSocket, upstream_path: String, token: Stri
         while let Some(Ok(msg)) = client_stream.next().await {
             let up = match msg {
                 Message::Binary(b) => TsMessage::Binary(b.to_vec()),
-                Message::Text(t) => TsMessage::Text(t.to_string().into()),
+                Message::Text(t) => TsMessage::Text(t.to_string()),
                 Message::Close(_) => {
                     let _ = upstream_sink.send(TsMessage::Close(None)).await;
                     break;

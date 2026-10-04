@@ -190,22 +190,20 @@ pub async fn exposure_rollup(
 async fn resolve_team(pool: &SqlitePool, target_id: &str, kind: &str) -> String {
     if kind == "bare_metal" {
         if let Ok(uid) = Uuid::parse_str(target_id) {
-            if let Ok(hostname) = sqlx::query_scalar::<_, String>(
+            if let Ok(Some(h)) = sqlx::query_scalar::<_, String>(
                 "SELECT hostname FROM baremetal_servers WHERE id = ?",
             )
             .bind(uid)
             .fetch_optional(pool)
             .await
             {
-                if let Some(h) = hostname {
-                    return format!("metal:{h}");
-                }
+                return format!("metal:{h}");
             }
         }
         return "metal:unassigned".into();
     }
     if let Ok(uid) = Uuid::parse_str(target_id) {
-        if let Ok(tag) = sqlx::query_scalar::<_, Option<String>>(
+        if let Ok(Some(Some(t))) = sqlx::query_scalar::<_, Option<String>>(
             "SELECT (SELECT value FROM json_each(COALESCE(tags,'[]')) WHERE value LIKE 'team:%' LIMIT 1)
              FROM vms WHERE host_id = ? LIMIT 1",
         )
@@ -213,9 +211,7 @@ async fn resolve_team(pool: &SqlitePool, target_id: &str, kind: &str) -> String 
         .fetch_optional(pool)
         .await
         {
-            if let Some(Some(t)) = tag {
-                return t.strip_prefix("team:").unwrap_or(&t).to_string();
-            }
+            return t.strip_prefix("team:").unwrap_or(&t).to_string();
         }
     }
     "platform".into()
@@ -246,8 +242,7 @@ pub async fn vm_idle_port_ranking(pool: &SqlitePool) -> anyhow::Result<Vec<VmIdl
         .ok()
         .flatten();
         let ports = host
-            .map(|(h,)| gather_firewall_inventory(&h).ok())
-            .flatten()
+            .and_then(|(h,)| gather_firewall_inventory(&h).ok())
             .map(|inv| inv.open_ports)
             .unwrap_or_default();
         let idle_ports: Vec<&OpenPort> = ports

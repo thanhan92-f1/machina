@@ -214,6 +214,22 @@ impl From<sqlx::Error> for ApiError {
     }
 }
 
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let mut body = json!({ "error": self.message });
+        if let Some(code) = self.error_code {
+            body["error_code"] = json!(code);
+        }
+        if let Some(rem) = self.remediation {
+            body["remediation"] = json!(rem);
+        }
+        if let Some(obj) = self.object_ref {
+            body["object_ref"] = serde_json::to_value(obj).unwrap_or(json!({}));
+        }
+        (self.status, Json(body)).into_response()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,21 +269,5 @@ mod tests {
     fn not_found_from_agent_maps_to_404() {
         let e = ApiError::from_upstream("Not found: vm missing");
         assert_eq!(e.status, StatusCode::NOT_FOUND);
-    }
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let mut body = json!({ "error": self.message });
-        if let Some(code) = self.error_code {
-            body["error_code"] = json!(code);
-        }
-        if let Some(rem) = self.remediation {
-            body["remediation"] = json!(rem);
-        }
-        if let Some(obj) = self.object_ref {
-            body["object_ref"] = serde_json::to_value(obj).unwrap_or(json!({}));
-        }
-        (self.status, Json(body)).into_response()
     }
 }

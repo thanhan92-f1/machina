@@ -118,11 +118,7 @@ pub async fn attribute(pool: &SqlitePool) -> anyhow::Result<CostAttributionRepor
         crate::engine::zeus_firewall::finops::team_exposure_attribution(pool, &cfg).await
     {
         for (team, exposure, _) in exp_teams {
-            let key = if team.starts_with("metal:") {
-                format!("tag:{team}")
-            } else {
-                format!("tag:{team}")
-            };
+            let key = format!("tag:{team}");
             if let Some(row) = teams
                 .iter_mut()
                 .find(|t| t.team.contains(&team) || t.team == key)

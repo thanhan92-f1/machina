@@ -614,7 +614,7 @@ pub fn list_passwd_entries(limit: usize) -> Result<Vec<PasswdEntry>, LibvirtErro
     }
     #[cfg(target_os = "linux")]
     {
-        let cap = limit.min(500).max(1);
+        let cap = limit.clamp(1, 500);
         let data = read_passwd_source()?;
         let mut rows = Vec::new();
         for line in data.lines() {
@@ -655,7 +655,7 @@ pub fn list_group_entries(limit: usize) -> Result<Vec<GroupEntry>, LibvirtError>
     }
     #[cfg(target_os = "linux")]
     {
-        let cap = limit.min(500).max(1);
+        let cap = limit.clamp(1, 500);
         let data = read_group_source()?;
         let mut rows = Vec::new();
         for line in data.lines() {

@@ -448,7 +448,7 @@ fn undefine_persistent(domain: &Domain, name: &str, user_flags: u32) -> Result<(
         | sys::VIR_DOMAIN_UNDEFINE_MANAGED_SAVE
         | sys::VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA;
     let flags = user_flags | base;
-    let nvram_flag = sys::VIR_DOMAIN_UNDEFINE_NVRAM as u32;
+    let nvram_flag = sys::VIR_DOMAIN_UNDEFINE_NVRAM;
     let nvram_requested = (user_flags & nvram_flag) != 0;
 
     match domain.undefine_flags(flags as sys::virDomainUndefineFlagsValues) {
@@ -543,7 +543,7 @@ pub fn delete_vm_with_options(
     opts: &UndefineOptions,
 ) -> Result<Vec<String>, LibvirtError> {
     let flags_u = opts.to_libvirt_flags()?;
-    let flags: u32 = flags_u as u32;
+    let flags: u32 = flags_u;
     let domain = match lookup_domain(conn, name) {
         Ok(d) => d,
         Err(LibvirtError::NotFound(_)) => return Ok(Vec::new()),
@@ -787,9 +787,9 @@ fn enrich_disk_block_info(domain: &virt::domain::Domain, disks: &mut [DiskInfo])
             continue;
         }
         if let Ok(info) = domain.get_block_info(&disk.target, 0) {
-            disk.capacity_bytes = Some(info.capacity.max(0) as u64);
-            disk.allocation_bytes = Some(info.allocation.max(0) as u64);
-            disk.physical_bytes = Some(info.physical.max(0) as u64);
+            disk.capacity_bytes = Some(info.capacity);
+            disk.allocation_bytes = Some(info.allocation);
+            disk.physical_bytes = Some(info.physical);
             continue;
         }
         if disk.device == "disk"

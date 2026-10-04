@@ -299,7 +299,7 @@ impl Engine {
                 kind => slots.entry(kind).or_default().push((k.slot, v)),
             }
         }
-        r.exits.sort_by(|a, b| b.count.cmp(&a.count));
+        r.exits.sort_by_key(|x| std::cmp::Reverse(x.count));
         r.residency.sort_by_key(|x| x.cpu);
         let h = |kind| vmintel::hist(slots.get(&kind).map(Vec::as_slice).unwrap_or_default());
         r.runq = h(vmi_kind::RUNQ);

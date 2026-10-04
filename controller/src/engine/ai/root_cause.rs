@@ -152,7 +152,7 @@ async fn analyze_with_symptoms(
         });
     }
 
-    timeline.sort_by(|a, b| b.at.cmp(&a.at));
+    timeline.sort_by_key(|x| std::cmp::Reverse(x.at));
     timeline.truncate(100);
 
     // Host / NIC evidence from events
@@ -191,16 +191,14 @@ async fn analyze_with_symptoms(
 
     // VM metrics spike
     if let Some(vid) = vm_id {
-        if let Ok(cpu) =
+        if let Ok(Some(c)) =
             sqlx::query_scalar::<_, f64>("SELECT cpu_percent FROM vm_metrics WHERE vm_id = ?")
                 .bind(vid)
                 .fetch_optional(pool)
                 .await
         {
-            if let Some(c) = cpu {
-                if c >= 95.0 {
-                    evidence.push(format!("VM CPU at {c:.0}% during incident window"));
-                }
+            if c >= 95.0 {
+                evidence.push(format!("VM CPU at {c:.0}% during incident window"));
             }
         }
     }
@@ -209,7 +207,7 @@ async fn analyze_with_symptoms(
         evidence.push(format!("Reported symptom: {s}"));
     }
 
-    timeline.sort_by(|a, b| b.at.cmp(&a.at));
+    timeline.sort_by_key(|x| std::cmp::Reverse(x.at));
     timeline.truncate(100);
 
     let (root_cause, confidence, factors, actions) =
@@ -254,7 +252,7 @@ pub fn merge_bpf_anomalies(timeline: &mut Vec<TimelineEntry>, anomalies: &serde_
             severity: severity.into(),
         });
     }
-    timeline.sort_by(|a, b| b.at.cmp(&a.at));
+    timeline.sort_by_key(|x| std::cmp::Reverse(x.at));
     timeline.truncate(120);
 }
 

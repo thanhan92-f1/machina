@@ -427,7 +427,7 @@ pub fn load_inventory_history_entries(
         Ok(c) => c,
         Err(_) => return Ok(Vec::new()),
     };
-    let lim = limit.max(1).min(50_000);
+    let lim = limit.clamp(1, 50_000);
     let out: Vec<HardwareInventoryReport> = data
         .lines()
         .filter(|l| !l.trim().is_empty())

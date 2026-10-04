@@ -10,6 +10,9 @@ use machina_core::libvirt::domain;
 use machina_core::state::CreateVmRequest;
 use machina_core::LibvirtError;
 use machina_spec::VirtualMachine;
+
+/// (PCI address, vendor, device name, IOMMU group, MIG mode)
+pub type HostGpu = (String, String, String, u32, String);
 use machina_translate::{domain_xml_from_spec, rbd_disk_xml};
 use virt::connect::Connect;
 use virt::domain::Domain;
@@ -82,7 +85,7 @@ impl LibvirtCtx {
                 uuid: String::new(),
                 state: v.state,
                 vcpus: v.vcpus,
-                memory_mb: v.memory_mb as u64,
+                memory_mb: v.memory_mb,
                 cpu_percent: 0.0,
                 memory_used_mib: 0,
                 disk_read_iops: 0,
@@ -117,9 +120,7 @@ impl LibvirtCtx {
         machina_core::libvirt::network::list_networks(&self.conn)
     }
 
-    pub fn list_host_gpus(
-        &self,
-    ) -> Result<Vec<(String, String, String, u32, String)>, LibvirtError> {
+    pub fn list_host_gpus(&self) -> Result<Vec<HostGpu>, LibvirtError> {
         use machina_core::libvirt::extras::list_iommu_groups;
         let mut out = Vec::new();
         for group in list_iommu_groups()? {
@@ -571,6 +572,7 @@ impl LibvirtCtx {
         machina_core::libvirt::vnc::resolve_vnc_tcp(&self.conn, name)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn migrate(
         &self,
         name: &str,

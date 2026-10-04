@@ -250,7 +250,7 @@ fn find_mkosi_disk_artifact(output_dir: &Path) -> Result<PathBuf, LibvirtError> 
     let mut candidates: Vec<(SystemTime, PathBuf)> = Vec::new();
     collect_disk_images(output_dir, &mut candidates);
 
-    candidates.sort_by(|a, b| a.0.cmp(&b.0));
+    candidates.sort_by_key(|a| a.0);
     candidates
         .into_iter()
         .next_back()

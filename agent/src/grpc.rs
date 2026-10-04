@@ -1,6 +1,8 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
+#![allow(clippy::result_large_err)]
+
 use std::sync::Arc;
 
 use machina_spec::VirtualMachine;
@@ -476,7 +478,7 @@ impl HostAgent for AgentService {
             tokio::task::spawn_blocking(move || build_console_access_plan(&libvirt, &vm_name))
                 .await
                 .map_err(|e| Status::internal(e.to_string()))?
-                .map_err(|e| Status::internal(e))?;
+                .map_err(Status::internal)?;
 
         Ok(Response::new(plan))
     }
@@ -1727,7 +1729,7 @@ impl HostAgent for AgentService {
         request: Request<GetLinuxTopProcessesRequest>,
     ) -> Result<Response<GetLinuxTopProcessesResponse>, Status> {
         let req = request.into_inner();
-        let limit = req.limit.max(1).min(64);
+        let limit = req.limit.clamp(1, 64);
         let order = if req.order.eq_ignore_ascii_case("cpu") {
             machina_core::libvirt::extras::HostTopProcessOrder::Cpu
         } else {
@@ -2170,9 +2172,7 @@ fn build_console_access_plan(
         "rdp".into()
     } else if console_type == "spice" {
         "spice".into()
-    } else if console_type == "vnc" && vnc_port > 0 {
-        "novnc".into()
-    } else if desktop_golden {
+    } else if (console_type == "vnc" && vnc_port > 0) || desktop_golden {
         "novnc".into()
     } else if serial_available {
         "serial".into()

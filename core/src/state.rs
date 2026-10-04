@@ -1033,7 +1033,7 @@ impl AppState {
         self.sidebar_items.clear();
 
         // Data-driven: each category maps to its child items
-        let mut categories: Vec<(SidebarCategory, Vec<SidebarItem>)> = vec![
+        let categories: Vec<(SidebarCategory, Vec<SidebarItem>)> = vec![
             (
                 SidebarCategory::VirtualMachines,
                 self.vms
@@ -1346,7 +1346,7 @@ impl AppState {
             ResourceView::Backups | ResourceView::Events | ResourceView::Node => vec![],
         };
 
-        scored.sort_by(|a, b| b.1.cmp(&a.1));
+        scored.sort_by_key(|x| std::cmp::Reverse(x.1));
         self.filtered_indices = scored.into_iter().map(|(i, _)| i).collect();
         self.clamp_selection();
     }

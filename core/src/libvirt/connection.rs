@@ -40,7 +40,7 @@ fn connection_label(uri: &str) -> String {
     for prefix in ["qemu+ssh://", "qemu+tls://", "qemu+tcp://", "qemu://"] {
         if let Some(rest) = uri.strip_prefix(prefix) {
             let host = rest.split('/').next().unwrap_or(rest);
-            let host = host.split('@').last().unwrap_or(host);
+            let host = host.split('@').next_back().unwrap_or(host);
             let host = host.split(':').next().unwrap_or(host);
             if !host.is_empty() {
                 return host.to_string();

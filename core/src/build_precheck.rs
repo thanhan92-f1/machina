@@ -25,7 +25,7 @@ pub fn filesystem_avail_bytes(path: &Path) -> Result<u64, LibvirtError> {
             std::io::Error::last_os_error()
         )));
     }
-    Ok(u64::from(vfs.f_bavail).saturating_mul(u64::from(vfs.f_frsize)))
+    Ok(vfs.f_bavail.saturating_mul(vfs.f_frsize))
 }
 
 #[cfg(not(unix))]

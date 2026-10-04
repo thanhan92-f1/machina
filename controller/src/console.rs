@@ -224,7 +224,7 @@ async fn proxy_to_agent_vnc(socket: WebSocket, state: AppState, vm_id: Uuid, rea
     let a2c = tokio::spawn(async move {
         while let Some(Ok(msg)) = agent_stream.next().await {
             let down = match msg {
-                TsMessage::Binary(b) => Message::Binary(b.into()),
+                TsMessage::Binary(b) => Message::Binary(b),
                 TsMessage::Text(t) => Message::Text(t.to_string().into()),
                 TsMessage::Close(_) => {
                     let _ = client_sink.send(Message::Close(None)).await;
@@ -374,7 +374,7 @@ async fn proxy_to_daemon_kubevirt(
     let d2c = tokio::spawn(async move {
         while let Some(Ok(msg)) = daemon_stream.next().await {
             let down = match msg {
-                TsMessage::Binary(b) => Message::Binary(b.into()),
+                TsMessage::Binary(b) => Message::Binary(b),
                 TsMessage::Text(t) => Message::Text(t.to_string().into()),
                 TsMessage::Close(_) => {
                     let _ = client_sink.send(Message::Close(None)).await;
@@ -444,7 +444,7 @@ async fn proxy_to_agent_serial(socket: WebSocket, state: AppState, vm_id: Uuid, 
     let a2c = tokio::spawn(async move {
         while let Some(Ok(msg)) = agent_stream.next().await {
             let down = match msg {
-                TsMessage::Binary(b) => Message::Binary(b.into()),
+                TsMessage::Binary(b) => Message::Binary(b),
                 TsMessage::Text(t) => Message::Text(t.to_string().into()),
                 TsMessage::Close(_) => {
                     let _ = client_sink.send(Message::Close(None)).await;
@@ -548,7 +548,7 @@ async fn proxy_to_agent_spice(socket: WebSocket, state: AppState, vm_id: Uuid, r
     let a2c = tokio::spawn(async move {
         while let Some(Ok(msg)) = agent_stream.next().await {
             let down = match msg {
-                TsMessage::Binary(b) => Message::Binary(b.into()),
+                TsMessage::Binary(b) => Message::Binary(b),
                 TsMessage::Text(t) => Message::Text(t.to_string().into()),
                 TsMessage::Close(_) => {
                     let _ = client_sink.send(Message::Close(None)).await;

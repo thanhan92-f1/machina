@@ -261,9 +261,8 @@ pub fn materialize_virt_builder_if_requested(
     post_customize(disk, req, log)?;
     if req.virt_builder_sysprep {
         tracing::info!("virt-sysprep {}", dest);
-        run_guestfs_tool("virt-sysprep", &["-a".into(), dest.clone()], log).map_err(|e| {
+        run_guestfs_tool("virt-sysprep", &["-a".into(), dest.clone()], log).inspect_err(|_e| {
             let _ = fs::remove_file(&dest);
-            e
         })?;
     }
 
@@ -316,9 +315,8 @@ fn post_customize(
     }
 
     tracing::info!("virt-customize on {}", disk.display());
-    run_guestfs_tool("virt-customize", &args, log).map_err(|e| {
+    run_guestfs_tool("virt-customize", &args, log).inspect_err(|_e| {
         let _ = fs::remove_file(disk);
-        e
     })
 }
 

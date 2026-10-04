@@ -62,7 +62,7 @@ pub fn verify_audit_log(max_lines: usize) -> AuditVerifyReport {
         Ok(c) => c,
         Err(_) => return AuditVerifyReport::default(),
     };
-    let max_lines = max_lines.max(1).min(500_000);
+    let max_lines = max_lines.clamp(1, 500_000);
     let lines: Vec<&str> = content.lines().rev().take(max_lines).collect();
     let mut report = AuditVerifyReport {
         total_lines: lines.len(),

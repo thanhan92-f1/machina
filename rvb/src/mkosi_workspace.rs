@@ -107,7 +107,7 @@ fn newest_disk_artifact(workspace: &Path) -> Result<PathBuf> {
     ] {
         collect_images(&sub, &mut found);
     }
-    found.sort_by_key(|a| a.0.clone());
+    found.sort_by_key(|a| a.0);
     found
         .into_iter()
         .next_back()

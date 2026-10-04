@@ -161,9 +161,9 @@ pub fn sanitize_k8s_label(s: &str) -> String {
 fn storage_gi_for_disk(path: &str, memory_mb: u64, padding_gi: u32) -> u32 {
     let from_file = std::fs::metadata(path).ok().map(|m| {
         let b = m.len();
-        ((b + (1 << 30) - 1) / (1 << 30)) as u32
+        b.div_ceil(1 << 30) as u32
     });
-    let fallback = ((memory_mb + 1023) / 1024).max(1) as u32;
+    let fallback = memory_mb.div_ceil(1024).max(1) as u32;
     from_file
         .unwrap_or(fallback)
         .saturating_add(padding_gi)
@@ -332,6 +332,7 @@ fn storage_class_line(cfg: &KubeVirtConfig, storage_class_override: Option<&str>
 }
 
 /// Build CDI DataVolume (upload) + KubeVirt VM from an on-disk qcow2 (no libvirt domain required).
+#[allow(clippy::too_many_arguments)]
 pub fn kubevirt_bundle_from_qcow2(
     qcow2_path: &str,
     cfg: &KubeVirtConfig,
@@ -403,7 +404,7 @@ pub fn kubevirt_bundle_from_qcow2(
             GuestOsFamily::Linux => 2,
         })
         .max(1);
-    let mem_gi = ((memory_mb + 1023) / 1024).max(1);
+    let mem_gi = memory_mb.div_ceil(1024).max(1);
     let sc_line = storage_class_line(cfg, storage_class_override);
 
     build_bundle(BundleBuildInput {
@@ -423,6 +424,7 @@ pub fn kubevirt_bundle_from_qcow2(
 }
 
 /// Build CDI DataVolume (upload) + KubeVirt VM with virtio root + optional virtio-win CDROM.
+#[allow(clippy::too_many_arguments)]
 pub fn kubevirt_bundle_from_libvirt_vm(
     details: &VmDetails,
     libvirt_name: &str,
@@ -468,8 +470,8 @@ pub fn kubevirt_bundle_from_libvirt_vm(
         storage_gi_for_disk(root_path, details.memory_mb, cfg.datavolume_padding_gi)
     });
     let sc_line = storage_class_line(cfg, storage_class_override);
-    let cores = details.vcpus.max(1) as u32;
-    let mem_gi = ((details.memory_mb + 1023) / 1024).max(1);
+    let cores = details.vcpus.max(1);
+    let mem_gi = details.memory_mb.div_ceil(1024).max(1);
 
     build_bundle(BundleBuildInput {
         source_label: libvirt_name,

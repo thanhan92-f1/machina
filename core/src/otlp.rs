@@ -61,44 +61,45 @@ pub fn build_metrics_export_payload(
     daemon_uptime_secs: u64,
     auth_failures: u64,
 ) -> Value {
-    let mut metrics: Vec<Value> = Vec::new();
-    metrics.push(gauge_metric(
-        "machina.host.cpu_percent",
-        point.host_cpu_percent,
-        vec![],
-    ));
-    metrics.push(gauge_metric(
-        "machina.host.memory_percent",
-        point.host_memory_percent,
-        vec![],
-    ));
-    metrics.push(gauge_metric(
-        "machina.host.disk_percent",
-        point.host_disk_percent,
-        vec![],
-    ));
-    metrics.push(gauge_metric("machina.host.load_1", point.load_1, vec![]));
-    metrics.push(gauge_metric(
-        "machina.vms.running",
-        point.vms_running as f64,
-        vec![],
-    ));
-    metrics.push(gauge_metric(
-        "machina.vms.defined",
-        point.vm_count as f64,
-        vec![],
-    ));
-    metrics.push(gauge_metric(
-        "machina.daemon.uptime_seconds",
-        daemon_uptime_secs as f64,
-        vec![],
-    ));
-    metrics.push(sum_metric(
-        "machina.daemon.auth_failures_total",
-        auth_failures as f64,
-        vec![],
-        true,
-    ));
+    let mut metrics: Vec<Value> = vec![
+        gauge_metric(
+            "machina.host.cpu_percent",
+            point.host_cpu_percent,
+            vec![],
+        ),
+        gauge_metric(
+            "machina.host.memory_percent",
+            point.host_memory_percent,
+            vec![],
+        ),
+        gauge_metric(
+            "machina.host.disk_percent",
+            point.host_disk_percent,
+            vec![],
+        ),
+        gauge_metric("machina.host.load_1", point.load_1, vec![]),
+        gauge_metric(
+            "machina.vms.running",
+            point.vms_running as f64,
+            vec![],
+        ),
+        gauge_metric(
+            "machina.vms.defined",
+            point.vm_count as f64,
+            vec![],
+        ),
+        gauge_metric(
+            "machina.daemon.uptime_seconds",
+            daemon_uptime_secs as f64,
+            vec![],
+        ),
+        sum_metric(
+            "machina.daemon.auth_failures_total",
+            auth_failures as f64,
+            vec![],
+            true,
+        ),
+    ];
 
     for vm in &point.vm_metrics {
         let mut attrs = vec![attr_str("vm.name", &vm.name)];

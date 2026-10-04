@@ -43,7 +43,7 @@ async fn evaluate_rule(pool: &SqlitePool, rule: &RuleRow) -> anyhow::Result<bool
         .query_json
         .get("window_minutes")
         .and_then(|v| v.as_i64())
-        .unwrap_or(60) as i64;
+        .unwrap_or(60);
     let since = Utc::now() - Duration::minutes(window);
 
     let events: Vec<(Uuid, String, String, String, Value)> = sqlx::query_as(
@@ -158,6 +158,7 @@ fn event_matches(query: &Value, source: &str, severity: &str, ecs: &Value) -> bo
     true
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn upsert_alert(
     pool: &SqlitePool,
     rule_id: Uuid,

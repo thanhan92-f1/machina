@@ -331,6 +331,7 @@ impl AtlasClient {
     // ---- Volume write path (async jobs) -----------------------------------
 
     /// Create a backend volume. Returns the enqueued job (`202`).
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_volume(
         &self,
         tenant_id: &str,

@@ -378,7 +378,7 @@ pub async fn run_safe_batch(
     let skipped_count = all.iter().filter(|a| !is_auto_safe(a)).count();
     let safe: Vec<ProposedAction> = all
         .into_iter()
-        .filter(|a| is_auto_safe(a))
+        .filter(is_auto_safe)
         .take(cap)
         .collect();
 

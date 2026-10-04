@@ -138,11 +138,10 @@ async fn fetch_peer_slice(base: &str) -> FleetClusterSlice {
     };
 
     let health = client.get(format!("{base}/api/v1/health")).send().await;
-    if health
+    if !health
         .as_ref()
         .map(|r| r.status().is_success())
         .unwrap_or(false)
-        == false
     {
         return FleetClusterSlice {
             label,

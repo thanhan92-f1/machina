@@ -296,6 +296,7 @@ pub async fn get_console_access_plan(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn migrate_vm(
     client: &mut AgentClient,
     vm_name: &str,

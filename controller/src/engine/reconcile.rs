@@ -155,7 +155,7 @@ async fn reconcile_once(state: &AppState) -> anyhow::Result<()> {
         }
 
         if let Err(e) = enqueue_task(
-            &state,
+            state,
             "vm.power",
             serde_json::json!({
                 "vm_id": vm_id.to_string(),

@@ -30,14 +30,13 @@ pub fn gather_firewall_inventory(hostname: &str) -> Result<FirewallInventory, Li
             .checked_sub(0)
             .map(|_| {
                 if score.score >= 80 {
-                    Some("ProductionServer".into())
+                    "ProductionServer".into()
                 } else if score.score >= 60 {
-                    Some("Public".into())
+                    "Public".into()
                 } else {
-                    Some("DevelopmentVm".into())
+                    "DevelopmentVm".into()
                 }
-            })
-            .flatten();
+            });
     }
     Ok(FirewallInventory {
         hostname: hostname.to_string(),

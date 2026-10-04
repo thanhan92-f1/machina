@@ -128,10 +128,9 @@ pub struct LlmToolCall {
 }
 
 pub fn parse_tool_call(text: &str) -> Option<LlmToolCall> {
-    let json = if let Some(start) = text.find('{') {
+    let json = {
+        let start = text.find('{')?;
         text.get(start..)?.to_string()
-    } else {
-        return None;
     };
     serde_json::from_str(&json).ok()
 }

@@ -726,10 +726,9 @@ pub async fn asset_inventory(pool: &SqlitePool) -> Value {
             .unwrap_or_default();
         for i in s.status.iter().flat_map(|st| st.interfaces.iter()) {
             if let Some(vm) = &i.vm {
-                vms.entry(vm.clone())
+                if let Some(a) = vms.entry(vm.clone())
                     .or_insert_with(|| json!({ "name": vm, "host_id": s.host_id, "taps": [] }))["taps"]
-                    .as_array_mut()
-                    .map(|a| a.push(json!(i.name)));
+                    .as_array_mut() { a.push(json!(i.name)) }
             }
         }
         hosts.push(json!({

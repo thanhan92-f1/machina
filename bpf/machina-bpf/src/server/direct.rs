@@ -12,10 +12,12 @@ use super::*;
 const IN: &str = "mn_direct";
 const OUT: &str = "mn_direct_out";
 
+/// (entry, mac key, ip keys, tap ifindex)
+type DirectSlot = (DirectEntry, u64, Vec<[u8; ADDR_LEN]>, u32);
+
 #[derive(Default)]
 pub(super) struct DirectRuntime {
-    /// vm → (entry, mac key, ip keys, tap ifindex)
-    entries: BTreeMap<String, (DirectEntry, u64, Vec<[u8; ADDR_LEN]>, u32)>,
+    entries: BTreeMap<String, DirectSlot>,
 }
 
 pub(crate) fn parse_mac(s: &str) -> Result<[u8; 6]> {

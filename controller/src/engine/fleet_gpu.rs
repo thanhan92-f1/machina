@@ -154,7 +154,7 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetGpuOverview> {
 
     let mut gpu_vms = Vec::new();
     for (vm_id, name, host_id, state, tags) in &vm_rows {
-        if !gpu_capable(&**tags) {
+        if !gpu_capable(tags) {
             continue;
         }
         gpu_vms.push(GpuVmItem {
@@ -163,7 +163,7 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetGpuOverview> {
             host_id: host_id.map(|h| h.to_string()),
             hostname: host_id.and_then(|h| host_names.get(&h).cloned()),
             observed_state: state.clone(),
-            profile: tag_profile(&**tags),
+            profile: tag_profile(tags),
             tags: (**tags).clone(),
         });
     }
@@ -178,11 +178,11 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetGpuOverview> {
 
     let mut hosts = Vec::new();
     for (id, hostname, state, site, rack, vm_count, tags) in host_rows {
-        let capable = gpu_capable(&*tags);
+        let capable = gpu_capable(&tags);
         if !capable {
             continue;
         }
-        let profile = tag_profile(&*tags);
+        let profile = tag_profile(&tags);
         let hid = id.to_string();
         let gpu_vm_count = gpu_vm_by_host.get(&hid).copied().unwrap_or(0);
         hosts.push(GpuHostItem {
@@ -193,10 +193,10 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetGpuOverview> {
             state,
             gpu_capable: capable,
             profile: profile.clone(),
-            model_hint: model_hint(&*tags),
+            model_hint: model_hint(&tags),
             vm_count,
             gpu_vm_count,
-            vgpu_slices: vgpu_slices_from_tags(&*tags),
+            vgpu_slices: vgpu_slices_from_tags(&tags),
             cuda_ready: profile == GpuProfileKind::Cuda
                 || tags.iter().any(|t| t.to_lowercase().contains("cuda")),
         });
@@ -245,7 +245,7 @@ pub async fn overview(pool: &SqlitePool) -> anyhow::Result<FleetGpuOverview> {
             vm_count,
         })
         .collect();
-    profiles.sort_by(|a, b| b.host_count.cmp(&a.host_count));
+    profiles.sort_by_key(|x| std::cmp::Reverse(x.host_count));
 
     let summary = if gpu_host_count > 0 {
         format!(

@@ -23,11 +23,11 @@ pub fn compare_cpu(
     let code = conn
         .compare_cpu(cpu_xml, flags as _)
         .map_err(|e| LibvirtError::Operation(format!("compare_cpu: {e}")))?;
-    let code_i = code as i32;
+    let code_i = code;
     let label = match code_i {
-        x if x == virt::sys::VIR_CPU_COMPARE_IDENTICAL as i32 => "identical",
-        x if x == virt::sys::VIR_CPU_COMPARE_SUPERSET as i32 => "superset",
-        x if x == virt::sys::VIR_CPU_COMPARE_INCOMPATIBLE as i32 => "incompatible",
+        x if x == virt::sys::VIR_CPU_COMPARE_IDENTICAL => "identical",
+        x if x == virt::sys::VIR_CPU_COMPARE_SUPERSET => "superset",
+        x if x == virt::sys::VIR_CPU_COMPARE_INCOMPATIBLE => "incompatible",
         _ => "unknown",
     };
     Ok(CpuCompareResult {

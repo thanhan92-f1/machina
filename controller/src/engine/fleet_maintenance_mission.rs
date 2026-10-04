@@ -66,6 +66,7 @@ pub struct FleetMaintenanceMissionOverview {
     pub hosts: Vec<MaintenanceMissionHost>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_steps(
     scanned: bool,
     assessed: bool,

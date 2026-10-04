@@ -69,7 +69,7 @@ pub fn define_secret_with_value(
     set_value_flags: u32,
 ) -> Result<String, LibvirtError> {
     let define_flags: u32 = if define_validate {
-        sys::VIR_SECRET_DEFINE_VALIDATE as u32
+        sys::VIR_SECRET_DEFINE_VALIDATE
     } else {
         0
     };

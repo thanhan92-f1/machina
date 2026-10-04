@@ -119,10 +119,10 @@ async fn platform_controller_proxy(
         )))
     })?;
 
-    Ok(Response::builder()
+    Response::builder()
         .status(status)
         .body(Body::from(bytes))
-        .map_err(|e| AppError::from(LibvirtError::Internal(format!("response build: {e}"))))?)
+        .map_err(|e| AppError::from(LibvirtError::Internal(format!("response build: {e}"))))
 }
 
 pub fn platform_controller_routes() -> Router<LibvirtManager> {
