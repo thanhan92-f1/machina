@@ -93,6 +93,8 @@ function portsText(rule: Obj): string {
     if (isObj(tp.rules)) out.push(l7Text(tp.rules))
     const sni = arr(tp.serverNames).map(String)
     if (sni.length) out.push(`TLS SNI ${sni.join(', ')}`)
+    if (isObj(tp.terminatingTLS)) out.push('TLS intercepted')
+    if (isObj(tp.originatingTLS)) out.push('TLS to server')
   }
   for (const ic of arr(rule.icmps)) {
     if (!isObj(ic)) continue

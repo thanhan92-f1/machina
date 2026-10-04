@@ -291,6 +291,16 @@ A handshake without VMs tests the path:
 on the bpfd socket. Agents must run a build that knows the `vm_auth_*` bpfd
 ops.
 
+### Symptom: TLS-intercepted VM connections fail or bypass the proxy
+`machinactl netpol status` shows `L7 proxy:`. Without a lease, connections
+are not redirected. *502*: the upstream handshake failed; check that
+`originatingTLS` trusts the server's CA (secret files live under
+`/etc/machina/netpol-secrets/<namespace>/<name>/`). *Certificate errors in the
+guest*: the guest must trust the CA that signed the `terminatingTLS`
+certificate. Redirected packets need `ip rule fwmark 0xb6000000 lookup 4251`
+and a local route in table 4251. bpfd adds both, and the rule stays after
+enforcement ends; it is harmless.
+
 ### Symptom: enforcement stopped on its own
 The lease expired or bpfd restarted. Enforcement is never persisted and fails
 open by design. Re-arm with a new lease (Native eBPF → Overview, or

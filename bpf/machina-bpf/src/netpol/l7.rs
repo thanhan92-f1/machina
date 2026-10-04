@@ -36,9 +36,52 @@ pub struct HeaderMatch {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
-    /// `LOG`: a mismatch is logged, the request still matches.
+    /// The value is the secret's `value` key (resolved on the host).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secret: Option<SecretRef>,
+    /// On mismatch the request still matches: `LOG` logs it, `ADD` adds the
+    /// header, `DELETE` removes it, `REPLACE` sets it (rewrites go through
+    /// the proxy).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mismatch: Option<String>,
+}
+
+/// A Cilium secret reference; on a hypervisor the secret is the directory
+/// `<secrets dir>/<namespace>/<name>/` with one file per key.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SecretRef {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    pub name: String,
+}
+
+/// `terminatingTLS` / `originatingTLS`: key names default to `tls.crt`,
+/// `tls.key` and `ca.crt`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TlsContext {
+    pub secret: SecretRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub certificate: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub private_key: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trusted_ca: Option<String>,
+}
+
+/// Header rewrite of a matched request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HeaderEdit {
+    Add(String, String),
+    Delete(String),
+    Replace(String, String),
+}
+
+/// HTTP verdict with the rewrites of the matching rule.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct HttpVerdict {
+    pub allowed: bool,
+    pub note: Option<String>,
+    pub edits: Vec<HeaderEdit>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -67,6 +110,10 @@ pub struct L7Rules {
     pub dns: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub server_names: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminating_tls: Option<TlsContext>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub originating_tls: Option<TlsContext>,
 }
 
 impl L7Rules {
@@ -77,9 +124,24 @@ impl L7Rules {
             && self.server_names.is_empty()
     }
 
+    /// Needs bpfd's terminating proxy: TLS interception, header rewrites or
+    /// secret header values.
+    pub fn needs_proxy(&self) -> bool {
+        self.terminating_tls.is_some()
+            || self.originating_tls.is_some()
+            || self.http.iter().any(|h| {
+                h.header_matches.iter().any(|m| {
+                    m.secret.is_some()
+                        || matches!(m.mismatch.as_deref(), Some("ADD" | "DELETE" | "REPLACE"))
+                })
+            })
+    }
+
     /// `http`, `kafka`, `dns` or `tls`.
     pub fn kind(&self) -> &'static str {
-        if !self.server_names.is_empty() {
+        if self.terminating_tls.is_some() || self.originating_tls.is_some() {
+            "http"
+        } else if !self.server_names.is_empty() {
             "tls"
         } else if !self.kafka.is_empty() {
             "kafka"
@@ -96,6 +158,22 @@ fn opt_str(v: &Value, k: &str) -> Option<String> {
         .and_then(Value::as_str)
         .filter(|s| !s.is_empty())
         .map(String::from)
+}
+
+fn secret_ref(v: &Value) -> Option<SecretRef> {
+    Some(SecretRef {
+        namespace: opt_str(v, "namespace"),
+        name: opt_str(v, "name")?,
+    })
+}
+
+fn tls_context(v: &Value) -> Option<TlsContext> {
+    Some(TlsContext {
+        secret: secret_ref(v.get("secret")?)?,
+        certificate: opt_str(v, "certificate"),
+        private_key: opt_str(v, "privateKey"),
+        trusted_ca: opt_str(v, "trustedCA"),
+    })
 }
 
 /// The L7 part of a `toPorts` entry; `None` when it has none.
@@ -132,13 +210,19 @@ pub fn from_to_ports(tp: &Value) -> Option<L7Rules> {
                     Some(HeaderMatch {
                         name: m.get("name")?.as_str()?.to_string(),
                         value: opt_str(m, "value"),
+                        secret: m.get("secret").and_then(secret_ref),
                         mismatch: opt_str(m, "mismatch"),
                     })
                 })
                 .collect(),
         });
     }
-    if has_http && out.http.is_empty() {
+    out.terminating_tls = tp.get("terminatingTLS").and_then(tls_context);
+    out.originating_tls = tp.get("originatingTLS").and_then(tls_context);
+    let tls = out.terminating_tls.is_some() || out.originating_tls.is_some();
+    if (has_http || (tls && arr("kafka").is_empty() && arr("dns").is_empty()))
+        && out.http.is_empty()
+    {
         out.http.push(HttpRule::default());
     }
     for k in arr("kafka") {
@@ -216,6 +300,39 @@ pub fn kafka_api_key(name: &str) -> Option<i16> {
 
 // ---- Validation ------------------------------------------------------------------
 
+const PROXY_EGRESS_ONLY: &str =
+    "TLS interception, header rewriting and secrets apply to egress rules only";
+
+/// Secret key names are file names in the secret's directory.
+pub fn valid_key_name(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 253
+        && s != "."
+        && s != ".."
+        && s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b))
+}
+
+fn invalid_secret(s: &Value) -> Option<&'static str> {
+    let Some(o) = s.as_object() else {
+        return Some("expected a mapping");
+    };
+    if o.keys().any(|k| k != "name" && k != "namespace") {
+        return Some("expected name and namespace");
+    }
+    let ok = |k: &str, required: bool| match o.get(k) {
+        None => !required,
+        Some(v) => v.as_str().is_some_and(valid_key_name),
+    };
+    if !ok("name", true) {
+        return Some("name is required (letters, digits, `-`, `_`, `.`)");
+    }
+    if !ok("namespace", false) {
+        return Some("namespace uses letters, digits, `-`, `_`, `.`");
+    }
+    None
+}
+
 /// Problems with one `toPorts` L7 section: (relative path, message).
 pub fn validate(tp: &Value, egress: bool) -> Vec<(String, String)> {
     let mut out = Vec::new();
@@ -280,19 +397,36 @@ pub fn validate(tp: &Value, egress: bool) -> Vec<(String, String)> {
                             {
                                 err(format!("{p}.headerMatches[{j}].name"), "required");
                             }
-                            if hm.get("secret").is_some() {
-                                err(
-                                    format!("{p}.headerMatches[{j}].secret"),
-                                    "secret references are not supported; use value",
-                                );
+                            let hp = format!("{p}.headerMatches[{j}]");
+                            if let Some(s) = hm.get("secret") {
+                                if !egress {
+                                    err(format!("{hp}.secret"), PROXY_EGRESS_ONLY);
+                                }
+                                if let Some(why) = invalid_secret(s) {
+                                    err(format!("{hp}.secret"), why);
+                                }
+                                if hm.get("value").is_some() {
+                                    err(hp.clone(), "set value or secret, not both");
+                                }
                             }
                             match hm.get("mismatch").and_then(Value::as_str) {
                                 None | Some("LOG") => {}
-                                Some("ADD" | "DELETE" | "REPLACE") => err(
-                                    format!("{p}.headerMatches[{j}].mismatch"),
-                                    "header rewriting needs a terminating proxy; only LOG is supported",
+                                Some("ADD" | "DELETE" | "REPLACE") if !egress => {
+                                    err(format!("{hp}.mismatch"), PROXY_EGRESS_ONLY)
+                                }
+                                Some("ADD" | "REPLACE")
+                                    if hm.get("value").is_none() && hm.get("secret").is_none() =>
+                                {
+                                    err(
+                                        format!("{hp}.mismatch"),
+                                        "ADD and REPLACE need a value or secret",
+                                    )
+                                }
+                                Some("ADD" | "DELETE" | "REPLACE") => {}
+                                Some(_) => err(
+                                    format!("{hp}.mismatch"),
+                                    "expected LOG, ADD, DELETE or REPLACE",
                                 ),
-                                Some(_) => err(format!("{p}.headerMatches[{j}].mismatch"), "expected LOG, ADD, DELETE or REPLACE"),
                             }
                         }
                     }
@@ -379,6 +513,40 @@ pub fn validate(tp: &Value, egress: bool) -> Vec<(String, String)> {
                 }
                 _ => err(p, "set exactly one of matchName / matchPattern"),
             }
+        }
+    }
+    for k in ["terminatingTLS", "originatingTLS"] {
+        let Some(c) = tp.get(k).filter(|c| !c.is_null()) else {
+            continue;
+        };
+        if !egress {
+            err(k.into(), PROXY_EGRESS_ONLY);
+        }
+        let Some(o) = c.as_object() else {
+            err(k.into(), "expected a mapping");
+            continue;
+        };
+        for (key, x) in o {
+            match key.as_str() {
+                "secret" => {
+                    if let Some(why) = invalid_secret(x) {
+                        err(format!("{k}.secret"), why);
+                    }
+                }
+                "certificate" | "privateKey" | "trustedCA" => {
+                    if !x.as_str().is_some_and(valid_key_name) {
+                        err(format!("{k}.{key}"), "expected a secret key name");
+                    }
+                }
+                _ => err(format!("{k}.{key}"), "unknown field"),
+            }
+        }
+        if !o.contains_key("secret") {
+            err(format!("{k}.secret"), "required");
+        }
+        let r = tp.get("rules").filter(|r| !r.is_null());
+        if r.is_some_and(|r| r.get("kafka").is_some() || r.get("dns").is_some()) {
+            err(k.into(), "TLS interception carries HTTP rules only");
         }
     }
     for (i, s) in tp
@@ -762,6 +930,35 @@ pub fn parse_sni(b: &[u8]) -> Result<String, &'static str> {
     Err("ClientHello has no SNI")
 }
 
+/// `head` (request line + headers, no blank line) with `edits` applied.
+/// Header names compare case-insensitively; untouched lines keep their
+/// bytes.
+pub fn rewrite_head(head: &str, edits: &[HeaderEdit]) -> String {
+    let mut lines: Vec<String> = head.split("\r\n").map(String::from).collect();
+    let named = |l: &str, n: &str| {
+        l.split_once(':')
+            .is_some_and(|(k, _)| k.trim().eq_ignore_ascii_case(n))
+    };
+    let drop = |lines: &mut Vec<String>, n: &str| {
+        let mut i = 0;
+        lines.retain(|l| {
+            i += 1;
+            i == 1 || !named(l, n)
+        });
+    };
+    for e in edits {
+        match e {
+            HeaderEdit::Add(n, v) => lines.push(format!("{n}: {v}")),
+            HeaderEdit::Delete(n) => drop(&mut lines, n),
+            HeaderEdit::Replace(n, v) => {
+                drop(&mut lines, n);
+                lines.push(format!("{n}: {v}"));
+            }
+        }
+    }
+    lines.join("\r\n")
+}
+
 // ---- Matching -------------------------------------------------------------------------
 
 /// Rules with their regular expressions compiled, ready to match.
@@ -795,57 +992,87 @@ impl Matcher {
         m
     }
 
+    /// First matching HTTP rule with its header rewrites. A secret header
+    /// match whose value was not resolved never matches.
+    pub fn check_http(&self, h: &HttpRequest) -> HttpVerdict {
+        for (rule, [m, p, host]) in &self.http {
+            let re_ok = |re: &Option<Regex>, src: &Option<String>, v: &str| match (re, src) {
+                (Some(re), _) => re.is_match(v),
+                (None, Some(_)) => false,
+                (None, None) => true,
+            };
+            if !re_ok(m, &rule.method, &h.method) || !re_ok(p, &rule.path, &h.path) {
+                continue;
+            }
+            let host_only = h
+                .host
+                .rsplit_once(':')
+                .filter(|(_, port)| port.bytes().all(|c| c.is_ascii_digit()))
+                .map_or(h.host.as_str(), |(a, _)| a);
+            if !(re_ok(host, &rule.host, &h.host) || re_ok(host, &rule.host, host_only)) {
+                continue;
+            }
+            let has = |n: &str, v: Option<&str>| {
+                let n = n.trim().to_ascii_lowercase();
+                h.headers
+                    .iter()
+                    .any(|(hn, hv)| *hn == n && v.is_none_or(|v| hv == v))
+            };
+            let headers_ok = rule.headers.iter().all(|e| match e.split_once(':') {
+                Some((n, v)) => has(n, Some(v.trim())),
+                None => has(e, None),
+            });
+            if !headers_ok {
+                continue;
+            }
+            let mut ok = true;
+            let mut notes = Vec::new();
+            let mut edits = Vec::new();
+            for hm in &rule.header_matches {
+                let unresolved = hm.secret.is_some() && hm.value.is_none();
+                if !unresolved && has(&hm.name, hm.value.as_deref()) {
+                    continue;
+                }
+                let name = hm.name.trim().to_string();
+                let value = hm.value.clone().unwrap_or_default();
+                match hm.mismatch.as_deref() {
+                    Some("LOG") => notes.push(format!("header {name} mismatch logged")),
+                    Some("ADD") if !unresolved => {
+                        notes.push(format!("header {name} added"));
+                        edits.push(HeaderEdit::Add(name, value));
+                    }
+                    Some("DELETE") => {
+                        notes.push(format!("header {name} deleted"));
+                        edits.push(HeaderEdit::Delete(name));
+                    }
+                    Some("REPLACE") if !unresolved => {
+                        notes.push(format!("header {name} replaced"));
+                        edits.push(HeaderEdit::Replace(name, value));
+                    }
+                    _ => ok = false,
+                }
+            }
+            if ok {
+                return HttpVerdict {
+                    allowed: true,
+                    note: (!notes.is_empty()).then(|| notes.join(", ")),
+                    edits,
+                };
+            }
+        }
+        HttpVerdict {
+            allowed: false,
+            note: Some("no http rule matches".into()),
+            edits: Vec::new(),
+        }
+    }
+
     /// Allowed?, plus a note (`header X mismatch logged`, why denied).
     pub fn check(&self, req: &Request) -> (bool, Option<String>) {
         match req {
             Request::Http(h) => {
-                let mut note = None;
-                for (rule, [m, p, host]) in &self.http {
-                    let re_ok = |re: &Option<Regex>, src: &Option<String>, v: &str| match (re, src)
-                    {
-                        (Some(re), _) => re.is_match(v),
-                        (None, Some(_)) => false,
-                        (None, None) => true,
-                    };
-                    if !re_ok(m, &rule.method, &h.method) || !re_ok(p, &rule.path, &h.path) {
-                        continue;
-                    }
-                    let host_only = h
-                        .host
-                        .rsplit_once(':')
-                        .filter(|(_, port)| port.bytes().all(|c| c.is_ascii_digit()))
-                        .map_or(h.host.as_str(), |(a, _)| a);
-                    if !(re_ok(host, &rule.host, &h.host) || re_ok(host, &rule.host, host_only)) {
-                        continue;
-                    }
-                    let has = |n: &str, v: Option<&str>| {
-                        let n = n.trim().to_ascii_lowercase();
-                        h.headers
-                            .iter()
-                            .any(|(hn, hv)| *hn == n && v.is_none_or(|v| hv == v))
-                    };
-                    let headers_ok = rule.headers.iter().all(|e| match e.split_once(':') {
-                        Some((n, v)) => has(n, Some(v.trim())),
-                        None => has(e, None),
-                    });
-                    if !headers_ok {
-                        continue;
-                    }
-                    let mut ok = true;
-                    for hm in &rule.header_matches {
-                        if !has(&hm.name, hm.value.as_deref()) {
-                            if hm.mismatch.as_deref() == Some("LOG") {
-                                note = Some(format!("header {} mismatch logged", hm.name));
-                            } else {
-                                ok = false;
-                            }
-                        }
-                    }
-                    if ok {
-                        return (true, note);
-                    }
-                }
-                (false, Some("no http rule matches".into()))
+                let v = self.check_http(h);
+                (v.allowed, v.note)
             }
             Request::Kafka(k) => {
                 let cands: Vec<&KafkaRule> = self
@@ -1072,6 +1299,66 @@ mod tests {
             })
             .0
         );
+    }
+
+    #[test]
+    fn header_rewrites_and_tls() {
+        let tp = json!({"ports": [{"port": "443"}],
+        "terminatingTLS": {"secret": {"namespace": "web", "name": "intercept"}},
+        "originatingTLS": {"secret": {"name": "upstream"}, "trustedCA": "ca.pem"},
+        "rules": {"http": [{"path": "/api/.*", "headerMatches": [
+            {"name": "X-Team", "value": "blue", "mismatch": "REPLACE"},
+            {"name": "X-Debug", "value": "0", "mismatch": "DELETE"},
+            {"name": "X-Via", "value": "machina", "mismatch": "ADD"},
+            {"name": "X-Token", "secret": {"name": "token"}, "mismatch": "LOG"}
+        ]}]}});
+        assert!(validate(&tp, true).is_empty(), "{:?}", validate(&tp, true));
+        let ing: Vec<String> = validate(&tp, false).into_iter().map(|(p, _)| p).collect();
+        assert!(ing.contains(&"terminatingTLS".to_string()), "{ing:?}");
+        assert!(ing.iter().any(|p| p.ends_with("headerMatches[0].mismatch")));
+        let r = from_to_ports(&tp).unwrap();
+        assert!(r.needs_proxy());
+        assert_eq!(r.terminating_tls.as_ref().unwrap().secret.name, "intercept");
+        assert_eq!(
+            r.originating_tls.as_ref().unwrap().trusted_ca.as_deref(),
+            Some("ca.pem")
+        );
+        let m = Matcher::new([&r]);
+        let head = "GET /api/x HTTP/1.1\r\nHost: a\r\nX-Team: red\r\nx-debug: 1\r\nX-Debug: 2";
+        let req = parse_http(format!("{head}\r\n\r\n").as_bytes()).unwrap().0;
+        let v = m.check_http(&req);
+        assert!(v.allowed, "{v:?}");
+        assert_eq!(v.edits.len(), 3);
+        assert!(v.note.unwrap().contains("X-Token mismatch logged"));
+        assert_eq!(
+            rewrite_head(head, &v.edits),
+            "GET /api/x HTTP/1.1\r\nHost: a\r\nX-Team: blue\r\nX-Via: machina"
+        );
+        assert!(
+            !m.check_http(&parse_http(b"GET /other HTTP/1.1\r\n\r\n").unwrap().0)
+                .allowed
+        );
+        let tls_only =
+            from_to_ports(&json!({"terminatingTLS": {"secret": {"name": "s"}}})).unwrap();
+        assert_eq!(tls_only.http.len(), 1);
+        assert!(
+            Matcher::new([&tls_only])
+                .check_http(&parse_http(b"POST / HTTP/1.1\r\n\r\n").unwrap().0)
+                .allowed
+        );
+        let plain = from_to_ports(&json!({"rules": {"http": [{"headerMatches": [
+            {"name": "X-A", "value": "1", "mismatch": "LOG"}]}]}}))
+        .unwrap();
+        assert!(!plain.needs_proxy());
+        let bad = validate(
+            &json!({"terminatingTLS": {"secret": {"name": "../x"}, "bogus": 1},
+                    "rules": {"http": [{"headerMatches": [{"name": "A", "mismatch": "ADD"}]}]}}),
+            true,
+        );
+        let paths: Vec<&str> = bad.iter().map(|(p, _)| p.as_str()).collect();
+        assert!(paths.contains(&"terminatingTLS.secret"), "{paths:?}");
+        assert!(paths.contains(&"terminatingTLS.bogus"));
+        assert!(paths.contains(&"rules.http[0].headerMatches[0].mismatch"));
     }
 
     #[test]

@@ -669,14 +669,6 @@ fn validate_ports(tp: &Value, path: &str, egress: bool, deny: bool, v: &mut Vali
                 }
             }
         }
-        for k in ["terminatingTLS", "originatingTLS"] {
-            if tp.get(k).is_some_and(|r| !r.is_null()) {
-                v.warn(
-                    format!("{path}.{k}"),
-                    "TLS interception is not supported natively; encrypted traffic is matched by serverNames only",
-                );
-            }
-        }
         if tp.get("listener").is_some_and(|r| !r.is_null()) {
             v.warn(
                 format!("{path}.listener"),

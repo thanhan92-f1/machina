@@ -60,11 +60,71 @@ fn rule_val(deny: bool, auth: u8, l7: bool) -> u32 {
 
 /// Two rules on one key: deny wins, auth accumulates, L7 only if both.
 fn merge_val(a: u32, b: u32) -> u32 {
+    const BOTH: u32 = VM_POLICY_L7 | VM_POLICY_PROXY;
     if (a | b) & VM_POLICY_DENY != 0 {
         VM_POLICY_DENY
     } else {
-        ((a | b) & !VM_POLICY_L7) | (a & b & VM_POLICY_L7)
+        ((a | b) & !BOTH) | (a & b & BOTH)
     }
+}
+
+/// Routing table / rule priority delivering VM_PROXY_MAGIC frames locally.
+const PROXY_TABLE: &str = "4251";
+const PROXY_RULE_PREF: &str = "9000";
+
+fn ip(args: &[&str]) -> Result<String> {
+    let out = std::process::Command::new("ip").args(args).output()?;
+    if !out.status.success() {
+        return Err(anyhow!(
+            "ip {}: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// fwmark VM_PROXY_MAGIC → local delivery, and no reverse-path check on the
+/// inject veth (proxied frames carry the VM's source address). IPv6 is
+/// best effort.
+fn ensure_proxy_route(rx: &str) -> Result<()> {
+    let mark = format!("{VM_PROXY_MAGIC:#x}");
+    for (fam, any) in [("-4", "0.0.0.0/0"), ("-6", "::/0")] {
+        let r = (|| {
+            if !ip(&[fam, "rule", "show"])?.contains(&format!("lookup {PROXY_TABLE}")) {
+                ip(&[
+                    fam,
+                    "rule",
+                    "add",
+                    "fwmark",
+                    &mark,
+                    "lookup",
+                    PROXY_TABLE,
+                    "pref",
+                    PROXY_RULE_PREF,
+                ])?;
+            }
+            ip(&[
+                fam,
+                "route",
+                "replace",
+                "local",
+                any,
+                "dev",
+                "lo",
+                "table",
+                PROXY_TABLE,
+            ])
+        })();
+        match (fam, r) {
+            (_, Ok(_)) => {}
+            ("-4", Err(e)) => return Err(e),
+            (_, Err(e)) => tracing::info!("vm proxy: IPv6 route: {e:#}"),
+        }
+    }
+    std::fs::write(format!("/proc/sys/net/ipv4/conf/{rx}/rp_filter"), "0")
+        .context("rp_filter on the inject veth")?;
+    Ok(())
 }
 
 const AUTH_TTL: Duration = Duration::from_secs(3600);
@@ -84,6 +144,8 @@ struct FqdnBinding {
 #[derive(Default)]
 pub(super) struct VmEdgeRuntime {
     pub state: VmEdgeState,
+    proxy_cfg: VmProxyCfg,
+    proxy_note: String,
     groups: BTreeMap<String, u32>,
     /// tap name → (ifindex, vm)
     taps: HashMap<String, (u32, String)>,
@@ -869,6 +931,22 @@ impl Engine {
             fqdn_ids.insert(*addr, id);
         }
 
+        let mut want_proxy = false;
+        for r in l7.iter().filter(|r| r.egress && r.rules.needs_proxy()) {
+            for port in r.port..=r.port_end.max(r.port) {
+                let k = PolicyKey {
+                    subject_identity: r.subject_identity,
+                    peer_identity: r.peer_identity,
+                    direction: POLICY_EGRESS,
+                    proto: r.proto,
+                    port: port.to_be_bytes(),
+                };
+                if let Some(v) = policy.get_mut(&k).filter(|v| **v & VM_POLICY_L7 != 0) {
+                    *v |= VM_POLICY_PROXY;
+                    want_proxy = true;
+                }
+            }
+        }
         for (k, id) in self.vm_edge.ips.clone() {
             if ips.get(&k) != Some(&id) {
                 self.dp.cni_hash_remove::<[u8; ADDR_LEN], u32>("VM_IPS", &k);
@@ -896,8 +974,35 @@ impl Engine {
         let inject = if l7.is_empty() {
             None
         } else {
-            Some(self.ensure_l7_inject())
+            Some(self.ensure_l7_inject(want_proxy))
         };
+        let (cfg, note) = match inject.filter(|i| *i != 0 && want_proxy) {
+            None if want_proxy => (VmProxyCfg::default(), "off: no inject veth".to_string()),
+            None => (VmProxyCfg::default(), String::new()),
+            Some(i) => match self
+                .vmproxy
+                .ensure_running()
+                .and_then(|port| ensure_proxy_route(L7_INJECT.1).map(|_| port))
+            {
+                Ok(port) => (
+                    VmProxyCfg {
+                        redirect_ifindex: i,
+                        port,
+                        _pad: 0,
+                    },
+                    format!("listening on 127.0.0.1:{port}"),
+                ),
+                Err(e) => {
+                    tracing::warn!("vm proxy: {e:#}; proxy rules pass unproxied");
+                    (VmProxyCfg::default(), format!("off: {e:#}"))
+                }
+            },
+        };
+        if cfg != self.vm_edge.proxy_cfg {
+            self.dp.set_vm_proxy(cfg)?;
+            self.vm_edge.proxy_cfg = cfg;
+        }
+        self.vm_edge.proxy_note = note;
         let mut sh = lock(&self.shared);
         if let Some(i) = inject {
             sh.vm_l7_inject = i;
@@ -910,8 +1015,9 @@ impl Engine {
 
     /// Create the L7 reinject veth pair if needed; returns the send side's
     /// ifindex, 0 when it cannot be set up (held frames then wait for the
-    /// client's retransmit).
-    fn ensure_l7_inject(&mut self) -> u32 {
+    /// client's retransmit). `v6_rx`: proxied IPv6 frames enter the stack on
+    /// the receive side.
+    fn ensure_l7_inject(&mut self, v6_rx: bool) -> u32 {
         let (tx, rx) = L7_INJECT;
         if if_nametoindex(tx).is_none() {
             let ok = std::process::Command::new("ip")
@@ -926,7 +1032,16 @@ impl Engine {
             }
         }
         for d in [tx, rx] {
-            let _ = std::fs::write(format!("/proc/sys/net/ipv6/conf/{d}/disable_ipv6"), "1");
+            let v6 = d == rx && v6_rx;
+            if v6 {
+                for k in ["accept_ra", "autoconf"] {
+                    let _ = std::fs::write(format!("/proc/sys/net/ipv6/conf/{d}/{k}"), "0");
+                }
+            }
+            let _ = std::fs::write(
+                format!("/proc/sys/net/ipv6/conf/{d}/disable_ipv6"),
+                if v6 { "0" } else { "1" },
+            );
             let _ = std::process::Command::new("ip")
                 .args(["link", "set", d, "up"])
                 .status();
@@ -1231,6 +1346,7 @@ impl Engine {
             l7_rules: self.vm_edge.l7_rules,
             auth_entries: self.vm_edge.auth.values().filter(|a| a.ok).count(),
             auth_cert: self.vmauth.cert_info(),
+            proxy: self.vm_edge.proxy_note.clone(),
         }
     }
 

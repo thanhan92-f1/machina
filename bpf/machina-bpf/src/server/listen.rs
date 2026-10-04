@@ -821,6 +821,11 @@ pub async fn run(cfg: Config) -> Result<()> {
             super::vm::on_vm_flow(&sh, &b, &w, x)
         });
         let (sh, b) = (shared.clone(), bus.clone());
+        let (flows, srcs) = (
+            eng.dp.take_hash("VM_PROXY_FLOW")?,
+            eng.dp.take_hash("VM_PROXY_SRC")?,
+        );
+        eng.vmproxy.init(shared.clone(), bus.clone(), flows, srcs);
         let mut l7 = super::vml7::L7Worker::new(eng.dp.take_hash("VM_L7_FLOW")?);
         spawn_reader(eng.dp.take_ringbuf("VM_L7_EVENTS")?, "vml7", move |x| {
             l7.on_event(&sh, &b, x)

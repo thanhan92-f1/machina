@@ -16,6 +16,12 @@
 //! the same way.
 //! Authenticated entries (VM_POLICY_AUTH) admit new flows only while
 //! VM_AUTH holds a live entry for the identity pair.
+//! Proxy entries (VM_POLICY_PROXY: TLS interception, header rewriting)
+//! redirect TCP flows from the VM that start while enforcement is live
+//! through the inject veth, where `mn_vm_l7_inject` assigns them to bpfd's
+//! transparent listener; a policy route on VM_PROXY_MAGIC delivers them
+//! locally. The proxy's upstream packets carry the client identity in their
+//! mark (VM_PROXY_UP_MAGIC | VM_PROXY_SRC slot).
 //!
 //! `mn_qemu_device` (cgroup device) and `mn_qemu_egress` (cgroup_skb egress)
 //! sandbox the QEMU process in its machine scope: a device-node allowlist
@@ -24,8 +30,11 @@
 //! own device program stays attached and the kernel ANDs the verdicts.
 
 use aya_ebpf::{
-    bindings::BPF_F_INGRESS,
-    helpers::generated::{bpf_get_current_cgroup_id, bpf_redirect, bpf_skb_cgroup_id, bpf_skb_load_bytes},
+    bindings::{BPF_F_CURRENT_NETNS, BPF_F_INGRESS, bpf_sock_tuple},
+    helpers::generated::{
+        bpf_get_current_cgroup_id, bpf_redirect, bpf_sk_assign, bpf_sk_release, bpf_skb_cgroup_id, bpf_skb_change_type,
+        bpf_skb_load_bytes, bpf_skc_lookup_tcp,
+    },
     macros::{cgroup_device, cgroup_skb, classifier, map},
     maps::{lpm_trie::Key, Array, HashMap, LpmTrie, LruHashMap, PerCpuHashMap, RingBuf},
     programs::{DeviceContext, SkBuffContext, TcContext},
@@ -83,6 +92,16 @@ pub static VM_L7_FLOW: LruHashMap<FlowKey, VmL7Flow> = LruHashMap::with_max_entr
 pub static VM_AUTH: LruHashMap<VmAuthKey, u64> = LruHashMap::with_max_entries(65536, 0);
 
 #[map]
+pub static VM_PROXY_CFG: Array<VmProxyCfg> = Array::with_max_entries(1, 0);
+
+#[map]
+pub static VM_PROXY_FLOW: LruHashMap<FlowKey, VmProxyFlow> = LruHashMap::with_max_entries(65536, 0);
+
+/// Upstream mark slot → client identity.
+#[map]
+pub static VM_PROXY_SRC: HashMap<u32, u32> = HashMap::with_max_entries(65536, 0);
+
+#[map]
 pub static VM_BUCKETS: HashMap<u32, VmBucket> = HashMap::with_max_entries(8192, 0);
 
 #[map]
@@ -114,11 +133,11 @@ fn pol(subject: u32, peer: u32, dir: u8, proto: u8, port: u16) -> u32 {
 
 #[inline(always)]
 fn l7_or_none(v: u32) -> u32 {
-    if v == 0 { VM_POLICY_L7 } else { v & VM_POLICY_L7 }
+    if v == 0 { VM_POLICY_L7 | VM_POLICY_PROXY } else { v & (VM_POLICY_L7 | VM_POLICY_PROXY) }
 }
 
 /// 0 = no entry, VM_POLICY_DENY (any deny match wins), or VM_POLICY_ALLOW
-/// plus the AUTH bits of any hit and L7 when every hit carries it.
+/// plus the AUTH bits of any hit and L7 / PROXY when every hit carries it.
 #[inline(never)]
 fn vm_policy_verdict(subject: u32, peer: u32, dir: u8, proto: u8, port: u16) -> u32 {
     let a = pol(subject, peer, dir, proto, port);
@@ -425,6 +444,39 @@ fn vm_l7(ctx: &TcContext, t: &Tuple, m: &FlowMeta, enforce: bool, ingress: bool)
     enforce
 }
 
+/// Proxy entry, packet from the VM: redirect flows that started while
+/// enforcement was live, pass the rest untouched.
+#[inline(never)]
+fn vm_proxy(ctx: &TcContext, t: &Tuple, m: &FlowMeta) -> i32 {
+    if t.proto != IPPROTO_TCP {
+        return TC_ACT_UNSPEC;
+    }
+    let Some(cfg) = VM_PROXY_CFG.get(0) else {
+        return TC_ACT_UNSPEC;
+    };
+    let out = cfg.redirect_ifindex;
+    if out == 0 {
+        return TC_ACT_UNSPEC;
+    }
+    let k = ct_key(t, false);
+    if unsafe { VM_PROXY_FLOW.get(&k) }.is_none() {
+        if t.tcp_flags & (TCP_SYN | TCP_ACK) != TCP_SYN || !enforce_active(now_ns()) {
+            return TC_ACT_UNSPEC;
+        }
+        let v = VmProxyFlow { subject: m.subject, peer: m.peer, ifindex: m.ifindex, _pad: 0 };
+        if VM_PROXY_FLOW.insert(&k, &v, 0).is_err() {
+            return TC_ACT_UNSPEC;
+        }
+    }
+    unsafe {
+        (*ctx.skb.skb).mark = VM_PROXY_MAGIC;
+        bpf_redirect(out, 0) as i32
+    }
+}
+
+const TCP_SYN: u8 = 0x02;
+const TCP_ACK: u8 = 0x10;
+
 #[inline(always)]
 fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     let ifindex = unsafe { (*ctx.skb.skb).ifindex };
@@ -519,7 +571,16 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     }
     let port = if icmp != 0 { icmp as u16 } else { t.dport };
     let (peer_addr, dir) = if from_vm { (&t.dst, POLICY_EGRESS) } else { (&t.src, POLICY_INGRESS) };
-    let peer = peer_identity(peer_addr);
+    let mark = unsafe { (*ctx.skb.skb).mark };
+    let proxy_src = if !from_vm && mark & VM_L7_INJECT_MAGIC_MASK == VM_PROXY_UP_MAGIC {
+        unsafe { VM_PROXY_SRC.get(&(mark & VM_PROXY_SLOT)) }.copied()
+    } else {
+        None
+    };
+    let peer = match proxy_src {
+        Some(id) => id,
+        None => peer_identity(peer_addr),
+    };
     let verdict = vm_policy_verdict(identity, peer, dir, t.proto, port);
     let k = ct_key(&t, false);
     let is_new = VM_CT.get_ptr(&k).is_none();
@@ -578,6 +639,9 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
             let _ = VM_CT.insert(&k, &now, 0);
         }
     }
+    if verdict & VM_POLICY_PROXY != 0 && verdict & VM_POLICY_DENY == 0 && from_vm {
+        return vm_proxy(ctx, &t, &m);
+    }
     if verdict & VM_POLICY_L7 != 0 && verdict & VM_POLICY_DENY == 0 && vm_l7(ctx, &t, &m, enforce_active(now), ingress) {
         return TC_ACT_SHOT;
     }
@@ -594,12 +658,107 @@ pub fn mn_vm_edge_out(ctx: TcContext) -> i32 {
     vm_edge(&ctx, false)
 }
 
+const TC_ACT_OK: i32 = 0;
+const PACKET_HOST: u32 = 0;
+const TCP_STATE_TIME_WAIT: u32 = 6;
+const TCP_STATE_LISTEN: u32 = 10;
+
+/// `struct bpf_sock_tuple`: IPv4 uses the first 12 bytes.
+#[repr(C, align(4))]
+struct SockTuple([u8; 36]);
+
+#[inline(always)]
+fn sock_tuple(t: &Tuple, dst: &[u8; ADDR_LEN], dport: u16) -> (SockTuple, u32) {
+    let mut b = [0u8; 36];
+    let (sp, dp) = (t.sport.to_be_bytes(), dport.to_be_bytes());
+    if t.v6 {
+        for i in 0..16 {
+            b[i] = t.src[i];
+            b[16 + i] = dst[i];
+        }
+        b[32] = sp[0];
+        b[33] = sp[1];
+        b[34] = dp[0];
+        b[35] = dp[1];
+        (SockTuple(b), 36)
+    } else {
+        for i in 0..4 {
+            b[i] = t.src[12 + i];
+            b[4 + i] = dst[12 + i];
+        }
+        b[8] = sp[0];
+        b[9] = sp[1];
+        b[10] = dp[0];
+        b[11] = dp[1];
+        (SockTuple(b), 12)
+    }
+}
+
+/// Assign the socket `tup` finds: an established (or handshaking) one, or
+/// with `listener` the proxy's listening socket. 1 = assigned.
+#[inline(never)]
+fn assign_sock(ctx: &TcContext, tup: &mut SockTuple, len: u32, listener: bool) -> i32 {
+    let skb = ctx.skb.skb;
+    let sk = unsafe {
+        bpf_skc_lookup_tcp(
+            skb.cast(),
+            (tup as *mut SockTuple).cast::<bpf_sock_tuple>(),
+            len,
+            BPF_F_CURRENT_NETNS as u64,
+            0,
+        )
+    };
+    if sk.is_null() {
+        return 0;
+    }
+    let st = unsafe { (*sk).state };
+    let usable = if listener { st == TCP_STATE_LISTEN } else { st != TCP_STATE_LISTEN && st != TCP_STATE_TIME_WAIT };
+    let r = if usable { unsafe { bpf_sk_assign(skb.cast(), sk.cast(), 0) } } else { -1 };
+    unsafe { bpf_sk_release(sk.cast()) };
+    (r == 0) as i32
+}
+
+/// A proxied VM frame: hand it to its proxy connection or the listener and
+/// let the stack deliver it locally (policy route on the mark).
+#[inline(never)]
+fn vm_proxy_assign(ctx: &TcContext) -> i32 {
+    let mut t = Tuple::zero();
+    if parse_tc(ctx, &mut t) == 0 || t.proto != IPPROTO_TCP {
+        return TC_ACT_SHOT;
+    }
+    let Some(cfg) = VM_PROXY_CFG.get(0) else {
+        return TC_ACT_SHOT;
+    };
+    let port = cfg.port;
+    let (mut tup, len) = sock_tuple(&t, &t.dst, t.dport);
+    if assign_sock(ctx, &mut tup, len, false) == 0 {
+        let mut lo = [0u8; ADDR_LEN];
+        if t.v6 {
+            lo[15] = 1;
+        } else {
+            lo[10] = 0xff;
+            lo[11] = 0xff;
+            lo[12] = 127;
+            lo[15] = 1;
+        }
+        let (mut tup, len) = sock_tuple(&t, &lo, port);
+        if assign_sock(ctx, &mut tup, len, true) == 0 {
+            return TC_ACT_SHOT;
+        }
+    }
+    unsafe { bpf_skb_change_type(ctx.skb.skb, PACKET_HOST) };
+    TC_ACT_OK
+}
+
 /// Ingress of the L7 inject veth: frames bpfd reinjects carry the target tap
-/// in their mark; anything else is dropped.
+/// in their mark, proxied VM frames VM_PROXY_MAGIC; anything else is dropped.
 #[classifier]
 pub fn mn_vm_l7_inject(ctx: TcContext) -> i32 {
     let skb = ctx.skb.skb;
     let mark = unsafe { (*skb).mark };
+    if mark == VM_PROXY_MAGIC {
+        return vm_proxy_assign(&ctx);
+    }
     if mark & VM_L7_INJECT_MAGIC_MASK != VM_L7_INJECT_MAGIC {
         return TC_ACT_SHOT;
     }

@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # VM network policy against two real libvirt VMs (Debian cloud image on the
-# `default` NAT network): observe first, then a short enforcement lease.
-# Creates np-client / np-server and deletes them, the policy and the base
-# image on exit; the edge is always returned to observe.
+# `default` NAT network): observe first, then a short enforcement lease,
+# then the TLS-intercepting proxy (terminatingTLS + header rewrites,
+# originatingTLS). Creates np-client / np-server and deletes them, the
+# policies, the proxy secret and the base image on exit; the edge is always
+# returned to observe.
 #
 # Only run on a disposable test host: while the lease is held the edge
 # enforces on every tap that has policy state.
@@ -19,7 +21,8 @@ read -r MACHINA_PASS
 export MACHINA_USER="${MACHINA_USER:-$USER}" MACHINA_PASS MACHINA_URL="${MACHINA_URL:-https://127.0.0.1:5092}" NO_COLOR=1
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"
 M="$HERE/machinactl"
-LEASE="${LEASE:-180}"
+LEASE="${LEASE:-300}"
+SECRET_DIR=/etc/machina/netpol-secrets/default/np-intercept
 IMG_URL="${IMG_URL:-https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2}"
 POOL=/var/lib/libvirt/images
 BASE="$POOL/np-realvm-base.qcow2"
@@ -51,6 +54,8 @@ observe() { bpfd '{"op":"set_mode","mode":"observe"}' >/dev/null; }
 cleanup() {
     observe
     "$M" netpol delete np-realvm >/dev/null 2>&1
+    "$M" netpol delete np-realvm-proxy >/dev/null 2>&1
+    sudo -n rm -rf "$SECRET_DIR"
     for v in "${VMS[@]}"; do
         sudo -n virsh destroy "$v" >/dev/null 2>&1
         sudo -n virsh undefine "$v" --nvram >/dev/null 2>&1 || sudo -n virsh undefine "$v" >/dev/null 2>&1
@@ -78,11 +83,30 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys: ["$(cat "$W/key.pub")"]
+write_files:
+  - path: /srv/echo.py
+    content: |
+      import http.server, ssl, sys
+      class H(http.server.BaseHTTPRequestHandler):
+          def do_GET(self):
+              b = (self.requestline + "\n" + str(self.headers)).encode()
+              self.send_response(200)
+              self.send_header("Content-Length", str(len(b)))
+              self.end_headers()
+              self.wfile.write(b)
+          do_POST = do_GET
+      s = http.server.ThreadingHTTPServer(("", int(sys.argv[1])), H)
+      if len(sys.argv) > 2:
+          c = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+          c.load_cert_chain(sys.argv[2], sys.argv[3])
+          s.socket = c.wrap_socket(s.socket, server_side=True)
+      s.serve_forever()
 runcmd:
   - [mkdir, -p, /srv]
   - [sh, -c, "echo ok > /srv/ok; echo secret > /srv/secret"]
   - [systemd-run, --unit, np80, python3, -m, http.server, "80", --directory, /srv]
   - [systemd-run, --unit, np8080, python3, -m, http.server, "8080", --directory, /srv]
+  - [systemd-run, --unit, np443, python3, /srv/echo.py, "443"]
 EOF
     printf 'instance-id: %s-%s\nlocal-hostname: %s\n' "$v" "$$" "$v" > "$W/$v-meta"
     sudo -n cloud-localds "$POOL/$v-seed.iso" "$W/$v-user" "$W/$v-meta"
@@ -100,11 +124,31 @@ for _ in $(seq 90); do
     sleep 2
 done
 [[ -n "${CIP:-}" && -n "${SIP:-}" ]] && ok "DHCP leases: client $CIP server $SIP" || { bad "DHCP leases"; exit 1; }
-cssh() { ssh -i "$W/key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o LogLevel=ERROR "np@$CIP" "$@"; }
+vssh() { local h=$1; shift; ssh -i "$W/key" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o LogLevel=ERROR "np@$h" "$@"; }
+cssh() { vssh "$CIP" "$@"; }
+sssh() { vssh "$SIP" "$@"; }
 for _ in $(seq 90); do cssh true 2>/dev/null && break; sleep 2; done
 check "ssh into client" cssh true
 for _ in $(seq 60); do curl -fs -m 2 "http://$SIP/ok" >/dev/null && curl -fs -m 2 "http://$SIP:8080/ok" >/dev/null && break; sleep 2; done
 check "server answers on 80 and 8080" curl -fs -m 2 "http://$SIP:8080/ok"
+
+# Test CA + server certificate for the proxy phase (shipped before any lease:
+# the server's ingress policy keeps the host's ssh out while enforcing).
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj /CN=np-test-ca \
+    -addext basicConstraints=critical,CA:TRUE -keyout "$W/ca.key" -out "$W/ca.crt" 2>/dev/null
+openssl req -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -subj /CN=np-server.test \
+    -keyout "$W/tls.key" -out "$W/tls.csr" 2>/dev/null
+printf 'subjectAltName=DNS:np-server.test,IP:%s\n' "$SIP" > "$W/san"
+openssl x509 -req -in "$W/tls.csr" -CA "$W/ca.crt" -CAkey "$W/ca.key" -CAcreateserial -days 1 \
+    -extfile "$W/san" -out "$W/tls.crt" 2>/dev/null
+for _ in $(seq 60); do sssh true 2>/dev/null && break; sleep 2; done
+cssh "cat > /tmp/ca.crt" < "$W/ca.crt"
+sssh "cat > /tmp/tls.crt" < "$W/tls.crt"
+sssh "cat > /tmp/tls.key" < "$W/tls.key"
+sssh "sudo systemd-run --unit np8443 python3 /srv/echo.py 8443 /tmp/tls.crt /tmp/tls.key" >/dev/null 2>&1
+tls_echo() { curl -fs -m 3 --cacert "$W/ca.crt" "https://$SIP:8443/hdr" | grep -q "GET /hdr"; }
+for _ in $(seq 10); do tls_echo && break; sleep 1; done
+check "server answers TLS on 8443" tls_echo
 
 # HTTP status of a request from the client to the server ("000" = no answer).
 get() { local path=$1; shift; cssh "curl -s -m 4 -o /dev/null -w '%{http_code}' $* http://$SIP$path" 2>/dev/null; }
@@ -114,12 +158,13 @@ taps_programmed() {
 }
 flow_has() {
     local pat=$1; shift
+    local vm=${FLOW_VM:-np-server}
     for _ in 1 2 3 4 5; do
-        "$M" flow observe --vm np-server --last 300 "$@" > "$W/flows" 2>&1
+        "$M" flow observe --vm "$vm" --last 300 "$@" > "$W/flows" 2>&1
         grep -q -- "$pat" "$W/flows" && return
         sleep 2
     done
-    { echo "      flow observe --vm np-server $*:"; tail -n 8 "$W/flows"; echo "      unfiltered:"; "$M" flow observe --last 8 2>&1; } | sed 's/^/      /' >&3
+    { echo "      flow observe --vm $vm $*:"; tail -n 8 "$W/flows"; echo "      unfiltered:"; "$M" flow observe --last 8 2>&1; } | sed 's/^/      /' >&3
     return 1
 }
 
@@ -169,6 +214,69 @@ check "enforce: client without policy keeps egress" cssh "ping -c1 -W2 192.168.1
 sleep 2
 check "enforce: DROPPED flow for 8080" flow_has 8080 --verdict DROPPED --port 8080
 check "enforce: L7 flow records the request" flow_has /secret --port 80
+
+echo "== proxy: TLS interception + header rewrites =="
+check "proxy secret installed" bash -c "sudo -n mkdir -p '$SECRET_DIR' && sudo -n install -m600 '$W/tls.crt' '$W/tls.key' '$W/ca.crt' '$SECRET_DIR/'"
+cat > "$W/proxy.yaml" <<'Y'
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: np-realvm-proxy
+specs:
+  - description: client HTTPS to the server is intercepted and rewritten
+    endpointSelector:
+      matchLabels: {app: np-client}
+    egress:
+      - toEndpoints:
+          - matchLabels: {app: np-server}
+        toPorts:
+          - ports: [{port: "443", protocol: TCP}]
+            terminatingTLS:
+              secret: {name: np-intercept}
+            rules:
+              http:
+                - path: /hdr
+                  headerMatches:
+                    - {name: X-Team, value: blue, mismatch: REPLACE}
+                    - {name: X-Debug, value: "0", mismatch: DELETE}
+                    - {name: X-Via, value: machina, mismatch: ADD}
+          - ports: [{port: "8443", protocol: TCP}]
+            originatingTLS:
+              secret: {name: np-intercept}
+              trustedCA: ca.crt
+            rules:
+              http: [{path: /hdr}]
+  - description: the server admits the client (not the host) on 443 / 8443
+    endpointSelector:
+      matchLabels: {app: np-server}
+    ingress:
+      - fromEndpoints:
+          - matchLabels: {app: np-client}
+        toPorts:
+          - ports: [{port: "443", protocol: TCP}, {port: "8443", protocol: TCP}]
+Y
+check "apply proxy policy" "$M" netpol apply -f "$W/proxy.yaml"
+proxy_up() {
+    bpfd '{"op":"vm_edge_status"}' | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("proxy","").startswith("listening") else 1)'
+}
+for _ in $(seq 10); do proxy_up && break; sleep 1; done
+check "bpfd proxy listening" proxy_up
+https() { local path=$1; shift; cssh "curl -s -m 6 --cacert /tmp/ca.crt --resolve np-server.test:443:$SIP $* https://np-server.test$path" 2>/dev/null; }
+https /hdr -H "'X-Team: red'" -H "'X-Debug: 1'" > "$W/hdr.out"
+check "intercepted HTTPS reaches the server" grep -q "GET /hdr" "$W/hdr.out"
+check "REPLACE: X-Team rewritten to blue" grep -q "X-Team: blue" "$W/hdr.out"
+check "REPLACE: original X-Team gone" bash -c "! grep -q 'X-Team: red' '$W/hdr.out'"
+check "DELETE: X-Debug removed" bash -c "! grep -qi 'X-Debug' '$W/hdr.out'"
+check "ADD: X-Via added" grep -q "X-Via: machina" "$W/hdr.out"
+denied_other() { [[ "$(https /other -o /dev/null -w "'%{http_code}'")" == 403 ]]; }
+check "intercepted path outside the rule: 403" denied_other
+policy_cert() { cssh "curl -sv -m 6 -o /dev/null --cacert /tmp/ca.crt --resolve np-server.test:443:$SIP https://np-server.test/hdr" 2>&1 | grep -q "issuer: CN=np-test-ca"; }
+check "client sees the policy certificate" policy_cert
+check "server sees the client identity (host itself is refused on 443)" bash -c "! curl -s -m 3 -o /dev/null http://$SIP:443/hdr"
+cssh "curl -s -m 6 http://$SIP:8443/hdr" > "$W/orig.out" 2>/dev/null
+check "originatingTLS: plain client request reaches the TLS server" grep -q "GET /hdr" "$W/orig.out"
+FLOW_VM=np-client check "flow records the intercepted request" flow_has "tls intercepted" --port 443
+FLOW_VM=np-client check "flow records the rewrite" flow_has "X-Via added" --port 443
 
 echo "== back to observe =="
 observe

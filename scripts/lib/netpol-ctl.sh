@@ -245,6 +245,7 @@ np_netpol_status() {
       (if .last_sync then "Last sync:    \(.last_sync.at // "-")  \(if .last_sync.skipped then "skipped: \(.last_sync.skipped)" elif .last_sync.ok then "ok (\(.last_sync.vms) VMs, \(.last_sync.rules) rules, \(.last_sync.peers) peers)" else "FAILED: \(.last_sync.error)" end)" else empty end),
       (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)\(if (.edge.fqdn_rules // 0) > 0 then ", toFQDNs \(.edge.fqdn_rules) rule(s) / \(.edge.fqdn_cache // 0) learned address(es)" else "" end)\(if (.edge.l7_rules // 0) > 0 then ", L7 \(.edge.l7_rules) rule(s)" else "" end)\(if (.edge.auth_entries // 0) > 0 then ", \(.edge.auth_entries) authenticated pair(s)" else "" end)" else empty end),
       (if .edge.auth_cert then "Auth cert:    host \(.edge.auth_cert.host_id), expires \(.edge.auth_cert.not_after | todate)\(if .edge.auth_cert.listening then ", mTLS on :4250" else ", not listening" end)" else empty end),
+      (if (.edge.proxy // "") != "" then "L7 proxy:     \(.edge.proxy)" else empty end),
       ((.hosts // [])[] | "  host \(.hostname // .host_id)  \(
           if .reachable == false then "\u001b[90munreachable\u001b[0m"
           elif .ok == false then "\u001b[31m\(.error // "error")\u001b[0m"
@@ -492,7 +493,9 @@ np_flow_main() {
                     *)
                         np_flow_banner "flow observe" "$filters"
                         jq -r ".items | reverse | .[] | $NP_FLOW_JQ_TSV" <<<"$body" | np_flow_render
-                        [[ "$(jq '.items | length' <<<"$body")" == 0 ]] && echo "(no flows — is a VM network policy applied and the bpfd VM edge attached?)" >&2
+                        if [[ "$(jq '.items | length' <<<"$body")" == 0 ]]; then
+                            echo "(no flows — is a VM network policy applied and the bpfd VM edge attached?)" >&2
+                        fi
                         ;;
                 esac
             fi

@@ -59,8 +59,9 @@ Validation is strict, and errors carry Cilium-style paths such as
 | `toPorts[].ports[]` | `port` (number or **named port**), `endPort` (ranges up to 256 ports), `protocol` `TCP` / `UDP` / `SCTP` / `ANY`. |
 | `icmps[].fields[]` | `type` as a number or Cilium name (`EchoRequest`, `DestinationUnreachable`, …), `family` `IPv4` / `IPv6`. |
 | `toFQDNs` | `matchName` (exact) and `matchPattern` (Cilium wildcards: `*` stays within one label, a lone `*` matches every name, a leading `**.` matches one or more labels). Allow rules only, as in Cilium; `toFQDNs` in `egressDeny` is rejected. See [DNS names](#dns-names-tofqdns). |
-| `toPorts[].rules` | `http` (`method`, `path` as anchored regexes, `host`, `headers`, `headerMatches` with `mismatch: LOG`), `kafka` (`role` or `apiKey`, `apiVersion`, `clientID`, `topic`), `dns` (`matchName` / `matchPattern`). Also on `toFQDNs` rules. See [L7 rules](#l7-rules). |
+| `toPorts[].rules` | `http` (`method`, `path` as anchored regexes, `host`, `headers`, `headerMatches` with `value` or `secret` and `mismatch` `LOG` / `ADD` / `DELETE` / `REPLACE`), `kafka` (`role` or `apiKey`, `apiVersion`, `clientID`, `topic`), `dns` (`matchName` / `matchPattern`). Also on `toFQDNs` rules. See [L7 rules](#l7-rules). |
 | `toPorts[].serverNames` | TLS SNI names, matched on the ClientHello. |
+| `toPorts[].terminatingTLS` / `originatingTLS` | `secret` (`name`, optional `namespace`), `certificate`, `privateKey`, `trustedCA`. Egress only. See [TLS interception and header rewrites](#tls-interception-and-header-rewrites). |
 | `toGroups` / `fromGroups` | Select `CiliumCIDRGroup` objects (any provider key; there is no cloud API on a hypervisor). See [Groups](#cidr-groups-and-togroups). |
 | `toServices` | `k8sService` (`serviceName`, optional `namespace`) or `k8sServiceSelector` (`selector`, optional `namespace`; no namespace = any). Allows the selected services' frontends and backends on their ports, or on the rule's `toPorts` intersected with them. See [Services](#services-toservices). |
 | `cidrGroupRef` | In `toCIDRSet` / `fromCIDRSet`: the prefixes of a named `CiliumCIDRGroup`. |
@@ -73,11 +74,7 @@ example `machina.io/port.http=8080`).
 
 ### Accepted with a warning
 
-- `originatingTLS` / `terminatingTLS`: TLS is not intercepted, so encrypted
-  traffic is matched by `serverNames` only.
 - `listener` (Envoy) is ignored.
-- `headerMatches[].mismatch` other than `LOG` is rejected, because rewriting
-  headers needs a terminating proxy.
 
 ## Services (toServices)
 
@@ -232,7 +229,8 @@ Limits:
 - A denied HTTP/2 request resets the whole connection, not just its stream
   (dropping a header block would desynchronise the server's HPACK table).
   The HPACK dynamic table is capped at 64 KiB.
-- TLS is matched on SNI only. After the ClientHello the connection is open.
+- TLS is matched on SNI only. After the ClientHello the connection is open,
+  unless the rule intercepts it (see below).
 - A request head over 64 KiB, a Kafka request over 4 MiB, or more than
   5 MiB held for one connection denies the connection.
 - A connection already open when an L7 rule is applied is checked from the
@@ -241,6 +239,85 @@ Limits:
 - If the inject veth cannot be created, allowed segments pass on the
   client's retransmit (at least 200 ms later) and allowed UDP DNS queries are
   forwarded from the host.
+
+## TLS interception and header rewrites
+
+```yaml
+egress:
+  - toEndpoints: [{matchLabels: {app: api}}]
+    toPorts:
+      - ports: [{port: "443", protocol: TCP}]
+        terminatingTLS: {secret: {namespace: shop, name: api-intercept}}
+        originatingTLS: {secret: {namespace: shop, name: api-upstream}, trustedCA: ca.crt}
+        rules:
+          http:
+            - path: "/v1/.*"
+              headerMatches:
+                - {name: X-Team, value: blue, mismatch: REPLACE}
+                - {name: X-Debug, value: "0", mismatch: DELETE}
+                - {name: X-Via, value: machina, mismatch: ADD}
+                - {name: Authorization, secret: {name: api-token}, mismatch: LOG}
+```
+
+These rules change the bytes on the wire, so they go through a terminating
+proxy in bpfd instead of the hold-and-reinject path. A `toPorts` entry uses
+the proxy when it has `terminatingTLS`, `originatingTLS`, a header match
+with `secret`, or a `mismatch` of `ADD`, `DELETE` or `REPLACE`:
+
+- `terminatingTLS`: bpfd completes the VM's TLS handshake with the secret's
+  certificate. The VM must trust its issuer. `serverNames`, when present,
+  are checked on the ClientHello first.
+- `originatingTLS`: bpfd opens TLS to the server, verifying it against the
+  secret's CA (`trustedCA`, default `ca.crt`; without either, the host's CA
+  bundle). It presents the secret's `tls.crt` / `tls.key` when present. The
+  server name is the client's SNI, else the request's `Host`.
+- With `terminatingTLS` alone, the request goes to the server in plain HTTP.
+  With `originatingTLS` alone, a plain-HTTP client reaches a TLS server.
+- `headerMatches` on a mismatch: `LOG` records it, `ADD` appends the header,
+  `DELETE` removes every header of that name, and `REPLACE` sets it. The
+  request still matches in all four cases. Without `mismatch`, a mismatch
+  fails the rule, as before.
+- A header `secret` is read from the secret's `value` key. A secret that
+  cannot be read never matches.
+
+Secrets are files on each hypervisor, never in the policy or the controller:
+`/etc/machina/netpol-secrets/<namespace>/<name>/<key>`. The namespace is
+`default` when the reference has none, and `MACHINA_NETPOL_SECRETS_DIR`
+moves the directory. TLS keys use the Kubernetes names `tls.crt`,
+`tls.key` and `ca.crt` unless `certificate`, `privateKey` or `trustedCA`
+name others. Keep them mode 0600, owned by root.
+
+How a proxied connection flows:
+
+1. The rule entry is marked PROXY as well as L7. A TCP connection from the
+   VM that **starts** while the enforcement lease is live is recorded in
+   `VM_PROXY_FLOW` and redirected through the inject veth. There,
+   `mn_vm_l7_inject` hands it to bpfd's transparent listener
+   (`127.0.0.1:4251` / `[::1]:4251`) with `bpf_sk_assign`. A policy route
+   (`fwmark 0xb6000000 lookup 4251`, a `local` default route in that table)
+   delivers it locally.
+2. bpfd checks each HTTP/1.x request against every L7 rule for the pair,
+   applies the matching rule's header rewrites, and forwards the request on
+   its own connection to the original destination. A denied request gets
+   `403 Access denied`. Each decision is a flow record (`… (tls intercepted)`,
+   `(header X-Via added)`).
+3. The upstream connection's socket mark carries the client's identity
+   (`VM_PROXY_SRC`), so the server's edge applies its ingress policy to the
+   client VM, not the host.
+
+Limits:
+
+- Egress rules only. HTTP/1.x only: bpfd offers ALPN `http/1.1` when it
+  terminates TLS.
+- Without the lease, or for connections opened before it, proxied ports
+  pass untouched and nothing is parsed.
+- Replies to the VM leave through the host's routing table, so the host
+  needs a route to the VM's network (true for libvirt NAT and routed
+  networks, and for bridges where the host has an address).
+- The server sees connections from the host's address. Its policy still
+  sees the client identity.
+- `machinactl netpol status` shows the proxy (`L7 proxy: listening on …`,
+  or why it is off).
 
 ## CIDR groups and toGroups
 
@@ -382,7 +459,9 @@ machinactl vm label web-1                         # show
    any port, any protocol. A deny match wins; a miss on an isolated direction
    is a default-deny drop. An allow entry can also require authentication
    (checked against `VM_AUTH` for new connections) or L7 (client segments
-   go to bpfd until it allows them, see [L7 rules](#l7-rules)).
+   go to bpfd until it allows them, see [L7 rules](#l7-rules)), or send the
+   connection through bpfd's proxy (see
+   [TLS interception](#tls-interception-and-header-rewrites)).
 
 The usual [safety model](README.md#safety-model) applies. Without the
 enforcement lease, a drop is recorded as an **AUDIT** flow and the packet is
@@ -466,9 +545,15 @@ a veth pair in a scratch netns and covers:
 network, labels them and applies an ingress policy: the client may only
 `GET /ok` on the server's port 80. In observe mode everything still works
 and flows show AUDIT. Under a short enforcement lease (`LEASE`, default
-180 s), `/ok` answers, other paths and methods get 403, port 8080 and the
-host are dropped, and flows record DROPPED and the L7 request. On exit it
-returns the edge to observe and deletes the VMs, the policy and the image.
+300 s), `/ok` answers, other paths and methods get 403, port 8080 and the
+host are dropped, and flows record DROPPED and the L7 request. A second
+policy then sends the client's HTTPS through the proxy, with a throwaway CA
+and secret. It checks the `REPLACE` / `DELETE` / `ADD` rewrites as the
+server receives them, a 403 for a path outside the rule, the policy
+certificate on the client, the client identity at the server (the host is
+refused on 443), and `originatingTLS` from a plain-HTTP client to a TLS
+server. On exit it returns the edge to observe and deletes the VMs, the
+policies, the secret and the image.
 It enforces on every tap with policy state, so run it only on a disposable
 host. The password is read from stdin:
 

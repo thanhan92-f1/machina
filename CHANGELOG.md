@@ -51,9 +51,20 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
     (listener plus members); the daemon reads Kubernetes services and
     endpoints through kubectl. Rule `toPorts` are intersected with the
     service ports.
+  - `terminatingTLS`, `originatingTLS` and `headerMatches` with `ADD`,
+    `DELETE`, `REPLACE` or a `secret` are enforced on egress through a
+    transparent proxy in bpfd. Under the lease, the edge redirects the VM's
+    TCP connection through the inject veth, and `bpf_sk_assign` hands it to
+    bpfd. bpfd terminates and re-originates TLS with rustls, checks and
+    rewrites each HTTP/1.x request, and connects upstream with the client's
+    identity in its socket mark, so the server's policy still sees the
+    client VM. Secrets are files on each host
+    (`/etc/machina/netpol-secrets/<namespace>/<name>/`). `netpol status`
+    shows the proxy.
 - **Tests.** `scripts/bpf/vm-netpol-realvm.sh` checks observe and leased
-  enforcement (L4 drops, L7 403s, flows) on two disposable libvirt VMs and
-  cleans up after itself. Playwright covers the policy page, with mocked and
+  enforcement (L4 drops, L7 403s, flows) and the TLS-intercepting proxy
+  (rewrites, 403, client identity at the server, `originatingTLS`) on two
+  disposable libvirt VMs, and cleans up after itself. Playwright covers the policy page, with mocked and
   read-only live specs.
 - **Labels.** Each VM has key/value labels, which policies select on. The
   daemon stores them in `vm-labels.json`. On the controller, migration 029

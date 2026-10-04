@@ -60,6 +60,23 @@ describe('summarizeSpec', () => {
     })
     expect(sv.rules[0].text).toContain('service:shop/pg')
     expect(sv.rules[0].text).toContain('service:tier=data')
+    const tls = summarizeSpec({
+      endpointSelector: {},
+      egress: [
+        {
+          toEndpoints: [{ matchLabels: { app: 'api' } }],
+          toPorts: [
+            {
+              ports: [{ port: '443', protocol: 'TCP' }],
+              terminatingTLS: { secret: { name: 'intercept' } },
+              originatingTLS: { secret: { name: 'upstream' } },
+              rules: { http: [{ path: '/v1/.*', headerMatches: [{ name: 'X-Via', value: 'machina', mismatch: 'ADD' }] }] },
+            },
+          ],
+        },
+      ],
+    })
+    expect(tls.rules[0].text).toBe('to VMs app=api on 443/TCP, HTTP any method /v1/.* +1 header, TLS intercepted, TLS to server')
     const g = summarizeSpec({ externalCIDRs: ['198.51.100.0/24'] })
     expect(g.groupCidrs).toEqual(['198.51.100.0/24'])
     expect(g.subject).toBe('CIDR group of 1 prefix')

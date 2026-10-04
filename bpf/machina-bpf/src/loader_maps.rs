@@ -60,6 +60,11 @@ impl Datapath {
         Ok(())
     }
 
+    pub fn set_vm_proxy(&mut self, cfg: VmProxyCfg) -> Result<()> {
+        self.array::<VmProxyCfg>("VM_PROXY_CFG")?.set(0, cfg, 0)?;
+        Ok(())
+    }
+
     pub fn global(&mut self) -> Result<GlobalCfg> {
         Ok(self.array::<GlobalCfg>("CONFIG")?.get(&0, 0)?)
     }

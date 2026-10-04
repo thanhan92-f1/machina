@@ -49,6 +49,7 @@ mod vm;
 mod vmauth;
 mod vmintel;
 mod vml7;
+mod vmproxy;
 
 pub use listen::{run, Config};
 
@@ -239,6 +240,7 @@ struct Engine {
     uplink: uplink::UplinkRuntime,
     vm_edge: vm::VmEdgeRuntime,
     vmauth: vmauth::VmAuth,
+    vmproxy: vmproxy::VmProxy,
     sandbox: vm::SandboxRuntime,
     shield: shield::ShieldRuntime,
     nodeiso: nodeiso::NodeIsoRuntime,
@@ -336,6 +338,7 @@ impl Engine {
             uplink: uplink::UplinkRuntime::default(),
             vm_edge: vm::VmEdgeRuntime::default(),
             vmauth: vmauth::VmAuth::default(),
+            vmproxy: vmproxy::VmProxy::default(),
             sandbox: vm::SandboxRuntime::default(),
             shield: shield::ShieldRuntime::default(),
             nodeiso: nodeiso::NodeIsoRuntime::default(),

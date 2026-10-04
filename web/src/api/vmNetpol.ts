@@ -522,6 +522,40 @@ spec:
 `,
   },
   {
+    id: 'tls-intercept',
+    label: 'TLS interception + header rewrites',
+    yaml: `apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: web-to-api-intercepted
+spec:
+  description: Web VMs' HTTPS to the API is decrypted, checked and tagged
+  endpointSelector:
+    matchLabels:
+      app: web
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: api
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+          # Files on each host: /etc/machina/netpol-secrets/<namespace>/<name>/
+          terminatingTLS:
+            secret: {namespace: shop, name: api-intercept}
+          originatingTLS:
+            secret: {namespace: shop, name: api-upstream}
+            trustedCA: ca.crt
+          rules:
+            http:
+              - path: "/v1/.*"
+                headerMatches:
+                  - {name: X-Team, value: web, mismatch: REPLACE}
+                  - {name: X-Debug, value: "0", mismatch: DELETE}
+`,
+  },
+  {
     id: 'cidr-group',
     label: 'CIDR group + toGroups',
     yaml: `apiVersion: cilium.io/v2alpha1

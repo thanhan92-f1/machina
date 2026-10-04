@@ -907,6 +907,9 @@ pub const VM_POLICY_L7: u32 = 4;
 pub const VM_POLICY_AUTH: u32 = 8;
 /// `authentication.mode: test-always-fail`.
 pub const VM_POLICY_AUTH_FAIL: u32 = 16;
+/// With L7: new TCP flows from the VM go through bpfd's terminating proxy
+/// (TLS interception, header rewriting) while enforcement is live.
+pub const VM_POLICY_PROXY: u32 = 32;
 
 pub const VMF_FORWARDED: u8 = 0;
 pub const VMF_DROPPED: u8 = 1;
@@ -1021,6 +1024,38 @@ pub struct VmL7Flow {
     pub pending_seq: u32,
     pub state: u8,
     pub _pad: [u8; 3],
+}
+
+/// skb mark of a VM frame redirected to bpfd's transparent L7 proxy through
+/// the inject veth (`mn_vm_l7_inject` assigns it to the proxy socket); also
+/// the fwmark of the policy route that delivers it locally.
+pub const VM_PROXY_MAGIC: u32 = 0xb600_0000;
+/// Socket mark of the proxy's upstream connections: magic | slot, where
+/// VM_PROXY_SRC[slot] is the client identity the server's edge sees. Slots
+/// avoid bits 8-15 (Cilium's mark magic) so kube-proxy / Cilium rules on
+/// the host never match them.
+pub const VM_PROXY_UP_MAGIC: u32 = 0xb500_0000;
+pub const VM_PROXY_SLOT: u32 = 0x00ff_00ff;
+
+/// VM_PROXY_CFG[0]: where proxied frames go and the proxy listener port
+/// (127.0.0.1 / ::1). `redirect_ifindex` 0 = no proxy.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmProxyCfg {
+    pub redirect_ifindex: u32,
+    pub port: u16,
+    pub _pad: u16,
+}
+
+/// VM_PROXY_FLOW value (key: the client's FlowKey, ifindex 0): the
+/// identities the edge resolved when it redirected the flow.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VmProxyFlow {
+    pub subject: u32,
+    pub peer: u32,
+    pub ifindex: u32,
+    pub _pad: u32,
 }
 
 /// VM_AUTH key; value = expiry (monotonic ns).
@@ -1508,6 +1543,8 @@ mod pod {
         VmFlowEvent,
         VmL7Event,
         VmL7Flow,
+        VmProxyCfg,
+        VmProxyFlow,
         VmAuthKey,
         QemuDevRule,
         QemuSandboxCfg,
@@ -1575,6 +1612,8 @@ mod tests {
         assert_eq!(size_of::<VmFlowEvent>(), 72);
         assert_eq!(size_of::<VmL7Event>(), VM_L7_HDR + VM_L7_CAP);
         assert_eq!(size_of::<VmL7Flow>(), 16);
+        assert_eq!(size_of::<VmProxyCfg>(), 8);
+        assert_eq!(size_of::<VmProxyFlow>(), 16);
         assert_eq!(size_of::<VmAuthKey>(), 12);
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);
         assert_eq!(size_of::<DevHitKey>(), 24);

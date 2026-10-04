@@ -907,6 +907,10 @@ pub struct VmEdgeStatus {
     pub auth_entries: usize,
     #[serde(default)]
     pub auth_cert: Option<VmAuthCertInfo>,
+    /// TLS-intercepting / rewriting proxy: `listening on …`, or why it is
+    /// off while proxy rules exist; empty without proxy rules.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub proxy: String,
 }
 
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
