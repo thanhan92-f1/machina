@@ -2783,7 +2783,7 @@ export interface NotificationRow {
   delivered_at?: string | null
 }
 
-interface HealthIssue {
+export interface HealthIssue {
   id: string
   severity: string
   message: string

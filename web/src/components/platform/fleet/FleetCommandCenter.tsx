@@ -16,13 +16,14 @@ import {
   Terminal,
   Trash2,
 } from 'lucide-react'
-import { getConsoleHubPlan, runVmHealthCheck, type ConsoleHubPlan } from '../../../api/platform'
+import { getConsoleHubPlan, runVmHealthCheck, type ConsoleHubPlan, type HealthIssue } from '../../../api/platform'
 import Sparkline from '../../kit/Sparkline'
 import { useVmMetricSeries } from '../../../hooks/useVmMetricSeries'
 import VmHealthRing from './VmHealthRing'
 import { vmHealthScore } from '../../../utils/vmHealthScore'
 import VmFeatureChips from './VmFeatureChips'
 import GuestAgentSetupDialog from './GuestAgentSetupDialog'
+import VmFixItList from './VmFixItList'
 import VmStatusBadge from '../../VmStatusBadge'
 import { formatVmMemoryGiB } from '../../../utils/vmVisual'
 import { useToastContext } from '../../../contexts/ToastContext'
@@ -49,6 +50,8 @@ export default function FleetCommandCenter({
   const toast = useToastContext()
   const [healthScore, setHealthScore] = useState<number | null>(null)
   const [healthLoading, setHealthLoading] = useState(false)
+  const [healthIssues, setHealthIssues] = useState<HealthIssue[] | null>(null)
+  const [healthTick, setHealthTick] = useState(0)
   const [plan, setPlan] = useState<ConsoleHubPlan | null>(null)
   const [agentSetupOpen, setAgentSetupOpen] = useState(false)
   const vmRunning = selectedVm?.observed_state === 'running'
@@ -74,10 +77,11 @@ export default function FleetCommandCenter({
       // Number(x) || null would drop a real score of 0 (worst health). Keep 0.
       .then((h) => {
         setHealthScore(vmHealthScore(h))
+        setHealthIssues(h.issues ?? [])
       })
-      .catch(() => setHealthScore(null))
+      .catch(() => { setHealthScore(null); setHealthIssues(null) })
       .finally(() => setHealthLoading(false))
-  }, [selectedVm?.id])
+  }, [selectedVm?.id, healthTick])
 
   if (!selectedVm) {
     return (
@@ -158,6 +162,10 @@ export default function FleetCommandCenter({
       </div>
 
       <VmFeatureChips vm={selectedVm} plan={plan} onAgentSetup={() => setAgentSetupOpen(true)} />
+
+      {running && healthIssues ? (
+        <VmFixItList vm={selectedVm} issues={healthIssues} plan={plan} onDone={() => setHealthTick((t) => t + 1)} />
+      ) : null}
     </div>
   )
 
@@ -211,11 +219,6 @@ export default function FleetCommandCenter({
             }}
           >
             <Copy className="w-3.5 h-3.5" /> Copy IP
-          </button>
-        )}
-        {running && !/^(ok|running|active|ready|installed)/i.test(selectedVm.guest_tools_status ?? '') && (
-          <button type="button" className="btn-secondary text-xs py-1.5 px-3" onClick={() => setAgentSetupOpen(true)}>
-            Set up guest agent
           </button>
         )}
         {selectedVm.managed === false && (

@@ -25,6 +25,7 @@ import MissionControlBriefing from './MissionControlBriefing'
 import MissionControlGeography from './MissionControlGeography'
 import MissionControlHero from './MissionControlHero'
 import MissionControlCapacity from './MissionControlCapacity'
+import MissionControlGetStarted from './MissionControlGetStarted'
 import MissionControlLaunchpad from './MissionControlLaunchpad'
 import MissionControlPulse from './MissionControlPulse'
 import FleetHero from './FleetHero'
@@ -162,6 +163,8 @@ export default function MissionControlPage() {
         )}
 
         <MissionControlHero state={state} warnings={warnings} onCreateVm={() => setWizardOpen(true)} />
+
+        <MissionControlGetStarted state={state} onCreateVm={() => setWizardOpen(true)} />
 
         <MissionControlPulse state={state} warnings={warnings} />
 

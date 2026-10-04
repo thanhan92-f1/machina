@@ -32,6 +32,7 @@ import { MacGlassPanel, MacListRow } from '../../components/platform/mac/Platfor
 import VmUsageBars from '../../components/platform/VmUsageBars'
 import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
 import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
+import VmFixItList from '../../components/platform/fleet/VmFixItList'
 import { vmHealthScore } from '../../utils/vmHealthScore'
 import { useVmMetricSeries } from '../../hooks/useVmMetricSeries'
 import JsonInspector from '../../components/platform/JsonInspector'
@@ -1167,6 +1168,10 @@ export default function PlatformVmDetail() {
               healthScore={vmHealthScore(health) ?? (doctor ? vmHealthScore({ score_numeric: Number(doctor.score_numeric) }) : null)}
               running={vm.observed_state === 'running'}
             />
+          )}
+
+          {tab === 'overview' && vm && health && (health.issues?.length ?? 0) > 0 && vm.observed_state === 'running' && (
+            <VmFixItList vm={vm} issues={health.issues} onDone={() => void load()} onOpenTab={(t) => setTab(t as typeof tab)} />
           )}
 
           {tab === 'overview' && id && vm && (
