@@ -79,6 +79,24 @@ pub async fn propose(pool: &SqlitePool, vm_id: Option<Uuid>) -> anyhow::Result<A
         }
     }
 
+    for vm in crate::engine::vm_inventory::stale_libvirt_vms(pool).await? {
+        if vm.managed || vm_id.is_some_and(|v| v != vm.id) {
+            continue;
+        }
+        actions.push(ProposedAction {
+            id: format!("stale-vm-{}", vm.id),
+            label: format!("Remove stale VM '{}'", vm.name),
+            review: format!(
+                "Its host is reporting inventory but has not listed this VM since {}; \
+                 the domain no longer exists, so consoles, keys and power actions fail.",
+                vm.last_seen
+            ),
+            risk: "Low".into(),
+            action_type: "remove_stale_vm".into(),
+            object_ref: serde_json::json!({ "vm_id": vm.id.to_string() }),
+        });
+    }
+
     Ok(AutopilotProposal {
         mode: settings.mode,
         actions,
@@ -306,6 +324,32 @@ pub async fn execute(
                 task_ids.push(tid.to_string());
             }
             format!("Queued sync for {} host(s)", task_ids.len())
+        }
+        "remove_stale_vm" => {
+            let vm_id = parse_vm_id(&body.object_ref)?;
+            let vm = crate::engine::vm_inventory::stale_libvirt_vm(&state.pool, vm_id)
+                .await
+                .map_err(|e| ApiError::internal(e.to_string()))?
+                .ok_or_else(|| {
+                    ApiError::conflict(
+                        "VM is not stale",
+                        "its host listed it recently or is not reporting; nothing removed",
+                    )
+                })?;
+            if vm.managed {
+                return Err(ApiError::bad_request(
+                    "managed VM: delete it from the VM page instead",
+                ));
+            }
+            sqlx::query("DELETE FROM vms WHERE id = ?")
+                .bind(vm_id)
+                .execute(&state.pool)
+                .await?;
+            state.emit_event(
+                "vm.removed",
+                format!("Stale VM '{}' removed — absent from hypervisor", vm.name),
+            );
+            format!("Removed stale VM '{}'", vm.name)
         }
         other => {
             return Err(ApiError::bad_request(format!(

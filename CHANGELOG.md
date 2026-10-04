@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-04 — Stale VM inventory
+
+- **Inventory pruning.** A host that reports no VMs on three consecutive
+  inventory scans is now taken at its word. Previously an empty scan never
+  pruned, so a host's last deleted VMs stayed listed as running forever and
+  their consoles, keys and power actions failed.
+- **Zyvor agent.** Troubleshooting flags a VM whose host no longer lists it.
+  Autopilot proposes `remove_stale_vm` for such unmanaged VMs; approving it
+  re-checks staleness before deleting the row.
+- **Console.** A failed send-key now shows the real error. The old message
+  blamed qemu-guest-agent, but keys are sent through libvirt and need no
+  agent.
+
 ## 2026-10-04 — VM network policy and packet flows
 
 Which VM may talk to which, in both directions, using the CiliumNetworkPolicy

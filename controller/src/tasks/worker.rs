@@ -466,6 +466,29 @@ async fn vm_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
     Ok(())
 }
 
+const EMPTY_SCANS_BEFORE_PRUNE: u32 = 3;
+
+fn empty_scans() -> &'static std::sync::Mutex<HashMap<Uuid, u32>> {
+    static EMPTY: std::sync::OnceLock<std::sync::Mutex<HashMap<Uuid, u32>>> =
+        std::sync::OnceLock::new();
+    EMPTY.get_or_init(Default::default)
+}
+
+/// Counts consecutive empty libvirt scans for a host; returns the new count.
+fn record_empty_scan(host_id: Uuid) -> u32 {
+    let mut m = empty_scans().lock().unwrap_or_else(|e| e.into_inner());
+    let n = m.entry(host_id).or_insert(0);
+    *n = n.saturating_add(1);
+    *n
+}
+
+fn clear_empty_scans(host_id: Uuid) {
+    empty_scans()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .remove(&host_id);
+}
+
 async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
     let host_id: Uuid = msg.payload["host_id"]
         .as_str()
@@ -680,10 +703,15 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
     // libvirtd can return an empty list right after a reconnect/restart, and a
     // hard RPC failure already errored out above. Reconciling on empty would
     // DELETE every unmanaged VM and mark managed ones 'missing' on one bad tick
-    // (the KubeVirt path guards the same way). Skip prune when nothing was seen.
-    if seen_names.is_empty() {
+    // (the KubeVirt path guards the same way). Only after EMPTY_SCANS_BEFORE_PRUNE
+    // consecutive empty scans is the host taken to really have no domains;
+    // otherwise its last VMs would stay listed forever.
+    if seen_names.is_empty() && record_empty_scan(host_id) < EMPTY_SCANS_BEFORE_PRUNE {
         tracing::warn!(%host_id, "libvirt inventory returned no VMs — skipping prune/mark-missing this tick");
     } else {
+        if !seen_names.is_empty() {
+            clear_empty_scans(host_id);
+        }
         crate::engine::vm_inventory::reconcile_libvirt_host(
             state,
             host_id,
@@ -2960,5 +2988,20 @@ mod scheduler_tests {
         }
         // Backlog empty → next completion idles the key.
         assert!(s.on_complete("vm_id:A").is_none());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_scans_count_until_cleared() {
+        let host = Uuid::new_v4();
+        assert_eq!(record_empty_scan(host), 1);
+        assert_eq!(record_empty_scan(host), 2);
+        assert_eq!(record_empty_scan(host), EMPTY_SCANS_BEFORE_PRUNE);
+        clear_empty_scans(host);
+        assert_eq!(record_empty_scan(host), 1);
     }
 }

@@ -172,6 +172,7 @@ pub async fn approve_and_execute(
         | "bulk_backup"
         | "bulk_ha"
         | "sync_hosts"
+        | "remove_stale_vm"
         =>
         {
             let body = super::autopilot::ExecuteBody {

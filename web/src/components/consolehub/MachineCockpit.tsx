@@ -250,8 +250,8 @@ function CockpitInner({
     try {
       await sendGuestKey(vmName, { preset: 'ctrl_alt_del' })
       toast.success('Sent Ctrl+Alt+Del')
-    } catch {
-      toast.error('Could not send key — install qemu-guest-agent in the VM or connect via VNC')
+    } catch (e: unknown) {
+      toast.error(`Could not send key: ${formatUserError(e)}`)
     }
   }
 
@@ -270,8 +270,8 @@ function CockpitInner({
     try {
       await sendGuestKey(vmName, { preset })
       toast.success(`Sent ${preset}`)
-    } catch {
-      toast.error('Could not send key — install qemu-guest-agent in the VM or connect via VNC')
+    } catch (e: unknown) {
+      toast.error(`Could not send key: ${formatUserError(e)}`)
     }
   }
 

@@ -279,6 +279,27 @@ pub async fn diagnose(
         }
     }
 
+    if let Some(stale) = crate::engine::vm_inventory::stale_libvirt_vm(pool, vid).await? {
+        checks.push(CheckResult {
+            domain: "inventory".into(),
+            status: "critical".into(),
+            detail: format!("Host has not listed this VM since {}", stale.last_seen),
+        });
+        findings.push(Finding {
+            severity: "critical".into(),
+            message: format!(
+                "VM is recorded as {state} but its host no longer lists it — the domain is gone \
+                 and consoles, keys and power actions will fail"
+            ),
+            domain: "inventory".into(),
+        });
+        actions.push(if stale.managed {
+            "Recreate the VM or delete it from the VM page.".into()
+        } else {
+            "Approve the 'Remove stale VM' autopilot action.".into()
+        });
+    }
+
     if state != "running" && (symptom.contains("slow") || symptom.contains("unreachable")) {
         findings.push(Finding {
             severity: "critical".into(),

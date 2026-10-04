@@ -108,6 +108,43 @@ pub async fn reconcile_libvirt_host(
     Ok(())
 }
 
+/// A libvirt VM whose host is reporting inventory but which the host has not
+/// listed for a while: its domain is gone and the row is stale.
+#[derive(Debug, sqlx::FromRow)]
+pub struct StaleVm {
+    pub id: Uuid,
+    pub name: String,
+    pub managed: bool,
+    pub last_seen: String,
+}
+
+const STALE_VMS_SQL: &str = "SELECT v.id, v.name, v.managed,
+        COALESCE(v.last_seen_at, v.created_at) AS last_seen
+     FROM vms v JOIN hosts h ON h.id = v.host_id
+     WHERE v.inventory_source = 'libvirt'
+       AND v.observed_state != 'missing'
+       AND v.lifecycle_phase NOT IN ('creating', 'deleting', 'migrating')
+       AND h.state = 'online'
+       AND h.last_heartbeat_at > datetime('now', '-2 minutes')
+       AND COALESCE(v.last_seen_at, v.created_at) < datetime('now', '-10 minutes')";
+
+pub async fn stale_libvirt_vms(pool: &SqlitePool) -> anyhow::Result<Vec<StaleVm>> {
+    Ok(
+        sqlx::query_as::<_, StaleVm>(&format!("{STALE_VMS_SQL} ORDER BY v.name LIMIT 50"))
+            .fetch_all(pool)
+            .await?,
+    )
+}
+
+pub async fn stale_libvirt_vm(pool: &SqlitePool, vm_id: Uuid) -> anyhow::Result<Option<StaleVm>> {
+    Ok(
+        sqlx::query_as::<_, StaleVm>(&format!("{STALE_VMS_SQL} AND v.id = ?"))
+            .bind(vm_id)
+            .fetch_optional(pool)
+            .await?,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

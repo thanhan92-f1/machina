@@ -34,7 +34,7 @@ use tokio::net::{TcpSocket, TcpStream};
 use tokio::sync::broadcast;
 use tokio::time::timeout;
 
-use machina_bpf_common::{FlowKey, VmProxyFlow, ADDR_LEN, VM_PROXY_SLOT, VM_PROXY_UP_MAGIC};
+use machina_bpf_common::{FlowKey, VmProxyFlow, ADDR_LEN, VM_PROXY_UP_MAGIC};
 
 use super::{lock, publish, Shared, SharedState, VM_FLOW_STORE_CAP};
 use crate::api::{StreamEvent, VmEdgeL7Rule, VmFlowRecord};
@@ -780,6 +780,7 @@ async fn http_loop(c: &Conn<'_>, pol: &Policy, io: BoxIo, sni: Option<String>) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    use machina_bpf_common::VM_PROXY_SLOT;
 
     #[test]
     fn keys_hosts_and_secrets() {
