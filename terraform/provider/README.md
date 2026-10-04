@@ -46,3 +46,9 @@ terraform plan   # skip `terraform init` when using dev_overrides
 
 Verified against a lab host: plan, apply, a clean re-plan (no drift), and destroy of a throwaway machine.
 Networks, storage pools and volumes are next; until then use the generic HTTP examples in `../machina`.
+
+## Dependency status
+`govulncheck` reports GO-2026-6443 (gRPC server panic on missing `:authority`/Host headers) as reachable through the
+Terraform plugin server. It is fixed only in unreleased gRPC 1.85 dev builds, so we stay on the latest stable (1.84.0).
+Exposure is minimal: the plugin's gRPC server listens on a local socket that only the Terraform process connects to.
+Bump gRPC as soon as 1.85 is released.
