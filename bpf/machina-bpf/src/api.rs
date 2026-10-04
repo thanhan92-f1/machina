@@ -810,6 +810,10 @@ pub struct VmEdgeState {
     /// Host id → address, for bpfd-to-bpfd authentication.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub host_addrs: BTreeMap<String, String>,
+    /// Also count every global address of the receiving node as `host`
+    /// (a controller only knows the management address).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub node_is_host: bool,
 }
 
 /// One VM edge verdict (`flow` topic / `vm_flows`).

@@ -188,6 +188,10 @@ check "netpol enforce: DROPPED flow for ICMP" flow_has "f['verdict']=='DROPPED' 
 
 np "$NPVM" "$HOSTPEER" "$R_RANGE,$R_ICMP"
 check "netpol enforce: ICMP echo-request rule allows ping" ping_ok
+edge "{\"vms\":[$NPVM}],\"policy\":[$R_RANGE,$R_ICMP],\"flow_log\":true,\"owner\":\"smoke\"}"
+check "netpol enforce: without a host peer the host address is not host" ping_blocked
+edge "{\"vms\":[$NPVM}],\"policy\":[$R_RANGE,$R_ICMP],\"flow_log\":true,\"owner\":\"smoke\",\"node_is_host\":true}"
+check "netpol enforce: node_is_host makes node addresses host" ping_ok
 
 np "$NPVM" "$HOSTPEER" "$R_RANGE,$R_ICMP,$R_DENY"
 check "netpol enforce: deny beats the allow range" bash -c "! ip netns exec $NS curl -s -m3 -o /dev/null http://$HOST_IP:18080/"

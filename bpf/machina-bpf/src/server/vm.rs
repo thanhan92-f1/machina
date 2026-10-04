@@ -23,6 +23,25 @@ pub(super) use threat::{threat_observe, ThreatHit};
 
 const EDGE_IN: &str = "mn_vm_edge_in";
 const EDGE_OUT: &str = "mn_vm_edge_out";
+/// Global unicast addresses of this node (management, bridges, uplinks).
+fn node_addresses() -> Vec<[u8; ADDR_LEN]> {
+    let Ok(out) = std::process::Command::new("ip")
+        .args(["-j", "addr", "show"])
+        .output()
+    else {
+        return Vec::new();
+    };
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_default();
+    v.as_array()
+        .into_iter()
+        .flatten()
+        .filter(|l| l["ifname"].as_str() != Some("lo"))
+        .flat_map(|l| l["addr_info"].as_array().cloned().unwrap_or_default())
+        .filter(|a| a["scope"].as_str() == Some("global"))
+        .filter_map(|a| a["local"].as_str().and_then(|ip| addr16(ip).ok()))
+        .collect()
+}
+
 /// Veth pair held L7 frames are reinjected through: bpfd sends on the
 /// first, `mn_vm_l7_inject` on the second's ingress redirects into the tap.
 const L7_INJECT: (&str, &str) = ("mnl7inj0", "mnl7inj1");
@@ -681,6 +700,11 @@ impl Engine {
                     .names
                     .entry(p.identity)
                     .or_insert_with(|| (p.name.clone(), BTreeMap::new()));
+            }
+        }
+        if state.node_is_host {
+            for a in node_addresses() {
+                ips.entry(a).or_insert(IDENTITY_HOST);
             }
         }
         let mut policy: HashMap<PolicyKey, u32> = HashMap::new();

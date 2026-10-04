@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-04 — Fleet VM network policy fixes from real-VM testing
+
+- **Host identity under the controller.** When the controller owns a host's
+  VM edge, `machina-bpfd` now counts every global address of the node as
+  `host`. Before, only the management address did, so traffic from libvirt
+  bridge addresses was dropped by `fromEntities: host` rules. That affected
+  SSH into isolated projects, DNS through the host, and pings to the gateway.
+- **`netpol project assign P|- VM...`** puts VMs into a Fleet Cloud project
+  from the CLI.
+- **`machinactl --fleet netpol …`** works with the flag before the command,
+  as the docs show (the flag after the command still works).
+- **Daemon → controller proxy** forwards `Content-Type` and
+  `Content-Disposition`, so controller downloads keep their type and
+  filename.
+- `scripts/bpf/vm-netpol-realvm.sh` gains a fleet phase on the same two VMs.
+  It covers project isolation (cross-project dropped, same project and host
+  allowed, `--no-host`), an egress allowlist (domain, IP and port, unlisted
+  dropped), a project egress IP seen from a TEST-NET netns, and evidence.
+
 ## 2026-10-04 — Project isolation, egress control and segmentation evidence
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#project-isolation-fleet-cloud).

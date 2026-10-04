@@ -1058,8 +1058,19 @@ cmd_help() {
 # ── Main ────────────────────────────────────────────────────────────────
 main() {
     ORIGINAL_ARGS=("$@")
+    local lead_fleet=0
+    if [[ "${1:-}" == --fleet ]]; then
+        lead_fleet=1
+        shift
+    fi
     local cmd="${1:-help}"
     shift || true
+    if [[ $lead_fleet == 1 ]]; then
+        case "$cmd" in
+            netpol|networkpolicy|cnp|flow|flows|hubble|vm) set -- "$@" --fleet ;;
+            *) err "--fleet applies to netpol, flow and vm"; exit 1 ;;
+        esac
+    fi
 
     case "$cmd" in
         deps)       cmd_deps "$@" ;;

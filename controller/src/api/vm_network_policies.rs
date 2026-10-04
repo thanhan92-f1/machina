@@ -994,6 +994,7 @@ pub async fn evidence(
                 updated_at: String::new(),
             }),
     );
+    let nothing_to_push = fleet.policies.is_empty();
     let hosts = host_rows(&state)
         .await?
         .iter()
@@ -1003,8 +1004,8 @@ pub async fn evidence(
             enforcing: h["enforcing"].as_bool().unwrap_or(false),
             owner: h["owner"].as_str().unwrap_or_default().to_string(),
             synced_at: h["synced_at"].as_str().map(str::to_string),
-            in_sync: h["ok"].as_bool().unwrap_or(false)
-                && h["reachable"].as_bool().unwrap_or(false),
+            in_sync: h["reachable"].as_bool().unwrap_or(false)
+                && (h["ok"].as_bool().unwrap_or(false) || nothing_to_push),
             error: h["error"].as_str().map(str::to_string),
         })
         .collect();

@@ -877,6 +877,7 @@ writing any YAML.
 
 ```bash
 machinactl --fleet netpol projects                    # every project and its settings
+machinactl --fleet netpol project assign payments web-1 db-1   # put VMs in a project (- clears)
 machinactl --fleet netpol project default isolated    # new projects start isolated
 machinactl --fleet netpol project open shared-tools   # this one stays open
 machinactl --fleet netpol project isolate payments --no-host
@@ -885,7 +886,9 @@ machinactl --fleet netpol project reset payments      # drop every setting
 ```
 
 - **Isolated:** the project's VMs accept connections only from VMs of the
-  same project, plus the host unless `--no-host` is given. **Open:** no
+  same project, plus the host unless `--no-host` is given. The host is
+  every global address on the hypervisor (management address, libvirt
+  bridges), so SSH and health checks from the host keep working. **Open:** no
   generated rule. **Inherit:** follow the default, which is open until
   set.
 - **Exceptions:** ordinary allow policies still apply, because policies
@@ -951,7 +954,9 @@ machinactl --fleet netpol egress                             # egress IPs on eve
   project's traffic leaving one host. Firewalls and SaaS allowlists
   outside the fleet can then tell tenants apart.
 - **Setting it:** set one per host, by host name or id. The address must
-  already be configured on that host; Machina does not add addresses.
+  already be configured on that host, and the upstream network must route
+  it back to that host; otherwise replies never arrive. Machina does not
+  add addresses.
 - **What is never rewritten:** destinations in private (RFC 1918),
   CGNAT, link-local, loopback and multicast ranges keep the VM's own
   source, so VM-to-VM traffic and policies are unaffected.
@@ -1100,6 +1105,27 @@ Last, with no policies left, it sets a blocking threat feed for
   while the gateway stays reachable;
 - that the feed survives a bpfd restart, and the site is reachable again
   once the feed is removed.
+
+The fleet phase then hands the edge to the controller. It waits for the
+controller inventory to list both VMs, puts the server in project `np-red`
+and the client in `np-blue`, isolates `np-red`, and checks:
+
+- that a cross-project request is only audited in observe mode, and dropped
+  under a lease;
+- that the host and the server's own outbound requests still work;
+- that moving the client into `np-red` lets it in, and `--no-host` drops
+  the host;
+- that an egress allowlist on `np-blue` (`example.com:80`,
+  `1.1.1.1:443`) lets DNS through the host, the domain and the listed IP
+  and port through, and drops other ports and destinations, with DROPPED
+  flows; `unrestrict` restores access;
+- that a project egress IP rewrites the client's source as seen from a
+  netns on the host (198.51.100.1 → 198.51.100.77). The check also covers
+  private destinations keeping libvirt's NAT, the other project not being
+  rewritten, and the nftables table going away when the IP is removed;
+- that the evidence export marks `np-red` isolated, shows `np-blue → np-red`
+  segmented and `host → np-red` allowed, lists the dropped connection, and
+  verifies.
 
 On exit it returns the edge to observe, releases any quarantine, and
 deletes the VMs, the policies, the feed, the secret and the image.

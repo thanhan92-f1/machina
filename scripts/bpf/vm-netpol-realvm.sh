@@ -5,7 +5,10 @@
 # VM network policy against two real libvirt VMs (Debian cloud image on the
 # `default` NAT network): observe first, then a short enforcement lease,
 # then the TLS-intercepting proxy (terminatingTLS + header rewrites,
-# originatingTLS). Creates np-client / np-server and deletes them, the
+# originatingTLS), flow history, quarantine and threat feeds on the host,
+# then the fleet phase through the controller: Fleet Cloud project
+# isolation, an egress allowlist and a project egress IP (seen from a
+# TEST-NET netns on the host). Creates np-client / np-server and deletes them, the
 # policies, the proxy secret and the base image on exit; the edge is always
 # returned to observe.
 #
@@ -53,6 +56,17 @@ observe() { bpfd '{"op":"set_mode","mode":"observe"}' >/dev/null; }
 
 cleanup() {
     observe
+    if [[ -n "${FLEET:-}" ]]; then
+        "$M" netpol project reset np-red --fleet >/dev/null 2>&1
+        "$M" netpol project reset np-blue --fleet >/dev/null 2>&1
+        "$M" netpol project assign - np-client np-server --fleet >/dev/null 2>&1
+        "$M" netpol sync --fleet >/dev/null 2>&1
+        sudo -n iptables -D FORWARD -i virbr0 -o np-outv -j ACCEPT 2>/dev/null
+        sudo -n iptables -D FORWARD -i np-outv -o virbr0 -j ACCEPT 2>/dev/null
+        sudo -n ip netns pids np-out 2>/dev/null | xargs -r sudo -n kill 2>/dev/null
+        sudo -n ip netns del np-out 2>/dev/null
+        sudo -n ip link del np-outv 2>/dev/null
+    fi
     for v in "${VMS[@]}"; do "$M" vm release "$v" >/dev/null 2>&1; done
     "$M" netpol delete np-realvm >/dev/null 2>&1
     "$M" netpol delete np-realvm-proxy >/dev/null 2>&1
@@ -65,6 +79,10 @@ cleanup() {
         "$M" vm label "$v" app- >/dev/null 2>&1
     done
     sudo -n rm -f "$BASE"
+    # The controller's inventory sync does not prune when a host has no VMs left.
+    if [[ -n "${FLEET:-}" && -f "${CONTROLLER_DB:-/var/lib/machina/controller.db}" ]]; then
+        sudo -n sqlite3 "${CONTROLLER_DB:-/var/lib/machina/controller.db}" "DELETE FROM vms WHERE name IN ('np-client', 'np-server')" 2>/dev/null
+    fi
     rm -rf "$W"
     echo "cleanup: VMs, policy and image removed; edge mode $(bpfd '{"op":"vm_edge_status"}' | python3 -c 'import json,sys; print("enforce" if json.load(sys.stdin).get("enforcing") else "observe")')"
 }
@@ -433,6 +451,116 @@ check "restart: feed restored" bash -c "'$M' netpol threat | grep -q np-lab"
 check "remove the feed" "$M" netpol threat rm np-lab
 check "removed: nothing listed" bash -c "! '$M' netpol threat 2>/dev/null | grep -q np-lab"
 check "removed: $THREAT_DOMAIN reachable" reach
+
+# ---- fleet: projects, egress allowlist, egress IP, evidence --------------------
+# The controller owns the edge here (no daemon policies are left). The outside
+# world for the egress IP is a netns on the host with TEST-NET-2 addresses:
+# libvirt's NAT shows it 198.51.100.1, the project egress IP 198.51.100.77.
+echo "== fleet: projects =="
+FLEET=1
+FM() { "$M" netpol "$@" --fleet; }
+fsync() { FM sync >/dev/null 2>&1; }
+fleet_sees() { FM endpoints 2>/dev/null | grep -q "np-server.*$SIP" && FM endpoints 2>/dev/null | grep -q "np-client.*$CIP"; }
+for _ in $(seq 60); do fleet_sees && break; sleep 3; done
+check "controller inventory has both VMs with their addresses" fleet_sees
+check "assign np-server to np-red" FM project assign np-red np-server
+check "assign np-client to np-blue" FM project assign np-blue np-client
+check "isolate np-red" FM project isolate np-red
+fsync
+owned() { bpfd '{"op":"vm_edge_status"}' | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("owner")=="controller" and len(d.get("taps",[]))>=1 else 1)'; }
+for _ in $(seq 20); do owned && break; sleep 2; fsync; done
+check "controller owns the edge, server tap programmed" owned
+check "generated policy listed" bash -c "'$M' netpol projects --fleet | grep -q 'project-isolation-np-red-'"
+observe
+check "observe: client → server still 200 (audited)" is 200 /ok
+sleep 2
+check "observe: AUDIT flow for the cross-project request" flow_has "$CIP" --verdict AUDIT --port 80
+check "take a 240s enforcement lease" bpfd '{"op":"set_mode","mode":"enforce","lease_secs":240}'
+until_is() { local want=$1; shift; for _ in $(seq 15); do is "$want" "$@" && return; sleep 1; done; return 1; }
+check "enforce: np-blue client → np-red server dropped" until_is 000 /ok
+check "enforce: host → server allowed" curl -fs -m 3 -o /dev/null "http://$SIP/ok"
+srv_to_client() { [[ "$(sssh "curl -s -m 4 -o /dev/null -w '%{http_code}' http://$CIP/ok" 2>/dev/null)" == 200 ]]; }
+check "enforce: np-red server → np-blue client allowed" srv_to_client
+FM project assign np-red np-client >/dev/null; fsync
+check "enforce: same project (client moved to np-red) allowed" until_is 200 /ok
+FM project assign np-blue np-client >/dev/null; fsync
+check "enforce: moved back, dropped again" until_is 000 /ok
+FM project isolate np-red --no-host >/dev/null; fsync
+host_dropped() { for _ in $(seq 15); do curl -fs -m 2 -o /dev/null "http://$SIP/ok" || return 0; sleep 1; done; return 1; }
+check "enforce: --no-host drops the host" host_dropped
+FM project isolate np-red >/dev/null; fsync
+host_back() { for _ in $(seq 15); do curl -fs -m 2 -o /dev/null "http://$SIP/ok" && return; sleep 1; done; return 1; }
+check "enforce: host allowed again" host_back
+
+echo "== fleet: egress allowlist =="
+cweb() { cssh "curl -sk -m 5 -o /dev/null -w '%{http_code}' $1" 2>/dev/null; }
+reaches() { for _ in $(seq 10); do [[ "$(cweb "$1")" != 000 ]] && return; sleep 1; done; return 1; }
+blocked_to() { for _ in $(seq 10); do [[ "$(cweb "$1")" == 000 ]] && return; sleep 1; done; return 1; }
+check "renew the enforcement lease (180s)" bpfd '{"op":"set_mode","mode":"enforce","lease_secs":180}'
+check "allow example.com:80 for np-blue" FM egress np-blue allow example.com --port 80
+check "allow 1.1.1.1:443 for np-blue" FM egress np-blue allow 1.1.1.1 --port 443
+fsync
+check "enforce: DNS through the host works" cssh "getent ahostsv4 example.com"
+check "enforce: allowed domain reachable" reaches http://example.com/
+check "enforce: allowed IP and port reachable" reaches https://1.1.1.1/
+check "enforce: allowed IP, other port dropped" blocked_to http://1.1.1.1/
+check "enforce: unlisted destination dropped" blocked_to https://9.9.9.9/
+check "enforce: host gateway still reachable" cssh "ping -c1 -W2 192.168.122.1"
+check "enforce: server (np-red) egress unaffected" bash -c "[[ \"\$(ssh -i '$W/key' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR np@$SIP \"curl -sk -m 5 -o /dev/null -w '%{http_code}' https://9.9.9.9/\")\" != 000 ]]"
+FLOW_VM=np-client check "enforce: DROPPED flow to 9.9.9.9" flow_has 9.9.9.9 --verdict DROPPED
+check "unrestrict np-blue" FM egress np-blue unrestrict
+fsync
+check "unrestricted: 9.9.9.9 reachable again" reaches https://9.9.9.9/
+observe
+
+echo "== fleet: egress IP =="
+ON=np-out OV=np-outv
+outside_up() {
+    sudo -n ip netns add $ON && sudo -n ip link add $OV type veth peer name ${OV}p && sudo -n ip link set ${OV}p netns $ON \
+        && sudo -n ip addr add 198.51.100.1/24 dev $OV && sudo -n ip addr add 198.51.100.77/32 dev $OV \
+        && sudo -n ip addr add 10.199.90.1/24 dev $OV && sudo -n ip link set $OV up \
+        && sudo -n ip netns exec $ON ip addr add 198.51.100.2/24 dev ${OV}p \
+        && sudo -n ip netns exec $ON ip addr add 10.199.90.2/24 dev ${OV}p \
+        && sudo -n ip netns exec $ON ip link set ${OV}p up && sudo -n ip netns exec $ON ip link set lo up || return 1
+    if command -v iptables >/dev/null; then
+        sudo -n iptables -I FORWARD -i virbr0 -o $OV -j ACCEPT
+        sudo -n iptables -I FORWARD -i $OV -o virbr0 -j ACCEPT
+    fi
+    sudo -n ip netns exec $ON python3 -c "
+import socket
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('0.0.0.0', 18095)); s.listen(8)
+while True:
+    c, a = s.accept(); c.sendall(a[0].encode()); c.close()
+" >/dev/null 2>&1 &
+    sleep 1
+}
+check "outside netns with a peer-address server" outside_up
+seen() { vssh "$1" "python3 -c \"import socket; s=socket.create_connection(('$2',18095),4); print(s.recv(64).decode())\"" 2>/dev/null; }
+check "before: client seen as libvirt NAT address" [ "$(seen "$CIP" 198.51.100.2)" = 198.51.100.1 ]
+HN=$(NP_JSON=1 FM egress 2>/dev/null | jq -r '.items[0].hostname // empty')
+check "set np-blue egress IP 198.51.100.77 on $HN" FM egress np-blue ip "$HN" 198.51.100.77
+fsync
+egress_active() { for _ in $(seq 20); do NP_JSON=1 FM egress 2>/dev/null | jq -e '.items[0].active and (.items[0].rules | length) == 1' >/dev/null && return; sleep 1; fsync; done; return 1; }
+check "host reports the rule active" egress_active
+check "nft rule names the client and the egress IP" bash -c "sudo -n nft list table ip machina_egress | grep -q '$CIP' && sudo -n nft list table ip machina_egress | grep -q 'snat to 198.51.100.77'"
+check "client seen as the egress IP" [ "$(seen "$CIP" 198.51.100.2)" = 198.51.100.77 ]
+check "private destination keeps libvirt NAT" [ "$(seen "$CIP" 10.199.90.2)" = 10.199.90.1 ]
+check "server (np-red) not rewritten" [ "$(seen "$SIP" 198.51.100.2)" = 198.51.100.1 ]
+check "remove the egress IP" FM egress np-blue ip "$HN" -
+fsync
+no_egress_table() { for _ in $(seq 20); do sudo -n nft list table ip machina_egress >/dev/null 2>&1 || return 0; sleep 1; fsync; done; return 1; }
+check "removed: nft table gone" no_egress_table
+check "removed: client seen as libvirt NAT address again" [ "$(seen "$CIP" 198.51.100.2)" = 198.51.100.1 ]
+
+echo "== fleet: evidence =="
+check "export JSON evidence" FM evidence -o json --out "$W/ev.json"
+check "evidence digest verifies" "$M" netpol evidence verify "$W/ev.json"
+check "evidence: np-red isolated" jq -e '.projects[] | select(.project == "np-red") | .isolated' "$W/ev.json"
+check "evidence: np-blue → np-red segmented" jq -e '.matrix[] | select(.from == "np-blue" and .to == "np-red") | (.allowed | length) == 0' "$W/ev.json"
+check "evidence: host → np-red allowed" jq -e '.matrix[] | select(.from == "host" and .to == "np-red") | (.allowed | length) > 0' "$W/ev.json"
+check "evidence: dropped client → server connection listed" bash -c "jq -r '.denied[] | \"\(.src) \(.dst) \(.port)\"' '$W/ev.json' | grep -Eq '(np-client|$CIP).*(np-server|$SIP) 80'"
+check "evidence: Markdown export" bash -c "'$M' netpol evidence -o md --fleet | grep -q '## Reachability matrix'"
 
 echo "passed=$P failed=$F"
 [[ $F -eq 0 ]]

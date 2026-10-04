@@ -100,6 +100,7 @@ Usage: netpol <command> [options]
   projects                       Fleet Cloud projects: isolation, egress allowlist,
                                  egress IPs (fleet; netpol project help)
   project isolate|open|inherit|reset P | project default isolated|open
+          | project assign P|- VM...
                                  Default isolation between projects
   egress [P] [allow TO|remove TO|restrict|unrestrict|ip HOST IP|ip HOST -]
                                  Project egress allowlists and egress IPs
@@ -772,6 +773,7 @@ np_project_usage() {
 Usage: netpol projects
        netpol project isolate P [--no-host] | open P | inherit P | reset P
        netpol project default isolated|open [--no-host]
+       netpol project assign P|- VM...                (put VMs in a project, - clears)
        netpol egress                                  (egress IPs on every host)
        netpol egress P                                (one project)
        netpol egress P allow TO [--port N[/udp]]...   (and limit egress to the list)
@@ -859,6 +861,16 @@ np_netpol_project() {
             [[ "$iso" == isolated || "$iso" == open ]] || np_die "default is isolated or open"
             [[ "${1:-}" == --no-host ]] && host=false
             np_project_put '*' "$(jq -nc --arg i "$iso" --argjson h "$host" '{isolation: $i, allow_host: $h}')"
+            ;;
+        assign)
+            p="${1:?usage: netpol project assign PROJECT|- VM...}"; shift
+            [[ $# -gt 0 ]] || np_die "usage: netpol project assign PROJECT|- VM..."
+            [[ "$p" == - ]] && p=""
+            local vm
+            for vm in "$@"; do
+                np_api PATCH "/vms/$(np_vm_ref "$vm")" -H 'Content-Type: application/json' -d "$(jq -nc --arg p "$p" '{project: $p}')" >/dev/null
+                echo "vm/$vm project ${p:-cleared}"
+            done
             ;;
         *) np_die "unknown project command: $sub (try: netpol project help)" ;;
     esac

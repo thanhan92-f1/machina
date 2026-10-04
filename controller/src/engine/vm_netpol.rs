@@ -469,6 +469,7 @@ async fn sync_host(pool: &SqlitePool, fleet: &Fleet, h: &HostRef, force: bool) -
         state.flow_log = false;
     } else {
         state.owner = OWNER.into();
+        state.node_is_host = true;
     }
     let v = serde_json::to_value(&state).unwrap_or_default();
     let digest = hash_value(&v);
