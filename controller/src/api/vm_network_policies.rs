@@ -211,6 +211,7 @@ pub async fn trace(
     let r = netpol::trace(
         &fleet.policies,
         &fleet.vms,
+        &fleet.services,
         &fleet.all_host_addresses(),
         &[],
         &q,

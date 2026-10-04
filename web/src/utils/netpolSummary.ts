@@ -117,7 +117,14 @@ function peersText(rule: Obj, dir: 'from' | 'to'): string[] {
   for (const f of arr(rule.toFQDNs)) {
     if (dir === 'to' && isObj(f)) out.push(`fqdn:${String(f.matchName ?? f.matchPattern ?? '?')}`)
   }
-  if (dir === 'to' && arr(rule.toServices).length) out.push('services (not enforced yet)')
+  for (const sv of dir === 'to' ? arr(rule.toServices) : []) {
+    if (!isObj(sv)) continue
+    const k = isObj(sv.k8sService) ? sv.k8sService : null
+    const sel = isObj(sv.k8sServiceSelector) ? sv.k8sServiceSelector : null
+    const ns = (k ?? sel)?.namespace
+    const what = k ? String(k.serviceName ?? '?') : sel ? selectorText(sel.selector) : '?'
+    out.push(`service:${ns ? `${String(ns)}/` : ''}${what}`)
+  }
   for (const g of arr(rule[`${dir}Groups`])) out.push(groupText(g))
   return out
 }

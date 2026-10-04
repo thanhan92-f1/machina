@@ -11,7 +11,9 @@ use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 
 use machina_bpf::api::Request;
-use machina_bpf::netpol::{self, Inputs, NetpolVm, VmNetworkPolicy};
+use machina_bpf::netpol::{
+    self, Inputs, NetpolService, NetpolVm, ServiceEndpoint, VmNetworkPolicy,
+};
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::SqlitePool;
@@ -154,10 +156,63 @@ pub async fn host_addresses(pool: &SqlitePool) -> BTreeMap<String, String> {
         .collect()
 }
 
+/// Fleet Cloud load balancers as `toServices` targets: name = LB name,
+/// namespace = project, endpoints = listener on the owning host plus the
+/// enabled members.
+pub async fn services(pool: &SqlitePool) -> Vec<NetpolService> {
+    type Row = (
+        Uuid,
+        String,
+        String,
+        String,
+        i64,
+        String,
+        Option<String>,
+        Option<i64>,
+    );
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT lb.id, lb.name, COALESCE(p.name, ''), lb.protocol, lb.listener_port, h.address,
+                v.guest_ip, m.port
+           FROM load_balancers lb
+           JOIN hosts h ON h.id = lb.host_id
+           LEFT JOIN projects p ON p.id = lb.project_id
+           LEFT JOIN lb_members m ON m.load_balancer_id = lb.id AND m.enabled = 1
+           LEFT JOIN vms v ON v.id = m.vm_id
+          ORDER BY lb.id",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    let mut out: BTreeMap<Uuid, NetpolService> = BTreeMap::new();
+    for (id, name, project, protocol, listener, host, member, member_port) in rows {
+        let proto = if protocol.eq_ignore_ascii_case("udp") {
+            17
+        } else {
+            6
+        };
+        let ep = |address: &str, port: i64| ServiceEndpoint {
+            address: address.to_string(),
+            port: u16::try_from(port).unwrap_or(0),
+            proto,
+        };
+        let s = out.entry(id).or_insert_with(|| NetpolService {
+            name,
+            namespace: project,
+            labels: BTreeMap::new(),
+            endpoints: vec![ep(host.split(':').next().unwrap_or(""), listener)],
+        });
+        if let (Some(ip), Some(port)) = (member.filter(|a| !a.is_empty()), member_port) {
+            s.endpoints.push(ep(&ip, port));
+        }
+    }
+    out.into_values().collect()
+}
+
 /// Everything needed to compile for any host.
 pub struct Fleet {
     pub policies: Vec<VmNetworkPolicy>,
     pub vms: Vec<NetpolVm>,
+    pub services: Vec<NetpolService>,
     pub host_addrs: BTreeMap<String, String>,
 }
 
@@ -166,6 +221,7 @@ impl Fleet {
         Fleet {
             policies: enabled_policies(pool).await,
             vms: inventory(pool).await,
+            services: services(pool).await,
             host_addrs: host_addresses(pool).await,
         }
     }
@@ -187,6 +243,7 @@ impl Fleet {
         netpol::compile(&Inputs {
             policies: &self.policies,
             vms: &self.vms,
+            services: &self.services,
             host,
             host_addresses: &own,
             remote_node_addresses: if host.is_some() { &remote } else { &[] },
@@ -334,4 +391,57 @@ pub fn spawn(state: AppState) {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::test_support::{seed_host, test_state};
+
+    #[tokio::test]
+    async fn load_balancers_are_services() {
+        let (state, _rx) = test_state().await;
+        let pool = &state.pool;
+        let host = seed_host(pool, Uuid::from_u128(1)).await;
+        sqlx::query("UPDATE hosts SET address = '192.0.2.10:50051' WHERE id = ?")
+            .bind(host)
+            .execute(pool)
+            .await
+            .unwrap();
+        let (vm, lb) = (Uuid::from_u128(2), Uuid::from_u128(3));
+        sqlx::query(
+            "INSERT INTO vms (id, name, host_id, guest_ip) VALUES (?, 'web-1', ?, '10.0.0.5')",
+        )
+        .bind(vm)
+        .bind(host)
+        .execute(pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO load_balancers (id, name, protocol, host_id, listener_port) VALUES (?, 'web-lb', 'tcp', ?, 8080)",
+        )
+        .bind(lb)
+        .bind(host)
+        .execute(pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO lb_members (id, load_balancer_id, vm_id, port) VALUES (?, ?, ?, 80)",
+        )
+        .bind(Uuid::from_u128(4))
+        .bind(lb)
+        .bind(vm)
+        .execute(pool)
+        .await
+        .unwrap();
+        let s = services(pool).await;
+        assert_eq!(s.len(), 1);
+        assert_eq!(s[0].name, "web-lb");
+        let eps: Vec<(&str, u16, u8)> = s[0]
+            .endpoints
+            .iter()
+            .map(|e| (e.address.as_str(), e.port, e.proto))
+            .collect();
+        assert_eq!(eps, [("192.0.2.10", 8080, 6), ("10.0.0.5", 80, 6)]);
+    }
 }

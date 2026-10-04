@@ -54,6 +54,12 @@ describe('summarizeSpec', () => {
     expect(s.rules[0].text).toBe('from VMs app=web on 80/TCP, HTTP GET /v1/.* — mutual authentication required')
     expect(s.rules[1].text).toBe('to group sg-1 on 443/TCP, TLS SNI a.example.com')
     expect(s.rules[2].text).toBe('to group partners on 9092/TCP, Kafka produce topic orders')
+    const sv = summarizeSpec({
+      endpointSelector: {},
+      egress: [{ toServices: [{ k8sService: { serviceName: 'pg', namespace: 'shop' } }, { k8sServiceSelector: { selector: { matchLabels: { tier: 'data' } } } }] }],
+    })
+    expect(sv.rules[0].text).toContain('service:shop/pg')
+    expect(sv.rules[0].text).toContain('service:tier=data')
     const g = summarizeSpec({ externalCIDRs: ['198.51.100.0/24'] })
     expect(g.groupCidrs).toEqual(['198.51.100.0/24'])
     expect(g.subject).toBe('CIDR group of 1 prefix')

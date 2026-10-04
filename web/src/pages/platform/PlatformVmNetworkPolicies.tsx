@@ -406,7 +406,7 @@ export default function PlatformVmNetworkPolicies() {
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <MacGlassPanel
             title="YAML"
-            subtitle="apiVersion cilium.io/v2 (CiliumCIDRGroup: v2alpha1) — multiple documents with ---. L7 (HTTP, Kafka, DNS, TLS SNI), toFQDNs, toGroups and authentication are enforced natively; toServices is accepted with a warning."
+            subtitle="apiVersion cilium.io/v2 (CiliumCIDRGroup: v2alpha1) — multiple documents with ---. L7 (HTTP, HTTP/2, gRPC, Kafka, DNS, TLS SNI), toFQDNs, toGroups, toServices and authentication are enforced natively."
             action={
               <div className="flex gap-2">
                 <select

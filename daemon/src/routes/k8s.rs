@@ -617,6 +617,16 @@ async fn run_kubectl_json_timeout(
         .map_err(|e| LibvirtError::Operation(format!("failed to parse kubectl JSON output: {e}")))
 }
 
+/// Services and endpoints for VM `toServices` rules; empty without kubectl
+/// or a reachable cluster.
+pub(crate) async fn netpol_services() -> Vec<machina_bpf::netpol::NetpolService> {
+    let args = ["get", "services,endpoints", "-A"].map(String::from);
+    match run_kubectl_json_timeout(&args, KUBECTL_PROBE_TIMEOUT_SECS, None).await {
+        Ok(v) => machina_bpf::netpol::services_from_k8s(&v),
+        Err(_) => Vec::new(),
+    }
+}
+
 async fn run_kubectl_json_ctx(
     args: &[String],
     timeout_secs: u64,

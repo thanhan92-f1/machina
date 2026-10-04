@@ -42,7 +42,11 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
     send as another VM's address. `machinactl netpol auth` and
     `GET …/vm-network-policies/auth` list the authenticated pairs.
   - `machinactl netpol test` and the UI tester take an L7 request.
-  - `toServices` is accepted with a warning and matches nothing.
+  - `toServices` (`k8sService`, `k8sServiceSelector`) is enforced
+    natively. The controller treats Fleet Cloud load balancers as services
+    (listener plus members); the daemon reads Kubernetes services and
+    endpoints through kubectl. Rule `toPorts` are intersected with the
+    service ports.
 - **Labels.** Each VM has key/value labels, which policies select on. The
   daemon stores them in `vm-labels.json`. On the controller, migration 029
   adds a `vms.labels` column, seeded from `key=value` tags.

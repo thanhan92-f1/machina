@@ -9,6 +9,7 @@
 use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use axum::body::Bytes;
 use axum::extract::{Extension, Path, Query, State};
@@ -19,7 +20,9 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use futures_util::Stream;
 use machina_bpf::api::{Request, VmEdgeStatus, VmFlowRecord};
-use machina_bpf::netpol::{self, FlowFilter, Inputs, NetpolVm, TraceQuery, VmNetworkPolicy};
+use machina_bpf::netpol::{
+    self, FlowFilter, Inputs, NetpolService, NetpolVm, TraceQuery, VmNetworkPolicy,
+};
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
 use serde::{Deserialize, Serialize};
@@ -58,6 +61,23 @@ static STORE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 static LAST: Mutex<Option<SyncReport>> = Mutex::new(None);
 static INVENTORY: Mutex<Vec<NetpolVm>> = Mutex::new(Vec::new());
 static MANAGER: OnceLock<LibvirtManager> = OnceLock::new();
+static SERVICES: Mutex<Option<(Instant, Vec<NetpolService>)>> = Mutex::new(None);
+
+/// Kubernetes services for `toServices`, refreshed at most once a minute
+/// and only fetched while a policy uses them.
+async fn services(policies: &[VmNetworkPolicy]) -> Vec<NetpolService> {
+    if !netpol::uses_services(policies) {
+        return Vec::new();
+    }
+    if let Some((at, s)) = SERVICES.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
+        if at.elapsed() < Duration::from_secs(60) {
+            return s.clone();
+        }
+    }
+    let s = super::k8s::netpol_services().await;
+    *SERVICES.lock().unwrap_or_else(|e| e.into_inner()) = Some((Instant::now(), s.clone()));
+    s
+}
 
 fn load_store() -> Store {
     std::fs::read_to_string(STORE)
@@ -189,9 +209,11 @@ async fn sync(m: &LibvirtManager) -> SyncReport {
         let hosts = tokio::task::spawn_blocking(host_addresses)
             .await
             .unwrap_or_default();
+        let svcs = services(&store.policies).await;
         let c = netpol::compile(&Inputs {
             policies: &store.policies,
             vms: &inv,
+            services: &svcs,
             host: None,
             host_addresses: &hosts,
             remote_node_addresses: &[],
@@ -298,9 +320,11 @@ async fn compile_cached(m: &LibvirtManager, policies: &[VmNetworkPolicy]) -> net
     let hosts = tokio::task::spawn_blocking(host_addresses)
         .await
         .unwrap_or_default();
+    let svcs = services(policies).await;
     netpol::compile(&Inputs {
         policies,
         vms: &inv,
+        services: &svcs,
         host: None,
         host_addresses: &hosts,
         remote_node_addresses: &[],
@@ -442,7 +466,9 @@ async fn trace(
     let hosts = tokio::task::spawn_blocking(host_addresses)
         .await
         .unwrap_or_default();
-    let r = netpol::trace(&store.policies, &inv, &hosts, &[], &q).map_err(LibvirtError::Invalid)?;
+    let svcs = services(&store.policies).await;
+    let r = netpol::trace(&store.policies, &inv, &svcs, &hosts, &[], &q)
+        .map_err(LibvirtError::Invalid)?;
     Ok(Json(serde_json::to_value(r).unwrap_or_default()))
 }
 

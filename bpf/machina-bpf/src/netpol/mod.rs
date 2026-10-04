@@ -22,6 +22,7 @@ mod flow;
 pub mod fqdn;
 pub mod l7;
 pub mod l7stream;
+mod services;
 #[cfg(test)]
 mod tests;
 mod trace;
@@ -32,9 +33,24 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 pub use compile::{
-    cidr_identity, compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolVm, SelectorInfo,
-    IDENTITY_REMOTE_NODE,
+    cidr_identity, compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolService, NetpolVm,
+    SelectorInfo, ServiceEndpoint, IDENTITY_REMOTE_NODE,
 };
+pub use services::from_k8s as services_from_k8s;
+
+/// Whether any egress rule uses `toServices` (callers skip fetching a
+/// service inventory otherwise).
+pub fn uses_services(policies: &[VmNetworkPolicy]) -> bool {
+    policies.iter().flat_map(|p| &p.specs).any(|spec| {
+        ["egress", "egressDeny"].iter().any(|sec| {
+            spec[*sec]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .any(|r| r["toServices"].as_array().is_some_and(|a| !a.is_empty()))
+        })
+    })
+}
 pub use flow::FlowFilter;
 pub use trace::{trace, TraceEndpoint, TraceQuery, TraceResult, TraceSide};
 
@@ -795,11 +811,31 @@ fn validate_rule(r: &Value, path: &str, egress: bool, deny: bool, v: &mut Valida
         }
     }
     if egress {
-        if !list(r, "toServices", path, v).is_empty() {
-            v.warn(
-                format!("{path}.toServices"),
-                "not enforced natively yet; matches nothing (audited in observe mode)",
-            );
+        for (i, s) in list(r, "toServices", path, v).iter().enumerate() {
+            let sp = format!("{path}.toServices[{i}]");
+            if !keys_only(s, &sp, &["k8sService", "k8sServiceSelector"], v) {
+                continue;
+            }
+            match (s.get("k8sService"), s.get("k8sServiceSelector")) {
+                (Some(k), None) => {
+                    let kp = format!("{sp}.k8sService");
+                    if keys_only(k, &kp, &["serviceName", "namespace"], v)
+                        && !k["serviceName"].as_str().is_some_and(|n| !n.is_empty())
+                    {
+                        v.err(format!("{kp}.serviceName"), "required");
+                    }
+                }
+                (None, Some(k)) => {
+                    let kp = format!("{sp}.k8sServiceSelector");
+                    if keys_only(k, &kp, &["selector", "namespace"], v) {
+                        match k.get("selector") {
+                            Some(sel) => validate_selector(sel, &format!("{kp}.selector"), v),
+                            None => v.err(format!("{kp}.selector"), "required"),
+                        }
+                    }
+                }
+                _ => v.err(sp, "set exactly one of k8sService / k8sServiceSelector"),
+            }
         }
         for (i, s) in list(r, "toFQDNs", path, v).iter().enumerate() {
             let sp = format!("{path}.toFQDNs[{i}]");

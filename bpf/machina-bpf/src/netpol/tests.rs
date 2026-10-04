@@ -61,6 +61,7 @@ fn trace_q(p: &[VmNetworkPolicy], from: &str, to: &str, proto: &str, port: u16) 
     trace(
         p,
         &fleet(),
+        &[],
         &["192.168.1.10".into()],
         &["192.168.1.11".into()],
         &TraceQuery {
@@ -162,6 +163,7 @@ fn compile_per_host_named_ports_and_icmp() {
     let c = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: Some("h1"),
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -189,6 +191,7 @@ fn compile_per_host_named_ports_and_icmp() {
     let c2 = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: Some("h2"),
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -303,6 +306,7 @@ spec:
     let c = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: None,
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -337,6 +341,7 @@ spec:
     let c = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: Some("h1"),
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -423,6 +428,7 @@ fn cidr_groups_and_to_groups() {
     let c = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: Some("h1"),
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -463,6 +469,7 @@ spec:
     let c = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: Some("h1"),
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -558,7 +565,7 @@ fn trace_l7(
         ..Default::default()
     };
     f(&mut q);
-    trace(p, &fleet(), &[], &[], &q).unwrap()
+    trace(p, &fleet(), &[], &[], &[], &q).unwrap()
 }
 
 #[test]
@@ -568,6 +575,7 @@ fn l7_compile_and_trace() {
     let c = compile(&Inputs {
         policies: &p,
         vms: &vms,
+        services: &[],
         host: Some("h1"),
         host_addresses: &[],
         remote_node_addresses: &[],
@@ -673,4 +681,126 @@ fn l7_compile_and_trace() {
     };
     assert!(fq("GET"));
     assert!(!fq("PUT"));
+}
+
+#[test]
+fn to_services() {
+    let svc =
+        |name: &str, ns: &str, labels: &[(&str, &str)], eps: &[(&str, u16, u8)]| NetpolService {
+            name: name.into(),
+            namespace: ns.into(),
+            labels: labels
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+            endpoints: eps
+                .iter()
+                .map(|(a, port, proto)| ServiceEndpoint {
+                    address: a.to_string(),
+                    port: *port,
+                    proto: *proto,
+                })
+                .collect(),
+        };
+    let services = vec![
+        svc(
+            "pg",
+            "shop",
+            &[("tier", "data")],
+            &[("10.96.0.20", 5432, 6), ("10.0.0.9", 5432, 6)],
+        ),
+        svc(
+            "dns",
+            "kube-system",
+            &[],
+            &[("10.96.0.10", 53, 17), ("10.96.0.10", 53, 6)],
+        ),
+    ];
+    let run = |y: &str, from: &str, to: &str, proto: &str, port: u16| {
+        let p = parse(y);
+        let q = TraceQuery {
+            from: from.into(),
+            to: to.into(),
+            protocol: proto.into(),
+            port,
+            ..Default::default()
+        };
+        trace(&p, &fleet(), &services, &[], &[], &q)
+            .unwrap()
+            .allowed
+    };
+    let by_name = r#"
+apiVersion: machina.io/v1
+kind: VmNetworkPolicy
+metadata: {name: s}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress: [{toServices: [{k8sService: {serviceName: pg, namespace: shop}}]}]
+"#;
+    assert!(run(by_name, "web-1", "10.96.0.20", "TCP", 5432));
+    assert!(run(by_name, "web-1", "db-1", "TCP", 5432));
+    assert!(!run(by_name, "web-1", "db-1", "TCP", 22));
+    assert!(!run(by_name, "web-1", "10.96.0.20", "UDP", 5432));
+    assert!(!run(by_name, "web-1", "10.96.0.10", "UDP", 53));
+
+    let by_selector = r#"
+apiVersion: machina.io/v1
+kind: VmNetworkPolicy
+metadata: {name: s}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress:
+  - toServices: [{k8sServiceSelector: {selector: {matchLabels: {tier: data}}}}]
+  - toServices: [{k8sService: {serviceName: dns}}]
+    toPorts: [{ports: [{port: "53", protocol: UDP}, {port: "80", protocol: TCP}]}]
+"#;
+    assert!(run(by_selector, "web-1", "10.96.0.20", "TCP", 5432));
+    assert!(run(by_selector, "web-1", "10.96.0.10", "UDP", 53));
+    assert!(!run(by_selector, "web-1", "10.96.0.10", "TCP", 53));
+    assert!(!run(by_selector, "web-1", "10.96.0.10", "TCP", 80));
+
+    let wrong_ns = r#"
+apiVersion: machina.io/v1
+kind: VmNetworkPolicy
+metadata: {name: s}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress: [{toServices: [{k8sService: {serviceName: pg, namespace: other}}]}]
+"#;
+    assert!(!run(wrong_ns, "web-1", "10.96.0.20", "TCP", 5432));
+    let p = parse(wrong_ns);
+    let vms = fleet();
+    let c = compile(&Inputs {
+        policies: &p,
+        vms: &vms,
+        services: &services,
+        host: None,
+        host_addresses: &[],
+        remote_node_addresses: &[],
+    });
+    assert!(c.warnings.iter().any(|w| w.contains("selects no service")));
+
+    let deny = r#"
+apiVersion: machina.io/v1
+kind: VmNetworkPolicy
+metadata: {name: s}
+spec:
+  endpointSelector: {matchLabels: {app: web}}
+  egress: [{toEntities: [all]}]
+  egressDeny: [{toServices: [{k8sService: {serviceName: pg}}]}]
+"#;
+    assert!(!run(deny, "web-1", "db-1", "TCP", 5432));
+    assert!(run(deny, "web-1", "db-1", "TCP", 22));
+
+    let (_, v) = parse_documents(
+        r#"
+apiVersion: machina.io/v1
+kind: VmNetworkPolicy
+metadata: {name: s}
+spec:
+  endpointSelector: {}
+  egress: [{toServices: [{k8sService: {}}, {k8sService: {serviceName: a}, k8sServiceSelector: {selector: {}}}]}]
+"#,
+    );
+    assert!(!v.ok());
 }

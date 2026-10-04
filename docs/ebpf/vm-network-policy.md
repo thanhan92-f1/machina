@@ -62,6 +62,7 @@ Validation is strict, and errors carry Cilium-style paths such as
 | `toPorts[].rules` | `http` (`method`, `path` as anchored regexes, `host`, `headers`, `headerMatches` with `mismatch: LOG`), `kafka` (`role` or `apiKey`, `apiVersion`, `clientID`, `topic`), `dns` (`matchName` / `matchPattern`). Also on `toFQDNs` rules. See [L7 rules](#l7-rules). |
 | `toPorts[].serverNames` | TLS SNI names, matched on the ClientHello. |
 | `toGroups` / `fromGroups` | Select `CiliumCIDRGroup` objects (any provider key; there is no cloud API on a hypervisor). See [Groups](#cidr-groups-and-togroups). |
+| `toServices` | `k8sService` (`serviceName`, optional `namespace`) or `k8sServiceSelector` (`selector`, optional `namespace`; no namespace = any). Allows the selected services' frontends and backends on their ports, or on the rule's `toPorts` intersected with them. See [Services](#services-toservices). |
 | `cidrGroupRef` | In `toCIDRSet` / `fromCIDRSet`: the prefixes of a named `CiliumCIDRGroup`. |
 | `authentication.mode` | `required`, or `test-always-fail`. See [Authentication](#authentication). |
 | `enableDefaultDeny` | `ingress: false` / `egress: false` keeps a direction open even when the spec has rules for it (additive policies). |
@@ -72,12 +73,41 @@ example `machina.io/port.http=8080`).
 
 ### Accepted with a warning
 
-- `toServices` matches nothing (there are no Kubernetes services).
 - `originatingTLS` / `terminatingTLS`: TLS is not intercepted, so encrypted
   traffic is matched by `serverNames` only.
 - `listener` (Envoy) is ignored.
 - `headerMatches[].mismatch` other than `LOG` is rejected, because rewriting
   headers needs a terminating proxy.
+
+## Services (toServices)
+
+```yaml
+egress:
+- toServices:
+  - k8sService: {serviceName: web-lb, namespace: shop}
+- toServices:
+  - k8sServiceSelector: {selector: {matchLabels: {tier: data}}}
+  toPorts: [{ports: [{port: "5432", protocol: TCP}]}]
+```
+
+The service inventory depends on where policies are compiled:
+
+- **Controller (fleet):** every Fleet Cloud load balancer is a service. Its
+  name is the load balancer name, its namespace the project name. Endpoints
+  are the listener (owning host address, listener port) and every enabled
+  member (VM address, member port), with the load balancer protocol. Load
+  balancers carry no labels, so `k8sServiceSelector` only matches them with
+  an empty selector.
+- **Daemon (single host):** Kubernetes services and endpoints from
+  `kubectl get services,endpoints -A`, fetched only while a policy uses
+  `toServices` and cached for a minute. Frontends are the cluster IPs,
+  external IPs and load-balancer ingress IPs on the service ports; backends
+  are the Endpoints addresses on their ports. Without kubectl or a cluster
+  the inventory is empty.
+
+A backend that is a managed VM resolves to that VM's identity; any other
+address gets its own CIDR identity, so CIDR denies covering it still win.
+An entry that selects no service matches nothing and the compiler warns.
 
 ## DNS names (toFQDNs)
 

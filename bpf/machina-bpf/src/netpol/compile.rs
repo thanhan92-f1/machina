@@ -18,7 +18,10 @@
 //!   carrying the required labels;
 //! * CIDR rules cover narrower prefixes from other rules (minus `except`),
 //!   and `world` covers every CIDR identity; managed VMs and hypervisors
-//!   always resolve to their own identity first.
+//!   always resolve to their own identity first;
+//! * `toServices` allows the frontends and backends of the selected
+//!   services (Fleet Cloud load balancers, Kubernetes services) on their
+//!   ports, narrowed by `toPorts` when the rule has any.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -61,9 +64,35 @@ pub struct NetpolVm {
     pub addresses: Vec<String>,
 }
 
+/// A service `toServices` can select: a Fleet Cloud load balancer
+/// (controller) or a Kubernetes service (daemon).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct NetpolService {
+    pub name: String,
+    #[serde(default)]
+    pub namespace: String,
+    #[serde(default)]
+    pub labels: BTreeMap<String, String>,
+    /// Frontends (cluster IP, VIP, listener) and backends.
+    #[serde(default)]
+    pub endpoints: Vec<ServiceEndpoint>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ServiceEndpoint {
+    pub address: String,
+    /// 0 = any port.
+    #[serde(default)]
+    pub port: u16,
+    /// IP protocol number; 0 = any.
+    #[serde(default)]
+    pub proto: u8,
+}
+
 pub struct Inputs<'a> {
     pub policies: &'a [VmNetworkPolicy],
     pub vms: &'a [NetpolVm],
+    pub services: &'a [NetpolService],
     /// Emit entries for VMs on this host only; `None` = every VM is local.
     pub host: Option<&'a str>,
     /// This hypervisor's own addresses (`host`).
@@ -188,8 +217,57 @@ struct Ctx<'a> {
     warnings: Vec<String>,
     entries: BTreeMap<Key, String>,
     groups: Vec<&'a VmNetworkPolicy>,
+    services: &'a [NetpolService],
+    /// Exact addresses of VMs and hypervisors → identity.
+    addr_ids: BTreeMap<Prefix, u32>,
     l7: Vec<L7Rules>,
     l7_out: BTreeSet<VmEdgeL7Rule>,
+}
+
+fn host_prefix(a: &str) -> Option<Prefix> {
+    parse_prefix(a.split('/').next()?).ok()
+}
+
+/// Services a `toServices` entry selects (no namespace = any namespace).
+fn service_selected(entry: &Value, s: &NetpolService) -> bool {
+    let ns_ok = |spec: &Value| spec["namespace"].as_str().is_none_or(|n| n == s.namespace);
+    if let Some(k) = entry.get("k8sService") {
+        k["serviceName"].as_str() == Some(s.name.as_str()) && ns_ok(k)
+    } else if let Some(k) = entry.get("k8sServiceSelector") {
+        selector_matches(&k["selector"], &s.labels) && ns_ok(k)
+    } else {
+        false
+    }
+}
+
+/// A rule port narrowed to one service endpoint port; None when disjoint.
+fn port_for_endpoint(p: &PortSpec, proto: u8, port: u16) -> Option<PortSpec> {
+    match p {
+        PortSpec::Num {
+            proto: pp,
+            port: lo,
+            end,
+            l7,
+        } => {
+            if *pp != 0 && proto != 0 && *pp != proto {
+                return None;
+            }
+            if port == 0 {
+                return Some(p.clone());
+            }
+            let hi = (*end).max(*lo);
+            if *lo != 0 && !(*lo..=hi).contains(&port) {
+                return None;
+            }
+            Some(PortSpec::Num {
+                proto: if *pp != 0 { *pp } else { proto },
+                port,
+                end: 0,
+                l7: *l7,
+            })
+        }
+        PortSpec::Named { .. } => Some(p.clone()),
+    }
 }
 
 /// CiliumCIDRGroups a `toGroups` / `fromGroups` entry selects (any provider:
@@ -393,22 +471,38 @@ impl<'a> Ctx<'a> {
         if d.egress && !arr(rule, "toFQDNs").is_empty() {
             named = true;
         }
-        let mut pending = vec![key("Nodes")];
-        if d.egress {
-            pending.push("toServices".to_string());
+        if d.egress && !arr(rule, "toServices").is_empty() {
+            named = true;
         }
-        for k in pending {
-            if !arr(rule, &k).is_empty() {
-                named = true;
-                self.warnings.push(format!(
-                    "{ctx}: {k} is not enforced natively yet; it matches nothing"
-                ));
-            }
+        let k = key("Nodes");
+        if !arr(rule, &k).is_empty() {
+            named = true;
+            self.warnings.push(format!(
+                "{ctx}: {k} is not enforced natively yet; it matches nothing"
+            ));
         }
         if !named && (!arr(rule, "toPorts").is_empty() || !arr(rule, "icmps").is_empty()) {
             peers.insert(0);
         }
         (peers, named)
+    }
+
+    /// (peer, proto, port) of the service endpoints a rule's `toServices`
+    /// selects.
+    fn service_targets(&self, rule: &Value) -> BTreeSet<(u32, u8, u16)> {
+        let mut out = BTreeSet::new();
+        for entry in arr(rule, "toServices") {
+            let hits = self.services.iter().filter(|s| service_selected(entry, s));
+            for e in hits.flat_map(|s| &s.endpoints) {
+                let Some(p) = host_prefix(&e.address) else {
+                    continue;
+                };
+                if let Some(id) = self.addr_ids.get(&p).or_else(|| self.prefixes.get(&p)) {
+                    out.insert((*id, e.proto, e.port));
+                }
+            }
+        }
+        out
     }
 
     fn named_port(&self, dest: Option<u32>, name: &str) -> BTreeSet<u16> {
@@ -645,12 +739,34 @@ pub fn compile(inp: &Inputs) -> Compiled {
             local,
         });
     }
+    let mut addr_ids = BTreeMap::new();
+    for v in &vms {
+        for p in v.vm.addresses.iter().filter_map(|a| host_prefix(a)) {
+            addr_ids.insert(p, v.id);
+        }
+    }
+    for (list, id) in [
+        (inp.host_addresses, IDENTITY_HOST),
+        (inp.remote_node_addresses, IDENTITY_REMOTE_NODE),
+    ] {
+        for p in list.iter().filter_map(|a| host_prefix(a)) {
+            addr_ids.entry(p).or_insert(id);
+        }
+    }
+    let mut prefixes = collect_prefixes(inp.policies);
+    for e in inp.services.iter().flat_map(|s| &s.endpoints) {
+        if let Some(p) = host_prefix(&e.address).filter(|p| !addr_ids.contains_key(p)) {
+            prefixes.insert(p, cidr_identity(&p));
+        }
+    }
     let mut cx = Ctx {
         vms,
-        prefixes: collect_prefixes(inp.policies),
+        prefixes,
         warnings: Vec::new(),
         entries: BTreeMap::new(),
         groups: inp.policies.iter().filter(|p| p.is_cidr_group()).collect(),
+        services: inp.services,
+        addr_ids,
         l7: Vec::new(),
         l7_out: BTreeSet::new(),
     };
@@ -728,6 +844,20 @@ pub fn compile(inp: &Inputs) -> Compiled {
         }
     }
 
+    for (pname, sp, spec, _) in &specs {
+        for sec in ["egress", "egressDeny"] {
+            for (ri, rule) in arr(spec, sec).iter().enumerate() {
+                for (i, entry) in arr(rule, "toServices").iter().enumerate() {
+                    if !inp.services.iter().any(|s| service_selected(entry, s)) {
+                        cx.warnings.push(format!(
+                            "{pname} {sp}.{sec}[{ri}]: toServices[{i}] selects no service"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
     // Pass 2: entries for local subjects.
     let mut fqdn: BTreeSet<VmEdgeFqdnRule> = BTreeSet::new();
     for (pname, sp, spec, subjects) in &specs {
@@ -757,6 +887,37 @@ pub fn compile(inp: &Inputs) -> Compiled {
                             narrow(&cx, &requires, *s, d.egress, &peers)
                         };
                         cx.emit(*s, &peers, &ports, d.egress, deny, auth, &source);
+                    }
+                    let svc = if d.egress {
+                        cx.service_targets(rule)
+                    } else {
+                        BTreeSet::new()
+                    };
+                    let explicit =
+                        !arr(rule, "toPorts").is_empty() || !arr(rule, "icmps").is_empty();
+                    for (peer, proto, port) in &svc {
+                        let svc_ports: Vec<PortSpec> = if explicit {
+                            ports
+                                .iter()
+                                .filter_map(|p| port_for_endpoint(p, *proto, *port))
+                                .collect()
+                        } else {
+                            vec![PortSpec::Num {
+                                proto: *proto,
+                                port: *port,
+                                end: 0,
+                                l7: None,
+                            }]
+                        };
+                        let one = BTreeSet::from([*peer]);
+                        for s in &local {
+                            let peers = if deny {
+                                one.clone()
+                            } else {
+                                narrow(&cx, &requires, *s, true, &one)
+                            };
+                            cx.emit(*s, &peers, &svc_ports, true, deny, auth, &source);
+                        }
                     }
                     let fq = fqdn::selectors(arr(rule, "toFQDNs"));
                     if d.egress && !deny && !fq.is_empty() {

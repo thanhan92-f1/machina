@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use machina_bpf_common::{IDENTITY_HOST, IDENTITY_WORLD};
 use serde::{Deserialize, Serialize};
 
-use super::compile::{compile, Inputs, NetpolVm, IDENTITY_REMOTE_NODE};
+use super::compile::{compile, Inputs, NetpolService, NetpolVm, IDENTITY_REMOTE_NODE};
 use super::{fqdn, l7, VmNetworkPolicy};
 use crate::api::VmEdgeState;
 use crate::policy::parse_prefix;
@@ -334,6 +334,7 @@ fn resolve(
 pub fn trace(
     policies: &[VmNetworkPolicy],
     vms: &[NetpolVm],
+    services: &[NetpolService],
     host_addresses: &[String],
     remote_node_addresses: &[String],
     q: &TraceQuery,
@@ -347,6 +348,7 @@ pub fn trace(
     let c = compile(&Inputs {
         policies,
         vms,
+        services,
         host: None,
         host_addresses,
         remote_node_addresses,
