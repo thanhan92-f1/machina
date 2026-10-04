@@ -1375,6 +1375,33 @@ pub async fn execute_zyra_action(
         .map(Json)
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct AgentRunBody {
+    pub prompt: String,
+}
+
+/// Run the tool-calling Zyra agent. It can look at the fleet and queue proposals for approval; it can
+/// never execute a change itself.
+pub async fn run_zyra_agent(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Json(body): Json<AgentRunBody>,
+) -> Result<Json<ai::agent_loop::AgentRun>, ApiError> {
+    require_operator(&actor)?;
+    if body.prompt.trim().is_empty() {
+        return Err(ApiError::bad_request("prompt is required"));
+    }
+    ai::agent_loop::run(
+        &state,
+        &actor.username,
+        Some(actor.username.clone()),
+        &body.prompt,
+    )
+    .await
+    .map_err(|e| ApiError::bad_request(e.to_string()))
+    .map(Json)
+}
+
 pub async fn zyra_action_history(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,

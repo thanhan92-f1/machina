@@ -8,6 +8,7 @@ import PlatformPageChrome, { PlatformRefreshButton } from '../../components/plat
 import PlatformEmptyState from '../../components/platform/PlatformEmptyState'
 import { MacGlassPanel } from '../../components/platform/mac/PlatformMacUi'
 import ZyraInsightCard from '../../components/ai/ZyraInsightCard'
+import ZyraAgentPanel from '../../components/ai/ZyraAgentPanel'
 import {
   executeZyraAction,
   getZyraApprovalHub,
@@ -34,8 +35,9 @@ export default function PlatformZyraApprovals() {
   const [history, setHistory] = useState<ZyraActionHistoryRow[]>([])
   const [undoTarget, setUndoTarget] = useState<ZyraActionHistoryRow | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // `quiet` refreshes in place (no full-page spinner) so panels with local state keep what they show.
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true)
     setError(null)
     try {
       const hub = await getZyraApprovalHub()
@@ -122,6 +124,8 @@ export default function PlatformZyraApprovals() {
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-4"
     >
+      <ZyraAgentPanel onProposed={() => void load(true)} />
+
       <MacGlassPanel
         title="Pending queue"
         subtitle={`${totalPending} total · ${firewallPending} firewall-related`}

@@ -89,7 +89,7 @@ async fn complete_resolved(
 /// What has zero legitimate use as an LLM endpoint is the cloud instance
 /// metadata service — a classic SSRF target for stealing IAM/IMDS
 /// credentials — so only those well-known addresses are blocked here.
-fn validate_base_url(base_url: &str) -> Result<(), String> {
+pub(super) fn validate_base_url(base_url: &str) -> Result<(), String> {
     let trimmed = base_url.trim();
     if trimmed.is_empty() {
         return Ok(());
@@ -141,11 +141,11 @@ fn normalize_host_for_metadata_check(host: &str) -> String {
     host
 }
 
-fn uses_local_endpoint(kind: &str) -> bool {
+pub(super) fn uses_local_endpoint(kind: &str) -> bool {
     matches!(kind, "ollama" | "vllm" | "openai_compatible")
 }
 
-fn openai_base(resolved: &ResolvedProvider) -> String {
+pub(super) fn openai_base(resolved: &ResolvedProvider) -> String {
     // Azure requires its own path format regardless of whether base_url is set.
     if resolved.kind == "azure_openai" {
         let base = resolved.base_url.trim().trim_end_matches('/');

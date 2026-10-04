@@ -560,6 +560,7 @@ pub fn router(state: AppState) -> Router {
             post(ai::reject_zyra_action),
         )
         .route("/api/v1/ai/actions/history", get(ai::zyra_action_history))
+        .route("/api/v1/ai/agent/run", post(ai::run_zyra_agent))
         .route(
             "/api/v1/ai/actions/{id}/verify",
             post(ai::verify_zyra_action),

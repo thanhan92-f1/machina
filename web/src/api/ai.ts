@@ -903,6 +903,22 @@ export const executeZyraAction = (id: string) =>
 export const rejectZyraAction = (id: string) =>
   platformFetch<{ rejected: boolean }>(`/api/v1/ai/actions/${encodeURIComponent(id)}/reject`, { method: 'POST' })
 
+export interface ZyraAgentStep {
+  kind: 'tool_call' | 'tool_result' | 'note'
+  tool?: string | null
+  detail: string
+}
+export interface ZyraAgentRun {
+  answer: string
+  steps: ZyraAgentStep[]
+  proposed_action_ids: string[]
+  provider: string
+}
+
+/** Run the tool-calling Zyra agent. It can look at the fleet and queue proposals; it never executes a change. */
+export const runZyraAgent = (prompt: string) =>
+  platformFetch<ZyraAgentRun>('/api/v1/ai/agent/run', { method: 'POST', body: JSON.stringify({ prompt }) })
+
 /** An executed or failed AI action with its verification and undo state. */
 export interface ZyraActionHistoryRow {
   id: string
