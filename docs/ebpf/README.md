@@ -9,7 +9,7 @@ and PacketWolf agents; Machina no longer integrates with any of them.
 |---|---|
 | [datapath.md](datapath.md) | Uplink XDP dispatcher, service load balancing, DDoS shield, node isolation, TCP/ICMP health, TLS fingerprints |
 | [enforcement.md](enforcement.md) | Policy kinds and the enforcement lease, VM edge, QEMU sandbox, VMM guard (BPF-LSM), direct tap redirect |
-| [vm-network-policy.md](vm-network-policy.md) | VM-to-VM ingress/egress policy in the CiliumNetworkPolicy schema: L3/L4, toFQDNs, L7 (HTTP, Kafka, TLS SNI, DNS), CIDR groups, authentication. VM labels, policy trace, packet flows (`machinactl netpol` / `flow`) |
+| [vm-network-policy.md](vm-network-policy.md) | VM-to-VM ingress/egress policy in the CiliumNetworkPolicy schema: L3/L4, toFQDNs, L7 (HTTP, gRPC, Kafka, TLS SNI, DNS), TLS interception and header rewrites, CIDR groups, authentication (mTLS between hosts). VM labels, policy trace, packet flows (`machinactl netpol` / `flow`) |
 | [observability.md](observability.md) | Flows, DNS, L7, accounting, captures, network-change audit, sampled L7, VM runtime intelligence |
 | [fastpath.md](fastpath.md) | QUIC-LB, AF_XDP, sched_ext VM scheduler (`machina-scx`) |
 | [cni.md](cni.md) | `machina-cni`: Kubernetes CNI, NetworkPolicy and Cilium policy compile, services |

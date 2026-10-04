@@ -137,6 +137,8 @@ _Virtual networks, host interfaces, filters, and a visual canvas for wiring the 
   - **How:** Web → Native eBPF → Service LB / QUIC LB / Shield; Fleet Cloud → Load Balancers.
 - **Kubernetes CNI (opt-in)** — `machina-cni` gives Kubernetes pods eBPF routing, NetworkPolicy (and compiled Cilium policies) and socket-level service load balancing. — _One datapath for VMs and containers._
   - **How:** Kubernetes → Cluster bootstrap → tick **Use machina-cni** (k3s otherwise keeps flannel + kube-proxy). It never replaces a CNI that is already configured (see docs/ebpf/cni.md).
+- **VM network policy** — Decide which VM may talk to which, ingress and egress, in CiliumNetworkPolicy YAML enforced on each VM tap by `machina-bpfd`, without Cilium or Envoy: L3/L4, DNS names, L7 (HTTP, gRPC, Kafka, DNS, TLS SNI), TLS interception with header rewrites, CIDR groups and mutual authentication between hosts. — _Zero-trust segmentation between VMs, fleet-wide._
+  - **How:** Web → Security → VM Network Policies (policies, tester, live Flows terminal); VM detail → Network tab; CLI `machinactl netpol` / `machinactl flow` (see docs/ebpf/vm-network-policy.md).
 
 ## 4. Consoles & Remote Access
 
