@@ -142,7 +142,7 @@ export default function CinemaControlStrip({
 
   // Cinema is always dark chrome; dock is light glass — never inherit --text-primary (light on dark themes).
   const btn =
-    'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/90 border border-white/95 text-slate-900 hover:bg-white hover:text-black transition inline-flex items-center gap-1 shadow-sm'
+    'px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/90 border border-white/95 text-slate-900 hover:bg-white hover:text-black transition inline-flex items-center gap-1 shadow-sm'
   const menuItem = 'block w-full text-left px-2 py-1.5 text-xs text-slate-900 hover:bg-black/5 rounded'
 
   const setMode = (mode: ViewportMode) => {
@@ -188,11 +188,11 @@ export default function CinemaControlStrip({
 
   return (
     <div
-      className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+      className={`absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 w-max max-w-[calc(100vw-1rem)] transition-opacity duration-300 ${show && !idle ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
       data-testid="cinema-control-strip"
       data-idle={idle ? 'true' : 'false'}
     >
-      <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-1.5 rounded-2xl border border-white/80 bg-white/90 shadow-lg shadow-black/30 backdrop-blur-2xl text-slate-900">
+      <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1.5 rounded-2xl border border-white/80 bg-white/90 shadow-lg shadow-black/30 backdrop-blur-2xl text-slate-900">
         {/* Power */}
         <div className="relative" ref={powerRef}>
           <button type="button" className={`${btn} ${readOnly ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={readOnly} onClick={() => !readOnly && setPowerOpen((v) => !v)} title={readOnly ? 'Read-only session' : 'Power'}>
@@ -352,7 +352,7 @@ export default function CinemaControlStrip({
         {/* Hardware (libvirt + KubeVirt) */}
         {onOpenHardware ? (
           <button type="button" className={`${btn} text-emerald-800`} onClick={onOpenHardware} title="Hardware" data-testid="cinema-hardware">
-            <Cpu className="w-3.5 h-3.5" /> Hardware
+            <Cpu className="w-3.5 h-3.5" /> <span className="max-sm:sr-only">Hardware</span>
           </button>
         ) : null}
 

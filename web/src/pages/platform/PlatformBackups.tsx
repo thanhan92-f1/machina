@@ -361,9 +361,11 @@ export default function PlatformBackups() {
           )}
         </>
       )}
-      <MacGlassPanel title="Per-VM backups" subtitle="Full backup history and restore live on each VM detail page.">
-        <Link to="/platform/vms" className={`text-sm hover:underline ${hubLinkClasses()}`}>Browse VMs →</Link>
-      </MacGlassPanel>
+      {!(tab === 'timeline' && grouped.length === 0 && !error) && (
+        <MacGlassPanel title="Per-VM backups" subtitle="Full backup history and restore live on each VM detail page.">
+          <Link to="/platform/vms" className={`text-sm hover:underline ${hubLinkClasses()}`}>Browse VMs →</Link>
+        </MacGlassPanel>
+      )}
       <ConfirmDialog
         open={pendingRestore !== null}
         title="Restore VM from backup"

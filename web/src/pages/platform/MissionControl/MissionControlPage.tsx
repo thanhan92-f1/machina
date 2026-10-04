@@ -24,6 +24,7 @@ import { dispatchOpenSpotlight, SCROLL_GEOGRAPHY_EVENT } from '../../../utils/pl
 import MissionControlBriefing from './MissionControlBriefing'
 import MissionControlGeography from './MissionControlGeography'
 import MissionControlHero from './MissionControlHero'
+import MissionControlCapacity from './MissionControlCapacity'
 import MissionControlLaunchpad from './MissionControlLaunchpad'
 import MissionControlPulse from './MissionControlPulse'
 import FleetHero from './FleetHero'
@@ -168,6 +169,9 @@ export default function MissionControlPage() {
           <FleetHero state={state} />
         </Reveal>
 
+        <MissionControlCapacity state={state} />
+
+        <div className="nl-duo">
         <MissionControlBriefing
           state={state}
           missingImagesCount={missingImagesCount}
@@ -215,6 +219,7 @@ export default function MissionControlPage() {
             </>
           )}
         </section>
+        </div>
 
         {tier === 'advanced' && (
           <div className="apple-section apple-section--tight">

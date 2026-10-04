@@ -926,7 +926,7 @@ html[data-theme='tahoe'] .platform-detail-tabs-sticky {
   opacity: 1;
   transition: opacity 0.2s;
 }
-.nl-console-protocols a { background: rgba(255, 255, 255, 0.12) !important; color: #fff !important; border-color: transparent !important; backdrop-filter: blur(10px); }
+.nl-console-protocols a { background: rgba(10, 10, 14, 0.62) !important; color: #fff !important; border-color: transparent !important; backdrop-filter: blur(10px); }
 .nl-console-protocols a[title*='recommended'] { background: rgba(48, 209, 88, 0.3) !important; }
 .cc-grid { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 1024px) { .cc-grid { grid-template-columns: minmax(0, 2.5fr) minmax(300px, 1fr); } }
@@ -1049,3 +1049,68 @@ html[data-theme='tahoe'] .nl-aurora { opacity: 0.85; }
   .login-chapter-hero .login-hero-title { font-size: clamp(2.75rem, 4.6vw, 4.5rem) !important; }
   .login-chapter-sign-in { background: hsl(240 5% 97%); }
 }
+
+
+/* ---- Mission Control: capacity rings + duo cards ---------------------------- */
+.nl-capacity {
+  display: grid;
+  gap: 1.5rem 2.5rem;
+  align-items: center;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--nl-hairline);
+  border-radius: 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, #0a84ff 6%, transparent), color-mix(in srgb, #30d158 5%, transparent));
+}
+@media (min-width: 900px) { .nl-capacity { grid-template-columns: minmax(0, 1fr) auto; } }
+.nl-capacity-rings { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem 2.25rem; }
+.nl-duo { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .nl-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nl-duo > .apple-section {
+  border: 1px solid var(--nl-hairline) !important;
+  border-radius: 24px;
+  padding: clamp(1.25rem, 3vw, 2rem) !important;
+  margin: 0 !important;
+  background: linear-gradient(160deg, color-mix(in srgb, #bf5af2 5%, transparent), transparent 60%);
+}
+.nl-duo > .apple-section:nth-child(2) { background: linear-gradient(160deg, color-mix(in srgb, #0a84ff 6%, transparent), transparent 60%); }
+.nl-duo .apple-display--sm { font-size: clamp(1.5rem, 2.4vw, 2rem); }
+[data-testid='mission-control-capacity'] { padding-left: 0 !important; padding-right: 0 !important; }
+
+/* ---- Keyboard focus for the newer controls (tabs, tiles, rails, console chips) ---- */
+html .nl-tile:focus-visible,
+html .nl-console-controls a:focus-visible,
+html .nl-console-controls button:focus-visible,
+html [role='tablist'] [role='tab']:focus-visible,
+html .mac-settings-detail ~ nav button:focus-visible,
+html nav[aria-label$=' sections'] button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring) !important;
+  border-radius: 12px;
+}
+
+/* ---- Motion: honour reduced-motion for the new surfaces ---------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .nl-console-stage[data-tone='ok'] .nl-console-pill i,
+  .nl-chip i,
+  .nl-aurora { animation: none !important; }
+  .nl-console-stage, .nl-console-controls, .nl-tile, .mc-host-fleet-card { transition: none !important; }
+  .mc-host-fleet-card:hover { transform: none !important; }
+}
+
+/* ---- Friendlier empty states ---------------------------------------------------------- */
+.apple-empty {
+  border: 1px dashed var(--nl-hairline);
+  background: linear-gradient(160deg, color-mix(in srgb, #0a84ff 5%, transparent), transparent 65%), var(--apple-surface);
+  box-shadow: none;
+  border-radius: 24px;
+}
+.apple-empty-icon {
+  width: 3rem;
+  height: 3rem;
+  border: 0;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(145deg, #0a84ff, #5e5ce6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 18px -8px rgba(10, 132, 255, 0.55);
+}
+.apple-empty .apple-cta-row { margin-top: 1.25rem; }

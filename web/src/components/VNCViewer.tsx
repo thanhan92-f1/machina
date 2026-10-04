@@ -209,6 +209,13 @@ export default function VNCViewer({
   const scrollRef = useRef<HTMLDivElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [status, setStatus] = useState<'loading' | 'connecting' | 'connected' | 'disconnected'>('loading')
+  // The blank-display tip is only useful right after connecting; fade it so it never sits over console text.
+  const [showBlankHint, setShowBlankHint] = useState(true)
+  useEffect(() => {
+    if (status !== 'connected') { setShowBlankHint(true); return }
+    const t = window.setTimeout(() => setShowBlankHint(false), 7000)
+    return () => window.clearTimeout(t)
+  }, [status])
   /** Soft cursor dot helps when the remote cursor shape is delayed (common on Windows before drivers). */
   const [showDotCursor, setShowDotCursor] = useState(true)
   /** Scaling to fit can blur and sometimes hurts pointer feel; native 1:1 + scroll is sharper/snappier. */
@@ -741,7 +748,7 @@ export default function VNCViewer({
             }
           />
         </div>
-        {cockpitMode && status === 'connected' ? (
+        {cockpitMode && status === 'connected' && showBlankHint ? (
           <p className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 max-w-md text-center text-xs text-[var(--text-muted)] bg-black/70 border border-white/10 rounded-lg px-3 py-2 pointer-events-none">
             Blank display? Cloud images often have no graphical login — use <strong className="text-[var(--text-primary)]">Shell</strong> (SSH) in the dock when available, or click the canvas and try <strong className="text-[var(--text-primary)]">Ctrl+Alt+Del</strong>. Serial appears only when the VM has a serial console.
           </p>
