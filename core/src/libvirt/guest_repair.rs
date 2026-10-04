@@ -130,6 +130,38 @@ pub fn repair_offline(
     })
 }
 
+/// `guestkit drift <baseline> <current> -R`: how far `name`'s disk has moved from `baseline`'s. Both machines must
+/// be powered off; GuestKit opens both images read-only, so nothing is written.
+pub fn drift_offline(
+    conn: &Connect,
+    name: &str,
+    baseline: &str,
+) -> Result<GuestRepairReport, LibvirtError> {
+    if name == baseline {
+        return Err(LibvirtError::Invalid(
+            "Pick a different machine to compare against".into(),
+        ));
+    }
+    let base_disk = offline_disk(conn, baseline, "comparing against it")?;
+    let disk = offline_disk(conn, name, "checking its drift")?;
+    let mut cmd = Command::new("guestkit");
+    cmd.arg("drift")
+        .arg(&base_disk)
+        .arg(&disk)
+        .args(["-R", "--report", "--no-color"]);
+    let (output, exit_ok) = run_guestkit(cmd)?;
+    Ok(GuestRepairReport {
+        vm: name.to_string(),
+        disk: disk.display().to_string(),
+        action: "drift".into(),
+        dry_run: true,
+        backup: false,
+        output,
+        // guestkit exits non-zero when drift passes its threshold; the text still carries the findings.
+        exit_ok,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::tail;

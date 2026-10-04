@@ -229,6 +229,29 @@ async fn repair_guest_handler(
     Ok(Json(serde_json::json!(report)))
 }
 
+#[derive(serde::Deserialize)]
+struct GuestDriftRequest {
+    /// The machine to compare against (a golden image VM). Both must be powered off.
+    baseline: String,
+}
+
+/// How far a powered-off VM's disk has drifted from another powered-off VM's (GuestKit `drift`, read-only).
+async fn drift_guest_handler(
+    State(manager): State<LibvirtManager>,
+    Extension(actor): Extension<RequestActor>,
+    Query(conn_q): Query<ConnQuery>,
+    Path(name): Path<String>,
+    Json(req): Json<GuestDriftRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    require_write(&actor, "vms:write")?;
+    let (name2, baseline) = (name.clone(), req.baseline.clone());
+    let report = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        guest_repair::drift_offline(conn, &name2, &baseline)
+    })
+    .await?;
+    Ok(Json(serde_json::json!(report)))
+}
+
 // ── CD-ROM ──────────────────────────────────────────────────────────
 
 #[derive(serde::Deserialize)]
@@ -1149,6 +1172,7 @@ pub fn advanced_routes() -> Router<LibvirtManager> {
             post(diagnose_guest_handler),
         )
         .route("/vms/{name}/guest-repair/apply", post(repair_guest_handler))
+        .route("/vms/{name}/guest-drift", post(drift_guest_handler))
         .route(
             "/guest-repair/capabilities",
             get(guest_repair_capabilities_handler),

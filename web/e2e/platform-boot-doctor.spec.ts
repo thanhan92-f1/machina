@@ -42,4 +42,20 @@ test.describe('Boot Doctor', () => {
     await page.goto(`/platform/vms/${VM}?action=bootdoctor`)
     await expect(page.getByTestId('boot-doctor-missing-guestkit')).toBeVisible({ timeout: 15_000 })
   })
+
+  test('a powered-off machine can be compared with another powered-off machine (read-only)', async ({ page }) => {
+    const bodies: string[] = []
+    await page.route('**/guest-drift', (r) => {
+      bodies.push(r.request().postData() ?? '')
+      return r.fulfill({ json: { vm: 'vm-1', disk: '/d', action: 'drift', dry_run: true, backup: false, output: 'Drift score: 12% (below threshold)', exit_ok: true } })
+    })
+    await page.goto('/platform/vms/vm-1')
+    const card = page.getByTestId('guest-drift')
+    // The mock fleet lists db-01 as stopped, so it is offered as the baseline.
+    await expect(card).toBeVisible({ timeout: 15_000 })
+    await card.getByRole('combobox', { name: 'Machine to compare against' }).selectOption('db-01')
+    await card.getByRole('button', { name: 'Compare' }).click()
+    await expect(card.getByText(/Drift score: 12%/)).toBeVisible()
+    expect(bodies[0]).toContain('"baseline":"db-01"')
+  })
 })

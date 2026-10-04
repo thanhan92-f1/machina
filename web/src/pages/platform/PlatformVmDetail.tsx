@@ -34,6 +34,7 @@ import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
 import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
 import VmFixItList from '../../components/platform/fleet/VmFixItList'
 import BootDoctorCard from '../../components/platform/vmdetail/BootDoctorCard'
+import GuestDriftCard from '../../components/platform/vmdetail/GuestDriftCard'
 import GuestAgentSetupDialog from '../../components/platform/fleet/GuestAgentSetupDialog'
 import { vmHealthScore } from '../../utils/vmHealthScore'
 import { useVmMetricSeries } from '../../hooks/useVmMetricSeries'
@@ -1182,6 +1183,8 @@ export default function PlatformVmDetail() {
           {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && (vm.observed_state !== 'running' || Boolean(vm.last_error) || deepAction === 'bootdoctor' || bootDoctorEngaged) && (
             <BootDoctorCard vm={vm} onChanged={() => void load()} onEngaged={() => setBootDoctorEngaged(true)} />
           )}
+
+          {tab === 'overview' && vm && vm.inventory_source !== 'kubevirt' && vm.observed_state !== 'running' && <GuestDriftCard vm={vm} />}
 
           {tab === 'overview' && vm && health && (health.issues?.length ?? 0) > 0 && vm.observed_state === 'running' && (
             <VmFixItList vm={vm} issues={health.issues} onDone={() => void load()} onOpenTab={(t) => setTab(t as typeof tab)} />

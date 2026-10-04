@@ -26,6 +26,9 @@ export const diagnoseGuestDisk = (name: string) => apiPost<GuestRepairReport>(`$
 export const repairGuestDisk = (name: string, opts: { dryRun: boolean; backup?: boolean }) =>
   apiPost<GuestRepairReport>(`${base(name)}/apply`, { dry_run: opts.dryRun, backup: opts.backup ?? true })
 
+export const driftGuestDisk = (name: string, baseline: string) =>
+  apiPost<GuestRepairReport>(`/api/v1/vms/${encodeURIComponent(name)}/guest-drift`, { baseline })
+
 /** Pull a score and readable findings out of GuestKit's doctor JSON (it nests them under `bootability`). */
 export function summariseDoctorOutput(output: string): { score: number | null; findings: string[]; raw: string } {
   let data: unknown = null

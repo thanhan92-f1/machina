@@ -292,7 +292,7 @@ async fn exec_tool(
                 let idle = super::idle::find(&state.pool, limit as usize).await?;
                 Ok(json!({
                     "idle": idle,
-                    "total_monthly_usd": (idle.iter().map(|v| v.monthly_usd).sum::<f64>() * 100.0).round() / 100.0,
+                    "total_monthly_usd": (idle.iter().map(|v| v.monthly_usd).sum::<f64>() * 100.0).round() / 100.0 + 0.0,
                     "note": if idle.is_empty() { "No machine has been idle long enough, or there is not a full day of samples yet." } else { "" }
                 })
                 .to_string())
