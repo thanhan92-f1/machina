@@ -46,6 +46,7 @@ mod tcp;
 mod tls;
 mod uplink;
 mod vm;
+mod vmauth;
 mod vmintel;
 mod vml7;
 
@@ -237,6 +238,7 @@ struct Engine {
     cni: cni::CniRuntime,
     uplink: uplink::UplinkRuntime,
     vm_edge: vm::VmEdgeRuntime,
+    vmauth: vmauth::VmAuth,
     sandbox: vm::SandboxRuntime,
     shield: shield::ShieldRuntime,
     nodeiso: nodeiso::NodeIsoRuntime,
@@ -333,6 +335,7 @@ impl Engine {
             cni: cni::CniRuntime::default(),
             uplink: uplink::UplinkRuntime::default(),
             vm_edge: vm::VmEdgeRuntime::default(),
+            vmauth: vmauth::VmAuth::default(),
             sandbox: vm::SandboxRuntime::default(),
             shield: shield::ShieldRuntime::default(),
             nodeiso: nodeiso::NodeIsoRuntime::default(),

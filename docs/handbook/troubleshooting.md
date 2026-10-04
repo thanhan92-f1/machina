@@ -280,6 +280,17 @@ XSK sockets itself, so the probe falls back to `xsk_map_ops` in
 `/proc/kallsyms`. AF_XDP consumers run outside that unit, open their own
 sockets and hand them to bpfd with `register_xsk`.
 
+### Symptom: VM pairs on different hosts stay unauthenticated
+`machinactl netpol auth --fleet` shows the reason per pair. *no certificate*:
+the controller issues host certificates only while a fleet policy uses
+`authentication`, and needs to reach the host's agent; `machinactl netpol status`
+on the host shows `Auth cert:`. *mTLS … failed*: open 4250/tcp between
+hypervisors and check the host address the controller has for the peer host.
+A handshake without VMs tests the path:
+`{"op":"vm_auth_probe","host_id":"<peer host id>","address":"<peer address>"}`
+on the bpfd socket. Agents must run a build that knows the `vm_auth_*` bpfd
+ops.
+
 ### Symptom: enforcement stopped on its own
 The lease expired or bpfd restarted. Enforcement is never persisted and fails
 open by design. Re-arm with a new lease (Native eBPF → Overview, or

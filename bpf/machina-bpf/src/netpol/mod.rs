@@ -38,6 +38,19 @@ pub use compile::{
 };
 pub use services::from_k8s as services_from_k8s;
 
+/// Whether any rule asks for mutual authentication.
+pub fn uses_authentication(policies: &[VmNetworkPolicy]) -> bool {
+    policies.iter().flat_map(|p| &p.specs).any(|spec| {
+        ["ingress", "egress"].iter().any(|sec| {
+            spec[*sec]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .any(|r| r["authentication"]["mode"].is_string())
+        })
+    })
+}
+
 /// Whether any egress rule uses `toServices` (callers skip fetching a
 /// service inventory otherwise).
 pub fn uses_services(policies: &[VmNetworkPolicy]) -> bool {

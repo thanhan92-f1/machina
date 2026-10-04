@@ -434,6 +434,22 @@ impl Daemon {
             Request::VmEdgeStatus => v(&lock(&self.engine).vm_edge_status()),
             Request::VmFqdnCache => v(&lock(&self.engine).vm_fqdn_cache()),
             Request::VmAuthTable => v(&lock(&self.engine).vm_auth_table()),
+            Request::VmAuthIdentity => v(&lock(&self.engine).vmauth.identity()?),
+            Request::VmAuthCert {
+                host_id,
+                ca_pem,
+                cert_pem,
+                not_after,
+            } => v(&lock(&self.engine)
+                .vmauth
+                .install(host_id, ca_pem, cert_pem, not_after)?),
+            Request::VmAuthProbe { host_id, address } => {
+                let id = lock(&self.engine)
+                    .vmauth
+                    .probe_identity()
+                    .ok_or_else(|| anyhow!("no host certificate"))?;
+                json!({ "ok": true, "detail": super::vmauth::probe(&id, &host_id, &address)? })
+            }
             Request::VmFlows { limit, vm, verdict } => {
                 let s = lock(&self.shared);
                 let out: Vec<&VmFlowRecord> = s
@@ -756,6 +772,7 @@ pub async fn run(cfg: Config) -> Result<()> {
     let wake = Arc::new(Notify::new());
 
     let mut eng = Engine::new(shared.clone(), bus.clone())?;
+    eng.vmauth.set_dir(cfg.state_dir.join("auth"));
     {
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("NET_EVENTS")?, "net", move |x| {

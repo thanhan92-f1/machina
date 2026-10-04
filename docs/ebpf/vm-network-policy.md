@@ -274,17 +274,39 @@ ingress:
     authentication: {mode: required}
 ```
 
-Cilium uses SPIFFE identities with mutual TLS. Machina authenticates against
-its own inventory instead:
+Cilium authenticates SPIFFE identities with mutual TLS between agents.
+Machina does the same between the bpfds of the two hosts, with a CA the
+controller holds:
 
 - The first packet of a new connection on a rule with `authentication` needs
   an entry for the pair in the `VM_AUTH` map. Without one it is dropped with
   reason `auth-required` (with the lease) or audited, and bpfd is asked to
-  authenticate the pair.
-- bpfd accepts a pair when the peer is a VM identity it knows on this host or
-  elsewhere in the fleet. The TCP retransmit after authentication passes.
+  authenticate the pair. The TCP retransmit after authentication passes.
   Entries last an hour; after that, the next new connection triggers
   authentication again.
+- **Peer on the same host:** the pair is accepted when the peer identity is a
+  VM on one of this host's taps (the source guard below keeps it honest).
+- **Peer on another host:** bpfd opens TLS 1.3 to the bpfd of the host that
+  owns the peer identity, on TCP **4250**. Both present host certificates
+  signed by the controller's CA; each certificate names its host as the DNS
+  SAN `<host-id>.host.machina`, so the client checks that it reached the
+  owner of the peer and the server checks which host is asking. The server
+  accepts only when the peer identity is a VM on one of its taps and its
+  synced state places the subject identity on the client's host. Any
+  failure (no certificate, unreachable host, wrong name, foreign CA,
+  identity not where the requester claims) leaves the pair
+  unauthenticated, with the reason in the auth table.
+- **Certificates.** While any fleet policy uses `authentication`, the
+  controller asks each host's bpfd for a CSR (the key is generated on the
+  host and stays in `/var/lib/machina/bpf/auth/key.pem`, mode 0600),
+  signs it for 24 hours with the CA in `MACHINA_NETPOL_CA_DIR` (default
+  `/var/lib/machina/netpol-ca`), and re-issues it past half its lifetime.
+  The name, usages and lifetime come from the controller, never from the
+  CSR. bpfd keeps the certificate across restarts and listens on 4250 once it
+  has one, accepting only clients with a certificate from the same CA. Open
+  4250/tcp between hypervisors.
+- Without the controller (a daemon managing a single host) every VM is local,
+  so no certificate is needed.
 - `test-always-fail` never authenticates (reason `auth-test-always-fail`), as
   in Cilium.
 - **Source guard.** While any authentication rule exists, every tap checks
@@ -293,7 +315,11 @@ its own inventory instead:
   dropped as `spoofed-source`, so identities can't be borrowed.
 
 `machinactl netpol auth` and `GET /vm-network-policies/auth` list the
-authenticated pairs, and `machinactl netpol test` shows ⚿ on rules that need
+authenticated pairs and why the others failed. `machinactl netpol status`
+shows the host certificate (`Auth cert:`). The bpfd `vm_auth_probe` op
+(`{"op":"vm_auth_probe","host_id":…,"address":…}`) runs a handshake with
+another host without identities, to check certificates and reachability.
+Also, `machinactl netpol test` shows ⚿ on rules that need
 authentication.
 
 ## Semantics

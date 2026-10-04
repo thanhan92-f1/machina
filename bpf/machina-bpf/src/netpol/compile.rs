@@ -973,6 +973,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
 
     let mut state = VmEdgeState {
         flow_log: true,
+        host_id: inp.host.unwrap_or_default().to_string(),
         fqdn: fqdn.into_iter().collect(),
         l7: std::mem::take(&mut cx.l7_out).into_iter().collect(),
         ..Default::default()
@@ -1009,6 +1010,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
                     cidr: a.clone(),
                     identity: v.id,
                     name: v.vm.name.clone(),
+                    host: v.vm.host.clone().unwrap_or_default(),
                 });
             }
         }
@@ -1018,6 +1020,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
             cidr: a.clone(),
             identity: IDENTITY_HOST,
             name: "host".into(),
+            ..Default::default()
         });
     }
     for a in inp.remote_node_addresses {
@@ -1025,6 +1028,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
             cidr: a.clone(),
             identity: IDENTITY_REMOTE_NODE,
             name: "remote-node".into(),
+            ..Default::default()
         });
     }
     for (p, id) in &cx.prefixes {
@@ -1036,6 +1040,7 @@ pub fn compile(inp: &Inputs) -> Compiled {
             cidr: c.clone(),
             identity: *id,
             name: c,
+            ..Default::default()
         });
     }
     for (k, source) in &cx.entries {

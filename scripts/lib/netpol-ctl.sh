@@ -244,6 +244,7 @@ np_netpol_status() {
       (if has("hosts") then empty elif .cilium then "Cilium:       present (\(.cilium)) — Cilium enforces its own endpoints; Machina enforces libvirt VMs" else "Cilium:       absent — Machina eBPF enforces natively" end),
       (if .last_sync then "Last sync:    \(.last_sync.at // "-")  \(if .last_sync.skipped then "skipped: \(.last_sync.skipped)" elif .last_sync.ok then "ok (\(.last_sync.vms) VMs, \(.last_sync.rules) rules, \(.last_sync.peers) peers)" else "FAILED: \(.last_sync.error)" end)" else empty end),
       (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)\(if (.edge.fqdn_rules // 0) > 0 then ", toFQDNs \(.edge.fqdn_rules) rule(s) / \(.edge.fqdn_cache // 0) learned address(es)" else "" end)\(if (.edge.l7_rules // 0) > 0 then ", L7 \(.edge.l7_rules) rule(s)" else "" end)\(if (.edge.auth_entries // 0) > 0 then ", \(.edge.auth_entries) authenticated pair(s)" else "" end)" else empty end),
+      (if .edge.auth_cert then "Auth cert:    host \(.edge.auth_cert.host_id), expires \(.edge.auth_cert.not_after | todate)\(if .edge.auth_cert.listening then ", mTLS on :4250" else ", not listening" end)" else empty end),
       ((.hosts // [])[] | "  host \(.hostname // .host_id)  \(
           if .reachable == false then "\u001b[90munreachable\u001b[0m"
           elif .ok == false then "\u001b[31m\(.error // "error")\u001b[0m"

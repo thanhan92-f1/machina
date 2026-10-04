@@ -10,7 +10,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 
-use machina_bpf::api::Request;
+use machina_bpf::api::{Request, VmAuthIdentity};
+use machina_bpf::authca;
 use machina_bpf::netpol::{
     self, Inputs, NetpolService, NetpolVm, ServiceEndpoint, VmNetworkPolicy,
 };
@@ -240,14 +241,18 @@ impl Fleet {
             .filter(|(id, _)| Some(id.as_str()) != host)
             .map(|(_, a)| a.clone())
             .collect();
-        netpol::compile(&Inputs {
+        let mut c = netpol::compile(&Inputs {
             policies: &self.policies,
             vms: &self.vms,
             services: &self.services,
             host,
             host_addresses: &own,
             remote_node_addresses: if host.is_some() { &remote } else { &[] },
-        })
+        });
+        if host.is_some() {
+            c.state.host_addrs = self.host_addrs.clone();
+        }
+        c
     }
 
     pub fn all_host_addresses(&self) -> Vec<String> {
@@ -303,6 +308,47 @@ async fn previously_synced(pool: &SqlitePool, host_id: &str) -> bool {
         > 0
 }
 
+static CA: Mutex<Option<std::sync::Arc<authca::Ca>>> = Mutex::new(None);
+
+/// The VM network policy CA (`MACHINA_NETPOL_CA_DIR`, default
+/// `/var/lib/machina/netpol-ca`).
+fn netpol_ca() -> anyhow::Result<std::sync::Arc<authca::Ca>> {
+    let mut g = CA.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(ca) = g.as_ref() {
+        return Ok(ca.clone());
+    }
+    let dir = std::env::var("MACHINA_NETPOL_CA_DIR")
+        .unwrap_or_else(|_| "/var/lib/machina/netpol-ca".into());
+    let ca = std::sync::Arc::new(authca::Ca::load_or_create(std::path::Path::new(&dir))?);
+    *g = Some(ca.clone());
+    Ok(ca)
+}
+
+/// Give the host's bpfd a certificate for bpfd-to-bpfd authentication,
+/// re-issued past half its lifetime. The key never leaves the host.
+async fn ensure_auth_cert(h: &HostRef) -> anyhow::Result<bool> {
+    let id: VmAuthIdentity = serde_json::from_value(bpf::call(h, &Request::VmAuthIdentity).await?)?;
+    let fresh = id.cert.as_ref().is_some_and(|c| {
+        c.host_id == h.id && c.not_after - authca::unix_now() > authca::HOST_CERT_SECS / 2
+    });
+    if fresh {
+        return Ok(false);
+    }
+    let ca = netpol_ca()?;
+    let (cert_pem, not_after) = ca.sign_host(&id.csr, &h.id)?;
+    bpf::call(
+        h,
+        &Request::VmAuthCert {
+            host_id: h.id.clone(),
+            ca_pem: ca.cert_pem.clone(),
+            cert_pem,
+            not_after,
+        },
+    )
+    .await?;
+    Ok(true)
+}
+
 async fn sync_host(pool: &SqlitePool, fleet: &Fleet, h: &HostRef, force: bool) -> HostSync {
     let c = fleet.compile(Some(&h.id));
     let mut state = c.state;
@@ -320,6 +366,17 @@ async fn sync_host(pool: &SqlitePool, fleet: &Fleet, h: &HostRef, force: bool) -
     };
     if empty && !previously_synced(pool, &h.id).await {
         return out;
+    }
+    if netpol::uses_authentication(&fleet.policies) {
+        match ensure_auth_cert(h).await {
+            Ok(true) => {
+                tracing::info!(host = %h.hostname, "issued VM network policy host certificate")
+            }
+            Ok(false) => {}
+            Err(e) => out
+                .warnings
+                .push(format!("mutual authentication certificate: {e:#}")),
+        }
     }
     if empty {
         state.owner = String::new();

@@ -38,9 +38,13 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
   - `toGroups` / `fromGroups` and `cidrGroupRef` resolve `CiliumCIDRGroup`
     objects.
   - `authentication` (`required`, `test-always-fail`): new connections need
-    a bpfd-authenticated VM identity pair. A source guard drops VMs that
-    send as another VM's address. `machinactl netpol auth` and
-    `GET …/vm-network-policies/auth` list the authenticated pairs.
+    an authenticated VM identity pair. Peers on another host are
+    authenticated by mutual TLS (TLS 1.3, port 4250) between the two
+    hosts' bpfds, with host certificates the controller's CA signs from
+    CSRs (keys stay on the hosts, 24-hour lifetime, renewed automatically).
+    A source guard drops VMs that send as another VM's address.
+    `machinactl netpol auth` and `GET …/vm-network-policies/auth` list the
+    pairs; `netpol status` shows the host certificate.
   - `machinactl netpol test` and the UI tester take an L7 request.
   - `toServices` (`k8sService`, `k8sServiceSelector`) is enforced
     natively. The controller treats Fleet Cloud load balancers as services

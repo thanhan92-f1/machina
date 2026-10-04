@@ -15,6 +15,7 @@
 pub mod anomaly;
 pub mod api;
 pub mod attribution;
+pub mod authca;
 pub mod btf;
 pub mod client;
 pub mod dns;

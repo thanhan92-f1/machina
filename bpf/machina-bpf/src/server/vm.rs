@@ -1230,97 +1230,146 @@ impl Engine {
             fqdn_cache: self.vm_edge.fqdn_ids.len(),
             l7_rules: self.vm_edge.l7_rules,
             auth_entries: self.vm_edge.auth.values().filter(|a| a.ok).count(),
+            auth_cert: self.vmauth.cert_info(),
         }
     }
 
     /// Authenticate identity pairs the datapath asked for. `required` holds
-    /// when the peer is a VM identity this edge state knows (a local VM or
-    /// a fleet VM the controller synced), which the source guard on every
-    /// tap keeps unforgeable; `test-always-fail` never authenticates.
+    /// for a VM on this host (the source guard on every tap keeps its
+    /// identity unforgeable) and, for a VM on another host, after a mutual
+    /// TLS handshake with that host's bpfd (see `vmauth`);
+    /// `test-always-fail` never authenticates.
     pub(super) fn vm_auth_tick(&mut self) -> Result<()> {
         let queue = std::mem::take(&mut lock(&self.shared).vm_auth_queue);
         let now = Instant::now();
         self.vm_edge.auth.retain(|_, a| a.expires > now);
+        for h in self.vmauth.take_done() {
+            let mode = self.auth_mode(h.pair.0, h.pair.1);
+            self.auth_set(h.pair, mode, h.ok, h.note)?;
+        }
+        if self.vmauth.has_cert() {
+            self.vmauth.set_view(self.auth_view());
+        }
         if queue.is_empty() {
             return Ok(());
         }
-        let vm_ids: HashMap<u32, &str> = self
-            .vm_edge
-            .state
-            .vms
-            .iter()
-            .map(|v| (vm_ident(v), v.name.as_str()))
-            .collect();
-        let local: HashSet<&str> = self
-            .vm_edge
-            .taps
-            .values()
-            .map(|(_, v)| v.as_str())
-            .collect();
+        let local: HashMap<u32, String> = self.auth_view().local;
         for (subject, peer) in queue {
             if self
                 .vm_edge
                 .auth
                 .get(&(subject, peer))
                 .is_some_and(|a| a.ok)
+                || self.vmauth.is_pending((subject, peer))
             {
                 continue;
             }
-            let mode = self
+            let mode = self.auth_mode(subject, peer);
+            let remote = self
                 .vm_edge
                 .state
-                .policy
+                .peers
                 .iter()
-                .filter(|r| {
-                    r.subject_identity == Some(subject)
-                        && r.peer_identity.is_some_and(|p| p == peer || p == 0)
+                .find(|p| {
+                    p.identity == peer
+                        && !p.cidr.contains('/')
+                        && peer >= 16
+                        && peer & 0x8000_0000 == 0
                 })
-                .fold(0u8, |m, r| m | r.auth);
+                .map(|p| (p.name.clone(), p.host.clone()));
             let (ok, note) = if mode & crate::api::AUTH_ALWAYS_FAIL != 0 {
                 (false, "test-always-fail".to_string())
-            } else if let Some(name) = vm_ids.get(&peer) {
-                if local.contains(name) {
-                    (true, format!("authenticated (local VM {name})"))
+            } else if let Some(name) = local.get(&peer) {
+                (true, format!("authenticated (local VM {name})"))
+            } else if let Some((name, host)) = remote {
+                if !self.vmauth.has_cert() {
+                    (
+                        false,
+                        format!("VM {name} is on another host and this host has no certificate (the controller issues one)"),
+                    )
+                } else if host.is_empty() || host == self.vm_edge.state.host_id {
+                    (false, format!("VM {name} has no known host"))
                 } else {
-                    (true, format!("authenticated (fleet VM {name})"))
+                    self.vmauth.start((subject, peer), &host);
+                    continue;
                 }
-            } else if let Some(p) = self.vm_edge.state.peers.iter().find(|p| {
-                p.identity == peer && !p.cidr.contains('/') && peer >= 16 && peer & 0x8000_0000 == 0
-            }) {
-                (
-                    true,
-                    format!(
-                        "authenticated (fleet VM {})",
-                        if p.name.is_empty() { &p.cidr } else { &p.name }
-                    ),
-                )
             } else {
                 (false, "peer is not a VM identity".to_string())
             };
-            if ok {
-                let key = VmAuthKey {
-                    subject,
-                    peer,
-                    mode: 1,
-                    _pad: [0; 3],
-                };
-                self.dp.cni_hash_insert(
-                    "VM_AUTH",
-                    key,
-                    loader::monotonic_ns() + AUTH_TTL.as_nanos() as u64,
-                )?;
-            }
-            self.vm_edge.auth.insert(
-                (subject, peer),
-                AuthState {
-                    mode: mode.max(1),
-                    ok,
-                    note,
-                    expires: now + AUTH_TTL,
-                },
-            );
+            self.auth_set((subject, peer), mode, ok, note)?;
         }
         Ok(())
+    }
+
+    fn auth_mode(&self, subject: u32, peer: u32) -> u8 {
+        self.vm_edge
+            .state
+            .policy
+            .iter()
+            .filter(|r| {
+                r.subject_identity == Some(subject)
+                    && r.peer_identity.is_some_and(|p| p == peer || p == 0)
+            })
+            .fold(0u8, |m, r| m | r.auth)
+    }
+
+    fn auth_set(
+        &mut self,
+        (subject, peer): (u32, u32),
+        mode: u8,
+        ok: bool,
+        note: String,
+    ) -> Result<()> {
+        if ok {
+            let key = VmAuthKey {
+                subject,
+                peer,
+                mode: 1,
+                _pad: [0; 3],
+            };
+            self.dp.cni_hash_insert(
+                "VM_AUTH",
+                key,
+                loader::monotonic_ns() + AUTH_TTL.as_nanos() as u64,
+            )?;
+        }
+        self.vm_edge.auth.insert(
+            (subject, peer),
+            AuthState {
+                mode: mode.max(1),
+                ok,
+                note,
+                expires: Instant::now() + AUTH_TTL,
+            },
+        );
+        Ok(())
+    }
+
+    /// Local VM identities (on a tap here), fleet VM hosts and addresses.
+    fn auth_view(&self) -> super::vmauth::View {
+        let st = &self.vm_edge.state;
+        let on_tap: HashSet<&str> = self
+            .vm_edge
+            .taps
+            .values()
+            .map(|(_, v)| v.as_str())
+            .collect();
+        super::vmauth::View {
+            host_id: st.host_id.clone(),
+            local: st
+                .vms
+                .iter()
+                .filter(|v| on_tap.contains(v.name.as_str()))
+                .map(|v| (vm_ident(v), v.name.clone()))
+                .collect(),
+            vm_hosts: st
+                .peers
+                .iter()
+                .filter(|p| !p.host.is_empty())
+                .map(|p| (p.identity, p.host.clone()))
+                .collect(),
+            host_addrs: st.host_addrs.clone(),
+        }
     }
 
     pub(super) fn vm_auth_table(&self) -> Vec<VmAuthEntry> {

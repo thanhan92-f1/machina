@@ -718,6 +718,24 @@ pub struct VmAuthEntry {
     pub expires_in_secs: u64,
 }
 
+/// `VmAuthIdentity` reply.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmAuthIdentity {
+    pub csr: String,
+    #[serde(default)]
+    pub cert: Option<VmAuthCertInfo>,
+}
+
+/// The host certificate a bpfd holds.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmAuthCertInfo {
+    pub host_id: String,
+    /// Unix seconds.
+    pub not_after: i64,
+    /// Accepting handshakes on `authca::AUTH_PORT`.
+    pub listening: bool,
+}
+
 fn is_zero_u16(v: &u16) -> bool {
     *v == 0
 }
@@ -732,6 +750,9 @@ pub struct VmEdgePeer {
     /// VM name, `host`, `remote-node` or the CIDR text.
     #[serde(default)]
     pub name: String,
+    /// Host id of a VM peer (who to authenticate it with).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub host: String,
 }
 
 /// Egress allow towards addresses a DNS reply to the subject resolved for a
@@ -783,6 +804,12 @@ pub struct VmEdgeState {
     /// Who synced it (`daemon`, `controller`, empty = manual).
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub owner: String,
+    /// This host's id in the fleet (controller syncs only).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub host_id: String,
+    /// Host id → address, for bpfd-to-bpfd authentication.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub host_addrs: BTreeMap<String, String>,
 }
 
 /// One VM edge verdict (`flow` topic / `vm_flows`).
@@ -878,6 +905,8 @@ pub struct VmEdgeStatus {
     /// Authenticated (subject, peer) pairs.
     #[serde(default)]
     pub auth_entries: usize,
+    #[serde(default)]
+    pub auth_cert: Option<VmAuthCertInfo>,
 }
 
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
@@ -1838,6 +1867,21 @@ pub enum Request {
     VmFqdnCache,
     /// Mutual-authentication table of the VM edge.
     VmAuthTable,
+    /// This host's authentication key (created on first use) as a CSR, and
+    /// the certificate it holds.
+    VmAuthIdentity,
+    /// Install the controller-signed host certificate and CA.
+    VmAuthCert {
+        host_id: String,
+        ca_pem: String,
+        cert_pem: String,
+        not_after: i64,
+    },
+    /// Handshake with another host's bpfd (diagnostics; no identities).
+    VmAuthProbe {
+        host_id: String,
+        address: String,
+    },
     /// Recent VM edge verdicts, newest first.
     VmFlows {
         #[serde(default)]
