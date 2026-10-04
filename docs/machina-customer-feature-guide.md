@@ -139,6 +139,14 @@ _Virtual networks, host interfaces, filters, and a visual canvas for wiring the 
   - **How:** Kubernetes → Cluster bootstrap → tick **Use machina-cni** (k3s otherwise keeps flannel + kube-proxy). It never replaces a CNI that is already configured (see docs/ebpf/cni.md).
 - **VM network policy** — Decide which VM may talk to which, ingress and egress, in CiliumNetworkPolicy YAML enforced on each VM tap by `machina-bpfd`, without Cilium or Envoy: L3/L4, DNS names, L7 (HTTP, gRPC, Kafka, DNS, TLS SNI), TLS interception with header rewrites, CIDR groups and mutual authentication between hosts. — _Zero-trust segmentation between VMs, fleet-wide._
   - **How:** Web → Security → VM Network Policies (policies, tester, live Flows terminal); VM detail → Network tab; CLI `machinactl netpol` / `machinactl flow` (see docs/ebpf/vm-network-policy.md).
+- **VM traffic insight and response** — Flow history with a live service map and denied edges, learn mode (least-privilege policy from observed traffic), replay of a draft against past flows, L7 latency/error/rate per VM pair, port-scan and lateral-movement alerts with SIEM export, DNS threat feeds, one-click quarantine under a lease, and just-in-time access with approval and expiry. — _See what talks to what, then lock it down or cut off a suspect VM in seconds._
+  - **How:** VM Network Policies → Service map / Learn / Alerts tabs, Quarantine on a VM; CLI `machinactl netpol learn|replay|jit|threat|quarantines`, `machinactl vm quarantine VM --for 1h`, `machinactl flow history|alerts`.
+- **Plain-English VM policies** — Describe the rule ("web may reach db on 5432"); Zyvor drafts the CiliumNetworkPolicy YAML, dry-runs it against past traffic and applies it only after approval. — _Policy without learning YAML._
+  - **How:** VM Network Policies → YAML editor → Draft policy; CLI `machinactl netpol draft "…"` (fleet: `netpol draft pending|approve|reject`).
+- **Project isolation and egress control** — Fleet Cloud projects are isolated from each other by default (the host stays reachable), with per-project egress allowlists (domains, CIDRs, ports) and a per-project egress IP. — _Multi-tenant segmentation and predictable source IPs for partner allowlists._
+  - **How:** VM Network Policies → Projects; CLI `machinactl --fleet netpol projects`, `netpol project isolate|assign …`, `netpol egress P allow|ip …`.
+- **Segmentation evidence** — A sealed (SHA-256 digest) JSON or Markdown report: policies with hashes, project isolation, the reachability matrix, denied traffic, quarantines and egress settings per host. — _Audit-ready proof that segmentation is in force._
+  - **How:** VM Network Policies → Export evidence; CLI `machinactl netpol evidence -o md --out ev.md`, `machinactl netpol evidence verify ev.json`.
 
 ## 4. Consoles & Remote Access
 

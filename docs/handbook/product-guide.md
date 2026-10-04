@@ -239,6 +239,18 @@ port-forwarding and firewall rules (`routes/host_network.rs`). Network filters
 (nwfilter) are managed at `/nwfilters`. Autostart networks are bootstrapped at
 daemon boot.
 
+### VM network policy
+
+VM-to-VM segmentation in the CiliumNetworkPolicy schema, enforced by
+`machina-bpfd` on each VM tap (observe by default, enforce under a lease).
+On top of L3/L4, DNS names and L7 rules: flow history with a service map,
+learn mode and replay, L7 metrics, lateral-movement alerts, DNS threat feeds,
+quarantine, just-in-time access, plain-English drafts with approval,
+Fleet Cloud project isolation with egress allowlists and egress IPs, and
+sealed segmentation evidence for audits. UI: VM Network Policies; CLI:
+`machinactl [--fleet] netpol|flow`. Details:
+[docs/ebpf/vm-network-policy.md](../ebpf/vm-network-policy.md).
+
 ### Snapshots & backup
 
 Per-VM snapshots (create/list/revert/delete) plus a scheduled backup subsystem:

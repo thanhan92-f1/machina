@@ -301,6 +301,34 @@ certificate. Redirected packets need `ip rule fwmark 0xb6000000 lookup 4251`
 and a local route in table 4251. bpfd adds both, and the rule stays after
 enforcement ends; it is harmless.
 
+### Symptom: an isolated project loses SSH, DNS or gateway pings from the host
+`allow_host` is on by default (`--no-host` turns it off). When the controller
+owns the edge it sets `node_is_host`, so bpfd counts every global address of
+the hypervisor (libvirt bridges included) as `host`. If only the management
+address works, the host's bpfd or controller predates that flag; upgrade both
+(and the agent). `machinactl netpol test --from 192.168.122.1 --to <vm> --port 22`
+(the bridge address) shows the verdict.
+
+### Symptom: a project's egress IP is not used
+`machinactl --fleet netpol egress P` lists the egress IP per host;
+`sudo nft list table ip machina_egress` on the VM's host shows the SNAT rules.
+No table means nothing is wanted on that host (no VMs of the project there).
+The address must be configured on that host (bpfd skips addresses that are
+not local), and the upstream router must route it back; an address that is
+not routable upstream only works for destinations that route to the host.
+
+### Symptom: `netpol evidence verify` reports a digest mismatch
+A value, key or key order changed after export (whitespace does not matter,
+the JSON is compacted before hashing). Export again and keep the JSON;
+only the JSON form can be verified.
+Evidence lists a host as *in sync* when its agent answered and either the
+push succeeded or there was nothing to push.
+
+### Symptom: VMs on another host show up as `remote-node`
+On libvirt NAT networks, traffic from another hypervisor arrives with the
+peer host's address, so the source VM can't be identified. Use bridged or
+routed networks for cross-host VM identity, or allow `remote-node` explicitly.
+
 ### Symptom: enforcement stopped on its own
 The lease expired or bpfd restarted. Enforcement is never persisted and fails
 open by design. Re-arm with a new lease (Native eBPF → Overview, or
