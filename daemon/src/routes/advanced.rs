@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use machina_core::libvirt::guest_agent::GuestIpAddress;
 use machina_core::libvirt::{
     boot, capabilities, cdrom, domain, domain_job, emulator, extras, filesystem, guest_agent,
-    guest_health, host_cpu, hostdev_pci, migrate, net_xml, network, node_device, numa_tune,
-    nwfilter, save_restore, secret, storage,
+    guest_agent_provision, guest_health, host_cpu, hostdev_pci, migrate, net_xml, network,
+    node_device, numa_tune, nwfilter, save_restore, secret, storage,
 };
 use machina_core::{LibvirtError, LibvirtManager};
 
@@ -136,6 +136,35 @@ async fn get_guest_health(
     let name2 = name.clone();
     let report = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         guest_health::gather_guest_health(conn, &name2)
+    })
+    .await?;
+    Ok(Json(serde_json::json!(report)))
+}
+
+// ── Guest agent offline install ─────────────────────────────────────
+
+#[derive(serde::Deserialize, Default)]
+struct AgentInjectRequest {
+    /// Preview what `guestkit agent-inject` would change without writing.
+    #[serde(default)]
+    dry_run: bool,
+}
+
+/// Inject the GuestKit agent into a powered-off VM's disk. The VM must already be off; the web UI
+/// shuts it down first and starts it again afterwards.
+async fn inject_guest_agent_handler(
+    State(manager): State<LibvirtManager>,
+    Extension(actor): Extension<RequestActor>,
+    Query(conn_q): Query<ConnQuery>,
+    Path(name): Path<String>,
+    Json(req): Json<AgentInjectRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    require_write(&actor, "vms:write")?;
+    let libvirt_cfg = machina_core::MachinaConfig::load().libvirt;
+    let name2 = name.clone();
+    let dry_run = req.dry_run;
+    let report = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
+        guest_agent_provision::inject_agent_offline(conn, &name2, Some(&libvirt_cfg), dry_run)
     })
     .await?;
     Ok(Json(serde_json::json!(report)))
@@ -1052,6 +1081,10 @@ pub fn advanced_routes() -> Router<LibvirtManager> {
             get(get_guest_observability),
         )
         .route("/vms/{name}/guest-health", get(get_guest_health))
+        .route(
+            "/vms/{name}/guest-agent/inject",
+            post(inject_guest_agent_handler),
+        )
         // CD-ROM
         .route("/vms/{name}/cdrom/insert", post(insert_cdrom_handler))
         .route(

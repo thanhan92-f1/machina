@@ -232,3 +232,101 @@ pub fn inject_guestkit_into_disk(
     }
     Ok(())
 }
+
+/// Result of an offline agent injection into an existing VM's disk.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct AgentInjectReport {
+    pub vm: String,
+    pub disk: String,
+    pub binary: String,
+    pub dry_run: bool,
+    /// Combined stdout/stderr from `guestkit agent-inject` (trimmed).
+    pub output: String,
+}
+
+/// Install the GuestKit agent into an existing VM's primary disk with `guestkit agent-inject`.
+///
+/// The VM must be powered off: writing into a disk a running guest has open would corrupt it, so a
+/// running domain is refused with a clear message instead of being stopped here. The caller (the web
+/// UI) shuts the VM down first, calls this, then starts it again.
+pub fn inject_agent_offline(
+    conn: &virt::connect::Connect,
+    name: &str,
+    cfg: Option<&LibvirtConfig>,
+    dry_run: bool,
+) -> Result<AgentInjectReport, LibvirtError> {
+    let domain = super::domain::lookup_domain(conn, name)?;
+    let active = domain.is_active().map_err(|e| {
+        LibvirtError::Operation(format!("Failed to read state of VM '{name}': {e}"))
+    })?;
+    if active {
+        return Err(LibvirtError::Invalid(format!(
+            "VM '{name}' is running — shut it down before injecting the guest agent"
+        )));
+    }
+
+    let xml = domain
+        .get_xml_desc(0)
+        .map_err(|e| LibvirtError::Operation(format!("Failed to read XML of VM '{name}': {e}")))?;
+    let disk = super::template_apply::primary_disk_path_from_xml(&xml).ok_or_else(|| {
+        LibvirtError::Invalid(format!(
+            "VM '{name}' has no file-backed primary disk to inject into"
+        ))
+    })?;
+    if !disk.is_file() {
+        return Err(LibvirtError::Invalid(format!(
+            "Disk image {} for VM '{name}' is not a file on this host",
+            disk.display()
+        )));
+    }
+
+    let binary = resolve_guestkit_binary(cfg);
+    if !binary.is_file() {
+        return Err(LibvirtError::Invalid(format!(
+            "GuestKit binary not found at {} — install GuestKit on this hypervisor or set [libvirt].guestkit_agent_binary",
+            binary.display()
+        )));
+    }
+
+    let mut cmd = Command::new("guestkit");
+    cmd.arg("agent-inject")
+        .arg(&disk)
+        .arg("--agent-binary")
+        .arg(&binary);
+    if dry_run {
+        cmd.arg("--dry-run");
+    }
+    let out = cmd
+        .output()
+        .map_err(|e| LibvirtError::Operation(format!("Failed to run guestkit: {e}")))?;
+    let mut text = String::from_utf8_lossy(&out.stdout).to_string();
+    let err = String::from_utf8_lossy(&out.stderr);
+    if !err.trim().is_empty() {
+        if !text.is_empty() && !text.ends_with('\n') {
+            text.push('\n');
+        }
+        text.push_str(err.trim());
+    }
+    // Keep responses small and avoid echoing an unbounded tool log back to the browser.
+    let output: String = text
+        .trim()
+        .chars()
+        .rev()
+        .take(4000)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
+    if !out.status.success() {
+        return Err(LibvirtError::Operation(format!(
+            "guestkit agent-inject failed for VM '{name}': {output}"
+        )));
+    }
+    Ok(AgentInjectReport {
+        vm: name.to_string(),
+        disk: disk.display().to_string(),
+        binary: binary.display().to_string(),
+        dry_run,
+        output,
+    })
+}
