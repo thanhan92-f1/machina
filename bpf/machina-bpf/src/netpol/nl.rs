@@ -259,7 +259,7 @@ fn selector(p: &Peer) -> Value {
     }
 }
 
-fn slug(s: &str) -> String {
+pub(super) fn slug(s: &str) -> String {
     let mut out = String::new();
     for c in s.to_ascii_lowercase().chars() {
         if c.is_ascii_alphanumeric() {

@@ -71,6 +71,8 @@ struct Persisted {
     /// Re-held for the time they have left (wall clock `until`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     vm_quarantines: Vec<VmQuarantine>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    vm_egress: Option<VmEgressSnat>,
 }
 
 struct Daemon {
@@ -126,6 +128,7 @@ impl Daemon {
             vm_intel: (eng.vmi.config != VmIntelConfig::default()).then(|| eng.vmi.config.clone()),
             guard: eng.guard_persisted(),
             vm_quarantines: eng.vm_quarantines(),
+            vm_egress: (!eng.egress.config.rules.is_empty()).then(|| eng.egress.config.clone()),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -203,6 +206,11 @@ impl Daemon {
             eng.sandbox.config = cfg;
         }
         eng.sandbox.pinned = p.vm_sandbox_pinned.into_iter().collect();
+        if let Some(cfg) = p.vm_egress {
+            if let Err(e) = eng.vm_egress_set(cfg) {
+                tracing::warn!("restore egress SNAT: {e:#}");
+            }
+        }
         for q in p.vm_quarantines {
             let vm = q.vm.clone();
             if let Err(e) = eng.quarantine_restore(q) {
@@ -525,6 +533,13 @@ impl Daemon {
                 json!({ "removed": removed, "name": name })
             }
             Request::VmThreatFeeds => v(&lock(&self.engine).vm_threat_status()),
+            Request::VmEgressSnatSet { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.vm_egress_set(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmEgressSnatStatus => v(&lock(&self.engine).vm_egress_status()),
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;

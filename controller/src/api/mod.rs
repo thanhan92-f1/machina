@@ -253,6 +253,22 @@ pub fn router(state: AppState) -> Router {
             post(vm_network_policies::replay),
         )
         .route(
+            "/api/v1/vm-network-policies/projects",
+            get(vm_network_policies::projects),
+        )
+        .route(
+            "/api/v1/vm-network-policies/projects/{project}",
+            put(vm_network_policies::project_set).delete(vm_network_policies::project_remove),
+        )
+        .route(
+            "/api/v1/vm-network-policies/evidence",
+            get(vm_network_policies::evidence),
+        )
+        .route(
+            "/api/v1/vm-network-policies/egress-ips",
+            get(vm_network_policies::egress_ips),
+        )
+        .route(
             "/api/v1/vm-network-policies/draft",
             get(vm_network_policies::draft_pending).post(vm_network_policies::draft),
         )

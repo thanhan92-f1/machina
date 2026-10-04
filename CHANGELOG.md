@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-10-04 — Project isolation, egress control and segmentation evidence
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#project-isolation-fleet-cloud).
+
+- **Project isolation.** Fleet Cloud projects can be isolated from each
+  other with `machinactl --fleet netpol project isolate P`, or by default
+  with `netpol project default isolated`.
+  - An isolated project's VMs accept connections only from the same
+    project and the host (unless `--no-host`). Ordinary policies still add
+    exceptions.
+  - Each setting generates a `project-isolation-…` policy that is traced,
+    replayed and pushed like any other.
+- **Egress allowlists.** `netpol egress P allow TO --port N` limits a
+  project to CIDRs, IPs, domains, `*.domain` or `world`, plus its own VMs,
+  the host and DNS. It generates a `project-egress-…` policy.
+- **Per-project egress IPs.** `netpol egress P ip HOST IP` rewrites the
+  source of the project's internet-bound traffic on that host.
+  - `machina-bpfd` applies the rules as one atomic nftables table,
+    `ip machina_egress`. Private and link-local destinations are never
+    rewritten.
+  - Addresses missing from the host are reported, not applied.
+  - The table is saved and restored across bpfd restarts. Nothing is
+    installed until an egress IP is set.
+- **Segmentation evidence.** `netpol evidence` (UI: *Export evidence*)
+  produces a SHA-256-sealed report for audits, as JSON or Markdown. It
+  covers policies with hashes and selected VMs, host sync and enforcement,
+  project settings, a reachability matrix traced from the policy set,
+  denied connections, alerts, quarantines, temporary access, threat feeds
+  and egress IPs.
+  - On the fleet, it also includes 90 days of approvals.
+  - `netpol evidence verify FILE` checks the digest.
+- **UI.** A *Projects* view on the VM Network Policies page, with the
+  default isolation, per-project isolation, egress allowlist and egress
+  IPs, plus each host's egress state.
+- **API.**
+  - Controller: `GET /api/v1/vm-network-policies/projects`,
+    `PUT`/`DELETE …/projects/{project}` and `GET …/egress-ips`.
+  - Daemon and controller: `GET …/evidence[?format=md]`.
+  - bpfd: `vm_egress_snat_set` / `vm_egress_snat_status`.
+
 ## 2026-10-04 — Plain-English VM network policies
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#plain-english-policies).

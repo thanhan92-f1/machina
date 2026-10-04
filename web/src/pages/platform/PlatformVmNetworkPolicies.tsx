@@ -21,6 +21,7 @@ import QuarantinePanel from '../../components/flow/QuarantinePanel'
 import JitPanel from '../../components/flow/JitPanel'
 import ThreatFeedsPanel from '../../components/flow/ThreatFeedsPanel'
 import DraftPanel from '../../components/flow/DraftPanel'
+import ProjectsPanel from '../../components/flow/ProjectsPanel'
 import {
   NETPOL_TEMPLATES,
   applyVmNetpol,
@@ -32,6 +33,8 @@ import {
   listNetpolEndpoints,
   listNetpolSelectors,
   listQuarantines,
+  evidenceFilename,
+  getEvidence,
   listVmNetpols,
   replayVmNetpol,
   setVmNetpolEnabled,
@@ -39,6 +42,7 @@ import {
   traceVmNetpol,
   validateVmNetpol,
   type AuthEntry,
+  type EvidenceFormat,
   type FqdnEntry,
   type NetpolEndpoint,
   type NetpolPreview,
@@ -54,10 +58,11 @@ import {
 } from '../../api/vmNetpol'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
+import { downloadText } from '../../utils/export'
 import { statusPillClasses, statusToneClass } from '../../utils/semanticColors'
 import { summarizeSpec } from '../../utils/netpolSummary'
 
-type Tab = 'policies' | 'editor' | 'tester' | 'endpoints' | 'flows' | 'map' | 'learn' | 'alerts'
+type Tab = 'policies' | 'editor' | 'tester' | 'endpoints' | 'flows' | 'map' | 'learn' | 'alerts' | 'projects'
 
 type L7Kind = 'none' | 'http' | 'tls' | 'dns' | 'kafka'
 
@@ -78,6 +83,7 @@ const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'map', label: 'Service map' },
   { value: 'learn', label: 'Learn' },
   { value: 'alerts', label: 'Alerts' },
+  { value: 'projects', label: 'Projects' },
 ]
 
 function PolicyView({ p }: { p: VmNetworkPolicy }) {
@@ -299,6 +305,15 @@ export default function PlatformVmNetworkPolicies() {
     setTab('endpoints')
     window.setTimeout(() => document.getElementById('q-vm')?.focus(), 50)
   }
+  const exportEvidence = async (format: EvidenceFormat) => {
+    try {
+      const text = await getEvidence(scope, format)
+      downloadText(text, evidenceFilename(format), format === 'md' ? 'text/markdown' : 'application/json')
+      toast.success('Segmentation evidence downloaded')
+    } catch (e) {
+      toast.error(formatUserError(e))
+    }
+  }
   const enforcement = status?.enforcement?.mode ?? (status?.hosts?.some((h) => h.enforcing) ? 'enforce' : 'observe')
   const cilium = status?.cilium ?? status?.hosts?.find((h) => h.cilium)?.cilium ?? null
   const lastSync = status?.last_sync
@@ -323,6 +338,13 @@ export default function PlatformVmNetworkPolicies() {
               Sync hosts
             </button>
           )}
+          <span className="text-xs text-[var(--text-muted)]">Export evidence</span>
+          <button type="button" className="btn-secondary text-xs" aria-label="Export evidence as JSON" onClick={() => void exportEvidence('json')}>
+            JSON
+          </button>
+          <button type="button" className="btn-secondary text-xs" aria-label="Export evidence as Markdown" onClick={() => void exportEvidence('md')}>
+            Markdown
+          </button>
           <PlatformRefreshButton onClick={() => void load()} />
         </div>
       }
@@ -785,6 +807,16 @@ export default function PlatformVmNetworkPolicies() {
           <FlowAlerts key={scope} scope={scope} onQuarantine={startQuarantine} />
           <ThreatFeedsPanel key={`threat-${scope}`} scope={scope} />
         </div>
+      )}
+
+      {tab === 'projects' && (
+        scope === 'fleet' ? (
+          <ProjectsPanel onChanged={() => void load()} />
+        ) : (
+          <MacGlassPanel title="Projects">
+            <Empty>Project isolation, egress allowlists and egress IPs are fleet features. Switch the scope to Fleet (controller).</Empty>
+          </MacGlassPanel>
+        )
       )}
 
       <input ref={fileRef} type="file" accept=".yaml,.yml,.json" className="hidden" onChange={(e) => void importFile(e.target.files?.[0])} />

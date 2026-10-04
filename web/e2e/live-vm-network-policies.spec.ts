@@ -59,3 +59,22 @@ test('live VM network policies page: status, dry-run validate, trace, flows', as
     await expect(page.getByRole('alert')).toHaveCount(0)
   }
 })
+
+test('live VM network policies: projects view and sealed evidence export', async ({ page }) => {
+  await ensureLoggedIn(page, live!, `${PAGE}?scope=fleet&tab=projects`)
+  await expect(page.getByText('Default project isolation')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByLabel('Default isolation')).toBeVisible()
+  await expect(page.getByText('Egress IPs on hosts')).toBeVisible()
+  for (const scope of ['fleet', 'host']) {
+    await page.goto(`${live}${PAGE}?scope=${scope}`)
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 60_000 }),
+      page.getByRole('button', { name: 'Export evidence as JSON' }).click(),
+    ])
+    const fs = await import('node:fs/promises')
+    const doc = JSON.parse(await fs.readFile((await dl.path())!, 'utf8')) as { kind: string; digest: string; source: string }
+    expect(doc.kind).toBe('machina.io/segmentation-evidence/v1')
+    expect(doc.digest).toMatch(/^[0-9a-f]{64}$/)
+    expect(doc.source).toBe(scope === 'fleet' ? 'machina-controller' : 'machina-daemon')
+  }
+})

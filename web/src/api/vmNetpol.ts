@@ -231,6 +231,17 @@ export async function listVmNetpols(scope: NetpolScope): Promise<{ items: VmNetw
 export const getVmNetpolYaml = (scope: NetpolScope, name: string) =>
   apiGetText(`${netpolBase(scope)}${P}/${encodeURIComponent(name)}?format=yaml`)
 
+export type EvidenceFormat = 'json' | 'md'
+
+/** Segmentation evidence, as served (the JSON keeps its exact bytes so the digest verifies). */
+export const getEvidence = (scope: NetpolScope, format: EvidenceFormat) =>
+  apiGetText(`${netpolBase(scope)}${P}/evidence${format === 'md' ? '?format=md' : ''}`)
+
+export function evidenceFilename(format: EvidenceFormat, now = new Date()): string {
+  const stamp = now.toISOString().slice(0, 19).replace(/[-:]/g, '')
+  return `segmentation-evidence-${stamp}.${format}`
+}
+
 export const validateVmNetpol = (scope: NetpolScope, yaml: string) =>
   apiPost<NetpolPreview>(`${netpolBase(scope)}${P}/validate`, { yaml })
 
@@ -436,6 +447,69 @@ export const proposeVmNetpol = (yaml: string, prompt: string) =>
 export async function listDraftPending(): Promise<DraftPending[]> {
   const r = await apiGet<{ pending?: DraftPending[] }>(`${netpolBase('fleet')}${P}/draft`)
   return r.pending ?? []
+}
+
+export type ProjectIsolation = 'inherit' | 'isolated' | 'open'
+
+export interface EgressAllow {
+  /** CIDR, IP, domain, `*.domain` or `world`. */
+  to: string
+  ports?: string[]
+}
+
+export interface ProjectNet {
+  project: string
+  isolation: ProjectIsolation
+  allow_host: boolean
+  egress_restricted: boolean
+  egress_allow: EgressAllow[]
+  /** Host name or id → egress IP on that host. */
+  egress_ips: Record<string, string>
+  updated_by?: string
+  updated_at?: string
+}
+
+export interface ProjectRow {
+  project: string
+  explicit: boolean
+  settings: ProjectNet
+  isolated: boolean
+  allow_host: boolean
+  vms: string[]
+  policies: string[]
+}
+
+export interface EgressHostStatus {
+  hostname: string
+  host_id?: string
+  active: boolean
+  rules: Array<{ project: string; egress_ip: string; sources: string[] }>
+  exclude: string[]
+  skipped: string[]
+  error?: string
+}
+
+/** Fleet only. */
+export const listProjects = () =>
+  apiGet<{ default: ProjectNet; items: ProjectRow[] }>(`${netpolBase('fleet')}${P}/projects`)
+
+export const setProject = (project: string, s: Omit<ProjectNet, 'project'>) =>
+  apiPut<{ project: ProjectNet }>(`${netpolBase('fleet')}${P}/projects/${encodeURIComponent(project)}`, s)
+
+export const resetProject = (project: string) =>
+  apiDelete(`${netpolBase('fleet')}${P}/projects/${encodeURIComponent(project)}`)
+
+export const listEgressIps = () =>
+  apiGet<{ items: EgressHostStatus[]; errors: Array<{ hostname: string; error: string }> }>(`${netpolBase('fleet')}${P}/egress-ips`)
+
+export function describeEgress(s: ProjectNet): string {
+  if (!s.egress_restricted) return 'Any destination'
+  if (s.egress_allow.length === 0) return 'Only the project, host and DNS'
+  return s.egress_allow.map((e) => (e.ports?.length ? `${e.to} (${e.ports.join(', ')})` : e.to)).join(', ')
+}
+
+export function splitPorts(s: string): string[] {
+  return s.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean)
 }
 
 export interface VmQuarantineAllow {

@@ -611,6 +611,83 @@ check "netpol observe: ingressDeny only audited" host_ping_vm
 edge '{"vms":[]}'
 check "netpol: cleared" [ "$(jpath vm_edge_status "len(d['taps'])")" = 0 ]
 
+# ---- per-project egress IP (SNAT) ---------------------------------------------
+# A second netns stands in for the outside world; the "VM" netns is routed
+# through the host and the egress IP is a /32 on the host side of that link.
+# Skipped when the host already has a machina_egress table (a real bpfd owns it).
+
+if nft list table ip machina_egress >/dev/null 2>&1; then
+  echo "SKIP  egress: ip machina_egress already exists on this host"
+else
+  OUT_NS=mnvme-out
+  OUT_IF=mnvme-b0
+  OUT_HOST_IP=10.199.82.1
+  OUT_IP=10.199.82.2
+  EGRESS_IP=10.199.84.1
+  FWD_WAS=$(cat /proc/sys/net/ipv4/ip_forward)
+  egress_cleanup() {
+    nft delete table ip machina_egress 2>/dev/null || true
+    for d in "-i $HOST_IF -o $OUT_IF" "-i $OUT_IF -o $HOST_IF"; do
+      # shellcheck disable=SC2086
+      iptables -D FORWARD $d -j ACCEPT 2>/dev/null || true
+    done
+    [[ -n "${OUTSRV_PID:-}" ]] && kill "$OUTSRV_PID" 2>/dev/null || true
+    ip netns del "$OUT_NS" 2>/dev/null || true
+    ip link del "$OUT_IF" 2>/dev/null || true
+    echo "$FWD_WAS" >/proc/sys/net/ipv4/ip_forward
+  }
+  trap 'egress_cleanup; cleanup' EXIT
+  ip netns add "$OUT_NS"
+  ip link add "$OUT_IF" type veth peer name "${OUT_IF}p"
+  ip link set "${OUT_IF}p" netns "$OUT_NS"
+  ip addr add "$OUT_HOST_IP/30" dev "$OUT_IF"
+  ip addr add "$EGRESS_IP/32" dev "$OUT_IF"
+  ip link set "$OUT_IF" up
+  ip netns exec "$OUT_NS" ip addr add "$OUT_IP/30" dev "${OUT_IF}p"
+  ip netns exec "$OUT_NS" ip link set "${OUT_IF}p" up
+  ip netns exec "$OUT_NS" ip route add 10.199.81.0/30 via "$OUT_HOST_IP"
+  ip netns exec "$OUT_NS" ip route add "$EGRESS_IP/32" via "$OUT_HOST_IP"
+  ip netns exec "$NS" ip route add 10.199.82.0/30 via "$HOST_IP"
+  echo 1 >/proc/sys/net/ipv4/ip_forward
+  if command -v iptables >/dev/null; then
+    iptables -I FORWARD -i "$HOST_IF" -o "$OUT_IF" -j ACCEPT
+    iptables -I FORWARD -i "$OUT_IF" -o "$HOST_IF" -j ACCEPT
+  fi
+  (ip netns exec "$OUT_NS" python3 -c "
+import socket
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('$OUT_IP', 18095)); s.listen(8)
+while True:
+    c, a = s.accept(); c.sendall(a[0].encode()); c.close()
+" >/dev/null 2>&1) &
+  OUTSRV_PID=$!
+  sleep 0.5
+  seen_as() {
+    ip netns exec "$NS" python3 -c "import socket; s=socket.create_connection(('$OUT_IP',18095),3); print(s.recv(64).decode())" 2>/dev/null
+  }
+  snat() { req "{\"op\":\"vm_egress_snat_set\",\"config\":{\"rules\":$1,\"exclude\":[]}}"; }
+  check "egress: routed out with the VM address" [ "$(seen_as)" = "$VM_IP" ]
+  snat "[{\"project\":\"smoke\",\"egress_ip\":\"$EGRESS_IP\",\"sources\":[\"$VM_IP\"]}]" | must
+  check "egress: status active with one rule" [ "$(jpath vm_egress_snat_status "(d['active'], len(d['rules']), d.get('error'))")" = "(True, 1, None)" ]
+  check "egress: nft table installed" bash -c "nft list table ip machina_egress | grep -q 'snat to $EGRESS_IP'"
+  check "egress: outside sees the project egress IP" [ "$(seen_as)" = "$EGRESS_IP" ]
+  bad_snat_ok() { snat "[{\"project\":\"x\",\"egress_ip\":\"nope\",\"sources\":[\"$VM_IP\"]}]" | grep -q '"ok":true'; }
+  check "egress: invalid address refused" not bad_snat_ok
+  check "egress: refused config left the rule in place" [ "$(seen_as)" = "$EGRESS_IP" ]
+  snat "[{\"project\":\"smoke\",\"egress_ip\":\"10.199.85.9\",\"sources\":[\"$VM_IP\"]}]" | must
+  check "egress: non-local egress IP skipped" [ "$(jpath vm_egress_snat_status "(d['active'], len(d['skipped']))")" = "(False, 1)" ]
+  no_table() { ! nft list table ip machina_egress >/dev/null 2>&1; }
+  check "egress: skipped rule leaves no table" no_table
+  check "egress: VM address again without a rule" [ "$(seen_as)" = "$VM_IP" ]
+  snat "[{\"project\":\"smoke\",\"egress_ip\":\"$EGRESS_IP\",\"sources\":[\"$VM_IP\"]}]" | must
+  check "egress: re-applied" [ "$(seen_as)" = "$EGRESS_IP" ]
+  snat '[]' | must
+  check "egress: cleared removes the table" no_table
+  check "egress: cleared restores the VM address" [ "$(seen_as)" = "$VM_IP" ]
+  egress_cleanup
+  trap cleanup EXIT
+fi
+
 # ---- QEMU sandbox -----------------------------------------------------------
 
 mkdir -p "$CG"

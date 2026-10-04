@@ -23,8 +23,8 @@ use machina_bpf::api::{
     Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry, VmQuarantineBody, VmThreatStatus,
 };
 use machina_bpf::netpol::{
-    self, jit, nl, threat, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs,
-    TraceQuery, VmNetworkPolicy,
+    self, evidence, jit, nl, threat, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm,
+    ReplayInputs, TraceQuery, VmNetworkPolicy,
 };
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
@@ -1062,6 +1062,116 @@ async fn draft(
     .into_response())
 }
 
+async fn evidence(
+    State(m): State<LibvirtManager>,
+    Extension(actor): Extension<RequestActor>,
+    Query(q): Query<GetQuery>,
+) -> Result<Response, AppError> {
+    let store = load_store();
+    let inv = refresh_inventory(&m).await;
+    let haddr = tokio::task::spawn_blocking(host_addresses)
+        .await
+        .unwrap_or_default();
+    let svcs = services(&store.policies).await;
+    let c = compile_cached(&m, &store.policies).await;
+    let sel = selected_map(&c);
+    let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname")
+        .map(|h| h.trim().to_string())
+        .unwrap_or_default();
+    let edge = edge_status().await;
+    let last = LAST.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let host = evidence::HostEvidence {
+        hostname: hostname.clone(),
+        reachable: edge.is_some(),
+        enforcing: edge.as_ref().is_some_and(|e| e.enforcing),
+        owner: edge.as_ref().map(|e| e.owner.clone()).unwrap_or_default(),
+        synced_at: last.as_ref().and_then(|l| l.at.clone()),
+        in_sync: edge.is_some() && last.as_ref().is_some_and(|l| l.ok),
+        error: last.as_ref().and_then(|l| l.error.clone()),
+    };
+    let policies = store
+        .policies
+        .iter()
+        .map(|p| evidence::PolicyEvidence {
+            name: p.name.clone(),
+            kind: p.kind.clone(),
+            enabled: true,
+            generated: false,
+            description: p.description(),
+            sha256: evidence::policy_hash(p),
+            selected_vms: sel.get(&p.name).cloned().unwrap_or_default(),
+            updated_at: String::new(),
+        })
+        .collect();
+    let (kind, groups) = evidence::groups(&inv);
+    let (pol, vms) = (store.policies.clone(), inv.clone());
+    let matrix =
+        tokio::task::spawn_blocking(move || evidence::matrix(&pol, &vms, &svcs, &haddr, &groups))
+            .await
+            .map_err(|e| LibvirtError::Operation(format!("matrix: {e}")))?;
+    let denied = evidence::denied(&history(None).await.unwrap_or_default());
+    let items = |v: Result<Value, AppError>| {
+        v.ok()
+            .and_then(|v| v.as_array().cloned())
+            .unwrap_or_default()
+    };
+    let now = chrono::Utc::now();
+    let mut e = evidence::Evidence {
+        generated_at: now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        generated_by: actor.username.clone(),
+        scope: format!("host {hostname}"),
+        source: "machina-daemon".into(),
+        hosts: vec![host],
+        policies,
+        matrix_groups: kind,
+        matrix,
+        alerts: items(bpfd_call(&Request::VmFlowAlerts { limit: Some(50) }).await),
+        quarantines: items(bpfd_call(&Request::VmQuarantines).await),
+        temporary_access: jit::grants(&store.policies, now)
+            .iter()
+            .map(|g| serde_json::to_value(g).unwrap_or_default())
+            .collect(),
+        threat_feeds: threat_status()
+            .await
+            .map(|t| t.feeds)
+            .unwrap_or_default()
+            .iter()
+            .map(|f| serde_json::to_value(f).unwrap_or_default())
+            .collect(),
+        egress_ips: bpfd_call(&Request::VmEgressSnatStatus)
+            .await
+            .ok()
+            .and_then(|v| v["rules"].as_array().cloned())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|r| json!({ "hostname": hostname, "project": r["project"], "egress_ip": r["egress_ip"], "sources": r["sources"].as_array().map(|a| a.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>().join(", ")) }))
+            .collect(),
+        denied: denied.clone(),
+        ..Default::default()
+    };
+    e.summary.vms = inv.len();
+    e.seal(denied.len());
+    tracing::info!(actor = %actor.username, digest = %e.digest, "segmentation evidence exported");
+    let stamp = e.generated_at.replace([':', '-'], "");
+    Ok(match q.format.as_deref() {
+        Some("md" | "markdown") => (
+            [
+                (
+                    header::CONTENT_TYPE,
+                    "text/markdown; charset=utf-8".to_string(),
+                ),
+                (
+                    header::CONTENT_DISPOSITION,
+                    format!("attachment; filename=\"segmentation-evidence-{stamp}.md\""),
+                ),
+            ],
+            evidence::markdown(&e),
+        )
+            .into_response(),
+        _ => Json(e).into_response(),
+    })
+}
+
 async fn get_labels(Path(name): Path<String>) -> Json<Value> {
     let labels = machina_core::libvirt::extras::get_vm_labels(&name);
     Json(json!({ "name": name, "labels": labels }))
@@ -1106,6 +1216,7 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/learn", post(learn))
         .route("/vm-network-policies/replay", post(replay))
         .route("/vm-network-policies/draft", post(draft))
+        .route("/vm-network-policies/evidence", get(evidence))
         .route("/vm-network-policies/quarantines", get(quarantines))
         .route("/vm-network-policies/jit", get(jit_list).post(jit_grant))
         .route("/vm-network-policies/threat-feeds", get(threat_feeds))

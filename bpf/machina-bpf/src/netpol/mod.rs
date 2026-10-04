@@ -18,6 +18,7 @@
 //! datapath does.
 
 mod compile;
+pub mod evidence;
 mod flow;
 pub mod fqdn;
 pub mod jit;
@@ -26,6 +27,8 @@ pub mod l7stream;
 mod learn;
 pub mod nl;
 mod services;
+pub mod snat;
+pub mod tenant;
 #[cfg(test)]
 mod tests;
 pub mod threat;

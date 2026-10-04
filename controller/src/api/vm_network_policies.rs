@@ -18,7 +18,9 @@ use futures_util::stream::Stream;
 use machina_bpf::api::{
     Request, VmEdgeStatus, VmFlowAlert, VmFlowEdge, VmFlowRecord, VmQuarantineBody,
 };
+use machina_bpf::netpol::evidence;
 use machina_bpf::netpol::jit::{self, JitRequest};
+use machina_bpf::netpol::tenant::{self, Isolation, ProjectNet};
 use machina_bpf::netpol::{
     self, nl, FlowFilter, LearnOptions, NetpolVm, ReplayInputs, TraceQuery, VmNetworkPolicy,
 };
@@ -235,7 +237,8 @@ pub async fn selectors(State(state): State<AppState>) -> Json<Value> {
     Json(json!({ "items": c.selectors }))
 }
 
-pub async fn status(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+/// Sync record plus live edge state of every host.
+async fn host_rows(state: &AppState) -> Result<Vec<Value>, ApiError> {
     type Row = (
         String,
         String,
@@ -274,6 +277,11 @@ pub async fn status(State(state): State<AppState>) -> Result<Json<Value>, ApiErr
         row["cilium"] = json!(edge.as_ref().and_then(|e| e.cilium.clone()));
         hosts.push(row);
     }
+    Ok(hosts)
+}
+
+pub async fn status(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+    let hosts = host_rows(&state).await?;
     let policies = vm_netpol::policies(&state.pool).await?.len();
     Ok(Json(
         json!({ "policies": policies, "managed_by": "controller", "hosts": hosts }),
@@ -761,6 +769,349 @@ pub async fn threat_feed_refresh(
 }
 
 // ---- just-in-time access --------------------------------------------------------
+
+// ---- Fleet Cloud project networking ------------------------------------------------
+
+fn describe_project(s: &ProjectNet) -> String {
+    let mut parts = vec![match s.isolation {
+        Isolation::Isolated if s.allow_host => "isolated (host allowed)".to_string(),
+        Isolation::Isolated => "isolated (host blocked)".to_string(),
+        Isolation::Open => "open".to_string(),
+        Isolation::Inherit => "follows the default".to_string(),
+    }];
+    if s.egress_restricted {
+        parts.push(format!(
+            "egress limited to {} destination(s)",
+            s.egress_allow.len()
+        ));
+    }
+    if !s.egress_ips.is_empty() {
+        let ips: Vec<String> = s
+            .egress_ips
+            .iter()
+            .map(|(h, ip)| format!("{ip} on {h}"))
+            .collect();
+        parts.push(format!("egress IP {}", ips.join(", ")));
+    }
+    parts.join(", ")
+}
+
+/// Every project with its settings, what it inherits and its VMs.
+pub async fn projects(State(state): State<AppState>) -> Json<Value> {
+    let fleet = Fleet::load(&state.pool).await;
+    let names = vm_netpol::project_names(&state.pool, &fleet.vms).await;
+    let mut all: std::collections::BTreeSet<String> = names;
+    all.extend(
+        fleet
+            .projects
+            .iter()
+            .filter(|p| !p.is_default())
+            .map(|p| p.project.clone()),
+    );
+    let default = fleet
+        .projects
+        .iter()
+        .find(|p| p.is_default())
+        .cloned()
+        .unwrap_or_else(|| ProjectNet {
+            project: tenant::DEFAULT_PROJECT.into(),
+            isolation: Isolation::Open,
+            ..Default::default()
+        });
+    let items: Vec<Value> = all
+        .iter()
+        .map(|name| {
+            let own = fleet.projects.iter().find(|p| &p.project == name);
+            let (isolated, allow_host) = tenant::effective(&fleet.projects, name);
+            let vms: Vec<&str> = fleet
+                .vms
+                .iter()
+                .filter(|v| v.project.as_deref() == Some(name.as_str()))
+                .map(|v| v.name.as_str())
+                .collect();
+            let policies: Vec<&str> = fleet
+                .policies
+                .iter()
+                .filter(|p| {
+                    p.labels.get(tenant::LABEL_MANAGED).map(String::as_str)
+                        == Some(tenant::MANAGED_VALUE)
+                        && p.labels.get(netpol::LABEL_PROJECT) == Some(name)
+                })
+                .map(|p| p.name.as_str())
+                .collect();
+            json!({
+                "project": name,
+                "explicit": own.is_some(),
+                "settings": own.cloned().unwrap_or_else(|| ProjectNet { project: name.clone(), ..Default::default() }),
+                "isolated": isolated,
+                "allow_host": allow_host,
+                "vms": vms,
+                "policies": policies,
+            })
+        })
+        .collect();
+    Json(json!({ "default": default, "items": items }))
+}
+
+pub async fn project_set(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(project): Path<String>,
+    Json(mut b): Json<ProjectNet>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    b.project = project.trim().to_string();
+    b.validate().map_err(ApiError::bad_request)?;
+    if !b.egress_ips.is_empty() {
+        let hosts = bpf::hosts(&state.pool).await;
+        for h in b.egress_ips.keys() {
+            if !hosts.iter().any(|x| &x.id == h || &x.hostname == h) {
+                return Err(ApiError::bad_request(format!(
+                    "egress IP host `{h}` is not a fleet host (use its name or id)"
+                )));
+            }
+        }
+    }
+    vm_netpol::project_put(&state.pool, &b, &actor.username)
+        .await
+        .map_err(|e| ApiError::internal(format!("{e:#}")))?;
+    let what = if b.is_default() {
+        "the project default".to_string()
+    } else {
+        format!("project {}", b.project)
+    };
+    state.emit_event(
+        "netpol.project",
+        format!("{} set {what}: {}", actor.username, describe_project(&b)),
+    );
+    let sync = vm_netpol::reconcile(&state.pool, false).await;
+    Ok(Json(json!({ "project": b, "sync": sync })))
+}
+
+pub async fn project_remove(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(project): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    let removed = vm_netpol::project_delete(&state.pool, &project)
+        .await
+        .map_err(|e| ApiError::internal(format!("{e:#}")))?;
+    if removed {
+        state.emit_event(
+            "netpol.project",
+            format!(
+                "{} reset network settings of {}",
+                actor.username,
+                if project == tenant::DEFAULT_PROJECT {
+                    "the project default".to_string()
+                } else {
+                    format!("project {project}")
+                }
+            ),
+        );
+    }
+    let sync = vm_netpol::reconcile(&state.pool, false).await;
+    Ok(Json(
+        json!({ "project": project, "removed": removed, "sync": sync }),
+    ))
+}
+
+/// Egress SNAT state of every online host.
+pub async fn egress_ips(State(state): State<AppState>) -> Json<Value> {
+    let (hosts, errors) = fan_out_report(&state, &Request::VmEgressSnatStatus).await;
+    Json(json!({ "items": hosts, "errors": errors }))
+}
+
+// ---- Segmentation evidence ------------------------------------------------------------
+
+#[derive(Deserialize, Default)]
+pub struct EvidenceQuery {
+    #[serde(default)]
+    format: Option<String>,
+}
+
+/// Answer an evidence report as JSON or (`format=md`) Markdown.
+pub fn evidence_response(e: &evidence::Evidence, format: Option<&str>) -> Response {
+    let stamp = e.generated_at.replace([':', '-'], "");
+    match format {
+        Some("md" | "markdown") => (
+            [
+                (
+                    header::CONTENT_TYPE,
+                    "text/markdown; charset=utf-8".to_string(),
+                ),
+                (
+                    header::CONTENT_DISPOSITION,
+                    format!("attachment; filename=\"segmentation-evidence-{stamp}.md\""),
+                ),
+            ],
+            evidence::markdown(e),
+        )
+            .into_response(),
+        _ => Json(e).into_response(),
+    }
+}
+
+pub async fn evidence(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Query(q): Query<EvidenceQuery>,
+) -> Result<Response, ApiError> {
+    let fleet = Fleet::load(&state.pool).await;
+    let rows = vm_netpol::policies(&state.pool).await?;
+    let c = fleet.compile(None);
+    let sel = selected_map(&c);
+    let mut policies: Vec<evidence::PolicyEvidence> = rows
+        .iter()
+        .map(|(p, en, _, u)| evidence::PolicyEvidence {
+            name: p.name.clone(),
+            kind: p.kind.clone(),
+            enabled: *en,
+            generated: false,
+            description: p.description(),
+            sha256: evidence::policy_hash(p),
+            selected_vms: sel.get(&p.name).cloned().unwrap_or_default(),
+            updated_at: u.clone(),
+        })
+        .collect();
+    policies.extend(
+        fleet
+            .policies
+            .iter()
+            .filter(|p| {
+                p.labels.get(tenant::LABEL_MANAGED).map(String::as_str)
+                    == Some(tenant::MANAGED_VALUE)
+            })
+            .map(|p| evidence::PolicyEvidence {
+                name: p.name.clone(),
+                kind: p.kind.clone(),
+                enabled: true,
+                generated: true,
+                description: p.description(),
+                sha256: evidence::policy_hash(p),
+                selected_vms: sel.get(&p.name).cloned().unwrap_or_default(),
+                updated_at: String::new(),
+            }),
+    );
+    let hosts = host_rows(&state)
+        .await?
+        .iter()
+        .map(|h| evidence::HostEvidence {
+            hostname: h["hostname"].as_str().unwrap_or_default().to_string(),
+            reachable: h["reachable"].as_bool().unwrap_or(false),
+            enforcing: h["enforcing"].as_bool().unwrap_or(false),
+            owner: h["owner"].as_str().unwrap_or_default().to_string(),
+            synced_at: h["synced_at"].as_str().map(str::to_string),
+            in_sync: h["ok"].as_bool().unwrap_or(false)
+                && h["reachable"].as_bool().unwrap_or(false),
+            error: h["error"].as_str().map(str::to_string),
+        })
+        .collect();
+    let projects: Vec<Value> = projects(State(state.clone()))
+        .await
+        .0["items"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|p| {
+            let s: ProjectNet = serde_json::from_value(p["settings"].clone()).unwrap_or_default();
+            let iso = if p["isolated"].as_bool() == Some(true) {
+                if p["allow_host"].as_bool() == Some(true) { "isolated" } else { "isolated (no host)" }
+            } else {
+                "open"
+            };
+            json!({
+                "project": p["project"],
+                "vms": p["vms"],
+                "isolated": p["isolated"],
+                "isolation": format!("{iso}{}", if s.isolation == Isolation::Inherit { " (default)" } else { "" }),
+                "egress": if s.egress_restricted {
+                    s.egress_allow.iter().map(|e| if e.ports.is_empty() { e.to.clone() } else { format!("{} ({})", e.to, e.ports.join(", ")) }).collect::<Vec<_>>().join(", ")
+                } else { "any".into() },
+                "egress_ips": s.egress_ips.iter().map(|(h, ip)| format!("{ip}@{h}")).collect::<Vec<_>>().join(", "),
+                "policies": p["policies"],
+            })
+        })
+        .collect();
+    let (kind, groups) = evidence::groups(&fleet.vms);
+    let (pol, vms, svcs, haddr) = (
+        fleet.policies.clone(),
+        fleet.vms.clone(),
+        fleet.services.clone(),
+        fleet.all_host_addresses(),
+    );
+    let matrix =
+        tokio::task::spawn_blocking(move || evidence::matrix(&pol, &vms, &svcs, &haddr, &groups))
+            .await
+            .map_err(|e| ApiError::internal(format!("matrix: {e}")))?;
+    let denied = evidence::denied(&fleet_edges(&state, None).await);
+    let now = chrono::Utc::now();
+    let stored: Vec<VmNetworkPolicy> = rows.iter().map(|r| r.0.clone()).collect();
+    let approvals: Vec<(String, String, String, Option<String>, String, String)> = sqlx::query_as(
+        "SELECT action_type, label, requested_by, approved_by, status, created_at FROM ai_actions
+         WHERE action_type IN (?, ?, 'vm.quarantine') AND created_at >= datetime('now', '-90 days')
+         ORDER BY created_at DESC LIMIT 500",
+    )
+    .bind(JIT_ACTION)
+    .bind(APPLY_ACTION)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+    let (egress_hosts, _) = fan_out_report(&state, &Request::VmEgressSnatStatus).await;
+    let mut e = evidence::Evidence {
+        generated_at: now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        generated_by: actor.username.clone(),
+        scope: "fleet".into(),
+        source: "machina-controller".into(),
+        hosts,
+        policies,
+        projects,
+        matrix_groups: kind,
+        matrix,
+        alerts: fleet_alerts(&state, 50)
+            .await
+            .iter()
+            .map(|a| serde_json::to_value(a).unwrap_or_default())
+            .collect(),
+        quarantines: bpf::fan_out_items(&state.pool, &Request::VmQuarantines).await,
+        temporary_access: jit::grants(&stored, now)
+            .iter()
+            .map(|g| serde_json::to_value(g).unwrap_or_default())
+            .collect(),
+        threat_feeds: vm_netpol::threat_feeds(&state.pool)
+            .await
+            .iter()
+            .map(|f| json!({ "name": f.name, "source": f.source, "block": f.block, "domains": f.domain_count, "updated": f.updated_at }))
+            .collect(),
+        egress_ips: egress_hosts
+            .iter()
+            .flat_map(|h| {
+                h["rules"].as_array().cloned().unwrap_or_default().into_iter().map(move |r| {
+                    json!({ "hostname": h["hostname"], "project": r["project"], "egress_ip": r["egress_ip"], "sources": r["sources"].as_array().map(|a| a.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>().join(", ")) })
+                })
+            })
+            .collect(),
+        approvals: approvals
+            .into_iter()
+            .map(|(t, l, r, a, st, at)| json!({ "action_type": t, "label": l, "requested_by": r, "approved_by": a, "status": st, "created_at": at }))
+            .collect(),
+        denied: denied.clone(),
+        ..Default::default()
+    };
+    e.summary.vms = fleet.vms.len();
+    e.seal(denied.len());
+    state.emit_event(
+        "netpol.evidence",
+        format!(
+            "{} exported segmentation evidence {}",
+            actor.username,
+            &e.digest[..16]
+        ),
+    );
+    Ok(evidence_response(&e, q.format.as_deref()))
+}
 
 pub const JIT_ACTION: &str = "vm_netpol.jit";
 

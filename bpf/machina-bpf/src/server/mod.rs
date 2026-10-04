@@ -32,6 +32,7 @@ use crate::{dns, fmt_addr};
 mod afxdp;
 mod cni;
 mod direct;
+mod egress;
 mod flowhist;
 mod guard;
 mod l7sample;
@@ -278,6 +279,7 @@ struct Engine {
     quiclb: quiclb::QuicLbRuntime,
     afxdp: afxdp::AfxdpRuntime,
     scx: scx::ScxRuntime,
+    egress: egress::EgressRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -376,6 +378,7 @@ impl Engine {
             quiclb: quiclb::QuicLbRuntime::default(),
             afxdp: afxdp::AfxdpRuntime::default(),
             scx: scx::ScxRuntime::default(),
+            egress: egress::EgressRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

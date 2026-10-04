@@ -11,6 +11,15 @@ export function downloadJSON(data: unknown, filename: string) {
   URL.revokeObjectURL(url)
 }
 
+export function downloadText(text: string, filename: string, type = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 /**
  * Neutralize CSV/Excel formula injection: values here can originate from
  * user-controlled data (VM names, audit actors, event messages) and this

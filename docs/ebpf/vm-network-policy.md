@@ -869,6 +869,157 @@ API:
     returns `{pending}`.
   - `GET /api/v1/vm-network-policies/draft` lists the pending drafts.
 
+## Project isolation (Fleet Cloud)
+
+On the fleet, a VM's Fleet Cloud project is also a policy label:
+`machina.io/project`. Projects can be isolated from each other without
+writing any YAML.
+
+```bash
+machinactl --fleet netpol projects                    # every project and its settings
+machinactl --fleet netpol project default isolated    # new projects start isolated
+machinactl --fleet netpol project open shared-tools   # this one stays open
+machinactl --fleet netpol project isolate payments --no-host
+machinactl --fleet netpol project inherit payments    # back to the default
+machinactl --fleet netpol project reset payments      # drop every setting
+```
+
+- **Isolated:** the project's VMs accept connections only from VMs of the
+  same project, plus the host unless `--no-host` is given. **Open:** no
+  generated rule. **Inherit:** follow the default, which is open until
+  set.
+- **Exceptions:** ordinary allow policies still apply, because policies
+  add up. One `CiliumNetworkPolicy` that lets `app=monitor` reach port
+  9100 opens that port into an isolated project.
+- **Generated policies:** each setting becomes a policy named
+  `project-isolation-<project>-<hash>`, labelled
+  `machina.io/managed-by: project-network`. It is compiled, traced, replayed
+  and pushed like any other policy. It is listed by `netpol trace` and in
+  evidence exports, but not stored: changing the setting replaces it.
+- **Enforcement:** drops need the enforcement lease like every policy. In
+  observe mode, cross-project connections show up as AUDIT flows.
+- **Storage:** settings live in the controller table `vm_netpol_projects`.
+  Changes are recorded as `netpol.project` events.
+
+In the UI, the *Projects* view (fleet scope) has the default, a row per
+project with its VM count and an isolation picker, and *Egress…* for the
+allowlist and egress IPs.
+
+API (controller, admin to change):
+
+- `GET /api/v1/vm-network-policies/projects` returns `{default, items}`.
+  Each item has the stored settings, the effective `isolated` /
+  `allow_host`, the VMs and the generated policy names.
+- `PUT /api/v1/vm-network-policies/projects/{project}` with
+  `{isolation, allow_host, egress_restricted, egress_allow, egress_ips}`.
+  Project `*` is the default and takes only `isolation` and `allow_host`.
+- `DELETE /api/v1/vm-network-policies/projects/{project}` resets it.
+
+## Egress allowlists and egress IPs
+
+A project's outbound traffic can be limited to a list, and given its own
+source address on the way out.
+
+```bash
+machinactl --fleet netpol egress payments allow '*.stripe.com' --port 443
+machinactl --fleet netpol egress payments allow 10.20.0.0/16 --port 5432
+machinactl --fleet netpol egress payments allow 203.0.113.10 --port 53/udp
+machinactl --fleet netpol egress payments                    # show it
+machinactl --fleet netpol egress payments remove 10.20.0.0/16
+machinactl --fleet netpol egress payments unrestrict         # keep the list, stop limiting
+machinactl --fleet netpol egress payments ip hv-1 198.51.100.7
+machinactl --fleet netpol egress                             # egress IPs on every host
+```
+
+### Allowlist
+
+- **Restricted project:** its VMs reach only the allowlist, the project's
+  own VMs, the host (unless `--no-host`) and DNS on the host.
+- **Entries:** a CIDR or IP, a domain, `*.domain`, or `world`. Each entry
+  takes optional ports (`443`, `53/udp`); without ports every port is
+  allowed. Domains become `toFQDNs` rules, so they work once the VM has
+  resolved the name.
+- **DNS:** lookups must go to the host's resolver (port 53 on the host), which
+  is what libvirt networks hand out. To use another resolver, add it to
+  the list with `--port 53/udp`.
+- **Generated policy:** `project-egress-<project>-<hash>`, with the same
+  labels and handling as the isolation policy.
+
+### Egress IPs
+
+- **What it does:** an egress IP rewrites the source address of the
+  project's traffic leaving one host. Firewalls and SaaS allowlists
+  outside the fleet can then tell tenants apart.
+- **Setting it:** set one per host, by host name or id. The address must
+  already be configured on that host; Machina does not add addresses.
+- **What is never rewritten:** destinations in private (RFC 1918),
+  CGNAT, link-local, loopback and multicast ranges keep the VM's own
+  source, so VM-to-VM traffic and policies are unaffected.
+- **How it works:** on every reconcile the controller sends each host the
+  rules for its VMs. `machina-bpfd` installs them as one nftables table,
+  `ip machina_egress` (a `srcnat` chain with `ip saddr {VMs} snat to IP`),
+  replaced atomically on each change.
+- **Missing addresses:** a rule whose address is not on the host is
+  skipped and reported, not applied.
+- **Persistence:** the table is address translation, not a security
+  control, so it stays in place while bpfd is stopped. bpfd re-applies the
+  saved rules when it starts.
+- **Off by default:** with no egress IPs set, nothing is installed and no
+  `nft` command runs.
+
+`GET /api/v1/vm-network-policies/egress-ips` (controller) shows each host's
+rules, whether they are active, skipped rules and errors.
+
+## Segmentation evidence
+
+`netpol evidence` exports what an auditor asks for when checking network
+segmentation (PCI DSS 1.2/1.3 or SOC 2 CC6.6, for example) as one document:
+
+```bash
+machinactl --fleet netpol evidence                        # summary and matrix
+machinactl --fleet netpol evidence -o json --out ev.json  # full document
+machinactl --fleet netpol evidence -o md --out ev.md      # for the audit binder
+machinactl netpol evidence verify ev.json                 # digest check
+```
+
+The document (`kind: machina.io/segmentation-evidence/v1`) contains:
+
+- **Summary:** VMs, how many are covered by a policy, policies (stored
+  and generated), projects and how many are isolated, hosts in sync and
+  enforcing, denied connections and alerts.
+- **Hosts:** for each host, whether it is reachable, whether it is
+  enforcing, who owns its edge, and its last sync and error.
+- **Policies:** every policy, with its kind, whether it is enabled or
+  generated, its description, the selected VMs and a SHA-256 of its YAML
+  (as `netpol get NAME -o yaml` prints it).
+- **Projects:** isolation, egress allowlist and egress IPs per project
+  (fleet only).
+- **Reachability matrix:** for every pair of groups, plus `host` and
+  `world`, which probe ports the policy set allows.
+  - Groups are projects, or VMs when no VM has a project, up to 40.
+  - The probes are TCP 22, 80, 443, 3389, 5432 and UDP 53.
+  - Each cell is computed by the policy tracer from up to three sample VMs
+    per group, and lists the pairs it traced. It shows what the policy
+    allows, not what was observed.
+- **Denied connections:** the 50 largest dropped or audited edges in the
+  7-day flow history, with the total.
+- **Operations:** alerts, active quarantines, temporary access grants,
+  threat feeds and egress IPs.
+- **Approvals:** on the fleet, 90 days of `vm_netpol.jit`,
+  `vm_netpol.apply` and `vm.quarantine` approval actions, with requester and
+  approver.
+- **Digest:** a SHA-256 over the compact JSON with `digest` empty.
+  `netpol evidence verify FILE` recomputes it (with `jq` and `sha256sum`),
+  so later edits to a saved file are detected.
+
+The Markdown form has the same content as tables, and is what the UI's
+*Export evidence → Markdown* button downloads. *JSON* downloads the
+document byte for byte, so its digest verifies.
+
+API: `GET /api/v1/vm-network-policies/evidence[?format=md]` on the daemon
+(this host) and the controller (the fleet). Exports are logged, as
+`netpol.evidence` events on the controller.
+
 ## Test
 
 `scripts/bpf/vm-edge-smoke.sh` has a *VM network policy* section. It runs on
@@ -893,6 +1044,13 @@ a veth pair in a scratch netns and covers:
   `toFQDNs`); AUDIT in observe mode.
 - Authentication: `test-always-fail`, `required` against a fleet peer, the
   auth table, and the source guard with and without the lease.
+- Egress IPs: a second netns stands in for the internet, routed through
+  the host. A server there reports the source address it sees: the VM's
+  address before the rule, the egress IP after it, and the VM's address
+  again when the rule is skipped (non-local address) or cleared. The
+  checks also cover refusing an invalid config and removing the nftables
+  table. The section is skipped when the host already has an
+  `ip machina_egress` table.
 
 `scripts/bpf/vm-netpol-realvm.sh` runs against two real VMs. It boots
 `np-client` and `np-server` from a Debian cloud image on the `default` NAT

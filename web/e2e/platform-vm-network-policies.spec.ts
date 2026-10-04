@@ -98,6 +98,13 @@ async function mockNetpol(page: Page) {
   const quarantines: Array<Record<string, unknown>> = []
   const grants: Array<Record<string, unknown>> = []
   const feeds: Array<Record<string, unknown>> = []
+  const blankNet = { isolation: 'inherit', allow_host: true, egress_restricted: false, egress_allow: [], egress_ips: {} }
+  const projectNet: Record<string, Record<string, unknown>> = {
+    '*': { ...blankNet, project: '*', isolation: 'open' },
+    shop: { ...blankNet, project: 'shop' },
+  }
+  const projectVms: Record<string, string[]> = { shop: ['web-1', 'db-1'], lab: ['lab-1'] }
+  const evidenceBody = '{"kind":"machina.io/segmentation-evidence/v1","scope":"fleet","digest":"abc123"}'
   await page.route('**/vms/*/quarantine', (route) => {
     const req = route.request()
     const vm = decodeURIComponent(new URL(req.url()).pathname.split('/').slice(-2)[0])
@@ -240,6 +247,48 @@ async function mockNetpol(page: Page) {
       if (i >= 0) feeds.splice(i, 1, f)
       else feeds.push(f)
       return json(route, f)
+    }
+    if (path === '/projects') {
+      const def = projectNet['*']
+      const isolated = (n: string) => {
+        const own = projectNet[n]?.isolation
+        return own === 'isolated' || (own !== 'open' && def.isolation === 'isolated')
+      }
+      return json(route, {
+        default: def,
+        items: Object.keys(projectVms).map((n) => ({
+          project: n,
+          explicit: n in projectNet,
+          settings: projectNet[n] ?? { ...blankNet, project: n },
+          isolated: isolated(n),
+          allow_host: true,
+          vms: projectVms[n],
+          policies: isolated(n) ? [`project-isolation-${n}-a1b2c3`] : [],
+        })),
+      })
+    }
+    if (path.startsWith('/projects/')) {
+      const name = decodeURIComponent(path.split('/')[2])
+      if (method === 'DELETE') {
+        delete projectNet[name]
+        return json(route, { deleted: name })
+      }
+      projectNet[name] = { ...(req.postDataJSON() as Record<string, unknown>), project: name }
+      return json(route, { project: projectNet[name] })
+    }
+    if (path === '/egress-ips') {
+      const rules = Object.values(projectNet).flatMap((n) =>
+        Object.values((n.egress_ips ?? {}) as Record<string, string>).map((ip) => ({ project: n.project, egress_ip: ip, sources: ['10.0.0.5'] })),
+      )
+      return json(route, { items: [{ hostname: 'hv1', rules, exclude: [], active: rules.length > 0, skipped: [], error: null }], errors: [] })
+    }
+    if (path === '/evidence') {
+      const md = new URL(req.url()).searchParams.get('format') === 'md'
+      return route.fulfill({
+        status: 200,
+        headers: { 'content-type': md ? 'text/markdown' : 'application/json' },
+        body: md ? '# Segmentation evidence\n' : evidenceBody,
+      })
     }
     if (method === 'DELETE') {
       const name = decodeURIComponent(path.slice(1))
@@ -404,7 +453,7 @@ test('VM network policies: grant temporary access, then revoke it', async ({ pag
   await expect(page.getByText('No temporary access.')).toBeVisible({ timeout: 15_000 })
   await page.getByLabel('From').fill('web-1')
   await page.getByLabel('To', { exact: true }).fill('db-1')
-  await page.getByLabel('Port').fill('5432')
+  await page.getByLabel('Port', { exact: true }).fill('5432')
   await page.getByLabel('For').selectOption('900')
   await page.getByLabel('Reason').fill('migration')
   await page.getByRole('button', { name: 'Grant access' }).click()
@@ -454,4 +503,47 @@ test('VM network policies: delete asks for confirmation', async ({ page }) => {
   await table.getByRole('button', { name: 'Delete' }).click()
   await expect(page.getByText('Deleted db-from-web')).toBeVisible()
   await expect(page.getByText(/No VM network policies/)).toBeVisible()
+})
+
+test('VM network policies: isolate a project, allow egress and set an egress IP', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?scope=fleet&tab=projects`)
+  const t = page.getByRole('table', { name: 'Project networking' })
+  await expect(t.getByText('shop')).toBeVisible({ timeout: 15_000 })
+  await expect(t.getByText('lab', { exact: true })).toBeVisible()
+  await page.getByLabel('Isolation of shop').selectOption('isolated')
+  await expect(page.getByText('Project shop: isolated')).toBeVisible()
+  await expect(t.locator('span', { hasText: /^Isolated$/ })).toBeVisible()
+  await t.getByRole('button', { name: 'Egress…' }).first().click()
+  await page.getByLabel('Destination').fill('*.stripe.com')
+  await page.getByLabel('Ports').fill('443')
+  await page.getByRole('button', { name: 'Allow', exact: true }).click()
+  await expect(page.getByText('Project shop: allowed *.stripe.com')).toBeVisible()
+  await expect(page.getByLabel('Limit egress of shop')).toBeChecked()
+  await expect(t.getByText('*.stripe.com (443)')).toBeVisible()
+  await page.getByLabel('Egress IP host').fill('hv1')
+  await page.getByLabel('Egress IP', { exact: true }).fill('198.51.100.7')
+  await page.getByRole('button', { name: 'Set egress IP' }).click()
+  await expect(page.getByText('Project shop: egress IP set')).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Egress IPs on hosts' }).getByText(/shop: 1 VM address\(es\) → 198\.51\.100\.7/)).toBeVisible()
+  await page.getByLabel('Default isolation').selectOption('isolated')
+  await expect(page.getByText('Projects are isolated by default')).toBeVisible()
+  page.once('dialog', (d) => void d.accept())
+  await t.getByRole('button', { name: 'Reset' }).click()
+  await expect(page.getByText('Project shop follows the default')).toBeVisible()
+})
+
+test('VM network policies: export segmentation evidence', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(PAGE)
+  await expect(page.getByRole('heading', { name: 'VM Network Policies' })).toBeVisible({ timeout: 15_000 })
+  const [json] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export evidence as JSON' }).click()])
+  expect(json.suggestedFilename()).toMatch(/^segmentation-evidence-\d{8}T\d{6}\.json$/)
+  const fs = await import('node:fs/promises')
+  expect(await fs.readFile((await json.path())!, 'utf8')).toBe('{"kind":"machina.io/segmentation-evidence/v1","scope":"fleet","digest":"abc123"}')
+  await expect(page.getByText('Segmentation evidence downloaded')).toBeVisible()
+  const [md] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export evidence as Markdown' }).click()])
+  expect(md.suggestedFilename()).toMatch(/\.md$/)
 })

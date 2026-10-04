@@ -1108,6 +1108,43 @@ pub struct VmThreatStatus {
     pub watched_vms: usize,
 }
 
+/// Traffic from `sources` (VM addresses on this host) leaving the host is
+/// rewritten to come from `egress_ip`, an address configured on this host.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmEgressSnatRule {
+    /// The Fleet Cloud project the rule is for (informational).
+    #[serde(default)]
+    pub project: String,
+    pub egress_ip: String,
+    pub sources: Vec<String>,
+}
+
+/// Every egress SNAT rule for one host; replaces the previous set.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmEgressSnat {
+    #[serde(default)]
+    pub rules: Vec<VmEgressSnatRule>,
+    /// Destinations never rewritten. `None` = private, link-local,
+    /// loopback, CGNAT and multicast ranges.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exclude: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmEgressSnatStatus {
+    pub rules: Vec<VmEgressSnatRule>,
+    pub exclude: Vec<String>,
+    /// The nftables table is installed.
+    pub active: bool,
+    /// Rules or sources left out, with the reason.
+    #[serde(default)]
+    pub skipped: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
+}
+
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
 /// also needs the bpfd enforcement lease.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -2131,6 +2168,11 @@ pub enum Request {
         name: String,
     },
     VmThreatFeeds,
+    /// Replace the egress SNAT rules (nftables table `machina_egress`).
+    VmEgressSnatSet {
+        config: VmEgressSnat,
+    },
+    VmEgressSnatStatus,
     VmSandboxConfigure {
         config: VmSandboxConfig,
     },

@@ -6,12 +6,14 @@
 //! host daemon's local policies inactive). Re-pushes when the compiled
 //! state changes (policies, labels, addresses, placement) and periodically.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::hash::{Hash, Hasher};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
-use machina_bpf::api::{Request, VmAuthIdentity};
+use machina_bpf::api::{Request, VmAuthIdentity, VmEgressSnat};
 use machina_bpf::authca;
+use machina_bpf::netpol::tenant::{self, ProjectNet};
 use machina_bpf::netpol::{
     self, Inputs, NetpolService, NetpolVm, ServiceEndpoint, VmNetworkPolicy,
 };
@@ -31,6 +33,8 @@ const FORCE_EVERY: u32 = 10;
 const THREAT_REFRESH_EVERY: u32 = 120;
 
 static LAST_PUSH: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
+/// Every host has an empty egress SNAT set and nothing asks for one.
+static EGRESS_IDLE: AtomicBool = AtomicBool::new(false);
 
 pub async fn policies(
     pool: &SqlitePool,
@@ -224,21 +228,88 @@ pub async fn services(pool: &SqlitePool) -> Vec<NetpolService> {
     out.into_values().collect()
 }
 
+/// Project network settings, the default (`*`) first.
+pub async fn project_settings(pool: &SqlitePool) -> Vec<ProjectNet> {
+    let rows: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT settings, updated_by, updated_at FROM vm_netpol_projects
+         ORDER BY project != '*', project",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    rows.into_iter()
+        .filter_map(|(j, by, at)| {
+            let mut s: ProjectNet = serde_json::from_str(&j).ok()?;
+            s.updated_by = by;
+            s.updated_at = at;
+            Some(s)
+        })
+        .collect()
+}
+
+pub async fn project_put(pool: &SqlitePool, s: &ProjectNet, actor: &str) -> anyhow::Result<()> {
+    sqlx::query(
+        "INSERT INTO vm_netpol_projects (project, settings, updated_by) VALUES (?, ?, ?)
+         ON CONFLICT(project) DO UPDATE SET settings = excluded.settings,
+           updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP",
+    )
+    .bind(&s.project)
+    .bind(serde_json::to_string(s)?)
+    .bind(actor)
+    .execute(pool)
+    .await?;
+    EGRESS_IDLE.store(false, Ordering::Relaxed);
+    Ok(())
+}
+
+pub async fn project_delete(pool: &SqlitePool, project: &str) -> anyhow::Result<bool> {
+    let r = sqlx::query("DELETE FROM vm_netpol_projects WHERE project = ?")
+        .bind(project)
+        .execute(pool)
+        .await?;
+    EGRESS_IDLE.store(false, Ordering::Relaxed);
+    Ok(r.rows_affected() > 0)
+}
+
+/// Fleet Cloud projects plus every project a VM names.
+pub async fn project_names(pool: &SqlitePool, vms: &[NetpolVm]) -> BTreeSet<String> {
+    let mut out: BTreeSet<String> = sqlx::query_scalar("SELECT name FROM projects")
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    out.extend(vms.iter().filter_map(|v| v.project.clone()));
+    out
+}
+
 /// Everything needed to compile for any host.
 pub struct Fleet {
+    /// Stored policies plus the generated project policies.
     pub policies: Vec<VmNetworkPolicy>,
     pub vms: Vec<NetpolVm>,
     pub services: Vec<NetpolService>,
     pub host_addrs: BTreeMap<String, String>,
+    pub projects: Vec<ProjectNet>,
 }
 
 impl Fleet {
     pub async fn load(pool: &SqlitePool) -> Self {
+        let vms = inventory(pool).await;
+        let projects = project_settings(pool).await;
+        let mut policies = enabled_policies(pool).await;
+        let generated = tenant::policies(&projects, &project_names(pool, &vms).await);
+        for g in generated {
+            if !policies.iter().any(|p| p.name == g.name) {
+                policies.push(g);
+            }
+        }
         Fleet {
-            policies: enabled_policies(pool).await,
-            vms: inventory(pool).await,
+            policies,
+            vms,
             services: services(pool).await,
             host_addrs: host_addresses(pool).await,
+            projects,
         }
     }
 
@@ -443,7 +514,41 @@ pub async fn reconcile(pool: &SqlitePool, force: bool) -> Vec<HostSync> {
     for h in &hosts {
         out.push(sync_host(pool, &fleet, h, force).await);
     }
+    reconcile_egress(&fleet, &hosts).await;
     out
+}
+
+/// Push each host its project egress SNAT rules. Once every host holds an
+/// empty set and no project has an egress IP, nothing is sent until a
+/// project setting changes.
+async fn reconcile_egress(fleet: &Fleet, hosts: &[HostRef]) {
+    let wanted = fleet.projects.iter().any(|p| !p.egress_ips.is_empty());
+    if !wanted && EGRESS_IDLE.load(Ordering::Relaxed) {
+        return;
+    }
+    let mut all_ok = true;
+    for h in hosts {
+        let rules = tenant::snat_rules(&fleet.projects, &fleet.vms, &h.id, &h.hostname);
+        let none = rules.is_empty();
+        let req = Request::VmEgressSnatSet {
+            config: VmEgressSnat {
+                rules,
+                exclude: None,
+            },
+        };
+        match bpf::call(h, &req).await {
+            Ok(_) => {}
+            // A bpfd without egress support has nothing to clear.
+            Err(e) if none && format!("{e:#}").contains("unknown variant") => {}
+            Err(e) => {
+                all_ok = false;
+                tracing::warn!(host = %h.hostname, "egress SNAT push: {e:#}");
+            }
+        }
+    }
+    if !wanted && all_ok {
+        EGRESS_IDLE.store(true, Ordering::Relaxed);
+    }
 }
 
 pub fn spawn(state: AppState) {
