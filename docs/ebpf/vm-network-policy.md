@@ -11,7 +11,7 @@ hypervisor), it keeps enforcing its own endpoints and Machina enforces the VMs.
 |---|---|
 | Web UI | Platform → Security → **VM Network Policies** (`/platform/zyra/security/network-policies`): policies, YAML editor with dry-run preview and templates, policy tester, endpoints / selectors, live **Flows** terminal. Scope switch: *This host* (daemon) or *Fleet* (controller). VM detail → **Network** tab: labels, enforcement state, live flows for that VM. |
 | CLI | `machinactl netpol …`, `machinactl flow …`, `machinactl vm label …` (add `--fleet` to go through the controller); `scripts/platformctl netpol|flow|label` talks to the controller directly. |
-| Daemon | `/api/v1/vm-network-policies*`, `/api/v1/flows`, `/api/v1/flows/stream`, `/api/v1/vms/{name}/labels` |
+| Daemon | `/api/v1/vm-network-policies*` (including `/fqdn-cache` and `/auth`), `/api/v1/flows`, `/api/v1/flows/stream`, `/api/v1/vms/{name}/labels` |
 | Controller | Same paths; labels are `/api/v1/vms/{id}/labels`. Adds `PUT /vm-network-policies/{name}/enabled` and `POST /vm-network-policies/sync`. |
 
 ## Policy documents
@@ -298,7 +298,9 @@ machinactl vm label web-1                         # show
    `VM_IPS` (exact match), then `VM_CIDR_IDS` (longest prefix), and otherwise
    treats it as `world`. It then checks `VM_POLICY` with wildcards: any peer,
    any port, any protocol. A deny match wins; a miss on an isolated direction
-   is a default-deny drop.
+   is a default-deny drop. An allow entry can also require authentication
+   (checked against `VM_AUTH` for new connections) or L7 (the request's first
+   segment goes to bpfd, see [L7 rules](#l7-rules)).
 
 The usual [safety model](README.md#safety-model) applies. Without the
 enforcement lease, a drop is recorded as an **AUDIT** flow and the packet is
