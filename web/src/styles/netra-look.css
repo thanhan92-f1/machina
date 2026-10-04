@@ -926,7 +926,7 @@ html[data-theme='tahoe'] .platform-detail-tabs-sticky {
   opacity: 1;
   transition: opacity 0.2s;
 }
-.nl-console-protocols a { background: rgba(10, 10, 14, 0.62) !important; color: #fff !important; border-color: transparent !important; backdrop-filter: blur(10px); }
+.nl-console-protocols a { background: rgba(10, 10, 14, 0.82) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; opacity: 1 !important; backdrop-filter: blur(10px); }
 .nl-console-protocols a[title*='recommended'] { background: rgba(48, 209, 88, 0.3) !important; }
 .cc-grid { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 1024px) { .cc-grid { grid-template-columns: minmax(0, 2.5fr) minmax(300px, 1fr); } }
