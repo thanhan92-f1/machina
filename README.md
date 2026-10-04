@@ -92,13 +92,9 @@ Create, clone, snapshot, back up and migrate. Cloud-init, GPU and PCI passthroug
 
 noVNC, SPICE, serial and SSH are proxied by `machina-daemon` itself, behind the same RBAC and audit log as everything else. VM detail leads with a live console preview. [Console architecture →](docs/consolehub-architecture.md)
 
-![VM detail with live console](docs/ux/machina-vm-detail.png)
-
 ### A fleet, not a host
 
 Add hypervisors with a gRPC agent over TLS. The controller keeps desired state, fails VMs over when a host dies, balances load with DRS and live-migrates between hosts. [Controller HA and DRS →](docs/controller-ha.md)
-
-![High availability and host fencing](docs/ux/machina-fleet.png)
 
 ### Fleet Cloud: self-service like a public cloud
 
