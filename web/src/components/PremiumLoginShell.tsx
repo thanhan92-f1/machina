@@ -6,7 +6,7 @@
  * second chapter for credentials. Matches h2kvm / Zeus OS store pattern.
  */
 import type { ReactNode } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Camera, Monitor, ShieldCheck } from 'lucide-react'
 import '../styles/zyvor-premium-login.css'
 
 type PremiumLoginPill = {
@@ -70,6 +70,7 @@ export function PremiumLoginShell({
       {themeSwitcher}
       <main className="login-store-scroll" aria-label="Sign in">
         <section className="login-chapter login-chapter-hero" aria-label={productName}>
+          <span className="login-aurora" aria-hidden />
           <div className="login-chapter-inner">
             {logo ? <div className="login-logo inline-flex mb-5">{logo}</div> : null}
             <p className="login-wordmark" aria-label={productName}>
@@ -84,6 +85,11 @@ export function PremiumLoginShell({
             {tagline ? <p className="login-tagline">{tagline}</p> : null}
             {heroCta ? <div className="login-cta">{heroCta}</div> : null}
             {chapterNote ? <p className="login-chapter-note">{chapterNote}</p> : null}
+            <ul className="login-features" aria-hidden>
+              <li><span style={{ background: 'linear-gradient(145deg,#0a84ff,#5e5ce6)' }}><Monitor className="w-4 h-4" /></span>Live consoles for every machine</li>
+              <li><span style={{ background: 'linear-gradient(145deg,#64d2ff,#0a84ff)' }}><Camera className="w-4 h-4" /></span>Snapshots, backups and one-click recovery</li>
+              <li><span style={{ background: 'linear-gradient(145deg,#ff9f0a,#ff375f)' }}><ShieldCheck className="w-4 h-4" /></span>Firewall, risk and compliance built in</li>
+            </ul>
           </div>
         </section>
 

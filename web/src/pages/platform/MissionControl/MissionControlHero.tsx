@@ -38,7 +38,8 @@ export default function MissionControlHero({ state, warnings, onCreateVm }: Prop
 
   return (
     <>
-      <header className="apple-section apple-hero-band mc-hero mc-hero-ribbon" data-testid="mission-control-hero">
+      <header className="apple-section apple-hero-band mc-hero mc-hero-ribbon nl-aurora-host" data-testid="mission-control-hero" data-status={status}>
+        <span className="nl-aurora" aria-hidden />
         <p className="apple-eyebrow">Machina · {fleetTitle}</p>
         <p className="text-[17px] text-[var(--text-secondary)] tracking-tight mb-2 text-center">{hello}</p>
         <h1 className="apple-display">{word}</h1>
@@ -71,6 +72,13 @@ export default function MissionControlHero({ state, warnings, onCreateVm }: Prop
             </button>
           )}
         </div>
+        {!state.loading && !controlPlaneDown ? (
+          <ul className="nl-chip-row" aria-label="Fleet status">
+            <li className="nl-chip" data-tone={onlineHosts === hosts.length && hosts.length > 0 ? 'ok' : 'warn'}><i aria-hidden />{onlineHosts}/{hosts.length} hosts online</li>
+            <li className="nl-chip" data-tone="info"><i aria-hidden />{running} VMs running</li>
+            <li className="nl-chip" data-tone={warnings > 0 ? 'warn' : 'ok'}><i aria-hidden />{warnings > 0 ? `${warnings} alert${warnings === 1 ? '' : 's'}` : 'No alerts'}</li>
+          </ul>
+        ) : null}
       </header>
 
     </>
