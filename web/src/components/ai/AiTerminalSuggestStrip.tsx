@@ -59,7 +59,7 @@ export default function AiTerminalSuggestStrip({
           </div>
           <code className="block mt-1 text-[10px] text-[var(--text-muted)] break-all">{s.command}</code>
           <p className="text-[var(--text-muted)] mt-0.5">{s.description}</p>
-          <button type="button" className="btn-secondary text-[10px] mt-1 flex items-center gap-1" onClick={() => copyCmd(s.command)}>
+          <button type="button" className="btn-secondary text-xs mt-1 flex items-center gap-1" onClick={() => copyCmd(s.command)}>
             <Copy className="w-3 h-3" /> Copy
           </button>
         </div>

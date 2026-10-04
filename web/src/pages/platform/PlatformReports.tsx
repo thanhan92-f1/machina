@@ -177,7 +177,7 @@ export default function PlatformReports({ embedded }: { embedded?: boolean } = {
       subtitle={embedded ? undefined : 'Cost Guardian, FinOps, operations runbooks, and compliance showback.'}
       icon={embedded ? undefined : <PieChart className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={embedded ? undefined : <PlatformRefreshButton onClick={() => void load()} />}
-      contentClassName="space-y-4"
+      contentClassName="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4 xl:[&>*:first-child]:[column-span:all]"
     >
       <DetailTabs primary={REPORT_TABS} active={tab} onChange={setTab} />
 

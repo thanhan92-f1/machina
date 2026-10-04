@@ -15,11 +15,13 @@ type GlassModalProps = {
   subtitle?: string
   children: ReactNode
   wide?: boolean
+  /** Extra-large panel for forms and wizards. */
+  xl?: boolean
   footer?: ReactNode
   ariaLabel?: string
 }
 
-export function GlassModal({ open, onClose, title, subtitle, children, wide, footer, ariaLabel }: GlassModalProps) {
+export function GlassModal({ open, onClose, title, subtitle, children, wide, xl, footer, ariaLabel }: GlassModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   // Captured during render, before any child autoFocus can take focus (see useCaptureTrigger).
@@ -89,7 +91,7 @@ export function GlassModal({ open, onClose, title, subtitle, children, wide, foo
             tabIndex={-1}
             aria-label={!title ? ariaLabel : undefined}
             aria-labelledby={title ? 'glass-modal-title' : undefined}
-            className={`liquid-glass-modal-panel relative w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} max-h-[90vh] flex flex-col overflow-hidden`}
+            className={`liquid-glass-modal-panel relative w-full ${xl ? 'max-w-4xl' : wide ? 'max-w-2xl' : 'max-w-lg'} max-h-[90vh] flex flex-col overflow-hidden`}
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}

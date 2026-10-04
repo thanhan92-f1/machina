@@ -424,7 +424,7 @@ export default function PlatformSettingsHub() {
               } catch (e: unknown) { toast.error(formatUserError(e)) }
             }}>Generate YAML</button>
             {policyYaml && (
-              <textarea className="input font-mono text-[10px] min-h-32 w-full mt-2" readOnly value={policyYaml} aria-label="Exported policy YAML" />
+              <textarea className="input font-mono text-xs min-h-32 w-full mt-2" readOnly value={policyYaml} aria-label="Exported policy YAML" />
             )}
           </MacSettingsGroup>
         </div>

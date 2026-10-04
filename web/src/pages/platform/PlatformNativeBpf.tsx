@@ -56,6 +56,7 @@ import DirectTab from '../../components/bpf/DirectTab'
 import QuicLbTab from '../../components/bpf/QuicLbTab'
 import AfxdpTab from '../../components/bpf/AfxdpTab'
 import SchedulerTab from '../../components/bpf/SchedulerTab'
+import GroupedTabs from '../../components/kit/GroupedTabs'
 import { useToastContext } from '../../contexts/ToastContext'
 import { formatUserError } from '../../utils/apiError'
 import { hubLinkClasses, statusPillClasses, statusToneClass } from '../../utils/semanticColors'
@@ -66,6 +67,12 @@ const TABS = [
   'L7 sampling', 'VM runtime', 'VMM guard', 'Direct redirect', 'QUIC LB', 'AF_XDP', 'Scheduler',
 ] as const
 type Tab = (typeof TABS)[number]
+const TAB_GROUPS: Array<{ name: string; tabs: Tab[] }> = [
+  { name: 'Observe', tabs: ['Overview', 'Flows', 'L7', 'Accounting', 'Live', 'DNS & processes', 'Captures', 'TCP Health', 'TLS / JA4', 'Net changes', 'L7 sampling'] },
+  { name: 'Enforce', tabs: ['Shield', 'Node Isolation', 'QoS & telemetry'] },
+  { name: 'VM', tabs: ['VM Edge', 'VM runtime', 'VMM guard', 'Direct redirect', 'Scheduler'] },
+  { name: 'Network', tabs: ['Service LB', 'QUIC LB', 'AF_XDP'] },
+]
 
 const TOPICS = ['net', 'dns', 'l7', 'proc', 'anomaly'] as const
 const L7_PROTOCOLS = ['', 'tls', 'http', 'ssh'] as const
@@ -252,9 +259,7 @@ export default function PlatformNativeBpf() {
       )}
 
       {available && (
-        <div className="overflow-x-auto pb-1">
-          <MacSegmentedControl options={TABS.map((t) => ({ value: t, label: t }))} value={tab} onChange={setTab} />
-        </div>
+        <GroupedTabs label="eBPF sections" groups={TAB_GROUPS} value={tab} onChange={setTab} />
       )}
 
       {available && tab === 'Overview' && status && (

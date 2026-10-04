@@ -108,7 +108,7 @@ export default function PlatformAlertRules() {
       icon={<Gauge className="w-6 h-6 text-[var(--text-muted)]" />}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       loading={loading && rows.length === 0}
-      contentClassName="space-y-4"
+      contentClassName="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4"
     >
       <OperatingSurfaceLayout testId="platform-alert-rules-page">
         <MacGlassPanel title="New alert rule">

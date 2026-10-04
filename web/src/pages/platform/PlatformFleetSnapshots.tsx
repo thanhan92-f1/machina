@@ -84,7 +84,7 @@ export default function PlatformFleetSnapshots() {
       subtitle="Nightly disk snapshots across managed libvirt VMs (project or tag filter)."
       icon={<Camera className="w-6 h-6 text-[var(--text-muted)]" />}
       loading={loading && rows.length === 0}
-      contentClassName="space-y-4"
+      contentClassName="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4"
     >
       <OperatingSurfaceLayout testId="platform-fleet-snapshots-page">
       <MacGlassPanel title="New schedule">

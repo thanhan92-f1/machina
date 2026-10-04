@@ -347,7 +347,7 @@ export default function PlatformHostDetailPage() {
               <>
               <MachinaExplainObjectPanel kind="host" id={id!} name={host.hostname} />
               <MacGlassPanel title="General">
-              <div className="space-y-6">
+              <div className="space-y-6 xl:space-y-0 xl:columns-2 xl:gap-6 [&>*]:break-inside-avoid xl:[&>*]:mb-6">
                 {(host.validation_report?.length ?? 0) > 0 && (
                   <MacSettingsGroup title="Join validation">
                     <ul className="p-3 text-sm space-y-2">
@@ -560,7 +560,7 @@ export default function PlatformHostDetailPage() {
             )}
 
             {section === 'network' && (
-              <div className="space-y-4">
+              <div className="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-6 [&>*]:break-inside-avoid xl:[&>*]:mb-6">
                 {id && <HostCockpitPanels hostId={id} section="network" />}
                 {netDiag ? (
                   <MacGlassPanel title="systemd networking">
@@ -575,13 +575,13 @@ export default function PlatformHostDetailPage() {
                     {netDiag.networkctl_status_all && (
                       <details className="p-3 text-xs">
                         <summary className="cursor-pointer text-[var(--text-muted)]">networkctl status</summary>
-                        <pre className="mt-2 font-mono text-[var(--text-muted)] max-h-48 overflow-auto whitespace-pre-wrap">{netDiag.networkctl_status_all.slice(0, 6000)}</pre>
+                        <pre className="mt-2 font-mono text-[var(--text-muted)] max-h-80 resize-y overflow-auto whitespace-pre-wrap">{netDiag.networkctl_status_all.slice(0, 6000)}</pre>
                       </details>
                     )}
                     {netDiag.resolvectl_status && (
                       <details className="p-3 text-xs">
                         <summary className="cursor-pointer text-[var(--text-muted)]">resolvectl status</summary>
-                        <pre className="mt-2 font-mono text-[var(--text-muted)] max-h-48 overflow-auto whitespace-pre-wrap">{netDiag.resolvectl_status.slice(0, 4000)}</pre>
+                        <pre className="mt-2 font-mono text-[var(--text-muted)] max-h-80 resize-y overflow-auto whitespace-pre-wrap">{netDiag.resolvectl_status.slice(0, 4000)}</pre>
                       </details>
                     )}
                   </MacGlassPanel>
@@ -609,7 +609,7 @@ export default function PlatformHostDetailPage() {
             )}
 
             {section === 'linux' && (
-              <div className="space-y-4">
+              <div className="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-6 [&>*]:break-inside-avoid xl:[&>*]:mb-6">
                 <MacGlassPanel title="GPU inventory" subtitle="PCI passthrough · MIG · CUDA readiness from host agent">
                   {gpuLoading && <p className="text-sm text-[var(--text-muted)]">Scanning GPUs…</p>}
                   {!gpuLoading && gpuError && (
@@ -630,7 +630,7 @@ export default function PlatformHostDetailPage() {
                     </ul>
                   )}
                   {gpuSummary && (
-                    <pre className="mt-3 text-[10px] font-mono text-[var(--text-muted)] whitespace-pre-wrap max-h-32 overflow-y-auto">{gpuSummary}</pre>
+                    <pre className="mt-3 text-xs font-mono text-[var(--text-muted)] whitespace-pre-wrap max-h-64 overflow-y-auto">{gpuSummary}</pre>
                   )}
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link to="/platform/gpu" className={`text-xs inline-flex items-center gap-1 ${hubLinkClasses()}`}>
@@ -806,7 +806,7 @@ export default function PlatformHostDetailPage() {
                           </ul>
                         )}
                         {upgradePreview && (
-                          <pre className="mt-2 p-2 text-[10px] font-mono text-[var(--text-muted)] max-h-40 overflow-auto bg-[var(--apple-surface)]/50 rounded-lg">{upgradePreview}</pre>
+                          <pre className="mt-2 p-2 text-xs font-mono text-[var(--text-muted)] max-h-72 overflow-auto bg-[var(--apple-surface)]/50 rounded-lg">{upgradePreview}</pre>
                         )}
                       </MacGlassPanel>
                     )}
@@ -837,7 +837,7 @@ export default function PlatformHostDetailPage() {
             )}
 
             {section === 'security' && (
-              <div className="space-y-4">
+              <div className="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-6 [&>*]:break-inside-avoid xl:[&>*]:mb-6">
                 <MacGlassPanel title="Machine Security">
                   {firewall ? (
                     <div className="text-sm space-y-2 mb-3">

@@ -148,7 +148,7 @@ export default function VmEditHardwareDrawer({
       <button type="button" className="fixed inset-0 z-[85] bg-black/50 backdrop-blur-sm" aria-label="Close Edit Hardware" onClick={onClose} />
       <aside
         ref={panelRef}
-        className="fixed top-0 right-0 z-[90] h-full w-full max-w-lg bg-[var(--apple-surface)]/98 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden"
+        className="fixed top-0 right-0 z-[90] h-full w-full max-w-xl bg-[var(--apple-surface)]/98 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Edit hardware"

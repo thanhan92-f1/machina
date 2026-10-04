@@ -46,7 +46,7 @@ export default function MigratePrecheckModal({ vm, destHostId, destHostName, onC
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div ref={panelRef} className="w-full max-w-lg rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-2xl" role="dialog" aria-modal="true" aria-label="Migrate precheck" onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className="w-full max-w-2xl max-h-[85dvh] overflow-y-auto rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] shadow-2xl" role="dialog" aria-modal="true" aria-label="Migrate precheck" onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b border-[var(--apple-hairline)]">
           <h2 className="text-lg font-semibold">Live migrate {vm.name}</h2>
           <p className="text-sm text-[var(--text-muted)] mt-1">Target host: {destHostName}</p>

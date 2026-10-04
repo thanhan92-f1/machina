@@ -446,15 +446,22 @@ export default function PlatformStorage() {
                         </td>
                         <td className="capitalize text-[var(--text-muted)]">{p.storage_class} · {p.backend}</td>
                         <td>{p.used_gib} GiB</td>
-                        <td>{p.capacity_gib || '—'} GiB ({pct}%)</td>
+                        <td>
+                          <div className="min-w-[8rem]">
+                            <p>{p.capacity_gib || '—'} GiB <span className="text-[var(--text-muted)]">({pct}%)</span></p>
+                            <div className="mt-1.5 h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden" aria-hidden>
+                              <div className={`h-full rounded-full transition-all duration-700 ${pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                            </div>
+                          </div>
+                        </td>
                         <td>
                           {tiers.length > 0 ? (
                             <div className="flex gap-1">
-                              <select aria-label="Storage tier" className="input text-[10px] max-w-[6rem]" value={bindDraft[p.id] ?? p.tier_id ?? ''} onChange={(e) => setBindDraft((d) => ({ ...d, [p.id]: e.target.value }))}>
+                              <select aria-label="Storage tier" className="input text-xs max-w-[6rem]" value={bindDraft[p.id] ?? p.tier_id ?? ''} onChange={(e) => setBindDraft((d) => ({ ...d, [p.id]: e.target.value }))}>
                                 <option value="">Tier…</option>
                                 {tiers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                               </select>
-                              <button type="button" className="btn-secondary text-[10px]" disabled={binding === p.id || !(bindDraft[p.id] ?? p.tier_id)} onClick={() => {
+                              <button type="button" className="btn-secondary text-xs" disabled={binding === p.id || !(bindDraft[p.id] ?? p.tier_id)} onClick={() => {
                                 const tid = bindDraft[p.id] ?? p.tier_id
                                 if (tid) void bindTier(p.id, tid)
                               }}>Bind</button>
@@ -469,27 +476,27 @@ export default function PlatformStorage() {
                         <td className="text-right">
                           <div className="flex flex-wrap justify-end gap-1">
                             {!active ? (
-                              <button type="button" className="btn-primary text-[10px]" disabled={poolActionId === p.id || hostCount === 0} onClick={async () => {
+                              <button type="button" className="btn-primary text-xs" disabled={poolActionId === p.id || hostCount === 0} onClick={async () => {
                                 setPoolActionId(p.id)
                                 try { await activateStoragePool(p.id); toast.success(`Activated ${p.name}`); await load(false) }
                                 catch (e: unknown) { toast.error(formatUserError(e)) }
                                 finally { setPoolActionId(null) }
                               }}>Activate</button>
                             ) : (
-                              <button type="button" className="btn-secondary text-[10px]" disabled={poolActionId === p.id} onClick={async () => {
+                              <button type="button" className="btn-secondary text-xs" disabled={poolActionId === p.id} onClick={async () => {
                                 setPoolActionId(p.id)
                                 try { await deactivateStoragePool(p.id); toast.success(`Deactivated ${p.name}`); await load(false) }
                                 catch (e: unknown) { toast.error(formatUserError(e)) }
                                 finally { setPoolActionId(null) }
                               }}>Deactivate</button>
                             )}
-                            <button type="button" className="btn-secondary text-[10px]" onClick={() => togglePoolVolumes(p.id)}>
+                            <button type="button" className="btn-secondary text-xs" onClick={() => togglePoolVolumes(p.id)}>
                               {expandedPoolId === p.id ? 'Hide vols' : 'Volumes'}
                             </button>
-                            <button type="button" className="btn-destructive text-[10px]" onClick={() => setConfirmPoolId(p.id)}>Remove</button>
+                            <button type="button" className="btn-destructive text-xs" onClick={() => setConfirmPoolId(p.id)}>Remove</button>
                             <button
                               type="button"
-                              className="btn-secondary text-[10px]"
+                              className="btn-secondary text-xs"
                               disabled={snapshotPolicyLoading === p.id}
                               onClick={() => void loadSnapshotPolicy(p.id)}
                             >
@@ -510,7 +517,7 @@ export default function PlatformStorage() {
                 {poolVolumes[expandedPoolId].map((v) => (
                   <li key={v.name} className="flex justify-between gap-2">
                     <span>{v.name} · {v.capacity_gb} GiB</span>
-                    <button type="button" className="btn-destructive text-[10px]" onClick={() => setConfirmVolume({ poolId: expandedPoolId, volName: v.name, poolName: rows.find((r) => r.id === expandedPoolId)?.name ?? '' })}>Delete</button>
+                    <button type="button" className="btn-destructive text-xs" onClick={() => setConfirmVolume({ poolId: expandedPoolId, volName: v.name, poolName: rows.find((r) => r.id === expandedPoolId)?.name ?? '' })}>Delete</button>
                   </li>
                 ))}
               </ul>

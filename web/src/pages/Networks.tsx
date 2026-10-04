@@ -332,7 +332,7 @@ export default function NetworksPage() {
       {/* Create Network Dialog */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={() => setShowCreate(false)}>
-          <div ref={createRef} className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+          <div ref={createRef} className="bg-[var(--apple-fill-tertiary)] border border-[var(--apple-hairline)] rounded-2xl shadow-2xl w-full max-w-xl mx-4" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-[var(--apple-hairline)] flex items-center justify-between">
               <span className="text-lg font-semibold flex items-center gap-2"><Network className={`w-5 h-5 ${statusToneClass('info')}`} /> Create Network</span>
               <button aria-label="Close" onClick={() => setShowCreate(false)} className="p-1 hover:bg-[var(--surface-hover)] rounded"><X className="w-4 h-4 text-[var(--text-muted)]" /></button>

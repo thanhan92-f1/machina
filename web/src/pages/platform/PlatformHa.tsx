@@ -89,7 +89,7 @@ export default function PlatformHa() {
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-6"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 xl:space-y-0 xl:columns-2 xl:gap-6 [&>*]:break-inside-avoid xl:[&>*]:mb-6">
         <MacGlassPanel title="HA Events" >
           {!status || status.events.length === 0 ? (
             <PlatformEmptyState icon={CheckCircle2} title="No HA events" subtitle="All hosts are healthy." />

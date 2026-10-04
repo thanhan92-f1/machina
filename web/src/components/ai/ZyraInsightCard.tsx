@@ -25,17 +25,17 @@ export default function ZyraInsightCard({
           <p className="text-[var(--text-muted)] text-xs mt-1">{detail}</p>
           <div className="flex flex-wrap gap-2 mt-2">
             {onApprove && (
-              <button type="button" className="btn-primary text-[10px]" onClick={onApprove}>
+              <button type="button" className="btn-primary text-xs" onClick={onApprove}>
                 Approve
               </button>
             )}
             {onExplain && (
-              <button type="button" className="btn-secondary text-[10px]" onClick={onExplain}>
+              <button type="button" className="btn-secondary text-xs" onClick={onExplain}>
                 Explain
               </button>
             )}
             {onDismiss && (
-              <button type="button" className="btn-secondary text-[10px]" onClick={onDismiss}>
+              <button type="button" className="btn-secondary text-xs" onClick={onDismiss}>
                 Dismiss
               </button>
             )}

@@ -285,7 +285,7 @@ export default function PlatformFirewallOverview() {
                     </span>
                     <button
                       type="button"
-                      className="btn-secondary text-[10px] py-0.5 px-1.5"
+                      className="btn-secondary text-xs py-0.5 px-1.5"
                       disabled={operatorBusy}
                       data-testid={`operator-secure-${p.host_id}`}
                       onClick={() => void runOperatorSecure(p.host_id, p.target_profile, true)}

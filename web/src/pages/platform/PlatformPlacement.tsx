@@ -138,7 +138,7 @@ export default function PlatformPlacement() {
           <PlatformRefreshButton onClick={() => void load()} />
         </>
       }
-      contentClassName="space-y-4"
+      contentClassName="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4"
     >
       <OperatingSurfaceLayout testId="platform-placement-page">
       {settings && (

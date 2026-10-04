@@ -389,18 +389,18 @@ export default function PlatformNetworks() {
                         </td>
                         <td className="text-right">
                           <div className="flex flex-wrap justify-end gap-1">
-                            <button type="button" data-testid={`network-save-${n.id}`} className="btn-secondary text-[10px]" disabled={savingId === n.id} onClick={() => void saveNetwork(n)}>
+                            <button type="button" data-testid={`network-save-${n.id}`} className="btn-secondary text-xs" disabled={savingId === n.id} onClick={() => void saveNetwork(n)}>
                               {savingId === n.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Save'}
                             </button>
                             {!active ? (
-                              <button type="button" className="btn-primary text-[10px]" disabled={networkActionId === n.id || hostCount === 0} onClick={async () => {
+                              <button type="button" className="btn-primary text-xs" disabled={networkActionId === n.id || hostCount === 0} onClick={async () => {
                                 setNetworkActionId(n.id)
                                 try { await activatePlatformNetwork(n.id); toast.success(`Activated ${n.name}`); await load(false) }
                                 catch (e: unknown) { toast.error(formatUserError(e)) }
                                 finally { setNetworkActionId(null) }
                               }}>Activate</button>
                             ) : (
-                              <button type="button" className="btn-secondary text-[10px]" disabled={networkActionId === n.id} onClick={async () => {
+                              <button type="button" className="btn-secondary text-xs" disabled={networkActionId === n.id} onClick={async () => {
                                 setNetworkActionId(n.id)
                                 try { await deactivatePlatformNetwork(n.id); toast.success(`Deactivated ${n.name}`); await load(false) }
                                 catch (e: unknown) { toast.error(formatUserError(e)) }
@@ -409,17 +409,17 @@ export default function PlatformNetworks() {
                             )}
                             {segments.length > 0 && (
                               <>
-                                <select aria-label="Segment" className="input text-[10px] max-w-[6rem]" value={bindDraft[n.id] ?? n.segment_id ?? ''} onChange={(e) => setBindDraft((d) => ({ ...d, [n.id]: e.target.value }))}>
+                                <select aria-label="Segment" className="input text-xs max-w-[6rem]" value={bindDraft[n.id] ?? n.segment_id ?? ''} onChange={(e) => setBindDraft((d) => ({ ...d, [n.id]: e.target.value }))}>
                                   <option value="">Segment…</option>
                                   {segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
-                                <button type="button" className="btn-secondary text-[10px]" disabled={binding === n.id || !(bindDraft[n.id] ?? n.segment_id)} onClick={() => {
+                                <button type="button" className="btn-secondary text-xs" disabled={binding === n.id || !(bindDraft[n.id] ?? n.segment_id)} onClick={() => {
                                   const seg = bindDraft[n.id] ?? n.segment_id
                                   if (seg) void bindNetwork(n.id, seg)
                                 }}>Bind</button>
                               </>
                             )}
-                            <button type="button" className="btn-destructive text-[10px] min-h-9" onClick={() => setConfirmDeleteNetwork({ id: n.id, name: n.name })}>Remove</button>
+                            <button type="button" className="btn-destructive text-xs min-h-9" onClick={() => setConfirmDeleteNetwork({ id: n.id, name: n.name })}>Remove</button>
                           </div>
                         </td>
                       </tr>

@@ -414,7 +414,7 @@ export default function ContainersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div
             ref={createRef}
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[var(--apple-surface)] p-5 shadow-xl"
+            className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-white/10 bg-[var(--apple-surface)] p-6 shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-container-title"

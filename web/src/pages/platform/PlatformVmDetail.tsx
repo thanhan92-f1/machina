@@ -1937,7 +1937,7 @@ export default function PlatformVmDetail() {
                               <div className="flex gap-1">
                                 <button
                                   type="button"
-                                  className="btn-secondary text-[10px] px-2 py-0.5"
+                                  className="btn-secondary text-xs px-2 py-0.5"
                                   disabled={!!guestServiceBusy}
                                   onClick={() => void runGuestServiceAction(s.name, 'start')}
                                 >
@@ -1948,7 +1948,7 @@ export default function PlatformVmDetail() {
                                 </button>
                                 <button
                                   type="button"
-                                  className="btn-secondary text-[10px] px-2 py-0.5"
+                                  className="btn-secondary text-xs px-2 py-0.5"
                                   disabled={!!guestServiceBusy}
                                   onClick={() => void runGuestServiceAction(s.name, 'stop')}
                                 >
@@ -1959,7 +1959,7 @@ export default function PlatformVmDetail() {
                                 </button>
                                 <button
                                   type="button"
-                                  className="btn-secondary text-[10px] px-2 py-0.5"
+                                  className="btn-secondary text-xs px-2 py-0.5"
                                   disabled={!!guestServiceBusy}
                                   onClick={() => void runGuestServiceAction(s.name, 'restart')}
                                 >
@@ -2530,7 +2530,7 @@ export default function PlatformVmDetail() {
                             <button
                               key={d.target}
                               type="button"
-                              className="btn-secondary text-[10px] font-mono"
+                              className="btn-secondary text-xs font-mono"
                               onClick={() => {
                                 const path = d.source
                                 setMigrateDisks((prev) => {
@@ -2579,7 +2579,7 @@ export default function PlatformVmDetail() {
                             <p className="text-[var(--text-muted)] pl-2 mt-1">
                               Fix: {c.remediation}
                               {!c.passed && c.name.toLowerCase().includes('network') && (
-                                <button type="button" className="btn-secondary text-[10px] ml-2" onClick={() => setTab('network')}>Choose network</button>
+                                <button type="button" className="btn-secondary text-xs ml-2" onClick={() => setTab('network')}>Choose network</button>
                               )}
                             </p>
                           )}

@@ -6,6 +6,7 @@ import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import { Link } from 'react-router'
 import { Plus, Shield } from 'lucide-react'
 import PlatformPageChrome, { PlatformRefreshButton } from '../../components/platform/PlatformPageChrome'
+import UnderlineTabs from '../../components/kit/UnderlineTabs'
 import SocAlertDetailPanel from '../../components/platform/soc/SocAlertDetailPanel'
 import SocPlaybookEditor from '../../components/platform/soc/SocPlaybookEditor'
 import { MacGlassPanel, MacListRow } from '../../components/platform/mac/PlatformMacUi'
@@ -320,24 +321,19 @@ export default function PlatformSoc() {
       error={error}
       actions={<PlatformRefreshButton onClick={() => void load()} />}
     >
-      <div className="flex flex-wrap gap-2 mb-4">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={tab === t.id ? 'btn-primary text-sm' : 'btn-secondary text-sm'}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-        <Link to="/platform/zyra/security/hunt" className={`btn-secondary text-sm ml-auto ${hubLinkClasses()}`}>
-          Threat hunting →
-        </Link>
-        <Link to="/platform/zeus/security" className={`btn-secondary text-sm ${hubLinkClasses()}`}>
-          Security Center →
-        </Link>
-      </div>
+      <UnderlineTabs
+        className="mb-5"
+        label="SOC sections"
+        tabs={tabs.map((t) => ({ id: t.id, label: t.label }))}
+        value={tab}
+        onChange={(id) => setTab(id as typeof tab)}
+        trailing={
+          <>
+            <Link to="/platform/zyra/security/hunt" className={`text-[13px] ${hubLinkClasses()}`}>Threat hunting →</Link>
+            <Link to="/platform/zeus/security" className={`text-[13px] ${hubLinkClasses()}`}>Security Center →</Link>
+          </>
+        }
+      />
 
       {tab === 'overview' && (
         <div className="space-y-4">
@@ -386,7 +382,7 @@ export default function PlatformSoc() {
       )}
 
       {tab === 'alerts' && (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="grid w-full gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] xl:items-start">
           <MacGlassPanel title="Alert queue">
             {alerts.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] p-3">No open alerts.</p>
@@ -655,7 +651,7 @@ export default function PlatformSoc() {
                 {integrationStatusLabel(splunkStatus).text}
               </p>
             )}
-            <div className="p-3 space-y-3 max-w-xl">
+            <div className="p-3 space-y-3">
               <label className="block text-sm">
                 <span className="text-[var(--text-muted)] text-xs">HEC URL</span>
                 <input
@@ -720,7 +716,7 @@ export default function PlatformSoc() {
                 {integrationStatusLabel(elasticStatus).text}
               </p>
             )}
-            <div className="p-3 space-y-3 max-w-xl">
+            <div className="p-3 space-y-3">
               <label className="block text-sm">
                 <span className="text-[var(--text-muted)] text-xs">Elasticsearch URL</span>
                 <input className="input w-full mt-1 text-sm" value={elasticUrl} onChange={(e) => setElasticUrl(e.target.value)} placeholder="https://elastic:9200" />
@@ -750,7 +746,7 @@ export default function PlatformSoc() {
                 {integrationStatusLabel(sentinelStatus).text}
               </p>
             )}
-            <div className="p-3 space-y-3 max-w-xl">
+            <div className="p-3 space-y-3">
               <label className="block text-sm">
                 <span className="text-[var(--text-muted)] text-xs">DCE endpoint</span>
                 <input className="input w-full mt-1 text-sm" value={sentinelDce} onChange={(e) => setSentinelDce(e.target.value)} />
@@ -792,7 +788,7 @@ export default function PlatformSoc() {
                 {integrationStatusLabel(qradarStatus).text}
               </p>
             )}
-            <div className="p-3 space-y-3 max-w-xl">
+            <div className="p-3 space-y-3">
               <label className="block text-sm">
                 <span className="text-[var(--text-muted)] text-xs">QRadar URL</span>
                 <input className="input w-full mt-1 text-sm" value={qradarUrl} onChange={(e) => setQradarUrl(e.target.value)} />

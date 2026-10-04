@@ -97,7 +97,7 @@ export default function PlatformMarketplace() {
       actions={<PlatformRefreshButton onClick={() => void load()} />}
       contentClassName="space-y-6"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 xl:space-y-0 xl:columns-2 xl:gap-6 [&>*]:break-inside-avoid xl:[&>*]:mb-6">
         <TahoeToolbar search={filter} onSearchChange={setFilter} placeholder="Filter plugins…" />
 
         {featured.length > 0 && (

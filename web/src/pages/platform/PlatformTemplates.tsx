@@ -447,8 +447,8 @@ export default function PlatformTemplates() {
                           <div className="flex flex-wrap justify-end gap-1">
                             {approval === 'pending' && (
                               <>
-                                <button type="button" className="btn-secondary text-[10px]" onClick={() => void approvePlatformTemplate(t.name, t.version, 'approved').then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}>Approve</button>
-                                <button type="button" className="btn-secondary text-[10px]" onClick={() => void approvePlatformTemplate(t.name, t.version, 'rejected').then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}>Reject</button>
+                                <button type="button" className="btn-secondary text-xs" onClick={() => void approvePlatformTemplate(t.name, t.version, 'approved').then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}>Approve</button>
+                                <button type="button" className="btn-secondary text-xs" onClick={() => void approvePlatformTemplate(t.name, t.version, 'rejected').then(() => load(false)).catch((e) => toast.error(formatUserError(e)))}>Reject</button>
                               </>
                             )}
                             <button type="button" className="btn-primary text-xs" onClick={() => { setDeployName(`${t.name.split('-')[0]}-01`); setDeploySheet(t) }}>Deploy</button>

@@ -161,7 +161,7 @@ export default function VmHostDeviceAttachDrawer({
       />
       <aside
         ref={panelRef}
-        className="fixed top-0 right-0 z-[95] h-full w-full max-w-lg bg-[var(--apple-surface)]/98 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden"
+        className="fixed top-0 right-0 z-[95] h-full w-full max-w-xl bg-[var(--apple-surface)]/98 border-l border-white/10 shadow-2xl flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Attach host device"

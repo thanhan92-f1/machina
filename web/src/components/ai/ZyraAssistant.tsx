@@ -237,7 +237,7 @@ export default function ZyraAssistant() {
             </div>
           </div>
           <select
-            className="input text-[10px] max-w-[120px] mr-2"
+            className="input text-xs max-w-[120px] mr-2"
             value={selectedAgent}
             onChange={(e) => setSelectedAgent(e.target.value)}
             aria-label="Zyra agent"
@@ -278,7 +278,7 @@ export default function ZyraAssistant() {
                 <p className="text-[var(--text-muted)] mt-0.5 line-clamp-2">{a.review}</p>
                 <button
                   type="button"
-                  className="btn-primary text-[10px] mt-2"
+                  className="btn-primary text-xs mt-2"
                   disabled={executingId === a.id}
                   onClick={() => setConfirmAction(a)}
                 >
