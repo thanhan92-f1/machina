@@ -435,6 +435,15 @@ pub enum Request {
 }
 
 impl Request {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Request::Http(_) => "http",
+            Request::Kafka(_) => "kafka",
+            Request::Tls { .. } => "tls",
+            Request::Dns { .. } => "dns",
+        }
+    }
+
     /// `GET example.com/api`, `kafka produce topic=orders`, ...
     pub fn summary(&self) -> String {
         match self {

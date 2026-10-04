@@ -32,9 +32,10 @@ StateDirectory=machina/bpf
 StateDirectoryMode=0750
 
 # Load programs, attach tc/xdp/cgroup/tracepoint hooks, read perf/ringbuf,
-# signal denied processes, and install the fq qdisc for QoS.
-CapabilityBoundingSet=CAP_BPF CAP_NET_ADMIN CAP_PERFMON CAP_SYS_ADMIN CAP_SYS_RESOURCE CAP_KILL CAP_DAC_READ_SEARCH
-AmbientCapabilities=CAP_BPF CAP_NET_ADMIN CAP_PERFMON CAP_SYS_ADMIN CAP_SYS_RESOURCE CAP_KILL CAP_DAC_READ_SEARCH
+# signal denied processes, install the fq qdisc for QoS, and send VM L7
+# frames on AF_PACKET sockets (CAP_NET_RAW).
+CapabilityBoundingSet=CAP_BPF CAP_NET_ADMIN CAP_PERFMON CAP_SYS_ADMIN CAP_SYS_RESOURCE CAP_KILL CAP_DAC_READ_SEARCH CAP_NET_RAW
+AmbientCapabilities=CAP_BPF CAP_NET_ADMIN CAP_PERFMON CAP_SYS_ADMIN CAP_SYS_RESOURCE CAP_KILL CAP_DAC_READ_SEARCH CAP_NET_RAW
 NoNewPrivileges=true
 LimitMEMLOCK=infinity
 ProtectHome=true
@@ -44,7 +45,7 @@ ProtectClock=true
 ProtectHostname=true
 RestrictRealtime=true
 LockPersonality=true
-RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6 AF_PACKET
 
 StandardOutput=journal
 StandardError=journal

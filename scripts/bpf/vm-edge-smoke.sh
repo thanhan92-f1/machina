@@ -274,6 +274,99 @@ check "l7 enforce: POST is denied" [ "$(code -X POST -d x "http://$HOST_IP:18080
 check "l7 enforce: keep-alive second request checked too" bash -c "ip netns exec $NS curl -s -m8 -o /dev/null -o /dev/null -w '%{http_code} ' http://$HOST_IP:18080/allowed.txt http://$HOST_IP:18080/secret.txt | grep -q '^200 403'"
 check "l7: DROPPED flow with the request" flow_has "f['verdict']=='DROPPED' and f.get('l7_type')=='http' and 'GET' in (f.get('l7') or '') and '/secret.txt' in f['l7'] and f.get('drop_reason')=='l7-deny'"
 check "l7: FORWARDED flow for the allowed request" flow_has "f['verdict']=='FORWARDED' and f.get('l7_type')=='http' and '/allowed.txt' in (f.get('l7') or '')"
+check "l7: reinject veth up" bash -c "ip link show mnl7inj0 | grep -q UP && { tc filter show dev mnl7inj1 ingress; bpftool net show dev mnl7inj1; } 2>/dev/null | grep -q mn_vm_l7_inject"
+check "l7 enforce: no retransmit wait (< 150 ms)" python3 -c "import sys; sys.exit(0 if float(sys.argv[1]) < 0.15 else 1)" "$(ip netns exec "$NS" curl -s -m6 -o /dev/null -w '%{time_total}' "http://$HOST_IP:18080/allowed.txt" || echo 9)"
+split_get() {
+  ip netns exec "$NS" python3 - "$HOST_IP" "$1" <<'PY'
+import socket, sys, time
+c = socket.create_connection((sys.argv[1], 18080), timeout=5)
+c.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+c.sendall(b"GET " + sys.argv[2].encode() + b" HTTP/1.1\r\nHost: x\r\nX-Pad: " + b"a" * 3000)
+time.sleep(0.2)
+c.sendall(b"a" * 3000 + b"\r\nConnection: close\r\n\r\n")
+try:
+    print(c.recv(64).split(b"\r\n")[0].split()[1].decode())
+except (OSError, IndexError):
+    print("reset")
+PY
+}
+check "l7 enforce: request head split across segments allowed" [ "$(split_get /allowed.txt)" = 200 ]
+check "l7 enforce: split head of a denied request gets 403" [ "$(split_get /secret.txt)" = 403 ]
+
+# Bodies: a server that counts POST bytes (Content-Length or chunked).
+python3 - "$HOST_IP" >/dev/null 2>&1 <<'PY' &
+import http.server, sys
+class H(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    def do_POST(self):
+        n = 0
+        if self.headers.get("Transfer-Encoding", "").lower() == "chunked":
+            while True:
+                size = int(self.rfile.readline().split(b";")[0], 16)
+                if size == 0:
+                    while self.rfile.readline() not in (b"\r\n", b""):
+                        pass
+                    break
+                n += len(self.rfile.read(size)); self.rfile.readline()
+        else:
+            n = len(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+        b = f"got {n}".encode()
+        self.send_response(200); self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
+    do_GET = do_POST
+    def log_message(self, *a):
+        pass
+http.server.ThreadingHTTPServer((sys.argv[1], 18081), H).serve_forever()
+PY
+POST_PID=$!
+R_L7B="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18081,\"l7\":true,\"source\":\"smoke spec.egress[9]\"}"
+L7_POST="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18081,\"rules\":{\"http\":[{\"method\":\"POST\",\"path\":\"/upload.*\"}]},\"source\":\"smoke spec.egress[9]\"}"
+sleep 0.5
+npl "$R_L7,$R_L7B" "$L7_HTTP,$L7_POST"
+check "l7 enforce: 384 KiB POST body passes" [ "$(ip netns exec "$NS" curl -s -m10 --data-binary @"$WORK/blob" "http://$HOST_IP:18081/upload")" = "got 393216" ]
+chunked() {
+  ip netns exec "$NS" python3 - "$HOST_IP" <<'PY'
+import socket, sys, time
+c = socket.create_connection((sys.argv[1], 18081), timeout=5)
+c.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+c.sendall(b"POST /upload HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n")
+time.sleep(0.1); c.sendall(b"5\r\nhello\r\n")
+time.sleep(0.1); c.sendall(b"6\r\n world\r\n0\r\n\r\n")
+r = b""
+while not r.endswith(b"got 11"):
+    x = c.recv(4096)
+    if not x:
+        break
+    r += x
+ok = r.startswith(b"HTTP/1.1 200") and r.endswith(b"got 11")
+c.sendall(b"GET /upload HTTP/1.1\r\nHost: x\r\n\r\n")
+try:
+    r2 = c.recv(4096).split(b"\r\n")[0].split()[1].decode()
+except (OSError, IndexError):
+    r2 = "reset"
+print(int(ok), r2)
+PY
+}
+check "l7 enforce: chunked POST passes, next request on the connection denied" [ "$(chunked)" = "1 403" ]
+kill "$POST_PID" 2>/dev/null || true
+
+# IPv6: the same hold / parse / reinject path.
+HOST_IP6=fd00:5e:81::1
+VM_IP6=fd00:5e:81::2
+ip addr add "$HOST_IP6/64" dev "$HOST_IF" nodad
+ip netns exec "$NS" ip addr add "$VM_IP6/64" dev "$PEER_IF" nodad
+(cd "$WORK" && exec python3 -m http.server 18082 --bind "$HOST_IP6" >/dev/null 2>&1) &
+HTTP6_PID=$!
+NPVM6="{\"name\":\"$VM\",\"addresses\":[\"$VM_IP\",\"$VM_IP6\"],\"taps\":[\"$HOST_IF\"],\"identity\":$VMID,\"isolate_egress\":true"
+HOSTPEER6="{\"cidr\":\"$HOST_IP6\",\"identity\":1,\"name\":\"host6\"}"
+R_L76="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18082,\"l7\":true,\"source\":\"smoke spec.egress[12]\"}"
+L7_HTTP6="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18082,\"rules\":{\"http\":[{\"method\":\"GET\",\"path\":\"/allowed.*\"}]},\"source\":\"smoke spec.egress[12]\"}"
+sleep 0.5
+edge "{\"vms\":[$NPVM6}],\"peers\":[$HOSTPEER_W,$HOSTPEER6],\"policy\":[$R_L76],\"l7\":[$L7_HTTP6],\"flow_log\":true,\"owner\":\"smoke\"}"
+check "l7 v6: GET /allowed.txt passes" [ "$(code -g "http://[$HOST_IP6]:18082/allowed.txt")" = 200 ]
+check "l7 v6: GET /secret.txt gets 403 from bpfd" [ "$(code -g "http://[$HOST_IP6]:18082/secret.txt")" = 403 ]
+check "l7 v6: flow over IPv6" flow_has "f.get('l7_type')=='http' and f['dst']=='$HOST_IP6' and f['verdict']=='DROPPED'"
+kill "$HTTP6_PID" 2>/dev/null || true
+npl "$R_L7" "$L7_HTTP"
 observe
 check "l7 observe: denied request still served" [ "$(code "http://$HOST_IP:18080/secret.txt")" = 200 ]
 check "l7 observe: AUDIT flow" flow_has "f['verdict']=='AUDIT' and f.get('l7_type')=='http'"
@@ -378,6 +471,57 @@ check "l7 dns: allowed name forwarded by bpfd and answered" [ "$(rcode svc.smoke
 check "l7 dns: other name REFUSED" [ "$(rcode example.org)" = "5 0" ]
 check "l7 dns: flow names the query" flow_has "f.get('l7_type')=='dns' and 'example.org' in (f.get('l7') or '') and f['verdict']=='DROPPED'"
 kill "$DNS_PID" 2>/dev/null || true
+
+# DNS over TCP: rules.dns on tcp/53, and toFQDNs learns from the answer.
+python3 - "$HOST_IP" >/dev/null 2>&1 <<'PY' &
+import socket, struct, sys, threading
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind((sys.argv[1], 53)); s.listen(8)
+ip = socket.inet_aton(sys.argv[1])
+def serve(c):
+    try:
+        n = struct.unpack(">H", c.recv(2))[0]; q = b""
+        while len(q) < n:
+            x = c.recv(n - len(q))
+            if not x: return
+            q += x
+        i = 12
+        while q[i]: i += q[i] + 1
+        r = q[:2] + struct.pack(">HHHHH", 0x8180, 1, 1, 0, 0) + q[12:i + 5] + b"\xc0\x0c" + struct.pack(">HHIH", 1, 1, 5, 4) + ip
+        c.sendall(struct.pack(">H", len(r)) + r)
+    except OSError:
+        pass
+    finally:
+        c.close()
+while True:
+    c, _ = s.accept(); threading.Thread(target=serve, args=(c,), daemon=True).start()
+PY
+DNST_PID=$!
+tcp_rcode() {
+  ip netns exec "$NS" python3 - "$HOST_IP" "$1" <<'PY'
+import socket, struct, sys
+q = struct.pack(">HHHHHH", 0x4d50, 0x0100, 1, 0, 0, 0)
+q += b"".join(bytes([len(p)]) + p.encode() for p in sys.argv[2].split(".")) + b"\x00" + struct.pack(">HH", 1, 1)
+try:
+    c = socket.create_connection((sys.argv[1], 53), timeout=3)
+    c.sendall(struct.pack(">H", len(q)) + q)
+    r = c.recv(512)[2:]
+    print(r[3] & 15, struct.unpack(">H", r[6:8])[0])
+except (OSError, IndexError):
+    print("reset")
+PY
+}
+R_DNST="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":53,\"l7\":true,\"source\":\"smoke spec.egress[10]\"}"
+L7_DNST="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":53,\"rules\":{\"dns\":[\"*.smoke.test\"]},\"source\":\"smoke spec.egress[10]\"}"
+F_SVCT="{\"pattern\":\"svc.smoke.test\",\"subject_identity\":$VMID,\"proto\":6,\"port\":18080,\"source\":\"smoke spec.egress[11]\"}"
+sleep 0.3
+edge "{\"vms\":[$NPVM}],\"peers\":[$HOSTPEER_W],\"policy\":[$R_DNST],\"l7\":[$L7_DNST],\"fqdn\":[$F_SVCT],\"flow_log\":true,\"owner\":\"smoke\"}"
+check "l7 dns/tcp: allowed name answered" [ "$(tcp_rcode svc.smoke.test)" = "0 1" ]
+check "l7 dns/tcp: other name reset" [ "$(tcp_rcode example.org)" = reset ]
+check "l7 dns/tcp: flow names the query" flow_has "f.get('l7_type')=='dns' and f['proto']=='tcp' and 'example.org' in (f.get('l7') or '') and f['verdict']=='DROPPED'"
+sleep 1.5
+check "fqdn: learned from a DNS-over-TCP answer" fqdn_has "e['name']=='svc.smoke.test' and e['address']=='$HOST_IP'"
+kill "$DNST_PID" 2>/dev/null || true
 
 # ---- authentication + source guard -------------------------------------------
 # HOST_IP is a fleet VM peer (identity 5001) for `required`; the host

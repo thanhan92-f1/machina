@@ -157,7 +157,12 @@ pub(super) fn on_dns(
         return;
     };
     let n = (ev.payload_len as usize).min(DNS_PAYLOAD_LEN);
-    let Some(msg) = dns::parse(&ev.payload[..n]) else {
+    let start = if ev.flags & DNS_EV_TCP != 0 {
+        2.min(n)
+    } else {
+        0
+    };
+    let Some(msg) = dns::parse(&ev.payload[start..n]) else {
         return;
     };
     let local = fmt_addr(&ev.local);

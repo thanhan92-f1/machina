@@ -274,7 +274,8 @@ update the bootloader and reboot. Audit mode works without it.
 
 ### Symptom: `xsk` is `true` but bpfd can't open AF_XDP sockets
 Expected. `machina-bpfd.service` sets
-`RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6`; bpfd never opens
+`RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6 AF_PACKET`
+(AF_PACKET for VM L7 reinjection and answers); bpfd never opens
 XSK sockets itself, so the probe falls back to `xsk_map_ops` in
 `/proc/kallsyms`. AF_XDP consumers run outside that unit, open their own
 sockets and hand them to bpfd with `register_xsk`.

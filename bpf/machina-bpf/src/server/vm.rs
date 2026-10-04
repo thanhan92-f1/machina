@@ -18,6 +18,10 @@ use super::*;
 
 const EDGE_IN: &str = "mn_vm_edge_in";
 const EDGE_OUT: &str = "mn_vm_edge_out";
+/// Veth pair held L7 frames are reinjected through: bpfd sends on the
+/// first, `mn_vm_l7_inject` on the second's ingress redirects into the tap.
+const L7_INJECT: (&str, &str) = ("mnl7inj0", "mnl7inj1");
+const L7_INJECT_PROG: &str = "mn_vm_l7_inject";
 const MACHINE_SLICE: &str = "machine.slice";
 const VM_POLICY_CAP: usize = 131_072;
 
@@ -889,11 +893,49 @@ impl Engine {
         self.vm_edge.policy = policy;
         self.vm_edge.fqdn_ids = fqdn_ids;
         self.vm_edge.l7_rules = l7.len();
+        let inject = if l7.is_empty() {
+            None
+        } else {
+            Some(self.ensure_l7_inject())
+        };
         let mut sh = lock(&self.shared);
+        if let Some(i) = inject {
+            sh.vm_l7_inject = i;
+        }
         sh.vm_flow_index = index;
         sh.vm_l7_rules = Arc::new(l7);
         sh.vm_l7_gen += 1;
         Ok(())
+    }
+
+    /// Create the L7 reinject veth pair if needed; returns the send side's
+    /// ifindex, 0 when it cannot be set up (held frames then wait for the
+    /// client's retransmit).
+    fn ensure_l7_inject(&mut self) -> u32 {
+        let (tx, rx) = L7_INJECT;
+        if if_nametoindex(tx).is_none() {
+            let ok = std::process::Command::new("ip")
+                .args(["link", "add", tx, "type", "veth", "peer", "name", rx])
+                .status()
+                .is_ok_and(|s| s.success());
+            if !ok {
+                tracing::warn!(
+                    "vm l7: cannot create {tx}/{rx}; held segments wait for retransmits"
+                );
+                return 0;
+            }
+        }
+        for d in [tx, rx] {
+            let _ = std::fs::write(format!("/proc/sys/net/ipv6/conf/{d}/disable_ipv6"), "1");
+            let _ = std::process::Command::new("ip")
+                .args(["link", "set", d, "up"])
+                .status();
+        }
+        if let Err(e) = self.dp.attach_tc_first(rx, L7_INJECT_PROG, true) {
+            tracing::warn!("vm l7: attach {L7_INJECT_PROG} on {rx}: {e:#}");
+            return 0;
+        }
+        if_nametoindex(tx).unwrap_or(0)
     }
 
     /// Take queued DNS answers, expire old names, reapply on change.

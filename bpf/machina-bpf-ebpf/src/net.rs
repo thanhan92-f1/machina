@@ -241,7 +241,8 @@ fn qos_inner(ctx: &TcContext, ifindex: u32, rate: u64, ingress: bool, now: u64, 
     }
 }
 
-/// `if_dir` packs ifindex (low 32 bits) and from_workload (bit 32).
+/// `if_dir` packs ifindex (low 32 bits), from_workload (bit 32) and
+/// DNS-over-TCP (bit 33).
 #[inline(never)]
 pub(crate) fn emit_dns(ctx: &TcContext, t: &Tuple, if_dir: u64) {
     let ifindex = if_dir as u32;
@@ -268,7 +269,7 @@ pub(crate) fn emit_dns(ctx: &TcContext, t: &Tuple, if_dir: u64) {
         } else {
             DIR_TO_WORKLOAD
         };
-        (*ev)._pad = 0;
+        (*ev).flags = ((if_dir >> 33) & 1) as u32 * DNS_EV_TCP;
         if from_workload {
             (*ev).local = t.src;
             (*ev).remote = t.dst;
@@ -692,8 +693,12 @@ fn tc_verdict(ctx: &TcContext, ingress: bool, ifindex: u32, cfg: &IfaceCfg, from
         emit_l7(ctx, &t, &key, from_workload as u64);
     }
 
-    if cfg.flags & IF_DNS != 0 && t.proto == IPPROTO_UDP && (t.sport == 53 || t.dport == 53) {
-        emit_dns(ctx, &t, ifindex as u64 | ((from_workload as u64) << 32));
+    if cfg.flags & IF_DNS != 0 && (t.sport == 53 || t.dport == 53) {
+        let tcp = t.proto == IPPROTO_TCP;
+        // TCP: a length prefix and at least a DNS header (skips ACKs, padding).
+        if t.proto == IPPROTO_UDP || (tcp && ctx.len() as usize > t.payload_off + 14) {
+            emit_dns(ctx, &t, ifindex as u64 | ((from_workload as u64) << 32) | ((tcp as u64) << 33));
+        }
     }
     if cfg.flags & IF_CAPTURE != 0 {
         emit_capture(

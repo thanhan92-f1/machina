@@ -124,6 +124,8 @@ struct Shared {
     /// L7 rules in force (static plus learned `toFQDNs`), for the L7 reader.
     vm_l7_rules: Arc<Vec<VmEdgeL7Rule>>,
     vm_l7_gen: u64,
+    /// Send side of the L7 reinject veth (0 = none).
+    vm_l7_inject: u32,
     /// Identity pairs (subject, peer) waiting for authentication.
     vm_auth_queue: Vec<(u32, u32)>,
 }

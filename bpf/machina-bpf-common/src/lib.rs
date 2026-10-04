@@ -218,11 +218,14 @@ pub struct DnsEvent {
     pub ifindex: u32,
     pub dir: u32,
     pub payload_len: u32,
-    pub _pad: u32,
+    /// DNS_EV_TCP: payload is a DNS-over-TCP segment (length prefix first).
+    pub flags: u32,
     pub local: [u8; ADDR_LEN],
     pub remote: [u8; ADDR_LEN],
     pub payload: [u8; DNS_PAYLOAD_LEN],
 }
+
+pub const DNS_EV_TCP: u32 = 1;
 
 /// First client→server payload of a TCP flow (`key` from the workload's view).
 #[repr(C)]
@@ -942,11 +945,14 @@ pub struct VmFlowEvent {
     pub _pad: [u8; 5],
 }
 
-/// Bytes of an L7 request copied to VM_L7_EVENTS.
-pub const VM_L7_CAP: usize = 4096;
+/// Frame bytes copied to VM_L7_EVENTS: a whole GSO packet fits, so bpfd can
+/// reinject what it holds.
+pub const VM_L7_CAP: usize = 65536;
+/// Bytes of `VmL7Event` before `data`.
+pub const VM_L7_HDR: usize = 96;
 
-/// One request start on an L7 port (VM_L7_EVENTS). `held` = the segment was
-/// dropped and its retransmit waits for bpfd's verdict in VM_L7_FLOW.
+/// One segment past the flow's L7 window (VM_L7_EVENTS). `held` = the
+/// segment was dropped; bpfd reinjects it once its bytes are allowed.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct VmL7Event {
@@ -959,10 +965,16 @@ pub struct VmL7Event {
     pub ack: u32,
     /// L4 payload length.
     pub len: u32,
-    /// Bytes in `data`.
+    /// Frame bytes in `data` (from the Ethernet header).
     pub cap: u32,
-    /// Payload bytes that belong to the request already allowed.
+    /// Payload bytes inside the window already allowed.
     pub skip: u32,
+    /// Length of the whole frame (`skb->len`).
+    pub frame_len: u32,
+    /// Offset of the L4 payload in `data`.
+    pub payload_off: u16,
+    /// `skb->gso_size` (0 = not a GSO packet).
+    pub gso_size: u16,
     pub src: [u8; ADDR_LEN],
     pub dst: [u8; ADDR_LEN],
     pub sport: u16,
@@ -971,22 +983,36 @@ pub struct VmL7Event {
     pub from_vm: u8,
     pub held: u8,
     pub v6: u8,
-    /// Destination then source MAC of the frame.
-    pub mac: [u8; 12],
-    pub _pad: u32,
+    /// Offsets of the IP and L4 headers in `data`.
+    pub l3_off: u16,
+    pub l4_off: u16,
+    /// Captured on the tc ingress hook (reinject into the receive path).
+    pub ingress: u8,
+    pub _pad: [u8; 3],
     pub data: [u8; VM_L7_CAP],
 }
 
+/// skb mark of a frame bpfd reinjects through the L7 inject veth:
+/// magic | VM_L7_INJECT_INGRESS (into the tap's receive path, as if the VM
+/// sent it; otherwise out of the tap towards the VM) | tap ifindex.
+pub const VM_L7_INJECT_MAGIC: u32 = 0xb700_0000;
+pub const VM_L7_INJECT_MAGIC_MASK: u32 = 0xff00_0000;
+pub const VM_L7_INJECT_INGRESS: u32 = 1 << 23;
+pub const VM_L7_INJECT_IFINDEX: u32 = (1 << 23) - 1;
+
 pub const L7S_NONE: u8 = 0;
-/// A request start was held; later segments drop until bpfd decides.
+/// Unused (bpfd orders held segments itself).
 pub const L7S_PENDING: u8 = 1;
 /// Denied: data segments drop (bpfd already answered the client).
 pub const L7S_DENIED: u8 = 2;
-/// Allowed for the rest of the connection (TLS, chunked bodies).
+/// TCP: allowed for the rest of the connection (TLS, upgrades). UDP: one
+/// reinjected datagram of `pass_until` bytes starting with `allow_seq`
+/// passes once.
 pub const L7S_OPEN: u8 = 3;
 
-/// Per-flow L7 window (VM_L7_FLOW, key = conntrack FlowKey of the
-/// originator): segments inside `[allow_seq, pass_until)` pass.
+/// Per-edge L7 window (VM_L7_FLOW, key = conntrack FlowKey of the
+/// originator with the tap ifindex): segments inside
+/// `[allow_seq, pass_until)` pass.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct VmL7Flow {
@@ -1547,7 +1573,7 @@ mod tests {
         assert_eq!(size_of::<VmBucket>(), 24);
         assert_eq!(size_of::<VmEdgeStats>(), 56);
         assert_eq!(size_of::<VmFlowEvent>(), 72);
-        assert_eq!(size_of::<VmL7Event>(), 96 + VM_L7_CAP);
+        assert_eq!(size_of::<VmL7Event>(), VM_L7_HDR + VM_L7_CAP);
         assert_eq!(size_of::<VmL7Flow>(), 16);
         assert_eq!(size_of::<VmAuthKey>(), 12);
         assert_eq!(size_of::<QemuSandboxCfg>(), 8 + 16 * QEMU_DEV_RULES);

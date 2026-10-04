@@ -25,10 +25,15 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
     - covers HTTP (method, path, host, headers), Kafka (role or apiKey,
       version, clientID, topic), TLS `serverNames` and DNS `matchName` /
       `matchPattern`, including L7 on `toFQDNs` rules;
-    - the VM edge holds the first segment of each request, and bpfd parses
-      it and opens the flow, or answers with HTTP 403, a TCP reset or DNS
+    - the VM edge holds client segments past the allowed window; bpfd parses
+      the stream (HTTP headers across segments, `Content-Length` and chunked
+      bodies, keep-alive, whole Kafka requests, TLS SNI, DNS over UDP and
+      TCP), then reinjects the allowed frames at once through a private veth
+      (no retransmission wait), or answers with HTTP 403, a TCP reset or DNS
       REFUSED;
-    - allowed DNS queries are forwarded from the host;
+    - windows are per tap, so both ends of a VM-to-VM connection on one host
+      are checked;
+    - `toFQDNs` also learns from DNS answers over TCP;
     - flows carry the L7 request.
   - `toGroups` / `fromGroups` and `cidrGroupRef` resolve `CiliumCIDRGroup`
     objects.

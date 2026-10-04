@@ -7,11 +7,13 @@
 //! address (VM_IPS), then longest CIDR prefix (VM_CIDR_IDS), then `world`.
 //! For ICMP the policy port is the ICMP type + 1.
 //!
-//! L7 entries (VM_POLICY_L7) copy each request start to VM_L7_EVENTS; with
-//! enforcement live the segment is held (dropped) until bpfd writes its
-//! verdict to VM_L7_FLOW, so the client's retransmit passes or the flow is
-//! answered by bpfd (RST / HTTP 403 / DNS REFUSED). UDP L7 (DNS) queries
-//! are always handed to bpfd, which forwards allowed ones itself.
+//! L7 entries (VM_POLICY_L7) copy every segment past the flow's window in
+//! VM_L7_FLOW (the whole frame) to VM_L7_EVENTS; with enforcement live the
+//! segment is held (dropped). bpfd parses the stream, widens the window as
+//! bytes are allowed and reinjects held frames through the inject veth
+//! (`mn_vm_l7_inject` redirects them into the tap), or answers a denied
+//! client (RST / HTTP 403 / DNS REFUSED). UDP L7 (DNS) queries are handled
+//! the same way.
 //! Authenticated entries (VM_POLICY_AUTH) admit new flows only while
 //! VM_AUTH holds a live entry for the identity pair.
 //!
@@ -22,7 +24,8 @@
 //! own device program stays attached and the kernel ANDs the verdicts.
 
 use aya_ebpf::{
-    helpers::generated::{bpf_get_current_cgroup_id, bpf_skb_cgroup_id, bpf_skb_load_bytes},
+    bindings::BPF_F_INGRESS,
+    helpers::generated::{bpf_get_current_cgroup_id, bpf_redirect, bpf_skb_cgroup_id, bpf_skb_load_bytes},
     macros::{cgroup_device, cgroup_skb, classifier, map},
     maps::{lpm_trie::Key, Array, HashMap, LpmTrie, LruHashMap, PerCpuHashMap, RingBuf},
     programs::{DeviceContext, SkBuffContext, TcContext},
@@ -71,7 +74,7 @@ pub static VM_FLOW_SEEN: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries
 pub static VM_CT: LruHashMap<FlowKey, u64> = LruHashMap::with_max_entries(131072, 0);
 
 #[map]
-pub static VM_L7_EVENTS: RingBuf = RingBuf::with_byte_size(1 << 22, 0);
+pub static VM_L7_EVENTS: RingBuf = RingBuf::with_byte_size(1 << 24, 0);
 
 #[map]
 pub static VM_L7_FLOW: LruHashMap<FlowKey, VmL7Flow> = LruHashMap::with_max_entries(65536, 0);
@@ -310,29 +313,28 @@ fn payload_len(ctx: &TcContext, t: &Tuple) -> u32 {
     if end > t.payload_off { (end - t.payload_off) as u32 } else { 0 }
 }
 
-/// `len_skip`: payload length (low 32), skip (bits 32..62), held (bit 63);
-/// BPF calls take at most five arguments.
+/// `len_skip` from [`l7_pack`]; BPF calls take at most five arguments.
 #[inline(never)]
 fn l7_emit(ctx: &TcContext, t: &Tuple, m: &FlowMeta, seq_ack: u64, len_skip: u64) {
     let len = len_skip as u32;
-    let skip = ((len_skip >> 32) & 0x7fff_ffff) as u32;
+    let skip = ((len_skip >> 32) & 0x3fff_ffff) as u32;
+    let ingress = (len_skip >> 62) & 1 != 0;
     let held = len_skip >> 63 != 0;
+    let frame_len = ctx.len() as usize;
+    if frame_len == 0 {
+        return;
+    }
     let Some(mut e) = VM_L7_EVENTS.reserve::<VmL7Event>(0) else {
         return;
     };
     let ev = e.as_mut_ptr();
-    let n = (len as usize).min(VM_L7_CAP);
-    if n == 0 {
-        e.discard(0);
-        return;
-    }
+    let n = frame_len.min(VM_L7_CAP);
     let n = ((n - 1) & (VM_L7_CAP - 1)) + 1;
     unsafe {
-        if bpf_skb_load_bytes(ctx.skb.skb.cast(), t.payload_off as u32, (*ev).data.as_mut_ptr().cast(), n as u32) != 0 {
+        if bpf_skb_load_bytes(ctx.skb.skb.cast(), 0, (*ev).data.as_mut_ptr().cast(), n as u32) != 0 {
             e.discard(0);
             return;
         }
-        let mac = ctx.load::<[u8; 12]>(0).unwrap_or([0; 12]);
         (*ev).ts_ns = now_ns();
         (*ev).ifindex = m.ifindex;
         (*ev).subject = m.subject;
@@ -342,6 +344,9 @@ fn l7_emit(ctx: &TcContext, t: &Tuple, m: &FlowMeta, seq_ack: u64, len_skip: u64
         (*ev).len = len;
         (*ev).cap = n as u32;
         (*ev).skip = skip;
+        (*ev).frame_len = frame_len as u32;
+        (*ev).payload_off = t.payload_off as u16;
+        (*ev).gso_size = (*ctx.skb.skb).gso_size as u16;
         (*ev).src = t.src;
         (*ev).dst = t.dst;
         (*ev).sport = t.sport;
@@ -350,26 +355,41 @@ fn l7_emit(ctx: &TcContext, t: &Tuple, m: &FlowMeta, seq_ack: u64, len_skip: u64
         (*ev).from_vm = m.from_vm;
         (*ev).held = held as u8;
         (*ev).v6 = t.v6 as u8;
-        (*ev).mac = mac;
-        (*ev)._pad = 0;
+        (*ev).l3_off = t.l3_off as u16;
+        (*ev).l4_off = t.l4_off as u16;
+        (*ev).ingress = ingress as u8;
+        (*ev)._pad = [0; 3];
     }
     e.submit(0);
 }
 
+/// Payload length, window skip (30 bits), ingress hook and hold flags for
+/// [`l7_emit`].
 #[inline(always)]
-fn l7_pack(len: u32, skip: u32, held: bool) -> u64 {
-    len as u64 | ((skip & 0x7fff_ffff) as u64) << 32 | (held as u64) << 63
+fn l7_pack(len: u32, skip: u32, ingress: bool, held: bool) -> u64 {
+    len as u64 | ((skip & 0x3fff_ffff) as u64) << 32 | (ingress as u64) << 62 | (held as u64) << 63
 }
 
 /// L7 gate for one packet of an allowed flow; true = drop.
 #[inline(never)]
-fn vm_l7(ctx: &TcContext, t: &Tuple, m: &FlowMeta, enforce: bool) -> bool {
+fn vm_l7(ctx: &TcContext, t: &Tuple, m: &FlowMeta, enforce: bool, ingress: bool) -> bool {
     let len = payload_len(ctx, t);
     if len == 0 {
         return false;
     }
+    let k = FlowKey { ifindex: m.ifindex, ..ct_key(t, false) };
     if t.proto == IPPROTO_UDP {
-        l7_emit(ctx, t, m, 0, l7_pack(len, 0, enforce));
+        if let Some(f) = unsafe { VM_L7_FLOW.get(&k) } {
+            if f.state == L7S_OPEN && f.pass_until == len {
+                if let Ok(b) = ctx.load::<[u8; 4]>(t.payload_off) {
+                    if u32::from_be_bytes(b) == f.allow_seq {
+                        let _ = VM_L7_FLOW.remove(&k);
+                        return false;
+                    }
+                }
+            }
+        }
+        l7_emit(ctx, t, m, 0, l7_pack(len, 0, ingress, enforce));
         return enforce;
     }
     if t.proto != IPPROTO_TCP {
@@ -384,38 +404,24 @@ fn vm_l7(ctx: &TcContext, t: &Tuple, m: &FlowMeta, enforce: bool) -> bool {
         Err(_) => 0,
     };
     let seq_ack = ((seq as u64) << 32) | ack as u64;
-    let k = ct_key(t, false);
-    let Some(f) = VM_L7_FLOW.get_ptr_mut(&k) else {
-        l7_emit(ctx, t, m, seq_ack, l7_pack(len, 0, enforce));
-        if enforce {
-            let v = VmL7Flow { allow_seq: seq, pass_until: seq, pending_seq: seq, state: L7S_PENDING, _pad: [0; 3] };
-            let _ = VM_L7_FLOW.insert(&k, &v, 0);
-        }
-        return enforce;
-    };
-    let f = unsafe { &mut *f };
-    if f.state == L7S_OPEN {
-        return false;
-    }
-    if f.state == L7S_DENIED {
-        return enforce;
-    }
-    let span = f.pass_until.wrapping_sub(f.allow_seq);
-    let off = seq.wrapping_sub(f.allow_seq);
     let mut skip = 0;
-    if off < span {
-        if len <= span - off {
+    if let Some(f) = unsafe { VM_L7_FLOW.get(&k) } {
+        if f.state == L7S_OPEN {
             return false;
         }
-        skip = span - off;
-    } else if f.state == L7S_PENDING && seq != f.pending_seq {
-        return enforce;
+        if f.state == L7S_DENIED {
+            return enforce;
+        }
+        let span = f.pass_until.wrapping_sub(f.allow_seq);
+        let off = seq.wrapping_sub(f.allow_seq);
+        if off < span {
+            if len <= span - off {
+                return false;
+            }
+            skip = span - off;
+        }
     }
-    l7_emit(ctx, t, m, seq_ack, l7_pack(len, skip, enforce));
-    if enforce {
-        f.state = L7S_PENDING;
-        f.pending_seq = seq;
-    }
+    l7_emit(ctx, t, m, seq_ack, l7_pack(len, skip, ingress, enforce));
     enforce
 }
 
@@ -450,11 +456,14 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
         return TC_ACT_UNSPEC;
     }
     if fqdn
-        && t.proto == IPPROTO_UDP
+        && (t.proto == IPPROTO_UDP || t.proto == IPPROTO_TCP)
         && t.sport == 53
         && !unsafe { IFACE_CFG.get(&ifindex) }.is_some_and(|c| c.flags & IF_DNS != 0)
     {
-        emit_dns(ctx, &t, ifindex as u64);
+        let tcp = (t.proto == IPPROTO_TCP) as u64;
+        if tcp == 0 || payload_len(ctx, &t) > 2 {
+            emit_dns(ctx, &t, ifindex as u64 | tcp << 33);
+        }
     }
     if !isolated && !has_deny && !flow_log && !ext {
         return TC_ACT_UNSPEC;
@@ -569,7 +578,7 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
             let _ = VM_CT.insert(&k, &now, 0);
         }
     }
-    if verdict & VM_POLICY_L7 != 0 && verdict & VM_POLICY_DENY == 0 && vm_l7(ctx, &t, &m, enforce_active(now)) {
+    if verdict & VM_POLICY_L7 != 0 && verdict & VM_POLICY_DENY == 0 && vm_l7(ctx, &t, &m, enforce_active(now), ingress) {
         return TC_ACT_SHOT;
     }
     TC_ACT_UNSPEC
@@ -583,6 +592,20 @@ pub fn mn_vm_edge_in(ctx: TcContext) -> i32 {
 #[classifier]
 pub fn mn_vm_edge_out(ctx: TcContext) -> i32 {
     vm_edge(&ctx, false)
+}
+
+/// Ingress of the L7 inject veth: frames bpfd reinjects carry the target tap
+/// in their mark; anything else is dropped.
+#[classifier]
+pub fn mn_vm_l7_inject(ctx: TcContext) -> i32 {
+    let skb = ctx.skb.skb;
+    let mark = unsafe { (*skb).mark };
+    if mark & VM_L7_INJECT_MAGIC_MASK != VM_L7_INJECT_MAGIC {
+        return TC_ACT_SHOT;
+    }
+    unsafe { (*skb).mark = 0 };
+    let flags = if mark & VM_L7_INJECT_INGRESS != 0 { BPF_F_INGRESS as u64 } else { 0 };
+    unsafe { bpf_redirect(mark & VM_L7_INJECT_IFINDEX, flags) as i32 }
 }
 
 // ---- QEMU sandbox --------------------------------------------------------------

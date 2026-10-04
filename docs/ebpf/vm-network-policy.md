@@ -113,11 +113,13 @@ Enforced natively by snooping DNS, without a DNS proxy:
 
 Things to know:
 
-- Policy has to allow the lookup itself (UDP 53 to the resolver), as in the
-  example. Otherwise the reply never arrives and nothing is learned.
+- Policy has to allow the lookup itself (UDP or TCP 53 to the resolver), as
+  in the example. Otherwise the reply never arrives and nothing is learned.
 - Learning is asynchronous. The first SYN sent right after the reply can
   race it and be dropped; the TCP retransmit a second later goes through.
-- DNS over TCP, DoT and DoH aren't snooped.
+- Answers over UDP and over TCP are snooped (a TCP answer must fit in its
+  first segment). DoT and DoH are encrypted and aren't; DoT can still be
+  restricted by SNI with `serverNames` on port 853.
 - `machinactl netpol fqdn` (like `cilium fqdn cache list`), the UI
   **Endpoints → DNS names** table and `GET /vm-network-policies/fqdn-cache`
   list the learned names. `machinactl netpol test --to api.example.com`
@@ -150,21 +152,36 @@ egress:
 Enforced natively, without Envoy or a proxy in the data path:
 
 1. The L3/L4 match marks the rule entry L7. A connection is allowed as usual,
-   but the VM edge program copies the first payload segment of each request
-   (up to 4 KiB) to bpfd over the `VM_L7_EVENTS` ring buffer. UDP DNS on an
-   L7 port is copied the same way.
-2. With the enforcement lease, the edge drops that segment and marks the flow
-   pending. bpfd parses it (HTTP/1.x, including pipelined requests; Kafka
-   request headers and Produce/Fetch topics; the TLS ClientHello SNI; DNS
-   queries) and checks it against every L7 rule that applies to the pair.
-3. **Allowed:** bpfd opens a window in the flow's `VM_L7_FLOW` entry, and the
-   client's retransmit of the segment passes, along with the rest of that
-   request. The next request on a keep-alive connection is checked again.
+   but every client segment past the flow's allowed window in `VM_L7_FLOW`
+   is copied whole (up to 64 KiB) to bpfd over the `VM_L7_EVENTS` ring
+   buffer. UDP DNS on an L7 port is copied the same way.
+2. With the enforcement lease, the edge holds (drops) those segments. bpfd
+   puts them in order per connection and parses the client's byte stream
+   incrementally:
+   - HTTP/1.x: headers may span segments; `Content-Length` and chunked
+     bodies are skipped without inspection; pipelined and keep-alive
+     requests are each checked; `CONNECT` and `Upgrade` open the connection.
+   - Kafka: whole requests up to 4 MiB, with Produce/Fetch topics.
+   - TLS: the ClientHello SNI.
+   - DNS over UDP and over TCP: the query name.
+
+   Each request is checked against every L7 rule for the pair.
+3. **Allowed:** bpfd widens the window to the end of the request (and of a
+   body it does not need to see), then reinjects the held frames at once
+   through a private veth pair (`mnl7inj0` → `mnl7inj1`, where
+   `mn_vm_l7_inject` redirects them into the tap). A frame that carries the
+   end of one request and the start of the next is split. There is no
+   retransmission wait. Bodies inside the window pass in the kernel.
 4. **Denied:** bpfd answers in place of the server: `HTTP/1.1 403 Access
-   denied` for HTTP, a TCP reset for Kafka and TLS, `REFUSED` for DNS. It
-   resets the server side too, and the flow stays closed.
-5. DNS queries that are allowed are forwarded by bpfd from the host, and the
-   answer is injected back into the tap, where `toFQDNs` learning sees it.
+   denied` for HTTP, a TCP reset for Kafka, TLS and DNS over TCP, `REFUSED`
+   for UDP DNS. It resets the server side too (through the same inject path,
+   so routed and NAT taps work as well as bridged ones), and the connection
+   stays closed.
+5. An allowed UDP DNS query is reinjected once. The answer comes back
+   through the tap, where `toFQDNs` learning sees it.
+
+Windows are per tap, so a client VM and a server VM on the same host are each
+checked against their own rules.
 
 Each decision is a flow record with the L7 type and request (for example
 `GET /v1/users`), shown with ◆ in `machinactl flow observe` and the UI
@@ -177,14 +194,17 @@ no L7 check applies.
 
 Limits:
 
-- Holding the first segment costs one TCP retransmission timeout (at least
-  200 ms) per checked request under enforcement.
-- Only the first 4 KiB of a request is seen. HTTP headers past that, and
-  chunked request bodies, are not parsed; the rest of such a request passes.
+- HTTP/2 (and so gRPC) is not parsed: a connection that starts with the
+  HTTP/2 preface is denied on a port with HTTP rules.
 - TLS is matched on SNI only. After the ClientHello the connection is open.
-- `rules.dns` covers DNS over UDP only.
-- For a denied egress connection, the reset to the server goes out through the
-  tap's bridge. A tap without a bridge leaves the server side to time out.
+- A request head over 64 KiB, a Kafka request over 4 MiB, or more than
+  5 MiB held for one connection denies the connection.
+- A connection already open when an L7 rule is applied is checked from the
+  next segment bpfd sees; mid-request it fails to parse and is denied.
+- bpfd tracks up to 65536 connections and forgets one after 5 minutes idle.
+- If the inject veth cannot be created, allowed segments pass on the
+  client's retransmit (at least 200 ms later) and allowed UDP DNS queries are
+  forwarded from the host.
 
 ## CIDR groups and toGroups
 
@@ -299,8 +319,8 @@ machinactl vm label web-1                         # show
    treats it as `world`. It then checks `VM_POLICY` with wildcards: any peer,
    any port, any protocol. A deny match wins; a miss on an isolated direction
    is a default-deny drop. An allow entry can also require authentication
-   (checked against `VM_AUTH` for new connections) or L7 (the request's first
-   segment goes to bpfd, see [L7 rules](#l7-rules)).
+   (checked against `VM_AUTH` for new connections) or L7 (client segments
+   go to bpfd until it allows them, see [L7 rules](#l7-rules)).
 
 The usual [safety model](README.md#safety-model) applies. Without the
 enforcement lease, a drop is recorded as an **AUDIT** flow and the packet is
@@ -369,9 +389,12 @@ a veth pair in a scratch netns and covers:
   blocking before the lookup, learning from the reply, allowing after it,
   ignoring NXDOMAIN and unmatched names, `world` deny still winning, and
   removing the rule.
-- L7: HTTP allow, 403 and keep-alive requests; TLS SNI with `openssl`; Kafka
-  Produce to an allowed and a denied topic; DNS forwarded and REFUSED; AUDIT
-  in observe mode.
+- L7: HTTP allow, 403 and keep-alive requests; no retransmission wait; a
+  request head split across segments; a 384 KiB body and a chunked body
+  followed by a denied request on the same connection; HTTP over IPv6; TLS
+  SNI with `openssl`; Kafka Produce to an allowed and a denied topic; DNS
+  over UDP (reinjected, REFUSED) and over TCP (answered, reset, learned by
+  `toFQDNs`); AUDIT in observe mode.
 - Authentication: `test-always-fail`, `required` against a fleet peer, the
   auth table, and the source guard with and without the lease.
 
