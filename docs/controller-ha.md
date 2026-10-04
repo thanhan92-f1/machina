@@ -63,6 +63,35 @@ The web UI reaches the controller through the daemon's same-origin proxy
 (`/api/v1/platform/controller`), so nothing changes for operators when the
 leader moves.
 
+## Surviving the loss of the controller host (active/standby)
+
+The state database is SQLite, so the controller host itself is the thing to protect. Machina does this without
+changing the database: a small **Podman pod runs Litestream**, which streams the SQLite WAL to a replica (S3/MinIO/
+Atlas RGW, SFTP, or an NFS path) about once a second, and a **standby controller on another host** restores the replica
+and takes over when the primary is gone.
+
+```bash
+# on the primary (the controller keeps running as its normal service)
+scripts/ha/machina-ha.sh start s3://my-bucket/machina/controller   # needs LITESTREAM_ACCESS_KEY_ID/SECRET in the pod env
+scripts/ha/machina-ha.sh status                                     # generations / lag
+
+# prove it works, safely, on a scratch database (touches nothing real; also runs in CI)
+scripts/ha/machina-ha.sh drill
+
+# on the standby, when the primary is confirmed down
+export MACHINA_CONTROLLER_ID=controller-b MACHINA_PRIMARY_URL=https://primary:5093
+scripts/ha/machina-ha.sh promote          # refuses if the primary still answers; --force to override
+```
+
+**Fencing.** The leadership row carries an **epoch** that goes up every time leadership changes hands. The controller sends
+it to every agent (`x-machina-epoch`), and an agent **refuses any controller whose epoch is lower than one it has already
+seen**. If the old primary returns after a failover it can no longer act on hosts. Set `MACHINA_AGENT_REQUIRE_EPOCH=1` on
+agents to also refuse controllers that send no epoch (older builds).
+
+**Expectations.** Data loss on failover is about one second of writes (`sync-interval`). Promotion is deliberate, not automatic,
+so a network partition can never produce two controllers acting at once. A Postgres backend is intentionally not part of this:
+it would mean porting every query (the controller has roughly 1,450 SQLite-specific calls); revisit only if scale demands it.
+
 ## Related
 
 - [platform.md](platform.md) — controller setup, host enrollment, mTLS
