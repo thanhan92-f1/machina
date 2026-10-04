@@ -1189,6 +1189,77 @@ pub async fn egress_ips(State(state): State<AppState>) -> Json<Value> {
     Json(json!({ "items": hosts, "errors": errors }))
 }
 
+// ---- WireGuard overlay -------------------------------------------------------------------
+
+/// Overlay settings, every host's state, and the fleet address of each VM.
+pub async fn overlay(State(state): State<AppState>) -> Json<Value> {
+    let s = crate::engine::vm_overlay::settings(&state.pool).await;
+    let (hosts, errors) = if s.enabled {
+        fan_out_report(&state, &Request::VmOverlayStatus).await
+    } else {
+        (Vec::new(), Vec::new())
+    };
+    Json(json!({ "settings": s, "items": hosts, "errors": errors }))
+}
+
+#[derive(Deserialize, Default)]
+pub struct OverlayBody {
+    #[serde(default)]
+    enabled: Option<bool>,
+    #[serde(default)]
+    prefix4: Option<String>,
+    #[serde(default)]
+    prefix6: Option<String>,
+    #[serde(default)]
+    port: Option<u16>,
+}
+
+/// Turn the overlay on or off, or change its prefixes or port. Changing a
+/// prefix renumbers every fleet address.
+pub async fn overlay_set(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Json(b): Json<OverlayBody>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    let mut s = crate::engine::vm_overlay::settings(&state.pool).await;
+    if let Some(e) = b.enabled {
+        s.enabled = e;
+    }
+    if let Some(p) = b.prefix4 {
+        s.prefix4 = p.trim().to_string();
+    }
+    if let Some(p) = b.prefix6 {
+        s.prefix6 = p.trim().to_string();
+    }
+    if let Some(p) = b.port {
+        s.port = p;
+    }
+    s.validate()
+        .map_err(|e| ApiError::bad_request(e).with_code("invalid_overlay"))?;
+    s.updated_by = actor.username.clone();
+    crate::engine::vm_overlay::put_settings(&state.pool, &s)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    state.emit_event(
+        "netpol.overlay",
+        format!(
+            "{} turned the WireGuard overlay {} ({}, {}, port {})",
+            actor.username,
+            if s.enabled { "on" } else { "off" },
+            s.prefix4,
+            s.prefix6,
+            s.port
+        ),
+    );
+    // The first push makes hosts create their keys; the second gives them peers.
+    let mut sync = vm_netpol::reconcile(&state.pool, false).await;
+    if s.enabled {
+        sync = vm_netpol::reconcile(&state.pool, false).await;
+    }
+    Ok(Json(json!({ "settings": s, "sync": sync })))
+}
+
 // ---- Segmentation evidence ------------------------------------------------------------
 
 #[derive(Deserialize, Default)]

@@ -63,6 +63,7 @@ cleanup() {
         "$M" netpol project reset np-red --fleet >/dev/null 2>&1
         "$M" netpol project reset np-blue --fleet >/dev/null 2>&1
         "$M" netpol project assign - np-client np-server --fleet >/dev/null 2>&1
+        [[ -n "${OVERLAY_ON:-}" ]] && "$M" netpol overlay disable --fleet >/dev/null 2>&1
         "$M" netpol sync --fleet >/dev/null 2>&1
         sudo -n iptables -D FORWARD -i virbr0 -o np-outv -j ACCEPT 2>/dev/null
         sudo -n iptables -D FORWARD -i np-outv -o virbr0 -j ACCEPT 2>/dev/null
@@ -612,6 +613,33 @@ fsync
 no_egress6() { for _ in $(seq 20); do sudo -n nft list table ip6 machina_egress >/dev/null 2>&1 || return 0; sleep 1; fsync; done; return 1; }
 check "IPv6 removed: ip6 table gone" no_egress6
 check "IPv6 removed: client seen as its ULA again" [ "$(seen "$CIP" 2001:db8:78::2)" = fd00:6e70::10 ]
+fi
+
+echo "== fleet: learned addresses and overlay =="
+learned() { bpfd '{"op":"vm_edge_status"}' | python3 -c "import json,sys; d=json.load(sys.stdin); d=d.get('data',d); sys.exit(0 if '$CIP' in d.get('learned',{}).get('np-client',[]) else 1)"; }
+check "bpfd learned the client's address from its tap traffic" learned
+if ! command -v wg >/dev/null || ip link show machina-wg >/dev/null 2>&1; then
+    echo "SKIP  overlay: wg missing or machina-wg already in use"
+else
+OVERLAY_ON=1
+check "enable the overlay" FM overlay enable
+ov_mapped() {
+    for _ in $(seq 20); do
+        NP_JSON=1 FM overlay 2>/dev/null | jq -e --arg c "$CIP" --arg s "$SIP" '.items[0] | .interface == "machina-wg" and (.public_key | length) == 44
+          and ([.mappings[] | select(.local == $c or .local == $s) | .fleet | startswith("100.96.")] == [true, true])
+          and all(.mappings[]; .fleet | startswith("100.96.") or startswith("fd6d:6163:6869:"))' >/dev/null && return
+        sleep 1; fsync
+    done
+    return 1
+}
+check "overlay up: public key, both VMs mapped to fleet addresses" ov_mapped
+check "overlay: nft maps the client" bash -c "sudo -n nft list table ip machina_overlay | grep -q '$CIP'"
+check "overlay: fleet range unreachable without a peer" bash -c "ip route show type unreachable | grep -q '^unreachable 100.96.0.0/12'"
+check "overlay: unmapped new connections from peers dropped" bash -c "sudo -n nft list table ip machina_overlay | grep -q 'ct status ! dnat drop'"
+check "disable the overlay" FM overlay disable
+ov_gone() { for _ in $(seq 20); do ! ip link show machina-wg >/dev/null 2>&1 && ! sudo -n nft list table ip machina_overlay >/dev/null 2>&1 && ! ip route show type unreachable | grep -q 100.96.0.0/12 && return; sleep 1; done; return 1; }
+check "overlay off: interface, tables and routes removed" ov_gone
+OVERLAY_ON=
 fi
 
 echo "== fleet: evidence =="

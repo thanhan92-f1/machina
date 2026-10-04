@@ -620,6 +620,8 @@ kill "$VMHTTP_PID" 2>/dev/null || true
 
 observe
 check "netpol observe: ingressDeny only audited" host_ping_vm
+learned_has() { jpath vm_edge_status "'$VM_IP' in d.get('learned', {}).get('$VM', [])" | grep -q True; }
+check "learned: VM source address noted from tap traffic" learned_has
 
 edge '{"vms":[]}'
 check "netpol: cleared" [ "$(jpath vm_edge_status "len(d['taps'])")" = 0 ]
@@ -678,7 +680,7 @@ while True:
   seen_as() {
     ip netns exec "$NS" python3 -c "import socket; s=socket.create_connection(('$OUT_IP',18095),3); print(s.recv(64).decode())" 2>/dev/null
   }
-  snat() { req "{\"op\":\"vm_egress_snat_set\",\"config\":{\"rules\":$1,\"exclude\":[]}}"; }
+  snat() { req "{\"op\":\"vm_egress_snat_set\",\"config\":{\"rules\":$1,\"exclude\":[],\"manage_addresses\":false}}"; }
   check "egress: routed out with the VM address" [ "$(seen_as)" = "$VM_IP" ]
   snat "[{\"project\":\"smoke\",\"egress_ip\":\"$EGRESS_IP\",\"sources\":[\"$VM_IP\"]}]" | must
   check "egress: status active with one rule" [ "$(jpath vm_egress_snat_status "(d['active'], len(d['rules']), d.get('error'))")" = "(True, 1, None)" ]
@@ -697,7 +699,149 @@ while True:
   snat '[]' | must
   check "egress: cleared removes the table" no_table
   check "egress: cleared restores the VM address" [ "$(seen_as)" = "$VM_IP" ]
+
+  # Managed addresses: bpfd adds a missing egress IP to the (overridden)
+  # uplink, announces it, and removes only what it added.
+  MANAGED_IP=10.199.86.9
+  MANAGED_IP6=fd99:86::9
+  OUT_MAC=$(cat "/sys/class/net/$OUT_IF/address")
+  ip netns exec "$OUT_NS" ip route add 10.199.86.0/24 dev "${OUT_IF}p"
+  ip netns exec "$OUT_NS" sysctl -qw "net.ipv4.conf.${OUT_IF}p.arp_accept=1"
+  NA_KNOB=/proc/sys/net/ipv6/conf/${OUT_IF}p/accept_untracked_na
+  ip netns exec "$OUT_NS" sh -c "[ -e $NA_KNOB ] && echo 1 > $NA_KNOB && sysctl -qw net.ipv6.conf.${OUT_IF}p.forwarding=1" || true
+  managed() { req "{\"op\":\"vm_egress_snat_set\",\"config\":{\"rules\":$1,\"exclude\":[],\"interface\":\"$OUT_IF\"}}"; }
+  managed "[{\"project\":\"smoke\",\"egress_ip\":\"$MANAGED_IP\",\"sources\":[\"$VM_IP\"]},{\"project\":\"smoke6\",\"egress_ip\":\"$MANAGED_IP6\",\"sources\":[\"fd99:81::2\"]}]" | must
+  on_out() { ip -o addr show dev "$OUT_IF" | grep -q " $1 "; }
+  check "egress managed: IPv4 /32 added to the interface" on_out "$MANAGED_IP/32"
+  check "egress managed: IPv6 /128 added to the interface" on_out "$MANAGED_IP6/128"
+  check "egress managed: status lists both, nothing skipped" [ "$(jpath vm_egress_snat_status "(sorted(d['managed']), len(d['skipped']))")" = "(['$MANAGED_IP/32@$OUT_IF', '$MANAGED_IP6/128@$OUT_IF'], 0)" ]
+  garp_seen() { ip netns exec "$OUT_NS" ip neigh show "$MANAGED_IP" dev "${OUT_IF}p" | grep -qi "$OUT_MAC"; }
+  check "egress managed: gratuitous ARP taught the outside the address" garp_seen
+  if ip netns exec "$OUT_NS" test -e "$NA_KNOB"; then
+    na_seen() { ip netns exec "$OUT_NS" ip -6 neigh show "$MANAGED_IP6" dev "${OUT_IF}p" | grep -qi "$OUT_MAC"; }
+    check "egress managed: unsolicited NA taught the outside the address" na_seen
+  fi
+  check "egress managed: outside sees the added address" [ "$(seen_as)" = "$MANAGED_IP" ]
+  managed '[]' | must
+  not_out() { ! on_out "$1"; }
+  check "egress managed: cleared removes the IPv4 address" not_out "$MANAGED_IP/32"
+  check "egress managed: cleared removes the IPv6 address" not_out "$MANAGED_IP6/128"
+  check "egress managed: status empty" [ "$(jpath vm_egress_snat_status "d.get('managed', [])")" = "[]" ]
+  check "egress managed: pre-existing address kept" on_out "$EGRESS_IP/32"
   egress_cleanup
+  trap cleanup EXIT
+fi
+
+# ---- WireGuard overlay ----------------------------------------------------------
+# A netns with its own WireGuard interface stands in for a peer hypervisor that
+# owns 100.96.2.0/24; the "VM" gets fleet address 100.96.1.2 on this host.
+# Skipped when wg is missing or machina-wg is already in use (a real bpfd).
+
+if ! command -v wg >/dev/null || ip link show machina-wg >/dev/null 2>&1 ||
+  nft list table ip machina_overlay >/dev/null 2>&1; then
+  echo "SKIP  overlay: wg missing or machina-wg already in use"
+else
+  WG_NS=mnvme-wg
+  WG_IF=mnvme-c0
+  WG_HOST_IP=10.199.87.1
+  WG_PEER_IP=10.199.87.2
+  FLEET_VM=100.96.1.2
+  REMOTE_VM=100.96.2.5
+  SPOOF_IP=100.96.1.50
+  OV_PORT=51879
+  # Distro AppArmor profiles only let wg read keys under /etc/wireguard.
+  WG_DIR_NEW=
+  [[ -d /etc/wireguard ]] || { install -d -m700 /etc/wireguard && WG_DIR_NEW=1; }
+  PEER_KEY=/etc/wireguard/mnvme-smoke-peer.key
+  FWD_WAS=$(cat /proc/sys/net/ipv4/ip_forward)
+  FWD_RULES=("-i $HOST_IF -o machina-wg -j ACCEPT"
+    "-i machina-wg -o $HOST_IF -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")
+  overlay_cleanup() {
+    req '{"op":"vm_overlay_set","config":{"enabled":false}}' >/dev/null 2>&1 || true
+    for p in "${WGSRV_PID:-}" "${VMSRV_PID:-}"; do [[ -n "$p" ]] && kill "$p" 2>/dev/null || true; done
+    for r in "${FWD_RULES[@]}"; do
+      # shellcheck disable=SC2086
+      iptables -D FORWARD $r 2>/dev/null || true
+    done
+    ip netns exec "$NS" ip route del 100.96.0.0/12 2>/dev/null || true
+    ip netns del "$WG_NS" 2>/dev/null || true
+    ip link del "$WG_IF" 2>/dev/null || true
+    rm -f "$PEER_KEY"
+    [[ -n "$WG_DIR_NEW" ]] && rmdir /etc/wireguard 2>/dev/null || true
+    echo "$FWD_WAS" >/proc/sys/net/ipv4/ip_forward
+  }
+  trap 'overlay_cleanup; cleanup' EXIT
+  ip netns add "$WG_NS"
+  ip link add "$WG_IF" type veth peer name "${WG_IF}p"
+  ip link set "${WG_IF}p" netns "$WG_NS"
+  ip addr add "$WG_HOST_IP/30" dev "$WG_IF"
+  ip link set "$WG_IF" up
+  ip netns exec "$WG_NS" ip link set lo up
+  ip netns exec "$WG_NS" ip addr add "$WG_PEER_IP/30" dev "${WG_IF}p"
+  ip netns exec "$WG_NS" ip addr add "$REMOTE_VM/32" dev lo
+  ip netns exec "$WG_NS" ip addr add "$SPOOF_IP/32" dev lo
+  ip netns exec "$WG_NS" ip link set "${WG_IF}p" up
+  ip netns exec "$NS" ip route add 100.96.0.0/12 via "$HOST_IP"
+  echo 1 >/proc/sys/net/ipv4/ip_forward
+  (umask 077 && wg genkey >"$PEER_KEY")
+  PEER_PUB=$(cat "$PEER_KEY" | wg pubkey)
+  ov_set() {
+    req "{\"op\":\"vm_overlay_set\",\"config\":{\"enabled\":true,\"listen_port\":$OV_PORT,\"prefixes\":[\"100.96.1.0/24\"],\"fleet_prefixes\":[\"100.96.0.0/12\"],\"mappings\":[{\"local\":\"$VM_IP\",\"fleet\":\"$FLEET_VM\",\"vm\":\"$VM\"}],\"peers\":[{\"host\":\"peer\",\"public_key\":\"$PEER_PUB\",\"endpoint\":\"$WG_PEER_IP:51872\",\"prefixes\":[\"100.96.2.0/24\"]}]}}"
+  }
+  ov_set | must
+  HOST_PUB=$(jpath vm_overlay_status "d.get('public_key') or ''")
+  ip netns exec "$WG_NS" ip link add wg-peer type wireguard
+  ip netns exec "$WG_NS" wg set wg-peer listen-port 51872 private-key "$PEER_KEY" \
+    peer "$HOST_PUB" endpoint "$WG_HOST_IP:$OV_PORT" allowed-ips 100.96.1.0/24,10.199.81.0/30
+  ip netns exec "$WG_NS" ip link set wg-peer mtu 1420 up
+  ip netns exec "$WG_NS" ip route add 100.96.1.0/24 dev wg-peer src "$REMOTE_VM"
+  ip netns exec "$WG_NS" ip route add 10.199.81.0/30 dev wg-peer src "$REMOTE_VM"
+  for r in "${FWD_RULES[@]}"; do
+    # shellcheck disable=SC2086
+    iptables -I FORWARD $r
+  done
+  echo_srv() {
+    python3 -c "
+import socket
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('$1', $2)); s.listen(8)
+while True:
+    c, a = s.accept(); c.sendall(a[0].encode()); c.close()
+"
+  }
+  (ip netns exec "$WG_NS" bash -c "$(declare -f echo_srv); echo_srv $REMOTE_VM 18096" >/dev/null 2>&1) &
+  WGSRV_PID=$!
+  (ip netns exec "$NS" bash -c "$(declare -f echo_srv); echo_srv $VM_IP 18097" >/dev/null 2>&1) &
+  VMSRV_PID=$!
+  # bpfd's first handshake went out before this peer existed; WireGuard
+  # retries after 5 s, so wait for the tunnel instead of the first dial.
+  for _ in $(seq 15); do ip netns exec "$WG_NS" ping -c1 -W1 100.96.1.1 >/dev/null 2>&1 && break; done
+  # dial NETNS SRC DST PORT: print the address the server saw.
+  dial() {
+    ip netns exec "$1" python3 -c "
+import socket
+s = socket.socket(); s.settimeout(3); s.bind(('$2', 0)); s.connect(('$3', $4)); print(s.recv(64).decode())" 2>/dev/null
+  }
+  has_key() { [[ ${#HOST_PUB} -eq 44 ]] && ip link show machina-wg 2>/dev/null | grep -q ",UP"; }
+  check "overlay: machina-wg up with a public key" has_key
+  check "overlay: applied without error" [ "$(jpath vm_overlay_status "d.get('error')")" = None ]
+  check "overlay: VM reaches the remote VM as its fleet address" [ "$(dial "$NS" "$VM_IP" "$REMOTE_VM" 18096)" = "$FLEET_VM" ]
+  check "overlay: remote VM reaches the VM by fleet address" [ "$(dial "$WG_NS" "$REMOTE_VM" "$FLEET_VM" 18097)" = "$REMOTE_VM" ]
+  handshake() { [ "$(jpath vm_overlay_status "[p['latest_handshake'] > 0 and p['rx_bytes'] > 0 for p in d['peers']]")" = "[True]" ]; }
+  check "overlay: peer handshake and encrypted transfer" handshake
+  spoof_ok() { [ -n "$(dial "$WG_NS" "$SPOOF_IP" "$FLEET_VM" 18097)" ]; }
+  check "overlay: source outside the peer's prefixes dropped" not spoof_ok
+  direct_ok() { [ -n "$(dial "$WG_NS" "$REMOTE_VM" "$VM_IP" 18097)" ]; }
+  check "overlay: unmapped destination from a peer dropped" not direct_ok
+  unreach() { ip route show type unreachable | grep -q '^unreachable 100.96.0.0/12'; }
+  check "overlay: fleet range unreachable outside peer routes" unreach
+  req '{"op":"vm_overlay_set","config":{"enabled":false}}' | must
+  no_wg() { ! ip link show machina-wg >/dev/null 2>&1 && ! nft list table ip machina_overlay >/dev/null 2>&1; }
+  check "overlay: disable removes the interface and tables" no_wg
+  check "overlay: disable removes the unreachable routes" not unreach
+  no_fwd() { ! iptables -S FORWARD | grep -q machina-overlay; }
+  check "overlay: disable removes the forward rule" no_fwd
+  overlay_cleanup
   trap cleanup EXIT
 fi
 

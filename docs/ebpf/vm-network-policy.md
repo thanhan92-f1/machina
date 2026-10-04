@@ -896,18 +896,31 @@ machinactl --fleet netpol project reset payments      # drop every setting
   every few minutes. On a host, its own addresses are `host`; the other
   hosts' addresses are `remote-node`. An address that several hosts share
   (libvirt's `192.168.122.1`, for example) is left out of `remote-node`.
-- **VM addresses:** every address the agent sees for a VM is part of its
-  identity, not only the first one. Sources: libvirt DHCP leases; the
-  guest agent (every NIC, IPv6 included) when its channel is connected;
-  ARP when neither gave an IPv4. Without a running `qemu-guest-agent`,
-  addresses outside libvirt DHCP (static IPv6, a second NIC) are not seen.
+- **VM addresses:** every address seen for a VM is part of its identity,
+  not only the first one. The sources are:
+  - libvirt DHCP leases;
+  - the guest agent (every NIC, IPv6 included), when its channel is
+    connected;
+  - otherwise the host's neighbour tables (ARP and IPv6 NDP), matched by
+    the MAC addresses of the VM's NICs (`virsh domiflist`). This finds
+    static IPv6 addresses and second NICs without `qemu-guest-agent`;
+  - source addresses `machina-bpfd` sees in traffic from the VM's tap
+    (`learned` in `vm_edge_status`). bpfd keeps up to 16 per VM and
+    forgets an address 15 minutes after its last packet.
+- **Learned addresses that are refused:** the controller adds learned
+  addresses to the VM's identity unless the address belongs to a host,
+  another VM on the same host already owns it, or two VMs on the same host
+  both send from it. A VM cannot take over another VM's identity by
+  spoofing its address.
 - **Cross-host NAT:** VMs on libvirt NAT networks reach VMs on other hosts
   with their host's address, so isolation cannot tell them apart from the
   host. A project with VMs on two or more hosts whose VM subnets are NATed
   per host (the same `addr/prefix` on several hosts) is flagged:
   `cross_host_nat` in the API, a warning in `netpol projects`, a badge in
-  the UI and a line in evidence exports. Use routed or bridged networks for
-  projects that span hosts.
+  the UI and a line in evidence exports. Turn on the
+  [overlay](#cross-host-overlay-wireguard) to keep each VM's identity
+  across hosts (the flag then goes away), or use routed or bridged
+  networks.
 - **Exceptions:** ordinary allow policies still apply, because policies
   add up. One `CiliumNetworkPolicy` that lets `app=monitor` reach port
   9100 opens that port into an isolated project.
@@ -1028,10 +1041,22 @@ machinactl --fleet netpol egress                             # egress IPs on eve
   outside the fleet can then tell tenants apart.
 - **Setting it:** set one per host, by host name or id: one IPv4, one
   IPv6, or both comma-separated. IPv4 VM addresses leave with the IPv4
-  egress IP and IPv6 ones with the IPv6 egress IP. The address must
-  already be configured on that host, and the upstream network must route
-  it back to that host; otherwise replies never arrive. Machina does not
-  add addresses.
+  egress IP and IPv6 ones with the IPv6 egress IP.
+- **Adding the address:** when the egress IP is not on the host yet,
+  `machina-bpfd` adds it as a `/32` or `/128` to the interface of the
+  default route for that family and announces it: a gratuitous ARP for
+  IPv4, an unsolicited neighbour advertisement for IPv6. It removes the
+  address with the rule, and only addresses it added itself (they are kept
+  in its state file across restarts). An address that is already
+  configured is used as it is and never removed.
+- **Routing:** the announcement is enough when the egress IP is in the
+  uplink's subnet. An address from another range needs the upstream
+  router to route it to that host (a static route, or a routed IP from
+  the provider); otherwise replies never arrive.
+- **Controller settings:** `MACHINA_NETPOL_EGRESS_MANAGE=0` stops hosts
+  adding addresses (missing ones are then skipped, as before).
+  `MACHINA_NETPOL_EGRESS_INTERFACE=eth1` picks the interface instead of
+  the default route's.
 - **What is never rewritten:** destinations in private (RFC 1918),
   CGNAT, link-local, loopback and multicast ranges keep the VM's own
   source, and so do IPv6 ULA (`fc00::/7`), link-local, loopback and
@@ -1049,8 +1074,10 @@ machinactl --fleet netpol egress                             # egress IPs on eve
   `project-egress-ip-<project>` policy instead blocks those VMs' internet
   egress (everything except the never-rewritten ranges above, and IPv6
   outside `2000::/3`); `allow-host-ip` turns it off.
-- **Missing addresses:** a rule whose address is not on the host is
-  skipped and reported, not applied.
+- **Missing addresses:** a rule whose address is not on the host and
+  could not be added (no default route, adding turned off, `ip` failed) is
+  skipped and reported, not applied. `managed` in the status lists the
+  addresses bpfd added, as `IP/prefix@interface`.
 - **Persistence:** the table is address translation, not a security
   control, so it stays in place while bpfd is stopped. bpfd re-applies the
   saved rules when it starts.
@@ -1058,7 +1085,66 @@ machinactl --fleet netpol egress                             # egress IPs on eve
   `nft` command runs.
 
 `GET /api/v1/vm-network-policies/egress-ips` (controller) shows each host's
-rules, whether they are active, skipped rules and errors.
+rules, whether they are active, skipped rules, added addresses and errors.
+
+## Cross-host overlay (WireGuard)
+
+```bash
+machinactl --fleet netpol overlay                 # status, fleet addresses
+machinactl --fleet netpol overlay enable          # 100.96.0.0/12, fd6d:6163:6869::/48, udp/51871
+machinactl --fleet netpol overlay enable --prefix4 100.80.0.0/12 --port 51900
+machinactl --fleet netpol overlay disable
+```
+
+On libvirt NAT networks a VM's traffic to another host leaves with its
+host's address, so the receiving host cannot tell which VM sent it. The
+overlay carries VM-to-VM traffic between hosts in encrypted WireGuard
+tunnels and keeps the sender's identity.
+
+- **Fleet addresses:** each host gets a fleet prefix: a `/24` of the IPv4
+  range and a `/64` of the IPv6 range. Each VM address on the host gets a
+  fleet address in it. `.1` (`::1`) is the host's own. Allocations are
+  stored by the controller and stay the same while the VM keeps its
+  address on that host.
+- **Reaching a VM on another host:** use its fleet address (`netpol overlay`
+  lists them). The receiving host sees the sending VM's fleet address,
+  which is part of that VM's identity, so policies, project isolation and
+  flows name the VM. A VM that moves to another host gets a fleet address
+  in that host's prefix.
+- **How it works:** each host's `machina-bpfd` runs the `machina-wg`
+  WireGuard interface and the nftables tables `ip machina_overlay` and
+  `ip6 machina_overlay`. They hold 1:1 maps: arriving traffic to a fleet
+  address is DNATed to the VM, and VM traffic into the tunnel is SNATed
+  to its fleet address (ahead of libvirt's masquerade). TCP MSS is
+  clamped to the tunnel MTU (1420).
+- **What a peer host can send:** each peer may only use its own prefixes
+  as source addresses (WireGuard `allowed-ips`), so one host cannot pose as
+  another host's VMs. New connections from the tunnel are dropped unless
+  they go to a mapped fleet address; a peer cannot use the host as a
+  router. Replies to connections VMs opened pass.
+- **No leaks:** the fleet ranges and the host's own prefix are
+  `unreachable` routes. Traffic for a host that is not peered yet, or for
+  an unmapped fleet address, is refused rather than sent out the uplink.
+- **Keys:** each host generates its private key in bpfd's state directory
+  (`overlay/wg.key`, mode 0600) and hands it to the kernel over netlink,
+  never to the `wg` command (distro AppArmor profiles only let `wg` read
+  `/etc/wireguard`). The
+  controller learns the public keys from the push responses; the first
+  push after enabling generates them and the next one sets the peers.
+- **Endpoints:** a peer's endpoint is the address the controller has for
+  that host in its inventory, port 51871 (`--port`). Allow that UDP port between
+  hosts.
+- **Requirements:** `wireguard-tools` (`wg`) on every host (`machinactl
+  deps` installs it) and the `wireguard` kernel module.
+- **Disabling:** removes the interface, the routes, the forward rule and
+  the tables on every host, and the fleet addresses from identities.
+- **Storage:** settings and allocations live in the controller table
+  `vm_netpol_overlay`. Changes are recorded as `netpol.overlay` events.
+
+API (controller): `GET /api/v1/vm-network-policies/overlay` returns the
+settings and, when on, each host's status (interface, public key,
+prefixes, fleet addresses, peers with their last handshake and bytes).
+`PUT` with `{enabled, prefix4?, prefix6?, port?}` changes them (admin).
 
 ## Segmentation evidence
 
@@ -1143,12 +1229,15 @@ the daemon (this host) and the controller (the fleet, also `&project=P`). Export
 - **Self-approval status code:** refusing a requester's own approval
   returns HTTP 500 with the reason in the body, not 403. The shared
   approvals handler maps every refusal to an internal error.
-- **Egress IP addresses:** Machina neither adds the egress IP to the host
-  nor sets up upstream routing for it; both are manual.
-- **Cross-host NAT:** projects spanning NATed hosts are only flagged.
-  Isolation between them needs routed or bridged VM networks.
-- **Addresses outside libvirt DHCP:** static IPv6 addresses and additional
-  NICs are only seen with `qemu-guest-agent` running in the guest.
+- **Egress IPs from another range:** bpfd adds and announces the egress
+  IP, but an address outside the uplink's subnet still needs an upstream
+  route to the host.
+- **Overlay addressing:** VMs reach VMs on other hosts by fleet address,
+  not by their own address, and the fleet address changes when a VM moves
+  to another host. Without the overlay, projects spanning NATed hosts are
+  only flagged.
+- **Silent VMs:** without the guest agent, an address outside libvirt DHCP
+  is only seen once the VM sends from it (neighbour tables or tap traffic).
 - **Timing-sensitive smoke checks:** the large-body L7 checks in
   `vm-edge-smoke.sh` (384 KiB and chunked POST) can fail on a heavily
   loaded host; rerun before investigating.
@@ -1185,10 +1274,23 @@ a veth pair in a scratch netns and covers:
 - Egress IPs: a second netns stands in for the internet, routed through
   the host. A server there reports the source address it sees: the VM's
   address before the rule, the egress IP after it, and the VM's address
-  again when the rule is skipped (non-local address) or cleared. The
-  checks also cover refusing an invalid config and removing the nftables
-  table. The section is skipped when the host already has an
-  `ip machina_egress` table.
+  again when the rule is skipped (non-local address with adding turned
+  off) or cleared. The checks also cover refusing an invalid config and
+  removing the nftables table. Then, with `interface` set to the test
+  veth, bpfd adds a missing IPv4 and IPv6 egress IP, lists them as
+  `managed`, teaches the outside netns its MAC by gratuitous ARP and
+  unsolicited NA, and is seen with the added address; clearing removes
+  them and keeps the address it did not add. The section is skipped when
+  the host already has an `ip machina_egress` table.
+- Learned addresses: the VM's source address shows up in `learned` after
+  its traffic.
+- Overlay: a netns with its own WireGuard interface stands in for a peer
+  host. The checks cover the VM reaching the remote VM as its fleet
+  address, the remote reaching the VM by fleet address, the handshake and
+  encrypted bytes, a source outside the peer's prefixes and an unmapped
+  destination both dropped, the `unreachable` fleet route, and disabling
+  removing the interface, tables, routes and forward rule. Skipped without
+  `wg` or when `machina-wg` exists.
 
 `scripts/bpf/vm-netpol-realvm.sh` runs against two real VMs. It boots
 `np-client` and `np-server` from a Debian cloud image on the `default` NAT
@@ -1264,6 +1366,10 @@ and the client in `np-blue`, isolates `np-red`, and checks:
   with its own IPv6 default route (enabling IPv6 forwarding would stop it
   accepting router advertisements); the forwarding and `virbr0` sysctls
   are restored on exit;
+- that bpfd learned the client's address from its tap, and that enabling
+  the overlay brings up `machina-wg` with a public key, maps both VMs to
+  fleet addresses in nftables, and installs the `unreachable` fleet route
+  and the drop for unmapped connections; disabling removes them all;
 - that the evidence export marks `np-red` isolated, shows `np-blue → np-red`
   segmented and `host → np-red` allowed, lists the dropped connection, and
   verifies;

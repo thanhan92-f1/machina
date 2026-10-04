@@ -152,24 +152,71 @@ fn guest_agent_connected(name: &str) -> bool {
         })
 }
 
-/// Every usable guest address (IPv4 first, then IPv6) from `virsh
-/// domifaddr`: DHCP leases, plus the guest agent (every NIC, IPv6) when it
-/// is connected, plus ARP when neither gave an IPv4.
+/// NIC MACs (lowercase) from `virsh domiflist`.
+fn parse_domiflist_macs(out: &str) -> Vec<String> {
+    out.lines()
+        .filter_map(|l| {
+            l.split_whitespace()
+                .find(|w| w.len() == 17 && w.matches(':').count() == 5)
+                .map(str::to_ascii_lowercase)
+        })
+        .collect()
+}
+
+/// Addresses in `ip neigh show` (IPv4 ARP and IPv6 NDP) whose link-layer
+/// address is one of `macs`; failed and incomplete entries are skipped.
+fn parse_neigh_for_macs(out: &str, macs: &[String]) -> Vec<String> {
+    out.lines()
+        .filter_map(|l| {
+            let w: Vec<&str> = l.split_whitespace().collect();
+            let mac = w
+                .iter()
+                .position(|x| *x == "lladdr")
+                .and_then(|i| w.get(i + 1))?;
+            let state = w.last()?;
+            (macs.iter().any(|m| m.eq_ignore_ascii_case(mac))
+                && !matches!(*state, "FAILED" | "INCOMPLETE" | "NOARP"))
+            .then(|| w[0].to_string())
+        })
+        .collect()
+}
+
+fn guest_addresses_from_neigh(name: &str) -> Vec<String> {
+    use std::process::Command;
+    let Ok(o) = Command::new("virsh").args(["domiflist", name]).output() else {
+        return Vec::new();
+    };
+    let macs = parse_domiflist_macs(&String::from_utf8_lossy(&o.stdout));
+    if macs.is_empty() {
+        return Vec::new();
+    }
+    let Ok(n) = Command::new("ip").args(["neigh", "show"]).output() else {
+        return Vec::new();
+    };
+    parse_neigh_for_macs(&String::from_utf8_lossy(&n.stdout), &macs)
+}
+
+/// Every usable guest address (IPv4 first, then IPv6): libvirt DHCP leases,
+/// the guest agent (every NIC, IPv6) when it is connected, and the host's
+/// IPv4/IPv6 neighbour entries for the VM's NIC MACs, which need no agent.
 pub fn guest_addresses_from_virsh(name: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
-    for source in ["lease", "agent", "arp"] {
-        if source == "agent" && !guest_agent_connected(name) {
-            continue;
+    let mut add = |a: &str| {
+        let a = a.split('/').next().unwrap_or("").to_string();
+        if usable_guest_addr(&a) && !out.contains(&a) {
+            out.push(a);
         }
-        if source == "arp" && out.iter().any(|a| !a.contains(':')) {
-            break;
+    };
+    for r in guest_interfaces_from_virsh(name, "lease") {
+        add(&r.address);
+    }
+    if guest_agent_connected(name) {
+        for r in guest_interfaces_from_virsh(name, "agent") {
+            add(&r.address);
         }
-        for r in guest_interfaces_from_virsh(name, source) {
-            let a = r.address.split('/').next().unwrap_or("").to_string();
-            if usable_guest_addr(&a) && !out.contains(&a) {
-                out.push(a);
-            }
-        }
+    }
+    for a in guest_addresses_from_neigh(name) {
+        add(&a);
     }
     out.sort_by_key(|a| a.contains(':'));
     out
@@ -547,13 +594,33 @@ fn base64_decode(s: &str) -> Option<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{agent_channel_connected, parse_virsh_domifaddr_ipv4, parse_virsh_domifaddr_rows};
+    use super::{
+        agent_channel_connected, parse_domiflist_macs, parse_neigh_for_macs,
+        parse_virsh_domifaddr_ipv4, parse_virsh_domifaddr_rows,
+    };
 
     const SAMPLE: &str = r#" Name       MAC address          Protocol     Address
 -------------------------------------------------------------------------------
  vnet0      52:54:00:12:34:56    ipv4         192.168.122.10/24
  vnet0      52:54:00:12:34:56    ipv6         fe80::5054:ff:fe12:3456/64
 "#;
+
+    #[test]
+    fn neighbour_entries_by_nic_mac() {
+        let ifl = " Interface   Type      Source    Model    MAC\n------------------------------------------\n vnet3       network   default   virtio   52:54:00:AA:bb:01\n vnet4       bridge    br0       virtio   52:54:00:aa:bb:02\n";
+        let macs = parse_domiflist_macs(ifl);
+        assert_eq!(macs, ["52:54:00:aa:bb:01", "52:54:00:aa:bb:02"]);
+        let neigh = "192.168.122.5 dev virbr0 lladdr 52:54:00:aa:bb:01 REACHABLE\n\
+            fd00:6e70::10 dev virbr0 lladdr 52:54:00:aa:bb:01 STALE\n\
+            10.0.0.7 dev br0 lladdr 52:54:00:aa:bb:02 DELAY\n\
+            192.168.122.9 dev virbr0 lladdr 52:54:00:aa:bb:01 FAILED\n\
+            192.168.122.6 dev virbr0 lladdr 52:54:00:ff:ff:ff REACHABLE\n\
+            192.168.122.8 dev virbr0 INCOMPLETE\n";
+        assert_eq!(
+            parse_neigh_for_macs(neigh, &macs),
+            ["192.168.122.5", "fd00:6e70::10", "10.0.0.7"]
+        );
+    }
 
     #[test]
     fn agent_is_asked_only_when_its_channel_is_connected() {

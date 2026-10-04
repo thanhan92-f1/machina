@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-04 — Egress IPs added by Machina, agentless VM addresses, cross-host overlay
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#cross-host-overlay-wireguard).
+
+- **Egress IPs are added for you.** When a project egress IP is not on the
+  host, `machina-bpfd` adds it (`/32` or `/128`) to the default route's
+  interface, announces it with a gratuitous ARP or unsolicited neighbour
+  advertisement, and removes it with the rule. Only addresses it added are
+  removed. `MACHINA_NETPOL_EGRESS_MANAGE=0` turns it off;
+  `MACHINA_NETPOL_EGRESS_INTERFACE` picks the interface.
+- **VM addresses without the guest agent.** Inventory falls back to the
+  host's ARP and NDP tables, matched by the VM's NIC MACs, so static IPv6
+  addresses and second NICs are found without `qemu-guest-agent`. bpfd also
+  learns source addresses from VM tap traffic (16 per VM, 15-minute expiry);
+  the controller adds them to identities unless a host or another VM on the
+  same host owns them.
+- **Encrypted cross-host overlay.** `netpol overlay enable --fleet` connects
+  hosts with WireGuard (`machina-wg`, UDP 51871). Each VM gets a fleet
+  address; traffic between hosts keeps the sending VM's identity, so project
+  isolation works across NATed hosts. Peers may only send from their own
+  prefixes, new connections are only accepted to mapped VMs, and unpeered
+  fleet traffic is refused instead of leaving through the uplink. Private
+  keys never leave the host and go to the kernel over netlink, so Ubuntu's
+  AppArmor profile for `wg` (keys only under `/etc/wireguard`) does not get
+  in the way. `machinactl deps` installs `wireguard-tools`.
+- **Tests.** `vm-edge-smoke.sh` covers managed egress addresses (ARP/NA
+  seen by a netns), learned addresses and the overlay against a netns
+  WireGuard peer; `vm-netpol-realvm.sh` covers learned addresses and
+  enabling and disabling the overlay with real VMs.
+
 ## 2026-10-04 — IPv6 egress IPs on real VMs, second-admin approval, agent restarts
 
 - **Guest addresses from the guest agent.** VM addresses always include

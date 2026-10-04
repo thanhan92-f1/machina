@@ -999,6 +999,9 @@ pub struct VmEdgeStatus {
     /// Global addresses of this node as `address/prefix`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub node_addrs: Vec<String>,
+    /// VM → source addresses its tap sent from recently (unverified).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub learned: BTreeMap<String, Vec<String>>,
 }
 
 /// One exception while a VM is quarantined. `peer`: `host` (this host's
@@ -1135,6 +1138,14 @@ pub struct VmEgressSnat {
     /// loopback, CGNAT and multicast ranges.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exclude: Option<Vec<String>>,
+    /// Add egress IPs missing on the host to the uplink (as /32 or /128) and
+    /// announce them (gratuitous ARP, unsolicited NA). `None` = yes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub manage_addresses: Option<bool>,
+    /// Interface for managed addresses; default: the interface of the
+    /// default route of the address family.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interface: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
@@ -1146,6 +1157,94 @@ pub struct VmEgressSnatStatus {
     /// Rules or sources left out, with the reason.
     #[serde(default)]
     pub skipped: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
+    /// Egress IPs bpfd added to an interface (`IP/prefix@dev`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub managed: Vec<String>,
+}
+
+/// One VM address and the fleet address it is reached by over the overlay.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmOverlayMap {
+    pub local: String,
+    pub fleet: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub vm: String,
+}
+
+/// Another host on the overlay.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmOverlayPeer {
+    #[serde(default)]
+    pub host: String,
+    /// WireGuard public key (base64).
+    pub public_key: String,
+    /// `address:port` the peer listens on.
+    pub endpoint: String,
+    /// The peer's fleet prefixes; also the only sources accepted from it.
+    pub prefixes: Vec<String>,
+}
+
+/// The WireGuard overlay between hosts: VM traffic to another host's fleet
+/// prefix leaves encrypted, with the sending VM's fleet address as source,
+/// and arrives at the VM behind the destination fleet address.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmOverlay {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub listen_port: u16,
+    /// This host's fleet prefixes (`/24` IPv4, `/64` IPv6); the first
+    /// address of each is the host's own.
+    #[serde(default)]
+    pub prefixes: Vec<String>,
+    /// The whole fleet ranges: unreachable unless a peer route is more
+    /// specific, so fleet traffic never leaves through the uplink.
+    #[serde(default)]
+    pub fleet_prefixes: Vec<String>,
+    #[serde(default)]
+    pub mappings: Vec<VmOverlayMap>,
+    #[serde(default)]
+    pub peers: Vec<VmOverlayPeer>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmOverlayPeerStatus {
+    pub public_key: String,
+    #[serde(default)]
+    pub host: String,
+    #[serde(default)]
+    pub endpoint: String,
+    #[serde(default)]
+    pub allowed_ips: Vec<String>,
+    /// Unix seconds of the last handshake (0 = never).
+    #[serde(default)]
+    pub latest_handshake: u64,
+    #[serde(default)]
+    pub rx_bytes: u64,
+    #[serde(default)]
+    pub tx_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmOverlayStatus {
+    pub enabled: bool,
+    #[serde(default)]
+    pub interface: String,
+    /// This host's WireGuard public key, once the overlay was enabled.
+    #[serde(default)]
+    pub public_key: String,
+    #[serde(default)]
+    pub listen_port: u16,
+    #[serde(default)]
+    pub prefixes: Vec<String>,
+    #[serde(default)]
+    pub mappings: Vec<VmOverlayMap>,
+    #[serde(default)]
+    pub peers: Vec<VmOverlayPeerStatus>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -2180,6 +2279,11 @@ pub enum Request {
         config: VmEgressSnat,
     },
     VmEgressSnatStatus,
+    /// Replace the WireGuard overlay config (interface `machina-wg`).
+    VmOverlaySet {
+        config: VmOverlay,
+    },
+    VmOverlayStatus,
     VmSandboxConfigure {
         config: VmSandboxConfig,
     },

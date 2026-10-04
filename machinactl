@@ -132,7 +132,7 @@ cmd_deps() {
 
             info "Utilities..."
             dnf install -y \
-                curl jq rsync socat \
+                curl jq rsync socat nftables wireguard-tools \
                 || { err "Failed to install utilities"; exit 1; }
 
             ok "All Fedora/RHEL packages installed"
@@ -158,7 +158,7 @@ cmd_deps() {
 
             info "Utilities..."
             apt-get install -y \
-                curl jq rsync socat \
+                curl jq rsync socat nftables wireguard-tools \
                 || { err "Failed to install utilities"; exit 1; }
 
             ok "All Ubuntu/Debian packages installed"
@@ -166,7 +166,7 @@ cmd_deps() {
 
         *)
             err "Unsupported distribution: $distro"
-            echo "Install manually: libvirt, qemu-kvm, gcc, make, git, pkg-config, openssl-dev, curl, jq"
+            echo "Install manually: libvirt, qemu-kvm, gcc, make, git, pkg-config, openssl-dev, curl, jq, nftables, wireguard-tools"
             exit 1
             ;;
     esac

@@ -7,7 +7,7 @@
 //! change.
 
 use std::collections::BTreeSet;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 use crate::api::{VmEgressSnat, VmEgressSnatRule};
 
@@ -127,7 +127,7 @@ pub fn render(cfg: &VmEgressSnat, local: &[IpAddr]) -> (Option<String>, Vec<Stri
         };
         if !local.contains(&ip) {
             skipped.push(format!(
-                "{label}: {ip} is not configured on this host; add it to an interface first"
+                "{label}: {ip} is not configured on this host and could not be added"
             ));
             continue;
         }
@@ -190,6 +190,59 @@ pub fn local_addrs(ip_output: &str) -> Vec<IpAddr> {
         .collect()
 }
 
+/// The egress IPs bpfd should hold (rules with an address only).
+pub fn wanted_addrs(cfg: &VmEgressSnat) -> BTreeSet<IpAddr> {
+    if cfg.manage_addresses == Some(false) {
+        return BTreeSet::new();
+    }
+    cfg.rules
+        .iter()
+        .filter(|r| !r.sources.is_empty())
+        .filter_map(|r| r.egress_ip.parse().ok())
+        .collect()
+}
+
+/// `IP/32` or `IP/128`: a managed address never claims a subnet route.
+pub fn host_cidr(ip: IpAddr) -> String {
+    format!("{ip}/{}", if ip.is_ipv4() { 32 } else { 128 })
+}
+
+/// The interface of the first default route in `ip -o route show default`.
+pub fn default_dev(route_output: &str) -> Option<String> {
+    route_output.lines().find_map(|l| {
+        let mut it = l.split_whitespace();
+        (it.next()? == "default").then_some(())?;
+        it.skip_while(|w| *w != "dev").nth(1).map(str::to_string)
+    })
+}
+
+/// Gratuitous ARP (a request for our own address), the 28-byte ARP payload.
+pub fn garp(mac: [u8; 6], ip: Ipv4Addr) -> [u8; 28] {
+    let mut b = [0u8; 28];
+    b[0..2].copy_from_slice(&1u16.to_be_bytes());
+    b[2..4].copy_from_slice(&0x0800u16.to_be_bytes());
+    b[4] = 6;
+    b[5] = 4;
+    b[6..8].copy_from_slice(&1u16.to_be_bytes());
+    b[8..14].copy_from_slice(&mac);
+    b[14..18].copy_from_slice(&ip.octets());
+    b[24..28].copy_from_slice(&ip.octets());
+    b
+}
+
+/// Unsolicited neighbour advertisement (override flag, target link-layer
+/// option); the kernel fills the ICMPv6 checksum.
+pub fn unsolicited_na(mac: [u8; 6], ip: Ipv6Addr) -> [u8; 32] {
+    let mut b = [0u8; 32];
+    b[0] = 136;
+    b[4] = 0x20;
+    b[8..24].copy_from_slice(&ip.octets());
+    b[24] = 2;
+    b[25] = 1;
+    b[26..32].copy_from_slice(&mac);
+    b
+}
+
 /// One project's rule from its VMs' addresses (the egress IP's family
 /// only, deduplicated).
 pub fn rules_for(
@@ -241,6 +294,7 @@ mod tests {
                 rule("ghost", "198.51.100.1", &["192.168.122.7"]),
             ],
             exclude: None,
+            ..Default::default()
         };
         let local = [
             "203.0.113.10".parse().unwrap(),
@@ -281,6 +335,7 @@ mod tests {
         let cfg = VmEgressSnat {
             rules: vec![rule("x", "203.0.113.10", &["192.168.122.5"])],
             exclude: Some(vec![]),
+            ..Default::default()
         };
         let (s, skipped) = render(&cfg, &[]);
         assert!(s.is_none() && skipped.len() == 1);
@@ -293,11 +348,13 @@ mod tests {
         let bad = VmEgressSnat {
             rules: vec![rule("x", "not-an-ip", &[])],
             exclude: None,
+            ..Default::default()
         };
         assert!(validate(&bad).is_err());
         let bad = VmEgressSnat {
             rules: vec![],
             exclude: Some(vec!["10.0.0.0/33".into()]),
+            ..Default::default()
         };
         assert!(validate(&bad).is_err());
         let out = "2: eth0    inet 203.0.113.10/24 brd 203.0.113.255 scope global eth0\\       valid_lft forever\n3: virbr0    inet 192.168.122.1/24 scope global virbr0\n2: eth0    inet6 2001:db8::10/64 scope global\n";
@@ -318,6 +375,34 @@ mod tests {
     }
 
     #[test]
+    fn managed_addresses_and_announcements() {
+        let mut cfg = VmEgressSnat {
+            rules: vec![
+                rule("a", "203.0.113.10", &["192.168.122.5"]),
+                rule("b", "2001:db8::10", &["fd00::5"]),
+                rule("idle", "203.0.113.99", &[]),
+            ],
+            ..Default::default()
+        };
+        let w: Vec<String> = wanted_addrs(&cfg).iter().map(|a| host_cidr(*a)).collect();
+        assert_eq!(w, ["203.0.113.10/32", "2001:db8::10/128"]);
+        cfg.manage_addresses = Some(false);
+        assert!(wanted_addrs(&cfg).is_empty());
+        let r = "default via 80.79.5.1 dev eno8303 proto static\n10.0.0.0/8 dev x\n";
+        assert_eq!(default_dev(r).as_deref(), Some("eno8303"));
+        assert_eq!(default_dev("10.0.0.0/8 dev x"), None);
+        let mac = [0x52, 0x54, 0, 1, 2, 3];
+        let a = garp(mac, "203.0.113.10".parse().unwrap());
+        assert_eq!(&a[0..8], &[0, 1, 8, 0, 6, 4, 0, 1]);
+        assert_eq!(&a[8..14], &mac);
+        assert_eq!(&a[14..18], &a[24..28]);
+        assert_eq!(&a[18..24], &[0; 6]);
+        let n = unsolicited_na(mac, "2001:db8::10".parse().unwrap());
+        assert_eq!((n[0], n[4], n[24], n[25]), (136, 0x20, 2, 1));
+        assert_eq!(&n[26..32], &mac);
+    }
+
+    #[test]
     fn ipv6_egress_gets_its_own_table() {
         let cfg = VmEgressSnat {
             rules: vec![
@@ -325,6 +410,7 @@ mod tests {
                 rule("shop", "2001:db8::10", &["fd00::5", "192.168.122.5"]),
             ],
             exclude: None,
+            ..Default::default()
         };
         let local = [
             "203.0.113.10".parse().unwrap(),
@@ -356,6 +442,7 @@ mod tests {
         let only6 = VmEgressSnat {
             rules: vec![rule("x", "2001:db8::10", &["fd00::5"])],
             exclude: None,
+            ..Default::default()
         };
         let (s, _) = render(&only6, &local);
         assert!(!s.unwrap().contains("table ip machina_egress"));

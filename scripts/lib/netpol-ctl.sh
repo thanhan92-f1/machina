@@ -104,6 +104,9 @@ Usage: netpol <command> [options]
                                  Default isolation between projects
   egress [P] [allow TO|remove TO|restrict|unrestrict|ip HOST IP|ip HOST -]
                                  Project egress allowlists and egress IPs
+  overlay [enable|disable] [--prefix4 CIDR] [--prefix6 CIDR] [--port N]
+                                 WireGuard overlay between hosts: fleet addresses,
+                                 VM identity across NAT (fleet)
   evidence [-o summary|json|md] [--out FILE] | evidence verify FILE
                                  Segmentation evidence for audits: policies with
                                  hashes, project isolation, reachability matrix,
@@ -523,6 +526,7 @@ np_netpol_main() {
         projects) np_projects_list ;;
         project|tenant) np_netpol_project "$@" ;;
         egress) np_netpol_egress "$@" ;;
+        overlay|wg) np_netpol_overlay "$@" ;;
         evidence|audit) np_netpol_evidence "$@" ;;
         ""|help|-h|--help) np_netpol_usage ;;
         *) np_die "unknown netpol command: $sub (try: netpol help)" ;;
@@ -1021,6 +1025,60 @@ np_netpol_project() {
             ;;
         *) np_die "unknown project command: $sub (try: netpol project help)" ;;
     esac
+}
+
+np_netpol_overlay() {
+    [[ "$NP_FLEET" == 1 ]] || np_die "the overlay is a fleet feature: add --fleet"
+    local sub="${1:-status}" body='{}'
+    shift || true
+    case "$sub" in
+        help|-h|--help)
+            cat <<'EOF'
+Usage: netpol overlay [status]                      (fleet)
+       netpol overlay enable [--prefix4 CIDR] [--prefix6 CIDR] [--port N]
+       netpol overlay disable
+
+Encrypted WireGuard tunnels between hosts. Each host gets a fleet prefix
+(default a /24 of 100.96.0.0/12 and a /64 of fd6d:6163:6869::/48) and
+each VM address a fleet address in it. VMs reach VMs on other hosts by
+fleet address; the receiving host sees the sending VM's fleet address,
+so policies and project isolation apply across hosts even on NAT
+networks. Needs wireguard-tools on every host; UDP 51871 between hosts.
+EOF
+            return ;;
+        status) ;;
+        enable|on|disable|off)
+            body=$(jq -n --argjson e "$([[ "$sub" == enable || "$sub" == on ]] && echo true || echo false)" '{enabled: $e}')
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --prefix4) body=$(jq -c --arg v "${2:?}" '.prefix4 = $v' <<<"$body"); shift 2 ;;
+                    --prefix6) body=$(jq -c --arg v "${2:?}" '.prefix6 = $v' <<<"$body"); shift 2 ;;
+                    --port) body=$(jq -c --argjson v "${2:?}" '.port = $v' <<<"$body"); shift 2 ;;
+                    *) np_die "unknown option: $1" ;;
+                esac
+            done
+            np_api PUT /vm-network-policies/overlay -H 'Content-Type: application/json' -d "$body" >/dev/null
+            ;;
+        *) np_die "usage: netpol overlay [status|enable|disable] (netpol overlay help)" ;;
+    esac
+    local out
+    out=$(np_api GET /vm-network-policies/overlay)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$out"; return; fi
+    jq -r '.settings | "overlay: \(if .enabled then "on" else "off" end) (\(.prefix4), \(.prefix6), udp/\(.port))"' <<<"$out"
+    [[ "$(jq '.items | length' <<<"$out")" == 0 ]] && return
+    {
+        printf 'HOST\tPREFIXES\tVMS\tPEERS\tHANDSHAKES\tERROR\n'
+        jq -r '.items[] | [
+            (.hostname // "-"),
+            (.prefixes | join(",") | if . == "" then "-" else . end),
+            (.mappings | length | tostring),
+            (.peers | length | tostring),
+            ([.peers[] | select(.latest_handshake > 0)] | length | tostring),
+            (.error // "-")
+          ] | @tsv' <<<"$out"
+    } | column -t -s $'\t'
+    jq -r '[.items[] | .hostname as $h | .mappings[] | "  \(.vm // "?") \(.local) → \(.fleet)  (\($h))"] | if length > 0 then "fleet addresses:", .[] else empty end' <<<"$out"
+    jq -r '.errors[]? | "warning: \(.hostname): \(.error)"' <<<"$out" >&2
 }
 
 np_netpol_egress() {

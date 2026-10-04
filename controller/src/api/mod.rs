@@ -282,6 +282,10 @@ pub fn router(state: AppState) -> Router {
             get(vm_network_policies::egress_ips),
         )
         .route(
+            "/api/v1/vm-network-policies/overlay",
+            get(vm_network_policies::overlay).put(vm_network_policies::overlay_set),
+        )
+        .route(
             "/api/v1/vm-network-policies/draft",
             get(vm_network_policies::draft_pending).post(vm_network_policies::draft),
         )

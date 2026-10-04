@@ -73,6 +73,11 @@ struct Persisted {
     vm_quarantines: Vec<VmQuarantine>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     vm_egress: Option<VmEgressSnat>,
+    /// Egress IPs bpfd added, so a restart can still remove them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    vm_egress_managed: Vec<(std::net::IpAddr, String)>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    vm_overlay: Option<VmOverlay>,
 }
 
 struct Daemon {
@@ -129,6 +134,12 @@ impl Daemon {
             guard: eng.guard_persisted(),
             vm_quarantines: eng.vm_quarantines(),
             vm_egress: (!eng.egress.config.rules.is_empty()).then(|| eng.egress.config.clone()),
+            vm_egress_managed: eng.egress.managed.clone(),
+            vm_overlay: eng
+                .overlay
+                .config
+                .enabled
+                .then(|| eng.overlay.config.clone()),
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -206,9 +217,15 @@ impl Daemon {
             eng.sandbox.config = cfg;
         }
         eng.sandbox.pinned = p.vm_sandbox_pinned.into_iter().collect();
-        if let Some(cfg) = p.vm_egress {
-            if let Err(e) = eng.vm_egress_set(cfg) {
+        eng.egress.managed = p.vm_egress_managed;
+        if p.vm_egress.is_some() || !eng.egress.managed.is_empty() {
+            if let Err(e) = eng.vm_egress_set(p.vm_egress.unwrap_or_default()) {
                 tracing::warn!("restore egress SNAT: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.vm_overlay {
+            if let Err(e) = eng.vm_overlay_set(cfg) {
+                tracing::warn!("restore overlay: {e:#}");
             }
         }
         for q in p.vm_quarantines {
@@ -540,6 +557,13 @@ impl Daemon {
                 v(&st)
             }
             Request::VmEgressSnatStatus => v(&lock(&self.engine).vm_egress_status()),
+            Request::VmOverlaySet { config } => {
+                let mut eng = lock(&self.engine);
+                let st = eng.vm_overlay_set(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmOverlayStatus => v(&lock(&self.engine).vm_overlay_status()),
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;
@@ -847,6 +871,7 @@ pub async fn run(cfg: Config) -> Result<()> {
     let mut eng = Engine::new(shared.clone(), bus.clone())?;
     eng.vmauth.set_dir(cfg.state_dir.join("auth"));
     eng.threat_set_path(cfg.state_dir.join("threat-feeds.json"));
+    eng.overlay.dir = Some(cfg.state_dir.join("overlay"));
     {
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("NET_EVENTS")?, "net", move |x| {

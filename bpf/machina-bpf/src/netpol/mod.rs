@@ -26,6 +26,7 @@ pub mod l7;
 pub mod l7stream;
 mod learn;
 pub mod nl;
+pub mod overlay;
 mod services;
 pub mod snat;
 pub mod tenant;

@@ -37,6 +37,9 @@ static LAST_PUSH: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
 static EGRESS_GAPS: Mutex<Vec<tenant::EgressGap>> = Mutex::new(Vec::new());
 /// host id → global addresses (`address/prefix`) its bpfd reported.
 static NODE_ADDRS: Mutex<BTreeMap<String, Vec<String>>> = Mutex::new(BTreeMap::new());
+/// host id → VM → source addresses its bpfd saw on the VM's tap.
+static LEARNED: Mutex<BTreeMap<String, BTreeMap<String, Vec<String>>>> =
+    Mutex::new(BTreeMap::new());
 /// Every host has an empty egress SNAT set and nothing asks for one.
 static EGRESS_IDLE: AtomicBool = AtomicBool::new(false);
 
@@ -312,21 +315,67 @@ fn node_addrs() -> BTreeMap<String, Vec<String>> {
     NODE_ADDRS.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
 
-/// Ask each host's bpfd for its addresses (all hosts when `all`, else
-/// hosts not heard from yet).
-async fn refresh_node_addrs(hosts: &[HostRef], all: bool) {
-    let known = node_addrs();
+/// Ask each host's bpfd for its addresses and the VM source addresses it
+/// learned.
+async fn refresh_node_addrs(hosts: &[HostRef]) {
     for h in hosts {
-        if !all && known.contains_key(&h.id) {
-            continue;
-        }
         let Ok(v) = bpf::call(h, &Request::VmEdgeStatus).await else {
             continue;
         };
         if let Ok(s) = serde_json::from_value::<VmEdgeStatus>(v) {
             note_node_addrs(&h.id, &s.node_addrs);
+            LEARNED
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(h.id.clone(), s.learned);
         }
     }
+}
+
+fn learned() -> BTreeMap<String, BTreeMap<String, Vec<String>>> {
+    LEARNED.lock().unwrap_or_else(|e| e.into_inner()).clone()
+}
+
+/// Add tap-learned addresses to VM identities. Refused: host addresses,
+/// addresses another VM on the same host already has, and addresses two
+/// VMs on the same host both sent from.
+pub fn merge_learned(
+    mut vms: Vec<NetpolVm>,
+    learned: &BTreeMap<String, BTreeMap<String, Vec<String>>>,
+    host_ips: &BTreeSet<String>,
+) -> Vec<NetpolVm> {
+    let mut claims: BTreeMap<(&str, &str), Vec<usize>> = BTreeMap::new();
+    for (host, by_vm) in learned {
+        for (vm, addrs) in by_vm {
+            let Some(i) = vms
+                .iter()
+                .position(|v| v.name == *vm && v.host.as_deref() == Some(host.as_str()))
+            else {
+                continue;
+            };
+            for a in addrs {
+                if !host_ips.contains(a) && !vms[i].addresses.contains(a) {
+                    claims
+                        .entry((host.as_str(), a.as_str()))
+                        .or_default()
+                        .push(i);
+                }
+            }
+        }
+    }
+    let mut accepted: Vec<(usize, String)> = Vec::new();
+    for ((host, a), who) in claims {
+        let owned = vms
+            .iter()
+            .any(|v| v.host.as_deref() == Some(host) && v.addresses.iter().any(|x| x == a));
+        if who.len() == 1 && !owned {
+            accepted.push((who[0], a.to_string()));
+        }
+    }
+    for (i, a) in accepted {
+        vms[i].addresses.push(a);
+    }
+    vms
 }
 
 fn ipv4_net(cidr: &str) -> Option<(u32, u32)> {
@@ -358,11 +407,43 @@ pub struct Fleet {
     pub projects: Vec<ProjectNet>,
     /// host id → hostname.
     pub hostnames: BTreeMap<String, String>,
+    /// The WireGuard overlay is on: VMs on other hosts are reached by
+    /// fleet address with their identity, NAT or not.
+    pub overlay: bool,
 }
 
 impl Fleet {
     pub async fn load(pool: &SqlitePool) -> Self {
-        let vms = inventory(pool).await;
+        let host_addrs = host_addresses(pool).await;
+        let node_addrs = node_addrs();
+        let host_ips: BTreeSet<String> = host_addrs
+            .values()
+            .cloned()
+            .chain(
+                node_addrs
+                    .values()
+                    .flatten()
+                    .map(|c| c.split('/').next().unwrap_or(c).to_string()),
+            )
+            .collect();
+        let mut vms = merge_learned(inventory(pool).await, &learned(), &host_ips);
+        let fleet_addrs = super::vm_overlay::fleet_addresses(pool, &vms).await;
+        for v in &mut vms {
+            let Some(h) = v.host.clone() else {
+                continue;
+            };
+            let extra: Vec<String> = v
+                .addresses
+                .iter()
+                .filter_map(|a| fleet_addrs.get(&(h.clone(), a.clone())).cloned())
+                .collect();
+            for e in extra {
+                if !v.addresses.contains(&e) {
+                    v.addresses.push(e);
+                }
+            }
+        }
+        let overlay = super::vm_overlay::enabled(pool).await;
         let projects = project_settings(pool).await;
         let mut policies = enabled_policies(pool).await;
         let hostnames: BTreeMap<String, String> = bpf::hosts(pool)
@@ -381,10 +462,11 @@ impl Fleet {
             policies,
             vms,
             services: services(pool).await,
-            host_addrs: host_addresses(pool).await,
-            node_addrs: node_addrs(),
+            host_addrs,
+            node_addrs,
             projects,
             hostnames,
+            overlay,
         }
     }
 
@@ -427,6 +509,9 @@ impl Fleet {
     /// those hosts arrives from the other host's address, so it is
     /// `remote-node`, not a VM, and isolation can't tell projects apart.
     pub fn nat_spans(&self) -> Vec<NatSpan> {
+        if self.overlay {
+            return Vec::new();
+        }
         let mut same: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
         for (id, cidrs) in &self.node_addrs {
             for c in cidrs {
@@ -701,7 +786,7 @@ async fn sync_host(pool: &SqlitePool, fleet: &Fleet, h: &HostRef, force: bool) -
 /// Compile and push to every online host.
 pub async fn reconcile(pool: &SqlitePool, force: bool) -> Vec<HostSync> {
     let hosts = bpf::online_hosts(pool).await;
-    refresh_node_addrs(&hosts, force).await;
+    refresh_node_addrs(&hosts).await;
     let fleet = Fleet::load(pool).await;
     *EGRESS_GAPS.lock().unwrap_or_else(|e| e.into_inner()) = fleet.egress_gaps();
     let mut out = Vec::new();
@@ -709,7 +794,17 @@ pub async fn reconcile(pool: &SqlitePool, force: bool) -> Vec<HostSync> {
         out.push(sync_host(pool, &fleet, h, force).await);
     }
     reconcile_egress(&fleet, &hosts).await;
+    super::vm_overlay::reconcile(pool, &hosts, &fleet.host_addrs, &fleet.vms).await;
     out
+}
+
+/// Hosts add missing egress IPs to their uplink unless
+/// `MACHINA_NETPOL_EGRESS_MANAGE=0`.
+fn egress_manage() -> bool {
+    !matches!(
+        std::env::var("MACHINA_NETPOL_EGRESS_MANAGE").as_deref(),
+        Ok("0" | "false" | "no" | "off")
+    )
 }
 
 /// Push each host its project egress SNAT rules. Once every host holds an
@@ -728,6 +823,10 @@ async fn reconcile_egress(fleet: &Fleet, hosts: &[HostRef]) {
             config: VmEgressSnat {
                 rules,
                 exclude: None,
+                manage_addresses: Some(egress_manage()),
+                interface: std::env::var("MACHINA_NETPOL_EGRESS_INTERFACE")
+                    .ok()
+                    .filter(|s| !s.is_empty()),
             },
         };
         match bpf::call(h, &req).await {
@@ -1205,6 +1304,42 @@ mod tests {
         }
     }
 
+    #[test]
+    fn learned_addresses_join_identities_unless_contested() {
+        let vms = vec![
+            nvm("a", "h1", "p", "192.168.122.5"),
+            nvm("b", "h1", "p", "192.168.122.6"),
+            nvm("c", "h2", "p", "192.168.122.5"),
+        ];
+        let l = |v: &[(&str, &[&str])]| {
+            v.iter()
+                .map(|(vm, a)| (vm.to_string(), a.iter().map(|x| x.to_string()).collect()))
+                .collect::<BTreeMap<String, Vec<String>>>()
+        };
+        let learned: BTreeMap<String, BTreeMap<String, Vec<String>>> = [
+            (
+                "h1".to_string(),
+                l(&[
+                    ("a", &["fd00::5", "192.168.122.6", "10.0.0.1", "10.9.9.9"]),
+                    ("b", &["10.9.9.9", "fd00::6"]),
+                    ("ghost", &["fd00::7"]),
+                ]),
+            ),
+            (
+                "h2".to_string(),
+                l(&[("a", &["fd00::8"]), ("c", &["fd00::5"])]),
+            ),
+        ]
+        .into_iter()
+        .collect();
+        let host_ips: BTreeSet<String> = ["10.0.0.1".to_string()].into_iter().collect();
+        let out = merge_learned(vms, &learned, &host_ips);
+        let addrs = |n: &str| out.iter().find(|v| v.name == n).unwrap().addresses.clone();
+        assert_eq!(addrs("a"), ["192.168.122.5", "fd00::5"]);
+        assert_eq!(addrs("b"), ["192.168.122.6", "fd00::6"]);
+        assert_eq!(addrs("c"), ["192.168.122.5", "fd00::5"]);
+    }
+
     fn two_host_fleet(vms: Vec<NetpolVm>) -> Fleet {
         let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
         Fleet {
@@ -1226,6 +1361,7 @@ mod tests {
             .collect(),
             projects: vec![],
             hostnames: BTreeMap::new(),
+            overlay: false,
         }
     }
 

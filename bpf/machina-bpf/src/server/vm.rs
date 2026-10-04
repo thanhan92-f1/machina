@@ -16,6 +16,7 @@ use std::os::unix::fs::MetadataExt;
 use super::cni::addr16;
 use super::*;
 
+pub(super) mod learned;
 mod quarantine;
 mod threat;
 
@@ -341,8 +342,8 @@ pub(super) fn on_vm_flow(
     let (rec, alerts) = {
         let mut s = lock(sh);
         let (iface, tap_vm) = s.iface(ev.ifindex);
-        let idx = &s.vm_flow_index;
         let egress = ev.from_vm != 0;
+        let idx = &s.vm_flow_index;
         let subject = idx.name(ev.subject).cloned();
         let peer = idx.name(ev.peer).cloned();
         let port = if ev.icmp != 0 {
@@ -354,6 +355,9 @@ pub(super) fn on_vm_flow(
         let vm = tap_vm
             .or_else(|| subject.as_ref().map(|s| s.0.clone()))
             .unwrap_or_default();
+        if let (true, false, Ok(ip)) = (egress, vm.is_empty(), fmt_addr(&ev.src).parse()) {
+            s.vm_learned.note(&vm, ip, Instant::now());
+        }
         let (src_side, dst_side) = if egress {
             (subject, peer)
         } else {
@@ -1468,6 +1472,7 @@ impl Engine {
             proxy: self.vm_edge.proxy_note.clone(),
             quarantines: self.vm_quarantines(),
             node_addrs: node_cidrs(),
+            learned: lock(&self.shared).vm_learned.report(Instant::now()),
         }
     }
 

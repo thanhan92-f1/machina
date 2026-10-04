@@ -39,6 +39,7 @@ mod l7sample;
 mod listen;
 mod nodeiso;
 mod ops;
+mod overlay;
 mod quiclb;
 mod readers;
 mod rtnl;
@@ -137,6 +138,8 @@ struct Shared {
     vm_l7_inject: u32,
     /// Identity pairs (subject, peer) waiting for authentication.
     vm_auth_queue: Vec<(u32, u32)>,
+    /// Source addresses seen on each VM's tap.
+    vm_learned: vm::learned::Learned,
 }
 
 impl Shared {
@@ -280,6 +283,7 @@ struct Engine {
     afxdp: afxdp::AfxdpRuntime,
     scx: scx::ScxRuntime,
     egress: egress::EgressRuntime,
+    overlay: overlay::OverlayRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -379,6 +383,7 @@ impl Engine {
             afxdp: afxdp::AfxdpRuntime::default(),
             scx: scx::ScxRuntime::default(),
             egress: egress::EgressRuntime::default(),
+            overlay: overlay::OverlayRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

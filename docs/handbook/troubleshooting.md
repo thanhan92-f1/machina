@@ -332,9 +332,13 @@ address works, the host's bpfd or controller predates that flag; upgrade both
 `sudo nft list table ip machina_egress` (and `ip6 machina_egress` for an
 IPv6 egress IP) on the VM's host shows the SNAT rules.
 No table means nothing is wanted on that host (no VMs of the project there).
-The address must be configured on that host (bpfd skips addresses that are
-not local), and the upstream router must route it back; an address that is
-not routable upstream only works for destinations that route to the host.
+bpfd adds a missing address to the default route's interface (`managed` in
+`netpol egress` JSON, `ip -o addr` on the host) and announces it; a rule is
+skipped when that fails: no default route for the family, or the controller
+runs with `MACHINA_NETPOL_EGRESS_MANAGE=0`. Set
+`MACHINA_NETPOL_EGRESS_INTERFACE` when the uplink is not the default route's
+interface. An address outside the uplink's subnet also needs an upstream
+route to the host; without one replies never arrive.
 An IPv4 egress IP only rewrites the VM's IPv4 addresses; set an IPv6 one too
 (`ip HOST 'IPv4,IPv6'`) for IPv6 traffic. A VM on a host without any of the
 project's egress IPs leaves with the host's address: `netpol projects` warns
@@ -350,8 +354,35 @@ start). Add an egress IP on that host, move the VM back, or run
 The project has VMs on two or more hosts whose VM subnets are NATed per host
 (the same `addr/prefix` on each, e.g. libvirt's `default` network). Traffic
 between those hosts arrives with the host's address, so isolation cannot tell
-the project's VMs from the host. Put the project on a bridged or routed
-network, or keep its VMs on one host.
+the project's VMs from the host. Turn on the overlay
+(`netpol overlay enable --fleet`) so VMs reach each other by fleet address
+with their own identity, put the project on a bridged or routed network, or
+keep its VMs on one host.
+
+### Symptom: the overlay is on but VMs on different hosts cannot connect
+`machinactl --fleet netpol overlay` shows each host's prefixes, fleet
+addresses, peers and handshakes, and per-host errors.
+- **`wg` not found:** install `wireguard-tools` (`machinactl deps`) and check
+  `modprobe wireguard`.
+- **No peers:** the first push after enabling only generates keys; peers
+  follow on the next reconcile (`netpol sync --fleet`).
+- **Peers but no handshakes:** UDP 51871 (or the `--port` you set) is blocked
+  between the hosts, or the host address in the controller's inventory is not
+  reachable from the other host. `sudo wg show machina-wg` lists the endpoints.
+- **Handshakes but no traffic:** connect to the remote VM's fleet address,
+  not its own address (`netpol overlay` lists them). Traffic to an unmapped
+  fleet address, or to a host that is not peered yet, is refused by the
+  `unreachable 100.96.0.0/12` route by design.
+- **Address overlap:** the default ranges are inside CGNAT (`100.64.0.0/10`)
+  and a ULA. If something else on the hosts uses them, re-enable with
+  `--prefix4` / `--prefix6`.
+
+### Symptom: a VM address without DHCP or guest agent is missing from policies
+Addresses come from DHCP leases, the guest agent, the host's neighbour tables
+(matched by the VM's NIC MACs) and source addresses bpfd sees on the VM's tap.
+A VM that has not sent from an address yet is not known by it. The controller
+also refuses a learned address that belongs to a host or to another VM on
+that host. `sudo ip neigh` and `vm_edge_status` (`learned`) show what was seen.
 
 ### Symptom: a project change says "admin role required" or "egress IPs are set by fleet admins"
 Project admins (the `admin` role in the Fleet Cloud project) may change its
