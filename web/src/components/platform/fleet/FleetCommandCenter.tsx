@@ -20,6 +20,7 @@ import { getConsoleHubPlan, runVmHealthCheck, type ConsoleHubPlan } from '../../
 import Sparkline from '../../kit/Sparkline'
 import { useVmMetricSeries } from '../../../hooks/useVmMetricSeries'
 import VmHealthRing from './VmHealthRing'
+import { vmHealthScore } from '../../../utils/vmHealthScore'
 import VmFeatureChips from './VmFeatureChips'
 import VmStatusBadge from '../../VmStatusBadge'
 import { formatVmMemoryGiB } from '../../../utils/vmVisual'
@@ -70,8 +71,7 @@ export default function FleetCommandCenter({
     void runVmHealthCheck(selectedVm.id)
       // Number(x) || null would drop a real score of 0 (worst health). Keep 0.
       .then((h) => {
-        const n = h.score != null ? Number(h.score) : NaN
-        setHealthScore(Number.isFinite(n) ? n : null)
+        setHealthScore(vmHealthScore(h))
       })
       .catch(() => setHealthScore(null))
       .finally(() => setHealthLoading(false))

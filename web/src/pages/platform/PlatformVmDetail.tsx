@@ -32,6 +32,7 @@ import { MacGlassPanel, MacListRow } from '../../components/platform/mac/Platfor
 import VmUsageBars from '../../components/platform/VmUsageBars'
 import VmOverviewStats from '../../components/platform/vmdetail/VmOverviewStats'
 import VmPerfPanel from '../../components/platform/vmdetail/VmPerfPanel'
+import { vmHealthScore } from '../../utils/vmHealthScore'
 import { useVmMetricSeries } from '../../hooks/useVmMetricSeries'
 import JsonInspector from '../../components/platform/JsonInspector'
 import { StructuredErrorBanner } from '../../components/StructuredErrorBanner'
@@ -872,7 +873,7 @@ export default function PlatformVmDetail() {
         vmName: vm.name,
         observedState: vm.observed_state,
         guestIp,
-        healthScore: health?.score != null ? (Number.isNaN(Number.parseInt(String(health.score), 10)) ? null : Number.parseInt(String(health.score), 10)) : null,
+        healthScore: vmHealthScore(health),
         doctor,
         blockers: detailBlockers,
       })
@@ -1118,7 +1119,7 @@ export default function PlatformVmDetail() {
             <VmDetailHero
               observedState={vm.observed_state}
               guestIp={guestIp}
-              healthScore={health?.score != null ? Number.parseInt(String(health.score), 10) : null}
+              healthScore={vmHealthScore(health)}
               doctorScore={doctor?.score_numeric ?? null}
               sshExposed={Boolean(sshNatHostPort(portForwardRules))}
               blockers={detailBlockers}
@@ -1163,7 +1164,7 @@ export default function PlatformVmDetail() {
               series={metricSeries}
               vcpus={vm.vcpus}
               memoryMib={vm.memory_mib}
-              healthScore={(() => { const n = Number.parseInt(String(health?.score ?? ''), 10); if (!Number.isNaN(n)) return n; const d = doctor ? Number(doctor.score_numeric) : NaN; return Number.isNaN(d) ? null : d })()}
+              healthScore={vmHealthScore(health) ?? (doctor ? vmHealthScore({ score_numeric: Number(doctor.score_numeric) }) : null)}
               running={vm.observed_state === 'running'}
             />
           )}

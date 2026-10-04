@@ -2796,6 +2796,8 @@ export interface VmHealthReport {
   vm_id: string
   vm_name: string
   score: string
+  /** 0-100; `score` is the label. */
+  score_numeric?: number
   healthy: boolean
   checks_passed: number
   checks_total: number
