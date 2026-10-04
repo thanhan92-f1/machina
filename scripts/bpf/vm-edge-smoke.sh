@@ -349,6 +349,51 @@ PY
 check "l7 enforce: chunked POST passes, next request on the connection denied" [ "$(chunked)" = "1 403" ]
 kill "$POST_PID" 2>/dev/null || true
 
+# HTTP/2 (prior knowledge) and gRPC-style paths: a stub h2c server answers
+# every request with :status 200.
+python3 - "$HOST_IP" >/dev/null 2>&1 <<'PY' &
+import socket, sys, threading
+def serve(c):
+    c.sendall(b"\x00\x00\x00\x04\x00\x00\x00\x00\x00")
+    buf, pre = b"", False
+    while True:
+        x = c.recv(65536)
+        if not x:
+            return
+        buf += x
+        if not pre:
+            if len(buf) < 24:
+                continue
+            buf, pre = buf[24:], True
+        while len(buf) >= 9:
+            n = int.from_bytes(buf[:3], "big"); t, f = buf[3], buf[4]
+            sid = int.from_bytes(buf[5:9], "big") & 0x7fffffff
+            if len(buf) < 9 + n:
+                break
+            buf = buf[9 + n:]
+            if t == 4 and not f & 1:
+                c.sendall(b"\x00\x00\x00\x04\x01\x00\x00\x00\x00")
+            if t in (0, 1) and f & 1:
+                s = sid.to_bytes(4, "big")
+                c.sendall(b"\x00\x00\x01\x01\x04" + s + b"\x88" + b"\x00\x00\x02\x00\x01" + s + b"ok")
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind((sys.argv[1], 18083)); s.listen(8)
+while True:
+    c, _ = s.accept(); threading.Thread(target=serve, args=(c,), daemon=True).start()
+PY
+H2_PID=$!
+R_H2="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18083,\"l7\":true,\"source\":\"smoke spec.egress[13]\"}"
+L7_H2="{\"subject_identity\":$VMID,\"peer_identity\":1,\"egress\":true,\"proto\":6,\"port\":18083,\"rules\":{\"http\":[{\"method\":\"GET\",\"path\":\"/allowed.*\"},{\"method\":\"POST\",\"path\":\"/smoke.Echo/.*\"}]},\"source\":\"smoke spec.egress[13]\"}"
+h2code() { ip netns exec "$NS" curl -s -m6 -o /dev/null -w '%{http_code}' --http2-prior-knowledge "$@" || true; }
+sleep 0.5
+npl "$R_H2" "$L7_H2"
+check "l7 h2: GET /allowed.txt over HTTP/2 passes" [ "$(h2code "http://$HOST_IP:18083/allowed.txt")" = 200 ]
+check "l7 h2: GET /secret.txt over HTTP/2 reset" [ "$(h2code "http://$HOST_IP:18083/secret.txt")" = 000 ]
+check "l7 h2: gRPC-style POST /smoke.Echo/Say passes" [ "$(h2code -H 'content-type: application/grpc' -d x "http://$HOST_IP:18083/smoke.Echo/Say")" = 200 ]
+check "l7 h2: gRPC-style POST /smoke.Admin/Drop reset" [ "$(h2code -H 'content-type: application/grpc' -d x "http://$HOST_IP:18083/smoke.Admin/Drop")" = 000 ]
+check "l7 h2: flow names the HTTP/2 request" flow_has "f.get('l7_type')=='http' and '/smoke.Admin/Drop' in (f.get('l7') or '') and f['verdict']=='DROPPED'"
+kill "$H2_PID" 2>/dev/null || true
+
 # IPv6: the same hold / parse / reinject path.
 HOST_IP6=fd00:5e:81::1
 VM_IP6=fd00:5e:81::2

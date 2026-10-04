@@ -161,6 +161,11 @@ Enforced natively, without Envoy or a proxy in the data path:
    - HTTP/1.x: headers may span segments; `Content-Length` and chunked
      bodies are skipped without inspection; pipelined and keep-alive
      requests are each checked; `CONNECT` and `Upgrade` open the connection.
+   - HTTP/2, with prior knowledge or after an `h2c` upgrade: frames are
+     followed and every header block is HPACK-decoded (Huffman, dynamic
+     table, CONTINUATION). Each request's `:method`, `:path` and
+     `:authority` are checked, so gRPC is matched by path
+     (`/package.Service/Method`); DATA frames pass without inspection.
    - Kafka: whole requests up to 4 MiB, with Produce/Fetch topics.
    - TLS: the ClientHello SNI.
    - DNS over UDP and over TCP: the query name.
@@ -173,8 +178,8 @@ Enforced natively, without Envoy or a proxy in the data path:
    end of one request and the start of the next is split. There is no
    retransmission wait. Bodies inside the window pass in the kernel.
 4. **Denied:** bpfd answers in place of the server: `HTTP/1.1 403 Access
-   denied` for HTTP, a TCP reset for Kafka, TLS and DNS over TCP, `REFUSED`
-   for UDP DNS. It resets the server side too (through the same inject path,
+   denied` for HTTP/1, a TCP reset for HTTP/2, Kafka, TLS and DNS over TCP,
+   `REFUSED` for UDP DNS. It resets the server side too (through the same inject path,
    so routed and NAT taps work as well as bridged ones), and the connection
    stays closed.
 5. An allowed UDP DNS query is reinjected once. The answer comes back
@@ -194,8 +199,9 @@ no L7 check applies.
 
 Limits:
 
-- HTTP/2 (and so gRPC) is not parsed: a connection that starts with the
-  HTTP/2 preface is denied on a port with HTTP rules.
+- A denied HTTP/2 request resets the whole connection, not just its stream
+  (dropping a header block would desynchronise the server's HPACK table).
+  The HPACK dynamic table is capped at 64 KiB.
 - TLS is matched on SNI only. After the ClientHello the connection is open.
 - A request head over 64 KiB, a Kafka request over 4 MiB, or more than
   5 MiB held for one connection denies the connection.
@@ -389,7 +395,8 @@ a veth pair in a scratch netns and covers:
   blocking before the lookup, learning from the reply, allowing after it,
   ignoring NXDOMAIN and unmatched names, `world` deny still winning, and
   removing the rule.
-- L7: HTTP allow, 403 and keep-alive requests; no retransmission wait; a
+- L7: HTTP allow, 403 and keep-alive requests; HTTP/2 and gRPC-style paths
+  with `curl --http2-prior-knowledge`; no retransmission wait; a
   request head split across segments; a 384 KiB body and a chunked body
   followed by a denied request on the same connection; HTTP over IPv6; TLS
   SNI with `openssl`; Kafka Produce to an allowed and a denied topic; DNS

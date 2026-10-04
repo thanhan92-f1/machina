@@ -27,8 +27,8 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
       `matchPattern`, including L7 on `toFQDNs` rules;
     - the VM edge holds client segments past the allowed window; bpfd parses
       the stream (HTTP headers across segments, `Content-Length` and chunked
-      bodies, keep-alive, whole Kafka requests, TLS SNI, DNS over UDP and
-      TCP), then reinjects the allowed frames at once through a private veth
+      bodies, keep-alive, HTTP/2 and gRPC with HPACK, whole Kafka requests,
+      TLS SNI, DNS over UDP and TCP), then reinjects the allowed frames at once through a private veth
       (no retransmission wait), or answers with HTTP 403, a TCP reset or DNS
       REFUSED;
     - windows are per tap, so both ends of a VM-to-VM connection on one host

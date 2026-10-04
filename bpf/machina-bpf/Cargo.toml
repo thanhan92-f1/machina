@@ -26,6 +26,7 @@ clap = { workspace = true, features = ["env"] }
 md5 = { package = "md-5", version = "0.10" }
 sha2 = "0.10"
 regex = "1"
+loona-hpack = "0.4"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 aya = { version = "0.14", default-features = false }

@@ -6,7 +6,7 @@
 //! flow, bpfd orders the segments, parses the client's stream
 //! (`netpol::l7stream`), writes the allowed window back and reinjects the
 //! held frames through the inject veth, splitting a frame where a verdict
-//! boundary falls inside it. Denied clients get an HTTP 403 or a TCP RST
+//! boundary falls inside it. Denied clients get an HTTP/1 403 or a TCP RST
 //! (and the server a RST), denied DNS queries a REFUSED; allowed UDP DNS
 //! queries are reinjected once. Without the inject veth the window still
 //! opens and the client's retransmit passes; allowed DNS queries are then
@@ -926,7 +926,7 @@ impl L7Worker {
             .unwrap_or(0)
             .max(f.stream.pos());
         let client_ack = f.seq(client_end);
-        let to_client = if f.stream.kind() == Kind::Http {
+        let to_client = if f.stream.kind() == Kind::Http && !f.stream.is_h2() {
             tcp_seg(
                 h.dport,
                 h.sport,

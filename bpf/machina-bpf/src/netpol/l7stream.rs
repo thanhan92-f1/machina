@@ -5,8 +5,11 @@
 //! VM edge hands bpfd every segment past the flow's allowed window; bpfd
 //! feeds the new bytes in order and learns how far the stream is allowed:
 //! request heads are checked against the rules, HTTP bodies
-//! (Content-Length, chunked) pass without a check. Kafka requests are read
-//! whole, since topic names sit between record batches.
+//! (Content-Length, chunked, HTTP/2 DATA) pass without a check. Kafka
+//! requests are read whole, since topic names sit between record batches.
+//! HTTP/2 (prior knowledge or after an `h2c` upgrade) is followed frame by
+//! frame with an HPACK decoder; every header block is decoded to keep its
+//! table in step, and each request (gRPC included) is checked.
 
 use super::l7::{self, Request};
 
@@ -17,6 +20,16 @@ pub const MAX_HEAD: usize = 64 * 1024;
 /// `max.request.size` is 1 MiB).
 pub const KAFKA_MAX: usize = 4 << 20;
 const H2_PREFACE: &[u8] = b"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+/// HPACK dynamic table limit; clients stay within the server's
+/// SETTINGS_HEADER_TABLE_SIZE, commonly 4 KiB.
+const HPACK_MAX_TABLE: usize = 64 * 1024;
+const H2_DATA: u8 = 0x0;
+const H2_HEADERS: u8 = 0x1;
+const H2_PUSH_PROMISE: u8 = 0x5;
+const H2_CONTINUATION: u8 = 0x9;
+const H2_END_HEADERS: u8 = 0x4;
+const H2_PADDED: u8 = 0x8;
+const H2_PRIORITY: u8 = 0x20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
@@ -81,9 +94,17 @@ enum St {
 
 pub type Check<'a> = dyn FnMut(&Request) -> (bool, Option<String>) + 'a;
 
+struct H2 {
+    dec: loona_hpack::Decoder<'static>,
+    /// Header block being collected (HEADERS + CONTINUATION) and its stream.
+    block: Vec<u8>,
+    block_stream: u32,
+}
+
 pub struct Stream {
     kind: Kind,
     st: St,
+    h2: Option<Box<H2>>,
     /// Unconsumed bytes, starting at stream offset `base`.
     buf: Vec<u8>,
     base: u64,
@@ -105,6 +126,7 @@ impl Stream {
         Stream {
             kind,
             st: St::Head,
+            h2: None,
             buf: Vec::new(),
             base: 0,
         }
@@ -131,6 +153,11 @@ impl Stream {
     /// Stream offset up to which every byte is allowed.
     pub fn allowed(&self) -> u64 {
         self.base
+    }
+
+    /// The connection speaks HTTP/2.
+    pub fn is_h2(&self) -> bool {
+        self.h2.is_some()
     }
 
     pub fn is_open(&self) -> bool {
@@ -236,6 +263,7 @@ impl Stream {
                 }
             }
             St::Chunk(c) => self.chunk(c, i, p),
+            St::Head if self.h2.is_some() => self.h2_frame(i, check, p),
             St::Head => match self.kind {
                 Kind::Http => self.http_head(i, check, p),
                 Kind::Kafka => self.kafka_head(i, check, p),
@@ -254,8 +282,14 @@ impl Stream {
             if rest.len() < H2_PREFACE.len() {
                 return Step::NeedMore;
             }
-            self.fail(p, "HTTP/2 is not inspected".into());
-            return Step::Stop;
+            let mut dec = loona_hpack::Decoder::new();
+            dec.set_max_allowed_table_size(HPACK_MAX_TABLE);
+            self.h2 = Some(Box::new(H2 {
+                dec,
+                block: Vec::new(),
+                block_stream: 0,
+            }));
+            return Step::Took(H2_PREFACE.len());
         }
         let Some(end) = find(rest, b"\r\n\r\n") else {
             if !l7::HTTP_METHODS.iter().any(|m| {
@@ -275,8 +309,11 @@ impl Stream {
                 return Step::Stop;
             }
         };
+        // An h2c upgrade is followed by the HTTP/2 preface (or by more
+        // HTTP/1 if the server declines), so it is not a tunnel.
+        let upgrade = req.headers.iter().find(|(n, _)| n == "upgrade");
         let tunnel = req.method == "CONNECT"
-            || (req.headers.iter().any(|(n, _)| n == "upgrade")
+            || (upgrade.is_some_and(|(_, v)| !v.eq_ignore_ascii_case("h2c"))
                 && req
                     .headers
                     .iter()
@@ -298,6 +335,108 @@ impl Stream {
             St::Head
         };
         Step::Took(head_len)
+    }
+
+    fn h2_frame(&mut self, i: usize, check: &mut Check, p: &mut Progress) -> Step {
+        let rest = &self.buf[i..];
+        if rest.len() < 9 {
+            return Step::NeedMore;
+        }
+        let len = u32::from_be_bytes([0, rest[0], rest[1], rest[2]]) as usize;
+        let (ty, flags) = (rest[3], rest[4]);
+        let sid = u32::from_be_bytes([rest[5], rest[6], rest[7], rest[8]]) & 0x7fff_ffff;
+        let in_block = self.h2.as_ref().is_some_and(|h| h.block_stream != 0);
+        if in_block && ty != H2_CONTINUATION {
+            self.fail(p, "HTTP/2 frame inside a header block".into());
+            return Step::Stop;
+        }
+        if ty == H2_DATA {
+            self.st = if len > 0 {
+                St::Body(len as u64)
+            } else {
+                St::Head
+            };
+            return Step::Took(9);
+        }
+        if len > MAX_HEAD {
+            self.fail(p, format!("HTTP/2 frame over {MAX_HEAD} bytes"));
+            return Step::Stop;
+        }
+        if rest.len() < 9 + len {
+            return Step::NeedMore;
+        }
+        let payload = rest[9..9 + len].to_vec();
+        let done = match ty {
+            H2_HEADERS => {
+                let Some(frag) = h2_fragment(&payload, flags).filter(|_| sid != 0) else {
+                    self.fail(p, "HTTP/2: malformed HEADERS".into());
+                    return Step::Stop;
+                };
+                let h2 = self.h2.as_mut().expect("h2");
+                h2.block = frag;
+                h2.block_stream = sid;
+                flags & H2_END_HEADERS != 0
+            }
+            H2_CONTINUATION => {
+                let fits = self.h2.as_ref().is_some_and(|h| {
+                    in_block && h.block_stream == sid && h.block.len() + payload.len() <= MAX_HEAD
+                });
+                if !fits {
+                    self.fail(p, "HTTP/2: unexpected CONTINUATION".into());
+                    return Step::Stop;
+                }
+                let h2 = self.h2.as_mut().expect("h2");
+                h2.block.extend_from_slice(&payload);
+                flags & H2_END_HEADERS != 0
+            }
+            H2_PUSH_PROMISE => {
+                self.fail(p, "HTTP/2: PUSH_PROMISE from a client".into());
+                return Step::Stop;
+            }
+            _ => false,
+        };
+        if done && !self.h2_request(check, p) {
+            return Step::Stop;
+        }
+        Step::Took(9 + len)
+    }
+
+    /// Decode the collected header block; a request (`:method` present) is
+    /// checked, trailers only keep the HPACK table in step.
+    fn h2_request(&mut self, check: &mut Check, p: &mut Progress) -> bool {
+        let h2 = self.h2.as_mut().expect("h2");
+        let block = std::mem::take(&mut h2.block);
+        h2.block_stream = 0;
+        let dec = &mut h2.dec;
+        let decoded = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| dec.decode(&block)));
+        let fields = match decoded {
+            Ok(Ok(f)) => f,
+            Ok(Err(e)) => {
+                self.fail(p, format!("HTTP/2 HPACK: {e}"));
+                return false;
+            }
+            Err(_) => {
+                self.fail(p, "HTTP/2 HPACK: decoder failure".into());
+                return false;
+            }
+        };
+        let mut req = l7::HttpRequest::default();
+        for (n, v) in fields {
+            let n = String::from_utf8_lossy(&n).to_ascii_lowercase();
+            let v = String::from_utf8_lossy(&v).into_owned();
+            match n.as_str() {
+                ":method" => req.method = v,
+                ":path" => req.path = v,
+                ":authority" => req.host = v,
+                "host" if req.host.is_empty() => req.host = v,
+                _ if n.starts_with(':') => {}
+                _ => req.headers.push((n, v)),
+            }
+        }
+        if req.method.is_empty() {
+            return true;
+        }
+        self.verdict(p, Request::Http(req), check)
     }
 
     fn chunk(&mut self, c: Chunk, i: usize, p: &mut Progress) -> Step {
@@ -453,6 +592,22 @@ impl Stream {
     }
 }
 
+/// Header block fragment of a HEADERS frame payload (padding and priority
+/// removed).
+fn h2_fragment(payload: &[u8], flags: u8) -> Option<Vec<u8>> {
+    let mut f = payload;
+    let mut pad = 0;
+    if flags & H2_PADDED != 0 {
+        let (&n, tail) = f.split_first()?;
+        pad = n as usize;
+        f = tail;
+    }
+    if flags & H2_PRIORITY != 0 {
+        f = f.get(5..)?;
+    }
+    Some(f.get(..f.len().checked_sub(pad)?)?.to_vec())
+}
+
 /// Which parser a flow gets, from the L7 rule kinds on its port and the
 /// first payload byte.
 pub fn pick_kind(kinds: &[&str], first: u8) -> Kind {
@@ -540,9 +695,111 @@ mod tests {
         assert!(p.open && !p.denied);
         let mut s = Stream::new(Kind::Http);
         let p = s.feed(H2_PREFACE, &mut allow_get);
-        assert!(p.denied && p.error.is_some());
+        assert!(!p.denied && s.is_h2());
         let mut s = Stream::new(Kind::Http);
         assert!(s.feed(b"\x16\x03\x01", &mut allow_get).denied, "not HTTP");
+    }
+
+    fn hp(enc: &mut loona_hpack::Encoder, h: &[(&str, &str)]) -> Vec<u8> {
+        enc.encode(h.iter().map(|(n, v)| (n.as_bytes(), v.as_bytes())))
+    }
+
+    fn h2_frame(ty: u8, flags: u8, sid: u32, payload: &[u8]) -> Vec<u8> {
+        let mut f = (payload.len() as u32).to_be_bytes()[1..].to_vec();
+        f.extend_from_slice(&[ty, flags]);
+        f.extend_from_slice(&sid.to_be_bytes());
+        f.extend_from_slice(payload);
+        f
+    }
+
+    #[test]
+    fn h2_requests_checked_data_skipped() {
+        let mut enc = loona_hpack::Encoder::new();
+        let get = hp(
+            &mut enc,
+            &[
+                (":method", "GET"),
+                (":path", "/up/a"),
+                (":authority", "svc"),
+                ("x-k", "v"),
+            ],
+        );
+        let post = hp(&mut enc, &[(":method", "POST"), (":path", "/admin")]);
+        let mut s = Stream::new(Kind::Http);
+        let mut c = H2_PREFACE.to_vec();
+        c.extend(h2_frame(0x4, 0, 0, &[0, 3, 0, 0, 0, 100]));
+        c.extend(h2_frame(H2_HEADERS, H2_END_HEADERS, 1, &get));
+        c.extend(h2_frame(H2_DATA, 0x1, 1, &[0u8; 300]));
+        let p = s.feed(&c[..c.len() - 200], &mut allow_get);
+        assert!(!p.denied && p.verdicts.len() == 1 && p.verdicts[0].allowed);
+        match &p.verdicts[0].req {
+            Request::Http(h) => assert_eq!(
+                (h.method.as_str(), h.host.as_str(), h.path.as_str()),
+                ("GET", "svc", "/up/a")
+            ),
+            r => panic!("{r:?}"),
+        }
+        assert_eq!(p.body, 200, "rest of the DATA frame passes unseen");
+        s.skip(200);
+        let p = s.feed(
+            &h2_frame(H2_HEADERS, H2_END_HEADERS, 3, &post),
+            &mut allow_get,
+        );
+        assert!(p.denied && !p.verdicts[0].allowed);
+    }
+
+    #[test]
+    fn h2_continuation_huffman_trailers() {
+        // RFC 7541 C.4.1: GET http://www.example.com/ with Huffman strings.
+        let block = [
+            0x82, 0x86, 0x84, 0x41, 0x8c, 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab,
+            0x90, 0xf4, 0xff,
+        ];
+        let mut s = Stream::new(Kind::Http);
+        let mut c = H2_PREFACE.to_vec();
+        c.extend(h2_frame(H2_HEADERS, 0, 1, &block[..5]));
+        c.extend(h2_frame(H2_CONTINUATION, H2_END_HEADERS, 1, &block[5..]));
+        let p = s.feed(&c, &mut |r: &Request| match r {
+            Request::Http(h) => (h.host == "www.example.com" && h.path == "/", None),
+            _ => (false, None),
+        });
+        assert!(
+            !p.denied && p.verdicts.len() == 1 && p.verdicts[0].allowed,
+            "{p:?}"
+        );
+        let trailers = hp(&mut loona_hpack::Encoder::new(), &[("grpc-status", "0")]);
+        let p = s.feed(
+            &h2_frame(H2_HEADERS, H2_END_HEADERS | 0x1, 1, &trailers),
+            &mut allow_get,
+        );
+        assert!(
+            !p.denied && p.verdicts.is_empty(),
+            "trailers are not requests"
+        );
+        let p = s.feed(&h2_frame(H2_DATA, 0, 3, b"x"), &mut allow_get);
+        assert!(!p.denied);
+        let p = s.feed(
+            &h2_frame(H2_CONTINUATION, H2_END_HEADERS, 3, b""),
+            &mut allow_get,
+        );
+        assert!(
+            p.denied && p.error.is_some(),
+            "CONTINUATION without HEADERS"
+        );
+    }
+
+    #[test]
+    fn h2c_upgrade_then_preface() {
+        let mut s = Stream::new(Kind::Http);
+        let p = s.feed(b"GET /up HTTP/1.1\r\nConnection: Upgrade, HTTP2-Settings\r\nUpgrade: h2c\r\nHTTP2-Settings: AAMAAABkAAQAoAAAAAIAAAAA\r\n\r\n", &mut allow_get);
+        assert!(!p.open && !p.denied, "h2c is not a tunnel");
+        let mut c = H2_PREFACE.to_vec();
+        let post = hp(
+            &mut loona_hpack::Encoder::new(),
+            &[(":method", "DELETE"), (":path", "/x")],
+        );
+        c.extend(h2_frame(H2_HEADERS, H2_END_HEADERS, 3, &post));
+        assert!(s.feed(&c, &mut allow_get).denied);
     }
 
     #[test]
