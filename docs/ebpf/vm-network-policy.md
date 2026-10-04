@@ -435,4 +435,22 @@ a veth pair in a scratch netns and covers:
 - Authentication: `test-always-fail`, `required` against a fleet peer, the
   auth table, and the source guard with and without the lease.
 
-Compiler and tracer unit tests: `cargo test -p machina-bpf netpol`.
+`scripts/bpf/vm-netpol-realvm.sh` runs against two real VMs. It boots
+`np-client` and `np-server` from a Debian cloud image on the `default` NAT
+network, labels them and applies an ingress policy: the client may only
+`GET /ok` on the server's port 80. In observe mode everything still works
+and flows show AUDIT. Under a short enforcement lease (`LEASE`, default
+180 s), `/ok` answers, other paths and methods get 403, port 8080 and the
+host are dropped, and flows record DROPPED and the L7 request. On exit it
+returns the edge to observe and deletes the VMs, the policy and the image.
+It enforces on every tap with policy state, so run it only on a disposable
+host. The password is read from stdin:
+
+```bash
+printf '%s\n' "$PASS" | bash scripts/bpf/vm-netpol-realvm.sh
+```
+
+Compiler and tracer unit tests: `cargo test -p machina-bpf netpol`. The
+policy page has Playwright tests: `web/e2e/platform-vm-network-policies.spec.ts`
+(mocked API) and `web/e2e/live-vm-network-policies.spec.ts` (read-only, with
+`PLAYWRIGHT_LIVE_URL`).

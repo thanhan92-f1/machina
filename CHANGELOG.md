@@ -47,6 +47,10 @@ needed. See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md).
     (listener plus members); the daemon reads Kubernetes services and
     endpoints through kubectl. Rule `toPorts` are intersected with the
     service ports.
+- **Tests.** `scripts/bpf/vm-netpol-realvm.sh` checks observe and leased
+  enforcement (L4 drops, L7 403s, flows) on two disposable libvirt VMs and
+  cleans up after itself. Playwright covers the policy page, with mocked and
+  read-only live specs.
 - **Labels.** Each VM has key/value labels, which policies select on. The
   daemon stores them in `vm-labels.json`. On the controller, migration 029
   adds a `vms.labels` column, seeded from `key=value` tags.
