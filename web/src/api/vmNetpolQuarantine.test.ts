@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { describeAllow, describeJit, formatRemaining, groupQuarantines, type VmQuarantine } from './vmNetpol'
+import {
+  THREAT_FEED_NAME,
+  describeAllow,
+  describeJit,
+  formatRemaining,
+  groupQuarantines,
+  splitDomains,
+  threatDomainCount,
+  type VmQuarantine,
+} from './vmNetpol'
 
 const q = (over: Partial<VmQuarantine>): VmQuarantine => ({
   vm: 'web-1',
@@ -37,5 +46,13 @@ describe('quarantine helpers', () => {
   it('describes temporary access', () => {
     expect(describeJit({ from: 'web-1', to: 'db-1', port: 5432, protocol: 'TCP' })).toBe('web-1 → db-1:5432/tcp')
     expect(describeJit({ from: 'host', to: 'db-1', port: 0, protocol: 'ANY' })).toBe('host → db-1 (every port)')
+  })
+
+  it('reads threat feed input and counts', () => {
+    expect(splitDomains('evil.example\n c2.example, ads.example  ')).toEqual(['evil.example', 'c2.example', 'ads.example'])
+    expect(threatDomainCount({ name: 'a', source: '', block: false, domains: 3 })).toBe(3)
+    expect(threatDomainCount({ name: 'a', source: '', block: true, domain_count: 7 })).toBe(7)
+    expect(THREAT_FEED_NAME.test('url-haus_1.0')).toBe(true)
+    expect(THREAT_FEED_NAME.test('bad name')).toBe(false)
   })
 })

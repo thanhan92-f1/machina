@@ -27,6 +27,8 @@ pub const OWNER: &str = "controller";
 const TICK_SECS: u64 = 30;
 /// Push unchanged state again every this many ticks (bpfd restarts, drift).
 const FORCE_EVERY: u32 = 10;
+/// Check URL threat feeds for a refetch hourly.
+const THREAT_REFRESH_EVERY: u32 = 120;
 
 static LAST_PUSH: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
 
@@ -467,6 +469,23 @@ pub fn spawn(state: AppState) {
                     tracing::warn!(host = %r.hostname, "vm network policy sync: {e}");
                 }
             }
+            if n.is_multiple_of(THREAT_REFRESH_EVERY) {
+                for f in refresh_due_threat_feeds(&state.pool).await {
+                    for (h, r) in bpf::fan_out(&state.pool, &f.request()).await {
+                        if let Err(e) = r {
+                            tracing::warn!(host = %h.hostname, feed = %f.name, "threat feed push: {e:#}");
+                        }
+                    }
+                    state.emit_event(
+                        "netpol.threat",
+                        format!(
+                            "threat feed {} refreshed: {} domains",
+                            f.name, f.domain_count
+                        ),
+                    );
+                }
+            }
+            reconcile_threat(&state.pool).await;
             forward_alerts(&state, &mut alerts_seen).await;
         }
     });
@@ -503,7 +522,12 @@ async fn propose_quarantine(state: &AppState, a: &machina_bpf::api::VmFlowAlert)
     let Some(vm) = a.src_vm.as_deref() else {
         return;
     };
-    if a.severity != "high" || !matches!(a.kind.as_str(), "port_scan" | "host_sweep") {
+    if a.severity != "high"
+        || !matches!(
+            a.kind.as_str(),
+            "port_scan" | "host_sweep" | "threat_domain"
+        )
+    {
         return;
     }
     let pending: i64 = sqlx::query_scalar(
@@ -539,6 +563,199 @@ async fn propose_quarantine(state: &AppState, a: &machina_bpf::api::VmFlowAlert)
     {
         tracing::warn!("quarantine proposal for {vm}: {e:#}");
     }
+}
+
+// ---- DNS threat feeds -------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ThreatFeedRow {
+    pub name: String,
+    pub source: String,
+    pub block: bool,
+    #[serde(skip)]
+    pub domains: Vec<String>,
+    pub domain_count: usize,
+    pub updated_by: String,
+    pub updated_at: String,
+}
+
+impl ThreatFeedRow {
+    pub fn request(&self) -> Request {
+        Request::VmThreatFeedSet {
+            name: self.name.clone(),
+            source: self.source.clone(),
+            block: self.block,
+            domains: self.domains.clone(),
+        }
+    }
+}
+
+pub async fn threat_feeds(pool: &SqlitePool) -> Vec<ThreatFeedRow> {
+    let rows: Vec<(String, String, bool, String, String, String)> = sqlx::query_as(
+        "SELECT name, source, block, domains, updated_by, updated_at FROM vm_netpol_threat_feeds ORDER BY name",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+    rows.into_iter()
+        .map(|(name, source, block, d, updated_by, updated_at)| {
+            let domains: Vec<String> = serde_json::from_str(&d).unwrap_or_default();
+            ThreatFeedRow {
+                name,
+                source,
+                block,
+                domain_count: domains.len(),
+                domains,
+                updated_by,
+                updated_at,
+            }
+        })
+        .collect()
+}
+
+pub async fn threat_feed_put(
+    pool: &SqlitePool,
+    name: &str,
+    source: &str,
+    block: bool,
+    domains: &[String],
+    by: &str,
+) -> anyhow::Result<()> {
+    sqlx::query(
+        "INSERT INTO vm_netpol_threat_feeds (name, source, block, domains, updated_by, updated_at)
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(name) DO UPDATE SET source = excluded.source, block = excluded.block,
+           domains = excluded.domains, updated_by = excluded.updated_by, updated_at = excluded.updated_at",
+    )
+    .bind(name)
+    .bind(source)
+    .bind(block)
+    .bind(serde_json::to_string(domains)?)
+    .bind(by)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn threat_feed_delete(pool: &SqlitePool, name: &str) -> anyhow::Result<bool> {
+    let r = sqlx::query("DELETE FROM vm_netpol_threat_feeds WHERE name = ?")
+        .bind(name)
+        .execute(pool)
+        .await?;
+    Ok(r.rows_affected() > 0)
+}
+
+pub async fn fetch_feed(url: &str) -> anyhow::Result<String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()?;
+    let mut resp = client.get(url).send().await?.error_for_status()?;
+    let mut body = Vec::new();
+    while let Some(chunk) = resp.chunk().await? {
+        body.extend_from_slice(&chunk);
+        if body.len() > netpol::threat::MAX_FEED_BYTES {
+            anyhow::bail!(
+                "feed {url} is larger than {} MiB",
+                netpol::threat::MAX_FEED_BYTES >> 20
+            );
+        }
+    }
+    Ok(String::from_utf8_lossy(&body).into_owned())
+}
+
+/// What a host must change to match `want`: feeds to (re)send, names to drop.
+fn threat_diff<'a>(
+    want: &'a [ThreatFeedRow],
+    have: &[machina_bpf::api::VmThreatFeed],
+) -> (Vec<&'a ThreatFeedRow>, Vec<String>) {
+    let send = want
+        .iter()
+        .filter(|w| {
+            !have.iter().any(|h| {
+                h.name == w.name
+                    && h.source == w.source
+                    && h.block == w.block
+                    && h.domains == w.domain_count
+            })
+        })
+        .collect();
+    let drop = have
+        .iter()
+        .filter(|h| !want.iter().any(|w| w.name == h.name))
+        .map(|h| h.name.clone())
+        .collect();
+    (send, drop)
+}
+
+/// With any fleet feeds, every online host carries exactly those.
+pub async fn reconcile_threat(pool: &SqlitePool) {
+    let want = threat_feeds(pool).await;
+    if want.is_empty() {
+        return;
+    }
+    for h in bpf::online_hosts(pool).await {
+        let have: machina_bpf::api::VmThreatStatus =
+            match bpf::call(&h, &Request::VmThreatFeeds).await {
+                Ok(v) => serde_json::from_value(v).unwrap_or_default(),
+                Err(e) => {
+                    tracing::debug!(host = %h.hostname, "threat feeds: {e:#}");
+                    continue;
+                }
+            };
+        let (send, drop) = threat_diff(&want, &have.feeds);
+        for f in send {
+            if let Err(e) = bpf::call(&h, &f.request()).await {
+                tracing::warn!(host = %h.hostname, feed = %f.name, "threat feed push: {e:#}");
+            }
+        }
+        for name in drop {
+            if let Err(e) = bpf::call(&h, &Request::VmThreatFeedRemove { name: name.clone() }).await
+            {
+                tracing::warn!(host = %h.hostname, feed = %name, "threat feed remove: {e:#}");
+            }
+        }
+    }
+}
+
+/// Refetch URL feeds older than [`netpol::threat::REFRESH_SECS`]; returns
+/// the refreshed names (pushed to the hosts by the caller).
+pub async fn refresh_due_threat_feeds(pool: &SqlitePool) -> Vec<ThreatFeedRow> {
+    let cutoff = (chrono::Utc::now()
+        - chrono::Duration::seconds(netpol::threat::REFRESH_SECS as i64))
+    .format("%Y-%m-%d %H:%M:%S")
+    .to_string();
+    let mut out = Vec::new();
+    for f in threat_feeds(pool).await {
+        if f.source.is_empty() || f.updated_at > cutoff {
+            continue;
+        }
+        match refresh_threat_feed(pool, &f, "threat-feed-refresh").await {
+            Ok(r) => out.push(r),
+            Err(e) => tracing::warn!(feed = %f.name, "threat feed refresh: {e:#}"),
+        }
+    }
+    out
+}
+
+pub async fn refresh_threat_feed(
+    pool: &SqlitePool,
+    f: &ThreatFeedRow,
+    by: &str,
+) -> anyhow::Result<ThreatFeedRow> {
+    let body = fetch_feed(&f.source).await?;
+    let b = netpol::threat::FeedBody {
+        url: Some(f.source.clone()),
+        block: f.block,
+        ..Default::default()
+    };
+    let domains = b.domains(Some(&body)).map_err(|e| anyhow::anyhow!(e))?;
+    threat_feed_put(pool, &f.name, &f.source, f.block, &domains, by).await?;
+    Ok(ThreatFeedRow {
+        domain_count: domains.len(),
+        domains,
+        updated_by: by.to_string(),
+        ..f.clone()
+    })
 }
 
 #[cfg(test)]
@@ -696,5 +913,36 @@ mod tests {
         );
         assert_eq!(reap_expired(pool).await, [p.name]);
         assert!(policies(pool).await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn threat_feeds_are_mirrored_by_name_and_shape() {
+        let (state, _rx) = test_state().await;
+        let pool = &state.pool;
+        let d = vec!["a.example".to_string(), "b.example".to_string()];
+        threat_feed_put(pool, "urlhaus", "", true, &d, "alice")
+            .await
+            .unwrap();
+        let want = threat_feeds(pool).await;
+        assert_eq!((want.len(), want[0].domain_count), (1, 2));
+        let have = |block, domains| machina_bpf::api::VmThreatFeed {
+            name: "urlhaus".into(),
+            block,
+            domains,
+            ..Default::default()
+        };
+        let local = machina_bpf::api::VmThreatFeed {
+            name: "local".into(),
+            ..Default::default()
+        };
+        let (send, drop) = threat_diff(&want, &[have(true, 2), local]);
+        assert!(send.is_empty());
+        assert_eq!(drop, ["local"]);
+        let (send, _) = threat_diff(&want, &[have(false, 2)]);
+        assert_eq!(send.len(), 1, "block changed");
+        let (send, _) = threat_diff(&want, &[have(true, 3)]);
+        assert_eq!(send.len(), 1, "list changed");
+        assert!(threat_feed_delete(pool, "urlhaus").await.unwrap());
+        assert!(threat_feeds(pool).await.is_empty());
     }
 }

@@ -169,6 +169,7 @@ pub(super) fn on_dns(
     let remote = fmt_addr(&ev.remote);
     let mut anomaly = None;
     let mut queued = false;
+    let mut alerts = Vec::new();
     let rec = {
         let mut s = lock(sh);
         let (iface, vm) = s.iface(ev.ifindex);
@@ -226,6 +227,11 @@ pub(super) fn on_dns(
         {
             queued = true;
         }
+        if let Some(name) = rec.vm.as_deref() {
+            let (q, a) = vm::threat_observe(&mut s, &msg, name, &local);
+            queued |= q;
+            alerts = a;
+        }
         Shared::push_capped(&mut s.dns, rec.clone(), DNS_STORE_CAP);
         if let Some(a) = &anomaly {
             s.counters.anomalies += 1;
@@ -239,6 +245,10 @@ pub(super) fn on_dns(
     publish(bus, "dns", &rec);
     if let Some(a) = anomaly {
         publish(bus, "anomaly", &a);
+    }
+    for a in alerts {
+        tracing::warn!(kind = %a.kind, src = %a.src, "{}", a.detail);
+        publish(bus, "alert", &a);
     }
 }
 

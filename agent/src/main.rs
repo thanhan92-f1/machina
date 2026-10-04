@@ -239,8 +239,12 @@ async fn run_serve(cli: &Cli) -> anyhow::Result<()> {
                     );
                 }
             }
+            // DNS threat feeds reach bpfd as one bpf_call of up to ~64 MiB.
+            let svc = HostAgentServer::new(service).max_decoding_message_size(80 << 20);
             builder
-                .add_service(HostAgentServer::with_interceptor(service, auth))
+                .add_service(tonic::service::interceptor::InterceptedService::new(
+                    svc, auth,
+                ))
                 .serve(grpc_addr)
                 .await
                 .map_err(anyhow::Error::from)

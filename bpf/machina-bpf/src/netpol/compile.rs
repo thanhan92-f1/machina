@@ -43,6 +43,7 @@ use crate::policy::{parse_prefix, Prefix};
 
 /// Other hypervisors (`remote-node`).
 pub const IDENTITY_REMOTE_NODE: u32 = 3;
+pub use machina_bpf_common::IDENTITY_THREAT;
 
 const IPPROTO_ICMP: u8 = 1;
 const IPPROTO_TCP: u8 = 6;

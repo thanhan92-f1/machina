@@ -32,10 +32,15 @@ const NEW_PEER_WARMUP_HOURS: i64 = 24;
 
 type EdgeKey = (String, String, String, String, u16, String, String, String);
 
+const DOMAIN_CAP: usize = 50_000;
+
 #[derive(serde::Serialize, serde::Deserialize, Default)]
 struct Saved {
     since: Option<String>,
     edges: Vec<VmFlowEdge>,
+    /// Base domain → first seen, for `new_domain` alerts.
+    #[serde(default)]
+    domains: HashMap<String, String>,
 }
 
 struct Seen {
@@ -53,6 +58,7 @@ pub(super) struct FlowHistory {
     dirty: bool,
     windows: HashMap<String, VecDeque<Seen>>,
     quiet: HashMap<(String, String, String), Instant>,
+    domains: HashMap<String, String>,
     pub alerts: VecDeque<VmFlowAlert>,
 }
 
@@ -170,6 +176,7 @@ impl FlowHistory {
         match serde_json::from_str::<Saved>(&text) {
             Ok(s) => {
                 self.since = s.since;
+                self.domains = s.domains;
                 for mut e in s.edges {
                     e.proto = cilium_proto(&e.proto);
                     if e.src_entity.is_none() {
@@ -227,6 +234,7 @@ impl FlowHistory {
         let saved = Saved {
             since: self.since.clone(),
             edges: self.edges.values().cloned().collect(),
+            domains: self.domains.clone(),
         };
         let tmp = path.with_extension("json.tmp");
         let res = serde_json::to_vec(&saved)
@@ -242,6 +250,7 @@ impl FlowHistory {
     pub(super) fn reset(&mut self) {
         self.edges.clear();
         self.since = None;
+        self.domains.clear();
         self.windows.clear();
         self.alerts.clear();
         self.dirty = true;
@@ -326,10 +335,7 @@ impl FlowHistory {
         }
 
         let mut alerts = self.detect(r, &key, &src_vm);
-        let warm = self.since.as_deref().is_some_and(|s| {
-            s <= ago_rfc3339(chrono::Duration::hours(NEW_PEER_WARMUP_HOURS)).as_str()
-        });
-        if new_pair && warm && r.direction == "egress" {
+        if new_pair && self.warm() && r.direction == "egress" {
             alerts.extend(self.raise(VmFlowAlert {
                 kind: "new_peer".into(),
                 severity: "low".into(),
@@ -366,6 +372,71 @@ impl FlowHistory {
             s.latency_ms_max = s.latency_ms_max.max(latency_ms);
             self.dirty = true;
         }
+    }
+
+    fn warm(&self) -> bool {
+        self.since.as_deref().is_some_and(|s| {
+            s <= ago_rfc3339(chrono::Duration::hours(NEW_PEER_WARMUP_HOURS)).as_str()
+        })
+    }
+
+    /// A VM resolved a name listed by a threat feed.
+    pub(super) fn threat_alert(
+        &mut self,
+        vm: &str,
+        client: &str,
+        qname: &str,
+        detail: String,
+    ) -> Option<VmFlowAlert> {
+        self.raise(VmFlowAlert {
+            kind: "threat_domain".into(),
+            severity: "high".into(),
+            src: client.to_string(),
+            src_vm: Some(vm.to_string()),
+            dst: Some(qname.trim_end_matches('.').to_ascii_lowercase()),
+            detail,
+            count: 1,
+            ..Default::default()
+        })
+    }
+
+    /// Note the base domain of a successful VM lookup; a `new_domain` alert
+    /// the first time one is seen after the warm-up day.
+    pub(super) fn observe_domain(
+        &mut self,
+        vm: &str,
+        client: &str,
+        qname: &str,
+    ) -> Option<VmFlowAlert> {
+        let name = crate::netpol::threat::normalize(qname)?;
+        if name.ends_with(".arpa") {
+            return None;
+        }
+        let base = crate::netpol::threat::base_domain(&name);
+        if self.domains.contains_key(&base) {
+            return None;
+        }
+        if self.since.is_none() {
+            self.since = Some(now_rfc3339());
+        }
+        if self.domains.len() >= DOMAIN_CAP {
+            return None;
+        }
+        self.domains.insert(base.clone(), now_rfc3339());
+        self.dirty = true;
+        if !self.warm() {
+            return None;
+        }
+        self.raise(VmFlowAlert {
+            kind: "new_domain".into(),
+            severity: "low".into(),
+            src: client.to_string(),
+            src_vm: Some(vm.to_string()),
+            dst: Some(base.clone()),
+            detail: format!("{vm} resolved {name}, the first lookup under {base}"),
+            count: 1,
+            ..Default::default()
+        })
     }
 
     fn raise(&mut self, mut a: VmFlowAlert) -> Option<VmFlowAlert> {
@@ -580,6 +651,36 @@ mod tests {
             sweep.extend(h.observe(&r));
         }
         assert!(sweep.iter().any(|a| a.kind == "host_sweep"));
+    }
+
+    #[test]
+    fn new_domains_alert_after_warmup_once() {
+        let mut h = FlowHistory::default();
+        assert!(h
+            .observe_domain("web", "10.0.0.1", "a.cold.example.")
+            .is_none());
+        h.since = Some(ago_rfc3339(chrono::Duration::hours(25)));
+        assert!(h
+            .observe_domain("web", "10.0.0.1", "b.cold.example")
+            .is_none());
+        assert!(h
+            .observe_domain("web", "10.0.0.1", "1.0.0.10.in-addr.arpa")
+            .is_none());
+        let a = h
+            .observe_domain("web", "10.0.0.1", "x.fresh.example")
+            .unwrap();
+        assert_eq!(
+            (a.kind.as_str(), a.dst.as_deref()),
+            ("new_domain", Some("fresh.example"))
+        );
+        assert!(h
+            .observe_domain("db", "10.0.0.2", "y.fresh.example")
+            .is_none());
+        let t = h.threat_alert("web", "10.0.0.1", "Evil.Example.", "x".into());
+        assert_eq!(t.unwrap().dst.as_deref(), Some("evil.example"));
+        assert!(h
+            .threat_alert("web", "10.0.0.1", "evil.example", "x".into())
+            .is_none());
     }
 
     #[test]

@@ -56,6 +56,7 @@ cleanup() {
     for v in "${VMS[@]}"; do "$M" vm release "$v" >/dev/null 2>&1; done
     "$M" netpol delete np-realvm >/dev/null 2>&1
     "$M" netpol delete np-realvm-proxy >/dev/null 2>&1
+    "$M" netpol threat rm np-lab >/dev/null 2>&1
     sudo -n rm -rf "$SECRET_DIR"
     for v in "${VMS[@]}"; do
         sudo -n virsh destroy "$v" >/dev/null 2>&1
@@ -407,6 +408,31 @@ check "no policies: client egress cut" bash -c "! ssh -i '$W/key' -o StrictHostK
 check "no policies: host SSH exception works" cssh true
 check "release np-client" "$M" vm release np-client
 check "no policies: client egress back" cssh "ping -c1 -W2 192.168.122.1"
+
+echo "== DNS threat feeds =="
+web() { cssh "curl -s -m 5 -o /dev/null -w '%{http_code}' http://$THREAT_DOMAIN/" 2>/dev/null; }
+reach() { [[ "$(web)" != 000 ]]; }
+THREAT_DOMAIN="${THREAT_DOMAIN:-example.com}"
+check "client reaches $THREAT_DOMAIN before any feed" reach
+check "set a blocking feed for $THREAT_DOMAIN" "$M" netpol threat set np-lab --domain "$THREAT_DOMAIN" --block
+check "feed listed, both VMs watched" bash -c "'$M' netpol threat | grep -q 'np-lab.*1.*block' && '$M' netpol threat | grep -Eq 'watching DNS of [2-9]'"
+cssh "getent ahostsv4 www.$THREAT_DOMAIN; getent ahostsv4 $THREAT_DOMAIN" >/dev/null 2>&1
+check "threat_domain alert for np-client" alert_has threat_domain
+blocked() { for _ in $(seq 10); do "$M" netpol threat | grep -q "BLOCKED" && return; sleep 1; done; return 1; }
+check "answer addresses blocked" blocked
+check "observe: still reachable" reach
+FLOW_VM=np-client check "observe: AUDIT flow says threat-domain" flow_has threat-domain --verdict AUDIT
+check "take a 60s enforcement lease" bpfd '{"op":"set_mode","mode":"enforce","lease_secs":60}'
+check "enforce: $THREAT_DOMAIN dropped" bash -c "[[ \"\$(ssh -i '$W/key' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR np@$CIP \"curl -s -m 5 -o /dev/null -w '%{http_code}' http://$THREAT_DOMAIN/\")\" == 000 ]]"
+check "enforce: gateway still reachable" cssh "ping -c1 -W2 192.168.122.1"
+FLOW_VM=np-client check "enforce: DROPPED flow says threat-domain" flow_has threat-domain --verdict DROPPED
+observe
+check "restart machina-bpfd" sudo -n systemctl restart machina-bpfd
+for _ in $(seq 20); do bpfd '{"op":"vm_threat_feeds"}' 2>/dev/null | grep -q np-lab && break; sleep 1; done
+check "restart: feed restored" bash -c "'$M' netpol threat | grep -q np-lab"
+check "remove the feed" "$M" netpol threat rm np-lab
+check "removed: nothing listed" bash -c "! '$M' netpol threat 2>/dev/null | grep -q np-lab"
+check "removed: $THREAT_DOMAIN reachable" reach
 
 echo "passed=$P failed=$F"
 [[ $F -eq 0 ]]

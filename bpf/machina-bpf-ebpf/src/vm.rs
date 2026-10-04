@@ -648,16 +648,18 @@ fn vm_edge(ctx: &TcContext, ingress: bool) -> i32 {
     };
     if verdict == VM_POLICY_DENY || (verdict == 0 && isolated) {
         m.reason = if verdict == VM_POLICY_DENY { VMF_REASON_POLICY_DENY } else { VMF_REASON_DEFAULT_DENY };
+        // Threat-feed hits are logged without flow logging, once per connection.
+        let log = flow_log || (is_new && peer == IDENTITY_THREAT);
         if enforce_active(now) {
             count(ifindex, from_vm, len, 1);
-            if flow_log {
+            if log {
                 m.verdict = VMF_DROPPED;
                 flow_event(&t, &m);
             }
             return TC_ACT_SHOT;
         }
         count(ifindex, from_vm, len, 2);
-        if flow_log {
+        if log {
             m.verdict = VMF_AUDIT;
             flow_event(&t, &m);
         }

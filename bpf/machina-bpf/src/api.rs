@@ -1069,6 +1069,45 @@ impl VmQuarantineBody {
     }
 }
 
+/// One DNS threat feed (without its domain list).
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmThreatFeed {
+    pub name: String,
+    /// URL it was fetched from, or empty for an inline list.
+    #[serde(default)]
+    pub source: String,
+    /// Deny egress to the addresses its domains resolve to (drops need the
+    /// enforcement lease); otherwise alert only.
+    #[serde(default)]
+    pub block: bool,
+    #[serde(default)]
+    pub domains: usize,
+    #[serde(default)]
+    pub updated: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
+}
+
+/// An address a blocking feed's domain resolved to for a VM.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmThreatBlock {
+    pub address: String,
+    pub domain: String,
+    pub feed: String,
+    pub vm: String,
+    pub expires_in_secs: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmThreatStatus {
+    pub feeds: Vec<VmThreatFeed>,
+    #[serde(default)]
+    pub blocked: Vec<VmThreatBlock>,
+    /// VMs whose DNS replies are being checked.
+    #[serde(default)]
+    pub watched_vms: usize,
+}
+
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
 /// also needs the bpfd enforcement lease.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -2078,6 +2117,20 @@ pub enum Request {
         vm: String,
     },
     VmQuarantines,
+    /// Create or replace one DNS threat feed. While any feed exists, every
+    /// running VM's DNS replies are checked.
+    VmThreatFeedSet {
+        name: String,
+        #[serde(default)]
+        source: String,
+        #[serde(default)]
+        block: bool,
+        domains: Vec<String>,
+    },
+    VmThreatFeedRemove {
+        name: String,
+    },
+    VmThreatFeeds,
     VmSandboxConfigure {
         config: VmSandboxConfig,
     },

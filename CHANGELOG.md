@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-04 — DNS threat feeds
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#dns-threat-feeds).
+
+- **Threat feeds.** `machinactl netpol threat set NAME --url U` (or `-f
+  FILE`, `--domain D`) checks every VM's DNS replies against a domain list.
+  - It reads plain lists, hosts files and Adblock rules.
+  - URL feeds are fetched again every 12 hours.
+  - Feeds survive a bpfd restart.
+- **Alerts and blocking.** A listed name raises a `threat_domain` alert.
+  With `--block`, its answer addresses are denied as egress for every VM for
+  the record's TTL: AUDIT in observe mode, dropped under the enforcement
+  lease, with the reason `threat-domain`; these flows are logged even
+  without flow logging. Addresses of known VMs are never blocked. On the fleet, a `threat_domain` alert also files a pending
+  quarantine.
+- **New-domain alerts.** Once the flow history is a day old, the first
+  lookup under a base domain no VM has resolved before raises `new_domain`.
+- **Fleet.** With `--fleet`, the controller stores the feeds and keeps every
+  online host on exactly that set. Changes and refreshes become
+  `netpol.threat` events.
+- **UI.** A *DNS threat feeds* panel on the Alerts tab lists feeds, watched
+  VMs and blocked addresses, and adds, refreshes or removes feeds.
+- **API.** New `/api/v1/vm-network-policies/threat-feeds` routes on both the
+  daemon and the controller.
+- **Datapath plumbing.**
+  - `machina-agent` now accepts gRPC requests up to 80 MiB, so large feeds
+    reach remote hosts.
+  - bpfd updates the edge settings of already-programmed taps in place when
+    their flags change.
+
 ## 2026-10-04 — Just-in-time network access
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#just-in-time-access).

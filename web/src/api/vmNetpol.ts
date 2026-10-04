@@ -534,6 +534,68 @@ export function describeJit(g: Pick<JitGrant, 'from' | 'to' | 'port' | 'protocol
   return g.port ? `${g.from} → ${g.to}:${g.port}/${proto}` : `${g.from} → ${g.to} (every port)`
 }
 
+export interface ThreatFeed {
+  name: string
+  /** URL it is fetched from; empty for an inline list. */
+  source: string
+  block: boolean
+  /** Host: count. Fleet rows carry `domain_count`. */
+  domains?: number
+  domain_count?: number
+  updated?: string
+  updated_at?: string
+}
+
+export interface ThreatBlock {
+  address: string
+  domain: string
+  feed: string
+  vm: string
+  expires_in_secs: number
+  hostname?: string
+}
+
+export interface ThreatStatus {
+  feeds: ThreatFeed[]
+  blocked: ThreatBlock[]
+  watched_vms: number
+  errors?: Array<{ hostname: string; error: string }>
+}
+
+/** One source: a URL, a domain list or feed text (hosts / Adblock / one per line). */
+export interface ThreatFeedInput {
+  url?: string
+  domains?: string[]
+  text?: string
+  block: boolean
+}
+
+export async function listThreatFeeds(scope: NetpolScope): Promise<ThreatStatus> {
+  const r = await apiGet<Partial<ThreatStatus>>(`${netpolBase(scope)}${P}/threat-feeds`)
+  return { feeds: r.feeds ?? [], blocked: r.blocked ?? [], watched_vms: r.watched_vms ?? 0, errors: r.errors ?? [] }
+}
+
+export const setThreatFeed = (scope: NetpolScope, name: string, body: ThreatFeedInput) =>
+  apiPut<unknown>(`${netpolBase(scope)}${P}/threat-feeds/${encodeURIComponent(name)}`, body)
+
+export const refreshThreatFeed = (scope: NetpolScope, name: string) =>
+  apiPost<unknown>(`${netpolBase(scope)}${P}/threat-feeds/${encodeURIComponent(name)}/refresh`, {})
+
+export const removeThreatFeed = (scope: NetpolScope, name: string) =>
+  apiDelete(`${netpolBase(scope)}${P}/threat-feeds/${encodeURIComponent(name)}`)
+
+export const threatDomainCount = (f: ThreatFeed) => f.domains ?? f.domain_count ?? 0
+
+export const THREAT_FEED_NAME = /^[A-Za-z0-9._-]{1,64}$/
+
+/** Domains typed one per line / comma separated. */
+export function splitDomains(text: string): string[] {
+  return text
+    .split(/[\s,]+/)
+    .map((d) => d.trim())
+    .filter(Boolean)
+}
+
 /** Daemon: VM name. Controller: VM id. */
 export async function getVmLabels(scope: NetpolScope, vm: string): Promise<Record<string, string>> {
   const r = await apiGet<{ labels?: Record<string, string> }>(`${netpolBase(scope)}/vms/${encodeURIComponent(vm)}/labels`)

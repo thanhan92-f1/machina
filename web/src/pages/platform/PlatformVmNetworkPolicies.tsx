@@ -19,6 +19,7 @@ import ReplaySummary from '../../components/flow/ReplaySummary'
 import ServiceMap from '../../components/flow/ServiceMap'
 import QuarantinePanel from '../../components/flow/QuarantinePanel'
 import JitPanel from '../../components/flow/JitPanel'
+import ThreatFeedsPanel from '../../components/flow/ThreatFeedsPanel'
 import {
   NETPOL_TEMPLATES,
   applyVmNetpol,
@@ -765,7 +766,12 @@ export default function PlatformVmNetworkPolicies() {
       {tab === 'learn' && (
         <LearnPanel key={scope} scope={scope} vmNames={vmNames} onOpenInEditor={(y) => { editYaml(y); setTab('editor') }} />
       )}
-      {tab === 'alerts' && <FlowAlerts key={scope} scope={scope} onQuarantine={startQuarantine} />}
+      {tab === 'alerts' && (
+        <div className="space-y-4">
+          <FlowAlerts key={scope} scope={scope} onQuarantine={startQuarantine} />
+          <ThreatFeedsPanel key={`threat-${scope}`} scope={scope} />
+        </div>
+      )}
 
       <input ref={fileRef} type="file" accept=".yaml,.yml,.json" className="hidden" onChange={(e) => void importFile(e.target.files?.[0])} />
     </PlatformPageChrome>

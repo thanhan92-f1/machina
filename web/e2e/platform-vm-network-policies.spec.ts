@@ -97,6 +97,7 @@ async function mockNetpol(page: Page) {
   const applied: string[] = []
   const quarantines: Array<Record<string, unknown>> = []
   const grants: Array<Record<string, unknown>> = []
+  const feeds: Array<Record<string, unknown>> = []
   await page.route('**/vms/*/quarantine', (route) => {
     const req = route.request()
     const vm = decodeURIComponent(new URL(req.url()).pathname.split('/').slice(-2)[0])
@@ -206,6 +207,25 @@ async function mockNetpol(page: Page) {
       grants.push(g)
       policies.push({ ...dbPolicy, name: g.name, description: `Temporary access ${b.from} → ${b.to}:${b.port}/${b.protocol}`, selected_vms: [b.to, b.from] })
       return json(route, { granted: g, policy: g.name, sync: { ok: true, vms: 2, rules: 3, peers: 1, warnings: [] } })
+    }
+    if (path === '/threat-feeds') {
+      const blocked = feeds.some((f) => f.block)
+        ? [{ address: '203.0.113.7', domain: 'evil.example', feed: 'lab', vm: 'web-1', expires_in_secs: 600 }]
+        : []
+      return json(route, { feeds, blocked, watched_vms: feeds.length ? 2 : 0 })
+    }
+    if (path.startsWith('/threat-feeds/')) {
+      const name = decodeURIComponent(path.split('/')[2])
+      const i = feeds.findIndex((f) => f.name === name)
+      if (method === 'DELETE') {
+        if (i >= 0) feeds.splice(i, 1)
+        return json(route, { removed: i >= 0, name })
+      }
+      const b = req.postDataJSON() as { domains?: string[]; url?: string; block: boolean }
+      const f = { name, source: b.url ?? '', block: b.block, domains: b.domains?.length ?? 0, updated: recent }
+      if (i >= 0) feeds.splice(i, 1, f)
+      else feeds.push(f)
+      return json(route, f)
     }
     if (method === 'DELETE') {
       const name = decodeURIComponent(path.slice(1))
@@ -366,6 +386,30 @@ test('VM network policies: grant temporary access, then revoke it', async ({ pag
   await t.getByRole('button', { name: 'Revoke' }).click()
   await expect(page.getByText('Revoked web-1 → db-1:5432/tcp')).toBeVisible()
   await expect(page.getByText('No temporary access.')).toBeVisible()
+})
+
+test('VM network policies: add a blocking threat feed, then remove it', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?tab=alerts`)
+  await expect(page.getByText(/No threat feeds/)).toBeVisible({ timeout: 15_000 })
+  await page.getByLabel('Name').fill('lab')
+  await page.getByLabel('Source').selectOption('list')
+  await page.getByLabel('Domains').fill('evil.example\nc2.example')
+  await page.getByLabel('Block').check()
+  await page.getByRole('button', { name: 'Save feed' }).click()
+  await expect(page.getByText('Threat feed lab set — blocking')).toBeVisible()
+  const t = page.getByRole('table', { name: 'Threat feeds' })
+  await expect(t.getByText('inline list')).toBeVisible()
+  await expect(t.getByText('Block', { exact: true })).toBeVisible()
+  await expect(page.getByText('Watching DNS of 2 VMs.')).toBeVisible()
+  const blocked = page.getByRole('table', { name: 'Blocked addresses' })
+  await expect(blocked.getByText('203.0.113.7')).toBeVisible()
+  await expect(blocked.getByText('evil.example')).toBeVisible()
+  page.once('dialog', (d) => void d.accept())
+  await t.getByRole('button', { name: 'Remove' }).click()
+  await expect(page.getByText('Removed lab')).toBeVisible()
+  await expect(page.getByText(/No threat feeds/)).toBeVisible()
 })
 
 test('VM network policies: delete asks for confirmation', async ({ page }) => {

@@ -595,11 +595,13 @@ each connection once, at the client:
 | `host_sweep` | 20+ destinations on one port | high |
 | `deny_burst` | 50+ denied or audited flows | medium |
 | `new_peer` | a VM pair talking for the first time, once the history is a day old | low |
+| `threat_domain` | a VM resolved a name on a [threat feed](#dns-threat-feeds) | high |
+| `new_domain` | the first lookup under a base domain, once the history is a day old | low |
 
 The same alert is suppressed for 10 minutes, and the last 1000 alerts are
 kept. bpfd logs each alert. The leader controller turns new ones into
 `netpol.alert` events every 30 s, so they reach webhooks and SIEM export.
-A fleet `port_scan` or `host_sweep` from a VM also creates a pending
+A fleet `port_scan`, `host_sweep` or `threat_domain` from a VM also creates a pending
 `vm.quarantine` action in Approvals (at most one pending per VM): one hour,
 SSH from its host allowed. Nothing happens until someone approves it.
 
@@ -719,6 +721,71 @@ API, the same on the daemon and the controller:
 While the controller manages a host's VM edge, the daemon refuses local
 grants and points to `--fleet`.
 
+## DNS threat feeds
+
+A threat feed is a named domain list checked against the DNS replies every
+VM receives. A listed domain also covers its subdomains. Feeds work with or
+without policies: while any feed exists, bpfd programs the taps of every
+running libvirt VM for DNS capture.
+
+```bash
+machinactl netpol threat set urlhaus --url https://example.org/hosts.txt --block
+machinactl netpol threat set lab -f blocklist.txt          # alert only
+machinactl netpol threat set c2 --domain evil.example --domain bad.example --block
+machinactl netpol threat                                   # feeds, watched VMs, blocked addresses
+machinactl netpol threat refresh urlhaus
+machinactl netpol threat rm lab
+```
+
+A feed accepts one domain per line, hosts files (`0.0.0.0 evil.example`),
+Adblock rules (`||evil.example^`) and URLs; `#` and `!` start comments. It
+holds at most 500 000 domains, and a download at most 64 MiB. Feeds with a
+URL are fetched again every 12 hours.
+
+When a VM resolves a listed name:
+
+- bpfd raises a `threat_domain` alert (high). It names the VM, the name,
+  the listed domain, the feed and the answer addresses.
+- For a blocking feed (`--block`), each A/AAAA answer address gets the
+  reserved identity `threat-domain` for the record's TTL (10 minutes to
+  1 day), and every VM gets an egress deny towards it. Connections show as
+  AUDIT in observe mode and are dropped under the enforcement lease, with
+  the reason `threat-domain`. These flows are logged even when flow logging
+  is off, once per connection.
+- The addresses of known VMs are never blocked, so a forged answer cannot
+  cut a VM off.
+
+Alongside, bpfd remembers the base domain (`example.org`) of every
+successful VM lookup. Once the history is a day old, the first lookup
+under a new base domain raises a `new_domain` alert (low). This runs for
+every VM whose DNS replies bpfd captures (feeds or `toFQDNs` policies).
+
+Both alerts follow the rules in [Alerts](#flow-history-service-map-learn-replay-and-alerts):
+a fleet `threat_domain` also files a pending `vm.quarantine` action.
+
+Feeds persist in `/var/lib/machina/bpf/threat-feeds.json` and survive a bpfd
+restart. Blocked addresses do not; they are learned again from the next
+lookup.
+
+With `--fleet`, the controller stores feeds in its database
+(`vm_netpol_threat_feeds`) and pushes them to every online host. Once it
+holds at least one feed, each host carries exactly the fleet's feeds, and
+host-local feeds are removed within 30 s. The controller records changes
+and refreshes as `netpol.threat` events. While the controller manages a
+host's VM edge, the daemon refuses local feed changes.
+
+In the UI, the *Alerts* tab has a *DNS threat feeds* panel: add a feed by
+URL or domain list, refresh or remove it, and see the blocked addresses.
+
+API, the same on the daemon and the controller:
+
+- `GET /api/v1/vm-network-policies/threat-feeds`: `{feeds, blocked,
+  watched_vms}` (the controller adds `hosts` and `errors`);
+- `PUT /api/v1/vm-network-policies/threat-feeds/{name}` with one of `url`,
+  `domains` or `text`, plus `block` (admin);
+- `POST /api/v1/vm-network-policies/threat-feeds/{name}/refresh` (admin);
+- `DELETE /api/v1/vm-network-policies/threat-feeds/{name}` (admin).
+
 ## Test
 
 `scripts/bpf/vm-edge-smoke.sh` has a *VM network policy* section. It runs on
@@ -781,8 +848,20 @@ Then it quarantines the server, still in observe mode, and checks:
 - that a quarantine survives a bpfd restart;
 - that a VM with no policy at all can be quarantined.
 
+Last, with no policies left, it sets a blocking threat feed for
+`example.com` (`THREAT_DOMAIN`) and checks:
+
+- that a lookup from the client raises `threat_domain` and blocks the
+  answer addresses;
+- that the site stays reachable in observe mode, with AUDIT flows labelled
+  `threat-domain`;
+- that under a 60-second lease the site is dropped, with DROPPED flows,
+  while the gateway stays reachable;
+- that the feed survives a bpfd restart, and the site is reachable again
+  once the feed is removed.
+
 On exit it returns the edge to observe, releases any quarantine, and
-deletes the VMs, the policies, the secret and the image.
+deletes the VMs, the policies, the feed, the secret and the image.
 It enforces on every tap with policy state, so run it only on a disposable
 host. The password is read from stdin:
 

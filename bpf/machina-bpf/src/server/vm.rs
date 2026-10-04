@@ -17,6 +17,9 @@ use super::cni::addr16;
 use super::*;
 
 mod quarantine;
+mod threat;
+
+pub(super) use threat::{threat_observe, ThreatHit};
 
 const EDGE_IN: &str = "mn_vm_edge_in";
 const EDGE_OUT: &str = "mn_vm_edge_out";
@@ -169,6 +172,11 @@ pub(super) struct VmEdgeRuntime {
     auth: HashMap<(u32, u32), AuthState>,
     l7_rules: usize,
     quarantines: BTreeMap<String, quarantine::Held>,
+    threat_feeds: BTreeMap<String, threat::Feed>,
+    threat_bound: HashMap<[u8; ADDR_LEN], threat::Bound>,
+    /// Libvirt VMs outside the edge state whose taps the feeds programmed.
+    threat_vms: BTreeSet<String>,
+    threat_path: Option<std::path::PathBuf>,
 }
 
 /// Queue the A/AAAA answers of a DNS reply whose names match a `toFQDNs`
@@ -359,6 +367,9 @@ pub(super) fn on_vm_flow(
             }
             .into(),
             drop_reason: match ev.reason {
+                VMF_REASON_POLICY_DENY if ev.peer == crate::netpol::IDENTITY_THREAT => {
+                    Some("threat-domain".into())
+                }
                 VMF_REASON_POLICY_DENY => Some("policy-deny".into()),
                 VMF_REASON_DEFAULT_DENY => Some("default-deny".into()),
                 VMF_REASON_AUTH_REQUIRED if ev.auth == 2 => Some("auth-test-always-fail".into()),
@@ -934,6 +945,7 @@ impl Engine {
             }
             fqdn_ids.insert(*addr, id);
         }
+        rt.threat_entries(&mut ips, &mut policy, &mut index);
         rt.quarantine_entries(&mut ips, &mut policy, &mut index);
 
         let mut want_proxy = false;
@@ -1162,17 +1174,45 @@ impl Engine {
 
     /// Program taps of VMs in the edge state; drop taps that went away.
     pub(super) fn vm_edge_refresh(&mut self) {
+        let watch = self.vm_edge.threat_watch();
         if self.vm_edge.state.vms.is_empty()
             && self.vm_edge.taps.is_empty()
             && self.vm_edge.quarantines.is_empty()
+            && !watch
         {
             return;
         }
-        let quarantined_only: Vec<VmEdgeVm> = self
+        let known = |n: &str| self.vm_edge.state.vms.iter().any(|v| v.name == n);
+        let scanned: Vec<(String, String)> = if watch
+            || !self.vm_edge.quarantines.is_empty()
+            || self.vm_edge.state.vms.iter().any(|v| v.taps.is_empty())
+        {
+            attribution::scan_libvirt()
+                .into_iter()
+                .map(|(tap, info)| (tap, info.vm))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let mut synth: BTreeSet<String> = self
             .vm_edge
             .quarantines
             .keys()
-            .filter(|n| !self.vm_edge.state.vms.iter().any(|v| &v.name == *n))
+            .filter(|n| !known(n))
+            .cloned()
+            .collect();
+        let watched: BTreeSet<String> = if watch {
+            scanned
+                .iter()
+                .map(|(_, vm)| vm.clone())
+                .filter(|n| !known(n))
+                .collect()
+        } else {
+            BTreeSet::new()
+        };
+        synth.extend(watched.iter().cloned());
+        let synthesized: Vec<VmEdgeVm> = synth
+            .iter()
             .map(|n| VmEdgeVm {
                 name: n.clone(),
                 identity: Some(crate::netpol::vm_identity(n)),
@@ -1184,16 +1224,13 @@ impl Engine {
             .state
             .vms
             .iter()
-            .chain(&quarantined_only)
+            .chain(&synthesized)
             .map(|v| (v.name.as_str(), v))
             .collect();
         let mut taps: Vec<(String, &VmEdgeVm)> = Vec::new();
-        if !quarantined_only.is_empty() || self.vm_edge.state.vms.iter().any(|v| v.taps.is_empty())
-        {
-            for (tap, info) in attribution::scan_libvirt() {
-                if let Some(vm) = by_name.get(info.vm.as_str()).filter(|v| v.taps.is_empty()) {
-                    taps.push((tap, vm));
-                }
+        for (tap, vm) in &scanned {
+            if let Some(vm) = by_name.get(vm.as_str()).filter(|v| v.taps.is_empty()) {
+                taps.push((tap.clone(), vm));
             }
         }
         for vm in &self.vm_edge.state.vms {
@@ -1219,18 +1256,19 @@ impl Engine {
             if self.vm_edge.deny.contains(&(identity, false)) {
                 flags |= VME_DENY_IN;
             }
-            if self.vm_edge.deny.contains(&(identity, true)) {
+            if self.vm_edge.deny.contains(&(identity, true)) || self.vm_edge.threat_blocking() {
                 flags |= VME_DENY_OUT;
             }
             if self.vm_edge.state.flow_log {
                 flags |= VME_FLOW_LOG;
             }
-            if self
-                .vm_edge
-                .state
-                .fqdn
-                .iter()
-                .any(|r| r.subject_identity == identity)
+            if watch
+                || self
+                    .vm_edge
+                    .state
+                    .fqdn
+                    .iter()
+                    .any(|r| r.subject_identity == identity)
             {
                 flags |= VME_FQDN;
             }
@@ -1269,8 +1307,31 @@ impl Engine {
             }
             self.vm_edge.taps.remove(&tap);
         }
+        if self.vm_edge.threat_vms != watched {
+            self.vm_edge.threat_vms = watched;
+            if self.vm_edge.threat_blocking() {
+                if let Err(e) = self.vm_edge_apply() {
+                    tracing::warn!("threat feed entries: {e:#}");
+                }
+            }
+        }
+        let programmed: HashMap<u32, VmEdgeCfg> = if self.vm_edge.taps.is_empty() {
+            HashMap::new()
+        } else {
+            self.dp
+                .hash_entries::<u32, VmEdgeCfg>("VM_EDGE")
+                .unwrap_or_default()
+                .into_iter()
+                .collect()
+        };
         for (tap, (vm, cfg)) in want {
-            if self.vm_edge.taps.contains_key(&tap) {
+            if let Some((idx, _)) = self.vm_edge.taps.get(&tap) {
+                let idx = *idx;
+                if programmed.get(&idx).is_some_and(|c| *c != cfg) {
+                    if let Err(e) = self.dp.cni_hash_insert("VM_EDGE", idx, cfg) {
+                        tracing::warn!("vm edge on {tap}: {e:#}");
+                    }
+                }
                 continue;
             }
             let Some(idx) = if_nametoindex(&tap) else {

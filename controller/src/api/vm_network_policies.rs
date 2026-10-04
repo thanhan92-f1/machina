@@ -615,6 +615,151 @@ pub async fn quarantines(State(state): State<AppState>) -> Json<Value> {
     Json(json!({ "items": bpf::fan_out_items(&state.pool, &Request::VmQuarantines).await }))
 }
 
+// ---- DNS threat feeds -----------------------------------------------------------
+
+/// `req` on every online host: (host results, errors), never failing.
+async fn fan_out_report(state: &AppState, req: &Request) -> (Vec<Value>, Vec<Value>) {
+    let (mut ok, mut errors) = (Vec::new(), Vec::new());
+    for (h, r) in bpf::fan_out(&state.pool, req).await {
+        match r {
+            Ok(mut v) => {
+                if let Some(o) = v.as_object_mut() {
+                    o.insert("host_id".into(), json!(h.id));
+                    o.insert("hostname".into(), json!(h.hostname));
+                }
+                ok.push(v);
+            }
+            Err(e) => errors.push(json!({ "hostname": h.hostname, "error": format!("{e:#}") })),
+        }
+    }
+    (ok, errors)
+}
+
+pub async fn threat_feeds(State(state): State<AppState>) -> Json<Value> {
+    let feeds = vm_netpol::threat_feeds(&state.pool).await;
+    let (hosts, errors) = fan_out_report(&state, &Request::VmThreatFeeds).await;
+    let mut blocked = Vec::new();
+    let mut watched = 0;
+    for h in &hosts {
+        watched += h["watched_vms"].as_u64().unwrap_or(0);
+        for b in h["blocked"].as_array().into_iter().flatten() {
+            let mut b = b.clone();
+            if let Some(o) = b.as_object_mut() {
+                o.insert("hostname".into(), h["hostname"].clone());
+            }
+            blocked.push(b);
+        }
+    }
+    Json(json!({
+        "feeds": feeds,
+        "blocked": blocked,
+        "watched_vms": watched,
+        "hosts": hosts,
+        "errors": errors,
+    }))
+}
+
+async fn push_threat_feed(
+    state: &AppState,
+    f: &vm_netpol::ThreatFeedRow,
+    what: &str,
+) -> Json<Value> {
+    let (hosts, errors) = fan_out_report(state, &f.request()).await;
+    state.emit_event(
+        "netpol.threat",
+        format!(
+            "{what} threat feed {} ({} domains, {})",
+            f.name,
+            f.domain_count,
+            if f.block { "blocking" } else { "alert only" }
+        ),
+    );
+    Json(json!({ "feed": f, "hosts": hosts, "errors": errors }))
+}
+
+pub async fn threat_feed_set(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(name): Path<String>,
+    Json(b): Json<machina_bpf::netpol::threat::FeedBody>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    machina_bpf::netpol::threat::check_name(&name).map_err(ApiError::bad_request)?;
+    b.validate().map_err(ApiError::bad_request)?;
+    let fetched = match &b.url {
+        Some(u) => Some(
+            vm_netpol::fetch_feed(u)
+                .await
+                .map_err(|e| ApiError::bad_request(format!("fetch {u}: {e:#}")))?,
+        ),
+        None => None,
+    };
+    let domains = b
+        .domains(fetched.as_deref())
+        .map_err(ApiError::bad_request)?;
+    vm_netpol::threat_feed_put(
+        &state.pool,
+        &name,
+        &b.source(),
+        b.block,
+        &domains,
+        &actor.username,
+    )
+    .await
+    .map_err(|e| ApiError::internal(format!("{e:#}")))?;
+    let f = vm_netpol::threat_feeds(&state.pool)
+        .await
+        .into_iter()
+        .find(|f| f.name == name)
+        .ok_or_else(|| ApiError::internal("threat feed vanished"))?;
+    Ok(push_threat_feed(&state, &f, &format!("{} set", actor.username)).await)
+}
+
+pub async fn threat_feed_remove(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    let removed = vm_netpol::threat_feed_delete(&state.pool, &name)
+        .await
+        .map_err(|e| ApiError::internal(format!("{e:#}")))?;
+    let (hosts, errors) =
+        fan_out_report(&state, &Request::VmThreatFeedRemove { name: name.clone() }).await;
+    let removed = removed || hosts.iter().any(|h| h["removed"].as_bool() == Some(true));
+    if removed {
+        state.emit_event(
+            "netpol.threat",
+            format!("{} removed threat feed {name}", actor.username),
+        );
+    }
+    Ok(Json(
+        json!({ "name": name, "removed": removed, "hosts": hosts, "errors": errors }),
+    ))
+}
+
+pub async fn threat_feed_refresh(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&actor)?;
+    let f = vm_netpol::threat_feeds(&state.pool)
+        .await
+        .into_iter()
+        .find(|f| f.name == name)
+        .ok_or_else(|| ApiError::not_found(format!("threat feed `{name}`")))?;
+    if f.source.is_empty() {
+        return Err(ApiError::bad_request(format!(
+            "threat feed `{name}` is an inline list; set it again to change it"
+        )));
+    }
+    let f = vm_netpol::refresh_threat_feed(&state.pool, &f, &actor.username)
+        .await
+        .map_err(|e| ApiError::bad_request(format!("{e:#}")))?;
+    Ok(push_threat_feed(&state, &f, &format!("{} refreshed", actor.username)).await)
+}
+
 // ---- just-in-time access --------------------------------------------------------
 
 pub const JIT_ACTION: &str = "vm_netpol.jit";

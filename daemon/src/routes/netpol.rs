@@ -20,11 +20,11 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use futures_util::Stream;
 use machina_bpf::api::{
-    Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry, VmQuarantineBody,
+    Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry, VmQuarantineBody, VmThreatStatus,
 };
 use machina_bpf::netpol::{
-    self, jit, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs, TraceQuery,
-    VmNetworkPolicy,
+    self, jit, threat, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs,
+    TraceQuery, VmNetworkPolicy,
 };
 use machina_bpf::BpfdClient;
 use machina_core::{LibvirtError, LibvirtManager};
@@ -300,6 +300,12 @@ pub fn spawn_resync_loop(m: LibvirtManager) {
                 _ = tokio::time::sleep(std::time::Duration::from_secs(wait)) => {}
                 _ = WAKE.notified() => {}
             }
+        }
+    });
+    tokio::spawn(async {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
+            threat_refresh_due().await;
         }
     });
 }
@@ -767,6 +773,160 @@ async fn jit_list() -> Json<Value> {
     Json(json!({ "items": items }))
 }
 
+async fn controller_owned() -> bool {
+    edge_status().await.is_some_and(|s| s.owner == "controller")
+}
+
+async fn fetch_feed(url: &str) -> Result<String, LibvirtError> {
+    let op = LibvirtError::Operation;
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .build()
+        .map_err(|e| op(format!("feed client: {e}")))?;
+    let mut resp = client
+        .get(url)
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|e| op(format!("fetch {url}: {e}")))?;
+    let mut body = Vec::new();
+    while let Some(chunk) = resp
+        .chunk()
+        .await
+        .map_err(|e| op(format!("fetch {url}: {e}")))?
+    {
+        body.extend_from_slice(&chunk);
+        if body.len() > threat::MAX_FEED_BYTES {
+            return Err(op(format!(
+                "feed {url} is larger than {} MiB",
+                threat::MAX_FEED_BYTES >> 20
+            )));
+        }
+    }
+    Ok(String::from_utf8_lossy(&body).into_owned())
+}
+
+async fn bpfd_raw(req: &Request) -> Result<Value, LibvirtError> {
+    BpfdClient::from_env()
+        .call(req)
+        .await
+        .map_err(|e| LibvirtError::Operation(format!("{e:#}")))
+}
+
+async fn threat_status() -> Result<VmThreatStatus, LibvirtError> {
+    let v = bpfd_raw(&Request::VmThreatFeeds).await?;
+    Ok(serde_json::from_value(v).unwrap_or_default())
+}
+
+async fn threat_push(name: &str, b: &threat::FeedBody) -> Result<Value, LibvirtError> {
+    b.validate().map_err(LibvirtError::Invalid)?;
+    let fetched = match &b.url {
+        Some(u) => Some(fetch_feed(u).await?),
+        None => None,
+    };
+    let domains = b
+        .domains(fetched.as_deref())
+        .map_err(LibvirtError::Invalid)?;
+    bpfd_raw(&Request::VmThreatFeedSet {
+        name: name.to_string(),
+        source: b.source(),
+        block: b.block,
+        domains,
+    })
+    .await
+}
+
+async fn threat_feeds() -> Result<Json<Value>, AppError> {
+    Ok(Json(
+        serde_json::to_value(threat_status().await?).unwrap_or_default(),
+    ))
+}
+
+fn fleet_managed() -> AppError {
+    LibvirtError::Invalid(
+        "the controller manages this host's VM edge; change threat feeds through the controller (--fleet)".into(),
+    )
+    .into()
+}
+
+async fn threat_feed_set(
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+    Json(b): Json<threat::FeedBody>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing DNS threat feeds")?;
+    if controller_owned().await {
+        return Err(fleet_managed());
+    }
+    let v = threat_push(&name, &b).await?;
+    tracing::warn!(actor = %actor.username, feed = %name, block = b.block, "DNS threat feed set");
+    Ok(Json(v))
+}
+
+async fn threat_feed_remove(
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Changing DNS threat feeds")?;
+    if controller_owned().await {
+        return Err(fleet_managed());
+    }
+    let v = bpfd_call(&Request::VmThreatFeedRemove { name: name.clone() }).await?;
+    tracing::warn!(actor = %actor.username, feed = %name, "DNS threat feed removed");
+    Ok(Json(v))
+}
+
+/// Fetch a URL feed again, keeping its block setting.
+async fn threat_refresh_one(name: &str) -> Result<Value, LibvirtError> {
+    let st = threat_status().await?;
+    let f = st
+        .feeds
+        .iter()
+        .find(|f| f.name == name)
+        .ok_or_else(|| LibvirtError::NotFound(format!("threat feed `{name}`")))?;
+    if f.source.is_empty() {
+        return Err(LibvirtError::Invalid(format!(
+            "threat feed `{name}` is an inline list; set it again to change it"
+        )));
+    }
+    let b = threat::FeedBody {
+        url: Some(f.source.clone()),
+        block: f.block,
+        ..Default::default()
+    };
+    threat_push(name, &b).await
+}
+
+async fn threat_feed_refresh(
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Refreshing a DNS threat feed")?;
+    if controller_owned().await {
+        return Err(fleet_managed());
+    }
+    Ok(Json(threat_refresh_one(&name).await?))
+}
+
+/// Refetch URL feeds older than [`threat::REFRESH_SECS`].
+async fn threat_refresh_due() {
+    if controller_owned().await {
+        return;
+    }
+    let Ok(st) = threat_status().await else {
+        return;
+    };
+    let cutoff = chrono::Utc::now() - chrono::Duration::seconds(threat::REFRESH_SECS as i64);
+    for f in st.feeds.iter().filter(|f| !f.source.is_empty()) {
+        if !matches!(chrono::DateTime::parse_from_rfc3339(&f.updated), Ok(t) if t >= cutoff) {
+            match threat_refresh_one(&f.name).await {
+                Ok(_) => tracing::info!(feed = %f.name, "DNS threat feed refreshed"),
+                Err(e) => tracing::warn!(feed = %f.name, "DNS threat feed refresh: {e}"),
+            }
+        }
+    }
+}
+
 /// Address → DNS names from the `toFQDNs` cache.
 async fn fqdn_names() -> BTreeMap<String, Vec<String>> {
     let entries: Vec<VmFqdnEntry> = match bpfd_call(&Request::VmFqdnCache).await {
@@ -888,6 +1048,17 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/replay", post(replay))
         .route("/vm-network-policies/quarantines", get(quarantines))
         .route("/vm-network-policies/jit", get(jit_list).post(jit_grant))
+        .route("/vm-network-policies/threat-feeds", get(threat_feeds))
+        .route(
+            "/vm-network-policies/threat-feeds/{name}",
+            axum::routing::put(threat_feed_set)
+                .delete(threat_feed_remove)
+                .layer(axum::extract::DefaultBodyLimit::max(threat::MAX_FEED_BYTES)),
+        )
+        .route(
+            "/vm-network-policies/threat-feeds/{name}/refresh",
+            post(threat_feed_refresh),
+        )
         .route(
             "/vms/{name}/quarantine",
             post(quarantine).delete(quarantine_release),

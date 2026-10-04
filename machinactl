@@ -1036,6 +1036,7 @@ cmd_help() {
     echo "  vm quarantine VM [--for 1h]        Cut every flow of a VM until the deadline"
     echo "  vm release VM | netpol quarantines Lift a quarantine / list quarantined VMs"
     echo "  netpol jit grant --from A --to B   Temporary access that removes itself (--port, --for 1h)"
+    echo "  netpol threat set NAME --url U     DNS threat feed: alert on listed domains (--block denies them)"
     echo "  flow observe [-f] [filters]        Colorful packet flows (like hubble observe)"
     echo "  flow top [--by pair|src|dst|port|policy|l7] | flow stats"
     echo "  flow edges [--vm X] | flow alerts  7-day history (who talks to whom) / scan + sweep alerts"

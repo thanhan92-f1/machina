@@ -125,6 +125,10 @@ struct Shared {
     vm_fqdn_patterns: Vec<String>,
     /// DNS answers awaiting the engine.
     vm_fqdn_queue: Vec<vm::FqdnLearn>,
+    /// Threat feed domain → (feed, block), for the DNS reader.
+    vm_threat: HashMap<String, (String, bool)>,
+    /// Blocking threat answers awaiting the engine.
+    vm_threat_queue: Vec<vm::ThreatHit>,
     /// L7 rules in force (static plus learned `toFQDNs`), for the L7 reader.
     vm_l7_rules: Arc<Vec<VmEdgeL7Rule>>,
     vm_l7_gen: u64,

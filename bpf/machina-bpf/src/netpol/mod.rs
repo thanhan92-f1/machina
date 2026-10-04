@@ -27,6 +27,7 @@ mod learn;
 mod services;
 #[cfg(test)]
 mod tests;
+pub mod threat;
 mod trace;
 
 use std::collections::BTreeMap;
@@ -36,7 +37,7 @@ use serde_json::{Map, Value};
 
 pub use compile::{
     cidr_identity, compile, vm_identity, Compiled, EndpointInfo, Inputs, NetpolService, NetpolVm,
-    SelectorInfo, ServiceEndpoint, IDENTITY_REMOTE_NODE,
+    SelectorInfo, ServiceEndpoint, IDENTITY_REMOTE_NODE, IDENTITY_THREAT,
 };
 pub use services::from_k8s as services_from_k8s;
 

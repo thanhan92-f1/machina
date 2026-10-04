@@ -514,6 +514,17 @@ impl Daemon {
                 json!({ "released": released, "vm": vm })
             }
             Request::VmQuarantines => v(&lock(&self.engine).vm_quarantines()),
+            Request::VmThreatFeedSet {
+                name,
+                source,
+                block,
+                domains,
+            } => v(&lock(&self.engine).vm_threat_feed_set(&name, source, block, domains)?),
+            Request::VmThreatFeedRemove { name } => {
+                let removed = lock(&self.engine).vm_threat_feed_remove(&name)?;
+                json!({ "removed": removed, "name": name })
+            }
+            Request::VmThreatFeeds => v(&lock(&self.engine).vm_threat_status()),
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;
@@ -776,6 +787,7 @@ fn spawn_maintenance(d: Arc<Daemon>, wake: Arc<Notify>) {
                 let mut eng = lock(&d2.engine);
                 eng.drain_dns_blocks()?;
                 eng.vm_fqdn_tick()?;
+                eng.threat_tick()?;
                 eng.vm_auth_tick()?;
                 eng.expire_lease()?;
                 eng.nodeiso_expire()?;
@@ -819,6 +831,7 @@ pub async fn run(cfg: Config) -> Result<()> {
 
     let mut eng = Engine::new(shared.clone(), bus.clone())?;
     eng.vmauth.set_dir(cfg.state_dir.join("auth"));
+    eng.threat_set_path(cfg.state_dir.join("threat-feeds.json"));
     {
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("NET_EVENTS")?, "net", move |x| {
@@ -887,6 +900,7 @@ pub async fn run(cfg: Config) -> Result<()> {
     {
         let mut eng = lock(&d.engine);
         d.restore(&mut eng);
+        eng.threat_restore();
         eng.rescan_ifaces();
         let st = eng.status();
         tracing::info!(

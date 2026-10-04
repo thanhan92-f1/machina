@@ -440,6 +440,8 @@ pub struct QosState {
 
 pub const IDENTITY_HOST: u32 = 1;
 pub const IDENTITY_WORLD: u32 = 2;
+/// Addresses a blocking DNS threat feed resolved (bpfd runtime only).
+pub const IDENTITY_THREAT: u32 = 4;
 
 pub const EP_INGRESS_ISOLATED: u32 = 1 << 0;
 pub const EP_EGRESS_ISOLATED: u32 = 1 << 1;

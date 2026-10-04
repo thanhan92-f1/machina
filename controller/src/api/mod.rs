@@ -193,6 +193,22 @@ pub fn router(state: AppState) -> Router {
             get(vm_network_policies::jit_list).post(vm_network_policies::jit_request),
         )
         .route(
+            "/api/v1/vm-network-policies/threat-feeds",
+            get(vm_network_policies::threat_feeds),
+        )
+        .route(
+            "/api/v1/vm-network-policies/threat-feeds/{name}",
+            put(vm_network_policies::threat_feed_set)
+                .delete(vm_network_policies::threat_feed_remove)
+                .layer(axum::extract::DefaultBodyLimit::max(
+                    machina_bpf::netpol::threat::MAX_FEED_BYTES,
+                )),
+        )
+        .route(
+            "/api/v1/vm-network-policies/threat-feeds/{name}/refresh",
+            post(vm_network_policies::threat_feed_refresh),
+        )
+        .route(
             "/api/v1/vm-network-policies",
             get(vm_network_policies::list).post(vm_network_policies::apply),
         )

@@ -98,6 +98,8 @@ Usage: netpol <command> [options]
   jit [list|grant|approve|reject|revoke]
                                  Temporary access that removes itself
                                  (netpol jit help)
+  threat [list|set|refresh|rm]   DNS threat feeds: alert on (and optionally block)
+                                 listed domains VMs resolve (netpol threat help)
 EOF
 }
 
@@ -352,6 +354,7 @@ np_netpol_main() {
         auth) np_netpol_auth ;;
         quarantines|quarantine|q) np_netpol_quarantines ;;
         jit|access) np_netpol_jit "$@" ;;
+        threat|threats|threat-feeds) np_netpol_threat "$@" ;;
         sync)
             [[ "$NP_FLEET" == 1 ]] || np_die "sync is a fleet (controller) feature; the daemon resyncs on every change and every 60s"
             np_api POST /vm-network-policies/sync | jq .
@@ -592,6 +595,108 @@ np_netpol_jit() {
             ;;
         help|-h|--help) np_jit_usage ;;
         *) np_die "unknown jit command: $sub (try: netpol jit help)" ;;
+    esac
+}
+
+# ── DNS threat feeds ──────────────────────────────────────────────────────
+
+np_threat_usage() {
+    cat <<'EOF'
+Usage: netpol threat [list]
+       netpol threat set NAME (--url URL | -f FILE | --domain D [--domain D ...]) [--block]
+       netpol threat refresh NAME
+       netpol threat rm NAME
+
+Domain lists checked against every VM's DNS replies (a domain covers its
+subdomains). A match raises a threat_domain alert; with --block the answer
+addresses are also denied as egress for every VM (AUDIT in observe mode,
+dropped under the enforcement lease) for the record's TTL (10 min to 1 day).
+Lists: one domain per line, hosts files, Adblock (||d^) or URLs. URL feeds
+are fetched again every 12h. With --fleet, feeds go to every host.
+EOF
+}
+
+np_threat_list() {
+    local body
+    body=$(np_api GET /vm-network-policies/threat-feeds)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    if [[ "$(jq '.feeds | length' <<<"$body")" == 0 ]]; then
+        echo "(no threat feeds)" >&2
+        return
+    fi
+    {
+        printf 'FEED\tDOMAINS\tMODE\tSOURCE\tUPDATED\n'
+        jq -r '.feeds[] | [
+            .name, ((.domains // .domain_count) | tostring), (if .block then "block" else "alert" end),
+            (.source // "" | if . == "" then "inline" else . end), (.updated // .updated_at // "-")
+          ] | @tsv' <<<"$body"
+    } | column -t -s $'\t'
+    echo "watching DNS of $(jq -r '.watched_vms // 0' <<<"$body") VM(s)"
+    if [[ "$(jq '(.blocked // []) | length' <<<"$body")" != 0 ]]; then
+        echo
+        {
+            printf 'BLOCKED\tDOMAIN\tFEED\tVM\tHOST\tLEFT\n'
+            jq -r '.blocked[] | [.address, .domain, .feed, (.vm // "-"), (.hostname // "-"), "\(.expires_in_secs)s"] | @tsv' <<<"$body"
+        } | column -t -s $'\t'
+    fi
+    jq -r '(.errors // [])[] | "\(.hostname): \(.error)"' <<<"$body" >&2
+}
+
+np_threat_set() {
+    local name="${1:-}"
+    [[ -n "$name" && "$name" != -* ]] || { np_threat_usage >&2; exit 1; }
+    shift
+    local url="" file="" block=false domains=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url) url="$2"; shift 2 ;;
+            -f|--file) file="$2"; shift 2 ;;
+            --domain) domains+=("$2"); shift 2 ;;
+            --block) block=true; shift ;;
+            -h|--help) np_threat_usage; return ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    local req
+    if [[ -n "$url" ]]; then
+        req=$(jq -nc --arg u "$url" --argjson b "$block" '{url: $u, block: $b}')
+    elif [[ -n "$file" ]]; then
+        [[ "$file" == - || -r "$file" ]] || np_die "cannot read $file"
+        req=$(np_read_file "$file" | jq -Rsc --argjson b "$block" '{text: ., block: $b}')
+    elif [[ ${#domains[@]} -gt 0 ]]; then
+        req=$(printf '%s\n' "${domains[@]}" | jq -Rnc --argjson b "$block" '{domains: [inputs], block: $b}')
+    else
+        np_threat_usage >&2
+        exit 1
+    fi
+    local body
+    body=$(np_api PUT "/vm-network-policies/threat-feeds/$(np_uri "$name")" -H 'Content-Type: application/json' --data-binary @- <<<"$req")
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r --arg n "$name" '
+      (.feed // .) as $f
+      | "threatfeed/\($n) set: \($f.domains // $f.domain_count) domains, \(if $f.block then "blocking" else "alert only" end)",
+        ((.hosts // [])[] | "  on \(.hostname)"),
+        ((.errors // [])[] | "  \(.hostname): \(.error)")' <<<"$body"
+}
+
+np_netpol_threat() {
+    local sub="${1:-list}"
+    shift || true
+    case "$sub" in
+        list|ls) np_threat_list ;;
+        set|add|apply) np_threat_set "$@" ;;
+        refresh)
+            np_api POST "/vm-network-policies/threat-feeds/$(np_uri "${1:?usage: netpol threat refresh NAME}")/refresh" \
+                -H 'Content-Type: application/json' -d '{}' \
+                | jq -r --arg n "$1" '(.feed // .) as $f | "threatfeed/\($n) refreshed: \($f.domains // $f.domain_count) domains"'
+            ;;
+        rm|delete|remove)
+            local body
+            body=$(np_api DELETE "/vm-network-policies/threat-feeds/$(np_uri "${1:?usage: netpol threat rm NAME}")")
+            if [[ "$(jq -r '.removed' <<<"$body")" == true ]]; then echo "threatfeed/$1 removed"; else echo "threatfeed/$1 not found"; fi
+            ;;
+        help|-h|--help) np_threat_usage ;;
+        *) np_die "unknown threat command: $sub (try: netpol threat help)" ;;
     esac
 }
 
