@@ -225,24 +225,6 @@ pub async fn create_vm(
         .project
         .clone()
         .unwrap_or_else(|| "default".into());
-    // NOTE: this quota check runs before the insert transaction, so two concurrent
-    // creates at the project boundary can both pass and exceed the quota by one. Quota is
-    // a soft guardrail (not a security boundary), so this off-by-one is accepted rather
-    // than paid for with a BEGIN IMMEDIATE / DB-constraint refactor.
-    if let Err(v) = policy::evaluate_vm_create(
-        &state.pool,
-        &project,
-        &body.tags,
-        vcpus,
-        memory_mib,
-        storage_gib,
-        body.vm.spec.ha.enabled,
-    )
-    .await
-    {
-        return Err(ApiError::policy_violation(v.message, v.remediation));
-    }
-
     let host_id = match body.host_id {
         Some(id) => id,
         None => pick_host_for_vm(&state.pool, &body.tags, memory_mib)
@@ -254,7 +236,22 @@ pub async fn create_vm(
     let spec_json =
         serde_json::to_value(&body.vm).map_err(|e| ApiError::internal(e.to_string()))?;
 
-    let mut tx = state.pool.begin().await?;
+    // Quota and policy are checked inside this same write transaction (BEGIN IMMEDIATE takes the SQLite write lock
+    // up front), so concurrent creates at a project's limit are serialised and cannot both pass.
+    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    if let Err(v) = policy::evaluate_vm_create_tx(
+        &mut tx,
+        &project,
+        &body.tags,
+        vcpus,
+        memory_mib,
+        storage_gib,
+        body.vm.spec.ha.enabled,
+    )
+    .await
+    {
+        return Err(ApiError::policy_violation(v.message, v.remediation));
+    }
 
     sqlx::query(
         "INSERT INTO vms (id, cluster_id, host_id, name, project, spec_json, desired_state, lifecycle_phase, vcpus, memory_mib, tags)

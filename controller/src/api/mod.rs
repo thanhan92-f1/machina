@@ -1864,6 +1864,11 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/cloud-init/validate",
             post(cloud_init::validate_cloud_init),
         )
+        // Project-scoped access (opt-in: MACHINA_PROJECT_RBAC=audit|enforce). Innermost, so it runs after auth.
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            crate::project_rbac::middleware,
+        ))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             observability_middleware::trace_middleware,
