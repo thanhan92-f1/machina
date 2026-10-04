@@ -18,6 +18,14 @@ const RENEW_SECS: u64 = 5;
 /// task stalled (GC pause, DB stall) past the lease.
 const DEMOTE_GUARD_SECS: i64 = 3;
 
+/// Leadership epoch as last read from the database (bumped on every change of leader). Attached to every agent
+/// call so agents can refuse a controller that has been superseded.
+static EPOCH: AtomicI64 = AtomicI64::new(0);
+
+pub fn current_epoch() -> i64 {
+    EPOCH.load(Ordering::Relaxed)
+}
+
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -77,7 +85,12 @@ pub fn spawn(pool: SqlitePool, controller_id: String) -> LeaderHandle {
             // later than the DB's own `datetime('now','+15s')` (a slow query only
             // makes our deadline more conservative, never less).
             let attempt_at = now_unix();
-            match renew_lease(&pool, &controller_id).await {
+            let renewed = renew_lease(&pool, &controller_id).await;
+            if let Ok(Some(e)) = read_epoch(&pool).await {
+                // Never go backwards: a restored-from-backup database must not lower a floor agents already hold.
+                EPOCH.fetch_max(e, Ordering::Relaxed);
+            }
+            match renewed {
                 Ok(true) => {
                     lease_until_unix.store(attempt_at + LEASE_SECS, Ordering::Relaxed);
                     is_leader.store(true, Ordering::Relaxed);
@@ -97,13 +110,25 @@ pub fn spawn(pool: SqlitePool, controller_id: String) -> LeaderHandle {
     handle
 }
 
+async fn read_epoch(pool: &SqlitePool) -> anyhow::Result<Option<i64>> {
+    Ok(
+        sqlx::query_scalar("SELECT epoch FROM controller_leadership WHERE id = 1")
+            .fetch_optional(pool)
+            .await?,
+    )
+}
+
 async fn renew_lease(pool: &SqlitePool, holder_id: &str) -> anyhow::Result<bool> {
+    // The epoch only moves when leadership changes hands (the old holder differs from us); a plain renewal keeps it.
     let acquired: bool = sqlx::query_scalar(
-        "UPDATE controller_leadership SET holder_id = ?, lease_until = datetime('now', '+15 seconds'),
-         updated_at = datetime('now')
+        "UPDATE controller_leadership SET
+             epoch = CASE WHEN holder_id = ? THEN epoch ELSE epoch + 1 END,
+             holder_id = ?, lease_until = datetime('now', '+15 seconds'),
+             updated_at = datetime('now')
          WHERE id = 1 AND (lease_until < datetime('now') OR holder_id = ? OR holder_id = '')
          RETURNING TRUE",
     )
+    .bind(holder_id)
     .bind(holder_id)
     .bind(holder_id)
     .fetch_optional(pool)
@@ -162,5 +187,47 @@ mod tests {
         // → is_leader must be false, preventing a second active leader.
         let lease_until = 1000;
         assert!(!holds_lease(true, lease_until + 100, lease_until));
+    }
+
+    async fn pool_with_lease_table() -> sqlx::SqlitePool {
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        sqlx::query(
+            "CREATE TABLE controller_leadership (
+                 id INTEGER PRIMARY KEY CHECK (id = 1), holder_id TEXT NOT NULL DEFAULT '',
+                 lease_until TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, epoch INTEGER NOT NULL DEFAULT 0)",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query("INSERT INTO controller_leadership (id, holder_id) VALUES (1, '')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        pool
+    }
+
+    #[tokio::test]
+    async fn epoch_moves_only_when_leadership_changes_hands() {
+        let pool = pool_with_lease_table().await;
+        assert!(super::renew_lease(&pool, "a").await.unwrap());
+        assert_eq!(super::read_epoch(&pool).await.unwrap(), Some(1));
+        // The same holder renewing keeps the epoch.
+        assert!(super::renew_lease(&pool, "a").await.unwrap());
+        assert_eq!(super::read_epoch(&pool).await.unwrap(), Some(1));
+        // A challenger cannot take a live lease, so nothing changes.
+        assert!(!super::renew_lease(&pool, "b").await.unwrap());
+        assert_eq!(super::read_epoch(&pool).await.unwrap(), Some(1));
+        // Once the lease lapses the challenger takes over and the epoch goes up.
+        sqlx::query("UPDATE controller_leadership SET lease_until = datetime('now', '-1 minute')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert!(super::renew_lease(&pool, "b").await.unwrap());
+        assert_eq!(super::read_epoch(&pool).await.unwrap(), Some(2));
     }
 }

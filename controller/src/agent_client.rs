@@ -24,6 +24,13 @@ impl tonic::service::Interceptor for AgentAuth {
                 req.metadata_mut().insert("authorization", val);
             }
         }
+        // Fencing: agents refuse a controller whose leadership epoch is older than one they have already seen.
+        let epoch = crate::leader::current_epoch();
+        if epoch > 0 {
+            if let Ok(val) = epoch.to_string().parse() {
+                req.metadata_mut().insert("x-machina-epoch", val);
+            }
+        }
         Ok(req)
     }
 }

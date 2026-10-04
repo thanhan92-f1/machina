@@ -178,7 +178,10 @@ async fn run_serve(cli: &Cli) -> anyhow::Result<()> {
                      set a shared token on the controller and this agent to require auth"
                 );
             }
+            // Refuse a controller that lost leadership: it sends an older epoch than one already seen here.
+            let epoch_required = std::env::var("MACHINA_AGENT_REQUIRE_EPOCH").as_deref() == Ok("1");
             let auth = move |req: tonic::Request<()>| -> Result<tonic::Request<()>, tonic::Status> {
+                machina_agent::epoch::check(&req, epoch_required)?;
                 match &expected_token {
                     None => Ok(req),
                     Some(exp) => {

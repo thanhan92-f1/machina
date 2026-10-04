@@ -3,6 +3,7 @@
 
 pub mod bpf_ops;
 pub mod console_ws;
+pub mod epoch;
 pub mod grpc;
 pub mod jwt;
 pub mod libvirt_invoke;
