@@ -312,7 +312,7 @@ export function MacListRow({
   return <div className={cls}>{inner}</div>
 }
 
-/** apple.com-style single column: section chips on top, content full-bleed below (no split pane). */
+/** Settings shell: sticky grouped section nav on the left (desktop), scrollable chips on top (small screens). */
 export function MacSettingsPane({
   sections,
   active,
@@ -321,7 +321,7 @@ export function MacSettingsPane({
   hideTitle = false,
   children,
 }: {
-  sections: Array<{ id: string; label: string; icon?: React.ReactNode }>
+  sections: Array<{ id: string; label: string; icon?: React.ReactNode; group?: string }>
   active: string
   onSelect: (id: string) => void
   title: string
@@ -329,33 +329,57 @@ export function MacSettingsPane({
   hideTitle?: boolean
   children: React.ReactNode
 }) {
+  const groups: Array<{ name: string; items: typeof sections }> = []
+  for (const s of sections) {
+    const name = s.group ?? ''
+    const g = groups.find((x) => x.name === name)
+    if (g) g.items.push(s)
+    else groups.push({ name, items: [s] })
+  }
+  const btn = (s: (typeof sections)[number], chip: boolean) => (
+    <button
+      key={s.id}
+      type="button"
+      onClick={() => onSelect(s.id)}
+      aria-current={active === s.id ? 'page' : undefined}
+      className={
+        chip
+          ? `inline-flex shrink-0 items-center gap-2 px-3.5 py-2 rounded-full text-sm transition ${
+              active === s.id
+                ? navActiveChipClasses()
+                : 'text-[var(--text-muted)] bg-[var(--apple-fill-tertiary)]/50 hover:bg-[var(--apple-fill-tertiary)] hover:text-[var(--text-primary)]'
+            }`
+          : `flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition ${
+              active === s.id
+                ? 'bg-[color-mix(in_srgb,var(--apple-link,#0071e3)_12%,transparent)] font-medium text-[var(--apple-link,#0071e3)]'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--apple-fill-tertiary)] hover:text-[var(--text-primary)]'
+            }`
+      }
+    >
+      <span className="shrink-0 opacity-90">{s.icon}</span>
+      {s.label}
+    </button>
+  )
   return (
-    <div className="w-full max-w-none space-y-6">
-      <div className="space-y-3">
-        <h2 className={hideTitle ? 'sr-only' : 'apple-display text-2xl sm:text-3xl text-[var(--text-primary)] tracking-tight'}>{title}</h2>
-        <nav
-          className="flex flex-wrap gap-2"
-          aria-label={`${title} sections`}
-        >
-          {sections.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onSelect(s.id)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm transition ${
-                active === s.id
-                  ? navActiveChipClasses()
-                  : 'text-[var(--text-muted)] bg-[var(--apple-fill-tertiary)]/50 hover:bg-[var(--apple-fill-tertiary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              {s.icon}
-              {s.label}
-            </button>
+    <div className="w-full max-w-none">
+      <h2 className={hideTitle ? 'sr-only' : 'apple-display text-2xl sm:text-3xl text-[var(--text-primary)] tracking-tight mb-3'}>{title}</h2>
+      <div className="grid gap-6 lg:grid-cols-[14.5rem_minmax(0,1fr)] lg:items-start">
+        {/* Phone/tablet: one scrollable row of chips */}
+        <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden [scrollbar-width:none]" aria-label={`${title} sections`}>
+          {sections.map((s) => btn(s, true))}
+        </nav>
+        {/* Desktop: sticky grouped rail */}
+        <nav className="hidden lg:block lg:sticky lg:top-16 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto space-y-5 pr-1" aria-label={`${title} sections`}>
+          {groups.map((g) => (
+            <div key={g.name || 'all'}>
+              {g.name ? <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">{g.name}</p> : null}
+              <div className="space-y-0.5">{g.items.map((s) => btn(s, false))}</div>
+            </div>
           ))}
         </nav>
-      </div>
-      <div className="mac-settings-detail w-full min-w-0 platform-readable text-[var(--text-primary)]">
-        {children}
+        <div className="mac-settings-detail w-full min-w-0 platform-readable text-[var(--text-primary)]">
+          {children}
+        </div>
       </div>
     </div>
   )

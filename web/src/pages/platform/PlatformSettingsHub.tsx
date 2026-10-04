@@ -130,6 +130,9 @@ const SECTIONS: Array<{ id: SettingsSection; label: string; icon: React.ReactNod
   // Support / About are top menubar Help items — not Settings side-rail entries.
 ]
 
+const SECTION_GROUPS: Record<string, string> = {"general": "Workspace", "zyra": "Workspace", "stage-manager": "Workspace", "console": "Workspace", "identity": "Access", "users": "Access", "keychain": "Access", "api-keys": "Access", "security": "Security", "policy": "Security", "network": "Security", "ai-providers": "Integrations", "webhooks": "Integrations", "integrations": "Integrations", "reports": "System", "resources": "System", "updates": "System"}
+const SECTION_GROUP_ORDER = ['Workspace', 'Access', 'Security', 'Integrations', 'System']
+
 export default function PlatformSettingsHub() {
   const toast = useToastContext()
   const navigate = useNavigate()
@@ -261,7 +264,7 @@ export default function PlatformSettingsHub() {
     <MacSettingsPane
       title="Settings"
       hideTitle
-      sections={SECTIONS.map((s) => ({ id: s.id, label: s.label, icon: s.icon }))}
+      sections={SECTION_GROUP_ORDER.flatMap((g) => SECTIONS.filter((s) => SECTION_GROUPS[s.id] === g).map((s) => ({ id: s.id, label: s.label, icon: s.icon, group: g })))}
       active={section}
       onSelect={selectSection}
     >
