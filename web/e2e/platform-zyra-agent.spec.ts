@@ -19,6 +19,8 @@ const RUN = {
 test.describe('Zyra agent panel', () => {
   test.beforeEach(async ({ page }) => {
     await mockPlatformApi(page)
+    // Older controller without the stream route: the panel must fall back to the single request.
+    await page.route('**/ai/agent/stream', (route) => route.fulfill({ status: 404, body: 'not found' }))
   })
 
   test('asking shows the answer, the queued-proposals note and the step trace', async ({ page }) => {
@@ -63,5 +65,22 @@ test.describe('Zyra agent panel', () => {
     await expect(ladder.locator('[data-trust="create_backup"]')).toHaveAttribute('data-level', 'auto')
     expect(puts[0]).toContain('create_backup')
     expect(puts[0]).toContain('"level":"auto"')
+  })
+
+  test('steps appear live while the agent works, then the answer', async ({ page }) => {
+    const sse = (o: unknown) => `data: ${JSON.stringify(o)}\n\n`
+    await page.route('**/ai/agent/stream', (route) =>
+      route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+        body:
+          sse({ type: 'step', kind: 'tool_call', tool: 'find_idle_vms', detail: '{}' }) +
+          sse({ type: 'step', kind: 'tool_result', tool: 'find_idle_vms', detail: '{}' }) +
+          sse({ type: 'done', run: { ...RUN, answer: 'Nothing is idle yet.', steps: [], proposed_action_ids: [] } }),
+      }))
+    await page.goto('/platform/zyra/approvals')
+    const panel = page.getByTestId('zyra-agent-panel')
+    await panel.getByText('Is anything unhealthy right now?').click()
+    await expect(panel.getByText('Nothing is idle yet.')).toBeVisible()
   })
 })

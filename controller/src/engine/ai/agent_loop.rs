@@ -660,6 +660,22 @@ pub async fn run(
     user_id: Option<String>,
     prompt: &str,
 ) -> anyhow::Result<AgentRun> {
+    run_streaming(state, actor, user_id, prompt, &|_| {}).await
+}
+
+fn push_step(steps: &mut Vec<AgentStep>, on_step: &(dyn Fn(&AgentStep) + Sync), step: AgentStep) {
+    on_step(&step);
+    steps.push(step);
+}
+
+/// Same as [`run`], but calls `on_step` for every step the moment it happens (for live UIs).
+pub async fn run_streaming(
+    state: &AppState,
+    actor: &str,
+    user_id: Option<String>,
+    prompt: &str,
+    on_step: &(dyn Fn(&AgentStep) + Sync),
+) -> anyhow::Result<AgentRun> {
     if !super::settings::llm_enabled(&state.pool).await? {
         anyhow::bail!("Zyra AI is turned off — enable an AI provider in Settings → AI Providers");
     }
@@ -705,17 +721,25 @@ pub async fn run(
             Turn::Calls { text, calls } => {
                 let mut results = Vec::new();
                 for call in &calls {
-                    steps.push(AgentStep {
-                        kind: "tool_call",
-                        tool: Some(call.name.clone()),
-                        detail: truncate(&call.args.to_string(), 300),
-                    });
+                    push_step(
+                        &mut steps,
+                        on_step,
+                        AgentStep {
+                            kind: "tool_call",
+                            tool: Some(call.name.clone()),
+                            detail: truncate(&call.args.to_string(), 300),
+                        },
+                    );
                     let (out, is_err) = exec_tool(state, actor, call, &mut proposed).await;
-                    steps.push(AgentStep {
-                        kind: "tool_result",
-                        tool: Some(call.name.clone()),
-                        detail: truncate(&out, 300),
-                    });
+                    push_step(
+                        &mut steps,
+                        on_step,
+                        AgentStep {
+                            kind: "tool_result",
+                            tool: Some(call.name.clone()),
+                            detail: truncate(&out, 300),
+                        },
+                    );
                     results.push((call.clone(), out, is_err));
                 }
                 msgs.push(Msg::Assistant { text, calls });
@@ -723,11 +747,15 @@ pub async fn run(
             }
         }
     }
-    steps.push(AgentStep {
-        kind: "note",
-        tool: None,
-        detail: "Stopped after the step limit.".into(),
-    });
+    push_step(
+        &mut steps,
+        on_step,
+        AgentStep {
+            kind: "note",
+            tool: None,
+            detail: "Stopped after the step limit.".into(),
+        },
+    );
     Ok(AgentRun {
         answer: "I reached my step limit before finishing. Here is what I did so far — ask again to continue."
             .into(),

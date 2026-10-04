@@ -74,6 +74,20 @@ GPU environments are not supported by this action.
 computed on the server, not by the model. It is a clean guest shutdown and **Undo** starts the machine again.
 Idle detection needs at least a day of samples (below).
 
+### Live steps
+`POST /api/v1/ai/agent/stream` (same body) streams server-sent events as the agent works:
+`{"type":"step","kind":"tool_call|tool_result","tool":…}` per step, then `{"type":"done","run":{…}}` or
+`{"type":"error","message":…}`. The panel shows steps live and falls back to `/agent/run` on older controllers.
+
+## Migration copilot (Migration → Plan waves)
+Scores every machine's disk for a move to KVM with GuestKit (`migrate-plan`), groups them into waves — 1: score ≥ 85 and
+nothing blocking; 2: 70–84; 3: below 70, a licensing warning, or a boot score under 60 — quickest cutovers first, with the
+changes and blockers listed per machine and a link to Boot Doctor for boot problems. Planning only; nothing is changed.
+
+## Drift check (VM detail, powered-off machines)
+"Compare with a golden image" runs `guestkit drift` between this machine's disk and another powered-off machine's,
+read-only. `POST /api/v1/vms/{name}/guest-drift {baseline}` on the daemon.
+
 ## Trust ladder (Zyra approvals → "What Zyra may do on its own")
 
 Each class starts at **Ask me**. After 5 approvals in a row (a rejection or failure resets the streak) Zyra offers

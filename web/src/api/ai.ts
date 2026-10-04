@@ -919,6 +919,50 @@ export interface ZyraAgentRun {
 export const runZyraAgent = (prompt: string) =>
   platformFetch<ZyraAgentRun>('/api/v1/ai/agent/run', { method: 'POST', body: JSON.stringify({ prompt }) })
 
+/**
+ * Same as {@link runZyraAgent} but reports each step the moment it happens. Resolves with the final run.
+ * Throws `AgentStreamUnsupported` when the controller has no stream route (older build) so callers can fall back.
+ */
+export class AgentStreamUnsupported extends Error {}
+export async function streamZyraAgent(prompt: string, onStep: (s: ZyraAgentStep) => void): Promise<ZyraAgentRun> {
+  const res = await fetch(`${getControllerBase()}/api/v1/ai/agent/stream`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: platformHeaders(),
+    body: JSON.stringify({ prompt }),
+  })
+  if (res.status === 404 || res.status === 405) throw new AgentStreamUnsupported('no stream route')
+  if (!res.ok) {
+    let msg = `Zyra agent failed (HTTP ${res.status})`
+    try { msg = ((await res.json()) as { error?: string }).error ?? msg } catch { /* keep default */ }
+    throw new Error(msg)
+  }
+  if (!res.body) throw new AgentStreamUnsupported('empty body')
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let final: ZyraAgentRun | null = null
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const frames = buffer.split('\n\n')
+    buffer = frames.pop() ?? ''
+    for (const frame of frames) {
+      for (const line of frame.split('\n')) {
+        if (!line.startsWith('data: ')) continue
+        let ev: { type?: string; message?: string; run?: ZyraAgentRun } & Partial<ZyraAgentStep>
+        try { ev = JSON.parse(line.slice(6)) } catch { continue }
+        if (ev.type === 'step') onStep({ kind: ev.kind as ZyraAgentStep['kind'], tool: ev.tool, detail: ev.detail ?? '' })
+        else if (ev.type === 'done' && ev.run) final = ev.run
+        else if (ev.type === 'error') throw new Error(ev.message || 'Zyra agent failed')
+      }
+    }
+  }
+  if (!final) throw new Error('The agent stream ended without an answer')
+  return final
+}
+
 /** An executed or failed AI action with its verification and undo state. */
 export interface ZyraActionHistoryRow {
   id: string

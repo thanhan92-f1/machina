@@ -10,6 +10,7 @@ import DetailTabs from '../../components/platform/DetailTabs'
 import PlatformPageChrome, { PlatformBackLink } from '../../components/platform/PlatformPageChrome'
 import { usePlatformTabState } from '../../hooks/usePlatformTabState'
 import { getHypersdkStatus, listHypersdkProviders, listHypersdkProviderVms, submitHypersdkMigration, hypersdkProxyGet, hypersdkProxyPost } from '../../api/hypersdk'
+import MigrationWavePlanner from '../../components/platform/MigrationWavePlanner'
 import { getGuestkitStatus, guestkitDoctor, guestkitMigratePlan, submitGuestkitInspectJob, getGuestkitJob, listGuestkitJobsDaemon, getGuestkitCapabilitiesDaemon, type GuestkitJobRow } from '../../api/guestkit'
 import JsonInspector from '../../components/platform/JsonInspector'
 import { getMigrationAdvisor, type MigrationAdvisorReport } from '../../api/ai'
@@ -32,13 +33,14 @@ const SOURCES = [
 
 type ScanVm = { name: string; status: string; os: string; note: string; provider?: string; advisor?: MigrationAdvisorReport }
 
-type MigrationTab = 'radar' | 'jobs'
+type MigrationTab = 'radar' | 'waves' | 'jobs'
 
 // Reused by several "enable this backend" call-to-action links on the page.
 const INTEGRATIONS_ROUTE = '/platform/settings?section=integrations'
 
 const MIGRATION_TABS = [
   { id: 'radar' as const, label: 'Scan & migrate' },
+  { id: 'waves' as const, label: 'Plan waves' },
   { id: 'jobs' as const, label: 'GuestKit jobs' },
 ]
 
@@ -226,6 +228,8 @@ export default function PlatformMigration() {
           )}
         </MacGlassPanel>
       )}
+
+      {tab === 'waves' && (guestkit ? <MigrationWavePlanner /> : <p className="text-sm text-[var(--text-secondary)]">Wave planning needs GuestKit — enable it in Integrations.</p>)}
 
       {tab === 'radar' && (
       <>

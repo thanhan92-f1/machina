@@ -1424,6 +1424,43 @@ pub async fn run_zyra_agent(
     .map(Json)
 }
 
+/// Like `run_zyra_agent`, but streams each step as it happens (server-sent events): `{"type":"step",...}` per
+/// tool call/result, then `{"type":"done","run":{...}}` or `{"type":"error","message":"..."}`.
+pub async fn run_zyra_agent_stream(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Json(body): Json<AgentRunBody>,
+) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, ApiError> {
+    require_operator(&actor)?;
+    if body.prompt.trim().is_empty() {
+        return Err(ApiError::bad_request("prompt is required"));
+    }
+    let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, Infallible>>(64);
+    tokio::spawn(async move {
+        let step_tx = tx.clone();
+        let on_step = move |s: &ai::agent_loop::AgentStep| {
+            let mut v = serde_json::to_value(s).unwrap_or_default();
+            v["type"] = "step".into();
+            let _ = step_tx.try_send(Ok(Event::default().data(v.to_string())));
+        };
+        let res = ai::agent_loop::run_streaming(
+            &state,
+            &actor.username,
+            Some(actor.username.clone()),
+            &body.prompt,
+            &on_step,
+        )
+        .await;
+        let payload = match res {
+            Ok(run) => serde_json::json!({"type": "done", "run": run}),
+            Err(e) => serde_json::json!({"type": "error", "message": e.to_string()}),
+        };
+        let _ = tx.send(Ok(Event::default().data(payload.to_string()))).await;
+    });
+    Ok(Sse::new(ReceiverStream::new(rx))
+        .keep_alive(KeepAlive::new().interval(Duration::from_secs(15))))
+}
+
 pub async fn zyra_action_history(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,

@@ -589,6 +589,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/ai/trust", get(ai::zyra_trust_list))
         .route("/api/v1/ai/trust/{action_type}", put(ai::zyra_trust_set))
         .route("/api/v1/ai/agent/run", post(ai::run_zyra_agent))
+        .route("/api/v1/ai/agent/stream", post(ai::run_zyra_agent_stream))
         .route(
             "/api/v1/ai/actions/{id}/verify",
             post(ai::verify_zyra_action),

@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { Loader2, Sparkles, Wrench } from 'lucide-react'
-import { runZyraAgent, type ZyraAgentRun } from '../../api/ai'
+import { AgentStreamUnsupported, runZyraAgent, streamZyraAgent, type ZyraAgentRun, type ZyraAgentStep } from '../../api/ai'
 import { formatUserError } from '../../utils/apiError'
 
 const SUGGESTIONS = [
@@ -30,6 +30,7 @@ export default function ZyraAgentPanel({ onProposed }: { onProposed?: () => void
   const [busy, setBusy] = useState(false)
   const [run, setRun] = useState<ZyraAgentRun | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [live, setLive] = useState<ZyraAgentStep[]>([])
 
   const go = async (text: string) => {
     const q = text.trim()
@@ -37,8 +38,15 @@ export default function ZyraAgentPanel({ onProposed }: { onProposed?: () => void
     setBusy(true)
     setError(null)
     setRun(null)
+    setLive([])
     try {
-      const r = await runZyraAgent(q)
+      let r: ZyraAgentRun
+      try {
+        r = await streamZyraAgent(q, (st) => setLive((prev) => [...prev, st]))
+      } catch (e) {
+        if (!(e instanceof AgentStreamUnsupported)) throw e
+        r = await runZyraAgent(q) // older controller: no live steps, same answer
+      }
       setRun(r)
       if (r.proposed_action_ids.length > 0) onProposed?.()
     } catch (e: unknown) {
@@ -70,7 +78,14 @@ export default function ZyraAgentPanel({ onProposed }: { onProposed?: () => void
         ))}
       </div>
 
-      {busy ? <p className="mt-3 flex items-center gap-2 text-sm text-[var(--text-secondary)]"><Loader2 className="h-4 w-4 animate-spin" /> Looking at your fleet…</p> : null}
+      {busy ? (
+        <div className="mt-3 space-y-1" data-testid="zyra-agent-live" aria-live="polite">
+          <p className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><Loader2 className="h-4 w-4 animate-spin" /> {live.length === 0 ? 'Looking at your fleet…' : 'Working on it…'}</p>
+          {live.filter((s) => s.kind === 'tool_call').map((s, i) => (
+            <p key={i} className="flex items-start gap-1.5 pl-6 text-xs text-[var(--text-muted)]"><Wrench className="mt-0.5 h-3 w-3 shrink-0" aria-hidden /> {TOOL_LABELS[s.tool ?? ''] ?? s.tool}</p>
+          ))}
+        </div>
+      ) : null}
       {error ? <p className="mt-3 text-xs text-red-500" role="alert">{error}</p> : null}
 
       {run ? (

@@ -59,3 +59,24 @@ test.describe('Boot Doctor', () => {
     expect(bodies[0]).toContain('"baseline":"db-01"')
   })
 })
+
+test.describe('Migration copilot', () => {
+  test('scores machines and groups them into waves with what blocks each', async ({ page }) => {
+    await mockPlatformApi(page)
+    const plan = (score: number, boot: number, extra: object = {}) => ({
+      image_path: '/d', target: 'kvm', migration_score: score, boot_score: boot, estimated_downtime_minutes: 5,
+      driver_injections: [], required_changes: [], licensing_warnings: [], summary: '', ...extra,
+    })
+    let n = 0
+    await page.route('**/guestkit/vms/*/migrate-plan*', (r) => {
+      n += 1
+      return r.fulfill({ json: n === 1 ? plan(92, 90) : plan(90, 40, { licensing_warnings: ['OEM Windows key'] }) })
+    })
+    await page.goto('/platform/migration?tab=waves')
+    const planner = page.getByTestId('migration-wave-planner')
+    await expect(planner).toBeVisible({ timeout: 15_000 })
+    await planner.getByRole('button', { name: 'Score my machines' }).click()
+    await expect(planner.locator('[data-wave="1"] [data-machine]').first()).toBeVisible({ timeout: 15_000 })
+    await expect(planner.locator('[data-wave="3"]').getByText(/Licensing: OEM Windows key/).first()).toBeVisible()
+  })
+})
