@@ -119,13 +119,86 @@ EOF
 }
 
 np_evidence_digest() {
-    jq -cj '.digest = ""' "$1" | if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+    jq -cj '.digest = "" | del(.signature)' "$1" | if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+
+# Check the signature over the digest, and that the signer chains to
+# the CA in the report (or to CA_FILE, the fleet CA the auditor trusts).
+np_evidence_verify_signature() {
+    local file=$1 digest=$2 trust=${3:-}
+    if [[ "$(jq -r '.signature.value // empty' "$file")" == "" ]]; then
+        echo "unsigned (host reports and older fleet reports carry only the digest)"
+        return
+    fi
+    command -v openssl >/dev/null || np_die "openssl is needed to check the signature"
+    local d
+    d=$(mktemp -d) || np_die "mktemp failed"
+    jq -r '.signature.signer_pem' "$file" >"$d/signer.pem"
+    jq -r '.signature.ca_pem' "$file" >"$d/ca.pem"
+    jq -r '.signature.value' "$file" | openssl base64 -d -A >"$d/sig.der"
+    openssl x509 -in "$d/signer.pem" -pubkey -noout >"$d/pub.pem" 2>/dev/null
+    local ca="$d/ca.pem"
+    [[ -n "$trust" ]] && ca=$trust
+    if ! printf '%s' "$digest" | openssl dgst -sha256 -verify "$d/pub.pem" -signature "$d/sig.der" >/dev/null 2>&1; then
+        rm -rf "$d"
+        echo "BAD SIGNATURE: the digest was not signed by the included certificate" >&2
+        exit 1
+    fi
+    if ! openssl verify -CAfile "$ca" "$d/signer.pem" >/dev/null 2>&1; then
+        rm -rf "$d"
+        echo "UNTRUSTED: the signing certificate does not chain to ${trust:-the included CA}" >&2
+        exit 1
+    fi
+    local fp
+    fp=$(openssl x509 -in "$ca" -noout -fingerprint -sha256 | cut -d= -f2)
+    rm -rf "$d"
+    echo "ok: signed ($(jq -r .signature.alg "$file")) by a certificate of CA $fp"
+    [[ -n "$trust" ]] || echo "  compare that fingerprint with your fleet CA, or pass it: netpol evidence verify FILE CA.pem" >&2
+}
+
+np_evidence_archive() {
+    np_need_fleet
+    local name="${1:-}" out=json file=""
+    if [[ -z "$name" ]]; then
+        local body
+        body=$(np_api GET /vm-network-policies/evidence/archive)
+        if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+        if [[ "$(jq '.items | length' <<<"$body")" == 0 ]]; then
+            jq -r '"(no stored reports in \(.dir))"' <<<"$body" >&2
+            return
+        fi
+        { printf 'NAME\tBYTES\tMODIFIED\n'; jq -r '.items[] | [.name, (.bytes | tostring), .modified] | @tsv' <<<"$body"; } | column -t -s $'\t'
+        return
+    fi
+    shift
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -o|--output) out=$2; shift 2 ;;
+            --out|--file) file=$2; shift 2 ;;
+            *) np_die "unknown archive option: $1" ;;
+        esac
+    done
+    local path
+    path="/vm-network-policies/evidence/archive/$(np_uri "$name")"
+    [[ "$out" == md || "$out" == markdown ]] && path="$path?format=md"
+    if [[ -n "$file" ]]; then
+        np_api GET "$path" >"$file" || np_die "cannot write $file"
+        echo "wrote $file"
+    else
+        np_api GET "$path"
+    fi
 }
 
 np_netpol_evidence() {
     local out="summary" file=""
+    local probes="" project=""
+    if [[ "${1:-}" == archive ]]; then
+        shift
+        np_evidence_archive "$@"
+        return
+    fi
     if [[ "${1:-}" == verify ]]; then
-        file=${2:?usage: netpol evidence verify FILE}
+        file=${2:?usage: netpol evidence verify FILE [CA.pem]}
         [[ -r "$file" ]] || np_die "cannot read $file"
         local want got
         want=$(jq -r '.digest // empty' "$file") || np_die "$file is not JSON evidence"
@@ -137,22 +210,29 @@ np_netpol_evidence() {
             echo "MISMATCH: recorded $want, content hashes to $got" >&2
             exit 1
         fi
+        np_evidence_verify_signature "$file" "$want" "${3:-}"
         return
     fi
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -o|--output) out=$2; shift 2 ;;
             --out|--file) file=$2; shift 2 ;;
+            --probes) probes=$2; shift 2 ;;
+            --project) project=$2; shift 2 ;;
             -h|--help|help)
-                echo 'Usage: netpol evidence [-o summary|json|md] [--out FILE] | netpol evidence verify FILE'
+                echo 'Usage: netpol evidence [-o summary|json|md] [--out FILE] [--probes tcp/22,udp/53,...] [--project P]'
+                echo '       netpol evidence verify FILE [CA.pem]     (digest, signature and CA chain)'
+                echo '       netpol evidence archive [NAME [-o json|md] [--out FILE]]   (scheduled reports, fleet)'
                 return ;;
             *) np_die "unknown evidence option: $1" ;;
         esac
     done
-    local body
+    local body q=""
+    [[ -n "$probes" ]] && q="probes=$(np_uri "$probes")"
+    [[ -n "$project" ]] && q="${q:+$q&}project=$(np_uri "$project")"
     case "$out" in
-        md|markdown) body=$(np_api GET '/vm-network-policies/evidence?format=md') ;;
-        json|summary) body=$(np_api GET /vm-network-policies/evidence) ;;
+        md|markdown) body=$(np_api GET "/vm-network-policies/evidence?format=md${q:+&$q}") ;;
+        json|summary) body=$(np_api GET "/vm-network-policies/evidence${q:+?$q}") ;;
         *) np_die "-o must be summary, json or md" ;;
     esac
     if [[ -n "$file" ]]; then
@@ -173,7 +253,8 @@ np_netpol_evidence() {
               "  matrix (\(.matrix_groups)):",
               (.matrix[] | select(.from != .to or (.allowed | length) > 0) | "    \(.from) → \(.to): \(if (.allowed | length) == 0 then "deny" else (.allowed | join(", ")) end)"),
               "",
-              "  sha256 \(.digest)"' <<<"$body"
+              (.warnings[]? | "  warning: \(.)"),
+              "  sha256 \(.digest)\(if .signature then "  (signed)" else "" end)"' <<<"$body"
             [[ -n "$file" ]] && echo "wrote $file"
             ;;
     esac
@@ -779,7 +860,14 @@ Usage: netpol projects
        netpol egress P allow TO [--port N[/udp]]...   (and limit egress to the list)
        netpol egress P remove TO
        netpol egress P restrict | unrestrict
-       netpol egress P ip HOST IP | ip HOST -
+       netpol egress P ip HOST IP[,IPv6] | ip HOST -  (one IPv4, one IPv6, or both)
+       netpol egress P require-ip | allow-host-ip     (block or allow egress on hosts without one)
+
+Add --preview to any change to replay it against the flow history without
+applying it, or --propose to ask a second admin (Approvals; also forced
+for every change by MACHINA_NETPOL_PROJECT_APPROVAL=1 on the controller).
+A project's own admins (Fleet Cloud project role) may change its isolation
+and egress allowlist; egress IPs and the default need a fleet admin.
 
 Fleet only (--fleet). An isolated project's VMs accept connections only
 from VMs of the same project (and the host, unless --no-host). Projects
@@ -792,7 +880,10 @@ Drops need the enforcement lease, like every policy.
 
 An egress IP rewrites the source of project traffic leaving HOST (name or
 id) to IP, which must already be configured on that host. Private,
-link-local, CGNAT and multicast destinations are never rewritten.
+link-local, CGNAT and multicast destinations are never rewritten. A VM
+of the project on a host without one of its egress IPs leaves with the
+host's address and raises an event; `require-ip` blocks its internet
+egress there instead.
 EOF
 }
 
@@ -808,9 +899,46 @@ np_project_settings() {
       end'
 }
 
+# --preview / --dry-run (replay only) and --propose (ask a second admin),
+# anywhere in a project or egress command; the rest lands in NP_ARGS.
+np_project_mode() {
+    NP_PMODE=apply
+    NP_ARGS=()
+    local a
+    for a in "$@"; do
+        case "$a" in
+            --preview|--dry-run) NP_PMODE=preview ;;
+            --propose) NP_PMODE=propose ;;
+            *) NP_ARGS+=("$a") ;;
+        esac
+    done
+}
+
+np_project_preview_print() {
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$1"; return; fi
+    jq -r '"preview \(if .project == "*" then "default" else "project \(.project)" end): \(.describe)",
+      "  \(.summary) (nothing applied)",
+      (.replay.would_break[:10][] | "  would break: \(.src) → \(.dst) \(.proto | ascii_downcase)/\(.port) (\(.flows) flows)"),
+      (.replay.would_allow[:10][] | "  would allow: \(.src) → \(.dst) \(.proto | ascii_downcase)/\(.port) (\(.flows) flows)")' <<<"$1"
+}
+
+np_project_pending_print() {
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$1"; return; fi
+    jq -r '"requested: \(.pending.label)\(if .preview then " — " + .preview else "" end)",
+      "  waiting for another admin: netpol draft approve \(.pending.id)  (or Approvals in the UI)"' <<<"$1"
+}
+
 np_project_put() {
-    local p=$1 body=$2 out
-    out=$(np_api PUT "/vm-network-policies/projects/$(np_uri "$p")" -H 'Content-Type: application/json' -d "$body")
+    local p=$1 body=$2 out path
+    path="/vm-network-policies/projects/$(np_uri "$p")"
+    case "${NP_PMODE:-apply}" in
+        preview)
+            np_project_preview_print "$(np_api POST "$path/preview" -H 'Content-Type: application/json' -d "$body")"
+            return ;;
+        propose) path="$path?propose=1" ;;
+    esac
+    out=$(np_api PUT "$path" -H 'Content-Type: application/json' -d "$body")
+    if [[ "$(jq -r '.pending.id // empty' <<<"$out")" != "" ]]; then np_project_pending_print "$out"; return; fi
     if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$out"; return; fi
     jq -r '"\(if .project.project == "*" then "default" else "project \(.project.project)" end): \(.project.isolation)\(if .project.isolation == "isolated" and (.project.allow_host | not) then " (host blocked)" else "" end)\(if .project.egress_restricted then ", egress limited to \(.project.egress_allow | length) destination(s)" else "" end)\(if (.project.egress_ips | length) > 0 then ", egress IPs " + ([.project.egress_ips | to_entries[] | "\(.value)@\(.key)"] | join(", ")) else "" end)",
       (.sync[]? | select(.ok | not) | "  warning: \(.hostname): \(.error)")' <<<"$out"
@@ -835,9 +963,12 @@ np_projects_list() {
           ] | @tsv' <<<"$body"
     } | column -t -s $'\t'
     echo "(* = follows the default)" >&2
+    jq -r '.warnings[]? | "warning: \(.)"' <<<"$body" >&2
 }
 
 np_netpol_project() {
+    np_project_mode "$@"
+    set -- ${NP_ARGS[@]+"${NP_ARGS[@]}"}
     local sub="${1:-}" p host=true
     shift || true
     case "$sub" in
@@ -854,7 +985,16 @@ np_netpol_project() {
             ;;
         reset)
             p="${1:?usage: netpol project reset PROJECT}"
-            np_api DELETE "/vm-network-policies/projects/$(np_uri "$p")" | jq -r 'if .removed then "project \(.project): settings removed, follows the default" else "project \(.project) had no settings" end'
+            local path out
+            path="/vm-network-policies/projects/$(np_uri "$p")"
+            if [[ "$NP_PMODE" == preview ]]; then
+                np_project_preview_print "$(np_api POST "$path/preview" -H 'Content-Type: application/json' -d '{}')"
+                return
+            fi
+            [[ "$NP_PMODE" == propose ]] && path="$path?propose=1"
+            out=$(np_api DELETE "$path")
+            if [[ "$(jq -r '.pending.id // empty' <<<"$out")" != "" ]]; then np_project_pending_print "$out"; return; fi
+            jq -r 'if .removed then "project \(.project): settings removed, follows the default" else "project \(.project) had no settings" end' <<<"$out"
             ;;
         default)
             local iso="${1:?usage: netpol project default isolated|open [--no-host]}"; shift
@@ -878,6 +1018,8 @@ np_netpol_project() {
 
 np_netpol_egress() {
     np_need_fleet
+    np_project_mode "$@"
+    set -- ${NP_ARGS[@]+"${NP_ARGS[@]}"}
     local p="${1:-}"
     case "$p" in
         help|-h|--help) np_project_usage; return ;;
@@ -904,7 +1046,8 @@ np_netpol_egress() {
             if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$cur"; return; fi
             jq -r '"project \(.project): egress \(if .egress_restricted then "limited to the allowlist" else "unrestricted" end)",
               (.egress_allow[] | "  allow \(.to)\(if (.ports // []) | length > 0 then " on " + (.ports | join(", ")) else "" end)"),
-              (.egress_ips | to_entries[] | "  egress IP \(.value) on \(.key)")' <<<"$cur"
+              (.egress_ips | to_entries[] | "  egress IP \(.value) on \(.key)"),
+              (if .egress_ip_required then "  hosts without an egress IP: internet egress blocked" else empty end)' <<<"$cur"
             ;;
         allow)
             local to="${1:?usage: netpol egress P allow TO [--port N]...}" ports='[]'
@@ -931,6 +1074,8 @@ np_netpol_egress() {
                 np_project_put "$p" "$(jq -c --arg h "$h" --arg ip "$ip" '.egress_ips[$h] = $ip' <<<"$cur")"
             fi
             ;;
+        require-ip) np_project_put "$p" "$(jq -c '.egress_ip_required = true' <<<"$cur")" ;;
+        allow-host-ip) np_project_put "$p" "$(jq -c '.egress_ip_required = false' <<<"$cur")" ;;
         *) np_die "unknown egress command: $sub (try: netpol egress help)" ;;
     esac
 }

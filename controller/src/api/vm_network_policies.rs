@@ -265,6 +265,9 @@ async fn host_rows(state: &AppState) -> Result<Vec<Value>, ApiError> {
     let mut hosts = Vec::new();
     for (h, res) in bpf::fan_out(&state.pool, &Request::VmEdgeStatus).await {
         let edge: Option<VmEdgeStatus> = res.ok().and_then(|v| serde_json::from_value(v).ok());
+        if let Some(e) = &edge {
+            vm_netpol::note_node_addrs(&h.id, &e.node_addrs);
+        }
         let mut row = synced
             .get(&h.id)
             .cloned()
@@ -275,6 +278,10 @@ async fn host_rows(state: &AppState) -> Result<Vec<Value>, ApiError> {
         row["taps"] = json!(edge.as_ref().map_or(0, |e| e.taps.len()));
         row["missing"] = json!(edge.as_ref().map(|e| e.missing.clone()).unwrap_or_default());
         row["cilium"] = json!(edge.as_ref().and_then(|e| e.cilium.clone()));
+        row["addresses"] = json!(edge
+            .as_ref()
+            .map(|e| e.node_addrs.clone())
+            .unwrap_or_default());
         hosts.push(row);
     }
     Ok(hosts)
@@ -818,6 +825,20 @@ pub async fn projects(State(state): State<AppState>) -> Json<Value> {
             isolation: Isolation::Open,
             ..Default::default()
         });
+    let names = hostnames(&state).await;
+    let gaps = fleet.egress_gaps();
+    let spans: HashMap<String, vm_netpol::NatSpan> = fleet
+        .nat_spans()
+        .into_iter()
+        .map(|mut n| {
+            for h in &mut n.hosts {
+                if let Some(name) = names.get(h) {
+                    *h = name.clone();
+                }
+            }
+            (n.project.clone(), n)
+        })
+        .collect();
     let items: Vec<Value> = all
         .iter()
         .map(|name| {
@@ -847,19 +868,163 @@ pub async fn projects(State(state): State<AppState>) -> Json<Value> {
                 "allow_host": allow_host,
                 "vms": vms,
                 "policies": policies,
+                "cross_host_nat": spans.get(name),
+                "egress_gaps": gaps.iter().filter(|g| &g.project == name).collect::<Vec<_>>(),
             })
         })
         .collect();
-    Json(json!({ "default": default, "items": items }))
+    Json(json!({ "default": default, "items": items, "warnings": fleet_warnings(&fleet, &names) }))
+}
+
+pub const PROJECT_ACTION: &str = "vm_netpol.project";
+
+#[derive(Deserialize, Default)]
+pub struct ProjectSetQuery {
+    /// Ask a second admin instead of applying.
+    #[serde(default)]
+    propose: bool,
+}
+
+/// Every change waits for a second admin (`MACHINA_NETPOL_PROJECT_APPROVAL=1`).
+fn project_approval_required() -> bool {
+    std::env::var("MACHINA_NETPOL_PROJECT_APPROVAL").is_ok_and(|v| v == "1" || v == "true")
+}
+
+/// The caller's role in a Fleet Cloud project (`admin`, `operator`, `viewer`).
+pub async fn project_role(state: &AppState, username: &str, project: &str) -> Option<String> {
+    sqlx::query_scalar(
+        "SELECT a.role FROM project_role_assignments a
+           JOIN users u ON u.id = a.user_id
+           JOIN projects p ON p.id = a.project_id
+          WHERE u.username = ? AND p.name = ?
+          ORDER BY CASE a.role WHEN 'admin' THEN 0 WHEN 'operator' THEN 1 ELSE 2 END
+          LIMIT 1",
+    )
+    .bind(username)
+    .bind(project)
+    .fetch_optional(&state.pool)
+    .await
+    .ok()
+    .flatten()
+}
+
+/// Fleet admins change any project. A project's own admins change its
+/// isolation and egress allowlist, not its egress IPs (host addresses)
+/// and not the default.
+async fn check_project_change(
+    state: &AppState,
+    actor: &AuthUser,
+    project: &str,
+    cur: Option<&ProjectNet>,
+    new: Option<&ProjectNet>,
+) -> Result<(), ApiError> {
+    if actor.role == "admin" {
+        return Ok(());
+    }
+    if project == tenant::DEFAULT_PROJECT {
+        return Err(ApiError::forbidden(
+            "only fleet admins change the project default",
+        ));
+    }
+    if project_role(state, &actor.username, project)
+        .await
+        .as_deref()
+        != Some("admin")
+    {
+        return Err(ApiError::forbidden(
+            "admin role required (fleet-wide or in this project)",
+        ));
+    }
+    let ips = |p: Option<&ProjectNet>| p.map(|p| p.egress_ips.clone()).unwrap_or_default();
+    if ips(cur) != ips(new) {
+        return Err(
+            ApiError::forbidden("egress IPs are set by fleet admins").with_remediation(
+                "ask a fleet admin; project admins manage isolation and the egress allowlist",
+            ),
+        );
+    }
+    Ok(())
+}
+
+/// The policy set with `next` in place of the project's settings (`None`
+/// = reset) and what it would change in the recorded traffic.
+async fn project_replay(
+    state: &AppState,
+    project: &str,
+    next: Option<&ProjectNet>,
+    limit: usize,
+) -> Result<Value, ApiError> {
+    let fleet = Fleet::load(&state.pool).await;
+    let mut settings: Vec<ProjectNet> = fleet
+        .projects
+        .iter()
+        .filter(|s| s.project != project)
+        .cloned()
+        .collect();
+    settings.extend(next.cloned());
+    let names = vm_netpol::project_names(&state.pool, &fleet.vms).await;
+    let mut draft: Vec<VmNetworkPolicy> = fleet
+        .policies
+        .iter()
+        .filter(|p| {
+            p.labels.get(tenant::LABEL_MANAGED).map(String::as_str) != Some(tenant::MANAGED_VALUE)
+        })
+        .cloned()
+        .collect();
+    let mut generated = tenant::policies(&settings, &names);
+    generated.extend(tenant::egress_ip_guards(&settings, &fleet.hostnames));
+    for g in generated {
+        if !draft.iter().any(|p| p.name == g.name) {
+            draft.push(g);
+        }
+    }
+    replay_set(state, fleet, draft, limit).await
+}
+
+fn replay_summary(r: &Value) -> String {
+    let n = |k: &str| r[k].as_array().map_or(0, Vec::len);
+    format!(
+        "would break {} recorded connection{} ({} flows) and newly allow {}",
+        n("would_break"),
+        if n("would_break") == 1 { "" } else { "s" },
+        r["flows_breaking"].as_u64().unwrap_or(0),
+        n("would_allow")
+    )
+}
+
+/// What a project change would do to recorded traffic; nothing is applied.
+pub async fn project_preview(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(project): Path<String>,
+    Json(mut b): Json<ProjectNet>,
+) -> Result<Json<Value>, ApiError> {
+    b.project = project.trim().to_string();
+    b.validate().map_err(ApiError::bad_request)?;
+    if require_operator(&actor).is_err()
+        && (b.is_default()
+            || project_role(&state, &actor.username, &b.project)
+                .await
+                .is_none())
+    {
+        return Err(ApiError::forbidden("not a member of this project"));
+    }
+    let r = project_replay(&state, &b.project, Some(&b), 200).await?;
+    Ok(Json(json!({
+        "project": b.project,
+        "describe": describe_project(&b),
+        "summary": replay_summary(&r),
+        "replay": r,
+    })))
 }
 
 pub async fn project_set(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
     Path(project): Path<String>,
+    Query(q): Query<ProjectSetQuery>,
     Json(mut b): Json<ProjectNet>,
 ) -> Result<Json<Value>, ApiError> {
-    require_admin(&actor)?;
     b.project = project.trim().to_string();
     b.validate().map_err(ApiError::bad_request)?;
     if !b.egress_ips.is_empty() {
@@ -872,49 +1037,139 @@ pub async fn project_set(
             }
         }
     }
-    vm_netpol::project_put(&state.pool, &b, &actor.username)
+    let cur = vm_netpol::project_settings(&state.pool)
         .await
-        .map_err(|e| ApiError::internal(format!("{e:#}")))?;
-    let what = if b.is_default() {
-        "the project default".to_string()
-    } else {
-        format!("project {}", b.project)
-    };
-    state.emit_event(
-        "netpol.project",
-        format!("{} set {what}: {}", actor.username, describe_project(&b)),
-    );
-    let sync = vm_netpol::reconcile(&state.pool, false).await;
-    Ok(Json(json!({ "project": b, "sync": sync })))
+        .into_iter()
+        .find(|s| s.project == b.project);
+    check_project_change(&state, &actor, &b.project, cur.as_ref(), Some(&b)).await?;
+    if q.propose || project_approval_required() {
+        let r = project_replay(&state, &b.project, Some(&b), 50).await?;
+        return propose_project(&state, &actor, &b.project, Some(&b), &r).await;
+    }
+    apply_project(&state, &b.project, Some(&b), &actor.username).await
 }
 
 pub async fn project_remove(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
     Path(project): Path<String>,
+    Query(q): Query<ProjectSetQuery>,
 ) -> Result<Json<Value>, ApiError> {
-    require_admin(&actor)?;
-    let removed = vm_netpol::project_delete(&state.pool, &project)
+    let cur = vm_netpol::project_settings(&state.pool)
         .await
-        .map_err(|e| ApiError::internal(format!("{e:#}")))?;
-    if removed {
-        state.emit_event(
-            "netpol.project",
-            format!(
-                "{} reset network settings of {}",
-                actor.username,
-                if project == tenant::DEFAULT_PROJECT {
-                    "the project default".to_string()
-                } else {
-                    format!("project {project}")
-                }
-            ),
-        );
+        .into_iter()
+        .find(|s| s.project == project);
+    check_project_change(&state, &actor, &project, cur.as_ref(), None).await?;
+    if q.propose || project_approval_required() {
+        let r = project_replay(&state, &project, None, 50).await?;
+        return propose_project(&state, &actor, &project, None, &r).await;
     }
-    let sync = vm_netpol::reconcile(&state.pool, false).await;
+    apply_project(&state, &project, None, &actor.username).await
+}
+
+async fn propose_project(
+    state: &AppState,
+    actor: &AuthUser,
+    project: &str,
+    next: Option<&ProjectNet>,
+    replay: &Value,
+) -> Result<Json<Value>, ApiError> {
+    let what = if project == tenant::DEFAULT_PROJECT {
+        "the project default".to_string()
+    } else {
+        format!("project {project}")
+    };
+    let change = next.map_or_else(
+        || "reset every network setting".to_string(),
+        describe_project,
+    );
+    let body = crate::engine::ai::actions::CreateActionBody {
+        action_type: PROJECT_ACTION.into(),
+        label: format!("Change network settings of {what}"),
+        review: format!(
+            "{} asks to change {what}: {change}.\n\nAgainst the flow history this {}.",
+            actor.username,
+            replay_summary(replay)
+        ),
+        risk: "Changes which VMs can talk to each other or reach the internet".into(),
+        object_ref: json!({ "project": project, "settings": next }),
+        source: "netpol".into(),
+    };
+    let action = crate::engine::ai::actions::create_action(&state.pool, &body, &actor.username)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    state.emit_event(
+        "netpol.project",
+        format!("{} asked to change {what}: {change}", actor.username),
+    );
     Ok(Json(
-        json!({ "project": project, "removed": removed, "sync": sync }),
+        json!({ "pending": action, "preview": replay_summary(replay) }),
     ))
+}
+
+async fn apply_project(
+    state: &AppState,
+    project: &str,
+    next: Option<&ProjectNet>,
+    by: &str,
+) -> Result<Json<Value>, ApiError> {
+    let what = if project == tenant::DEFAULT_PROJECT {
+        "the project default".to_string()
+    } else {
+        format!("project {project}")
+    };
+    let removed = match next {
+        Some(b) => {
+            vm_netpol::project_put(&state.pool, b, by)
+                .await
+                .map_err(|e| ApiError::internal(format!("{e:#}")))?;
+            state.emit_event(
+                "netpol.project",
+                format!("{by} set {what}: {}", describe_project(b)),
+            );
+            false
+        }
+        None => {
+            let removed = vm_netpol::project_delete(&state.pool, project)
+                .await
+                .map_err(|e| ApiError::internal(format!("{e:#}")))?;
+            if removed {
+                state.emit_event(
+                    "netpol.project",
+                    format!("{by} reset network settings of {what}"),
+                );
+            }
+            removed
+        }
+    };
+    let sync = vm_netpol::reconcile(&state.pool, false).await;
+    Ok(Json(match next {
+        Some(b) => json!({ "project": b, "sync": sync }),
+        None => json!({ "project": project, "removed": removed, "sync": sync }),
+    }))
+}
+
+/// Apply an approved `vm_netpol.project` action.
+pub(crate) async fn project_approved(
+    state: &AppState,
+    object_ref: &Value,
+    by: &str,
+) -> Result<Value, ApiError> {
+    let project = object_ref["project"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    let next: Option<ProjectNet> = match &object_ref["settings"] {
+        Value::Null => None,
+        v => {
+            let mut s: ProjectNet = serde_json::from_value(v.clone())
+                .map_err(|e| ApiError::bad_request(format!("project settings: {e}")))?;
+            s.project = project.clone();
+            s.validate().map_err(ApiError::bad_request)?;
+            Some(s)
+        }
+    };
+    Ok(apply_project(state, &project, next.as_ref(), by).await?.0)
 }
 
 /// Egress SNAT state of every online host.
@@ -929,6 +1184,12 @@ pub async fn egress_ips(State(state): State<AppState>) -> Json<Value> {
 pub struct EvidenceQuery {
     #[serde(default)]
     format: Option<String>,
+    /// `tcp/22,udp/53` (default: the standard probes).
+    #[serde(default)]
+    probes: Option<String>,
+    /// One project only (its members may export it).
+    #[serde(default)]
+    project: Option<String>,
 }
 
 /// Answer an evidence report as JSON or (`format=md`) Markdown.
@@ -958,6 +1219,141 @@ pub async fn evidence(
     Extension(actor): Extension<AuthUser>,
     Query(q): Query<EvidenceQuery>,
 ) -> Result<Response, ApiError> {
+    let probes =
+        evidence::parse_probes(q.probes.as_deref().unwrap_or("")).map_err(ApiError::bad_request)?;
+    let project = q
+        .project
+        .as_deref()
+        .map(str::trim)
+        .filter(|p| !p.is_empty());
+    match project {
+        None => require_operator(&actor).map_err(|e| {
+            e.with_remediation("project members can export their project: ?project=NAME")
+        })?,
+        Some(p) => {
+            if require_operator(&actor).is_err()
+                && project_role(&state, &actor.username, p).await.is_none()
+            {
+                return Err(ApiError::forbidden("not a member of this project"));
+            }
+        }
+    }
+    let e = build_evidence(&state, &actor.username, &probes, project).await?;
+    state.emit_event(
+        "netpol.evidence",
+        format!(
+            "{} exported segmentation evidence {}",
+            actor.username,
+            &e.digest[..16]
+        ),
+    );
+    Ok(evidence_response(&e, q.format.as_deref()))
+}
+
+/// Scheduled reports kept on the controller, newest first.
+pub async fn evidence_archive(
+    Extension(actor): Extension<AuthUser>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    let items: Vec<Value> = vm_netpol::evidence_archive()
+        .into_iter()
+        .map(|(name, size, at)| {
+            let at: chrono::DateTime<chrono::Utc> = at.into();
+            json!({ "name": name, "bytes": size, "modified": at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true) })
+        })
+        .collect();
+    Ok(Json(
+        json!({ "dir": vm_netpol::evidence_dir(), "items": items }),
+    ))
+}
+
+pub async fn evidence_archived(
+    Extension(actor): Extension<AuthUser>,
+    Path(name): Path<String>,
+    Query(q): Query<EvidenceQuery>,
+) -> Result<Response, ApiError> {
+    require_operator(&actor)?;
+    let known = vm_netpol::evidence_archive()
+        .into_iter()
+        .any(|(n, _, _)| n == name);
+    if !known {
+        return Err(ApiError::not_found("no such stored evidence report"));
+    }
+    let body = std::fs::read(vm_netpol::evidence_dir().join(&name))
+        .map_err(|e| ApiError::internal(format!("read {name}: {e}")))?;
+    let e: evidence::Evidence =
+        serde_json::from_slice(&body).map_err(|e| ApiError::internal(format!("{name}: {e}")))?;
+    if q.format
+        .as_deref()
+        .is_some_and(|f| f == "md" || f == "markdown")
+    {
+        return Ok(evidence_response(&e, q.format.as_deref()));
+    }
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/json".to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{name}\""),
+            ),
+        ],
+        body,
+    )
+        .into_response())
+}
+
+/// Projects spread over hosts on per-host NAT networks and VMs without
+/// their project's egress IP, as report lines.
+pub fn fleet_warnings(fleet: &Fleet, hostnames: &HashMap<String, String>) -> Vec<String> {
+    let gaps = fleet.egress_gaps().into_iter().map(|g| {
+        format!(
+            "VM {} of project {} runs on {}, which has none of the project's egress IPs ({})",
+            g.vm,
+            g.project,
+            g.host,
+            if g.blocked {
+                "internet egress blocked"
+            } else {
+                "leaves with the host's address"
+            }
+        )
+    });
+    fleet
+        .nat_spans()
+        .iter()
+        .map(|n| {
+            let hosts: Vec<&str> = n
+                .hosts
+                .iter()
+                .map(|h| hostnames.get(h).map_or(h.as_str(), String::as_str))
+                .collect();
+            format!(
+                "project {} has VMs on {} behind per-host NAT networks ({}): traffic between those hosts arrives from the other host's address, so it is matched as remote-node and isolation cannot tell projects apart across hosts; use routed or bridged VM networks",
+                n.project,
+                hosts.join(", "),
+                n.subnets.join(", ")
+            )
+        })
+        .chain(gaps)
+        .collect()
+}
+
+pub async fn hostnames(state: &AppState) -> HashMap<String, String> {
+    bpf::hosts(&state.pool)
+        .await
+        .into_iter()
+        .map(|h| (h.id, h.hostname))
+        .collect()
+}
+
+/// Build, seal and (when the CA is available) sign a fleet report.
+pub async fn build_evidence(
+    state: &AppState,
+    actor: &str,
+    probes: &[evidence::Probe],
+    project: Option<&str>,
+) -> Result<evidence::Evidence, ApiError> {
+    let state = state.clone();
     let fleet = Fleet::load(&state.pool).await;
     let rows = vm_netpol::policies(&state.pool).await?;
     let c = fleet.compile(None);
@@ -1036,17 +1432,22 @@ pub async fn evidence(
             })
         })
         .collect();
-    let (kind, groups) = evidence::groups(&fleet.vms);
-    let (pol, vms, svcs, haddr) = (
+    let (kind, groups) = match project {
+        Some(p) => evidence::groups_for_project(&fleet.vms, p),
+        None => evidence::groups(&fleet.vms),
+    };
+    let (pol, vms, svcs, haddr, pr) = (
         fleet.policies.clone(),
         fleet.vms.clone(),
         fleet.services.clone(),
         fleet.all_host_addresses(),
+        probes.to_vec(),
     );
-    let matrix =
-        tokio::task::spawn_blocking(move || evidence::matrix(&pol, &vms, &svcs, &haddr, &groups))
-            .await
-            .map_err(|e| ApiError::internal(format!("matrix: {e}")))?;
+    let matrix = tokio::task::spawn_blocking(move || {
+        evidence::matrix(&pol, &vms, &svcs, &haddr, &groups, &pr)
+    })
+    .await
+    .map_err(|e| ApiError::internal(format!("matrix: {e}")))?;
     let denied = evidence::denied(&fleet_edges(&state, None).await);
     let now = chrono::Utc::now();
     let stored: Vec<VmNetworkPolicy> = rows.iter().map(|r| r.0.clone()).collect();
@@ -1063,7 +1464,7 @@ pub async fn evidence(
     let (egress_hosts, _) = fan_out_report(&state, &Request::VmEgressSnatStatus).await;
     let mut e = evidence::Evidence {
         generated_at: now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-        generated_by: actor.username.clone(),
+        generated_by: actor.to_string(),
         scope: "fleet".into(),
         source: "machina-controller".into(),
         hosts,
@@ -1099,19 +1500,35 @@ pub async fn evidence(
             .map(|(t, l, r, a, st, at)| json!({ "action_type": t, "label": l, "requested_by": r, "approved_by": a, "status": st, "created_at": at }))
             .collect(),
         denied: denied.clone(),
+        matrix_probes: probes.iter().map(|(p, n)| format!("{p}/{n}")).collect(),
+        warnings: fleet_warnings(&fleet, &hostnames(&state).await),
         ..Default::default()
     };
     e.summary.vms = fleet.vms.len();
-    e.seal(denied.len());
-    state.emit_event(
-        "netpol.evidence",
-        format!(
-            "{} exported segmentation evidence {}",
-            actor.username,
-            &e.digest[..16]
-        ),
-    );
-    Ok(evidence_response(&e, q.format.as_deref()))
+    let mut denied_total = denied.len();
+    if let Some(p) = project {
+        let members: std::collections::BTreeSet<String> = fleet
+            .vms
+            .iter()
+            .filter(|v| v.project.as_deref() == Some(p))
+            .map(|v| v.name.clone())
+            .collect();
+        if members.is_empty() && !fleet.projects.iter().any(|s| s.project == p) {
+            return Err(ApiError::not_found(format!("no project {p}")));
+        }
+        evidence::scope_to_project(&mut e, p, &members);
+        denied_total = e.denied.len();
+    }
+    e.seal(denied_total);
+    match vm_netpol::evidence_signer() {
+        Ok((signer, ca_pem)) => {
+            if let Err(err) = e.sign(&signer, &ca_pem) {
+                tracing::warn!("segmentation evidence signature: {err:#}");
+            }
+        }
+        Err(err) => tracing::warn!("segmentation evidence signer: {err:#}"),
+    }
+    Ok(e)
 }
 
 pub const JIT_ACTION: &str = "vm_netpol.jit";
@@ -1288,6 +1705,16 @@ async fn replay_draft(
     let mut draft = fleet.policies.clone();
     draft.retain(|p| !parsed.iter().any(|n| n.name == p.name));
     draft.extend(parsed);
+    replay_set(state, fleet, draft, limit).await
+}
+
+/// Replay the flow history against the fleet's policies and `draft`.
+async fn replay_set(
+    state: &AppState,
+    fleet: Fleet,
+    draft: Vec<VmNetworkPolicy>,
+    limit: usize,
+) -> Result<Value, ApiError> {
     let edges = fleet_edges(state, None).await;
     let fqdn = fqdn_names(state).await;
     let r = tokio::task::spawn_blocking(move || {

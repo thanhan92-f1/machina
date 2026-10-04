@@ -311,16 +311,43 @@ address works, the host's bpfd or controller predates that flag; upgrade both
 
 ### Symptom: a project's egress IP is not used
 `machinactl --fleet netpol egress P` lists the egress IP per host;
-`sudo nft list table ip machina_egress` on the VM's host shows the SNAT rules.
+`sudo nft list table ip machina_egress` (and `ip6 machina_egress` for an
+IPv6 egress IP) on the VM's host shows the SNAT rules.
 No table means nothing is wanted on that host (no VMs of the project there).
 The address must be configured on that host (bpfd skips addresses that are
 not local), and the upstream router must route it back; an address that is
 not routable upstream only works for destinations that route to the host.
+An IPv4 egress IP only rewrites the VM's IPv4 addresses; set an IPv6 one too
+(`ip HOST 'IPv4,IPv6'`) for IPv6 traffic. A VM on a host without any of the
+project's egress IPs leaves with the host's address: `netpol projects` warns
+about it, and `egress P require-ip` blocks its internet egress instead.
+
+### Symptom: a project VM lost internet access after a migration
+The project has `require-ip` and the new host has no egress IP for it
+(`netpol projects` lists it as blocked; a `netpol.egress_gap` event marks the
+start). Add an egress IP on that host, move the VM back, or run
+`egress P allow-host-ip`.
+
+### Symptom: `netpol projects` warns about cross-host NAT
+The project has VMs on two or more hosts whose VM subnets are NATed per host
+(the same `addr/prefix` on each, e.g. libvirt's `default` network). Traffic
+between those hosts arrives with the host's address, so isolation cannot tell
+the project's VMs from the host. Put the project on a bridged or routed
+network, or keep its VMs on one host.
+
+### Symptom: a project change says "admin role required" or "egress IPs are set by fleet admins"
+Project admins (the `admin` role in the Fleet Cloud project) may change its
+isolation, egress allowlist and `require-ip`. Egress IPs and the default need
+a fleet admin. With `MACHINA_NETPOL_PROJECT_APPROVAL=1` every change becomes
+a pending approval; approve it under *Approvals*.
 
 ### Symptom: `netpol evidence verify` reports a digest mismatch
 A value, key or key order changed after export (whitespace does not matter,
 the JSON is compacted before hashing). Export again and keep the JSON;
-only the JSON form can be verified.
+only the JSON form can be verified. *BAD SIGNATURE* with a good digest means
+the `signature` block does not belong to this content; *UNTRUSTED* means the
+signing certificate was not issued by the CA you passed (or the embedded one).
+Fleet reports are signed; host (daemon) reports print *unsigned*.
 Evidence lists a host as *in sync* when its agent answered and either the
 push succeeded or there was nothing to push.
 

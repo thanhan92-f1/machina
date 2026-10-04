@@ -11,7 +11,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
-use machina_bpf::api::{Request, VmAuthIdentity, VmEgressSnat};
+use machina_bpf::api::{Request, VmAuthIdentity, VmEdgeStatus, VmEgressSnat};
 use machina_bpf::authca;
 use machina_bpf::netpol::tenant::{self, ProjectNet};
 use machina_bpf::netpol::{
@@ -33,6 +33,10 @@ const FORCE_EVERY: u32 = 10;
 const THREAT_REFRESH_EVERY: u32 = 120;
 
 static LAST_PUSH: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
+/// Egress IP gaps found by the last reconcile.
+static EGRESS_GAPS: Mutex<Vec<tenant::EgressGap>> = Mutex::new(Vec::new());
+/// host id → global addresses (`address/prefix`) its bpfd reported.
+static NODE_ADDRS: Mutex<BTreeMap<String, Vec<String>>> = Mutex::new(BTreeMap::new());
 /// Every host has an empty egress SNAT set and nothing asks for one.
 static EGRESS_IDLE: AtomicBool = AtomicBool::new(false);
 
@@ -122,16 +126,17 @@ pub async fn inventory(pool: &SqlitePool) -> Vec<NetpolVm> {
         Option<String>,
         Option<String>,
         Option<String>,
+        Option<String>,
     );
     let rows: Vec<Row> = sqlx::query_as(
-        "SELECT name, host_id, project, labels, tags, guest_ip FROM vms
+        "SELECT name, host_id, project, labels, tags, guest_ip, guest_ips FROM vms
              WHERE COALESCE(inventory_source, 'libvirt') != 'kubevirt' ORDER BY name",
     )
     .fetch_all(pool)
     .await
     .unwrap_or_default();
     rows.into_iter()
-        .map(|(name, host, project, labels, tags, ip)| {
+        .map(|(name, host, project, labels, tags, ip, ips)| {
             let mut l: BTreeMap<String, String> = labels
                 .as_deref()
                 .and_then(|s| serde_json::from_str(s).ok())
@@ -148,12 +153,22 @@ pub async fn inventory(pool: &SqlitePool) -> Vec<NetpolVm> {
                     .map(|(k, v)| (k.to_string(), v.to_string()))
                     .collect();
             }
+            let mut addresses: Vec<String> = ip.into_iter().filter(|a| !a.is_empty()).collect();
+            let more: Vec<String> = ips
+                .as_deref()
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default();
+            for a in more {
+                if !a.is_empty() && !addresses.contains(&a) {
+                    addresses.push(a);
+                }
+            }
             NetpolVm {
                 name,
                 host: host.map(|h| h.to_string()),
                 project: project.filter(|p| !p.is_empty()),
                 labels: l,
-                addresses: ip.into_iter().filter(|a| !a.is_empty()).collect(),
+                addresses,
             }
         })
         .collect()
@@ -283,6 +298,54 @@ pub async fn project_names(pool: &SqlitePool, vms: &[NetpolVm]) -> BTreeSet<Stri
     out
 }
 
+pub fn note_node_addrs(host_id: &str, addrs: &[String]) {
+    if addrs.is_empty() {
+        return;
+    }
+    NODE_ADDRS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(host_id.to_string(), addrs.to_vec());
+}
+
+fn node_addrs() -> BTreeMap<String, Vec<String>> {
+    NODE_ADDRS.lock().unwrap_or_else(|e| e.into_inner()).clone()
+}
+
+/// Ask each host's bpfd for its addresses (all hosts when `all`, else
+/// hosts not heard from yet).
+async fn refresh_node_addrs(hosts: &[HostRef], all: bool) {
+    let known = node_addrs();
+    for h in hosts {
+        if !all && known.contains_key(&h.id) {
+            continue;
+        }
+        let Ok(v) = bpf::call(h, &Request::VmEdgeStatus).await else {
+            continue;
+        };
+        if let Ok(s) = serde_json::from_value::<VmEdgeStatus>(v) {
+            note_node_addrs(&h.id, &s.node_addrs);
+        }
+    }
+}
+
+fn ipv4_net(cidr: &str) -> Option<(u32, u32)> {
+    let (a, l) = cidr.split_once('/')?;
+    let a: std::net::Ipv4Addr = a.parse().ok()?;
+    let l: u32 = l.parse().ok().filter(|l| *l <= 32)?;
+    let mask = if l == 0 { 0 } else { u32::MAX << (32 - l) };
+    Some((u32::from(a) & mask, mask))
+}
+
+/// A project spread over hosts on per-host NAT networks.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct NatSpan {
+    pub project: String,
+    pub hosts: Vec<String>,
+    /// Subnets that several hosts have, holding this project's VMs.
+    pub subnets: Vec<String>,
+}
+
 /// Everything needed to compile for any host.
 pub struct Fleet {
     /// Stored policies plus the generated project policies.
@@ -290,7 +353,11 @@ pub struct Fleet {
     pub vms: Vec<NetpolVm>,
     pub services: Vec<NetpolService>,
     pub host_addrs: BTreeMap<String, String>,
+    /// host id → every global address reported by its bpfd.
+    pub node_addrs: BTreeMap<String, Vec<String>>,
     pub projects: Vec<ProjectNet>,
+    /// host id → hostname.
+    pub hostnames: BTreeMap<String, String>,
 }
 
 impl Fleet {
@@ -298,7 +365,13 @@ impl Fleet {
         let vms = inventory(pool).await;
         let projects = project_settings(pool).await;
         let mut policies = enabled_policies(pool).await;
-        let generated = tenant::policies(&projects, &project_names(pool, &vms).await);
+        let hostnames: BTreeMap<String, String> = bpf::hosts(pool)
+            .await
+            .into_iter()
+            .map(|h| (h.id, h.hostname))
+            .collect();
+        let mut generated = tenant::policies(&projects, &project_names(pool, &vms).await);
+        generated.extend(tenant::egress_ip_guards(&projects, &hostnames));
         for g in generated {
             if !policies.iter().any(|p| p.name == g.name) {
                 policies.push(g);
@@ -309,24 +382,127 @@ impl Fleet {
             vms,
             services: services(pool).await,
             host_addrs: host_addresses(pool).await,
+            node_addrs: node_addrs(),
             projects,
+            hostnames,
         }
+    }
+
+    pub fn egress_gaps(&self) -> Vec<tenant::EgressGap> {
+        tenant::egress_gaps(&self.projects, &self.vms, &self.hostnames)
+    }
+
+    /// host id → its addresses (management first), without prefixes.
+    fn addresses_by_host(&self) -> BTreeMap<&str, BTreeSet<String>> {
+        let mut out: BTreeMap<&str, BTreeSet<String>> = BTreeMap::new();
+        for (id, a) in &self.host_addrs {
+            out.entry(id.as_str()).or_default().insert(a.clone());
+        }
+        for (id, cidrs) in &self.node_addrs {
+            let set = out.entry(id.as_str()).or_default();
+            for c in cidrs {
+                set.insert(c.split('/').next().unwrap_or(c).to_string());
+            }
+        }
+        out
+    }
+
+    /// Addresses more than one host has (e.g. every libvirt `default`
+    /// network's 192.168.122.1): they say nothing about which host sent.
+    fn shared_addresses(by_host: &BTreeMap<&str, BTreeSet<String>>) -> BTreeSet<String> {
+        let mut seen: BTreeMap<&str, usize> = BTreeMap::new();
+        for set in by_host.values() {
+            for a in set {
+                *seen.entry(a.as_str()).or_default() += 1;
+            }
+        }
+        seen.into_iter()
+            .filter(|(_, n)| *n > 1)
+            .map(|(a, _)| a.to_string())
+            .collect()
+    }
+
+    /// Projects whose VMs sit on several hosts behind the same gateway
+    /// address on each (per-host NAT networks): traffic between
+    /// those hosts arrives from the other host's address, so it is
+    /// `remote-node`, not a VM, and isolation can't tell projects apart.
+    pub fn nat_spans(&self) -> Vec<NatSpan> {
+        let mut same: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+        for (id, cidrs) in &self.node_addrs {
+            for c in cidrs {
+                same.entry(c.as_str()).or_default().insert(id.as_str());
+            }
+        }
+        let nets: BTreeSet<(u32, u32)> = same
+            .into_iter()
+            .filter(|(_, hosts)| hosts.len() > 1)
+            .filter_map(|(c, _)| ipv4_net(c))
+            .collect();
+        let mut by_project: BTreeMap<&str, (BTreeSet<String>, BTreeSet<String>)> = BTreeMap::new();
+        for vm in &self.vms {
+            let (Some(p), Some(h)) = (vm.project.as_deref(), vm.host.as_deref()) else {
+                continue;
+            };
+            let e = by_project.entry(p).or_default();
+            e.0.insert(h.to_string());
+            for a in &vm.addresses {
+                let Ok(ip) = a
+                    .split('/')
+                    .next()
+                    .unwrap_or(a)
+                    .parse::<std::net::Ipv4Addr>()
+                else {
+                    continue;
+                };
+                for (net, mask) in &nets {
+                    if u32::from(ip) & mask == *net {
+                        let bits = mask.count_ones();
+                        e.1.insert(format!("{}/{bits}", std::net::Ipv4Addr::from(*net)));
+                    }
+                }
+            }
+        }
+        by_project
+            .into_iter()
+            .filter(|(_, (hosts, subnets))| hosts.len() > 1 && !subnets.is_empty())
+            .map(|(p, (hosts, subnets))| NatSpan {
+                project: p.to_string(),
+                hosts: hosts.into_iter().collect(),
+                subnets: subnets.into_iter().collect(),
+            })
+            .collect()
+    }
+
+    /// (`host`, `remote-node`) addresses as seen from `host`.
+    pub fn node_identity_addresses(&self, host: Option<&str>) -> (Vec<String>, Vec<String>) {
+        let by_host = self.addresses_by_host();
+        let shared = Self::shared_addresses(&by_host);
+        let own_set = host
+            .and_then(|h| by_host.get(h))
+            .cloned()
+            .unwrap_or_default();
+        let mgmt = host.and_then(|h| self.host_addrs.get(h));
+        let own: Vec<String> = mgmt
+            .cloned()
+            .into_iter()
+            .chain(own_set.iter().filter(|a| Some(*a) != mgmt).cloned())
+            .collect();
+        let remote: Vec<String> = by_host
+            .iter()
+            .filter(|(id, _)| Some(**id) != host)
+            .flat_map(|(_, set)| set.iter())
+            .filter(|a| !shared.contains(*a) && !own_set.contains(*a))
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        (own, remote)
     }
 
     /// Compile for one host (`None` / the local pseudo host = every VM).
     pub fn compile(&self, host_id: Option<&str>) -> netpol::Compiled {
         let host = host_id.filter(|h| *h != LOCAL_HOST_ID);
-        let own: Vec<String> = host
-            .and_then(|h| self.host_addrs.get(h))
-            .cloned()
-            .into_iter()
-            .collect();
-        let remote: Vec<String> = self
-            .host_addrs
-            .iter()
-            .filter(|(id, _)| Some(id.as_str()) != host)
-            .map(|(_, a)| a.clone())
-            .collect();
+        let (own, remote) = self.node_identity_addresses(host);
         let mut c = netpol::compile(&Inputs {
             policies: &self.policies,
             vms: &self.vms,
@@ -342,7 +518,12 @@ impl Fleet {
     }
 
     pub fn all_host_addresses(&self) -> Vec<String> {
-        self.host_addrs.values().cloned().collect()
+        self.addresses_by_host()
+            .into_values()
+            .flatten()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect()
     }
 }
 
@@ -403,11 +584,21 @@ fn netpol_ca() -> anyhow::Result<std::sync::Arc<authca::Ca>> {
     if let Some(ca) = g.as_ref() {
         return Ok(ca.clone());
     }
-    let dir = std::env::var("MACHINA_NETPOL_CA_DIR")
-        .unwrap_or_else(|_| "/var/lib/machina/netpol-ca".into());
-    let ca = std::sync::Arc::new(authca::Ca::load_or_create(std::path::Path::new(&dir))?);
+    let ca = std::sync::Arc::new(authca::Ca::load_or_create(&netpol_ca_dir())?);
     *g = Some(ca.clone());
     Ok(ca)
+}
+
+fn netpol_ca_dir() -> std::path::PathBuf {
+    std::env::var("MACHINA_NETPOL_CA_DIR")
+        .unwrap_or_else(|_| "/var/lib/machina/netpol-ca".into())
+        .into()
+}
+
+/// The evidence-signing certificate (issued by the netpol CA) and the CA.
+pub fn evidence_signer() -> anyhow::Result<(authca::DocSigner, String)> {
+    let ca = netpol_ca()?;
+    Ok((ca.doc_signer(&netpol_ca_dir())?, ca.cert_pem.clone()))
 }
 
 /// Give the host's bpfd a certificate for bpfd-to-bpfd authentication,
@@ -509,8 +700,10 @@ async fn sync_host(pool: &SqlitePool, fleet: &Fleet, h: &HostRef, force: bool) -
 
 /// Compile and push to every online host.
 pub async fn reconcile(pool: &SqlitePool, force: bool) -> Vec<HostSync> {
-    let fleet = Fleet::load(pool).await;
     let hosts = bpf::online_hosts(pool).await;
+    refresh_node_addrs(&hosts, force).await;
+    let fleet = Fleet::load(pool).await;
+    *EGRESS_GAPS.lock().unwrap_or_else(|e| e.into_inner()) = fleet.egress_gaps();
     let mut out = Vec::new();
     for h in &hosts {
         out.push(sync_host(pool, &fleet, h, force).await);
@@ -557,6 +750,7 @@ pub fn spawn(state: AppState) {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(TICK_SECS));
         let mut n: u32 = 0;
         let mut alerts_seen: Option<String> = None;
+        let mut gaps_seen: BTreeSet<tenant::EgressGap> = BTreeSet::new();
         loop {
             interval.tick().await;
             if !state.leader.is_leader() {
@@ -593,8 +787,140 @@ pub fn spawn(state: AppState) {
             }
             reconcile_threat(&state.pool).await;
             forward_alerts(&state, &mut alerts_seen).await;
+            egress_gap_events(&state, &mut gaps_seen);
+            if n.is_multiple_of(FORCE_EVERY) {
+                scheduled_evidence(&state).await;
+            }
         }
     });
+}
+
+/// Scheduled evidence: `MACHINA_NETPOL_EVIDENCE_DIR` (default
+/// `/var/lib/machina/netpol-evidence`), every
+/// `MACHINA_NETPOL_EVIDENCE_EVERY_HOURS` (default 24, 0 = off), kept
+/// `MACHINA_NETPOL_EVIDENCE_KEEP_DAYS` (default 90).
+pub fn evidence_dir() -> std::path::PathBuf {
+    std::env::var("MACHINA_NETPOL_EVIDENCE_DIR")
+        .unwrap_or_else(|_| "/var/lib/machina/netpol-evidence".into())
+        .into()
+}
+
+fn env_u64(key: &str, default: u64) -> u64 {
+    std::env::var(key)
+        .ok()
+        .and_then(|v| v.trim().parse().ok())
+        .unwrap_or(default)
+}
+
+pub const EVIDENCE_PREFIX: &str = "segmentation-evidence-";
+
+/// Stored reports, newest first: (file name, bytes, modified).
+pub fn evidence_archive() -> Vec<(String, u64, std::time::SystemTime)> {
+    let mut out: Vec<_> = std::fs::read_dir(evidence_dir())
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().to_string();
+            if !name.starts_with(EVIDENCE_PREFIX) || !name.ends_with(".json") {
+                return None;
+            }
+            let md = e.metadata().ok()?;
+            Some((name, md.len(), md.modified().ok()?))
+        })
+        .collect();
+    out.sort_by_key(|a| std::cmp::Reverse(a.2));
+    out
+}
+
+/// Write a report when the newest is older than the interval, then drop
+/// reports past the retention.
+async fn scheduled_evidence(state: &AppState) {
+    let every = env_u64("MACHINA_NETPOL_EVIDENCE_EVERY_HOURS", 24);
+    if every == 0 {
+        return;
+    }
+    let keep = std::time::Duration::from_secs(
+        env_u64("MACHINA_NETPOL_EVIDENCE_KEEP_DAYS", 90).max(1) * 86_400,
+    );
+    let now = std::time::SystemTime::now();
+    let archive = evidence_archive();
+    let due = archive.first().is_none_or(|(_, _, at)| {
+        now.duration_since(*at).unwrap_or_default().as_secs() >= every * 3600
+    });
+    for (name, _, at) in &archive {
+        if now.duration_since(*at).unwrap_or_default() > keep {
+            let _ = std::fs::remove_file(evidence_dir().join(name));
+        }
+    }
+    if !due {
+        return;
+    }
+    let probes = netpol::evidence::default_probes();
+    let e = match crate::api::vm_network_policies::build_evidence(state, "scheduled", &probes, None)
+        .await
+    {
+        Ok(e) => e,
+        Err(err) => {
+            tracing::warn!("scheduled segmentation evidence: {err:?}");
+            return;
+        }
+    };
+    let dir = evidence_dir();
+    let name = format!(
+        "{EVIDENCE_PREFIX}{}.json",
+        e.generated_at.replace([':', '-'], "")
+    );
+    let body = serde_json::to_string(&e).unwrap_or_default();
+    let written = std::fs::create_dir_all(&dir)
+        .and_then(|_| std::fs::write(dir.join(&name), body.as_bytes()));
+    match written {
+        Ok(()) => state.emit_event(
+            "netpol.evidence",
+            format!(
+                "scheduled segmentation evidence {name} ({})",
+                &e.digest[..16]
+            ),
+        ),
+        Err(err) => tracing::warn!(dir = %dir.display(), "scheduled segmentation evidence: {err}"),
+    }
+}
+
+/// A VM that lands on a host without its project's egress IP (or leaves
+/// one) becomes an event, and so a webhook / SIEM record.
+fn egress_gap_events(state: &AppState, seen: &mut BTreeSet<tenant::EgressGap>) {
+    let now: BTreeSet<tenant::EgressGap> = EGRESS_GAPS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .iter()
+        .cloned()
+        .collect();
+    for g in now.difference(seen) {
+        state.emit_event(
+            "netpol.egress_gap",
+            format!(
+                "VM {} of project {} runs on {}, which has none of the project's egress IPs: {}",
+                g.vm,
+                g.project,
+                g.host,
+                if g.blocked {
+                    "its internet egress is blocked"
+                } else {
+                    "it leaves with the host's address"
+                }
+            ),
+        );
+    }
+    for g in seen.difference(&now) {
+        state.emit_event(
+            "netpol.egress_gap",
+            format!(
+                "VM {} of project {} no longer lacks an egress IP on {}",
+                g.vm, g.project, g.host
+            ),
+        );
+    }
+    *seen = now;
 }
 
 /// Detection alerts newer than `seen` become events (and so webhooks / SIEM).
@@ -868,6 +1194,76 @@ pub async fn refresh_threat_feed(
 mod tests {
     use super::*;
     use crate::engine::test_support::{seed_host, test_state};
+
+    fn nvm(name: &str, host: &str, project: &str, ip: &str) -> NetpolVm {
+        NetpolVm {
+            name: name.into(),
+            host: Some(host.into()),
+            project: Some(project.into()),
+            labels: BTreeMap::new(),
+            addresses: vec![ip.into()],
+        }
+    }
+
+    fn two_host_fleet(vms: Vec<NetpolVm>) -> Fleet {
+        let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        Fleet {
+            policies: vec![],
+            vms,
+            services: vec![],
+            host_addrs: [("h1", "10.0.0.1"), ("h2", "10.0.0.2")]
+                .iter()
+                .map(|(a, b)| (a.to_string(), b.to_string()))
+                .collect(),
+            node_addrs: [
+                (
+                    "h1".to_string(),
+                    s(&["10.0.0.1/24", "192.168.122.1/24", "172.16.5.1/24"]),
+                ),
+                ("h2".to_string(), s(&["10.0.0.2/24", "192.168.122.1/24"])),
+            ]
+            .into_iter()
+            .collect(),
+            projects: vec![],
+            hostnames: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn node_addresses_split_into_host_and_remote_node() {
+        let f = two_host_fleet(vec![]);
+        let (own, remote) = f.node_identity_addresses(Some("h1"));
+        assert_eq!(own[0], "10.0.0.1", "management address first");
+        assert!(own.contains(&"172.16.5.1".to_string()));
+        assert!(own.contains(&"192.168.122.1".to_string()));
+        assert_eq!(remote, ["10.0.0.2"], "a shared bridge address is no node");
+        let (own2, remote2) = f.node_identity_addresses(Some("h2"));
+        assert_eq!(own2, ["10.0.0.2", "192.168.122.1"]);
+        assert_eq!(remote2, ["10.0.0.1", "172.16.5.1"]);
+        assert!(f.node_identity_addresses(None).0.is_empty());
+        assert_eq!(f.all_host_addresses().len(), 4);
+    }
+
+    #[test]
+    fn projects_across_per_host_nat_are_flagged() {
+        let f = two_host_fleet(vec![
+            nvm("a", "h1", "shop", "192.168.122.10"),
+            nvm("b", "h2", "shop", "192.168.122.20"),
+            nvm("c", "h1", "lab", "10.0.0.50"),
+            nvm("d", "h2", "lab", "10.0.0.51"),
+            nvm("e", "h1", "solo", "192.168.122.30"),
+        ]);
+        let spans = f.nat_spans();
+        assert_eq!(
+            spans,
+            [NatSpan {
+                project: "shop".into(),
+                hosts: vec!["h1".into(), "h2".into()],
+                subnets: vec!["192.168.122.0/24".into()],
+            }],
+            "a shared LAN (distinct host addresses) and a one-host project are fine"
+        );
+    }
 
     #[tokio::test]
     async fn load_balancers_are_services() {

@@ -233,6 +233,7 @@ impl HostAgent for AgentService {
                     disk_read_iops: v.disk_read_iops,
                     disk_write_iops: v.disk_write_iops,
                     guest_ip: v.guest_ip,
+                    guest_ips: v.guest_ips,
                 })
                 .collect(),
         }))

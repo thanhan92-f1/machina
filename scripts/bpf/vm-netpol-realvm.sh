@@ -470,6 +470,13 @@ fsync
 owned() { bpfd '{"op":"vm_edge_status"}' | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("owner")=="controller" and len(d.get("taps",[]))>=1 else 1)'; }
 for _ in $(seq 20); do owned && break; sleep 2; fsync; done
 check "controller owns the edge, server tap programmed" owned
+node_addrs() { bpfd '{"op":"vm_edge_status"}' | python3 -c 'import json,sys; d=json.load(sys.stdin); d=d.get("data",d); a=d.get("node_addrs",[]); sys.exit(0 if any(x.startswith("192.168.122.1/") for x in a) else 1)'; }
+check "host reports its addresses, libvirt bridge included" node_addrs
+preview_only() {
+    local out; out=$(FM project open np-red --preview 2>&1) || return 1
+    grep -q "would break" <<<"$out" && "$M" netpol projects --fleet | grep -q 'project-isolation-np-red-'
+}
+check "preview: opening np-red is replayed, not applied" preview_only
 check "generated policy listed" bash -c "'$M' netpol projects --fleet | grep -q 'project-isolation-np-red-'"
 observe
 check "observe: client → server still 200 (audited)" is 200 /ok
@@ -539,7 +546,7 @@ check "outside netns with a peer-address server" outside_up
 seen() { vssh "$1" "python3 -c \"import socket; s=socket.create_connection(('$2',18095),4); print(s.recv(64).decode())\"" 2>/dev/null; }
 check "before: client seen as libvirt NAT address" [ "$(seen "$CIP" 198.51.100.2)" = 198.51.100.1 ]
 HN=$(NP_JSON=1 FM egress 2>/dev/null | jq -r '.items[0].hostname // empty')
-check "set np-blue egress IP 198.51.100.77 on $HN" FM egress np-blue ip "$HN" 198.51.100.77
+check "set np-blue egress IP 198.51.100.77 (plus IPv6) on $HN" FM egress np-blue ip "$HN" "198.51.100.77,2001:db8:77::77"
 fsync
 egress_active() { for _ in $(seq 20); do NP_JSON=1 FM egress 2>/dev/null | jq -e '.items[0].active and (.items[0].rules | length) == 1' >/dev/null && return; sleep 1; fsync; done; return 1; }
 check "host reports the rule active" egress_active
@@ -556,6 +563,13 @@ check "removed: client seen as libvirt NAT address again" [ "$(seen "$CIP" 198.5
 echo "== fleet: evidence =="
 check "export JSON evidence" FM evidence -o json --out "$W/ev.json"
 check "evidence digest verifies" "$M" netpol evidence verify "$W/ev.json"
+check "evidence is signed by the controller CA" bash -c "'$M' netpol evidence verify '$W/ev.json' 2>/dev/null | grep -q 'ok: signed (ecdsa-p256-sha256)'"
+tampered_sig() { jq -c '.signature.value = "MEUCIQ"' "$W/ev.json" >"$W/ev-bad.json" && ! "$M" netpol evidence verify "$W/ev-bad.json" >/dev/null 2>&1; }
+check "evidence: a replaced signature is rejected" tampered_sig
+check "project evidence for np-red" FM evidence --project np-red --probes tcp/80,tcp/22 -o json --out "$W/ev-red.json"
+check "project evidence: only np-red against the others" jq -e '([.matrix[].from] | unique) as $f | ($f | index("np-red")) and ($f | index("np-blue") | not) and ([.matrix[].to] | index("(other projects)"))' "$W/ev-red.json"
+check "project evidence: probes as asked" jq -e '.matrix_probes == ["TCP/80", "TCP/22"]' "$W/ev-red.json"
+check "evidence archive lists" FM evidence archive
 check "evidence: np-red isolated" jq -e '.projects[] | select(.project == "np-red") | .isolated' "$W/ev.json"
 check "evidence: np-blue → np-red segmented" jq -e '.matrix[] | select(.from == "np-blue" and .to == "np-red") | (.allowed | length) == 0' "$W/ev.json"
 check "evidence: host → np-red allowed" jq -e '.matrix[] | select(.from == "host" and .to == "np-red") | (.allowed | length) > 0' "$W/ev.json"

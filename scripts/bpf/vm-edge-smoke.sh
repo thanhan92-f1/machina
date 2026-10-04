@@ -592,10 +592,19 @@ check "auth: source guard on the tap" [ "$(jpath vm_edge_status "'source_guard' 
 check "auth enforce: test-always-fail blocks" bash -c "! curl -s -m3 -o /dev/null http://$VM_IP:18090/"
 check "auth: flow says auth-test-always-fail" flow_has "f.get('drop_reason')=='auth-test-always-fail' and f['verdict']=='DROPPED'"
 npa "$R_AUTH"
-check "auth enforce: required authenticates the fleet VM peer" to_vm
+check "auth enforce: required blocks a remote VM without a host certificate" not to_vm
 check "auth: first SYN dropped as auth-required" flow_has "f.get('drop_reason')=='auth-required'"
-check "auth: table shows the pair" auth_has 'authenticated (fleet VM fleet-peer)'
+check "auth: table says why" auth_has 'this host has no certificate'
+check "auth: nothing authenticated" [ "$(jpath vm_edge_status "d['auth_entries']")" = 0 ]
+# A peer address that resolves to a VM on this host's taps authenticates
+# locally, without mTLS.
+LOCALPEER="{\"cidr\":\"$HOST_IP\",\"identity\":$VMID,\"name\":\"$VM\"},{\"cidr\":\"$SPOOF_IP\",\"identity\":5002,\"name\":\"other-vm\"}"
+R_ALOCAL="{\"subject_identity\":$VMID,\"peer_identity\":$VMID,\"egress\":false,\"proto\":6,\"port\":18090,\"auth\":1,\"source\":\"smoke spec.ingress[0]\"}"
+edge "{\"vms\":[$AVM}],\"peers\":[$LOCALPEER],\"policy\":[$R_ALOCAL],\"flow_log\":true,\"owner\":\"smoke\"}"
+check "auth enforce: required authenticates a local VM peer" to_vm
+check "auth: table shows the pair" auth_has 'authenticated (local VM'
 check "auth: status counts it" [ "$(jpath vm_edge_status "d['auth_entries']")" = 1 ]
+npa "$R_AUTH"
 ip netns exec "$NS" ip addr add "$SPOOF_IP/32" dev "$PEER_IF"
 ip route add "$SPOOF_IP/32" dev "$HOST_IF"
 from_spoof() {

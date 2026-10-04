@@ -8,7 +8,7 @@
 //! (denied flows, alerts, exceptions and approvals). The report carries a
 //! SHA-256 digest of its own content so a stored copy can be checked.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -19,7 +19,7 @@ use super::{NetpolService, NetpolVm, TraceQuery, VmNetworkPolicy};
 use crate::api::VmFlowEdge;
 
 pub const KIND: &str = "machina.io/segmentation-evidence/v1";
-/// Connections each matrix cell is checked on.
+/// Connections each matrix cell is checked on by default.
 pub const PROBES: &[(&str, u16)] = &[
     ("TCP", 22),
     ("TCP", 80),
@@ -32,6 +32,44 @@ pub const PROBES: &[(&str, u16)] = &[
 pub const SAMPLE: usize = 3;
 pub const MAX_GROUPS: usize = 40;
 pub const TOP_DENIED: usize = 50;
+pub const MAX_PROBES: usize = 16;
+pub const SIGNATURE_ALG: &str = "ecdsa-p256-sha256";
+
+pub type Probe = (String, u16);
+
+pub fn default_probes() -> Vec<Probe> {
+    PROBES.iter().map(|(p, n)| (p.to_string(), *n)).collect()
+}
+
+/// `tcp/22,udp/53,sctp/3868` → probes (empty = the defaults).
+pub fn parse_probes(s: &str) -> Result<Vec<Probe>, String> {
+    let mut out: Vec<Probe> = Vec::new();
+    for item in s.split(',').map(str::trim).filter(|x| !x.is_empty()) {
+        let (proto, port) = item
+            .split_once('/')
+            .ok_or_else(|| format!("probe `{item}`: use PROTO/PORT, e.g. tcp/443"))?;
+        let proto = proto.to_ascii_uppercase();
+        if !matches!(proto.as_str(), "TCP" | "UDP" | "SCTP") {
+            return Err(format!("probe `{item}`: protocol must be tcp, udp or sctp"));
+        }
+        let port: u16 = port
+            .parse()
+            .ok()
+            .filter(|p| *p > 0)
+            .ok_or_else(|| format!("probe `{item}`: port must be 1-65535"))?;
+        if !out.contains(&(proto.clone(), port)) {
+            out.push((proto, port));
+        }
+    }
+    if out.len() > MAX_PROBES {
+        return Err(format!("at most {MAX_PROBES} probes"));
+    }
+    Ok(if out.is_empty() {
+        default_probes()
+    } else {
+        out
+    })
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Summary {
@@ -132,8 +170,24 @@ pub struct Evidence {
     pub egress_ips: Vec<Value>,
     #[serde(default)]
     pub approvals: Vec<Value>,
-    /// SHA-256 over the report with this field empty.
+    /// Limits of what the report can show (e.g. projects across NAT).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
+    /// SHA-256 over the report with this field empty and no `signature`.
     pub digest: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signature: Option<EvidenceSignature>,
+}
+
+/// A signature over the hex `digest` by a certificate the fleet's VM
+/// network policy CA issued.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct EvidenceSignature {
+    pub alg: String,
+    /// DER signature, base64.
+    pub value: String,
+    pub signer_pem: String,
+    pub ca_pem: String,
 }
 
 pub fn policy_hash(p: &VmNetworkPolicy) -> String {
@@ -161,13 +215,76 @@ pub fn groups(vms: &[NetpolVm]) -> (String, Vec<(String, Vec<String>)>) {
     (kind.into(), g.into_iter().take(MAX_GROUPS).collect())
 }
 
-/// Trace every group pair (and the host / internet) on [`PROBES`].
+pub const OTHER_PROJECTS: &str = "(other projects)";
+
+/// Groups for a report about one project: the project and, sampled one VM
+/// per other group in turn, everything else.
+pub fn groups_for_project(vms: &[NetpolVm], project: &str) -> (String, Vec<(String, Vec<String>)>) {
+    let (_, all) = groups(vms);
+    let mine: Vec<String> = all
+        .iter()
+        .find(|(n, _)| n == project)
+        .map(|(_, m)| m.clone())
+        .unwrap_or_default();
+    let others: Vec<&Vec<String>> = all
+        .iter()
+        .filter(|(n, _)| n != project)
+        .map(|(_, m)| m)
+        .collect();
+    let mut spread = Vec::new();
+    for i in 0..others.iter().map(|m| m.len()).max().unwrap_or(0) {
+        spread.extend(others.iter().filter_map(|m| m.get(i)).cloned());
+    }
+    let mut out = vec![(project.to_string(), mine)];
+    if !spread.is_empty() {
+        out.push((OTHER_PROJECTS.to_string(), spread));
+    }
+    ("project".into(), out)
+}
+
+fn names_any(v: &Value, keys: &[&str], members: &BTreeSet<String>) -> bool {
+    keys.iter()
+        .any(|k| v[*k].as_str().is_some_and(|s| members.contains(s)))
+}
+
+/// Narrow a fleet report to one project: its VMs' policies, flows and
+/// exceptions. Host enforcement state and threat feeds stay; call before
+/// [`Evidence::seal`].
+pub fn scope_to_project(e: &mut Evidence, project: &str, members: &BTreeSet<String>) {
+    e.scope = format!("project {project}");
+    for p in &mut e.policies {
+        p.selected_vms.retain(|v| members.contains(v));
+    }
+    e.policies.retain(|p| !p.selected_vms.is_empty());
+    e.projects
+        .retain(|p| p["project"].as_str() == Some(project));
+    e.denied
+        .retain(|d| members.contains(&d.src) || members.contains(&d.dst));
+    e.alerts
+        .retain(|a| names_any(a, &["src_vm", "src"], members));
+    e.quarantines.retain(|q| names_any(q, &["vm"], members));
+    e.temporary_access
+        .retain(|g| names_any(g, &["from", "to"], members));
+    e.egress_ips
+        .retain(|r| r["project"].as_str() == Some(project));
+    let tag = format!("project {project} ");
+    e.warnings.retain(|w| w.contains(&tag));
+    e.approvals.retain(|a| {
+        a["label"]
+            .as_str()
+            .is_some_and(|l| l.contains(&format!("project {project}")))
+    });
+    e.summary.vms = members.len();
+}
+
+/// Trace every group pair (and the host / internet) on `probes`.
 pub fn matrix(
     policies: &[VmNetworkPolicy],
     vms: &[NetpolVm],
     services: &[NetpolService],
     host_addresses: &[String],
     groups: &[(String, Vec<String>)],
+    probes: &[Probe],
 ) -> Vec<MatrixCell> {
     let t = Tracer::new(policies, vms, services, host_addresses, &[]);
     let mut ends: Vec<(String, Vec<String>)> = vec![
@@ -200,12 +317,12 @@ pub fn matrix(
                 samples: pairs.iter().map(|(a, b)| format!("{a} → {b}")).collect(),
                 ..Default::default()
             };
-            for (proto, port) in PROBES {
+            for (proto, port) in probes {
                 let ok = pairs.iter().any(|(a, b)| {
                     t.trace(&TraceQuery {
                         from: (*a).clone(),
                         to: (*b).clone(),
-                        protocol: proto.to_string(),
+                        protocol: proto.clone(),
                         port: *port,
                         ..Default::default()
                     })
@@ -271,15 +388,32 @@ impl Evidence {
         s.hosts_in_sync = self.hosts.iter().filter(|h| h.in_sync).count();
         s.denied_connections = denied_total;
         s.alerts = self.alerts.len();
-        self.matrix_probes = PROBES.iter().map(|(p, n)| format!("{p}/{n}")).collect();
+        if self.matrix_probes.is_empty() {
+            self.matrix_probes = PROBES.iter().map(|(p, n)| format!("{p}/{n}")).collect();
+        }
         self.denied.truncate(TOP_DENIED);
+        self.signature = None;
         self.digest = String::new();
         self.digest = self.compute_digest();
+    }
+
+    /// Sign the digest (after [`Evidence::seal`]).
+    pub fn sign(&mut self, signer: &crate::authca::DocSigner, ca_pem: &str) -> anyhow::Result<()> {
+        use base64::Engine as _;
+        let sig = signer.sign(self.digest.as_bytes())?;
+        self.signature = Some(EvidenceSignature {
+            alg: SIGNATURE_ALG.into(),
+            value: base64::engine::general_purpose::STANDARD.encode(sig),
+            signer_pem: signer.cert_pem.clone(),
+            ca_pem: ca_pem.to_string(),
+        });
+        Ok(())
     }
 
     pub fn compute_digest(&self) -> String {
         let mut c = self.clone();
         c.digest = String::new();
+        c.signature = None;
         hex(&Sha256::digest(
             serde_json::to_vec(&c).unwrap_or_default().as_slice(),
         ))
@@ -312,6 +446,19 @@ pub fn markdown(e: &Evidence) -> String {
         "- Generated: {} by {}\n- Scope: {} ({})\n- Digest (SHA-256): `{}`\n\n",
         e.generated_at, e.generated_by, e.scope, e.source, e.digest
     ));
+    if let Some(s) = &e.signature {
+        o.push_str(&format!(
+            "- Signed ({}) by the fleet's VM network policy CA; verify the JSON export with `machinactl netpol evidence verify`\n\n",
+            s.alg
+        ));
+    }
+    if !e.warnings.is_empty() {
+        o.push_str("## Limits\n\n");
+        for w in &e.warnings {
+            o.push_str(&format!("- {}\n", md_escape(w)));
+        }
+        o.push('\n');
+    }
     o.push_str("## Summary\n\n| Item | Value |\n|---|---|\n");
     for (k, v) in [
         ("Policies", s.policies.to_string()),
@@ -529,7 +676,14 @@ mod tests {
             g.iter().map(|x| x.0.as_str()).collect::<Vec<_>>(),
             ["(no project)", "lab", "shop"]
         );
-        let m = matrix(&p, &vms, &[], &["192.168.1.10".into()], &g);
+        let m = matrix(
+            &p,
+            &vms,
+            &[],
+            &["192.168.1.10".into()],
+            &g,
+            &default_probes(),
+        );
         let cell = |f: &str, t: &str| m.iter().find(|c| c.from == f && c.to == t).unwrap();
         assert!(cell("lab", "shop").allowed.is_empty());
         assert_eq!(cell("shop", "shop").allowed, ["TCP/5432"]);
@@ -564,5 +718,115 @@ mod tests {
         assert!(md.contains(&e.digest));
         e.policies[0].enabled = false;
         assert!(!e.verify());
+    }
+
+    #[test]
+    fn a_project_report_shows_only_that_project() {
+        let vms = vec![
+            vm("a1", Some("shop"), "10.0.0.5"),
+            vm("a2", Some("shop"), "10.0.0.6"),
+            vm("b1", Some("lab"), "10.0.0.9"),
+            vm("b2", Some("lab"), "10.0.0.10"),
+            vm("c1", None, "10.0.0.20"),
+        ];
+        let (kind, g) = groups_for_project(&vms, "shop");
+        assert_eq!(kind, "project");
+        assert_eq!(g[0], ("shop".into(), vec!["a1".into(), "a2".into()]));
+        assert_eq!(g[1].0, OTHER_PROJECTS);
+        assert_eq!(g[1].1[..2], ["c1".to_string(), "b1".to_string()], "spread");
+        let mut e = Evidence {
+            policies: vec![
+                PolicyEvidence {
+                    name: "both".into(),
+                    selected_vms: vec!["a1".into(), "b1".into()],
+                    ..Default::default()
+                },
+                PolicyEvidence {
+                    name: "lab-only".into(),
+                    selected_vms: vec!["b1".into()],
+                    ..Default::default()
+                },
+            ],
+            projects: vec![
+                serde_json::json!({"project": "shop"}),
+                serde_json::json!({"project": "lab"}),
+            ],
+            denied: vec![
+                DeniedEdge {
+                    src: "b1".into(),
+                    dst: "a1".into(),
+                    ..Default::default()
+                },
+                DeniedEdge {
+                    src: "b1".into(),
+                    dst: "c1".into(),
+                    ..Default::default()
+                },
+            ],
+            alerts: vec![
+                serde_json::json!({"src": "10.0.0.5", "src_vm": "a1"}),
+                serde_json::json!({"src": "b2"}),
+            ],
+            quarantines: vec![serde_json::json!({"vm": "b2"})],
+            egress_ips: vec![serde_json::json!({"project": "lab"})],
+            warnings: vec![
+                "project shop has VMs on h1, h2 behind per-host NAT".into(),
+                "project shopping has VMs on h1".into(),
+            ],
+            ..Default::default()
+        };
+        let members: BTreeSet<String> = ["a1".to_string(), "a2".to_string()].into();
+        scope_to_project(&mut e, "shop", &members);
+        assert_eq!(e.scope, "project shop");
+        assert_eq!(e.policies.len(), 1);
+        assert_eq!(e.policies[0].selected_vms, ["a1"], "other VMs not named");
+        assert_eq!(e.projects.len(), 1);
+        assert_eq!(e.denied.len(), 1);
+        assert_eq!(e.alerts.len(), 1);
+        assert!(e.quarantines.is_empty() && e.egress_ips.is_empty());
+        assert_eq!(e.warnings.len(), 1);
+        assert_eq!(e.summary.vms, 2);
+    }
+
+    #[test]
+    fn probes_parse_and_default() {
+        assert_eq!(parse_probes("").unwrap(), default_probes());
+        assert_eq!(
+            parse_probes("tcp/8443, udp/53,tcp/8443").unwrap(),
+            [("TCP".to_string(), 8443), ("UDP".to_string(), 53)]
+        );
+        assert!(parse_probes("icmp/1").is_err());
+        assert!(parse_probes("tcp/0").is_err());
+        assert!(parse_probes("443").is_err());
+    }
+
+    #[test]
+    fn signature_covers_the_digest_and_leaves_it_alone() {
+        use base64::Engine as _;
+        let dir = tempfile::tempdir().unwrap();
+        let ca = crate::authca::Ca::load_or_create(dir.path()).unwrap();
+        let signer = ca.doc_signer(dir.path()).unwrap();
+        let mut e = Evidence {
+            generated_at: "2026-10-04T10:00:00Z".into(),
+            warnings: vec!["projects across NAT".into()],
+            ..Default::default()
+        };
+        e.seal(0);
+        let digest = e.digest.clone();
+        e.sign(&signer, &ca.cert_pem).unwrap();
+        assert_eq!(e.digest, digest);
+        assert!(e.verify(), "the signature is outside the digest");
+        let s = e.signature.clone().unwrap();
+        let sig = base64::engine::general_purpose::STANDARD
+            .decode(&s.value)
+            .unwrap();
+        assert!(signer.verify(digest.as_bytes(), &sig));
+        assert!(!signer.verify(b"something else", &sig));
+        assert_eq!(
+            ca.doc_signer(dir.path()).unwrap().cert_pem,
+            signer.cert_pem,
+            "reused"
+        );
+        assert!(markdown(&e).contains("## Limits"));
     }
 }

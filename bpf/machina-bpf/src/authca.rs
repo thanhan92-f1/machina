@@ -109,6 +109,72 @@ impl Ca {
         let cert = csr.signed_by(&issuer, &key)?;
         Ok((cert.pem(), not_after.unix_timestamp()))
     }
+
+    /// `evidence.pem` / `evidence.key` in `dir`: a document-signing
+    /// certificate issued by this CA, created on first use.
+    pub fn doc_signer(&self, dir: &Path) -> Result<DocSigner> {
+        let (cp, kp) = (dir.join("evidence.pem"), dir.join("evidence.key"));
+        if let (Ok(cert_pem), Ok(key_pem)) =
+            (std::fs::read_to_string(&cp), std::fs::read_to_string(&kp))
+        {
+            return Ok(DocSigner { cert_pem, key_pem });
+        }
+        let key = KeyPair::generate()?;
+        let mut p = CertificateParams::default();
+        let mut dn = DistinguishedName::new();
+        dn.push(DnType::CommonName, "machina segmentation evidence signer");
+        p.distinguished_name = dn;
+        p.is_ca = IsCa::ExplicitNoCa;
+        p.key_usages = vec![
+            KeyUsagePurpose::DigitalSignature,
+            KeyUsagePurpose::ContentCommitment,
+        ];
+        let now = time::OffsetDateTime::now_utc();
+        p.not_before = now - time::Duration::hours(1);
+        p.not_after = now + time::Duration::days(1825);
+        let ca_key = KeyPair::from_pem(&self.key_pem)?;
+        let issuer = CertificateParams::from_ca_cert_pem(&self.cert_pem)?.self_signed(&ca_key)?;
+        let cert = p.signed_by(&key, &issuer, &ca_key)?;
+        std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
+        write_private(&kp, &key.serialize_pem())?;
+        std::fs::write(&cp, cert.pem()).with_context(|| format!("write {}", cp.display()))?;
+        Ok(DocSigner {
+            cert_pem: cert.pem(),
+            key_pem: key.serialize_pem(),
+        })
+    }
+}
+
+/// Signs documents (segmentation evidence) with a CA-issued certificate.
+pub struct DocSigner {
+    pub cert_pem: String,
+    key_pem: String,
+}
+
+impl DocSigner {
+    /// ECDSA P-256 / SHA-256, DER encoded (what `openssl dgst -sha256
+    /// -verify` checks).
+    pub fn sign(&self, data: &[u8]) -> Result<Vec<u8>> {
+        let der = PrivateKeyDer::from_pem_slice(self.key_pem.as_bytes())
+            .map_err(|e| anyhow!("signing key: {e}"))?;
+        let key = rustls::crypto::ring::sign::any_ecdsa_type(&der)
+            .map_err(|e| anyhow!("signing key: {e}"))?;
+        let signer = key
+            .choose_scheme(&[rustls::SignatureScheme::ECDSA_NISTP256_SHA256])
+            .ok_or_else(|| anyhow!("signing key is not ECDSA P-256"))?;
+        signer.sign(data).map_err(|e| anyhow!("sign: {e}"))
+    }
+
+    pub fn verify(&self, data: &[u8], sig: &[u8]) -> bool {
+        let Ok(der) = CertificateDer::from_pem_slice(self.cert_pem.as_bytes()) else {
+            return false;
+        };
+        let Ok(cert) = webpki::EndEntityCert::try_from(&der) else {
+            return false;
+        };
+        cert.verify_signature(webpki::ring::ECDSA_P256_SHA256, data, sig)
+            .is_ok()
+    }
 }
 
 pub fn write_private(path: &Path, data: &str) -> Result<()> {

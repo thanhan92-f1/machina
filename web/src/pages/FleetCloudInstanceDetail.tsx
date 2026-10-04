@@ -22,6 +22,7 @@ import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
+import InstanceIsolation from '../components/flow/InstanceIsolation'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
@@ -138,6 +139,8 @@ function FleetCloudInstanceDetailContent() {
           <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Last error</dt><dd className="mt-1 text-red-600">{vm.last_error}</dd></div>
         )}
       </dl>
+
+      <InstanceIsolation vmName={vm.name} project={vm.project} />
 
       <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
         <h2 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Network interfaces</h2>

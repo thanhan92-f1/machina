@@ -5,7 +5,7 @@
 // flows. `host` talks to this daemon; `fleet` to the controller, which pushes
 // the compiled policy to every host's machina-bpfd.
 
-import { apiDelete, apiGet, apiGetText, apiPost, apiPut, readJsonItemsList } from './client'
+import { apiDelete, apiDeleteJson, apiGet, apiGetText, apiPost, apiPut, readJsonItemsList } from './client'
 import { PLATFORM_CONTROLLER_PROXY } from './platform'
 
 export type NetpolScope = 'host' | 'fleet'
@@ -233,14 +233,44 @@ export const getVmNetpolYaml = (scope: NetpolScope, name: string) =>
 
 export type EvidenceFormat = 'json' | 'md'
 
-/** Segmentation evidence, as served (the JSON keeps its exact bytes so the digest verifies). */
-export const getEvidence = (scope: NetpolScope, format: EvidenceFormat) =>
-  apiGetText(`${netpolBase(scope)}${P}/evidence${format === 'md' ? '?format=md' : ''}`)
-
-export function evidenceFilename(format: EvidenceFormat, now = new Date()): string {
-  const stamp = now.toISOString().slice(0, 19).replace(/[-:]/g, '')
-  return `segmentation-evidence-${stamp}.${format}`
+export interface EvidenceOptions {
+  /** Fleet only: one project's VMs (project members may export it). */
+  project?: string
+  /** Matrix probes, e.g. `tcp/22,udp/53` (default tcp/22, tcp/443). */
+  probes?: string
 }
+
+export function evidenceQuery(format: EvidenceFormat, o: EvidenceOptions = {}): string {
+  const q = new URLSearchParams()
+  if (format === 'md') q.set('format', 'md')
+  if (o.project) q.set('project', o.project)
+  if (o.probes?.trim()) q.set('probes', o.probes.trim())
+  const qs = q.toString()
+  return qs ? `?${qs}` : ''
+}
+
+/** Segmentation evidence, as served (the JSON keeps its exact bytes so the digest verifies). */
+export const getEvidence = (scope: NetpolScope, format: EvidenceFormat, o: EvidenceOptions = {}) =>
+  apiGetText(`${netpolBase(scope)}${P}/evidence${evidenceQuery(format, scope === 'fleet' ? o : { probes: o.probes })}`)
+
+export function evidenceFilename(format: EvidenceFormat, now = new Date(), project?: string): string {
+  const stamp = now.toISOString().slice(0, 19).replace(/[-:]/g, '')
+  const tag = project ? `-${project.replace(/[^A-Za-z0-9_.-]+/g, '_')}` : ''
+  return `segmentation-evidence${tag}-${stamp}.${format}`
+}
+
+export interface StoredEvidence {
+  name: string
+  bytes: number
+  modified: string
+}
+
+/** Fleet only: reports the controller exported on its schedule. */
+export const listStoredEvidence = () =>
+  apiGet<{ dir: string; items: StoredEvidence[] }>(`${netpolBase('fleet')}${P}/evidence/archive`)
+
+export const getStoredEvidence = (name: string, format: EvidenceFormat) =>
+  apiGetText(`${netpolBase('fleet')}${P}/evidence/archive/${encodeURIComponent(name)}${format === 'md' ? '?format=md' : ''}`)
 
 export const validateVmNetpol = (scope: NetpolScope, yaml: string) =>
   apiPost<NetpolPreview>(`${netpolBase(scope)}${P}/validate`, { yaml })
@@ -463,8 +493,10 @@ export interface ProjectNet {
   allow_host: boolean
   egress_restricted: boolean
   egress_allow: EgressAllow[]
-  /** Host name or id → egress IP on that host. */
+  /** Host name or id → egress IP on that host: IPv4, IPv6, or both comma-separated. */
   egress_ips: Record<string, string>
+  /** Block internet egress on hosts without one of the egress IPs. */
+  egress_ip_required?: boolean
   updated_by?: string
   updated_at?: string
 }
@@ -477,6 +509,32 @@ export interface ProjectRow {
   allow_host: boolean
   vms: string[]
   policies: string[]
+  /** The project spans hosts whose VM subnets are NATed per host. */
+  cross_host_nat?: { project: string; hosts: string[]; subnets: string[] } | null
+  egress_gaps?: EgressGap[]
+}
+
+export interface EgressGap {
+  project: string
+  vm: string
+  host: string
+  blocked: boolean
+}
+
+export interface ProjectPreview {
+  project: string
+  describe: string
+  summary: string
+  replay: ReplayResult
+}
+
+export interface ProjectPending {
+  pending: { id: string; label?: string; requested_by?: string }
+  preview: string
+}
+
+export function isProjectPending(r: unknown): r is ProjectPending {
+  return typeof r === 'object' && r !== null && 'pending' in r
 }
 
 export interface EgressHostStatus {
@@ -491,13 +549,20 @@ export interface EgressHostStatus {
 
 /** Fleet only. */
 export const listProjects = () =>
-  apiGet<{ default: ProjectNet; items: ProjectRow[] }>(`${netpolBase('fleet')}${P}/projects`)
+  apiGet<{ default: ProjectNet; items: ProjectRow[]; warnings?: string[] }>(`${netpolBase('fleet')}${P}/projects`)
 
-export const setProject = (project: string, s: Omit<ProjectNet, 'project'>) =>
-  apiPut<{ project: ProjectNet }>(`${netpolBase('fleet')}${P}/projects/${encodeURIComponent(project)}`, s)
+const projectPath = (project: string) => `${netpolBase('fleet')}${P}/projects/${encodeURIComponent(project)}`
 
-export const resetProject = (project: string) =>
-  apiDelete(`${netpolBase('fleet')}${P}/projects/${encodeURIComponent(project)}`)
+/** Applies, or with `propose` (or when the controller requires approval) returns a pending approval. */
+export const setProject = (project: string, s: Omit<ProjectNet, 'project'>, propose = false) =>
+  apiPut<{ project: ProjectNet } | ProjectPending>(`${projectPath(project)}${propose ? '?propose=1' : ''}`, s)
+
+export const resetProject = (project: string, propose = false) =>
+  apiDeleteJson<unknown>(`${projectPath(project)}${propose ? '?propose=1' : ''}`)
+
+/** What a change would do to recorded traffic; nothing is applied. */
+export const previewProject = (project: string, s: Omit<ProjectNet, 'project'>) =>
+  apiPost<ProjectPreview>(`${projectPath(project)}/preview`, { project, ...s })
 
 export const listEgressIps = () =>
   apiGet<{ items: EgressHostStatus[]; errors: Array<{ hostname: string; error: string }> }>(`${netpolBase('fleet')}${P}/egress-ips`)

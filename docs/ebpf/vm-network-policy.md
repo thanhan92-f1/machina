@@ -891,6 +891,21 @@ machinactl --fleet netpol project reset payments      # drop every setting
   bridges), so SSH and health checks from the host keep working. **Open:** no
   generated rule. **Inherit:** follow the default, which is open until
   set.
+- **Host addresses:** each host's `machina-bpfd` reports all of its global
+  addresses (`node_addrs` in its status), and the controller refreshes them
+  every few minutes. On a host, its own addresses are `host`; the other
+  hosts' addresses are `remote-node`. An address that several hosts share
+  (libvirt's `192.168.122.1`, for example) is left out of `remote-node`.
+- **VM addresses:** every address the agent sees for a VM (all NICs, IPv4
+  and IPv6, from DHCP leases, the guest agent and ARP) is part of its
+  identity, not only the first one.
+- **Cross-host NAT:** VMs on libvirt NAT networks reach VMs on other hosts
+  with their host's address, so isolation cannot tell them apart from the
+  host. A project with VMs on two or more hosts whose VM subnets are NATed
+  per host (the same `addr/prefix` on several hosts) is flagged:
+  `cross_host_nat` in the API, a warning in `netpol projects`, a badge in
+  the UI and a line in evidence exports. Use routed or bridged networks for
+  projects that span hosts.
 - **Exceptions:** ordinary allow policies still apply, because policies
   add up. One `CiliumNetworkPolicy` that lets `app=monitor` reach port
   9100 opens that port into an isolated project.
@@ -904,19 +919,64 @@ machinactl --fleet netpol project reset payments      # drop every setting
 - **Storage:** settings live in the controller table `vm_netpol_projects`.
   Changes are recorded as `netpol.project` events.
 
-In the UI, the *Projects* view (fleet scope) has the default, a row per
-project with its VM count and an isolation picker, and *Egress…* for the
-allowlist and egress IPs.
+### Preview and approval
 
-API (controller, admin to change):
+```bash
+machinactl --fleet netpol project isolate payments --preview   # replay only
+machinactl --fleet netpol egress payments allow 10.0.0.0/8 --propose
+```
 
-- `GET /api/v1/vm-network-policies/projects` returns `{default, items}`.
-  Each item has the stored settings, the effective `isolated` /
-  `allow_host`, the VMs and the generated policy names.
-- `PUT /api/v1/vm-network-policies/projects/{project}` with
-  `{isolation, allow_host, egress_restricted, egress_allow, egress_ips}`.
-  Project `*` is the default and takes only `isolation` and `allow_host`.
-- `DELETE /api/v1/vm-network-policies/projects/{project}` resets it.
+- **Preview:** `--preview` (or `--dry-run`) on any project or egress change
+  replays the result against the 7-day flow history and prints what it
+  would break or newly allow. Nothing is applied.
+- **Approval:** `--propose` sends the change to *Approvals* as a
+  `vm_netpol.project` action with the replay summary. A second admin
+  applies it. With `MACHINA_NETPOL_PROJECT_APPROVAL=1` on the controller,
+  every project change goes through approval.
+
+### Who may change what
+
+- **Fleet admins:** everything.
+- **Project admins** (the `admin` role in a Fleet Cloud project): that
+  project's isolation, egress allowlist and `require-ip`. Egress IPs are
+  host addresses and need a fleet admin, as does the default (`*`).
+- **Members** (any project role) may preview changes and export their
+  project's evidence.
+
+### UI
+
+The *Projects* view (fleet scope) has:
+
+- the default isolation;
+- *Preview against recorded traffic* and *Ask a second admin* toggles,
+  which apply to every change made on the page;
+- an *Assign* form that puts any VM in a new or existing project;
+- warnings (cross-host NAT, VMs without their egress IP);
+- a row per project with its VM count, isolation picker and badges, and
+  *Manage…* for its VMs, egress allowlist, egress IPs, `require-ip`, a
+  per-project reachability matrix (with configurable probes) and evidence
+  export.
+
+Fleet Cloud instance pages show the instance's isolation, egress and egress
+IP, including whether its host lacks the project's egress IP.
+
+### API
+
+All on the controller.
+
+- `GET /api/v1/vm-network-policies/projects` returns
+  `{default, items, warnings}`. Each item has the stored settings, the
+  effective `isolated` / `allow_host`, the VMs, the generated policy
+  names, `cross_host_nat` and `egress_gaps`.
+- `PUT /api/v1/vm-network-policies/projects/{project}[?propose=1]` with
+  `{isolation, allow_host, egress_restricted, egress_allow, egress_ips,
+  egress_ip_required}`. Project `*` is the default and takes only
+  `isolation` and `allow_host`. When approval applies, it returns
+  `{pending, preview}` instead.
+- `DELETE /api/v1/vm-network-policies/projects/{project}[?propose=1]`
+  resets it.
+- `POST /api/v1/vm-network-policies/projects/{project}/preview` with the
+  same body returns `{describe, summary, replay}`.
 
 ## Egress allowlists and egress IPs
 
@@ -931,6 +991,8 @@ machinactl --fleet netpol egress payments                    # show it
 machinactl --fleet netpol egress payments remove 10.20.0.0/16
 machinactl --fleet netpol egress payments unrestrict         # keep the list, stop limiting
 machinactl --fleet netpol egress payments ip hv-1 198.51.100.7
+machinactl --fleet netpol egress payments ip hv-2 '198.51.100.8,2001:db8::8'
+machinactl --fleet netpol egress payments require-ip         # block hosts without one
 machinactl --fleet netpol egress                             # egress IPs on every host
 ```
 
@@ -953,17 +1015,29 @@ machinactl --fleet netpol egress                             # egress IPs on eve
 - **What it does:** an egress IP rewrites the source address of the
   project's traffic leaving one host. Firewalls and SaaS allowlists
   outside the fleet can then tell tenants apart.
-- **Setting it:** set one per host, by host name or id. The address must
+- **Setting it:** set one per host, by host name or id: one IPv4, one
+  IPv6, or both comma-separated. IPv4 VM addresses leave with the IPv4
+  egress IP and IPv6 ones with the IPv6 egress IP. The address must
   already be configured on that host, and the upstream network must route
   it back to that host; otherwise replies never arrive. Machina does not
   add addresses.
 - **What is never rewritten:** destinations in private (RFC 1918),
   CGNAT, link-local, loopback and multicast ranges keep the VM's own
-  source, so VM-to-VM traffic and policies are unaffected.
+  source, and so do IPv6 ULA (`fc00::/7`), link-local, loopback and
+  multicast. VM-to-VM traffic and policies are unaffected.
 - **How it works:** on every reconcile the controller sends each host the
-  rules for its VMs. `machina-bpfd` installs them as one nftables table,
-  `ip machina_egress` (a `srcnat` chain with `ip saddr {VMs} snat to IP`),
-  replaced atomically on each change.
+  rules for its VMs. `machina-bpfd` installs them as the nftables tables
+  `ip machina_egress` and `ip6 machina_egress` (a `srcnat` chain with
+  `ip saddr {VMs} snat to IP`, and the `ip6` equivalent), replaced
+  atomically together on each change.
+- **VMs on other hosts:** a VM that migrates (or starts) on a host without
+  one of its project's egress IPs leaves with that host's address. The
+  controller records a `netpol.egress_gap` event when this starts and
+  stops, and lists the VM in `egress_gaps`, `netpol projects` and evidence
+  warnings. With `require-ip` (`egress_ip_required`), a generated
+  `project-egress-ip-<project>` policy instead blocks those VMs' internet
+  egress (everything except the never-rewritten ranges above, and IPv6
+  outside `2000::/3`); `allow-host-ip` turns it off.
 - **Missing addresses:** a rule whose address is not on the host is
   skipped and reported, not applied.
 - **Persistence:** the table is address translation, not a security
@@ -984,7 +1058,10 @@ segmentation (PCI DSS 1.2/1.3 or SOC 2 CC6.6, for example) as one document:
 machinactl --fleet netpol evidence                        # summary and matrix
 machinactl --fleet netpol evidence -o json --out ev.json  # full document
 machinactl --fleet netpol evidence -o md --out ev.md      # for the audit binder
-machinactl netpol evidence verify ev.json                 # digest check
+machinactl --fleet netpol evidence --project payments --probes tcp/22,tcp/5432
+machinactl netpol evidence verify ev.json                 # digest and signature
+machinactl --fleet netpol evidence archive                # scheduled exports
+machinactl --fleet netpol evidence archive NAME -o md --out ev.md
 ```
 
 The document (`kind: machina.io/segmentation-evidence/v1`) contains:
@@ -1002,7 +1079,8 @@ The document (`kind: machina.io/segmentation-evidence/v1`) contains:
 - **Reachability matrix:** for every pair of groups, plus `host` and
   `world`, which probe ports the policy set allows.
   - Groups are projects, or VMs when no VM has a project, up to 40.
-  - The probes are TCP 22, 80, 443, 3389, 5432 and UDP 53.
+  - The probes are TCP 22, 80, 443, 3389, 5432 and UDP 53 unless
+    `--probes` (`?probes=tcp/22,udp/53`, up to 16) picks others.
   - Each cell is computed by the policy tracer from up to three sample VMs
     per group, and lists the pairs it traced. It shows what the policy
     allows, not what was observed.
@@ -1013,16 +1091,36 @@ The document (`kind: machina.io/segmentation-evidence/v1`) contains:
 - **Approvals:** on the fleet, 90 days of `vm_netpol.jit`,
   `vm_netpol.apply` and `vm.quarantine` approval actions, with requester and
   approver.
-- **Digest:** a SHA-256 over the compact JSON with `digest` empty.
-  `netpol evidence verify FILE` recomputes it (with `jq` and `sha256sum`),
-  so later edits to a saved file are detected.
+- **Warnings:** what the report cannot show as configured: projects
+  across per-host NAT and VMs running without their project's egress IP.
+- **Digest:** a SHA-256 over the compact JSON with `digest` empty and no
+  `signature`. `netpol evidence verify FILE` recomputes it (with `jq` and
+  `sha256sum`), so later edits to a saved file are detected.
+- **Signature (fleet):** the controller signs the digest with ECDSA P-256
+  (`signature.alg: ecdsa-p256-sha256`). The signing certificate
+  (`evidence.pem`, issued by the controller's netpol CA, which also issues
+  host authentication certificates) and the CA certificate are embedded.
+  `verify` checks the signature and the chain with `openssl` and prints the
+  CA fingerprint; pass `CA.pem` as the second argument to pin your own copy.
+
+**Project reports:** `--project P` (`?project=P`) limits the document to
+one project: its VMs, its policies and settings, and a matrix of the
+project against `(other projects)`, `host` and `world`. Fleet-wide reports
+need an operator; project reports are open to the project's members.
+
+**Scheduled exports:** the controller writes a signed JSON report to
+`MACHINA_NETPOL_EVIDENCE_DIR` (default `/var/lib/machina/netpol-evidence`)
+every `MACHINA_NETPOL_EVIDENCE_EVERY_HOURS` (default 24; 0 turns it off)
+and deletes reports older than `MACHINA_NETPOL_EVIDENCE_KEEP_DAYS` (default
+90). `GET /api/v1/vm-network-policies/evidence/archive` lists them and
+`…/evidence/archive/{name}[?format=md]` serves one.
 
 The Markdown form has the same content as tables, and is what the UI's
 *Export evidence → Markdown* button downloads. *JSON* downloads the
 document byte for byte, so its digest verifies.
 
-API: `GET /api/v1/vm-network-policies/evidence[?format=md]` on the daemon
-(this host) and the controller (the fleet). Exports are logged, as
+API: `GET /api/v1/vm-network-policies/evidence[?format=md][&probes=…]` on
+the daemon (this host) and the controller (the fleet, also `&project=P`). Exports are logged, as
 `netpol.evidence` events on the controller.
 
 ## Test
@@ -1047,8 +1145,10 @@ a veth pair in a scratch netns and covers:
   SNI with `openssl`; Kafka Produce to an allowed and a denied topic; DNS
   over UDP (reinjected, REFUSED) and over TCP (answered, reset, learned by
   `toFQDNs`); AUDIT in observe mode.
-- Authentication: `test-always-fail`, `required` against a fleet peer, the
-  auth table, and the source guard with and without the lease.
+- Authentication: `test-always-fail`; `required` against a VM on another
+  host while this host has no certificate (blocked, with the reason in the
+  auth table) and against a VM on this host (authenticated locally); the
+  source guard with and without the lease.
 - Egress IPs: a second netns stands in for the internet, routed through
   the host. A server there reports the source address it sees: the VM's
   address before the rule, the egress IP after it, and the VM's address

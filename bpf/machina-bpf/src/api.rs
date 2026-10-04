@@ -996,6 +996,9 @@ pub struct VmEdgeStatus {
     pub proxy: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub quarantines: Vec<VmQuarantine>,
+    /// Global addresses of this node as `address/prefix`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub node_addrs: Vec<String>,
 }
 
 /// One exception while a VM is quarantined. `peer`: `host` (this host's

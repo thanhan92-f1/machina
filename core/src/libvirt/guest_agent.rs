@@ -124,6 +124,37 @@ fn guest_interfaces_from_virsh(name: &str, source: &'static str) -> Vec<GuestIpA
     parse_virsh_domifaddr_rows(&String::from_utf8_lossy(&out.stdout), source)
 }
 
+fn usable_guest_addr(a: &str) -> bool {
+    match a.parse::<std::net::IpAddr>() {
+        Ok(std::net::IpAddr::V4(v4)) => {
+            !v4.is_loopback() && !v4.is_link_local() && !v4.is_unspecified()
+        }
+        Ok(std::net::IpAddr::V6(v6)) => {
+            !v6.is_loopback() && !v6.is_unspecified() && (v6.segments()[0] & 0xffc0) != 0xfe80
+        }
+        Err(_) => false,
+    }
+}
+
+/// Every usable guest address (IPv4 first, then IPv6), from `virsh
+/// domifaddr` sources in turn (lease, agent, arp) until one gives an IPv4.
+pub fn guest_addresses_from_virsh(name: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for source in ["lease", "agent", "arp"] {
+        for r in guest_interfaces_from_virsh(name, source) {
+            let a = r.address.split('/').next().unwrap_or("").to_string();
+            if usable_guest_addr(&a) && !out.contains(&a) {
+                out.push(a);
+            }
+        }
+        if out.iter().any(|a| !a.contains(':')) {
+            break;
+        }
+    }
+    out.sort_by_key(|a| a.contains(':'));
+    out
+}
+
 /// Resolve guest IPv4 via `virsh domifaddr` so a bad qemu/libvirt FFI response cannot SIGSEGV the daemon.
 pub fn guest_ipv4_from_virsh(name: &str) -> Option<String> {
     use std::process::Command;

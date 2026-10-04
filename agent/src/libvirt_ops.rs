@@ -30,6 +30,7 @@ pub struct VmListEntry {
     pub disk_read_iops: u64,
     pub disk_write_iops: u64,
     pub guest_ip: String,
+    pub guest_ips: Vec<String>,
 }
 
 pub struct LibvirtCtx {
@@ -91,6 +92,7 @@ impl LibvirtCtx {
                 disk_read_iops: 0,
                 disk_write_iops: 0,
                 guest_ip: v.guest_ip.clone().unwrap_or_default(),
+                guest_ips: v.guest_ips.clone(),
             };
             if let Ok(dom) = Domain::lookup_by_name(&self.conn, &v.name) {
                 if let Ok(uuid) = dom.get_uuid_string() {

@@ -636,6 +636,7 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
             sqlx::query(
                 "UPDATE vms SET host_id = ?, name = ?, observed_state = ?, uuid = COALESCE(NULLIF(?, ''), uuid),
                  vcpus = ?, memory_mib = ?, guest_ip = CASE WHEN ? != '' THEN ? ELSE guest_ip END,
+                 guest_ips = CASE WHEN ? != '[]' THEN ? ELSE guest_ips END,
                  last_seen_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
             )
             .bind(host_id)
@@ -646,6 +647,8 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
             .bind(vm.memory_mb as i64)
             .bind(&vm.guest_ip)
             .bind(&vm.guest_ip)
+            .bind(serde_json::to_string(&vm.guest_ips).unwrap_or_else(|_| "[]".into()))
+            .bind(serde_json::to_string(&vm.guest_ips).unwrap_or_else(|_| "[]".into()))
             .bind(id)
             .execute(&state.pool)
             .await?;

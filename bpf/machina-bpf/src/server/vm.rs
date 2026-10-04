@@ -23,8 +23,9 @@ pub(super) use threat::{threat_observe, ThreatHit};
 
 const EDGE_IN: &str = "mn_vm_edge_in";
 const EDGE_OUT: &str = "mn_vm_edge_out";
-/// Global unicast addresses of this node (management, bridges, uplinks).
-fn node_addresses() -> Vec<[u8; ADDR_LEN]> {
+/// Global unicast addresses of this node (management, bridges, uplinks)
+/// as `address/prefix`.
+pub(super) fn node_cidrs() -> Vec<String> {
     let Ok(out) = std::process::Command::new("ip")
         .args(["-j", "addr", "show"])
         .output()
@@ -38,7 +39,18 @@ fn node_addresses() -> Vec<[u8; ADDR_LEN]> {
         .filter(|l| l["ifname"].as_str() != Some("lo"))
         .flat_map(|l| l["addr_info"].as_array().cloned().unwrap_or_default())
         .filter(|a| a["scope"].as_str() == Some("global"))
-        .filter_map(|a| a["local"].as_str().and_then(|ip| addr16(ip).ok()))
+        .filter_map(|a| {
+            let ip = a["local"].as_str()?;
+            let len = a["prefixlen"].as_u64()?;
+            Some(format!("{ip}/{len}"))
+        })
+        .collect()
+}
+
+fn node_addresses() -> Vec<[u8; ADDR_LEN]> {
+    node_cidrs()
+        .iter()
+        .filter_map(|c| addr16(c.split('/').next().unwrap_or("")).ok())
         .collect()
 }
 
@@ -1455,6 +1467,7 @@ impl Engine {
             auth_cert: self.vmauth.cert_info(),
             proxy: self.vm_edge.proxy_note.clone(),
             quarantines: self.vm_quarantines(),
+            node_addrs: node_cidrs(),
         }
     }
 

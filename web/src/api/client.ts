@@ -200,6 +200,17 @@ export async function apiDelete(url: string): Promise<void> {
   }
 }
 
+/** DELETE that returns the JSON body (`null` when there is none). */
+export async function apiDeleteJson<T>(url: string): Promise<T | null> {
+  const res = await fetchApi(url, { ...defaultOpts, method: 'DELETE' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(formatHttpErrorBody(res.status, res.statusText, text))
+  }
+  const contentType = res.headers.get('content-type') || ''
+  return contentType.includes('application/json') ? res.json() : null
+}
+
 function wsAuthHeaders(): HeadersInit {
   const h = new Headers()
   try {

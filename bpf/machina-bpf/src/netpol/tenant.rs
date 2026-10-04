@@ -59,9 +59,14 @@ pub struct ProjectNet {
     pub egress_restricted: bool,
     #[serde(default)]
     pub egress_allow: Vec<EgressAllow>,
-    /// Host id or name → source address for traffic leaving that host.
+    /// Host id or name → source address for traffic leaving that host: one
+    /// IPv4, one IPv6, or both comma-separated.
     #[serde(default)]
     pub egress_ips: BTreeMap<String, String>,
+    /// Block internet egress of the project's VMs on hosts without one of
+    /// its egress IPs (instead of leaving with the host's address).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub egress_ip_required: bool,
     #[serde(default)]
     pub updated_by: String,
     #[serde(default)]
@@ -81,6 +86,7 @@ impl Default for ProjectNet {
             egress_restricted: false,
             egress_allow: Vec::new(),
             egress_ips: BTreeMap::new(),
+            egress_ip_required: false,
             updated_by: String::new(),
             updated_at: String::new(),
         }
@@ -140,6 +146,7 @@ impl ProjectNet {
             if self.egress_restricted
                 || !self.egress_allow.is_empty()
                 || !self.egress_ips.is_empty()
+                || self.egress_ip_required
             {
                 return Err("egress allowlists and egress IPs are set per project".into());
             }
@@ -164,12 +171,135 @@ impl ProjectNet {
             if h.trim().is_empty() {
                 return Err("egress IP needs a host".into());
             }
-            if ip.parse::<std::net::Ipv4Addr>().is_err() {
-                return Err(format!("egress IP `{ip}` for {h} is not an IPv4 address"));
+            let (mut v4, mut v6) = (0, 0);
+            for a in egress_ip_list(ip) {
+                match a.parse::<std::net::IpAddr>() {
+                    Ok(x) if x.is_ipv4() => v4 += 1,
+                    Ok(_) => v6 += 1,
+                    Err(_) => return Err(format!("egress IP `{a}` for {h} is not an IP address")),
+                }
             }
+            if v4 + v6 == 0 {
+                return Err(format!("egress IP for {h} is empty"));
+            }
+            if v4 > 1 || v6 > 1 {
+                return Err(format!(
+                    "{h}: at most one IPv4 and one IPv6 egress IP per host"
+                ));
+            }
+        }
+        if self.egress_ip_required && self.egress_ips.is_empty() {
+            return Err("requiring the egress IP needs at least one egress IP".into());
         }
         Ok(())
     }
+
+    /// Has an egress IP on the host with this id or name.
+    pub fn egress_ip_on(&self, host_id: &str, hostname: &str) -> Option<&String> {
+        self.egress_ips
+            .get(host_id)
+            .or_else(|| self.egress_ips.get(hostname))
+    }
+}
+
+/// The addresses of one `egress_ips` value.
+pub fn egress_ip_list(v: &str) -> impl Iterator<Item = &str> {
+    v.split(',').map(str::trim).filter(|a| !a.is_empty())
+}
+
+/// A VM of a project with egress IPs, on a host that has none of them.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct EgressGap {
+    pub project: String,
+    pub vm: String,
+    pub host: String,
+    /// Its internet egress is blocked (`egress_ip_required`).
+    pub blocked: bool,
+}
+
+/// `hosts`: host id → hostname.
+pub fn egress_gaps(
+    settings: &[ProjectNet],
+    vms: &[NetpolVm],
+    hosts: &BTreeMap<String, String>,
+) -> Vec<EgressGap> {
+    let mut out = Vec::new();
+    for s in settings
+        .iter()
+        .filter(|s| !s.is_default() && !s.egress_ips.is_empty())
+    {
+        for v in vms
+            .iter()
+            .filter(|v| v.project.as_deref() == Some(s.project.as_str()))
+        {
+            let Some(h) = v.host.as_deref() else { continue };
+            let name = hosts.get(h).map_or(h, String::as_str);
+            if s.egress_ip_on(h, name).is_none() {
+                out.push(EgressGap {
+                    project: s.project.clone(),
+                    vm: v.name.clone(),
+                    host: name.to_string(),
+                    blocked: s.egress_ip_required,
+                });
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// Not `::/0`: the compiler keeps IPv4 as IPv4-mapped IPv6, which `::/0`
+/// would cover too.
+const GLOBAL_UNICAST6: &str = "2000::/3";
+
+/// For projects that require their egress IP: deny traffic that would be
+/// source-NATed (non-private destinations) from VMs on other hosts.
+pub fn egress_ip_guards(
+    settings: &[ProjectNet],
+    hosts: &BTreeMap<String, String>,
+) -> Vec<VmNetworkPolicy> {
+    settings
+        .iter()
+        .filter(|s| !s.is_default() && s.egress_ip_required && !s.egress_ips.is_empty())
+        .map(|s| {
+            let project = s.project.as_str();
+            let mut with: BTreeSet<String> = hosts
+                .iter()
+                .filter(|(id, name)| s.egress_ip_on(id, name).is_some())
+                .map(|(id, _)| id.clone())
+                .collect();
+            with.extend(
+                s.egress_ips
+                    .keys()
+                    .filter(|k| !hosts.values().any(|n| n == *k))
+                    .cloned(),
+            );
+            policy(
+                policy_name("egress-ip", project),
+                project,
+                json!({
+                    "description": format!(
+                        "Project {project} requires its egress IP: internet egress is blocked on hosts without one"
+                    ),
+                    "endpointSelector": {
+                        "matchLabels": { LABEL_PROJECT: project },
+                        "matchExpressions": [{
+                            "key": super::LABEL_HOST,
+                            "operator": "NotIn",
+                            "values": with.into_iter().collect::<Vec<_>>(),
+                        }],
+                    },
+                    "enableDefaultDeny": { "egress": false },
+                    "egressDeny": [{
+                        "toCIDRSet": [
+                            { "cidr": "0.0.0.0/0", "except": super::snat::DEFAULT_EXCLUDE },
+                            { "cidr": GLOBAL_UNICAST6 },
+                        ],
+                    }],
+                }),
+            )
+        })
+        .collect()
 }
 
 /// Whether `project` is isolated and lets the host in, after inheritance.
@@ -321,21 +451,19 @@ pub fn snat_rules(
 ) -> Vec<VmEgressSnatRule> {
     let mut out = Vec::new();
     for s in settings.iter().filter(|s| !s.is_default()) {
-        let Some(ip) = s
-            .egress_ips
-            .get(host_id)
-            .or_else(|| s.egress_ips.get(hostname))
-        else {
+        let Some(ips) = s.egress_ip_on(host_id, hostname) else {
             continue;
         };
-        let addrs = vms
-            .iter()
-            .filter(|v| v.project.as_deref() == Some(s.project.as_str()))
-            .filter(|v| v.host.as_deref() == Some(host_id))
-            .flat_map(|v| v.addresses.iter().cloned());
-        let r = super::snat::rules_for(&s.project, ip, addrs);
-        if !r.sources.is_empty() {
-            out.push(r);
+        for ip in egress_ip_list(ips) {
+            let addrs = vms
+                .iter()
+                .filter(|v| v.project.as_deref() == Some(s.project.as_str()))
+                .filter(|v| v.host.as_deref() == Some(host_id))
+                .flat_map(|v| v.addresses.iter().cloned());
+            let r = super::snat::rules_for(&s.project, ip, addrs);
+            if !r.sources.is_empty() {
+                out.push(r);
+            }
         }
     }
     out
@@ -504,5 +632,93 @@ mod tests {
         assert_eq!(r[0].sources, ["10.0.0.5", "10.0.0.6"]);
         assert!(snat_rules(&settings, &inv(), "h2", "hv2").is_empty());
         assert_ne!(policy_name("egress", "a b"), policy_name("egress", "a-b"));
+
+        let mut dual = settings[0].clone();
+        dual.egress_ips
+            .insert("hv1".into(), "203.0.113.10, 2001:db8::10".into());
+        dual.validate().unwrap();
+        let mut vms = inv();
+        vms[0].addresses.push("fd00::5".into());
+        let r = snat_rules(&[dual.clone()], &vms, "h1", "hv1");
+        assert_eq!(r.len(), 2, "{r:?}");
+        assert_eq!(r[1].egress_ip, "2001:db8::10");
+        assert_eq!(r[1].sources, ["fd00::5"]);
+        for bad in [
+            "203.0.113.10,203.0.113.11",
+            "2001:db8::1,2001:db8::2",
+            " , ",
+            "x",
+        ] {
+            dual.egress_ips.insert("hv1".into(), bad.into());
+            assert!(dual.validate().is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn egress_ip_gaps_are_reported_and_optionally_blocked() {
+        let mut vms = inv();
+        vms.push(NetpolVm {
+            host: Some("h2".into()),
+            ..vm("shop-moved", "shop", "10.0.0.7")
+        });
+        let hosts: BTreeMap<String, String> = [
+            ("h1".to_string(), "hv1".to_string()),
+            ("h2".to_string(), "hv2".to_string()),
+        ]
+        .into();
+        let mut s = ProjectNet {
+            project: "shop".into(),
+            egress_ip_required: true,
+            ..Default::default()
+        };
+        assert!(s.validate().is_err(), "required needs an egress IP");
+        s.egress_ips.insert("hv1".into(), "203.0.113.10".into());
+        s.validate().unwrap();
+        let settings = vec![s];
+        assert_eq!(
+            egress_gaps(&settings, &vms, &hosts),
+            [EgressGap {
+                project: "shop".into(),
+                vm: "shop-moved".into(),
+                host: "hv2".into(),
+                blocked: true,
+            }]
+        );
+        let p = egress_ip_guards(&settings, &hosts);
+        assert_eq!(p.len(), 1);
+        assert!(p[0].name.starts_with("project-egress-ip-shop-"));
+        let (_, v) = parse_documents(&super::super::nl::to_yaml(&p));
+        assert!(v.ok(), "{:?}", v.errors);
+        let go = |from: &str, to: &str| {
+            trace(
+                &p,
+                &vms,
+                &[],
+                &[],
+                &[],
+                &TraceQuery {
+                    from: from.into(),
+                    to: to.into(),
+                    protocol: "tcp".into(),
+                    port: 443,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .allowed
+        };
+        assert!(!go("shop-moved", "8.8.8.8"), "no egress IP on hv2");
+        assert!(go("shop-moved", "10.20.0.1"), "private: not NATed anyway");
+        assert!(!go("shop-moved", "2001:4860::8888"), "global IPv6 too");
+        assert!(go("shop-moved", "fd00::9"), "ULA stays local");
+        assert!(go("shop-web", "8.8.8.8"), "hv1 has the egress IP");
+        assert!(go("lab-1", "8.8.8.8"));
+
+        let open = vec![ProjectNet {
+            egress_ip_required: false,
+            ..settings[0].clone()
+        }];
+        assert!(egress_ip_guards(&open, &hosts).is_empty());
+        assert!(!egress_gaps(&open, &vms, &hosts)[0].blocked);
     }
 }

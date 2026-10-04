@@ -19,6 +19,9 @@ pub struct VmInfo {
     /// Best-effort guest IPv4 (list view; running VMs only).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub guest_ip: Option<String>,
+    /// Every guest address seen (all NICs, IPv4 then IPv6).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub guest_ips: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1546,6 +1549,7 @@ mod tests {
                 memory_mb: 512,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "bravo".into(),
@@ -1554,6 +1558,7 @@ mod tests {
                 memory_mb: 1024,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
         ];
         state.search_query = "zzzznotfound".into();
@@ -1573,6 +1578,7 @@ mod tests {
             memory_mb: 512,
             libvirt_connection: None,
             guest_ip: None,
+            guest_ips: Vec::new(),
         }];
         state.search_query.clear();
         state.apply_search_filter();
@@ -1592,6 +1598,7 @@ mod tests {
                 memory_mb: 512,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "bravo".into(),
@@ -1600,6 +1607,7 @@ mod tests {
                 memory_mb: 1024,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "charlie".into(),
@@ -1608,6 +1616,7 @@ mod tests {
                 memory_mb: 512,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
         ];
         state.search_query = "alpha".into();
@@ -1627,6 +1636,7 @@ mod tests {
                 memory_mb: 1024,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "b".into(),
@@ -1635,6 +1645,7 @@ mod tests {
                 memory_mb: 512,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "c".into(),
@@ -1643,6 +1654,7 @@ mod tests {
                 memory_mb: 2048,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
         ];
         state.compute_dashboard();
@@ -1665,6 +1677,7 @@ mod tests {
                 memory_mb: 512,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "alpha".into(),
@@ -1673,6 +1686,7 @@ mod tests {
                 memory_mb: 1024,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
             VmInfo {
                 name: "bravo".into(),
@@ -1681,6 +1695,7 @@ mod tests {
                 memory_mb: 256,
                 libvirt_connection: None,
                 guest_ip: None,
+                guest_ips: Vec::new(),
             },
         ];
         state.sort_column = SortColumn::Name;

@@ -1,7 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-//! Per-project egress IPs: the `ip machina_egress` nftables table. It is
+//! Per-project egress IPs: the `ip`/`ip6 machina_egress` nftables tables. They are
 //! address translation, not a security control, so it stays installed while
 //! bpfd is stopped and is re-applied from the persisted config on start.
 
@@ -43,11 +43,11 @@ fn nft(script: &str) -> Result<()> {
     Ok(())
 }
 
-fn local_addresses() -> Vec<std::net::Ipv4Addr> {
+fn local_addresses() -> Vec<std::net::IpAddr> {
     Command::new("ip")
-        .args(["-o", "-4", "addr", "show"])
+        .args(["-o", "addr", "show"])
         .output()
-        .map(|o| snat::local_v4(&String::from_utf8_lossy(&o.stdout)))
+        .map(|o| snat::local_addrs(&String::from_utf8_lossy(&o.stdout)))
         .unwrap_or_default()
 }
 

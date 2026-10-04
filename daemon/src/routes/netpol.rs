@@ -462,6 +462,9 @@ async fn validate(State(m): State<LibvirtManager>, body: Bytes) -> Json<Value> {
 struct GetQuery {
     #[serde(default)]
     format: Option<String>,
+    /// Evidence matrix probes, `tcp/22,udp/53`.
+    #[serde(default)]
+    probes: Option<String>,
 }
 
 async fn get_one(
@@ -1067,6 +1070,8 @@ async fn evidence(
     Extension(actor): Extension<RequestActor>,
     Query(q): Query<GetQuery>,
 ) -> Result<Response, AppError> {
+    let probes =
+        evidence::parse_probes(q.probes.as_deref().unwrap_or("")).map_err(LibvirtError::Invalid)?;
     let store = load_store();
     let inv = refresh_inventory(&m).await;
     let haddr = tokio::task::spawn_blocking(host_addresses)
@@ -1104,11 +1109,12 @@ async fn evidence(
         })
         .collect();
     let (kind, groups) = evidence::groups(&inv);
-    let (pol, vms) = (store.policies.clone(), inv.clone());
-    let matrix =
-        tokio::task::spawn_blocking(move || evidence::matrix(&pol, &vms, &svcs, &haddr, &groups))
-            .await
-            .map_err(|e| LibvirtError::Operation(format!("matrix: {e}")))?;
+    let (pol, vms, pr) = (store.policies.clone(), inv.clone(), probes.clone());
+    let matrix = tokio::task::spawn_blocking(move || {
+        evidence::matrix(&pol, &vms, &svcs, &haddr, &groups, &pr)
+    })
+    .await
+    .map_err(|e| LibvirtError::Operation(format!("matrix: {e}")))?;
     let denied = evidence::denied(&history(None).await.unwrap_or_default());
     let items = |v: Result<Value, AppError>| {
         v.ok()
@@ -1147,6 +1153,7 @@ async fn evidence(
             .map(|r| json!({ "hostname": hostname, "project": r["project"], "egress_ip": r["egress_ip"], "sources": r["sources"].as_array().map(|a| a.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>().join(", ")) }))
             .collect(),
         denied: denied.clone(),
+        matrix_probes: probes.iter().map(|(p, n)| format!("{p}/{n}")).collect(),
         ..Default::default()
     };
     e.summary.vms = inv.len();

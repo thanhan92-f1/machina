@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-10-04 — Fleet project networking: gaps closed
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#project-isolation-fleet-cloud).
+
+- **All host and VM addresses.** `machina-bpfd` reports every global
+  address of its host (`node_addrs`); the controller uses them for `host`
+  and `remote-node` instead of the management address alone. VMs carry
+  every guest address (all NICs, IPv4 and IPv6; controller column
+  `vms.guest_ips`, migration 036), not only the first IPv4.
+- **Cross-host NAT warning.** Projects spread over hosts whose VM subnets
+  are NATed per host are flagged in the API, CLI, UI and evidence.
+- **Egress IP gaps.** VMs running on a host without their project's egress
+  IP are reported (`netpol.egress_gap` events, `egress_gaps`, evidence
+  warnings). `netpol egress P require-ip` blocks their internet egress
+  instead.
+- **IPv6 egress IPs.** An egress IP may be IPv4, IPv6 or both
+  (`ip HOST 'IPv4,IPv6'`); bpfd adds an `ip6 machina_egress` table.
+- **Preview and approval for project changes.** `--preview` replays a
+  change against the flow history; `--propose` (or
+  `MACHINA_NETPOL_PROJECT_APPROVAL=1`) sends it to a second admin as a
+  `vm_netpol.project` approval.
+- **Project admins.** A Fleet Cloud project's admins may change its
+  isolation, egress allowlist and `require-ip`; members may preview and
+  export its evidence.
+- **Evidence.** Fleet reports are signed (ECDSA P-256, certificate from the
+  controller's netpol CA, verified by `netpol evidence verify`), take
+  `--probes` and `--project`, list warnings, and are exported on a schedule
+  (`MACHINA_NETPOL_EVIDENCE_DIR`, `…_EVERY_HOURS`, `…_KEEP_DAYS`) with an
+  archive API and `netpol evidence archive`. Fleet-wide reports need an
+  operator.
+- **UI.** The *Projects* view assigns VMs to projects, shows warnings and
+  egress gaps, has preview and approval toggles, a `require-ip` switch, and
+  a per-project matrix with evidence export. Fleet Cloud instance pages show
+  the instance's isolation and egress.
+
 ## 2026-10-04 — Fleet VM network policy fixes from real-VM testing
 
 - **Host identity under the controller.** When the controller owns a host's

@@ -284,6 +284,8 @@ Frontend polls `/api/v1/tasks/{task_id}`.
 - `MACHINA_CONTROLLER_ID` — unique instance ID
 - `MACHINA_DAEMON_URL` — URL the controller uses to reach the daemon
 - `MACHINA_API_KEY_MASTER_KEY` — 64-char hex (32 bytes) AES-256-GCM master key for encrypting LLM provider API keys at rest. Unset = plaintext (dev/legacy). Generate: `openssl rand -hex 32`
+- `MACHINA_NETPOL_PROJECT_APPROVAL=1` — every project network change (isolation, egress allowlist/IPs) becomes a two-person `vm_netpol.project` approval
+- `MACHINA_NETPOL_EVIDENCE_DIR` (default `/var/lib/machina/netpol-evidence`), `MACHINA_NETPOL_EVIDENCE_EVERY_HOURS` (default 24, 0 = off), `MACHINA_NETPOL_EVIDENCE_KEEP_DAYS` (default 90) — scheduled signed segmentation-evidence exports
 
 **Atlas storage integration** (controller ↔ `../atlas` Zyvor storage control plane; VM disks as Ceph/NFS/ZFS volumes, snapshot/backup/restore via Atlas):
 - `ATLAS_ENABLED=1` — enable the Atlas integration (default off). Surfaces the Platform → **Storage (Atlas)** page and `/api/v1/atlas/*`.

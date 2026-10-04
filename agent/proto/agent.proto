@@ -112,6 +112,8 @@ message VmSummary {
   uint64 disk_read_iops = 8;
   uint64 disk_write_iops = 9;
   string guest_ip = 10;
+  // Every guest address seen (all NICs, IPv4 then IPv6).
+  repeated string guest_ips = 11;
 }
 
 message ListVmsRequest {}

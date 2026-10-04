@@ -125,8 +125,8 @@ cgroups (Linux host only):
 |---|---|---|
 | `scripts/bpf/netns-smoke.sh` (`make bpf-test`) | Policies, capture, QoS, rate limit, L7, accounting, DNS deny, shield, node isolation, direct redirect | 112 |
 | `scripts/bpf/cni-smoke.sh` (`make bpf-cni-test`) | CNI routing, NetworkPolicy, socket-LB and NodePort services | 40 |
-| `scripts/bpf/vm-edge-smoke.sh` | VM edge, VM network policy (identity rules, deny, ranges, ICMP, CIDR, toFQDNs, L7 HTTP/TLS/Kafka/DNS, authentication, source guard, flows, quarantine, egress SNAT, node addresses as host), QEMU sandbox | 120 |
-| `scripts/bpf/vm-netpol-realvm.sh` | VM network policy on two disposable real VMs: observe and leased enforce, L7, flows, history, quarantine, JIT, project isolation, egress allowlist and egress IP, evidence (needs a running daemon and controller) | 149 |
+| `scripts/bpf/vm-edge-smoke.sh` | VM edge, VM network policy (identity rules, deny, ranges, ICMP, CIDR, toFQDNs, L7 HTTP/TLS/Kafka/DNS, authentication, source guard, flows, quarantine, egress SNAT, node addresses as host), QEMU sandbox | 123 |
+| `scripts/bpf/vm-netpol-realvm.sh` | VM network policy on two disposable real VMs: observe and leased enforce, L7, flows, history, quarantine, JIT, project isolation and preview, egress allowlist and egress IP, signed and per-project evidence (needs a running daemon and controller) | 157 |
 | `scripts/bpf/vmintel-smoke.sh` | VM runtime intelligence | 14 |
 | `scripts/bpf/guard-smoke.sh` | VMM guard | 12 |
 | `scripts/bpf/quiclb-smoke.sh` | QUIC-LB | 18 |

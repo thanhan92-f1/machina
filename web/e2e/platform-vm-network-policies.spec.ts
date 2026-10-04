@@ -264,11 +264,20 @@ async function mockNetpol(page: Page) {
           allow_host: true,
           vms: projectVms[n],
           policies: isolated(n) ? [`project-isolation-${n}-a1b2c3`] : [],
+          cross_host_nat: n === 'lab' ? { project: 'lab', hosts: ['hv1', 'hv2'], subnets: ['192.168.122.0/24'] } : null,
+          egress_gaps: Object.keys((projectNet[n]?.egress_ips ?? {}) as Record<string, string>).length ? [{ project: n, vm: 'db-1', host: 'hv2', blocked: Boolean(projectNet[n]?.egress_ip_required) }] : [],
         })),
+        warnings: ['Project lab has VMs on hv1, hv2 behind per-host NAT (192.168.122.0/24)'],
       })
+    }
+    if (path.endsWith('/preview')) {
+      return json(route, { project: 'shop', describe: 'Project shop: isolated', summary: 'would break 2 recorded connections (9 flows) and newly allow 0', replay: { evaluated: 4, unchanged: 2, would_break: [{}, {}], would_allow: [], flows_breaking: 9 } })
     }
     if (path.startsWith('/projects/')) {
       const name = decodeURIComponent(path.split('/')[2])
+      if (new URL(req.url()).searchParams.get('propose') === '1') {
+        return json(route, { pending: { id: 'p1' }, preview: 'would break 2 recorded connections (9 flows) and newly allow 0' })
+      }
       if (method === 'DELETE') {
         delete projectNet[name]
         return json(route, { deleted: name })
@@ -283,11 +292,18 @@ async function mockNetpol(page: Page) {
       return json(route, { items: [{ hostname: 'hv1', rules, exclude: [], active: rules.length > 0, skipped: [], error: null }], errors: [] })
     }
     if (path === '/evidence') {
-      const md = new URL(req.url()).searchParams.get('format') === 'md'
+      const q = new URL(req.url()).searchParams
+      const md = q.get('format') === 'md'
+      const scoped = q.get('project')
+        ? JSON.stringify({ kind: 'machina.io/segmentation-evidence/v1', scope: 'fleet', digest: 'def456', matrix: [
+            { from: q.get('project'), to: q.get('project'), allowed: ['TCP/22'], denied: [] },
+            { from: q.get('project'), to: '(other projects)', allowed: [], denied: ['TCP/22', 'TCP/443'] },
+          ] })
+        : evidenceBody
       return route.fulfill({
         status: 200,
         headers: { 'content-type': md ? 'text/markdown' : 'application/json' },
-        body: md ? '# Segmentation evidence\n' : evidenceBody,
+        body: md ? '# Segmentation evidence\n' : scoped,
       })
     }
     if (method === 'DELETE') {
@@ -298,6 +314,24 @@ async function mockNetpol(page: Page) {
       return json(route, { deleted: name })
     }
     return json(route, { error: `unmocked ${method} ${path}` }, 404)
+  })
+  const vmProjects: Record<string, string> = { 'web-1': 'shop', 'db-1': 'shop', 'lab-1': 'lab', 'spare-1': '' }
+  await page.route(/\/platform\/controller\/api\/v1\/vms(\/[^/?]+)?(\?.*)?$/, async (route) => {
+    const req = route.request()
+    const id = new URL(req.url()).pathname.split('/vms/')[1]
+    if (req.method() === 'PATCH' && id) {
+      const name = id.replace(/^id-/, '')
+      const project = (req.postDataJSON() as { project: string }).project
+      for (const list of Object.values(projectVms)) {
+        const i = list.indexOf(name)
+        if (i >= 0) list.splice(i, 1)
+      }
+      if (project) (projectVms[project] ??= []).push(name)
+      vmProjects[name] = project
+      return json(route, { id, name, project })
+    }
+    if (id) return route.fallback()
+    return json(route, Object.entries(vmProjects).map(([name, project]) => ({ id: `id-${name}`, name, project, desired_state: 'running', observed_state: 'running', lifecycle_phase: 'ready', last_error: '', managed: true, vcpus: 1, memory_mib: 512, ha_enabled: false })))
   })
   return { applied }
 }
@@ -515,7 +549,7 @@ test('VM network policies: isolate a project, allow egress and set an egress IP'
   await page.getByLabel('Isolation of shop').selectOption('isolated')
   await expect(page.getByText('Project shop: isolated')).toBeVisible()
   await expect(t.locator('span', { hasText: /^Isolated$/ })).toBeVisible()
-  await t.getByRole('button', { name: 'Egress…' }).first().click()
+  await t.getByRole('button', { name: 'Manage…' }).first().click()
   await page.getByLabel('Destination').fill('*.stripe.com')
   await page.getByLabel('Ports').fill('443')
   await page.getByRole('button', { name: 'Allow', exact: true }).click()
@@ -546,4 +580,47 @@ test('VM network policies: export segmentation evidence', async ({ page }) => {
   await expect(page.getByText('Segmentation evidence downloaded')).toBeVisible()
   const [md] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export evidence as Markdown' }).click()])
   expect(md.suggestedFilename()).toMatch(/\.md$/)
+})
+
+test('VM network policies: assign a VM, preview, propose and a per-project matrix', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(`${PAGE}?scope=fleet&tab=projects`)
+  const t = page.getByRole('table', { name: 'Project networking' })
+  await expect(t.getByText('shop')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByLabel('Project warnings').getByText(/per-host NAT/)).toBeVisible()
+  await expect(t.getByText('Cross-host NAT')).toBeVisible()
+
+  await page.getByLabel('VM', { exact: true }).selectOption('spare-1')
+  await page.getByLabel('Project', { exact: true }).fill('shop')
+  await page.getByRole('button', { name: 'Assign' }).click()
+  await expect(page.getByText('spare-1 is in project shop')).toBeVisible()
+  await t.getByRole('button', { name: 'Manage…' }).first().click()
+  await expect(page.getByLabel('VMs of shop').getByText('spare-1')).toBeVisible()
+  await page.getByRole('button', { name: 'Remove spare-1 from shop' }).click()
+  await expect(page.getByText('spare-1 left its project')).toBeVisible()
+
+  const m = page.getByRole('table', { name: 'Matrix of shop' })
+  await expect(m.getByText('(other projects)')).toBeVisible()
+  await expect(m.getByText('Segmented')).toBeVisible()
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export evidence of shop as JSON' }).click()])
+  expect(dl.suggestedFilename()).toMatch(/^segmentation-evidence-shop-\d{8}T\d{6}\.json$/)
+
+  await page.getByLabel('Egress IP host').fill('hv1')
+  await page.getByLabel('Egress IP', { exact: true }).fill('198.51.100.7, 2001:db8::7')
+  await page.getByRole('button', { name: 'Set egress IP' }).click()
+  await expect(page.getByText('Project shop: egress IP set')).toBeVisible()
+  await expect(t.getByText('1 VM without it')).toBeVisible()
+  await page.getByLabel('Require the egress IP of shop').click()
+  await expect(t.getByText('1 VM blocked')).toBeVisible()
+
+  await page.getByLabel('Preview changes').check()
+  let shown = ''
+  page.once('dialog', (d) => { shown = d.message(); void d.dismiss() })
+  await page.getByLabel('Isolation of shop').selectOption('isolated')
+  await expect.poll(() => shown).toContain('would break 2 recorded connections')
+  await page.getByLabel('Preview changes').uncheck()
+  await page.getByLabel('Ask a second admin').check()
+  await page.getByLabel('Isolation of shop').selectOption('isolated')
+  await expect(page.getByText(/Sent for approval: would break 2/)).toBeVisible()
 })

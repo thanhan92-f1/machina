@@ -262,8 +262,20 @@ pub fn router(state: AppState) -> Router {
             put(vm_network_policies::project_set).delete(vm_network_policies::project_remove),
         )
         .route(
+            "/api/v1/vm-network-policies/projects/{project}/preview",
+            post(vm_network_policies::project_preview),
+        )
+        .route(
             "/api/v1/vm-network-policies/evidence",
             get(vm_network_policies::evidence),
+        )
+        .route(
+            "/api/v1/vm-network-policies/evidence/archive",
+            get(vm_network_policies::evidence_archive),
+        )
+        .route(
+            "/api/v1/vm-network-policies/evidence/archive/{name}",
+            get(vm_network_policies::evidence_archived),
         )
         .route(
             "/api/v1/vm-network-policies/egress-ips",

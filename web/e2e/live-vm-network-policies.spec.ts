@@ -24,7 +24,7 @@ test('live VM network policies page: status, dry-run validate, trace, flows', as
   await page.getByRole('button', { name: 'Draft policy' }).click()
   await expect(page.getByLabel('Policy YAML')).toHaveValue(/nl-deny-/, { timeout: 30_000 })
   await expect(page.getByText(/Drafted by the sentence parser/)).toBeVisible()
-  await expect(page.getByText(/Safe for|Would break/)).toBeVisible()
+  await expect(page.getByText(/Safe for|Would break/).first()).toBeVisible()
 
   await page.goto(`${live}${PAGE}?tab=tester`)
   await page.locator('#tr-from').fill('10.9.9.1')
@@ -65,6 +65,8 @@ test('live VM network policies: projects view and sealed evidence export', async
   await expect(page.getByText('Default project isolation')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByLabel('Default isolation')).toBeVisible()
   await expect(page.getByText('Egress IPs on hosts')).toBeVisible()
+  await expect(page.getByLabel('Assign a VM')).toBeVisible()
+  await expect(page.getByLabel('Preview changes')).not.toBeChecked()
   for (const scope of ['fleet', 'host']) {
     await page.goto(`${live}${PAGE}?scope=${scope}`)
     const [dl] = await Promise.all([
@@ -72,9 +74,10 @@ test('live VM network policies: projects view and sealed evidence export', async
       page.getByRole('button', { name: 'Export evidence as JSON' }).click(),
     ])
     const fs = await import('node:fs/promises')
-    const doc = JSON.parse(await fs.readFile((await dl.path())!, 'utf8')) as { kind: string; digest: string; source: string }
+    const doc = JSON.parse(await fs.readFile((await dl.path())!, 'utf8')) as { kind: string; digest: string; source: string; signature?: { alg: string } }
     expect(doc.kind).toBe('machina.io/segmentation-evidence/v1')
     expect(doc.digest).toMatch(/^[0-9a-f]{64}$/)
     expect(doc.source).toBe(scope === 'fleet' ? 'machina-controller' : 'machina-daemon')
+    expect(doc.signature?.alg).toBe(scope === 'fleet' ? 'ecdsa-p256-sha256' : undefined)
   }
 })

@@ -140,10 +140,10 @@ pub fn list_vms(conn: &Connect) -> Result<Vec<VmInfo>, LibvirtError> {
             .map_err(LibvirtError::map_op("Failed to get domain info"))?;
 
         let state = state_to_string(info.state);
-        let guest_ip = if state == "running" {
-            first_guest_ipv4(conn, &name)
+        let guest_ips = if state == "running" {
+            super::guest_agent::guest_addresses_from_virsh(&name)
         } else {
-            None
+            Vec::new()
         };
         vms.push(VmInfo {
             name,
@@ -151,7 +151,8 @@ pub fn list_vms(conn: &Connect) -> Result<Vec<VmInfo>, LibvirtError> {
             vcpus: info.nr_virt_cpu,
             memory_mb: info.memory / 1024,
             libvirt_connection: None,
-            guest_ip,
+            guest_ip: guest_ips.iter().find(|a| !a.contains(':')).cloned(),
+            guest_ips,
         });
     }
 
