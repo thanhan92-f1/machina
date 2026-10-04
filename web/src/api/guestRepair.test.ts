@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { describe, expect, it } from 'vitest'
-import { summariseDoctorOutput } from './guestRepair'
+import { extractBackupPath, summariseDoctorOutput } from './guestRepair'
 
 describe('summariseDoctorOutput', () => {
   it('reads a boot score and finding messages from GuestKit JSON', () => {
@@ -24,5 +24,28 @@ describe('summariseDoctorOutput', () => {
   })
   it('de-duplicates findings', () => {
     expect(summariseDoctorOutput(JSON.stringify({ blockers: ['a', 'a'], warnings: ['a'] })).findings).toEqual(['a'])
+  })
+
+  it('reads the real GuestKit doctor shape (score and findings under bootability)', () => {
+    const out = JSON.stringify({
+      target: 'kvm',
+      bootability: {
+        score: 94.7368,
+        blockers: [],
+        warnings: [{ title: 'GRUB configuration', message: 'No GRUB configuration detected' }],
+      },
+    })
+    const s = summariseDoctorOutput(out)
+    expect(s.score).toBe(95)
+    expect(s.findings).toEqual(['GRUB configuration: No GRUB configuration detected'])
+  })
+})
+
+describe('extractBackupPath', () => {
+  it('finds the backup GuestKit created', () => {
+    expect(extractBackupPath('Repair complete.\nBackup created: /var/lib/libvirt/images/x.backup_1.qcow2\nWarning: y')).toBe('/var/lib/libvirt/images/x.backup_1.qcow2')
+  })
+  it('returns null when there is none', () => {
+    expect(extractBackupPath('Repair complete.')).toBeNull()
   })
 })

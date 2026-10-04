@@ -7,6 +7,7 @@ import { getPlatformVm, runVmHealthCheck, vmPower, type PlatformVm } from '../..
 import {
   guestkitCapabilities,
   diagnoseGuestDisk,
+  extractBackupPath,
   repairGuestDisk,
   summariseDoctorOutput,
   type GuestRepairReport,
@@ -178,6 +179,9 @@ export default function BootDoctorCard({ vm, onChanged }: { vm: PlatformVm; onCh
       {phase === 'repaired' && result ? (
         <div className="mt-3 space-y-2 text-sm" role="status">
           <p className="flex items-center gap-2 text-emerald-600"><Check className="h-4 w-4" /> Repair applied{result.report.backup ? ' (disk backed up first)' : ''}.</p>
+          {extractBackupPath(result.report.output) ? (
+            <p className="text-xs text-[var(--text-muted)]">Backup kept at <code className="break-all">{extractBackupPath(result.report.output)}</code> — restore it to undo the repair.</p>
+          ) : null}
           <p className="text-xs text-[var(--text-secondary)]">
             {result.started
               ? result.score != null ? `The machine is running again — health ${result.score}/100.` : 'The machine is running again.'

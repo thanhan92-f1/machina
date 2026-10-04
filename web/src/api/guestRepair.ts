@@ -26,7 +26,7 @@ export const diagnoseGuestDisk = (name: string) => apiPost<GuestRepairReport>(`$
 export const repairGuestDisk = (name: string, opts: { dryRun: boolean; backup?: boolean }) =>
   apiPost<GuestRepairReport>(`${base(name)}/apply`, { dry_run: opts.dryRun, backup: opts.backup ?? true })
 
-/** Pull a score and readable findings out of GuestKit's JSON; fall back to the raw text. */
+/** Pull a score and readable findings out of GuestKit's doctor JSON (it nests them under `bootability`). */
 export function summariseDoctorOutput(output: string): { score: number | null; findings: string[]; raw: string } {
   let data: unknown = null
   try {
@@ -40,21 +40,41 @@ export function summariseDoctorOutput(output: string): { score: number | null; f
     }
   }
   if (!data || typeof data !== 'object') return { score: null, findings: [], raw: output }
-  const obj = data as Record<string, unknown>
-  const scoreKey = ['boot_score', 'score', 'bootScore'].find((k) => typeof obj[k] === 'number')
-  const score = scoreKey ? Math.max(0, Math.min(100, Math.round(obj[scoreKey] as number))) : null
+  const root = data as Record<string, unknown>
+  const nested = root.bootability && typeof root.bootability === 'object' ? (root.bootability as Record<string, unknown>) : null
+  const sources = nested ? [nested, root] : [root]
+
+  let score: number | null = null
+  for (const obj of sources) {
+    const key = ['boot_score', 'score', 'bootScore'].find((k) => typeof obj[k] === 'number')
+    if (key) {
+      score = Math.max(0, Math.min(100, Math.round(obj[key] as number)))
+      break
+    }
+  }
+
   const findings: string[] = []
   const take = (v: unknown) => {
     if (typeof v === 'string') findings.push(v)
     else if (v && typeof v === 'object') {
       const o = v as Record<string, unknown>
-      const text = [o.title, o.message, o.description, o.summary, o.detail].find((x) => typeof x === 'string')
-      if (typeof text === 'string') findings.push(text)
+      const title = typeof o.title === 'string' ? o.title : null
+      const msg = [o.message, o.description, o.summary, o.detail].find((x) => typeof x === 'string') as string | undefined
+      if (title && msg && msg !== title) findings.push(`${title}: ${msg}`)
+      else if (title || msg) findings.push((title ?? msg) as string)
     }
   }
-  for (const key of ['blockers', 'warnings', 'findings', 'issues', 'root_causes', 'causes', 'recommendations']) {
-    const v = obj[key]
-    if (Array.isArray(v)) v.forEach(take)
+  for (const obj of sources) {
+    for (const key of ['blockers', 'warnings', 'findings', 'issues', 'root_causes', 'causes', 'recommendations']) {
+      const v = obj[key]
+      if (Array.isArray(v)) v.forEach(take)
+    }
   }
   return { score, findings: [...new Set(findings)].slice(0, 12), raw: output }
+}
+
+/** GuestKit prints "Backup created: <path>" when asked to back the disk up first. */
+export function extractBackupPath(output: string): string | null {
+  const m = output.match(/Backup created:\s*(\S+)/)
+  return m ? m[1] : null
 }
