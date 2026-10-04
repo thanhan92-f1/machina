@@ -18,6 +18,7 @@ use futures_util::stream::Stream;
 use machina_bpf::api::{
     Request, VmEdgeStatus, VmFlowAlert, VmFlowEdge, VmFlowRecord, VmQuarantineBody,
 };
+use machina_bpf::netpol::jit::{self, JitRequest};
 use machina_bpf::netpol::{
     self, FlowFilter, LearnOptions, ReplayInputs, TraceQuery, VmNetworkPolicy,
 };
@@ -612,6 +613,120 @@ pub async fn quarantine_release(
 
 pub async fn quarantines(State(state): State<AppState>) -> Json<Value> {
     Json(json!({ "items": bpf::fan_out_items(&state.pool, &Request::VmQuarantines).await }))
+}
+
+// ---- just-in-time access --------------------------------------------------------
+
+pub const JIT_ACTION: &str = "vm_netpol.jit";
+
+async fn check_jit(state: &AppState, req: &JitRequest) -> Result<(), ApiError> {
+    req.validate().map_err(ApiError::bad_request)?;
+    let inv = vm_netpol::inventory(&state.pool).await;
+    for vm in [&req.to, &req.from] {
+        if vm != "host" && !inv.iter().any(|v| &v.name == vm) {
+            return Err(ApiError::not_found(format!("VM `{vm}`")));
+        }
+    }
+    Ok(())
+}
+
+/// Store the grant and push it (also the approved `vm_netpol.jit` action).
+pub(crate) async fn jit_grant(
+    state: &AppState,
+    req: &JitRequest,
+    by: &str,
+) -> Result<Value, ApiError> {
+    check_jit(state, req).await?;
+    let now = chrono::Utc::now();
+    let p = req.policy(by, now).map_err(ApiError::bad_request)?;
+    vm_netpol::upsert(&state.pool, &p, by).await?;
+    state.emit_event(
+        "netpol.jit",
+        format!(
+            "{by} granted {} for {}{}",
+            req.what(),
+            jit::duration_label(req.secs()),
+            if req.reason.is_empty() {
+                String::new()
+            } else {
+                format!(": {}", req.reason)
+            }
+        ),
+    );
+    let sync = vm_netpol::reconcile(&state.pool, false).await;
+    let grant = jit::grants(std::slice::from_ref(&p), now).pop();
+    Ok(json!({ "granted": grant, "policy": p.name, "sync": sync }))
+}
+
+#[derive(Deserialize)]
+pub struct JitBody {
+    #[serde(flatten)]
+    req: JitRequest,
+    /// Admins only: grant now instead of asking for approval.
+    #[serde(default)]
+    grant: bool,
+}
+
+pub async fn jit_request(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Json(b): Json<JitBody>,
+) -> Result<Json<Value>, ApiError> {
+    require_operator(&actor)?;
+    if b.grant {
+        require_admin(&actor)?;
+        return Ok(Json(jit_grant(&state, &b.req, &actor.username).await?));
+    }
+    check_jit(&state, &b.req).await?;
+    let req = &b.req;
+    let body = crate::engine::ai::actions::CreateActionBody {
+        action_type: JIT_ACTION.into(),
+        label: format!(
+            "Allow {} for {}",
+            req.what(),
+            jit::duration_label(req.secs())
+        ),
+        review: format!(
+            "{} asks for temporary network access: {}. It is removed after {}.{}",
+            actor.username,
+            req.what(),
+            jit::duration_label(req.secs()),
+            if req.reason.is_empty() {
+                String::new()
+            } else {
+                format!(" Reason: {}", req.reason)
+            }
+        ),
+        risk: "Opens network access until it expires".into(),
+        object_ref: serde_json::to_value(req).unwrap_or_default(),
+        source: "netpol".into(),
+    };
+    let action = crate::engine::ai::actions::create_action(&state.pool, &body, &actor.username)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+    state.emit_event(
+        "netpol.jit",
+        format!("{} requested {}", actor.username, req.what()),
+    );
+    Ok(Json(json!({ "pending": action })))
+}
+
+pub async fn jit_list(State(state): State<AppState>) -> Result<Json<Value>, ApiError> {
+    let policies: Vec<VmNetworkPolicy> = vm_netpol::policies(&state.pool)
+        .await?
+        .into_iter()
+        .filter(|r| r.1)
+        .map(|r| r.0)
+        .collect();
+    let pending: Vec<_> = crate::engine::ai::actions::list_pending(&state.pool)
+        .await?
+        .into_iter()
+        .filter(|a| a.action_type == JIT_ACTION)
+        .collect();
+    Ok(Json(json!({
+        "items": jit::grants(&policies, chrono::Utc::now()),
+        "pending": pending,
+    })))
 }
 
 /// Address → DNS names from every host's `toFQDNs` cache.

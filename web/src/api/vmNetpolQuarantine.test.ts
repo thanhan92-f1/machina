@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeAllow, formatRemaining, groupQuarantines, type VmQuarantine } from './vmNetpol'
+import { describeAllow, describeJit, formatRemaining, groupQuarantines, type VmQuarantine } from './vmNetpol'
 
 const q = (over: Partial<VmQuarantine>): VmQuarantine => ({
   vm: 'web-1',
@@ -32,5 +32,10 @@ describe('quarantine helpers', () => {
     expect(formatRemaining(3 * 3600 + 120)).toBe('3h 2m left')
     expect(describeAllow({ direction: 'ingress', peer: 'host', proto: 'tcp', port: 22 })).toBe('ingress host tcp/22')
     expect(describeAllow({ direction: 'egress', peer: 'world' })).toBe('egress world any')
+  })
+
+  it('describes temporary access', () => {
+    expect(describeJit({ from: 'web-1', to: 'db-1', port: 5432, protocol: 'TCP' })).toBe('web-1 → db-1:5432/tcp')
+    expect(describeJit({ from: 'host', to: 'db-1', port: 0, protocol: 'ANY' })).toBe('host → db-1 (every port)')
   })
 })

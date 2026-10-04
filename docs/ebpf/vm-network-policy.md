@@ -488,6 +488,7 @@ Policies are persisted; the enforce mode and its lease never are.
 | — | `machinactl netpol replay -f draft.yaml` — what the draft would have done to the last 7 days of traffic |
 | — | `machinactl flow alerts` — port scans, host sweeps, deny bursts, new peers |
 | — | `machinactl vm quarantine VM [--for 1h] [--allow-host-ssh]`, `vm release VM`, `netpol quarantines` |
+| — | `machinactl netpol jit grant --from A --to B --port N --for 1h`, `netpol jit [approve\|reject ID\|revoke NAME]` |
 
 Auth: `MACHINA_API_TOKEN`, or `MACHINA_USER` + `MACHINA_PASS`. With a user
 and password, the CLI keeps its session in `~/.machina/cli-session` (mode
@@ -659,6 +660,65 @@ The controller also takes `?host=`. It records each quarantine and release
 as a `netpol.quarantine` event. The `vm.quarantine` Zyvor action takes the
 same body plus `vm` and `host` in its `object_ref`.
 
+## Just-in-time access
+
+Temporary access is an ordinary policy that removes itself. It lets one VM,
+or the host, reach a port on another VM until a deadline (default 1 hour,
+max 24 hours).
+
+```bash
+machinactl netpol jit grant --from web-1 --to db-1 --port 5432 --for 1h --reason "schema migration"
+machinactl netpol jit grant --from host --to db-1 --port 22 --for 15m
+machinactl netpol jit                 # active grants (and pending requests on the fleet)
+machinactl netpol jit revoke jit-web-1-to-db-1-5432-…
+```
+
+On a single host, an admin grants access directly.
+
+Through the controller (`--fleet`, or the UI in fleet scope), a grant is a
+request instead. It appears in Approvals as a `vm_netpol.jit` action, and in
+the *Temporary access* panel:
+
+- It is applied only when another admin approves it (`netpol jit approve
+  ID`, or the Approve button in either place).
+- The requester's own approval is refused, and the request stays pending.
+- `netpol jit reject ID` turns it down.
+- Admins can skip the approval with `--now` (*Grant now* in the UI).
+
+What a grant contains:
+
+- The policy is named `jit-<from>-to-<to>-<port>-<id>` and labelled
+  `machina.io/jit: "true"`.
+- Its annotations record the end, who granted it and why:
+  `machina.io/expires-at` (RFC 3339), `machina.io/granted-by` and
+  `machina.io/reason`.
+- It has an ingress rule on the target and, for a VM source, an egress
+  rule on the source.
+- Both rules set `enableDefaultDeny: false`. A grant therefore only adds an
+  allow and never isolates a VM that was open before.
+- Without `--port`, every port is allowed. `--proto` takes `tcp` (the
+  default), `udp`, `sctp` or `any`.
+
+Expiry:
+
+- `machina.io/expires-at` works on any policy, not just grants.
+- An expired policy is no longer compiled and is deleted: by the daemon
+  within a second (its resync wakes for the next expiry), and by the leader
+  controller within 30 s.
+- The daemon logs each expiry. The controller records grants, requests and
+  expiries as `netpol.jit` events.
+
+API, the same on the daemon and the controller:
+
+- `GET /api/v1/vm-network-policies/jit`: `{items, pending}`.
+- `POST /api/v1/vm-network-policies/jit` with `{from, to, port, protocol,
+  secs, reason}`. On the controller, add `grant: true` for an immediate
+  grant (admins).
+- Revoke with `DELETE /api/v1/vm-network-policies/{name}`.
+
+While the controller manages a host's VM edge, the daemon refuses local
+grants and points to `--fleet`.
+
 ## Test
 
 `scripts/bpf/vm-edge-smoke.sh` has a *VM network policy* section. It runs on
@@ -690,14 +750,17 @@ network, labels them and applies an ingress policy: the client may only
 `GET /ok` on the server's port 80. In observe mode everything still works
 and flows show AUDIT. Under a short enforcement lease (`LEASE`, default
 300 s), `/ok` answers, other paths and methods get 403, port 8080 and the
-host are dropped, and flows record DROPPED and the L7 request. A second
+host are dropped, and flows record DROPPED and the L7 request. An 8-second
+temporary grant then opens 8080 for the client (the host stays dropped),
+and the port is dropped again once the grant expires. A second
 policy then sends the client's HTTPS through the proxy, with a throwaway CA
 and secret. It checks the `REPLACE` / `DELETE` / `ADD` rewrites as the
 server receives them, a 403 for a path outside the rule, the policy
 certificate on the client, the client identity at the server (the host is
 refused on 443), and `originatingTLS` from a plain-HTTP client to a TLS
 server. Back in observe mode it then checks the flow history, using the
-traffic the earlier phases generated:
+traffic the earlier phases generated (the history is cleared when the
+script starts):
 
 - the client → server `GET /ok` edge, the dropped 8080 edge, and status and
   latency on the proxied 443 traffic;

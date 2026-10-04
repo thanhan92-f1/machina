@@ -189,6 +189,10 @@ pub fn router(state: AppState) -> Router {
             get(vm_network_policies::quarantines),
         )
         .route(
+            "/api/v1/vm-network-policies/jit",
+            get(vm_network_policies::jit_list).post(vm_network_policies::jit_request),
+        )
+        .route(
             "/api/v1/vm-network-policies",
             get(vm_network_policies::list).post(vm_network_policies::apply),
         )

@@ -23,7 +23,7 @@ use machina_bpf::api::{
     Request, VmEdgeStatus, VmFlowEdge, VmFlowRecord, VmFqdnEntry, VmQuarantineBody,
 };
 use machina_bpf::netpol::{
-    self, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs, TraceQuery,
+    self, jit, FlowFilter, Inputs, LearnOptions, NetpolService, NetpolVm, ReplayInputs, TraceQuery,
     VmNetworkPolicy,
 };
 use machina_bpf::BpfdClient;
@@ -61,6 +61,8 @@ struct SyncReport {
 }
 
 static STORE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+/// Wakes the resync loop so it re-arms for a new expiry.
+static WAKE: tokio::sync::Notify = tokio::sync::Notify::const_new();
 static LAST: Mutex<Option<SyncReport>> = Mutex::new(None);
 static INVENTORY: Mutex<Vec<NetpolVm>> = Mutex::new(Vec::new());
 static MANAGER: OnceLock<LibvirtManager> = OnceLock::new();
@@ -82,11 +84,30 @@ async fn services(policies: &[VmNetworkPolicy]) -> Vec<NetpolService> {
     s
 }
 
-fn load_store() -> Store {
+fn load_store_all() -> Store {
     std::fs::read_to_string(STORE)
         .ok()
         .and_then(|d| serde_json::from_str(&d).ok())
         .unwrap_or_default()
+}
+
+/// The store without expired temporary policies (`sync` deletes those).
+fn load_store() -> Store {
+    let mut s = load_store_all();
+    let now = chrono::Utc::now();
+    s.policies.retain(|p| !jit::expired(p, now));
+    s
+}
+
+/// Seconds until the next temporary policy expires.
+fn next_expiry_secs() -> Option<u64> {
+    let now = chrono::Utc::now();
+    load_store_all()
+        .policies
+        .iter()
+        .filter_map(jit::expires_at)
+        .map(|t| (t - now).num_seconds().max(0) as u64)
+        .min()
 }
 
 fn save_store(s: &Store) -> Result<(), LibvirtError> {
@@ -195,7 +216,19 @@ async fn edge_status() -> Option<VmEdgeStatus> {
 /// Compile the stored policies and push them to the local bpfd.
 async fn sync(m: &LibvirtManager) -> SyncReport {
     let _g = STORE_LOCK.lock().await;
-    let mut store = load_store();
+    let mut store = load_store_all();
+    let now = chrono::Utc::now();
+    let (expired, live): (Vec<_>, Vec<_>) =
+        store.policies.drain(..).partition(|p| jit::expired(p, now));
+    store.policies = live;
+    if !expired.is_empty() {
+        for p in &expired {
+            tracing::info!(policy = %p.name, "temporary VM network policy expired");
+        }
+        if let Err(e) = save_store(&store) {
+            tracing::warn!("vm netpol store: {e}");
+        }
+    }
     let mut rep = SyncReport {
         at: Some(chrono::Utc::now().to_rfc3339()),
         ..Default::default()
@@ -262,7 +295,11 @@ pub fn spawn_resync_loop(m: LibvirtManager) {
             if let Some(e) = rep.error {
                 tracing::debug!("vm netpol sync: {e}");
             }
-            tokio::time::sleep(std::time::Duration::from_secs(RESYNC_SECS)).await;
+            let wait = next_expiry_secs().map_or(RESYNC_SECS, |s| s.clamp(1, RESYNC_SECS));
+            tokio::select! {
+                _ = tokio::time::sleep(std::time::Duration::from_secs(wait)) => {}
+                _ = WAKE.notified() => {}
+            }
         }
     });
 }
@@ -685,6 +722,51 @@ async fn quarantines() -> Result<Json<Value>, AppError> {
     Ok(Json(json!({ "items": v })))
 }
 
+async fn jit_grant(
+    State(m): State<LibvirtManager>,
+    Extension(actor): Extension<RequestActor>,
+    Json(req): Json<jit::JitRequest>,
+) -> Result<Json<Value>, AppError> {
+    require_admin(&actor, "Granting temporary network access")?;
+    req.validate().map_err(LibvirtError::Invalid)?;
+    if edge_status().await.is_some_and(|s| s.owner == "controller") {
+        return Err(LibvirtError::Invalid(
+            "the controller manages this host's VM edge; request access through the controller (--fleet)".into(),
+        )
+        .into());
+    }
+    let inv = refresh_inventory(&m).await;
+    for vm in [&req.to, &req.from] {
+        if vm != "host" && !inv.iter().any(|v| &v.name == vm) {
+            return Err(LibvirtError::NotFound(format!("VM `{vm}`")).into());
+        }
+    }
+    let now = chrono::Utc::now();
+    let p = req
+        .policy(&actor.username, now)
+        .map_err(LibvirtError::Invalid)?;
+    {
+        let _g = STORE_LOCK.lock().await;
+        let mut store = load_store_all();
+        store.policies.push(p.clone());
+        store.policies.sort_by(|a, b| a.name.cmp(&b.name));
+        save_store(&store)?;
+    }
+    tracing::info!(actor = %actor.username, policy = %p.name, access = %req.what(),
+        secs = req.secs(), reason = %req.reason, "temporary VM network access granted");
+    let rep = sync(&m).await;
+    WAKE.notify_one();
+    let grant = jit::grants(std::slice::from_ref(&p), now).pop();
+    Ok(Json(
+        json!({ "granted": grant, "policy": p.name, "sync": rep }),
+    ))
+}
+
+async fn jit_list() -> Json<Value> {
+    let items = jit::grants(&load_store().policies, chrono::Utc::now());
+    Json(json!({ "items": items }))
+}
+
 /// Address → DNS names from the `toFQDNs` cache.
 async fn fqdn_names() -> BTreeMap<String, Vec<String>> {
     let entries: Vec<VmFqdnEntry> = match bpfd_call(&Request::VmFqdnCache).await {
@@ -805,6 +887,7 @@ pub fn netpol_routes() -> Router<LibvirtManager> {
         .route("/vm-network-policies/learn", post(learn))
         .route("/vm-network-policies/replay", post(replay))
         .route("/vm-network-policies/quarantines", get(quarantines))
+        .route("/vm-network-policies/jit", get(jit_list).post(jit_grant))
         .route(
             "/vms/{name}/quarantine",
             post(quarantine).delete(quarantine_release),

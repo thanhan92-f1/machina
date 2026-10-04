@@ -41,10 +41,15 @@ test('live VM network policies page: status, dry-run validate, trace, flows', as
   await expect(page.getByRole('table', { name: 'Flow alerts' }).or(page.getByText(/No alerts/))).toBeVisible({ timeout: 20_000 })
   await page.goto(`${live}${PAGE}?tab=endpoints`)
   await expect(page.getByRole('table', { name: 'Quarantined VMs' }).or(page.getByText('No VM is quarantined.'))).toBeVisible({ timeout: 20_000 })
+  await page.goto(`${live}${PAGE}?tab=policies`)
+  await expect(page.getByRole('button', { name: 'Grant access' })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('table', { name: 'Temporary access' }).or(page.getByText('No temporary access.'))).toBeVisible()
 
   for (const scope of ['fleet']) {
     await page.goto(`${live}${PAGE}?tab=policies&scope=${scope}`)
     await expect(page.getByText(/Managed by/)).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Request access' })).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Temporary access' }).or(page.getByText('No temporary access.'))).toBeVisible()
     await expect(page.getByRole('alert')).toHaveCount(0)
   }
 })

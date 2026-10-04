@@ -20,6 +20,7 @@
 mod compile;
 mod flow;
 pub mod fqdn;
+pub mod jit;
 pub mod l7;
 pub mod l7stream;
 mod learn;

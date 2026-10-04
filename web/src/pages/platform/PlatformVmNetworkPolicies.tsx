@@ -18,6 +18,7 @@ import LearnPanel from '../../components/flow/LearnPanel'
 import ReplaySummary from '../../components/flow/ReplaySummary'
 import ServiceMap from '../../components/flow/ServiceMap'
 import QuarantinePanel from '../../components/flow/QuarantinePanel'
+import JitPanel from '../../components/flow/JitPanel'
 import {
   NETPOL_TEMPLATES,
   applyVmNetpol,
@@ -357,6 +358,10 @@ export default function PlatformVmNetworkPolicies() {
         <p className="text-xs text-[var(--text-muted)]">
           Observe mode: traffic a policy would drop is logged as AUDIT in Flows and still forwarded. Drops need the enforcement lease (Native eBPF → Enforcement).
         </p>
+      )}
+
+      {tab === 'policies' && (
+        <JitPanel key={scope} scope={scope} vmNames={vmNames} onChanged={() => void load()} />
       )}
 
       {tab === 'policies' && (

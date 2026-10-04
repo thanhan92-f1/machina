@@ -95,6 +95,9 @@ Usage: netpol <command> [options]
                                  in the flow history (would break / newly allow)
   quarantines                    Quarantined VMs, time left and exceptions
                                  (quarantine with `vm quarantine VM`)
+  jit [list|grant|approve|reject|revoke]
+                                 Temporary access that removes itself
+                                 (netpol jit help)
 EOF
 }
 
@@ -287,7 +290,8 @@ np_netpol_status() {
     jq -r '
       "Policies:     \(.policies // (.items|length? // 0))",
       (if .managed_by then "Managed by:   \(.managed_by)" else empty end),
-      (if .enforcement then "Enforcement:  \(.enforcement.mode // "observe")\(if .enforcement.lease_remaining_secs then " (lease \(.enforcement.lease_remaining_secs)s)" else "" end)" else empty end),
+      (if .enforcement then (.enforcement | if (.mode | type) == "object" then .mode else . end) as $e
+        | "Enforcement:  \($e.mode // "observe")\(if $e.lease_remaining_secs then " (lease \($e.lease_remaining_secs)s)" else "" end)" else empty end),
       (if has("hosts") then empty elif .cilium then "Cilium:       present (\(.cilium)) — Cilium enforces its own endpoints; Machina enforces libvirt VMs" else "Cilium:       absent — Machina eBPF enforces natively" end),
       (if .last_sync then "Last sync:    \(.last_sync.at // "-")  \(if .last_sync.skipped then "skipped: \(.last_sync.skipped)" elif .last_sync.ok then "ok (\(.last_sync.vms) VMs, \(.last_sync.rules) rules, \(.last_sync.peers) peers)" else "FAILED: \(.last_sync.error)" end)" else empty end),
       (if .edge then "VM edge:      \(.edge.owner // "-") owner, \((.edge.taps // []) | length) tap(s), flow log \(if .edge.flow_log then "on" else "off" end)\(if (.edge.fqdn_rules // 0) > 0 then ", toFQDNs \(.edge.fqdn_rules) rule(s) / \(.edge.fqdn_cache // 0) learned address(es)" else "" end)\(if (.edge.l7_rules // 0) > 0 then ", L7 \(.edge.l7_rules) rule(s)" else "" end)\(if (.edge.auth_entries // 0) > 0 then ", \(.edge.auth_entries) authenticated pair(s)" else "" end)" else empty end),
@@ -347,6 +351,7 @@ np_netpol_main() {
         fqdn|fqdn-cache|dns) np_netpol_fqdn ;;
         auth) np_netpol_auth ;;
         quarantines|quarantine|q) np_netpol_quarantines ;;
+        jit|access) np_netpol_jit "$@" ;;
         sync)
             [[ "$NP_FLEET" == 1 ]] || np_die "sync is a fleet (controller) feature; the daemon resyncs on every change and every 60s"
             np_api POST /vm-network-policies/sync | jq .
@@ -499,6 +504,95 @@ np_netpol_quarantines() {
             (.reason // "" | if . == "" then "-" else . end), (.by // "" | if . == "" then "-" else . end)
           ] | @tsv' <<<"$body"
     } | column -t -s $'\t'
+}
+
+# ── just-in-time access ───────────────────────────────────────────────────
+
+np_jit_usage() {
+    cat <<'EOF'
+Usage: netpol jit [list]
+       netpol jit grant --from VM|host --to VM [--port N] [--proto tcp|udp|sctp|any] [--for 1h] [--reason TEXT] [--now]
+       netpol jit approve ID | reject ID      (fleet)
+       netpol jit revoke NAME
+
+Temporary access: a policy that lets --from reach --to (one port, or every
+port without --port) and is removed when --for runs out (default 1h, max
+24h). It only adds an allow; it never isolates either VM.
+On a single host, admins grant directly. With --fleet, grant files a
+request in Approvals that another admin approves; --now (admins) skips it.
+EOF
+}
+
+np_jit_list() {
+    local body
+    body=$(np_api GET /vm-network-policies/jit)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    if [[ "$(jq '.items | length' <<<"$body")" == 0 ]]; then
+        echo "(no temporary access)" >&2
+    else
+        {
+            printf 'NAME\tFROM\tTO\tPORT\tLEFT\tUNTIL\tBY\tREASON\n'
+            jq -r '.items[] | [
+                .name, .from, .to, (if .port == 0 then "any" else "\(.port)/\(.protocol | ascii_downcase)" end),
+                "\(.remaining_secs)s", .expires_at, (.granted_by // "-"), (.reason // "" | if . == "" then "-" else . end)
+              ] | @tsv' <<<"$body"
+        } | column -t -s $'\t'
+    fi
+    if [[ "$(jq '(.pending // []) | length' <<<"$body")" != 0 ]]; then
+        echo
+        {
+            printf 'PENDING\tREQUEST\tBY\tSINCE\n'
+            jq -r '.pending[] | [.id, .label, .requested_by, .created_at] | @tsv' <<<"$body"
+        } | column -t -s $'\t'
+    fi
+}
+
+np_jit_grant() {
+    local req='{}' now=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --from) req=$(jq -c --arg v "$2" '.from = $v' <<<"$req"); shift 2 ;;
+            --to) req=$(jq -c --arg v "$2" '.to = $v' <<<"$req"); shift 2 ;;
+            --port) req=$(jq -c --argjson v "$2" '.port = $v' <<<"$req"); shift 2 ;;
+            --proto|--protocol) req=$(jq -c --arg v "$2" '.protocol = ($v | ascii_upcase)' <<<"$req"); shift 2 ;;
+            --for|--duration) req=$(jq -c --argjson v "$(np_duration "$2")" '.secs = $v' <<<"$req"); shift 2 ;;
+            --reason) req=$(jq -c --arg v "$2" '.reason = $v' <<<"$req"); shift 2 ;;
+            --now) now=true; shift ;;
+            -h|--help) np_jit_usage; return ;;
+            *) np_die "unknown option: $1" ;;
+        esac
+    done
+    [[ "$(jq -r '.from // "" | length > 0' <<<"$req")" == true && "$(jq -r '.to // "" | length > 0' <<<"$req")" == true ]] \
+        || { np_jit_usage >&2; exit 1; }
+    [[ "$NP_FLEET" == 1 ]] && req=$(jq -c --argjson g "$now" '.grant = $g' <<<"$req")
+    local body
+    body=$(np_api POST /vm-network-policies/jit -H 'Content-Type: application/json' -d "$req")
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r '
+      if .pending then "requested: \(.pending.label)\n  waiting for another admin: netpol jit approve \(.pending.id)  (or Approvals in the UI)"
+      else "granted: \(.granted.from) → \(.granted.to)\(if .granted.port > 0 then ":\(.granted.port)/\(.granted.protocol | ascii_downcase)" else "" end) until \(.granted.expires_at)\n  policy \(.policy) (revoke early: netpol jit revoke \(.policy))" end' <<<"$body"
+}
+
+np_netpol_jit() {
+    local sub="${1:-list}"
+    shift || true
+    case "$sub" in
+        list|ls) np_jit_list ;;
+        grant|request) np_jit_grant "$@" ;;
+        approve|reject)
+            [[ "$NP_FLEET" == 1 ]] || np_die "approvals are a fleet (controller) feature; on a single host admins grant directly"
+            local id="${1:?usage: netpol jit $sub ID}" verb=execute done=approved
+            [[ "$sub" == reject ]] && verb=reject done=rejected
+            np_api POST "/ai/actions/$(np_uri "$id")/$verb" -H 'Content-Type: application/json' -d '{}' >/dev/null
+            echo "request $id $done"
+            ;;
+        revoke|delete|rm)
+            np_api DELETE "/vm-network-policies/$(np_uri "${1:?usage: netpol jit revoke NAME}")" >/dev/null
+            echo "temporary access $1 revoked"
+            ;;
+        help|-h|--help) np_jit_usage ;;
+        *) np_die "unknown jit command: $sub (try: netpol jit help)" ;;
+    esac
 }
 
 # ── flows ─────────────────────────────────────────────────────────────────

@@ -195,6 +195,8 @@ for _ in $(seq 30); do
 done
 check "server endpoint has its address" bash -c "'$M' netpol endpoints | grep -q 'np-server.*$SIP'"
 check "edge programmed the VM taps" taps_programmed
+# Learn and replay below judge this run's traffic, not earlier runs'.
+check "flow history cleared" bpfd '{"op":"vm_flow_edges_reset"}'
 
 echo "== observe =="
 observe
@@ -215,6 +217,15 @@ check "enforce: client without policy keeps egress" cssh "ping -c1 -W2 192.168.1
 sleep 2
 check "enforce: DROPPED flow for 8080" flow_has 8080 --verdict DROPPED --port 8080
 check "enforce: L7 flow records the request" flow_has /secret --port 80
+
+echo "== just-in-time access =="
+check "jit: grant np-client → np-server :8080 for 8s" "$M" netpol jit grant --from np-client --to np-server --port 8080 --for 8s --reason realvm
+check "jit: 8080 open during the grant" is 200 :8080/ok
+check "jit: still only for np-client (host dropped on 8080)" bash -c "! curl -fs -m 3 -o /dev/null http://$SIP:8080/ok"
+check "jit: listed" bash -c "'$M' netpol jit | grep -q 'np-client.*np-server.*8080/tcp'"
+sleep 10
+check "jit: 8080 dropped again after expiry" is 000 :8080/ok
+check "jit: grant removed" bash -c "! '$M' netpol get | grep -q jit-np-client"
 
 echo "== proxy: TLS interception + header rewrites =="
 check "proxy secret installed" bash -c "sudo -n mkdir -p '$SECRET_DIR' && sudo -n install -m600 '$W/tls.crt' '$W/tls.key' '$W/ca.crt' '$SECRET_DIR/'"

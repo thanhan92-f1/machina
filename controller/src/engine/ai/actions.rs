@@ -150,6 +150,14 @@ pub async fn approve_and_execute(
     if action.status != "pending" {
         return Err(anyhow::anyhow!("Action already {}", action.status));
     }
+    if action.action_type == crate::api::vm_network_policies::JIT_ACTION {
+        crate::auth::require_admin(actor).map_err(|e| anyhow::anyhow!(e.message))?;
+        if actor.username == action.requested_by {
+            return Err(anyhow::anyhow!(
+                "temporary access needs a second person: you requested it"
+            ));
+        }
+    }
     let updated = sqlx::query(
         "UPDATE ai_actions SET status = 'approved', approved_by = ? WHERE id = ? AND status = 'pending'",
     )
@@ -314,6 +322,18 @@ pub async fn approve_and_execute(
             )
             .await
             .map_err(|e| anyhow::anyhow!(e.message))
+        }
+        crate::api::vm_network_policies::JIT_ACTION => {
+            match serde_json::from_value::<machina_bpf::netpol::jit::JitRequest>(
+                action.object_ref.clone(),
+            ) {
+                Ok(req) => {
+                    crate::api::vm_network_policies::jit_grant(state, &req, &actor.username)
+                        .await
+                        .map_err(|e| anyhow::anyhow!(e.message))
+                }
+                Err(e) => Err(anyhow::anyhow!("temporary access object_ref: {e}")),
+            }
         }
         "vm.shutdown_agent" => {
             let vm_id = action

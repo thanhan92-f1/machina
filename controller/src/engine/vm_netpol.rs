@@ -45,13 +45,26 @@ pub async fn policies(
 }
 
 pub async fn enabled_policies(pool: &SqlitePool) -> Vec<VmNetworkPolicy> {
+    let now = chrono::Utc::now();
     policies(pool)
         .await
         .unwrap_or_default()
         .into_iter()
-        .filter(|p| p.1)
+        .filter(|p| p.1 && !netpol::jit::expired(&p.0, now))
         .map(|p| p.0)
         .collect()
+}
+
+/// Delete policies past `machina.io/expires-at`; returns their names.
+pub async fn reap_expired(pool: &SqlitePool) -> Vec<String> {
+    let now = chrono::Utc::now();
+    let mut gone = Vec::new();
+    for (p, ..) in policies(pool).await.unwrap_or_default() {
+        if netpol::jit::expired(&p, now) && delete(pool, &p.name).await.unwrap_or(false) {
+            gone.push(p.name);
+        }
+    }
+    gone
 }
 
 pub async fn upsert(pool: &SqlitePool, p: &VmNetworkPolicy, actor: &str) -> anyhow::Result<bool> {
@@ -442,6 +455,13 @@ pub fn spawn(state: AppState) {
                 continue;
             }
             n = n.wrapping_add(1);
+            for name in reap_expired(&state.pool).await {
+                tracing::info!(policy = %name, "temporary VM network policy expired");
+                state.emit_event(
+                    "netpol.jit",
+                    format!("temporary policy {name} expired and was removed"),
+                );
+            }
             for r in reconcile(&state.pool, n.is_multiple_of(FORCE_EVERY)).await {
                 if let Some(e) = r.error {
                     tracing::warn!(host = %r.hostname, "vm network policy sync: {e}");
@@ -601,5 +621,80 @@ mod tests {
         let body: machina_bpf::api::VmQuarantineBody =
             serde_json::from_value(q[0].object_ref.clone()).unwrap();
         assert_eq!(body.secs, Some(3600));
+    }
+
+    #[tokio::test]
+    async fn jit_needs_a_second_admin_and_expires() {
+        use crate::api::vm_network_policies::JIT_ACTION;
+        use crate::engine::ai::actions;
+        let (state, _rx) = test_state().await;
+        let pool = &state.pool;
+        for (i, name) in ["np-a", "np-b"].iter().enumerate() {
+            sqlx::query("INSERT INTO vms (id, name) VALUES (?, ?)")
+                .bind(Uuid::from_u128(10 + i as u128))
+                .bind(name)
+                .execute(pool)
+                .await
+                .unwrap();
+        }
+        let req = netpol::jit::JitRequest {
+            from: "np-a".into(),
+            to: "np-b".into(),
+            port: 22,
+            secs: Some(60),
+            ..Default::default()
+        };
+        let body = actions::CreateActionBody {
+            action_type: JIT_ACTION.into(),
+            label: "jit".into(),
+            review: String::new(),
+            risk: String::new(),
+            object_ref: serde_json::to_value(&req).unwrap(),
+            source: "netpol".into(),
+        };
+        let a = actions::create_action(pool, &body, "alice").await.unwrap();
+        let user = |name: &str, role: &str| crate::auth::AuthUser {
+            username: name.into(),
+            role: role.into(),
+            auth_source: None,
+        };
+        assert!(
+            actions::approve_and_execute(&state, a.id, &user("alice", "admin"))
+                .await
+                .is_err()
+        );
+        assert!(
+            actions::approve_and_execute(&state, a.id, &user("carol", "operator"))
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            actions::get_action(pool, a.id)
+                .await
+                .unwrap()
+                .unwrap()
+                .status,
+            "pending",
+            "refused approvals leave the request pending"
+        );
+        actions::approve_and_execute(&state, a.id, &user("bob", "admin"))
+            .await
+            .unwrap();
+        let grants = netpol::jit::grants(&enabled_policies(pool).await, chrono::Utc::now());
+        assert_eq!(grants.len(), 1);
+        assert_eq!(grants[0].granted_by, "bob");
+
+        let mut p = enabled_policies(pool).await.remove(0);
+        p.annotations.insert(
+            netpol::jit::ANNOTATION_EXPIRES.into(),
+            "2000-01-01T00:00:00Z".into(),
+        );
+        upsert(pool, &p, "bob").await.unwrap();
+        assert!(
+            enabled_policies(pool).await.is_empty(),
+            "expired is not compiled"
+        );
+        assert_eq!(reap_expired(pool).await, [p.name]);
+        assert!(policies(pool).await.unwrap().is_empty());
     }
 }

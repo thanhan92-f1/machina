@@ -471,6 +471,69 @@ export function formatRemaining(secs: number): string {
   return `${secs}s left`
 }
 
+export interface JitGrant {
+  name: string
+  /** A VM name or `host`. */
+  from: string
+  to: string
+  /** 0 = every port. */
+  port: number
+  protocol: string
+  expires_at: string
+  remaining_secs: number
+  reason?: string
+  granted_by?: string
+}
+
+export interface JitRequest {
+  from: string
+  to: string
+  port?: number
+  protocol?: string
+  secs: number
+  reason?: string
+}
+
+export interface JitPending {
+  id: string
+  label: string
+  requested_by: string
+  created_at: string
+  object_ref: JitRequest
+}
+
+export const JIT_DURATIONS: Array<{ secs: number; label: string }> = [
+  { secs: 900, label: '15 minutes' },
+  { secs: 3600, label: '1 hour' },
+  { secs: 4 * 3600, label: '4 hours' },
+  { secs: 8 * 3600, label: '8 hours' },
+]
+
+export async function listJit(scope: NetpolScope): Promise<{ items: JitGrant[]; pending: JitPending[] }> {
+  const r = await apiGet<{ items?: JitGrant[]; pending?: JitPending[] }>(`${netpolBase(scope)}${P}/jit`)
+  return { items: r.items ?? [], pending: r.pending ?? [] }
+}
+
+/** Host: an admin grant. Fleet: an approval request unless `grant` (admins). */
+export const requestJit = (scope: NetpolScope, req: JitRequest, grant = false) =>
+  apiPost<{ granted?: JitGrant; policy?: string; pending?: JitPending }>(
+    `${netpolBase(scope)}${P}/jit`,
+    scope === 'fleet' ? { ...req, grant } : req,
+  )
+
+export const approveJit = (id: string) =>
+  apiPost<unknown>(`${PLATFORM_CONTROLLER_PROXY}/api/v1/ai/actions/${encodeURIComponent(id)}/execute`, {})
+
+export const rejectJit = (id: string) =>
+  apiPost<unknown>(`${PLATFORM_CONTROLLER_PROXY}/api/v1/ai/actions/${encodeURIComponent(id)}/reject`, {})
+
+export const revokeJit = (scope: NetpolScope, name: string) => deleteVmNetpol(scope, name)
+
+export function describeJit(g: Pick<JitGrant, 'from' | 'to' | 'port' | 'protocol'>): string {
+  const proto = (g.protocol || 'TCP').toLowerCase()
+  return g.port ? `${g.from} → ${g.to}:${g.port}/${proto}` : `${g.from} → ${g.to} (every port)`
+}
+
 /** Daemon: VM name. Controller: VM id. */
 export async function getVmLabels(scope: NetpolScope, vm: string): Promise<Record<string, string>> {
   const r = await apiGet<{ labels?: Record<string, string> }>(`${netpolBase(scope)}/vms/${encodeURIComponent(vm)}/labels`)

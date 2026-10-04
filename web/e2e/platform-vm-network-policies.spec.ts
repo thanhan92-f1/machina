@@ -96,6 +96,7 @@ async function mockNetpol(page: Page) {
   const policies = [dbPolicy]
   const applied: string[] = []
   const quarantines: Array<Record<string, unknown>> = []
+  const grants: Array<Record<string, unknown>> = []
   await page.route('**/vms/*/quarantine', (route) => {
     const req = route.request()
     const vm = decodeURIComponent(new URL(req.url()).pathname.split('/').slice(-2)[0])
@@ -198,9 +199,19 @@ async function mockNetpol(page: Page) {
     if (path === '/fqdn-cache') return json(route, { items: [] })
     if (path === '/auth') return json(route, { items: [] })
     if (path === '/quarantines') return json(route, { items: quarantines })
+    if (path === '/jit' && method === 'GET') return json(route, { items: grants })
+    if (path === '/jit' && method === 'POST') {
+      const b = req.postDataJSON() as { from: string; to: string; port: number; protocol: string; secs: number; reason?: string }
+      const g = { name: `jit-${b.from}-to-${b.to}-${b.port}-x`, from: b.from, to: b.to, port: b.port, protocol: b.protocol, expires_at: recent, remaining_secs: b.secs, reason: b.reason ?? '', granted_by: 'sus' }
+      grants.push(g)
+      policies.push({ ...dbPolicy, name: g.name, description: `Temporary access ${b.from} → ${b.to}:${b.port}/${b.protocol}`, selected_vms: [b.to, b.from] })
+      return json(route, { granted: g, policy: g.name, sync: { ok: true, vms: 2, rules: 3, peers: 1, warnings: [] } })
+    }
     if (method === 'DELETE') {
       const name = decodeURIComponent(path.slice(1))
       policies.splice(policies.findIndex((p) => p.name === name), 1)
+      const gi = grants.findIndex((g) => g.name === name)
+      if (gi >= 0) grants.splice(gi, 1)
       return json(route, { deleted: name })
     }
     return json(route, { error: `unmocked ${method} ${path}` }, 404)
@@ -332,6 +343,29 @@ test('VM network policies: quarantine from an alert, then release', async ({ pag
   await q.getByRole('button', { name: 'Release' }).click()
   await expect(page.getByText('Released web-1')).toBeVisible()
   await expect(page.getByText('No VM is quarantined.')).toBeVisible()
+})
+
+test('VM network policies: grant temporary access, then revoke it', async ({ page }) => {
+  await mockPlatformApi(page, { tier: 'power' })
+  await mockNetpol(page)
+  await page.goto(PAGE)
+  await expect(page.getByText('No temporary access.')).toBeVisible({ timeout: 15_000 })
+  await page.getByLabel('From').fill('web-1')
+  await page.getByLabel('To', { exact: true }).fill('db-1')
+  await page.getByLabel('Port').fill('5432')
+  await page.getByLabel('For').selectOption('900')
+  await page.getByLabel('Reason').fill('migration')
+  await page.getByRole('button', { name: 'Grant access' }).click()
+  await expect(page.getByText(/Granted web-1 → db-1:5432\/tcp/)).toBeVisible()
+  const t = page.getByRole('table', { name: 'Temporary access' })
+  await expect(t.getByText('web-1 → db-1:5432/tcp')).toBeVisible()
+  await expect(t.getByText('15m left')).toBeVisible()
+  await expect(t.getByText('migration')).toBeVisible()
+  await expect(page.getByRole('table', { name: 'VM network policies' }).getByText('jit-web-1-to-db-1-5432-x')).toBeVisible()
+  page.once('dialog', (d) => void d.accept())
+  await t.getByRole('button', { name: 'Revoke' }).click()
+  await expect(page.getByText('Revoked web-1 → db-1:5432/tcp')).toBeVisible()
+  await expect(page.getByText('No temporary access.')).toBeVisible()
 })
 
 test('VM network policies: delete asks for confirmation', async ({ page }) => {

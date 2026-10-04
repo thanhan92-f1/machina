@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-10-04 — Just-in-time network access
+
+See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#just-in-time-access).
+
+- **Temporary access.** `machinactl netpol jit grant --from web-1 --to db-1
+  --port 5432 --for 1h` lets one VM (or `host`) reach another VM's port
+  until the deadline (max 24 hours).
+  - It only adds an allow (`enableDefaultDeny: false`), so it never
+    isolates either VM.
+  - The daemon removes it within a second of expiry; the controller within
+    30 s.
+  - `machina.io/expires-at` also works on hand-written policies.
+- **Approval on the fleet.** Through the controller, a grant is a request in
+  Approvals (`vm_netpol.jit`) that a second admin must approve; the
+  requester's own approval is refused. `--now` lets an admin grant
+  directly. Grants, requests and expiries become `netpol.jit` events.
+- **UI.** A *Temporary access* panel on the Policies tab offers request or
+  grant, pending requests with Approve and Reject, and active grants with
+  time left and Revoke.
+- **API.** New `GET`/`POST /api/v1/vm-network-policies/jit` route on both
+  the daemon and the controller.
+- **Fixes.**
+  - `machinactl netpol status` printed the enforcement mode as raw JSON.
+  - The real-VM test script now clears the flow history first, so a rerun
+    no longer fails replay on traffic from the previous run.
+
 ## 2026-10-04 — VM quarantine
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#quarantine).

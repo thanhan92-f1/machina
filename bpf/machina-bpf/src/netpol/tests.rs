@@ -804,3 +804,92 @@ spec:
     );
     assert!(!v.ok());
 }
+
+#[test]
+fn jit_grant_opens_one_port_until_it_expires() {
+    use chrono::TimeZone;
+    let now = chrono::Utc.with_ymd_and_hms(2026, 10, 4, 12, 0, 0).unwrap();
+    let req = jit::JitRequest {
+        from: "lb-1".into(),
+        to: "db-1".into(),
+        port: 5432,
+        secs: Some(600),
+        reason: "migration".into(),
+        ..Default::default()
+    };
+    let g = req.policy("alice", now).unwrap();
+    let round = parse(&g.to_yaml());
+    assert_eq!(round[0], g, "the grant is a valid policy");
+
+    let mut p = parse(WEB_DB);
+    assert!(!trace_q(&p, "lb-1", "db-1", "TCP", 5432).allowed);
+    p.push(g.clone());
+    assert!(trace_q(&p, "lb-1", "db-1", "TCP", 5432).allowed);
+    assert!(!trace_q(&p, "lb-1", "db-1", "TCP", 22).allowed);
+    assert!(
+        trace_q(&p, "lb-1", "web-1", "TCP", 80).allowed,
+        "the source is not egress-isolated by the grant"
+    );
+    assert!(
+        trace_q(std::slice::from_ref(&g), "web-1", "db-1", "TCP", 22).allowed,
+        "an open target stays open"
+    );
+
+    let soon = now + chrono::Duration::seconds(599);
+    let gs = jit::grants(std::slice::from_ref(&g), soon);
+    assert_eq!(gs.len(), 1);
+    assert_eq!(
+        (gs[0].from.as_str(), gs[0].to.as_str(), gs[0].port),
+        ("lb-1", "db-1", 5432)
+    );
+    assert_eq!(gs[0].remaining_secs, 1);
+    assert_eq!(gs[0].granted_by, "alice");
+    let later = now + chrono::Duration::seconds(600);
+    assert!(jit::expired(&g, later));
+    assert!(jit::grants(&[g], later).is_empty());
+}
+
+#[test]
+fn jit_rejects_bad_requests() {
+    let now = chrono::Utc::now();
+    let ok = jit::JitRequest {
+        from: "host".into(),
+        to: "db-1".into(),
+        port: 22,
+        ..Default::default()
+    };
+    let g = ok.policy("bob", now).unwrap();
+    assert_eq!(g.specs.len(), 1, "host source: ingress only");
+    let mut p = parse(WEB_DB);
+    assert!(!trace_q(&p, "192.168.1.10", "db-1", "TCP", 22).allowed);
+    p.push(g);
+    assert!(trace_q(&p, "192.168.1.10", "db-1", "TCP", 22).allowed);
+    for bad in [
+        jit::JitRequest {
+            from: String::new(),
+            ..ok.clone()
+        },
+        jit::JitRequest {
+            to: "host".into(),
+            ..ok.clone()
+        },
+        jit::JitRequest {
+            from: "db-1".into(),
+            ..ok.clone()
+        },
+        jit::JitRequest {
+            protocol: "icmp".into(),
+            ..ok.clone()
+        },
+        jit::JitRequest {
+            secs: Some(0),
+            ..ok.clone()
+        },
+        jit::JitRequest {
+            secs: Some(jit::JIT_MAX_SECS + 1),
+            ..ok.clone()
+        },
+    ] {
+        assert!(bad.policy("bob", now).is_err(), "{bad:?}");
+    }
+}
