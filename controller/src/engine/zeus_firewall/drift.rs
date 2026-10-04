@@ -42,7 +42,7 @@ pub fn checksum_inventory(inv: &FirewallInventory) -> String {
     let json = serde_json::to_string(&relevant).unwrap_or_default();
     let mut hasher = Sha256::new();
     hasher.update(json.as_bytes());
-    format!("{:x}", hasher.finalize())
+    hasher.finalize().iter().map(|b| format!("{b:02x}")).collect::<String>()
 }
 
 pub async fn save_snapshot(

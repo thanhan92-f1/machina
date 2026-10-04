@@ -149,7 +149,7 @@ pub fn hash_token(token: &str) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(token.as_bytes());
-    format!("{:x}", hasher.finalize())
+    hasher.finalize().iter().map(|b| format!("{b:02x}")).collect::<String>()
 }
 
 pub async fn authenticate_api_key(

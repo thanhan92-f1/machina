@@ -29,7 +29,7 @@ pub fn sha256_file(path: &Path) -> Result<String> {
         }
         h.update(&buf[..n]);
     }
-    Ok(format!("{:x}", h.finalize()))
+    Ok(h.finalize().iter().map(|b| format!("{b:02x}")).collect::<String>())
 }
 
 pub fn write_sidecars(output: &Path, template_id: &str) -> Result<()> {

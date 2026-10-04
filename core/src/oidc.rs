@@ -191,6 +191,9 @@ pub fn allowed_algorithms_for_jwk(jwk: &jsonwebtoken::jwk::Jwk) -> Vec<Algorithm
         // A symmetric (HMAC) key published in a *public* JWKS would mean the
         // "secret" is public too — never usable for signature verification.
         AlgorithmParameters::OctetKey(_) => vec![],
+        // Any key type a future jsonwebtoken adds (post-quantum, …) is refused until it is deliberately supported here.
+        #[allow(unreachable_patterns)]
+        _ => vec![],
     }
 }
 
