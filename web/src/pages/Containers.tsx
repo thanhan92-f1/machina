@@ -36,6 +36,7 @@ import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 function statusTone(status: string): 'ok' | 'warn' | 'error' | 'neutral' | 'info' {
   const s = status.toLowerCase()
@@ -183,7 +184,7 @@ export default function ContainersPage() {
     <PageLayout
       eyebrow="Vessel"
       title="Containers"
-      subtitle="Local Podman / Docker containers on this host (Vessel). Windows 10/11 run via dockur with KVM."
+      subtitle={<>{platformStatSubtitle([{ label: 'Containers', value: items.length }, { label: 'Running', value: runningCount }, { label: 'Stopped', value: items.length - runningCount }])}<span className="mt-2 block">Local Podman / Docker containers on this host (Vessel). Windows 10/11 run via dockur with KVM.</span></>}
       icon={<Box className="w-5 h-5" />}
       loading={loading && items.length === 0 && !error}
       error={error}

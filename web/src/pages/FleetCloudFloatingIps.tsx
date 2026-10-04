@@ -20,6 +20,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Globe, Loader2, RefreshCw } from 'lucide-react'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 const PROTOCOLS = ['tcp', 'udp'] as const
 
@@ -101,6 +102,7 @@ function FleetCloudFloatingIpsContent() {
         <Globe className="w-7 h-7 text-[var(--accent)]" />
         Floating IPs (port forwards)
       </h1>
+      {platformStatSubtitle([{ label: 'Port forwards', value: forwards.length }, { label: 'Instances', value: vms.length }])}
       <p className="text-sm text-[var(--text-muted)]">
         No allocatable floating-IP pool natively — reach a VM's service from outside via a
         host_port → vm_port NAT rule instead.

@@ -13,6 +13,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Cpu, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 // Native flavor catalog — unlike the rest of the /fleet-cloud/* pages, this one no
 // longer depends on a wired external cloud (see api/flavors.ts). The
@@ -103,6 +104,7 @@ function FleetCloudFlavorsContent() {
         <Cpu className="w-7 h-7 text-[var(--accent)]" />
         Compute flavors
       </h1>
+      {platformStatSubtitle([{ label: 'Flavors', value: flavors.length }])}
       <p className="text-sm text-[var(--text-muted)]">Flavor catalog — create and delete require admin role.</p>
       <section className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
         <h2 className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"><Plus className="w-4 h-4" /> Create flavor</h2>

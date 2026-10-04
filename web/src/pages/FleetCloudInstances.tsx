@@ -16,6 +16,7 @@ import { useExpandable } from '../hooks/useExpandable'
 import { ExpandableToggle } from '../components/ui/ExpandableToggle'
 import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 const STATUS_CHIPS = ['', 'ACTIVE', 'SHUTOFF', 'ERROR', 'CREATING'] as const
 
@@ -91,7 +92,11 @@ function FleetCloudInstancesContent() {
       eyebrow="Fleet Cloud"
       prepend={<><FleetCloudSubNav /></>}
       title="Instances"
-      subtitle={`${vms.length} instance${vms.length === 1 ? '' : 's'}`}
+      subtitle={platformStatSubtitle([
+        { label: 'Instances', value: vms.length },
+        { label: 'Running', value: vms.filter((v) => v.observed_state === 'running').length },
+        { label: 'Stopped', value: vms.filter((v) => v.observed_state !== 'running').length },
+      ])}
       icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       error={loadError}
       errorTitle="Failed to load instances"

@@ -29,6 +29,7 @@ import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { HardDrive, RefreshCw } from 'lucide-react'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 // Native standalone volumes — no old external-cloud gate component in the
 // way any more (the daemon's external-cloud-client integration has
@@ -125,6 +126,7 @@ function FleetCloudVolumesContent() {
         <HardDrive className="w-7 h-7 text-[var(--accent)]" />
         Volumes
       </h1>
+      {platformStatSubtitle([{ label: 'Volumes', value: volumes.length }, { label: 'Attached', value: volumes.filter((v) => v.attached_vm_id).length }, { label: 'Total GiB', value: volumes.reduce((a, v) => a + (v.size_gib || 0), 0) }])}
       <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 flex flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs text-[var(--text-muted)] mb-1">Size (GB)</label>

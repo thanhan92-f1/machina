@@ -69,6 +69,11 @@ const INSTALL_WIZARD_STEPS = ['Source & OS', 'Disk', 'Network & display', 'Cloud
 const LINUX_PACKER_GUESTS = MACHINA_PACKER_SCRIPT_GUESTS.filter((g) => g.family !== 'windows')
 const WINDOWS_PACKER_GUESTS = MACHINA_PACKER_SCRIPT_GUESTS.filter((g) => g.family === 'windows')
 
+function formatSummaryMemory(mb: number): string {
+  if (!Number.isFinite(mb) || mb <= 0) return '—'
+  return mb >= 1024 ? `${(mb / 1024).toFixed(mb % 1024 ? 1 : 0)} GiB` : `${mb} MiB`
+}
+
 export default function CreateVMPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -712,6 +717,8 @@ export default function CreateVMPage() {
       errorTone="amber"
       onErrorDismiss={() => setCatalogWarning(null)}
     >
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_17rem] xl:items-start">
+      <div className="min-w-0 space-y-8">
       <div>
         <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">How do you want to create this VM?</h2>
         <ChoiceCardGrid>
@@ -1891,6 +1898,31 @@ export default function CreateVMPage() {
           setBackingBrowseOpen(false)
         }}
       />
+      </div>
+      <aside className="hidden xl:block sticky top-20" aria-label="Summary" data-testid="create-vm-summary">
+        <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Summary</p>
+          <p className="mt-1 truncate text-base font-semibold text-[var(--text-primary)]">{vmName.trim() || 'Unnamed guest'}</p>
+          <p className="text-xs text-[var(--text-muted)]">{pageFlow === 'golden' ? 'Clone from golden image' : 'Install from media'}</p>
+          <dl className="mt-3 divide-y divide-[var(--apple-hairline)] text-sm">
+            {[
+              ['vCPUs', String(vcpus)],
+              ['Memory', formatSummaryMemory(Number(memoryMb))],
+              ['Disk', `${pageFlow === 'golden' ? goldenOverlayGb ?? '—' : diskGb ?? '—'} GiB`],
+              ['Network', network || 'default'],
+              ['Firmware', String(firmware ?? '').toUpperCase() || '—'],
+              ['Graphics', String(graphicsType ?? '').toUpperCase() || '—'],
+              ...(osVariant ? [['OS variant', osVariant]] : []),
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-3 py-2">
+                <dt className="text-[var(--text-muted)]">{k}</dt>
+                <dd className="min-w-0 truncate text-right font-medium text-[var(--text-primary)] tabular-nums">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </aside>
+      </div>
     </PageLayout>
   )
 }

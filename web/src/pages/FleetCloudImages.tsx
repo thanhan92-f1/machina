@@ -13,6 +13,7 @@ import PageLayout from '../components/PageLayout'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { formatUserError } from '../utils/apiError'
 import { statusToneClass } from '../utils/semanticColors'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 // Native golden-image catalog — no old external-cloud gate component in the way
 // any more (the daemon's external-cloud-client integration has since been
@@ -83,7 +84,7 @@ function FleetCloudImagesContent() {
       eyebrow="Fleet Cloud"
       prepend={<><FleetCloudSubNav /></>}
       title="Images"
-      subtitle={`${images.length} image${images.length === 1 ? '' : 's'}`}
+      subtitle={platformStatSubtitle([{ label: 'Images', value: images.length }])}
       icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       error={loadError}
       errorTitle="Failed to load images"

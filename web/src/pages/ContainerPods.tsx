@@ -23,6 +23,7 @@ import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { statusBadgeClasses } from '../utils/semanticColors'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 function podTone(status: string): 'ok' | 'warn' | 'error' | 'neutral' | 'info' {
   const s = status.toLowerCase()
@@ -125,7 +126,7 @@ export default function ContainerPodsPage() {
     <PageLayout
       eyebrow="Vessel"
       title="Container Pods"
-      subtitle="Podman pods on this host — shared network namespace for grouped containers."
+      subtitle={<>{platformStatSubtitle([{ label: 'Pods', value: items.length }])}<span className="mt-2 block">Podman pods on this host — shared network namespace for grouped containers.</span></>}
       icon={<Layers className="w-5 h-5" />}
       loading={loading && items.length === 0 && !error}
       error={error}

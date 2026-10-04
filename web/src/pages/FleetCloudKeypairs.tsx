@@ -12,6 +12,7 @@ import PageLayout from '../components/PageLayout'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { statusActionLinkClasses } from '../utils/semanticColors'
 import { Key, RefreshCw } from 'lucide-react'
+import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
 // Native SSH keypair catalog — no old external-cloud gate component in the way
 // any more (the daemon's external-cloud-client integration has since been
@@ -64,7 +65,7 @@ function FleetCloudKeypairsContent() {
       prepend={<FleetCloudSubNav />}
       eyebrow="Fleet Cloud"
       title="SSH keypairs"
-      subtitle={`${keys.length} keypair${keys.length === 1 ? '' : 's'}`}
+      subtitle={platformStatSubtitle([{ label: 'Keypairs', value: keys.length }])}
       icon={<Key className="w-7 h-7 text-[var(--accent)]" />}
       contentLoading={loading && keys.length === 0}
       actions={
