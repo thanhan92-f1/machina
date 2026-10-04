@@ -45,7 +45,11 @@ pub async fn call_tool(state: &AppState, actor: &str, name: &str, args: Value) -
     if !tool_specs().iter().any(|(n, _, _)| *n == name) {
         return (format!("unknown tool '{name}'"), true);
     }
-    let call = ToolCall { id: String::new(), name: name.to_string(), args };
+    let call = ToolCall {
+        id: String::new(),
+        name: name.to_string(),
+        args,
+    };
     let mut proposed = Vec::new();
     exec_tool(state, actor, &call, &mut proposed).await
 }
@@ -128,16 +132,26 @@ fn tool_specs() -> Vec<(&'static str, &'static str, Value)> {
             }),
         ),
         (
+            "plan_environment",
+            "Work out what a described environment would need (machines, CPU, memory, storage, network, backup) and its monthly cost. Read-only: creates nothing.",
+            json!({
+                "type": "object",
+                "properties": {"description": {"type": "string", "description": "What the person wants, e.g. 'staging for 10 developers'"}},
+                "required": ["description"]
+            }),
+        ),
+        (
             "propose_action",
-            "Queue a change for a human to approve. Nothing happens until they approve it.",
+            "Queue a change for a human to approve. Nothing happens until they approve it. For create_environment, give `description` instead of `vm`.",
             json!({
                 "type": "object",
                 "properties": {
-                    "action": {"type": "string", "enum": ["start_vm", "enable_ha", "create_backup", "install_guest_tools"]},
-                    "vm": {"type": "string", "description": "Machine name or id"},
+                    "action": {"type": "string", "enum": ["start_vm", "enable_ha", "create_backup", "install_guest_tools", "create_environment"]},
+                    "vm": {"type": "string", "description": "Machine name or id (not used for create_environment)"},
+                    "description": {"type": "string", "description": "For create_environment: what to build"},
                     "reason": {"type": "string", "description": "Why this change helps, in one sentence"}
                 },
-                "required": ["action", "vm", "reason"]
+                "required": ["action", "reason"]
             }),
         ),
     ]
@@ -268,6 +282,53 @@ async fn exec_tool(
                     .collect();
                 Ok(json!({ "events": items }).to_string())
             }
+            "plan_environment" => {
+                let query = arg_str(&call.args, "description");
+                if query.trim().is_empty() {
+                    anyhow::bail!("description is required");
+                }
+                let plan = environment_plan(&state.pool, &query).await?;
+                Ok(plan.to_string())
+            }
+            "propose_action" if arg_str(&call.args, "action") == "create_environment" => {
+                let query = arg_str(&call.args, "description");
+                if query.trim().is_empty() {
+                    anyhow::bail!("description is required for create_environment");
+                }
+                let plan = environment_plan(&state.pool, &query).await?;
+                if plan["gpu_required"].as_bool().unwrap_or(false) {
+                    anyhow::bail!("GPU environments are not supported by this action yet");
+                }
+                let reason = arg_str(&call.args, "reason");
+                let review = format!(
+                    "{} — {} machine(s), about ${:.0}/month. {}",
+                    plan["label"].as_str().unwrap_or("Environment"),
+                    plan["vm_count"],
+                    plan["estimated_monthly_usd"].as_f64().unwrap_or(0.0),
+                    truncate(&reason, 300)
+                );
+                let row = actions::create_action(
+                    &state.pool,
+                    &CreateActionBody {
+                        action_type: "create_environment".into(),
+                        label: format!("Create environment: {}", truncate(&query, 80)),
+                        review,
+                        risk: "Review required".into(),
+                        object_ref: json!({ "query": query, "max_vms": 5 }),
+                        source: "zyra-agent".into(),
+                    },
+                    actor,
+                )
+                .await?;
+                proposed.push(row.id.to_string());
+                Ok(json!({
+                    "queued": true,
+                    "action_id": row.id.to_string(),
+                    "plan": plan,
+                    "note": "Waiting for an administrator to approve it in Zyra approvals. Nothing is created until then."
+                })
+                .to_string())
+            }
             "propose_action" => {
                 let action = arg_str(&call.args, "action");
                 if !matches!(
@@ -314,6 +375,29 @@ async fn exec_tool(
         Ok(out) => (truncate(&out, MAX_TOOL_OUTPUT), false),
         Err(e) => (format!("error: {e}"), true),
     }
+}
+
+/// The environment planner's answer as plain JSON (no side effects).
+async fn environment_plan(pool: &sqlx::SqlitePool, query: &str) -> anyhow::Result<Value> {
+    let rates: (f64, f64) = sqlx::query_as(
+        "SELECT finops_vcpu_hour_usd, finops_gib_hour_usd FROM clusters ORDER BY created_at LIMIT 1",
+    )
+    .fetch_one(pool)
+    .await?;
+    let p = super::environment_intent::plan_environment(query, rates.0, rates.1);
+    Ok(json!({
+        "label": p.label,
+        "environment_type": p.environment_type,
+        "vm_count": p.vm_count,
+        "vcpus_per_vm": p.vcpus_per_vm,
+        "memory_gib_per_vm": p.memory_gib_per_vm,
+        "storage_gib": p.storage_gib,
+        "network": p.network,
+        "backup_policy": p.backup_policy,
+        "estimated_monthly_usd": p.estimated_monthly_usd,
+        "gpu_required": p.gpu_required,
+        "build_steps": p.build_steps,
+    }))
 }
 
 // ── Provider adapters (pure functions: unit-testable) ───────────────────────────
@@ -624,6 +708,25 @@ pub async fn run(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn environment_tools_are_registered_and_only_proposals_write() {
+        let names: Vec<_> = tool_specs().iter().map(|t| t.0).collect();
+        assert!(names.contains(&"plan_environment"));
+        let propose = tool_specs()
+            .into_iter()
+            .find(|t| t.0 == "propose_action")
+            .unwrap();
+        let actions = propose.2["properties"]["action"]["enum"]
+            .as_array()
+            .unwrap()
+            .clone();
+        assert!(actions.iter().any(|a| a == "create_environment"));
+        // The agent has no tool that changes anything directly.
+        assert!(names
+            .iter()
+            .all(|n| !n.starts_with("create_") && !n.starts_with("delete_")));
+    }
+
     use super::*;
 
     fn call(id: &str, name: &str) -> ToolCall {

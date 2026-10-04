@@ -205,6 +205,36 @@ pub async fn approve_and_execute(
                 .map(|r| serde_json::json!({"message": r.message, "task_ids": r.task_ids}))
                 .map_err(|e| anyhow::anyhow!(e.message))
         }
+        // "Describe it, get it": approving builds the planned machines through the same path as the
+        // environment-intent API (admin only, placed by the scheduler, created by the task bus).
+        "create_environment" => {
+            let query = action
+                .object_ref
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow::anyhow!("query missing in object_ref"))?
+                .to_string();
+            let max_vms = action
+                .object_ref
+                .get("max_vms")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(5) as i32;
+            let out = super::environment_intent::execute_environment(
+                state,
+                actor,
+                &super::environment_intent::EnvironmentExecuteBody {
+                    query,
+                    dry_run: false,
+                    max_vms,
+                },
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?;
+            Ok(serde_json::json!({
+                "message": out.summary,
+                "task_ids": out.vm_tasks.iter().filter_map(|t| t.task_id.clone()).collect::<Vec<_>>(),
+            }))
+        }
         "guest.sync_time" | "guest.fstrim" => {
             let vm_id = action
                 .object_ref
