@@ -1134,6 +1134,28 @@ API: `GET /api/v1/vm-network-policies/evidence[?format=md][&probes=…]` on
 the daemon (this host) and the controller (the fleet, also `&project=P`). Exports are logged, as
 `netpol.evidence` events on the controller.
 
+## Known limitations
+
+- **Approvals through the daemon proxy:** with `MACHINA_PLATFORM_AUTH`
+  set, the controller records every daemon user as the proxy's service
+  account (see *Preview and approval*). The two-person rule then needs a
+  second admin with their own controller login.
+- **Self-approval status code:** refusing a requester's own approval
+  returns HTTP 500 with the reason in the body, not 403. The shared
+  approvals handler maps every refusal to an internal error.
+- **Egress IP addresses:** Machina neither adds the egress IP to the host
+  nor sets up upstream routing for it; both are manual.
+- **Cross-host NAT:** projects spanning NATed hosts are only flagged.
+  Isolation between them needs routed or bridged VM networks.
+- **Addresses outside libvirt DHCP:** static IPv6 addresses and additional
+  NICs are only seen with `qemu-guest-agent` running in the guest.
+- **Timing-sensitive smoke checks:** the large-body L7 checks in
+  `vm-edge-smoke.sh` (384 KiB and chunked POST) can fail on a heavily
+  loaded host; rerun before investigating.
+- **Mocked UI tests:** `platform-vm-network-policies.spec.ts` mocks the
+  API, so it does not catch request-format mismatches with the
+  controller. The real-VM script and the live spec do.
+
 ## Test
 
 `scripts/bpf/vm-edge-smoke.sh` has a *VM network policy* section. It runs on
