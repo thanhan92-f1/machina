@@ -87,7 +87,7 @@ export default function GuestAgentSetupDialog({
   ]
 
   return (
-    <GlassModal open={open} onClose={onClose} xl title="Set up the guest agent" subtitle={`${name} · ${vm.guest_tools_status ?? 'status unknown'}`}>
+    <GlassModal open={open} onClose={onClose} xl title="Set up the guest agent" subtitle={`${name} · agent ${(vm.guest_tools_status ?? 'status unknown').replace(/[_-]+/g, ' ')}`}>
       <div className="space-y-5 text-sm" data-testid="guest-agent-setup">
         <p className="text-[var(--text-secondary)]">
           The guest agent lets Machina read the guest IP and health, shut the VM down gracefully and run guest commands. Pick whichever route fits
