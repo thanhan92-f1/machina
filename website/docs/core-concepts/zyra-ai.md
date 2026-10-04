@@ -14,7 +14,7 @@ Zyra AI is the operations assistant built into the controller.
 - **Natural-language operations.** Ask about the fleet or request a change in plain language.
 - **Approval queue.** Every change Zyra proposes waits for a human approval before it runs.
 
-![Zyra AI](/machina-zyra.png)
+![Zyra AI](/machina-zyra-dark.png)
 
 ## Bring your own model
 

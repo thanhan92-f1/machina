@@ -11,7 +11,7 @@ Machina installs on any Linux host with KVM: Ubuntu, Debian, Fedora, RHEL/Alma/R
 ## One host
 
 ```bash
-git clone https://github.com/zyvorai/machina.git && cd machina
+git clone https://github.com/zyvorai/zyvor-machina.git machina && cd machina
 ./machinactl deploy        # deps · build · install · start · verify
 ```
 
@@ -60,4 +60,4 @@ Open **Platform → Security → Native eBPF** to see what your kernel supports 
 | Browser consoles | [Consoles](../core-concepts/consoles.md) |
 | Create and manage VMs | [Virtual machines](../core-concepts/virtual-machines.md) |
 | Something not working | [Troubleshooting](../operations/troubleshooting.md) |
-| Production pilot checklist | [Customer site readiness](https://github.com/zyvorai/machina/blob/main/docs/CUSTOMER_SITE_READINESS.md) |
+| Production pilot checklist | [Customer site readiness](https://github.com/zyvorai/zyvor-machina/blob/main/docs/CUSTOMER_SITE_READINESS.md) |

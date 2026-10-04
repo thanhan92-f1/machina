@@ -50,4 +50,4 @@ description: The first checks to run, and fixes for the most common problems.
 ## More
 
 The full symptom-by-symptom guide is the
-[troubleshooting handbook](https://github.com/zyvorai/machina/blob/main/docs/handbook/troubleshooting.md).
+[troubleshooting handbook](https://github.com/zyvorai/zyvor-machina/blob/main/docs/handbook/troubleshooting.md).

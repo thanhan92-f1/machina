@@ -1,6 +1,6 @@
 # Machina docs site
 
-Built with [Docusaurus](https://docusaurus.io/). Serves the marketing site and docs at https://zyvorai.github.io/machina/.
+Built with [Docusaurus](https://docusaurus.io/). Serves the marketing site and docs at https://zyvorai.github.io/zyvor-machina/.
 
 ## Local development
 

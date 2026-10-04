@@ -23,7 +23,7 @@ controller's own APIs; there is no external cloud to integrate.
 | Projects | Tenancy and quota boundaries |
 | Load balancers | Weighted round-robin iptables rules pushed to the owning host, no amphora VM |
 
-![Fleet Cloud](/machina-fleet-cloud.png)
+![Fleet Cloud](/machina-fleet-cloud-dark.png)
 
 If you know OpenStack, these map to Nova, Glance, Cinder, Neutron security groups, Heat and Octavia. See
 [Machina vs OpenStack](/vs-openstack).

@@ -62,5 +62,5 @@ overview shows it as pills.
 | `xsk` | AF_XDP |
 
 Any recent distribution kernel (6.6 or later) runs the core datapath. See the
-[engineering reference](https://github.com/zyvorai/machina/tree/main/docs/ebpf)
+[engineering reference](https://github.com/zyvorai/zyvor-machina/tree/main/docs/ebpf)
 for full details.

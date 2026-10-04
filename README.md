@@ -2,15 +2,15 @@
 
 # Machina
 
-[![CI](https://github.com/zyvorai/machina/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/machina/actions/workflows/ci.yml)
+[![CI](https://github.com/zyvorai/zyvor-machina/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/zyvor-machina/actions/workflows/ci.yml)
 [![License: Zyvor Production v1.0](https://img.shields.io/badge/License-Zyvor%20Production%20v1.0-orange.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-daemon%20%C2%B7%20controller%20%C2%B7%20agent-1d1d1f?logo=rust)](Cargo.toml)
-[![KVM](https://img.shields.io/badge/libvirt-QEMU%2FKVM-6e3ad6)](docs/README.md)
-[![Website](https://img.shields.io/badge/Website-zyvorai.github.io%2Fmachina-0071e3)](https://zyvorai.github.io/machina/)
+[![Rust](https://img.shields.io/badge/Rust-daemon%20%C2%B7%20controller%20%C2%B7%20agent%20%C2%B7%20bpfd-000000?logo=rust)](Cargo.toml)
+[![KVM](https://img.shields.io/badge/libvirt-QEMU%2FKVM-2997ff)](docs/README.md)
+[![Website](https://img.shields.io/badge/Website-zyvorai.github.io%2Fzyvor--machina-0071e3)](https://zyvorai.github.io/zyvor-machina/)
 
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=machina&utm_campaign=readme_hero)
-[![30-day PoC](https://img.shields.io/badge/30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=machina&utm_campaign=readme_hero)
-[![Quickstart](https://img.shields.io/badge/Quickstart_in_one_command-6e3ad6?style=for-the-badge)](#quickstart)
+[![30-day PoC](https://img.shields.io/badge/30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=machina&utm_campaign=readme_hero)
+[![Quickstart](https://img.shields.io/badge/Quickstart_in_one_command-2997ff?style=for-the-badge)](#quickstart)
 
 ![Machina — your metal, your cloud, one control plane](docs/social/machina-share-card.jpg)
 
@@ -24,18 +24,32 @@
 
 ---
 
+## What's new
+
+| | |
+|---|---|
+| **Boot Doctor** | A VM that won't boot gets diagnosed and repaired offline through GuestKit, with a backup taken first. |
+| **VM quarantine** | Isolate a suspect VM in the eBPF datapath under a time-boxed lease that lapses on its own. |
+| **Just-in-time access** | Open a VM's network for a set time, with two-person approval and automatic expiry. |
+| **Zyra verify and undo** | Every AI action is checked afterwards ("did it work?") and can be rolled back in one click. |
+| **VM flow history** | Service map, learn and replay of VM traffic, with lateral-movement alerts. |
+| **DNS threat feeds** | VM network policy blocks known-bad domains from threat feeds. |
+| **Quick create and Fix-it** | Image, size, Create; then a one-click Fix-it list (guest agent, backups) in Command Center. |
+
+---
+
 ## Why Machina
 
 | When this happens… | Machina gives you… |
 |---|---|
 | You want a private cloud, but OpenStack is a six-week project and a full-time team | `./machinactl deploy`: a few Rust services, embedded SQLite, a browser UI on `:5092` minutes later |
 | VMware renewal quotes keep climbing | Open KVM/libvirt underneath, with HA failover, DRS and live migration on top |
-| libvirt ops live in a pile of `virsh` scripts | One dashboard, a REST API with 900+ routes, a CLI and a Terraform provider over the same model |
+| libvirt ops live in a pile of `virsh` scripts | One dashboard, a REST API with 1,000+ routes, a CLI and a Terraform provider over the same model |
 | Every console needs its own gateway | noVNC, SPICE, serial and SSH proxied by the daemon, with RBAC and audit |
 | Networking means Cilium + Tetragon + kube-proxy + a firewall agent | One eBPF service, `machina-bpfd`: load balancing, DDoS shield, VM isolation, flow visibility |
 | On-call means triaging the same incidents at 3 a.m. | Zyra AI diagnoses, correlates and proposes the fix, then waits for a human approval |
 
-![Capabilities at a glance — Run, Reach, Scale, Operate](docs/ux/readme-capabilities.jpg)
+![Capabilities at a glance: Run, Secure, Scale, Operate](docs/ux/readme-capabilities.jpg)
 
 ---
 
@@ -50,7 +64,7 @@
 | Install | `./machinactl deploy` | Kolla-Ansible / OpenStack-Ansible project |
 | Smallest useful footprint | A single KVM host | A multi-node control plane |
 | Flavors, images, volumes, SGs, stacks, LBs | Yes, in [Fleet Cloud](docs/customer/pages/fleet-cloud/fleet-cloud.md) | Yes, across six projects |
-| Load balancer data plane | eBPF Maglev on the host, no amphora VM | Amphora VMs (Octavia) |
+| Load balancer data plane | On the host, no amphora VM: iptables rules for Fleet Cloud, eBPF Maglev for Kubernetes services | Amphora VMs (Octavia) |
 | Network datapath | Native eBPF, lease-gated enforcement | Neutron agents + OVS/OVN |
 | Browser consoles | Built into the daemon | noVNC/SPICE proxy services |
 | HA failover and DRS | Built in ([controller HA](docs/controller-ha.md)) | Masakari + Watcher (separate projects) |
@@ -64,15 +78,15 @@ Machina targets the fleets you own: a lab, a branch, a sovereign region, a VMwar
 
 ## See it live
 
-Captured from a real deployment on Ubuntu 26.04, not mockups.
+Captured from a real deployment on Ubuntu 26.04 in the dark theme, not mockups.
 
-![Machina dashboard](docs/ux/machina-dashboard.png)
+![Machina Mission Control, dark theme](docs/ux/machina-dashboard-dark.png)
 
 ### Every VM operation, in one place
 
 Create, clone, snapshot, back up and migrate. Cloud-init, GPU and PCI passthrough, golden images built with Packer (Linux, plus Windows 10/11 through dockur when enabled), networks, storage pools and nwfilters. [VM guide →](docs/customer/pages/core/vms.md)
 
-![VM inventory](docs/ux/machina-vms.png)
+![Create a VM: guided wizard with a live summary](docs/ux/machina-create-dark.png)
 
 ### Consoles in the browser, no gateway to deploy
 
@@ -90,13 +104,13 @@ Add hypervisors with a gRPC agent over TLS. The controller keeps desired state, 
 
 Flavors, images, instances, volumes and snapshots, security groups, keypairs, floating IPs, server groups, Heat-style stacks, projects and load balancers, all native controller APIs. [Fleet Cloud →](docs/customer/pages/fleet-cloud/fleet-cloud.md)
 
-![Fleet Cloud](docs/ux/machina-fleet-cloud.png)
+![Fleet Cloud](docs/ux/machina-fleet-cloud-dark.png)
 
 ### Zyra AI: an operator that asks first
 
 Autonomous diagnostics across the fleet, incident correlation, rightsizing and natural-language operations, with bring-your-own LLM providers (keys encrypted at rest) and an approval queue in front of every change. [Zyra AI →](docs/customer/pages/platform-security/platform-zyra.md)
 
-![Zyra AI](docs/ux/machina-zyra.png)
+![Zyra AI](docs/ux/machina-zyra-dark.png)
 
 ### Networking and security, in the kernel
 
@@ -111,6 +125,10 @@ Machina ships its own eBPF datapath instead of bolting on Cilium, Tetragon or a 
 
 Everything that can drop traffic starts in observe mode and enforces only under a time-boxed lease that the kernel honours on its own; nothing is persisted. [Native eBPF →](docs/ebpf/README.md)
 
+![Native eBPF on a live host: machina-bpfd datapath loaded](docs/ux/machina-native-ebpf-dark.png)
+
+![Security Center: Zeus firewall, SOC, threat hunting, runtime enforcement](docs/ux/machina-security-dark.png)
+
 ### And the rest of the platform
 
 - **Identity and access**: PAM, OIDC, SAML and [LDAP](docs/ldap-auth.md) sign-in, role-based access, a full audit trail. [Admin guide →](docs/handbook/admin-configuration.md)
@@ -124,7 +142,7 @@ Everything that can drop traffic starts in observe mode and enforces only under 
 
 ## How it fits together
 
-![Three binaries, one private cloud](docs/ux/readme-architecture.jpg)
+![Four Rust services, one private cloud](docs/ux/readme-architecture.jpg)
 
 | Component | Port | Role |
 |---|---|---|
@@ -144,7 +162,7 @@ The daemon alone is a complete single-host manager. Add the controller and an ag
 On any Linux host with KVM (Ubuntu, Debian, Fedora, RHEL/Alma/Rocky, openSUSE, Arch):
 
 ```bash
-git clone https://github.com/zyvorai/machina.git && cd machina
+git clone https://github.com/zyvorai/zyvor-machina.git machina && cd machina
 ./machinactl deploy        # deps · build · install · start · verify
 # open https://<host>:5092 and sign in with a local (PAM) account
 ```
@@ -172,7 +190,7 @@ From your laptop to a remote host (sources are rsync'd and built on the server; 
 | Ports, auth, TLS, config | [Admin configuration](docs/handbook/admin-configuration.md) |
 | Production pilot checklist | [Customer site readiness](docs/CUSTOMER_SITE_READINESS.md) |
 | Contributor setup | [Engineering onboarding](docs/ENGINEERING_ONBOARDING.md) |
-| Everything else | [Docs index](docs/README.md) · [Website](https://zyvorai.github.io/machina/) |
+| Everything else | [Docs index](docs/README.md) · [Website](https://zyvorai.github.io/zyvor-machina/) |
 
 ---
 
@@ -237,7 +255,7 @@ Contributions are welcome under the same license; see [CONTRIBUTING.md](CONTRIBU
 ### Ready to run your own cloud?
 
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=machina&utm_campaign=readme_footer)
-[![30-day PoC](https://img.shields.io/badge/Start_a_30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=machina&utm_campaign=readme_footer)
-[![Star on GitHub](https://img.shields.io/github/stars/zyvorai/machina?style=for-the-badge&logo=github&label=Star&color=6e3ad6)](https://github.com/zyvorai/machina)
+[![30-day PoC](https://img.shields.io/badge/Start_a_30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=machina&utm_campaign=readme_footer)
+[![Star on GitHub](https://img.shields.io/github/stars/zyvorai/zyvor-machina?style=for-the-badge&logo=github&label=Star&color=2997ff)](https://github.com/zyvorai/zyvor-machina)
 
 </div>

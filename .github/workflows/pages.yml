@@ -1,5 +1,5 @@
 # Requires GitHub Pages enabled with Source = "GitHub Actions" (repo Settings
-# > Pages), done once via `gh api repos/zyvorai/machina/pages -X POST -f
+# > Pages), done once via `gh api repos/zyvorai/zyvor-machina/pages -X POST -f
 # build_type=workflow`.
 name: Deploy Docs Site
 on:

@@ -7,7 +7,7 @@ description: Machina is source-available under the Zyvor Production License v1.0
 # License
 
 Machina is source-available under the
-**[Zyvor Production License v1.0](https://github.com/zyvorai/machina/blob/main/LICENSE)**
+**[Zyvor Production License v1.0](https://github.com/zyvorai/zyvor-machina/blob/main/LICENSE)**
 (SPDX `LicenseRef-Zyvor-Production-1.0`).
 
 | Use | Terms |
@@ -16,11 +16,11 @@ Machina is source-available under the
 | Production use: live business operations, customer environments, production workloads or data | Annual enterprise subscription |
 
 Plans, support levels and terms are in the
-[subscription model](https://github.com/zyvorai/machina/blob/main/docs/SUBSCRIPTION-MODEL.md) and the
-[licensing model](https://github.com/zyvorai/machina/blob/main/docs/legal/LICENSING-MODEL.md).
+[subscription model](https://github.com/zyvorai/zyvor-machina/blob/main/docs/SUBSCRIPTION-MODEL.md) and the
+[licensing model](https://github.com/zyvorai/zyvor-machina/blob/main/docs/legal/LICENSING-MODEL.md).
 
 Contributions are welcome under the same license; see
-[CONTRIBUTING.md](https://github.com/zyvorai/machina/blob/main/CONTRIBUTING.md).
+[CONTRIBUTING.md](https://github.com/zyvorai/zyvor-machina/blob/main/CONTRIBUTING.md).
 
 Questions about production use: [sales@zyvor.dev](mailto:sales@zyvor.dev) or
 [book a demo](https://zyvor.dev/schedule?utm_source=pages&utm_medium=machina&utm_campaign=license).

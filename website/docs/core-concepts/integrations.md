@@ -45,6 +45,6 @@ HyperSDK and hyper2kvm convert guests from other platforms into KVM; GuestKit ch
 
 ## Automation
 
-- [Terraform provider](https://github.com/zyvorai/machina/blob/main/terraform/machina/README.md)
-- [TypeScript SDK](https://github.com/zyvorai/machina/blob/main/sdk/typescript/README.md)
+- [Terraform provider](https://github.com/zyvorai/zyvor-machina/blob/main/terraform/machina/README.md)
+- [TypeScript SDK](https://github.com/zyvorai/zyvor-machina/blob/main/sdk/typescript/README.md)
 - OpenAPI spec and the `machinactl` CLI

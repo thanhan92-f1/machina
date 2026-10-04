@@ -18,15 +18,15 @@ export type { HelpDocLink }
 const MACHINA_HELP_LINKS: HelpDocLink[] = [
   {
     label: 'Documentation index',
-    href: 'https://github.com/zyvorai/machina/blob/main/docs/README.md',
+    href: 'https://github.com/zyvorai/zyvor-machina/blob/main/docs/README.md',
   },
   {
     label: 'Web UI & API',
-    href: 'https://github.com/zyvorai/machina/tree/main/web',
+    href: 'https://github.com/zyvorai/zyvor-machina/tree/main/web',
   },
   {
     label: 'KubeVirt migration guide',
-    href: 'https://github.com/zyvorai/machina/blob/main/docs/kubevirt-migration.md',
+    href: 'https://github.com/zyvorai/zyvor-machina/blob/main/docs/kubevirt-migration.md',
   },
   {
     label: 'Zyvor documentation',

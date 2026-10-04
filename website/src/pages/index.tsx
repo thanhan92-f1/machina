@@ -11,7 +11,7 @@ import Reveal from '@site/src/components/Reveal';
 import Counter from '@site/src/components/Counter';
 import BrowserFrame from '@site/src/components/BrowserFrame';
 import CopyCommand from '@site/src/components/CopyCommand';
-import {DEMO_URL, FEATURES, INSTALL, POC_URL, REPO, SHOTS, WHY} from '@site/src/data/product';
+import {DEMO_URL, FEATURES, INSTALL, POC_URL, REPO, SHOTS, WHATS_NEW, WHY} from '@site/src/data/product';
 
 import styles from './index.module.css';
 
@@ -51,7 +51,7 @@ function Hero() {
           <CopyCommand command={INSTALL} />
         </div>
         <div className={styles.heroMedia}>
-          <BrowserFrame src="/machina-dashboard.png" alt="Machina Mission Control dashboard" eager className={styles.heroFrame} />
+          <BrowserFrame src="/machina-dashboard-dark.png" alt="Machina Mission Control dashboard" eager className={styles.heroFrame} />
           <p className={styles.heroCaption}>Live capture from a real Ubuntu 26.04 deployment, not a mockup.</p>
         </div>
       </div>
@@ -62,7 +62,7 @@ function Hero() {
 function Stats() {
   const stats = [
     {value: 4, suffix: '', label: 'core Rust services'},
-    {value: 900, suffix: '+', label: 'REST routes'},
+    {value: 1000, suffix: '+', label: 'REST routes'},
     {value: 1, suffix: '', label: 'command to install'},
     {value: 4, suffix: '', label: 'console protocols'},
   ];
@@ -79,6 +79,33 @@ function Stats() {
             </div>
           ))}
         </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function WhatsNew() {
+  return (
+    <section className={clsx('mx-section', styles.news)}>
+      <div className="container">
+        <Reveal className="mx-center text--center">
+          <div className="mx-eyebrow">What's new</div>
+          <Heading as="h2">
+            Fix it, contain it, <span className="mx-gradient--light">undo it.</span>
+          </Heading>
+          <p className="mx-lede mx-center">The latest releases, straight from the commit log.</p>
+        </Reveal>
+        <div className={styles.newsGrid}>
+          {WHATS_NEW.map((n, i) => (
+            <Reveal key={n.title} delay={i * 60}>
+              <div className={clsx('mx-card', styles.newsCard)}>
+                <span className={styles.newsTag}>New</span>
+                <h3>{n.title}</h3>
+                <p>{n.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -116,7 +143,7 @@ function Features() {
         <Reveal className="mx-center text--center">
           <div className="mx-eyebrow">The platform</div>
           <Heading as="h2">
-            Run it. Reach it. Scale it. Protect it. <span className="mx-gradient--light">Let AI watch it.</span>
+            Run it. Reach it. Scale it. Secure it. <span className="mx-gradient--light">Let AI watch it.</span>
           </Heading>
         </Reveal>
         {FEATURES.map((f, i) => (
@@ -262,7 +289,7 @@ function Trust() {
           <div className={styles.badges}>
             <img src={`${REPO}/actions/workflows/ci.yml/badge.svg`} alt="CI status" />
             <img src="https://img.shields.io/badge/License-Zyvor%20Production%20v1.0-0071e3.svg" alt="Zyvor Production License v1.0" />
-            <img src="https://img.shields.io/github/stars/zyvorai/machina?style=social" alt="GitHub stars" />
+            <img src="https://img.shields.io/github/stars/zyvorai/zyvor-machina?style=social" alt="GitHub stars" />
           </div>
         </Reveal>
       </div>
@@ -308,6 +335,7 @@ export default function Home(): ReactNode {
       <Hero />
       <main>
         <Stats />
+        <WhatsNew />
         <Why />
         <Features />
         <VsOpenStack />

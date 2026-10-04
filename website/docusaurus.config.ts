@@ -5,7 +5,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
-const REPO = 'https://github.com/zyvorai/machina';
+const REPO = 'https://github.com/zyvorai/zyvor-machina';
 
 const config: Config = {
   title: 'Machina',
@@ -17,10 +17,10 @@ const config: Config = {
   },
 
   url: 'https://zyvorai.github.io',
-  baseUrl: '/machina/',
+  baseUrl: '/zyvor-machina/',
 
   organizationName: 'zyvorai',
-  projectName: 'machina',
+  projectName: 'zyvor-machina',
 
   onBrokenLinks: 'throw',
 
@@ -74,7 +74,8 @@ const config: Config = {
       {name: 'twitter:card', content: 'summary_large_image'},
     ],
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'Machina',

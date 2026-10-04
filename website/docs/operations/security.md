@@ -47,5 +47,5 @@ honours on its own and that fails open when it expires, and nothing is persisted
 ## Reporting a vulnerability
 
 Report privately as described in
-[SECURITY.md](https://github.com/zyvorai/machina/blob/main/SECURITY.md). Please do not open public issues for
+[SECURITY.md](https://github.com/zyvorai/zyvor-machina/blob/main/SECURITY.md). Please do not open public issues for
 security problems.

@@ -64,8 +64,8 @@ Poll `GET /api/v1/tasks/{task_id}` until it finishes.
 
 Generated specs live in the repository:
 
-- [Daemon OpenAPI](https://github.com/zyvorai/machina/blob/main/docs/openapi-daemon.json)
-- [Controller OpenAPI](https://github.com/zyvorai/machina/blob/main/docs/openapi-controller.json)
+- [Daemon OpenAPI](https://github.com/zyvorai/zyvor-machina/blob/main/docs/openapi-daemon.json)
+- [Controller OpenAPI](https://github.com/zyvorai/zyvor-machina/blob/main/docs/openapi-controller.json)
 
-Clients: the [TypeScript SDK](https://github.com/zyvorai/machina/blob/main/sdk/typescript/README.md), the
-[Terraform provider](https://github.com/zyvorai/machina/blob/main/terraform/machina/README.md) and `machinactl`.
+Clients: the [TypeScript SDK](https://github.com/zyvorai/zyvor-machina/blob/main/sdk/typescript/README.md), the
+[Terraform provider](https://github.com/zyvorai/zyvor-machina/blob/main/terraform/machina/README.md) and `machinactl`.

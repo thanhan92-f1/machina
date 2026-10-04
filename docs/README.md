@@ -2,13 +2,13 @@
 
 Machina is a private cloud for KVM: a single-host daemon, a multi-host controller with an agent per host, a native
 eBPF datapath (`machina-bpfd`) and a React web UI. The public site with the same material in tutorial form is
-[zyvorai.github.io/machina](https://zyvorai.github.io/machina/).
+[zyvorai.github.io/zyvor-machina](https://zyvorai.github.io/zyvor-machina/).
 
 ## Start here
 
 | You are… | Read |
 |----------|------|
-| Evaluating Machina | [../README.md](../README.md), then the [website](https://zyvorai.github.io/machina/docs/intro) |
+| Evaluating Machina | [../README.md](../README.md), then the [website](https://zyvorai.github.io/zyvor-machina/docs/intro) |
 | Installing or running it | [handbook/README.md](handbook/README.md) — product guide, admin configuration, runbook, FAQ, troubleshooting |
 | Using the web UI | [customer/README.md](customer/README.md) — page-by-page manual and PDFs; [machina-customer-feature-guide.md](machina-customer-feature-guide.md) |
 | Preparing a customer pilot | [CUSTOMER_SITE_READINESS.md](CUSTOMER_SITE_READINESS.md), [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) |

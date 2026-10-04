@@ -82,4 +82,4 @@ persisted. See [Native eBPF](../networking/ebpf-overview.md).
 | eBPF socket | `/run/machina-bpf/bpfd.sock` |
 
 The full reference lives in the
-[admin configuration handbook](https://github.com/zyvorai/machina/blob/main/docs/handbook/admin-configuration.md).
+[admin configuration handbook](https://github.com/zyvorai/zyvor-machina/blob/main/docs/handbook/admin-configuration.md).
