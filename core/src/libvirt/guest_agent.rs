@@ -136,19 +136,39 @@ fn usable_guest_addr(a: &str) -> bool {
     }
 }
 
-/// Every usable guest address (IPv4 first, then IPv6), from `virsh
-/// domifaddr` sources in turn (lease, agent, arp) until one gives an IPv4.
+/// libvirt marks the guest agent channel `connected` only while an agent
+/// answers; asking a channel nobody listens on blocks for seconds.
+fn agent_channel_connected(xml: &str) -> bool {
+    xml.lines()
+        .any(|l| l.contains("org.qemu.guest_agent.0") && l.contains("state='connected'"))
+}
+
+fn guest_agent_connected(name: &str) -> bool {
+    std::process::Command::new("virsh")
+        .args(["dumpxml", name])
+        .output()
+        .is_ok_and(|o| {
+            o.status.success() && agent_channel_connected(&String::from_utf8_lossy(&o.stdout))
+        })
+}
+
+/// Every usable guest address (IPv4 first, then IPv6) from `virsh
+/// domifaddr`: DHCP leases, plus the guest agent (every NIC, IPv6) when it
+/// is connected, plus ARP when neither gave an IPv4.
 pub fn guest_addresses_from_virsh(name: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for source in ["lease", "agent", "arp"] {
+        if source == "agent" && !guest_agent_connected(name) {
+            continue;
+        }
+        if source == "arp" && out.iter().any(|a| !a.contains(':')) {
+            break;
+        }
         for r in guest_interfaces_from_virsh(name, source) {
             let a = r.address.split('/').next().unwrap_or("").to_string();
             if usable_guest_addr(&a) && !out.contains(&a) {
                 out.push(a);
             }
-        }
-        if out.iter().any(|a| !a.contains(':')) {
-            break;
         }
     }
     out.sort_by_key(|a| a.contains(':'));
@@ -527,13 +547,24 @@ fn base64_decode(s: &str) -> Option<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_virsh_domifaddr_ipv4, parse_virsh_domifaddr_rows};
+    use super::{agent_channel_connected, parse_virsh_domifaddr_ipv4, parse_virsh_domifaddr_rows};
 
     const SAMPLE: &str = r#" Name       MAC address          Protocol     Address
 -------------------------------------------------------------------------------
  vnet0      52:54:00:12:34:56    ipv4         192.168.122.10/24
  vnet0      52:54:00:12:34:56    ipv6         fe80::5054:ff:fe12:3456/64
 "#;
+
+    #[test]
+    fn agent_is_asked_only_when_its_channel_is_connected() {
+        let on = "<channel type='unix'>\n  <target type='virtio' name='org.qemu.guest_agent.0' state='connected'/>\n</channel>";
+        let off = "<channel type='unix'>\n  <target type='virtio' name='org.qemu.guest_agent.0' state='disconnected'/>\n</channel>";
+        let spice = "<target type='virtio' name='com.redhat.spice.0' state='connected'/>";
+        assert!(agent_channel_connected(on));
+        assert!(!agent_channel_connected(off));
+        assert!(!agent_channel_connected(spice));
+        assert!(!agent_channel_connected(""));
+    }
 
     #[test]
     fn parse_virsh_domifaddr_ipv4_skips_loopback() {

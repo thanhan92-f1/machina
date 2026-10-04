@@ -19,6 +19,11 @@ Environment=MACHINA_LIBVIRT_URI=qemu:///system
 Environment=MACHINA_BPFD_SOCK=/run/machina-bpf/bpfd.sock
 
 ExecStartPre=-/usr/bin/systemctl start libvirtd.service
+# 50051/50052 sit inside the default ephemeral range (32768-60999): during a
+# restart a local outbound connection (controller, daemon) can take one as its
+# source port and hold it in a keep-alive pool, and the bind fails with EADDRINUSE
+# until that connection closes. Reserve them (appended, other reservations kept).
+ExecStartPre=-/bin/sh -c 'f=/proc/sys/net/ipv4/ip_local_reserved_ports; r=$$(cat $$f); case ",$$r," in *,50051-50052,*) ;; *) echo "$${r:+$$r,}50051-50052" > $$f ;; esac'
 ExecStart=/usr/local/bin/machina-agent --listen 127.0.0.1:50051 --console-listen 127.0.0.1:50052
 Restart=always
 RestartSec=5

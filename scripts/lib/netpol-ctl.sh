@@ -100,7 +100,7 @@ Usage: netpol <command> [options]
   projects                       Fleet Cloud projects: isolation, egress allowlist,
                                  egress IPs (fleet; netpol project help)
   project isolate|open|inherit|reset P | project default isolated|open
-          | project assign P|- VM...
+          | project assign P|- VM... | project approve|reject ID
                                  Default isolation between projects
   egress [P] [allow TO|remove TO|restrict|unrestrict|ip HOST IP|ip HOST -]
                                  Project egress allowlists and egress IPs
@@ -855,6 +855,7 @@ Usage: netpol projects
        netpol project isolate P [--no-host] | open P | inherit P | reset P
        netpol project default isolated|open [--no-host]
        netpol project assign P|- VM...                (put VMs in a project, - clears)
+       netpol project approve ID | reject ID          (a proposed change; approve needs another admin)
        netpol egress                                  (egress IPs on every host)
        netpol egress P                                (one project)
        netpol egress P allow TO [--port N[/udp]]...   (and limit egress to the list)
@@ -925,7 +926,7 @@ np_project_preview_print() {
 np_project_pending_print() {
     if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$1"; return; fi
     jq -r '"requested: \(.pending.label)\(if .preview then " — " + .preview else "" end)",
-      "  waiting for another admin: netpol draft approve \(.pending.id)  (or Approvals in the UI)"' <<<"$1"
+      "  waiting for another admin: netpol project approve \(.pending.id)  (or Approvals in the UI)"' <<<"$1"
 }
 
 np_project_put() {
@@ -1011,6 +1012,12 @@ np_netpol_project() {
                 np_api PATCH "/vms/$(np_vm_ref "$vm")" -H 'Content-Type: application/json' -d "$(jq -nc --arg p "$p" '{project: $p}')" >/dev/null
                 echo "vm/$vm project ${p:-cleared}"
             done
+            ;;
+        approve|reject)
+            local id="${1:?usage: netpol project $sub ID}" verb=execute done=approved
+            [[ "$sub" == reject ]] && verb=reject done=rejected
+            np_api POST "/ai/actions/$(np_uri "$id")/$verb" -H 'Content-Type: application/json' -d '{}' >/dev/null
+            echo "project change $id $done"
             ;;
         *) np_die "unknown project command: $sub (try: netpol project help)" ;;
     esac

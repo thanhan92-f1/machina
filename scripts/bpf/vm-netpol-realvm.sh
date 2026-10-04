@@ -7,9 +7,11 @@
 # then the TLS-intercepting proxy (terminatingTLS + header rewrites,
 # originatingTLS), flow history, quarantine and threat feeds on the host,
 # then the fleet phase through the controller: Fleet Cloud project
-# isolation, an egress allowlist and a project egress IP (seen from a
-# TEST-NET netns on the host). Creates np-client / np-server and deletes them, the
-# policies, the proxy secret and the base image on exit; the edge is always
+# isolation, an egress allowlist, a project egress IP over IPv4 and IPv6 (seen
+# from a TEST-NET netns on the host; IPv6 is skipped on a host with its own IPv6
+# default route) and a project change approved by a second, temporary admin.
+# Creates np-client / np-server and deletes them, the policies, the proxy
+# secret, the temporary admin and the base image on exit; the edge is always
 # returned to observe.
 #
 # Only run on a disposable test host: while the lease is held the edge
@@ -23,6 +25,7 @@ set -uo pipefail
 read -r MACHINA_PASS
 export MACHINA_USER="${MACHINA_USER:-$USER}" MACHINA_PASS MACHINA_URL="${MACHINA_URL:-https://127.0.0.1:5092}" NO_COLOR=1
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"
+JAR="${MACHINA_COOKIE_JAR:-$HOME/.machina/cli-session}"
 M="$HERE/machinactl"
 LEASE="${LEASE:-300}"
 SECRET_DIR=/etc/machina/netpol-secrets/default/np-intercept
@@ -63,6 +66,11 @@ cleanup() {
         "$M" netpol sync --fleet >/dev/null 2>&1
         sudo -n iptables -D FORWARD -i virbr0 -o np-outv -j ACCEPT 2>/dev/null
         sudo -n iptables -D FORWARD -i np-outv -o virbr0 -j ACCEPT 2>/dev/null
+        sudo -n ip6tables -D FORWARD -i virbr0 -o np-outv -j ACCEPT 2>/dev/null
+        sudo -n ip6tables -D FORWARD -i np-outv -o virbr0 -j ACCEPT 2>/dev/null
+        sudo -n ip -6 addr del fd00:6e70::1/64 dev virbr0 2>/dev/null
+        [[ -n "${V6_FWD:-}" ]] && sudo -n sysctl -qw "net.ipv6.conf.all.forwarding=$V6_FWD" "net.ipv6.conf.virbr0.disable_ipv6=$V6_BR"
+        [[ -s "$W/aid" ]] && curl -sk -o /dev/null -b "$JAR" -X DELETE "$MACHINA_URL/api/v1/platform/controller/api/v1/users/$(cat "$W/aid")"
         sudo -n ip netns pids np-out 2>/dev/null | xargs -r sudo -n kill 2>/dev/null
         sudo -n ip netns del np-out 2>/dev/null
         sudo -n ip link del np-outv 2>/dev/null
@@ -127,13 +135,15 @@ runcmd:
   - [systemd-run, --unit, np80, python3, -m, http.server, "80", --directory, /srv]
   - [systemd-run, --unit, np8080, python3, -m, http.server, "8080", --directory, /srv]
   - [systemd-run, --unit, np443, python3, /srv/echo.py, "443"]
+  - [sh, -c, "apt-get update -qq && apt-get install -y -qq qemu-guest-agent && systemctl start qemu-guest-agent"]
 EOF
     printf 'instance-id: %s-%s\nlocal-hostname: %s\n' "$v" "$$" "$v" > "$W/$v-meta"
     sudo -n cloud-localds "$POOL/$v-seed.iso" "$W/$v-user" "$W/$v-meta"
     sudo -n qemu-img create -q -f qcow2 -F qcow2 -b "$BASE" "$POOL/$v.qcow2" 8G
     sudo -n virt-install --name "$v" --memory 1024 --vcpus 1 --import --osinfo detect=on,require=off \
         --disk "path=$POOL/$v.qcow2,format=qcow2,bus=virtio" --disk "path=$POOL/$v-seed.iso,device=cdrom" \
-        --network network=default,model=virtio --graphics none --noautoconsole >/dev/null \
+        --network network=default,model=virtio --channel unix,target.type=virtio,target.name=org.qemu.guest_agent.0 \
+        --graphics none --noautoconsole >/dev/null \
         && ok "virt-install $v" || bad "virt-install $v"
 done
 
@@ -560,6 +570,50 @@ no_egress_table() { for _ in $(seq 20); do sudo -n nft list table ip machina_egr
 check "removed: nft table gone" no_egress_table
 check "removed: client seen as libvirt NAT address again" [ "$(seen "$CIP" 198.51.100.2)" = 198.51.100.1 ]
 
+# IPv6: a ULA on virbr0 and the client, the outside netns on 2001:db8:78::/64.
+# ULA destinations are never rewritten, so the peer has a documentation prefix.
+if [[ -n "$(ip -6 route show default 2>/dev/null)" ]]; then
+    echo "SKIP  IPv6 egress IP: this host has its own IPv6 default route"
+else
+V6_FWD=$(sysctl -n net.ipv6.conf.all.forwarding) V6_BR=$(sysctl -n net.ipv6.conf.virbr0.disable_ipv6)
+outside6_up() {
+    sudo -n sysctl -qw net.ipv6.conf.virbr0.disable_ipv6=0 net.ipv6.conf.all.forwarding=1 \
+        && sudo -n ip -6 addr add fd00:6e70::1/64 dev virbr0 nodad \
+        && sudo -n ip -6 addr add 2001:db8:78::1/64 dev $OV nodad && sudo -n ip -6 addr add 2001:db8:77::77/128 dev $OV nodad \
+        && sudo -n ip netns exec $ON ip -6 addr add 2001:db8:78::2/64 dev ${OV}p nodad \
+        && sudo -n ip netns exec $ON ip -6 route add default via 2001:db8:78::1 || return 1
+    if command -v ip6tables >/dev/null; then
+        sudo -n ip6tables -I FORWARD -i virbr0 -o $OV -j ACCEPT
+        sudo -n ip6tables -I FORWARD -i $OV -o virbr0 -j ACCEPT
+    fi
+    sudo -n ip netns exec $ON python3 -c "
+import socket
+s = socket.socket(socket.AF_INET6); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+s.bind(('::', 18095)); s.listen(8)
+while True:
+    c, a = s.accept(); c.sendall(a[0].encode()); c.close()
+" >/dev/null 2>&1 &
+    cssh "dev=\$(ip -o -4 route show default | awk '{print \$5}'); sudo ip -6 addr add fd00:6e70::10/64 dev \$dev nodad && sudo ip -6 route add default via fd00:6e70::1"
+}
+check "IPv6: ULA on virbr0 and the client, outside netns on 2001:db8:78::/64" outside6_up
+# virbr0's link-local address is still in DAD for a moment after IPv6 is enabled.
+seen_as() { for _ in $(seq 10); do [[ "$(seen "$CIP" "$1")" == "$2" ]] && return; sleep 1; done; return 1; }
+check "IPv6 before: client seen as its own ULA" seen_as 2001:db8:78::2 fd00:6e70::10
+check "IPv6: guest agent reports the client's ULA" bash -c "sudo -n virsh domifaddr np-client --source agent | grep -q fd00:6e70::10"
+check "set the dual-stack egress IP again" FM egress np-blue ip "$HN" "198.51.100.77,2001:db8:77::77"
+egress6() { for _ in $(seq 60); do sudo -n nft list table ip6 machina_egress 2>/dev/null | grep -q 'fd00:6e70::10' && return; sleep 3; fsync; done; return 1; }
+check "IPv6: ip6 machina_egress names the client's ULA (from the guest agent)" egress6
+check "IPv6: nft rule snats to 2001:db8:77::77" bash -c "sudo -n nft list table ip6 machina_egress | grep -q 'snat to 2001:db8:77::77'"
+check "IPv6: client seen as the egress IP" [ "$(seen "$CIP" 2001:db8:78::2)" = 2001:db8:77::77 ]
+check "IPv6: IPv4 rule still applies" [ "$(seen "$CIP" 198.51.100.2)" = 198.51.100.77 ]
+check "IPv6: remove the egress IP" FM egress np-blue ip "$HN" -
+fsync
+no_egress6() { for _ in $(seq 20); do sudo -n nft list table ip6 machina_egress >/dev/null 2>&1 || return 0; sleep 1; fsync; done; return 1; }
+check "IPv6 removed: ip6 table gone" no_egress6
+check "IPv6 removed: client seen as its ULA again" [ "$(seen "$CIP" 2001:db8:78::2)" = fd00:6e70::10 ]
+fi
+
 echo "== fleet: evidence =="
 check "export JSON evidence" FM evidence -o json --out "$W/ev.json"
 check "evidence digest verifies" "$M" netpol evidence verify "$W/ev.json"
@@ -575,6 +629,42 @@ check "evidence: np-blue → np-red segmented" jq -e '.matrix[] | select(.from =
 check "evidence: host → np-red allowed" jq -e '.matrix[] | select(.from == "host" and .to == "np-red") | (.allowed | length) > 0' "$W/ev.json"
 check "evidence: dropped client → server connection listed" bash -c "jq -r '.denied[] | \"\(.src) \(.dst) \(.port)\"' '$W/ev.json' | grep -Eq '(np-client|$CIP).*(np-server|$SIP) 80'"
 check "evidence: Markdown export" bash -c "'$M' netpol evidence -o md --fleet | grep -q '## Reachability matrix'"
+
+# Approval: with [vm_netpol] project_approval the requester proposes, a second
+# admin approves. The second admin is a temporary controller user.
+echo "== fleet: approval =="
+CTRL="${MACHINA_CONTROLLER_URL:-http://127.0.0.1:5093}"
+# Through the daemon proxy the controller sees its service account, not $MACHINA_USER.
+propose_open() { NP_JSON=1 FM project open np-red --propose 2>/dev/null | jq -r '.pending | select(.id) | "\(.id) \(.requested_by)"'; }
+red_isolated() { "$M" netpol projects --fleet | grep -q 'project-isolation-np-red-'; }
+read -r AID REQ <<<"$(propose_open)"
+check "propose: opening np-red waits for a second admin" [ -n "$AID" ]
+check "propose: np-red still isolated" red_isolated
+check "propose: the requester cannot approve it" bash -c "! '$M' netpol project approve '$AID' --fleet"
+check "reject the proposal" FM project reject "$AID"
+check "rejected: np-red still isolated" red_isolated
+approver() {
+    local u="np-approver-$$"
+    (umask 077; openssl rand -hex 16 >"$W/apw") || return 1
+    jq -n --arg u "$u" --rawfile p "$W/apw" '{username: $u, password: ($p | rtrimstr("\n")), role: "admin"}' >"$W/au.json"
+    curl -sk -b "$JAR" -X POST -H 'Content-Type: application/json' --data-binary @"$W/au.json" \
+        "$MACHINA_URL/api/v1/platform/controller/api/v1/users" | jq -er .id >"$W/aid" || return 1
+    jq 'del(.role)' "$W/au.json" | curl -sf -X POST -H 'Content-Type: application/json' --data-binary @- "$CTRL/api/v1/auth/login" \
+        | jq -er '"Authorization: Bearer " + .token' >"$W/ah"
+}
+check "a temporary second admin" approver
+read -r AID REQ <<<"$(propose_open)"
+check "propose again" [ -n "$AID" ]
+check "second admin approves" curl -sf -o /dev/null -H @"$W/ah" -H 'Content-Type: application/json' -d '{}' -X POST "$CTRL/api/v1/ai/actions/$AID/execute"
+red_open() { for _ in $(seq 15); do red_isolated || return 0; sleep 1; fsync; done; return 1; }
+check "approved: np-red open" red_open
+approval_in_evidence() {
+    FM evidence -o json --out "$W/ev2.json" >/dev/null 2>&1 \
+        && jq -e --arg u "np-approver-$$" --arg r "$REQ" \
+            '[.approvals[] | select(.action_type == "vm_netpol.project" and .approved_by == $u and .requested_by == $r)] | length > 0' "$W/ev2.json"
+}
+check "approval in evidence (requester and approver)" approval_in_evidence
+check "re-isolate np-red" FM project isolate np-red
 
 echo "passed=$P failed=$F"
 [[ $F -eq 0 ]]

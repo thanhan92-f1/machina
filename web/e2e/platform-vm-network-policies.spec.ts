@@ -1,8 +1,11 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-import { test, expect, type Page, type Route } from '@playwright/test'
+import { test, expect as baseExpect, type Page, type Route } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
+
+// Under a full parallel run, lazy chunks and toasts can take longer than the 5 s default.
+const expect = baseExpect.configure({ timeout: 15_000 })
 
 const PAGE = '/platform/zyra/security/network-policies'
 

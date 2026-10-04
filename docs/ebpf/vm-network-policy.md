@@ -896,9 +896,11 @@ machinactl --fleet netpol project reset payments      # drop every setting
   every few minutes. On a host, its own addresses are `host`; the other
   hosts' addresses are `remote-node`. An address that several hosts share
   (libvirt's `192.168.122.1`, for example) is left out of `remote-node`.
-- **VM addresses:** every address the agent sees for a VM (all NICs, IPv4
-  and IPv6, from DHCP leases, the guest agent and ARP) is part of its
-  identity, not only the first one.
+- **VM addresses:** every address the agent sees for a VM is part of its
+  identity, not only the first one. Sources: libvirt DHCP leases; the
+  guest agent (every NIC, IPv6 included) when its channel is connected;
+  ARP when neither gave an IPv4. Without a running `qemu-guest-agent`,
+  addresses outside libvirt DHCP (static IPv6, a second NIC) are not seen.
 - **Cross-host NAT:** VMs on libvirt NAT networks reach VMs on other hosts
   with their host's address, so isolation cannot tell them apart from the
   host. A project with VMs on two or more hosts whose VM subnets are NATed
@@ -931,8 +933,17 @@ machinactl --fleet netpol egress payments allow 10.0.0.0/8 --propose
   would break or newly allow. Nothing is applied.
 - **Approval:** `--propose` sends the change to *Approvals* as a
   `vm_netpol.project` action with the replay summary. A second admin
-  applies it. With `MACHINA_NETPOL_PROJECT_APPROVAL=1` on the controller,
-  every project change goes through approval.
+  applies it (`netpol project approve ID`, or *Approvals* in the UI);
+  the requester cannot. Anyone with operator rights can withdraw it with
+  `netpol project reject ID`. With `MACHINA_NETPOL_PROJECT_APPROVAL=1` on
+  the controller, every project change goes through approval. Approvals
+  and rejections are listed in evidence exports.
+- **Identity through the daemon:** when the daemon's controller proxy uses
+  `MACHINA_PLATFORM_AUTH`, the controller sees every daemon user as that
+  service account. The requester is then recorded as the service account,
+  and two daemon users cannot approve each other's changes. The second
+  admin needs their own controller login (`POST /api/v1/users`, then
+  `/api/v1/auth/login` on the controller).
 
 ### Who may change what
 
@@ -1223,12 +1234,27 @@ and the client in `np-blue`, isolates `np-red`, and checks:
   netns on the host (198.51.100.1 → 198.51.100.77). The check also covers
   private destinations keeping libvirt's NAT, the other project not being
   rewritten, and the nftables table going away when the IP is removed;
+- the same over IPv6: `virbr0` and the client get a ULA (`fd00:6e70::/64`),
+  the netns `2001:db8:78::/64`. The guest agent reports the client's ULA,
+  the controller puts it in `ip6 machina_egress`, and the netns sees
+  `2001:db8:77::77` instead of the ULA until the IP is removed. The VMs
+  run `qemu-guest-agent` for this. The IPv6 part is skipped on a host
+  with its own IPv6 default route (enabling IPv6 forwarding would stop it
+  accepting router advertisements); the forwarding and `virbr0` sysctls
+  are restored on exit;
 - that the evidence export marks `np-red` isolated, shows `np-blue → np-red`
   segmented and `host → np-red` allowed, lists the dropped connection, and
-  verifies.
+  verifies;
+- approval: opening `np-red` with `--propose` leaves it isolated, the
+  requester cannot approve it, and a rejected proposal changes nothing. A
+  temporary controller admin (`np-approver-PID`, random password) then
+  approves a new proposal, `np-red` opens, and the evidence lists the
+  approval with the recorded requester and the approver. The user is
+  deleted on exit.
 
 On exit it returns the edge to observe, releases any quarantine, and
-deletes the VMs, the policies, the feed, the secret and the image.
+deletes the VMs, the policies, the feed, the secret, the temporary admin
+and the image.
 It enforces on every tap with policy state, so run it only on a disposable
 host. The password is read from stdin:
 
@@ -1238,5 +1264,6 @@ printf '%s\n' "$PASS" | bash scripts/bpf/vm-netpol-realvm.sh
 
 Compiler and tracer unit tests: `cargo test -p machina-bpf netpol`. The
 policy page has Playwright tests: `web/e2e/platform-vm-network-policies.spec.ts`
-(mocked API) and `web/e2e/live-vm-network-policies.spec.ts` (read-only, with
-`PLAYWRIGHT_LIVE_URL`).
+(mocked API; assertions wait up to 15 s, because lazy chunks and toasts are
+slower under a full parallel run) and `web/e2e/live-vm-network-policies.spec.ts`
+(read-only, with `PLAYWRIGHT_LIVE_URL`).

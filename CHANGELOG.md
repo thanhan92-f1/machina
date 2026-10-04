@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-04 — IPv6 egress IPs on real VMs, second-admin approval, agent restarts
+
+- **Guest addresses from the guest agent.** VM addresses always include
+  what `qemu-guest-agent` reports (every NIC, IPv6) when its channel is
+  connected, not only when DHCP leases had no IPv4. Disconnected channels
+  are not queried, so inventory never waits on a missing agent.
+- **Approve or withdraw project changes from the CLI.**
+  `netpol project approve ID` (another admin) and `netpol project reject ID`.
+  Project-change approvals now appear in evidence exports.
+- **Agent restarts.** `machina-agent.service` reserves ports 50051–50052
+  from the ephemeral range, so a local keep-alive connection can no longer
+  take the port and fail the restart with "address already in use".
+- **Tests.** `vm-netpol-realvm.sh` checks IPv6 egress IPs end to end
+  (guest-agent ULA → `ip6 machina_egress` → seen as the egress IP) and a
+  project change proposed, refused for self-approval, rejected, and
+  approved by a temporary second admin. The mocked network-policy
+  Playwright spec waits up to 15 s, so it no longer flakes under a full parallel run.
+
 ## 2026-10-04 — Fleet project networking: gaps closed
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#project-isolation-fleet-cloud).

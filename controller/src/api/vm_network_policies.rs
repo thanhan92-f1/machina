@@ -881,8 +881,19 @@ pub const PROJECT_ACTION: &str = "vm_netpol.project";
 #[derive(Deserialize, Default)]
 pub struct ProjectSetQuery {
     /// Ask a second admin instead of applying.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "query_flag")]
     propose: bool,
+}
+
+/// `?flag=1` as well as `?flag=true`.
+fn query_flag<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+    match String::deserialize(d)?.to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" | "" => Ok(true),
+        "0" | "false" | "no" | "off" => Ok(false),
+        v => Err(serde::de::Error::custom(format!(
+            "expected true/false or 1/0, got `{v}`"
+        ))),
+    }
 }
 
 /// Every change waits for a second admin (`MACHINA_NETPOL_PROJECT_APPROVAL=1`).
@@ -1453,11 +1464,12 @@ pub async fn build_evidence(
     let stored: Vec<VmNetworkPolicy> = rows.iter().map(|r| r.0.clone()).collect();
     let approvals: Vec<(String, String, String, Option<String>, String, String)> = sqlx::query_as(
         "SELECT action_type, label, requested_by, approved_by, status, created_at FROM ai_actions
-         WHERE action_type IN (?, ?, 'vm.quarantine') AND created_at >= datetime('now', '-90 days')
+         WHERE action_type IN (?, ?, ?, 'vm.quarantine') AND created_at >= datetime('now', '-90 days')
          ORDER BY created_at DESC LIMIT 500",
     )
     .bind(JIT_ACTION)
     .bind(APPLY_ACTION)
+    .bind(PROJECT_ACTION)
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
@@ -2017,4 +2029,23 @@ pub async fn flow_stream(
         }
     });
     Sse::new(stream).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn project_propose_query_takes_1_and_true() {
+        use axum::extract::Query;
+        let q = |s: &str| {
+            Query::<super::ProjectSetQuery>::try_from_uri(
+                &format!("http://x/p?{s}").parse().unwrap(),
+            )
+            .map(|q| q.0.propose)
+        };
+        assert_eq!(q("propose=1").ok(), Some(true));
+        assert_eq!(q("propose=true").ok(), Some(true));
+        assert_eq!(q("propose=0").ok(), Some(false));
+        assert_eq!(q("").ok(), Some(false));
+        assert!(q("propose=maybe").is_err());
+    }
 }

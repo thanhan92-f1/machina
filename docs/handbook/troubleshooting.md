@@ -236,6 +236,24 @@ systemctl status machina-agent       # per-host gRPC agent (:50051)
 # controller → agent address is MACHINA_AGENT_ADDR (default http://127.0.0.1:50051)
 ```
 
+### Symptom: `machina-agent` fails after a restart with "address already in use"
+Ports 50051 (gRPC) and 50052 lie inside Linux's default ephemeral range
+(32768–60999). While the agent restarts, a local outbound connection (the
+controller or daemon, held open in a keep-alive pool) can take one of them as
+its source port, and the bind fails until that connection closes.
+`SO_REUSEADDR` does not help against an established socket.
+
+The shipped unit reserves both ports before the agent starts (appended to any
+existing reservations). Units installed before this fix lack it:
+```bash
+cat /proc/sys/net/ipv4/ip_local_reserved_ports   # should include 50051-50052
+ss -tanp | grep -E ':5005[12]\b'                 # who holds the port
+sudo install -m644 contrib/machina-agent.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl restart machina-agent
+```
+To make the reservation independent of the unit, add
+`net.ipv4.ip_local_reserved_ports = 50051-50052` to `/etc/sysctl.d/`.
+
 ---
 
 ## Native eBPF
