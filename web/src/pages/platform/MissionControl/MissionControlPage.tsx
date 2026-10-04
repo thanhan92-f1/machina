@@ -2,23 +2,10 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import PageLayout from '../../../components/PageLayout'
 import { StructuredErrorBanner } from '../../../components/StructuredErrorBanner'
-import SimpleCreateVmWizard, {
-  cloudInitUserForOs,
-  sizeToSpec,
-  type VmWizardPayload,
-} from '../../../components/platform/SimpleCreateVmWizard'
-import { toastQueuedOperation } from '../../../utils/platformTaskToast'
-import { useToastContext } from '../../../contexts/ToastContext'
-import { formatUserError } from '../../../utils/apiError'
-import {
-  createFromTemplate,
-  createPlatformVm,
-  listMissingTemplateImages,
-  type CreatePlatformVmBody,
-} from '../../../api/platform'
+import { listMissingTemplateImages } from '../../../api/platform'
 import { usePlatformDesktopTier } from '../../../hooks/usePlatformDesktopTier'
 import { dispatchOpenSpotlight, SCROLL_GEOGRAPHY_EVENT } from '../../../utils/platformJarvisShell'
 import MissionControlBriefing from './MissionControlBriefing'
@@ -26,6 +13,7 @@ import MissionControlGeography from './MissionControlGeography'
 import MissionControlHero from './MissionControlHero'
 import MissionControlCapacity from './MissionControlCapacity'
 import MissionControlGetStarted from './MissionControlGetStarted'
+import { openQuickCreateVm } from '../../../hooks/usePlatformVmCreate'
 import MissionControlLaunchpad from './MissionControlLaunchpad'
 import MissionControlPulse from './MissionControlPulse'
 import FleetHero from './FleetHero'
@@ -34,12 +22,9 @@ import { useMissionControlFleet } from './useMissionControlFleet'
 import EnterpriseSecurityStrip from '../../../components/platform/EnterpriseSecurityStrip'
 
 export default function MissionControlPage() {
-  const toast = useToastContext()
-  const navigate = useNavigate()
   const [tier] = usePlatformDesktopTier()
   const state = useMissionControlFleet()
   const [searchParams] = useSearchParams()
-  const [wizardOpen, setWizardOpen] = useState(false)
   const [missingImagesCount, setMissingImagesCount] = useState(0)
   const [geoExpanded, setGeoExpanded] = useState(searchParams.get('mission') === '1')
 
@@ -72,81 +57,6 @@ export default function MissionControlPage() {
     return offline
   }, [state.hosts.length, state.onlineHosts])
 
-  const handleCreate = async (payload: VmWizardPayload) => {
-    try {
-      if (payload.os === 'custom-iso') {
-        navigate(`/platform/create-iso?name=${encodeURIComponent(payload.name)}`)
-        return
-      }
-      if (payload.os === 'custom-virt-install') {
-        const q = new URLSearchParams({ name: payload.name })
-        if (payload.network) q.set('network', payload.network)
-        navigate(`/platform/create-advanced?${q}`)
-        return
-      }
-      if (payload.windows) {
-        const wspec = sizeToSpec(payload.size)
-        const labels: Record<string, string> = { os_family: 'windows' }
-        if (payload.windows.tpm) labels.tpm = 'true'
-        if (payload.windows.secureBoot) labels.secure_boot = 'true'
-        if (payload.windows.virtio) {
-          labels.virtio_win = 'true'
-          if (payload.windows.virtioIsoPath.trim()) labels.virtio_win_iso = payload.windows.virtioIsoPath.trim()
-        }
-        const wbody: CreatePlatformVmBody = {
-          api_version: 'virt.zyvor.dev/v1',
-          kind: 'VirtualMachine',
-          metadata: { name: payload.name, labels },
-          tags: ['windows', payload.os, payload.network],
-          spec: {
-            cpu: { sockets: 1, cores: wspec.cores },
-            memory: wspec.memory,
-            firmware: payload.windows.uefi ? 'uefi' : 'bios',
-            storage: [{ name: 'root', size: wspec.disk, class: 'silver' }],
-            network: [{ network: payload.network, ip_mode: 'dhcp' }],
-          },
-        }
-        const wr = await createPlatformVm(wbody)
-        toastQueuedOperation(toast, `Creating ${payload.name}`, wr.task_id, tier)
-        await state.load()
-        navigate('/platform/vms')
-        return
-      }
-      const spec = sizeToSpec(payload.size, payload.customSpec)
-      if (payload.fromTemplate) {
-        const r = await createFromTemplate({
-          template_ref: `${payload.os}@${payload.templateVersion ?? '1.0.0'}`,
-          name: payload.name,
-          memory: spec.memory,
-          template_vars: { hostname: payload.name, name: payload.name },
-          cloud_init_user: cloudInitUserForOs(payload.os),
-          cloud_init_ssh_pubkey: payload.cloudInitSshPubkey,
-        })
-        toastQueuedOperation(toast, `Deploying ${payload.name}`, r.task_id, tier)
-      } else {
-        const body: CreatePlatformVmBody = {
-          api_version: 'virt.zyvor.dev/v1',
-          kind: 'VirtualMachine',
-          metadata: { name: payload.name },
-          tags: [payload.os, payload.network],
-          spec: {
-            cpu: { sockets: 1, cores: spec.cores },
-            memory: spec.memory,
-            storage: [{ name: 'root', size: spec.disk, class: 'silver' }],
-            network: [{ network: payload.network, ip_mode: 'dhcp' }],
-          },
-        }
-        const r = await createPlatformVm(body)
-        toastQueuedOperation(toast, `Creating ${payload.name}`, r.task_id, tier)
-      }
-      await state.load()
-      navigate('/platform/vms')
-    } catch (e: unknown) {
-      toast.error(formatUserError(e))
-      throw e
-    }
-  }
-
   return (
     <PageLayout
       compact
@@ -162,9 +72,9 @@ export default function MissionControlPage() {
           </div>
         )}
 
-        <MissionControlHero state={state} warnings={warnings} onCreateVm={() => setWizardOpen(true)} />
+        <MissionControlHero state={state} warnings={warnings} onCreateVm={openQuickCreateVm} />
 
-        <MissionControlGetStarted state={state} onCreateVm={() => setWizardOpen(true)} />
+        <MissionControlGetStarted state={state} onCreateVm={openQuickCreateVm} />
 
         <MissionControlPulse state={state} warnings={warnings} />
 
@@ -245,14 +155,13 @@ export default function MissionControlPage() {
           </section>
         )}
 
-        <MissionControlLaunchpad onCreateVm={() => setWizardOpen(true)} />
+        <MissionControlLaunchpad onCreateVm={openQuickCreateVm} />
 
         <div className="apple-section apple-section--tight">
           <MissionControlGeography expanded={geoExpanded} onToggle={() => setGeoExpanded((v) => !v)} />
         </div>
       </div>
 
-      <SimpleCreateVmWizard open={wizardOpen} onClose={() => setWizardOpen(false)} onCreate={handleCreate} />
     </PageLayout>
   )
 }

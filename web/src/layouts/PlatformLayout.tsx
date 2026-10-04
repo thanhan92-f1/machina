@@ -27,6 +27,7 @@ import { useKeyboardShortcut, isInputFocused } from '../hooks/useKeyboardShortcu
 import { suppressContextBar } from '../utils/platformNavRegistry'
 import { contextNavForPath, shouldShowContextBar } from '../utils/platformContextNav'
 import { dismissPlatformShellOverlays, dispatchScrollGeography } from '../utils/platformJarvisShell'
+import GlobalQuickCreate from '../components/platform/GlobalQuickCreate'
 
 function PlatformDesktopShell() {
   const location = useLocation()
@@ -202,6 +203,7 @@ function PlatformDesktopShell() {
       </div>
 
       <MissionControlOverlay />
+      <GlobalQuickCreate />
     </div>
   )
 }

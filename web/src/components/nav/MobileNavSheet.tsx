@@ -10,6 +10,7 @@ import { integrationNavItems } from '../../utils/platformIntegrationsNav'
 import { menubarProductGroupsForTier } from '../../utils/platformMacMenus'
 import { dispatchOpenSpotlight } from '../../utils/platformJarvisShell'
 import { navItemActive } from '../../utils/routes'
+import { openQuickCreateVm } from '../../hooks/usePlatformVmCreate'
 
 /**
  * Full-height navigation sheet for phones and tablets (<= 1024px), where the top-bar group buttons
@@ -107,7 +108,7 @@ export default function MobileNavSheet({
         <button type="button" className="btn-secondary text-sm" onClick={() => { onClose(); navigate('/platform/settings') }}>
           <Settings size={15} /> Settings
         </button>
-        <button type="button" className="btn-primary text-sm" onClick={() => { onClose(); navigate('/create') }}>
+        <button type="button" className="btn-primary text-sm" onClick={() => { onClose(); openQuickCreateVm() }}>
           <Plus size={15} /> New VM
         </button>
       </div>

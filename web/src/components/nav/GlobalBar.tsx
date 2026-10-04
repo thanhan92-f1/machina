@@ -24,6 +24,7 @@ import { dispatchOpenMissionControl } from '../platform/mac/MissionControlContex
 import { CLOSE_PLATFORM_MENUS_EVENT, dispatchOpenSpotlight, OPEN_SPOTLIGHT_EVENT } from '../../utils/platformJarvisShell'
 import { dispatchOpenHelp } from '../../utils/openHelp'
 import { operationsHubHref } from '../../utils/platformHubLinks'
+import { openQuickCreateVm } from '../../hooks/usePlatformVmCreate'
 
 const FLYOUT_CLOSE_DELAY_MS = 650
 
@@ -177,7 +178,7 @@ export default function GlobalBar({ onBurger, needsAttention = 0 }: { onBurger: 
             <button type="button" className="gnb-icon-btn" aria-label={ASK_ZYRA_LABEL} title={ASK_ZYRA_LABEL} onClick={openCopilot}>
               <Sparkles size={17} />
             </button>
-            <button type="button" className="gnb-new-vm" onClick={() => navigate('/create')}>
+            <button type="button" className="gnb-new-vm" onClick={() => openQuickCreateVm()}>
               <Plus size={14} />New VM
             </button>
             <span className="gnb-avatar" title={username || 'user'} aria-hidden>

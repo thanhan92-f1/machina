@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Check, Copy, Plug } from 'lucide-react'
 import { GlassModal } from '../../glass/GlassModal'
 import UnderlineTabs from '../../kit/UnderlineTabs'
+import GuestAgentAutoInstall from './GuestAgentAutoInstall'
 import { installGuestTools, type PlatformVm } from '../../../api/platform'
 import { useToastContext } from '../../../contexts/ToastContext'
 import { formatUserError } from '../../../utils/apiError'
@@ -106,8 +107,10 @@ export default function GuestAgentSetupDialog({
           </div>
         ) : null}
 
+        {libvirt && !windows ? <GuestAgentAutoInstall vm={vm} /> : null}
+
         <div>
-          <p className="mb-2 font-medium text-[var(--text-primary)]">{libvirt ? 'Step 2 · ' : ''}Install the agent in the guest</p>
+          <p className="mb-2 font-medium text-[var(--text-primary)]">{libvirt ? 'Step 2 · ' : ''}Or install it yourself</p>
           <UnderlineTabs tabs={tabs} value={method} onChange={setMethod} label="Install methods" className="mb-4" />
 
           {method === 'ssh' && (
