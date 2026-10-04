@@ -595,7 +595,7 @@ export default function PlatformNetworks() {
       )}
 
       {tab === 'lens' && (
-        <div className="space-y-4">
+        <div className="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4">
           {fleetNetwork && (
             <p className="text-sm text-[var(--text-muted)]">{fleetNetwork.summary}</p>
           )}
@@ -620,7 +620,7 @@ export default function PlatformNetworks() {
       />
 
       <MacSheet open={segmentSheetOpen} onClose={() => setSegmentSheetOpen(false)} title="New overlay segment" subtitle="Tier-0 uplink / Tier-1 workload segment with optional Zyra profile." wide>
-        <div className="space-y-4">
+        <div className="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4">
           <label className="block text-sm">
             <span className="text-[var(--text-muted)]">Name</span>
             <input className="input w-full mt-1.5" value={segName} onChange={(e) => setSegName(e.target.value)} />
@@ -667,7 +667,7 @@ export default function PlatformNetworks() {
           <p className="text-sm text-[var(--text-muted)] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Simulating…</p>
         )}
         {connectivity && (
-          <div className="space-y-4">
+          <div className="space-y-4 xl:space-y-0 xl:columns-2 xl:gap-4 [&>*]:break-inside-avoid xl:[&>*]:mb-4">
             <p className="text-sm text-[var(--text-muted)]">{connectivity.matrix.summary}</p>
             {connectivity.matrix.warnings.length > 0 && (
               <div className={`rounded-xl p-3 text-sm space-y-1 ${statusSurfaceClasses('warn')}`}>

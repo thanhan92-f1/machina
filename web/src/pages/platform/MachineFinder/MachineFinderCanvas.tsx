@@ -90,7 +90,7 @@ function GridLens({ state, compact }: { state: MachineFinderState; compact?: boo
               `truncate` clip almost the whole label. `auto-fill`/`minmax`
               gives each card a legible floor width and just wraps to fewer
               columns instead of shrinking below it. */}
-          <div className={`grid gap-4 nl-stagger ${compact ? 'grid-cols-[repeat(auto-fill,minmax(9rem,1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))]'}`}>
+          <div className={`grid gap-4 nl-stagger ${compact ? 'grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(13rem,1fr))]'}`}>
             {group.vms.map((vm) => (
               <LivingMachineCard
                 key={vm.id}

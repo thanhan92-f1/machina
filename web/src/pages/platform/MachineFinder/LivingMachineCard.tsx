@@ -164,7 +164,7 @@ export default function LivingMachineCard({
         <VmStatusBadge state={vm.observed_state} />
       </div>
 
-      <dl className="mt-2 space-y-1 text-[11px] text-[var(--text-muted)]">
+      <dl className="mt-2 space-y-1 text-xs text-[var(--text-muted)]">
         {(overlay === 'default' || overlay === 'network') && (
           <div className="flex justify-between gap-2">
             <dt>IP</dt>
@@ -233,7 +233,7 @@ export default function LivingMachineCard({
         )}
         {overlay === 'default' && cpuPct != null && (
           <div className="mt-1">
-            <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5"><span>CPU</span><span>{cpuPct}%</span></div>
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mb-0.5"><span>CPU</span><span>{cpuPct}%</span></div>
             <div className="h-1 rounded-full bg-[var(--mark-track)] overflow-hidden">
               <div className="h-full bg-[var(--accent)]/70" style={{ width: `${Math.min(100, cpuPct)}%` }} />
             </div>
@@ -241,7 +241,7 @@ export default function LivingMachineCard({
         )}
         {overlay === 'default' && memPct != null && (
           <div>
-            <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-0.5"><span>Mem</span><span>{memPct}%</span></div>
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mb-0.5"><span>Mem</span><span>{memPct}%</span></div>
             <div className="h-1 rounded-full bg-[var(--mark-track)] overflow-hidden">
               <div className="h-full bg-[var(--accent)]" style={{ width: `${Math.min(100, memPct)}%` }} />
             </div>
@@ -256,7 +256,7 @@ export default function LivingMachineCard({
           <button type="button" className="p-1.5 rounded-lg hover:bg-white/10" title="SSH" aria-label="SSH" onClick={onSsh}><Terminal className="w-3.5 h-3.5 text-[var(--text-muted)]" /></button>
           <button
             type="button"
-            className="p-1.5 rounded-lg hover:bg-white/10 text-[10px] text-[var(--text-muted)]"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-xs text-[var(--text-muted)]"
             title="Pop out Cinema"
             onClick={() => openCenterPopout(cinemaPopoutPath(vm.id))}
           >

@@ -314,7 +314,7 @@ export default function PlatformUsers({ embedded }: { embedded?: boolean } = {})
                           <td className="font-medium text-[var(--text-primary)]">
                             {w.name}
                             {workspace === w.name && (
-                              <span className="ml-2 text-[10px] text-[var(--link)] border border-[var(--apple-hairline)] px-2 py-0.5 rounded">active</span>
+                              <span className="ml-2 text-xs text-[var(--link)] border border-[var(--apple-hairline)] px-2 py-0.5 rounded">active</span>
                             )}
                           </td>
                           <td>{w.vm_count}</td>

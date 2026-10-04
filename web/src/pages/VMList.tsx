@@ -385,7 +385,7 @@ export default function VMList() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id={vmList.listId}>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-4" id={vmList.listId}>
           {vmList.shown.map((vm) => (
             <div key={vmScopeKey(vm)} className="card p-5 hover:border-white/15 transition-all">
               <div className="flex items-center justify-between mb-3">

@@ -227,13 +227,13 @@ export default function ZyraAssistant() {
           if (action) void runAction(action)
         }}
       />
-      <aside className="fixed right-0 top-0 bottom-0 z-[56] w-full max-w-md border-l border-white/[0.08] bg-[var(--apple-surface)]/98 backdrop-blur-xl flex flex-col shadow-2xl animate-fade-in">
+      <aside className="fixed right-0 top-0 bottom-0 z-[56] w-full max-w-xl border-l border-white/[0.08] bg-[var(--apple-surface)]/98 backdrop-blur-xl flex flex-col shadow-2xl animate-fade-in">
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2 min-w-0">
             <Bot className="w-5 h-5 text-orange-400 shrink-0" />
             <div className="min-w-0">
               <p className="font-semibold text-sm">Zyra</p>
-              <p className="text-[10px] text-[var(--text-muted)] truncate">{modeLabel}</p>
+              <p className="text-xs text-[var(--text-muted)] truncate">{modeLabel}</p>
             </div>
           </div>
           <select
@@ -269,7 +269,7 @@ export default function ZyraAssistant() {
 
         {proposals.length > 0 && (
           <div className="px-4 py-3 border-b border-white/[0.06] space-y-2 max-h-48 overflow-y-auto">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-400/80 flex items-center gap-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-400/80 flex items-center gap-1">
               <Zap className="w-3 h-3" /> Proposed fixes
             </p>
             {proposals.map((a) => (
@@ -290,7 +290,7 @@ export default function ZyraAssistant() {
         )}
         {nlOpsPlan && nlOpsPlan.approval_required && (
           <div className="px-4 py-3 border-b border-white/[0.06] space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-400/80">NL Ops plan (dry-run)</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-400/80">NL Ops plan (dry-run)</p>
             <p className="text-xs text-[var(--text-muted)]">Risk {nlOpsPlan.risk_score}/10 · {nlOpsPlan.steps.length} step(s)</p>
             <button type="button" className="btn-primary text-xs w-full" disabled={busy} onClick={() => void queueNlOps()}>
               Queue for approval
@@ -305,7 +305,7 @@ export default function ZyraAssistant() {
               </p>
               {showGuestPrompts && (
                 <div className="space-y-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Guest agent prompts</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Guest agent prompts</p>
                   {GUEST_SUGGESTED_PROMPTS.map((p) => (
                     <button
                       key={p}
@@ -326,7 +326,7 @@ export default function ZyraAssistant() {
             </div>
           ))}
           {streaming && (
-            <p className="text-[10px] text-orange-400/70 px-1">Streaming…</p>
+            <p className="text-xs text-orange-400/70 px-1">Streaming…</p>
           )}
         </div>
         <footer className="p-3 border-t border-white/[0.06] flex gap-2">

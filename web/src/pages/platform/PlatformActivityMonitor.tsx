@@ -24,7 +24,7 @@ function bar(label: string, value: number, tone: 'cpu' | 'mem' | 'io' | 'thermal
     tone === 'thermal' ? { warn: 70, error: 85 } : tone === 'io' ? { warn: 20, error: 50 } : { warn: 60, error: 85 }
   const unit = tone === 'thermal' ? '°C' : '%'
   return (
-    <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+    <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
       <span className="w-14 shrink-0">{label}</span>
       <div className="flex-1 h-1.5 rounded-full bg-[var(--apple-fill-tertiary)] overflow-hidden">
         <div className={`h-full rounded-full ${utilizationBarClass(value, thresholds)}`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
@@ -128,7 +128,7 @@ export default function PlatformActivityMonitor() {
                   subtitle={`${h.vm_count} VM(s) · ${h.state} · ${h.status}`}
                   badge={
                     h.status !== 'ok' && h.status !== 'offline' ? (
-                      <span className={`text-[10px] ${statusToneClass('warn')}`}>{h.status}</span>
+                      <span className={`text-xs ${statusToneClass('warn')}`}>{h.status}</span>
                     ) : undefined
                   }
                   href={`/platform/hosts/${h.host_id}`}

@@ -79,7 +79,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
   return (
     <section className="machine-finder-filters w-full space-y-3" data-testid="machine-finder-smart-folders">
       <div className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
           <FolderOpen className="w-3 h-3" /> Smart Folders
         </p>
         <div className="flex flex-wrap gap-2">
@@ -96,7 +96,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
           <Server className="w-3 h-3" /> Sources
         </p>
         <div className="flex flex-wrap gap-2">
@@ -110,7 +110,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
 
       {(finder?.tags?.length ?? 0) > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
             <Tag className="w-3 h-3" /> Tags
           </p>
           <div className="flex flex-wrap gap-2">
@@ -123,7 +123,7 @@ export default function MachineFinderSmartFolders({ state }: Props) {
 
       {(finder?.projects?.length ?? 0) > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Projects</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Projects</p>
           <div className="flex flex-wrap gap-2">
             {(finder?.projects ?? []).map((p) => (
               <FilterChip key={p.project} active={project === p.project} label={p.project} count={p.count} onClick={() => setFilter({ project: p.project })} />

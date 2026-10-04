@@ -222,7 +222,7 @@ export default function PlatformControlCenter() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute right-0 top-full mt-2 z-50 w-[22rem] glass-strong rounded-liquid-lg overflow-hidden animate-fade-in">
+          <div className="absolute right-0 top-full mt-2 z-50 w-[min(26rem,calc(100vw-1.5rem))] glass-strong rounded-liquid-lg overflow-hidden animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--apple-hairline)]">
               <span className="font-semibold text-sm">Control Center</span>
               <button type="button" onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-[var(--apple-fill-tertiary)] text-[var(--text-muted)]" aria-label="Close control center">

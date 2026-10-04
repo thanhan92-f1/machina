@@ -769,7 +769,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
           className="fixed inset-0 z-[500] liquid-glass-modal-backdrop"
           onClick={close}
         >
-          <div className="fixed inset-x-0 top-[15%] mx-auto max-w-lg px-4" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-x-0 top-[12%] mx-auto max-w-2xl px-4" onClick={(e) => e.stopPropagation()}>
             <motion.div
               role="dialog"
               aria-modal
