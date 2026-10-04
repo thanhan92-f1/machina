@@ -104,3 +104,30 @@ jobs:
   # hypervisor (/var/run/libvirt/libvirt-sock) that standard GitHub runners don't have, so it
   # failed 100% of the time. Run scripts/ci-kvm-lifecycle.sh on a self-hosted KVM runner if
   # end-to-end libvirt coverage is needed.
+
+  # SDKs and the Terraform provider: pure Go / Python, no libvirt or sibling repos needed.
+  sdks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Go SDK
+        working-directory: sdk/go
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test ./...
+      - name: Terraform provider
+        working-directory: terraform/provider
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go build ./...
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python SDK
+        working-directory: sdk/python
+        run: python -W error::ResourceWarning -m unittest discover -s tests

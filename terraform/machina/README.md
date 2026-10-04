@@ -1,6 +1,6 @@
 # Machina Platform Terraform (GA v1 schemas)
 
-Terraform resource schemas are exported from the controller API. Use the HTTP provider example until the native `zyvor/machina` provider is published to the Registry.
+A native provider now exists: see [`../provider`](../provider) (`machina_vm`, `machina_hosts`, `machina_vms`). The schemas below are exported from the controller API; the HTTP provider example remains for resources the native provider does not cover yet (networks, storage pools).
 
 ## Quick start
 
