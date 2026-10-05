@@ -124,3 +124,33 @@ let them stop, then delete). The stopped instances and their disks are kept; the
 the group lose their action. A refused delete leaves the group unpaused and unchanged.
 `DELETE /api/v1/cloud/launch-templates/{id}` removes a template that no group uses (409 otherwise).
 Subnet and VPC delete with libvirt network teardown are still not implemented.
+
+## Elastic IPs
+An admin defines a pool of public addresses a host holds (`POST /api/v1/elastic-ip-pools {name, cidr (/16–/32), host_id,
+interface}`; the interface name is at most 11 characters). Operators then use:
+
+- `POST /api/v1/elastic-ips {pool?}` allocates the first free address (`eipalloc-…` id), `GET /api/v1/elastic-ips` lists them;
+- `POST /api/v1/elastic-ips/{id|address}/associate {vm_id}` maps it 1:1 to an instance on the pool's host (one elastic IP per
+  instance; the instance needs a known address), `…/disassociate` frees it, `DELETE …` releases an unassociated address;
+- the response says whether the host confirmed the mapping (`applied`, `apply_error`).
+
+On the host (the agent's `eip.sync`): the address is held as a `/32` alias `<iface>:eip` on the interface, traffic to it is
+DNATed to the instance (from outside and from the host itself), the instance's traffic to non-private destinations is SNATed
+to it, and the DNATed connections are accepted ahead of libvirt's own forward rules. Three iptables chains of our own
+(`MACHINA_EIP_DNAT`, `MACHINA_EIP_SNAT`, `MACHINA_EIP_FWD`) are rebuilt on every push (every 30 s and on each change), so a
+libvirt restart or a manual flush heals itself.
+
+**Limits:** host-local (the instance must be on the host that holds the pool; no failover with the instance), IPv4 only, the
+address must be routed to the host by your network (the agent announces it with a gratuitous ARP when `arping` exists), and
+there is no NAT gateway for private subnets yet. Security groups apply to the instance as before.
+
+## NAT gateway for private subnets
+`PUT /api/v1/cloud/subnets/{id}/nat {"enabled": true}` lets the instances of a ready subnet reach the outside through their
+host: traffic leaving the subnet is masqueraded behind the host's uplink (the interface of its default route), and the
+subnet's traffic and its replies are accepted ahead of libvirt's forward rules. Two iptables chains of our own
+(`MACHINA_NAT`, `MACHINA_NAT_FWD`) are rebuilt every 30 s and on each change; switching the last subnet off clears them.
+The response says whether the host confirmed it (`applied`, `apply_error`).
+
+**Limits:** IPv4, host-local. Cloud subnets are libvirt isolated networks that do not advertise a default gateway, so an
+instance still needs a default route via the subnet's gateway address (the `.1` of the subnet) set by its own configuration
+(cloud-init network config or user-data); the NAT gateway makes that route work, it does not install it.

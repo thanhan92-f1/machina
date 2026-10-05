@@ -552,6 +552,14 @@ pub fn host_invoke(conn: &Connect, action: &str, payload: &Value) -> Result<Valu
             storage::delete_volume(conn, &pool, &vol_name)?;
             Ok(serde_json::json!({ "status": "deleted", "pool": pool, "name": vol_name }))
         }
+        "eip.sync" => {
+            let n = crate::eip::sync(payload).map_err(LibvirtError::Operation)?;
+            Ok(serde_json::json!({ "status": "ok", "entries": n }))
+        }
+        "nat.sync" => {
+            let n = crate::natgw::sync(payload).map_err(LibvirtError::Operation)?;
+            Ok(serde_json::json!({ "status": "ok", "entries": n }))
+        }
         "network.start" => {
             let name = payload_str(payload, "name")?;
             network::start_network(conn, &name)?;
