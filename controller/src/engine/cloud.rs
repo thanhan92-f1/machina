@@ -5,7 +5,7 @@
 //! VM reconciler performs power changes. Scale-in stops and retains disks.
 use crate::{agent_client, auth::AuthUser, state::AppState, tasks::TaskMessage};
 use axum::{extract::State, Extension, Json};
-use machina_spec::{NetworkAttachmentSpec, ScalingPolicy, VirtualMachine};
+use machina_spec::{LbBinding, NetworkAttachmentSpec, ScaleIn, ScalingPolicy, VirtualMachine};
 use serde_json::Value;
 use std::time::Duration;
 use uuid::Uuid;
@@ -125,13 +125,19 @@ async fn reconcile_group_fenced(
     // sample from EVERY active member. Averages over a partial set are unsafe.
     let (count,cpu):(i64,Option<f64>)=sqlx::query_as("SELECT COUNT(*),AVG(m.cpu_percent) FROM cloud_group_members gm JOIN vms v ON v.id=gm.vm_id JOIN vm_metrics m ON m.vm_id=v.id WHERE gm.group_id=? AND gm.slot<? AND v.observed_state='running' AND m.updated_at>datetime('now','-2 minutes')").bind(id).bind(policy.desired).fetch_one(&state.pool).await?;
     let elapsed:i64=sqlx::query_scalar("SELECT CAST(strftime('%s','now') AS INTEGER)-CAST(strftime('%s',last_scaled_at) AS INTEGER) FROM cloud_instance_groups WHERE id=?").bind(id).fetch_one(&state.pool).await?;
-    let desired = policy.next_desired(
+    let peak = if policy.predictive {
+        crate::engine::ai::forecast::group_demand_peak(&state.pool, id).await
+    } else {
+        None
+    };
+    let desired = policy.next_desired_with_forecast(
         if count == i64::from(policy.desired) && count > 0 {
             cpu
         } else {
             None
         },
         elapsed,
+        peak,
     );
     if desired != policy.desired {
         policy.desired = desired;
@@ -165,21 +171,36 @@ async fn reconcile_group_fenced(
         if current.as_deref() != Some(expected.as_str()) {
             return Ok(());
         }
-        let existing: Option<Uuid> =
-            sqlx::query_scalar("SELECT vm_id FROM cloud_group_members WHERE group_id=? AND slot=?")
-                .bind(id)
-                .bind(slot)
-                .fetch_optional(&state.pool)
-                .await?
-                .flatten();
-        let target = if slot < policy.desired {
-            "running"
-        } else {
-            "stopped"
+        let existing: Option<Member> = sqlx::query_as(
+            "SELECT gm.vm_id, COALESCE(v.desired_state, ''), COALESCE(v.observed_state, ''),
+                    COALESCE(v.guest_ip, ''),
+                    CAST(strftime('%s', 'now') AS INTEGER) - CAST(strftime('%s', gm.draining_since) AS INTEGER)
+             FROM cloud_group_members gm JOIN vms v ON v.id = gm.vm_id
+             WHERE gm.group_id = ? AND gm.slot = ?",
+        )
+        .bind(id)
+        .bind(slot)
+        .fetch_optional(&state.pool)
+        .await?;
+        let guard = Guard {
+            group: id,
+            project: &project,
+            policy: &expected,
         };
-        if let Some(vm) = existing {
-            // Ordinary VM reconciliation performs the action and its retries.
-            sqlx::query("UPDATE vms SET desired_state=? WHERE id=? AND project=? AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused=0 AND policy_json=?)").bind(target).bind(vm).bind(&project).bind(id).bind(&expected).execute(&state.pool).await?;
+        if let Some(m) = existing {
+            if slot < policy.desired {
+                // Ordinary VM reconciliation starts it (restoring a sleeping
+                // one) and retries.
+                guard.set_desired(state, m.0, "running").await?;
+                set_draining(state, id, slot, false).await?;
+                if let Some(lb) = policy.load_balancer {
+                    if m.2 == "running" && !m.3.is_empty() {
+                        lb_member(state, lb, m.0, true).await?;
+                    }
+                }
+            } else {
+                scale_in(state, &policy, &guard, slot, &m).await?;
+            }
             continue;
         }
         if slot >= policy.desired {
@@ -233,7 +254,146 @@ async fn reconcile_group_fenced(
         sqlx::query("INSERT INTO cloud_group_members (group_id,slot,vm_id) VALUES (?,?,?) ON CONFLICT(group_id,slot) DO UPDATE SET vm_id=excluded.vm_id WHERE cloud_group_members.vm_id IS NULL").bind(id).bind(slot).bind(vm_id).execute(&state.pool).await?;
     }
     // If max was lowered, stopped retained slots above the new max remain owned.
-    sqlx::query("UPDATE vms SET desired_state='stopped' WHERE id IN (SELECT vm_id FROM cloud_group_members WHERE group_id=? AND slot>=?) AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused=0 AND policy_json=?)").bind(id).bind(policy.desired).bind(id).bind(&expected).execute(&state.pool).await?;
+    sqlx::query("UPDATE vms SET desired_state='stopped' WHERE id IN (SELECT vm_id FROM cloud_group_members WHERE group_id=? AND slot>=?) AND desired_state<>'sleeping' AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused=0 AND policy_json=?)").bind(id).bind(policy.max).bind(id).bind(&expected).execute(&state.pool).await?;
+    Ok(())
+}
+
+/// vm_id, desired_state, observed_state, guest_ip, seconds draining.
+type Member = (Uuid, String, String, String, Option<i64>);
+
+/// Writes only while the group still has the policy this pass read.
+struct Guard<'a> {
+    group: Uuid,
+    project: &'a str,
+    policy: &'a str,
+}
+
+impl Guard<'_> {
+    async fn set_desired(&self, state: &AppState, vm: Uuid, target: &str) -> anyhow::Result<()> {
+        sqlx::query("UPDATE vms SET desired_state=? WHERE id=? AND project=? AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused=0 AND policy_json=?)")
+            .bind(target)
+            .bind(vm)
+            .bind(self.project)
+            .bind(self.group)
+            .bind(self.policy)
+            .execute(&state.pool)
+            .await?;
+        Ok(())
+    }
+}
+
+async fn set_draining(state: &AppState, group: Uuid, slot: u32, on: bool) -> anyhow::Result<()> {
+    let sql = if on {
+        "UPDATE cloud_group_members SET draining_since = CURRENT_TIMESTAMP WHERE group_id = ? AND slot = ? AND draining_since IS NULL"
+    } else {
+        "UPDATE cloud_group_members SET draining_since = NULL WHERE group_id = ? AND slot = ? AND draining_since IS NOT NULL"
+    };
+    sqlx::query(sql)
+        .bind(group)
+        .bind(slot)
+        .execute(&state.pool)
+        .await?;
+    Ok(())
+}
+
+/// A member the group no longer needs: out of the load balancer first, then
+/// after the drain period stopped, or managed-saved when the policy says sleep
+/// and traffic could wake it (a known address).
+async fn scale_in(
+    state: &AppState,
+    policy: &ScalingPolicy,
+    guard: &Guard<'_>,
+    slot: u32,
+    m: &Member,
+) -> anyhow::Result<()> {
+    let (vm, desired, observed, ip, draining) = m;
+    if let Some(lb) = policy.load_balancer {
+        lb_member(state, lb, *vm, false).await?;
+    }
+    if desired != "running" {
+        return set_draining(state, guard.group, slot, false).await;
+    }
+    let drain = i64::from(policy.drain());
+    if drain > 0 && observed == "running" {
+        match draining {
+            None => return set_draining(state, guard.group, slot, true).await,
+            Some(s) if *s < drain => return Ok(()),
+            Some(_) => {}
+        }
+    }
+    let sleep = policy.scale_in == ScaleIn::Sleep && observed == "running" && !ip.is_empty();
+    if sleep {
+        let inflight: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM tasks WHERE resource_id = ? AND operation = 'vm.power' AND status IN ('pending', 'running')",
+        )
+        .bind(vm)
+        .fetch_one(&state.pool)
+        .await?;
+        if inflight == 0 {
+            let host: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+                .bind(vm)
+                .fetch_one(&state.pool)
+                .await?;
+            crate::tasks::enqueue::enqueue_task(
+                state,
+                "vm.power",
+                serde_json::json!({ "vm_id": vm.to_string(), "action": "managedsave", "reason": "scale-in" }),
+                Some("vm"),
+                Some(*vm),
+                host,
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!("scale-in sleep: {}", e.message))?;
+        }
+    } else {
+        guard.set_desired(state, *vm, "stopped").await?;
+    }
+    set_draining(state, guard.group, slot, false).await
+}
+
+/// Enables or disables `vm` in the group's load balancer, adding it on first
+/// join, and pushes the rule set only when something changed.
+async fn lb_member(state: &AppState, lb: LbBinding, vm: Uuid, enabled: bool) -> anyhow::Result<()> {
+    let row: Option<(Uuid, bool)> = sqlx::query_as(
+        "SELECT id, enabled FROM lb_members WHERE load_balancer_id = ? AND vm_id = ? AND port = ?",
+    )
+    .bind(lb.id)
+    .bind(vm)
+    .bind(i64::from(lb.port))
+    .fetch_optional(&state.pool)
+    .await?;
+    let changed = match row {
+        Some((member, on)) if on != enabled => {
+            sqlx::query("UPDATE lb_members SET enabled = ? WHERE id = ?")
+                .bind(enabled)
+                .bind(member)
+                .execute(&state.pool)
+                .await?;
+            true
+        }
+        Some(_) => false,
+        None if enabled => {
+            sqlx::query(
+                "INSERT INTO lb_members (id, load_balancer_id, vm_id, port, weight, enabled) VALUES (?, ?, ?, ?, 1, 1)",
+            )
+            .bind(Uuid::new_v4())
+            .bind(lb.id)
+            .bind(vm)
+            .bind(i64::from(lb.port))
+            .execute(&state.pool)
+            .await?;
+            true
+        }
+        None => false,
+    };
+    // A host that can't take the rule set marks the load balancer `error`;
+    // that mustn't stop the group from scaling.
+    if changed {
+        if let Err(e) = crate::engine::load_balancer::apply(&state.pool, &state.config, lb.id).await
+        {
+            tracing::warn!(lb = %lb.id, "group load balancer push: {e:#}");
+        }
+    }
     Ok(())
 }
 

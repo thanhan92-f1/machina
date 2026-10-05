@@ -8,6 +8,8 @@ import { platformFetch } from '../api/platform'
 import PageLayout from '../components/PageLayout'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
+import GroupAutoscale from '../components/cloud/GroupAutoscale'
+import { listLoadBalancers, type NativeLoadBalancer } from '../api/nativeLoadBalancers'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 
@@ -73,6 +75,7 @@ export default function FleetCloudVpc() {
   const [templateId, setTemplateId] = useState('')
   const [subnetId, setSubnetId] = useState('')
   const [desired, setDesired] = useState(1)
+  const [lbs, setLbs] = useState<NativeLoadBalancer[]>([])
   const selection = useRef({ project, selected })
   selection.current = { project, selected }
 
@@ -88,6 +91,7 @@ export default function FleetCloudVpc() {
       })
       .catch((e) => { if (alive) setError(formatUserError(e)) })
       .finally(() => { if (alive) setLoading(false) })
+    listLoadBalancers().then((l) => { if (alive) setLbs(l) }).catch(() => undefined)
     return () => { alive = false }
   }, [])
 
@@ -246,7 +250,7 @@ export default function FleetCloudVpc() {
 
         <section className="tahoe-glass-card space-y-3 p-5" aria-label="Instance groups">
           <h2 className="text-lg font-semibold">Elastic instance groups</h2>
-          <p className="text-[var(--text-secondary)]">Scale-in stops instances and retains their disks. Pausing leaves current instances unchanged. Capacity is set by hand here; CPU autoscaling can be configured through the API.</p>
+          <p className="text-[var(--text-secondary)]">Set capacity by hand, or open Autoscale to follow a CPU target, scale ahead of the usual rush, sleep instead of stop on scale-in, and drain members from a load balancer first. Pausing leaves current instances unchanged.</p>
           <form
             className="flex flex-wrap items-end gap-3"
             onSubmit={(e) => {
@@ -284,11 +288,12 @@ export default function FleetCloudVpc() {
               }
               return (
                 <li className="flex flex-wrap gap-3 py-3" key={g.id}>
-                  <span>{g.name} · {policy.desired} desired · {g.paused ? 'paused' : 'active'}</span>
+                  <span>{g.name} · {policy.desired} desired{policy.target_cpu != null ? ` · ${policy.target_cpu}% CPU target` : ''}{policy.predictive ? ' · predictive' : ''} · {g.paused ? 'paused' : 'active'}</span>
                   {g.last_error && <span role="alert">{g.last_error}</span>}
                   <button className={secondary} disabled={busy} onClick={() => void action(() => cloud.updateInstanceGroup(g.id, policy, !g.paused))}>{g.paused ? 'Resume' : 'Pause'} {g.name}</button>
                   <button className={secondary} disabled={busy || policy.desired >= policy.max} onClick={() => void action(() => cloud.updateInstanceGroup(g.id, { ...policy, desired: policy.desired + 1 }, g.paused))}>Add instance</button>
-                  <button className={secondary} disabled={busy || policy.desired <= policy.min} onClick={() => void action(() => cloud.updateInstanceGroup(g.id, { ...policy, desired: policy.desired - 1 }, g.paused))}>Stop one instance</button>
+                  <button className={secondary} disabled={busy || policy.desired <= policy.min} onClick={() => void action(() => cloud.updateInstanceGroup(g.id, { ...policy, desired: policy.desired - 1 }, g.paused))}>{policy.scale_in === 'sleep' ? 'Sleep one instance' : 'Stop one instance'}</button>
+                  <GroupAutoscale group={g} policy={policy} loadBalancers={lbs.filter((b) => !b.project_id || b.project_id === project)} busy={busy} onSave={(p) => action(() => cloud.updateInstanceGroup(g.id, p, g.paused))} />
                 </li>
               )
             })}

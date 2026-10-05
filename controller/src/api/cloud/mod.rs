@@ -65,6 +65,10 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/cloud/instance-groups/{id}",
             get(elastic::get_group).patch(elastic::update_group),
         )
+        .route(
+            "/api/v1/cloud/instance-groups/{id}/forecast",
+            get(elastic::group_forecast),
+        )
 }
 
 /// Cloud APIs always enforce membership, even when legacy project RBAC is off.

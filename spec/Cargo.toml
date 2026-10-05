@@ -9,6 +9,7 @@ description = "Declarative VM/cluster spec types for the Machina control plane"
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 serde_yaml = "0.9"

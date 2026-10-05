@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-05 — Fleet Cloud: autopilot capacity
+
+See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#autopilot-capacity).
+
+- **Instance groups.** Scaling policies take `predictive`, `scale_in`
+  (`stop` / `sleep`), `load_balancer` and `drain_secs`. Scale-in takes the
+  member out of the load balancer, waits for the drain, then sleeps or
+  stops it. Scale-out restores a sleeping member and puts it back.
+- **History.** Disk IOPS, network bytes and per-group CPU are sampled too,
+  and everything is rolled up hourly (average, peak) for 35 days.
+- **Forecast.** Weekly or daily seasonal forecast per group;
+  `GET /api/v1/cloud/instance-groups/{id}/forecast`. Predictive groups are
+  raised before the rush and never lowered by it.
+- **Rightsizing.** `GET /api/v1/rightsizing` sizes running VMs from the
+  95th percentile of 14 days of hourly peaks. `POST /api/v1/rightsizing/propose`
+  files a `vm.resize` action, verified afterwards and undoable.
+- **Consolidation.** `GET /api/v1/drs/consolidation` plans live migrations
+  that empty under-used hosts; `POST .../propose` files a
+  `drs.consolidate` action.
+- **UI.** Autoscale panel on each instance group (with members and a
+  demand chart) and a new Fleet Cloud → Autopilot page.
+- **Fix.** `CloudCidr::last()` no longer overflows on a /32.
+- **Tests.** `scripts/fleet/autopilot-realvm.sh` on real VMs.
+
 ## 2026-10-05 — Fleet Cloud: stacks you describe
 
 See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#stacks-you-describe).

@@ -334,3 +334,133 @@ detail has a Drift tab (check, converge, auto-heal) and a Template tab
   missing, a blocked and a queued proposal, and `stack.deploy` undo.
 - `web/e2e/fleet-cloud-stacks.spec.ts` (mocked): compose, plan, propose
   and approve; drift, converge and auto-heal on stack detail.
+
+## Autopilot capacity
+
+Capacity follows real demand instead of a number someone typed once.
+Elastic instance groups scale ahead of the daily or weekly rush, drain from
+their load balancer before they shrink, and sleep instead of stopping so the
+next scale-out takes seconds. Every running VM gets a size suggestion from
+its own history, applied through an approval that is checked afterwards and
+can be undone. Under-used hosts are emptied so they can be powered down.
+OpenStack splits this across Senlin or Heat autoscaling (reactive alarms
+only), Watcher (separate service) and manual resizes.
+
+### Instance groups
+
+These build on the [elastic instance groups](cloud-vpc-elastic-compute.md)
+of cloud VPCs. Their scaling policy takes four more optional fields:
+
+| Field | |
+|---|---|
+| `predictive` | Raise the group before a recurring rush (needs `target_cpu`) |
+| `scale_in` | `stop` (default; disks kept) or `sleep` (memory saved, wakes in seconds) |
+| `load_balancer` | `{ "id", "port" }`: a native load balancer on the VPC's host, in the group's project or unscoped |
+| `drain_secs` | Seconds a member stays out of the load balancer before it stops or sleeps; default 30, at most 900 |
+
+Every 30 seconds, for each group:
+
+1. **Desired count.** The CPU step from the operator guide, then, with
+   `predictive`, raised to what the forecast for the coming hour needs at
+   the target (summed CPU ÷ target, within min and max). The forecast only
+   adds capacity. While the rush is expected, idle CPU doesn't step the
+   group back down.
+2. **Members below the count** are set to run. A sleeping one is restored
+   from its saved memory and keeps its address. Once it is running with an
+   address it joins the load balancer.
+3. **Members above the count** leave the load balancer first. A running one
+   is then marked draining. After `drain_secs` it sleeps (with
+   `scale_in: sleep` and a known address) or stops.
+
+A load balancer that can't take the new rule set is marked `error`, but
+the group still scales.
+
+### History and forecast
+
+Each metrics pass also records disk IOPS, network bytes and, per group, the
+CPU summed over its running members. Samples are rolled up into hourly
+averages and peaks (`metric_hourly`), with network bytes turned into a rate.
+The rollup is kept for 35 days.
+
+The forecast for an hour is the mean of the same hour in up to 4 past weeks
+when at least 2 exist. Otherwise it is the mean of the same hour over up to
+7 past days, when at least 3 exist. With less history there is no forecast,
+and the group scales on CPU alone.
+
+### Rightsizing
+
+A running VM with at least 72 hourly points in the last 14 days gets a
+suggestion from the 95th percentile of its hourly peaks:
+
+- **vCPUs:** enough to run that peak at 60%, between 1 and twice the
+  current count.
+- **Memory:** that peak plus 30%, rounded up to 256 MiB, at least 512 MiB.
+
+Suggestions show the monthly cost change at the cluster's FinOps rates.
+**Apply** files a `vm.resize` action (one per VM at a time) and runs it once
+approved. Running guests are resized live where the guest allows it;
+otherwise the new size is written to the VM's configuration and applies
+at its next restart. Verification compares the size the VM runs with
+against the request, so it reports pending until then. Undo resizes it
+back to what it had before. A VM resized in the last 14 days, and not
+undone, gets no new suggestion: its older history describes the old size.
+
+### Consolidation
+
+Hosts under 30% memory use are emptied, quietest first. Their VMs go
+largest first onto the busiest host that stays under 80%. A host is kept
+if any of its VMs can't move (host-local cloud network, local-only disk) or
+nothing has room, and the last host is always kept. **Consolidate** files a
+`drs.consolidate` action. Each live migration is prechecked when it runs,
+and the emptied hosts are listed as candidates to power down. Nothing
+powers a host off on its own.
+
+### API
+
+| Route | |
+|---|---|
+| `GET /api/v1/cloud/instance-groups/{id}` | Members with `desired_state` and `draining_since` |
+| `GET /api/v1/cloud/instance-groups/{id}/forecast` | Last 48 hours of group demand, the next 24 forecast with the instances each needs, and the next-hour peak |
+| `GET /api/v1/rightsizing` | Suggestions and the total monthly change |
+| `POST /api/v1/rightsizing/propose` | `{ "vm_id", "vcpus"?, "memory_mib"? }`; without sizes, the suggestion. 409 while one waits |
+| `GET /api/v1/drs/consolidation` | `{ moves, emptied, kept }` |
+| `POST /api/v1/drs/consolidation/propose` | Files the plan; 400 `nothing_to_consolidate` |
+
+### UI
+
+Fleet Cloud → VPCs & elastic compute: **Autoscale** on a group sets the
+CPU target, predictive scaling, scale-in mode, load balancer, member port
+and drain. It also lists members (with draining ones marked) and charts
+demand with the forecast. Fleet Cloud → Autopilot is the rightsizing inbox
+(Apply or Request approval) and the consolidation plan.
+
+### Limits
+
+- Groups still live on the VPC's host, so they don't spread across hosts.
+- A group member that is resized keeps its new size. The launch template
+  is unchanged, so slots created later use the template's size.
+- Predictive scaling raises the count for the coming hour. It doesn't hold
+  capacity for a rush further ahead.
+- Consolidation uses memory only, not CPU.
+- A slot whose first create fails (an image download, for example) isn't
+  retried by the group. Two slots on a cold host can both start
+  downloading the same template image, so let the first instance finish
+  before scaling past one.
+
+### Tests
+
+- `scripts/fleet/autopilot-realvm.sh` on real VMs: a VPC, subnet, Debian
+  launch template and load balancer, then a group of 2. Scale in to watch
+  a member drain from the load balancer and then sleep. Scale out to watch
+  it wake with the same address and rejoin. Seeded history checks a
+  rightsizing resize through approval, verification and undo. A seeded
+  daily rush checks the group is raised before it.
+- Controller unit tests: drain then sleep with load-balancer membership,
+  the forecast endpoint and pre-scaling, the hourly rollup with a network
+  rate, seasonal weekly/daily selection, rightsizing suggestions and a
+  resize that is undone, consolidation plans (pinned VMs, full fleets),
+  and the resize undo record.
+- Spec tests: older policies serialize unchanged, and the forecast only
+  adds capacity.
+- `web/e2e/fleet-cloud-autopilot.spec.ts` (mocked): apply a suggestion,
+  consolidation, empty states, and saving a group's autoscale settings.

@@ -46,12 +46,7 @@ impl FromStr for CloudCidr {
 
 impl CloudCidr {
     pub fn last(self) -> u32 {
-        self.network
-            | if self.prefix == 0 {
-                u32::MAX
-            } else {
-                u32::MAX >> self.prefix
-            }
+        self.network | u32::MAX.checked_shr(u32::from(self.prefix)).unwrap_or(0)
     }
     pub fn contains(self, other: Self) -> bool {
         self.network <= other.network && self.last() >= other.last()
@@ -105,7 +100,7 @@ pub fn cloud_network_xml(id: &str, cidr: &str) -> Result<String, String> {
     Ok(format!("<network><name>mc-{id}</name><uuid>{id}</uuid><bridge name='mc{}' stp='on' delay='0'/><ip address='{gateway}' prefix='{}'><dhcp><range start='{start}' end='{end}'/></dhcp></ip></network>", &compact[..12], c.prefix))
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ScalingPolicy {
     pub min: u32,
@@ -113,7 +108,50 @@ pub struct ScalingPolicy {
     pub desired: u32,
     pub target_cpu: Option<f64>,
     pub cooldown_secs: u32,
+    // Optional fields are skipped when unset: the reconciler compares stored
+    // policy JSON byte for byte, so older rows must serialize unchanged.
+    /// Scale up ahead of the daily/weekly pattern in the group's CPU history.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub predictive: bool,
+    #[serde(default, skip_serializing_if = "ScaleIn::is_stop")]
+    pub scale_in: ScaleIn,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub load_balancer: Option<LbBinding>,
+    /// Seconds a member stays out of the load balancer before it is stopped.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drain_secs: Option<u32>,
 }
+
+fn is_false(v: &bool) -> bool {
+    !*v
+}
+
+/// What happens to an instance the group no longer needs.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ScaleIn {
+    /// Shut down; disks are kept.
+    #[default]
+    Stop,
+    /// Managed-save (scale to zero): no RAM held, the first packet wakes it.
+    Sleep,
+}
+
+impl ScaleIn {
+    fn is_stop(&self) -> bool {
+        *self == ScaleIn::Stop
+    }
+}
+
+/// Members join this load balancer on `port` while they are running.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct LbBinding {
+    pub id: uuid::Uuid,
+    pub port: u16,
+}
+
+pub const DEFAULT_DRAIN_SECS: u32 = 30;
 impl ScalingPolicy {
     pub fn validate(&self) -> Result<(), String> {
         if self.min > self.desired || self.desired > self.max || self.max > 100 {
@@ -128,7 +166,52 @@ impl ScalingPolicy {
         if !(30..=86400).contains(&self.cooldown_secs) {
             return Err("cooldown must be 30..86400 seconds".into());
         }
+        if self.drain_secs.is_some_and(|d| d > 900) {
+            return Err("drain must be 0..900 seconds".into());
+        }
+        if self.load_balancer.is_some_and(|l| l.port == 0) {
+            return Err("load balancer port must be 1..65535".into());
+        }
+        if self.predictive && self.target_cpu.is_none() {
+            return Err("predictive scaling needs a target CPU".into());
+        }
         Ok(())
+    }
+
+    pub fn drain(&self) -> u32 {
+        if self.load_balancer.is_none() {
+            return 0;
+        }
+        self.drain_secs.unwrap_or(DEFAULT_DRAIN_SECS)
+    }
+
+    /// Instances needed to keep `demand` (summed CPU percent across members)
+    /// at the target, within bounds.
+    pub fn needed_for(&self, demand: f64) -> Option<u32> {
+        let target = self.target_cpu?;
+        if !demand.is_finite() || demand < 0.0 {
+            return None;
+        }
+        let n = (demand / target).ceil() as u32;
+        Some(n.clamp(self.min.max(1), self.max))
+    }
+
+    /// Reactive step, then raised (never lowered) to what the forecast peak
+    /// needs. The forecast only scales up, so a wrong one can't remove capacity.
+    pub fn next_desired_with_forecast(
+        &self,
+        cpu: Option<f64>,
+        elapsed_secs: i64,
+        forecast_peak: Option<f64>,
+    ) -> u32 {
+        let reactive = self.next_desired(cpu, elapsed_secs);
+        if !self.predictive {
+            return reactive;
+        }
+        match forecast_peak.and_then(|d| self.needed_for(d)) {
+            Some(n) if n > reactive => n,
+            _ => reactive,
+        }
     }
     /// Missing/stale metrics must never trigger scale-in. One step per cooldown;
     /// 10-point hysteresis prevents small oscillations around the target.
@@ -222,6 +305,7 @@ mod tests {
             desired: 2,
             target_cpu: Some(60.0),
             cooldown_secs: 60,
+            ..Default::default()
         };
         assert!(p.validate().is_ok());
         assert_eq!(p.next_desired(Some(95.0), 60), 3);
@@ -238,6 +322,70 @@ mod tests {
         .is_err());
         assert!(ScalingPolicy {
             target_cpu: Some(f64::INFINITY),
+            ..p
+        }
+        .validate()
+        .is_err());
+    }
+
+    #[test]
+    fn older_policies_serialize_unchanged() {
+        let raw = r#"{"min":0,"max":10,"desired":2,"target_cpu":null,"cooldown_secs":300}"#;
+        let p: ScalingPolicy = serde_json::from_str(raw).unwrap();
+        assert_eq!(serde_json::to_string(&p).unwrap(), raw);
+        let full: ScalingPolicy = serde_json::from_str(
+            r#"{"min":1,"max":6,"desired":2,"target_cpu":50.0,"cooldown_secs":60,"predictive":true,"scale_in":"sleep","load_balancer":{"id":"00000000-0000-0000-0000-000000000001","port":8080},"drain_secs":5}"#,
+        )
+        .unwrap();
+        assert!(full.validate().is_ok());
+        assert_eq!(full.scale_in, ScaleIn::Sleep);
+        assert_eq!(full.drain(), 5);
+        assert!(serde_json::from_str::<ScalingPolicy>(
+            r#"{"min":0,"max":1,"desired":0,"target_cpu":null,"cooldown_secs":60,"bogus":1}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn forecast_only_scales_up() {
+        let p = ScalingPolicy {
+            min: 1,
+            max: 6,
+            desired: 2,
+            target_cpu: Some(50.0),
+            cooldown_secs: 60,
+            predictive: true,
+            ..Default::default()
+        };
+        // 210% of demand at 50% each needs 5.
+        assert_eq!(
+            p.next_desired_with_forecast(Some(50.0), 600, Some(210.0)),
+            5
+        );
+        // A low forecast never lowers the count below the reactive step.
+        assert_eq!(p.next_desired_with_forecast(Some(50.0), 600, Some(10.0)), 2);
+        assert_eq!(p.next_desired_with_forecast(Some(95.0), 600, Some(10.0)), 3);
+        // Capped at max; ignored inside the cooldown only for the reactive part.
+        assert_eq!(p.next_desired_with_forecast(None, 600, Some(10_000.0)), 6);
+        // Once raised for the rush, idle CPU doesn't step it back down before it.
+        let raised = ScalingPolicy {
+            desired: 5,
+            ..p.clone()
+        };
+        assert_eq!(
+            raised.next_desired_with_forecast(Some(5.0), 600, Some(210.0)),
+            5
+        );
+        let off = ScalingPolicy {
+            predictive: false,
+            ..p.clone()
+        };
+        assert_eq!(
+            off.next_desired_with_forecast(Some(50.0), 600, Some(210.0)),
+            2
+        );
+        assert!(ScalingPolicy {
+            target_cpu: None,
             ..p
         }
         .validate()

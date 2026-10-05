@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, State},
     Extension, Json,
 };
-use machina_spec::{ScalingPolicy, VirtualMachine};
+use machina_spec::{ScaleIn, ScalingPolicy, VirtualMachine};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -151,6 +151,7 @@ pub async fn create_group(
             "ready subnet and template from the same project required",
         ));
     }
+    check_lb(&mut tx, project, body.subnet_id, &body.policy).await?;
     let duplicate: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM cloud_instance_groups WHERE project_id=? AND name=?)",
     )
@@ -196,10 +197,130 @@ pub async fn get_group(
         .fetch_one(&mut *conn)
         .await?;
     access(&mut conn, &actor, row.project_id, false).await?;
-    let members:Vec<(i64,Option<Uuid>,Option<String>,Option<String>)>=sqlx::query_as("SELECT m.slot,m.vm_id,v.name,v.observed_state FROM cloud_group_members m LEFT JOIN vms v ON v.id=m.vm_id WHERE m.group_id=? ORDER BY m.slot").bind(id).fetch_all(&mut *conn).await?;
-    Ok(Json(
-        json!({"group":row,"members":members.into_iter().map(|(slot,vm_id,name,state)|json!({"slot":slot,"vm_id":vm_id,"name":name,"observed_state":state})).collect::<Vec<_>>(),"scale_in":"stop-and-retain","network_backend":"host-local-isolated"}),
-    ))
+    type Member = (
+        i64,
+        Option<Uuid>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    );
+    let members: Vec<Member> = sqlx::query_as(
+        "SELECT m.slot, m.vm_id, v.name, v.observed_state, v.desired_state, m.draining_since
+         FROM cloud_group_members m LEFT JOIN vms v ON v.id = m.vm_id
+         WHERE m.group_id = ? ORDER BY m.slot",
+    )
+    .bind(id)
+    .fetch_all(&mut *conn)
+    .await?;
+    let policy: Option<ScalingPolicy> = serde_json::from_str(&row.policy_json).ok();
+    let scale_in = match policy.as_ref().map(|p| p.scale_in) {
+        Some(ScaleIn::Sleep) => "sleep",
+        _ => "stop-and-retain",
+    };
+    Ok(Json(json!({
+        "group": row,
+        "members": members
+            .into_iter()
+            .map(|(slot, vm_id, name, state, desired, draining)| json!({
+                "slot": slot,
+                "vm_id": vm_id,
+                "name": name,
+                "observed_state": state,
+                "desired_state": desired,
+                "draining_since": draining,
+            }))
+            .collect::<Vec<_>>(),
+        "scale_in": scale_in,
+        "network_backend": "host-local-isolated",
+    })))
+}
+
+/// A group's load balancer must be on the group's host (its rules DNAT to the
+/// members from there) and belong to the group's project.
+async fn check_lb(
+    conn: &mut sqlx::SqliteConnection,
+    project: Uuid,
+    subnet: Uuid,
+    policy: &ScalingPolicy,
+) -> Result<(), ApiError> {
+    let Some(lb) = policy.load_balancer else {
+        return Ok(());
+    };
+    let ok: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM load_balancers l, cloud_subnets s
+           JOIN cloud_vpcs v ON v.id = s.vpc_id
+         WHERE l.id = ? AND s.id = ? AND l.host_id = v.host_id
+           AND (l.project_id IS NULL OR l.project_id = ?))",
+    )
+    .bind(lb.id)
+    .bind(subnet)
+    .bind(project)
+    .fetch_one(&mut *conn)
+    .await?;
+    if !ok {
+        return Err(invalid(
+            "the load balancer must exist on the subnet's host and belong to the project",
+        ));
+    }
+    Ok(())
+}
+
+/// Demand history and the seasonal forecast for the next day: summed member
+/// CPU per hour, and the instances the target would need.
+pub async fn group_forecast(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Value>, ApiError> {
+    use crate::engine::ai::forecast;
+    let mut conn = state.pool.acquire().await?;
+    let row: Group = sqlx::query_as(&format!("{GROUPS} WHERE id=?"))
+        .bind(id)
+        .fetch_one(&mut *conn)
+        .await?;
+    access(&mut conn, &actor, row.project_id, false).await?;
+    drop(conn);
+    let policy: ScalingPolicy = serde_json::from_str(&row.policy_json).map_err(invalid)?;
+    let hourly = forecast::hourly(
+        &state.pool,
+        &forecast::group_subject(id),
+        "cpu_sum",
+        35,
+        true,
+    )
+    .await
+    .map_err(|e| ApiError::internal(e.to_string()))?;
+    let now = chrono::Utc::now().timestamp();
+    let history: Vec<Value> = hourly
+        .range(now - 48 * 3600..)
+        .map(|(h, v)| json!({ "hour": h, "demand": v }))
+        .collect();
+    let ahead: Vec<Value> = (0..24)
+        .filter_map(|k| {
+            let h = now / 3600 * 3600 + k * 3600;
+            forecast::seasonal_at(&hourly, h).map(|s| {
+                json!({
+                    "hour": h,
+                    "demand": s.value,
+                    "basis": s.basis,
+                    "needed": policy.needed_for(s.value),
+                })
+            })
+        })
+        .collect();
+    let peak = forecast::seasonal_peak(&hourly, now, 1).map(|(h, s)| {
+        json!({ "hour": h, "demand": s.value, "basis": s.basis, "needed": policy.needed_for(s.value) })
+    });
+    Ok(Json(json!({
+        "group_id": id,
+        "predictive": policy.predictive,
+        "target_cpu": policy.target_cpu,
+        "hours_of_history": hourly.len(),
+        "history": history,
+        "forecast": ahead,
+        "next_hour_peak": peak,
+    })))
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -215,12 +336,13 @@ pub async fn update_group(
 ) -> Result<Json<Value>, ApiError> {
     body.policy.validate().map_err(invalid)?;
     let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
-    let project: Uuid =
-        sqlx::query_scalar("SELECT project_id FROM cloud_instance_groups WHERE id=?")
+    let (project, subnet): (Uuid, Uuid) =
+        sqlx::query_as("SELECT project_id, subnet_id FROM cloud_instance_groups WHERE id=?")
             .bind(id)
             .fetch_one(&mut *tx)
             .await?;
     access(&mut tx, &actor, project, true).await?;
+    check_lb(&mut tx, project, subnet, &body.policy).await?;
     sqlx::query("UPDATE cloud_instance_groups SET policy_json=?,paused=?,last_scaled_at=CURRENT_TIMESTAMP,last_error='' WHERE id=?").bind(serde_json::to_string(&body.policy).map_err(invalid)?).bind(body.paused).bind(id).execute(&mut *tx).await?;
     audit(&mut tx, &actor, "cloud.group.update", id).await?;
     tx.commit().await?;

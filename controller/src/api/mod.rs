@@ -7,6 +7,7 @@ pub mod apikeys;
 mod applications;
 mod atlas;
 mod audit;
+mod autopilot;
 mod backup_targets;
 mod backups;
 mod baremetal;
@@ -1737,6 +1738,13 @@ pub fn router(state: AppState) -> Router {
             get(stacks::list_stacks).post(stacks::create_stack),
         )
         .route("/api/v1/stacks/draft", post(stacks::draft_stack))
+        .route("/api/v1/rightsizing", get(autopilot::rightsizing))
+        .route("/api/v1/rightsizing/propose", post(autopilot::propose_resize))
+        .route("/api/v1/drs/consolidation", get(autopilot::consolidation))
+        .route(
+            "/api/v1/drs/consolidation/propose",
+            post(autopilot::propose_consolidation),
+        )
         .route("/api/v1/stacks/plan", post(stacks::plan_stack))
         .route("/api/v1/stacks/propose", post(stacks::propose_stack))
         .route(

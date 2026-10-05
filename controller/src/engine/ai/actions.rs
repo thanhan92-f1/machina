@@ -394,6 +394,16 @@ pub async fn approve_and_execute(
                 .await
                 .map_err(|e| anyhow::anyhow!(e.message))
         }
+        crate::engine::rightsizing::RESIZE_ACTION => {
+            crate::engine::rightsizing::execute(state, &action.object_ref)
+                .await
+                .map_err(|e| anyhow::anyhow!(e.message))
+        }
+        crate::engine::consolidation::CONSOLIDATE_ACTION => {
+            crate::engine::consolidation::execute(state, &action.object_ref)
+                .await
+                .map_err(|e| anyhow::anyhow!(e.message))
+        }
         crate::api::vm_network_policies::PROJECT_ACTION => {
             crate::api::vm_network_policies::project_approved(
                 state,

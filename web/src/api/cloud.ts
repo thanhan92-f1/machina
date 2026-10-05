@@ -4,7 +4,17 @@
 import { platformFetch } from './platform'
 export interface Vpc { id: string; project_id: string; host_id: string; name: string; cidr: string }
 export interface Subnet { id: string; vpc_id: string; network_id: string; name: string; cidr: string; status: 'pending' | 'ready' | 'error'; last_error: string }
-export interface ScalingPolicy { min: number; max: number; desired: number; target_cpu: number | null; cooldown_secs: number }
+export interface ScalingPolicy {
+  min: number; max: number; desired: number; target_cpu: number | null; cooldown_secs: number
+  predictive?: boolean
+  scale_in?: 'stop' | 'sleep'
+  load_balancer?: { id: string; port: number } | null
+  drain_secs?: number | null
+}
+export interface GroupMember { slot: number; vm_id: string | null; name: string | null; observed_state: string | null; desired_state: string | null; draining_since: string | null }
+export interface GroupDetail { group: InstanceGroup; members: GroupMember[]; scale_in: string }
+export interface ForecastPoint { hour: number; demand: number; basis?: 'weekly' | 'daily'; needed?: number }
+export interface GroupForecast { group_id: string; predictive: boolean; target_cpu: number | null; hours_of_history: number; history: ForecastPoint[]; forecast: ForecastPoint[]; next_hour_peak: ForecastPoint | null }
 export interface InstanceGroup { id: string; project_id: string; template_id: string; subnet_id: string; name: string; policy_json: string; paused: boolean; last_scaled_at: string; last_error: string }
 export interface LaunchTemplate { id: string; project_id: string; name: string }
 export interface CloudPlan { vpc: Vpc; subnets: Subnet[]; routes: unknown[]; peerings: unknown[]; forwarding_active: boolean; backend: string; warnings: string[] }
@@ -22,4 +32,6 @@ export const listInstanceGroups = (id: string) => platformFetch<InstanceGroup[]>
 export const listLaunchTemplates = (id: string) => platformFetch<LaunchTemplate[]>(`${project(id)}/launch-templates`)
 export const createLaunchTemplate = (id: string, name: string, vm: unknown) => post<LaunchTemplate>(`${project(id)}/launch-templates`, { name, vm })
 export const createInstanceGroup = (id: string, body: { name: string; template_id: string; subnet_id: string; policy: ScalingPolicy }) => post<{ id: string }>(`${project(id)}/instance-groups`, body)
+export const getInstanceGroup = (id: string) => platformFetch<GroupDetail>(`/api/v1/cloud/instance-groups/${enc(id)}`)
+export const getGroupForecast = (id: string) => platformFetch<GroupForecast>(`/api/v1/cloud/instance-groups/${enc(id)}/forecast`)
 export const updateInstanceGroup = (id: string, policy: ScalingPolicy, paused: boolean) => platformFetch(`/api/v1/cloud/instance-groups/${enc(id)}`, { method: 'PATCH', body: JSON.stringify({ policy, paused }) })

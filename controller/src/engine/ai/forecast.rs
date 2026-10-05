@@ -8,6 +8,9 @@
 
 use std::time::Duration;
 
+use std::collections::BTreeMap;
+
+use serde::Serialize;
 use sqlx::SqlitePool;
 
 use crate::state::AppState;
@@ -62,11 +65,194 @@ pub async fn record_samples(pool: &SqlitePool) -> anyhow::Result<()> {
     .bind(now)
     .execute(pool)
     .await?;
+    sqlx::query(
+        "INSERT OR IGNORE INTO metric_samples (subject, metric, ts, value)
+         SELECT v.id, 'disk_iops', ?, m.disk_read_iops + m.disk_write_iops
+         FROM vms v JOIN vm_metrics m ON m.vm_id = v.id
+         WHERE v.observed_state = 'running'",
+    )
+    .bind(now)
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "INSERT OR IGNORE INTO metric_samples (subject, metric, ts, value)
+         SELECT v.id, 'net_bytes', ?, m.net_bytes
+         FROM vms v JOIN vm_metrics m ON m.vm_id = v.id
+         WHERE v.observed_state = 'running'",
+    )
+    .bind(now)
+    .execute(pool)
+    .await?;
+    // A group's demand: CPU percent summed over its running members, in
+    // "instances' worth" once divided by the target.
+    sqlx::query(
+        "INSERT OR IGNORE INTO metric_samples (subject, metric, ts, value)
+         SELECT 'group:' || lower(hex(gm.group_id)), 'cpu_sum', ?, SUM(m.cpu_percent)
+         FROM cloud_group_members gm
+         JOIN vms v ON v.id = gm.vm_id
+         JOIN vm_metrics m ON m.vm_id = v.id
+         WHERE v.observed_state = 'running' AND m.updated_at > datetime('now', '-5 minutes')
+         GROUP BY gm.group_id",
+    )
+    .bind(now)
+    .execute(pool)
+    .await?;
     sqlx::query("DELETE FROM metric_samples WHERE ts < ?")
         .bind(now - KEEP_SECS)
         .execute(pool)
         .await?;
+    rollup_hourly(pool, now).await?;
     Ok(())
+}
+
+/// Hourly history is kept this long, enough for four weekly periods.
+const KEEP_HOURLY_SECS: i64 = 35 * 24 * 3600;
+const HOUR: i64 = 3600;
+const DAY: i64 = 24 * HOUR;
+const WEEK: i64 = 7 * DAY;
+
+/// The subject a group's demand is recorded under.
+pub fn group_subject(id: uuid::Uuid) -> String {
+    format!("group:{}", id.simple())
+}
+
+/// Rolls the last two days of raw samples up into `metric_hourly` (complete
+/// hours only), turning the cumulative `net_bytes` counter into `net_bps`.
+pub async fn rollup_hourly(pool: &SqlitePool, now: i64) -> anyhow::Result<()> {
+    let end = now / HOUR * HOUR;
+    let start = end - 2 * DAY;
+    sqlx::query(
+        "INSERT OR REPLACE INTO metric_hourly (subject, metric, hour, avg, max, n)
+         SELECT subject, metric, ts / 3600 * 3600 AS h, AVG(value), MAX(value), COUNT(*)
+         FROM metric_samples
+         WHERE ts >= ? AND ts < ? AND metric <> 'net_bytes'
+         GROUP BY subject, metric, h",
+    )
+    .bind(start)
+    .bind(end)
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "INSERT OR REPLACE INTO metric_hourly (subject, metric, hour, avg, max, n)
+         SELECT subject, 'net_bps', ts / 3600 * 3600 AS h,
+                max(0.0, (MAX(value) - MIN(value)) * 1.0 / max(1, MAX(ts) - MIN(ts))),
+                max(0.0, (MAX(value) - MIN(value)) * 1.0 / max(1, MAX(ts) - MIN(ts))),
+                COUNT(*)
+         FROM metric_samples
+         WHERE ts >= ? AND ts < ? AND metric = 'net_bytes'
+         GROUP BY subject, h
+         HAVING COUNT(*) >= 2",
+    )
+    .bind(start)
+    .bind(end)
+    .execute(pool)
+    .await?;
+    sqlx::query("DELETE FROM metric_hourly WHERE hour < ?")
+        .bind(now - KEEP_HOURLY_SECS)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Hourly history for one subject+metric: hour start -> average (or peak).
+pub async fn hourly(
+    pool: &SqlitePool,
+    subject: &str,
+    metric: &str,
+    days: i64,
+    peak: bool,
+) -> anyhow::Result<BTreeMap<i64, f64>> {
+    let since = chrono::Utc::now().timestamp() - days * DAY;
+    let rows: Vec<(i64, f64, f64)> = sqlx::query_as(
+        "SELECT hour, avg, max FROM metric_hourly WHERE subject = ? AND metric = ? AND hour >= ?",
+    )
+    .bind(subject)
+    .bind(metric)
+    .bind(since)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(h, a, m)| (h, if peak { m } else { a }))
+        .collect())
+}
+
+/// [`hourly`] for a VM, whose samples are keyed by its id as stored in `vms`.
+pub async fn hourly_vm(
+    pool: &SqlitePool,
+    vm: uuid::Uuid,
+    metric: &str,
+    days: i64,
+    peak: bool,
+) -> anyhow::Result<BTreeMap<i64, f64>> {
+    let since = chrono::Utc::now().timestamp() - days * DAY;
+    let rows: Vec<(i64, f64, f64)> = sqlx::query_as(
+        "SELECT hour, avg, max FROM metric_hourly WHERE subject = ? AND metric = ? AND hour >= ?",
+    )
+    .bind(vm)
+    .bind(metric)
+    .bind(since)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(h, a, m)| (h, if peak { m } else { a }))
+        .collect())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct Seasonal {
+    pub value: f64,
+    /// "weekly": the same hour in earlier weeks; "daily": the same hour on earlier days.
+    pub basis: &'static str,
+    /// How many earlier periods the value is the mean of.
+    pub periods: usize,
+}
+
+/// The value expected in the hour starting at `at`: the mean of the same hour
+/// of the week over the last four weeks when at least two are known, else the
+/// same hour of the day over the last week when at least three are known.
+pub fn seasonal_at(hourly: &BTreeMap<i64, f64>, at: i64) -> Option<Seasonal> {
+    let at = at / HOUR * HOUR;
+    let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;
+    let weekly: Vec<f64> = (1..=4)
+        .filter_map(|k| hourly.get(&(at - k * WEEK)).copied())
+        .collect();
+    if weekly.len() >= 2 {
+        return Some(Seasonal {
+            value: mean(&weekly),
+            basis: "weekly",
+            periods: weekly.len(),
+        });
+    }
+    let daily: Vec<f64> = (1..=7)
+        .filter_map(|k| hourly.get(&(at - k * DAY)).copied())
+        .collect();
+    (daily.len() >= 3).then(|| Seasonal {
+        value: mean(&daily),
+        basis: "daily",
+        periods: daily.len(),
+    })
+}
+
+/// The highest expected value over the hour containing `now` and the next
+/// `hours` hours, with the hour it falls in.
+pub fn seasonal_peak(hourly: &BTreeMap<i64, f64>, now: i64, hours: i64) -> Option<(i64, Seasonal)> {
+    (0..=hours)
+        .filter_map(|k| {
+            let h = now / HOUR * HOUR + k * HOUR;
+            seasonal_at(hourly, h).map(|s| (h, s))
+        })
+        .max_by(|a, b| a.1.value.total_cmp(&b.1.value))
+}
+
+/// Expected peak demand (summed CPU percent) for a scaling group over the
+/// next hour, from the hourly peaks of its history.
+pub async fn group_demand_peak(pool: &SqlitePool, group: uuid::Uuid) -> Option<f64> {
+    let h = hourly(pool, &group_subject(group), "cpu_sum", 35, true)
+        .await
+        .ok()?;
+    seasonal_peak(&h, chrono::Utc::now().timestamp(), 1).map(|(_, s)| s.value)
 }
 
 /// Recent samples for one subject+metric as (epoch seconds, value), oldest first.
@@ -249,6 +435,39 @@ mod tests {
     fn far_future_crossings_are_dropped() {
         // +0.0001/hour needs ~months to reach the limit
         assert!(time_to_threshold(&line(48, 1800, 0.10, 0.0001), 0.95).is_none());
+    }
+
+    #[test]
+    fn seasonal_prefers_weekly_then_daily() {
+        let now = 100 * WEEK + 10 * HOUR + 600;
+        let at = now / HOUR * HOUR;
+        let mut h = BTreeMap::new();
+        h.insert(at - DAY, 30.0);
+        h.insert(at - 2 * DAY, 40.0);
+        assert_eq!(seasonal_at(&h, at), None);
+        h.insert(at - 3 * DAY, 50.0);
+        let d = seasonal_at(&h, at).unwrap();
+        assert_eq!((d.basis, d.periods, d.value), ("daily", 3, 40.0));
+        h.insert(at - WEEK, 200.0);
+        h.insert(at - 2 * WEEK, 100.0);
+        let w = seasonal_at(&h, at).unwrap();
+        assert_eq!((w.basis, w.periods, w.value), ("weekly", 2, 150.0));
+    }
+
+    #[test]
+    fn seasonal_peak_finds_the_coming_rush() {
+        let now = 50 * WEEK + 8 * HOUR + 1800;
+        let mut h = BTreeMap::new();
+        for d in 1..=5 {
+            let day = now / HOUR * HOUR - d * DAY;
+            h.insert(day, 20.0);
+            h.insert(day + HOUR, 180.0);
+            h.insert(day + 2 * HOUR, 30.0);
+        }
+        let (hour, s) = seasonal_peak(&h, now, 1).unwrap();
+        assert_eq!(hour, now / HOUR * HOUR + HOUR);
+        assert_eq!(s.value, 180.0);
+        assert_eq!(seasonal_peak(&BTreeMap::new(), now, 1), None);
     }
 
     #[test]

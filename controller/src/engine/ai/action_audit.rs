@@ -63,6 +63,14 @@ pub fn undo_kind(action_type: &str, before: &serde_json::Value) -> Option<&'stat
         {
             Some("start_vm")
         }
+        crate::engine::rightsizing::RESIZE_ACTION
+            if before
+                .get("vcpus")
+                .and_then(|v| v.as_i64())
+                .is_some_and(|v| v > 0) =>
+        {
+            Some("resize_back")
+        }
         crate::api::stacks::DEPLOY_ACTION
             if before.get("stack_id").is_some_and(|v| v.is_string()) =>
         {
@@ -78,6 +86,15 @@ pub fn undo_kind(action_type: &str, before: &serde_json::Value) -> Option<&'stat
 
 /// Snapshot the machine just before an action runs. Best effort: never blocks the action.
 pub async fn record_before(state: &AppState, action: &ZyraActionRow) {
+    if action.action_type == crate::engine::rightsizing::RESIZE_ACTION {
+        let snapshot = crate::engine::rightsizing::before(state, &action.object_ref).await;
+        let _ = sqlx::query("UPDATE ai_actions SET before_state = ? WHERE id = ?")
+            .bind(&snapshot)
+            .bind(action.id)
+            .execute(&state.pool)
+            .await;
+        return;
+    }
     if action.action_type == crate::api::stacks::DEPLOY_ACTION {
         let snapshot = crate::api::stacks::deploy_before(state, &action.object_ref).await;
         let _ = sqlx::query("UPDATE ai_actions SET before_state = ? WHERE id = ?")
@@ -184,6 +201,12 @@ pub async fn history(state: &AppState, limit: i64) -> anyhow::Result<Vec<ActionH
 async fn check(state: &AppState, action: &ZyraActionRow) -> (&'static str, String) {
     if action.action_type == crate::api::stacks::DEPLOY_ACTION {
         return crate::api::stacks::deploy_check(state, &action.object_ref).await;
+    }
+    if action.action_type == crate::engine::rightsizing::RESIZE_ACTION {
+        return crate::engine::rightsizing::check(state, &action.object_ref).await;
+    }
+    if action.action_type == crate::engine::consolidation::CONSOLIDATE_ACTION {
+        return crate::engine::consolidation::check(state, &action.object_ref).await;
     }
     let Some(vm_id) = vm_id_of(&action.object_ref) else {
         return (
@@ -340,6 +363,9 @@ pub async fn undo(
         "delete_stack" | "revert_stack" => crate::api::stacks::deploy_undo(state, actor, &before)
             .await
             .map_err(|e| anyhow::anyhow!(e.message))?,
+        "resize_back" => crate::engine::rightsizing::undo(state, &before)
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?,
         "disable_ha" => {
             let vm_id = vm_id()?;
             crate::engine::template::upsert_ha_policy(
@@ -482,6 +508,19 @@ mod tests {
             Some("revert_stack")
         );
         assert_eq!(undo_kind("stack.deploy", &serde_json::json!({})), None);
+    }
+
+    #[test]
+    fn resizes_undo_to_the_recorded_size_and_consolidation_does_not() {
+        assert_eq!(
+            undo_kind(
+                "vm.resize",
+                &serde_json::json!({ "vm_id": "x", "vcpus": 4, "memory_mib": 8192 })
+            ),
+            Some("resize_back")
+        );
+        assert_eq!(undo_kind("vm.resize", &serde_json::json!(null)), None);
+        assert_eq!(undo_kind("drs.consolidate", &serde_json::json!({})), None);
     }
 
     #[test]
