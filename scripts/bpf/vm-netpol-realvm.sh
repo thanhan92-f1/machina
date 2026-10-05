@@ -9,7 +9,9 @@
 # then the fleet phase through the controller: Fleet Cloud project
 # isolation, an egress allowlist, a project egress IP over IPv4 and IPv6 (seen
 # from a TEST-NET netns on the host; IPv6 is skipped on a host with its own IPv6
-# default route) and a project change approved by a second, temporary admin.
+# default route), a project change approved by a second, temporary admin and
+# scale to zero (managed save, woken by a request from the host and from the
+# other VM).
 # Creates np-client / np-server and deletes them, the policies, the proxy
 # secret, the temporary admin and the base image on exit; the edge is always
 # returned to observe.
@@ -83,6 +85,7 @@ cleanup() {
     sudo -n rm -rf "$SECRET_DIR"
     for v in "${VMS[@]}"; do
         sudo -n virsh destroy "$v" >/dev/null 2>&1
+        sudo -n virsh managedsave-remove "$v" >/dev/null 2>&1
         sudo -n virsh undefine "$v" --nvram >/dev/null 2>&1 || sudo -n virsh undefine "$v" >/dev/null 2>&1
         sudo -n rm -f "$POOL/$v.qcow2" "$POOL/$v-seed.iso"
         "$M" vm label "$v" app- >/dev/null 2>&1
@@ -693,6 +696,74 @@ approval_in_evidence() {
 }
 check "approval in evidence (requester and approver)" approval_in_evidence
 check "re-isolate np-red" FM project isolate np-red
+
+echo "== fleet: scale to zero =="
+sp_json() { NP_JSON=1 "$M" vm sleep-policy np-server 2>/dev/null; }
+saved() {
+    for _ in $(seq 90); do
+        [[ "$(sudo -n virsh domstate np-server 2>/dev/null)" == "shut off" ]] \
+            && sudo -n virsh dominfo np-server | grep -Eq 'Managed save: +yes' && return
+        sleep 1
+    done
+    { echo "      state: $(sudo -n virsh domstate np-server --reason 2>&1)"
+      sudo -n virsh dominfo np-server 2>&1 | grep -i 'managed'
+      bpfd '{"op":"vm_wake_status"}' | jq -c '.wakes[-3:]'; } | sed 's/^/      /' >&3
+    return 1
+}
+wake_listed() {
+    for _ in $(seq 60); do
+        bpfd '{"op":"vm_wake_status"}' | jq -e --arg s "$SIP" '.entries[] | select(.vm == "np-server") | .addresses | index($s)' >/dev/null && return
+        sleep 1
+    done
+    return 1
+}
+desired() { for _ in $(seq 90); do [[ "$(sp_json | jq -r .desired_state)" == "$1" ]] && return; sleep 2; done; return 1; }
+# The quarantine phase's client → server SSH session keeps retransmitting,
+# which would (rightly) wake the server.
+cssh "pkill -x ssh" >/dev/null 2>&1
+check "sleep np-server" "$M" vm sleep np-server
+check "np-server managed-saved (shut off with a managed save)" saved
+check "controller: np-server desired sleeping" desired sleeping
+check "bpfd wake set lists np-server with its address" wake_listed
+check "host neighbor entry for np-server pinned while asleep" bash -c "ip neigh show '$SIP' | grep -q PERMANENT"
+check "fleet summary lists np-server and the RAM handed back" bash -c "'$M' vm sleeping | grep -q np-server"
+asleep_quiet() {
+    sleep 20
+    [[ "$(sudo -n virsh domstate np-server 2>/dev/null)" == "shut off" ]] && return
+    bpfd '{"op":"vm_wake_status"}' | jq -c '.wakes[-2:]' | sed 's/^/      /' >&3
+    return 1
+}
+check "stays asleep with no traffic for it (20 s)" asleep_quiet
+T0=$(date +%s%N)
+woke_http() { curl -fs -m 40 "http://$SIP/ok" | grep -q ok; }
+check "first request to the sleeping VM wakes it and is answered" woke_http
+echo "      first request answered after $(( ($(date +%s%N) - T0) / 1000000 )) ms"
+check "agent logged the restore, woken by the host's request" bash -c "sudo -n journalctl -u machina-agent --since '-3min' --no-pager | grep 'wake: restored sleeping vm' | tail -1 | grep -q 'via=\"host\"'"
+check "controller: np-server desired running again" desired running
+unlisted() {
+    for _ in $(seq 60); do
+        bpfd '{"op":"vm_wake_status"}' | jq -e '[.entries[] | select(.vm == "np-server")] | length == 0' >/dev/null && return
+        sleep 2
+    done
+    return 1
+}
+check "woken VM leaves the wake set" unlisted
+check "neighbor pin released on wake" bash -c "! ip neigh show '$SIP' | grep -q PERMANENT"
+check "wake (traffic) in the VM's sleep history" bash -c "NP_JSON=1 '$M' vm sleep-policy np-server | jq -e '[.events[] | select(.kind == \"wake\" and .reason == \"traffic\")] | length > 0'"
+check "sleep np-server again" "$M" vm sleep np-server
+check "managed-saved again" saved
+check "listed again" wake_listed
+cssh "curl -s -m 40 -o /dev/null http://$SIP/ok" >/dev/null 2>&1 &
+PEER_PID=$!
+woke_peer() { for _ in $(seq 40); do [[ "$(sudo -n virsh domstate np-server 2>/dev/null)" == running ]] && return; sleep 1; done; return 1; }
+check "a request from a VM on the same bridge wakes it" woke_peer
+check "the peer wake came in through bridge ARP" bash -c "sudo -n journalctl -u machina-agent --since '-2min' --no-pager | grep 'wake: restored sleeping vm' | tail -1 | grep -q 'via=\"arp\"'"
+wait "$PEER_PID"
+check "controller: running after the peer wake" desired running
+check "auto-sleep policy: 15 min" "$M" vm sleep-policy np-server 15
+check "policy reads back 15 min" bash -c "NP_JSON=1 '$M' vm sleep-policy np-server | jq -e '.effective_minutes == 15'"
+check "a policy under 5 minutes is refused" bash -c "! '$M' vm sleep-policy np-server 2"
+check "auto-sleep policy: never" "$M" vm sleep-policy np-server never
 
 echo "passed=$P failed=$F"
 [[ $F -eq 0 ]]

@@ -1251,6 +1251,47 @@ pub struct VmOverlayStatus {
     pub hostname: Option<String>,
 }
 
+/// A sleeping VM and the addresses whose traffic wakes it.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmWakeEntry {
+    pub vm: String,
+    #[serde(default)]
+    pub addresses: Vec<String>,
+}
+
+/// The host's wake set: every sleeping (managed-saved) VM. Traffic to one
+/// of its addresses publishes a `vm_wake` stream event.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmWake {
+    #[serde(default)]
+    pub entries: Vec<VmWakeEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmWakeEvent {
+    pub vm: String,
+    pub address: String,
+    /// Which hook saw the packet: "host" (sent by the host), "forward"
+    /// (routed or DNATed) or "arp" (a peer on the same bridge).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub via: String,
+    /// Unix seconds.
+    pub at: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct VmWakeStatus {
+    #[serde(default)]
+    pub entries: Vec<VmWakeEntry>,
+    /// Most recent wakes, newest last.
+    #[serde(default)]
+    pub wakes: Vec<VmWakeEvent>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
+}
+
 /// QEMU sandbox settings (device allowlist + egress ports). Enforcement
 /// also needs the bpfd enforcement lease.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -2284,6 +2325,11 @@ pub enum Request {
         config: VmOverlay,
     },
     VmOverlayStatus,
+    /// Replace the wake set (nftables tables `machina_wake`).
+    VmWakeSet {
+        config: VmWake,
+    },
+    VmWakeStatus,
     VmSandboxConfigure {
         config: VmSandboxConfig,
     },

@@ -32,6 +32,9 @@ CPU scaling, and the explicit routing/peering limitations.
 
 | | |
 |---|---|
+| **Scale to zero** | Idle VMs sleep (memory saved to disk, RAM handed back to the host) and wake on the first packet sent to them. [How →](docs/fleet-cloud-features.md#scale-to-zero) |
+| **Time travel** | Fork a running VM in seconds, with or without its RAM; scheduled restore points and one-click rewind. [How →](docs/fleet-cloud-features.md#time-travel) |
+| **Stacks you describe** | Say what you want in a sentence; get a template, a dry run (quota, placement, cost, policy replay), an approval, then a stack that heals its own drift. [How →](docs/fleet-cloud-features.md#stacks-you-describe) |
 | **Boot Doctor** | A VM that won't boot gets diagnosed and repaired offline through GuestKit, with a backup taken first. |
 | **VM quarantine** | Isolate a suspect VM in the eBPF datapath under a time-boxed lease that lapses on its own. |
 | **Just-in-time access** | Open a VM's network for a set time, with two-person approval and automatic expiry. |
@@ -77,6 +80,9 @@ CPU scaling, and the explicit routing/peering limitations.
 | Browser consoles | Built into the daemon | noVNC/SPICE proxy services |
 | HA failover and DRS | Built in ([controller HA](docs/controller-ha.md)) | Masakari + Watcher (separate projects) |
 | AI operations | Zyra AI, approval-gated | Not included |
+| Idle VMs | [Scale to zero](docs/fleet-cloud-features.md#scale-to-zero): sleep when idle, wake on the first packet | Shelve and unshelve by hand |
+| Copies and rollback | [Time travel](docs/fleet-cloud-features.md#time-travel): live fork (optionally with RAM), restore points, rewind in place | Snapshot uploads a full image to Glance; rebuild from it |
+| Orchestration | [Stacks](docs/fleet-cloud-features.md#stacks-you-describe) drafted from a description, dry-run with cost and policy replay, approved, then kept in sync every minute | Heat: hand-written HOT templates; no drift repair |
 | Containers and Kubernetes | Podman, KubeVirt | Zun / Magnum (separate projects) |
 | **Choose OpenStack when** | | You run thousands of tenants, need Neutron-grade SDN breadth, or depend on its ecosystem |
 
@@ -106,7 +112,7 @@ Add hypervisors with a gRPC agent over TLS. The controller keeps desired state, 
 
 ### Fleet Cloud: self-service like a public cloud
 
-Flavors, images, instances, volumes and snapshots, security groups, keypairs, floating IPs, server groups, Heat-style stacks, projects and load balancers, all native controller APIs. [Fleet Cloud →](docs/customer/pages/fleet-cloud/fleet-cloud.md)
+Flavors, images, instances, volumes and snapshots, security groups, keypairs, floating IPs, server groups, Heat-style stacks, projects and load balancers, all native controller APIs. Beyond that, idle instances can scale to zero and wake on traffic. [Fleet Cloud →](docs/customer/pages/fleet-cloud/fleet-cloud.md) · [Features OpenStack doesn't have →](docs/fleet-cloud-features.md)
 
 ![Fleet Cloud](docs/ux/machina-fleet-cloud-dark.png)
 

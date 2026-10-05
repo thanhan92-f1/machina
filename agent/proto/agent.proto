@@ -74,6 +74,13 @@ service HostAgent {
   rpc ListHostGpus(ListHostGpusRequest) returns (ListHostGpusResponse);
   rpc SetLoadBalancer(SetLoadBalancerRequest) returns (SetLoadBalancerResponse);
   rpc DeleteLoadBalancer(DeleteLoadBalancerRequest) returns (DeleteLoadBalancerResponse);
+  // Restore points and forks on qcow2 backing chains (machina_core::libvirt::fork).
+  rpc ForkVm(ForkVmRequest) returns (ForkVmResponse);
+  rpc RestorePointCreate(RestorePointCreateRequest) returns (RestorePointCreateResponse);
+  rpc RestorePointRewind(RestorePointRewindRequest) returns (RestorePointRewindResponse);
+  rpc RestorePointMerge(RestorePointMergeRequest) returns (RestorePointMergeResponse);
+  rpc RestorePointDiscard(RestorePointDiscardRequest) returns (RestorePointDiscardResponse);
+  rpc DetachFork(DetachForkRequest) returns (DetachForkResponse);
 }
 
 message RegisterRequest {
@@ -115,6 +122,8 @@ message VmSummary {
   string guest_ip = 10;
   // Every guest address seen (all NICs, IPv4 then IPv6).
   repeated string guest_ips = 11;
+  // Cumulative rx+tx bytes across every guest NIC since the domain started.
+  uint64 net_bytes = 12;
 }
 
 message ListVmsRequest {}
@@ -899,3 +908,73 @@ message ListHostGpusResponse {
   repeated HostGpuDevice devices = 1;
   string nvidia_smi_summary = 2;
 }
+
+message DiskLayer {
+  string target = 1;
+  string file = 2;
+}
+
+message ForkVmRequest {
+  string source_name = 1;
+  string new_name = 2;
+  /// Empty: freeze the source now (a live fork).
+  repeated DiskLayer layers = 3;
+  bool memory = 4;
+  bool isolate = 5;
+  bool reseed = 6;
+  bool start = 7;
+  string label = 8;
+}
+
+message ForkVmResponse {
+  string uuid = 1;
+  repeated DiskLayer frozen = 2;
+  repeated DiskLayer disks = 3;
+  bool quiesced = 4;
+  bool reseeded = 5;
+  bool running = 6;
+}
+
+message RestorePointCreateRequest {
+  string vm_name = 1;
+  string label = 2;
+}
+
+message RestorePointCreateResponse {
+  repeated DiskLayer layers = 1;
+  bool quiesced = 2;
+}
+
+message RestorePointRewindRequest {
+  string vm_name = 1;
+  repeated DiskLayer layers = 2;
+  string label = 3;
+  repeated string discard = 4;
+}
+
+message RestorePointRewindResponse {
+  repeated DiskLayer disks = 1;
+  bool restarted = 2;
+}
+
+message RestorePointMergeRequest {
+  string vm_name = 1;
+  repeated DiskLayer top = 2;
+  repeated DiskLayer base = 3;
+}
+
+message RestorePointMergeResponse {}
+
+message RestorePointDiscardRequest {
+  repeated string files = 1;
+}
+
+message RestorePointDiscardResponse {
+  uint32 removed = 1;
+}
+
+message DetachForkRequest {
+  string vm_name = 1;
+}
+
+message DetachForkResponse {}

@@ -53,6 +53,7 @@ mod vmauth;
 mod vmintel;
 mod vml7;
 mod vmproxy;
+mod wake;
 
 pub use listen::{run, Config};
 
@@ -284,6 +285,7 @@ struct Engine {
     scx: scx::ScxRuntime,
     egress: egress::EgressRuntime,
     overlay: overlay::OverlayRuntime,
+    wake: wake::WakeRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -384,6 +386,7 @@ impl Engine {
             scx: scx::ScxRuntime::default(),
             egress: egress::EgressRuntime::default(),
             overlay: overlay::OverlayRuntime::default(),
+            wake: wake::WakeRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

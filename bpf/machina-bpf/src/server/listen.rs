@@ -78,6 +78,8 @@ struct Persisted {
     vm_egress_managed: Vec<(std::net::IpAddr, String)>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     vm_overlay: Option<VmOverlay>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    vm_wake: Option<VmWake>,
 }
 
 struct Daemon {
@@ -140,6 +142,10 @@ impl Daemon {
                 .config
                 .enabled
                 .then(|| eng.overlay.config.clone()),
+            vm_wake: {
+                let w = eng.wake.config();
+                (!w.entries.is_empty()).then_some(w)
+            },
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -226,6 +232,11 @@ impl Daemon {
         if let Some(cfg) = p.vm_overlay {
             if let Err(e) = eng.vm_overlay_set(cfg) {
                 tracing::warn!("restore overlay: {e:#}");
+            }
+        }
+        if let Some(cfg) = p.vm_wake {
+            if let Err(e) = eng.wake.set(cfg) {
+                tracing::warn!("restore wake set: {e:#}");
             }
         }
         for q in p.vm_quarantines {
@@ -564,6 +575,13 @@ impl Daemon {
                 v(&st)
             }
             Request::VmOverlayStatus => v(&lock(&self.engine).vm_overlay_status()),
+            Request::VmWakeSet { config } => {
+                let eng = lock(&self.engine);
+                let st = eng.wake.set(config)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmWakeStatus => v(&lock(&self.engine).wake.status()),
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;
@@ -872,6 +890,7 @@ pub async fn run(cfg: Config) -> Result<()> {
     eng.vmauth.set_dir(cfg.state_dir.join("auth"));
     eng.threat_set_path(cfg.state_dir.join("threat-feeds.json"));
     eng.overlay.dir = Some(cfg.state_dir.join("overlay"));
+    eng.wake.spawn_poller(bus.clone());
     {
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("NET_EVENTS")?, "net", move |x| {

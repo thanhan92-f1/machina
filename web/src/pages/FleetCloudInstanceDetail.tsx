@@ -23,6 +23,8 @@ import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
 import InstanceIsolation from '../components/flow/InstanceIsolation'
+import InstanceSleep from '../components/flow/InstanceSleep'
+import InstanceTimeTravel from '../components/flow/InstanceTimeTravel'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusActionLinkClasses } from '../utils/semanticColors'
@@ -79,7 +81,7 @@ function FleetCloudInstanceDetailContent() {
 
   useEffect(() => { void load() }, [load])
 
-  if (loading) return <PageSkeleton />
+  if (loading && vm?.id !== id) return <PageSkeleton />
   if (!vm) {
     return (
       <div className="space-y-4">
@@ -139,6 +141,16 @@ function FleetCloudInstanceDetailContent() {
           <div className="sm:col-span-2"><dt className="text-xs text-[var(--text-muted)] uppercase">Last error</dt><dd className="mt-1 text-red-600">{vm.last_error}</dd></div>
         )}
       </dl>
+
+      <InstanceSleep vmId={vm.id} onChanged={() => void load()} />
+
+      <InstanceTimeTravel
+        key={vm.id}
+        vmId={vm.id}
+        vmName={vm.name}
+        running={vm.observed_state === 'running'}
+        onChanged={() => void load()}
+      />
 
       <InstanceIsolation vmName={vm.name} project={vm.project} />
 

@@ -274,13 +274,27 @@ pub async fn pick_host_for_vm(
     }
 
     let anti_map = host_anti_affinity_map(pool).await?;
+    choose_host(&hosts, &anti_map, &placement_policy, vm_tags, memory_mib)
+        .map(|(id, _)| id)
+        .ok_or_else(|| anyhow::anyhow!("no suitable host for placement"))
+}
 
+type AntiMap = std::collections::HashMap<Uuid, std::collections::HashSet<String>>;
+
+/// The best host and whether it breaks anti-affinity (only when every host would).
+fn choose_host(
+    hosts: &[HostCandidate],
+    anti_map: &AntiMap,
+    placement_policy: &str,
+    vm_tags: &[String],
+    memory_mib: i64,
+) -> Option<(Uuid, bool)> {
     // Prefer a host that doesn't violate anti-affinity, but keep the best overall as
     // a fallback so placement still succeeds when every host would violate (better to
     // place with a co-location than to fail the create).
     let mut best_ok: Option<(Uuid, f32)> = None;
     let mut best_any: Option<(Uuid, f32)> = None;
-    for h in &hosts {
+    for h in hosts {
         // Hard capacity guard: never place a VM on a host that doesn't actually
         // have enough free memory for it, no matter how good its (percentage-
         // based) score looks. Without this a host could be picked purely on
@@ -290,7 +304,7 @@ pub async fn pick_host_for_vm(
             continue;
         }
         let mem_pct = pct(h.memory_used_mib, h.memory_total_mib);
-        let mut score = dest_score(&placement_policy, h.cpu_percent, mem_pct, h.vm_count);
+        let mut score = dest_score(placement_policy, h.cpu_percent, mem_pct, h.vm_count);
         if score <= 0.0 {
             continue;
         }
@@ -305,11 +319,62 @@ pub async fn pick_host_for_vm(
             best_ok = Some((h.id, score));
         }
     }
-
     best_ok
-        .or(best_any)
-        .map(|(id, _)| id)
-        .ok_or_else(|| anyhow::anyhow!("no suitable host for placement"))
+        .map(|(id, _)| (id, false))
+        .or(best_any.map(|(id, _)| (id, true)))
+}
+
+/// A VM to place in [`simulate_placement`].
+pub struct PlacementAsk {
+    pub name: String,
+    pub tags: Vec<String>,
+    pub memory_mib: i64,
+}
+
+/// Where each VM would land if created in this order, counting the memory and
+/// anti-affinity of the ones placed before it. Creates nothing.
+pub async fn simulate_placement(
+    pool: &SqlitePool,
+    asks: &[PlacementAsk],
+) -> anyhow::Result<Vec<(String, Option<(Uuid, String)>, bool)>> {
+    let placement_policy: String =
+        sqlx::query_scalar("SELECT placement_policy FROM clusters ORDER BY created_at LIMIT 1")
+            .fetch_one(pool)
+            .await
+            .unwrap_or_else(|_| "balanced".into());
+    let mut hosts: Vec<HostCandidate> = sqlx::query_as(
+        "SELECT id, cpu_percent, memory_used_mib, memory_total_mib, vm_count,
+                COALESCE(tags, '[]') AS tags
+         FROM hosts WHERE state = 'online' AND maintenance_mode = FALSE AND schedulable = TRUE",
+    )
+    .fetch_all(pool)
+    .await?;
+    let names: std::collections::HashMap<Uuid, String> =
+        sqlx::query_as::<_, (Uuid, String)>("SELECT id, hostname FROM hosts")
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .collect();
+    let mut anti_map = host_anti_affinity_map(pool).await?;
+    let mut out = Vec::with_capacity(asks.len());
+    for a in asks {
+        match choose_host(&hosts, &anti_map, &placement_policy, &a.tags, a.memory_mib) {
+            Some((id, violates)) => {
+                if let Some(h) = hosts.iter_mut().find(|h| h.id == id) {
+                    h.memory_used_mib += a.memory_mib;
+                    h.vm_count += 1;
+                }
+                anti_map
+                    .entry(id)
+                    .or_default()
+                    .extend(anti_affinity_tags(&a.tags));
+                let host = names.get(&id).cloned().unwrap_or_else(|| id.to_string());
+                out.push((a.name.clone(), Some((id, host)), violates));
+            }
+            None => out.push((a.name.clone(), None, false)),
+        }
+    }
+    Ok(out)
 }
 
 fn tag_affinity_score(vm_tags: &[String], host_tags: &[String]) -> f32 {
@@ -350,9 +415,7 @@ fn violates_anti_affinity(
 }
 
 /// host_id -> anti-affinity tags of the running VMs currently on it.
-async fn host_anti_affinity_map(
-    pool: &SqlitePool,
-) -> anyhow::Result<std::collections::HashMap<Uuid, std::collections::HashSet<String>>> {
+async fn host_anti_affinity_map(pool: &SqlitePool) -> anyhow::Result<AntiMap> {
     let rows: Vec<(Uuid, sqlx::types::Json<Vec<String>>)> = sqlx::query_as(
         "SELECT host_id, COALESCE(tags, '[]') AS tags
          FROM vms WHERE desired_state = 'running' AND host_id IS NOT NULL",

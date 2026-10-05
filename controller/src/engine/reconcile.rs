@@ -219,6 +219,9 @@ mod tests {
         assert_eq!(reconcile_action("stopped", "paused"), Some("stop"));
         assert_eq!(reconcile_action("stopped", "pmsuspended"), Some("stop"));
         assert_eq!(reconcile_action("stopped", "shutoff"), None);
+        // Sleeping (managed-saved) VMs are woken by traffic, never by reconcile.
+        assert_eq!(reconcile_action("sleeping", "shutoff"), None);
+        assert_eq!(reconcile_action("sleeping", "running"), None);
     }
 
     async fn seed_vm(pool: &sqlx::SqlitePool, desired: &str, observed: &str) -> Uuid {

@@ -20,6 +20,7 @@ pub mod emulator;
 pub mod extra_devices;
 pub mod extras;
 pub mod filesystem;
+pub mod fork;
 pub mod firmware;
 pub mod graphics_convert;
 pub mod guest_agent;

@@ -37,8 +37,11 @@ interface TaskResponse {
 
 /** Best-effort display status derived from observed_state/lifecycle_phase — native
  * VMs don't have a single Nova-style status enum (ACTIVE/SHUTOFF/BUILD/ERROR). */
-export function vmDisplayStatus(vm: Pick<NativeVm, 'observed_state' | 'lifecycle_phase' | 'last_error'>): string {
+export function vmDisplayStatus(
+  vm: Pick<NativeVm, 'observed_state' | 'lifecycle_phase' | 'last_error'> & Partial<Pick<NativeVm, 'desired_state'>>,
+): string {
   if (vm.last_error) return 'ERROR'
+  if (vm.desired_state === 'sleeping' && !['running', 'blocked'].includes(vm.observed_state.toLowerCase())) return 'SLEEPING'
   if (vm.lifecycle_phase && vm.lifecycle_phase !== 'ready') return vm.lifecycle_phase.toUpperCase()
   const s = vm.observed_state.toLowerCase()
   if (s === 'running') return 'ACTIVE'
@@ -56,6 +59,8 @@ interface CreateFromTemplateBody {
   cloud_init_user?: string
   cloud_init_password?: string
   cloud_init_ssh_pubkey?: string
+  /** Scale to zero after this many idle minutes; 0 = never, omit = project default. */
+  sleep_after_minutes?: number
 }
 
 /** POST /api/v1/vms/from-template — boots an instance from a native image
@@ -93,6 +98,132 @@ export function stopVm(id: string): Promise<TaskResponse> {
 
 export function rebootVm(id: string): Promise<TaskResponse> {
   return platformFetch<TaskResponse>(`/api/v1/vms/${encodeURIComponent(id)}/reboot`, { method: 'POST' })
+}
+
+/** Scale-to-zero: managed-save the guest; traffic to its addresses restores it. */
+export function sleepVm(id: string): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`/api/v1/vms/${encodeURIComponent(id)}/sleep`, { method: 'POST' })
+}
+
+export function wakeVm(id: string): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`/api/v1/vms/${encodeURIComponent(id)}/wake`, { method: 'POST' })
+}
+
+export function isSleeping(vm: Pick<NativeVm, 'desired_state'>): boolean {
+  return vm.desired_state === 'sleeping'
+}
+
+export interface SleepEvent {
+  kind: 'sleep' | 'wake' | string
+  reason: string
+  at: string
+}
+
+export interface SleepPolicy {
+  vm_id: string
+  desired_state: string
+  observed_state: string
+  sleep_after_minutes: number | null
+  project: string | null
+  project_default: number | null
+  effective_minutes: number
+  last_active_at: string | null
+  idle_minutes: number | null
+  slept_at: string | null
+  wakeable: boolean
+  events: SleepEvent[]
+}
+
+export function getSleepPolicy(id: string): Promise<SleepPolicy> {
+  return platformFetch<SleepPolicy>(`/api/v1/vms/${encodeURIComponent(id)}/sleep-policy`)
+}
+
+/** `null` inherits the project default, `0` never sleeps. */
+export function setSleepPolicy(id: string, sleepAfterMinutes: number | null): Promise<SleepPolicy> {
+  return platformFetch<SleepPolicy>(`/api/v1/vms/${encodeURIComponent(id)}/sleep-policy`, {
+    method: 'PUT',
+    body: JSON.stringify({ sleep_after_minutes: sleepAfterMinutes }),
+  })
+}
+
+export interface SleepSummary {
+  sleeping: { id: string; name: string; host_id: string | null; project: string | null; memory_mib: number; vcpus: number; slept_at: string | null }[]
+  memory_freed_mib: number
+  vcpus_freed: number
+  auto_sleep_vms: number
+  wakes_24h: number
+  sleeps_24h: number
+  recent: { vm_id: string; vm_name: string; kind: string; reason: string; at: string }[]
+}
+
+export function getSleepSummary(): Promise<SleepSummary> {
+  return platformFetch<SleepSummary>('/api/v1/sleep/summary')
+}
+
+export interface RestorePoint {
+  id: string
+  label: string
+  kind: 'manual' | 'scheduled' | 'fork' | string
+  note: string | null
+  quiesced: boolean
+  created_at: string
+  layers: { target: string; file: string }[]
+  /** Forks whose disks sit on this point. */
+  forks: string[]
+}
+
+export interface TimeTravel {
+  vm_id: string
+  every_minutes: number | null
+  keep: number
+  /** Oldest first. */
+  points: RestorePoint[]
+  forks: { vm_id: string; name: string | null; restore_point_id: string | null; memory: boolean; isolated: boolean; created_at: string }[]
+  fork_of: { vm_id: string; name: string | null; restore_point_id: string | null; memory: boolean; isolated: boolean } | null
+}
+
+const vmPath = (id: string) => `/api/v1/vms/${encodeURIComponent(id)}`
+
+export function getTimeTravel(id: string): Promise<TimeTravel> {
+  return platformFetch<TimeTravel>(`${vmPath(id)}/restore-points`)
+}
+
+export function createRestorePoint(id: string, note?: string): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`${vmPath(id)}/restore-points`, {
+    method: 'POST',
+    body: JSON.stringify({ note: note || null }),
+  })
+}
+
+/** `everyMinutes` 0 turns scheduled restore points off. */
+export function setRestorePointPolicy(id: string, everyMinutes: number, keep?: number): Promise<TimeTravel> {
+  return platformFetch<TimeTravel>(`${vmPath(id)}/restore-points/policy`, {
+    method: 'PUT',
+    body: JSON.stringify({ every_minutes: everyMinutes, keep }),
+  })
+}
+
+export function rewindVm(id: string, pointId: string): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`${vmPath(id)}/restore-points/${encodeURIComponent(pointId)}/rewind`, { method: 'POST' })
+}
+
+export interface ForkOptions {
+  name: string
+  /** Omit to fork the instance as it is right now. */
+  restore_point_id?: string
+  /** Copy RAM too; the fork runs on an isolated network with the same addresses. */
+  memory?: boolean
+  isolate?: boolean
+  reseed?: boolean
+  start?: boolean
+}
+
+export function forkVm(id: string, opts: ForkOptions): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`${vmPath(id)}/fork`, { method: 'POST', body: JSON.stringify(opts) })
+}
+
+export function detachFork(id: string): Promise<TaskResponse> {
+  return platformFetch<TaskResponse>(`${vmPath(id)}/fork/detach`, { method: 'POST' })
 }
 
 export function deleteVm(id: string): Promise<TaskResponse> {

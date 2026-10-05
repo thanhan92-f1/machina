@@ -660,6 +660,227 @@ np_release_main() {
     fi
 }
 
+# ── scale to zero (controller only) ────────────────────────────────────────
+
+np_sleep_usage() {
+    cat <<'EOF'
+Usage: vm sleep VM            Managed-save the VM; traffic to its addresses wakes it
+       vm wake VM             Restore a sleeping VM now
+       vm sleep-policy VM [MINUTES|inherit|never]   Show or set auto-sleep after idle
+       vm sleep-policy --project NAME [MINUTES|never|clear]   Project default
+       vm sleeping            Sleeping VMs, RAM handed back, recent sleeps and wakes
+EOF
+}
+
+np_sleep_main() {
+    np_need
+    [[ "$NP_FLEET" == 1 ]] || np_die "sleep/wake run on the controller (--fleet)"
+    local action=$1 vm="${2:-}"
+    [[ -n "$vm" && "$vm" != -* ]] || { np_sleep_usage >&2; exit 1; }
+    local ref body
+    ref=$(np_vm_ref "$vm")
+    body=$(np_api POST "/vms/$(np_uri "$ref")/$action")
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r --arg vm "$vm" --arg a "$action" '"vm/\($vm) \($a) queued (task \(.task_id))"' <<<"$body"
+}
+
+np_sleep_policy_main() {
+    np_need
+    [[ "$NP_FLEET" == 1 ]] || np_die "sleep policies live on the controller (--fleet)"
+    if [[ "${1:-}" == --project ]]; then
+        local project="${2:-}" val="${3:-}"
+        [[ -n "$project" ]] || { np_sleep_usage >&2; exit 1; }
+        case "$val" in
+            "") np_api GET /sleep/policies | jq -r --arg p "$project" \
+                    'map(select(.project == $p)) | if length == 0 then "project/\($p): no default (VMs never auto-sleep unless set)" else .[0] | "project/\(.project): \(if .sleep_after_minutes == 0 then "never" else "\(.sleep_after_minutes) min" end)" end' ;;
+            clear) np_api DELETE "/sleep/policies/$(np_uri "$project")" >/dev/null; echo "project/$project default cleared" ;;
+            *)
+                [[ "$val" == never ]] && val=0
+                [[ "$val" =~ ^[0-9]+$ ]] || np_die "MINUTES must be a number, never or clear"
+                np_api PUT "/sleep/policies/$(np_uri "$project")" -H 'Content-Type: application/json' \
+                    -d "{\"sleep_after_minutes\":$val}" >/dev/null
+                echo "project/$project: VMs sleep after ${val} min idle (0 = never)" ;;
+        esac
+        return
+    fi
+    local vm="${1:-}" val="${2:-}"
+    [[ -n "$vm" && "$vm" != -* ]] || { np_sleep_usage >&2; exit 1; }
+    local ref body
+    ref=$(np_vm_ref "$vm")
+    if [[ -n "$val" ]]; then
+        local m
+        case "$val" in
+            inherit) m=null ;;
+            never) m=0 ;;
+            *) [[ "$val" =~ ^[0-9]+$ ]] || np_die "MINUTES must be a number, inherit or never"; m=$val ;;
+        esac
+        body=$(np_api PUT "/vms/$(np_uri "$ref")/sleep-policy" -H 'Content-Type: application/json' -d "{\"sleep_after_minutes\":$m}")
+    else
+        body=$(np_api GET "/vms/$(np_uri "$ref")/sleep-policy")
+    fi
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r --arg vm "$vm" '
+        "vm/\($vm): \(if .desired_state == "sleeping" then "sleeping since \(.slept_at // "?")" else .observed_state end)",
+        "  auto-sleep: \(if .effective_minutes == 0 then "off" else "after \(.effective_minutes) min idle" end)\(if .sleep_after_minutes == null then " (project default)" else "" end)",
+        (if .idle_minutes != null and .desired_state != "sleeping" then "  idle:       \(.idle_minutes) min" else empty end),
+        (if .wakeable then empty else "  no guest address known: traffic cannot wake it yet" end),
+        (.events[:5][] | "  \(.at)  \(.kind) (\(.reason))")' <<<"$body"
+}
+
+np_sleeping_main() {
+    np_need
+    [[ "$NP_FLEET" == 1 ]] || np_die "sleep state lives on the controller (--fleet)"
+    local body
+    body=$(np_api GET /sleep/summary)
+    if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+    jq -r '"\(.sleeping | length) sleeping, \(.memory_freed_mib) MiB RAM and \(.vcpus_freed) vCPU handed back; \(.auto_sleep_vms) VMs with auto-sleep; last 24h: \(.sleeps_24h) sleeps, \(.wakes_24h) wakes"' <<<"$body"
+    [[ "$(jq '.sleeping | length' <<<"$body")" != 0 ]] || return 0
+    {
+        printf 'VM\tPROJECT\tRAM\tSINCE\n'
+        jq -r '.sleeping[] | [.name, (.project // "-"), "\(.memory_mib) MiB", (.slept_at // "-")] | @tsv' <<<"$body"
+    } | column -t -s $'\t'
+}
+
+np_tt_usage() {
+    cat <<'EOF'
+Usage: vm restore-points VM [--every MIN|off] [--keep N]   List restore points, or schedule them
+       vm restore-point VM [--note TEXT] [--wait]          Take a restore point now
+       vm rewind VM POINT [--wait]                         Discard everything after POINT
+       vm fork VM NEW [--at POINT] [--memory] [--isolate] [--no-reseed] [--stopped] [--wait]
+       vm fork-detach VM [--wait]                          Copy the source's layers into the fork
+POINT is a number from `vm restore-points` (1 = oldest, -1 = newest), a label or an id.
+Without --at, fork copies the VM as it is now; --memory also copies its RAM onto an
+isolated network.
+EOF
+}
+
+# Waits for a controller task; fails with its message if it failed.
+np_task_wait() {
+    local id=$1 body st=""
+    for _ in $(seq 600); do
+        body=$(np_api GET "/tasks/$(np_uri "$id")")
+        st=$(jq -r '.status' <<<"$body")
+        case "$st" in
+            completed) return 0 ;;
+            failed|cancelled) np_die "task $id $st: $(jq -r '.message // .error // ""' <<<"$body")" ;;
+        esac
+        sleep 1
+    done
+    np_die "task $id still ${st:-unknown} after 600 s"
+}
+
+np_tt_queued() {
+    local body=$1 what=$2 wait=$3
+    if [[ "$wait" == 1 ]]; then
+        np_task_wait "$(jq -r .task_id <<<"$body")"
+        echo "$what done"
+    elif [[ "${NP_JSON:-0}" == 1 ]]; then
+        jq . <<<"$body"
+    else
+        echo "$what queued (task $(jq -r .task_id <<<"$body"))"
+    fi
+}
+
+np_tt_point_id() {
+    local ref=$1 sel=$2 body id
+    body=$(np_api GET "/vms/$(np_uri "$ref")/restore-points")
+    if [[ "$sel" =~ ^-?[0-9]+$ ]]; then
+        id=$(jq -r --argjson i "$sel" '.points | if $i < 0 then .[length + $i] else .[$i - 1] end | .id // empty' <<<"$body")
+    else
+        id=$(jq -r --arg s "$sel" '.points[] | select(.id == $s or .label == $s) | .id' <<<"$body" | head -1)
+    fi
+    [[ -n "$id" ]] || np_die "no restore point $sel"
+    printf '%s' "$id"
+}
+
+np_tt_main() {
+    np_need
+    [[ "$NP_FLEET" == 1 ]] || np_die "restore points and forks run on the controller (--fleet)"
+    local action=$1
+    shift
+    local vm="${1:-}"
+    [[ -n "$vm" && "$vm" != -* ]] || { np_tt_usage >&2; exit 1; }
+    shift
+    local ref body wait=0
+    ref=$(np_vm_ref "$vm")
+    case "$action" in
+        list)
+            local every="" keep=""
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --every) every=$2; shift 2 ;;
+                    --keep) keep=$2; shift 2 ;;
+                    *) np_tt_usage >&2; exit 1 ;;
+                esac
+            done
+            if [[ -n "$every$keep" ]]; then
+                [[ "$every" == off ]] && every=0
+                [[ -n "$every" ]] || every=$(np_api GET "/vms/$(np_uri "$ref")/restore-points" | jq -r '.every_minutes // 0')
+                [[ "$every" =~ ^[0-9]+$ ]] || np_die "--every takes minutes or off"
+                [[ -z "$keep" || "$keep" =~ ^[0-9]+$ ]] || np_die "--keep takes a number"
+                body=$(np_api PUT "/vms/$(np_uri "$ref")/restore-points/policy" -H 'Content-Type: application/json' \
+                    -d "$(jq -nc --argjson e "$every" --arg k "$keep" '{every_minutes: $e} + (if $k == "" then {} else {keep: ($k | tonumber)} end)')")
+            else
+                body=$(np_api GET "/vms/$(np_uri "$ref")/restore-points")
+            fi
+            if [[ "${NP_JSON:-0}" == 1 ]]; then jq . <<<"$body"; return; fi
+            jq -r --arg vm "$vm" '
+                "vm/\($vm): \(.points | length) restore points; schedule \(if (.every_minutes // 0) == 0 then "off" else "every \(.every_minutes) min, keep \(.keep)" end)",
+                (if .fork_of then "  fork of \(.fork_of.name // .fork_of.vm_id)\(if .fork_of.memory then " (with memory)" else "" end)" else empty end),
+                (.points | to_entries[] | "  \(.key + 1)  \(.value.created_at)  \(.value.kind)  \(.value.label)\(if .value.quiesced then "  quiesced" else "" end)\(if (.value.forks | length) > 0 then "  forks: \(.value.forks | join(","))" else "" end)\(if .value.note then "  \(.value.note)" else "" end)"),
+                (if (.forks | length) > 0 then "  forks: \([.forks[] | .name // .vm_id] | join(", "))" else empty end)' <<<"$body"
+            ;;
+        create)
+            local note=""
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --note) note=$2; shift 2 ;;
+                    --wait) wait=1; shift ;;
+                    *) np_tt_usage >&2; exit 1 ;;
+                esac
+            done
+            body=$(np_api POST "/vms/$(np_uri "$ref")/restore-points" -H 'Content-Type: application/json' \
+                -d "$(jq -nc --arg n "$note" '{note: (if $n == "" then null else $n end)}')")
+            np_tt_queued "$body" "vm/$vm restore point" "$wait"
+            ;;
+        rewind)
+            local sel="${1:-}" pid
+            [[ -n "$sel" ]] || { np_tt_usage >&2; exit 1; }
+            shift
+            [[ "${1:-}" == --wait ]] && wait=1
+            pid=$(np_tt_point_id "$ref" "$sel")
+            body=$(np_api POST "/vms/$(np_uri "$ref")/restore-points/$(np_uri "$pid")/rewind")
+            np_tt_queued "$body" "vm/$vm rewind" "$wait"
+            ;;
+        fork)
+            local new="${1:-}" at="" memory=false isolate=false reseed=true start=true
+            [[ -n "$new" && "$new" != -* ]] || { np_tt_usage >&2; exit 1; }
+            shift
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --at) at=$(np_tt_point_id "$ref" "$2"); shift 2 ;;
+                    --memory) memory=true; shift ;;
+                    --isolate) isolate=true; shift ;;
+                    --no-reseed) reseed=false; shift ;;
+                    --stopped) start=false; shift ;;
+                    --wait) wait=1; shift ;;
+                    *) np_tt_usage >&2; exit 1 ;;
+                esac
+            done
+            body=$(np_api POST "/vms/$(np_uri "$ref")/fork" -H 'Content-Type: application/json' \
+                -d "$(jq -nc --arg n "$new" --arg at "$at" --argjson m "$memory" --argjson i "$isolate" \
+                    --argjson r "$reseed" --argjson s "$start" \
+                    '{name: $n, memory: $m, isolate: $i, reseed: $r, start: $s} + (if $at == "" then {} else {restore_point_id: $at} end)')")
+            np_tt_queued "$body" "vm/$vm fork $new" "$wait"
+            ;;
+        detach)
+            [[ "${1:-}" == --wait ]] && wait=1
+            body=$(np_api POST "/vms/$(np_uri "$ref")/fork/detach")
+            np_tt_queued "$body" "vm/$vm detach" "$wait"
+            ;;
+    esac
+}
+
 np_netpol_quarantines() {
     local body
     body=$(np_api GET /vm-network-policies/quarantines)

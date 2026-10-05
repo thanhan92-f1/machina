@@ -103,7 +103,7 @@ export function instanceStatusTone(status: string): 'ok' | 'warn' | 'error' | 'i
   const s = status.toUpperCase()
   if (s === 'ACTIVE' || s === 'UP') return 'ok'
   if (s === 'ERROR' || s === 'DOWN') return 'error'
-  if (s === 'BUILD' || s === 'BUILDING') return 'info'
+  if (s === 'BUILD' || s === 'BUILDING' || s === 'SLEEPING') return 'info'
   return 'warn'
 }
 

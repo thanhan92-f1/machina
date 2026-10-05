@@ -3,9 +3,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { listVms, rebootVm, startVm, stopVm, vmDisplayStatus, type NativeVm } from '../api/nativeVms'
+import { isSleeping, listVms, rebootVm, sleepVm, startVm, stopVm, vmDisplayStatus, wakeVm, type NativeVm } from '../api/nativeVms'
 import { useToastContext } from '../contexts/ToastContext'
-import { Play, Square, RotateCcw, RefreshCw, Cloud, Plus } from 'lucide-react'
+import { Play, Square, RotateCcw, RefreshCw, Cloud, Plus, Moon, Sun } from 'lucide-react'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import EmptyState from '../components/EmptyState'
@@ -18,7 +18,7 @@ import { formatUserError } from '../utils/apiError'
 import { instanceStatusTone, statusBadgeClasses, statusToneClass } from '../utils/semanticColors'
 import { platformStatSubtitle } from '../components/platform/PlatformPageChrome'
 
-const STATUS_CHIPS = ['', 'ACTIVE', 'SHUTOFF', 'ERROR', 'CREATING'] as const
+const STATUS_CHIPS = ['', 'ACTIVE', 'SHUTOFF', 'SLEEPING', 'ERROR', 'CREATING'] as const
 
 function statusBadge(status: string) {
   return statusBadgeClasses(instanceStatusTone(status))
@@ -95,7 +95,8 @@ function FleetCloudInstancesContent() {
       subtitle={platformStatSubtitle([
         { label: 'Instances', value: vms.length },
         { label: 'Running', value: vms.filter((v) => v.observed_state === 'running').length },
-        { label: 'Stopped', value: vms.filter((v) => v.observed_state !== 'running').length },
+        { label: 'Stopped', value: vms.filter((v) => v.observed_state !== 'running' && !isSleeping(v)).length },
+        { label: 'Sleeping', value: vms.filter(isSleeping).length },
       ])}
       icon={<Cloud className="w-7 h-7 text-[var(--accent)]" />}
       error={loadError}
@@ -218,6 +219,27 @@ function FleetCloudInstancesContent() {
                   </td>
                   <td>
                     <div className="flex justify-end gap-1">
+                      {isSleeping(vm) ? (
+                        <button
+                          type="button"
+                          title="Wake"
+                          aria-label={`Wake ${vm.name}`}
+                          onClick={() => void runAction(vm, wakeVm, 'Wake')}
+                          className={`p-2 rounded hover:bg-[color-mix(in_srgb,var(--machina-status-info)_25%,transparent)] ${statusToneClass('info')}`}
+                        >
+                          <Sun className="w-4 h-4" />
+                        </button>
+                      ) : vm.observed_state === 'running' ? (
+                        <button
+                          type="button"
+                          title="Sleep (scale to zero — wakes on traffic)"
+                          aria-label={`Sleep ${vm.name}`}
+                          onClick={() => setPendingAction({ vm, fn: sleepVm, label: 'Sleep', message: `Put '${vm.name}' to sleep? Its memory is saved to disk and the host gets the RAM back; the first packet to its address wakes it.` })}
+                          className={`p-2 rounded hover:bg-[color-mix(in_srgb,var(--machina-status-info)_25%,transparent)] ${statusToneClass('info')}`}
+                        >
+                          <Moon className="w-4 h-4" />
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         title="Start"

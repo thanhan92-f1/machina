@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::agent_client;
 use crate::config::ControllerConfig;
-use crate::engine::vm_lifecycle;
+use crate::engine::{time_travel, vm_lifecycle};
 use crate::state::AppState;
 use crate::tasks::enqueue::enqueue_task;
 use crate::tasks::TaskMessage;
@@ -159,6 +159,10 @@ async fn process_one(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> 
         "vm.delete" => vm_delete(state, msg).await?,
         "vm.migrate" => vm_migrate(state, msg).await?,
         "vm.clone" => vm_clone(state, msg).await?,
+        "vm.restore_point" => time_travel::task_restore_point(state, msg).await?,
+        "vm.rewind" => time_travel::task_rewind(state, msg).await?,
+        "vm.fork" => time_travel::task_fork(state, msg).await?,
+        "vm.fork.detach" => time_travel::task_detach(state, msg).await?,
         "host.inventory" => host_inventory(state, msg).await?,
         "kubevirt.inventory" => kubevirt_inventory_task(state, msg).await?,
         "host.maintenance" => host_maintenance(state, msg).await?,
@@ -349,6 +353,7 @@ async fn vm_power(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
         "start" | "resume" | "reboot" | "reset" => "running",
         "stop" | "shutdown" => "stopped",
         "pause" => "paused",
+        "managedsave" => "sleeping",
         _ => "running",
     };
     sqlx::query(
@@ -359,6 +364,40 @@ async fn vm_power(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
     .bind(vm_id)
     .execute(&state.pool)
     .await?;
+    if action == "managedsave" {
+        sqlx::query("UPDATE vms SET slept_at = datetime('now') WHERE id = ?")
+            .bind(vm_id)
+            .execute(&state.pool)
+            .await?;
+        let reason = match msg.payload["idle_minutes"].as_i64() {
+            Some(m) if msg.payload["auto_sleep"].as_bool() == Some(true) => {
+                format!("idle {m} min")
+            }
+            _ => "manual".to_string(),
+        };
+        crate::engine::vm_sleep::record(&state.pool, vm_id, "sleep", &reason).await;
+    } else if desired == "running" {
+        let was_sleeping: bool =
+            sqlx::query_scalar("SELECT slept_at IS NOT NULL FROM vms WHERE id = ?")
+                .bind(vm_id)
+                .fetch_one(&state.pool)
+                .await
+                .unwrap_or(false);
+        sqlx::query(
+            "UPDATE vms SET slept_at = NULL, last_active_at = datetime('now') WHERE id = ?",
+        )
+        .bind(vm_id)
+        .execute(&state.pool)
+        .await?;
+        if was_sleeping && action == "start" {
+            crate::engine::vm_sleep::record(&state.pool, vm_id, "wake", "manual").await;
+        }
+    }
+    if action == "managedsave" || action == "start" {
+        if let Err(e) = crate::engine::vm_sleep::sync_host(state, host_id).await {
+            tracing::warn!(vm = %row.0, error = %e, "wake set sync failed");
+        }
+    }
 
     // Derive lifecycle_phase from the new desired/observed states so the VM
     // doesn't stay stuck in "starting" or "stopping" after the action completes.
@@ -461,6 +500,14 @@ async fn vm_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
         }
     }
 
+    sqlx::query("DELETE FROM vm_forks WHERE fork_vm_id = ?1 OR source_vm_id = ?1")
+        .bind(vm_id)
+        .execute(&state.pool)
+        .await?;
+    sqlx::query("DELETE FROM vm_restore_points WHERE vm_id = ?")
+        .bind(vm_id)
+        .execute(&state.pool)
+        .await?;
     sqlx::query("DELETE FROM vms WHERE id = ?")
         .bind(vm_id)
         .execute(&state.pool)
@@ -657,14 +704,24 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
             .execute(&state.pool)
             .await?;
 
+            if domain_active {
+                crate::engine::vm_sleep::observe_activity(
+                    &state.pool,
+                    id,
+                    vm.cpu_percent,
+                    vm.net_bytes,
+                )
+                .await;
+            }
             let metrics_result = sqlx::query(
-                "INSERT INTO vm_metrics (vm_id, cpu_percent, memory_used_mib, disk_read_iops, disk_write_iops, updated_at)
-                 VALUES (?, ?, ?, ?, ?, datetime('now'))
+                "INSERT INTO vm_metrics (vm_id, cpu_percent, memory_used_mib, disk_read_iops, disk_write_iops, net_bytes, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
                  ON CONFLICT (vm_id) DO UPDATE SET
                    cpu_percent = EXCLUDED.cpu_percent,
                    memory_used_mib = EXCLUDED.memory_used_mib,
                    disk_read_iops = EXCLUDED.disk_read_iops,
                    disk_write_iops = EXCLUDED.disk_write_iops,
+                   net_bytes = EXCLUDED.net_bytes,
                    updated_at = datetime('now')",
             )
             .bind(id)
@@ -672,6 +729,7 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
             .bind(vm.memory_used_mib as i64)
             .bind(vm.disk_read_iops as i64)
             .bind(vm.disk_write_iops as i64)
+            .bind(vm.net_bytes as i64)
             .execute(&state.pool)
             .await;
             if let Err(e) = metrics_result {
@@ -1263,7 +1321,7 @@ pub(crate) async fn revert_failed_ha_recovery(
     Ok(())
 }
 
-async fn host_agent_addr(pool: &SqlitePool, host_id: Uuid) -> anyhow::Result<String> {
+pub(crate) async fn host_agent_addr(pool: &SqlitePool, host_id: Uuid) -> anyhow::Result<String> {
     let addr: String = sqlx::query_scalar("SELECT agent_grpc_addr FROM hosts WHERE id = ?")
         .bind(host_id)
         .fetch_optional(pool)
@@ -1313,7 +1371,7 @@ async fn mark_task_failed(pool: &SqlitePool, id: Uuid, message: &str) -> anyhow:
     Ok(())
 }
 
-async fn update_task_progress(
+pub(crate) async fn update_task_progress(
     pool: &SqlitePool,
     id: Uuid,
     progress: i16,

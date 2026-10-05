@@ -38,6 +38,7 @@ export default function FleetCloudCreateInstancePage() {
   const [cloudInitUser, setCloudInitUser] = useState('')
   const [cloudInitPassword, setCloudInitPassword] = useState('')
   const [cloudInitSshPubkey, setCloudInitSshPubkey] = useState('')
+  const [sleepAfter, setSleepAfter] = useState('inherit')
 
   const loadCatalogs = useCallback(async () => {
     setLoading(true)
@@ -79,6 +80,7 @@ export default function FleetCloudCreateInstancePage() {
         cloud_init_user: cloudInitUser.trim() || undefined,
         cloud_init_password: cloudInitPassword || undefined,
         cloud_init_ssh_pubkey: cloudInitSshPubkey.trim() || undefined,
+        sleep_after_minutes: sleepAfter === 'inherit' ? undefined : Number(sleepAfter),
       })
       toast.success(`Instance '${name.trim()}' creation queued`)
       navigate('/fleet-cloud/instances')
@@ -237,6 +239,22 @@ export default function FleetCloudCreateInstancePage() {
         <textarea aria-label="SSH public key" value={cloudInitSshPubkey} onChange={(e) => setCloudInitSshPubkey(e.target.value)} rows={2}
           placeholder="SSH public key (optional) — or pick a saved keypair on the Keys page and paste its key here"
           className="w-full input-field text-xs font-mono" />
+      </div>
+
+      <div className="space-y-2 rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
+        <h2 className="text-sm font-medium text-[var(--text-secondary)]">Scale to zero</h2>
+        <p className="text-xs text-[var(--text-muted)]">
+          An idle instance is saved to disk and hands its RAM back to the host; the first packet sent to it wakes it.
+        </p>
+        <select aria-label="Auto-sleep" value={sleepAfter} onChange={(e) => setSleepAfter(e.target.value)}
+          className="input-field text-sm">
+          <option value="inherit">Project default</option>
+          <option value="0">Never</option>
+          <option value="15">After 15 min idle</option>
+          <option value="30">After 30 min idle</option>
+          <option value="60">After 1 h idle</option>
+          <option value="240">After 4 h idle</option>
+        </select>
       </div>
 
       <FleetCloudFooter />

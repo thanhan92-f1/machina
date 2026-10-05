@@ -47,7 +47,7 @@ pub async fn evaluate_vm_create_tx(
     storage_gib: i64,
     ha_enabled: bool,
 ) -> Result<(), PolicyViolation> {
-    check_project_quota(conn, project, vcpus, memory_mib, storage_gib).await?;
+    check_project_quota(conn, project, 1, vcpus, memory_mib, storage_gib).await?;
 
     let rows: Vec<(String, Value)> =
         sqlx::query_as("SELECT name, rule_json FROM policy_rules WHERE enabled = TRUE")
@@ -72,9 +72,23 @@ fn unavailable(e: sqlx::Error) -> PolicyViolation {
     }
 }
 
+/// Whether `vms` more VMs with these totals fit the project's quota.
+pub async fn check_project_quota_batch(
+    pool: &SqlitePool,
+    project: &str,
+    vms: i64,
+    vcpus: i32,
+    memory_mib: i64,
+    storage_gib: i64,
+) -> Result<(), PolicyViolation> {
+    let mut conn = pool.acquire().await.map_err(unavailable)?;
+    check_project_quota(&mut conn, project, vms, vcpus, memory_mib, storage_gib).await
+}
+
 async fn check_project_quota(
     conn: &mut SqliteConnection,
     project: &str,
+    vms: i64,
     vcpus: i32,
     memory_mib: i64,
     storage_gib: i64,
@@ -102,7 +116,7 @@ async fn check_project_quota(
         return Ok(());
     };
 
-    if max_vms > 0 && cur_vms + 1 > max_vms as i64 {
+    if max_vms > 0 && cur_vms + vms > max_vms as i64 {
         return Err(PolicyViolation {
             rule_name: "project_quota".into(),
             message: format!("Project '{project}' VM count quota exceeded ({max_vms})"),

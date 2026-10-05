@@ -16,6 +16,7 @@ pub const PHASE_BACKING_UP: &str = "backing_up";
 pub const PHASE_DELETING: &str = "deleting";
 pub const PHASE_ERROR: &str = "error";
 pub const PHASE_RETIRED: &str = "retired";
+pub const PHASE_SLEEPING: &str = "sleeping";
 
 pub fn phase_for_operation(op: &str) -> &'static str {
     match op {
@@ -88,6 +89,7 @@ pub async fn sync_phase_from_observed(pool: &SqlitePool, vm_id: Uuid) -> anyhow:
         ("running", _) if !matches!(observed.as_str(), "running" | "blocked") => PHASE_STARTING,
         ("stopped", "shutoff") | ("stopped", "stopped") => PHASE_STOPPED,
         ("stopped", _) => PHASE_STOPPING,
+        ("sleeping", "shutoff") | ("sleeping", "stopped") => PHASE_SLEEPING,
         (_, "running") | (_, "blocked") => PHASE_RUNNING,
         _ => PHASE_IDLE,
     };

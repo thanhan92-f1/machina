@@ -515,6 +515,9 @@ pub struct CreateFromTemplateBody {
     /// `VirtualMachine::new`'s default network.
     #[serde(default)]
     pub network: Option<String>,
+    /// Scale-to-zero policy (see `set_vm_sleep_policy`); omit to inherit the project default.
+    #[serde(default)]
+    pub sleep_after_minutes: Option<i64>,
 }
 
 fn default_memory() -> String {
@@ -527,6 +530,18 @@ pub async fn create_from_template(
     Json(body): Json<CreateFromTemplateBody>,
 ) -> Result<Json<TaskResponse>, ApiError> {
     require_operator(&actor)?;
+    if let Some(m) = body.sleep_after_minutes {
+        if !(0..=10_080).contains(&m)
+            || (1..crate::engine::vm_sleep::MIN_SLEEP_AFTER_MINUTES).contains(&m)
+        {
+            return Err(ApiError::bad_request(format!(
+                "sleep_after_minutes must be 0 or between {} and 10080",
+                crate::engine::vm_sleep::MIN_SLEEP_AFTER_MINUTES
+            )));
+        }
+    }
+    let sleep_after = body.sleep_after_minutes;
+    let pool = state.pool.clone();
     let apply = |s: &str| crate::engine::template::apply_template_vars(s, &body.template_vars);
     let name = apply(&body.name);
     machina_spec::validate_name(&name).map_err(|e| ApiError::bad_request(e.to_string()))?;
@@ -583,7 +598,17 @@ pub async fn create_from_template(
         atlas_root_disk: false,
         atlas_policy: None,
     };
-    create_vm(State(state), Extension(actor), Json(create_body)).await
+    let resp = create_vm(State(state), Extension(actor), Json(create_body)).await?;
+    if let (Some(m), Ok(task_id)) = (sleep_after, Uuid::parse_str(&resp.task_id)) {
+        sqlx::query(
+            "UPDATE vms SET sleep_after_minutes = ? WHERE id = (SELECT resource_id FROM tasks WHERE id = ?)",
+        )
+        .bind(m)
+        .bind(task_id)
+        .execute(&pool)
+        .await?;
+    }
+    Ok(resp)
 }
 
 #[derive(Debug, Deserialize)]
@@ -1005,6 +1030,78 @@ pub async fn resume_vm(
     power_action(&state, id, "resume", "vm.resume", None).await
 }
 
+pub async fn sleep_vm(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<TaskResponse>, ApiError> {
+    require_operator(&actor)?;
+    power_action(&state, id, "managedsave", "vm.sleep", None).await
+}
+
+pub async fn wake_vm(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<TaskResponse>, ApiError> {
+    require_operator(&actor)?;
+    power_action(&state, id, "start", "vm.wake", None).await
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SleepPolicyBody {
+    /// Minutes of idleness before the VM is put to sleep; `null` inherits the
+    /// project default, `0` never sleeps.
+    pub sleep_after_minutes: Option<i64>,
+}
+
+pub async fn get_vm_sleep_policy(
+    State(state): State<AppState>,
+    Extension(_actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<crate::engine::vm_sleep::SleepPolicyView>, ApiError> {
+    let view = crate::engine::vm_sleep::policy_view(&state.pool, id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("vm not found"))?;
+    Ok(Json(view))
+}
+
+pub async fn set_vm_sleep_policy(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<SleepPolicyBody>,
+) -> Result<Json<crate::engine::vm_sleep::SleepPolicyView>, ApiError> {
+    require_operator(&actor)?;
+    if let Some(m) = body.sleep_after_minutes {
+        if !(0..=10_080).contains(&m) {
+            return Err(ApiError::bad_request(
+                "sleep_after_minutes must be between 0 and 10080 (7 days)",
+            ));
+        }
+        if (1..crate::engine::vm_sleep::MIN_SLEEP_AFTER_MINUTES).contains(&m) {
+            return Err(ApiError::bad_request(format!(
+                "sleep_after_minutes must be 0 or at least {}",
+                crate::engine::vm_sleep::MIN_SLEEP_AFTER_MINUTES
+            )));
+        }
+    }
+    let res = sqlx::query("UPDATE vms SET sleep_after_minutes = ? WHERE id = ?")
+        .bind(body.sleep_after_minutes)
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
+    if res.rows_affected() == 0 {
+        return Err(ApiError::not_found("vm not found"));
+    }
+    let view = crate::engine::vm_sleep::policy_view(&state.pool, id)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("vm not found"))?;
+    Ok(Json(view))
+}
+
 pub async fn reset_vm(
     State(state): State<AppState>,
     Extension(actor): Extension<AuthUser>,
@@ -1237,6 +1334,12 @@ pub(crate) async fn power_action(
             "VM is missing from hypervisor inventory — sync hosts or remove the stale record",
         ));
     }
+    if action == "managedsave" && !matches!(meta.2.as_str(), "running" | "blocked") {
+        return Err(
+            ApiError::bad_request("Only a running VM can be put to sleep")
+                .with_code("vm_not_running"),
+        );
+    }
     let host_id = meta
         .0
         .ok_or_else(|| ApiError::bad_request("VM has no host assigned"))?;
@@ -1244,7 +1347,9 @@ pub(crate) async fn power_action(
     // Record explicit user intent in desired_state so the reconcile loop doesn't
     // immediately revert the action — e.g. without this, shutting a VM down leaves
     // desired_state='running' and reconcile restarts it. Transient actions (pause)
-    // leave the desired power state unchanged.
+    // leave the desired power state unchanged. Sleep ("managedsave") sets
+    // desired_state='sleeping' only once the save succeeds, since a sleeping
+    // desired state with a running guest reads as "woken by traffic".
     let desired_state = match action {
         "start" | "reboot" | "reset" | "resume" => Some("running"),
         "stop" | "shutdown" => Some("stopped"),

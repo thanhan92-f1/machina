@@ -972,10 +972,27 @@ cmd_vm() {
         label|labels) np_run np_label_main "$@" ;;
         quarantine|isolate) np_run np_quarantine_main "$@" ;;
         release|unquarantine) np_run np_release_main "$@" ;;
+        sleep|wake) np_run np_sleep_main "$sub" "$@" --fleet ;;
+        sleep-policy) np_run np_sleep_policy_main "$@" --fleet ;;
+        sleeping) np_run np_sleeping_main "$@" --fleet ;;
+        restore-points) np_run np_tt_main list "$@" --fleet ;;
+        restore-point) np_run np_tt_main create "$@" --fleet ;;
+        rewind) np_run np_tt_main rewind "$@" --fleet ;;
+        fork) np_run np_tt_main fork "$@" --fleet ;;
+        fork-detach) np_run np_tt_main detach "$@" --fleet ;;
         *)
             echo "Usage: machinactl vm label VM [key=value ...] [key- ...] [--fleet]"
             echo "       machinactl vm quarantine VM [--for 1h] [--allow-host-ssh] [--reason TEXT] [--fleet]"
             echo "       machinactl vm release VM [--fleet]"
+            echo "       machinactl vm sleep|wake VM                 Scale to zero / restore (controller)"
+            echo "       machinactl vm sleep-policy VM [MIN|inherit|never]   Auto-sleep after idle"
+            echo "       machinactl vm sleep-policy --project P [MIN|never|clear]"
+            echo "       machinactl vm sleeping                      Sleeping VMs and RAM handed back"
+            echo "       machinactl vm restore-points VM [--every MIN|off] [--keep N]"
+            echo "       machinactl vm restore-point VM [--note TEXT] [--wait]"
+            echo "       machinactl vm rewind VM POINT [--wait]      Discard everything after POINT"
+            echo "       machinactl vm fork VM NEW [--at POINT] [--memory] [--isolate] [--wait]"
+            echo "       machinactl vm fork-detach VM [--wait]"
             exit 1 ;;
     esac
 }
@@ -1035,6 +1052,11 @@ cmd_help() {
     echo "  vm label VM k=v [k-]               Show or edit VM labels"
     echo "  vm quarantine VM [--for 1h]        Cut every flow of a VM until the deadline"
     echo "  vm release VM | netpol quarantines Lift a quarantine / list quarantined VMs"
+    echo "  vm sleep|wake VM                   Scale to zero (managed save); traffic wakes it"
+    echo "  vm sleep-policy VM [MIN|never]     Auto-sleep after MIN idle minutes (--project P for a default)"
+    echo "  vm sleeping                        Sleeping VMs, RAM handed back, recent wakes"
+    echo "  vm restore-point VM / rewind VM N  Restore points and rewind (--every MIN schedules them)"
+    echo "  vm fork VM NEW [--memory]          Fork a running VM (disk, or disk + RAM isolated)"
     echo "  netpol jit grant --from A --to B   Temporary access that removes itself (--port, --for 1h)"
     echo "  netpol threat set NAME --url U     DNS threat feed: alert on listed domains (--block denies them)"
     echo "  flow observe [-f] [filters]        Colorful packet flows (like hubble observe)"

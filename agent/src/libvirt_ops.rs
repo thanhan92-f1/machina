@@ -31,6 +31,7 @@ pub struct VmListEntry {
     pub disk_write_iops: u64,
     pub guest_ip: String,
     pub guest_ips: Vec<String>,
+    pub net_bytes: u64,
 }
 
 pub struct LibvirtCtx {
@@ -57,6 +58,10 @@ impl LibvirtCtx {
             conn,
             cpu_samples: std::collections::HashMap::new(),
         })
+    }
+
+    pub fn uri(&self) -> &str {
+        &self.uri
     }
 
     /// Re-open libvirt when the XML-RPC socket goes stale (common after libvirtd restart).
@@ -93,6 +98,7 @@ impl LibvirtCtx {
                 disk_write_iops: 0,
                 guest_ip: v.guest_ip.clone().unwrap_or_default(),
                 guest_ips: v.guest_ips.clone(),
+                net_bytes: 0,
             };
             if let Ok(dom) = Domain::lookup_by_name(&self.conn, &v.name) {
                 if let Ok(uuid) = dom.get_uuid_string() {
@@ -104,6 +110,7 @@ impl LibvirtCtx {
                     entry.memory_used_mib = m.memory_used_mb;
                     entry.disk_read_iops = m.disk_rd_ops;
                     entry.disk_write_iops = m.disk_wr_ops;
+                    entry.net_bytes = m.net_rx_bytes.saturating_add(m.net_tx_bytes);
                     entry.cpu_percent =
                         sample_cpu_percent(&mut self.cpu_samples, &v.name, m.cpu_time_ns, m.vcpus);
                 }
@@ -473,6 +480,11 @@ impl LibvirtCtx {
             "resume" => {
                 domain::resume_vm(&self.conn, name)?;
             }
+            "managedsave" => {
+                if active {
+                    machina_core::libvirt::save_restore::managed_save(&self.conn, name)?;
+                }
+            }
             _ => {
                 return Err(LibvirtError::Invalid(format!(
                     "unknown power action: {action}"
@@ -485,6 +497,24 @@ impl LibvirtCtx {
             .get_info()
             .map_err(|e| LibvirtError::Operation(e.to_string()))?;
         Ok(machina_core::libvirt::metrics::domain_state_label(info.state).to_string())
+    }
+
+    /// Restore a managed-saved domain. Returns false (and does nothing) when the
+    /// domain is already up or has no managed save, so a stale wake never cold
+    /// boots a VM that was shut down on purpose.
+    pub fn wake(&mut self, name: &str) -> Result<bool, LibvirtError> {
+        self.ensure_alive()?;
+        let dom = Domain::lookup_by_name(&self.conn, name)
+            .map_err(|e| LibvirtError::NotFound(format!("VM '{name}': {e}")))?;
+        if dom.is_active().unwrap_or(false) {
+            return Ok(false);
+        }
+        if !machina_core::libvirt::save_restore::has_managed_save(&self.conn, name)? {
+            return Ok(false);
+        }
+        dom.create()
+            .map_err(|e| LibvirtError::Operation(e.to_string()))?;
+        Ok(true)
     }
 
     pub fn get_domain_xml(&self, name: &str) -> Result<String, LibvirtError> {

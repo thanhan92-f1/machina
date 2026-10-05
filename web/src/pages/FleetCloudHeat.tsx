@@ -9,6 +9,8 @@ import FleetCloudSubNav from '../components/FleetCloudSubNav'
 import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import EmptyState from '../components/EmptyState'
+import StackComposer from '../components/flow/StackComposer'
+import { DriftBadge } from '../components/flow/StackPlan'
 import { TahoeTableWrap, TahoeToolbar } from '../components/platform/tahoe/TahoeListKit'
 import { createStack, deleteStack, listStacks, type NativeStack, type StackTemplate } from '../api/stacks'
 import { useToastContext } from '../contexts/ToastContext'
@@ -40,8 +42,8 @@ function FleetCloudHeatContent() {
   const [search, setSearch] = useState('')
   const [pendingDelete, setPendingDelete] = useState<NativeStack | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true)
     try {
       const s = await listStacks()
       setStacks(s)
@@ -54,6 +56,12 @@ function FleetCloudHeatContent() {
   }, [toast])
 
   useEffect(() => { void load() }, [load])
+
+  useEffect(() => {
+    if (!stacks.some((s) => s.status === 'creating' || s.status === 'updating')) return
+    const t = window.setTimeout(() => void load(true), 5000)
+    return () => window.clearTimeout(t)
+  }, [stacks, load])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -72,13 +80,16 @@ function FleetCloudHeatContent() {
         <Layers className="w-7 h-7 text-[var(--accent)]" /> Stacks
       </h1>
       <p className="text-[var(--text-muted)] text-sm">
-        Declarative multi-resource stacks — security groups, volumes, and VMs created
-        and torn down together. Not a Heat-compatible resource graph: the template
-        below is a fixed JSON shape, not arbitrary HOT YAML.
+        Describe an application in plain English. Zyvor drafts the instance groups and
+        who-talks-to-whom policies, checks quota, placement and monthly cost, and replays
+        the policies against recorded traffic. After approval the stack is deployed and
+        kept matching its template.
       </p>
 
-      <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
-        <h2 className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"><Plus className="w-4 h-4" /> Create stack</h2>
+      <StackComposer onDeployed={() => void load(true)} />
+
+      <details className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4 space-y-3">
+        <summary className="text-sm font-medium text-[var(--text-secondary)] cursor-pointer inline-flex items-center gap-2"><Plus className="w-4 h-4" /> Create from JSON</summary>
         <input aria-label="Stack name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Stack name"
           className="w-full max-w-md input-field text-sm" />
         <label className="block text-xs text-[var(--text-muted)]">
@@ -103,7 +114,7 @@ function FleetCloudHeatContent() {
               void load()
             } catch (e: unknown) { toast.error(formatUserError(e)) }
           }}>Create</button>
-      </div>
+      </details>
 
       {loading ? (
         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)] mx-auto" />
@@ -123,13 +134,14 @@ function FleetCloudHeatContent() {
                   <th scope="col">Name</th>
                   <th scope="col">Status</th>
                   <th scope="col">Resources</th>
+                  <th scope="col">Drift</th>
                   <th scope="col" />
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="text-center text-[var(--text-muted)]">No stacks match your search.</td>
+                    <td colSpan={5} className="text-center text-[var(--text-muted)]">No stacks match your search.</td>
                   </tr>
                 )}
                 {filtered.map((s) => (
@@ -140,6 +152,7 @@ function FleetCloudHeatContent() {
                     </td>
                     <td>{s.status}</td>
                     <td className="text-[var(--text-muted)]">{s.resources_json.length}</td>
+                    <td><DriftBadge stack={s} /></td>
                     <td className="text-right">
                       <button type="button" className={statusActionLinkClasses('error', 'inline-flex items-center gap-1')}
                         onClick={() => setPendingDelete(s)}>

@@ -139,7 +139,7 @@ fn safe_name_component(s: &str) -> String {
         .collect()
 }
 
-fn guest_fs_freeze(domain: &Domain) -> Result<i32, LibvirtError> {
+pub(crate) fn guest_fs_freeze(domain: &Domain) -> Result<i32, LibvirtError> {
     let ret = unsafe { sys::virDomainFSFreeze(domain.as_ptr(), std::ptr::null_mut(), 0, 0) };
     if ret < 0 {
         return Err(LibvirtError::Internal("guest fs freeze failed".into()));
@@ -157,9 +157,9 @@ fn guest_fs_thaw(domain: &Domain) {
 /// snapshot (bad path, validation error, unsupported storage) left the guest's
 /// filesystems frozen indefinitely, stalling all guest I/O until a manual
 /// `virsh domfsthaw`.
-struct ThawGuard<'a> {
-    domain: &'a Domain,
-    armed: bool,
+pub(crate) struct ThawGuard<'a> {
+    pub(crate) domain: &'a Domain,
+    pub(crate) armed: bool,
 }
 
 impl Drop for ThawGuard<'_> {

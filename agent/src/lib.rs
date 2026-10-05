@@ -11,6 +11,7 @@ pub mod libvirt_invoke;
 pub mod libvirt_ops;
 pub mod provision_ops;
 pub mod state;
+pub mod wake;
 
 #[allow(clippy::result_large_err)]
 pub mod pb {

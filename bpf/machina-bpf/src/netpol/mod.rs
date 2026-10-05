@@ -34,6 +34,7 @@ pub mod tenant;
 mod tests;
 pub mod threat;
 mod trace;
+pub mod wake;
 
 use std::collections::BTreeMap;
 

@@ -11,13 +11,15 @@ import FleetCloudFooter from '../components/FleetCloudFooter'
 import PageLayout from '../components/PageLayout'
 import PageSkeleton from '../components/PageSkeleton'
 import { deleteStack, getStack, type NativeStack } from '../api/stacks'
+import { StackDriftPanel, StackTemplateEditor } from '../components/flow/StackDrift'
+import { DriftBadge } from '../components/flow/StackPlan'
 import { useToastContext } from '../contexts/ToastContext'
 import { formatUserError } from '../utils/apiError'
 import { useBreadcrumbName } from '../contexts/BreadcrumbNameContext'
 
-// resources/template only — native stacks have no Heat-style events log, no
-// live outputs, and (unlike Heat) no in-place template update: recreate instead.
-const HEAT_TABS = ['overview', 'resources', 'template'] as const
+// Native stacks have no Heat-style events log or live outputs. Templates are
+// updated in place (instance groups and policies; v1 resources stay as they are).
+const HEAT_TABS = ['overview', 'resources', 'drift', 'template'] as const
 type Tab = (typeof HEAT_TABS)[number]
 
 // Native stacks — there's no old external-cloud gate component in the way
@@ -37,6 +39,8 @@ function FleetCloudHeatDetailContent() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   useBreadcrumbName(stack?.name)
   const loadStackSeq = useRef(0)
+  const stackRef = useRef<NativeStack | null>(null)
+  stackRef.current = stack
 
   const loadStack = useCallback(async () => {
     if (!id) return
@@ -44,7 +48,7 @@ function FleetCloudHeatDetailContent() {
     // prior stack can't overwrite the one now shown.
     const seq = ++loadStackSeq.current
     const alive = () => seq === loadStackSeq.current
-    setLoading(true)
+    if (!stackRef.current) setLoading(true)
     try {
       const s = await getStack(id)
       if (!alive()) return
@@ -60,6 +64,12 @@ function FleetCloudHeatDetailContent() {
 
   useEffect(() => { void loadStack() }, [loadStack])
 
+  useEffect(() => {
+    if (stack?.status !== 'creating' && stack?.status !== 'updating') return
+    const t = window.setTimeout(() => void loadStack(), 5000)
+    return () => window.clearTimeout(t)
+  }, [stack, loadStack])
+
   if (loading) return <PageSkeleton />
   if (!stack) {
     return (
@@ -73,6 +83,7 @@ function FleetCloudHeatDetailContent() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'resources', label: 'Resources' },
+    { id: 'drift', label: 'Drift' },
     { id: 'template', label: 'Template' },
   ]
 
@@ -88,6 +99,7 @@ function FleetCloudHeatDetailContent() {
       <p className="apple-eyebrow">Fleet Cloud</p>
       <h1 className="page-title flex items-center gap-3">
         <Layers className="w-7 h-7 text-[var(--accent)]" /> {stack.name}
+        <DriftBadge stack={stack} />
       </h1>
 
       <div className="flex flex-wrap gap-2 border-b border-[var(--apple-hairline)] pb-2">
@@ -123,7 +135,7 @@ function FleetCloudHeatDetailContent() {
             </thead>
             <tbody>
               {stack.resources_json.map((r) => (
-                <tr key={r.id} className="border-t border-[var(--apple-hairline)]">
+                <tr key={`${r.kind}:${r.name}`} className="border-t border-[var(--apple-hairline)]">
                   <td className="px-3 py-2">{r.name}</td>
                   <td className="px-3 py-2 text-[var(--text-muted)]">{r.kind}</td>
                   <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
@@ -133,10 +145,10 @@ function FleetCloudHeatDetailContent() {
           </table>
           {stack.resources_json.length === 0 && <p className="p-4 text-[var(--text-muted)] text-sm">No resources created yet.</p>}
         </div>
+      ) : tab === 'drift' ? (
+        <StackDriftPanel key={stack.checked_at ?? ''} stack={stack} onChanged={() => void loadStack()} />
       ) : tab === 'template' ? (
-        <pre className="w-full font-mono text-xs input-field overflow-x-auto">
-          {JSON.stringify(stack.template_json, null, 2)}
-        </pre>
+        <StackTemplateEditor key={stack.updated_at ?? ''} stack={stack} onChanged={() => void loadStack()} />
       ) : null}
 
       <button type="button" className="px-3 py-1.5 rounded-lg border border-red-600/50 text-red-600 text-sm inline-flex items-center gap-1"

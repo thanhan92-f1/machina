@@ -63,12 +63,30 @@ pub fn undo_kind(action_type: &str, before: &serde_json::Value) -> Option<&'stat
         {
             Some("start_vm")
         }
+        crate::api::stacks::DEPLOY_ACTION
+            if before.get("stack_id").is_some_and(|v| v.is_string()) =>
+        {
+            if before.get("existed").and_then(|v| v.as_bool()) == Some(true) {
+                Some("revert_stack")
+            } else {
+                Some("delete_stack")
+            }
+        }
         _ => None,
     }
 }
 
 /// Snapshot the machine just before an action runs. Best effort: never blocks the action.
 pub async fn record_before(state: &AppState, action: &ZyraActionRow) {
+    if action.action_type == crate::api::stacks::DEPLOY_ACTION {
+        let snapshot = crate::api::stacks::deploy_before(state, &action.object_ref).await;
+        let _ = sqlx::query("UPDATE ai_actions SET before_state = ? WHERE id = ?")
+            .bind(&snapshot)
+            .bind(action.id)
+            .execute(&state.pool)
+            .await;
+        return;
+    }
     let Some(vm_id) = vm_id_of(&action.object_ref) else {
         return;
     };
@@ -164,6 +182,9 @@ pub async fn history(state: &AppState, limit: i64) -> anyhow::Result<Vec<ActionH
 
 /// What the world looks like now compared with what the action promised: (status, detail).
 async fn check(state: &AppState, action: &ZyraActionRow) -> (&'static str, String) {
+    if action.action_type == crate::api::stacks::DEPLOY_ACTION {
+        return crate::api::stacks::deploy_check(state, &action.object_ref).await;
+    }
     let Some(vm_id) = vm_id_of(&action.object_ref) else {
         return (
             "unknown",
@@ -311,11 +332,16 @@ pub async fn undo(
     }
     let kind = undo_kind(&action.action_type, &before)
         .ok_or_else(|| anyhow::anyhow!("This action cannot be undone automatically"))?;
-    let vm_id = vm_id_of(&action.object_ref)
-        .ok_or_else(|| anyhow::anyhow!("vm_id missing in object_ref"))?;
+    let vm_id = || {
+        vm_id_of(&action.object_ref).ok_or_else(|| anyhow::anyhow!("vm_id missing in object_ref"))
+    };
 
     let message = match kind {
+        "delete_stack" | "revert_stack" => crate::api::stacks::deploy_undo(state, actor, &before)
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?,
         "disable_ha" => {
+            let vm_id = vm_id()?;
             crate::engine::template::upsert_ha_policy(
                 &state.pool,
                 vm_id,
@@ -329,6 +355,7 @@ pub async fn undo(
             "High availability turned off again.".to_string()
         }
         "start_vm" => {
+            let vm_id = vm_id()?;
             let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
                 .bind(vm_id)
                 .fetch_optional(&state.pool)
@@ -350,6 +377,7 @@ pub async fn undo(
             "Start queued to put the machine back as it was.".to_string()
         }
         "shutdown_vm" => {
+            let vm_id = vm_id()?;
             let host_id: Option<Uuid> = sqlx::query_scalar("SELECT host_id FROM vms WHERE id = ?")
                 .bind(vm_id)
                 .fetch_optional(&state.pool)
@@ -434,6 +462,26 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn stack_deploy_undo_deletes_new_stacks_and_reverts_updates() {
+        let id = "00000000-0000-0000-0000-000000000001";
+        assert_eq!(
+            undo_kind(
+                "stack.deploy",
+                &serde_json::json!({ "stack_id": id, "existed": false })
+            ),
+            Some("delete_stack")
+        );
+        assert_eq!(
+            undo_kind(
+                "stack.deploy",
+                &serde_json::json!({ "stack_id": id, "existed": true })
+            ),
+            Some("revert_stack")
+        );
+        assert_eq!(undo_kind("stack.deploy", &serde_json::json!({})), None);
     }
 
     #[test]

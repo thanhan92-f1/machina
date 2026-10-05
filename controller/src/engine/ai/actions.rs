@@ -389,6 +389,11 @@ pub async fn approve_and_execute(
             .await
             .map_err(|e| anyhow::anyhow!(e.message))
         }
+        crate::api::stacks::DEPLOY_ACTION => {
+            crate::api::stacks::execute_deploy(state, actor, &action.object_ref)
+                .await
+                .map_err(|e| anyhow::anyhow!(e.message))
+        }
         crate::api::vm_network_policies::PROJECT_ACTION => {
             crate::api::vm_network_policies::project_approved(
                 state,

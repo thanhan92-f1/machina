@@ -992,7 +992,7 @@ async fn project_replay(
     replay_set(state, fleet, draft, limit).await
 }
 
-fn replay_summary(r: &Value) -> String {
+pub(crate) fn replay_summary(r: &Value) -> String {
     let n = |k: &str| r[k].as_array().map_or(0, Vec::len);
     format!(
         "would break {} recorded connection{} ({} flows) and newly allow {}",
@@ -1779,7 +1779,7 @@ pub async fn replay(
 
 /// Replay recorded flows against the current policies with `parsed` added
 /// or replacing same-named ones.
-async fn replay_draft(
+pub(crate) async fn replay_draft(
     state: &AppState,
     parsed: Vec<VmNetworkPolicy>,
     limit: usize,

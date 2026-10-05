@@ -845,6 +845,88 @@ s = socket.socket(); s.settimeout(3); s.bind(('$2', 0)); s.connect(('$3', $4)); 
   trap cleanup EXIT
 fi
 
+# ---- wake on traffic ---------------------------------------------------------
+# Three "sleeping VMs" with nobody behind their addresses: one reached from
+# the host (output hook), one routed from the smoke VM (forward hook), one
+# ARPed for by a peer on a private bridge (bridge prerouting).
+
+if nft list table inet machina_wake >/dev/null 2>&1; then
+  echo "SKIP  wake: machina_wake already in use"
+else
+  WB_NS=mnvme-wb
+  WB_BR=mnvme-br
+  WB_IF=mnvme-d0
+  WAKE_FWD_WAS=$(cat /proc/sys/net/ipv4/ip_forward)
+  wake_cleanup() {
+    req '{"op":"vm_wake_set","config":{"entries":[]}}' >/dev/null 2>&1 || true
+    [[ -n "${SUB_PID:-}" ]] && kill "$SUB_PID" 2>/dev/null || true
+    ip netns exec "$NS" ip route del 10.199.89.0/24 2>/dev/null || true
+    ip link del mnvme-dz 2>/dev/null || true
+    ip netns del "$WB_NS" 2>/dev/null || true
+    ip link del "$WB_IF" 2>/dev/null || true
+    ip link del "$WB_BR" 2>/dev/null || true
+    echo "$WAKE_FWD_WAS" >/proc/sys/net/ipv4/ip_forward
+  }
+  trap 'wake_cleanup; cleanup' EXIT
+  ip link add "$WB_BR" type bridge
+  ip link set "$WB_BR" up
+  ip netns add "$WB_NS"
+  ip link add "$WB_IF" type veth peer name "${WB_IF}p"
+  ip link set "$WB_IF" master "$WB_BR" up
+  ip link set "${WB_IF}p" netns "$WB_NS"
+  ip netns exec "$WB_NS" ip addr add 10.199.90.2/24 dev "${WB_IF}p"
+  ip netns exec "$WB_NS" ip link set "${WB_IF}p" up
+  # Nothing answers for the sleeping addresses: a dummy device stands in for
+  # the bridge of a VM whose tap is gone.
+  ip link add mnvme-dz type dummy
+  ip link set mnvme-dz up
+  ip route add 10.199.89.0/24 dev mnvme-dz
+  ip netns exec "$NS" ip route add 10.199.89.0/24 via "$HOST_IP"
+  echo 1 >/proc/sys/net/ipv4/ip_forward
+  python3 - "$SOCK" "$WORK/wake.events" <<'PY' &
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.connect(sys.argv[1])
+s.sendall(b'{"op":"subscribe","topics":["vm_wake"]}\n')
+f = s.makefile()
+f.readline()
+with open(sys.argv[2], "a") as out:
+    for line in f:
+        out.write(line)
+        out.flush()
+PY
+  SUB_PID=$!
+  sleep 0.5
+  req '{"op":"vm_wake_set","config":{"entries":[{"vm":"mnsmk-sleep-host","addresses":["10.199.89.2"]},{"vm":"mnsmk-sleep-fwd","addresses":["10.199.89.3","fd99::3"]},{"vm":"mnsmk-sleep-arp","addresses":["10.199.90.5"]}]}}' | must
+  check "wake: set applied without error" [ "$(jpath vm_wake_status "d.get('error')")" = None ]
+  tables() { nft list table inet machina_wake >/dev/null 2>&1 && nft list table bridge machina_wake >/dev/null 2>&1; }
+  check "wake: inet and bridge tables installed" tables
+  woke() {
+    for _ in $(seq 12); do
+      grep -q "\"vm\":\"$1\"" "$WORK/wake.events" 2>/dev/null && return 0
+      sleep 0.25
+    done
+    return 1
+  }
+  check "wake: no event before traffic" not woke mnsmk-sleep-host
+  ping -c1 -W1 10.199.89.2 >/dev/null 2>&1 || true
+  check "wake: host-originated packet publishes vm_wake" woke mnsmk-sleep-host
+  ip netns exec "$NS" ping -c1 -W1 10.199.89.3 >/dev/null 2>&1 || true
+  check "wake: routed packet from another VM publishes vm_wake" woke mnsmk-sleep-fwd
+  ip netns exec "$WB_NS" ping -c1 -W1 10.199.90.5 >/dev/null 2>&1 || true
+  check "wake: ARP from a bridge peer publishes vm_wake" woke mnsmk-sleep-arp
+  addr_ok() { grep -q '"vm":"mnsmk-sleep-fwd","address":"10.199.89.3"' "$WORK/wake.events"; }
+  check "wake: event names the address that was hit" addr_ok
+  hist() { [ "$(jpath vm_wake_status "sorted({w['vm'] for w in d['wakes']})")" = "['mnsmk-sleep-arp', 'mnsmk-sleep-fwd', 'mnsmk-sleep-host']" ]; }
+  check "wake: status keeps the wake history" hist
+  bad=$(req '{"op":"vm_wake_set","config":{"entries":[{"vm":"a","addresses":["10.199.89.9"]},{"vm":"b","addresses":["10.199.89.9"]}]}}')
+  check "wake: an address claimed by two VMs is rejected" grep -q "claimed by both" <<<"$bad"
+  req '{"op":"vm_wake_set","config":{"entries":[]}}' | must
+  check "wake: empty set removes the tables" not tables
+  wake_cleanup
+  trap cleanup EXIT
+fi
+
 # ---- QEMU sandbox -----------------------------------------------------------
 
 mkdir -p "$CG"

@@ -63,7 +63,7 @@ mod snapshots;
 mod soc;
 mod sprites;
 mod sse;
-mod stacks;
+pub mod stacks;
 mod storage;
 mod storage_tiers;
 mod support;
@@ -76,6 +76,8 @@ mod vm_libvirt;
 pub(crate) mod vm_network_policies;
 mod vm_row;
 mod vm_schedules;
+mod time_travel;
+mod vm_sleep;
 pub(crate) mod vms;
 mod vmware;
 pub(crate) mod volumes;
@@ -1236,6 +1238,32 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/vms/{id}/shutdown", post(vms::shutdown_vm))
         .route("/api/v1/vms/{id}/pause", post(vms::pause_vm))
         .route("/api/v1/vms/{id}/resume", post(vms::resume_vm))
+        .route("/api/v1/vms/{id}/sleep", post(vms::sleep_vm))
+        .route("/api/v1/vms/{id}/wake", post(vms::wake_vm))
+        .route(
+            "/api/v1/vms/{id}/sleep-policy",
+            get(vms::get_vm_sleep_policy).put(vms::set_vm_sleep_policy),
+        )
+        .route("/api/v1/sleep/summary", get(vm_sleep::summary))
+        .route("/api/v1/sleep/policies", get(vm_sleep::list_project_policies))
+        .route(
+            "/api/v1/sleep/policies/{project}",
+            put(vm_sleep::put_project_policy).delete(vm_sleep::delete_project_policy),
+        )
+        .route(
+            "/api/v1/vms/{id}/restore-points",
+            get(time_travel::get_time_travel).post(time_travel::create_restore_point),
+        )
+        .route(
+            "/api/v1/vms/{id}/restore-points/policy",
+            put(time_travel::set_policy),
+        )
+        .route(
+            "/api/v1/vms/{id}/restore-points/{point_id}/rewind",
+            post(time_travel::rewind),
+        )
+        .route("/api/v1/vms/{id}/fork", post(time_travel::fork))
+        .route("/api/v1/vms/{id}/fork/detach", post(time_travel::detach))
         .route("/api/v1/vms/{id}/reboot", post(vms::reboot_vm))
         .route("/api/v1/vms/{id}/reset", post(vms::reset_vm))
         .route("/api/v1/vms/{id}/install", post(vms::install_vm))
@@ -1708,10 +1736,18 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/stacks",
             get(stacks::list_stacks).post(stacks::create_stack),
         )
+        .route("/api/v1/stacks/draft", post(stacks::draft_stack))
+        .route("/api/v1/stacks/plan", post(stacks::plan_stack))
+        .route("/api/v1/stacks/propose", post(stacks::propose_stack))
         .route(
             "/api/v1/stacks/{id}",
-            get(stacks::get_stack).delete(stacks::delete_stack),
+            get(stacks::get_stack)
+                .put(stacks::update_stack)
+                .delete(stacks::delete_stack),
         )
+        .route("/api/v1/stacks/{id}/drift", get(stacks::get_drift))
+        .route("/api/v1/stacks/{id}/converge", post(stacks::converge_stack))
+        .route("/api/v1/stacks/{id}/auto-heal", put(stacks::set_auto_heal))
         .route(
             "/api/v1/flavors",
             get(flavors::list_flavors).post(flavors::create_flavor),

@@ -1,5 +1,69 @@
 # Changelog
 
+## 2026-10-05 — Fleet Cloud: stacks you describe
+
+See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#stacks-you-describe).
+
+- **Stack v2 templates.** Instance groups (count, flavor, image, network,
+  labels, anti-affinity, HA, auto-sleep, restore points, backups) and
+  group-to-group policies compiled into VM network policies.
+- **Drafting.** `POST /api/v1/stacks/draft` turns a description into a
+  template with the configured LLM (validated, one repair round), falling
+  back to a rule-based parser.
+- **Dry run.** `POST /api/v1/stacks/plan`: batch quota, placement
+  simulation, monthly cost, policy replay against observed flows, and the
+  diff for an update.
+- **Approval.** `POST /api/v1/stacks/propose` files a `stack.deploy`
+  action; undo deletes the new stack or restores the previous template.
+- **Drift.** A 60-second reconcile loop records drift and, with auto-heal,
+  recreates missing VMs and restores labels, policies and backup
+  schedules. `PUT /api/v1/stacks/{id}` updates with rollback.
+- **UI.** Compose stack on Fleet Cloud → Stacks; Drift and Template tabs on
+  stack detail.
+- **Tests.** `scripts/fleet/stack-realvm.sh` on real VMs.
+
+## 2026-10-05 — Fleet Cloud: time travel
+
+See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#time-travel).
+
+- **Restore points.** `POST /api/v1/vms/{id}/restore-points` takes an
+  external disk-only snapshot of every disk, quiesced through the guest
+  agent, while the VM keeps running. A schedule (`PUT
+  .../restore-points/policy`) takes one every N minutes and keeps the newest
+  K; older ones are merged with a live block commit.
+- **Fork.** `POST /api/v1/vms/{id}/fork` makes a new VM on thin overlays
+  over the source's layers, now or from any point, with new MACs and a new
+  cloud-init identity. `memory: true` also copies the RAM and attaches the
+  fork to the isolated `machina-fork` network. `.../fork/detach` copies the
+  layers so the fork stands alone.
+- **Rewind.** `POST .../restore-points/{point}/rewind` drops everything
+  written after the point and restarts the VM; refused while a fork depends
+  on a later point.
+- **UI and CLI.** A Time travel card on instance detail (slider, rewind,
+  fork, schedule). `machinactl vm restore-points|restore-point|rewind|fork|fork-detach`.
+- **Tests.** `scripts/fleet/vm-timetravel-realvm.sh` on a real VM.
+
+## 2026-10-05 — Fleet Cloud: scale to zero
+
+See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#scale-to-zero).
+
+- **Sleep and wake.** `POST /api/v1/vms/{id}/sleep` managed-saves a running
+  VM; its RAM and vCPUs go back to the host. The VM's addresses go into the
+  host bpfd's wake set: the nftables tables `inet machina_wake` (forward and
+  output) and `bridge machina_wake` (ARP), which only count packets. When a
+  counter moves, bpfd publishes `vm_wake`, the agent restores the VM, and
+  the controller returns it to `running`. The agent only restores a domain
+  that is off and has a managed save.
+- **Auto-sleep.** A VM that stays below 3 % CPU and 2 KiB/s of NIC traffic
+  for its policy's minutes is put to sleep. Policy is per VM (`null`
+  inherits, `0` never) or per project (`/api/v1/sleep/policies/{project}`).
+  Inventory now reports cumulative NIC bytes per VM (`VmSummary.net_bytes`).
+- **UI and CLI.** Instances have a Sleeping filter and Sleep/Wake buttons;
+  instance detail has a Scale to zero card. `machinactl vm sleep|wake|sleep-policy|sleeping`.
+- **Tests.** `vm-edge-smoke.sh` covers the wake tables (a packet from the
+  host, a routed packet, a bridge ARP). `vm-netpol-realvm.sh` sleeps a real
+  VM and wakes it with HTTP requests from the host and from another VM.
+
 ## 2026-10-04 — Egress IPs added by Machina, agentless VM addresses, cross-host overlay
 
 See [docs/ebpf/vm-network-policy.md](docs/ebpf/vm-network-policy.md#cross-host-overlay-wireguard).

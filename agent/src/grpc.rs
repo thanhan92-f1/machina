@@ -46,6 +46,58 @@ impl AgentService {
     }
 }
 
+impl AgentService {
+    /// Runs `f` on a dedicated libvirt connection so long block jobs (commit,
+    /// pull) don't hold the shared one that inventory and power ops use.
+    async fn own_conn_call<T, F>(&self, f: F) -> Result<T, Status>
+    where
+        F: FnOnce(&virt::connect::Connect) -> Result<T, machina_core::LibvirtError>
+            + Send
+            + 'static,
+        T: Send + 'static,
+    {
+        let uri = self
+            .libvirt
+            .lock()
+            .map_err(|e| Status::internal(e.to_string()))?
+            .uri()
+            .to_string();
+        tokio::task::spawn_blocking(move || {
+            let mut conn = virt::connect::Connect::open(Some(&uri)).map_err(|e| {
+                machina_core::LibvirtError::Connection(format!("libvirt connect {uri}: {e}"))
+            })?;
+            let r = f(&conn);
+            let _ = conn.close();
+            r
+        })
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?
+        .map_err(|e| match e {
+            machina_core::LibvirtError::Invalid(m) => Status::invalid_argument(m),
+            machina_core::LibvirtError::NotFound(m) => Status::not_found(m),
+            other => Status::internal(other.to_string()),
+        })
+    }
+}
+
+fn to_layers(v: Vec<DiskLayer>) -> Vec<machina_core::libvirt::fork::Layer> {
+    v.into_iter()
+        .map(|l| machina_core::libvirt::fork::Layer {
+            target: l.target,
+            file: l.file,
+        })
+        .collect()
+}
+
+fn from_layers(v: Vec<machina_core::libvirt::fork::Layer>) -> Vec<DiskLayer> {
+    v.into_iter()
+        .map(|l| DiskLayer {
+            target: l.target,
+            file: l.file,
+        })
+        .collect()
+}
+
 fn grpc_port_u16(field: &str, value: u32) -> Result<u16, Status> {
     if value == 0 || value > u16::MAX as u32 {
         return Err(Status::invalid_argument(format!("invalid {field}")));
@@ -234,6 +286,7 @@ impl HostAgent for AgentService {
                     disk_write_iops: v.disk_write_iops,
                     guest_ip: v.guest_ip,
                     guest_ips: v.guest_ips,
+                    net_bytes: v.net_bytes,
                 })
                 .collect(),
         }))
@@ -2069,6 +2122,120 @@ impl HostAgent for AgentService {
             ok: true,
             message: String::new(),
         }))
+    }
+
+    async fn fork_vm(
+        &self,
+        request: Request<ForkVmRequest>,
+    ) -> Result<Response<ForkVmResponse>, Status> {
+        let req = request.into_inner();
+        let opts = machina_core::libvirt::fork::ForkOptions {
+            layers: to_layers(req.layers),
+            memory: req.memory,
+            isolate: req.isolate || req.memory,
+            reseed: req.reseed,
+            start: req.start,
+        };
+        let r = self
+            .own_conn_call(move |conn| {
+                machina_core::libvirt::fork::fork(
+                    conn,
+                    &req.source_name,
+                    &req.new_name,
+                    &req.label,
+                    &opts,
+                )
+            })
+            .await?;
+        Ok(Response::new(ForkVmResponse {
+            uuid: r.uuid,
+            frozen: from_layers(r.frozen),
+            disks: from_layers(r.disks),
+            quiesced: r.quiesced,
+            reseeded: r.reseeded,
+            running: r.running,
+        }))
+    }
+
+    async fn restore_point_create(
+        &self,
+        request: Request<RestorePointCreateRequest>,
+    ) -> Result<Response<RestorePointCreateResponse>, Status> {
+        let req = request.into_inner();
+        let (layers, quiesced) = self
+            .own_conn_call(move |conn| {
+                machina_core::libvirt::fork::create_restore_point(conn, &req.vm_name, &req.label)
+            })
+            .await?;
+        Ok(Response::new(RestorePointCreateResponse {
+            layers: from_layers(layers),
+            quiesced,
+        }))
+    }
+
+    async fn restore_point_rewind(
+        &self,
+        request: Request<RestorePointRewindRequest>,
+    ) -> Result<Response<RestorePointRewindResponse>, Status> {
+        let req = request.into_inner();
+        let layers = to_layers(req.layers);
+        let (disks, restarted) = self
+            .own_conn_call(move |conn| {
+                machina_core::libvirt::fork::rewind(
+                    conn,
+                    &req.vm_name,
+                    &layers,
+                    &req.label,
+                    &req.discard,
+                )
+            })
+            .await?;
+        Ok(Response::new(RestorePointRewindResponse {
+            disks: from_layers(disks),
+            restarted,
+        }))
+    }
+
+    async fn restore_point_merge(
+        &self,
+        request: Request<RestorePointMergeRequest>,
+    ) -> Result<Response<RestorePointMergeResponse>, Status> {
+        let req = request.into_inner();
+        if req.top.len() != req.base.len() {
+            return Err(Status::invalid_argument("top and base differ in length"));
+        }
+        let pairs: Vec<_> = to_layers(req.top)
+            .into_iter()
+            .zip(to_layers(req.base))
+            .collect();
+        self.own_conn_call(move |conn| {
+            machina_core::libvirt::fork::merge(conn, &req.vm_name, &pairs)
+        })
+        .await?;
+        Ok(Response::new(RestorePointMergeResponse {}))
+    }
+
+    async fn restore_point_discard(
+        &self,
+        request: Request<RestorePointDiscardRequest>,
+    ) -> Result<Response<RestorePointDiscardResponse>, Status> {
+        let req = request.into_inner();
+        let removed = self
+            .own_conn_call(move |conn| machina_core::libvirt::fork::discard(conn, &req.files))
+            .await?;
+        Ok(Response::new(RestorePointDiscardResponse {
+            removed: removed as u32,
+        }))
+    }
+
+    async fn detach_fork(
+        &self,
+        request: Request<DetachForkRequest>,
+    ) -> Result<Response<DetachForkResponse>, Status> {
+        let req = request.into_inner();
+        self.own_conn_call(move |conn| machina_core::libvirt::fork::detach(conn, &req.vm_name))
+            .await?;
+        Ok(Response::new(DetachForkResponse {}))
     }
 
     async fn list_host_gpus(
