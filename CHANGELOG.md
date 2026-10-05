@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-05 — Fleet Cloud: preemptible instances
+
+See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#preemptible-instances).
+
+- **Preemption.** VMs flagged preemptible (priority 0–100) are saved to
+  disk, lowest priority first, when their host drops below its free-memory
+  reserve, and restored, highest priority first, once the host has the
+  reserve plus 5% to spare. A regular VM that fits nowhere makes room the
+  same way. Preempted VMs don't wake on traffic.
+- **API.** `/api/v1/preemption`, `/api/v1/preemption/settings`,
+  `/api/v1/vms/{id}/preemptible`; `preemptible` and `preempt_priority` on
+  VM create. Migration `054_preemptible.sql`.
+- **UI.** Fleet Cloud → Preemptible; a Preemptible box on the create form.
+- **Tests.** `scripts/fleet/preempt-realvm.sh` on real VMs.
+
 ## 2026-10-05 — Fleet Cloud: game days
 
 See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#game-days).

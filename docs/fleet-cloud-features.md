@@ -592,3 +592,87 @@ listed at the top.
   and report statistics, finding the first disk in domain XML.
 - `web/e2e/fleet-cloud-chaos.spec.ts` (mocked): building an experiment,
   running after typing the name, the report, live faults and abort.
+
+## Preemptible instances
+
+Mark VMs that can wait (batch jobs, CI runners, dev boxes) as preemptible.
+When a host runs short of memory they give way: saved to disk with their
+memory intact, like a sleeping VM, rather than stopped. Once there is room
+again they come back on their own, exactly where they left off. A regular
+VM that fits on no host also makes room this way. OpenStack has no
+preemptible instances; spot capacity there is a separate project, and it
+deletes the instance.
+
+### How it works
+
+Each host keeps a share of its memory free: the **reserve** (default 10%,
+up to 90%). Every 20 seconds the controller's leader checks each host:
+
+- **Below its reserve:** the host's running preemptible VMs are saved to
+  disk (`virsh managedsave`), lowest priority first and, within a
+  priority, the largest first, until the reserve is back.
+- **Room to spare:** preempted VMs are restored, highest priority first
+  and then the longest waiting, as long as the host keeps its reserve
+  plus 5% afterwards. The margin stops a VM from being restored and
+  preempted again straight away.
+
+A host the controller just acted on is left alone for 60 seconds, so its
+next memory report reflects the change. Hosts without a heartbeat in the
+last 2 minutes, and VMs with a power, migration or delete task in flight,
+are skipped.
+
+Priority runs from 0 to 100; lower gives way first. A preempted VM is out
+of the [scale-to-zero](#scale-to-zero) wake set, so traffic to it doesn't
+undo the preemption. Making it regular again puts it back in the wake set:
+it wakes on its next packet like any sleeping VM.
+
+**Making room at create time.** When a new regular VM fits nowhere, the
+controller picks the schedulable host where preempting costs least
+(lowest top priority, then the fewest VMs, then the least memory), saves
+those VMs and places the new one there. A new preemptible VM never
+preempts anything.
+
+### API
+
+| Route | |
+|---|---|
+| `GET /api/v1/preemption` | Settings, the resume margin, each host's free memory against its reserve, preemptible and preempted VMs, and the last 50 preemptions and resumes |
+| `PUT /api/v1/preemption/settings` | `{ "enabled", "reserve_pct" }`; 400 outside 0–90 |
+| `PUT /api/v1/vms/{id}/preemptible` | `{ "preemptible", "priority" }`; 400 outside 0–100 |
+
+`POST /api/v1/vms` and `POST /api/v1/vms/from-template` take `preemptible`
+and `preempt_priority`. Writes need the operator role. Preemptions and
+resumes are recorded with the VM's sleep events (`preempted: <host> below
+<n>% free memory`, `capacity freed`).
+
+### UI
+
+Fleet Cloud → Preemptible sets the reserve, shows each host's free memory
+against it, lists preemptible and preempted instances with their priority,
+and makes instances preemptible or regular. The create form has a
+Preemptible box with a priority.
+
+### Limits
+
+- A preempted VM resumes on the host it was saved on, since the saved
+  memory is a file on that host. It doesn't move to another host with
+  room.
+- Instance group templates can't be marked preemptible yet.
+- HA failover and DRS don't preempt to make room.
+- Memory is the only pressure considered, not CPU or disk.
+
+### Tests
+
+- `scripts/fleet/preempt-realvm.sh` on real VMs: a reserve just above the
+  host's free memory preempts only the lower-priority VM (managed save,
+  not a stop); traffic doesn't wake it; lowering the reserve restores it
+  in the same boot with its processes still running; a preempted VM made
+  regular joins the wake set and wakes on traffic; out-of-range settings
+  are rejected.
+- Controller unit tests: victim order, the cheapest host to make room on,
+  resume with the reserve and margin, pressure then resume through the
+  loop (and the wake set without the preempted VM), and making room at
+  create time.
+- `web/e2e/fleet-cloud-preemptible.spec.ts` (mocked): hosts under
+  pressure, saving the reserve, priorities and the flag, and the create
+  form sending the flag and priority.
