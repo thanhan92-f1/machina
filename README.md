@@ -35,7 +35,8 @@
 | **VM flow history** | Service map, learn and replay of VM traffic, with lateral-movement alerts. |
 | **DNS threat feeds** | VM network policy blocks known-bad domains from threat feeds. |
 | **Plain-English policies** | Describe a VM network policy in words; Zyvor drafts the YAML, dry-runs it against past traffic and applies it after approval. |
-| **Project isolation** | Fleet Cloud projects are isolated from each other by default, with per-project egress allowlists and egress IPs. |
+| **Project isolation** | Fleet Cloud projects are isolated from each other by default, with per-project egress allowlists and egress IPs that Machina adds to the host and announces itself. |
+| **Encrypted cross-host overlay** | WireGuard between hypervisors; VM traffic keeps its identity across hosts, so isolation holds even on NAT networks. |
 | **Segmentation evidence** | Export a sealed (SHA-256) JSON or Markdown report of policies, the reachability matrix and denied traffic for audits. |
 | **Quick create and Fix-it** | Image, size, Create; then a one-click Fix-it list (guest agent, backups) in Command Center. |
 
@@ -117,7 +118,7 @@ Machina ships its own eBPF datapath instead of bolting on Cilium, Tetragon or a 
 
 - **Load balancing**: Maglev service LB for Kubernetes (socket-level, NodePort at TC or XDP, DSR) and QUIC-LB at XDP.
 - **Kubernetes CNI** (opt-in): `machina-cni` replaces flannel and kube-proxy where you choose it, with NetworkPolicy and Cilium policy migration. It never takes over an existing CNI.
-- **VM network policy**: which VM may talk to which, ingress and egress, written as CiliumNetworkPolicy YAML and enforced on each VM tap without Cilium or Envoy. This covers L3/L4, DNS names (`toFQDNs`), L7 (HTTP, gRPC, Kafka, TLS SNI, DNS), TLS interception with header rewrites, CIDR groups and mutual authentication (mTLS between hosts). Comes with policy trace and Hubble-style flows in the UI and in `machinactl netpol` / `machinactl flow`, plus flow history (service map, learn, replay, L7 metrics), quarantine, just-in-time access, lateral-movement alerts, DNS threat feeds, plain-English policies, project isolation, egress allowlists and IPs, and segmentation evidence export.
+- **VM network policy**: which VM may talk to which, ingress and egress, written as CiliumNetworkPolicy YAML and enforced on each VM tap without Cilium or Envoy. This covers L3/L4, DNS names (`toFQDNs`), L7 (HTTP, gRPC, Kafka, TLS SNI, DNS), TLS interception with header rewrites, CIDR groups and mutual authentication (mTLS between hosts). Comes with policy trace and Hubble-style flows in the UI and in `machinactl netpol` / `machinactl flow`, plus flow history (service map, learn, replay, L7 metrics), quarantine, just-in-time access, lateral-movement alerts, DNS threat feeds, plain-English policies, project isolation, egress allowlists and IPs (added to the host and announced by Machina), an encrypted WireGuard overlay that keeps VM identity across hosts, VM addresses found without a guest agent (neighbour tables and tap traffic), and segmentation evidence export.
 - **Protection**: XDP DDoS shield, emergency node isolation, VM edge isolation and rate limits, a QEMU sandbox and a BPF-LSM guard around the VMM.
 - **Visibility**: flows, DNS, L7 (HTTP, TLS SNI, gRPC, Redis, PostgreSQL, MySQL, Kafka), JA3/JA4 fingerprints, network-change audit and per-VM runtime histograms.
 - **Inside guests**: per-container network and LSM policy through GuestKit, from the VM's **Guest policy** tab.

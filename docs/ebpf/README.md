@@ -9,7 +9,7 @@ and PacketWolf agents; Machina no longer integrates with any of them.
 |---|---|
 | [datapath.md](datapath.md) | Uplink XDP dispatcher, service load balancing, DDoS shield, node isolation, TCP/ICMP health, TLS fingerprints |
 | [enforcement.md](enforcement.md) | Policy kinds and the enforcement lease, VM edge, QEMU sandbox, VMM guard (BPF-LSM), direct tap redirect |
-| [vm-network-policy.md](vm-network-policy.md) | VM-to-VM ingress/egress policy in the CiliumNetworkPolicy schema: L3/L4, toFQDNs, L7 (HTTP, gRPC, Kafka, TLS SNI, DNS), TLS interception and header rewrites, CIDR groups, authentication (mTLS between hosts). VM labels, policy trace, packet flows (`machinactl netpol` / `flow`), flow history (map, learn, replay, L7 metrics), quarantine, just-in-time access, lateral-movement alerts, DNS threat feeds, plain-English policies, project isolation, egress allowlists and egress IPs, segmentation evidence |
+| [vm-network-policy.md](vm-network-policy.md) | VM-to-VM ingress/egress policy in the CiliumNetworkPolicy schema: L3/L4, toFQDNs, L7 (HTTP, gRPC, Kafka, TLS SNI, DNS), TLS interception and header rewrites, CIDR groups, authentication (mTLS between hosts). VM labels, policy trace, packet flows (`machinactl netpol` / `flow`), flow history (map, learn, replay, L7 metrics), quarantine, just-in-time access, lateral-movement alerts, DNS threat feeds, plain-English policies, project isolation, egress allowlists and egress IPs (added and announced by bpfd), WireGuard cross-host overlay, agentless VM addresses, segmentation evidence |
 | [observability.md](observability.md) | Flows, DNS, L7, accounting, captures, network-change audit, sampled L7, VM runtime intelligence |
 | [fastpath.md](fastpath.md) | QUIC-LB, AF_XDP, sched_ext VM scheduler (`machina-scx`) |
 | [cni.md](cni.md) | `machina-cni`: Kubernetes CNI, NetworkPolicy and Cilium policy compile, services |
@@ -103,8 +103,8 @@ uplink or production VM taps.
 | VM network policy | `/vm-network-policies` (+ `/validate`, `/trace`, `/endpoints`, `/selectors`, `/status`, `/fqdn-cache`, `/auth`, `/learn`, `/replay`, `/draft`, `/quarantines`, `/jit`, `/threat-feeds`, `/evidence`, `/{name}`), `/flows`, `/flows/edges`, `/flows/alerts`, `/flows/stream` (SSE), `/vms/{name}/labels` |
 
 The controller serves the same `/api/v1/vm-network-policies` routes for the
-fleet, plus `/projects`, `/projects/{project}`, `/egress-ips`, `/sync`,
-`/draft/propose` and `/{name}/enabled`.
+fleet, plus `/projects`, `/projects/{project}`, `/egress-ips`, `/overlay`,
+`/sync`, `/draft/propose` and `/{name}/enabled`.
 
 Controller fleet views: `GET /api/v1/zeus-security/native-dataplane`,
 `/zeus-security/tls/fingerprints`, `/zeus-security/icmp-errors`; per-host
@@ -126,7 +126,7 @@ cgroups (Linux host only):
 | `scripts/bpf/netns-smoke.sh` (`make bpf-test`) | Policies, capture, QoS, rate limit, L7, accounting, DNS deny, shield, node isolation, direct redirect | 112 |
 | `scripts/bpf/cni-smoke.sh` (`make bpf-cni-test`) | CNI routing, NetworkPolicy, socket-LB and NodePort services | 40 |
 | `scripts/bpf/vm-edge-smoke.sh` | VM edge, VM network policy (identity rules, deny, ranges, ICMP, CIDR, toFQDNs, L7 HTTP/TLS/Kafka/DNS, authentication, source guard, flows, quarantine, egress SNAT and managed egress addresses, learned addresses, WireGuard overlay, node addresses as host), QEMU sandbox | 145 |
-| `scripts/bpf/vm-netpol-realvm.sh` | VM network policy on two disposable real VMs: observe and leased enforce, L7, flows, history, quarantine, JIT, project isolation, preview and second-admin approval, egress allowlist, IPv4 and IPv6 egress IPs, signed and per-project evidence (needs a running daemon and controller) | 179 |
+| `scripts/bpf/vm-netpol-realvm.sh` | VM network policy on two disposable real VMs: observe and leased enforce, L7, flows, history, quarantine, JIT, project isolation, preview and second-admin approval, egress allowlist, IPv4 and IPv6 egress IPs, learned addresses, overlay enable/disable, signed and per-project evidence (needs a running daemon and controller) | 187 |
 | `scripts/bpf/vmintel-smoke.sh` | VM runtime intelligence | 14 |
 | `scripts/bpf/guard-smoke.sh` | VMM guard | 12 |
 | `scripts/bpf/quiclb-smoke.sh` | QUIC-LB | 18 |

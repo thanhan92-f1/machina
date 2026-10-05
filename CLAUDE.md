@@ -285,6 +285,8 @@ Frontend polls `/api/v1/tasks/{task_id}`.
 - `MACHINA_DAEMON_URL` — URL the controller uses to reach the daemon
 - `MACHINA_API_KEY_MASTER_KEY` — 64-char hex (32 bytes) AES-256-GCM master key for encrypting LLM provider API keys at rest. Unset = plaintext (dev/legacy). Generate: `openssl rand -hex 32`
 - `MACHINA_NETPOL_PROJECT_APPROVAL=1` — every project network change (isolation, egress allowlist/IPs) becomes a two-person `vm_netpol.project` approval
+- `MACHINA_NETPOL_EGRESS_MANAGE=0` — hosts no longer add missing project egress IPs to their uplink (default on: bpfd adds a `/32`/`/128`, announces it with GARP / unsolicited NA, removes only what it added); `MACHINA_NETPOL_EGRESS_INTERFACE` — interface for them instead of the default route's
+- WireGuard overlay (`netpol overlay enable --fleet`, `/api/v1/vm-network-policies/overlay`) is a DB setting, not an env var: needs `wireguard-tools` on every host and UDP 51871 between them; keys stay in bpfd's state dir and are set over netlink (Ubuntu's AppArmor profile blocks `wg` reading keys outside `/etc/wireguard`)
 - `MACHINA_NETPOL_EVIDENCE_DIR` (default `/var/lib/machina/netpol-evidence`), `MACHINA_NETPOL_EVIDENCE_EVERY_HOURS` (default 24, 0 = off), `MACHINA_NETPOL_EVIDENCE_KEEP_DAYS` (default 90) — scheduled signed segmentation-evidence exports
 
 **Atlas storage integration** (controller ↔ `../atlas` Zyvor storage control plane; VM disks as Ceph/NFS/ZFS volumes, snapshot/backup/restore via Atlas):
