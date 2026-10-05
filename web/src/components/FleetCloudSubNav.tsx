@@ -25,6 +25,7 @@ const MORE: Tab[] = [
   { to: '/fleet-cloud/server-groups', label: 'Groups' },
   { to: '/fleet-cloud/vpcs', label: 'VPCs & elastic compute' },
   { to: '/fleet-cloud/autopilot', label: 'Autopilot' },
+  { to: '/fleet-cloud/chaos', label: 'Game days' },
   { to: '/fleet-cloud/networking', label: 'Network' },
   { to: '/fleet-cloud/topology', label: 'Topology' },
   { to: '/fleet-cloud/floating-ips', label: 'Floating IPs' },

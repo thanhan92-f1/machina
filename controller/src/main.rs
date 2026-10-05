@@ -168,6 +168,7 @@ async fn main() -> anyhow::Result<()> {
     sync::spawn_periodic(state.clone());
     reconcile::spawn(state.clone());
     machina_controller::engine::cloud::spawn(state.clone());
+    machina_controller::engine::chaos::spawn(state.clone());
     machina_controller::engine::vm_sleep::spawn(state.clone());
     machina_controller::engine::time_travel::spawn(state.clone());
     machina_controller::engine::stack_reconcile::spawn(state.clone());

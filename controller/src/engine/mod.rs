@@ -10,6 +10,7 @@ pub mod baremetal;
 pub mod bpf;
 pub mod cert_monitor;
 pub mod channel_worker;
+pub mod chaos;
 pub mod cloud;
 pub mod consolidation;
 pub mod developer;

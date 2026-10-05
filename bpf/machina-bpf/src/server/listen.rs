@@ -80,6 +80,11 @@ struct Persisted {
     vm_overlay: Option<VmOverlay>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     vm_wake: Option<VmWake>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    vm_chaos: Vec<VmChaosActive>,
+    /// Root qdisc kinds chaos replaced, by tap.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    vm_chaos_prior: std::collections::BTreeMap<String, String>,
 }
 
 struct Daemon {
@@ -91,6 +96,7 @@ struct Daemon {
 
 impl Daemon {
     fn save(&self, eng: &Engine) {
+        let (vm_chaos, vm_chaos_prior) = eng.chaos.persisted();
         let p = Persisted {
             policies: eng.list_policies(),
             telemetry: Some(eng.telemetry.clone()),
@@ -146,6 +152,8 @@ impl Daemon {
                 let w = eng.wake.config();
                 (!w.entries.is_empty()).then_some(w)
             },
+            vm_chaos,
+            vm_chaos_prior,
         };
         let tmp = self.state_path.with_extension("json.tmp");
         let res = serde_json::to_vec_pretty(&p)
@@ -239,6 +247,7 @@ impl Daemon {
                 tracing::warn!("restore wake set: {e:#}");
             }
         }
+        eng.chaos.restore(p.vm_chaos, p.vm_chaos_prior);
         for q in p.vm_quarantines {
             let vm = q.vm.clone();
             if let Err(e) = eng.quarantine_restore(q) {
@@ -582,6 +591,19 @@ impl Daemon {
                 v(&st)
             }
             Request::VmWakeStatus => v(&lock(&self.engine).wake.status()),
+            Request::VmChaosStart { fault } => {
+                let eng = lock(&self.engine);
+                let st = eng.chaos.start(fault)?;
+                self.save(&eng);
+                v(&st)
+            }
+            Request::VmChaosStop { id, prefix } => {
+                let eng = lock(&self.engine);
+                let stopped = eng.chaos.stop(&id, &prefix);
+                self.save(&eng);
+                json!({ "stopped": stopped })
+            }
+            Request::VmChaosStatus => v(&lock(&self.engine).chaos.status()),
             Request::VmSandboxConfigure { config } => {
                 let mut eng = lock(&self.engine);
                 let st = eng.vm_sandbox_configure(config)?;
@@ -891,6 +913,7 @@ pub async fn run(cfg: Config) -> Result<()> {
     eng.threat_set_path(cfg.state_dir.join("threat-feeds.json"));
     eng.overlay.dir = Some(cfg.state_dir.join("overlay"));
     eng.wake.spawn_poller(bus.clone());
+    eng.chaos.spawn_ticker();
     {
         let (sh, b) = (shared.clone(), bus.clone());
         spawn_reader(eng.dp.take_ringbuf("NET_EVENTS")?, "net", move |x| {

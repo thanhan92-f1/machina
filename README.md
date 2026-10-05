@@ -36,6 +36,7 @@ CPU scaling, and the explicit routing/peering limitations.
 | **Time travel** | Fork a running VM in seconds, with or without its RAM; scheduled restore points and one-click rewind. [How →](docs/fleet-cloud-features.md#time-travel) |
 | **Stacks you describe** | Say what you want in a sentence; get a template, a dry run (quota, placement, cost, policy replay), an approval, then a stack that heals its own drift. [How →](docs/fleet-cloud-features.md#stacks-you-describe) |
 | **Autopilot capacity** | Instance groups scale ahead of the daily or weekly rush, drain from their load balancer, and sleep instead of stopping; VMs are right-sized from their own history and hosts consolidated, each through an approval you can undo. [How →](docs/fleet-cloud-features.md#autopilot-capacity) |
+| **Game days** | Inject latency, loss, partitions, slow disks and crashes into your own VMs under a lease; health probes abort the run and lift every fault when the service suffers; a report per step. [How →](docs/fleet-cloud-features.md#game-days) |
 | **Boot Doctor** | A VM that won't boot gets diagnosed and repaired offline through GuestKit, with a backup taken first. |
 | **VM quarantine** | Isolate a suspect VM in the eBPF datapath under a time-boxed lease that lapses on its own. |
 | **Just-in-time access** | Open a VM's network for a set time, with two-person approval and automatic expiry. |
@@ -85,6 +86,7 @@ CPU scaling, and the explicit routing/peering limitations.
 | Copies and rollback | [Time travel](docs/fleet-cloud-features.md#time-travel): live fork (optionally with RAM), restore points, rewind in place | Snapshot uploads a full image to Glance; rebuild from it |
 | Orchestration | [Stacks](docs/fleet-cloud-features.md#stacks-you-describe) drafted from a description, dry-run with cost and policy replay, approved, then kept in sync every minute | Heat: hand-written HOT templates; no drift repair |
 | Autoscaling and sizing | [Autopilot](docs/fleet-cloud-features.md#autopilot-capacity): seasonal forecast pre-scaling, load-balancer drain, sleep on scale-in, history-based rightsizing and host consolidation with approval and undo | Senlin/Heat alarms react after the fact; Watcher is a separate service; resizes by hand |
+| Resilience testing | [Game days](docs/fleet-cloud-features.md#game-days): leased network, disk and crash faults with health-probe abort and a report | Not included; a separate chaos tool |
 | Containers and Kubernetes | Podman, KubeVirt | Zun / Magnum (separate projects) |
 | **Choose OpenStack when** | | You run thousands of tenants, need Neutron-grade SDN breadth, or depend on its ecosystem |
 

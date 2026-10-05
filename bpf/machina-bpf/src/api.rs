@@ -1251,6 +1251,58 @@ pub struct VmOverlayStatus {
     pub hostname: Option<String>,
 }
 
+pub const CHAOS_MAX_SECS: u64 = 3600;
+
+/// One injected network fault on a VM's taps. It ends on its own when the
+/// lease runs out, whether or not anyone stops it.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmChaosFault {
+    /// Caller's id (e.g. experiment and step); starting the same id again
+    /// replaces the fault.
+    pub id: String,
+    #[serde(default)]
+    pub vm: String,
+    /// An explicit interface instead of the VM's taps (tests).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tap: Option<String>,
+    /// Added latency towards the VM.
+    #[serde(default)]
+    pub delay_ms: u32,
+    #[serde(default)]
+    pub jitter_ms: u32,
+    /// Packets towards the VM dropped at random.
+    #[serde(default)]
+    pub loss_pct: f64,
+    /// Traffic between the VM and these CIDRs is dropped both ways.
+    #[serde(default)]
+    pub partition: Vec<String>,
+    /// Lease, 1..=CHAOS_MAX_SECS.
+    pub secs: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmChaosActive {
+    #[serde(flatten)]
+    pub fault: VmChaosFault,
+    /// Interfaces it is applied to.
+    #[serde(default)]
+    pub taps: Vec<String>,
+    /// Wall clock end (RFC 3339).
+    pub until: String,
+    #[serde(default)]
+    pub remaining_secs: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct VmChaosStatus {
+    #[serde(default)]
+    pub faults: Vec<VmChaosActive>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
+}
+
 /// A sleeping VM and the addresses whose traffic wakes it.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct VmWakeEntry {
@@ -2325,6 +2377,18 @@ pub enum Request {
         config: VmOverlay,
     },
     VmOverlayStatus,
+    /// Inject a network fault on a VM for a lease.
+    VmChaosStart {
+        fault: VmChaosFault,
+    },
+    /// End faults now: one id, or every id starting with `prefix`.
+    VmChaosStop {
+        #[serde(default)]
+        id: String,
+        #[serde(default)]
+        prefix: String,
+    },
+    VmChaosStatus,
     /// Replace the wake set (nftables tables `machina_wake`).
     VmWakeSet {
         config: VmWake,

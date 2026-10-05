@@ -464,3 +464,131 @@ demand with the forecast. Fleet Cloud → Autopilot is the rightsizing inbox
   adds capacity.
 - `web/e2e/fleet-cloud-autopilot.spec.ts` (mocked): apply a suggestion,
   consolidation, empty states, and saving a group's autoscale settings.
+
+## Game days
+
+Break your own VMs on purpose and see what holds. An experiment injects
+latency, packet loss, a network partition, a slow disk or a crash into
+chosen VMs, one step at a time. Health probes run throughout, and the run
+stops itself, lifting every fault, when they fail too often. Every run ends
+with a report that compares each step with the baseline. OpenStack has no
+equivalent; teams bolt on a separate chaos tool.
+
+### Steps
+
+| Kind | What happens |
+|---|---|
+| `latency` | `delay_ms` (up to 10 s) and `jitter_ms` added to traffic towards the VM |
+| `loss` | `loss_pct` of packets towards the VM dropped |
+| `partition` | Traffic between the VM and `cidrs`, and the addresses of `peers` (VM ids), dropped both ways |
+| `disk` | The VM's first disk limited to `read_iops` / `write_iops` through libvirt, then set back to unlimited |
+| `kill` | The VM is powered off hard. The step waits up to `recover_secs` for the controller's reconcile loop to bring it back and records how long that took. A VM whose desired state isn't `running` is refused, since nothing would restart it |
+| `host_failure` | The digital twin's impact analysis for losing `host_id`: severity, what would be affected and recommendations. Nothing is shut down |
+
+`latency`, `loss`, `partition` and `disk` take `secs`. A run is a
+`baseline_secs` phase (default 15), the steps in order, then
+`recovery_secs` (default 15). A run lasts at most an hour, with up to 20
+steps, 20 targets and 10 probes.
+
+### How faults are applied
+
+`machina-bpfd` on the VM's host applies network faults to the VM's tap:
+
+- **Latency and loss** are a `tc netem` root qdisc on the tap, which acts
+  on traffic towards the VM. The tap's previous root qdisc (`fq` from bpfd
+  QoS, or none) is put back afterwards. A tap carries one latency/loss
+  fault at a time.
+- **Partitions** are drop rules for the tap in the bridge table
+  `machina_chaos` (forward, input and output hooks), so they hold for
+  routed and bridged traffic alike.
+
+Every fault is held under a lease: the step's length plus 30 seconds. bpfd
+lifts it at lease end whether or not the controller is still there. Faults
+are saved with bpfd's state and put back after a bpfd restart, as long as
+their lease hasn't run out. A controller that restarts during a run marks
+it `interrupted` and lifts its faults right away.
+
+### Probes and abort
+
+Probes run from the controller every 2 seconds with a 2-second timeout:
+
+| Kind | Succeeds when |
+|---|---|
+| `tcp` | `target` (`host:port`) accepts a connection |
+| `http` | `url` answers with `expect_status` (default 200; certificates aren't checked, redirects aren't followed) |
+| `vm_running` | The VM `vm` is observed running |
+
+The run aborts when probe success over the last `window_secs` (default 20)
+falls below `min_success_pct` (default 50). At least 3 samples are needed
+first. Set `min_success_pct` to 0 to never abort, for a kill whose downtime
+is the point. On abort, every network fault and disk limit is removed and
+killed VMs that are still down are started.
+
+### Report
+
+Each phase records its probe samples, success rate, p50 and p95 latency,
+and notes: the recovery time of a kill, the host-failure analysis, or the
+error of a step that couldn't run. Findings call out steps whose success
+dropped or whose p95 more than doubled against the baseline. The verdict
+is `passed`, `failed` (a step errored, or a kill didn't recover) or
+`aborted`.
+
+### Safety
+
+- Starting a run means typing the experiment's name.
+- VMs tagged `chaos=protected` can't be targeted.
+- An experiment runs once at a time; editing or deleting it waits until
+  the run ends.
+- Only targeted VMs' taps are touched. Disk limits and kills go through
+  the host agent, like any other power or tuning change.
+
+### API
+
+| Route | |
+|---|---|
+| `GET /api/v1/chaos/experiments` | With each one's last run status |
+| `POST /api/v1/chaos/experiments` | `{ "name", "description"?, "spec" }`; 400 on an invalid spec, 403 for a protected target |
+| `GET /api/v1/chaos/experiments/{id}` | The experiment, its last 20 runs and the longest it can run |
+| `PUT` / `DELETE /api/v1/chaos/experiments/{id}` | 409 while it runs |
+| `POST /api/v1/chaos/experiments/{id}/run` | `{ "confirm": "<name>" }`; 400 `confirm_mismatch`, 409 if already running |
+| `GET /api/v1/chaos/runs?experiment_id=` | Latest 100 runs |
+| `GET /api/v1/chaos/runs/{id}` | The run and its report; `live` phases and samples while it runs |
+| `POST /api/v1/chaos/runs/{id}/abort` | Stops it and lifts every fault |
+| `GET /api/v1/chaos/faults` | Faults active on every online host, with time left |
+
+Writes need the operator role. bpfd requests: `vm_chaos_start`,
+`vm_chaos_stop` (by `id` or `prefix`) and `vm_chaos_status`.
+
+### UI
+
+Fleet Cloud → Game days builds experiments (targets, steps, probes, abort
+rule), runs them after the name is typed, follows a run phase by phase
+with an abort button, and shows the report. Faults active on any host are
+listed at the top.
+
+### Limits
+
+- Latency and loss act on traffic towards the VM only. Traffic the VM
+  sends leaves through the tap's ingress, which belongs to the eBPF
+  datapath.
+- Probes run from the controller, so they see the network as the
+  controller does, not as another VM would.
+- `host_failure` is an analysis. Powering a host off for real stays a
+  manual step.
+- A partition from `peers` needs the controller to know their addresses.
+
+### Tests
+
+- `scripts/fleet/chaos-realvm.sh` on real VMs: latency, loss and a
+  partition from a peer VM checked from the host and from the peer during
+  each step; a disk limit seen in libvirt; a kill recovered by the
+  reconcile loop; a simulated host failure; an automatic abort when probes
+  fail; a manual abort; and no fault left behind after any of them.
+- `scripts/bpf/vm-edge-smoke.sh` (veth): netem applied and the prior `fq`
+  put back, one netem fault per tap, limits rejected, lease expiry, a
+  partition on a bridged port, and a fault that survives a bpfd restart.
+- bpfd unit tests: validation, netem arguments, the nft rules, root qdisc
+  parsing. Controller unit tests: spec parsing and validation, abort window
+  and report statistics, finding the first disk in domain XML.
+- `web/e2e/fleet-cloud-chaos.spec.ts` (mocked): building an experiment,
+  running after typing the name, the report, live faults and abort.

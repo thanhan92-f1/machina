@@ -12,6 +12,7 @@ mod backup_targets;
 mod backups;
 mod baremetal;
 mod blueprints;
+mod chaos;
 pub mod cert;
 pub(crate) mod cloud;
 mod cloud_init;
@@ -1785,6 +1786,21 @@ pub fn router(state: AppState) -> Router {
             get(stacks::list_stacks).post(stacks::create_stack),
         )
         .route("/api/v1/stacks/draft", post(stacks::draft_stack))
+        .route(
+            "/api/v1/chaos/experiments",
+            get(chaos::list_experiments).post(chaos::create_experiment),
+        )
+        .route(
+            "/api/v1/chaos/experiments/{id}",
+            get(chaos::get_experiment)
+                .put(chaos::update_experiment)
+                .delete(chaos::delete_experiment),
+        )
+        .route("/api/v1/chaos/experiments/{id}/run", post(chaos::run_experiment))
+        .route("/api/v1/chaos/runs", get(chaos::list_runs))
+        .route("/api/v1/chaos/runs/{id}", get(chaos::get_run))
+        .route("/api/v1/chaos/runs/{id}/abort", post(chaos::abort_run))
+        .route("/api/v1/chaos/faults", get(chaos::faults))
         .route("/api/v1/rightsizing", get(autopilot::rightsizing))
         .route("/api/v1/rightsizing/propose", post(autopilot::propose_resize))
         .route("/api/v1/drs/consolidation", get(autopilot::consolidation))

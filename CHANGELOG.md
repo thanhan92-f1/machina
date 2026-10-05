@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-05 — Fleet Cloud: game days
+
+See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#game-days).
+
+- **Faults.** bpfd applies latency and loss (`tc netem` on the VM tap, the
+  previous qdisc put back) and partitions (bridge table `machina_chaos`)
+  under a lease that ends on its own and survives a bpfd restart. New bpfd
+  requests `vm_chaos_start`, `vm_chaos_stop`, `vm_chaos_status`.
+- **Experiments.** `/api/v1/chaos/*`: steps for latency, loss, partition,
+  disk throttle, kill (recovery timed) and simulated host failure, with
+  tcp/http/VM-running probes and an abort rule. Runs need the name typed,
+  skip `chaos=protected` VMs, and end with a per-phase report.
+- **UI.** Fleet Cloud → Game days.
+- **Upgrade.** Hosts need the new `machina-agent` as well as `machina-bpfd`:
+  the agent relays the chaos requests to bpfd and runs the disk limit.
+- **Tests.** `scripts/fleet/chaos-realvm.sh` on real VMs; chaos checks in
+  `scripts/bpf/vm-edge-smoke.sh`.
+
 ## 2026-10-05 — Fleet Cloud: autopilot capacity
 
 See [docs/fleet-cloud-features.md](docs/fleet-cloud-features.md#autopilot-capacity).

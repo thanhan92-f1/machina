@@ -30,6 +30,7 @@ use crate::policy::{self, proto_name, Prefix, Rule};
 use crate::{dns, fmt_addr};
 
 mod afxdp;
+mod chaos;
 mod cni;
 mod direct;
 mod egress;
@@ -286,6 +287,7 @@ struct Engine {
     egress: egress::EgressRuntime,
     overlay: overlay::OverlayRuntime,
     wake: wake::WakeRuntime,
+    chaos: chaos::ChaosRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -387,6 +389,7 @@ impl Engine {
             egress: egress::EgressRuntime::default(),
             overlay: overlay::OverlayRuntime::default(),
             wake: wake::WakeRuntime::default(),
+            chaos: chaos::ChaosRuntime::default(),
         };
         eng.init()?;
         Ok(eng)

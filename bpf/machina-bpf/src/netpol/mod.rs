@@ -18,6 +18,7 @@
 //! datapath does.
 
 mod compile;
+pub mod chaos;
 pub mod evidence;
 mod flow;
 pub mod fqdn;

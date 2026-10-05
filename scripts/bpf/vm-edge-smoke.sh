@@ -969,6 +969,89 @@ req "{\"op\":\"vm_sandbox_detach\",\"vm\":\"$VM\"}" | must
 check "sandbox: detached" bash -c "! bpftool cgroup show $CG 2>/dev/null | grep -q mn_qemu"
 rmdir "$CG" 2>/dev/null || true
 
+# ---- chaos faults --------------------------------------------------------------
+# A bridged veth stands in for a VM tap (explicit `tap`, so real taps are
+# never looked up). netem acts on traffic towards the "VM"; the partition is
+# the bridge table. Runs last because it restarts bpfd.
+
+CH_NS=mnvme-cn
+CH_BR=mnvme-cb
+CH_IF=mnvme-c0
+ch_cleanup() {
+  req '{"op":"vm_chaos_stop","prefix":"smoke"}' >/dev/null 2>&1 || true
+  ip netns del "$CH_NS" 2>/dev/null || true
+  ip link del "$CH_IF" 2>/dev/null || true
+  ip link del "$CH_BR" 2>/dev/null || true
+}
+trap 'ch_cleanup; cleanup' EXIT
+ip link add "$CH_BR" type bridge
+ip addr add 10.199.91.1/24 dev "$CH_BR"
+ip link set "$CH_BR" up
+ip netns add "$CH_NS"
+ip link add "$CH_IF" type veth peer name "${CH_IF}p"
+ip link set "$CH_IF" master "$CH_BR" up
+ip link set "${CH_IF}p" netns "$CH_NS"
+ip netns exec "$CH_NS" ip addr add 10.199.91.2/24 dev "${CH_IF}p"
+ip netns exec "$CH_NS" ip link set "${CH_IF}p" up
+for _ in $(seq 20); do ping -c1 -W1 10.199.91.2 >/dev/null 2>&1 && break; sleep 0.25; done
+
+rtt() { ping -c3 -i0.3 -W2 10.199.91.2 2>/dev/null | awk -F/ '/^rtt|^round-trip/ {printf "%d", $5}'; }
+root_kind() { tc -j qdisc show dev "$CH_IF" root | python3 -c "import json,sys; q=json.load(sys.stdin); print(q[0]['kind'] if q else '')"; }
+fault() { req "{\"op\":\"vm_chaos_start\",\"fault\":{\"id\":\"$1\",\"vm\":\"mnsmk-chaos\",\"tap\":\"$CH_IF\",$2}}"; }
+ch_ok() { ip netns exec "$CH_NS" ping -c1 -W1 10.199.91.1 >/dev/null 2>&1; }
+active() { jpath vm_chaos_status "sorted(f['id'] for f in d['faults'])"; }
+
+R=$(rtt)
+check "chaos: baseline rtt under 50 ms" bash -c "[ ${R:-999} -lt 50 ]"
+tc qdisc replace dev "$CH_IF" root fq
+fault smoke-lat '"delay_ms":300,"jitter_ms":0,"secs":60' | must
+check "chaos: netem root installed" [ "$(root_kind)" = netem ]
+R=$(rtt); echo "      rtt with 300 ms delay: ${R:-?} ms"
+check "chaos: latency applied" bash -c "[ ${R:-0} -ge 280 ]"
+dup=$(fault smoke-lat2 '"loss_pct":10,"secs":60')
+check "chaos: second netem fault on the same tap refused" grep -qi "already" <<<"$dup"
+big=$(fault smoke-big '"delay_ms":20000,"secs":60')
+check "chaos: delay over the cap rejected" grep -q '"ok":false' <<<"$big"
+long=$(fault smoke-long '"delay_ms":10,"secs":7200')
+check "chaos: lease over an hour rejected" grep -q '"ok":false' <<<"$long"
+req '{"op":"vm_chaos_stop","id":"smoke-lat"}' | must
+check "chaos: stop puts the prior fq back" [ "$(root_kind)" = fq ]
+tc qdisc del dev "$CH_IF" root 2>/dev/null || true
+
+fault smoke-short '"loss_pct":100,"secs":3' | must
+check "chaos: 100% loss drops traffic to the VM" not ping -c1 -W1 10.199.91.2
+sleep 5
+check "chaos: lease end lifts the fault" [ "$(active)" = "[]" ]
+check "chaos: lease end removes netem" [ "$(root_kind)" != netem ]
+check "chaos: traffic back after lease" ping -c1 -W1 10.199.91.2
+
+if nft list table bridge machina_chaos >/dev/null 2>&1; then
+  echo "SKIP  chaos partition: machina_chaos already in use"
+else
+  check "chaos: bridge peer reachable before partition" ch_ok
+  fault smoke-part '"partition":["10.199.91.1/32"],"secs":60' | must
+  check "chaos: partition table installed" nft list table bridge machina_chaos
+  check "chaos: partition drops VM to peer" not ch_ok
+  req '{"op":"vm_chaos_stop","prefix":"smoke-part"}' | must
+  check "chaos: stop removes the partition table" not nft list table bridge machina_chaos
+  check "chaos: peer reachable again" ch_ok
+fi
+
+fault smoke-persist '"delay_ms":250,"secs":120' | must
+kill "$BPFD_PID"; wait "$BPFD_PID" 2>/dev/null || true
+rm -f "$SOCK"
+RUST_LOG=${RUST_LOG:-info} "$BPFD" --socket "$SOCK" --state-dir "$WORK" --socket-group "" >>"$WORK/bpfd.log" 2>&1 &
+BPFD_PID=$!
+for _ in $(seq 50); do [[ -S "$SOCK" ]] && break; sleep 0.2; done
+sleep 1.5
+check "chaos: fault survives a bpfd restart" [ "$(active)" = "['smoke-persist']" ]
+check "chaos: netem still on after restart" [ "$(root_kind)" = netem ]
+req '{"op":"vm_chaos_stop","prefix":"smoke"}' | must
+check "chaos: stop by prefix clears everything" [ "$(active)" = "[]" ]
+check "chaos: no netem left" [ "$(root_kind)" != netem ]
+ch_cleanup
+trap cleanup EXIT
+
 if grep -qiE "verifier|panicked" "$WORK/bpfd.log"; then
   echo "---- bpfd log (verifier/panic) ----"
   grep -iE -A20 "verifier|panicked" "$WORK/bpfd.log" | head -60

@@ -306,6 +306,7 @@ export const navGroups: NavGroup[] = [
           { to: '/fleet-cloud/keypairs', icon: React.createElement(Key, { className: 'w-4 h-4' }), label: 'Keypairs' },
           { to: '/fleet-cloud/flavors', icon: React.createElement(Cpu, { className: 'w-4 h-4' }), label: 'Flavors' },
           { to: '/fleet-cloud/autopilot', icon: React.createElement(Activity, { className: 'w-4 h-4' }), label: 'Autopilot' },
+          { to: '/fleet-cloud/chaos', icon: React.createElement(Zap, { className: 'w-4 h-4' }), label: 'Game days' },
         ],
       },
       {
@@ -401,6 +402,7 @@ export const routeLabels: Record<string, string> = {
   '/fleet-cloud/floating-ips': 'Floating IPs',
   '/fleet-cloud/vpcs': 'VPCs & elastic compute',
   '/fleet-cloud/autopilot': 'Autopilot',
+  '/fleet-cloud/chaos': 'Game days',
   '/fleet-cloud/networking': 'Networking',
   '/fleet-cloud/load-balancers': 'Load Balancers',
   '/fleet-cloud/topology': 'Network Topology',
