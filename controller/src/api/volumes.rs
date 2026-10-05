@@ -53,6 +53,15 @@ pub struct VolumeRow {
     pub write_iops: Option<i64>,
     pub read_bps: Option<i64>,
     pub write_bps: Option<i64>,
+    #[sqlx(skip)]
+    pub ec2_id: String,
+}
+
+impl VolumeRow {
+    fn with_id(mut self) -> Self {
+        self.ec2_id = crate::resource_ids::ec2_id(crate::resource_ids::Kind::Volume, self.id);
+        self
+    }
 }
 
 const VOLUME_SELECT: &str = "SELECT id, project_id, name, size_gib, volume_class, status, \
@@ -108,6 +117,11 @@ pub(crate) async fn wait_for_task_timeout(
 pub struct ListVolumesQuery {
     #[serde(default)]
     pub project_id: Option<Uuid>,
+    /// Only volumes carrying this tag (`resource_tags`); `tag_value` is optional.
+    #[serde(default)]
+    pub tag_key: Option<String>,
+    #[serde(default)]
+    pub tag_value: Option<String>,
 }
 
 pub async fn list_volumes(
@@ -117,12 +131,17 @@ pub async fn list_volumes(
 ) -> Result<Json<Vec<VolumeRow>>, ApiError> {
     require_operator(&actor)?;
     let rows = sqlx::query_as::<_, VolumeRow>(&format!(
-        "{VOLUME_SELECT} WHERE (?1 IS NULL OR project_id = ?1) ORDER BY created_at DESC"
+        "{VOLUME_SELECT} WHERE (?1 IS NULL OR project_id = ?1) \
+         AND (?2 IS NULL OR EXISTS (SELECT 1 FROM resource_tags rt WHERE rt.resource_type = 'volume' \
+              AND rt.resource_id = lower(hex(volumes.id)) AND rt.key = ?2 AND (?3 IS NULL OR rt.value = ?3))) \
+         ORDER BY created_at DESC"
     ))
     .bind(q.project_id)
+    .bind(q.tag_key.as_deref())
+    .bind(q.tag_value.as_deref())
     .fetch_all(&state.pool)
     .await?;
-    Ok(Json(rows))
+    Ok(Json(rows.into_iter().map(VolumeRow::with_id).collect()))
 }
 
 pub async fn get_volume(
@@ -135,7 +154,7 @@ pub async fn get_volume(
         .bind(id)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(row))
+    Ok(Json(row.with_id()))
 }
 
 #[derive(Debug, Deserialize)]
@@ -202,7 +221,7 @@ pub async fn create_volume(
         .bind(id)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(row))
+    Ok(Json(row.with_id()))
 }
 
 async fn create_volume_atlas(
@@ -456,7 +475,7 @@ pub async fn attach_volume(
         .bind(id)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(row))
+    Ok(Json(row.with_id()))
 }
 
 pub async fn detach_volume(
@@ -490,7 +509,7 @@ pub async fn detach_volume(
         .bind(id)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(row))
+    Ok(Json(row.with_id()))
 }
 
 #[derive(Debug, Deserialize)]
@@ -546,7 +565,7 @@ pub async fn extend_volume(
         .bind(id)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(row))
+    Ok(Json(row.with_id()))
 }
 
 // ---------------------------------------------------------------------------
@@ -838,4 +857,81 @@ mod iotune_tests {
         let big = IoTuneBody { read_iops: None, write_iops: None, read_bps: None, write_bps: Some(MAX_BPS + 1) };
         assert!(validate_iotune(&big).is_err());
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VolumeFromSnapshotBody {
+    pub name: String,
+}
+
+/// EC2 `CreateVolume` with `SnapshotId`: a new volume (same size, class and project as the source) cloned from an
+/// Atlas snapshot.
+pub async fn create_volume_from_snapshot(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(snapshot_id): Path<Uuid>,
+    Json(body): Json<VolumeFromSnapshotBody>,
+) -> Result<Json<VolumeRow>, ApiError> {
+    require_operator(&actor)?;
+    machina_spec::validate_name(&body.name).map_err(|e| ApiError::bad_request(e.to_string()))?;
+    let snap: Option<(Option<String>, Uuid)> =
+        sqlx::query_as("SELECT atlas_snapshot_id, volume_id FROM volume_snapshots WHERE id = ?")
+            .bind(snapshot_id)
+            .fetch_optional(&state.pool)
+            .await?;
+    let Some((atlas_snapshot, parent)) = snap else {
+        return Err(ApiError::not_found("snapshot not found"));
+    };
+    let atlas_snapshot = atlas_snapshot
+        .ok_or_else(|| ApiError::bad_request("this snapshot has no Atlas snapshot behind it"))?;
+    let (project_id, size_gib, class): (Option<Uuid>, i64, String) =
+        sqlx::query_as("SELECT project_id, size_gib, volume_class FROM volumes WHERE id = ?")
+            .bind(parent)
+            .fetch_one(&state.pool)
+            .await?;
+    let client = atlas_bridge::require_client(&state.config)
+        .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    let id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO volumes (id, project_id, name, size_gib, volume_class, status) VALUES (?, ?, ?, ?, ?, 'creating')",
+    )
+    .bind(id)
+    .bind(project_id)
+    .bind(&body.name)
+    .bind(size_gib)
+    .bind(&class)
+    .execute(&state.pool)
+    .await?;
+    let cloned = async {
+        let job = client
+            .clone_snapshot(&atlas_snapshot, &atlas_safe_name(&body.name), None)
+            .await
+            .map_err(|e| ApiError::internal(format!("Atlas snapshot clone failed: {e}")))?;
+        let vol = job
+            .resource_volume_id()
+            .ok_or_else(|| ApiError::internal("Atlas clone returned no volume_id"))?;
+        if let Some(jid) = job.job_id() {
+            let _ = client.wait_for_job(jid, Duration::from_secs(60)).await;
+        }
+        Ok::<String, ApiError>(vol)
+    }
+    .await;
+    match cloned {
+        Ok(vol) => {
+            sqlx::query("UPDATE volumes SET status = 'available', atlas_volume_id = ? WHERE id = ?")
+                .bind(&vol)
+                .bind(id)
+                .execute(&state.pool)
+                .await?;
+        }
+        Err(e) => {
+            sqlx::query("UPDATE volumes SET status = 'error' WHERE id = ?")
+                .bind(id)
+                .execute(&state.pool)
+                .await?;
+            return Err(e);
+        }
+    }
+    get_volume(State(state), Extension(actor), Path(id)).await
 }

@@ -1410,6 +1410,18 @@ pub fn router(state: AppState) -> Router {
             post(templates::sync_git_templates_webhook),
         )
         .route(
+            "/api/v1/templates/{name}/{version}/visibility",
+            put(templates::set_template_visibility),
+        )
+        .route(
+            "/api/v1/templates/{name}/{version}/shares",
+            get(templates::list_template_shares),
+        )
+        .route(
+            "/api/v1/templates/{name}/{version}/shares/{project}",
+            put(templates::share_template).delete(templates::unshare_template),
+        )
+        .route(
             "/api/v1/templates/{name}/{version}/approval",
             axum::routing::patch(templates::approve_template),
         )
@@ -1721,6 +1733,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/volume-snapshots",
             get(volumes::list_all_volume_snapshots),
+        )
+        .route(
+            "/api/v1/volume-snapshots/{id}/create-volume",
+            post(volumes::create_volume_from_snapshot),
         )
         .route(
             "/api/v1/volume-snapshots/{id}",
