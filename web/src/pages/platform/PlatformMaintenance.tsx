@@ -30,6 +30,8 @@ import {
   getFleetMaintenanceMission,
   getFleetUpdates,
   getUpgradeMatrix,
+  type UpgradeHostSkew,
+  type UpgradeMatrix,
   hostMaintenance,
   listMaintenanceSchedules,
   listPlatformHosts,
@@ -75,6 +77,14 @@ function stepTone(status: MaintenanceStepStatus): string {
   return 'text-[var(--text-muted)] border-white/[0.08]'
 }
 
+const SKEW_LABEL: Record<UpgradeHostSkew['status'], string> = {
+  current: 'Up to date',
+  supported: 'One version behind',
+  unsupported: 'Too far behind',
+  controller_behind: 'Newer than the controller',
+  unknown: 'Version unknown',
+}
+
 export default function PlatformMaintenance() {
   const toast = useToastContext()
   const [tier] = usePlatformDesktopTier()
@@ -82,12 +92,7 @@ export default function PlatformMaintenance() {
   const [tab, setTab] = usePlatformTabState<TabId>(MAINTENANCE_TABS.map((t) => t.id), { defaultTab: 'updates' })
 
   const [fleet, setFleet] = useState<FleetUpdatesOverview | null>(null)
-  const [upgradeMatrix, setUpgradeMatrix] = useState<{
-    controller_version: string
-    recommended_agent: string
-    min_agent: string
-    notes: string
-  } | null>(null)
+  const [upgradeMatrix, setUpgradeMatrix] = useState<UpgradeMatrix | null>(null)
   const [mission, setMission] = useState<FleetMaintenanceMissionOverview | null>(null)
   const [rows, setRows] = useState<MaintenanceSchedule[]>([])
   const [hosts, setHosts] = useState<PlatformHost[]>([])
@@ -432,6 +437,25 @@ export default function PlatformMaintenance() {
                       <dd className="text-[var(--text-secondary)]">{upgradeMatrix.notes}</dd>
                     </div>
                   </dl>
+                  {upgradeMatrix.hosts && upgradeMatrix.hosts.length > 0 ? (
+                    <div className="mt-4" data-testid="upgrade-skew">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Upgrade order: {(upgradeMatrix.order ?? []).join(' → ')}. The controller goes first; an agent may trail it by one minor version.
+                      </p>
+                      <ul className="mt-2 divide-y divide-[var(--apple-hairline)]">
+                        {upgradeMatrix.hosts.map((h) => (
+                          <li key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm" data-skew={h.status}>
+                            <span className="font-medium text-[var(--text-primary)]">{h.hostname}</span>
+                            <span className="font-mono text-xs text-[var(--text-muted)]">{h.agent_version || 'version unknown'}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs ${h.status === 'current' ? 'bg-emerald-500/15 text-emerald-600' : h.status === 'supported' ? 'bg-amber-500/15 text-amber-600' : 'bg-red-500/15 text-red-500'}`} title={h.reason}>
+                              {SKEW_LABEL[h.status]}
+                            </span>
+                            {h.blocker ? <span className="text-xs text-[var(--text-muted)]">{h.blocker}</span> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                 </MacGlassPanel>
               )}
             </>

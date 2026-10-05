@@ -71,9 +71,11 @@ Tokens are single-use and can expire; the host appears as *pending validation* u
 
 ## Compatibility
 
-The binaries are built on the oldest distribution the release workflow targets and link the C library and libvirt of that
-system, so they run on that release **and newer**. Check `machina-daemon --help` on the target: if it fails to start with a
-`GLIBC_` or `libvirt` error, use the assets built for your distribution. Needs x86_64, KVM (`/dev/kvm`), libvirt ≥ 8 and QEMU.
+The release is built on **Ubuntu 22.04** (glibc 2.35, libvirt 8.0), so the binaries need **glibc 2.34 or newer** and
+libvirt 8.0 or newer — verified by building there and starting `machina-daemon`, `machina-controller` and `machina-agent`
+on a clean 22.04. Distributions that ship at least that (Ubuntu 22.04+, Debian 12+, RHEL/Rocky/Alma 9+) are expected to
+work; only Ubuntu 22.04 and 26.04 and Fedora have been exercised so far. If a binary refuses to start with a `GLIBC_` or
+`libvirt` error, use assets built for your distribution. Needs x86_64, KVM (`/dev/kvm`) and QEMU.
 
 ## Upgrading
 

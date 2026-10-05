@@ -14,6 +14,7 @@ pub mod drs;
 pub mod enterprise_security;
 pub mod fleet_activity;
 pub mod backup_verifier;
+pub mod upgrade_skew;
 pub mod fleet_backup_scheduler;
 pub mod fleet_backups;
 pub mod fleet_console;

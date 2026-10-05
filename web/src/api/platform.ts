@@ -2133,10 +2133,31 @@ export const enqueueValidateHost = (id: string) =>
 
 export const getSupportBundle = () => platformFetch<Record<string, unknown>>('/api/v1/support/bundle')
 
-export const getUpgradeMatrix = () =>
-  platformFetch<{ controller_version: string; recommended_agent: string; min_agent: string; notes: string }>(
-    '/api/v1/upgrade/matrix',
-  )
+export type AgentSkewStatus = 'current' | 'supported' | 'unsupported' | 'controller_behind' | 'unknown'
+
+export interface UpgradeHostSkew {
+  id: string
+  hostname: string
+  agent_version: string
+  status: AgentSkewStatus
+  reason: string
+  running_vms: number
+  maintenance_mode: boolean
+  /** Why upgrading this host right now would be refused; null when it is safe to start. */
+  blocker: string | null
+}
+
+export interface UpgradeMatrix {
+  controller_version: string
+  recommended_agent: string
+  min_agent: string
+  notes: string
+  /** Older controllers return only the four fields above. */
+  hosts?: UpgradeHostSkew[]
+  order?: string[]
+}
+
+export const getUpgradeMatrix = () => platformFetch<UpgradeMatrix>('/api/v1/upgrade/matrix')
 
 export const upgradeHostAgent = (id: string, target_version?: string) =>
   platformFetch<{ task_id: string }>(`/api/v1/hosts/${id}/upgrade`, {
