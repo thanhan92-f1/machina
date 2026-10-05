@@ -487,6 +487,8 @@ async fn build_stack(
                     port_min: rule.port_min,
                     port_max: rule.port_max,
                     remote_cidr: rule.remote_cidr.clone(),
+                    remote_sg_id: None,
+                    description: String::new(),
                 }),
             )
             .await
@@ -504,6 +506,7 @@ async fn build_stack(
                 size_gib: vol.size_gib,
                 project_id: Some(project_id),
                 volume_class: vol.volume_class.clone(),
+                delete_on_termination: false,
             }),
         )
         .await
@@ -530,6 +533,7 @@ async fn build_stack(
             State(state.clone()),
             Extension(actor.clone()),
             Json(CreateVmBody {
+                flavor_id: None,
                 vm,
                 host_id: None,
                 tags: vec!["stack".into()],
@@ -580,6 +584,7 @@ async fn build_stack(
                 Json(AttachVolumeBody {
                     vm_id,
                     target_dev: default_target_dev_for(attach_count),
+                    delete_on_termination: None,
                 }),
             )
             .await
