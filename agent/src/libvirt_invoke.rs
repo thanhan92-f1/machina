@@ -565,6 +565,7 @@ pub fn host_invoke(conn: &Connect, action: &str, payload: &Value) -> Result<Valu
             network::start_network(conn, &name)?;
             Ok(serde_json::json!({ "status": "started", "name": name }))
         }
+        "lb.probe" => crate::lbprobe::run(payload).map_err(LibvirtError::Invalid),
         "network.stop" => {
             let name = payload_str(payload, "name")?;
             network::stop_network(conn, &name)?;
