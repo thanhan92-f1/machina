@@ -67,7 +67,7 @@ pub async fn create_template(
             "templates require SSH keys and private console listeners",
         ));
     }
-    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    let mut tx = crate::db::begin_write(&state.pool).await?;
     access(&mut tx, &actor, project, true).await?;
     let duplicate: bool = crate::db::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM cloud_launch_templates WHERE project_id=? AND name=?)",
@@ -138,7 +138,7 @@ pub async fn create_group(
 ) -> Result<Json<Value>, ApiError> {
     machina_spec::validate_name(&body.name).map_err(invalid)?;
     body.policy.validate().map_err(invalid)?;
-    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    let mut tx = crate::db::begin_write(&state.pool).await?;
     access(&mut tx, &actor, project, true).await?;
     let template: Option<Uuid> =
         crate::db::query_scalar("SELECT project_id FROM cloud_launch_templates WHERE id=?")
@@ -335,7 +335,7 @@ pub async fn update_group(
     Json(body): Json<UpdateGroup>,
 ) -> Result<Json<Value>, ApiError> {
     body.policy.validate().map_err(invalid)?;
-    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    let mut tx = crate::db::begin_write(&state.pool).await?;
     let (project, subnet): (Uuid, Uuid) =
         crate::db::query_as("SELECT project_id, subnet_id FROM cloud_instance_groups WHERE id=?")
             .bind(id)
@@ -363,7 +363,7 @@ pub async fn delete_group(
     Extension(actor): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    let mut tx = crate::db::begin_write(&state.pool).await?;
     let project: Uuid = crate::db::query_scalar("SELECT project_id FROM cloud_instance_groups WHERE id=?")
         .bind(id)
         .fetch_optional(&mut *tx)
@@ -371,7 +371,7 @@ pub async fn delete_group(
         .ok_or_else(|| ApiError::not_found("instance group not found"))?;
     access(&mut tx, &actor, project, true).await?;
     // Stop the reconciler touching it while we check.
-    crate::db::query("UPDATE cloud_instance_groups SET paused=1 WHERE id=?").bind(id).execute(&mut *tx).await?;
+    crate::db::query("UPDATE cloud_instance_groups SET paused = TRUE WHERE id=?").bind(id).execute(&mut *tx).await?;
     let active: i64 = crate::db::query_scalar(
         "SELECT COUNT(*) FROM cloud_group_members m JOIN vms v ON v.id = m.vm_id \
          WHERE m.group_id = ? AND v.observed_state NOT IN ('shutoff', 'stopped', 'missing')",
@@ -398,7 +398,7 @@ pub async fn delete_template(
     Extension(actor): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    let mut tx = crate::db::begin_write(&state.pool).await?;
     let project: Uuid = crate::db::query_scalar("SELECT project_id FROM cloud_launch_templates WHERE id=?")
         .bind(id)
         .fetch_optional(&mut *tx)

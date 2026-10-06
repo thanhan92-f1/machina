@@ -82,7 +82,7 @@ async fn run_one(state: &AppState, lb: LbRow) -> anyhow::Result<()> {
     type M = (Uuid, String, i64, String, i64, i64);
     let members: Vec<M> = crate::db::query_as(
         "SELECT m.id, v.guest_ip, m.port, m.health, m.health_ok, m.health_fail FROM lb_members m JOIN vms v ON v.id = m.vm_id \
-         WHERE m.load_balancer_id = ? AND m.enabled = 1 AND COALESCE(v.guest_ip, '') <> ''",
+         WHERE m.load_balancer_id = ? AND m.enabled = TRUE AND COALESCE(v.guest_ip, '') <> ''",
     )
     .bind(id)
     .fetch_all(&state.pool)
@@ -159,8 +159,7 @@ mod tests {
     /// invisibly, because the error was only logged at debug level.
     #[tokio::test]
     async fn a_probe_result_can_be_saved_against_the_migrated_schema() {
-        let pool = crate::db::DbPool::connect("sqlite::memory:").await.unwrap();
-        sqlx::migrate!().run(&pool).await.unwrap();
+        let pool = crate::db::testing::pool().await;
         record(&pool, Uuid::new_v4(), "healthy", 2, 0, "ok").await.unwrap();
     }
 

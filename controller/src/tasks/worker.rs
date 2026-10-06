@@ -517,8 +517,10 @@ async fn vm_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
 
     // Leave a tombstone so EC2-style clients still see the instance as `terminated` for a while.
     let _ = crate::db::query(
-        "INSERT OR REPLACE INTO terminated_instances (id, name, instance_type, project, vcpus, memory_mib) \
-         SELECT v.id, v.name, f.name, v.project, v.vcpus, v.memory_mib FROM vms v LEFT JOIN flavors f ON f.id = v.flavor_id WHERE v.id = ?",
+        "INSERT INTO terminated_instances (id, name, instance_type, project, vcpus, memory_mib) \
+         SELECT v.id, v.name, f.name, v.project, v.vcpus, v.memory_mib FROM vms v LEFT JOIN flavors f ON f.id = v.flavor_id WHERE v.id = ? \
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name, instance_type = excluded.instance_type, project = excluded.project, \
+             vcpus = excluded.vcpus, memory_mib = excluded.memory_mib, terminated_at = CURRENT_TIMESTAMP",
     )
     .bind(vm_id)
     .execute(&state.pool)
@@ -610,7 +612,7 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
     crate::db::query(
         // Clear any stale fence flag: a host that just heartbeated is alive and
         // reachable, so a future failure must be fenced afresh before HA recovers it.
-        "UPDATE hosts SET vm_count = ?, state = ?, last_heartbeat_at = datetime('now'), fenced = 0,
+        "UPDATE hosts SET vm_count = ?, state = ?, last_heartbeat_at = datetime('now'), fenced = FALSE,
          cpu_percent = ?, memory_used_mib = ?, memory_total_mib = ?,
          cpu_model = COALESCE(?, cpu_model),
          libvirt_version = COALESCE(?, libvirt_version),
@@ -2309,7 +2311,14 @@ fn is_transient_connect_error(err: &str) -> bool {
 /// infra/DB-contention hiccup.
 fn is_transient_db_busy_error(err: &str) -> bool {
     let e = err.to_ascii_lowercase();
-    e.contains("database is locked") || e.contains("code: 5") || e.contains("code: 6")
+    // SQLite: busy/locked (codes 5/6). PostgreSQL: deadlock_detected (40P01) and serialization_failure (40001).
+    e.contains("database is locked")
+        || e.contains("code: 5")
+        || e.contains("code: 6")
+        || e.contains("deadlock detected")
+        || e.contains("could not serialize access")
+        || e.contains("40p01")
+        || e.contains("40001")
 }
 
 async fn on_task_failure(state: &AppState, msg: &TaskMessage, err: &str) {

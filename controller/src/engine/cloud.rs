@@ -80,7 +80,7 @@ pub async fn reconcile_once(state: &AppState) -> anyhow::Result<()> {
     // Bootstrap reaps orphaned tasks through the generic worker. Propagate that
     // failure to the cloud resource so its retry endpoint is usable.
     crate::db::query("UPDATE cloud_subnets SET status='error',last_error='Provisioning task failed; inspect task history and retry' WHERE status='pending' AND EXISTS(SELECT 1 FROM tasks WHERE resource_id=cloud_subnets.id AND operation='cloud.subnet.provision' AND status='failed') AND NOT EXISTS(SELECT 1 FROM tasks WHERE resource_id=cloud_subnets.id AND operation='cloud.subnet.provision' AND status IN ('pending','running'))").execute(&state.pool).await?;
-    let groups:Vec<Uuid>=crate::db::query_scalar("SELECT g.id FROM cloud_instance_groups g JOIN projects p ON p.id=g.project_id WHERE g.paused=0 AND p.enabled=1 ORDER BY g.id LIMIT 100").fetch_all(&state.pool).await?;
+    let groups:Vec<Uuid>=crate::db::query_scalar("SELECT g.id FROM cloud_instance_groups g JOIN projects p ON p.id=g.project_id WHERE g.paused = FALSE AND p.enabled = TRUE ORDER BY g.id LIMIT 100").fetch_all(&state.pool).await?;
     for id in groups {
         if !fence_ok(state, Some(epoch)) {
             break;
@@ -115,7 +115,7 @@ async fn reconcile_group_fenced(
     epoch: Option<i64>,
 ) -> anyhow::Result<()> {
     type Definition = (Uuid, String, String, Uuid, String, String, bool);
-    let (_project_id,project,raw,host,network,template,paused):Definition=crate::db::query_as("SELECT g.project_id,p.name,g.policy_json,v.host_id,n.name,t.spec_json,g.paused FROM cloud_instance_groups g JOIN projects p ON p.id=g.project_id AND p.enabled=1 JOIN cloud_launch_templates t ON t.id=g.template_id AND t.project_id=g.project_id JOIN cloud_subnets s ON s.id=g.subnet_id AND s.status='ready' JOIN cloud_vpcs v ON v.id=s.vpc_id AND v.project_id=g.project_id JOIN networks n ON n.id=s.network_id WHERE g.id=?").bind(id).fetch_one(&state.pool).await?;
+    let (_project_id,project,raw,host,network,template,paused):Definition=crate::db::query_as("SELECT g.project_id,p.name,g.policy_json,v.host_id,n.name,t.spec_json,g.paused FROM cloud_instance_groups g JOIN projects p ON p.id=g.project_id AND p.enabled = TRUE JOIN cloud_launch_templates t ON t.id=g.template_id AND t.project_id=g.project_id JOIN cloud_subnets s ON s.id=g.subnet_id AND s.status='ready' JOIN cloud_vpcs v ON v.id=s.vpc_id AND v.project_id=g.project_id JOIN networks n ON n.id=s.network_id WHERE g.id=?").bind(id).fetch_one(&state.pool).await?;
     if paused {
         return Ok(());
     }
@@ -123,7 +123,7 @@ async fn reconcile_group_fenced(
     policy.validate().map_err(anyhow::Error::msg)?;
     // Autoscaling is only allowed on a fully converged group with a fresh
     // sample from EVERY active member. Averages over a partial set are unsafe.
-    let (count,cpu):(i64,Option<f64>)=crate::db::query_as("SELECT COUNT(*),AVG(m.cpu_percent) FROM cloud_group_members gm JOIN vms v ON v.id=gm.vm_id JOIN vm_metrics m ON m.vm_id=v.id WHERE gm.group_id=? AND gm.slot<? AND v.observed_state='running' AND m.updated_at>datetime('now','-2 minutes')").bind(id).bind(policy.desired).fetch_one(&state.pool).await?;
+    let (count,cpu):(i64,Option<f64>)=crate::db::query_as("SELECT COUNT(*),AVG(m.cpu_percent) FROM cloud_group_members gm JOIN vms v ON v.id=gm.vm_id JOIN vm_metrics m ON m.vm_id=v.id WHERE gm.group_id=? AND gm.slot<? AND v.observed_state='running' AND m.updated_at>datetime('now','-2 minutes')").bind(id).bind(i64::from(policy.desired)).fetch_one(&state.pool).await?;
     let elapsed:i64=crate::db::query_scalar("SELECT CAST(strftime('%s','now') AS INTEGER)-CAST(strftime('%s',last_scaled_at) AS INTEGER) FROM cloud_instance_groups WHERE id=?").bind(id).fetch_one(&state.pool).await?;
     let peak = if policy.predictive {
         crate::engine::ai::forecast::group_demand_peak(&state.pool, id).await
@@ -141,7 +141,7 @@ async fn reconcile_group_fenced(
     );
     if desired != policy.desired {
         policy.desired = desired;
-        let changed=crate::db::query("UPDATE cloud_instance_groups SET policy_json=?,last_scaled_at=CURRENT_TIMESTAMP WHERE id=? AND paused=0 AND policy_json=?").bind(serde_json::to_string(&policy)?).bind(id).bind(&raw).execute(&state.pool).await?.rows_affected();
+        let changed=crate::db::query("UPDATE cloud_instance_groups SET policy_json=?,last_scaled_at=CURRENT_TIMESTAMP WHERE id=? AND paused = FALSE AND policy_json=?").bind(serde_json::to_string(&policy)?).bind(id).bind(&raw).execute(&state.pool).await?.rows_affected();
         if changed == 0 {
             return Ok(());
         }
@@ -163,7 +163,7 @@ async fn reconcile_group_fenced(
         // A PATCH/pause that races this tick wins; do not continue with stale
         // desired counts or resurrect a paused group's stopped VMs.
         let current: Option<String> = crate::db::query_scalar(
-            "SELECT policy_json FROM cloud_instance_groups WHERE id=? AND paused=0",
+            "SELECT policy_json FROM cloud_instance_groups WHERE id=? AND paused = FALSE",
         )
         .bind(id)
         .fetch_optional(&state.pool)
@@ -179,7 +179,7 @@ async fn reconcile_group_fenced(
              WHERE gm.group_id = ? AND gm.slot = ?",
         )
         .bind(id)
-        .bind(slot)
+        .bind(i64::from(slot))
         .fetch_optional(&state.pool)
         .await?;
         let guard = Guard {
@@ -254,10 +254,10 @@ async fn reconcile_group_fenced(
                 .fetch_one(&state.pool)
                 .await?
         };
-        crate::db::query("INSERT INTO cloud_group_members (group_id,slot,vm_id) VALUES (?,?,?) ON CONFLICT(group_id,slot) DO UPDATE SET vm_id=excluded.vm_id WHERE cloud_group_members.vm_id IS NULL").bind(id).bind(slot).bind(vm_id).execute(&state.pool).await?;
+        crate::db::query("INSERT INTO cloud_group_members (group_id,slot,vm_id) VALUES (?,?,?) ON CONFLICT(group_id,slot) DO UPDATE SET vm_id=excluded.vm_id WHERE cloud_group_members.vm_id IS NULL").bind(id).bind(i64::from(slot)).bind(vm_id).execute(&state.pool).await?;
     }
     // If max was lowered, stopped retained slots above the new max remain owned.
-    crate::db::query("UPDATE vms SET desired_state='stopped' WHERE id IN (SELECT vm_id FROM cloud_group_members WHERE group_id=? AND slot>=?) AND desired_state<>'sleeping' AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused=0 AND policy_json=?)").bind(id).bind(policy.max).bind(id).bind(&expected).execute(&state.pool).await?;
+    crate::db::query("UPDATE vms SET desired_state='stopped' WHERE id IN (SELECT vm_id FROM cloud_group_members WHERE group_id=? AND slot>=?) AND desired_state<>'sleeping' AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused = FALSE AND policy_json=?)").bind(id).bind(i64::from(policy.max)).bind(id).bind(&expected).execute(&state.pool).await?;
     Ok(())
 }
 
@@ -273,7 +273,7 @@ struct Guard<'a> {
 
 impl Guard<'_> {
     async fn set_desired(&self, state: &AppState, vm: Uuid, target: &str) -> anyhow::Result<()> {
-        crate::db::query("UPDATE vms SET desired_state=? WHERE id=? AND project=? AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused=0 AND policy_json=?)")
+        crate::db::query("UPDATE vms SET desired_state=? WHERE id=? AND project=? AND EXISTS(SELECT 1 FROM cloud_instance_groups WHERE id=? AND paused = FALSE AND policy_json=?)")
             .bind(target)
             .bind(vm)
             .bind(self.project)
@@ -293,7 +293,7 @@ async fn set_draining(state: &AppState, group: Uuid, slot: u32, on: bool) -> any
     };
     crate::db::query(sql)
         .bind(group)
-        .bind(slot)
+        .bind(i64::from(slot))
         .execute(&state.pool)
         .await?;
     Ok(())

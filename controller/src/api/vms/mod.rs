@@ -46,7 +46,7 @@ pub struct VmRow {
     pub memory_mib: i64,
     pub ha_enabled: bool,
     pub project: Option<String>,
-    pub tags: sqlx::types::Json<Vec<String>>,
+    pub tags: crate::db::Json<Vec<String>>,
     pub inventory_source: String,
     pub k8s_namespace: Option<String>,
     pub last_seen_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -306,7 +306,7 @@ pub async fn create_vm(
 
     // Quota and policy are checked inside this same write transaction (BEGIN IMMEDIATE takes the SQLite write lock
     // up front), so concurrent creates at a project's limit are serialised and cannot both pass.
-    let mut tx = state.pool.begin_with("BEGIN IMMEDIATE").await?;
+    let mut tx = crate::db::begin_write(&state.pool).await?;
     if let Err(v) = policy::evaluate_vm_create_tx(
         &mut tx,
         &project,

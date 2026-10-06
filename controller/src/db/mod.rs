@@ -1,22 +1,54 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use sqlx::{Database, FromRow};
 use std::str::FromStr;
 use std::time::Duration;
 use uuid::Uuid;
 
-/// The database backend the controller was built for. Everything outside this module names these aliases instead of the
-/// `sqlx::Sqlite*` types, so a second backend is a change here rather than in ~260 files.
-pub type Db = sqlx::Sqlite;
-pub type DbPool = sqlx::SqlitePool;
-pub type DbConn = sqlx::SqliteConnection;
+pub mod dialect;
+#[doc(hidden)]
+pub mod testing;
 
-/// Prepare a statement. Today the text is used as written; this is the one place a backend that needs a different dialect
-/// rewrites it (placeholders, date functions), so the SQL in the rest of the controller stays in one form.
+#[cfg(all(feature = "sqlite", feature = "postgres"))]
+compile_error!("enable exactly one of the `sqlite` and `postgres` features of machina-controller");
+#[cfg(not(any(feature = "sqlite", feature = "postgres")))]
+compile_error!("enable one of the `sqlite` or `postgres` features of machina-controller");
+
+/// The database backend the controller was built for. Everything outside this module names these aliases instead of the
+/// `sqlx::Sqlite*` / `sqlx::Pg*` types, so the backend is chosen here and not in ~260 files.
+#[cfg(feature = "sqlite")]
+pub type Db = sqlx::Sqlite;
+#[cfg(feature = "sqlite")]
+pub type DbPool = sqlx::SqlitePool;
+#[cfg(feature = "sqlite")]
+pub type DbConn = sqlx::SqliteConnection;
+#[cfg(feature = "postgres")]
+pub type Db = sqlx::Postgres;
+#[cfg(feature = "postgres")]
+pub type DbPool = sqlx::PgPool;
+#[cfg(feature = "postgres")]
+pub type DbConn = sqlx::PgConnection;
+
+/// `sqlite` or `postgres`, for health and diagnostics.
+pub const BACKEND: &str = if cfg!(feature = "postgres") { "postgres" } else { "sqlite" };
+
+/// Where the controller looks for its database when `DATABASE_URL` is not set.
+#[cfg(feature = "sqlite")]
+pub const DEFAULT_URL: &str = "sqlite:///var/lib/machina/controller.db";
+#[cfg(feature = "postgres")]
+pub const DEFAULT_URL: &str = "postgres://machina@127.0.0.1:5432/machina";
+
+/// Prepare a statement for this backend. SQLite uses the text as written. PostgreSQL gets it rewritten once (placeholders,
+/// `CURRENT_TIMESTAMP`, `INSERT OR IGNORE`, ...; see `dialect`) and cached, so the SQL in the rest of the controller stays in one form.
+#[cfg(feature = "sqlite")]
 fn sql(text: &str) -> &str {
     text
+}
+
+#[cfg(feature = "postgres")]
+fn sql(text: &str) -> &str {
+    dialect::cached_postgres(text)
 }
 
 pub fn query<DB: Database>(text: &str) -> sqlx::query::Query<'_, DB, <DB as Database>::Arguments<'_>> {
@@ -39,6 +71,78 @@ where
     sqlx::query_scalar(sql(text))
 }
 
+/// Start a transaction that serializes against every other `begin_write` section: the check-then-write sequences (address and
+/// quota allocation, tags, Elastic IPs) that must not interleave. SQLite takes its one write lock up front (`BEGIN IMMEDIATE`);
+/// PostgreSQL has no such lock, so the same guarantee is a transaction-scoped advisory lock that every such section takes first.
+/// One key for all of them is deliberate: correct by construction, and these sections are short control-plane operations.
+#[cfg(feature = "sqlite")]
+pub async fn begin_write(pool: &DbPool) -> Result<sqlx::Transaction<'static, Db>, sqlx::Error> {
+    pool.begin_with("BEGIN IMMEDIATE").await
+}
+
+#[cfg(feature = "postgres")]
+pub async fn begin_write(pool: &DbPool) -> Result<sqlx::Transaction<'static, Db>, sqlx::Error> {
+    /// An arbitrary constant naming "machina serialized write section".
+    const WRITE_SECTION_LOCK: i64 = 0x6d61_6368_696e_6101;
+    let mut tx = pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)").bind(WRITE_SECTION_LOCK).execute(&mut *tx).await?;
+    Ok(tx)
+}
+
+
+// JSON documents are stored as TEXT on both backends (SQLite has no JSON type, and the controller's SQL treats them as text).
+// `Json<T>` is a drop-in for `sqlx::types::Json<T>` that is written as TEXT on both backends (PostgreSQL's own `Json<T>` binds as
+// JSONB, which a TEXT column rejects). Reading JSON from TEXT works through the patched driver in vendor/sqlx-postgres.
+use sqlx::encode::IsNull;
+use sqlx::error::BoxDynError;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
+pub struct Json<T>(pub T);
+
+impl<T> std::ops::Deref for Json<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+impl<T> std::ops::DerefMut for Json<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
+impl<T> sqlx::Type<Db> for Json<T> {
+    fn type_info() -> <Db as Database>::TypeInfo {
+        <str as sqlx::Type<Db>>::type_info()
+    }
+    fn compatible(ty: &<Db as Database>::TypeInfo) -> bool {
+        <str as sqlx::Type<Db>>::compatible(ty)
+    }
+}
+impl<'r, T: serde::de::DeserializeOwned> sqlx::Decode<'r, Db> for Json<T> {
+    fn decode(value: <Db as Database>::ValueRef<'r>) -> Result<Self, BoxDynError> {
+        let text = <&str as sqlx::Decode<Db>>::decode(value)?;
+        Ok(Json(serde_json::from_str(text)?))
+    }
+}
+impl<'q, T: serde::Serialize> sqlx::Encode<'q, Db> for Json<T> {
+    fn encode_by_ref(&self, buf: &mut <Db as Database>::ArgumentBuffer<'q>) -> Result<IsNull, BoxDynError> {
+        <String as sqlx::Encode<'q, Db>>::encode(serde_json::to_string(&self.0)?, buf)
+    }
+}
+
+/// The bind value for a machine in `metric_samples.subject` / `metric_hourly.subject`: its 16-byte id on SQLite, its canonical text
+/// on PostgreSQL (the column is TEXT there because it also holds group and pool subjects, and the sampler's `INSERT ... SELECT v.id`
+/// stores a uuid as that text).
+#[cfg(feature = "sqlite")]
+pub fn subject_id(id: Uuid) -> Uuid {
+    id
+}
+#[cfg(feature = "postgres")]
+pub fn subject_id(id: Uuid) -> String {
+    id.to_string()
+}
+
 /// A database URL that is safe to log: `scheme://user:password@host/db` loses the password, anything else is returned as is.
 pub fn redact_url(url: &str) -> String {
     let Some((scheme, rest)) = url.split_once("://") else { return url.to_string() };
@@ -49,7 +153,16 @@ pub fn redact_url(url: &str) -> String {
     }
 }
 
+#[cfg(feature = "sqlite")]
 pub async fn connect(database_url: &str) -> anyhow::Result<DbPool> {
+    use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
+    if !database_url.starts_with("sqlite:") {
+        anyhow::bail!(
+            "this machina-controller build uses the embedded SQLite database but DATABASE_URL is {}; \
+             use a sqlite:// URL, or run the PostgreSQL build (machina-controller-pg) for a postgres:// URL",
+            redact_url(database_url)
+        );
+    }
     let options = SqliteConnectOptions::from_str(database_url)?
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
@@ -83,8 +196,43 @@ pub async fn connect(database_url: &str) -> anyhow::Result<DbPool> {
     Ok(pool)
 }
 
+
+/// Connections the PostgreSQL pool may open (`MACHINA_DB_MAX_CONNECTIONS`, default 20).
+#[cfg(feature = "postgres")]
+fn pg_max_connections() -> u32 {
+    std::env::var("MACHINA_DB_MAX_CONNECTIONS").ok().and_then(|v| v.parse().ok()).filter(|n| *n >= 1).unwrap_or(20)
+}
+
+#[cfg(feature = "postgres")]
+pub async fn connect(database_url: &str) -> anyhow::Result<DbPool> {
+    use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+    if !(database_url.starts_with("postgres://") || database_url.starts_with("postgresql://")) {
+        anyhow::bail!(
+            "this machina-controller build uses PostgreSQL but DATABASE_URL is {}; \
+             use a postgres:// URL, or run the embedded-SQLite build (machina-controller) for a sqlite:// URL",
+            redact_url(database_url)
+        );
+    }
+    let options = PgConnectOptions::from_str(database_url)?.application_name("machina-controller");
+    let pool = PgPoolOptions::new()
+        .max_connections(pg_max_connections())
+        .acquire_timeout(Duration::from_secs(10))
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                // Timestamps are TEXT in UTC; keep any session-dependent date arithmetic in UTC too.
+                sqlx::query("SET TIME ZONE 'UTC'").execute(conn).await?;
+                Ok::<(), sqlx::Error>(())
+            })
+        })
+        .connect_with(options)
+        .await?;
+    Ok(pool)
+}
 pub async fn migrate(pool: &DbPool) -> anyhow::Result<()> {
-    sqlx::migrate!().run(pool).await?;
+    #[cfg(feature = "sqlite")]
+    sqlx::migrate!("./migrations").run(pool).await?;
+    #[cfg(feature = "postgres")]
+    sqlx::migrate!("./migrations_pg").run(pool).await?;
     Ok(())
 }
 
