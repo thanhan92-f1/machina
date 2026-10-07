@@ -464,6 +464,93 @@
         }
       }
     },
+    "/api/v1/bpf/blackbox": {
+      "get": {
+        "summary": "GET /api/v1/bpf/blackbox",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/bpf/blackbox/{vm}": {
+      "get": {
+        "summary": "GET /api/v1/bpf/blackbox/{vm}",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/bpf/blackbox/{vm}/trigger": {
+      "post": {
+        "summary": "POST /api/v1/bpf/blackbox/{vm}/trigger",
+        "tags": [
+          "bpf"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bpf/captures": {
       "get": {
         "summary": "GET /api/v1/bpf/captures",
@@ -1995,6 +2082,130 @@
         }
       }
     },
+    "/api/v1/flows": {
+      "get": {
+        "summary": "GET /api/v1/flows",
+        "tags": [
+          "flows"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/flows/alerts": {
+      "get": {
+        "summary": "GET /api/v1/flows/alerts",
+        "tags": [
+          "flows"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/flows/edges": {
+      "get": {
+        "summary": "GET /api/v1/flows/edges",
+        "tags": [
+          "flows"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/flows/stream": {
+      "get": {
+        "summary": "GET /api/v1/flows/stream",
+        "tags": [
+          "flows"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/fluxvm-console/{name}": {
+      "get": {
+        "summary": "GET /api/v1/fluxvm-console/{name}",
+        "tags": [
+          "fluxvm-console"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fluxvm/status": {
+      "get": {
+        "summary": "GET /api/v1/fluxvm/status",
+        "tags": [
+          "fluxvm"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/v1/guest-images/os-detect": {
       "post": {
         "summary": "POST /api/v1/guest-images/os-detect",
@@ -2068,6 +2279,25 @@
                 "additionalProperties": true
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/guest-repair/capabilities": {
+      "get": {
+        "summary": "GET /api/v1/guest-repair/capabilities",
+        "tags": [
+          "guest-repair"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }
@@ -7129,6 +7359,448 @@
         }
       }
     },
+    "/api/v1/vm-network-policies": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/{name}": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/{name}",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/vm-network-policies/auth": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/auth",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/draft": {
+      "post": {
+        "summary": "POST /api/v1/vm-network-policies/draft",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/endpoints": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/endpoints",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/evidence": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/evidence",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/fqdn-cache": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/fqdn-cache",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/jit": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/jit",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/learn": {
+      "post": {
+        "summary": "POST /api/v1/vm-network-policies/learn",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/quarantines": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/quarantines",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/replay": {
+      "post": {
+        "summary": "POST /api/v1/vm-network-policies/replay",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/selectors": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/selectors",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/status": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/status",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/threat-feeds": {
+      "get": {
+        "summary": "GET /api/v1/vm-network-policies/threat-feeds",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/threat-feeds/{name}": {
+      "put": {
+        "summary": "PUT /api/v1/vm-network-policies/threat-feeds/{name}",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/threat-feeds/{name}/refresh": {
+      "post": {
+        "summary": "POST /api/v1/vm-network-policies/threat-feeds/{name}/refresh",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/trace": {
+      "post": {
+        "summary": "POST /api/v1/vm-network-policies/trace",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vm-network-policies/validate": {
+      "post": {
+        "summary": "POST /api/v1/vm-network-policies/validate",
+        "tags": [
+          "vm-network-policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/vms": {
       "get": {
         "summary": "GET /api/v1/vms",
@@ -8319,9 +8991,87 @@
         }
       }
     },
+    "/api/v1/vms/{name}/guest-agent/inject": {
+      "post": {
+        "summary": "POST /api/v1/vms/{name}/guest-agent/inject",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/vms/{name}/guest-agent/install-media": {
       "post": {
         "summary": "POST /api/v1/vms/{name}/guest-agent/install-media",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vms/{name}/guest-drift": {
+      "post": {
+        "summary": "POST /api/v1/vms/{name}/guest-drift",
         "tags": [
           "vms"
         ],
@@ -8472,6 +9222,84 @@
             }
           }
         ]
+      }
+    },
+    "/api/v1/vms/{name}/guest-repair/apply": {
+      "post": {
+        "summary": "POST /api/v1/vms/{name}/guest-repair/apply",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vms/{name}/guest-repair/diagnose": {
+      "post": {
+        "summary": "POST /api/v1/vms/{name}/guest-repair/diagnose",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/vms/{name}/guest/screenshot": {
@@ -8880,6 +9708,35 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/vms/{name}/labels": {
+      "get": {
+        "summary": "GET /api/v1/vms/{name}/labels",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/api/v1/vms/{name}/linux/enable-ssh": {
@@ -9635,6 +10492,45 @@
     "/api/v1/vms/{name}/pause": {
       "post": {
         "summary": "POST /api/v1/vms/{name}/pause",
+        "tags": [
+          "vms"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vms/{name}/quarantine": {
+      "post": {
+        "summary": "POST /api/v1/vms/{name}/quarantine",
         "tags": [
           "vms"
         ],
@@ -10791,6 +11687,31 @@
         "summary": "WebSocket /ws/v1/console/{name}",
         "tags": [
           "console"
+        ],
+        "description": "WebSocket endpoint — use wscat or a WebSocket client. Obtain a token via POST /api/v1/ws-token first.",
+        "x-machina-transport": "websocket",
+        "responses": {
+          "101": {
+            "description": "Switching Protocols"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/ws/v1/fluxvm-console/{name}": {
+      "get": {
+        "summary": "WebSocket /ws/v1/fluxvm-console/{name}",
+        "tags": [
+          "fluxvm-console"
         ],
         "description": "WebSocket endpoint — use wscat or a WebSocket client. Obtain a token via POST /api/v1/ws-token first.",
         "x-machina-transport": "websocket",
