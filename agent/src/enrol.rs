@@ -37,28 +37,43 @@ pub fn token_is_valid(token: &str) -> bool {
 /// Replaces (or appends) `MACHINA_AGENT_TOKEN=` in `path` and leaves the file mode 0600.
 /// Returns true when the file changed. The old file is kept next to it as `<name>.bak-pre-join`.
 pub fn store_agent_token(path: &Path, token: &str) -> std::io::Result<bool> {
-    if !token_is_valid(token) {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "agent token is empty or has characters not allowed in an environment file",
-        ));
+    set_env_vars(path, &[("MACHINA_AGENT_TOKEN", token)])
+}
+
+/// Sets `KEY=value` lines in an environment file (replacing existing ones, appending new ones),
+/// mode 0600, previous file kept as `<name>.bak-pre-join`. Values must be one printable word.
+/// Returns true when the file changed.
+pub fn set_env_vars(path: &Path, vars: &[(&str, &str)]) -> std::io::Result<bool> {
+    for (k, v) in vars {
+        let key_ok = !k.is_empty()
+            && k.bytes()
+                .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_');
+        if !key_ok || !token_is_valid(v) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "environment entry is empty or has characters not allowed in an environment file",
+            ));
+        }
     }
     let old = match std::fs::read_to_string(path) {
         Ok(s) => s,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
         Err(e) => return Err(e),
     };
-    let wanted = format!("MACHINA_AGENT_TOKEN={token}");
-    if old.lines().any(|l| l == wanted) {
+    if vars
+        .iter()
+        .all(|(k, v)| old.lines().any(|l| l == format!("{k}={v}")))
+    {
         return Ok(false);
     }
     let mut out: String = old
         .lines()
-        .filter(|l| !l.starts_with("MACHINA_AGENT_TOKEN="))
+        .filter(|l| !vars.iter().any(|(k, _)| l.starts_with(&format!("{k}="))))
         .map(|l| format!("{l}\n"))
         .collect();
-    out.push_str(&wanted);
-    out.push('\n');
+    for (k, v) in vars {
+        out.push_str(&format!("{k}={v}\n"));
+    }
     if !old.is_empty() {
         let mut bak = path.as_os_str().to_owned();
         bak.push(".bak-pre-join");
@@ -72,6 +87,68 @@ pub fn store_agent_token(path: &Path, token: &str) -> std::io::Result<bool> {
     set_private(&tmp)?;
     std::fs::rename(&tmp, path)?;
     Ok(true)
+}
+
+/// The machine's own hostname: the explicit value if non-empty, else the kernel's, else the
+/// environment, else "localhost". (`$HOSTNAME` is a shell variable that is usually not exported,
+/// so reading only the environment registered every host as "localhost".)
+pub fn local_hostname(explicit: Option<&str>) -> String {
+    let clean = |s: &str| s.trim().to_string();
+    if let Some(h) = explicit.map(clean).filter(|h| !h.is_empty()) {
+        return h;
+    }
+    if let Ok(h) = std::fs::read_to_string("/proc/sys/kernel/hostname") {
+        let h = clean(&h);
+        if !h.is_empty() {
+            return h;
+        }
+    }
+    for var in ["HOSTNAME", "HOST"] {
+        if let Some(h) = std::env::var(var)
+            .ok()
+            .map(|s| clean(&s))
+            .filter(|h| !h.is_empty())
+        {
+            return h;
+        }
+    }
+    "localhost".into()
+}
+
+/// The address of this machine that routes to `controller` (what the controller can use to reach
+/// it), found by asking the kernel which source address it would use. None for loopback targets
+/// or when it cannot be determined.
+pub fn address_towards(controller: &str) -> Option<String> {
+    let rest = controller
+        .strip_prefix("https://")
+        .or_else(|| controller.strip_prefix("http://"))?;
+    let hostport = rest.split(['/', '?']).next()?;
+    let target = if hostport.contains(':') && !hostport.starts_with('[') {
+        hostport.to_string()
+    } else if hostport.starts_with('[') {
+        hostport.to_string()
+    } else {
+        format!("{hostport}:443")
+    };
+    let sock = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    sock.connect(target).ok()?;
+    let ip = sock.local_addr().ok()?.ip();
+    if ip.is_loopback() || ip.is_unspecified() {
+        None
+    } else {
+        Some(ip.to_string())
+    }
+}
+
+/// The `host:port` the controller should dial: a wildcard listen address is replaced with the
+/// machine's address; a concrete one is kept.
+pub fn advertised(listen: &str, address: &str) -> String {
+    match listen.rsplit_once(':') {
+        Some((h, port)) if h == "0.0.0.0" || h == "[::]" || h == "::" || h.is_empty() => {
+            format!("{address}:{port}")
+        }
+        _ => listen.to_string(),
+    }
 }
 
 #[cfg(unix)]
@@ -97,6 +174,48 @@ mod tests {
         assert!(!channel_is_safe("http://10.0.0.5:5093"));
         assert!(!channel_is_safe("http://127.0.0.1.evil.example"));
         assert!(!channel_is_safe("ctl:5093"));
+    }
+
+    #[test]
+    fn sets_several_variables_at_once_and_is_idempotent() {
+        let d = std::env::temp_dir().join(format!("machina-enrol-multi-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        let f = d.join("platform");
+        std::fs::write(&f, "A=1\nMACHINA_AGENT_LISTEN=127.0.0.1:50051\n").unwrap();
+        let vars = [
+            ("MACHINA_AGENT_LISTEN", "10.1.2.3:50051"),
+            ("MACHINA_AGENT_CONSOLE_LISTEN", "10.1.2.3:50052"),
+        ];
+        assert!(set_env_vars(&f, &vars).unwrap());
+        assert_eq!(
+            std::fs::read_to_string(&f).unwrap(),
+            "A=1\nMACHINA_AGENT_LISTEN=10.1.2.3:50051\nMACHINA_AGENT_CONSOLE_LISTEN=10.1.2.3:50052\n"
+        );
+        assert!(!set_env_vars(&f, &vars).unwrap());
+        assert!(set_env_vars(&f, &[("bad key", "x")]).is_err());
+        assert!(set_env_vars(&f, &[("OK", "two words")]).is_err());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn advertises_the_machine_address_for_wildcard_listeners() {
+        assert_eq!(advertised("0.0.0.0:50051", "10.1.2.3"), "10.1.2.3:50051");
+        assert_eq!(advertised("[::]:50051", "10.1.2.3"), "10.1.2.3:50051");
+        assert_eq!(advertised("10.9.9.9:50051", "10.1.2.3"), "10.9.9.9:50051");
+        assert_eq!(advertised("127.0.0.1:50051", "10.1.2.3"), "127.0.0.1:50051");
+    }
+
+    #[test]
+    fn hostname_prefers_a_non_empty_explicit_value_and_never_returns_empty() {
+        assert_eq!(local_hostname(Some("  node-7 ")), "node-7");
+        assert!(!local_hostname(Some("")).is_empty());
+        assert!(!local_hostname(None).is_empty());
+    }
+
+    #[test]
+    fn loopback_controllers_have_no_routable_address() {
+        assert_eq!(address_towards("http://127.0.0.1:5093"), None);
+        assert_eq!(address_towards("not a url"), None);
     }
 
     #[test]
