@@ -508,6 +508,21 @@ pub struct CreateVmRequest {
     /// Guest IPv4s for `l2-uplink` ARP steering (at most 8).
     #[serde(default)]
     pub fluxvm_direct_guest_ips: Vec<String>,
+    /// FluxVM direct-boot kernel on the host. Firecracker and flux-vm need one
+    /// (FluxVM falls back to its own configured kernel); QEMU needs a bzImage.
+    #[serde(default)]
+    pub fluxvm_kernel: String,
+    #[serde(default)]
+    pub fluxvm_initrd: String,
+    #[serde(default)]
+    pub fluxvm_kernel_args: String,
+    /// FluxVM in-guest vsock agent (exec, files, console). `None` = on.
+    #[serde(default)]
+    pub fluxvm_agent: Option<bool>,
+    /// Use the image in place as a `storage: shared` disk (never cloned or deleted;
+    /// needed for FluxVM HA re-create and live migration).
+    #[serde(default)]
+    pub fluxvm_shared_disk: bool,
 }
 
 fn default_graphics_listen() -> String {
@@ -600,6 +615,11 @@ impl Default for CreateVmRequest {
             fluxvm_direct_uplink: String::new(),
             fluxvm_direct_mode: String::new(),
             fluxvm_direct_guest_ips: Vec::new(),
+            fluxvm_kernel: String::new(),
+            fluxvm_initrd: String::new(),
+            fluxvm_kernel_args: String::new(),
+            fluxvm_agent: None,
+            fluxvm_shared_disk: false,
         }
     }
 }

@@ -4,6 +4,9 @@
 import { describe, expect, it } from 'vitest'
 import { appendVmConnection, sanitizeVmInfo, vmConsoleRoute, vmDetailRoute, vmScopeParam } from './vm'
 import { buildFluxvmCreateRequest } from '../components/vm/FluxvmCreatePanel'
+import { fluxvmCaps, fluxvmNicHotplugBlocked, fluxvmSerialLabel } from '../components/vm/FluxvmManagePanel'
+import { fluxvmAgentConsoleUrl } from '../components/vm/FluxvmAgentConsole'
+import { backupScopeQs } from './backup'
 
 describe('FluxVM VM scope', () => {
   it('maps the fluxvm connection to backend=fluxvm on API URLs', () => {
@@ -57,5 +60,56 @@ describe('buildFluxvmCreateRequest', () => {
     const d = buildFluxvmCreateRequest({ ...base, network: 'direct', directUplink: 'eno1', directMode: 'l2-uplink', directGuestIps: '10.0.0.5, 10.0.0.6' })
     expect(d).toMatchObject({ fluxvm_direct_uplink: 'eno1', fluxvm_direct_mode: 'l2-uplink', fluxvm_direct_guest_ips: ['10.0.0.5', '10.0.0.6'] })
     expect(d.fluxvm_network).toBeUndefined()
+  })
+})
+
+describe('FluxVM create extras', () => {
+  const base = { name: 'v', vcpus: 1, memoryMb: 512, diskGb: 0, hypervisor: 'qemu', image: '/i' }
+
+  it('passes kernel, initrd, args and the shared-disk flag; agent stays default-on', () => {
+    const r = buildFluxvmCreateRequest({ ...base, kernel: ' /k/bz ', initrd: '/k/rd', kernelArgs: 'root=/dev/vda', sharedDisk: true })
+    expect(r).toMatchObject({ fluxvm_kernel: '/k/bz', fluxvm_initrd: '/k/rd', fluxvm_kernel_args: 'root=/dev/vda', fluxvm_shared_disk: true })
+    expect(r.fluxvm_agent).toBeUndefined()
+    const plain = buildFluxvmCreateRequest(base)
+    expect(plain.fluxvm_kernel).toBeUndefined()
+    expect(plain.fluxvm_shared_disk).toBeUndefined()
+  })
+
+  it('sends agent: false only when the agent is turned off', () => {
+    expect(buildFluxvmCreateRequest({ ...base, agent: false }).fluxvm_agent).toBe(false)
+    expect(buildFluxvmCreateRequest({ ...base, agent: true }).fluxvm_agent).toBeUndefined()
+  })
+})
+
+describe('FluxVM per-engine features', () => {
+  it('gates hotplug, NICs, backups and migration by engine', () => {
+    expect(fluxvmCaps('qemu')).toEqual({ hotplug: true, nic: true, backup: true, migrate: true, interactiveSerial: true })
+    expect(fluxvmCaps('cloud-hypervisor')).toMatchObject({ hotplug: true, nic: false, backup: false, migrate: false })
+    expect(fluxvmCaps('firecracker')).toMatchObject({ hotplug: false, backup: false, migrate: false })
+    expect(fluxvmCaps(undefined).hotplug).toBe(false)
+  })
+
+  it('labels the non-QEMU serial tab as a read-only console log', () => {
+    expect(fluxvmSerialLabel('qemu')).toBe('Serial console')
+    expect(fluxvmSerialLabel('flux-vm')).toBe('Console log (read-only)')
+    expect(fluxvmSerialLabel('cloud-hypervisor')).toBe('Console log (read-only)')
+  })
+
+  it('builds the agent console and backup scope URLs', () => {
+    expect(fluxvmAgentConsoleUrl('h:5092', true, 'a b', 't&1', 120, 32)).toBe(
+      'wss://h:5092/ws/v1/fluxvm-console/a%20b?token=t%261&cols=120&rows=32',
+    )
+    expect(fluxvmAgentConsoleUrl('h', false, 'a', 't', 80, 24).startsWith('ws://h/')).toBe(true)
+    expect(backupScopeQs()).toBe('')
+    expect(backupScopeQs('fluxvm')).toBe('?backend=fluxvm')
+    expect(backupScopeQs('fluxvm', 'web-1')).toBe('?backend=fluxvm&vm=web-1')
+  })
+})
+
+describe('FluxVM NIC hot-add', () => {
+  it('is blocked when the primary NIC lives in a network namespace', () => {
+    expect(fluxvmNicHotplugBlocked('netns tapab12cd (eBPF)')).toBe(true)
+    expect(fluxvmNicHotplugBlocked('virbr0 · tapab12cd')).toBe(false)
+    expect(fluxvmNicHotplugBlocked(undefined)).toBe(false)
   })
 })

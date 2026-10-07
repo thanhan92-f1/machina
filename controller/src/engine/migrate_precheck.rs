@@ -26,6 +26,9 @@ pub async fn run_migrate_precheck(
     dest_host_id: Uuid,
     live: bool,
 ) -> anyhow::Result<MigratePrecheckResult> {
+    if crate::engine::fluxvm_fleet::is_fluxvm(pool, vm_id).await {
+        return crate::engine::fluxvm_fleet::precheck(pool, vm_id, dest_host_id, live).await;
+    }
     let mut checks = Vec::new();
 
     let vm_row: Option<(String, Option<Uuid>, i64, i32, String)> = crate::db::query_as(

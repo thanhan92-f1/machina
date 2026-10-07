@@ -294,6 +294,14 @@ export interface CreateVmRequest {
   fluxvm_direct_mode?: string
   /** Guest IPv4s for `l2-uplink` ARP steering (at most 8). */
   fluxvm_direct_guest_ips?: string[]
+  /** Kernel / initrd paths on the FluxVM host and extra kernel args (direct boot). */
+  fluxvm_kernel?: string
+  fluxvm_initrd?: string
+  fluxvm_kernel_args?: string
+  /** FluxVM guest agent (agent console, exec); on unless false. */
+  fluxvm_agent?: boolean
+  /** Use `fluxvm_image` in place as a shared raw disk (`storage: shared`): needed for live migration and HA. */
+  fluxvm_shared_disk?: boolean
 }
 
 export interface VmTemplate {
@@ -825,6 +833,12 @@ interface MigrateOptions {
   undefine_source?: boolean
   tunnelled?: boolean
   paused?: boolean
+  /** FluxVM: bearer token for a remote target FluxVM API in `destUri`. */
+  dest_token?: string
+  listen_host?: string
+  advertise_host?: string
+  bandwidth_mbps?: number
+  max_downtime_ms?: number
 }
 
 export const migrateVM = (name: string, destUri: string, live: boolean, opts?: MigrateOptions, connection?: string | null) =>

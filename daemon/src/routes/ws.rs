@@ -251,7 +251,6 @@ async fn handle_fluxvm_serial(
     name: String,
     upstream: Result<(String, Option<String>), String>,
 ) {
-    use tokio_tungstenite::tungstenite::client::IntoClientRequest;
     use tokio_tungstenite::tungstenite::Message as UpMsg;
 
     let (mut ws_sink, mut ws_stream) = socket.split();
@@ -266,24 +265,8 @@ async fn handle_fluxvm_serial(
             return;
         }
     };
-    let mut req = match url.as_str().into_client_request() {
-        Ok(r) => r,
-        Err(e) => {
-            let _ = ws_sink
-                .send(Message::Text(
-                    format!("\r\nBad FluxVM serial URL: {e}\r\n").into(),
-                ))
-                .await;
-            return;
-        }
-    };
-    if let Some(t) = token {
-        if let Ok(v) = format!("Bearer {t}").parse() {
-            req.headers_mut().insert("authorization", v);
-        }
-    }
-    let upstream = match tokio_tungstenite::connect_async(req).await {
-        Ok((s, _)) => s,
+    let upstream = match super::fluxvm::connect_ws(&url, token.as_deref()).await {
+        Ok(s) => s,
         Err(e) => {
             warn!("FluxVM serial connect failed for '{}': {}", name, e);
             let _ = ws_sink
@@ -315,6 +298,103 @@ async fn handle_fluxvm_serial(
         while let Some(Ok(msg)) = ws_stream.next().await {
             let out = match msg {
                 Message::Text(t) => UpMsg::Binary(t.as_bytes().to_vec().into()),
+                Message::Binary(b) => UpMsg::Binary(b.to_vec().into()),
+                Message::Close(_) => break,
+                _ => continue,
+            };
+            if up_sink.send(out).await.is_err() {
+                break;
+            }
+        }
+        let _ = up_sink.send(UpMsg::Close(None)).await;
+    });
+    tokio::select! {
+        _ = &mut down => up.abort(),
+        _ = &mut up => down.abort(),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct AgentConsoleQuery {
+    #[serde(default = "default_cols")]
+    cols: u16,
+    #[serde(default = "default_rows")]
+    rows: u16,
+}
+fn default_cols() -> u16 {
+    120
+}
+fn default_rows() -> u16 {
+    32
+}
+
+/// `/ws/v1/fluxvm-console/{name}`: interactive shell through the FluxVM guest
+/// agent (every engine, agent enabled). Binary frames are terminal data both
+/// ways; a text frame from the browser is a resize `{"cols":…,"rows":…}`.
+async fn fluxvm_agent_console_handler(
+    ws: WebSocketUpgrade,
+    Extension(actor): Extension<RequestActor>,
+    Path(name): Path<String>,
+    Query(q): Query<AgentConsoleQuery>,
+) -> axum::response::Response {
+    if let Err(e) = crate::auth::require_write(&actor, "vms:write") {
+        return e.into_response();
+    }
+    let upstream = match super::fluxvm::client() {
+        Ok(c) => match c.resolve(&name).await {
+            Ok(rec) => Ok(c.console_ws(&rec.id, q.cols, q.rows)),
+            Err(e) => Err(e.to_string()),
+        },
+        Err(_) => Err("FluxVM backend is disabled ([fluxvm] enabled = false)".to_string()),
+    };
+    ws.on_upgrade(move |socket| handle_fluxvm_agent_console(socket, name, upstream))
+        .into_response()
+}
+
+async fn handle_fluxvm_agent_console(
+    socket: WebSocket,
+    name: String,
+    upstream: Result<(String, Option<String>), String>,
+) {
+    use tokio_tungstenite::tungstenite::Message as UpMsg;
+
+    let (mut ws_sink, mut ws_stream) = socket.split();
+    let fail = |msg: String| Message::Binary(format!("\r\n{msg}\r\n").into_bytes().into());
+    let upstream = match upstream {
+        Ok((url, token)) => super::fluxvm::connect_ws(&url, token.as_deref()).await,
+        Err(e) => Err(e),
+    };
+    let upstream = match upstream {
+        Ok(s) => s,
+        Err(e) => {
+            warn!("FluxVM agent console for '{}' failed: {}", name, e);
+            let _ = ws_sink
+                .send(fail(format!(
+                    "FluxVM agent console for '{name}' unavailable: {e} (is the guest agent enabled and up?)"
+                )))
+                .await;
+            return;
+        }
+    };
+    info!("FluxVM agent console connected for VM '{}'", name);
+    let (mut up_sink, mut up_stream) = upstream.split();
+    let mut down = tokio::spawn(async move {
+        while let Some(Ok(msg)) = up_stream.next().await {
+            let out = match msg {
+                UpMsg::Binary(b) => Message::Binary(b.to_vec().into()),
+                UpMsg::Text(t) => Message::Binary(t.as_bytes().to_vec().into()),
+                UpMsg::Close(_) => break,
+                _ => continue,
+            };
+            if ws_sink.send(out).await.is_err() {
+                break;
+            }
+        }
+    });
+    let mut up = tokio::spawn(async move {
+        while let Some(Ok(msg)) = ws_stream.next().await {
+            let out = match msg {
+                Message::Text(t) => UpMsg::Text(t.as_str().to_string().into()),
                 Message::Binary(b) => UpMsg::Binary(b.to_vec().into()),
                 Message::Close(_) => break,
                 _ => continue,
@@ -974,6 +1054,7 @@ pub fn ws_routes() -> Router<LibvirtManager> {
             get(kubevirt_console_ws_handler),
         )
         .route("/console/{name}", get(console_handler))
+        .route("/fluxvm-console/{name}", get(fluxvm_agent_console_handler))
         .route("/vnc/{name}", get(vnc_handler))
         .route("/rdp/{name}", get(rdp_handler))
         .route("/spice/{name}", get(spice_handler))

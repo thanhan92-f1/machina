@@ -1598,6 +1598,59 @@ pub async fn migrate_vm(
     }))
 }
 
+#[derive(Debug, Default, Deserialize)]
+pub struct RecoverFluxvmBody {
+    /// Host to re-create on; default the VM's current host.
+    #[serde(default)]
+    pub host_id: Option<Uuid>,
+}
+
+/// Re-create a FluxVM VM from its last inventory record on `host_id` (the same
+/// `ha.recover` task HA runs after a host failure): a fresh instance on the
+/// same shared disk, taking over the disk lock.
+pub async fn recover_fluxvm_vm(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    body: Option<Json<RecoverFluxvmBody>>,
+) -> Result<Json<TaskResponse>, ApiError> {
+    require_operator(&actor)?;
+    if !crate::engine::fluxvm_fleet::is_fluxvm(&state.pool, id).await {
+        return Err(ApiError::bad_request("not a FluxVM VM").with_code("not_fluxvm"));
+    }
+    let current: Option<Uuid> = crate::db::query_scalar("SELECT host_id FROM vms WHERE id = ?")
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
+    let target = body
+        .and_then(|Json(b)| b.host_id)
+        .or(current)
+        .ok_or_else(|| ApiError::bad_request("VM has no host; pass host_id"))?;
+    crate::api::cloud::check_vm_host(&state.pool, id, target).await?;
+    let mut payload = serde_json::json!({
+        "vm_id": id.to_string(),
+        "host_id": target.to_string(),
+        "desired_state": "running",
+    });
+    if let Some(h) = current {
+        payload["recovered_from_host_id"] = h.to_string().into();
+    }
+    let task_id = enqueue_task(
+        &state,
+        "ha.recover",
+        payload,
+        Some("vm"),
+        Some(id),
+        Some(target),
+    )
+    .await?;
+    Ok(Json(TaskResponse {
+        task_id: task_id.to_string(),
+        status: "pending".into(),
+        operation: "ha.recover".into(),
+    }))
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CloneVmBody {
     pub new_name: String,

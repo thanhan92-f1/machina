@@ -1691,6 +1691,9 @@ async fn live_vcpus_handler(
     // hot-plug variant had no check at all, letting any authenticated (incl.
     // read-only) caller resize a running VM's vCPUs.
     require_write(&actor, "vms:write")?;
+    if conn_q.is_fluxvm() {
+        return Ok(Json(super::fluxvm::resize(&name, Some(count), None).await?));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(m, Some(&actor), conn_q, move |conn| {
         extras::live_set_vcpus(conn, &name2, count)
@@ -1710,6 +1713,9 @@ async fn live_memory_handler(
     // Same gap as `live_vcpus_handler` above: the offline sibling requires
     // write role, this live hot-plug variant did not.
     require_write(&actor, "vms:write")?;
+    if conn_q.is_fluxvm() {
+        return Ok(Json(super::fluxvm::resize(&name, None, Some(mb)).await?));
+    }
     let name2 = name.clone();
     let outcome = spawn_libvirt_actor(m, Some(&actor), conn_q, move |conn| {
         extras::live_set_memory(conn, &name2, mb)

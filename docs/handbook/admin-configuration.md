@@ -253,6 +253,15 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
 - `[kubevirt]`, `[fluxvm]`, and `[guestkit]` —
   integration blocks, all `enabled=false` by default (see
   [Product Guide → Integrations](product-guide.md#integrations)).
+- `[fluxvm]` — `enabled`, `base_url` (`http://127.0.0.1:7788`), `token` or
+  `token_file`, `insecure_tls` (also covers `wss://` serial and agent
+  console), `default_backend` (`auto` | `qemu` | `cloud-hypervisor` |
+  `firecracker` | `flux-vm`). Snapshots, backups (QEMU, default storage),
+  hot-add vCPU/memory (QEMU and Cloud Hypervisor), extra NICs (QEMU on a host
+  bridge) and live migration (QEMU on a shared disk) go through it. For the
+  controller to manage these VMs, set `MACHINA_FLUXVM_URL` for
+  `machina-agent` (below); fleet migration and HA re-create need the disk on
+  storage every host can reach (`fluxvm_shared_disk`).
 
 ---
 
@@ -321,6 +330,9 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
 | `MACHINA_AGENT_TLS_CERT` / `MACHINA_AGENT_TLS_KEY` | gRPC TLS certificate | unset |
 | `MACHINA_AGENT_TOKEN` | Token the controller must present; `machina-agent join` writes the host's own token here (`--env-file`, default `/etc/default/machina-platform`) | unset |
 | `MACHINA_AGENT_HOSTNAME` | Name reported to the controller | system hostname |
+| `MACHINA_FLUXVM_URL` | This host's fluxvm-api, so the controller sees, powers, migrates and re-creates its FluxVM VMs | the host's `[fluxvm] base_url` when `enabled` |
+| `MACHINA_FLUXVM_TOKEN` | Bearer token for that fluxvm-api | `[fluxvm] token` / `token_file` |
+| `MACHINA_FLUXVM_INSECURE_TLS` | `1` accepts a self-signed `https://` fluxvm-api | `[fluxvm] insecure_tls` |
 | `MACHINA_FENCE_COMMAND` | Fence command run on `FenceHost` | unset |
 | `MACHINA_BPFD_SOCK` | `machina-bpfd` socket | `/run/machina-bpf/bpfd.sock` |
 

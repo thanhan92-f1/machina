@@ -83,6 +83,15 @@ service HostAgent {
   rpc RestorePointMerge(RestorePointMergeRequest) returns (RestorePointMergeResponse);
   rpc RestorePointDiscard(RestorePointDiscardRequest) returns (RestorePointDiscardResponse);
   rpc DetachFork(DetachForkRequest) returns (DetachForkResponse);
+  // FluxVM live migration (QEMU on a shared disk). Target side: prepare + adopt;
+  // source side: export, start, status, finish. Ids are FluxVM VM ids.
+  rpc ExportFluxvmRecord(ExportFluxvmRecordRequest) returns (ExportFluxvmRecordResponse);
+  rpc PrepareFluxvmReceiver(PrepareFluxvmReceiverRequest) returns (PrepareFluxvmReceiverResponse);
+  rpc StartFluxvmMigration(StartFluxvmMigrationRequest) returns (StartFluxvmMigrationResponse);
+  rpc GetFluxvmMigrationStatus(GetFluxvmMigrationStatusRequest) returns (GetFluxvmMigrationStatusResponse);
+  rpc FinishFluxvmMigration(FinishFluxvmMigrationRequest) returns (FinishFluxvmMigrationResponse);
+  rpc AdoptFluxvmVm(AdoptFluxvmVmRequest) returns (AdoptFluxvmVmResponse);
+  rpc AbortFluxvmMigration(AbortFluxvmMigrationRequest) returns (AbortFluxvmMigrationResponse);
 }
 
 message RegisterRequest {
@@ -126,12 +135,24 @@ message VmSummary {
   repeated string guest_ips = 11;
   // Cumulative rx+tx bytes across every guest NIC since the domain started.
   uint64 net_bytes = 12;
+  // "" = libvirt, "fluxvm" = managed by this host's fluxvm-api.
+  string backend = 13;
+  // FluxVM engine (qemu, cloud-hypervisor, firecracker, flux-vm); `uuid` is the FluxVM id.
+  string fluxvm_engine = 14;
+  // FluxVM storage mode ("" = FluxVM-managed, "shared", ...) and the disk path.
+  string fluxvm_storage = 15;
+  string disk = 16;
+  // Full FluxVM VM record (JSON), kept by the controller so HA can re-create
+  // the VM elsewhere after this host is gone.
+  string fluxvm_record_json = 17;
 }
 
 message ListVmsRequest {}
 
 message ListVmsResponse {
   repeated VmSummary vms = 1;
+  // True when this host's fluxvm-api answered; FluxVM rows are pruned only then.
+  bool fluxvm_ok = 2;
 }
 
 // Read-only sprite inventory, proxied from this host's co-located
@@ -198,6 +219,11 @@ message ApplyVmRequest {
   string cloud_init_user = 4;
   string cloud_init_password = 5;
   string cloud_init_ssh_pubkey = 6;
+  // "fluxvm": create `fluxvm_create_json` (a fluxvm-api create body) instead of `spec_json`.
+  string backend = 7;
+  string fluxvm_create_json = 8;
+  // FluxVM shared disk: break a stale lock held by a dead host (HA re-create).
+  bool shared_takeover = 9;
 }
 
 message ApplyVmResponse {
@@ -211,6 +237,8 @@ message VmPowerRequest {
   string action = 2;
   /// Optional: "agent" for guest-agent shutdown/reboot (virsh --mode=agent).
   string mode = 3;
+  /// "fluxvm" routes to fluxvm-api; "" = libvirt.
+  string backend = 4;
 }
 
 message VmPowerResponse {
@@ -228,6 +256,8 @@ message GetDomainXmlResponse {
 
 message DeleteVmRequest {
   string vm_name = 1;
+  /// "fluxvm" routes to fluxvm-api; "" = libvirt.
+  string backend = 2;
 }
 
 message DeleteVmResponse {
@@ -1014,3 +1044,70 @@ message DetachForkRequest {
 }
 
 message DetachForkResponse {}
+
+message ExportFluxvmRecordRequest {
+  string vm_name = 1;
+}
+
+message ExportFluxvmRecordResponse {
+  string id = 1;
+  string record_json = 2;
+}
+
+message PrepareFluxvmReceiverRequest {
+  // Source VM record (ExportFluxvmRecord); the receiver boots its device model.
+  string record_json = 1;
+  string listen_host = 2;
+  string advertise_host = 3;
+}
+
+message PrepareFluxvmReceiverResponse {
+  string receiver_id = 1;
+  string uri = 2;
+  string token = 3;
+}
+
+message StartFluxvmMigrationRequest {
+  string vm_id = 1;
+  string destination = 2;
+  uint64 bandwidth_mbps = 3;
+  uint64 max_downtime_ms = 4;
+}
+
+message StartFluxvmMigrationResponse {}
+
+message GetFluxvmMigrationStatusRequest {
+  string vm_id = 1;
+}
+
+message GetFluxvmMigrationStatusResponse {
+  // running | completed | failed
+  string progress = 1;
+  string error = 2;
+  string status_json = 3;
+}
+
+message FinishFluxvmMigrationRequest {
+  string vm_id = 1;
+}
+
+message FinishFluxvmMigrationResponse {}
+
+message AdoptFluxvmVmRequest {
+  string receiver_id = 1;
+  string token = 2;
+}
+
+message AdoptFluxvmVmResponse {
+  string id = 1;
+  string name = 2;
+  string state = 3;
+}
+
+message AbortFluxvmMigrationRequest {
+  // Either side may be empty.
+  string source_vm_id = 1;
+  string receiver_id = 2;
+}
+
+message AbortFluxvmMigrationResponse {}

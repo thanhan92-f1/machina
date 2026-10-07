@@ -39,6 +39,8 @@ import ClassicVmPlatformHardware from './classic/ClassicVmPlatformHardware'
 import ClassicVmSpiceToVncButton from './classic/ClassicVmSpiceToVncButton'
 import VmPortForwardPanel from '../components/vm/VmPortForwardPanel'
 import VmGuestPolicyPanel from '../components/vm/VmGuestPolicyPanel'
+import FluxvmManagePanel, { fluxvmSerialLabel } from '../components/vm/FluxvmManagePanel'
+import FluxvmAgentConsole from '../components/vm/FluxvmAgentConsole'
 import VmNetworkPolicyPanel from '../components/vm/VmNetworkPolicyPanel'
 import VmSshConnectDialog, { navigateVmSshSession } from '../components/vm/VmSshConnectDialog'
 import type { GuestAccessHints } from '../utils/guestAccessHints'
@@ -115,7 +117,7 @@ function SnapshotTableRows({
   )
 }
 
-const VM_DETAIL_TABS = ['overview', 'disks', 'network', 'snapshots', 'devices', 'guest-policy', 'xml', 'logs', 'advanced', 'serial'] as const
+const VM_DETAIL_TABS = ['overview', 'disks', 'network', 'snapshots', 'devices', 'guest-policy', 'xml', 'logs', 'advanced', 'serial', 'manage', 'agent-console'] as const
 type Tab = (typeof VM_DETAIL_TABS)[number]
 type Dialog = null | 'cdrom' | 'clone' | 'rename' | 'migrate' | 'snapshot' | 'boot-order' | 'vcpus' | 'memory' | 'balloon' | 'attach-disk' | 'resize-disk' | 'attach-nic' | 'attach-usb' | 'save-template' | 'linux-ssh-key' | 'linux-password' | 'linux-hostname'
   | 'delete-vm' | 'scheduler-tune' | 'memtune' | 'numa-tune' | 'emulator-pin' | 'pin-vcpu' | 'block-commit'
@@ -1317,7 +1319,12 @@ export default function VMDetailsPage() {
     { key: 'advanced', label: 'Advanced' },
   ]
   const tabs = isFluxvm
-    ? [...allTabs.filter((t) => t.key === 'overview' || t.key === 'disks' || t.key === 'network'), { key: 'serial' as Tab, label: 'Serial console' }]
+    ? [
+        ...allTabs.filter((t) => t.key === 'overview' || t.key === 'disks' || t.key === 'network'),
+        { key: 'manage' as Tab, label: 'Manage' },
+        { key: 'serial' as Tab, label: fluxvmSerialLabel(vm.fluxvm_backend) },
+        { key: 'agent-console' as Tab, label: 'Agent console' },
+      ]
     : allTabs
 
   return (
@@ -1396,7 +1403,7 @@ export default function VMDetailsPage() {
       {/* Settings Bar */}
       {isFluxvm ? (
         <p className="text-xs text-[var(--text-muted)]">
-          FluxVM guest — lifecycle, metrics and serial console only. Snapshots, hotplug, XML and tuning are libvirt features.
+          FluxVM guest — snapshots, backups, hot-add and live migration are under Manage. XML and libvirt tuning don&apos;t apply.
         </p>
       ) : (
       <div className="flex items-center gap-2 flex-wrap">
@@ -2621,6 +2628,24 @@ export default function VMDetailsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {tab === 'manage' && isFluxvm && (
+        <FluxvmManagePanel
+          name={vm.name}
+          engine={vm.fluxvm_backend}
+          state={vm.state}
+          vcpus={vm.vcpus}
+          memoryMb={vm.memory_mb}
+          interfaces={vm.interfaces}
+          onChanged={load}
+        />
+      )}
+
+      {tab === 'agent-console' && isFluxvm && (
+        <div className="apple-section apple-section--tight px-0 flex flex-col min-h-[28rem]">
+          <FluxvmAgentConsole vmName={vm.name} />
         </div>
       )}
 

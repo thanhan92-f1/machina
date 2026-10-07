@@ -346,9 +346,13 @@ async fn vm_power(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
         .1
         .ok_or_else(|| anyhow::anyhow!("vm {} has no host", vm_id))?;
     let prior_observed_state = row.2;
-    let agent_addr = host_agent_addr(&state.pool, host_id).await?;
-    let mut client = agent_client::connect(&agent_addr).await?;
-    let resp = agent_client::vm_power(&mut client, &row.0, &action, power_mode).await?;
+    let resp = if crate::engine::fluxvm_fleet::is_fluxvm(&state.pool, vm_id).await {
+        crate::engine::fluxvm_fleet::power(&state.pool, host_id, &row.0, &action).await?
+    } else {
+        let agent_addr = host_agent_addr(&state.pool, host_id).await?;
+        let mut client = agent_client::connect(&agent_addr).await?;
+        agent_client::vm_power(&mut client, &row.0, &action, power_mode).await?
+    };
 
     let desired = match action.as_str() {
         "start" | "resume" | "reboot" | "reset" => "running",
@@ -493,6 +497,10 @@ async fn vm_delete(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
             &row.0,
         )
         .await?;
+    } else if row.2 == crate::engine::fluxvm_fleet::SOURCE {
+        if let Some(host_id) = row.1 {
+            crate::engine::fluxvm_fleet::delete(&state.pool, host_id, &row.0).await?;
+        }
     } else if let Some(host_id) = row.1 {
         let agent_addr = host_agent_addr(&state.pool, host_id).await?;
         let mut client = agent_client::connect(&agent_addr).await?;
@@ -655,8 +663,13 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
             .ok_or_else(|| anyhow::anyhow!("host {} not found or has no cluster", host_id))?;
 
     let mut seen_names: HashSet<String> = HashSet::new();
+    let fluxvm_ok = list.fluxvm_ok;
+    let (flux_vms, libvirt_vms): (Vec<_>, Vec<_>) = list
+        .vms
+        .into_iter()
+        .partition(|v| v.backend == crate::engine::fluxvm_fleet::SOURCE);
 
-    for vm in list.vms {
+    for vm in libvirt_vms {
         seen_names.insert(vm.name.clone());
         // Match on the libvirt UUID (the VM's stable identity) when reported, so
         // a migrated VM updates its own row and two same-name VMs on different
@@ -790,6 +803,13 @@ async fn host_inventory(state: &AppState, msg: &TaskMessage) -> anyhow::Result<(
         }
     }
 
+    if let Err(e) =
+        crate::engine::fluxvm_fleet::sync_host(state, host_id, cluster_id, &flux_vms, fluxvm_ok)
+            .await
+    {
+        tracing::warn!(%host_id, "FluxVM inventory sync: {e:#}");
+    }
+
     // Treat a successful-but-empty scan as inconclusive rather than authoritative:
     // libvirtd can return an empty list right after a reconnect/restart, and a
     // hard RPC failure already errored out above. Reconciling on empty would
@@ -905,6 +925,22 @@ async fn vm_migrate(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
             .collect::<Vec<_>>()
             .join("; ");
         anyhow::bail!("migration pre-check failed: {msg}");
+    }
+    if crate::engine::fluxvm_fleet::is_fluxvm(&state.pool, vm_id).await {
+        let mbps = msg.payload["bandwidth_mbps"]
+            .as_u64()
+            .unwrap_or(bandwidth_mib.saturating_mul(8));
+        return crate::engine::fluxvm_fleet::migrate(
+            state,
+            msg.task_id,
+            vm_id,
+            dest_host_id,
+            crate::engine::fluxvm_fleet::MigrateOpts {
+                bandwidth_mbps: mbps,
+                max_downtime_ms: msg.payload["max_downtime_ms"].as_u64().unwrap_or(0),
+            },
+        )
+        .await;
     }
 
     let row: (String, Option<Uuid>) = crate::db::query_as("SELECT name, host_id FROM vms WHERE id = ?")
@@ -1211,6 +1247,20 @@ async fn ha_recover(state: &AppState, msg: &TaskMessage) -> anyhow::Result<()> {
         .await
         .map_err(|e| anyhow::anyhow!("cloud host placement: {e:?}"))?;
     let desired = msg.payload["desired_state"].as_str().unwrap_or("running");
+    if crate::engine::fluxvm_fleet::is_fluxvm(&state.pool, vm_id).await {
+        let previous = msg.payload["recovered_from_host_id"]
+            .as_str()
+            .and_then(|s| Uuid::parse_str(s).ok());
+        return crate::engine::fluxvm_fleet::ha_recreate(
+            state,
+            msg.task_id,
+            vm_id,
+            host_id,
+            previous,
+            desired,
+        )
+        .await;
+    }
 
     let row: (String, serde_json::Value) =
         crate::db::query_as("SELECT name, spec_json FROM vms WHERE id = ?")

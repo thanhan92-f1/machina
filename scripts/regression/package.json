@@ -16,6 +16,7 @@
     "fleetcloud": "node ops-fleetcloud.js",
     "mission": "node ops-mission.js",
     "catalog": "node ops-catalog.js",
+    "fluxvm": "node ops-fluxvm.js",
     "hardware": "node ops-hardware.js",
     "hw-feats": "node ops-hw-feats.js",
     "host": "node ops-host.js",

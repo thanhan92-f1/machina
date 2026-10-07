@@ -12,7 +12,7 @@ export const FLUXVM_NETWORKS = [
   { id: 'netns', label: 'eBPF namespace (default)', hint: 'Tap in its own network namespace with DHCP + NAT; eBPF VM edge attached' },
   { id: 'bridge', label: 'eBPF on a host bridge', hint: 'Tap on an existing host bridge; eBPF VM edge attached' },
   { id: 'direct', label: 'eBPF direct uplink', hint: 'No bridge: TC/eBPF redirect between a host NIC and the tap' },
-  { id: 'user', label: 'User-mode NAT (QEMU only)', hint: 'No tap, so no eBPF policy or accounting' },
+  { id: 'user', label: 'User-mode NAT (forces QEMU)', hint: 'No tap, so no eBPF policy or accounting; auto picks QEMU' },
   { id: 'none', label: 'No network', hint: '' },
 ] as const
 export type FluxvmNetwork = (typeof FLUXVM_NETWORKS)[number]['id']
@@ -39,6 +39,11 @@ export function buildFluxvmCreateRequest(p: {
   directGuestIps?: string
   cloudInitUser?: string
   cloudInitSshKey?: string
+  kernel?: string
+  initrd?: string
+  kernelArgs?: string
+  agent?: boolean
+  sharedDisk?: boolean
 }): CreateVmRequest {
   const network = p.network ?? 'netns'
   const net: Partial<CreateVmRequest> =
@@ -62,6 +67,11 @@ export function buildFluxvmCreateRequest(p: {
     ...net,
     cloud_init_user: p.cloudInitUser?.trim() || undefined,
     cloud_init_ssh_pubkey: p.cloudInitSshKey?.trim() || undefined,
+    fluxvm_kernel: p.kernel?.trim() || undefined,
+    fluxvm_initrd: p.initrd?.trim() || undefined,
+    fluxvm_kernel_args: p.kernelArgs?.trim() || undefined,
+    fluxvm_agent: p.agent === false ? false : undefined,
+    fluxvm_shared_disk: p.sharedDisk || undefined,
   }
 }
 
@@ -80,6 +90,11 @@ export default function FluxvmCreatePanel({ initialName = '', defaultHypervisor,
   const [directUplink, setDirectUplink] = useState('')
   const [directMode, setDirectMode] = useState('l2-uplink')
   const [directGuestIps, setDirectGuestIps] = useState('')
+  const [kernel, setKernel] = useState('')
+  const [initrd, setInitrd] = useState('')
+  const [kernelArgs, setKernelArgs] = useState('')
+  const [agent, setAgent] = useState(true)
+  const [sharedDisk, setSharedDisk] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [log, setLog] = useState<string[]>([])
 
@@ -93,14 +108,16 @@ export default function FluxvmCreatePanel({ initialName = '', defaultHypervisor,
           ? 'Enter the host uplink NIC.'
           : network === 'user' && hypervisor !== 'qemu' && hypervisor !== 'auto'
             ? 'User-mode NAT needs the qemu (or auto) hypervisor.'
-            : null
+            : sharedDisk && hypervisor === 'flux-vm'
+              ? 'flux-vm needs FluxVM-managed storage; pick another hypervisor for a shared disk.'
+              : null
 
   const submit = async () => {
     if (blocked) return
     const req = buildFluxvmCreateRequest({
       name: vmName, vcpus, memoryMb, diskGb, hypervisor, image,
       network, bridge, directUplink, directMode, directGuestIps,
-      cloudInitUser, cloudInitSshKey,
+      cloudInitUser, cloudInitSshKey, kernel, initrd, kernelArgs, agent, sharedDisk,
     })
     setSubmitting(true)
     setLog([])
@@ -119,7 +136,7 @@ export default function FluxvmCreatePanel({ initialName = '', defaultHypervisor,
       <div>
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">FluxVM guest</h3>
         <p className="text-xs text-[var(--text-muted)]">
-          Created through fluxvm-api instead of libvirt. Lifecycle, metrics and the serial console work from Machina; snapshots and hotplug stay libvirt-only.
+          Created through fluxvm-api instead of libvirt. Lifecycle, metrics, consoles, snapshots, backups (QEMU), hot-add (QEMU / Cloud Hypervisor) and live migration (QEMU on a shared disk) work from Machina.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -184,15 +201,35 @@ export default function FluxvmCreatePanel({ initialName = '', defaultHypervisor,
           </>
         )}
         <div className="sm:col-span-2">
-          <label htmlFor="fluxvm-image" className="block text-sm text-[var(--text-muted)] mb-1">Base image on the FluxVM host *</label>
+          <label htmlFor="fluxvm-image" className="block text-sm text-[var(--text-muted)] mb-1">{sharedDisk ? 'Shared raw disk on the FluxVM host *' : 'Base image on the FluxVM host *'}</label>
           <input
             id="fluxvm-image"
             type="text"
             value={image}
             onChange={(e) => setImage(e.target.value)}
             className="input-field w-full font-mono text-sm"
-            placeholder="/var/lib/fluxvm/images/ubuntu-24.04.qcow2"
+            placeholder={sharedDisk ? '/var/lib/fluxvm/shared/web-1.raw' : '/var/lib/fluxvm/images/ubuntu-24.04.qcow2'}
           />
+          <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-2">
+            <input type="checkbox" checked={sharedDisk} onChange={(e) => setSharedDisk(e.target.checked)} data-testid="fluxvm-shared-disk" />
+            Use this raw file / block device in place (shared storage) — needed for live migration and HA; never deleted
+          </label>
+        </div>
+        <div>
+          <label htmlFor="fluxvm-kernel" className="block text-sm text-[var(--text-muted)] mb-1">Kernel (optional)</label>
+          <input id="fluxvm-kernel" type="text" value={kernel} onChange={(e) => setKernel(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="/var/lib/fluxvm/kernels/vmlinux (QEMU: bzImage)" />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-initrd" className="block text-sm text-[var(--text-muted)] mb-1">Initrd (optional)</label>
+          <input id="fluxvm-initrd" type="text" value={initrd} onChange={(e) => setInitrd(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="/var/lib/fluxvm/kernels/initrd.img" />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="fluxvm-kernel-args" className="block text-sm text-[var(--text-muted)] mb-1">Extra kernel args (optional)</label>
+          <input id="fluxvm-kernel-args" type="text" value={kernelArgs} onChange={(e) => setKernelArgs(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="root=/dev/vda rw" />
+          <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-2">
+            <input type="checkbox" checked={agent} onChange={(e) => setAgent(e.target.checked)} data-testid="fluxvm-agent" />
+            FluxVM guest agent (agent console and exec; the image must run fluxvm-agent)
+          </label>
         </div>
         <div>
           <label htmlFor="fluxvm-ci-user" className="block text-sm text-[var(--text-muted)] mb-1">Cloud-init user (optional)</label>

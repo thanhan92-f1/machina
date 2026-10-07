@@ -1151,6 +1151,9 @@ async fn set_vcpus(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     machina_core::validate::validate_vcpus(count)?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        return Ok(Json(super::fluxvm::resize(&name, Some(count), None).await?));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         resize::set_vcpus(conn, &name2, count)
@@ -1169,6 +1172,9 @@ async fn set_memory(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
     machina_core::validate::validate_memory_mb(mb)?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        return Ok(Json(super::fluxvm::resize(&name, None, Some(mb)).await?));
+    }
     let name2 = name.clone();
     let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         resize::set_memory(conn, &name2, mb)
@@ -1286,6 +1292,14 @@ async fn attach_interface_handler(
     Json(req): Json<AttachInterfaceRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        let mac = super::fluxvm::client()?
+            .hotplug_nic(&name, &req.network, None)
+            .await?;
+        return Ok(Json(serde_json::json!({
+            "status": "attached", "name": name, "network": req.network, "mac": mac, "backend": "fluxvm"
+        })));
+    }
     let name2 = name.clone();
     let network = req.network.clone();
     let model = req.model.clone();
@@ -1306,6 +1320,13 @@ async fn detach_interface_handler(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        super::fluxvm::client()?.unplug_nic(&name, &mac).await?;
+        return Ok(Json(serde_json::json!({
+            "status": "detached", "name": name, "mac": mac,
+            "live_removed": true, "requires_restart": false, "backend": "fluxvm"
+        })));
+    }
     let name2 = name.clone();
     let mac2 = mac.clone();
     let outcome = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {

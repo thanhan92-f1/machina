@@ -7,6 +7,7 @@ pub mod console_ws;
 pub mod eip;
 pub mod enrol;
 pub mod epoch;
+pub mod fluxvm;
 pub mod grpc;
 pub mod imds;
 pub mod jwt;

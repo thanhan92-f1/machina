@@ -40,7 +40,7 @@ jsonwebtoken = { version = "11", features = ["rust_crypto"] }
 # rustls 0.23 requires an explicit process default CryptoProvider when deps enable multiple backends.
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
 portable-pty = { workspace = true }
-tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect"] }
+tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 ldap3 = { version = "0.12", default-features = false, features = ["sync", "tls"] }
 vessel-core = { path = "../vessel" }
 

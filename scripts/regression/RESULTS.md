@@ -2,6 +2,25 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-10-07 — FluxVM (`212.8.248.187`, `make regression-fluxvm`)
+
+FluxVM `e6c5ad8`+ (netns NIC refusal) on the same host; daemon, controller and agent with
+`MACHINA_FLUXVM_URL=http://127.0.0.1:7788`.
+
+| Gate | Result |
+|------|--------|
+| fluxvm (`ops-fluxvm.js`) | **24/24 PASS** |
+
+Covers serial + agent console, snapshots (create/revert/delete), hot-add vCPU/memory (shrink
+refused), NIC attach/detach on a host bridge (refused on a netns VM), backup/restore/delete,
+shared-disk VM, daemon loopback live migration, controller inventory row, pre-check, `vm.migrate`
+host-to-itself and HA re-create (`POST …/fluxvm/recover`). Single host only: migration and HA
+were exercised host-to-itself, not between two hosts.
+
+Fixed on the way: hot-added NICs had no MAC to unplug by (Machina now generates one); a hot-added
+NIC left a netns VM unable to restart (FluxVM now refuses it); the FluxVM pre-check trusted a
+stale inventory row (it now asks the source agent).
+
 ## 2026-09-03 — Wave E extended ops (`212.8.248.187`)
 
 Harness tweaks before run: `resolveIds` also picks live **storage pool** id; `host-cockpit`

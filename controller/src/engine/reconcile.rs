@@ -87,7 +87,7 @@ async fn reconcile_once(state: &AppState) -> anyhow::Result<()> {
          ) t ON t.resource_id = v.id
          WHERE v.desired_state != v.observed_state
            AND v.observed_state NOT IN ('missing', 'unknown')
-           AND v.inventory_source = 'libvirt'
+           AND (v.inventory_source = 'libvirt' OR (v.inventory_source = 'fluxvm' AND v.managed))
            AND v.lifecycle_phase NOT IN ('creating', 'migrating', 'deleting', 'snapshotting', 'backing_up', 'retired')
          ORDER BY t.last_attempt ASC NULLS FIRST
          LIMIT 20",

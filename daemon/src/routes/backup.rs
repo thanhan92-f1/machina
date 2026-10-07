@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 use axum::body::Body;
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, Path, Query, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post};
@@ -30,6 +30,11 @@ struct BackupRequest {
     nfs_target: Option<String>,
     #[serde(default = "default_retain")]
     retain: u32,
+    /// `fluxvm` backs up a FluxVM VM (`vm_name` required) through `fluxvm-api`.
+    #[serde(default)]
+    backend: Option<String>,
+    #[serde(default)]
+    compress: bool,
 }
 
 fn default_retain() -> u32 {
@@ -39,6 +44,68 @@ fn default_retain() -> u32 {
 #[derive(Deserialize)]
 struct RestoreRequest {
     backup_id: String,
+    #[serde(default)]
+    backend: Option<String>,
+    /// FluxVM: VM to restore into (stopped); defaults to the backup's own VM.
+    #[serde(default)]
+    vm_name: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+struct BackupQuery {
+    #[serde(default)]
+    backend: Option<String>,
+    /// FluxVM listing: only this VM's backups.
+    #[serde(default)]
+    vm: Option<String>,
+}
+
+impl BackupQuery {
+    fn is_fluxvm(&self) -> bool {
+        machina_core::fluxvm::is_fluxvm(self.backend.as_deref())
+    }
+}
+
+fn human_bytes(n: u64) -> String {
+    const UNITS: [&str; 5] = ["B", "K", "M", "G", "T"];
+    let mut v = n as f64;
+    let mut i = 0;
+    while v >= 1024.0 && i < UNITS.len() - 1 {
+        v /= 1024.0;
+        i += 1;
+    }
+    if i == 0 {
+        format!("{n}B")
+    } else {
+        format!("{v:.1}{}", UNITS[i])
+    }
+}
+
+/// A `fluxvm-api` backup entry in the shape of this module's backup list.
+fn fluxvm_backup_item(b: &serde_json::Value) -> serde_json::Value {
+    let size = b["size_bytes"].as_u64().unwrap_or(0);
+    json!({
+        "id": b["name"],
+        "timestamp": b.get("created_at").cloned().unwrap_or_else(|| b["name"].clone()),
+        "vm_filter": b.get("vm_name").cloned().unwrap_or_default(),
+        "vm_count": 1,
+        "net_count": 0,
+        "with_disks": true,
+        "nfs_target": "",
+        "size": human_bytes(size),
+        "size_bytes": size,
+        "status": "completed",
+        "status_message": "",
+        "progress": "",
+        "has_checksums": false,
+        "backend": machina_core::fluxvm::BACKEND_NAME,
+        "live": b.get("live").cloned().unwrap_or_default(),
+    })
+}
+
+async fn fluxvm_backup_items(vm: Option<&str>) -> Result<Vec<serde_json::Value>, AppError> {
+    let items = crate::routes::fluxvm::client()?.backups(vm).await?;
+    Ok(items.iter().map(fluxvm_backup_item).collect())
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -319,6 +386,24 @@ async fn trigger_backup(
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "backups:write")?;
     let req = body.map(|Json(r)| r).unwrap_or_default();
+    if machina_core::fluxvm::is_fluxvm(req.backend.as_deref()) {
+        let vm = req.vm_name.as_deref().unwrap_or_default();
+        if vm.is_empty() {
+            return Err(machina_core::LibvirtError::Invalid(
+                "vm_name is required for a FluxVM backup".into(),
+            )
+            .into());
+        }
+        let out = crate::routes::fluxvm::client()?
+            .backup(vm, None, req.compress)
+            .await?;
+        return Ok(Json(json!({
+            "status": "completed",
+            "backup_id": out["name"],
+            "backend": machina_core::fluxvm::BACKEND_NAME,
+            "backup": fluxvm_backup_item(&out),
+        })));
+    }
     let script = backup_script();
 
     if !script.exists() {
@@ -400,8 +485,12 @@ async fn trigger_backup(
 async fn list_backups(
     State(_manager): State<LibvirtManager>,
     Extension(actor): Extension<RequestActor>,
+    Query(q): Query<BackupQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "backups:write")?;
+    if q.is_fluxvm() {
+        return Ok(Json(json!(fluxvm_backup_items(q.vm.as_deref()).await?)));
+    }
     let dir = backup_dir();
     let mut backups = Vec::new();
 
@@ -422,6 +511,12 @@ async fn list_backups(
     }
 
     backups.reverse();
+    if q.backend.is_none() && machina_core::MachinaConfig::load().fluxvm.enabled {
+        match fluxvm_backup_items(None).await {
+            Ok(items) => backups.extend(items),
+            Err(_) => tracing::warn!("fluxvm: backup list unavailable"),
+        }
+    }
     Ok(Json(json!(backups)))
 }
 
@@ -598,6 +693,32 @@ async fn restore_backup(
     Json(req): Json<RestoreRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "backups:write")?;
+    if machina_core::fluxvm::is_fluxvm(req.backend.as_deref()) {
+        let c = crate::routes::fluxvm::client()?;
+        let vm = match req.vm_name.filter(|v| !v.is_empty()) {
+            Some(v) => v,
+            None => c
+                .backups(None)
+                .await?
+                .into_iter()
+                .find(|b| b["name"] == req.backup_id.as_str())
+                .and_then(|b| b["vm_name"].as_str().map(str::to_string))
+                .ok_or_else(|| {
+                    machina_core::LibvirtError::NotFound(format!(
+                        "FluxVM backup '{}' not found (or it has no vm_name; pass vm_name)",
+                        req.backup_id
+                    ))
+                })?,
+        };
+        let out = c.restore_backup(&vm, &req.backup_id).await?;
+        return Ok(Json(json!({
+            "status": "restored",
+            "backup_id": req.backup_id,
+            "vm_name": vm,
+            "backend": machina_core::fluxvm::BACKEND_NAME,
+            "result": out,
+        })));
+    }
     validate_backup_id(&req.backup_id)?;
 
     let dir = backup_dir().join(&req.backup_id);
@@ -662,8 +783,17 @@ async fn delete_backup(
     State(_manager): State<LibvirtManager>,
     Extension(actor): Extension<RequestActor>,
     Path(id): Path<String>,
+    Query(q): Query<BackupQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "backups:write")?;
+    if q.is_fluxvm() {
+        crate::routes::fluxvm::client()?.delete_backup(&id).await?;
+        return Ok(Json(json!({
+            "status": "deleted",
+            "backup_id": id,
+            "backend": machina_core::fluxvm::BACKEND_NAME,
+        })));
+    }
     validate_backup_id(&id)?;
 
     let dir = backup_dir().join(&id);

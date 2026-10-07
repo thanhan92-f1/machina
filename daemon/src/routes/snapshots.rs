@@ -11,6 +11,7 @@ use machina_core::{CreateSnapshotRequest, LibvirtManager, SnapshotInfo};
 use crate::auth::{require_write, RequestActor};
 use crate::conn_query::{spawn_libvirt_actor, ConnQuery};
 use crate::error::AppError;
+use crate::routes::fluxvm::client as fluxvm_client;
 
 async fn list_all_snapshots(
     State(manager): State<LibvirtManager>,
@@ -28,6 +29,12 @@ async fn list_vm_snapshots(
     Path(vm_name): Path<String>,
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<Vec<SnapshotInfo>>, AppError> {
+    if conn_q.is_fluxvm() {
+        let snaps = fluxvm_client()?.snapshots(&vm_name).await?;
+        return Ok(Json(
+            snaps.iter().map(|s| s.to_snapshot_info(&vm_name)).collect(),
+        ));
+    }
     let vm2 = vm_name.clone();
     let rows = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         snapshot::list_snapshots(conn, &vm2)
@@ -44,6 +51,12 @@ async fn create_snapshot_handler(
     Json(req): Json<CreateSnapshotRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if conn_q.is_fluxvm() {
+        fluxvm_client()?.snapshot(&vm_name, &req.name).await?;
+        return Ok(Json(
+            serde_json::json!({ "status": "created", "vm": vm_name, "snapshot": req.name }),
+        ));
+    }
     let vm2 = vm_name.clone();
     let snap_name = req.name.clone();
     let req2 = req.clone();
@@ -63,6 +76,14 @@ async fn delete_snapshot_handler(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if conn_q.is_fluxvm() {
+        fluxvm_client()?
+            .delete_snapshot(&vm_name, &snap_name)
+            .await?;
+        return Ok(Json(
+            serde_json::json!({ "status": "deleted", "vm": vm_name, "snapshot": snap_name }),
+        ));
+    }
     let vm2 = vm_name.clone();
     let snap2 = snap_name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
@@ -81,6 +102,12 @@ async fn revert_snapshot_handler(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if conn_q.is_fluxvm() {
+        fluxvm_client()?.restore(&vm_name, &snap_name).await?;
+        return Ok(Json(
+            serde_json::json!({ "status": "reverted", "vm": vm_name, "snapshot": snap_name }),
+        ));
+    }
     let vm2 = vm_name.clone();
     let snap2 = snap_name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {

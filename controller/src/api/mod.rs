@@ -1314,6 +1314,10 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/vms/{id}/migrate", post(vms::migrate_vm))
         .route(
+            "/api/v1/vms/{id}/fluxvm/recover",
+            post(vms::recover_fluxvm_vm),
+        )
+        .route(
             "/api/v1/vms/{id}/ha",
             get(ha::get_vm_ha_policy).post(ha::set_vm_ha_policy),
         )

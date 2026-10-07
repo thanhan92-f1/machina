@@ -510,6 +510,66 @@ struct MigrateRequest {
     tunnelled: bool,
     #[serde(default)]
     paused: bool,
+    /// FluxVM (`?backend=fluxvm`): bearer token for a remote `dest_uri` FluxVM API.
+    #[serde(default)]
+    dest_token: Option<String>,
+    /// FluxVM: target listener bind address (default 127.0.0.1 locally, 0.0.0.0 remote).
+    #[serde(default)]
+    listen_host: Option<String>,
+    /// FluxVM: address the source dials when it differs from `listen_host`.
+    #[serde(default)]
+    advertise_host: Option<String>,
+    #[serde(default)]
+    bandwidth_mbps: Option<u64>,
+    #[serde(default)]
+    max_downtime_ms: Option<u64>,
+}
+
+/// FluxVM live migration. `dest_uri` is `local` (host to itself, the same
+/// `fluxvm-api`) or another host's FluxVM API URL (`https://host:7788`).
+async fn fluxvm_migrate(name: &str, req: &MigrateRequest) -> Result<serde_json::Value, AppError> {
+    use machina_core::fluxvm::migrate::{live_migrate, MigrateOptions};
+    use machina_core::fluxvm::FluxvmClient;
+    let cfg = machina_core::MachinaConfig::load().fluxvm;
+    let src = super::fluxvm::client()?;
+    let dest = req.dest_uri.trim();
+    let local = matches!(dest, "" | "local" | "loopback" | "fluxvm://local")
+        || dest.trim_end_matches('/') == cfg.base_url.trim_end_matches('/');
+    let dst = if local {
+        src.clone()
+    } else if dest.starts_with("http://") || dest.starts_with("https://") {
+        let mut c = cfg.clone();
+        c.base_url = dest.to_string();
+        c.token_file.clear();
+        c.token = req.dest_token.clone().unwrap_or_default();
+        FluxvmClient::from_config(&c)?
+    } else {
+        return Err(machina_core::LibvirtError::Invalid(
+            "FluxVM dest_uri must be `local` or the target's FluxVM API URL (https://host:7788)"
+                .into(),
+        )
+        .into());
+    };
+    let listen_default = if local { "127.0.0.1" } else { "0.0.0.0" };
+    let opts = MigrateOptions {
+        listen_host: req
+            .listen_host
+            .clone()
+            .unwrap_or_else(|| listen_default.into()),
+        advertise_host: req.advertise_host.clone().unwrap_or_default(),
+        bandwidth_mbps: req.bandwidth_mbps,
+        max_downtime_ms: req.max_downtime_ms,
+        timeout: std::time::Duration::from_secs(900),
+    };
+    let adopted = live_migrate(&src, &dst, name, &opts).await?;
+    Ok(serde_json::json!({
+        "status": "migrated",
+        "name": name,
+        "destination": if local { "local" } else { dest },
+        "backend": machina_core::fluxvm::BACKEND_NAME,
+        "id": adopted.id,
+        "state": machina_core::fluxvm::map_status(&adopted.status),
+    }))
 }
 
 async fn migrate_handler(
@@ -526,6 +586,9 @@ async fn migrate_handler(
     // migrate::validate_migrate_uri (called by migrate_vm_uri below).
     if req.undefine_source {
         crate::auth::require_destroy_vm(&actor)?;
+    }
+    if conn_q.is_fluxvm() {
+        return Ok(Json(fluxvm_migrate(&name, &req).await?));
     }
     let name2 = name.clone();
     let dest_uri = req.dest_uri.clone();

@@ -294,6 +294,7 @@ pub async fn apply_vm(
             cloud_init_user: cloud_init_user.to_string(),
             cloud_init_password: cloud_init_password.to_string(),
             cloud_init_ssh_pubkey: cloud_init_ssh_pubkey.to_string(),
+            ..Default::default()
         })
         .await?
         .into_inner())
@@ -310,6 +311,7 @@ pub async fn vm_power(
             vm_name: vm_name.to_string(),
             action: action.to_string(),
             mode: mode.unwrap_or("").to_string(),
+            ..Default::default()
         })
         .await?
         .into_inner())
@@ -349,6 +351,7 @@ pub async fn delete_vm(client: &mut AgentClient, vm_name: &str) -> anyhow::Resul
     client
         .delete_vm(DeleteVmRequest {
             vm_name: vm_name.to_string(),
+            ..Default::default()
         })
         .await?;
     Ok(())
@@ -1518,6 +1521,148 @@ pub async fn provision_cloud_subnet(
         .await?
         .into_inner();
     anyhow::ensure!(response.ok, "{}", response.message);
+    Ok(())
+}
+
+// --- FluxVM (the host's fluxvm-api, reached through its agent) ---
+
+pub async fn fluxvm_power(
+    client: &mut AgentClient,
+    vm_name: &str,
+    action: &str,
+) -> anyhow::Result<VmPowerResponse> {
+    Ok(client
+        .vm_power(VmPowerRequest {
+            vm_name: vm_name.to_string(),
+            action: action.to_string(),
+            backend: machina_core::fluxvm::BACKEND_NAME.into(),
+            ..Default::default()
+        })
+        .await?
+        .into_inner())
+}
+
+pub async fn fluxvm_delete(client: &mut AgentClient, vm_name: &str) -> anyhow::Result<()> {
+    client
+        .delete_vm(DeleteVmRequest {
+            vm_name: vm_name.to_string(),
+            backend: machina_core::fluxvm::BACKEND_NAME.into(),
+        })
+        .await?;
+    Ok(())
+}
+
+/// Create from a fluxvm-api create body (`{name, backend, image, …}`).
+pub async fn fluxvm_apply(
+    client: &mut AgentClient,
+    create: &serde_json::Value,
+    shared_takeover: bool,
+) -> anyhow::Result<ApplyVmResponse> {
+    Ok(client
+        .apply_vm(ApplyVmRequest {
+            backend: machina_core::fluxvm::BACKEND_NAME.into(),
+            fluxvm_create_json: create.to_string(),
+            shared_takeover,
+            ..Default::default()
+        })
+        .await?
+        .into_inner())
+}
+
+pub async fn fluxvm_export_record(
+    client: &mut AgentClient,
+    vm_name: &str,
+) -> anyhow::Result<ExportFluxvmRecordResponse> {
+    read_rpc(
+        "export_fluxvm_record",
+        client.export_fluxvm_record(ExportFluxvmRecordRequest {
+            vm_name: vm_name.to_string(),
+        }),
+    )
+    .await
+}
+
+pub async fn fluxvm_prepare_receiver(
+    client: &mut AgentClient,
+    record_json: &str,
+    listen_host: &str,
+    advertise_host: &str,
+) -> anyhow::Result<PrepareFluxvmReceiverResponse> {
+    Ok(client
+        .prepare_fluxvm_receiver(PrepareFluxvmReceiverRequest {
+            record_json: record_json.to_string(),
+            listen_host: listen_host.to_string(),
+            advertise_host: advertise_host.to_string(),
+        })
+        .await?
+        .into_inner())
+}
+
+pub async fn fluxvm_start_migration(
+    client: &mut AgentClient,
+    vm_id: &str,
+    destination: &str,
+    bandwidth_mbps: u64,
+    max_downtime_ms: u64,
+) -> anyhow::Result<()> {
+    client
+        .start_fluxvm_migration(StartFluxvmMigrationRequest {
+            vm_id: vm_id.to_string(),
+            destination: destination.to_string(),
+            bandwidth_mbps,
+            max_downtime_ms,
+        })
+        .await?;
+    Ok(())
+}
+
+pub async fn fluxvm_migration_status(
+    client: &mut AgentClient,
+    vm_id: &str,
+) -> anyhow::Result<GetFluxvmMigrationStatusResponse> {
+    read_rpc(
+        "get_fluxvm_migration_status",
+        client.get_fluxvm_migration_status(GetFluxvmMigrationStatusRequest {
+            vm_id: vm_id.to_string(),
+        }),
+    )
+    .await
+}
+
+pub async fn fluxvm_finish_migration(client: &mut AgentClient, vm_id: &str) -> anyhow::Result<()> {
+    client
+        .finish_fluxvm_migration(FinishFluxvmMigrationRequest {
+            vm_id: vm_id.to_string(),
+        })
+        .await?;
+    Ok(())
+}
+
+pub async fn fluxvm_adopt(
+    client: &mut AgentClient,
+    receiver_id: &str,
+    token: &str,
+) -> anyhow::Result<AdoptFluxvmVmResponse> {
+    Ok(client
+        .adopt_fluxvm_vm(AdoptFluxvmVmRequest {
+            receiver_id: receiver_id.to_string(),
+            token: token.to_string(),
+        })
+        .await?
+        .into_inner())
+}
+
+pub async fn fluxvm_abort(
+    client: &mut AgentClient,
+    source_vm_id: &str,
+    receiver_id: &str,
+) -> anyhow::Result<()> {
+    client
+        .abort_fluxvm_migration(AbortFluxvmMigrationRequest {
+            source_vm_id: source_vm_id.to_string(),
+            receiver_id: receiver_id.to_string(),
+        })
+        .await?;
     Ok(())
 }
 

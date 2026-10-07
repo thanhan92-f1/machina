@@ -18,6 +18,9 @@ export interface BackupInfo {
   status_message: string
   progress: string
   has_checksums: boolean
+  /** `fluxvm` for backups taken through `fluxvm-api`. */
+  backend?: string
+  size_bytes?: number
 }
 
 export interface BackupRequest {
@@ -26,10 +29,25 @@ export interface BackupRequest {
   incremental?: boolean
   nfs_target?: string
   retain?: number
+  /** `fluxvm`: back up a FluxVM VM (`vm_name` required). */
+  backend?: string
+  compress?: boolean
 }
 
-interface RestoreRequest {
+export interface RestoreRequest {
   backup_id: string
+  backend?: string
+  /** FluxVM: VM to restore into (must be stopped); defaults to the backup's own VM. */
+  vm_name?: string
+}
+
+/** `?backend=fluxvm[&vm=…]` for FluxVM backup calls; '' for libvirt. */
+export function backupScopeQs(backend?: string, vm?: string): string {
+  const q = new URLSearchParams()
+  if (backend) q.set('backend', backend)
+  if (backend && vm) q.set('vm', vm)
+  const s = q.toString()
+  return s ? `?${s}` : ''
 }
 
 export interface BackupStatus {
@@ -58,7 +76,8 @@ export interface ScheduleInfo {
   last_run: string
 }
 
-export const fetchBackups = () => readJsonArray<BackupInfo>(`${API}/backups`)
+export const fetchBackups = (backend?: string, vm?: string) =>
+  readJsonArray<BackupInfo>(`${API}/backups${backupScopeQs(backend, vm)}`)
 
 export const triggerBackup = (req: BackupRequest) =>
   apiPost<{ status: string; backup_id: string }>(`${API}/backups`, req)
@@ -66,8 +85,8 @@ export const triggerBackup = (req: BackupRequest) =>
 export const restoreBackup = (req: RestoreRequest) =>
   apiPostVoid(`${API}/backups/restore`, req)
 
-export const deleteBackup = (id: string) =>
-  apiDelete(`${API}/backups/${encodeURIComponent(id)}`)
+export const deleteBackup = (id: string, backend?: string) =>
+  apiDelete(`${API}/backups/${encodeURIComponent(id)}${backupScopeQs(backend)}`)
 
 export const getBackupStatus = (id: string) =>
   readJsonObject<BackupStatus>(`${API}/backups/${encodeURIComponent(id)}/status`)

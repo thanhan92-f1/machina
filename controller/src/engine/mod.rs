@@ -37,6 +37,7 @@ pub mod fleet_spaces;
 pub mod fleet_storage;
 pub mod fleet_updates;
 pub mod fleet_users;
+pub mod fluxvm_fleet;
 pub mod guest_context;
 pub mod guestkit_bridge;
 pub mod ha;

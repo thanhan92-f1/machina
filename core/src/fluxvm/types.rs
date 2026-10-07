@@ -12,6 +12,12 @@ use crate::{DiskInfo, InterfaceInfo, VmDetails, VmInfo, VmMetrics};
 
 pub const BACKEND_NAME: &str = "fluxvm";
 
+/// Label FluxVM puts on an adopt-mode migration receiver until it is adopted.
+/// Such a record shares its name with the source VM, so name lookups skip it.
+pub const MIGRATING_FROM_LABEL: &str = "fluxvm.dev/migrating-from";
+pub const LIVE_VCPUS_LABEL: &str = "fluxvm.dev/live-vcpus";
+pub const LIVE_MEMORY_LABEL: &str = "fluxvm.dev/live-memory-mib";
+
 /// FluxVM hypervisors accepted in `CreateVmRequest.backend` (kebab-case on the wire).
 pub const FLUXVM_HYPERVISORS: &[&str] =
     &["auto", "qemu", "cloud-hypervisor", "firecracker", "flux-vm"];
@@ -36,6 +42,31 @@ pub struct FluxRecord {
     pub created_at: Option<String>,
     #[serde(default)]
     pub request: FluxRequestView,
+    #[serde(default)]
+    pub labels: std::collections::BTreeMap<String, String>,
+}
+
+impl FluxRecord {
+    /// An adopt-mode migration receiver that has not been adopted yet.
+    pub fn is_incoming_migration(&self) -> bool {
+        self.labels.contains_key(MIGRATING_FROM_LABEL)
+    }
+
+    /// vCPUs including hot-adds since the last start.
+    pub fn live_vcpus(&self) -> u32 {
+        self.labels
+            .get(LIVE_VCPUS_LABEL)
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(self.request.vcpus)
+    }
+
+    /// Memory (MiB) including hot-adds since the last start.
+    pub fn live_memory_mib(&self) -> u64 {
+        self.labels
+            .get(LIVE_MEMORY_LABEL)
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(self.request.memory_mib)
+    }
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -50,6 +81,10 @@ pub struct FluxRequestView {
     pub network: Value,
     #[serde(default)]
     pub data_disks: Vec<Value>,
+    #[serde(default)]
+    pub storage: String,
+    #[serde(default)]
+    pub agent: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -71,6 +106,56 @@ pub struct FluxCreate {
     pub network: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cloud_init: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kernel: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub initrd: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kernel_args: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent: Option<Value>,
+    /// `shared` for an in-place disk; omitted = FluxVM's per-VM clone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<String>,
+}
+
+/// One entry of `GET /v1/vms/{id}/snapshots`.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct FluxSnapshot {
+    pub tag: String,
+    #[serde(default)]
+    pub created_at: Option<String>,
+    #[serde(default)]
+    pub size_bytes: u64,
+}
+
+impl FluxSnapshot {
+    pub fn to_snapshot_info(&self, vm_name: &str) -> crate::SnapshotInfo {
+        crate::SnapshotInfo {
+            name: self.tag.clone(),
+            vm_name: vm_name.to_string(),
+            creation_time: self
+                .created_at
+                .as_deref()
+                .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
+                .map(|t| t.timestamp())
+                .unwrap_or(0),
+            state: "fluxvm".into(),
+            description: format!("{} bytes", self.size_bytes),
+            parent: String::new(),
+            is_current: false,
+        }
+    }
+}
+
+/// `POST /v1/migration/receivers` response (the fields Machina uses).
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct FluxReceiver {
+    pub id: String,
+    pub uri: String,
+    pub token: String,
+    #[serde(default)]
+    pub source_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -89,7 +174,7 @@ impl FluxMetrics {
     /// Map onto Machina's per-VM metrics shape. FluxVM reports lifetime-average
     /// CPU % rather than cumulative CPU time, so `cpu_time_ns` stays 0.
     pub fn to_vm_metrics(&self, rec: &FluxRecord) -> VmMetrics {
-        let total = rec.request.memory_mib;
+        let total = rec.live_memory_mib();
         let used = self.memory_usage_bytes / (1024 * 1024);
         let state = map_status(&rec.status);
         VmMetrics {
@@ -135,7 +220,7 @@ pub fn map_status(status: &str) -> String {
 }
 
 fn vcpus(r: &FluxRecord) -> u32 {
-    r.request.vcpus
+    r.live_vcpus()
 }
 
 impl FluxRecord {
@@ -145,7 +230,7 @@ impl FluxRecord {
             name: self.name.clone(),
             state: map_status(&self.status),
             vcpus: vcpus(self),
-            memory_mb: self.request.memory_mib,
+            memory_mb: self.live_memory_mib(),
             libvirt_connection: None,
             guest_ip: self.guest_ip.clone(),
             guest_ips,
@@ -208,12 +293,35 @@ impl FluxRecord {
                 ip: self.guest_ip.clone(),
             });
         }
+        if let Some(extra) = self.request.network.get("extra").and_then(Value::as_array) {
+            for nic in extra {
+                let tap = nic.get("tap_name").and_then(Value::as_str).unwrap_or("tap");
+                let bridge = nic
+                    .get("bridge")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                interfaces.push(InterfaceInfo {
+                    mac_address: nic
+                        .get("mac")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string(),
+                    source: if bridge.is_empty() {
+                        format!("direct · {tap}")
+                    } else {
+                        format!("{bridge} · {tap}")
+                    },
+                    model: "virtio".into(),
+                    ip: None,
+                });
+            }
+        }
         VmDetails {
             name: self.name.clone(),
             uuid: self.id.clone(),
             state: map_status(&self.status),
             vcpus: vcpus(self),
-            memory_mb: self.request.memory_mib,
+            memory_mb: self.live_memory_mib(),
             os_type: "hvm".into(),
             arch: std::env::consts::ARCH.into(),
             autostart: false,
@@ -302,6 +410,36 @@ mod tests {
         assert_eq!(vm.memory_used_mb, 1024);
         assert!((vm.memory_pct - 50.0).abs() < 1e-9);
         assert_eq!(vm.disk_wr_bytes, 9);
+    }
+
+    #[test]
+    fn migration_receivers_are_flagged_by_label() {
+        let mut r = sample();
+        assert!(!r.is_incoming_migration());
+        r.labels
+            .insert(MIGRATING_FROM_LABEL.into(), "5f0c1c3e".into());
+        assert!(r.is_incoming_migration());
+        let parsed: FluxRecord = serde_json::from_value(json!({
+            "id": "x", "name": "y",
+            "labels": {"fluxvm.dev/migrating-from": "src"}
+        }))
+        .unwrap();
+        assert!(parsed.is_incoming_migration());
+    }
+
+    #[test]
+    fn hot_added_size_and_nics_show_up() {
+        let mut r = sample();
+        r.labels.insert(LIVE_VCPUS_LABEL.into(), "4".into());
+        r.labels.insert(LIVE_MEMORY_LABEL.into(), "3072".into());
+        r.request.network["extra"] =
+            json!([{"bridge": "virbr0", "mac": "52:54:00:00:00:02", "tap_name": "fvx1"}]);
+        let info = r.to_vm_info();
+        assert_eq!((info.vcpus, info.memory_mb), (4, 3072));
+        let d = r.to_vm_details();
+        assert_eq!(d.interfaces.len(), 2);
+        assert_eq!(d.interfaces[1].source, "virbr0 · fvx1");
+        assert_eq!(d.interfaces[1].mac_address, "52:54:00:00:00:02");
     }
 
     #[test]

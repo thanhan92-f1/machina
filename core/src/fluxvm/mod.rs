@@ -5,6 +5,7 @@
 //! reached over its REST API.
 
 pub mod client;
+pub mod migrate;
 pub mod types;
 
 pub use client::FluxvmClient;

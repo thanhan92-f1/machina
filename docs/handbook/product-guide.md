@@ -184,6 +184,7 @@ as `?token=`:
 | `/ws/v1/terminal/{session_id}` | Terminal / PTY |
 | `/ws/v1/ssh/{host}` | SSH |
 | `/ws/v1/k8s-kubevirt/{ns}/{name}/vnc\|console` | KubeVirt VNC / console |
+| `/ws/v1/fluxvm-console/{name}` | FluxVM guest-agent shell (`?token=&cols=&rows=`) |
 | `/ws/v1/vessel/containers/{id}/stats\|logs` | Container CPU/mem/network stats or log stream |
 | `/ws/v1/platform/vnc\|serial\|spice/{vm_id}` | Platform-proxied consoles |
 
@@ -300,6 +301,17 @@ engine behind Zyra AI. See [../controller-ha.md](../controller-ha.md),
 - **KubeVirt** — export a VM as a KubeVirt YAML bundle
   (`GET /vms/{name}/kubevirt-bundle`) and apply/upload/start it on a cluster.
   See [../kubevirt-migration.md](../kubevirt-migration.md).
+- **FluxVM** (`[fluxvm]`) — VMs on a FluxVM host (QEMU, Cloud Hypervisor,
+  Firecracker, flux-vm) appear next to libvirt VMs with `backend: "fluxvm"`.
+  Create (image or direct kernel boot, guest agent, shared disk), power,
+  serial console (read-only log on non-QEMU engines), guest-agent console,
+  snapshots, backups (QEMU), hot-add vCPU/memory (QEMU, Cloud Hypervisor),
+  extra NICs (QEMU on a host bridge) and live migration (QEMU on a shared
+  disk) from VM detail → **Manage**. With `MACHINA_FLUXVM_URL` on each
+  host's `machina-agent`, the controller lists them, powers and deletes
+  them, migrates them between hosts (`vm.migrate`, DRS) and re-creates them
+  on another host for HA (`ha.recover`, `POST /vms/{id}/fluxvm/recover`).
+  Fleet migration and HA re-create need QEMU on a shared disk.
 - **Fleet Cloud** (`/fleet-cloud/*` in the UI) — manage instances, flavors,
   networks, images, security groups, stacks, keypairs, and load balancers
   (kernel-level weighted round-robin, not an Octavia amphora) entirely via

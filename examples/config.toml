@@ -120,6 +120,9 @@ base_url = "http://127.0.0.1:7788"
 # token_file = ""       # or read it from a file
 # insecure_tls = false
 # default_backend = "auto"   # auto | qemu | cloud-hypervisor | firecracker | flux-vm
+# insecure_tls also covers wss:// serial and the guest-agent console.
+# machina-agent uses this block too, unless MACHINA_FLUXVM_URL / _TOKEN / _INSECURE_TLS are set,
+# so the controller can power, migrate and HA re-create this host's FluxVM VMs.
 
 [guestkit]
 enabled = true

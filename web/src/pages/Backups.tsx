@@ -144,7 +144,7 @@ export default function BackupsPage() {
     setRestoring(true)
     toast.info('Restore started in background...')
     try {
-      await restoreBackup({ backup_id: restoreTarget.id })
+      await restoreBackup({ backup_id: restoreTarget.id, backend: restoreTarget.backend })
       toast.success(`Restore completed from '${restoreTarget.id}'`)
       load()
     } catch (e: unknown) {
@@ -159,7 +159,7 @@ export default function BackupsPage() {
     if (!deleteTarget || deleting) return
     setDeleting(true)
     try {
-      await deleteBackup(deleteTarget.id)
+      await deleteBackup(deleteTarget.id, deleteTarget.backend)
       toast.success(`Deleted backup '${deleteTarget.id}'`)
       load()
     } catch (e: unknown) {
@@ -386,7 +386,7 @@ export default function BackupsPage() {
                     {b.vm_filter === 'all' ? (
                       <span className={`flex items-center gap-1 ${statusToneClass('info')}`}><Server className="w-3 h-3" /> All</span>
                     ) : (
-                      <span className={`flex items-center gap-1 ${statusToneClass('ok')}`}><Server className="w-3 h-3" /> {b.vm_filter}</span>
+                      <span className={`flex items-center gap-1 ${statusToneClass('ok')}`}><Server className="w-3 h-3" /> {b.vm_filter}{b.backend === 'fluxvm' && <span className="text-[10px] text-[var(--text-muted)]"> · FluxVM</span>}</span>
                     )}
                   </td>
                   <td className="text-sm text-[var(--text-muted)] hidden md:table-cell">{b.vm_count}</td>
@@ -435,14 +435,14 @@ export default function BackupsPage() {
                           )}
                         </button>
                       )}
-                      <a
+                      {b.backend !== 'fluxvm' && <a
                         href={downloadBackupUrl(b.id)}
                         className="p-2.5 hover:bg-[var(--accent-soft)] rounded transition"
                         title="Download as tar.gz"
                         aria-label="Download as tar.gz"
                       >
                         <Download className="w-4 h-4 text-[var(--accent)]" />
-                      </a>
+                      </a>}
                       <button onClick={() => setRestoreTarget(b)} className="p-1.5 hover:bg-white/10 rounded transition" title="Restore" aria-label="Restore">
                         <RotateCcw className={`w-4 h-4 ${statusToneClass('info')}`} />
                       </button>

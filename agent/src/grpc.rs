@@ -271,6 +271,8 @@ impl HostAgent for AgentService {
         _request: Request<ListVmsRequest>,
     ) -> Result<Response<ListVmsResponse>, Status> {
         let vms = self.libvirt_call(|ctx| ctx.list_vms()).await?;
+        let flux = crate::fluxvm::summaries().await;
+        let fluxvm_ok = flux.is_some();
         Ok(Response::new(ListVmsResponse {
             vms: vms
                 .into_iter()
@@ -287,9 +289,132 @@ impl HostAgent for AgentService {
                     guest_ip: v.guest_ip,
                     guest_ips: v.guest_ips,
                     net_bytes: v.net_bytes,
+                    ..Default::default()
                 })
+                .chain(flux.unwrap_or_default())
                 .collect(),
+            fluxvm_ok,
         }))
+    }
+
+    async fn export_fluxvm_record(
+        &self,
+        request: Request<ExportFluxvmRecordRequest>,
+    ) -> Result<Response<ExportFluxvmRecordResponse>, Status> {
+        let req = request.into_inner();
+        let rec = crate::fluxvm::require()?
+            .export_record(&req.vm_name)
+            .await
+            .map_err(crate::fluxvm::status)?;
+        Ok(Response::new(ExportFluxvmRecordResponse {
+            id: rec["id"].as_str().unwrap_or_default().to_string(),
+            record_json: rec.to_string(),
+        }))
+    }
+
+    async fn prepare_fluxvm_receiver(
+        &self,
+        request: Request<PrepareFluxvmReceiverRequest>,
+    ) -> Result<Response<PrepareFluxvmReceiverResponse>, Status> {
+        let req = request.into_inner();
+        let record: serde_json::Value = serde_json::from_str(&req.record_json)
+            .map_err(|e| Status::invalid_argument(format!("record_json: {e}")))?;
+        let listen = if req.listen_host.is_empty() {
+            "0.0.0.0"
+        } else {
+            req.listen_host.as_str()
+        };
+        let c = crate::fluxvm::require()?;
+        let recv = c
+            .receiver_create(record, listen, &req.advertise_host)
+            .await
+            .map_err(crate::fluxvm::status)?;
+        if let Err(e) = c.receiver_activate(&recv.id, &recv.token).await {
+            let _ = c.receiver_delete(&recv.id).await;
+            return Err(crate::fluxvm::status(e));
+        }
+        Ok(Response::new(PrepareFluxvmReceiverResponse {
+            receiver_id: recv.id,
+            uri: recv.uri,
+            token: recv.token,
+        }))
+    }
+
+    async fn start_fluxvm_migration(
+        &self,
+        request: Request<StartFluxvmMigrationRequest>,
+    ) -> Result<Response<StartFluxvmMigrationResponse>, Status> {
+        let req = request.into_inner();
+        crate::fluxvm::require()?
+            .migration_start(
+                &req.vm_id,
+                &req.destination,
+                Some(req.bandwidth_mbps),
+                Some(req.max_downtime_ms),
+            )
+            .await
+            .map_err(crate::fluxvm::status)?;
+        Ok(Response::new(StartFluxvmMigrationResponse {}))
+    }
+
+    async fn get_fluxvm_migration_status(
+        &self,
+        request: Request<GetFluxvmMigrationStatusRequest>,
+    ) -> Result<Response<GetFluxvmMigrationStatusResponse>, Status> {
+        let req = request.into_inner();
+        let st = crate::fluxvm::require()?
+            .migration_status(&req.vm_id)
+            .await
+            .map_err(crate::fluxvm::status)?;
+        let (progress, error) = crate::fluxvm::progress_of(&st);
+        Ok(Response::new(GetFluxvmMigrationStatusResponse {
+            progress: progress.into(),
+            error,
+            status_json: st.to_string(),
+        }))
+    }
+
+    async fn finish_fluxvm_migration(
+        &self,
+        request: Request<FinishFluxvmMigrationRequest>,
+    ) -> Result<Response<FinishFluxvmMigrationResponse>, Status> {
+        let req = request.into_inner();
+        crate::fluxvm::require()?
+            .migration_finish(&req.vm_id)
+            .await
+            .map_err(crate::fluxvm::status)?;
+        Ok(Response::new(FinishFluxvmMigrationResponse {}))
+    }
+
+    async fn adopt_fluxvm_vm(
+        &self,
+        request: Request<AdoptFluxvmVmRequest>,
+    ) -> Result<Response<AdoptFluxvmVmResponse>, Status> {
+        let req = request.into_inner();
+        let c = crate::fluxvm::require()?;
+        let rec = machina_core::fluxvm::migrate::adopt_with_retry(&c, &req.receiver_id, &req.token)
+            .await
+            .map_err(crate::fluxvm::status)?;
+        Ok(Response::new(AdoptFluxvmVmResponse {
+            id: rec.id,
+            name: rec.name,
+            state: machina_core::fluxvm::map_status(&rec.status),
+        }))
+    }
+
+    async fn abort_fluxvm_migration(
+        &self,
+        request: Request<AbortFluxvmMigrationRequest>,
+    ) -> Result<Response<AbortFluxvmMigrationResponse>, Status> {
+        let req = request.into_inner();
+        let c = crate::fluxvm::require()?;
+        if !req.source_vm_id.is_empty() {
+            let _ = c.migration_cancel(&req.source_vm_id).await;
+        }
+        if !req.receiver_id.is_empty() {
+            let _ = c.receiver_delete(&req.receiver_id).await;
+        }
+        Ok(Response::new(AbortFluxvmMigrationResponse {}))
     }
 
     async fn list_sprites(
@@ -358,6 +483,19 @@ impl HostAgent for AgentService {
         request: Request<ApplyVmRequest>,
     ) -> Result<Response<ApplyVmResponse>, Status> {
         let req = request.into_inner();
+        if machina_core::fluxvm::is_fluxvm(Some(&req.backend)) {
+            let body: serde_json::Value = serde_json::from_str(&req.fluxvm_create_json)
+                .map_err(|e| Status::invalid_argument(format!("fluxvm_create_json: {e}")))?;
+            let rec = crate::fluxvm::require()?
+                .create_raw(body, req.shared_takeover)
+                .await
+                .map_err(crate::fluxvm::status)?;
+            return Ok(Response::new(ApplyVmResponse {
+                vm_name: rec.name,
+                uuid: rec.id,
+                created: true,
+            }));
+        }
         let vm: VirtualMachine = serde_json::from_str(&req.spec_json)
             .map_err(|e| Status::invalid_argument(e.to_string()))?;
         let libvirt = self.libvirt.clone();
@@ -399,6 +537,18 @@ impl HostAgent for AgentService {
         request: Request<VmPowerRequest>,
     ) -> Result<Response<VmPowerResponse>, Status> {
         let req = request.into_inner();
+        if machina_core::fluxvm::is_fluxvm(Some(&req.backend)) {
+            let c = crate::fluxvm::require()?;
+            let verb = crate::fluxvm::verb(&req.action)?;
+            c.action(&req.vm_name, verb)
+                .await
+                .map_err(crate::fluxvm::status)?;
+            let rec = c.get(&req.vm_name).await.map_err(crate::fluxvm::status)?;
+            return Ok(Response::new(VmPowerResponse {
+                vm_name: req.vm_name,
+                state: machina_core::fluxvm::map_status(&rec.status),
+            }));
+        }
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         let action = req.action.clone();
@@ -446,6 +596,13 @@ impl HostAgent for AgentService {
         request: Request<DeleteVmRequest>,
     ) -> Result<Response<DeleteVmResponse>, Status> {
         let req = request.into_inner();
+        if machina_core::fluxvm::is_fluxvm(Some(&req.backend)) {
+            crate::fluxvm::require()?
+                .delete(&req.vm_name)
+                .await
+                .map_err(crate::fluxvm::status)?;
+            return Ok(Response::new(DeleteVmResponse { deleted: true }));
+        }
         let libvirt = self.libvirt.clone();
         let vm_name = req.vm_name.clone();
         tokio::task::spawn_blocking(move || {
@@ -574,11 +731,18 @@ impl HostAgent for AgentService {
         request: Request<GetMigrationStatusRequest>,
     ) -> Result<Response<GetMigrationStatusResponse>, Status> {
         let vm = request.into_inner().vm_name;
-        let uri = self.libvirt.lock().map_err(|e| Status::internal(e.to_string()))?.uri().to_string();
-        let st = tokio::task::spawn_blocking(move || machina_core::libvirt::migration_control::migration_status(&uri, &vm))
-            .await
+        let uri = self
+            .libvirt
+            .lock()
             .map_err(|e| Status::internal(e.to_string()))?
-            .map_err(|e| Status::failed_precondition(e.to_string()))?;
+            .uri()
+            .to_string();
+        let st = tokio::task::spawn_blocking(move || {
+            machina_core::libvirt::migration_control::migration_status(&uri, &vm)
+        })
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?
+        .map_err(|e| Status::failed_precondition(e.to_string()))?;
         Ok(Response::new(GetMigrationStatusResponse {
             active: st.active,
             job_type: st.job_type,
@@ -601,7 +765,12 @@ impl HostAgent for AgentService {
         request: Request<ControlMigrationRequest>,
     ) -> Result<Response<ControlMigrationResponse>, Status> {
         let r = request.into_inner();
-        let uri = self.libvirt.lock().map_err(|e| Status::internal(e.to_string()))?.uri().to_string();
+        let uri = self
+            .libvirt
+            .lock()
+            .map_err(|e| Status::internal(e.to_string()))?
+            .uri()
+            .to_string();
         let done = tokio::task::spawn_blocking(move || {
             use machina_core::libvirt::migration_control as m;
             match r.action.as_str() {
@@ -611,13 +780,18 @@ impl HostAgent for AgentService {
                 "abort" => m::abort(&uri, &r.vm_name),
                 "throttle_vcpu" => m::set_vcpu_quota(&uri, &r.vm_name, r.value as u32),
                 "restore_vcpu" => m::set_vcpu_quota(&uri, &r.vm_name, 100),
-                other => Err(machina_core::LibvirtError::Invalid(format!("unknown migration action {other}"))),
+                other => Err(machina_core::LibvirtError::Invalid(format!(
+                    "unknown migration action {other}"
+                ))),
             }
         })
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
         done.map_err(|e| Status::failed_precondition(e.to_string()))?;
-        Ok(Response::new(ControlMigrationResponse { ok: true, message: "migration control applied".into() }))
+        Ok(Response::new(ControlMigrationResponse {
+            ok: true,
+            message: "migration control applied".into(),
+        }))
     }
 
     async fn maintenance(

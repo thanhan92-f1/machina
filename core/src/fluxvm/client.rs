@@ -10,7 +10,10 @@ use reqwest::{Method, StatusCode};
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 
-use super::types::{FluxCreate, FluxList, FluxMetrics, FluxRecord, FLUXVM_HYPERVISORS};
+use super::types::{
+    FluxCreate, FluxList, FluxMetrics, FluxReceiver, FluxRecord, FluxSnapshot, FLUXVM_HYPERVISORS,
+    MIGRATING_FROM_LABEL,
+};
 use crate::{CreateVmRequest, FluxvmConfig, LibvirtError, VmMetrics};
 
 #[derive(Clone)]
@@ -66,16 +69,34 @@ impl FluxvmClient {
         &self.base
     }
 
-    /// `ws(s)://…/v1/vms/{id}/serial` plus the bearer token for the upgrade request.
-    pub fn serial_ws(&self, id: &str) -> (String, Option<String>) {
-        let ws_base = if let Some(rest) = self.base.strip_prefix("https://") {
+    fn ws_base(&self) -> String {
+        if let Some(rest) = self.base.strip_prefix("https://") {
             format!("wss://{rest}")
         } else if let Some(rest) = self.base.strip_prefix("http://") {
             format!("ws://{rest}")
         } else {
             self.base.clone()
-        };
-        (format!("{ws_base}/v1/vms/{id}/serial"), self.token.clone())
+        }
+    }
+
+    /// `ws(s)://…/v1/vms/{id}/serial` plus the bearer token for the upgrade request.
+    /// Interactive on QEMU; a read-only `console.log` stream on the other engines.
+    pub fn serial_ws(&self, id: &str) -> (String, Option<String>) {
+        (
+            format!("{}/v1/vms/{id}/serial", self.ws_base()),
+            self.token.clone(),
+        )
+    }
+
+    /// `ws(s)://…/v1/vms/{id}/console` (guest-agent PTY) plus the bearer token.
+    pub fn console_ws(&self, id: &str, cols: u16, rows: u16) -> (String, Option<String>) {
+        (
+            format!(
+                "{}/v1/vms/{id}/console?cols={cols}&rows={rows}",
+                self.ws_base()
+            ),
+            self.token.clone(),
+        )
     }
 
     async fn send(
@@ -128,19 +149,53 @@ impl FluxvmClient {
             .await
     }
 
+    /// Every VM except not-yet-adopted migration receivers.
     pub async fn list(&self) -> Result<Vec<FluxRecord>, LibvirtError> {
         let l: FluxList = self.call(Method::GET, "/v1/vms", None).await?;
-        Ok(l.items)
+        Ok(l.items
+            .into_iter()
+            .filter(|r| !r.is_incoming_migration())
+            .collect())
     }
 
-    /// Name → record, via the server-side `?name=` filter.
+    /// Full records as FluxVM serialises them, receivers excluded.
+    pub async fn list_raw(&self) -> Result<Vec<Value>, LibvirtError> {
+        #[derive(serde::Deserialize)]
+        struct Items {
+            #[serde(default)]
+            items: Vec<Value>,
+        }
+        let l: Items = self.call(Method::GET, "/v1/vms", None).await?;
+        Ok(l.items
+            .into_iter()
+            .filter(|v| {
+                v.get("labels")
+                    .and_then(|l| l.get(MIGRATING_FROM_LABEL))
+                    .is_none()
+            })
+            .collect())
+    }
+
+    /// Name → record, via the server-side `?name=` filter. A migration receiver
+    /// carries the source's name until it is adopted, so it is skipped.
     pub async fn resolve(&self, name: &str) -> Result<FluxRecord, LibvirtError> {
         let path = format!("/v1/vms?name={}", urlencode(name));
         let l: FluxList = self.call(Method::GET, &path, None).await?;
         l.items
             .into_iter()
-            .find(|r| r.name == name)
+            .find(|r| r.name == name && !r.is_incoming_migration())
             .ok_or_else(|| LibvirtError::NotFound(format!("FluxVM VM '{name}' not found")))
+    }
+
+    pub async fn get_by_id(&self, id: &str) -> Result<FluxRecord, LibvirtError> {
+        self.call(Method::GET, &format!("/v1/vms/{id}"), None).await
+    }
+
+    /// The full FluxVM record as FluxVM serialises it (the source `record` a
+    /// migration receiver is launched from, or the request HA re-creates).
+    pub async fn export_record(&self, name: &str) -> Result<Value, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.call(Method::GET, &format!("/v1/vms/{id}"), None).await
     }
 
     pub async fn get(&self, name: &str) -> Result<FluxRecord, LibvirtError> {
@@ -178,6 +233,295 @@ impl FluxvmClient {
         self.call(Method::POST, "/v1/vms", Some(body)).await
     }
 
+    /// `POST /v1/vms` with a FluxVM-native body (e.g. a stored record's
+    /// `request`). `shared_takeover` breaks a `storage: shared` disk lock first;
+    /// only for a caller that has fenced the previous holder's host.
+    pub async fn create_raw(
+        &self,
+        body: Value,
+        shared_takeover: bool,
+    ) -> Result<FluxRecord, LibvirtError> {
+        let path = if shared_takeover {
+            "/v1/vms?shared_takeover=true"
+        } else {
+            "/v1/vms"
+        };
+        self.call(Method::POST, path, Some(body)).await
+    }
+
+    // --- snapshots (every engine; running or paused) ---
+
+    pub async fn snapshots(&self, name: &str) -> Result<Vec<FluxSnapshot>, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        #[derive(serde::Deserialize)]
+        struct Items {
+            #[serde(default)]
+            items: Vec<FluxSnapshot>,
+        }
+        let l: Items = self
+            .call(Method::GET, &format!("/v1/vms/{id}/snapshots"), None)
+            .await?;
+        Ok(l.items)
+    }
+
+    pub async fn snapshot(&self, name: &str, tag: &str) -> Result<(), LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.send(
+            Method::POST,
+            &format!("/v1/vms/{id}/snapshot"),
+            Some(json!({ "tag": tag })),
+        )
+        .await
+        .map(|_| ())
+    }
+
+    /// A stopped VM relaunches from the tag; a running flux-vm restores in
+    /// place; other running engines must be stopped first (FluxVM answers 409).
+    pub async fn restore(&self, name: &str, tag: &str) -> Result<(), LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.send(
+            Method::POST,
+            &format!("/v1/vms/{id}/restore"),
+            Some(json!({ "tag": tag })),
+        )
+        .await
+        .map(|_| ())
+    }
+
+    pub async fn delete_snapshot(&self, name: &str, tag: &str) -> Result<(), LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.send(
+            Method::DELETE,
+            &format!("/v1/vms/{id}/snapshots/{}", urlencode(tag)),
+            None,
+        )
+        .await
+        .map(|_| ())
+    }
+
+    // --- backups (QEMU on FluxVM's default storage) ---
+
+    pub async fn backup(
+        &self,
+        name: &str,
+        backup_name: Option<&str>,
+        compress: bool,
+    ) -> Result<Value, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        let mut body = json!({ "compress": compress });
+        if let Some(n) = backup_name.filter(|n| !n.is_empty()) {
+            body["name"] = json!(n);
+        }
+        self.call(Method::POST, &format!("/v1/vms/{id}/backup"), Some(body))
+            .await
+    }
+
+    /// FluxVM backups, newest first; `vm` keeps only that VM's (by `vm_name`).
+    pub async fn backups(&self, vm: Option<&str>) -> Result<Vec<Value>, LibvirtError> {
+        #[derive(serde::Deserialize)]
+        struct Items {
+            #[serde(default)]
+            items: Vec<Value>,
+        }
+        let l: Items = self.call(Method::GET, "/v1/backups", None).await?;
+        Ok(l.items
+            .into_iter()
+            .filter(|b| vm.is_none_or(|v| b.get("vm_name").and_then(Value::as_str) == Some(v)))
+            .collect())
+    }
+
+    /// The VM must be stopped.
+    pub async fn restore_backup(&self, name: &str, backup: &str) -> Result<Value, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.call(
+            Method::POST,
+            &format!("/v1/vms/{id}/restore-backup"),
+            Some(json!({ "name": backup })),
+        )
+        .await
+    }
+
+    pub async fn delete_backup(&self, backup: &str) -> Result<(), LibvirtError> {
+        self.send(
+            Method::DELETE,
+            &format!("/v1/backups/{}", urlencode(backup)),
+            None,
+        )
+        .await
+        .map(|_| ())
+    }
+
+    // --- hotplug ---
+
+    /// QEMU and Cloud Hypervisor. Returns the realized vCPU count.
+    pub async fn hotplug_cpu(&self, name: &str, add_vcpus: u32) -> Result<u32, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        let v: Value = self
+            .call(
+                Method::POST,
+                &format!("/v1/vms/{id}/hotplug/cpu"),
+                Some(json!({ "add_vcpus": add_vcpus.min(u8::MAX as u32) })),
+            )
+            .await?;
+        Ok(v.get("vcpus").and_then(Value::as_u64).unwrap_or(0) as u32)
+    }
+
+    /// QEMU and Cloud Hypervisor. Returns the new total memory in MiB.
+    pub async fn hotplug_memory(
+        &self,
+        name: &str,
+        add_memory_mib: u64,
+    ) -> Result<u64, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        let v: Value = self
+            .call(
+                Method::POST,
+                &format!("/v1/vms/{id}/hotplug/memory"),
+                Some(json!({ "add_memory_mib": add_memory_mib })),
+            )
+            .await?;
+        Ok(v.get("memory_mib").and_then(Value::as_u64).unwrap_or(0))
+    }
+
+    /// QEMU: a virtio NIC on a tap enslaved to `bridge`. Returns its MAC (one
+    /// is generated when none is given, so the NIC can be unplugged by MAC).
+    pub async fn hotplug_nic(
+        &self,
+        name: &str,
+        bridge: &str,
+        mac: Option<&str>,
+    ) -> Result<String, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        let mac = mac
+            .filter(|m| !m.is_empty())
+            .map(str::to_string)
+            .unwrap_or_else(random_mac);
+        self.send(
+            Method::POST,
+            &format!("/v1/vms/{id}/hotplug/nic"),
+            Some(json!({ "bridge": bridge, "mac": mac })),
+        )
+        .await?;
+        Ok(mac)
+    }
+
+    pub async fn unplug_nic(&self, name: &str, mac: &str) -> Result<(), LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.send(
+            Method::POST,
+            &format!("/v1/vms/{id}/hotplug/nic/unplug"),
+            Some(json!({ "mac": mac })),
+        )
+        .await
+        .map(|_| ())
+    }
+
+    // --- live migration (QEMU on shared storage; ids, not names: during a
+    // migration two records share the name) ---
+
+    pub async fn migration_start(
+        &self,
+        id: &str,
+        destination: &str,
+        bandwidth_mbps: Option<u64>,
+        max_downtime_ms: Option<u64>,
+    ) -> Result<Value, LibvirtError> {
+        let mut body = json!({ "destination": destination });
+        if let Some(b) = bandwidth_mbps.filter(|b| *b > 0) {
+            body["bandwidth_mbps"] = json!(b);
+        }
+        if let Some(d) = max_downtime_ms.filter(|d| *d > 0) {
+            body["max_downtime_ms"] = json!(d);
+        }
+        self.call(
+            Method::POST,
+            &format!("/v1/vms/{id}/migration/start"),
+            Some(body),
+        )
+        .await
+    }
+
+    pub async fn migration_status(&self, id: &str) -> Result<Value, LibvirtError> {
+        self.call(Method::GET, &format!("/v1/vms/{id}/migration/status"), None)
+            .await
+    }
+
+    pub async fn migration_cancel(&self, id: &str) -> Result<Value, LibvirtError> {
+        self.call(
+            Method::POST,
+            &format!("/v1/vms/{id}/migration/cancel"),
+            None,
+        )
+        .await
+    }
+
+    /// Source side once the phase is `completed`: removes the paused source.
+    pub async fn migration_finish(&self, id: &str) -> Result<(), LibvirtError> {
+        self.send(
+            Method::POST,
+            &format!("/v1/vms/{id}/migration/finish"),
+            None,
+        )
+        .await
+        .map(|_| ())
+    }
+
+    /// Target side: an adopt-mode receiver launched from the source `record`.
+    pub async fn receiver_create(
+        &self,
+        record: Value,
+        listen_host: &str,
+        advertise_host: &str,
+    ) -> Result<FluxReceiver, LibvirtError> {
+        let mut body = json!({ "record": record, "listen_host": listen_host, "listen_port": 0 });
+        if !advertise_host.is_empty() {
+            body["advertise_host"] = json!(advertise_host);
+        }
+        self.call(Method::POST, "/v1/migration/receivers", Some(body))
+            .await
+    }
+
+    pub async fn receiver_activate(&self, id: &str, token: &str) -> Result<(), LibvirtError> {
+        self.send(
+            Method::POST,
+            &format!("/v1/migration/receivers/{id}/activate"),
+            Some(json!({ "token": token })),
+        )
+        .await
+        .map(|_| ())
+    }
+
+    pub async fn receiver_adopt(&self, id: &str, token: &str) -> Result<FluxRecord, LibvirtError> {
+        self.call(
+            Method::POST,
+            &format!("/v1/migration/receivers/{id}/adopt"),
+            Some(json!({ "token": token })),
+        )
+        .await
+    }
+
+    pub async fn receiver_delete(&self, id: &str) -> Result<(), LibvirtError> {
+        self.send(
+            Method::DELETE,
+            &format!("/v1/migration/receivers/{id}"),
+            None,
+        )
+        .await
+        .map(|_| ())
+    }
+
+    /// Last `lines` lines of the VM's console log.
+    pub async fn logs(&self, name: &str, lines: usize) -> Result<String, LibvirtError> {
+        let id = self.resolve(name).await?.id;
+        self.send(
+            Method::GET,
+            &format!("/v1/vms/{id}/logs?lines={}", lines.max(1)),
+            None,
+        )
+        .await
+        .map(|(_, text)| text)
+    }
+
     pub fn build_create(&self, req: &CreateVmRequest) -> Result<FluxCreate, LibvirtError> {
         let hv = match req.fluxvm_backend.trim() {
             "" => self.default_backend.as_str(),
@@ -200,6 +544,13 @@ impl FluxvmClient {
             ));
         }
         let network = build_network(req, hv)?;
+        // `auto` may resolve to flux-vm, which has no user-mode NAT: pin QEMU.
+        let hv = if hv == "auto" && network["mode"] == "user" {
+            "qemu"
+        } else {
+            hv
+        };
+        let opt = |s: &str| Some(s.trim().to_string()).filter(|s| !s.is_empty());
         let user = req.cloud_init_user.trim();
         let key = req.cloud_init_ssh_pubkey.trim();
         // Always send a NoCloud seed: without one cloud-init never runs its default
@@ -219,6 +570,11 @@ impl FluxvmClient {
             disk_size_gib: Some(req.disk_gb).filter(|g| *g > 0),
             network,
             cloud_init,
+            kernel: opt(&req.fluxvm_kernel),
+            initrd: opt(&req.fluxvm_initrd),
+            kernel_args: opt(&req.fluxvm_kernel_args),
+            agent: Some(json!({ "enabled": req.fluxvm_agent.unwrap_or(true) })),
+            storage: req.fluxvm_shared_disk.then(|| "shared".to_string()),
         })
     }
 }
@@ -449,6 +805,58 @@ mod tests {
         req.fluxvm_backend.clear();
         req.existing_disk.clear();
         assert!(c.build_create(&req).is_err());
+    }
+
+    #[test]
+    fn console_url_carries_the_terminal_size() {
+        let (url, tok) = client().console_ws("abc", 120, 40);
+        assert_eq!(
+            url,
+            "wss://flux.local:7788/v1/vms/abc/console?cols=120&rows=40"
+        );
+        assert_eq!(tok.as_deref(), Some("t0k"));
+    }
+
+    #[test]
+    fn create_body_kernel_agent_and_shared_disk() {
+        let c = client();
+        let mut req = CreateVmRequest {
+            name: "fc1".into(),
+            fluxvm_backend: "firecracker".into(),
+            fluxvm_image: "/srv/nfs/fc1.raw".into(),
+            fluxvm_kernel: " /var/lib/fluxvm/kernels/vmlinux ".into(),
+            fluxvm_kernel_args: "console=ttyS0".into(),
+            fluxvm_shared_disk: true,
+            ..Default::default()
+        };
+        let v = serde_json::to_value(c.build_create(&req).unwrap()).unwrap();
+        assert_eq!(v["kernel"], "/var/lib/fluxvm/kernels/vmlinux");
+        assert_eq!(v["kernel_args"], "console=ttyS0");
+        assert!(v.get("initrd").is_none());
+        assert_eq!(v["agent"]["enabled"], true);
+        assert_eq!(v["storage"], "shared");
+
+        req.fluxvm_agent = Some(false);
+        req.fluxvm_shared_disk = false;
+        req.fluxvm_kernel.clear();
+        let v = serde_json::to_value(c.build_create(&req).unwrap()).unwrap();
+        assert_eq!(v["agent"]["enabled"], false);
+        assert!(v.get("storage").is_none());
+        assert!(v.get("kernel").is_none());
+    }
+
+    #[test]
+    fn user_networking_pins_qemu_instead_of_auto() {
+        let c = client();
+        let req = CreateVmRequest {
+            name: "u1".into(),
+            fluxvm_image: "/images/base.qcow2".into(),
+            fluxvm_network: "user".into(),
+            ..Default::default()
+        };
+        let b = c.build_create(&req).unwrap();
+        assert_eq!(b.backend, "qemu");
+        assert_eq!(b.network["mode"], "user");
     }
 
     #[test]
