@@ -9,8 +9,11 @@
  *   VM A (QEMU, default storage, host bridge, direct kernel boot, guest agent):
  *   serial console, agent console, snapshots + revert, hot-add vCPU/memory,
  *   extra NIC, backup + restore.
- *   VM B (QEMU, shared raw disk, netns NIC): NIC hot-add refused, daemon live
- *   migration to the same host,
+ *   VM C (Firecracker, default storage): live backup refused, stopped backup +
+ *   restore.
+ *   VM B (QEMU, shared raw disk, netns NIC): extra NIC hot-add, restart with it
+ *   (fd-passed host tap) and removal, migration refused until a restart, daemon
+ *   live migration to the same host,
  *   controller inventory row, controller vm.migrate host-to-itself, HA
  *   re-create on the same host (POST …/fluxvm/recover).
  *
@@ -36,10 +39,12 @@ const INITRD = process.env.FLUXVM_QEMU_INITRD || '/var/lib/fluxvm/kernels/bionic
 const KARGS = process.env.FLUXVM_KERNEL_ARGS || 'console=ttyS0 root=/dev/vda rw';
 const SHARED_DIR = process.env.FLUXVM_SHARED_DIR || '/var/lib/fluxvm/shared';
 const BRIDGE = process.env.FLUXVM_BRIDGE || 'virbr0';
+const FC_KERNEL = process.env.FLUXVM_FC_KERNEL || '/var/lib/fluxvm/kernels/vmlinux';
 const SKIP_PLATFORM = process.env.FLUXVM_SKIP_PLATFORM === '1';
 const SUFFIX = Date.now().toString(36);
 const A = `mfx-a-${SUFFIX}`;
 const B = `mfx-b-${SUFFIX}`;
+const C = `mfx-c-${SUFFIX}`;
 const SHARED_DISK = `${SHARED_DIR}/${B}.raw`;
 const LOCAL = ['127.0.0.1', 'localhost', '::1'].includes(cfg.host);
 const SSH = process.env.FLUXVM_SSH || `${cfg.username}@${cfg.host}`;
@@ -140,6 +145,21 @@ function wsExchange(path, { input, delayMs = 1500, waitMs = 8000, until } = {}) 
   });
 }
 
+/** Waits for the guest agent shell to answer; ws tokens are single-use, so each try gets a new one. */
+async function agentEcho(name, timeoutMs = 300000) {
+  return waitFor(
+    `${name} agent console echo`,
+    async () => {
+      const token = await wsToken();
+      const path = `/ws/v1/fluxvm-console/${encodeURIComponent(name)}?token=${encodeURIComponent(token)}&cols=100&rows=30`;
+      const o = await wsExchange(path, { input: 'echo MNX$((6*7))\n', delayMs: 1500, waitMs: 10000, until: /MNX42/ });
+      return /MNX42/.test(o) ? o : null;
+    },
+    timeoutMs,
+    5000,
+  );
+}
+
 async function platformVm(name) {
   const r = await api('GET', `${P}/api/v1/vms?limit=1000`);
   if (!ok(r.status)) throw new Error(`platform vms ${r.status}`);
@@ -222,17 +242,7 @@ async function waitTask(taskId, timeoutMs = 600000) {
     });
 
     await step('agent-console', async () => {
-      const token = await wsToken();
-      const path = `/ws/v1/fluxvm-console/${encodeURIComponent(A)}?token=${encodeURIComponent(token)}&cols=100&rows=30`;
-      const out = await waitFor(
-        'agent console echo',
-        async () => {
-          const o = await wsExchange(path, { input: 'echo MNX$((6*7))\n', delayMs: 1500, waitMs: 10000, until: /MNX42/ });
-          return /MNX42/.test(o) ? o : null;
-        },
-        150000,
-        5000,
-      );
+      const out = await agentEcho(A);
       return `shell answered (${out.length} bytes)`;
     });
 
@@ -318,6 +328,64 @@ async function waitTask(taskId, timeoutMs = 600000) {
     });
   }
 
+  // --- VM C: backups on a non-QEMU engine ----------------------------------------
+  const createdC = await step('create-firecracker', async () => {
+    await must('POST', '/api/v1/vms', {
+      name: C,
+      vcpus: 1,
+      memory_mb: 512,
+      disk_gb: 0,
+      backend: 'fluxvm',
+      fluxvm_backend: 'firecracker',
+      fluxvm_image: IMAGE,
+      fluxvm_kernel: FC_KERNEL,
+      fluxvm_kernel_args: 'console=ttyS0 reboot=k panic=1 root=/dev/vda rw',
+      fluxvm_network: 'none',
+    });
+    if ((await details(C)).state !== 'running') await must('POST', q(C, '/start'));
+    await waitState(C, 'running');
+    return `${C} running`;
+  });
+
+  if (createdC) {
+    await step('fc-live-backup-refused', async () => {
+      const r = await api('POST', '/api/v1/backups', { vm_name: C, backend: 'fluxvm', compress: false });
+      if (ok(r.status)) throw new Error('accepted');
+      if (!/stop the VM/i.test(r.body)) throw new Error(`${r.status} ${String(r.body).slice(0, 160)}`);
+      return `${r.status}`;
+    });
+
+    await step('fc-stop', async () => {
+      await must('POST', q(C, '/stop'));
+      await waitState(C, 'shutoff', 90000);
+    });
+
+    let fcBackup = '';
+    await step('fc-backup-restore', async () => {
+      const r = await must('POST', '/api/v1/backups', { vm_name: C, backend: 'fluxvm', compress: false });
+      fcBackup = r.backup_id || r.backup?.id || '';
+      const item = await waitFor('fc backup listed', async () => {
+        const l = await must('GET', `/api/v1/backups?backend=fluxvm&vm=${encodeURIComponent(C)}`);
+        return (l || []).find((b) => b.id === fcBackup || (!fcBackup && b.vm_filter === C)) || null;
+      });
+      fcBackup = item.id;
+      await must('POST', '/api/v1/backups/restore', { backup_id: fcBackup, backend: 'fluxvm', vm_name: C });
+      return `${fcBackup} ${item.size}`;
+    });
+
+    await step('fc-start-after-restore', async () => {
+      await must('POST', q(C, '/start'));
+      await waitState(C, 'running', 90000);
+      return 'restored raw disk boots';
+    });
+
+    if (fcBackup) {
+      await step('fc-backup-delete', async () => {
+        await must('DELETE', `/api/v1/backups/${encodeURIComponent(fcBackup)}?backend=fluxvm`);
+      });
+    }
+  }
+
   // --- VM B: shared disk, migration, HA ----------------------------------------
   const createdB = await step('create-shared-disk', async () => {
     onHost(`sudo mkdir -p ${SHARED_DIR} && sudo cp --reflink=auto ${IMAGE} ${SHARED_DISK}`);
@@ -342,12 +410,57 @@ async function waitTask(taskId, timeoutMs = 600000) {
   });
 
   if (createdB) {
-    await step('nic-refused-on-netns', async () => {
-      const r = await api('POST', q(B, '/nic/attach'), { network: BRIDGE, model: 'virtio' });
-      if (ok(r.status)) throw new Error('accepted');
-      if (!/netns/.test(r.body)) throw new Error(`${r.status} ${String(r.body).slice(0, 160)}`);
-      return `${r.status}`;
+    // QEMU runs inside B's netns, so it holds the host-bridge tap by fd; carrier on the tap
+    // (LOWER_UP) shows the VM really has it open.
+    const tapOf = (iface) => String(iface?.source || '').split(' · ')[1] || '';
+    const tapHeld = (tap) => /LOWER_UP/.test(onHost(`ip -o link show ${tap} 2>/dev/null || true`));
+    let netnsNic = null;
+    await step('nic-attach-netns', async () => {
+      const r = await must('POST', q(B, '/nic/attach'), { network: BRIDGE, model: 'virtio' });
+      if (!r?.mac) throw new Error(`no mac in ${JSON.stringify(r)}`);
+      netnsNic = ((await details(B)).interfaces || []).find((i) => i.mac_address === r.mac);
+      if (!netnsNic) throw new Error('NIC not listed');
+      const tap = tapOf(netnsNic);
+      if (!tap || !tapHeld(tap)) throw new Error(`tap ${tap} has no carrier`);
+      return `${r.mac} on ${tap}`;
     });
+
+    if (netnsNic) {
+      await step('nic-netns-restart', async () => {
+        await must('POST', q(B, '/stop'));
+        await waitState(B, 'shutoff', 90000);
+        await must('POST', q(B, '/start'));
+        await waitState(B, 'running', 90000);
+        const nic = ((await details(B)).interfaces || []).find((i) => i.mac_address === netnsNic.mac_address);
+        if (!nic) throw new Error('NIC gone after restart');
+        const tap = await waitFor('tap carrier', async () => (tapHeld(tapOf(nic)) ? tapOf(nic) : null), 30000);
+        return `relaunched with ${tap}`;
+      });
+
+      await step('nic-detach-netns', async () => {
+        // A guest that hasn't finished booting ignores the PCIe unplug request.
+        await agentEcho(B);
+        await must('POST', q(B, `/nic/detach/${encodeURIComponent(netnsNic.mac_address)}`));
+        const left = ((await details(B)).interfaces || []).filter((i) => i.mac_address === netnsNic.mac_address);
+        if (left.length) throw new Error('still listed');
+        return 'removed';
+      });
+
+      // The running VM still has the PCIe layout it booted with (primary NIC on a hotplug port).
+      await step('migrate-refused-until-restart', async () => {
+        const r = await api('POST', q(B, '/migrate'), { dest_uri: 'local', live: true });
+        if (ok(r.status)) throw new Error('accepted');
+        if (!/restart/i.test(r.body)) throw new Error(`${r.status} ${String(r.body).slice(0, 160)}`);
+        return `${r.status}`;
+      });
+
+      await step('restart-after-unplug', async () => {
+        await must('POST', q(B, '/stop'));
+        await waitState(B, 'shutoff', 90000);
+        await must('POST', q(B, '/start'));
+        await waitState(B, 'running', 90000);
+      });
+    }
 
     await step('daemon-migrate-loopback', async () => {
       const before = (await details(B)).uuid;
@@ -408,7 +521,7 @@ async function waitTask(taskId, timeoutMs = 600000) {
   }
 
   // --- cleanup -------------------------------------------------------------------
-  for (const name of [A, B]) {
+  for (const name of [A, B, C]) {
     await step(`delete-${name.slice(0, 5)}`, async () => {
       const r = await api('DELETE', q(name));
       if (!ok(r.status) && r.status !== 404) throw new Error(`${r.status} ${String(r.body).slice(0, 120)}`);

@@ -299,7 +299,7 @@ impl FluxvmClient {
         .map(|_| ())
     }
 
-    // --- backups (QEMU on FluxVM's default storage) ---
+    // --- backups (default or shared storage; a running VM needs QEMU) ---
 
     pub async fn backup(
         &self,

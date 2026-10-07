@@ -16,7 +16,8 @@ export function fluxvmCaps(engine?: string | null) {
   return {
     hotplug: qemu || e === 'cloud-hypervisor',
     nic: qemu,
-    backup: qemu,
+    backup: e !== '',
+    liveBackup: qemu,
     migrate: qemu,
     interactiveSerial: qemu,
   }
@@ -28,11 +29,6 @@ export function fluxvmSerialLabel(engine?: string | null): string {
 }
 
 type Iface = { mac_address: string; source: string }
-
-/** FluxVM can't relaunch a network-namespace VM with extra NICs, so it refuses NIC hot-add there. */
-export function fluxvmNicHotplugBlocked(primarySource?: string | null): boolean {
-  return /^netns /.test(primarySource ?? '')
-}
 
 type Props = {
   name: string
@@ -97,7 +93,6 @@ export default function FluxvmManagePanel({ name, engine, state, vcpus, memoryMb
   }
 
   const primaryMac = interfaces[0]?.mac_address
-  const nicBlocked = fluxvmNicHotplugBlocked(interfaces[0]?.source)
   const extraNics = interfaces.filter((i, idx) => idx > 0 && i.mac_address && i.mac_address !== primaryMac)
 
   return (
@@ -126,9 +121,6 @@ export default function FluxvmManagePanel({ name, engine, state, vcpus, memoryMb
       {caps.nic && (
         <div className={section}>
           <h3 className={heading}><Network className="w-4 h-4" /> Extra NICs</h3>
-          {nicBlocked ? (
-            <p className={hint}>This VM&apos;s NIC is in its own network namespace; FluxVM adds NICs only to VMs created on a host bridge.</p>
-          ) : (
           <div className="flex items-end gap-3 flex-wrap">
             <div>
               <label htmlFor="fx-bridge" className="block text-xs text-[var(--text-muted)] mb-1">Host bridge</label>
@@ -137,7 +129,6 @@ export default function FluxvmManagePanel({ name, engine, state, vcpus, memoryMb
             <button type="button" className="btn-secondary text-sm disabled:opacity-50" disabled={!running || busy !== null || !bridge.trim()}
               onClick={() => run('nic', () => attachInterface(name, bridge.trim(), 'virtio', conn), `NIC added on ${bridge.trim()}`)}>Hot-add NIC</button>
           </div>
-          )}
           {extraNics.length > 0 ? (
             <ul className="text-sm space-y-1">
               {extraNics.map((n) => (
@@ -181,8 +172,12 @@ export default function FluxvmManagePanel({ name, engine, state, vcpus, memoryMb
       {caps.backup && (
         <div className={section}>
           <h3 className={heading}><Archive className="w-4 h-4" /> Backups</h3>
-          <p className={hint}>Full-disk qcow2 copies under FluxVM&apos;s state dir. Restoring needs the VM stopped.</p>
-          <button type="button" className="btn-secondary text-sm disabled:opacity-50" disabled={busy !== null}
+          <p className={hint}>
+            Full-disk qcow2 copies under FluxVM&apos;s state dir, for VMs on default or shared storage. Restoring needs the VM stopped
+            {caps.liveBackup ? '; backups of a running VM use a short internal snapshot.' : ', and so does backing up on this engine.'}
+          </p>
+          <button type="button" className="btn-secondary text-sm disabled:opacity-50" disabled={busy !== null || (running && !caps.liveBackup)}
+            title={running && !caps.liveBackup ? 'Stop the VM first' : undefined}
             onClick={() => run('backup', () => triggerBackup({ vm_name: name, backend: conn }), 'Backup written')}>
             {busy === 'backup' ? 'Backing up…' : 'Back up now'}
           </button>

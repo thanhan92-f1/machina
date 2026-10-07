@@ -213,7 +213,7 @@ pub fn mobility_blocker(record: &Value) -> Option<String> {
         ));
     }
     if record["labels"].get(HOTPLUGGED_LABEL).is_some() {
-        return Some("VM has hot-added CPUs or memory; restart it before migrating".into());
+        return Some("VM has hot-plugged CPUs, memory or NICs since it started; restart it before migrating".into());
     }
     None
 }

@@ -62,8 +62,8 @@ With none of the network fields, the VM gets a tap in its own network namespace 
 | Serial console | interactive | read-only log | read-only log | read-only log |
 | Agent console (guest shell) | yes | yes | yes | yes |
 | Hot-add vCPU / memory | yes | yes | no | no |
-| Extra NICs | host-bridge VMs only | no | no | no |
-| Backups | default storage | no | no | no |
+| Extra NICs | yes | no | no | no |
+| Backups (default or shared storage) | running or stopped | stopped | stopped | stopped |
 | Live migration, HA re-create | shared disk | no | no | no |
 
 The VM detail page shows only what the VM's engine supports (**Manage** and **Agent console** tabs).
@@ -76,12 +76,17 @@ All VM routes take `?backend=fluxvm` (a name that isn't a libvirt domain falls b
   A stopped VM relaunches from the snapshot; a running QEMU VM must be stopped first.
 - **Backups** — `POST /api/v1/backups {vm_name, backend: "fluxvm", compress}`, list with
   `GET /api/v1/backups?backend=fluxvm&vm=<name>`, `POST /api/v1/backups/restore {backup_id, backend: "fluxvm", vm_name}`
-  (VM stopped), `DELETE /api/v1/backups/{id}?backend=fluxvm`. A restore replaces the disk, so internal snapshots taken
-  after the backup are gone.
+  (VM stopped), `DELETE /api/v1/backups/{id}?backend=fluxvm`. Works on every engine for VMs on FluxVM's default
+  storage or a shared disk. A running VM can be backed up only on QEMU with default storage (through a short internal
+  snapshot); stop it first on the other engines. Backups are qcow2; a restore converts back to the disk's own format
+  (raw on every engine but QEMU with default storage) and replaces the disk, so internal snapshots taken after the
+  backup are gone.
 - **Hot-add** — `POST /api/v1/vms/{name}/vcpus/{n}` and `…/memory/{mb}`. Add-only: a smaller value is refused. The
   next start boots at the created size. A hot-added VM must be restarted before it can migrate.
 - **Extra NICs** — `POST …/nic/attach {network: "<bridge>"}` returns the NIC's `mac`; `POST …/nic/detach/{mac}`
-  removes it. Refused for VMs whose NIC is in its own network namespace: they can't relaunch with extra NICs.
+  removes it. Each NIC is a tap on that host bridge. When the primary NIC is in the VM's own network namespace,
+  FluxVM passes the bridge taps to QEMU as open file descriptors, at hot-add and on every restart. A VM with extra
+  NICs can't migrate; after removing the last one, restart it first (it still has the PCIe layout it booted with).
 - **Live migration** — `POST …/migrate {dest_uri, live: true}`. `dest_uri` is `local` (a fresh QEMU process on the
   same host) or another host's fluxvm-api URL with `dest_token`; optional `listen_host`, `advertise_host`,
   `bandwidth_mbps`, `max_downtime_ms`. The disk is never copied.
@@ -115,18 +120,20 @@ between hosts.
 make regression-fluxvm   # scripts/regression/ops-fluxvm.js
 ```
 
-It creates two throwaway VMs and covers the consoles, snapshots, hot-add, NICs, backup/restore, daemon migration,
-the controller inventory row, pre-check, `vm.migrate` and HA re-create. Overrides: `FLUXVM_IMAGE`,
-`FLUXVM_QEMU_KERNEL`, `FLUXVM_QEMU_INITRD`, `FLUXVM_BRIDGE` (`virbr0`), `FLUXVM_SHARED_DIR`
+It creates three throwaway VMs and covers the consoles, snapshots, hot-add, NICs (host bridge, and on a namespace VM
+across a restart), backup/restore on QEMU and on a stopped Firecracker VM, daemon migration, the controller inventory
+row, pre-check, `vm.migrate` and HA re-create. Overrides: `FLUXVM_IMAGE`, `FLUXVM_QEMU_KERNEL`,
+`FLUXVM_QEMU_INITRD`, `FLUXVM_FC_KERNEL`, `FLUXVM_BRIDGE` (`virbr0`), `FLUXVM_SHARED_DIR`
 (`/var/lib/fluxvm/shared`), `FLUXVM_SKIP_PLATFORM=1`. Results: [regression RESULTS](../scripts/regression/RESULTS.md).
 
 ## Limits
 
 - Migration and HA re-create were verified host-to-itself on one host; moving between two hosts uses the same code
   path but has not been run on a two-host lab yet.
-- Backups are QEMU-only, on FluxVM's default storage.
-- Hot-add is per engine (table above); NICs only on host-bridge QEMU VMs.
-- Migration needs QEMU on a shared disk and no hot-add since the last start.
+- Backups need FluxVM's default storage or a shared disk file (not LVM thin, NBD or Ceph RBD). Only QEMU with
+  default storage can back up a running VM.
+- Hot-add is per engine (table above); extra NICs are QEMU-only.
+- Migration needs QEMU on a shared disk, no extra NICs, and no hot-add or NIC removal since the last start.
 
 ## Troubleshooting
 

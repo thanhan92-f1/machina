@@ -2,6 +2,24 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-10-08 — FluxVM limits lifted (`212.8.248.187`, `make regression-fluxvm`)
+
+FluxVM with fd-passed netns NICs and backups on every engine; same host and agent setup.
+
+| Gate | Result |
+|------|--------|
+| fluxvm (`ops-fluxvm.js`) | **35/35 PASS** |
+
+New: a Firecracker VM (live backup refused, stopped backup, restore, boots from the restored raw
+disk) and, on the netns shared-disk VM, NIC hot-add (tap carrier checked), restart with the NIC,
+removal, migration refused until a restart, then the existing migration/HA steps.
+
+Fixed on the way: migrating after removing the last extra NIC killed the receiver (the primary NIC
+was on a hotplug port it didn't have; FluxVM now marks the VM hot-plugged until a restart); the
+fd-passing QMP session didn't wait for QEMU's socket right after create; relaunch after unplugging
+a middle NIC failed; the agent-console step reused a single-use ws token. Earlier runs on the same
+day hit fluxvm-api create timeouts while the host's disk was saturated (I/O pressure ~60% full).
+
 ## 2026-10-07 — FluxVM (`212.8.248.187`, `make regression-fluxvm`)
 
 FluxVM `e6c5ad8`+ (netns NIC refusal) on the same host; daemon, controller and agent with

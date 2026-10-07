@@ -60,11 +60,11 @@ npm run mission
 # Jobs/audit/guest-health/network CRUD/HA/CD-ROM guards
 npm run catalog
 
-# FluxVM: serial + agent console, snapshots, backup/restore, hot-add, NIC,
-# daemon live migration, controller inventory/migrate/HA re-create (one host).
+# FluxVM: serial + agent console, snapshots, backup/restore (QEMU + stopped
+# Firecracker), hot-add, NICs (bridge + netns across a restart), daemon live migration, controller inventory/migrate/HA re-create (one host).
 # Needs [fluxvm] on the daemon and MACHINA_FLUXVM_URL on machina-agent; copies a
 # shared disk on the host (locally on loopback, else ssh FLUXVM_SSH). Overrides:
-# FLUXVM_IMAGE, FLUXVM_QEMU_KERNEL, FLUXVM_QEMU_INITRD, FLUXVM_BRIDGE (virbr0),
+# FLUXVM_IMAGE, FLUXVM_QEMU_KERNEL, FLUXVM_QEMU_INITRD, FLUXVM_FC_KERNEL, FLUXVM_BRIDGE (virbr0),
 # FLUXVM_SHARED_DIR, FLUXVM_SKIP_PLATFORM=1
 npm run fluxvm
 # or: make regression-fluxvm

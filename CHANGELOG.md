@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-08 — FluxVM: NICs on namespace VMs, backups on every engine
+
+See [docs/fluxvm.md](docs/fluxvm.md).
+
+- **NICs.** Extra NICs work on QEMU VMs whose primary NIC is in its own network namespace; FluxVM hands QEMU the
+  host-bridge taps as open file descriptors, at hot-add and on every restart. The **Manage** tab no longer hides NIC
+  controls for these VMs. Removing a VM's last extra NIC now blocks migration until it restarts (the running VM keeps
+  the PCIe layout it booted with); the controller pre-check says so.
+- **Backups.** Stopped VMs on every engine (Cloud Hypervisor, Firecracker, flux-vm) can be backed up and restored,
+  on FluxVM's default storage or a shared disk. Backing up a running VM still needs QEMU with default storage; the UI
+  disables **Back up now** for running VMs on the other engines. A restore keeps the disk's format (raw stays raw).
+- **Regression.** `ops-fluxvm.js` adds a namespace NIC hot-add + restart + removal and a Firecracker backup/restore
+  (live backup refused, stopped backup, restore, boot).
+
 ## 2026-10-07 — FluxVM: full VM management and fleet HA
 
 See [docs/fluxvm.md](docs/fluxvm.md).

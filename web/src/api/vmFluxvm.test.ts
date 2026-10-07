@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { appendVmConnection, sanitizeVmInfo, vmConsoleRoute, vmDetailRoute, vmScopeParam } from './vm'
 import { buildFluxvmCreateRequest } from '../components/vm/FluxvmCreatePanel'
-import { fluxvmCaps, fluxvmNicHotplugBlocked, fluxvmSerialLabel } from '../components/vm/FluxvmManagePanel'
+import { fluxvmCaps, fluxvmSerialLabel } from '../components/vm/FluxvmManagePanel'
 import { fluxvmAgentConsoleUrl } from '../components/vm/FluxvmAgentConsole'
 import { backupScopeQs } from './backup'
 
@@ -83,10 +83,11 @@ describe('FluxVM create extras', () => {
 
 describe('FluxVM per-engine features', () => {
   it('gates hotplug, NICs, backups and migration by engine', () => {
-    expect(fluxvmCaps('qemu')).toEqual({ hotplug: true, nic: true, backup: true, migrate: true, interactiveSerial: true })
-    expect(fluxvmCaps('cloud-hypervisor')).toMatchObject({ hotplug: true, nic: false, backup: false, migrate: false })
-    expect(fluxvmCaps('firecracker')).toMatchObject({ hotplug: false, backup: false, migrate: false })
-    expect(fluxvmCaps(undefined).hotplug).toBe(false)
+    expect(fluxvmCaps('qemu')).toEqual({ hotplug: true, nic: true, backup: true, liveBackup: true, migrate: true, interactiveSerial: true })
+    expect(fluxvmCaps('cloud-hypervisor')).toMatchObject({ hotplug: true, nic: false, backup: true, liveBackup: false, migrate: false })
+    expect(fluxvmCaps('firecracker')).toMatchObject({ hotplug: false, backup: true, liveBackup: false, migrate: false })
+    expect(fluxvmCaps('flux-vm')).toMatchObject({ backup: true, liveBackup: false })
+    expect(fluxvmCaps(undefined)).toMatchObject({ hotplug: false, backup: false })
   })
 
   it('labels the non-QEMU serial tab as a read-only console log', () => {
@@ -103,13 +104,5 @@ describe('FluxVM per-engine features', () => {
     expect(backupScopeQs()).toBe('')
     expect(backupScopeQs('fluxvm')).toBe('?backend=fluxvm')
     expect(backupScopeQs('fluxvm', 'web-1')).toBe('?backend=fluxvm&vm=web-1')
-  })
-})
-
-describe('FluxVM NIC hot-add', () => {
-  it('is blocked when the primary NIC lives in a network namespace', () => {
-    expect(fluxvmNicHotplugBlocked('netns tapab12cd (eBPF)')).toBe(true)
-    expect(fluxvmNicHotplugBlocked('virbr0 · tapab12cd')).toBe(false)
-    expect(fluxvmNicHotplugBlocked(undefined)).toBe(false)
   })
 })
