@@ -170,9 +170,9 @@ fn axum_to_upstream(msg: Message) -> Option<UpMsg> {
 fn upstream_to_axum(msg: UpMsg) -> Option<Message> {
     match msg {
         UpMsg::Text(t) => Some(Message::Text(t.as_str().into())),
-        UpMsg::Binary(b) => Some(Message::Binary(b.into())),
-        UpMsg::Ping(p) => Some(Message::Ping(p.into())),
-        UpMsg::Pong(p) => Some(Message::Pong(p.into())),
+        UpMsg::Binary(b) => Some(Message::Binary(b)),
+        UpMsg::Ping(p) => Some(Message::Ping(p)),
+        UpMsg::Pong(p) => Some(Message::Pong(p)),
         UpMsg::Close(_) => None,
         UpMsg::Frame(_) => None,
     }
